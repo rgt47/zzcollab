@@ -833,13 +833,13 @@ create_vignette_template() {
         printf "  %%\\\\VignetteEncoding{UTF-8}\\n"
         printf "---\\n\\n"
         printf "\\\`\\\`\\\`{r, include = FALSE}\\n"
-        printf "knitr::opts_chunk\\$set(\\n"
+        printf 'knitr::opts_chunk$set(\n'
         printf "  collapse = TRUE,\\n"
         printf "  comment = \"#>\"\\n"
-        printf ")\\n"
+        printf ')\n'
         printf "\\\`\\\`\\\`\\n\\n"
         printf "\\\`\\\`\\\`{r setup}\\n"
-        printf "library(%s)\\n" "$PKG_NAME"
+        printf 'library(%s)\n' "$PKG_NAME"
         printf "\\\`\\\`\\\`\\n\\n"
         printf "# Introduction\\n\\n"
         printf "This is a template for the %s research project.\\n\\n" "$PKG_NAME"
