@@ -2,7 +2,7 @@
 # Create rrtools-compatible R package structure in the current directory
 # This script reorganizes existing files and sets up an rrtools framework
 
-# Bash safety options
+#  Bash safety options
 set -euo pipefail
 
 # Auto-detect script directory and make configuration customizable
