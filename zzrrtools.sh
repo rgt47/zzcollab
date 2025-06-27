@@ -883,13 +883,13 @@ highlights: |
 ---
 
 \`\`\`{r setup, include=FALSE}
-knitr::opts_chunk\$set(
+knitr::opts_chunk\\\\$set\\(
   echo = FALSE,
   message = FALSE,
   warning = FALSE,
   fig.path = \"../figures/\",
   dpi = 300
-)
+\\)
 library(${PKG_NAME})
 # other packages
 library(rmarkdown)
