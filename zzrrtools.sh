@@ -856,16 +856,18 @@ else
     log_info "Vignette template already exists, skipping creation"
 fi
 
-create_file_if_missing "analysis/paper/paper.Rmd" "---
-title: \"Title Goes Here\"
+create_paper_template() {
+    cat > "analysis/paper/paper.Rmd" << 'PAPER_EOF'
+---
+title: "Title Goes Here"
 author:
-  - ${AUTHOR_NAME}:
-      email: ${AUTHOR_EMAIL}
-      institute: [${AUTHOR_INSTITUTE}]
+  - AUTHOR_NAME_PLACEHOLDER:
+      email: AUTHOR_EMAIL_PLACEHOLDER
+      institute: [AUTHOR_INSTITUTE_PLACEHOLDER]
       correspondence: true
 institute:
-  - ${AUTHOR_INSTITUTE}: ${AUTHOR_INSTITUTE_FULL}
-date: \"\\`r format(Sys.time(), '%d %B, %Y')\\`\"
+  - AUTHOR_INSTITUTE_PLACEHOLDER: AUTHOR_INSTITUTE_FULL_PLACEHOLDER
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   bookdown::pdf_document2:
     fig_caption: yes
@@ -873,7 +875,7 @@ output:
     toc: false
     keep_tex: true
 bibliography: references.bib
-csl: \"../templates/statistics-in-medicine.csl\"
+csl: "../templates/statistics-in-medicine.csl"
 abstract: |
   Text of abstract
 keywords: |
@@ -882,19 +884,19 @@ highlights: |
   These are the highlights.
 ---
 
-\`\`\`{r setup, include=FALSE}
-knitr::opts_chunk\\\\$set\\(
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
   echo = FALSE,
   message = FALSE,
   warning = FALSE,
-  fig.path = \"../figures/\",
+  fig.path = "../figures/",
   dpi = 300
-\\)
-library(${PKG_NAME})
+)
+library(PKG_NAME_PLACEHOLDER)
 # other packages
 library(rmarkdown)
 library(knitr)
-\`\`\`
+```
 
 # Introduction
 
@@ -916,7 +918,24 @@ Discussion text goes here.
 
 Conclusions text goes here.
 
-# References"
+# References
+PAPER_EOF
+
+    # Replace placeholders with actual values
+    sed -i.bak "s/AUTHOR_NAME_PLACEHOLDER/${AUTHOR_NAME}/g" "analysis/paper/paper.Rmd"
+    sed -i.bak "s/AUTHOR_EMAIL_PLACEHOLDER/${AUTHOR_EMAIL}/g" "analysis/paper/paper.Rmd"
+    sed -i.bak "s/AUTHOR_INSTITUTE_PLACEHOLDER/${AUTHOR_INSTITUTE}/g" "analysis/paper/paper.Rmd"
+    sed -i.bak "s/AUTHOR_INSTITUTE_FULL_PLACEHOLDER/${AUTHOR_INSTITUTE_FULL}/g" "analysis/paper/paper.Rmd"
+    sed -i.bak "s/PKG_NAME_PLACEHOLDER/${PKG_NAME}/g" "analysis/paper/paper.Rmd"
+    rm -f "analysis/paper/paper.Rmd.bak"
+}
+
+if [[ ! -f "analysis/paper/paper.Rmd" ]]; then
+    log_info "Creating paper template..."
+    create_paper_template
+else
+    log_info "Paper template already exists, skipping creation"
+fi
 
 create_file_if_missing "analysis/paper/references.bib" "@article{marwick2017,
   title={Computational reproducibility in archaeological research: basic principles and a case study of their implementation},
@@ -984,7 +1003,7 @@ renv::snapshot()"
 
 # 8a. renv setup (Docker-first approach)
 echo "📦 renv environment will be initialized in Docker container"
-echo "⚠️  To initialize renv locally (optional): run 'source(\"setup_renv.R\")' in R"
+echo "⚠️  To initialize renv locally: run the setup_renv.R script in R"
 
 # Note: .gitignore, .Rproj, tests, .Rprofile, .dockerignore now created by create_core_files
 
@@ -1206,7 +1225,7 @@ show_next_steps() {
         getting_started+=(
             "2. Build Docker image: 'make docker-build'"
             "3. Start developing in Docker container (no local R needed!):"
-            "4. In container: run 'source(\"setup_renv.R\")' to initialize renv"
+            "4. In container: run the setup_renv.R script to initialize renv"
         )
         local next_step=5
     fi
@@ -1248,16 +1267,16 @@ local advanced_features=(
 )
 
 local package_dev=(
-    "7. Run 'devtools::document()' to generate documentation"
-    "8. Run 'devtools::load_all()' to load the package"
+    "7. Run devtools document function to generate documentation"
+    "8. Run devtools load_all function to load the package"
     "9. Edit your research paper in analysis/paper/paper.Rmd"
     "10. Add your R functions in the R directory"
-    "11. Run 'devtools::test()' to run tests"
+    "11. Run devtools test function to run tests"
 )
 
 local docker_tasks=(
     "12. Render paper: 'make docker-render'"
-    "13. Run tests: 'make docker-test'" 
+    "13. Run tests: 'make docker-test'"
     "14. Check package: 'make docker-check'"
     "15. Validate renv: 'make docker-check-renv'"
     "16. See all options: 'make help'"
