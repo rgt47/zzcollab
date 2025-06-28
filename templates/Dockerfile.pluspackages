@@ -1,3 +1,4 @@
+ARG R_VERSION=latest
 FROM rocker/r-ver:${R_VERSION}
 
 # Install system dependencies
