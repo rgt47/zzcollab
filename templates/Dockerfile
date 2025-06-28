@@ -45,14 +45,15 @@ COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
 COPY --chown=${USERNAME}:${USERNAME} .Rprofile* ./
 COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
 
-# Configure renv library path
+# Configure renv library path and disable system library usage
 ENV RENV_PATHS_LIBRARY renv/library
+ENV RENV_CONFIG_USER_LIBRARY FALSE
 
 # Switch to non-root user for R package installation
 USER ${USERNAME}
 
 # Initialize renv and restore packages from lockfile (if exists)
-RUN R -e "if (file.exists('renv.lock')) renv::restore() else cat('No renv.lock found, skipping restore\\n')"
+RUN R -e "renv::consent(provided = TRUE); if (file.exists('renv.lock')) renv::restore() else renv::init(bare = TRUE)"
 
 # Copy dotfiles (consolidated with wildcards)
 COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
@@ -74,7 +75,7 @@ RUN vim +PlugInstall +qall || true
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 # Install the research compendium as a package using renv (single copy, no duplication)
-RUN R -e "renv::install('.', dependencies = TRUE)"
+RUN R -e "renv::install('.', dependencies = TRUE, type = 'source')"
 
 # Set default shell and working directory
 WORKDIR /home/${USERNAME}/project
