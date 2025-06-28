@@ -34,7 +34,8 @@ ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
 # Install common R packages (this layer will be cached)
-RUN R -e "install.packages(c('renv', 'remotes', 'devtools', 'testthat', 'knitr', 'rmarkdown', 'tidyverse', 'here', 'usethis'), repos = c(CRAN = 'https://cloud.r-project.org'))"
+# Image name: rgt47/r-pluspackages
+RUN R -e "install.packages(c('renv', 'remotes', 'devtools', 'testthat', 'naniar', 'DT', 'conflicted', 'ggthemes', 'datapasta', 'janitor', 'kableExtra', 'tidytuesdayR', 'tidyverse'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 
 # Give analyst user write permission to R library directory
 RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
