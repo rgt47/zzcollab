@@ -51,7 +51,7 @@ ENV RENV_PATHS_LIBRARY renv/library
 # Switch to non-root user for R package installation
 USER ${USERNAME}
 
-# Restore R packages from lockfile (if exists)
+# Initialize renv and restore packages from lockfile (if exists)
 RUN R -e "if (file.exists('renv.lock')) renv::restore() else cat('No renv.lock found, skipping restore\\n')"
 
 # Copy dotfiles (consolidated with wildcards)
@@ -73,8 +73,8 @@ RUN vim +PlugInstall +qall || true
 # Copy rest of project
 COPY --chown=${USERNAME}:${USERNAME} . .
 
-# Install the research compendium as a package
-RUN R -e "remotes::install_local('.', dependencies = TRUE)"
+# Install the research compendium as a package using renv (single copy, no duplication)
+RUN R -e "renv::install('.', dependencies = TRUE)"
 
 # Set default shell and working directory
 WORKDIR /home/${USERNAME}/project
