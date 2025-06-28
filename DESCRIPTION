@@ -1,0 +1,14 @@
+Package: zzrrtools
+Title: Research Compendium for zzrrtools
+Version: 0.0.0.9000
+Authors@R: 
+    person("Ronald G. Thomas", email = "rgthomas@ucsd.edu", role = c("aut", "cre"))
+Description: This is a research compendium for the zzrrtools project.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
