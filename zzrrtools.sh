@@ -271,6 +271,13 @@ create_docker_files() {
     # Copy docker-compose.yml from template  
     copy_template_file "docker-compose.yml" "docker-compose.yml" "Docker Compose configuration"
     
+    # Copy .zshrc_docker for container shell configuration
+    copy_template_file ".zshrc_docker" ".zshrc_docker" "zsh configuration for Docker container"
+    
+    # Copy additional support files
+    copy_template_file "check_renv_for_commit.R" "check_renv_for_commit.R" "renv validation script"
+    copy_template_file "ZZRRTOOLS_USER_GUIDE.md" "ZZRRTOOLS_USER_GUIDE.md" "comprehensive user guide"
+    
     log_success "Docker configuration files created"
 }
 
