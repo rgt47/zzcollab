@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help|-h)
-            cat << ''EOF''
+            cat << EOF
 Usage: rrtools.sh [OPTIONS]
 
 Creates a complete rrtools research compendium with Docker support.
@@ -857,7 +857,7 @@ else
 fi
 
 create_paper_template() {
-    cat > "analysis/paper/paper.Rmd" << ''PAPER_EOF''
+    cat > "analysis/paper/paper.Rmd" << PAPER_EOF
 ---
 title: "Title Goes Here"
 author:
@@ -981,7 +981,7 @@ download_csl_style
 
 # 7. Create renv setup
 if [[ ! -f "setup_renv.R" ]]; then
-    cat > "setup_renv.R" << 'RENV_EOF'
+    cat > "setup_renv.R" << RENV_EOF
 # Run this in R to set up renv
 if (!requireNamespace("renv", quietly = TRUE)) {
   install.packages("renv")
@@ -1043,7 +1043,7 @@ generate_github_actions() {
     
     # Simple R package check workflow - just uses native R since Docker is local-only
     if [[ ! -f ".github/workflows/r-package.yml" ]]; then
-        cat > ".github/workflows/r-package.yml" << 'PACKAGE_WORKFLOW_EOF'
+        cat > ".github/workflows/r-package.yml" << PACKAGE_WORKFLOW_EOF
 name: R Package Check
 
 on:
@@ -1087,7 +1087,7 @@ PACKAGE_WORKFLOW_EOF
 
     # Simple paper rendering workflow  
     if [[ ! -f ".github/workflows/render-paper.yml" ]]; then
-        cat > ".github/workflows/render-paper.yml" << 'WORKFLOW_EOF'
+        cat > ".github/workflows/render-paper.yml" << WORKFLOW_EOF
 name: Render Research Paper
 
 on:
@@ -1278,10 +1278,10 @@ local collab_workflow=(
 local advanced_features=(
     "• Run ''rrtools_plus.sh'' to add advanced research compendium features:"
     "   - Enhanced data management and validation infrastructure"
-    "   - Ethics and legal documentation templates (IRB, data sharing)"
-    "   - Collaboration tools (GitHub issue templates, contribution guidelines)"
-    "   - Quality assurance (pre-commit hooks, reproducibility checks)"
-    "   - Publication infrastructure (journal checklists, dissemination planning)"
+    "   - Ethics and legal documentation templates for IRB and data sharing"
+    "   - Collaboration tools with GitHub issue templates and contribution guidelines"
+    "   - Quality assurance with pre-commit hooks and reproducibility checks"
+    "   - Publication infrastructure with journal checklists and dissemination planning"
 )
 
 local package_dev=(
@@ -1301,22 +1301,23 @@ local docker_tasks=(
 )
 
 local symlinks=(
-    "  a -> ./data              (data files)"
-    "  n -> ./analysis          (analysis files)"
-    "  f -> ./analysis/figures  (figures)"
-    "  t -> ./analysis/tables   (tables)"
-    "  s -> ./scripts           (working R scripts)"
-    "  m -> ./man               (function documentation)"
-    "  e -> ./tests             (tests)"
-    "  o -> ./docs              (documentation)"
-    "  c -> ./archive           (archived files)"
-    "  p -> ./analysis/paper    (research paper)"
+    "  a -> ./data              - data files"
+    "  n -> ./analysis          - analysis files"
+    "  f -> ./analysis/figures  - figures"
+    "  t -> ./analysis/tables   - tables"
+    "  s -> ./scripts           - working R scripts"
+    "  m -> ./man               - function documentation"
+    "  e -> ./tests             - tests"
+    "  o -> ./docs              - documentation"
+    "  c -> ./archive           - archived files"
+    "  p -> ./analysis/paper    - research paper"
 )
 
 # Print all sections
 print_section "RECOMMENDED DEVELOPMENT WORKFLOW:" "${dev_workflow[@]}"
 print_section "ONGOING COLLABORATION WORKFLOW:" "${collab_workflow[@]}"
-print_section "ADVANCED FEATURES (OPTIONAL):" "${advanced_features[@]}"
-print_section "R PACKAGE DEVELOPMENT (in Docker container):" "${package_dev[@]}"
+print_section "ADVANCED FEATURES - OPTIONAL:" "${advanced_features[@]}"
+print_section "R PACKAGE DEVELOPMENT in Docker container:" "${package_dev[@]}"
 print_section "COMMON DOCKER TASKS:" "${docker_tasks[@]}"
 print_section "📂 Symbolic links created for convenience:" "${symlinks[@]}"
+
