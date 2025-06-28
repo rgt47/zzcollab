@@ -36,6 +36,9 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 # Install essential R packages (remotes is much faster than devtools)
 RUN R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 
+# Give analyst user write permission to R library directory
+RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+
 # Set working directory and ensure user owns it
 WORKDIR /home/${USERNAME}/project
 RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/project
@@ -46,15 +49,8 @@ COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
 COPY --chown=${USERNAME}:${USERNAME} .Rprofile* ./
 COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
 
-# Configure renv library path and disable system library usage
-ENV RENV_PATHS_LIBRARY renv/library
-ENV RENV_CONFIG_USER_LIBRARY FALSE
-
 # Switch to non-root user for R package installation
 USER ${USERNAME}
-
-# Initialize renv and restore packages from lockfile (if exists)
-RUN R -e "renv::consent(provided = TRUE); if (file.exists('renv.lock')) renv::restore() else renv::init(bare = TRUE)"
 
 # Copy dotfiles (consolidated with wildcards)
 COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
@@ -75,8 +71,8 @@ RUN vim +PlugInstall +qall || true
 # Copy rest of project
 COPY --chown=${USERNAME}:${USERNAME} . .
 
-# Install the research compendium as a package using renv (single copy, no duplication)
-RUN R -e "renv::install('.', dependencies = TRUE, type = 'source')"
+# Install the research compendium as a package (analyst has write permissions)
+RUN R -e "remotes::install_local('.', dependencies = TRUE)"
 
 # Set default shell and working directory
 WORKDIR /home/${USERNAME}/project
