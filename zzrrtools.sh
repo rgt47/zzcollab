@@ -24,6 +24,7 @@ readonly PKG_NAME
 # Parse command line arguments
 BUILD_DOCKER=true
 DOTFILES_DIR=""
+DOTFILES_NODOT=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --no-docker)
@@ -34,6 +35,11 @@ while [[ $# -gt 0 ]]; do
             DOTFILES_DIR="$2"
             shift 2
             ;;
+        --dotfiles-nodot)
+            DOTFILES_DIR="$2"
+            DOTFILES_NODOT=true
+            shift 2
+            ;;
         --help|-h)
             cat << EOF
 Usage: rrtools.sh [OPTIONS]
@@ -42,7 +48,8 @@ Creates a complete rrtools research compendium with Docker support.
 
 OPTIONS:
   --no-docker       Skip Docker image build during setup
-  --dotfiles DIR    Copy dotfiles from specified directory
+  --dotfiles DIR    Copy dotfiles from specified directory (with leading dots)
+  --dotfiles-nodot DIR Copy dotfiles from directory (without leading dots)
   --next-steps      Show development workflow and next steps
   --help, -h        Show this help message
 
@@ -55,7 +62,8 @@ ENVIRONMENT VARIABLES:
 EXAMPLES:
   ./rrtools.sh                      # Full setup with Docker
   ./rrtools.sh --no-docker          # Setup without Docker build
-  ./rrtools.sh --dotfiles ~/dotfiles # Include personal dotfiles
+  ./rrtools.sh --dotfiles ~/dotfiles # Include personal dotfiles (with dots)
+  ./rrtools.sh --dotfiles-nodot ~/dotfiles # Include dotfiles (without dots)
   ./rrtools.sh --next-steps         # Show workflow help
 
 EOF
@@ -352,15 +360,27 @@ copy_dotfiles() {
             return 1
         fi
         
-        # Common dotfiles to copy
-        local dotfiles=(".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc" ".profile" ".aliases" ".functions" ".exports" ".editorconfig" ".ctags" ".ackrc" ".ripgreprc")
-        
-        for dotfile in "${dotfiles[@]}"; do
-            if [[ -f "$DOTFILES_DIR/$dotfile" ]]; then
-                cp "$DOTFILES_DIR/$dotfile" "."
-                log_info "Copied $dotfile"
-            fi
-        done
+        if [[ "$DOTFILES_NODOT" = true ]]; then
+            # Files without leading dots (e.g., vimrc -> .vimrc)
+            local dotfiles=("vimrc" "tmux.conf" "gitconfig" "inputrc" "bashrc" "profile" "aliases" "functions" "exports" "editorconfig" "ctags" "ackrc" "ripgreprc")
+            
+            for dotfile in "${dotfiles[@]}"; do
+                if [[ -f "$DOTFILES_DIR/$dotfile" ]]; then
+                    cp "$DOTFILES_DIR/$dotfile" ".$dotfile"
+                    log_info "Copied $dotfile -> .$dotfile"
+                fi
+            done
+        else
+            # Files with leading dots (e.g., .vimrc)
+            local dotfiles=(".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc" ".profile" ".aliases" ".functions" ".exports" ".editorconfig" ".ctags" ".ackrc" ".ripgreprc")
+            
+            for dotfile in "${dotfiles[@]}"; do
+                if [[ -f "$DOTFILES_DIR/$dotfile" ]]; then
+                    cp "$DOTFILES_DIR/$dotfile" "."
+                    log_info "Copied $dotfile"
+                fi
+            done
+        fi
         
         log_success "Dotfiles copied"
     fi
