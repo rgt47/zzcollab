@@ -1,7 +1,7 @@
-# rrtools Framework User Guide v2.0
+# ZZRRTOOLS Research Compendium Framework - User Guide v3.0
 
 ## Table of Contents
-1. [What is rrtools?](#what-is-rrtools)
+1. [What is ZZRRTOOLS?](#what-is-zzrrtools)
 2. [Getting Started](#getting-started)
 3. [Installation & Distribution](#installation--distribution)
 4. [Configuration](#configuration)
@@ -17,9 +17,9 @@
 14. [Collaboration](#collaboration)
 15. [Troubleshooting](#troubleshooting)
 
-## What is rrtools?
+## What is ZZRRTOOLS?
 
-**rrtools** is a framework for creating **research compendia** - self-contained, reproducible research projects that combine:
+**ZZRRTOOLS** is a framework for creating **research compendia** - self-contained, reproducible research projects that combine:
 - R package structure for code organization
 - Data management and documentation
 - Analysis scripts and notebooks
@@ -44,13 +44,15 @@
 
 ### Quick Start
 ```bash
-# 1. Get rrtools.sh (one-time setup)
-curl -fsSL https://raw.githubusercontent.com/your-org/rrtools/main/rrtools.sh -o rrtools.sh
-chmod +x rrtools.sh
+# 1. One-time installation
+git clone https://github.com/yourusername/zzrrtools.git
+cd zzrrtools
+./install.sh
 
-# 2. Create your project
-cd your-project-directory
-./rrtools.sh
+# 2. Create new analysis project
+mkdir my-penguin-analysis
+cd my-penguin-analysis
+zzrrtools --dotfiles ~/dotfiles
 
 # 3. Start developing immediately
 make docker-rstudio  # → http://localhost:8787
@@ -60,29 +62,102 @@ make docker-r        # → R console in container
 
 ## Installation & Distribution
 
-### One-Time Installation
+### Method 1: Automatic Installation (Recommended)
 ```bash
-# Install globally
-curl -fsSL https://raw.githubusercontent.com/your-org/rrtools/main/install.sh | bash
-
-# Then use anywhere
-cd my-project
-rrtools.sh
+# One-line install
+git clone https://github.com/yourusername/zzrrtools.git && cd zzrrtools && ./install.sh
 ```
 
-### Self-Replicating Strategy
-rrtools.sh **copies itself** to each project automatically:
-- Project creator runs `rrtools.sh` once
-- Script copies itself to `./rrtools.sh` in the project
-- When pushed to Git, collaborators get the script automatically
-- No separate installation needed for team members
-
-### Collaboration Workflow
+### Method 2: Manual Installation
 ```bash
-# Collaborator workflow
+# Clone and create symlink manually
+git clone https://github.com/yourusername/zzrrtools.git
+cd zzrrtools
+ln -s "$(pwd)/zzrrtools.sh" ~/bin/zzrrtools  # Adjust path as needed
+```
+
+### Method 3: Direct Download
+```bash
+# Download and install in one step
+curl -fsSL https://raw.githubusercontent.com/yourusername/zzrrtools/main/install.sh | bash
+```
+
+### Project Creation Workflow
+Each analysis project is **independent and self-contained**:
+
+#### For Each New Analysis Project:
+```bash
+# Create and enter new project directory
+mkdir my-climate-study
+cd my-climate-study
+
+# Set up complete research compendium
+zzrrtools --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
+
+# Initialize git (work locally first)
+git init
+git add .
+git commit -m "🎉 Initial research compendium setup"
+
+# When ready to share, create GitHub repo
+gh repo create my-climate-study --public
+git push -u origin main
+```
+
+### Team Collaboration Workflow
+```bash
+# Team member joins existing project
 git clone https://github.com/team/research-project
 cd research-project
-./rrtools.sh  # Script is already there!
+
+# Project structure is already set up - start working immediately!
+make docker-rstudio
+```
+
+### Git Integration Patterns
+
+#### Local-First Workflow (Recommended)
+Perfect for exploratory analysis and private development:
+
+```bash
+# 1. Create local project
+mkdir penguin-behavioral-analysis
+cd penguin-behavioral-analysis
+
+# 2. Set up research compendium
+zzrrtools --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
+
+# 3. Initialize git and work locally
+git init
+git add .
+git commit -m "🎉 Initial research compendium setup"
+
+# 4. Do analysis work, make commits
+# ... edit files, run analysis ...
+git add .
+git commit -m "Add data exploration and initial plots"
+
+# 5. When ready to share, create GitHub repo
+gh repo create penguin-behavioral-analysis --public
+git remote add origin https://github.com/username/penguin-behavioral-analysis.git
+git push -u origin main
+```
+
+#### GitHub-First Workflow
+For projects you know will be collaborative from the start:
+
+```bash
+# 1. Create GitHub repo first
+gh repo create my-research-project --public --clone
+
+# 2. Enter the directory and set up
+cd my-research-project
+zzrrtools --dotfiles ~/dotfiles
+
+# 3. Commit and push
+git add .
+git commit -m "🎉 Initial research compendium setup"
+git push
 ```
 
 ## Configuration
@@ -101,29 +176,37 @@ export RRTOOLS_INSTITUTE_FULL="Massachusetts Institute of Technology"
 export RRTOOLS_BASE_PATH="/path/to/rrtools/files"
 
 # Then run
-./rrtools.sh
+zzrrtools
 ```
 
 ### Command-Line Options
 ```bash
-./rrtools.sh [OPTIONS]
+zzrrtools [OPTIONS]
 
 OPTIONS:
-  --no-docker    Skip Docker image build during setup
-  --help, -h     Show help message
+  --no-docker          Skip Docker image build during setup
+  --dotfiles DIR       Copy dotfiles from specified directory (with leading dots)
+  --dotfiles-nodot DIR Copy dotfiles from directory (without leading dots)
+  --base-image NAME    Use custom Docker base image (default: rocker/r-ver)
+  --next-steps         Show development workflow and next steps
+  --help, -h           Show help message
 
 EXAMPLES:
-  ./rrtools.sh                                    # Full setup with Docker
-  ./rrtools.sh --no-docker                       # Setup without Docker build
-  RRTOOLS_AUTHOR_NAME="Jane Doe" ./rrtools.sh    # Custom author
+  zzrrtools                                           # Full setup with Docker
+  zzrrtools --no-docker                              # Setup without Docker build
+  zzrrtools --dotfiles ~/dotfiles                    # Include personal dotfiles
+  zzrrtools --dotfiles-nodot ~/dotfiles              # Dotfiles without leading dots
+  zzrrtools --base-image rgt47/r-pluspackages        # Use custom base image
+  RRTOOLS_AUTHOR_NAME="Jane Doe" zzrrtools           # Custom author
 ```
 
 ### Safety Features
-- **Input validation**: Package names sanitized and validated
+- **Input validation**: Package names sanitized and validated according to R package rules
 - **Error handling**: Comprehensive error checking with graceful fallbacks
-- **Backup creation**: Automatic backups before file overwrites
+- **File protection**: Never overwrites existing files (preserves user modifications)
 - **Docker validation**: Checks Docker availability before use
 - **Permission checking**: Verifies write permissions before starting
+- **Template validation**: Ensures all required templates exist before processing
 
 ## Directory Structure
 
@@ -138,8 +221,7 @@ your-project/
 │   ├── raw_data/              # Original, unmodified datasets
 │   ├── derived_data/          # Processed, analysis-ready data
 │   ├── metadata/              # Data dictionaries and documentation
-│   ├── validation/            # Data quality reports
-│   └── external_data/         # Third-party datasets
+│   └── validation/            # Data quality reports
 ├── analysis/                   # Research analysis components
 │   ├── paper/                 # Manuscript files
 │   ├── figures/               # Generated plots and figures
@@ -195,7 +277,7 @@ p     # → ./analysis/paper    (research paper)
 #### Initial Setup (One Time)
 ```bash
 cd your-project
-./rrtools.sh                    # Creates structure + builds Docker image
+zzrrtools                       # Creates structure + builds Docker image
 ```
 
 #### Daily Development Cycle
@@ -206,6 +288,8 @@ make docker-rstudio            # → RStudio at http://localhost:8787
 make docker-r                  # → R console
 # OR  
 make docker-bash               # → Shell access
+# OR
+make docker-zsh                # → Zsh shell access
 
 # 2. Do your analysis, install packages as needed
 # 3. Exit container when done
@@ -235,6 +319,7 @@ make docker-build             # Rebuild environment with new packages
 | **RStudio Server** | `make docker-rstudio` | GUI-based development |
 | **R Console** | `make docker-r` | Command-line R work |
 | **Bash Shell** | `make docker-bash` | File management, git operations |
+| **Zsh Shell** | `make docker-zsh` | Enhanced shell with personal dotfiles |
 | **Paper Rendering** | `make docker-render` | Generate manuscript |
 | **Package Testing** | `make docker-test` | Run unit tests |
 
@@ -312,6 +397,7 @@ make docker-build
 make docker-rstudio              # RStudio GUI
 make docker-r                    # R console
 make docker-bash                 # Shell
+make docker-zsh                  # Zsh shell
 
 # Automated tasks
 make docker-render               # Render paper
