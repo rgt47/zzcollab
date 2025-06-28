@@ -469,11 +469,19 @@ build_docker_image() {
     log_info "Building Docker environment..."
     log_info "This may take several minutes on first build..."
     
-    if docker build --build-arg R_VERSION="$R_VERSION" -t "$PKG_NAME" .; then
+    # Auto-detect platform and set Docker build args
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        DOCKER_PLATFORM="--platform linux/amd64"
+        log_info "Detected ARM64 architecture, using linux/amd64 platform for compatibility"
+    else
+        DOCKER_PLATFORM=""
+    fi
+    
+    if docker build $DOCKER_PLATFORM --build-arg R_VERSION="$R_VERSION" -t "$PKG_NAME" .; then
         log_success "Docker image '$PKG_NAME' built successfully!"
     else
         log_error "Docker build failed - you can build manually later with:"
-        log_error "   docker build --build-arg R_VERSION=$R_VERSION -t $PKG_NAME ."
+        log_error "   docker build $DOCKER_PLATFORM --build-arg R_VERSION=$R_VERSION -t $PKG_NAME ."
         return 1
     fi
 }
@@ -512,12 +520,12 @@ main() {
             build_docker_image
         else
             log_warn "Docker not found, skipping Docker build"
-            log_info "Install Docker and run: docker build --build-arg R_VERSION=$R_VERSION -t $PKG_NAME ."
+            log_info "Install Docker and run appropriate build command for your platform"
         fi
     else
         echo
         log_info "Skipped Docker build - no-docker flag used"
-        log_info "Build manually when ready: docker build --build-arg R_VERSION=$R_VERSION -t $PKG_NAME ."
+        log_info "Build manually when ready (see Makefile for platform-specific commands)"
     fi
     
     echo

@@ -1,4 +1,4 @@
-FROM rocker/verse:${R_VERSION}
+FROM rocker/r-ver:${R_VERSION}
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -21,7 +21,13 @@ RUN apt-get update && apt-get install -y \
     libtiff5-dev \
     libjpeg-dev \
     man-db \
+    pandoc \
     && rm -rf /var/lib/apt/lists/*
+
+# Install TinyTeX
+RUN R -e "install.packages('tinytex')" && \
+    R -e "tinytex::install_tinytex()" && \
+    /root/.TinyTeX/bin/*/tlmgr path add
 
 # Create non-root user with zsh as default shell
 ARG USERNAME=analyst
