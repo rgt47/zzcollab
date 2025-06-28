@@ -196,7 +196,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Suggests: 
     testthat (>= 3.0.0),
-    knitr,
     rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr"
