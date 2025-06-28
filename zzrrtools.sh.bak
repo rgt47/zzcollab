@@ -14,9 +14,9 @@ readonly AUTHOR_INSTITUTE_FULL="${RRTOOLS_INSTITUTE_FULL:-University of Californ
 readonly BASE_PATH="${RRTOOLS_BASE_PATH:-$SCRIPT_DIR}"
 
 # Early variable definition and validation
-PKG_NAME=$(basename "$(pwd)" | tr -cd '[:alnum:]_' | head -c 50)
+PKG_NAME=$(basename "$(pwd)" | tr -cd ''[:alnum:]_'' | head -c 50)
 if [[ -z "$PKG_NAME" ]]; then
-    echo "❌ Error: Cannot determine valid package name from directory '$(basename "$(pwd)")'" >&2
+    echo "❌ Error: Cannot determine valid package name from directory ''$(basename "$(pwd)")''" >&2
     exit 1
 fi
 readonly PKG_NAME
@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help|-h)
-            cat << 'EOF'
+            cat << EOF
 Usage: rrtools.sh [OPTIONS]
 
 Creates a complete rrtools research compendium with Docker support.
@@ -116,7 +116,7 @@ extract_r_version() {
     
     # Validate Docker before using it
     if ! docker info >/dev/null 2>&1; then
-        log_warn "Docker not available for R version extraction, using 'latest'"
+        log_warn "Docker not available for R version extraction, using ''latest''"
         echo "latest"
         return 0
     fi
@@ -124,14 +124,14 @@ extract_r_version() {
     local r_version
     r_version=$(docker run --rm -v "$(pwd):${mount_path}" -w "${mount_path}" "${container_image}" R --slave -e "
         tryCatch({
-            if (!requireNamespace('jsonlite', quietly = TRUE)) {
-                cat('latest')
+            if (!requireNamespace(''jsonlite'', quietly = TRUE)) {
+                cat(''latest'')
             } else {
-                lockfile <- jsonlite::read_json('renv.lock')
-                cat(lockfile\$R\$Version %||% 'latest')
+                lockfile <- jsonlite::read_json(''renv.lock'')
+                cat(lockfile\$R\$Version %||% ''latest'')
             }
         }, error = function(e) {
-            cat('latest')
+            cat(''latest'')
         })
     " 2>/dev/null || echo "latest")
     
@@ -217,14 +217,14 @@ copy_external_files() {
     # Process all files in unified loop with failure tracking
     local failed_copies=0
     for file_spec in "${files_to_copy[@]}"; do
-        IFS=':' read -r source dest description executable <<< "$file_spec"
+        IFS='':'' read -r source dest description executable <<< "$file_spec"
         copy_file_with_status "$source" "$dest" "$description" "$executable" || ((failed_copies++))
     done
     
     # Special handling for git config (remove personal info for container)
     if [[ -f "./.gitconfig" ]]; then
         log_info "Sanitizing .gitconfig for container use..."
-        sed -i.bak '/^\[user\]/,/^\[/ { /^\[user\]/d; /^[[:space:]]*name/d; /^[[:space:]]*email/d; }' ./.gitconfig 2>/dev/null || true
+        sed -i.bak ''/^\[user\]/,/^\[/ { /^\[user\]/d; /^[[:space:]]*name/d; /^[[:space:]]*email/d; }'' ./.gitconfig 2>/dev/null || true
         rm -f ./.gitconfig.bak 2>/dev/null || true
     fi
     
@@ -270,12 +270,12 @@ COPYRIGHT HOLDER: ${AUTHOR_NAME}"
 export(create_ar1_corr)"
 
     # Create utility functions
-    create_file_if_missing "R/utils.R" "#' Create AR(1) correlation matrix
-#'
-#' @param n_times Number of time points
-#' @param rho Correlation parameter
-#' @return A correlation matrix with AR(1) structure
-#' @export
+    create_file_if_missing "R/utils.R" "#'' Create AR(1) correlation matrix
+#''
+#'' @param n_times Number of time points
+#'' @param rho Correlation parameter
+#'' @return A correlation matrix with AR(1) structure
+#'' @export
 create_ar1_corr <- function(n_times, rho) {
   matrix(rho^abs(outer(1:n_times, 1:n_times, \"-\")), n_times, n_times)
 }"
@@ -387,7 +387,7 @@ Thumbs.db
 .npm/
 .cache/
 
-# Large data files that shouldn't be in container
+# Large data files that shouldn''t be in container
 analysis/data/raw_data/*.csv
 analysis/data/derived_data/*.rds
 
@@ -454,7 +454,7 @@ ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh \${USERNAME}
 
 # Install renv
-RUN R -e \"install.packages('renv', repos = c(CRAN = 'https://cloud.r-project.org'))\""
+RUN R -e \"install.packages(''renv'', repos = c(CRAN = ''https://cloud.r-project.org''))\""
 
 # Set working directory
 WORKDIR /home/\${USERNAME}/project
@@ -472,7 +472,7 @@ ENV RENV_PATHS_LIBRARY renv/library
 USER \${USERNAME}
 
 # Restore R packages from lockfile (if exists)
-RUN R -e "if (file.exists('renv.lock')) renv::restore() else cat('No renv.lock found, skipping restore\\n')\"
+RUN R -e "if (file.exists(''renv.lock'')) renv::restore() else cat(''No renv.lock found, skipping restore\\n'')\"
 
 # Copy dotfiles (consolidated with wildcards)
 COPY --chown=\${USERNAME}:\${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/\${USERNAME}/
@@ -496,14 +496,14 @@ RUN vim +PlugInstall +qall || true
 COPY --chown=\${USERNAME}:\${USERNAME} . .
 
 # Install the research compendium as a package
-RUN R -e "devtools::install('.', dependencies = TRUE)"
+RUN R -e "devtools::install(''.'', dependencies = TRUE)"
 
 # Set default shell and working directory
 WORKDIR /home/\${USERNAME}/project
 CMD [\"/bin/zsh\"]"
 
     # Generate docker-compose.yml
-    create_file_if_missing "docker-compose.yml" "version: '3.8'
+    create_file_if_missing "docker-compose.yml" "version: ''3.8''
 
 services:
   # RStudio Server for GUI users
@@ -555,7 +555,7 @@ services:
     environment:
       - RENV_PATHS_CACHE=/renv/cache
     working_dir: /project
-    command: R -e "rmarkdown::render('analysis/paper/paper.Rmd', output_dir = '/output')"
+    command: R -e "rmarkdown::render(''analysis/paper/paper.Rmd'', output_dir = ''/output'')"
 
   # Package testing
   test:
@@ -701,7 +701,7 @@ help:
 EOF
 }
 
-# Function to safely create file if it doesn't exist
+# Function to safely create file if it doesn''t exist
 create_file_if_missing() {
     local file_path="$1"
     local content="$2"
@@ -833,13 +833,13 @@ create_vignette_template() {
         printf "  %%\\\\VignetteEncoding{UTF-8}\\n"
         printf "---\\n\\n"
         printf "\\\`\\\`\\\`{r, include = FALSE}\\n"
-        printf 'knitr::opts_chunk$set(\n'
+        printf ''knitr::opts_chunk$set(\n''
         printf "  collapse = TRUE,\\n"
         printf "  comment = \"#>\"\\n"
-        printf ')\n'
+        printf '')\n''
         printf "\\\`\\\`\\\`\\n\\n"
         printf "\\\`\\\`\\\`{r setup}\\n"
-        printf 'library(%s)\n' "$PKG_NAME"
+        printf ''library(%s)\n'' "$PKG_NAME"
         printf "\\\`\\\`\\\`\\n\\n"
         printf "# Introduction\\n\\n"
         printf "This is a template for the %s research project.\\n\\n" "$PKG_NAME"
@@ -857,7 +857,7 @@ else
 fi
 
 create_paper_template() {
-    cat > "analysis/paper/paper.Rmd" << 'PAPER_EOF'
+    cat > "analysis/paper/paper.Rmd" << PAPER_EOF
 ---
 title: "Title Goes Here"
 author:
@@ -867,7 +867,7 @@ author:
       correspondence: true
 institute:
   - AUTHOR_INSTITUTE_PLACEHOLDER: AUTHOR_INSTITUTE_FULL_PLACEHOLDER
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "`r format(Sys.time(), ''%d %B, %Y'')`"
 output:
   bookdown::pdf_document2:
     fig_caption: yes
@@ -966,7 +966,7 @@ download_csl_style() {
             if grep -q "citation-style-language" "$csl_file" 2>/dev/null; then
                 log_success "CSL style downloaded successfully"
             else
-                log_warn "Downloaded file doesn't appear to be a valid CSL file"
+                log_warn "Downloaded file doesn''t appear to be a valid CSL file"
                 rm -f "$csl_file"
             fi
         else
@@ -980,26 +980,32 @@ download_csl_style() {
 download_csl_style
 
 # 7. Create renv setup
-create_file_if_missing "setup_renv.R" "# Run this in R to set up renv
-if (!requireNamespace(\"renv\", quietly = TRUE)) {
-  install.packages(\"renv\")
+if [[ ! -f "setup_renv.R" ]]; then
+    cat > "setup_renv.R" << RENV_EOF
+# Run this in R to set up renv
+if (!requireNamespace("renv", quietly = TRUE)) {
+  install.packages("renv")
 }
-renv::init(settings = list(snapshot.type = \"explicit\"))
+renv::init(settings = list(snapshot.type = "explicit"))
 
 # Install minimal required packages for rrtools functionality
 install.packages(c(
   # Package development essentials
-  \"devtools\", \"usethis\", \"roxygen2\", \"testthat\",
+  "devtools", "usethis", "roxygen2", "testthat",
   
   # Documentation and reporting
-  \"knitr\", \"rmarkdown\",
+  "knitr", "rmarkdown",
   
   # Package management
-  \"renv\"
+  "renv"
 ))
 
 # Take snapshot of the environment
-renv::snapshot()"
+renv::snapshot()
+RENV_EOF
+else
+    log_info "setup_renv.R already exists, skipping creation"
+fi
 
 # 8a. renv setup (Docker-first approach)
 echo "📦 renv environment will be initialized in Docker container"
@@ -1021,7 +1027,7 @@ if [ -f "renv.lock" ]; then
         echo "Could not parse R version from renv.lock, using latest"
     fi
 else
-    echo "No renv.lock found, using latest R version (rocker/verse:latest)"
+    echo "No renv.lock found, using latest R version from rocker/verse"
     echo "💡 Tip: After creating renv.lock, rebuild Docker image to pin specific R version"
     R_VERSION="latest"
 fi
@@ -1036,7 +1042,9 @@ copy_external_files
 generate_github_actions() {
     
     # Simple R package check workflow - just uses native R since Docker is local-only
-    create_file_if_missing ".github/workflows/r-package.yml" "name: R Package Check
+    if [[ ! -f ".github/workflows/r-package.yml" ]]; then
+        cat > ".github/workflows/r-package.yml" << PACKAGE_WORKFLOW_EOF
+name: R Package Check
 
 on:
   push:
@@ -1071,10 +1079,16 @@ jobs:
       
       - uses: r-lib/actions/check-r-package@v2
         with:
-          upload-snapshots: true"
+          upload-snapshots: true
+PACKAGE_WORKFLOW_EOF
+    else
+        log_info "r-package.yml already exists, skipping creation"
+    fi
 
     # Simple paper rendering workflow  
-    create_file_if_missing ".github/workflows/render-paper.yml" "name: Render Research Paper
+    if [[ ! -f ".github/workflows/render-paper.yml" ]]; then
+        cat > ".github/workflows/render-paper.yml" << WORKFLOW_EOF
+name: Render Research Paper
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -1101,13 +1115,17 @@ jobs:
       
       - name: Render paper
         run: |
-          Rscript -e \"rmarkdown::render('analysis/paper/paper.Rmd')\"
+          Rscript -e "rmarkdown::render\('analysis/paper/paper.Rmd'\)"
       
       - name: Upload paper
         uses: actions/upload-artifact@v4
         with:
           name: research-paper
-          path: analysis/paper/paper.pdf"
+          path: analysis/paper/paper.pdf
+WORKFLOW_EOF
+    else
+        log_info "render-paper.yml already exists, skipping creation"
+    fi
 }
 
 # 16. Create GitHub Actions workflows
@@ -1134,7 +1152,7 @@ ln -s ./analysis/paper p         # p -> analysis/paper
 
 # Function to build Docker image with proper error handling
 build_docker_image() {
-    log_info "Building Docker environment (3-phase process)..."
+    log_info "Building Docker environment - 3-phase process..."
     log_info "This may take several minutes on first build..."
     
     # Trap to ensure cleanup on exit
@@ -1152,10 +1170,10 @@ build_docker_image() {
     
     # Phase 2: Initialize renv inside container
     log_info "Phase 2: Initializing renv environment..."
-    if docker run --rm -v "$(pwd):/home/analyst/project" -w /home/analyst/project "${PKG_NAME}_temp" R -e "source('setup_renv.R')"; then
+    if docker run --rm -v "$(pwd):/home/analyst/project" -w /home/analyst/project "${PKG_NAME}_temp" R -e "source\(''setup_renv.R''\)"; then
         log_success "renv environment initialized"
     else
-        log_warn "renv initialization failed - using bootstrap image as '${PKG_NAME}'"
+        log_warn "renv initialization failed - using bootstrap image as ''${PKG_NAME}''"
         cleanup_temp_image
         return 0
     fi
@@ -1168,10 +1186,10 @@ build_docker_image() {
         
         if docker build --build-arg R_VERSION="$final_r_version" -t "$PKG_NAME" .; then
             docker rmi "${PKG_NAME}_temp" >/dev/null 2>&1 || true
-            log_success "Production Docker image '${PKG_NAME}' ready!"
+            log_success "Production Docker image ''${PKG_NAME}'' ready!"
             log_success "🚀 Complete environment with R ${final_r_version} and all packages"
         else
-            log_warn "Final build failed - using bootstrap image as '${PKG_NAME}'"
+            log_warn "Final build failed - using bootstrap image as ''${PKG_NAME}''"
             cleanup_temp_image
         fi
     else
@@ -1186,7 +1204,7 @@ if [[ "$BUILD_DOCKER" == "true" ]]; then
     build_docker_image
 else
     echo
-    log_info "Skipped Docker build (--no-docker flag used)"
+    log_info "Skipped Docker build - no-docker flag used"
     log_info "Build manually when ready: docker build --build-arg R_VERSION=${R_VERSION} -t ${PKG_NAME} ."
 fi
 
@@ -1201,8 +1219,8 @@ local features=(
     "- Data directory with raw, derived, metadata, and validation subdirectories"
     "- Scripts directory for working R files and code snippets"
     "- R function templates in R/ with documentation in man/"
-    "- Research paper template in analysis/paper/ (PDF output)"
-    "- Comprehensive user guide (RRTOOLS_USER_GUIDE.md)"
+    "- Research paper template in analysis/paper/ with PDF output"
+    "- Comprehensive user guide in RRTOOLS_USER_GUIDE.md"
     "- renv setup for package dependency management"
     "- Docker integration with rocker/verse base image"
     "- GitHub Actions CI/CD workflow for automated testing"
@@ -1223,47 +1241,47 @@ show_next_steps() {
         local next_step=4
     else
         getting_started+=(
-            "2. Build Docker image: 'make docker-build'"
-            "3. Start developing in Docker container (no local R needed!):"
+            "2. Build Docker image: ''make docker-build''"
+            "3. Start developing in Docker container - no local R needed:"
             "4. In container: run the setup_renv.R script to initialize renv"
         )
         local next_step=5
     fi
     
     getting_started+=(
-        "   - RStudio: 'make docker-rstudio' → http://localhost:8787"
-        "   - R console: 'make docker-r'"
-        "   - Bash: 'make docker-bash'"
+        "   - RStudio: ''make docker-rstudio'' → http://localhost:8787"
+        "   - R console: ''make docker-r''"
+        "   - Bash: ''make docker-bash''"
         "${next_step}. Develop your analysis, install packages as needed"
-        "$((next_step + 1)). When ready to commit: exit container → 'make docker-check-renv-fix'"
+        "$((next_step + 1)). When ready to commit: exit container → ''make docker-check-renv-fix''"
     )
     
-    print_section "🚀 Next steps (Docker-first workflow):" "${getting_started[@]}"
+    print_section "🚀 Next steps - Docker-first workflow:" "${getting_started[@]}"
 }
 
 show_next_steps
 
 # Define workflow sections
 local dev_workflow=(
-    "• Development: 'make docker-r' → do R work → exit container"
-    "• Pre-commit: 'make docker-check-renv-fix' (validates dependencies)"
-    "• Version control: 'git add .' → 'git commit' → 'git push'"
+    "• Development: ''make docker-r'' → do R work → exit container"
+    "• Pre-commit: ''make docker-check-renv-fix'' validates dependencies"
+    "• Version control: ''git add .'' → ''git commit'' → ''git push''"
 )
 
 local collab_workflow=(
     "• Initial setup: Clone repo → run rrtools.sh → identical environment!"
-    "• Stay in sync: 'git pull' → 'make docker-build' (updates environment)"
+    "• Stay in sync: ''git pull'' → ''make docker-build'' updates environment"
     "• Continue development: Same workflow as above"
-    "• Note: 'make docker-build' is safe to run anytime (idempotent)"
+    "• Note: ''make docker-build'' is safe to run anytime - idempotent"
 )
 
 local advanced_features=(
-    "• Run 'rrtools_plus.sh' to add advanced research compendium features:"
+    "• Run ''rrtools_plus.sh'' to add advanced research compendium features:"
     "   - Enhanced data management and validation infrastructure"
-    "   - Ethics and legal documentation templates (IRB, data sharing)"
-    "   - Collaboration tools (GitHub issue templates, contribution guidelines)"
-    "   - Quality assurance (pre-commit hooks, reproducibility checks)"
-    "   - Publication infrastructure (journal checklists, dissemination planning)"
+    "   - Ethics and legal documentation templates for IRB and data sharing"
+    "   - Collaboration tools with GitHub issue templates and contribution guidelines"
+    "   - Quality assurance with pre-commit hooks and reproducibility checks"
+    "   - Publication infrastructure with journal checklists and dissemination planning"
 )
 
 local package_dev=(
@@ -1275,30 +1293,31 @@ local package_dev=(
 )
 
 local docker_tasks=(
-    "12. Render paper: 'make docker-render'"
-    "13. Run tests: 'make docker-test'"
-    "14. Check package: 'make docker-check'"
-    "15. Validate renv: 'make docker-check-renv'"
-    "16. See all options: 'make help'"
+    "12. Render paper: ''make docker-render''"
+    "13. Run tests: ''make docker-test''"
+    "14. Check package: ''make docker-check''"
+    "15. Validate renv: ''make docker-check-renv''"
+    "16. See all options: ''make help''"
 )
 
 local symlinks=(
-    "  a -> ./data              (data files)"
-    "  n -> ./analysis          (analysis files)"
-    "  f -> ./analysis/figures  (figures)"
-    "  t -> ./analysis/tables   (tables)"
-    "  s -> ./scripts           (working R scripts)"
-    "  m -> ./man               (function documentation)"
-    "  e -> ./tests             (tests)"
-    "  o -> ./docs              (documentation)"
-    "  c -> ./archive           (archived files)"
-    "  p -> ./analysis/paper    (research paper)"
+    "  a -> ./data              - data files"
+    "  n -> ./analysis          - analysis files"
+    "  f -> ./analysis/figures  - figures"
+    "  t -> ./analysis/tables   - tables"
+    "  s -> ./scripts           - working R scripts"
+    "  m -> ./man               - function documentation"
+    "  e -> ./tests             - tests"
+    "  o -> ./docs              - documentation"
+    "  c -> ./archive           - archived files"
+    "  p -> ./analysis/paper    - research paper"
 )
 
 # Print all sections
 print_section "RECOMMENDED DEVELOPMENT WORKFLOW:" "${dev_workflow[@]}"
 print_section "ONGOING COLLABORATION WORKFLOW:" "${collab_workflow[@]}"
-print_section "ADVANCED FEATURES (OPTIONAL):" "${advanced_features[@]}"
-print_section "R PACKAGE DEVELOPMENT (in Docker container):" "${package_dev[@]}"
+print_section "ADVANCED FEATURES - OPTIONAL:" "${advanced_features[@]}"
+print_section "R PACKAGE DEVELOPMENT in Docker container:" "${package_dev[@]}"
 print_section "COMMON DOCKER TASKS:" "${docker_tasks[@]}"
 print_section "📂 Symbolic links created for convenience:" "${symlinks[@]}"
+
