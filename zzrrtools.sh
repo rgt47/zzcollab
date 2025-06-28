@@ -36,8 +36,9 @@ Usage: rrtools.sh [OPTIONS]
 Creates a complete rrtools research compendium with Docker support.
 
 OPTIONS:
-  --no-docker    Skip Docker image build during setup
-  --help, -h     Show this help message
+  --no-docker       Skip Docker image build during setup
+  --next-steps      Show development workflow and next steps
+  --help, -h        Show this help message
 
 ENVIRONMENT VARIABLES:
   RRTOOLS_AUTHOR_NAME         Author name (default: Ronald G. Thomas)
@@ -48,8 +49,13 @@ ENVIRONMENT VARIABLES:
 EXAMPLES:
   ./rrtools.sh                      # Full setup with Docker
   ./rrtools.sh --no-docker          # Setup without Docker build
+  ./rrtools.sh --next-steps         # Show workflow help
 
 EOF
+            exit 0
+            ;;
+        --next-steps)
+            show_workflow_help
             exit 0
             ;;
         *)
@@ -389,6 +395,38 @@ build_docker_image() {
     fi
 }
 
+# Show workflow help and next steps
+show_workflow_help() {
+    echo "🚀 rrtools Development Workflow"
+    echo
+    echo "📋 What was created:"
+    echo "  - Complete R package structure with documentation"
+    echo "  - Analysis directory with paper, figures, and templates subdirectories"
+    echo "  - Data directory with raw, derived, metadata, and validation subdirectories"
+    echo "  - Scripts directory for working R files and code snippets"
+    echo "  - Research paper template in analysis/paper/ with PDF output"
+    echo "  - renv setup for package dependency management"
+    echo "  - Docker integration with rocker/r-ver base image"
+    echo "  - GitHub Actions CI/CD workflow for automated testing"
+    echo "  - Symbolic links for convenient navigation"
+    echo
+    echo "🚀 Next steps:"
+    echo "  1. Start developing: 'make docker-r' for R console"
+    echo "  2. Or use RStudio: 'make docker-rstudio' → http://localhost:8787"
+    echo "  3. Initialize renv: Run setup_renv.R in R"
+    echo "  4. Edit your research paper in analysis/paper/paper.Rmd"
+    echo "  5. Add your R functions in the R directory"
+    echo "  6. Use symbolic links for quick navigation (e.g., 'cd p' for paper)"
+    echo
+    echo "💡 Useful commands:"
+    echo "  - 'make help' - Show all Docker commands"
+    echo "  - 'make docker-build' - Rebuild Docker image"
+    echo "  - 'make docker-test' - Run tests"
+    echo "  - 'make docker-render' - Render paper"
+    echo
+    echo "📚 More info: Read ZZRRTOOLS_USER_GUIDE.md for comprehensive documentation"
+}
+
 # Main execution
 main() {
     log_info "Setting up rrtools research compendium in $(pwd)"
@@ -446,12 +484,14 @@ main() {
     echo "  - Symbolic links for convenient navigation"
     echo
     echo "🚀 Next steps:"
-    echo "  1. Run 'docker build -t $PKG_NAME .' if you skipped Docker build"
-    echo "  2. Start developing: 'docker run -it --rm -v \$(pwd):/project $PKG_NAME'"
+    echo "  1. Start developing: 'make docker-r' for R console"
+    echo "  2. Or use RStudio: 'make docker-rstudio' → http://localhost:8787"
     echo "  3. Initialize renv: Run setup_renv.R in R"
     echo "  4. Edit your research paper in analysis/paper/paper.Rmd"
     echo "  5. Add your R functions in the R directory"
     echo "  6. Use symbolic links for quick navigation (e.g., 'cd p' for paper)"
+    echo
+    echo "💡 To see this help again: ~/prj/zzrrtools/zzrrtools.sh --next-steps"
     echo
 }
 
