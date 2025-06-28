@@ -14,12 +14,33 @@ readonly AUTHOR_INSTITUTE="${RRTOOLS_INSTITUTE:-UCSD}"
 readonly AUTHOR_INSTITUTE_FULL="${RRTOOLS_INSTITUTE_FULL:-University of California, San Diego}"
 
 # Early variable definition and validation
-PKG_NAME=$(basename "$(pwd)" | tr -cd '[:alnum:]_' | head -c 50)
-if [[ -z "$PKG_NAME" ]]; then
-    echo "❌ Error: Cannot determine valid package name from directory '$(basename "$(pwd)")'" >&2
-    exit 1
-fi
+validate_package_name() {
+    local dir_name
+    dir_name=$(basename "$(pwd)")
+    local pkg_name
+    pkg_name=$(printf '%s' "$dir_name" | tr -cd '[:alnum:].' | head -c 50)
+    
+    if [[ -z "$pkg_name" ]]; then
+        echo "❌ Error: Cannot determine valid package name from directory '$dir_name'" >&2
+        return 1
+    fi
+    
+    # Ensure it starts with a letter (R package requirement)
+    if [[ ! "$pkg_name" =~ ^[[:alpha:]] ]]; then
+        echo "❌ Error: Package name must start with a letter: '$pkg_name'" >&2
+        return 1
+    fi
+    
+    printf '%s' "$pkg_name"
+}
+
+PKG_NAME=$(validate_package_name)
 readonly PKG_NAME
+
+# Helper function for argument validation
+require_arg() {
+    [[ -n "${2:-}" ]] || { log_error "$1 requires an argument"; exit 1; }
+}
 
 # Parse command line arguments
 BUILD_DOCKER=true
@@ -33,15 +54,18 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --dotfiles)
+            require_arg "$1" "$2"
             DOTFILES_DIR="$2"
             shift 2
             ;;
         --dotfiles-nodot)
+            require_arg "$1" "$2"
             DOTFILES_DIR="$2"
             DOTFILES_NODOT=true
             shift 2
             ;;
         --base-image)
+            require_arg "$1" "$2"
             BASE_IMAGE="$2"
             shift 2
             ;;
@@ -110,21 +134,21 @@ EOF
     esac
 done
 
-# Logging functions
+# Logging functions with timestamps and better formatting
 log_info() {
-    echo "ℹ️  $*" >&2
+    printf "ℹ️  %s\n" "$*" >&2
 }
 
 log_warn() {
-    echo "⚠️  $*" >&2
+    printf "⚠️  %s\n" "$*" >&2
 }
 
 log_error() {
-    echo "❌ $*" >&2
+    printf "❌ %s\n" "$*" >&2
 }
 
 log_success() {
-    echo "✅ $*" >&2
+    printf "✅ %s\n" "$*" >&2
 }
 
 # Template copying and variable substitution functions
@@ -132,6 +156,8 @@ copy_template_file() {
     local template="$1"
     local dest="$2"
     local description="${3:-$dest}"
+    
+    [[ $# -ge 2 ]] || { log_error "copy_template_file: need template and destination"; return 1; }
     
     if [[ ! -f "$TEMPLATES_DIR/$template" ]]; then
         log_error "Template not found: $TEMPLATES_DIR/$template"
@@ -144,31 +170,43 @@ copy_template_file() {
     fi
     
     # Create destination directory if it doesn't exist
-    local dest_dir=$(dirname "$dest")
-    [[ "$dest_dir" != "." ]] && mkdir -p "$dest_dir"
+    local dest_dir
+    dest_dir=$(dirname "$dest")
+    if [[ "$dest_dir" != "." ]] && [[ ! -d "$dest_dir" ]]; then
+        if ! mkdir -p "$dest_dir"; then
+            log_error "Failed to create directory: $dest_dir"
+            return 1
+        fi
+    fi
     
     # Copy template and substitute variables
-    cp "$TEMPLATES_DIR/$template" "$dest"
-    substitute_variables "$dest"
+    if ! cp "$TEMPLATES_DIR/$template" "$dest"; then
+        log_error "Failed to copy template: $template"
+        return 1
+    fi
+    
+    if ! substitute_variables "$dest"; then
+        log_error "Failed to substitute variables in: $dest"
+        return 1
+    fi
+    
     log_info "Created $description from template"
 }
 
 substitute_variables() {
     local file="$1"
     
-    # Use sed to replace template variables
-    sed -i.bak \
-        -e "s/\${PKG_NAME}/$PKG_NAME/g" \
-        -e "s/\${AUTHOR_NAME}/$AUTHOR_NAME/g" \
-        -e "s/\${AUTHOR_EMAIL}/$AUTHOR_EMAIL/g" \
-        -e "s/\${AUTHOR_INSTITUTE}/$AUTHOR_INSTITUTE/g" \
-        -e "s/\${AUTHOR_INSTITUTE_FULL}/$AUTHOR_INSTITUTE_FULL/g" \
-        -e "s/\${R_VERSION}/${R_VERSION:-latest}/g" \
-        -e "s|\${BASE_IMAGE}|${BASE_IMAGE}|g" \
-        "$file"
+    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
     
-    # Clean up backup file
-    rm -f "$file.bak"
+    # Export variables for envsubst
+    export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
+    export R_VERSION="${R_VERSION:-latest}"
+    
+    if ! envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"; then
+        log_error "Failed to substitute variables in file: $file"
+        rm -f "$file.tmp"
+        return 1
+    fi
 }
 
 # Function to safely create file if it doesn't exist (for simple content)
@@ -177,21 +215,35 @@ create_file_if_missing() {
     local content="$2"
     local description="${3:-$file_path}"
     
+    [[ $# -ge 2 ]] || { log_error "create_file_if_missing: need file_path and content"; return 1; }
+    
     if [[ -f "$file_path" ]]; then
         log_info "$description already exists, skipping creation"
         return 0
     fi
     
     # Create directory if needed
-    local dir=$(dirname "$file_path")
-    [[ "$dir" != "." ]] && mkdir -p "$dir"
+    local dir
+    dir=$(dirname "$file_path")
+    if [[ "$dir" != "." ]] && [[ ! -d "$dir" ]]; then
+        if ! mkdir -p "$dir"; then
+            log_error "Failed to create directory: $dir"
+            return 1
+        fi
+    fi
     
-    echo "$content" > "$file_path"
+    # Use printf for safer output
+    if ! printf '%s\n' "$content" > "$file_path"; then
+        log_error "Failed to create file: $file_path"
+        return 1
+    fi
+    
     log_info "Created $description"
 }
 
 # Function to check if command exists
 command_exists() {
+    [[ $# -eq 1 ]] || { log_error "command_exists: need command name"; return 1; }
     command -v "$1" >/dev/null 2>&1
 }
 
@@ -199,7 +251,7 @@ command_exists() {
 create_directory_structure() {
     log_info "Creating directory structure..."
     
-    local dirs=(
+    local -r dirs=(
         "R"
         "man" 
         "tests/testthat"
@@ -221,7 +273,7 @@ create_directory_structure() {
     )
     
     for dir in "${dirs[@]}"; do
-        mkdir -p "$dir"
+        mkdir -p "$dir" || { log_error "Failed to create directory: $dir"; return 1; }
     done
     
     log_success "Directory structure created"
@@ -462,19 +514,45 @@ build_docker_image() {
     log_info "Building Docker environment..."
     log_info "This may take several minutes on first build..."
     
-    # Auto-detect platform and set Docker build args
-    if [[ "$(uname -m)" == "arm64" ]]; then
-        DOCKER_PLATFORM="--platform linux/amd64"
-        log_info "Detected ARM64 architecture, using linux/amd64 platform for compatibility"
-    else
-        DOCKER_PLATFORM=""
+    # Validate prerequisites
+    if ! command_exists docker; then
+        log_error "Docker is not installed or not in PATH"
+        return 1
     fi
     
-    if DOCKER_BUILDKIT=1 docker build $DOCKER_PLATFORM --build-arg R_VERSION="$R_VERSION" -t "$PKG_NAME" .; then
+    if [[ ! -f "Dockerfile" ]]; then
+        log_error "Dockerfile not found in current directory"
+        return 1
+    fi
+    
+    # Validate required variables
+    if [[ -z "$R_VERSION" ]]; then
+        log_error "R_VERSION is not set"
+        return 1
+    fi
+    
+    if [[ -z "$PKG_NAME" ]]; then
+        log_error "PKG_NAME is not set"
+        return 1
+    fi
+    
+    # Auto-detect platform and set Docker build args
+    local DOCKER_PLATFORM=""
+    case "$(uname -m)" in
+        arm64|aarch64) 
+            DOCKER_PLATFORM="--platform linux/amd64"
+            log_info "Using linux/amd64 platform for ARM compatibility"
+            ;;
+    esac
+    
+    # Build the Docker command
+    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" -t \"$PKG_NAME\" ."
+    
+    if eval "$docker_cmd"; then
         log_success "Docker image '$PKG_NAME' built successfully!"
     else
         log_error "Docker build failed - you can build manually later with:"
-        log_error "   DOCKER_BUILDKIT=1 docker build $DOCKER_PLATFORM --build-arg R_VERSION=$R_VERSION -t $PKG_NAME ."
+        log_error "   $docker_cmd"
         return 1
     fi
 }
