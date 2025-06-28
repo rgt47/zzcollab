@@ -23,11 +23,16 @@ readonly PKG_NAME
 
 # Parse command line arguments
 BUILD_DOCKER=true
+DOTFILES_DIR=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         --no-docker)
             BUILD_DOCKER=false
             shift
+            ;;
+        --dotfiles)
+            DOTFILES_DIR="$2"
+            shift 2
             ;;
         --help|-h)
             cat << EOF
@@ -37,6 +42,7 @@ Creates a complete rrtools research compendium with Docker support.
 
 OPTIONS:
   --no-docker       Skip Docker image build during setup
+  --dotfiles DIR    Copy dotfiles from specified directory
   --next-steps      Show development workflow and next steps
   --help, -h        Show this help message
 
@@ -49,6 +55,7 @@ ENVIRONMENT VARIABLES:
 EXAMPLES:
   ./rrtools.sh                      # Full setup with Docker
   ./rrtools.sh --no-docker          # Setup without Docker build
+  ./rrtools.sh --dotfiles ~/dotfiles # Include personal dotfiles
   ./rrtools.sh --next-steps         # Show workflow help
 
 EOF
@@ -335,9 +342,36 @@ create_makefile() {
     log_success "Makefile created"
 }
 
+# Copy dotfiles if directory specified
+copy_dotfiles() {
+    if [[ -n "$DOTFILES_DIR" ]]; then
+        log_info "Copying dotfiles from $DOTFILES_DIR..."
+        
+        if [[ ! -d "$DOTFILES_DIR" ]]; then
+            log_error "Dotfiles directory not found: $DOTFILES_DIR"
+            return 1
+        fi
+        
+        # Common dotfiles to copy
+        local dotfiles=(".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc" ".profile" ".aliases" ".functions" ".exports" ".editorconfig" ".ctags" ".ackrc" ".ripgreprc")
+        
+        for dotfile in "${dotfiles[@]}"; do
+            if [[ -f "$DOTFILES_DIR/$dotfile" ]]; then
+                cp "$DOTFILES_DIR/$dotfile" "."
+                log_info "Copied $dotfile"
+            fi
+        done
+        
+        log_success "Dotfiles copied"
+    fi
+}
+
 # Create other configuration files
 create_config_files() {
     log_info "Creating configuration files..."
+    
+    # Copy personal dotfiles first (if specified)
+    copy_dotfiles
     
     # .gitignore
     copy_template_file ".gitignore" ".gitignore" ".gitignore file"
