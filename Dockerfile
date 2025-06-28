@@ -1,5 +1,5 @@
 ARG R_VERSION=latest
-FROM ${BASE_IMAGE}:${R_VERSION}
+FROM rgt47/r-pluspackages:latest
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -29,28 +29,20 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install TinyTeX (skip if using custom base image that already has it)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
-        R -e "install.packages('tinytex')" && \
-        R -e "tinytex::install_tinytex()" && \
-        /root/.TinyTeX/bin/*/tlmgr path add; \
-    fi
+# Install TinyTeX
+RUN R -e "install.packages('tinytex')" && \
+    R -e "tinytex::install_tinytex()" && \
+    /root/.TinyTeX/bin/*/tlmgr path add
 
-# Create non-root user with zsh as default shell (skip if using custom base image)
+# Create non-root user with zsh as default shell
 ARG USERNAME=analyst
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
-        useradd --create-home --shell /bin/zsh ${USERNAME}; \
-    fi
+RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
-# Install essential R packages (skip if using custom base image that already has them)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
-        R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-    fi
+# Install essential R packages (remotes is much faster than devtools)
+RUN R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 
-# Give analyst user write permission to R library directory (skip if using custom base image)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
-        chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library; \
-    fi
+# Give analyst user write permission to R library directory
+RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
 
 # Set working directory and ensure user owns it
 WORKDIR /home/${USERNAME}/project
