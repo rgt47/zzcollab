@@ -1,3 +1,4 @@
+ARG R_VERSION=latest
 FROM ${BASE_IMAGE}:${R_VERSION}
 
 # Install system dependencies
