@@ -52,42 +52,42 @@ check-renv-ci:
 
 # Docker targets (work without local R)
 docker-build:
-	docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
+	docker build --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 docker-document:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::document()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::document()"
 
 docker-build-pkg:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD build .
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD build .
 
 docker-check: docker-document
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::test()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::test()"
 
 docker-vignettes: docker-document
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/paper/paper.Rmd')"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/paper/paper.Rmd')"
 
 docker-check-renv:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::status()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::status()"
 
 docker-check-renv-fix:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::snapshot()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::snapshot()"
 
 docker-r:
-	docker run --rm -it -v $$(pwd):/project $(PACKAGE_NAME) R
+	docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) R
 
 docker-bash:
-	docker run --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/bash
+	docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/bash
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: analyst, Password: analyst"
-	docker run --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
+	docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
 
 # Cleanup
 clean:
