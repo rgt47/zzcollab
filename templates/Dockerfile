@@ -33,8 +33,8 @@ RUN R -e "install.packages('tinytex')" && \
 ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
-# Install essential R packages
-RUN R -e "install.packages(c('renv', 'devtools', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"
+# Install essential R packages (remotes is much faster than devtools)
+RUN R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 
 # Set working directory
 WORKDIR /home/${USERNAME}/project
@@ -74,7 +74,7 @@ RUN vim +PlugInstall +qall || true
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 # Install the research compendium as a package
-RUN R -e "devtools::install('.', dependencies = TRUE)"
+RUN R -e "remotes::install_local('.', dependencies = TRUE)"
 
 # Set default shell and working directory
 WORKDIR /home/${USERNAME}/project
