@@ -25,6 +25,7 @@ readonly PKG_NAME
 BUILD_DOCKER=true
 DOTFILES_DIR=""
 DOTFILES_NODOT=false
+BASE_IMAGE="rocker/r-ver"
 while [[ $# -gt 0 ]]; do
     case $1 in
         --no-docker)
@@ -40,9 +41,13 @@ while [[ $# -gt 0 ]]; do
             DOTFILES_NODOT=true
             shift 2
             ;;
+        --base-image)
+            BASE_IMAGE="$2"
+            shift 2
+            ;;
         --help|-h)
             cat << EOF
-Usage: rrtools.sh [OPTIONS]
+Usage: zzrrtools.sh [OPTIONS]
 
 Creates a complete rrtools research compendium with Docker support.
 
@@ -50,6 +55,7 @@ OPTIONS:
   --no-docker       Skip Docker image build during setup
   --dotfiles DIR    Copy dotfiles from specified directory (with leading dots)
   --dotfiles-nodot DIR Copy dotfiles from directory (without leading dots)
+  --base-image NAME Use custom base image (default: rocker/r-ver)
   --next-steps      Show development workflow and next steps
   --help, -h        Show this help message
 
@@ -60,11 +66,12 @@ ENVIRONMENT VARIABLES:
   RRTOOLS_INSTITUTE_FULL      Full institute name (default: University of California, San Diego)
 
 EXAMPLES:
-  ./rrtools.sh                      # Full setup with Docker
-  ./rrtools.sh --no-docker          # Setup without Docker build
-  ./rrtools.sh --dotfiles ~/dotfiles # Include personal dotfiles (with dots)
-  ./rrtools.sh --dotfiles-nodot ~/dotfiles # Include dotfiles (without dots)
-  ./rrtools.sh --next-steps         # Show workflow help
+  ./zzrrtools.sh                    # Full setup with Docker
+  ./zzrrtools.sh --no-docker        # Setup without Docker build
+  ./zzrrtools.sh --dotfiles ~/dotfiles # Include personal dotfiles (with dots)
+  ./zzrrtools.sh --dotfiles-nodot ~/dotfiles # Include dotfiles (without dots)
+  ./zzrrtools.sh --base-image myorg/r-base # Use custom base image
+  ./zzrrtools.sh --next-steps       # Show workflow help
 
 TROUBLESHOOTING:
   Docker build fails:
@@ -157,6 +164,7 @@ substitute_variables() {
         -e "s/\${AUTHOR_INSTITUTE}/$AUTHOR_INSTITUTE/g" \
         -e "s/\${AUTHOR_INSTITUTE_FULL}/$AUTHOR_INSTITUTE_FULL/g" \
         -e "s/\${R_VERSION}/${R_VERSION:-latest}/g" \
+        -e "s|\${BASE_IMAGE}|${BASE_IMAGE}|g" \
         "$file"
     
     # Clean up backup file
