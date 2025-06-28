@@ -441,7 +441,7 @@ main() {
     echo "  - Scripts directory for working R files and code snippets"
     echo "  - Research paper template in analysis/paper/ with PDF output"
     echo "  - renv setup for package dependency management"
-    echo "  - Docker integration with rocker/verse base image"
+    echo "  - Docker integration with rocker/r-ver base image"
     echo "  - GitHub Actions CI/CD workflow for automated testing"
     echo "  - Symbolic links for convenient navigation"
     echo
