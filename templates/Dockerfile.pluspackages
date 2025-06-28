@@ -24,6 +24,10 @@ RUN apt-get update && apt-get install -y \
     pandoc \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js (required for coc.nvim and other vim plugins)
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs
+
 # Install TinyTeX
 RUN R -e "install.packages('tinytex')" && \
     R -e "tinytex::install_tinytex()" && \
