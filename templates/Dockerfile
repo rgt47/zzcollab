@@ -33,8 +33,8 @@ RUN R -e "install.packages('tinytex')" && \
 ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
-# Install renv
-RUN R -e "install.packages('renv', repos = c(CRAN = 'https://cloud.r-project.org'))"
+# Install essential R packages
+RUN R -e "install.packages(c('renv', 'devtools', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 
 # Set working directory
 WORKDIR /home/${USERNAME}/project
