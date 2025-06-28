@@ -66,6 +66,28 @@ EXAMPLES:
   ./rrtools.sh --dotfiles-nodot ~/dotfiles # Include dotfiles (without dots)
   ./rrtools.sh --next-steps         # Show workflow help
 
+TROUBLESHOOTING:
+  Docker build fails:
+    - Try: export DOCKER_BUILDKIT=0 (disable BuildKit)
+    - Check Docker has sufficient memory/disk space
+    - Ensure Docker is running and up to date
+  
+  Platform warnings on ARM64:
+    - Use updated Makefile with --platform linux/amd64 flags
+    - Or set: export DOCKER_DEFAULT_PLATFORM=linux/amd64
+  
+  Permission errors in container:
+    - Rebuild image after copying dotfiles
+    - Check file ownership in project directory
+  
+  Package name errors:
+    - Ensure directory name contains only letters/numbers/periods
+    - Avoid underscores and special characters
+  
+  Missing dotfiles in container:
+    - Use --dotfiles or --dotfiles-nodot flag during setup
+    - Rebuild Docker image after adding dotfiles
+
 EOF
             exit 0
             ;;
@@ -440,11 +462,11 @@ build_docker_image() {
         DOCKER_PLATFORM=""
     fi
     
-    if docker build $DOCKER_PLATFORM --build-arg R_VERSION="$R_VERSION" -t "$PKG_NAME" .; then
+    if DOCKER_BUILDKIT=1 docker build $DOCKER_PLATFORM --build-arg R_VERSION="$R_VERSION" -t "$PKG_NAME" .; then
         log_success "Docker image '$PKG_NAME' built successfully!"
     else
         log_error "Docker build failed - you can build manually later with:"
-        log_error "   docker build $DOCKER_PLATFORM --build-arg R_VERSION=$R_VERSION -t $PKG_NAME ."
+        log_error "   DOCKER_BUILDKIT=1 docker build $DOCKER_PLATFORM --build-arg R_VERSION=$R_VERSION -t $PKG_NAME ."
         return 1
     fi
 }
