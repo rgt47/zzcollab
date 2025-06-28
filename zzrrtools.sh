@@ -1,70 +1,150 @@
 #!/bin/bash
-# Create rrtools-compatible R package structure in the current directory
-# This script reorganizes existing files and sets up an rrtools framework
+##############################################################################
+# RRTOOLS RESEARCH COMPENDIUM SETUP SCRIPT
+##############################################################################
+# 
+# PURPOSE: Creates a complete rrtools-compatible R package structure with:
+#          - R package framework (DESCRIPTION, NAMESPACE, etc.)
+#          - Analysis directories for papers, figures, data
+#          - Docker integration for reproducible environments
+#          - GitHub Actions CI/CD workflows
+#          - Make-based automation tools
+#
+# USAGE:   ./zzrrtools.sh [OPTIONS]
+#          Run with --help to see all available options
+#
+# AUTHOR:  Designed for research reproducibility workflows
+##############################################################################
 
-# Bash safety options
+#=============================================================================
+# SCRIPT CONFIGURATION AND SAFETY SETTINGS
+#=============================================================================
+
+# Enable strict error handling for robust script execution
+# -e: Exit immediately if any command fails (non-zero exit status)
+# -u: Treat unset variables as errors and exit
+# -o pipefail: Fail if any command in a pipeline fails (not just the last one)
 set -euo pipefail
 
-# Auto-detect script directory and make configuration customizable
+#=============================================================================
+# GLOBAL CONSTANTS AND ENVIRONMENT SETUP
+#=============================================================================
+
+# Determine the directory where this script is located
+# This ensures templates and other resources are found regardless of where the script is called from
+# ${BASH_SOURCE[0]} = path to this script file
+# dirname = extracts directory portion of the path
+# cd + pwd = converts to absolute path, following any symlinks
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Templates directory contains all the template files for project setup
 readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
+
+# Author information can be customized via environment variables
+# ${VAR:-default} syntax provides a default value if the environment variable is not set
 readonly AUTHOR_NAME="${RRTOOLS_AUTHOR_NAME:-Ronald G. Thomas}"
 readonly AUTHOR_EMAIL="${RRTOOLS_AUTHOR_EMAIL:-rgthomas@ucsd.edu}"
 readonly AUTHOR_INSTITUTE="${RRTOOLS_INSTITUTE:-UCSD}"
 readonly AUTHOR_INSTITUTE_FULL="${RRTOOLS_INSTITUTE_FULL:-University of California, San Diego}"
 
-# Early variable definition and validation
+#=============================================================================
+# PACKAGE NAME VALIDATION FUNCTIONS
+#=============================================================================
+
+# Function: validate_package_name
+# Purpose: Converts current directory name into a valid R package name
+# R package naming rules: Only letters, numbers, and periods; must start with a letter
+# Returns: A valid package name string or exits with error
 validate_package_name() {
+    # Declare local variables to avoid affecting global scope
     local dir_name
+    # basename extracts the final directory name from the current working directory path
+    # $(pwd) returns the current working directory as an absolute path
     dir_name=$(basename "$(pwd)")
+    
     local pkg_name
+    # Clean the directory name to create a valid R package name:
+    # printf '%s' "$dir_name" - outputs the directory name without adding newlines
+    # tr -cd '[:alnum:].' - removes all characters EXCEPT alphanumeric and periods
+    # head -c 50 - limits to first 50 characters to avoid overly long names
     pkg_name=$(printf '%s' "$dir_name" | tr -cd '[:alnum:].' | head -c 50)
     
+    # Check if the cleaning process resulted in an empty string
     if [[ -z "$pkg_name" ]]; then
+        # >&2 redirects output to stderr (standard error stream)
         echo "❌ Error: Cannot determine valid package name from directory '$dir_name'" >&2
-        return 1
+        return 1  # Exit function with error status
     fi
     
-    # Ensure it starts with a letter (R package requirement)
+    # R packages must start with a letter (not a number or special character)
+    # =~ operator performs regex pattern matching
+    # ^[[:alpha:]] means "starts with any alphabetic character"
+    # The ! negates the condition, so this checks if it does NOT start with a letter
     if [[ ! "$pkg_name" =~ ^[[:alpha:]] ]]; then
         echo "❌ Error: Package name must start with a letter: '$pkg_name'" >&2
         return 1
     fi
     
+    # Output the valid package name (this becomes the return value when called with $())
     printf '%s' "$pkg_name"
 }
 
+# Create the package name by calling the validation function
+# $() syntax captures the output of the function and assigns it to the variable
 PKG_NAME=$(validate_package_name)
+# Make PKG_NAME read-only to prevent accidental modification throughout the script
 readonly PKG_NAME
 
-# Helper function for argument validation
+#=============================================================================
+# COMMAND LINE ARGUMENT PARSING
+#=============================================================================
+
+# Helper function: require_arg
+# Purpose: Validates that command line flags receive required arguments
+# Usage: require_arg FLAG_NAME ARGUMENT_VALUE
+# Example: require_arg "--dotfiles" "$2"
 require_arg() {
+    # [[ -n "${2:-}" ]] checks if the second parameter exists and is not empty
+    # ${2:-} syntax provides empty string as default if $2 is unset (prevents "unbound variable" error)
+    # -n tests for non-empty string
+    # || means "or" - if the test fails, execute the right side
+    # { ... } groups commands to execute together
+    # log_error function will be defined later in the script
     [[ -n "${2:-}" ]] || { log_error "$1 requires an argument"; exit 1; }
 }
 
-# Parse command line arguments
-BUILD_DOCKER=true
-DOTFILES_DIR=""
-DOTFILES_NODOT=false
-BASE_IMAGE="rocker/r-ver"
+# Initialize variables for command line options with sensible defaults
+BUILD_DOCKER=true           # Build Docker image by default
+DOTFILES_DIR=""             # No dotfiles directory specified initially
+DOTFILES_NODOT=false        # Assume dotfiles have leading dots by default
+BASE_IMAGE="rocker/r-ver"   # Default Docker base image for R
+
+# Process all command line arguments
+# $# contains the number of command line arguments
+# while [[ $# -gt 0 ]] continues until all arguments are processed
 while [[ $# -gt 0 ]]; do
+    # case statement for pattern matching against the first argument ($1)
     case $1 in
         --no-docker)
+            # Skip Docker image building
             BUILD_DOCKER=false
-            shift
+            shift  # Remove this argument from the list (shift moves $2 to $1, $3 to $2, etc.)
             ;;
         --dotfiles)
-            require_arg "$1" "$2"
-            DOTFILES_DIR="$2"
-            shift 2
+            # Copy dotfiles from specified directory (files have leading dots like .vimrc)
+            require_arg "$1" "$2"  # Ensure a directory path was provided
+            DOTFILES_DIR="$2"      # Store the directory path
+            shift 2                # Remove both the flag and its argument
             ;;
         --dotfiles-nodot)
+            # Copy dotfiles from directory where files don't have leading dots (like vimrc -> .vimrc)
             require_arg "$1" "$2"
             DOTFILES_DIR="$2"
-            DOTFILES_NODOT=true
+            DOTFILES_NODOT=true    # Flag to add dots when copying
             shift 2
             ;;
         --base-image)
+            # Use custom Docker base image instead of default rocker/r-ver
             require_arg "$1" "$2"
             BASE_IMAGE="$2"
             shift 2
@@ -123,10 +203,12 @@ EOF
             exit 0
             ;;
         --next-steps)
+            # Display workflow help and exit (function defined later)
             show_workflow_help
             exit 0
             ;;
         *)
+            # Handle any unrecognized command line options
             echo "Unknown option: $1"
             echo "Use --help for usage information"
             exit 1
@@ -134,36 +216,64 @@ EOF
     esac
 done
 
-# Logging functions with timestamps and better formatting
+#=============================================================================
+# LOGGING AND OUTPUT FUNCTIONS
+#=============================================================================
+
+# Function: log_info
+# Purpose: Display informational messages with an icon
+# All log functions send output to stderr (&2) so they don't interfere with script output
 log_info() {
+    # $* expands to all function arguments as a single string
+    # printf is safer than echo for consistent formatting across different shells
     printf "ℹ️  %s\n" "$*" >&2
 }
 
+# Function: log_warn  
+# Purpose: Display warning messages that don't stop execution
 log_warn() {
     printf "⚠️  %s\n" "$*" >&2
 }
 
+# Function: log_error
+# Purpose: Display error messages (typically before exiting)
 log_error() {
     printf "❌ %s\n" "$*" >&2
 }
 
+# Function: log_success
+# Purpose: Display success messages for completed operations
 log_success() {
     printf "✅ %s\n" "$*" >&2
 }
 
-# Template copying and variable substitution functions
+#=============================================================================
+# TEMPLATE FILE PROCESSING FUNCTIONS
+#=============================================================================
+
+# Function: copy_template_file
+# Purpose: Copy a template file and substitute variables within it
+# Arguments: 
+#   $1 - template filename (relative to TEMPLATES_DIR)
+#   $2 - destination path for the copied file
+#   $3 - optional description for logging (defaults to destination path)
+# Example: copy_template_file "Dockerfile" "Dockerfile" "Docker configuration"
 copy_template_file() {
+    # Declare local variables to avoid affecting global scope
     local template="$1"
     local dest="$2"
-    local description="${3:-$dest}"
+    local description="${3:-$dest}"  # Use $dest as default if $3 not provided
     
+    # Input validation: ensure minimum required arguments are provided
     [[ $# -ge 2 ]] || { log_error "copy_template_file: need template and destination"; return 1; }
     
+    # Check if the source template file exists
     if [[ ! -f "$TEMPLATES_DIR/$template" ]]; then
         log_error "Template not found: $TEMPLATES_DIR/$template"
         return 1
     fi
     
+    # Skip copying if destination file already exists (don't overwrite existing work)
     if [[ -f "$dest" ]]; then
         log_info "$description already exists, skipping creation"
         return 0
@@ -171,20 +281,23 @@ copy_template_file() {
     
     # Create destination directory if it doesn't exist
     local dest_dir
-    dest_dir=$(dirname "$dest")
+    dest_dir=$(dirname "$dest")  # Extract directory part of destination path
+    # Check if we need to create a directory (not current dir) and it doesn't exist
     if [[ "$dest_dir" != "." ]] && [[ ! -d "$dest_dir" ]]; then
+        # mkdir -p creates parent directories as needed
         if ! mkdir -p "$dest_dir"; then
             log_error "Failed to create directory: $dest_dir"
             return 1
         fi
     fi
     
-    # Copy template and substitute variables
+    # Copy the template file to the destination
     if ! cp "$TEMPLATES_DIR/$template" "$dest"; then
         log_error "Failed to copy template: $template"
         return 1
     fi
     
+    # Replace placeholder variables in the copied file with actual values
     if ! substitute_variables "$dest"; then
         log_error "Failed to substitute variables in: $dest"
         return 1
@@ -193,30 +306,53 @@ copy_template_file() {
     log_info "Created $description from template"
 }
 
+# Function: substitute_variables
+# Purpose: Replace template placeholders (${VAR_NAME}) with actual variable values
+# Arguments: $1 - path to file that contains template variables
+# Template variables used: ${PKG_NAME}, ${AUTHOR_NAME}, ${AUTHOR_EMAIL}, etc.
+# Uses envsubst (environment variable substitution) tool for safe replacement
 substitute_variables() {
     local file="$1"
     
+    # Verify the file exists before attempting to process it
     [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
     
-    # Export variables for envsubst
+    # Export all variables that templates might reference
+    # envsubst only substitutes variables that are in the environment
     export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
-    export R_VERSION="${R_VERSION:-latest}"
+    export R_VERSION="${R_VERSION:-latest}"  # Provide default value if not set
     
+    # Process the file: read it, substitute variables, write to temp file, then replace original
+    # envsubst < "$file" - reads file and substitutes ${VAR} with environment variable values
+    # > "$file.tmp" - writes output to temporary file
+    # && mv "$file.tmp" "$file" - if substitution succeeds, replace original with processed version
     if ! envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"; then
         log_error "Failed to substitute variables in file: $file"
-        rm -f "$file.tmp"
+        rm -f "$file.tmp"  # Clean up temporary file on failure
         return 1
     fi
 }
 
-# Function to safely create file if it doesn't exist (for simple content)
+#=============================================================================
+# FILE CREATION UTILITY FUNCTIONS
+#=============================================================================
+
+# Function: create_file_if_missing
+# Purpose: Create a file with specified content, but only if it doesn't already exist
+# Arguments:
+#   $1 - file_path: where to create the file
+#   $2 - content: what to put in the file
+#   $3 - description: optional description for logging (defaults to file_path)
+# This prevents overwriting existing user modifications
 create_file_if_missing() {
     local file_path="$1"
     local content="$2"
     local description="${3:-$file_path}"
     
+    # Ensure both required arguments are provided
     [[ $# -ge 2 ]] || { log_error "create_file_if_missing: need file_path and content"; return 1; }
     
+    # Don't overwrite existing files (preserves user modifications)
     if [[ -f "$file_path" ]]; then
         log_info "$description already exists, skipping creation"
         return 0
@@ -589,36 +725,45 @@ show_workflow_help() {
     echo "📚 More info: Read ZZRRTOOLS_USER_GUIDE.md for comprehensive documentation"
 }
 
-# Main execution
+#=============================================================================
+# MAIN SCRIPT EXECUTION WORKFLOW
+#=============================================================================
+
+# Function: main
+# Purpose: Orchestrates the complete research compendium setup process
+# This function is called at the end of the script and coordinates all setup steps
 main() {
+    # Display initial setup information
     log_info "Setting up rrtools research compendium in $(pwd)"
     log_info "Package name: $PKG_NAME"
     log_info "Author: $AUTHOR_NAME <$AUTHOR_EMAIL>"
     
-    # Check if templates directory exists
+    # Verify that the templates directory exists (critical dependency)
     if [[ ! -d "$TEMPLATES_DIR" ]]; then
         log_error "Templates directory not found: $TEMPLATES_DIR"
         log_error "Make sure you're running the script from the correct location"
         exit 1
     fi
     
-    create_directory_structure
-    create_core_files
-    create_config_files
-    create_docker_files
-    create_analysis_files
-    create_github_workflows
-    create_renv_setup
-    create_makefile
-    create_symbolic_links
+    # Execute setup steps in logical order
+    # Each function handles one aspect of the research compendium setup
+    create_directory_structure  # Create all necessary directories
+    create_core_files          # Generate R package structure (DESCRIPTION, NAMESPACE, etc.)
+    create_config_files        # Set up configuration files (.gitignore, .Rprofile, dotfiles)
+    create_docker_files        # Set up Docker integration
+    create_analysis_files      # Create analysis templates and paper structure
+    create_github_workflows    # Set up CI/CD workflows
+    create_renv_setup         # Configure R package dependency management
+    create_makefile           # Create automation scripts
+    create_symbolic_links     # Create convenience shortcuts
     
-    # Determine R version for Docker
+    # Determine which R version to use for Docker (from existing renv.lock if available)
     R_VERSION=$(extract_r_version_from_lockfile)
     log_info "Using R version: $R_VERSION"
     
-    # Build Docker image if requested
+    # Conditionally build Docker image based on user preference and availability
     if [ "$BUILD_DOCKER" = true ]; then
-        echo
+        echo  # Add blank line for readability
         if command_exists docker; then
             build_docker_image
         else
@@ -657,5 +802,11 @@ main() {
     echo
 }
 
-# Run main function
+#=============================================================================
+# SCRIPT EXECUTION
+#=============================================================================
+
+# Execute the main function with all command line arguments
+# "$@" passes all command line arguments to the main function
+# This is the entry point that starts the entire setup process
 main "$@"
