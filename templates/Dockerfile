@@ -1,4 +1,4 @@
-FROM rocker/r-ver:${R_VERSION}
+FROM ${BASE_IMAGE}:${R_VERSION}
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \

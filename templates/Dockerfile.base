@@ -1,0 +1,44 @@
+FROM rocker/r-ver:${R_VERSION}
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    ssh \
+    curl \
+    wget \
+    vim \
+    tmux \
+    zsh \
+    build-essential \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    man-db \
+    pandoc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install TinyTeX
+RUN R -e "install.packages('tinytex')" && \
+    R -e "tinytex::install_tinytex()" && \
+    /root/.TinyTeX/bin/*/tlmgr path add
+
+# Create non-root user with zsh as default shell
+ARG USERNAME=analyst
+RUN useradd --create-home --shell /bin/zsh ${USERNAME}
+
+# Install common R packages (this layer will be cached)
+RUN R -e "install.packages(c('renv', 'remotes', 'devtools', 'testthat', 'knitr', 'rmarkdown', 'tidyverse', 'here', 'usethis'), repos = c(CRAN = 'https://cloud.r-project.org'))"
+
+# Give analyst user write permission to R library directory
+RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+
+# Set working directory and ensure user owns it
+WORKDIR /home/${USERNAME}/project
+RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/project
