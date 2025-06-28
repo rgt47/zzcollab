@@ -14,7 +14,7 @@ help:
 	@echo "  Docker - works without local R:"
 	@echo "    docker-build, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
-	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-rstudio"
+	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, docker-clean"
@@ -84,6 +84,9 @@ docker-r:
 docker-bash:
 	docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/bash
 
+docker-zsh:
+	docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/zsh
+
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: analyst, Password: analyst"
@@ -98,4 +101,4 @@ docker-clean:
 	docker rmi $(PACKAGE_NAME) || true
 	docker system prune -f
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-rstudio docker-check-renv docker-check-renv-fix clean docker-clean help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-check-renv docker-check-renv-fix clean docker-clean help
