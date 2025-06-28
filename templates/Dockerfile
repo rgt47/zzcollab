@@ -36,8 +36,9 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 # Install essential R packages (remotes is much faster than devtools)
 RUN R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"
 
-# Set working directory
+# Set working directory and ensure user owns it
 WORKDIR /home/${USERNAME}/project
+RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/project
 
 # Copy project files first (for better Docker layer caching)
 COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
