@@ -388,6 +388,9 @@ main() {
     log_info "📝 Creating analysis files..."
     create_analysis_files || exit 1
     
+    log_info "📜 Creating research scripts..."
+    create_scripts_directory || exit 1
+    
     log_info "🚀 Creating GitHub workflows..."
     create_github_workflows || exit 1
     
