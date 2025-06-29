@@ -7,17 +7,21 @@
 4. [Configuration](#configuration)
 5. [Modular Architecture](#modular-architecture)
 6. [Uninstall and Cleanup](#uninstall-and-cleanup)
-7. [Directory Structure](#directory-structure)
-8. [Navigation Shortcuts](#navigation-shortcuts)
-9. [Workflow Overview](#workflow-overview)
-10. [Development Environments](#development-environments)
-11. [Package Management with renv](#package-management-with-renv)
-12. [Docker Environment](#docker-environment)
-13. [Build System with Make](#build-system-with-make)
-14. [GitHub Actions CI/CD](#github-actions-cicd)
-15. [Common Tasks](#common-tasks)
-16. [Collaboration](#collaboration)
-17. [Troubleshooting](#troubleshooting)
+7. [Enhanced Research Compendium Features](#enhanced-research-compendium-features)
+8. [Directory Structure](#directory-structure)
+9. [Navigation Shortcuts](#navigation-shortcuts)
+10. [Workflow Overview](#workflow-overview)
+11. [Development Environments](#development-environments)
+12. [Package Management with renv](#package-management-with-renv)
+13. [Docker Environment](#docker-environment)
+14. [Build System with Make](#build-system-with-make)
+15. [GitHub Actions CI/CD](#github-actions-cicd)
+16. [Enhanced Research Examples](#enhanced-research-examples)
+17. [Common Tasks](#common-tasks)
+18. [Collaboration](#collaboration)
+19. [Troubleshooting](#troubleshooting)
+20. [Version History](#version-history)
+21. [Architecture Information](#architecture-information)
 
 ## What is ZZRRTOOLS?
 
@@ -36,7 +40,7 @@
 - **Publication**: Direct path from analysis to manuscript
 - **Portability**: Works across different computing environments
 - **Docker-first**: No local R installation required
-- **Modular Design**: 7 focused modules for maintainability
+- **Modular Design**: 8 focused modules for maintainability
 - **Uninstall Capability**: Complete cleanup with manifest tracking
 
 ## Getting Started
@@ -48,8 +52,8 @@
 
 ### Quick Start
 ```bash
-# 1. One-time installation
-git clone https://github.com/yourusername/zzrrtools.git
+# 1. One-time installation (replace [YOUR-USERNAME] with actual GitHub username)
+git clone https://github.com/[YOUR-USERNAME]/zzrrtools.git
 cd zzrrtools
 ./install.sh
 
@@ -69,13 +73,13 @@ make docker-r        # → R console in container
 ### Method 1: Automatic Installation (Recommended)
 ```bash
 # One-line install
-git clone https://github.com/yourusername/zzrrtools.git && cd zzrrtools && ./install.sh
+git clone https://github.com/[YOUR-USERNAME]/zzrrtools.git && cd zzrrtools && ./install.sh
 ```
 
 ### Method 2: Manual Installation
 ```bash
 # Clone and create symlink manually
-git clone https://github.com/yourusername/zzrrtools.git
+git clone https://github.com/[YOUR-USERNAME]/zzrrtools.git
 cd zzrrtools
 ln -s "$(pwd)/zzrrtools.sh" ~/bin/zzrrtools  # Adjust path as needed
 ```
@@ -83,7 +87,7 @@ ln -s "$(pwd)/zzrrtools.sh" ~/bin/zzrrtools  # Adjust path as needed
 ### Method 3: Direct Download
 ```bash
 # Download and install in one step
-curl -fsSL https://raw.githubusercontent.com/yourusername/zzrrtools/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/[YOUR-USERNAME]/zzrrtools/main/install.sh | bash
 ```
 
 ### Project Creation Workflow
@@ -96,7 +100,7 @@ mkdir my-climate-study
 cd my-climate-study
 
 # Set up complete research compendium
-zzrrtools --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
+zzrrtools --dotfiles ~/dotfiles --base-image rocker/tidyverse
 
 # Initialize git (work locally first)
 git init
@@ -111,7 +115,7 @@ git push -u origin main
 ### Team Collaboration Workflow
 ```bash
 # Team member joins existing project
-git clone https://github.com/team/research-project
+git clone https://github.com/[TEAM]/research-project
 cd research-project
 
 # Project structure is already set up - start working immediately!
@@ -129,7 +133,7 @@ mkdir penguin-behavioral-analysis
 cd penguin-behavioral-analysis
 
 # 2. Set up research compendium
-zzrrtools --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
+zzrrtools --dotfiles ~/dotfiles --base-image rocker/tidyverse
 
 # 3. Initialize git and work locally
 git init
@@ -200,7 +204,7 @@ EXAMPLES:
   zzrrtools --no-docker                              # Setup without Docker build
   zzrrtools --dotfiles ~/dotfiles                    # Include personal dotfiles
   zzrrtools --dotfiles-nodot ~/dotfiles              # Dotfiles without leading dots
-  zzrrtools --base-image rgt47/r-pluspackages        # Use custom base image
+  zzrrtools --base-image rocker/tidyverse            # Use tidyverse base image
   RRTOOLS_AUTHOR_NAME="Jane Doe" zzrrtools           # Custom author
 ```
 
@@ -226,7 +230,7 @@ The modular design provides enhanced maintainability while preserving 100% backw
 
 ## Modular Architecture
 
-ZZRRTOOLS v4.0 features a **modular architecture** with 7 focused modules that provide maintainability and flexibility:
+ZZRRTOOLS v4.0 features a **modular architecture** with 8 focused modules that provide maintainability and flexibility:
 
 ### Core Modules
 
@@ -418,6 +422,8 @@ $ ./zzrrtools-uninstall.sh
 ```
 
 ## Enhanced Research Compendium Features
+
+This section describes the advanced research capabilities integrated into ZZRRTOOLS v4.0. These features were originally planned as separate rrtools_plus enhancements but have been seamlessly integrated into the modular architecture described in the previous section.
 
 ZZRRTOOLS v4.0 integrates advanced research compendium capabilities that were planned for the rrtools_plus enhancement:
 
@@ -926,20 +932,20 @@ git commit -m "Add new_package dependency"
 #### Project Creator
 ```bash
 # 1. Initial setup
-./rrtools.sh                    # Creates structure, copies script
+zzrrtools                       # Creates structure, copies script
 git init
 git add .
 git commit -m "Initial rrtools setup"
-git remote add origin https://github.com/team/project.git
+git remote add origin https://github.com/[TEAM]/project.git
 git push -u origin main
 ```
 
 #### Team Members
 ```bash
 # 1. Clone and setup (one time)
-git clone https://github.com/team/project.git
+git clone https://github.com/[TEAM]/project.git
 cd project
-./rrtools.sh                    # Script already in repo!
+zzrrtools                       # Script already in repo!
 
 # 2. Start developing immediately
 make docker-rstudio
@@ -1047,7 +1053,7 @@ Solution: Use .gitignore for data files, Git LFS for large files
 
 1. **Check this guide** for common workflows
 2. **Use `make help`** to see available targets
-3. **Check script help**: `./rrtools.sh --help`
+3. **Check script help**: `zzrrtools --help`
 4. **Validate environment**: `make docker-check-renv`
 5. **Clean and rebuild**: `make docker-clean && make docker-build`
 
