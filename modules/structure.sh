@@ -162,40 +162,50 @@ create_symbolic_links() {
         fi
     done
     
-    # Define symlink mappings: link_name → target_path
-    # Using associative array for clear mapping and easy maintenance
-    declare -A link_mappings=(
-        ["a"]="./data"                    # a → data
-        ["n"]="./analysis"                # n → analysis  
-        ["f"]="./analysis/figures"        # f → figures
-        ["t"]="./analysis/tables"         # t → tables
-        ["s"]="./scripts"                 # s → scripts
-        ["m"]="./man"                     # m → manual pages
-        ["e"]="./tests"                   # e → tests (e for "examine")
-        ["o"]="./docs"                    # o → docs (o for "open")
-        ["c"]="./archive"                 # c → archive (c for "cache")
-        ["p"]="./analysis/paper"          # p → paper
-    )
-    
-    # Create each symbolic link and track it
+    # Create new symlinks using exact same approach as original zzrrtools.sh
+    # This preserves the exact behavior and avoids associative array issues
     local created_count=0
-    for link in "${!link_mappings[@]}"; do
-        local target="${link_mappings[$link]}"
-        
-        # Only create symlink if target directory exists
-        if [[ -d "$target" ]]; then
-            if ln -s "$target" "$link"; then
-                # Track successful symlink creation for uninstall manifest
-                track_symlink "$link" "$target"
-                log_info "Created symlink: $link → $target"
-                ((created_count++))
-            else
-                log_warn "Failed to create symlink: $link → $target"
-            fi
-        else
-            log_warn "Target directory does not exist, skipping symlink: $link → $target"
-        fi
-    done
+    
+    # Create symlinks one by one (same as original)
+    if [[ -d "./data" ]]; then
+        ln -s ./data a && track_symlink "a" "./data" && log_info "Created symlink: a → ./data" && ((created_count++))
+    fi
+    
+    if [[ -d "./analysis" ]]; then
+        ln -s ./analysis n && track_symlink "n" "./analysis" && log_info "Created symlink: n → ./analysis" && ((created_count++))
+    fi
+    
+    if [[ -d "./analysis/figures" ]]; then
+        ln -s ./analysis/figures f && track_symlink "f" "./analysis/figures" && log_info "Created symlink: f → ./analysis/figures" && ((created_count++))
+    fi
+    
+    if [[ -d "./analysis/tables" ]]; then
+        ln -s ./analysis/tables t && track_symlink "t" "./analysis/tables" && log_info "Created symlink: t → ./analysis/tables" && ((created_count++))
+    fi
+    
+    if [[ -d "./scripts" ]]; then
+        ln -s ./scripts s && track_symlink "s" "./scripts" && log_info "Created symlink: s → ./scripts" && ((created_count++))
+    fi
+    
+    if [[ -d "./man" ]]; then
+        ln -s ./man m && track_symlink "m" "./man" && log_info "Created symlink: m → ./man" && ((created_count++))
+    fi
+    
+    if [[ -d "./tests" ]]; then
+        ln -s ./tests e && track_symlink "e" "./tests" && log_info "Created symlink: e → ./tests" && ((created_count++))
+    fi
+    
+    if [[ -d "./docs" ]]; then
+        ln -s ./docs o && track_symlink "o" "./docs" && log_info "Created symlink: o → ./docs" && ((created_count++))
+    fi
+    
+    if [[ -d "./archive" ]]; then
+        ln -s ./archive c && track_symlink "c" "./archive" && log_info "Created symlink: c → ./archive" && ((created_count++))
+    fi
+    
+    if [[ -d "./analysis/paper" ]]; then
+        ln -s ./analysis/paper p && track_symlink "p" "./analysis/paper" && log_info "Created symlink: p → ./analysis/paper" && ((created_count++))
+    fi
     
     log_success "Symbolic links created ($created_count links)"
     log_info "Quick navigation: cd a (data), cd n (analysis), cd p (paper), etc."
