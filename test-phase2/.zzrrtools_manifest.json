@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "created_at": "2025-06-29T05:02:46Z",
+  "package_name": "testphase2",
+  "modules_loaded": [
+    "core",
+    "templates",
+    "structure",
+    "rpackage",
+    "docker"
+  ],
+  "directories": [
+    "R",
+    "man",
+    "tests/testthat",
+    "vignettes",
+    "data",
+    "data/raw_data",
+    "data/derived_data",
+    "data/metadata",
+    "data/validation",
+    "analysis",
+    "analysis/paper",
+    "analysis/figures",
+    "analysis/tables",
+    "analysis/templates",
+    "scripts",
+    "archive",
+    "docs",
+    ".github/workflows"
+  ],
+  "files": [
+    "LICENSE",
+    "NAMESPACE",
+    "testphase2.Rproj",
+    "tests/testthat.R",
+    "tests/testthat/test-utils.R",
+    "setup_renv.R"
+  ],
+  "template_files": [
+    {
+      "template": "DESCRIPTION",
+      "destination": "DESCRIPTION"
+    },
+    {
+      "template": "R/utils.R",
+      "destination": "R/utils.R"
+    },
+    {
+      "template": "Dockerfile",
+      "destination": "Dockerfile"
+    },
+    {
+      "template": "docker-compose.yml",
+      "destination": "docker-compose.yml"
+    },
+    {
+      "template": ".zshrc_docker",
+      "destination": ".zshrc_docker"
+    },
+    {
+      "template": "check_renv_for_commit.R",
+      "destination": "check_renv_for_commit.R"
+    },
+    {
+      "template": "ZZRRTOOLS_USER_GUIDE.md",
+      "destination": "ZZRRTOOLS_USER_GUIDE.md"
+    }
+  ],
+  "symlinks": [
+    {
+      "link": "a",
+      "target": "./data"
+    },
+    {
+      "link": "n",
+      "target": "./analysis"
+    },
+    {
+      "link": "f",
+      "target": "./analysis/figures"
+    },
+    {
+      "link": "t",
+      "target": "./analysis/tables"
+    },
+    {
+      "link": "s",
+      "target": "./scripts"
+    },
+    {
+      "link": "m",
+      "target": "./man"
+    },
+    {
+      "link": "e",
+      "target": "./tests"
+    },
+    {
+      "link": "o",
+      "target": "./docs"
+    },
+    {
+      "link": "c",
+      "target": "./archive"
+    },
+    {
+      "link": "p",
+      "target": "./analysis/paper"
+    }
+  ],
+  "dotfiles": [],
+  "docker_image": null
+}

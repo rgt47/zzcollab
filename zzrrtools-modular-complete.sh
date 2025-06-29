@@ -9,7 +9,7 @@
 #          - Comprehensive manifest tracking for uninstall
 #          - Modular architecture with dependency management
 #
-# USAGE:   ./zzrrtools.sh [OPTIONS]
+# USAGE:   ./zzrrtools-modular-complete.sh [OPTIONS]
 #
 # OPTIONS: All original zzrrtools.sh options preserved:
 #          --no-docker, --dotfiles DIR, --dotfiles-nodot DIR, --base-image NAME
