@@ -172,7 +172,7 @@ git push origin feature/advanced-models
 # Any developer can sync at any time:
 git pull                       # Get latest changes
 make docker-build             # Rebuild with updated dependencies
-make docker-rstudio           # → Identical environment across team
+make docker-zsh               # → Identical vim/zsh environment across team
 ```
 
 #### **Data Management Collaboration:**
@@ -185,4 +185,93 @@ data/
 └── validation/               # Automated quality reports
 ```
 
-This workflow ensures **perfect reproducibility** across team members while providing **automated quality assurance** and **professional collaboration tools** integrated from the rrtools_plus enhancement framework.
+## **🛠️ Vim IDE Development Environment**
+
+### **Enhanced Vim Setup (via zzrrtools dotfiles)**
+The containerized environment includes a fully configured vim IDE with:
+
+#### **Vim Plugin Ecosystem:**
+- **vim-plug**: Plugin manager (automatically installed)
+- **R Language Support**: Syntax highlighting and R integration
+- **File Navigation**: Project file browser and fuzzy finding
+- **Git Integration**: Git status and diff visualization
+- **Code Completion**: Intelligent autocomplete for R functions
+
+#### **Essential Vim Workflow Commands:**
+```bash
+# In container vim session:
+vim R/analysis.R               # Open R file
+:Explore                       # File browser
+:split scripts/data.R          # Split window editing
+:vsplit analysis/paper.Rmd     # Vertical split for manuscript
+
+# Vim + R integration:
+:terminal                      # Open terminal in vim
+R                             # Start R session in terminal
+# devtools::load_all()         # Load package functions (in R)
+# :q                           # Exit R, back to vim
+
+# Git workflow in vim:
+:!git status                   # Check git status
+:!git add %                    # Add current file
+:!git commit -m "Update analysis"  # Commit changes
+```
+
+#### **Productive Development Cycle:**
+```bash
+# 1. Start development environment
+make docker-zsh               # → Enhanced zsh with vim
+
+# 2. Multi-file development workflow
+vim -p R/functions.R scripts/analysis.R analysis/paper/paper.Rmd
+# Opens multiple files in tabs
+
+# 3. Interactive R testing
+:terminal                     # Open terminal in vim
+R                            # Start R
+# devtools::load_all()        # Test functions
+# source("scripts/analysis.R") # Test scripts
+# quit()                      # Exit R
+
+# 4. File navigation and editing
+# gt (next tab), gT (previous tab)
+# Ctrl+w+w (switch windows)
+# :Explore (file browser)
+
+# 5. Quick testing cycle
+:!make docker-test           # Run tests from vim
+:!make docker-render         # Render paper from vim
+```
+
+### **Vim + R Development Tips:**
+
+#### **File Organization in Vim:**
+```bash
+# Open related files simultaneously:
+vim -O R/analysis_functions.R scripts/01_analysis.R    # Side by side
+vim -o R/plotting.R analysis/figures/                  # Horizontal split
+vim -p R/*.R scripts/*.R                               # All R files in tabs
+```
+
+#### **Git Integration Workflow:**
+```bash
+# In vim, check git status frequently:
+:!git status                  # See changed files
+:!git diff %                  # Diff current file
+:!git add %                   # Stage current file
+:!git commit -m "Add function"  # Commit from vim
+
+# View git log:
+:!git log --oneline -10       # Recent commits
+```
+
+#### **R Package Development in Vim:**
+```bash
+# Typical development cycle:
+vim R/new_function.R         # Write function
+:!make docker-test           # Test from vim
+vim man/new_function.Rd      # Check documentation
+:!make docker-check          # Package validation
+```
+
+This workflow ensures **perfect reproducibility** across team members while providing **automated quality assurance** and **professional collaboration tools** integrated from the rrtools_plus enhancement framework, all accessible through a powerful vim-based development environment.
