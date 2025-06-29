@@ -1,25 +1,27 @@
-# ZZRRTOOLS Research Compendium Framework - User Guide v3.0
+# ZZRRTOOLS Research Compendium Framework - User Guide v4.0
 
 ## Table of Contents
 1. [What is ZZRRTOOLS?](#what-is-zzrrtools)
 2. [Getting Started](#getting-started)
 3. [Installation & Distribution](#installation--distribution)
 4. [Configuration](#configuration)
-5. [Directory Structure](#directory-structure)
-6. [Navigation Shortcuts](#navigation-shortcuts)
-7. [Workflow Overview](#workflow-overview)
-8. [Development Environments](#development-environments)
-9. [Package Management with renv](#package-management-with-renv)
-10. [Docker Environment](#docker-environment)
-11. [Build System with Make](#build-system-with-make)
-12. [GitHub Actions CI/CD](#github-actions-cicd)
-13. [Common Tasks](#common-tasks)
-14. [Collaboration](#collaboration)
-15. [Troubleshooting](#troubleshooting)
+5. [Modular Architecture](#modular-architecture)
+6. [Uninstall and Cleanup](#uninstall-and-cleanup)
+7. [Directory Structure](#directory-structure)
+8. [Navigation Shortcuts](#navigation-shortcuts)
+9. [Workflow Overview](#workflow-overview)
+10. [Development Environments](#development-environments)
+11. [Package Management with renv](#package-management-with-renv)
+12. [Docker Environment](#docker-environment)
+13. [Build System with Make](#build-system-with-make)
+14. [GitHub Actions CI/CD](#github-actions-cicd)
+15. [Common Tasks](#common-tasks)
+16. [Collaboration](#collaboration)
+17. [Troubleshooting](#troubleshooting)
 
 ## What is ZZRRTOOLS?
 
-**ZZRRTOOLS** is a framework for creating **research compendia** - self-contained, reproducible research projects that combine:
+**ZZRRTOOLS** is a modular framework for creating **research compendia** - self-contained, reproducible research projects that combine:
 - R package structure for code organization
 - Data management and documentation
 - Analysis scripts and notebooks
@@ -34,6 +36,8 @@
 - **Publication**: Direct path from analysis to manuscript
 - **Portability**: Works across different computing environments
 - **Docker-first**: No local R installation required
+- **Modular Design**: 7 focused modules for maintainability
+- **Uninstall Capability**: Complete cleanup with manifest tracking
 
 ## Getting Started
 
@@ -200,6 +204,18 @@ EXAMPLES:
   RRTOOLS_AUTHOR_NAME="Jane Doe" zzrrtools           # Custom author
 ```
 
+### Modular Implementation Details
+
+ZZRRTOOLS now uses a **modular architecture** that automatically:
+
+1. **Loads 8 modules** in dependency order during setup
+2. **Creates manifest tracking** for complete uninstall capability  
+3. **Validates each module** before proceeding with setup
+4. **Shows module summaries** with detailed feature descriptions
+5. **Installs uninstall script** for easy cleanup
+
+The modular design provides enhanced maintainability while preserving 100% backward compatibility with existing workflows.
+
 ### Safety Features
 - **Input validation**: Package names sanitized and validated according to R package rules
 - **Error handling**: Comprehensive error checking with graceful fallbacks
@@ -207,6 +223,288 @@ EXAMPLES:
 - **Docker validation**: Checks Docker availability before use
 - **Permission checking**: Verifies write permissions before starting
 - **Template validation**: Ensures all required templates exist before processing
+
+## Modular Architecture
+
+ZZRRTOOLS v4.0 features a **modular architecture** with 7 focused modules that provide maintainability and flexibility:
+
+### Core Modules
+
+#### 1. **Core Module** (`modules/core.sh`)
+- **Purpose**: Foundation utilities and logging
+- **Features**:
+  - Package name validation with R naming rules
+  - Comprehensive logging system (`log_info`, `log_warn`, `log_error`, `log_success`)
+  - Command existence checking
+  - Error handling and validation functions
+
+#### 2. **Templates Module** (`modules/templates.sh`)
+- **Purpose**: Template processing and file creation
+- **Features**:
+  - Variable substitution in template files
+  - Safe file creation (never overwrites existing files)
+  - Manifest tracking for uninstall capability
+  - Template validation and error handling
+
+#### 3. **Structure Module** (`modules/structure.sh`)
+- **Purpose**: Directory structure and navigation
+- **Features**:
+  - Creates 18 directories for complete research compendium
+  - Generates 10 symbolic links for quick navigation
+  - Comprehensive structure validation
+  - Detailed logging of created items
+
+#### 4. **R Package Module** (`modules/rpackage.sh`)
+- **Purpose**: R package development framework
+- **Features**:
+  - DESCRIPTION, NAMESPACE, and LICENSE files
+  - R function templates with roxygen2 documentation
+  - RStudio project configuration
+  - testthat testing framework setup
+  - renv package management integration
+
+#### 5. **Docker Module** (`modules/docker.sh`)
+- **Purpose**: Container integration and builds
+- **Features**:
+  - Multi-service Docker Compose configuration
+  - Platform-aware builds (ARM64/AMD64 compatibility)
+  - R version detection from renv.lock
+  - Container optimization and caching
+  - Development shell configuration
+
+#### 6. **Analysis Module** (`modules/analysis.sh`)
+- **Purpose**: Research analysis framework
+- **Features**:
+  - R Markdown paper template with academic structure
+  - Bibliography management with BibTeX
+  - Citation styles (CSL) for academic journals
+  - Analysis templates and examples
+  - Figure and table creation workflows
+
+#### 7. **CI/CD Module** (`modules/cicd.sh`)
+- **Purpose**: Continuous integration and deployment
+- **Features**:
+  - GitHub Actions workflows for R package validation
+  - Automated paper rendering and artifact upload
+  - Issue and pull request templates
+  - Multi-platform testing support
+  - Quality assurance automation
+
+#### 8. **DevTools Module** (`modules/devtools.sh`)
+- **Purpose**: Development tools and configuration
+- **Features**:
+  - Comprehensive Makefile for build automation
+  - Git ignore patterns for R projects
+  - R session configuration (.Rprofile)
+  - Personal dotfiles integration
+  - Development helper scripts
+
+### Module Loading System
+
+```bash
+# Modules are loaded in dependency order:
+1. core.sh          # Foundation (required by all others)
+2. templates.sh     # Template processing (depends on core)
+3. structure.sh     # Directory creation (depends on core)
+4. rpackage.sh      # R package setup (depends on core, templates)
+5. docker.sh        # Container setup (depends on core, templates)
+6. analysis.sh      # Analysis framework (depends on core, templates)
+7. cicd.sh          # CI/CD workflows (depends on core, templates)
+8. devtools.sh      # Development tools (depends on core, templates)
+```
+
+### Module Benefits
+
+- **Maintainability**: Each module focuses on specific functionality
+- **Testability**: Modules can be tested independently
+- **Flexibility**: Individual modules can be modified without affecting others
+- **Clarity**: Clear separation of concerns and dependencies
+- **Extensibility**: New modules can be added easily
+- **Debugging**: Issues can be traced to specific modules
+
+## Uninstall and Cleanup
+
+ZZRRTOOLS v4.0 includes **comprehensive uninstall capability** with manifest tracking:
+
+### Automatic Manifest Creation
+
+Every zzrrtools setup creates a manifest file that tracks all created items:
+
+```bash
+# JSON manifest (if jq is available)
+.zzrrtools_manifest.json
+
+# Text manifest (fallback)
+.zzrrtools_manifest.txt
+```
+
+### Manifest Contents
+
+The manifest tracks:
+- **Directories**: All 18 created directories
+- **Files**: Core package files, configuration files
+- **Template Files**: All files created from templates
+- **Symbolic Links**: All 10 navigation shortcuts
+- **Dotfiles**: Personal configuration files copied
+- **Metadata**: Creation timestamp, package name, options used
+
+### Uninstall Script
+
+Each project includes an automatic uninstall script:
+
+```bash
+# Dry run (preview what would be removed)
+./zzrrtools-uninstall.sh --dry-run
+
+# Interactive removal with confirmations
+./zzrrtools-uninstall.sh
+
+# Force removal without prompts
+./zzrrtools-uninstall.sh --force
+
+# Show uninstall help
+./zzrrtools-uninstall.sh --help
+```
+
+### Safety Features
+
+- **Dry run mode**: Preview removals before execution
+- **Interactive confirmations**: Prompts for each category
+- **Git repository detection**: Warns if project is git-managed
+- **Backup recommendations**: Suggests backing up before removal
+- **Selective removal**: Choose which categories to remove
+- **Progress tracking**: Shows detailed removal progress
+
+### Uninstall Categories
+
+The uninstall script organizes removals by category:
+
+1. **Symbolic Links**: Navigation shortcuts (a, n, f, t, s, m, e, o, c, p)
+2. **Template Files**: Generated from templates with variable substitution
+3. **Core Files**: Package structure files (DESCRIPTION, NAMESPACE, etc.)
+4. **Dotfiles**: Personal configuration files
+5. **Directories**: All created directories (only if empty)
+6. **Manifest**: The tracking files themselves
+
+### Example Uninstall Session
+
+```bash
+$ ./zzrrtools-uninstall.sh
+ℹ️  === ZZRRTOOLS UNINSTALL ===
+ℹ️  Package: myproject
+ℹ️  Created: 2025-06-29T05:12:40Z
+ℹ️  Items to remove:
+ℹ️    - Directories: 18
+ℹ️    - Files: 15
+ℹ️    - Symlinks: 10
+
+⚠️  WARNING: This will remove all zzrrtools-created files
+📁 Project appears to be git-managed
+💡 Consider backing up your work first
+
+? Remove symbolic links? (y/N) y
+✅ Removed 10 symbolic links
+
+? Remove template files? (y/N) y
+✅ Removed 8 template files
+
+? Remove core package files? (y/N) y
+✅ Removed 7 core files
+
+? Remove directories? (y/N) y
+✅ Removed 15 empty directories
+
+✅ Uninstall completed successfully!
+```
+
+## Enhanced Research Compendium Features
+
+ZZRRTOOLS v4.0 integrates advanced research compendium capabilities that were planned for the rrtools_plus enhancement:
+
+### ✅ **Fully Integrated Features**
+
+#### **Advanced Collaboration Infrastructure**
+- **GitHub Templates**: Complete collaboration framework from the CI/CD module
+- **Pull Request Templates**: Research-specific checklists including analysis impact assessment
+- **Issue Templates**: Bug reports with environment information and feature requests with use cases
+- **Team Workflows**: Standardized contribution guidelines for research teams
+
+#### **Quality Assurance & Reproducibility**
+- **Automated CI/CD**: GitHub Actions workflows for continuous validation
+- **Package Validation**: Automated R CMD check, dependency validation, test execution
+- **Reproducibility Checks**: Automated paper rendering and artifact generation
+- **Multi-platform Testing**: Ensures code works across different environments
+
+#### **Professional Development Tools**
+- **Comprehensive Makefile**: Build automation for both native and Docker workflows
+- **Container Integration**: Production-ready Docker environment with multi-service support
+- **Development Environment**: Integrated RStudio Server, shell access, and development tools
+
+### ⚡ **Enhanced Data Management**
+
+#### **Comprehensive Data Structure**
+The integrated data management framework provides:
+
+```
+data/
+├── raw_data/           # Original, unmodified datasets
+├── derived_data/       # Processed, analysis-ready data  
+├── metadata/           # Data dictionaries and documentation
+└── validation/         # Data quality reports and checks
+```
+
+#### **Data Management Features**
+- **Structured Organization**: Separate spaces for raw, derived, and metadata
+- **Quality Tracking**: Dedicated validation directory for data quality reports
+- **Documentation Support**: Metadata directory for data dictionaries and provenance
+- **Version Control Integration**: Git-friendly structure with appropriate ignore patterns
+
+### 📚 **Academic Publishing Integration**
+
+#### **Research Paper Framework**
+- **R Markdown Templates**: Complete academic paper structure with proper sections
+- **Citation Management**: BibTeX integration with citation style files (CSL)
+- **Bibliography Support**: Automated reference formatting for academic journals
+- **Cross-references**: Support for figures, tables, and equation referencing
+
+#### **Publication Workflow**
+- **Automated Rendering**: GitHub Actions automatically render papers on changes
+- **Multiple Formats**: Support for PDF, HTML, and Word outputs
+- **Academic Standards**: Proper formatting for peer-reviewed publications
+- **Artifact Management**: Automatic paper uploads and version tracking
+
+### 🔧 **Development Excellence**
+
+#### **Package Development Integration**
+- **Professional Structure**: Complete R package framework with documentation
+- **Testing Infrastructure**: testthat framework with example tests
+- **Documentation System**: roxygen2 integration for function documentation
+- **Dependency Management**: renv for reproducible package environments
+
+#### **Container-First Development**
+- **Docker Integration**: Production-ready containerized development environment
+- **Platform Compatibility**: ARM64/AMD64 support with automatic platform detection
+- **Service Orchestration**: Multi-service Docker Compose configuration
+- **Development Tools**: Integrated shell configurations and dotfiles support
+
+### 📋 **Current Capabilities vs. Original rrtools_plus Vision**
+
+| Feature Category | Implementation Status | Available Now |
+|------------------|----------------------|---------------|
+| **Collaboration Infrastructure** | ✅ Complete | GitHub templates, PR workflows, issue management |
+| **Quality Assurance & CI/CD** | ✅ Complete | Automated testing, validation, reproducibility checks |
+| **Advanced Data Management** | 🟡 Structure Complete | Directory organization, validation framework |
+| **Academic Publishing** | 🟡 Core Features | Paper templates, citations, automated rendering |
+| **Development Tools** | ✅ Complete | Makefile, Docker, package development |
+| **Ethics & Legal Documentation** | 🔄 Planned | IRB templates, data sharing agreements |
+
+### 🚀 **Future Enhancements**
+
+Features planned for future releases:
+- **Ethics Documentation**: IRB templates and data sharing agreement frameworks
+- **Data Validation Automation**: Automated data quality checking and reporting
+- **Journal-Specific Templates**: Publication templates for specific academic journals
+- **Legal Compliance**: GDPR and data privacy documentation templates
 
 ## Directory Structure
 
@@ -272,15 +570,20 @@ p     # → ./analysis/paper    (research paper)
 
 ## Workflow Overview
 
-### Docker-First Development Workflow
+### Enhanced Docker-First Development Workflow
 
 #### Initial Setup (One Time)
 ```bash
 cd your-project
-zzrrtools                       # Creates structure + builds Docker image
+zzrrtools                       # Creates complete research compendium with:
+                               # - All 8 modules (core, templates, structure, etc.)
+                               # - GitHub collaboration templates  
+                               # - Automated CI/CD workflows
+                               # - Data management structure
+                               # - Publication infrastructure
 ```
 
-#### Daily Development Cycle
+#### Enhanced Daily Development Cycle
 ```bash
 # 1. Start development environment
 make docker-rstudio            # → RStudio at http://localhost:8787
@@ -289,27 +592,81 @@ make docker-r                  # → R console
 # OR  
 make docker-bash               # → Shell access
 # OR
-make docker-zsh                # → Zsh shell access
+make docker-zsh                # → Zsh shell access (with personal dotfiles)
 
-# 2. Do your analysis, install packages as needed
-# 3. Exit container when done
-exit
+# 2. Enhanced workflow with rrtools_plus features:
+# - Organize data in data/raw_data/, data/derived_data/
+# - Document datasets in data/metadata/
+# - Use R package functions for analysis
+# - Save outputs to analysis/figures/, analysis/tables/
 
-# 4. Validate dependencies before committing
-make docker-check-renv-fix
+# 3. Quality assurance (integrated validation)
+exit                           # Exit container
+make docker-check-renv-fix     # Validate and fix dependencies
+make docker-test               # Run package tests  
+make docker-render             # Test paper rendering
 
-# 5. Commit your work
+# 4. Commit triggers automated CI/CD
 git add .
 git commit -m "Analysis update"
-git push
+git push                       # → Triggers GitHub Actions:
+                              #   - R package validation
+                              #   - Automated paper rendering
+                              #   - Dependency checks
 ```
 
-#### Collaboration Sync
+#### 📊 **Data Management Workflow** (rrtools_plus Integration)
 ```bash
-# When collaborators push changes
-git pull                       # Get latest code
-make docker-build             # Rebuild environment with new packages
-# Continue development...
+# 1. Data intake and organization
+cp ~/Downloads/survey_data.csv data/raw_data/
+cp ~/Downloads/reference.csv data/external_data/
+
+# 2. Data documentation (enhanced templates)
+# Edit data/metadata/data_dictionary.md with variable descriptions
+# Document data provenance and collection methods
+# Create data validation scripts in data/validation/
+
+# 3. Data processing pipeline
+# scripts/01_data_cleaning.R     → Clean raw data
+# scripts/02_data_validation.R   → Quality checks  
+# scripts/03_analysis.R          → Main analysis
+# Save processed data to data/derived_data/
+```
+
+#### 🔬 **Publication Workflow** (Enhanced Academic Integration)
+```bash
+# 1. Research paper development
+# Edit analysis/paper/paper.Rmd with analysis and results
+# Add citations to analysis/paper/references.bib
+# Include figures with proper cross-references
+
+# 2. Automated rendering and validation
+make docker-render             # Local paper generation
+git push                       # → Triggers automated paper rendering
+                              # → GitHub Actions creates downloadable PDF
+
+# 3. Access rendered papers
+# Visit GitHub → Actions tab → Latest workflow → Artifacts
+# Download automatically generated PDF
+```
+
+#### 🤝 **Team Collaboration** (Complete rrtools_plus Implementation)
+```bash
+# 1. Enhanced GitHub templates automatically created:
+# - .github/pull_request_template.md (analysis impact assessment)
+# - .github/ISSUE_TEMPLATE/bug_report.md (environment details)
+# - .github/ISSUE_TEMPLATE/feature_request.md (research use cases)
+
+# 2. Automated quality assurance on every push:
+# - R package validation (R CMD check)
+# - Multi-platform testing 
+# - Dependency validation with renv
+# - Paper rendering and artifact upload
+
+# 3. Professional collaboration workflow:
+git pull                       # Get team updates
+make docker-build             # Rebuild with new dependencies
+# Work with validated, consistent environment
 ```
 
 ### Development Environment Options
@@ -453,8 +810,8 @@ make help                      # Show all available targets
 
 ## GitHub Actions CI/CD
 
-### Simplified Workflows
-rrtools provides **streamlined GitHub Actions** for the Docker-first approach:
+### Enhanced CI/CD with rrtools_plus Integration
+ZZRRTOOLS provides **comprehensive GitHub Actions** with quality assurance and collaboration features:
 
 #### 1. R Package Check (`.github/workflows/r-package.yml`)
 - **Triggers**: Push/PR to main/master
@@ -724,9 +1081,51 @@ export RRTOOLS_BASE_PATH="/custom/path"
 
 ---
 
+## Version History
+
+### v4.0 - Modular Architecture (Current)
+- **Modular Design**: 8 focused modules for enhanced maintainability
+- **Uninstall Capability**: Complete cleanup with manifest tracking
+- **Enhanced Logging**: Detailed progress tracking and module summaries
+- **100% Backward Compatibility**: All existing workflows preserved
+- **Safety Improvements**: Enhanced validation and error handling
+
+### v3.0 - Previous Monolithic Version
+- Single 812-line script implementation
+- All functionality preserved in modular v4.0
+
+### Migration from v3.0 to v4.0
+- **No user changes required**: Same command-line interface and workflows
+- **Enhanced capabilities**: Added uninstall, improved tracking, modular architecture
+- **Preservation guarantee**: 100% functionality preservation from v3.0
+
+## Architecture Information
+
+### File Organization
+```
+zzrrtools/
+├── zzrrtools.sh                    # Main entry point (modular v4.0)
+├── zzrrtools-original.sh           # Backup of v3.0 monolithic version
+├── modules/                        # Modular components
+│   ├── core.sh                     # Foundation utilities
+│   ├── templates.sh                # Template processing
+│   ├── structure.sh                # Directory creation
+│   ├── rpackage.sh                 # R package framework
+│   ├── docker.sh                   # Container integration
+│   ├── analysis.sh                 # Research templates
+│   ├── cicd.sh                     # CI/CD workflows
+│   └── devtools.sh                 # Development tools
+└── templates/                      # All template files
+    ├── ZZRRTOOLS_USER_GUIDE.md     # This documentation
+    ├── zzrrtools-uninstall.sh      # Uninstall script template
+    └── [template files...]
+```
+
 ## Summary
 
-rrtools provides a **complete research environment** with:
+ZZRRTOOLS v4.0 provides a **complete research environment** with integrated rrtools_plus enhancements:
+
+### **Core Research Infrastructure**
 - **Docker-first development** (no local R required)
 - **Automatic dependency management** with renv
 - **Professional collaboration tools** via Git/GitHub
@@ -734,4 +1133,18 @@ rrtools provides a **complete research environment** with:
 - **Reproducible environments** across team members
 - **Enterprise-grade reliability** with comprehensive error handling
 
-The framework handles the technical complexity so you can **focus on your research**.
+### **Advanced Research Compendium Features** (rrtools_plus Integration)
+- **Enhanced data management** with structured organization and validation frameworks
+- **Automated quality assurance** via GitHub Actions CI/CD workflows
+- **Professional collaboration** with research-specific templates and workflows
+- **Academic publishing integration** with automated paper rendering and citation management
+- **Comprehensive documentation** with data dictionaries and provenance tracking
+- **Team-ready infrastructure** with issue templates and pull request workflows
+
+### **Technical Excellence**
+- **Modular architecture** (8 focused modules) for maintainability and extensibility
+- **Complete uninstall capability** with manifest tracking for project cleanup
+- **100% backward compatibility** with existing workflows and command-line interface
+- **Platform compatibility** with ARM64/AMD64 support and container optimization
+
+The framework integrates advanced research compendium capabilities while handling the technical complexity so you can **focus on your research**.
