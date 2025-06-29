@@ -1,6 +1,6 @@
 # Developer Collaboration Workflow Sequence
 
-Based on my review of the user guide, here are the specific workflows for developer collaboration:
+Based on my review of the user guide, here are the specific workflows for developer collaboration using vim as the IDE:
 
 ## **Developer Collaboration Workflow Sequence**
 
@@ -20,25 +20,37 @@ git commit -m "Initial zzrrtools setup"
 git remote add origin https://github.com/[TEAM]/project.git
 git push -u origin main
 
-# 4. Start development work
-make docker-rstudio              # → RStudio at http://localhost:8787
+# 4. Start development work in containerized vim environment
+make docker-zsh                 # → Enhanced zsh shell with personal dotfiles
 
 # 5. Add packages and do initial analysis
-# (In RStudio container)
+# (In zsh container with vim IDE)
+R                               # Start R session
 # install.packages("tidyverse")
-# install.packages("lme4")
+# install.packages("lme4") 
 # renv::snapshot()
+# quit()                        # Exit R
 
-# 6. Quality assurance and commit
-exit                             # Exit container
-make docker-check-renv-fix       # Validate dependencies
-make docker-test                 # Run package tests
+# 6. Create initial analysis scripts using vim
+vim R/analysis_functions.R      # Create package functions
+# Write R functions with vim + plugins
+
+vim scripts/01_data_import.R    # Create analysis scripts
+# Write data import code
+
+vim analysis/paper/paper.Rmd    # Start research paper
+# Write analysis and methods in R Markdown
+
+# 7. Quality assurance and commit
+exit                            # Exit container
+make docker-check-renv-fix      # Validate dependencies
+make docker-test                # Run package tests
 make docker-render              # Test paper rendering
 
-# 7. Commit changes with CI/CD trigger
+# 8. Commit changes with CI/CD trigger
 git add .
 git commit -m "Add initial analysis and dependencies"
-git push                         # → Triggers GitHub Actions validation
+git push                        # → Triggers GitHub Actions validation
 ```
 
 ### **👩‍💻 Developer 2 (Joining Project)**
@@ -50,24 +62,39 @@ cd project
 # 2. Set up environment (structure already exists)
 make docker-build               # Build container with existing dependencies
 
-# 3. Start development immediately
-make docker-rstudio             # → Consistent environment with Dev 1
+# 3. Start development immediately in vim environment
+make docker-zsh                 # → Consistent zsh environment with Dev 1
 
 # 4. Sync with latest packages and add new work
-# (In RStudio container)
-# renv::restore()                # Get Dev 1's packages
-# install.packages("ggplot2")    # Add new package
-# renv::snapshot()               # Update environment
+# (In zsh container with vim)
+R                               # Start R session
+# renv::restore()               # Get Dev 1's packages
+# install.packages("ggplot2")   # Add new package
+# renv::snapshot()              # Update environment
+# quit()                        # Exit R
 
-# 5. Quality assurance workflow
-exit                            # Exit container
-make docker-check-renv-fix      # Update DESCRIPTION with new packages
-make docker-test               # Ensure tests still pass
+# 5. Create visualization functions using vim
+vim R/plotting_functions.R      # Add plotting utilities
+# Write ggplot2 wrapper functions
 
-# 6. Commit with automated validation
+vim scripts/02_visualization.R  # Create visualization script
+# Write code to generate analysis plots
+
+# 6. Test functions interactively
+R                               # Start R for testing
+# devtools::load_all()          # Load package functions
+# source("scripts/02_visualization.R")  # Test new code
+# quit()
+
+# 7. Quality assurance workflow
+exit                           # Exit container
+make docker-check-renv-fix     # Update DESCRIPTION with new packages
+make docker-test              # Ensure tests still pass
+
+# 8. Commit with automated validation
 git add .
 git commit -m "Add visualization analysis with ggplot2"
-git push                        # → GitHub Actions validates changes
+git push                       # → GitHub Actions validates changes
 ```
 
 ### **🧑‍💻 Developer 1 (Continuing Work)**
@@ -82,24 +109,44 @@ make docker-build              # Rebuild container with Dev 2's packages
 make docker-check-renv-fix     # Ensure all dependencies are properly tracked
 
 # 4. Continue development with updated environment
-make docker-rstudio            # → Environment now includes Dev 2's packages
+make docker-zsh                # → Environment now includes Dev 2's packages
 
-# 5. Add more analysis work
-# (In RStudio container)
-# renv::restore()               # Ensure all packages from Dev 2 are available
-# Continue analysis with full package environment
+# 5. Add more analysis work using vim
+# (In zsh container with vim)
+R                              # Start R session
+# renv::restore()              # Ensure all packages from Dev 2 are available
+# devtools::load_all()         # Load updated package with new functions
+# quit()
 
-# 6. Enhanced collaboration workflow
-exit                           # Exit container
+# 6. Create advanced analysis using vim
+vim R/modeling_functions.R     # Add statistical modeling functions
+# Write multilevel model functions
 
-# 7. Use enhanced GitHub templates for pull request
+vim scripts/03_advanced_models.R  # Create modeling script
+# Write analysis using both Dev 1 and Dev 2's functions
+
+# 7. Test integration of both developers' work
+R                              # Interactive testing
+# devtools::load_all()         # Load all functions
+# source("scripts/01_data_import.R")    # Dev 1's work
+# source("scripts/02_visualization.R") # Dev 2's work  
+# source("scripts/03_advanced_models.R") # New integration
+# quit()
+
+# 8. Update research paper with new analysis
+vim analysis/paper/paper.Rmd  # Update manuscript
+# Add new results and figures
+
+# 9. Enhanced collaboration workflow
+exit                          # Exit container
+
+# 10. Use enhanced GitHub templates for pull request
 git checkout -b feature/advanced-models
-# Make changes...
 git add .
-git commit -m "Add multilevel models for nested data"
+git commit -m "Add multilevel models integrating visualization functions"
 git push origin feature/advanced-models
 
-# 8. Create pull request using enhanced template
+# 11. Create pull request using enhanced template
 # GitHub automatically provides:
 # - Analysis impact assessment checklist
 # - Reproducibility validation
