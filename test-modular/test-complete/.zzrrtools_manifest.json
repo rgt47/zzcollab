@@ -1,0 +1,156 @@
+{
+  "version": "1.0",
+  "created_at": "2025-06-29T05:12:40Z",
+  "package_name": "testcomplete",
+  "modules_loaded": [
+    "core",
+    "templates",
+    "structure",
+    "rpackage",
+    "docker",
+    "analysis",
+    "cicd",
+    "devtools"
+  ],
+  "command_line_options": {
+    "build_docker": false,
+    "dotfiles_dir": "",
+    "dotfiles_nodot": false,
+    "base_image": "rocker/r-ver"
+  },
+  "directories": [
+    "R",
+    "man",
+    "tests/testthat",
+    "vignettes",
+    "data",
+    "data/raw_data",
+    "data/derived_data",
+    "data/metadata",
+    "data/validation",
+    "analysis",
+    "analysis/paper",
+    "analysis/figures",
+    "analysis/tables",
+    "analysis/templates",
+    "scripts",
+    "archive",
+    "docs",
+    ".github/workflows"
+  ],
+  "files": [
+    "LICENSE",
+    "NAMESPACE",
+    "testcomplete.Rproj",
+    "tests/testthat.R",
+    "tests/testthat/test-utils.R",
+    "setup_renv.R",
+    "zzrrtools-uninstall.sh"
+  ],
+  "template_files": [
+    {
+      "template": "DESCRIPTION",
+      "destination": "DESCRIPTION"
+    },
+    {
+      "template": "R/utils.R",
+      "destination": "R/utils.R"
+    },
+    {
+      "template": ".gitignore",
+      "destination": ".gitignore"
+    },
+    {
+      "template": ".Rprofile",
+      "destination": ".Rprofile"
+    },
+    {
+      "template": "Dockerfile",
+      "destination": "Dockerfile"
+    },
+    {
+      "template": "docker-compose.yml",
+      "destination": "docker-compose.yml"
+    },
+    {
+      "template": ".zshrc_docker",
+      "destination": ".zshrc_docker"
+    },
+    {
+      "template": "check_renv_for_commit.R",
+      "destination": "check_renv_for_commit.R"
+    },
+    {
+      "template": "ZZRRTOOLS_USER_GUIDE.md",
+      "destination": "ZZRRTOOLS_USER_GUIDE.md"
+    },
+    {
+      "template": "paper.Rmd",
+      "destination": "analysis/paper/paper.Rmd"
+    },
+    {
+      "template": "references.bib",
+      "destination": "analysis/paper/references.bib"
+    },
+    {
+      "template": "statistics-in-medicine.csl",
+      "destination": "analysis/paper/statistics-in-medicine.csl"
+    },
+    {
+      "template": "workflows/r-package.yml",
+      "destination": ".github/workflows/r-package.yml"
+    },
+    {
+      "template": "workflows/render-paper.yml",
+      "destination": ".github/workflows/render-paper.yml"
+    },
+    {
+      "template": "Makefile",
+      "destination": "Makefile"
+    }
+  ],
+  "symlinks": [
+    {
+      "link": "a",
+      "target": "./data"
+    },
+    {
+      "link": "n",
+      "target": "./analysis"
+    },
+    {
+      "link": "f",
+      "target": "./analysis/figures"
+    },
+    {
+      "link": "t",
+      "target": "./analysis/tables"
+    },
+    {
+      "link": "s",
+      "target": "./scripts"
+    },
+    {
+      "link": "m",
+      "target": "./man"
+    },
+    {
+      "link": "e",
+      "target": "./tests"
+    },
+    {
+      "link": "o",
+      "target": "./docs"
+    },
+    {
+      "link": "c",
+      "target": "./archive"
+    },
+    {
+      "link": "p",
+      "target": "./analysis/paper"
+    }
+  ],
+  "dotfiles": [],
+  "docker_image": null
+}

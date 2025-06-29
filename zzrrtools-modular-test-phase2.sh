@@ -83,7 +83,20 @@ else
     exit 1
 fi
 
-# Load rpackage module (depends on core, templates)
+#=============================================================================
+# PACKAGE NAME VALIDATION (must be done before rpackage module)
+#=============================================================================
+
+# Validate package name using extracted function
+PKG_NAME=$(validate_package_name)
+readonly PKG_NAME
+
+# Set Docker base image for templates
+readonly BASE_IMAGE="rocker/r-ver"
+
+log_info "Package name determined: $PKG_NAME"
+
+# Load rpackage module (depends on core, templates, and PKG_NAME)
 if [[ -f "$MODULES_DIR/rpackage.sh" ]]; then
     log_info "Loading rpackage module..."
     # shellcheck source=modules/rpackage.sh
@@ -103,16 +116,7 @@ else
     exit 1
 fi
 
-#=============================================================================
-# PACKAGE NAME VALIDATION
-#=============================================================================
-
-# Validate package name using extracted function
-PKG_NAME=$(validate_package_name)
-readonly PKG_NAME
-
-# Set Docker base image for templates
-readonly BASE_IMAGE="rocker/r-ver"
+# PKG_NAME and BASE_IMAGE already defined above during module loading
 
 #=============================================================================
 # MANIFEST INITIALIZATION
