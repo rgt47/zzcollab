@@ -35,8 +35,14 @@ R                               # Start R session
 vim R/analysis_functions.R      # Create package functions
 # Write R functions with vim + plugins
 
-vim scripts/01_data_import.R    # Create analysis scripts
+vim scripts/01_data_import.R    # Create analysis scripts  
 # Write data import code
+# Note: scripts/ directory includes templates for:
+# - 02_data_validation.R (data quality checks)
+# - 00_setup_parallel.R (high-performance computing)
+# - 00_database_setup.R (database connections)
+# - 99_reproducibility_check.R (validation)
+# - 00_testing_guide.R (testing instructions)
 
 vim analysis/paper/paper.Rmd    # Start research paper
 # Write analysis and methods in R Markdown
@@ -46,6 +52,7 @@ exit                            # Exit container
 make docker-check-renv-fix      # Validate dependencies
 make docker-test                # Run package tests
 make docker-render              # Test paper rendering
+# Rscript scripts/99_reproducibility_check.R  # Optional: Check reproducibility
 
 # 8. Commit changes with CI/CD trigger
 git add .
