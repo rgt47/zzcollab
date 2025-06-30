@@ -17,22 +17,60 @@ which zzrrtools                     # Confirm system PATH setup
 ```
 
 ### **📦 Developer 1 (Team Lead): Project Initialization**
+
+**📋 Developer 1 Checklist:**
+- [ ] Create new analysis project directory
+- [ ] Customize Dockerfile.teamcore for team's R packages and tools
+- [ ] Build and push shell core image to Docker Hub
+- [ ] Build and push RStudio core image to Docker Hub  
+- [ ] Run zzrrtools with dotfiles to create local development image
+- [ ] Initialize private GitHub repository and push code
+- [ ] Create first analysis script in scripts/ directory
+- [ ] Write integration tests for analysis script
+- [ ] Run tests to verify everything works
+- [ ] Commit and push code + tests together
+
 ```bash
 # 1. Create new analysis project
 mkdir research-project
 cd research-project
 
-# 2. Build team core image first (no dotfiles - for sharing)
+# 2. Customize team core image for your project
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
-docker build -f Dockerfile.pluspackages -t [TEAM]/${PROJECT_NAME}core:v1.0.0 .
-docker tag [TEAM]/${PROJECT_NAME}core:v1.0.0 [TEAM]/${PROJECT_NAME}core:latest
+# Copy and customize Dockerfile.pluspackages for your team's needs
+cp ~/bin/zzrrtools-support/templates/Dockerfile.pluspackages ./Dockerfile.teamcore
 
-# 3. Push team core image to Docker Hub (PUBLIC for reproducibility)
+# Edit Dockerfile.teamcore to add your team's specific R packages and tools:
+vim Dockerfile.teamcore
+# Key customizations:
+# 1. Ensure first lines support base image argument:
+#    ARG BASE_IMAGE=rocker/r-ver
+#    ARG R_VERSION=latest  
+#    FROM ${BASE_IMAGE}:${R_VERSION}
+# 2. Add domain-specific R packages (e.g., 'brms', 'targets', 'cmdstanr')
+# 3. Include specialized system tools (e.g., JAGS, Stan, ImageMagick)
+# 4. Set team-specific R options and configurations
+# 5. Add database drivers or cloud SDKs
+
+# 3. Build TWO team core images for different interfaces  
+# Shell-optimized core (rocker/r-ver base - lightweight, fast startup)
+docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/r-ver \
+              -t [TEAM]/${PROJECT_NAME}core-shell:v1.0.0 .
+docker tag [TEAM]/${PROJECT_NAME}core-shell:v1.0.0 [TEAM]/${PROJECT_NAME}core-shell:latest
+
+# RStudio-optimized core (rocker/rstudio base - includes RStudio Server)
+docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/rstudio \
+              -t [TEAM]/${PROJECT_NAME}core-rstudio:v1.0.0 .
+docker tag [TEAM]/${PROJECT_NAME}core-rstudio:v1.0.0 [TEAM]/${PROJECT_NAME}core-rstudio:latest
+
+# 4. Push both team core images to Docker Hub (PUBLIC for reproducibility)
 docker login                       # Login to Docker Hub
-docker push [TEAM]/${PROJECT_NAME}core:v1.0.0
-docker push [TEAM]/${PROJECT_NAME}core:latest
+docker push [TEAM]/${PROJECT_NAME}core-shell:v1.0.0
+docker push [TEAM]/${PROJECT_NAME}core-shell:latest
+docker push [TEAM]/${PROJECT_NAME}core-rstudio:v1.0.0
+docker push [TEAM]/${PROJECT_NAME}core-rstudio:latest
 
-# 4. Initialize zzrrtools project with dotfiles
+# 5. Initialize zzrrtools project with dotfiles
 zzrrtools --dotfiles ~/dotfiles
 # This automatically:
 # - Creates complete R package structure
@@ -40,7 +78,7 @@ zzrrtools --dotfiles ~/dotfiles
 # - Sets up CI/CD for automated team image rebuilds
 # - Local image NOT pushed - contains personal dotfiles
 
-# 5. Set up PRIVATE GitHub repository for research code
+# 6. Set up PRIVATE GitHub repository for research code
 git init
 git add .
 git commit -m "🎉 Initial research project setup
@@ -54,7 +92,7 @@ git commit -m "🎉 Initial research project setup
 git remote add origin https://github.com/[TEAM]/project.git  # PRIVATE repo
 git push -u origin main
 
-# 6. Start development immediately
+# 7. Start development immediately
 make docker-zsh                   # Enter containerized development environment with your dotfiles
 ```
 
@@ -66,26 +104,42 @@ make docker-zsh                   # Enter containerized development environment 
 vim scripts/01_initial_analysis.R
 # Write first iteration of analysis in R
 
-# 2. Exit container when done editing
+# 2. Write tests for the analysis immediately
+vim tests/integration/test-01_initial_analysis.R
+# Write integration tests:
+# test_that("initial analysis script runs without errors", {
+#   expect_no_error(source(here("scripts", "01_initial_analysis.R")))
+#   expect_true(file.exists(here("data", "derived_data", "analysis_output.rds")))
+# })
+
+# 3. Run tests to verify everything works
+R
+# testthat::test_dir("tests/integration")  # Run integration tests
+# source("scripts/01_initial_analysis.R")  # Test the script directly
+# quit()
+
+# 4. Exit container when iteration is complete
 exit
 
-# 3. Commit and push changes
+# 5. Commit and push changes (code + tests together)
 git add .
-git commit -m "Add initial analysis script
+git commit -m "Add initial analysis script with tests
 
 - First iteration of data analysis
-- Created scripts/01_initial_analysis.R"
+- Created scripts/01_initial_analysis.R
+- Added integration tests for analysis pipeline
+- All tests passing"
 git push
 
-# 4. CI automatically handles package updates
+# 6. CI automatically handles package updates
 # - If new packages detected: renv::snapshot() runs
 # - Team Docker image rebuilds automatically
 # - New image pushed to Docker Hub
 # - Team gets notification of updated environment
 
-# 5. Continue development cycle
+# 7. Continue development cycle
 make docker-zsh                   # Back to development environment
-# Repeat: edit → exit → commit → push
+# Repeat: code → test → exit → commit → push
 ```
 
 ### **🚀 Benefits of Automated Team Image Management:**
@@ -188,23 +242,45 @@ git push                        # → Triggers GitHub Actions validation
 ```
 
 ### **👩‍💻 Developer 2 (Joining Project)**
+
+**📋 Developer 2 Checklist:**
+- [ ] Get access to private GitHub repository from team lead
+- [ ] Clone the private repository to local machine
+- [ ] Choose preferred development interface (shell or RStudio)
+- [ ] Update docker-compose.yml to reference chosen core image
+- [ ] Build local development image with personal dotfiles
+- [ ] Create feature branch for your analysis work
+- [ ] Write analysis script in scripts/ directory
+- [ ] Write integration tests for your analysis script
+- [ ] Run tests to verify everything works
+- [ ] Commit and push code + tests together
+- [ ] Create pull request for team review
+
 ```bash
 # 1. Get access to PRIVATE repository and clone
 # Team lead must add you as collaborator to private GitHub repo first
 git clone https://github.com/[TEAM]/project.git  # PRIVATE repo - requires access
 cd project
 
-# 2. Update docker-compose.yml to use team base image
+# 2. Choose your preferred development interface
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
-# Edit docker-compose.yml to reference the team core image:
-# image: [TEAM]/${PROJECT_NAME}core:latest
 
-# 3. Build local image with your dotfiles (inherits from team core image)
+# Option A: Shell-based development (lightweight, fast)
+# Edit docker-compose.yml to reference shell core:
+# image: [TEAM]/${PROJECT_NAME}core-shell:latest
+
+# Option B: RStudio-based development (web interface)  
+# Edit docker-compose.yml to reference RStudio core:
+# image: [TEAM]/${PROJECT_NAME}core-rstudio:latest
+
+# 3. Build local image with your dotfiles (inherits from chosen core image)
 make docker-build --build-arg DOTFILES_DIR=~/dotfiles
-# This builds on top of the team core image, adding your personal dotfiles
+# This builds on top of your chosen team core image, adding personal dotfiles
 
-# 4. Start development immediately  
-make docker-zsh                   # Enter containerized environment with team packages + your dotfiles
+# 4. Start development with your preferred interface
+make docker-zsh                   # Shell interface with vim/tmux
+# OR
+make docker-rstudio              # RStudio Server at localhost:8787
 
 # 4. Create feature branch for your work
 git checkout -b feature/visualization-analysis
@@ -218,22 +294,38 @@ vim scripts/02_visualization_analysis.R
 # install.packages("ggplot2")   # Add new package  
 # quit()
 
+# 6. Write tests for your analysis immediately
+vim tests/integration/test-02_visualization_analysis.R
+# Write integration tests:
+# test_that("visualization analysis runs successfully", {
+#   expect_no_error(source(here("scripts", "02_visualization_analysis.R")))
+#   expect_true(file.exists(here("analysis", "figures", "plot1.png")))
+# })
+
+# 7. Run tests to verify everything works
+R
+# testthat::test_dir("tests/integration")  # Run all integration tests
+# source("scripts/02_visualization_analysis.R")  # Test your script
+# quit()
+
 exit
 
-# 7. Commit and push your changes
+# 8. Commit and push your changes (code + tests together)
 git add .
-git commit -m "Add visualization analysis
+git commit -m "Add visualization analysis with tests
 
 - Created scripts/02_visualization_analysis.R
-- Added ggplot2 for data visualization"
+- Added ggplot2 for data visualization
+- Added integration tests for visualization pipeline
+- All tests passing"
 git push origin feature/visualization-analysis
 
-# 8. Create pull request
-gh pr create --title "Add visualization analysis" \
-             --body "Added visualization analysis script with ggplot2" \
+# 9. Create pull request
+gh pr create --title "Add visualization analysis with tests" \
+             --body "Added visualization analysis script with comprehensive tests" \
              --base main
 
-# 9. CI automatically handles the rest!
+# 10. CI automatically handles the rest!
 # - If new packages detected: renv::snapshot() runs
 # - Team Docker image rebuilds automatically  
 # - New image pushed to Docker Hub
