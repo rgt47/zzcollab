@@ -22,27 +22,31 @@ which zzrrtools                     # Confirm system PATH setup
 mkdir research-project
 cd research-project
 
-# 2. Initialize zzrrtools project with dotfiles
+# 2. Build team core image first (no dotfiles - for sharing)
+PROJECT_NAME=$(basename $(pwd))    # Get current directory name
+docker build -f Dockerfile.pluspackages -t [TEAM]/${PROJECT_NAME}core:v1.0.0 .
+docker tag [TEAM]/${PROJECT_NAME}core:v1.0.0 [TEAM]/${PROJECT_NAME}core:latest
+
+# 3. Push team core image to Docker Hub (PUBLIC for reproducibility)
+docker login                       # Login to Docker Hub
+docker push [TEAM]/${PROJECT_NAME}core:v1.0.0
+docker push [TEAM]/${PROJECT_NAME}core:latest
+
+# 4. Initialize zzrrtools project with dotfiles
 zzrrtools --dotfiles ~/dotfiles
 # This automatically:
 # - Creates complete R package structure
-# - Builds Docker image with rocker/r-ver:latest + standard R packages
-# - Includes pandoc, vim, and essential Unix tools
+# - Builds LOCAL development image (inherits from core + adds dotfiles)
 # - Sets up CI/CD for automated team image rebuilds
+# - Local image NOT pushed - contains personal dotfiles
 
-# 3. Push team base image to Docker Hub (PUBLIC for reproducibility)
-docker tag $(cat .project-name):latest [TEAM]/$(cat .project-name):latest
-docker login                       # Login to Docker Hub
-docker push [TEAM]/$(cat .project-name):latest
-
-# 4. Set up PRIVATE GitHub repository for research code
+# 5. Set up PRIVATE GitHub repository for research code
 git init
 git add .
 git commit -m "🎉 Initial research project setup
 
 - Complete zzrrtools research compendium  
-- Base Docker image with standard R packages + tools
-- Team image published to Docker Hub: [TEAM]/$(cat .project-name):latest
+- Team core image published to Docker Hub: [TEAM]/${PROJECT_NAME}core:v1.0.0
 - Private repository protects unpublished research
 - CI/CD configured for automatic team image updates"
 
@@ -50,8 +54,8 @@ git commit -m "🎉 Initial research project setup
 git remote add origin https://github.com/[TEAM]/project.git  # PRIVATE repo
 git push -u origin main
 
-# 5. Start development immediately
-make docker-zsh                   # Enter containerized development environment
+# 6. Start development immediately
+make docker-zsh                   # Enter containerized development environment with your dotfiles
 ```
 
 ### **📊 Developer 1: Analysis Development Cycle**
@@ -190,12 +194,17 @@ git push                        # → Triggers GitHub Actions validation
 git clone https://github.com/[TEAM]/project.git  # PRIVATE repo - requires access
 cd project
 
-# 2. Use pre-built PUBLIC Docker image (much faster!)
-docker pull [TEAM]/$(cat .project-name):latest  # Pull from Docker Hub (public)
-# No Docker build needed - all packages already installed by Dev 1!
+# 2. Update docker-compose.yml to use team base image
+PROJECT_NAME=$(basename $(pwd))    # Get current directory name
+# Edit docker-compose.yml to reference the team core image:
+# image: [TEAM]/${PROJECT_NAME}core:latest
 
-# 3. Start development immediately
-make docker-zsh                   # Enter same containerized environment as Dev 1
+# 3. Build local image with your dotfiles (inherits from team core image)
+make docker-build --build-arg DOTFILES_DIR=~/dotfiles
+# This builds on top of the team core image, adding your personal dotfiles
+
+# 4. Start development immediately  
+make docker-zsh                   # Enter containerized environment with team packages + your dotfiles
 
 # 4. Create feature branch for your work
 git checkout -b feature/visualization-analysis
