@@ -4,6 +4,18 @@ Based on my review of the user guide, here are the specific workflows for develo
 
 ## **🐳 Pre-Collaboration: Docker Image Setup**
 
+### **🛠️ Initial ZZRRTOOLS Setup**
+```bash
+# 1. Clone and install zzrrtools system
+git clone https://github.com/[OWNER]/zzrrtools.git
+cd zzrrtools
+./install.sh                        # Install zzrrtools system-wide
+
+# 2. Verify installation
+zzrrtools --version                  # Check zzrrtools is available
+which zzrrtools                     # Confirm system PATH setup
+```
+
 ### **📦 Developer 1 (Team Lead): Build and Publish Base Image**
 ```bash
 # 1. Set up initial project and build optimized team image
