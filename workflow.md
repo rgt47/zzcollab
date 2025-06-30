@@ -2,69 +2,86 @@
 
 Based on my review of the user guide, here are the specific workflows for developer collaboration using vim as the IDE:
 
-## **🐳 Pre-Collaboration: Docker Image Setup**
+## **🚀 Streamlined Team Collaboration Workflow**
 
-### **🛠️ Initial ZZRRTOOLS Setup**
+### **🛠️ Initial ZZRRTOOLS Setup (One-time)**
 ```bash
 # 1. Clone and install zzrrtools system
 git clone https://github.com/[OWNER]/zzrrtools.git
 cd zzrrtools
 ./install.sh                        # Install to ~/bin (default)
-# OR: ./install.sh --prefix ~/.local  # Install to ~/.local/bin
-# OR: ./install.sh --help            # See installation options
 
 # 2. Verify installation
 zzrrtools --help                    # Test installation from anywhere
 which zzrrtools                     # Confirm system PATH setup
-
-# 3. Installation creates:
-# ~/bin/zzrrtools                   # Main executable  
-# ~/bin/zzrrtools-support/          # Modules and templates
-# ~/bin/README_zzrrtools.md         # Installation documentation
 ```
 
-### **📦 Developer 1 (Team Lead): Build and Publish Base Image**
+### **📦 Developer 1 (Team Lead): Project Initialization**
 ```bash
-# 1. Set up initial project and build optimized team image
+# 1. Create new analysis project
 mkdir research-project
 cd research-project
+
+# 2. Initialize zzrrtools project with dotfiles
 zzrrtools --dotfiles ~/dotfiles
+# This automatically:
+# - Creates complete R package structure
+# - Builds Docker image with rocker/r-ver:latest + standard R packages
+# - Includes pandoc, vim, and essential Unix tools
+# - Sets up CI/CD for automated team image rebuilds
 
-# 2. Install all anticipated R packages for the project
-make docker-rstudio                # Start development environment
-# In RStudio or R console:
-# install.packages(c("tidyverse", "lme4", "ggplot2", "brms", "targets"))
-# install.packages(c("visdat", "naniar", "skimr", "janitor"))  # Data validation
-# renv::snapshot()                 # Lock all packages
-# exit()
-
-# 3. Build optimized team Docker image with all packages pre-installed
-make docker-build                 # Rebuild with all packages
+# 3. Push team base image to Docker Hub (PUBLIC for reproducibility)
 docker tag $(cat .project-name):latest [TEAM]/$(cat .project-name):latest
-
-# 4. Push team image to Docker Hub (PUBLIC for reproducibility)
-docker login                      # Login to Docker Hub
+docker login                       # Login to Docker Hub
 docker push [TEAM]/$(cat .project-name):latest
 
-# 5. Update docker-compose.yml to use public Docker Hub image
-vim docker-compose.yml
-# Change: image: ${PKG_NAME}:latest
-# To:     image: [TEAM]/${PKG_NAME}:latest
-
-# 6. Set up PRIVATE GitHub repository for research code
+# 4. Set up PRIVATE GitHub repository for research code
 git init
 git add .
-git commit -m "🎉 Initial team setup with public Docker image
+git commit -m "🎉 Initial research project setup
 
-- Complete zzrrtools research compendium
-- All anticipated R packages pre-installed in Docker image
-- Team image published publicly to Docker Hub: [TEAM]/$(cat .project-name):latest
+- Complete zzrrtools research compendium  
+- Base Docker image with standard R packages + tools
+- Team image published to Docker Hub: [TEAM]/$(cat .project-name):latest
 - Private repository protects unpublished research
-- Ready for team collaboration"
+- CI/CD configured for automatic team image updates"
 
 # Create PRIVATE repository on GitHub first, then:
 git remote add origin https://github.com/[TEAM]/project.git  # PRIVATE repo
 git push -u origin main
+
+# 5. Start development immediately
+make docker-zsh                   # Enter containerized development environment
+```
+
+### **📊 Developer 1: Analysis Development Cycle**
+```bash
+# Inside the container (after make docker-zsh):
+
+# 1. Create initial analysis script
+vim scripts/01_initial_analysis.R
+# Write first iteration of analysis in R
+
+# 2. Exit container when done editing
+exit
+
+# 3. Commit and push changes
+git add .
+git commit -m "Add initial analysis script
+
+- First iteration of data analysis
+- Created scripts/01_initial_analysis.R"
+git push
+
+# 4. CI automatically handles package updates
+# - If new packages detected: renv::snapshot() runs
+# - Team Docker image rebuilds automatically
+# - New image pushed to Docker Hub
+# - Team gets notification of updated environment
+
+# 5. Continue development cycle
+make docker-zsh                   # Back to development environment
+# Repeat: edit → exit → commit → push
 ```
 
 ### **🚀 Benefits of Automated Team Image Management:**
@@ -173,100 +190,45 @@ git push                        # → Triggers GitHub Actions validation
 git clone https://github.com/[TEAM]/project.git  # PRIVATE repo - requires access
 cd project
 
-# 2. Set up remote for your development work
-# For private repos, you can work directly or fork if team prefers
-git remote -v  # Verify access to private team repository
-
-# 3. Use pre-built PUBLIC Docker image (much faster!)
+# 2. Use pre-built PUBLIC Docker image (much faster!)
 docker pull [TEAM]/$(cat .project-name):latest  # Pull from Docker Hub (public)
-# No need to build - all packages already installed!
+# No Docker build needed - all packages already installed by Dev 1!
+
+# 3. Start development immediately
+make docker-zsh                   # Enter same containerized environment as Dev 1
 
 # 4. Create feature branch for your work
 git checkout -b feature/visualization-analysis
 
-# 5. Start development immediately in vim environment
-make docker-zsh                 # → Consistent zsh environment with Dev 1
-
-# 6. Sync with latest packages and add new work
+# 5. Add your analysis work (inside container)
 # (In zsh container with vim)
-R                               # Start R session
-# renv::restore()               # Get Dev 1's packages
-# install.packages("ggplot2")   # Add new package
-# renv::snapshot()              # Update environment
-# quit()                        # Exit R
-
-# 7. Test-driven development for visualization functions
-vim R/plotting_functions.R      # Add plotting utilities
-# Write ggplot2 wrapper functions
-
-vim tests/testthat/test-plotting_functions.R  # Write tests for plotting functions
-# Write unit tests for plotting functions:
-# test_that("plot_function creates valid ggplot", {
-#   p <- my_plot_function(test_data)
-#   expect_s3_class(p, "ggplot")
-#   expect_true(length(p$layers) > 0)
-# })
-
-# Test package functions
-R                               # Start R for testing
-# devtools::load_all()          # Load package functions
-# devtools::test()              # Run all tests including Dev 1's and new tests
+vim scripts/02_visualization_analysis.R
+# Write visualization analysis code
+# If you need new packages, just install them:
+# R
+# install.packages("ggplot2")   # Add new package  
 # quit()
 
-vim scripts/02_visualization.R  # Create visualization script
-# Write code to generate analysis plots
+exit
 
-vim tests/integration/test-visualization.R  # Create integration tests
-# Write integration tests for visualization scripts:
-# test_that("visualization script produces plots", {
-#   expect_no_error(source(here("scripts", "02_visualization.R")))
-#   expect_true(file.exists(here("analysis", "figures", "plot1.png")))
-# })
-
-# 8. Test complete workflow integration
-R                               # Start R for comprehensive testing
-# devtools::load_all()          # Load package functions
-# source("scripts/01_data_import.R")    # Test Dev 1's work
-# source("scripts/02_visualization.R") # Test new visualization code
-# testthat::test_dir("tests/integration")  # Run integration tests
-# quit()
-
-# 9. Quality assurance workflow
-exit                           # Exit container
-make docker-check-renv-fix     # Update DESCRIPTION with new packages
-make docker-test              # Ensure tests still pass
-
-# 10. Create pull request with proper workflow
+# 7. Commit and push your changes
 git add .
-git commit -m "Add visualization analysis with ggplot2
+git commit -m "Add visualization analysis
 
-- Add plotting_functions.R with ggplot2 wrappers
-- Create comprehensive unit tests for plotting functions
-- Add integration tests for visualization pipeline
-- Update dependencies with ggplot2"
-
-# Push to your fork (origin)
+- Created scripts/02_visualization_analysis.R
+- Added ggplot2 for data visualization"
 git push origin feature/visualization-analysis
 
-# 11. Create pull request via GitHub CLI or web interface
-gh pr create --title "Add visualization analysis with ggplot2" \
-             --body "## Summary
-- Adds comprehensive plotting utilities with ggplot2
-- Includes full test coverage (unit + integration tests)
-- Updates package dependencies and documentation
-
-## Testing
-- [x] All existing tests pass
-- [x] New unit tests for plotting functions
-- [x] Integration tests for visualization pipeline
-- [x] Package check passes
-
-## Checklist
-- [x] Code follows project style guidelines
-- [x] Tests written and passing
-- [x] Documentation updated
-- [x] Dependencies properly tracked in renv" \
+# 8. Create pull request
+gh pr create --title "Add visualization analysis" \
+             --body "Added visualization analysis script with ggplot2" \
              --base main
+
+# 9. CI automatically handles the rest!
+# - If new packages detected: renv::snapshot() runs
+# - Team Docker image rebuilds automatically  
+# - New image pushed to Docker Hub
+# - Team gets notification of updated environment
 ```
 
 ### **🧑‍💻 Developer 1 (Continuing Work - After PR Review)**
