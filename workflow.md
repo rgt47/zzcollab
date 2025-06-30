@@ -9,11 +9,18 @@ Based on my review of the user guide, here are the specific workflows for develo
 # 1. Clone and install zzrrtools system
 git clone https://github.com/[OWNER]/zzrrtools.git
 cd zzrrtools
-./install.sh                        # Install zzrrtools system-wide
+./install.sh                        # Install to ~/bin (default)
+# OR: ./install.sh --prefix ~/.local  # Install to ~/.local/bin
+# OR: ./install.sh --help            # See installation options
 
 # 2. Verify installation
-zzrrtools --version                  # Check zzrrtools is available
+zzrrtools --help                    # Test installation from anywhere
 which zzrrtools                     # Confirm system PATH setup
+
+# 3. Installation creates:
+# ~/bin/zzrrtools                   # Main executable  
+# ~/bin/zzrrtools-support/          # Modules and templates
+# ~/bin/README_zzrrtools.md         # Installation documentation
 ```
 
 ### **📦 Developer 1 (Team Lead): Build and Publish Base Image**
