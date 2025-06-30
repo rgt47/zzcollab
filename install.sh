@@ -112,14 +112,14 @@ for dir in "modules" "templates"; do
     fi
 done
 
-# Remove existing installation
+# Check for existing installation
 if [[ -e "$INSTALL_DIR/zzrrtools" ]]; then
-    log_info "Removing existing zzrrtools installation..."
-    if [[ -d "$INSTALL_DIR/zzrrtools" ]]; then
-        rm -rf "$INSTALL_DIR/zzrrtools"
-    else
-        rm -f "$INSTALL_DIR/zzrrtools"
-    fi
+    log_error "Installation target already exists: $INSTALL_DIR/zzrrtools"
+    log_error "Please remove it first or choose a different installation directory:"
+    log_error "  rm -rf $INSTALL_DIR/zzrrtools"
+    log_error "  # OR"
+    log_error "  $0 --prefix /different/path"
+    exit 1
 fi
 
 if [[ -d "$ZZRRTOOLS_SUPPORT_DIR" ]]; then
@@ -150,7 +150,7 @@ set -euo pipefail
 
 # Determine the installation directory
 INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ZZRRTOOLS_SUPPORT_DIR="$INSTALL_DIR/zzrrtools"
+ZZRRTOOLS_SUPPORT_DIR="$INSTALL_DIR/zzrrtools-support"
 
 # Set up paths for the installed version
 readonly SCRIPT_DIR="$ZZRRTOOLS_SUPPORT_DIR"
@@ -174,7 +174,8 @@ fi
 EOF
 
 # Append the main zzrrtools.sh content (excluding the shebang and initial setup)
-tail -n +18 "$SCRIPT_DIR/zzrrtools.sh" >> "$INSTALL_DIR/zzrrtools"
+# Filter out duplicate readonly declarations that would conflict
+tail -n +18 "$SCRIPT_DIR/zzrrtools.sh" | grep -v "^readonly SCRIPT_DIR=" | grep -v "^readonly TEMPLATES_DIR=" | grep -v "^readonly MODULES_DIR=" >> "$INSTALL_DIR/zzrrtools"
 
 # Make the main executable
 chmod +x "$INSTALL_DIR/zzrrtools"
