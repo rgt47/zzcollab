@@ -45,6 +45,7 @@ cp ~/bin/zzrrtools-support/templates/Dockerfile.pluspackages ./Dockerfile.teamco
 # Edit Dockerfile.teamcore to add your team's specific R packages and tools:
 vim Dockerfile.teamcore
 # Key customizations:
+#
 # 1. Ensure first lines support base image argument:
 #    ARG BASE_IMAGE=rocker/r-ver
 #    ARG R_VERSION=latest  
@@ -75,6 +76,7 @@ docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 # 5. Initialize zzrrtools project with custom base image
 zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles
 # This automatically:
+#
 # - Creates complete R package structure
 # - Builds LOCAL development image (inherits from core + adds dotfiles)
 # - Sets up CI/CD for automated team image rebuilds
@@ -145,6 +147,7 @@ make docker-zsh                   # Back to development environment
 ```
 
 ### **🚀 Benefits of Automated Team Image Management:**
+
 - **⚡ Faster onboarding**: New developers get started in minutes, not hours
 - **🔒 Environment consistency**: Everyone uses identical package versions
 - **💾 Bandwidth efficiency**: ~500MB pull vs ~2GB+ rebuild
@@ -159,6 +162,7 @@ make docker-zsh                   # Back to development environment
 ZZRRTOOLS includes automated GitHub Actions workflows that rebuild and publish the team Docker image whenever package dependencies change. This ensures all team members always have access to the latest, consistent development environment.
 
 **Key Benefits:**
+
 - **Zero manual intervention** required for Docker image management
 - **Automatic detection** of package changes in `renv.lock` or `DESCRIPTION`
 - **Multi-tag versioning** for different use cases
@@ -210,6 +214,7 @@ R                                    # Start R session
 vim scripts/01_data_import.R         # Create analysis scripts  
 # Write data import code
 # Note: scripts/ directory includes templates for:
+#
 # - 02_data_validation.R (data quality checks)
 # - 00_setup_parallel.R (high-performance computing)
 # - 00_database_setup.R (database connections)
@@ -246,6 +251,7 @@ git push                        # → Triggers GitHub Actions validation
 ### **👩‍💻 Developer 2 (Joining Project)**
 
 **📋 Developer 2 Checklist:**
+
 - [ ] Get access to private GitHub repository from team lead
 - [ ] Clone the private repository to local machine
 - [ ] Choose preferred development interface (shell or RStudio)
@@ -445,24 +451,28 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
 - Updates research manuscript with new results
 
 ## Analysis Impact Assessment
+
 - [x] All existing functionality preserved
 - [x] New models compatible with existing visualization pipeline
 - [x] Data validation passes for modeling requirements
 - [x] Reproducibility check passes
 
 ## Testing Coverage
+
 - [x] Unit tests for all modeling functions
 - [x] Integration tests for complete analysis pipeline
 - [x] Paper rendering validation with new results
 - [x] All existing tests continue to pass
 
 ## Reproducibility Validation
+
 - [x] renv.lock updated with new dependencies
 - [x] Docker environment builds successfully
 - [x] Analysis runs from clean environment
 - [x] Results consistent across platforms
 
 ## Collaboration Quality
+
 - [x] Code follows established patterns
 - [x] Functions integrate cleanly with existing codebase
 - [x] Documentation updated for new capabilities
@@ -473,6 +483,7 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
 ### **🔄 Key Collaboration Features (Professional Git Workflow + Test-Driven Development)**
 
 #### **Automated Quality Assurance on Every Push:**
+
 - ✅ **R Package Validation**: R CMD check with dependency validation
 - ✅ **Comprehensive Testing Suite**: Unit tests, integration tests, and data validation
 - ✅ **Paper Rendering**: Automated PDF generation and artifact upload
@@ -480,6 +491,7 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
 - ✅ **Dependency Sync**: renv validation and DESCRIPTION file updates
 
 #### **Test-Driven Development Workflow:**
+
 - **Unit Tests**: Every R function has corresponding tests in `tests/testthat/`
 - **Integration Tests**: Analysis scripts tested end-to-end in `tests/integration/`
 - **Data Validation**: Automated data quality checks using `scripts/02_data_validation.R`
@@ -487,6 +499,7 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
 - **Paper Testing**: Manuscript rendering validation for each commit
 
 #### **Enhanced GitHub Templates:**
+
 - **Pull Request Template**: Analysis impact assessment, reproducibility checklist
 - **Issue Templates**: Bug reports with environment details, feature requests with research use cases
 - **Collaboration Guidelines**: Research-specific workflow standards
@@ -1096,6 +1109,7 @@ ZZRRTOOLS implements a **hybrid privacy approach** optimized for research collab
 - **No sensitive data included** - only software packages and configurations
 
 #### **Security Features**
+
 - **Docker Hub authentication**: Uses repository secrets for secure publishing
 - **SBOM generation**: Software Bill of Materials for vulnerability tracking  
 - **Provenance attestation**: Cryptographic proof of build integrity
@@ -1113,6 +1127,7 @@ DOCKERHUB_TOKEN: your-dockerhub-access-token  # Create at hub.docker.com/setting
 ```
 
 **Access Token Creation:**
+
 1. Visit [Docker Hub Security Settings](https://hub.docker.com/settings/security)
 2. Click "New Access Token"
 3. Name: "GitHub Actions - [PROJECT-NAME]"
@@ -1120,6 +1135,7 @@ DOCKERHUB_TOKEN: your-dockerhub-access-token  # Create at hub.docker.com/setting
 5. Copy token to GitHub repository secrets
 
 #### **Best Practices**
+
 - **Pin base image versions**: Use specific R version tags in Dockerfile
 - **Minimize image layers**: Combine RUN commands to reduce image size
 - **Use .dockerignore**: Exclude unnecessary files from build context
@@ -1171,6 +1187,7 @@ build-args: |
 ```
 
 **Key Benefits:**
+
 - ✅ **Custom base images**: Use team-specific R environments
 - ✅ **Consistent builds**: Same base image across all team members
 - ✅ **Automated propagation**: BASE_IMAGE automatically passed to Docker build
