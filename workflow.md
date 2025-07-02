@@ -58,7 +58,7 @@ vim Dockerfile.teamcore
 # Shell-optimized core (rocker/r-ver base - lightweight, fast startup)
 docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/r-ver \
               -t ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 .
-docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 ${TEAM/${PROJECT_NAME}core-shell:latest
+docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
 /${PROJECT_NAME}core-shell:latest
 
 # RStudio-optimized core (rocker/rstudio base - includes RStudio Server)
