@@ -59,22 +59,21 @@ vim Dockerfile.teamcore
 docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/r-ver \
               -t ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 .
 docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
-/${PROJECT_NAME}core-shell:latest
 
 # RStudio-optimized core (rocker/rstudio base - includes RStudio Server)
 docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/rstudio \
               -t ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 .
-docker tag ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 [TEAM]/${PROJECT_NAME}core-rstudio:latest
+docker tag ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
 # 4. Push both team core images to Docker Hub (PUBLIC for reproducibility)
 docker login                       # Login to Docker Hub
-docker push [TEAM]/${PROJECT_NAME}core-shell:v1.0.0
-docker push [TEAM]/${PROJECT_NAME}core-shell:latest
-docker push [TEAM]/${PROJECT_NAME}core-rstudio:v1.0.0
-docker push [TEAM]/${PROJECT_NAME}core-rstudio:latest
+docker push ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0
+docker push ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
+docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0
+docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
-# 5. Initialize zzrrtools project with dotfiles
-zzrrtools --dotfiles ~/dotfiles
+# 5. Initialize zzrrtools project with custom base image
+zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles
 # This automatically:
 # - Creates complete R package structure
 # - Builds LOCAL development image (inherits from core + adds dotfiles)
@@ -87,7 +86,7 @@ git add .
 git commit -m "🎉 Initial research project setup
 
 - Complete zzrrtools research compendium  
-- Team core image published to Docker Hub: [TEAM]/${PROJECT_NAME}core:v1.0.0
+- Team core image published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
 - Private repository protects unpublished research
 - CI/CD configured for automatic team image updates"
 
@@ -270,14 +269,14 @@ PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 
 # Option A: Shell-based development (lightweight, fast)
 # Edit docker-compose.yml to reference shell core:
-# image: [TEAM]/${PROJECT_NAME}core-shell:latest
+# image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
 
 # Option B: RStudio-based development (web interface)  
 # Edit docker-compose.yml to reference RStudio core:
-# image: [TEAM]/${PROJECT_NAME}core-rstudio:latest
+# image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
 # 3. Build local image with your dotfiles (inherits from chosen core image)
-make docker-build --build-arg DOTFILES_DIR=~/dotfiles
+zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles
 # This builds on top of your chosen team core image, adding personal dotfiles
 
 # 4. Start development with your preferred interface
@@ -737,6 +736,7 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: [TEAM]/$(cat .project-name)  # Docker Hub public repository
+  BASE_IMAGE: [TEAM]/$(cat .project-name)core-shell  # Team's custom base image
 
 jobs:
   update-team-image:
@@ -851,6 +851,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             R_VERSION=${{ steps.r-version.outputs.version }}
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
             BUILDKIT_INLINE_CACHE=1
           provenance: true
           sbom: true
@@ -1148,9 +1149,32 @@ on:
 # Custom build arguments
 build-args: |
   R_VERSION=${{ steps.r-version.outputs.version }}
+  BASE_IMAGE=${{ env.BASE_IMAGE }}
   CUSTOM_PACKAGES="additional_package1 additional_package2"
   BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
+
+#### **BASE_IMAGE Integration**
+The automated workflow now supports custom base images:
+
+```yaml
+# Environment variables for BASE_IMAGE support
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: team/project
+  BASE_IMAGE: team/projectcore-shell  # Custom team base image
+
+# Build arguments automatically include BASE_IMAGE
+build-args: |
+  R_VERSION=${{ steps.r-version.outputs.version }}
+  BASE_IMAGE=${{ env.BASE_IMAGE }}  # Passes custom base to Dockerfile
+```
+
+**Key Benefits:**
+- ✅ **Custom base images**: Use team-specific R environments
+- ✅ **Consistent builds**: Same base image across all team members
+- ✅ **Automated propagation**: BASE_IMAGE automatically passed to Docker build
+- ✅ **Version tracking**: Base image changes trigger rebuilds
 
 #### **Notification Customization**
 ```yaml
