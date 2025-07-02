@@ -19,6 +19,7 @@ which zzrrtools                     # Confirm system PATH setup
 ### **📦 Developer 1 (Team Lead): Project Initialization**
 
 **📋 Developer 1 Checklist:**
+
 - [ ] Create new analysis project directory
 - [ ] Customize Dockerfile.teamcore for team's R packages and tools
 - [ ] Build and push shell core image to Docker Hub
@@ -36,6 +37,7 @@ mkdir research-project
 cd research-project
 
 # 2. Customize team core image for your project
+TEAM_NAME="rgt47" # the account on dockerhub for hosting the core images
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # Copy and customize Dockerfile.pluspackages for your team's needs
 cp ~/bin/zzrrtools-support/templates/Dockerfile.pluspackages ./Dockerfile.teamcore
@@ -55,13 +57,14 @@ vim Dockerfile.teamcore
 # 3. Build TWO team core images for different interfaces  
 # Shell-optimized core (rocker/r-ver base - lightweight, fast startup)
 docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/r-ver \
-              -t [TEAM]/${PROJECT_NAME}core-shell:v1.0.0 .
-docker tag [TEAM]/${PROJECT_NAME}core-shell:v1.0.0 [TEAM]/${PROJECT_NAME}core-shell:latest
+              -t ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 .
+docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 ${TEAM/${PROJECT_NAME}core-shell:latest
+/${PROJECT_NAME}core-shell:latest
 
 # RStudio-optimized core (rocker/rstudio base - includes RStudio Server)
 docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/rstudio \
-              -t [TEAM]/${PROJECT_NAME}core-rstudio:v1.0.0 .
-docker tag [TEAM]/${PROJECT_NAME}core-rstudio:v1.0.0 [TEAM]/${PROJECT_NAME}core-rstudio:latest
+              -t ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 .
+docker tag ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 [TEAM]/${PROJECT_NAME}core-rstudio:latest
 
 # 4. Push both team core images to Docker Hub (PUBLIC for reproducibility)
 docker login                       # Login to Docker Hub
