@@ -6,6 +6,13 @@ if (file.exists("renv/activate.R")) {
 # Set CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 
+# Set R options
+options(stringsAsFactors = FALSE)
+options(contrasts = c("contr.treatment", "contr.poly"))
+options(na.action = "na.omit")
+options(digits = 7)
+options(OutDec = ".")
+
 # Load common packages for interactive use
 if (interactive()) {
   suppressMessages({
