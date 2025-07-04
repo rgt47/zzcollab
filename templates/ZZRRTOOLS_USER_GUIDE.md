@@ -280,7 +280,7 @@ ZZRRTOOLS v4.0 features a **modular architecture** with 8 focused modules that p
 #### 6. **Analysis Module** (`modules/analysis.sh`)
 - **Purpose**: Research analysis framework and infrastructure
 - **Features**:
-  - R Markdown paper template with academic structure
+  - R Markdown report template with academic structure
   - Bibliography management with BibTeX
   - Citation styles (CSL) for academic journals
   - Analysis templates and examples
@@ -296,7 +296,7 @@ ZZRRTOOLS v4.0 features a **modular architecture** with 8 focused modules that p
 - **Purpose**: Continuous integration and deployment
 - **Features**:
   - GitHub Actions workflows for R package validation
-  - Automated paper rendering and artifact upload
+  - Automated report rendering and artifact upload
   - Issue and pull request templates
   - Multi-platform testing support
   - Quality assurance automation
@@ -445,7 +445,7 @@ ZZRRTOOLS v4.0 integrates advanced research compendium capabilities that were pl
 #### **Quality Assurance & Reproducibility**
 - **Automated CI/CD**: GitHub Actions workflows for continuous validation
 - **Package Validation**: Automated R CMD check, dependency validation, test execution
-- **Reproducibility Checks**: Automated paper rendering and artifact generation
+- **Reproducibility Checks**: Automated report rendering and artifact generation
 - **Multi-platform Testing**: Ensures code works across different environments
 
 #### **Professional Development Tools**
@@ -475,16 +475,16 @@ data/
 ### 📚 **Academic Publishing Integration**
 
 #### **Research Paper Framework**
-- **R Markdown Templates**: Complete academic paper structure with proper sections
+- **R Markdown Templates**: Complete academic report structure with proper sections
 - **Citation Management**: BibTeX integration with citation style files (CSL)
 - **Bibliography Support**: Automated reference formatting for academic journals
 - **Cross-references**: Support for figures, tables, and equation referencing
 
 #### **Publication Workflow**
-- **Automated Rendering**: GitHub Actions automatically render papers on changes
+- **Automated Rendering**: GitHub Actions automatically render reports on changes
 - **Multiple Formats**: Support for PDF, HTML, and Word outputs
 - **Academic Standards**: Proper formatting for peer-reviewed publications
-- **Artifact Management**: Automatic paper uploads and version tracking
+- **Artifact Management**: Automatic report uploads and version tracking
 
 ### 🔧 **Development Excellence**
 
@@ -534,7 +534,7 @@ your-project/
 │   ├── metadata/              # Data dictionaries and documentation
 │   └── validation/            # Data quality reports
 ├── analysis/                   # Research analysis components
-│   ├── paper/                 # Manuscript files
+│   ├── report/                 # Manuscript files
 │   ├── figures/               # Generated plots and figures
 │   ├── tables/                # Generated tables
 │   └── templates/             # Document templates
@@ -553,7 +553,7 @@ your-project/
 | **Reusable functions** | `R/` | Functions you want others to use |
 | **Function documentation** | `man/` | Auto-generated help files (.Rd) |
 | **Analysis scripts** | `scripts/` | Working code, exploratory analysis |
-| **Research paper** | `analysis/paper/` | Manuscript and publication files |
+| **Research report** | `analysis/report/` | Manuscript and publication files |
 | **Generated figures** | `analysis/figures/` | Plots and visualizations |
 | **Generated tables** | `analysis/tables/` | Statistical tables |
 | **Raw data** | `data/raw_data/` | Original, unmodified datasets |
@@ -576,7 +576,7 @@ m     # → ./man               (function documentation)
 e     # → ./tests             (tests)
 o     # → ./docs              (documentation)
 c     # → ./archive           (archived files)
-p     # → ./analysis/paper    (research paper)
+p     # → ./analysis/report    (research report)
 ```
 
 **Usage**: `cd a` to go to data directory, `ls f` to see figures, etc.
@@ -617,14 +617,14 @@ make docker-zsh                # → Zsh shell access (with personal dotfiles)
 exit                           # Exit container
 make docker-check-renv-fix     # Validate and fix dependencies
 make docker-test               # Run package tests  
-make docker-render             # Test paper rendering
+make docker-render             # Test report rendering
 
 # 4. Commit triggers automated CI/CD
 git add .
 git commit -m "Analysis update"
 git push                       # → Triggers GitHub Actions:
                               #   - R package validation
-                              #   - Automated paper rendering
+                              #   - Automated report rendering
                               #   - Dependency checks
 ```
 
@@ -655,17 +655,17 @@ cp ~/Downloads/reference.csv data/external_data/
 
 #### 🔬 **Publication Workflow** (Enhanced Academic Integration)
 ```bash
-# 1. Research paper development
-# Edit analysis/paper/paper.Rmd with analysis and results
-# Add citations to analysis/paper/references.bib
+# 1. Research report development
+# Edit analysis/report/report.Rmd with analysis and results
+# Add citations to analysis/report/references.bib
 # Include figures with proper cross-references
 
 # 2. Automated rendering and validation
-make docker-render             # Local paper generation
-git push                       # → Triggers automated paper rendering
+make docker-render             # Local report generation
+git push                       # → Triggers automated report rendering
                               # → GitHub Actions creates downloadable PDF
 
-# 3. Access rendered papers
+# 3. Access rendered reports
 # Visit GitHub → Actions tab → Latest workflow → Artifacts
 # Download automatically generated PDF
 ```
@@ -697,7 +697,7 @@ make docker-build             # Rebuild with new dependencies
 | **R Console** | `make docker-r` | Command-line R work |
 | **Bash Shell** | `make docker-bash` | File management, git operations |
 | **Zsh Shell** | `make docker-zsh` | Enhanced shell with personal dotfiles |
-| **Paper Rendering** | `make docker-render` | Generate manuscript |
+| **Report Rendering** | `make docker-render` | Generate manuscript |
 | **Package Testing** | `make docker-test` | Run unit tests |
 
 ## Research Infrastructure Scripts
@@ -879,7 +879,7 @@ make docker-bash                 # Shell
 make docker-zsh                  # Zsh shell
 
 # Automated tasks
-make docker-render               # Render paper
+make docker-render               # Render report
 make docker-test                 # Run tests
 make docker-check               # Validate package
 make docker-check-renv          # Check dependencies
@@ -916,7 +916,7 @@ make docker-build              # Build Docker image
 make docker-document           # Generate docs in container
 make docker-test               # Run tests in container
 make docker-check-renv         # Validate deps in container
-make docker-render             # Render paper in container
+make docker-render             # Render report in container
 ```
 
 ### Cleanup Commands
@@ -944,9 +944,9 @@ ZZRRTOOLS provides **comprehensive GitHub Actions** with quality assurance and c
   - Package checks across platforms
   - Dependency validation with `check_renv_for_commit.R`
 
-#### 2. Paper Rendering (`.github/workflows/render-paper.yml`)
+#### 2. Report Rendering (`.github/workflows/render-report.yml`)
 - **Triggers**: Manual dispatch, changes to analysis files
-- **Purpose**: Generate research paper automatically  
+- **Purpose**: Generate research report automatically  
 - **Features**:
   - Automatic PDF generation
   - Artifact upload
@@ -961,7 +961,7 @@ ZZRRTOOLS provides **comprehensive GitHub Actions** with quality assurance and c
 ### Customization
 Workflows are **optimized for local Docker development**:
 - No Docker builds in CI (use local Docker instead)
-- Focus on validation and paper rendering
+- Focus on validation and report rendering
 - Minimal, fast execution
 - Easy to customize for your needs
 
@@ -987,11 +987,11 @@ renv::snapshot()
 
 ### Rendering Your Paper
 ```bash
-# Render paper to PDF
+# Render report to PDF
 make docker-render
 
-# View generated paper
-open analysis/paper/paper.pdf
+# View generated report
+open analysis/report/report.pdf
 ```
 
 ### Running Tests
@@ -1259,7 +1259,7 @@ ZZRRTOOLS v4.0 provides a **complete research environment** with integrated rrto
 - **Enhanced data management** with structured organization and validation frameworks
 - **Automated quality assurance** via GitHub Actions CI/CD workflows
 - **Professional collaboration** with research-specific templates and workflows
-- **Academic publishing integration** with automated paper rendering and citation management
+- **Academic publishing integration** with automated report rendering and citation management
 - **Comprehensive documentation** with data dictionaries and provenance tracking
 - **Team-ready infrastructure** with issue templates and pull request workflows
 

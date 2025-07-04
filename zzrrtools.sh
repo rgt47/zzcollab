@@ -203,7 +203,7 @@ MODULES INCLUDED:
     structure    - Directory structure and navigation
     rpackage     - R package development framework
     docker       - Container integration and builds
-    analysis     - Research paper and analysis templates
+    analysis     - Research report and analysis templates
     cicd         - GitHub Actions workflows
     devtools     - Makefile, configs, development tools
 
@@ -230,7 +230,7 @@ After running the modular setup script, here's how to get started:
 📁 PROJECT STRUCTURE:
    Your project now has a complete research compendium with:
    - R package structure with functions and tests
-   - Analysis workflow with paper templates
+   - Analysis workflow with report templates
    - Docker environment for reproducibility
    - CI/CD workflows for automation
 
@@ -245,7 +245,7 @@ After running the modular setup script, here's how to get started:
 📝 ANALYSIS WORKFLOW:
    1. Place raw data in data/raw_data/
    2. Develop analysis scripts in scripts/
-   3. Write your paper in analysis/paper/paper.Rmd
+   3. Write your report in analysis/report/report.Rmd
    4. Use 'make docker-render' to generate PDF
 
 🔧 PACKAGE DEVELOPMENT:

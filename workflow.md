@@ -227,19 +227,19 @@ vim tests/integration/test-data_import.R  # Create integration tests
 #   expect_no_error(source(here("scripts", "01_data_import.R")))
 # })
 
-vim analysis/paper/paper.Rmd        # Start research paper
+vim analysis/report/report.Rmd        # Start research report
 # Write analysis and methods in R Markdown
 
-# Test paper rendering
+# Test report rendering
 R                                   # Start R session
-# rmarkdown::render("analysis/paper/paper.Rmd")  # Test paper compiles
+# rmarkdown::render("analysis/report/report.Rmd")  # Test report compiles
 # quit()                            # Exit R
 
 # 4. Quality assurance and commit
 exit                            # Exit container
 make docker-check-renv-fix      # Validate dependencies
 make docker-test                # Run package tests
-make docker-render              # Test paper rendering
+make docker-render              # Test report rendering
 # Rscript scripts/99_reproducibility_check.R  # Optional: Check reproducibility
 
 # 5. Commit changes with CI/CD trigger
@@ -409,20 +409,20 @@ R                              # Comprehensive integration testing
 # source("scripts/03_advanced_models.R")   # New integration
 # quit()
 
-# 8. Update research paper with testing
-vim analysis/paper/paper.Rmd  # Update manuscript
+# 8. Update research report with testing
+vim analysis/report/report.Rmd  # Update manuscript
 # Add new results and figures
 
-vim tests/integration/test-paper_rendering.R  # Create paper rendering tests
-# Write tests for paper compilation:
-# test_that("paper renders successfully", {
-#   expect_no_error(rmarkdown::render(here("analysis", "paper", "paper.Rmd")))
-#   expect_true(file.exists(here("analysis", "paper", "paper.pdf")))
+vim tests/integration/test-report_rendering.R  # Create report rendering tests
+# Write tests for report compilation:
+# test_that("report renders successfully", {
+#   expect_no_error(rmarkdown::render(here("analysis", "report", "report.Rmd")))
+#   expect_true(file.exists(here("analysis", "report", "report.pdf")))
 # })
 
-# Test paper rendering
-R                              # Test paper compilation
-# rmarkdown::render("analysis/paper/paper.Rmd")  # Verify paper compiles
+# Test report rendering
+R                              # Test report compilation
+# rmarkdown::render("analysis/report/report.Rmd")  # Verify report compiles
 # testthat::test_dir("tests/integration")         # Run all integration tests
 # quit()
 
@@ -436,7 +436,7 @@ git commit -m "Add advanced multilevel modeling with integrated visualization
 - Add modeling_functions.R with multilevel model utilities
 - Create comprehensive test suite for statistical models
 - Add end-to-end pipeline integration tests
-- Update research paper with new analysis results
+- Update research report with new analysis results
 - Test complete workflow integration"
 
 # Push feature branch to your fork
@@ -556,7 +556,7 @@ The containerized environment includes a fully configured vim IDE with:
 vim R/analysis.R               # Open R file
 :Explore                       # File browser
 :split scripts/data.R          # Split window editing
-:vsplit analysis/paper.Rmd     # Vertical split for manuscript
+:vsplit analysis/report.Rmd     # Vertical split for manuscript
 
 # Vim + R integration:
 :terminal                      # Open terminal in vim
@@ -576,7 +576,7 @@ R                             # Start R session in terminal
 make docker-zsh               # → Enhanced zsh with vim
 
 # 2. Multi-file development workflow
-vim -p R/functions.R scripts/analysis.R analysis/paper/paper.Rmd
+vim -p R/functions.R scripts/analysis.R analysis/report/report.Rmd
 # Opens multiple files in tabs
 
 # 3. Interactive R testing
@@ -593,7 +593,7 @@ R                            # Start R
 
 # 5. Test-driven development cycle from vim
 :!make docker-test           # Run all package tests from vim
-:!make docker-render         # Render paper from vim
+:!make docker-render         # Render report from vim
 :terminal                    # Open terminal for interactive testing
 R                           # Start R in terminal
 # devtools::load_all()       # Load package functions

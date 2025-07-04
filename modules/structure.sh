@@ -69,7 +69,7 @@ track_symlink() {
 #   ├── metadata/           - Data dictionaries and documentation
 #   └── validation/         - Data quality reports and validation
 #   analysis/               - Research analysis components
-#   ├── paper/              - Research paper (Rmd → PDF)
+#   ├── report/              - Research paper (Rmd → PDF)
 #   ├── figures/            - Generated plots and visualizations
 #   ├── tables/             - Generated statistical tables
 #   └── templates/          - Analysis templates and snippets
@@ -96,7 +96,7 @@ create_directory_structure() {
         "data/metadata"          # Data documentation and dictionaries
         "data/validation"        # Data quality and validation reports
         "analysis"               # Analysis workflow root
-        "analysis/paper"         # Research paper development
+        "analysis/report"         # Research paper development
         "analysis/figures"       # Generated plots and figures
         "analysis/tables"        # Generated tables and summaries
         "analysis/templates"     # Analysis templates and reusable code
@@ -140,7 +140,7 @@ create_directory_structure() {
 #   e → ./tests                - Quick access to tests
 #   o → ./docs                 - Quick access to documentation
 #   c → ./archive              - Quick access to archive
-#   p → ./analysis/paper       - Quick access to paper directory
+#   p → ./analysis/report       - Quick access to paper directory
 #
 # Usage Examples:
 #   cd a        # Go to data directory
@@ -203,12 +203,12 @@ create_symbolic_links() {
         ln -s ./archive c && track_symlink "c" "./archive" && log_info "Created symlink: c → ./archive" && ((created_count++))
     fi
     
-    if [[ -d "./analysis/paper" ]]; then
-        ln -s ./analysis/paper p && track_symlink "p" "./analysis/paper" && log_info "Created symlink: p → ./analysis/paper" && ((created_count++))
+    if [[ -d "./analysis/report" ]]; then
+        ln -s ./analysis/report p && track_symlink "p" "./analysis/report" && log_info "Created symlink: p → ./analysis/report" && ((created_count++))
     fi
     
     log_success "Symbolic links created ($created_count links)"
-    log_info "Quick navigation: cd a (data), cd n (analysis), cd p (paper), etc."
+    log_info "Quick navigation: cd a (data), cd n (analysis), cd p (report), etc."
 }
 
 #=============================================================================
@@ -224,7 +224,7 @@ validate_directory_structure() {
     local -r required_dirs=(
         "R" "man" "tests/testthat" "vignettes" "data" "data/raw_data"
         "data/derived_data" "data/metadata" "data/validation" "analysis"
-        "analysis/paper" "analysis/figures" "analysis/tables" "analysis/templates"
+        "analysis/report" "analysis/figures" "analysis/tables" "analysis/templates"
         "scripts" "archive" "docs" ".github/workflows"
     )
     
@@ -261,7 +261,7 @@ show_structure_summary() {
 │   ├── metadata/          # Data dictionaries and documentation
 │   └── validation/        # Data quality reports
 ├── analysis/              # Research analysis workflow
-│   ├── paper/             # Research paper (Rmd → PDF)
+│   ├── report/             # Research paper (Rmd → PDF)
 │   ├── figures/           # Generated plots and visualizations
 │   ├── tables/            # Generated statistical tables
 │   └── templates/         # Analysis templates
@@ -274,7 +274,7 @@ show_structure_summary() {
 🔗 QUICK NAVIGATION:
    cd a  →  data/           cd n  →  analysis/
    cd f  →  figures/        cd t  →  tables/
-   cd s  →  scripts/        cd p  →  paper/
+   cd s  →  scripts/        cd p  →  report/
    cd m  →  man/            cd e  →  tests/
    cd o  →  docs/           cd c  →  archive/
 EOF
