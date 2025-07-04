@@ -45,10 +45,10 @@ analysis/data/derived_data/*.rds
 # Generated outputs
 analysis/figures/*.png
 analysis/figures/*.pdf
-analysis/paper/*.html
-analysis/paper/*.pdf
-analysis/paper/*.tex
-analysis/paper/*_files/
+analysis/report/*.html
+analysis/report/*.pdf
+analysis/report/*.tex
+analysis/report/*_files/
 
 # Docker
 .dockerignore

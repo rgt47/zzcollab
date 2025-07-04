@@ -3,8 +3,8 @@
 # ZZRRTOOLS ANALYSIS MODULE
 ##############################################################################
 # 
-# PURPOSE: Research analysis framework and academic paper templates
-#          - Research paper template (R Markdown)
+# PURPOSE: Research analysis framework and academic report templates
+#          - Research report template (R Markdown)
 #          - Bibliography and citation management
 #          - Analysis templates and examples
 #          - Academic workflow support
@@ -30,10 +30,10 @@ fi
 #=============================================================================
 
 # Function: create_analysis_files
-# Purpose: Creates research paper templates and analysis framework
+# Purpose: Creates research report templates and analysis framework
 # Creates:
-#   - analysis/paper/paper.Rmd (main research paper template)
-#   - analysis/paper/references.bib (bibliography file)
+#   - analysis/report/report.Rmd (main research report template)
+#   - analysis/report/references.bib (bibliography file)
 #   - Citation style files for academic publishing
 #
 # Template Features:
@@ -45,7 +45,7 @@ fi
 #   - Package loading and setup configurations
 #
 # Academic Standards:
-#   - Follows academic paper conventions
+#   - Follows academic report conventions
 #   - Supports multiple citation styles
 #   - Integrated with R package workflow
 #   - Reproducible research practices
@@ -54,20 +54,20 @@ fi
 create_analysis_files() {
     log_info "Creating analysis and paper files..."
     
-    # Create research paper template from R Markdown template
+    # Create research report template from R Markdown template
     # Template includes: YAML header, author info, bibliography setup, standard sections
-    if copy_template_file "paper.Rmd" "analysis/paper/paper.Rmd" "Research paper template"; then
-        track_template_file "paper.Rmd" "analysis/paper/paper.Rmd"
-        log_info "Created research paper template with academic structure"
+    if copy_template_file "report.Rmd" "analysis/report/report.Rmd" "Research report template"; then
+        track_template_file "report.Rmd" "analysis/report/report.Rmd"
+        log_info "Created research report template with academic structure"
     else
-        log_error "Failed to create research paper template"
+        log_error "Failed to create research report template"
         return 1
     fi
     
     # Create bibliography file for citations and references
     # BibTeX format for academic reference management
-    if copy_template_file "references.bib" "analysis/paper/references.bib" "references.bib file"; then
-        track_template_file "references.bib" "analysis/paper/references.bib"
+    if copy_template_file "references.bib" "analysis/report/references.bib" "references.bib file"; then
+        track_template_file "references.bib" "analysis/report/references.bib"
         log_info "Created bibliography file for citation management"
     else
         log_error "Failed to create bibliography file"
@@ -76,8 +76,8 @@ create_analysis_files() {
     
     # Create citation style file for academic journals
     # CSL (Citation Style Language) file for formatting citations
-    if copy_template_file "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl" "citation style file"; then
-        track_template_file "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl"
+    if copy_template_file "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file"; then
+        track_template_file "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl"
         log_info "Created citation style file for academic formatting"
     else
         log_warn "Citation style file not found - citations will use default format"
@@ -92,14 +92,14 @@ create_analysis_files() {
 
 # Function: validate_analysis_structure
 # Purpose: Verify that all required analysis files were created successfully
-# Checks: paper.Rmd, references.bib, analysis directories
+# Checks: report.Rmd, references.bib, analysis directories
 # Returns: 0 if all files exist, 1 if any are missing
 validate_analysis_structure() {
     log_info "Validating analysis structure..."
     
     local -r required_files=(
-        "analysis/paper/paper.Rmd"
-        "analysis/paper/references.bib"
+        "analysis/report/report.Rmd"
+        "analysis/report/references.bib"
     )
     
     local -r required_dirs=(
@@ -142,8 +142,8 @@ show_analysis_summary() {
 📝 ANALYSIS FRAMEWORK CREATED:
 
 ├── analysis/
-│   ├── paper/
-│   │   ├── paper.Rmd            # Main research paper template
+│   ├── report/
+│   │   ├── report.Rmd            # Main research report template
 │   │   ├── references.bib       # Bibliography for citations
 │   │   └── *.csl               # Citation style files (optional)
 │   ├── figures/                # Generated plots and visualizations
@@ -151,26 +151,26 @@ show_analysis_summary() {
 │   └── templates/              # Analysis templates and snippets
 
 📊 RESEARCH WORKFLOW:
-1. Edit analysis/paper/paper.Rmd for your research paper
-2. Add references to analysis/paper/references.bib
+1. Edit analysis/report/report.Rmd for your research report
+2. Add references to analysis/report/references.bib
 3. Generate figures and save to analysis/figures/
 4. Create tables and save to analysis/tables/
-5. Use knitr to render paper.Rmd to PDF
+5. Use knitr to render report.Rmd to PDF
 
 📚 KEY FEATURES:
 - R Markdown integration with package functions
 - Automatic bibliography generation
 - Reproducible figure and table creation
-- Standard academic paper structure
+- Standard academic report structure
 - Citation management with BibTeX
 
 🔧 RENDERING COMMANDS:
-- rmarkdown::render("analysis/paper/paper.Rmd")     # Render to PDF
+- rmarkdown::render("analysis/report/report.Rmd")     # Render to PDF
 - make docker-render                                 # Render in container
-- knitr::knit("analysis/paper/paper.Rmd")           # Process R chunks
+- knitr::knit("analysis/report/report.Rmd")           # Process R chunks
 
 📝 EDITING WORKFLOW:
-1. Write analysis code in R chunks within paper.Rmd
+1. Write analysis code in R chunks within report.Rmd
 2. Reference package functions with PKG_NAME::function_name
 3. Include figures with knitr chunk options
 4. Cite references with [@citation_key] syntax
@@ -576,7 +576,7 @@ cat("\\n=== FILE INTEGRITY CHECK ===\\n")
 # Check for required files
 required_files <- c(
   "DESCRIPTION",
-  "analysis/paper/paper.Rmd",
+  "analysis/report/report.Rmd",
   "R/utils.R",
   "scripts"
 )
