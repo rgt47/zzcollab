@@ -26,6 +26,10 @@ jobs:
         run: |
           Rscript check_renv_for_commit.R --quiet --fail-on-issues
       
+      - name: Check critical R options changes
+        run: |
+          Rscript check_rprofile_options.R
+      
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
