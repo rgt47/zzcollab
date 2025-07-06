@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS STRUCTURE MODULE
+# ZZCOLLAB STRUCTURE MODULE
 ##############################################################################
 # 
 # PURPOSE: Project structure creation and navigation setup
@@ -14,7 +14,7 @@
 ##############################################################################
 
 # Validate core module is loaded
-if [[ "${ZZRRTOOLS_CORE_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
     echo "❌ Error: structure.sh requires core.sh to be loaded first" >&2
     exit 1
 fi
@@ -162,7 +162,7 @@ create_symbolic_links() {
         fi
     done
     
-    # Create new symlinks using exact same approach as original zzrrtools.sh
+    # Create new symlinks using exact same approach as original zzcollab.sh
     # This preserves the exact behavior and avoids associative array issues
     local created_count=0
     
@@ -294,6 +294,6 @@ if [[ -z "${MANIFEST_TXT:-}" ]]; then
 fi
 
 # Set structure module loaded flag
-readonly ZZRRTOOLS_STRUCTURE_LOADED=true
+readonly ZZCOLLAB_STRUCTURE_LOADED=true
 
 log_info "Structure module loaded successfully"

@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS ANALYSIS MODULE
+# ZZCOLLAB ANALYSIS MODULE
 ##############################################################################
 # 
 # PURPOSE: Research analysis framework and academic report templates
@@ -15,12 +15,12 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZRRTOOLS_CORE_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
     echo "❌ Error: analysis.sh requires core.sh to be loaded first" >&2
     exit 1
 fi
 
-if [[ "${ZZRRTOOLS_TEMPLATES_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_TEMPLATES_LOADED:-}" != "true" ]]; then
     echo "❌ Error: analysis.sh requires templates.sh to be loaded first" >&2
     exit 1
 fi
@@ -896,6 +896,6 @@ if [[ ! -d "analysis/figures" ]]; then
 fi
 
 # Set analysis module loaded flag
-readonly ZZRRTOOLS_ANALYSIS_LOADED=true
+readonly ZZCOLLAB_ANALYSIS_LOADED=true
 
 log_info "Analysis module loaded successfully"

@@ -1,17 +1,17 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS UNINSTALL SCRIPT
+# ZZCOLLAB UNINSTALL SCRIPT
 ##############################################################################
 # 
-# PURPOSE: Safely removes files and directories created by zzrrtools setup
+# PURPOSE: Safely removes files and directories created by zzcollab setup
 #          - Reads manifest file to determine what to remove
 #          - Provides interactive confirmation for safety
 #          - Handles Docker image cleanup
 #          - Preserves user-created content
 #
-# USAGE:   ./zzrrtools-uninstall.sh [OPTIONS]
+# USAGE:   ./zzcollab-uninstall.sh [OPTIONS]
 #
-# AUTHOR:  Companion to zzrrtools.sh
+# AUTHOR:  Companion to zzcollab.sh
 ##############################################################################
 
 set -euo pipefail
@@ -20,8 +20,8 @@ set -euo pipefail
 # CONFIGURATION
 #=============================================================================
 
-readonly MANIFEST_FILE=".zzrrtools_manifest.json"
-readonly MANIFEST_TXT=".zzrrtools_manifest.txt"
+readonly MANIFEST_FILE=".zzcollab_manifest.json"
+readonly MANIFEST_TXT=".zzcollab_manifest.txt"
 readonly SCRIPT_NAME="$(basename "$0")"
 
 # Colors for output
@@ -291,7 +291,7 @@ remove_manifest() {
 
 show_help() {
     cat << EOF
-$SCRIPT_NAME - Uninstall zzrrtools-created files and directories
+$SCRIPT_NAME - Uninstall zzcollab-created files and directories
 
 USAGE:
     $SCRIPT_NAME [OPTIONS]
@@ -310,8 +310,8 @@ EXAMPLES:
     $SCRIPT_NAME --keep-docker      # Keep Docker image
 
 DESCRIPTION:
-    This script removes files and directories created by zzrrtools based on 
-    the manifest file (.zzrrtools_manifest.json or .zzrrtools_manifest.txt).
+    This script removes files and directories created by zzcollab based on 
+    the manifest file (.zzcollab_manifest.json or .zzcollab_manifest.txt).
     
     It will:
     - Remove symbolic links first
@@ -330,11 +330,11 @@ EOF
 }
 
 show_summary() {
-    log_info "=== ZZRRTOOLS UNINSTALL SUMMARY ==="
+    log_info "=== ZZCOLLAB UNINSTALL SUMMARY ==="
     
     if ! read_manifest_json && ! read_manifest_txt; then
         log_error "No manifest file found!"
-        log_error "Cannot determine what files were created by zzrrtools"
+        log_error "Cannot determine what files were created by zzcollab"
         log_error "Manifest files: $MANIFEST_FILE or $MANIFEST_TXT"
         return 1
     fi
@@ -433,7 +433,7 @@ main() {
     fi
     
     # Perform removal in safe order
-    log_info "Starting zzrrtools uninstall..."
+    log_info "Starting zzcollab uninstall..."
     
     remove_symlinks
     

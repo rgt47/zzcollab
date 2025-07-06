@@ -1,17 +1,17 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS COMPLETE MODULAR IMPLEMENTATION
+# ZZCOLLAB COMPLETE MODULAR IMPLEMENTATION
 ##############################################################################
 # 
-# PURPOSE: Complete modular implementation of zzrrtools functionality
+# PURPOSE: Complete modular implementation of zzcollab functionality
 #          - All 7 modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools
-#          - 100% functionality preservation from original zzrrtools.sh
+#          - 100% functionality preservation from original zzcollab.sh
 #          - Comprehensive manifest tracking for uninstall
 #          - Modular architecture with dependency management
 #
-# USAGE:   ./zzrrtools-modular-complete.sh [OPTIONS]
+# USAGE:   ./zzcollab-modular-complete.sh [OPTIONS]
 #
-# OPTIONS: All original zzrrtools.sh options preserved:
+# OPTIONS: All original zzcollab.sh options preserved:
 #          --no-docker, --dotfiles DIR, --dotfiles-nodot DIR, --base-image NAME
 ##############################################################################
 
@@ -26,8 +26,8 @@ readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
 readonly MODULES_DIR="$SCRIPT_DIR/modules"
 
 # Manifest tracking for uninstall functionality
-readonly MANIFEST_FILE=".zzrrtools_manifest.json"
-readonly MANIFEST_TXT=".zzrrtools_manifest.txt"
+readonly MANIFEST_FILE=".zzcollab_manifest.json"
+readonly MANIFEST_TXT=".zzcollab_manifest.txt"
 
 #=============================================================================
 # COMMAND LINE ARGUMENT PARSING (preserved from original)
@@ -43,7 +43,7 @@ DOTFILES_DIR=""
 DOTFILES_NODOT=false
 BASE_IMAGE="rocker/r-ver"
 
-# Process all command line arguments (identical to original zzrrtools.sh)
+# Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
     case $1 in
         --no-docker)
@@ -104,12 +104,12 @@ log_success() {
 # Validate modules directory exists
 if [[ ! -d "$MODULES_DIR" ]]; then
     log_error "Modules directory not found: $MODULES_DIR"
-    log_error "Please ensure you're running this script from the zzrrtools directory"
+    log_error "Please ensure you're running this script from the zzcollab directory"
     exit 1
 fi
 
 # Load modules in dependency order
-log_info "Loading all zzrrtools modules..."
+log_info "Loading all zzcollab modules..."
 
 # Load core module first (required by all others)
 if [[ -f "$MODULES_DIR/core.sh" ]]; then
@@ -169,7 +169,7 @@ for module in "${modules_to_load[@]}"; do
 done
 
 #=============================================================================
-# HELP AND NEXT STEPS (from original zzrrtools.sh)
+# HELP AND NEXT STEPS (from original zzcollab.sh)
 #=============================================================================
 
 show_help() {
@@ -217,13 +217,13 @@ CREATED STRUCTURE:
     ├── Makefile              # Build automation
     └── Symbolic links (a→data, n→analysis, etc.)
 
-For detailed documentation, see ZZRRTOOLS_USER_GUIDE.md after setup.
+For detailed documentation, see ZZCOLLAB_USER_GUIDE.md after setup.
 EOF
 }
 
 show_next_steps() {
     cat << 'EOF'
-🚀 ZZRRTOOLS NEXT STEPS
+🚀 ZZCOLLAB NEXT STEPS
 
 After running the modular setup script, here's how to get started:
 
@@ -262,7 +262,7 @@ After running the modular setup script, here's how to get started:
 🤝 COLLABORATION:
    git init                   # Initialize version control
    git add .                  # Stage all files
-   git commit -m "Initial zzrrtools setup"
+   git commit -m "Initial zzcollab setup"
    # Push to GitHub to activate CI/CD workflows
 
 🔄 AUTOMATION:
@@ -271,17 +271,17 @@ After running the modular setup script, here's how to get started:
    - Use pre-commit hooks for code quality
 
 📄 DOCUMENTATION:
-   - See ZZRRTOOLS_USER_GUIDE.md for comprehensive guide
+   - See ZZCOLLAB_USER_GUIDE.md for comprehensive guide
    - Use make help for all available commands
    - Check .github/workflows/ for CI/CD documentation
 
 🆘 GETTING HELP:
    make help                 # See all available commands
-   ./zzrrtools-uninstall.sh  # Remove created files if needed
+   ./zzcollab-uninstall.sh  # Remove created files if needed
    
 🧹 UNINSTALL:
-   All created files are tracked in .zzrrtools_manifest.json
-   Run './zzrrtools-uninstall.sh' to remove everything cleanly
+   All created files are tracked in .zzcollab_manifest.json
+   Run './zzcollab-uninstall.sh' to remove everything cleanly
 
 Happy researching! 🎉
 EOF
@@ -316,7 +316,7 @@ EOF
         log_success "Initialized JSON manifest file: $MANIFEST_FILE"
     else
         {
-            echo "# ZZRRTOOLS MANIFEST - Created $(date)"
+            echo "# ZZCOLLAB MANIFEST - Created $(date)"
             echo "# Package: $PKG_NAME"
             echo "# Modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools"
             echo "# Build Docker: $BUILD_DOCKER"
@@ -329,7 +329,7 @@ EOF
 }
 
 install_uninstall_script() {
-    local uninstall_script="zzrrtools-uninstall.sh"
+    local uninstall_script="zzcollab-uninstall.sh"
     if [[ -f "$TEMPLATES_DIR/$uninstall_script" ]]; then
         cp "$TEMPLATES_DIR/$uninstall_script" "./$uninstall_script"
         chmod +x "./$uninstall_script"
@@ -341,7 +341,7 @@ install_uninstall_script() {
 }
 
 #=============================================================================
-# MAIN EXECUTION FUNCTION (identical workflow to original zzrrtools.sh)
+# MAIN EXECUTION FUNCTION (identical workflow to original zzcollab.sh)
 #=============================================================================
 
 main() {
@@ -364,14 +364,14 @@ main() {
     # Validate templates directory
     if [[ ! -d "$TEMPLATES_DIR" ]]; then
         log_error "Templates directory not found: $TEMPLATES_DIR"
-        log_error "Please ensure you're running this script from the zzrrtools directory"
+        log_error "Please ensure you're running this script from the zzcollab directory"
         exit 1
     fi
     
     # Initialize manifest tracking
     init_manifest
     
-    # Execute setup in same order as original zzrrtools.sh
+    # Execute setup in same order as original zzcollab.sh
     log_info "📁 Creating project structure..."
     create_directory_structure || exit 1
     
@@ -448,8 +448,8 @@ main() {
     
     echo ""
     log_info "📚 Run '$0 --next-steps' for development workflow guidance"
-    log_info "🆘 Run './zzrrtools-uninstall.sh' if you need to remove created files"
-    log_info "📖 See ZZRRTOOLS_USER_GUIDE.md for comprehensive documentation"
+    log_info "🆘 Run './zzcollab-uninstall.sh' if you need to remove created files"
+    log_info "📖 See ZZCOLLAB_USER_GUIDE.md for comprehensive documentation"
     echo ""
 }
 
