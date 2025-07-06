@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS CORE MODULE
+# ZZCOLLAB CORE MODULE
 ##############################################################################
 # 
 # PURPOSE: Core infrastructure functions required by all other modules
@@ -13,7 +13,7 @@
 ##############################################################################
 
 #=============================================================================
-# CORE CONSTANTS (from original zzrrtools.sh)
+# CORE CONSTANTS (from original zzcollab.sh)
 #=============================================================================
 
 # Author information can be customized via environment variables
@@ -121,4 +121,4 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 fi
 
 # Set core module loaded flag
-readonly ZZRRTOOLS_CORE_LOADED=true
+readonly ZZCOLLAB_CORE_LOADED=true
