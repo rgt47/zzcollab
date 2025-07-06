@@ -1,4 +1,4 @@
-# ZZRRTOOLS
+# ZZCOLLAB
 
 [![License: GPL-3](https://img.shields.io/badge/License-GPL%203-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](https://www.docker.com/)
@@ -23,15 +23,15 @@ A tool for creating reproducible research compendia with R package structure, Do
 ### Method 1: Automatic Installation
 
 ```bash
-git clone https://github.com/yourusername/zzrrtools.git && cd zzrrtools && ./install.sh
+git clone https://github.com/yourusername/zzcollab.git && cd zzcollab && ./install.sh
 ```
 
 ### Method 2: Manual Installation
 
 ```bash
-git clone https://github.com/yourusername/zzrrtools.git
-cd zzrrtools
-ln -s "$(pwd)/zzrrtools.sh" ~/bin/zzrrtools
+git clone https://github.com/yourusername/zzcollab.git
+cd zzcollab
+ln -s "$(pwd)/zzcollab.sh" ~/bin/zzcollab
 ```
 
 ## Usage
@@ -42,7 +42,7 @@ mkdir my-analysis
 cd my-analysis
 
 # Set up research compendium
-zzrrtools --dotfiles ~/dotfiles
+zzcollab --dotfiles ~/dotfiles
 
 # Start development environment
 make docker-rstudio  # → http://localhost:8787 (user: analyst, pass: analyst)
@@ -91,7 +91,7 @@ your-project/
 ## Command Line Options
 
 ```bash
-zzrrtools [OPTIONS]
+zzcollab [OPTIONS]
 
 OPTIONS:
   --dotfiles DIR       Copy dotfiles from directory (files with leading dots)
@@ -102,11 +102,11 @@ OPTIONS:
   --help, -h           Show help message
 
 EXAMPLES:
-  zzrrtools                                    # Basic setup
-  zzrrtools --dotfiles ~/dotfiles              # Include personal dotfiles
-  zzrrtools --dotfiles-nodot ~/dotfiles        # Dotfiles without leading dots
-  zzrrtools --base-image rgt47/r-pluspackages  # Use custom base image
-  zzrrtools --no-docker                        # Setup without Docker build
+  zzcollab                                    # Basic setup
+  zzcollab --dotfiles ~/dotfiles              # Include personal dotfiles
+  zzcollab --dotfiles-nodot ~/dotfiles        # Dotfiles without leading dots
+  zzcollab --base-image rgt47/r-pluspackages  # Use custom base image
+  zzcollab --no-docker                        # Setup without Docker build
 ```
 
 ## Docker Integration
@@ -115,7 +115,7 @@ EXAMPLES:
 
 ```bash
 # Use base image with common R packages pre-installed
-zzrrtools --base-image rgt47/r-pluspackages
+zzcollab --base-image rgt47/r-pluspackages
 
 # Packages included: tidyverse, DT, conflicted, ggthemes, datapasta, 
 # janitor, kableExtra, tidytuesdayR, and more
@@ -125,12 +125,12 @@ zzrrtools --base-image rgt47/r-pluspackages
 
 ```bash
 # Build custom base image with your organization's packages
-cd zzrrtools
+cd zzcollab
 docker build -f templates/Dockerfile.pluspackages -t myorg/r-base:latest .
 docker push myorg/r-base:latest
 
 # Use in projects
-zzrrtools --base-image myorg/r-base
+zzcollab --base-image myorg/r-base
 ```
 
 ## Use Cases
@@ -156,15 +156,15 @@ zzrrtools --base-image myorg/r-base
 
 ## Documentation
 
-- [User Guide](templates/ZZRRTOOLS_USER_GUIDE.md) - Comprehensive documentation
+- [User Guide](templates/ZZCOLLAB_USER_GUIDE.md) - Comprehensive documentation
 - [Command Reference](#command-line-options) - All available options
 - [Docker Guide](#docker-integration) - Container workflows
 - [Troubleshooting](#troubleshooting) - Common issues and solutions
 
 ### Getting Help
 ```bash
-zzrrtools --help          # Command line help
-zzrrtools --next-steps     # Show workflow guidance
+zzcollab --help          # Command line help
+zzcollab --next-steps     # Show workflow guidance
 make help                 # Show all make targets
 ```
 
@@ -192,7 +192,7 @@ make help                 # Show all make targets
 ```bash
 # Try disabling BuildKit
 export DOCKER_BUILDKIT=0
-zzrrtools
+zzcollab
 ```
 
 **Platform warnings on ARM64 (Apple Silicon):**
@@ -205,9 +205,9 @@ export DOCKER_DEFAULT_PLATFORM=linux/amd64
 **Missing dotfiles in container:**
 ```bash
 # Make sure to specify dotfiles directory
-zzrrtools --dotfiles ~/dotfiles
+zzcollab --dotfiles ~/dotfiles
 # or for files without leading dots:
-zzrrtools --dotfiles-nodot ~/dotfiles
+zzcollab --dotfiles-nodot ~/dotfiles
 ```
 
 **Package name errors:**
@@ -227,8 +227,8 @@ docker info
 
 ### Getting Help
 
-1. Check the [User Guide](templates/ZZRRTOOLS_USER_GUIDE.md) for detailed workflows
-2. Use built-in help: `zzrrtools --help`
+1. Check the [User Guide](templates/ZZCOLLAB_USER_GUIDE.md) for detailed workflows
+2. Use built-in help: `zzcollab --help`
 3. Validate your environment: `make docker-check-renv`
 4. Clean and rebuild: `make docker-clean && make docker-build`
 5. Open an issue on GitHub with system details and error messages
@@ -243,13 +243,13 @@ docker info
 ### Development Setup
 ```bash
 # Fork and clone the repository
-git clone https://github.com/yourusername/zzrrtools.git
-cd zzrrtools
+git clone https://github.com/yourusername/zzcollab.git
+cd zzcollab
 
-# Make your changes to zzrrtools.sh or templates/
+# Make your changes to zzcollab.sh or templates/
 # Test with a sample project
 mkdir test-project && cd test-project
-../zzrrtools.sh
+../zzcollab.sh
 
 # Submit a pull request
 ```

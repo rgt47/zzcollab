@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# zzrrtools-init-team
-# Automated team setup script for ZZRRTOOLS research collaboration
+# zzcollab-init-team
+# Automated team setup script for ZZCOLLAB research collaboration
 # 
 # This script automates the entire Developer 1 workflow:
 # - Creates team core Docker images (shell + RStudio variants)
 # - Builds and pushes images to Docker Hub
-# - Initializes zzrrtools project with custom base image
+# - Initializes zzcollab project with custom base image
 # - Creates private GitHub repository
 # - Sets up initial commit with proper structure
 
@@ -47,10 +47,10 @@ DOCKERFILE_PATH=""
 # Help function
 show_help() {
     cat << EOF
-zzrrtools-init-team - Automated team setup for ZZRRTOOLS research collaboration
+zzcollab-init-team - Automated team setup for ZZCOLLAB research collaboration
 
 USAGE:
-    zzrrtools-init-team --team-name TEAM --project-name PROJECT [OPTIONS]
+    zzcollab-init-team --team-name TEAM --project-name PROJECT [OPTIONS]
 
 REQUIRED:
     --team-name NAME        Docker Hub team/organization name
@@ -65,23 +65,23 @@ OPTIONAL:
 
 EXAMPLES:
     # Minimal setup (no dotfiles)
-    zzrrtools-init-team --team-name rgt47 --project-name research-study
+    zzcollab-init-team --team-name rgt47 --project-name research-study
 
     # With custom GitHub account
-    zzrrtools-init-team --team-name rgt47 --project-name research-study --github-account mylab
+    zzcollab-init-team --team-name rgt47 --project-name research-study --github-account mylab
 
     # With dotfiles
-    zzrrtools-init-team --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+    zzcollab-init-team --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
 
     # Skip dotfiles explicitly
-    zzrrtools-init-team --team-name rgt47 --project-name research-study --nodots
+    zzcollab-init-team --team-name rgt47 --project-name research-study --nodots
 
 WORKFLOW:
     1. Create project directory
     2. Copy and customize Dockerfile.teamcore
     3. Build shell and RStudio core images
     4. Push images to Docker Hub
-    5. Initialize zzrrtools project
+    5. Initialize zzcollab project
     6. Create private GitHub repository
     7. Push initial commit
 
@@ -89,7 +89,7 @@ PREREQUISITES:
     - Docker installed and running
     - Docker Hub account and logged in (docker login)
     - GitHub CLI installed and authenticated (gh auth login)
-    - zzrrtools installed and available in PATH
+    - zzcollab installed and available in PATH
 
 EOF
 }
@@ -189,8 +189,8 @@ if ! gh auth status &> /dev/null; then
     exit 1
 fi
 
-if ! command -v zzrrtools &> /dev/null; then
-    print_error "zzrrtools is not installed or not in PATH"
+if ! command -v zzcollab &> /dev/null; then
+    print_error "zzcollab is not installed or not in PATH"
     exit 1
 fi
 
@@ -317,17 +317,17 @@ docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
 docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
 print_success "Pushed all images to Docker Hub"
 
-# Step 6: Initialize zzrrtools project
-print_status "Step 6: Initializing zzrrtools project..."
+# Step 6: Initialize zzcollab project
+print_status "Step 6: Initializing zzcollab project..."
 if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then
-    zzrrtools --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell" \
+    zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell" \
         --dotfiles "$DOTFILES_PATH"
 elif [[ "$USE_DOTFILES" == false ]]; then
-    zzrrtools --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
+    zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
 else
-    zzrrtools --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
+    zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
 fi
-print_success "Initialized zzrrtools project with custom base image"
+print_success "Initialized zzcollab project with custom base image"
 
 # Step 7: Initialize git repository
 print_status "Step 7: Initializing git repository..."
@@ -335,21 +335,21 @@ git init
 git add .
 git commit -m "🎉 Initial research project setup
 
-- Complete zzrrtools research compendium  
+- Complete zzcollab research compendium  
 - Team core images published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
 - Private repository protects unpublished research
 - CI/CD configured for automatic team image updates
 
-🐳 Generated with zzrrtools-init-team
+🐳 Generated with zzcollab-init-team
 
-Co-Authored-By: zzrrtools-init-team <noreply@zzrrtools.dev>"
+Co-Authored-By: zzcollab-init-team <noreply@zzcollab.dev>"
 print_success "Initialized git repository with initial commit"
 
 # Step 8: Create private GitHub repository
 print_status "Step 8: Creating private GitHub repository..."
 gh repo create "${GITHUB_ACCOUNT}/${PROJECT_NAME}" \
     --private \
-    --description "Research project using ZZRRTOOLS - team core images: ${TEAM_NAME}/${PROJECT_NAME}core" \
+    --description "Research project using ZZCOLLAB - team core images: ${TEAM_NAME}/${PROJECT_NAME}core" \
     --source=. \
     --remote=origin \
     --push
@@ -367,7 +367,7 @@ echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
 echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
 echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
 echo "  🔒 Private GitHub repo: https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}"
-echo "  📦 Complete zzrrtools research compendium"
+echo "  📦 Complete zzcollab research compendium"
 echo ""
 print_status "Next steps:"
 echo "  1. cd $PROJECT_NAME"
@@ -377,5 +377,5 @@ echo ""
 print_status "Team members can now join with:"
 echo "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
 echo "  cd $PROJECT_NAME"
-echo "  zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles"
+echo "  zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles"
 echo "  make docker-zsh"

@@ -4,16 +4,16 @@ Based on my review of the user guide, here are the specific workflows for develo
 
 ## **🚀 Streamlined Team Collaboration Workflow**
 
-### **🛠️ Initial ZZRRTOOLS Setup (One-time)**
+### **🛠️ Initial ZZCOLLAB Setup (One-time)**
 ```bash
-# 1. Clone and install zzrrtools system
-git clone https://github.com/[OWNER]/zzrrtools.git
-cd zzrrtools
+# 1. Clone and install zzcollab system
+git clone https://github.com/[OWNER]/zzcollab.git
+cd zzcollab
 ./install.sh                        # Install to ~/bin (default)
 
 # 2. Verify installation
-zzrrtools --help                    # Test installation from anywhere
-which zzrrtools                     # Confirm system PATH setup
+zzcollab --help                    # Test installation from anywhere
+which zzcollab                     # Confirm system PATH setup
 ```
 
 ### **📦 Developer 1 (Team Lead): Project Initialization**
@@ -24,7 +24,7 @@ which zzrrtools                     # Confirm system PATH setup
 - [ ] Customize Dockerfile.teamcore for team's R packages and tools
 - [ ] Build and push shell core image to Docker Hub
 - [ ] Build and push RStudio core image to Docker Hub  
-- [ ] Run zzrrtools with dotfiles to create local development image
+- [ ] Run zzcollab with dotfiles to create local development image
 - [ ] Initialize private GitHub repository and push code
 - [ ] Create first analysis script in scripts/ directory
 - [ ] Write integration tests for analysis script
@@ -40,7 +40,7 @@ cd research-project
 TEAM_NAME="rgt47" # the account on dockerhub for hosting the core images
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # Copy and customize Dockerfile.pluspackages for your team's needs
-cp ~/bin/zzrrtools-support/templates/Dockerfile.pluspackages \
+cp ~/bin/zzcollab-support/templates/Dockerfile.pluspackages \
     ./Dockerfile.teamcore
 
 # Edit Dockerfile.teamcore to add your team's specific R packages and tools:
@@ -76,8 +76,8 @@ docker push ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
 docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0
 docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
-# 5. Initialize zzrrtools project with custom base image
-zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
+# 5. Initialize zzcollab project with custom base image
+zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
     --dotfiles ~/dotfiles
 # This automatically:
 #
@@ -91,7 +91,7 @@ git init
 git add .
 git commit -m "🎉 Initial research project setup
 
-- Complete zzrrtools research compendium  
+- Complete zzcollab research compendium  
 - Team core image published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
 - Private repository protects unpublished research
 - CI/CD configured for automatic team image updates"
@@ -163,7 +163,7 @@ make docker-zsh                   # Back to development environment
 
 ### **🤖 Automated Team Image Updates**
 
-ZZRRTOOLS includes automated GitHub Actions workflows that rebuild and publish the team Docker image whenever package dependencies change. This ensures all team members always have access to the latest, consistent development environment.
+ZZCOLLAB includes automated GitHub Actions workflows that rebuild and publish the team Docker image whenever package dependencies change. This ensures all team members always have access to the latest, consistent development environment.
 
 **Key Benefits:**
 
@@ -286,7 +286,7 @@ PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
 # 3. Build local image with your dotfiles (inherits from chosen core image)
-zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
+zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
     --dotfiles ~/dotfiles
 # This builds on top of your chosen team core image, adding personal dotfiles
 
@@ -545,7 +545,7 @@ data/
 
 ## **🛠️ Vim IDE Development Environment**
 
-### **Enhanced Vim Setup (via zzrrtools dotfiles)**
+### **Enhanced Vim Setup (via zzcollab dotfiles)**
 The containerized environment includes a fully configured vim IDE with:
 
 #### **Vim Plugin Ecosystem:**
@@ -668,7 +668,7 @@ This fully automated workflow provides **enterprise-grade collaboration** for re
 
 ### **📊 Automation Benefits:**
 
-| Traditional Workflow | Automated ZZRRTOOLS Workflow |
+| Traditional Workflow | Automated ZZCOLLAB Workflow |
 |----------------------|------------------------------|
 | Manual image rebuilds | ✅ **Automatic rebuilds on package changes** |
 | Inconsistent environments | ✅ **Guaranteed environment consistency** |
@@ -692,7 +692,7 @@ This workflow ensures **perfect reproducibility** across team members while prov
 
 ### **Overview**
 
-ZZRRTOOLS includes a sophisticated automated Docker image management system that eliminates manual container maintenance while ensuring perfect environment consistency across research teams. This system automatically detects package changes, rebuilds Docker images, and notifies team members - providing enterprise-grade DevOps automation for research workflows.
+ZZCOLLAB includes a sophisticated automated Docker image management system that eliminates manual container maintenance while ensuring perfect environment consistency across research teams. This system automatically detects package changes, rebuilds Docker images, and notifies team members - providing enterprise-grade DevOps automation for research workflows.
 
 ### **🏗️ Architecture**
 
@@ -718,7 +718,7 @@ The automated system is implemented through a comprehensive GitHub Actions workf
 
 ```yaml
 # .github/workflows/update-team-image.yml
-# Automated Team Docker Image Management for ZZRRTOOLS Research Projects
+# Automated Team Docker Image Management for ZZCOLLAB Research Projects
 # 
 # PURPOSE: Automatically rebuild and publish team Docker images when R package
 #          dependencies change, ensuring consistent environments across team members
@@ -851,11 +851,11 @@ jobs:
             type=raw,value=r${{ steps.r-version.outputs.version }}
             type=raw,value={{date 'YYYY-MM-DD'}}
           labels: |
-            org.opencontainers.image.title=ZZRRTOOLS Research Environment
+            org.opencontainers.image.title=ZZCOLLAB Research Environment
             org.opencontainers.image.description=Automated team Docker image for research collaboration
-            org.opencontainers.image.vendor=ZZRRTOOLS
-            research.zzrrtools.r-version=${{ steps.r-version.outputs.version }}
-            research.zzrrtools.package-count=${{ steps.r-version.outputs.package-count }}
+            org.opencontainers.image.vendor=ZZCOLLAB
+            research.zzcollab.r-version=${{ steps.r-version.outputs.version }}
+            research.zzcollab.package-count=${{ steps.r-version.outputs.package-count }}
       
       - name: Build and push Docker image
         if: steps.check-rebuild.outputs.rebuild == 'true'
@@ -891,7 +891,7 @@ jobs:
             
             # Configure git for automated commit
             git config --local user.email "action@github.com"
-            git config --local user.name "ZZRRTOOLS AutoBot"
+            git config --local user.name "ZZCOLLAB AutoBot"
             
             # Commit the updated docker-compose.yml
             git add docker-compose.yml
@@ -1101,7 +1101,7 @@ curl -s "https://hub.docker.com/v2/repositories/team/project/tags/" | \
 ### **🛡️ Security and Privacy Model**
 
 #### **Repository Privacy Strategy**
-ZZRRTOOLS implements a **hybrid privacy approach** optimized for research collaboration:
+ZZCOLLAB implements a **hybrid privacy approach** optimized for research collaboration:
 
 **🔒 PRIVATE GitHub Repository:**
 - **Protects unpublished research** and sensitive methodologies
@@ -1223,4 +1223,4 @@ build-args: |
       }
 ```
 
-This automated Docker image management system transforms ZZRRTOOLS from a manual development tool into an enterprise-grade research collaboration platform with zero-friction package management and perfect environment consistency.
+This automated Docker image management system transforms ZZCOLLAB from a manual development tool into an enterprise-grade research collaboration platform with zero-friction package management and perfect environment consistency.
