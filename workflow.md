@@ -40,7 +40,8 @@ cd research-project
 TEAM_NAME="rgt47" # the account on dockerhub for hosting the core images
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # Copy and customize Dockerfile.pluspackages for your team's needs
-cp ~/bin/zzrrtools-support/templates/Dockerfile.pluspackages ./Dockerfile.teamcore
+cp ~/bin/zzrrtools-support/templates/Dockerfile.pluspackages \
+    ./Dockerfile.teamcore
 
 # Edit Dockerfile.teamcore to add your team's specific R packages and tools:
 vim Dockerfile.teamcore
@@ -59,12 +60,14 @@ vim Dockerfile.teamcore
 # Shell-optimized core (rocker/r-ver base - lightweight, fast startup)
 docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/r-ver \
               -t ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 .
-docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
+docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 \
+    ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
 
 # RStudio-optimized core (rocker/rstudio base - includes RStudio Server)
 docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/rstudio \
               -t ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 .
-docker tag ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
+docker tag ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 \
+    ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
 # 4. Push both team core images to Docker Hub (PUBLIC for reproducibility)
 docker login                       # Login to Docker Hub
@@ -74,7 +77,8 @@ docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0
 docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
 # 5. Initialize zzrrtools project with custom base image
-zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles
+zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
+    --dotfiles ~/dotfiles
 # This automatically:
 #
 # - Creates complete R package structure
@@ -282,7 +286,8 @@ PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
 # 3. Build local image with your dotfiles (inherits from chosen core image)
-zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles
+zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
+    --dotfiles ~/dotfiles
 # This builds on top of your chosen team core image, adding personal dotfiles
 
 # 4. Start development with your preferred interface
@@ -330,8 +335,8 @@ git push origin feature/visualization-analysis
 
 # 9. Create pull request
 gh pr create --title "Add visualization analysis with tests" \
-             --body "Added visualization analysis script with comprehensive tests" \
-             --base main
+    --body "Added visualization analysis script with comprehensive tests" \
+    --base main
 
 # 10. CI automatically handles the rest!
 # - If new packages detected: renv::snapshot() runs
@@ -444,7 +449,7 @@ git push origin feature/advanced-models
 
 # 13. Create pull request with detailed review checklist
 gh pr create --title "Add advanced multilevel modeling analysis" \
-             --body "## Summary
+    --body "## Summary
 - Integrates visualization functions from previous PR
 - Adds multilevel modeling capabilities with lme4
 - Includes comprehensive end-to-end testing
@@ -777,7 +782,8 @@ jobs:
           if [ "${{ github.event.inputs.force_rebuild }}" == "true" ]; then
             echo "rebuild=true" >> $GITHUB_OUTPUT
             echo "reason=Manual force rebuild requested" >> $GITHUB_OUTPUT
-          elif git diff HEAD~1 --name-only | grep -E "(renv\.lock|DESCRIPTION|Dockerfile|docker-compose\.yml)"; then
+          elif git diff HEAD~1 --name-only | \
+               grep -E "(renv\.lock|DESCRIPTION|Dockerfile|docker-compose\.yml)"; then
             echo "rebuild=true" >> $GITHUB_OUTPUT
             echo "reason=Package or container configuration changes detected" >> $GITHUB_OUTPUT
           else
@@ -807,7 +813,8 @@ jobs:
           fi
           
           # Compare with previous version if available
-          if git show HEAD~1:renv.lock 2>/dev/null | jq -r '.Packages | keys[]' | sort > previous_packages.txt; then
+          if git show HEAD~1:renv.lock 2>/dev/null | \
+             jq -r '.Packages | keys[]' | sort > previous_packages.txt; then
             NEW_PACKAGES=$(comm -13 previous_packages.txt current_packages.txt | tr '\n' ' ')
             REMOVED_PACKAGES=$(comm -23 previous_packages.txt current_packages.txt | tr '\n' ' ')
             echo "new-packages=${NEW_PACKAGES}" >> $GITHUB_OUTPUT
@@ -873,7 +880,8 @@ jobs:
         if: steps.check-rebuild.outputs.rebuild == 'true'
         run: |
           # Update image reference in docker-compose.yml
-          sed -i "s|image: .*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest|g" docker-compose.yml
+          sed -i "s|image: .*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest|g" \
+              docker-compose.yml
           
           # Check if there are actual changes
           if git diff --quiet docker-compose.yml; then
@@ -1086,7 +1094,8 @@ make docker-build
 docker run --rm $(cat .project-name):latest R -e "installed.packages()[,1]"
 
 # Docker Hub registry inspection
-curl -s "https://hub.docker.com/v2/repositories/team/project/tags/" | jq '.results[].name'
+curl -s "https://hub.docker.com/v2/repositories/team/project/tags/" | \
+    jq '.results[].name'
 ```
 
 ### **🛡️ Security and Privacy Model**
