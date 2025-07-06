@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS INSTALLATION SCRIPT
+# ZZCOLLAB INSTALLATION SCRIPT
 ##############################################################################
 
 set -euo pipefail
@@ -30,9 +30,9 @@ log_success() {
 
 show_help() {
     cat << EOF
-${BLUE}ZZRRTOOLS Installation Script${NC}
+${BLUE}ZZCOLLAB Installation Script${NC}
 
-Installs zzrrtools by copying all necessary files to the specified directory.
+Installs zzcollab by copying all necessary files to the specified directory.
 
 USAGE:
     $0 [OPTIONS]
@@ -48,13 +48,13 @@ EXAMPLES:
 
 INSTALLATION STRUCTURE:
     INSTALL_DIR/
-    ├── zzrrtools           # Main executable script
-    ├── zzrrtools/          # Support files directory
+    ├── zzcollab           # Main executable script
+    ├── zzcollab/          # Support files directory
     │   ├── modules/        # Module files
     │   └── templates/      # Template files
-    └── README_zzrrtools.md # Installation info
+    └── README_zzcollab.md # Installation info
 
-The installed zzrrtools will be completely self-contained and work from any location.
+The installed zzcollab will be completely self-contained and work from any location.
 EOF
 }
 
@@ -86,11 +86,11 @@ done
 
 # Set up installation paths
 INSTALL_DIR="$INSTALL_PREFIX/bin"
-ZZRRTOOLS_SUPPORT_DIR="$INSTALL_DIR/zzrrtools-support"
+ZZCOLLAB_SUPPORT_DIR="$INSTALL_DIR/zzcollab-support"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-log_info "Installing zzrrtools to $INSTALL_DIR"
-log_info "Support files will be in $ZZRRTOOLS_SUPPORT_DIR"
+log_info "Installing zzcollab to $INSTALL_DIR"
+log_info "Support files will be in $ZZCOLLAB_SUPPORT_DIR"
 
 # Create installation directory if it doesn't exist
 if [[ ! -d "$INSTALL_DIR" ]]; then
@@ -98,9 +98,9 @@ if [[ ! -d "$INSTALL_DIR" ]]; then
     mkdir -p "$INSTALL_DIR"
 fi
 
-# Check if zzrrtools.sh exists
-if [[ ! -f "$SCRIPT_DIR/zzrrtools.sh" ]]; then
-    log_error "zzrrtools.sh not found in $SCRIPT_DIR"
+# Check if zzcollab.sh exists
+if [[ ! -f "$SCRIPT_DIR/zzcollab.sh" ]]; then
+    log_error "zzcollab.sh not found in $SCRIPT_DIR"
     exit 1
 fi
 
@@ -113,116 +113,116 @@ for dir in "modules" "templates"; do
 done
 
 # Check for existing installation
-if [[ -e "$INSTALL_DIR/zzrrtools" ]]; then
-    log_error "Installation target already exists: $INSTALL_DIR/zzrrtools"
+if [[ -e "$INSTALL_DIR/zzcollab" ]]; then
+    log_error "Installation target already exists: $INSTALL_DIR/zzcollab"
     log_error "Please remove it first or choose a different installation directory:"
-    log_error "  rm -rf $INSTALL_DIR/zzrrtools"
+    log_error "  rm -rf $INSTALL_DIR/zzcollab"
     log_error "  # OR"
     log_error "  $0 --prefix /different/path"
     exit 1
 fi
 
-if [[ -d "$ZZRRTOOLS_SUPPORT_DIR" ]]; then
-    log_info "Removing existing zzrrtools support directory..."
-    rm -rf "$ZZRRTOOLS_SUPPORT_DIR"
+if [[ -d "$ZZCOLLAB_SUPPORT_DIR" ]]; then
+    log_info "Removing existing zzcollab support directory..."
+    rm -rf "$ZZCOLLAB_SUPPORT_DIR"
 fi
 
 # Create support directory
 log_info "Creating support directory structure..."
-mkdir -p "$ZZRRTOOLS_SUPPORT_DIR"
+mkdir -p "$ZZCOLLAB_SUPPORT_DIR"
 
 # Copy modules and templates
 log_info "Copying modules directory..."
-cp -r "$SCRIPT_DIR/modules" "$ZZRRTOOLS_SUPPORT_DIR/"
+cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_SUPPORT_DIR/"
 
 log_info "Copying templates directory..."
-cp -r "$SCRIPT_DIR/templates" "$ZZRRTOOLS_SUPPORT_DIR/"
+cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_SUPPORT_DIR/"
 
-# Create the main zzrrtools executable
+# Create the main zzcollab executable
 log_info "Creating main executable..."
-cat > "$INSTALL_DIR/zzrrtools" << 'EOF'
+cat > "$INSTALL_DIR/zzcollab" << 'EOF'
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS MAIN EXECUTABLE (Installed Version)
+# ZZCOLLAB MAIN EXECUTABLE (Installed Version)
 ##############################################################################
 
 set -euo pipefail
 
 # Determine the installation directory
 INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ZZRRTOOLS_SUPPORT_DIR="$INSTALL_DIR/zzrrtools-support"
+ZZCOLLAB_SUPPORT_DIR="$INSTALL_DIR/zzcollab-support"
 
 # Set up paths for the installed version
-readonly SCRIPT_DIR="$ZZRRTOOLS_SUPPORT_DIR"
+readonly SCRIPT_DIR="$ZZCOLLAB_SUPPORT_DIR"
 readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
 readonly MODULES_DIR="$SCRIPT_DIR/modules"
 
 # Validate installation
 if [[ ! -d "$MODULES_DIR" ]]; then
     echo "❌ Error: Modules directory not found: $MODULES_DIR"
-    echo "❌ zzrrtools installation may be corrupted"
+    echo "❌ zzcollab installation may be corrupted"
     exit 1
 fi
 
 if [[ ! -d "$TEMPLATES_DIR" ]]; then
     echo "❌ Error: Templates directory not found: $TEMPLATES_DIR"
-    echo "❌ zzrrtools installation may be corrupted"
+    echo "❌ zzcollab installation may be corrupted"
     exit 1
 fi
 
-# Source the main zzrrtools script logic
+# Source the main zzcollab script logic
 EOF
 
-# Append the main zzrrtools.sh content (excluding the shebang and initial setup)
+# Append the main zzcollab.sh content (excluding the shebang and initial setup)
 # Filter out duplicate readonly declarations that would conflict
-tail -n +18 "$SCRIPT_DIR/zzrrtools.sh" | grep -v "^readonly SCRIPT_DIR=" | grep -v "^readonly TEMPLATES_DIR=" | grep -v "^readonly MODULES_DIR=" >> "$INSTALL_DIR/zzrrtools"
+tail -n +18 "$SCRIPT_DIR/zzcollab.sh" | grep -v "^readonly SCRIPT_DIR=" | grep -v "^readonly TEMPLATES_DIR=" | grep -v "^readonly MODULES_DIR=" >> "$INSTALL_DIR/zzcollab"
 
 # Make the main executable
-chmod +x "$INSTALL_DIR/zzrrtools"
+chmod +x "$INSTALL_DIR/zzcollab"
 
 # Create installation info file
-cat > "$INSTALL_DIR/README_zzrrtools.md" << EOF
-# ZZRRTOOLS Installation
+cat > "$INSTALL_DIR/README_zzcollab.md" << EOF
+# ZZCOLLAB Installation
 
-This directory contains a complete installation of zzrrtools.
+This directory contains a complete installation of zzcollab.
 
 ## Installation Details
 - Installed on: $(date)
 - Installed from: $SCRIPT_DIR
 - Installation directory: $INSTALL_DIR
-- Support files: $ZZRRTOOLS_SUPPORT_DIR
+- Support files: $ZZCOLLAB_SUPPORT_DIR
 
 ## Files
-- \`zzrrtools\` - Main executable
-- \`zzrrtools/\` - Support files directory
-- \`README_zzrrtools.md\` - This file
+- \`zzcollab\` - Main executable
+- \`zzcollab/\` - Support files directory
+- \`README_zzcollab.md\` - This file
 
 ## Usage
-Run \`zzrrtools --help\` from anywhere to get started.
+Run \`zzcollab --help\` from anywhere to get started.
 
 ## Uninstall
-To remove zzrrtools:
+To remove zzcollab:
 \`\`\`bash
-rm -f $INSTALL_DIR/zzrrtools
-rm -rf $ZZRRTOOLS_SUPPORT_DIR
-rm -f $INSTALL_DIR/README_zzrrtools.md
+rm -f $INSTALL_DIR/zzcollab
+rm -rf $ZZCOLLAB_SUPPORT_DIR
+rm -f $INSTALL_DIR/README_zzcollab.md
 \`\`\`
 EOF
 
 log_success "Installation complete!"
 echo ""
 log_info "📁 Installed files:"
-log_info "   Main executable: $INSTALL_DIR/zzrrtools"
-log_info "   Support files: $ZZRRTOOLS_SUPPORT_DIR"
-log_info "   Documentation: $INSTALL_DIR/README_zzrrtools.md"
+log_info "   Main executable: $INSTALL_DIR/zzcollab"
+log_info "   Support files: $ZZCOLLAB_SUPPORT_DIR"
+log_info "   Documentation: $INSTALL_DIR/README_zzcollab.md"
 echo ""
 
 # Test the installation
 log_info "🧪 Testing installation..."
-if "$INSTALL_DIR/zzrrtools" --help > /dev/null 2>&1; then
+if "$INSTALL_DIR/zzcollab" --help > /dev/null 2>&1; then
     log_success "Installation test passed!"
 else
-    log_error "Installation test failed - zzrrtools may not work correctly"
+    log_error "Installation test failed - zzcollab may not work correctly"
 fi
 
 # Check if directory is in PATH
@@ -232,11 +232,11 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     log_warn "Add this to your shell config file (~/.bashrc, ~/.zshrc):"
     log_warn "export PATH=\"$INSTALL_DIR:\$PATH\""
     echo ""
-    log_info "Or run zzrrtools with full path: $INSTALL_DIR/zzrrtools"
+    log_info "Or run zzcollab with full path: $INSTALL_DIR/zzcollab"
 else
     echo ""
-    log_success "🚀 zzrrtools is ready! Run 'zzrrtools --help' to get started"
+    log_success "🚀 zzcollab is ready! Run 'zzcollab --help' to get started"
 fi
 
 echo ""
-log_info "📖 See $INSTALL_DIR/README_zzrrtools.md for installation details"
+log_info "📖 See $INSTALL_DIR/README_zzcollab.md for installation details"
