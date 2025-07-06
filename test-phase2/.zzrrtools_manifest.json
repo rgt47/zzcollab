@@ -63,8 +63,8 @@
       "destination": "check_renv_for_commit.R"
     },
     {
-      "template": "ZZRRTOOLS_USER_GUIDE.md",
-      "destination": "ZZRRTOOLS_USER_GUIDE.md"
+      "template": "ZZCOLLAB_USER_GUIDE.md",
+      "destination": "ZZCOLLAB_USER_GUIDE.md"
     }
   ],
   "symlinks": [

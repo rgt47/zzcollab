@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS DOCKER MODULE
+# ZZCOLLAB DOCKER MODULE
 ##############################################################################
 # 
 # PURPOSE: Docker integration and containerized development environment
@@ -16,12 +16,12 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZRRTOOLS_CORE_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
     echo "❌ Error: docker.sh requires core.sh to be loaded first" >&2
     exit 1
 fi
 
-if [[ "${ZZRRTOOLS_TEMPLATES_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_TEMPLATES_LOADED:-}" != "true" ]]; then
     echo "❌ Error: docker.sh requires templates.sh to be loaded first" >&2
     exit 1
 fi
@@ -106,7 +106,7 @@ except:
 #   - docker-compose.yml (multi-service container orchestration)
 #   - .zshrc_docker (container shell configuration)
 #   - check_renv_for_commit.R (package validation script)
-#   - ZZRRTOOLS_USER_GUIDE.md (comprehensive documentation)
+#   - ZZCOLLAB_USER_GUIDE.md (comprehensive documentation)
 #
 # Process:
 #   1. Detect R version from renv.lock if available
@@ -175,8 +175,8 @@ create_docker_files() {
     
     # Create comprehensive user guide
     # Contains: detailed usage instructions, troubleshooting, best practices
-    if copy_template_file "ZZRRTOOLS_USER_GUIDE.md" "ZZRRTOOLS_USER_GUIDE.md" "comprehensive user guide"; then
-        track_template_file "ZZRRTOOLS_USER_GUIDE.md" "ZZRRTOOLS_USER_GUIDE.md"
+    if copy_template_file "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide"; then
+        track_template_file "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md"
         log_info "Created comprehensive user guide"
     else
         log_error "Failed to create user guide"
@@ -289,7 +289,7 @@ build_docker_image() {
         log_error "1. Check the Dockerfile for syntax errors"
         log_error "2. Try building with no cache: docker build --no-cache ..."
         log_error "3. Check Docker logs for specific error messages"
-        log_error "4. Consult ZZRRTOOLS_USER_GUIDE.md for additional troubleshooting"
+        log_error "4. Consult ZZCOLLAB_USER_GUIDE.md for additional troubleshooting"
         
         return 1
     fi
@@ -362,7 +362,7 @@ show_docker_summary() {
 ├── docker-compose.yml           # Multi-service orchestration
 ├── .zshrc_docker                # Container shell configuration
 ├── check_renv_for_commit.R      # Package validation script
-└── ZZRRTOOLS_USER_GUIDE.md      # Comprehensive documentation
+└── ZZCOLLAB_USER_GUIDE.md      # Comprehensive documentation
 
 🚀 CONTAINER SERVICES:
 - rstudio    → RStudio Server (http://localhost:8787)
@@ -387,7 +387,7 @@ show_docker_summary() {
 🔍 TROUBLESHOOTING:
 - Check Docker Desktop is running
 - Ensure sufficient disk space (>2GB)
-- See ZZRRTOOLS_USER_GUIDE.md for detailed help
+- See ZZCOLLAB_USER_GUIDE.md for detailed help
 EOF
 }
 
@@ -406,6 +406,6 @@ if [[ -z "${BASE_IMAGE:-}" ]]; then
 fi
 
 # Set docker module loaded flag
-readonly ZZRRTOOLS_DOCKER_LOADED=true
+readonly ZZCOLLAB_DOCKER_LOADED=true
 
 log_info "Docker module loaded successfully"

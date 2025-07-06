@@ -1,7 +1,7 @@
-# ZZRRTOOLS Research Compendium Framework - User Guide v4.0
+# ZZCOLLAB Research Compendium Framework - User Guide v4.0
 
 ## Table of Contents
-1. [What is ZZRRTOOLS?](#what-is-zzrrtools)
+1. [What is ZZCOLLAB?](#what-is-zzcollab)
 2. [Getting Started](#getting-started)
 3. [Installation & Distribution](#installation--distribution)
 4. [Configuration](#configuration)
@@ -24,9 +24,9 @@
 21. [Version History](#version-history)
 22. [Architecture Information](#architecture-information)
 
-## What is ZZRRTOOLS?
+## What is ZZCOLLAB?
 
-**ZZRRTOOLS** is a modular framework for creating **research compendia** - self-contained, reproducible research projects that combine:
+**ZZCOLLAB** is a modular framework for creating **research compendia** - self-contained, reproducible research projects that combine:
 - R package structure for code organization
 - Data management and documentation
 - Analysis scripts and notebooks
@@ -54,14 +54,14 @@
 ### Quick Start
 ```bash
 # 1. One-time installation (replace [YOUR-USERNAME] with actual GitHub username)
-git clone https://github.com/[YOUR-USERNAME]/zzrrtools.git
-cd zzrrtools
+git clone https://github.com/[YOUR-USERNAME]/zzcollab.git
+cd zzcollab
 ./install.sh
 
 # 2. Create new analysis project
 mkdir my-penguin-analysis
 cd my-penguin-analysis
-zzrrtools --dotfiles ~/dotfiles
+zzcollab --dotfiles ~/dotfiles
 
 # 3. Start developing immediately
 make docker-rstudio  # → http://localhost:8787
@@ -74,21 +74,21 @@ make docker-r        # → R console in container
 ### Method 1: Automatic Installation (Recommended)
 ```bash
 # One-line install
-git clone https://github.com/[YOUR-USERNAME]/zzrrtools.git && cd zzrrtools && ./install.sh
+git clone https://github.com/[YOUR-USERNAME]/zzcollab.git && cd zzcollab && ./install.sh
 ```
 
 ### Method 2: Manual Installation
 ```bash
 # Clone and create symlink manually
-git clone https://github.com/[YOUR-USERNAME]/zzrrtools.git
-cd zzrrtools
-ln -s "$(pwd)/zzrrtools.sh" ~/bin/zzrrtools  # Adjust path as needed
+git clone https://github.com/[YOUR-USERNAME]/zzcollab.git
+cd zzcollab
+ln -s "$(pwd)/zzcollab.sh" ~/bin/zzcollab  # Adjust path as needed
 ```
 
 ### Method 3: Direct Download
 ```bash
 # Download and install in one step
-curl -fsSL https://raw.githubusercontent.com/[YOUR-USERNAME]/zzrrtools/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/[YOUR-USERNAME]/zzcollab/main/install.sh | bash
 ```
 
 ### Project Creation Workflow
@@ -101,7 +101,7 @@ mkdir my-climate-study
 cd my-climate-study
 
 # Set up complete research compendium
-zzrrtools --dotfiles ~/dotfiles --base-image rocker/tidyverse
+zzcollab --dotfiles ~/dotfiles --base-image rocker/tidyverse
 
 # Initialize git (work locally first)
 git init
@@ -134,7 +134,7 @@ mkdir penguin-behavioral-analysis
 cd penguin-behavioral-analysis
 
 # 2. Set up research compendium
-zzrrtools --dotfiles ~/dotfiles --base-image rocker/tidyverse
+zzcollab --dotfiles ~/dotfiles --base-image rocker/tidyverse
 
 # 3. Initialize git and work locally
 git init
@@ -161,7 +161,7 @@ gh repo create my-research-project --public --clone
 
 # 2. Enter the directory and set up
 cd my-research-project
-zzrrtools --dotfiles ~/dotfiles
+zzcollab --dotfiles ~/dotfiles
 
 # 3. Commit and push
 git add .
@@ -185,12 +185,12 @@ export RRTOOLS_INSTITUTE_FULL="Massachusetts Institute of Technology"
 export RRTOOLS_BASE_PATH="/path/to/rrtools/files"
 
 # Then run
-zzrrtools
+zzcollab
 ```
 
 ### Command-Line Options
 ```bash
-zzrrtools [OPTIONS]
+zzcollab [OPTIONS]
 
 OPTIONS:
   --no-docker          Skip Docker image build during setup
@@ -201,17 +201,17 @@ OPTIONS:
   --help, -h           Show help message
 
 EXAMPLES:
-  zzrrtools                                           # Full setup with Docker
-  zzrrtools --no-docker                              # Setup without Docker build
-  zzrrtools --dotfiles ~/dotfiles                    # Include personal dotfiles
-  zzrrtools --dotfiles-nodot ~/dotfiles              # Dotfiles without leading dots
-  zzrrtools --base-image rocker/tidyverse            # Use tidyverse base image
-  RRTOOLS_AUTHOR_NAME="Jane Doe" zzrrtools           # Custom author
+  zzcollab                                           # Full setup with Docker
+  zzcollab --no-docker                              # Setup without Docker build
+  zzcollab --dotfiles ~/dotfiles                    # Include personal dotfiles
+  zzcollab --dotfiles-nodot ~/dotfiles              # Dotfiles without leading dots
+  zzcollab --base-image rocker/tidyverse            # Use tidyverse base image
+  RRTOOLS_AUTHOR_NAME="Jane Doe" zzcollab           # Custom author
 ```
 
 ### Modular Implementation Details
 
-ZZRRTOOLS now uses a **modular architecture** that automatically:
+ZZCOLLAB now uses a **modular architecture** that automatically:
 
 1. **Loads 8 modules** in dependency order during setup
 2. **Creates manifest tracking** for complete uninstall capability  
@@ -231,7 +231,7 @@ The modular design provides enhanced maintainability while preserving 100% backw
 
 ## Modular Architecture
 
-ZZRRTOOLS v4.0 features a **modular architecture** with 8 focused modules that provide maintainability and flexibility:
+ZZCOLLAB v4.0 features a **modular architecture** with 8 focused modules that provide maintainability and flexibility:
 
 ### Core Modules
 
@@ -335,18 +335,18 @@ ZZRRTOOLS v4.0 features a **modular architecture** with 8 focused modules that p
 
 ## Uninstall and Cleanup
 
-ZZRRTOOLS v4.0 includes **comprehensive uninstall capability** with manifest tracking:
+ZZCOLLAB v4.0 includes **comprehensive uninstall capability** with manifest tracking:
 
 ### Automatic Manifest Creation
 
-Every zzrrtools setup creates a manifest file that tracks all created items:
+Every zzcollab setup creates a manifest file that tracks all created items:
 
 ```bash
 # JSON manifest (if jq is available)
-.zzrrtools_manifest.json
+.zzcollab_manifest.json
 
 # Text manifest (fallback)
-.zzrrtools_manifest.txt
+.zzcollab_manifest.txt
 ```
 
 ### Manifest Contents
@@ -365,16 +365,16 @@ Each project includes an automatic uninstall script:
 
 ```bash
 # Dry run (preview what would be removed)
-./zzrrtools-uninstall.sh --dry-run
+./zzcollab-uninstall.sh --dry-run
 
 # Interactive removal with confirmations
-./zzrrtools-uninstall.sh
+./zzcollab-uninstall.sh
 
 # Force removal without prompts
-./zzrrtools-uninstall.sh --force
+./zzcollab-uninstall.sh --force
 
 # Show uninstall help
-./zzrrtools-uninstall.sh --help
+./zzcollab-uninstall.sh --help
 ```
 
 ### Safety Features
@@ -400,8 +400,8 @@ The uninstall script organizes removals by category:
 ### Example Uninstall Session
 
 ```bash
-$ ./zzrrtools-uninstall.sh
-ℹ️  === ZZRRTOOLS UNINSTALL ===
+$ ./zzcollab-uninstall.sh
+ℹ️  === ZZCOLLAB UNINSTALL ===
 ℹ️  Package: myproject
 ℹ️  Created: 2025-06-29T05:12:40Z
 ℹ️  Items to remove:
@@ -409,7 +409,7 @@ $ ./zzrrtools-uninstall.sh
 ℹ️    - Files: 15
 ℹ️    - Symlinks: 10
 
-⚠️  WARNING: This will remove all zzrrtools-created files
+⚠️  WARNING: This will remove all zzcollab-created files
 📁 Project appears to be git-managed
 💡 Consider backing up your work first
 
@@ -430,9 +430,9 @@ $ ./zzrrtools-uninstall.sh
 
 ## Enhanced Research Compendium Features
 
-This section describes the advanced research capabilities integrated into ZZRRTOOLS v4.0. These features were originally planned as separate rrtools_plus enhancements but have been seamlessly integrated into the modular architecture described in the previous section.
+This section describes the advanced research capabilities integrated into ZZCOLLAB v4.0. These features were originally planned as separate rrtools_plus enhancements but have been seamlessly integrated into the modular architecture described in the previous section.
 
-ZZRRTOOLS v4.0 integrates advanced research compendium capabilities that were planned for the rrtools_plus enhancement:
+ZZCOLLAB v4.0 integrates advanced research compendium capabilities that were planned for the rrtools_plus enhancement:
 
 ### ✅ **Fully Integrated Features**
 
@@ -588,7 +588,7 @@ p     # → ./analysis/report    (research report)
 #### Initial Setup (One Time)
 ```bash
 cd your-project
-zzrrtools                       # Creates complete research compendium with:
+zzcollab                       # Creates complete research compendium with:
                                # - All 8 modules (core, templates, structure, etc.)
                                # - GitHub collaboration templates  
                                # - Automated CI/CD workflows
@@ -640,7 +640,7 @@ cp ~/Downloads/reference.csv data/external_data/
 # Create data validation scripts in data/validation/
 
 # 3. Data processing pipeline using research infrastructure templates
-# ZZRRTOOLS automatically creates these research scripts:
+# ZZCOLLAB automatically creates these research scripts:
 # scripts/00_testing_guide.R       → Comprehensive testing instructions
 # scripts/00_setup_parallel.R     → High-performance computing setup
 # scripts/00_database_setup.R     → Database connection templates
@@ -702,7 +702,7 @@ make docker-build             # Rebuild with new dependencies
 
 ## Research Infrastructure Scripts
 
-ZZRRTOOLS automatically creates **comprehensive research infrastructure scripts** in the `scripts/` directory to support advanced research workflows:
+ZZCOLLAB automatically creates **comprehensive research infrastructure scripts** in the `scripts/` directory to support advanced research workflows:
 
 ### Infrastructure Scripts Overview
 
@@ -933,7 +933,7 @@ make help                      # Show all available targets
 ## GitHub Actions CI/CD
 
 ### Enhanced CI/CD with rrtools_plus Integration
-ZZRRTOOLS provides **comprehensive GitHub Actions** with quality assurance and collaboration features:
+ZZCOLLAB provides **comprehensive GitHub Actions** with quality assurance and collaboration features:
 
 #### 1. R Package Check (`.github/workflows/r-package.yml`)
 - **Triggers**: Push/PR to main/master
@@ -1048,7 +1048,7 @@ git commit -m "Add new_package dependency"
 #### Project Creator
 ```bash
 # 1. Initial setup
-zzrrtools                       # Creates structure, copies script
+zzcollab                       # Creates structure, copies script
 git init
 git add .
 git commit -m "Initial rrtools setup"
@@ -1061,7 +1061,7 @@ git push -u origin main
 # 1. Clone and setup (one time)
 git clone https://github.com/[TEAM]/project.git
 cd project
-zzrrtools                       # Script already in repo!
+zzcollab                       # Script already in repo!
 
 # 2. Start developing immediately
 make docker-rstudio
@@ -1169,7 +1169,7 @@ Solution: Use .gitignore for data files, Git LFS for large files
 
 1. **Check this guide** for common workflows
 2. **Use `make help`** to see available targets
-3. **Check script help**: `zzrrtools --help`
+3. **Check script help**: `zzcollab --help`
 4. **Validate environment**: `make docker-check-renv`
 5. **Clean and rebuild**: `make docker-clean && make docker-build`
 
@@ -1225,9 +1225,9 @@ export RRTOOLS_BASE_PATH="/custom/path"
 
 ### File Organization
 ```
-zzrrtools/
-├── zzrrtools.sh                    # Main entry point (modular v4.0)
-├── zzrrtools-original.sh           # Backup of v3.0 monolithic version
+zzcollab/
+├── zzcollab.sh                    # Main entry point (modular v4.0)
+├── zzcollab-original.sh           # Backup of v3.0 monolithic version
 ├── modules/                        # Modular components
 │   ├── core.sh                     # Foundation utilities
 │   ├── templates.sh                # Template processing
@@ -1238,14 +1238,14 @@ zzrrtools/
 │   ├── cicd.sh                     # CI/CD workflows
 │   └── devtools.sh                 # Development tools
 └── templates/                      # All template files
-    ├── ZZRRTOOLS_USER_GUIDE.md     # This documentation
-    ├── zzrrtools-uninstall.sh      # Uninstall script template
+    ├── ZZCOLLAB_USER_GUIDE.md     # This documentation
+    ├── zzcollab-uninstall.sh      # Uninstall script template
     └── [template files...]
 ```
 
 ## Summary
 
-ZZRRTOOLS v4.0 provides a **complete research environment** with integrated rrtools_plus enhancements:
+ZZCOLLAB v4.0 provides a **complete research environment** with integrated rrtools_plus enhancements:
 
 ### **Core Research Infrastructure**
 - **Docker-first development** (no local R required)

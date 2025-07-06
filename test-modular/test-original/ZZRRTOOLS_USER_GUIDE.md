@@ -1,7 +1,7 @@
-# ZZRRTOOLS Research Compendium Framework - User Guide v3.0
+# ZZCOLLAB Research Compendium Framework - User Guide v3.0
 
 ## Table of Contents
-1. [What is ZZRRTOOLS?](#what-is-zzrrtools)
+1. [What is ZZCOLLAB?](#what-is-zzcollab)
 2. [Getting Started](#getting-started)
 3. [Installation & Distribution](#installation--distribution)
 4. [Configuration](#configuration)
@@ -17,9 +17,9 @@
 14. [Collaboration](#collaboration)
 15. [Troubleshooting](#troubleshooting)
 
-## What is ZZRRTOOLS?
+## What is ZZCOLLAB?
 
-**ZZRRTOOLS** is a framework for creating **research compendia** - self-contained, reproducible research projects that combine:
+**ZZCOLLAB** is a framework for creating **research compendia** - self-contained, reproducible research projects that combine:
 - R package structure for code organization
 - Data management and documentation
 - Analysis scripts and notebooks
@@ -45,14 +45,14 @@
 ### Quick Start
 ```bash
 # 1. One-time installation
-git clone https://github.com/yourusername/zzrrtools.git
-cd zzrrtools
+git clone https://github.com/yourusername/zzcollab.git
+cd zzcollab
 ./install.sh
 
 # 2. Create new analysis project
 mkdir my-penguin-analysis
 cd my-penguin-analysis
-zzrrtools --dotfiles ~/dotfiles
+zzcollab --dotfiles ~/dotfiles
 
 # 3. Start developing immediately
 make docker-rstudio  # → http://localhost:8787
@@ -65,21 +65,21 @@ make docker-r        # → R console in container
 ### Method 1: Automatic Installation (Recommended)
 ```bash
 # One-line install
-git clone https://github.com/yourusername/zzrrtools.git && cd zzrrtools && ./install.sh
+git clone https://github.com/yourusername/zzcollab.git && cd zzcollab && ./install.sh
 ```
 
 ### Method 2: Manual Installation
 ```bash
 # Clone and create symlink manually
-git clone https://github.com/yourusername/zzrrtools.git
-cd zzrrtools
-ln -s "$(pwd)/zzrrtools.sh" ~/bin/zzrrtools  # Adjust path as needed
+git clone https://github.com/yourusername/zzcollab.git
+cd zzcollab
+ln -s "$(pwd)/zzcollab.sh" ~/bin/zzcollab  # Adjust path as needed
 ```
 
 ### Method 3: Direct Download
 ```bash
 # Download and install in one step
-curl -fsSL https://raw.githubusercontent.com/yourusername/zzrrtools/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yourusername/zzcollab/main/install.sh | bash
 ```
 
 ### Project Creation Workflow
@@ -92,7 +92,7 @@ mkdir my-climate-study
 cd my-climate-study
 
 # Set up complete research compendium
-zzrrtools --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
+zzcollab --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
 
 # Initialize git (work locally first)
 git init
@@ -125,7 +125,7 @@ mkdir penguin-behavioral-analysis
 cd penguin-behavioral-analysis
 
 # 2. Set up research compendium
-zzrrtools --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
+zzcollab --dotfiles ~/dotfiles --base-image rgt47/r-pluspackages
 
 # 3. Initialize git and work locally
 git init
@@ -152,7 +152,7 @@ gh repo create my-research-project --public --clone
 
 # 2. Enter the directory and set up
 cd my-research-project
-zzrrtools --dotfiles ~/dotfiles
+zzcollab --dotfiles ~/dotfiles
 
 # 3. Commit and push
 git add .
@@ -176,12 +176,12 @@ export RRTOOLS_INSTITUTE_FULL="Massachusetts Institute of Technology"
 export RRTOOLS_BASE_PATH="/path/to/rrtools/files"
 
 # Then run
-zzrrtools
+zzcollab
 ```
 
 ### Command-Line Options
 ```bash
-zzrrtools [OPTIONS]
+zzcollab [OPTIONS]
 
 OPTIONS:
   --no-docker          Skip Docker image build during setup
@@ -192,12 +192,12 @@ OPTIONS:
   --help, -h           Show help message
 
 EXAMPLES:
-  zzrrtools                                           # Full setup with Docker
-  zzrrtools --no-docker                              # Setup without Docker build
-  zzrrtools --dotfiles ~/dotfiles                    # Include personal dotfiles
-  zzrrtools --dotfiles-nodot ~/dotfiles              # Dotfiles without leading dots
-  zzrrtools --base-image rgt47/r-pluspackages        # Use custom base image
-  RRTOOLS_AUTHOR_NAME="Jane Doe" zzrrtools           # Custom author
+  zzcollab                                           # Full setup with Docker
+  zzcollab --no-docker                              # Setup without Docker build
+  zzcollab --dotfiles ~/dotfiles                    # Include personal dotfiles
+  zzcollab --dotfiles-nodot ~/dotfiles              # Dotfiles without leading dots
+  zzcollab --base-image rgt47/r-pluspackages        # Use custom base image
+  RRTOOLS_AUTHOR_NAME="Jane Doe" zzcollab           # Custom author
 ```
 
 ### Safety Features
@@ -277,7 +277,7 @@ p     # → ./analysis/paper    (research paper)
 #### Initial Setup (One Time)
 ```bash
 cd your-project
-zzrrtools                       # Creates structure + builds Docker image
+zzcollab                       # Creates structure + builds Docker image
 ```
 
 #### Daily Development Cycle

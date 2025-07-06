@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS R PACKAGE MODULE
+# ZZCOLLAB R PACKAGE MODULE
 ##############################################################################
 # 
 # PURPOSE: R package structure creation and management
@@ -17,12 +17,12 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZRRTOOLS_CORE_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
     echo "❌ Error: rpackage.sh requires core.sh to be loaded first" >&2
     exit 1
 fi
 
-if [[ "${ZZRRTOOLS_TEMPLATES_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_TEMPLATES_LOADED:-}" != "true" ]]; then
     echo "❌ Error: rpackage.sh requires templates.sh to be loaded first" >&2
     exit 1
 fi
@@ -365,6 +365,6 @@ if [[ -z "${PKG_NAME:-}" ]]; then
 fi
 
 # Set rpackage module loaded flag
-readonly ZZRRTOOLS_RPACKAGE_LOADED=true
+readonly ZZCOLLAB_RPACKAGE_LOADED=true
 
 log_info "R package module loaded successfully"

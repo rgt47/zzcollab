@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS TEMPLATES MODULE
+# ZZCOLLAB TEMPLATES MODULE
 ##############################################################################
 # 
 # PURPOSE: Template processing engine and file creation utilities
@@ -12,7 +12,7 @@
 ##############################################################################
 
 # Validate core module is loaded
-if [[ "${ZZRRTOOLS_CORE_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
     echo "❌ Error: templates.sh requires core.sh to be loaded first" >&2
     exit 1
 fi
@@ -153,4 +153,4 @@ create_file_if_missing() {
 #=============================================================================
 
 # Set templates module loaded flag
-readonly ZZRRTOOLS_TEMPLATES_LOADED=true
+readonly ZZCOLLAB_TEMPLATES_LOADED=true

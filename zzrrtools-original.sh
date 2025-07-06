@@ -10,7 +10,7 @@
 #          - GitHub Actions CI/CD workflows
 #          - Make-based automation tools
 #
-# USAGE:   ./zzrrtools.sh [OPTIONS]
+# USAGE:   ./zzcollab.sh [OPTIONS]
 #          Run with --help to see all available options
 #
 # AUTHOR:  Designed for research reproducibility workflows
@@ -151,7 +151,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --help|-h)
             cat << EOF
-Usage: zzrrtools.sh [OPTIONS]
+Usage: zzcollab.sh [OPTIONS]
 
 Creates a complete rrtools research compendium with Docker support.
 
@@ -170,12 +170,12 @@ ENVIRONMENT VARIABLES:
   RRTOOLS_INSTITUTE_FULL      Full institute name (default: University of California, San Diego)
 
 EXAMPLES:
-  ./zzrrtools.sh                    # Full setup with Docker
-  ./zzrrtools.sh --no-docker        # Setup without Docker build
-  ./zzrrtools.sh --dotfiles ~/dotfiles # Include personal dotfiles (with dots)
-  ./zzrrtools.sh --dotfiles-nodot ~/dotfiles # Include dotfiles (without dots)
-  ./zzrrtools.sh --base-image myorg/r-base # Use custom base image
-  ./zzrrtools.sh --next-steps       # Show workflow help
+  ./zzcollab.sh                    # Full setup with Docker
+  ./zzcollab.sh --no-docker        # Setup without Docker build
+  ./zzcollab.sh --dotfiles ~/dotfiles # Include personal dotfiles (with dots)
+  ./zzcollab.sh --dotfiles-nodot ~/dotfiles # Include dotfiles (without dots)
+  ./zzcollab.sh --base-image myorg/r-base # Use custom base image
+  ./zzcollab.sh --next-steps       # Show workflow help
 
 TROUBLESHOOTING:
   Docker build fails:
@@ -798,7 +798,7 @@ main() {
     echo "  5. Add your R functions in the R directory"
     echo "  6. Use symbolic links for quick navigation (e.g., 'cd p' for paper)"
     echo
-    echo "💡 To see this help again: ~/prj/zzrrtools/zzrrtools.sh --next-steps"
+    echo "💡 To see this help again: ~/prj/zzcollab/zzcollab.sh --next-steps"
     echo
 }
 

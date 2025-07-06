@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS DEVTOOLS MODULE
+# ZZCOLLAB DEVTOOLS MODULE
 ##############################################################################
 # 
 # PURPOSE: Development tools and configuration management
@@ -15,12 +15,12 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZRRTOOLS_CORE_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
     echo "❌ Error: devtools.sh requires core.sh to be loaded first" >&2
     exit 1
 fi
 
-if [[ "${ZZRRTOOLS_TEMPLATES_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_TEMPLATES_LOADED:-}" != "true" ]]; then
     echo "❌ Error: devtools.sh requires templates.sh to be loaded first" >&2
     exit 1
 fi
@@ -472,6 +472,6 @@ if [[ -n "${DOTFILES_DIR:-}" ]] && [[ ! -d "${DOTFILES_DIR}" ]]; then
 fi
 
 # Set devtools module loaded flag
-readonly ZZRRTOOLS_DEVTOOLS_LOADED=true
+readonly ZZCOLLAB_DEVTOOLS_LOADED=true
 
 log_info "Development tools module loaded successfully"

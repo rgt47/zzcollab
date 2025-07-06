@@ -1,6 +1,6 @@
 #!/bin/bash
 ##############################################################################
-# ZZRRTOOLS CI/CD MODULE
+# ZZCOLLAB CI/CD MODULE
 ##############################################################################
 # 
 # PURPOSE: Continuous Integration and Deployment workflows
@@ -15,12 +15,12 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZRRTOOLS_CORE_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
     echo "❌ Error: cicd.sh requires core.sh to be loaded first" >&2
     exit 1
 fi
 
-if [[ "${ZZRRTOOLS_TEMPLATES_LOADED:-}" != "true" ]]; then
+if [[ "${ZZCOLLAB_TEMPLATES_LOADED:-}" != "true" ]]; then
     echo "❌ Error: cicd.sh requires templates.sh to be loaded first" >&2
     exit 1
 fi
@@ -365,6 +365,6 @@ if [[ ! -d ".github" ]] && ! mkdir -p ".github/workflows"; then
 fi
 
 # Set cicd module loaded flag
-readonly ZZRRTOOLS_CICD_LOADED=true
+readonly ZZCOLLAB_CICD_LOADED=true
 
 log_info "CI/CD module loaded successfully"

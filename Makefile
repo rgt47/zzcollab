@@ -1,7 +1,7 @@
-# Makefile for zzrrtools research compendium
+# Makefile for zzcollab research compendium
 # Docker-first workflow for reproducible research
 
-PACKAGE_NAME = zzrrtools
+PACKAGE_NAME = zzcollab
 R_VERSION = latest
 
 # Help target (default)

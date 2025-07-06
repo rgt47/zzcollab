@@ -1,9 +1,9 @@
-Package: zzrrtools
-Title: Research Compendium for zzrrtools
+Package: zzcollab
+Title: Research Compendium for zzcollab
 Version: 0.0.0.9000
 Authors@R: 
     person("Ronald G. Thomas", email = "rgthomas@ucsd.edu", role = c("aut", "cre"))
-Description: This is a research compendium for the zzrrtools project.
+Description: This is a research compendium for the zzcollab project.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
