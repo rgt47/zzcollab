@@ -1,0 +1,381 @@
+#!/bin/bash
+
+# zzrrtools-init-team
+# Automated team setup script for ZZRRTOOLS research collaboration
+# 
+# This script automates the entire Developer 1 workflow:
+# - Creates team core Docker images (shell + RStudio variants)
+# - Builds and pushes images to Docker Hub
+# - Initializes zzrrtools project with custom base image
+# - Creates private GitHub repository
+# - Sets up initial commit with proper structure
+
+set -e  # Exit on any error
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Default values
+TEAM_NAME=""
+PROJECT_NAME=""
+GITHUB_ACCOUNT=""
+DOTFILES_PATH=""
+USE_DOTFILES=true
+DOCKERFILE_PATH=""
+
+# Help function
+show_help() {
+    cat << EOF
+zzrrtools-init-team - Automated team setup for ZZRRTOOLS research collaboration
+
+USAGE:
+    zzrrtools-init-team --team-name TEAM --project-name PROJECT [OPTIONS]
+
+REQUIRED:
+    --team-name NAME        Docker Hub team/organization name
+    --project-name NAME     Project name (will be used for directories and images)
+
+OPTIONAL:
+    --github-account NAME   GitHub account name (default: same as team-name)
+    --dotfiles PATH         Path to dotfiles directory (default: none)
+    --nodots               Skip dotfiles integration entirely
+    --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
+    --help                 Show this help message
+
+EXAMPLES:
+    # Minimal setup (no dotfiles)
+    zzrrtools-init-team --team-name rgt47 --project-name research-study
+
+    # With custom GitHub account
+    zzrrtools-init-team --team-name rgt47 --project-name research-study --github-account mylab
+
+    # With dotfiles
+    zzrrtools-init-team --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+
+    # Skip dotfiles explicitly
+    zzrrtools-init-team --team-name rgt47 --project-name research-study --nodots
+
+WORKFLOW:
+    1. Create project directory
+    2. Copy and customize Dockerfile.teamcore
+    3. Build shell and RStudio core images
+    4. Push images to Docker Hub
+    5. Initialize zzrrtools project
+    6. Create private GitHub repository
+    7. Push initial commit
+
+PREREQUISITES:
+    - Docker installed and running
+    - Docker Hub account and logged in (docker login)
+    - GitHub CLI installed and authenticated (gh auth login)
+    - zzrrtools installed and available in PATH
+
+EOF
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --team-name)
+            TEAM_NAME="$2"
+            shift 2
+            ;;
+        --project-name)
+            PROJECT_NAME="$2"
+            shift 2
+            ;;
+        --github-account)
+            GITHUB_ACCOUNT="$2"
+            shift 2
+            ;;
+        --dotfiles)
+            DOTFILES_PATH="$2"
+            USE_DOTFILES=true
+            shift 2
+            ;;
+        --nodots)
+            USE_DOTFILES=false
+            shift
+            ;;
+        --dockerfile)
+            DOCKERFILE_PATH="$2"
+            shift 2
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Validate required parameters
+if [[ -z "$TEAM_NAME" ]]; then
+    print_error "Required parameter --team-name is missing"
+    show_help
+    exit 1
+fi
+
+if [[ -z "$PROJECT_NAME" ]]; then
+    print_error "Required parameter --project-name is missing"
+    show_help
+    exit 1
+fi
+
+# Set defaults
+if [[ -z "$GITHUB_ACCOUNT" ]]; then
+    GITHUB_ACCOUNT="$TEAM_NAME"
+    print_status "Using default GitHub account: $GITHUB_ACCOUNT"
+fi
+
+if [[ -z "$DOCKERFILE_PATH" ]]; then
+    # Try to find the Dockerfile template
+    if [[ -f "templates/Dockerfile.pluspackages" ]]; then
+        DOCKERFILE_PATH="templates/Dockerfile.pluspackages"
+    elif [[ -f "$(dirname "$0")/templates/Dockerfile.pluspackages" ]]; then
+        DOCKERFILE_PATH="$(dirname "$0")/templates/Dockerfile.pluspackages"
+    else
+        print_error "Could not find Dockerfile.pluspackages template"
+        print_error "Please specify --dockerfile path or ensure templates/Dockerfile.pluspackages exists"
+        exit 1
+    fi
+fi
+
+# Validate prerequisites
+print_status "Validating prerequisites..."
+
+if ! command -v docker &> /dev/null; then
+    print_error "Docker is not installed or not in PATH"
+    exit 1
+fi
+
+if ! docker info &> /dev/null; then
+    print_error "Docker is not running or not accessible"
+    exit 1
+fi
+
+if ! command -v gh &> /dev/null; then
+    print_error "GitHub CLI (gh) is not installed or not in PATH"
+    exit 1
+fi
+
+if ! gh auth status &> /dev/null; then
+    print_error "GitHub CLI is not authenticated. Please run: gh auth login"
+    exit 1
+fi
+
+if ! command -v zzrrtools &> /dev/null; then
+    print_error "zzrrtools is not installed or not in PATH"
+    exit 1
+fi
+
+# Check Docker Hub login status
+if ! docker info | grep -q "Username:"; then
+    print_warning "Docker Hub login status unclear. You may need to run: docker login"
+fi
+
+# Verify Docker Hub account exists and is accessible
+print_status "Verifying Docker Hub account: $TEAM_NAME"
+if ! docker pull hello-world &> /dev/null; then
+    print_error "Cannot pull from Docker Hub. Please check your Docker Hub login with: docker login"
+    exit 1
+fi
+
+# Try to verify the Docker Hub account exists (best effort)
+if command -v curl &> /dev/null; then
+    if curl -s "https://hub.docker.com/v2/users/${TEAM_NAME}/" | grep -q "User not found"; then
+        print_warning "Docker Hub user '$TEAM_NAME' may not exist. Please verify the account exists."
+        read -p "Continue anyway? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    else
+        print_success "Docker Hub account '$TEAM_NAME' verified"
+    fi
+fi
+
+# Verify GitHub account exists
+print_status "Verifying GitHub account: $GITHUB_ACCOUNT"
+if ! gh api "users/${GITHUB_ACCOUNT}" &> /dev/null; then
+    print_error "GitHub account '$GITHUB_ACCOUNT' does not exist or is not accessible"
+    print_error "Please verify the account exists and you have proper permissions"
+    exit 1
+fi
+print_success "GitHub account '$GITHUB_ACCOUNT' verified"
+
+# Validate dotfiles path if specified
+if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then
+    if [[ ! -d "$DOTFILES_PATH" ]]; then
+        print_error "Dotfiles path does not exist: $DOTFILES_PATH"
+        exit 1
+    fi
+    print_status "Using dotfiles from: $DOTFILES_PATH"
+elif [[ "$USE_DOTFILES" == false ]]; then
+    print_status "Skipping dotfiles integration (--nodots specified)"
+else
+    print_status "No dotfiles specified, proceeding without dotfiles integration"
+fi
+
+print_success "All prerequisites validated"
+
+# Print configuration summary
+print_status "Configuration Summary:"
+echo "  Team Name: $TEAM_NAME"
+echo "  Project Name: $PROJECT_NAME"
+echo "  GitHub Account: $GITHUB_ACCOUNT"
+echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then echo "$DOTFILES_PATH"; elif [[ "$USE_DOTFILES" == false ]]; then echo "disabled"; else echo "none"; fi)"
+echo "  Dockerfile: $DOCKERFILE_PATH"
+echo ""
+
+# Confirm before proceeding
+read -p "Proceed with team setup? [y/N] " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    print_status "Setup cancelled by user"
+    exit 0
+fi
+
+# Start the setup process
+print_status "Starting automated team setup..."
+
+# Step 1: Create project directory
+print_status "Step 1: Creating project directory..."
+if [[ -d "$PROJECT_NAME" ]]; then
+    print_error "Directory $PROJECT_NAME already exists"
+    exit 1
+fi
+
+mkdir "$PROJECT_NAME"
+cd "$PROJECT_NAME"
+print_success "Created project directory: $PROJECT_NAME"
+
+# Step 2: Copy and customize Dockerfile
+print_status "Step 2: Setting up team Dockerfile..."
+if [[ ! -f "$DOCKERFILE_PATH" ]]; then
+    print_error "Dockerfile template not found: $DOCKERFILE_PATH"
+    exit 1
+fi
+
+cp "$DOCKERFILE_PATH" ./Dockerfile.teamcore
+print_success "Copied Dockerfile template to Dockerfile.teamcore"
+
+# Step 3: Build shell core image
+print_status "Step 3: Building shell core image..."
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/r-ver \
+    --build-arg TEAM_NAME="$TEAM_NAME" \
+    --build-arg PROJECT_NAME="$PROJECT_NAME" \
+    -t "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" .
+
+docker tag "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" \
+    "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+
+# Step 4: Build RStudio core image
+print_status "Step 4: Building RStudio core image..."
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/rstudio \
+    --build-arg TEAM_NAME="$TEAM_NAME" \
+    --build-arg PROJECT_NAME="$PROJECT_NAME" \
+    -t "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" .
+
+docker tag "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" \
+    "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+
+# Step 5: Push images to Docker Hub
+print_status "Step 5: Pushing images to Docker Hub..."
+docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+print_success "Pushed all images to Docker Hub"
+
+# Step 6: Initialize zzrrtools project
+print_status "Step 6: Initializing zzrrtools project..."
+if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then
+    zzrrtools --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell" \
+        --dotfiles "$DOTFILES_PATH"
+elif [[ "$USE_DOTFILES" == false ]]; then
+    zzrrtools --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
+else
+    zzrrtools --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
+fi
+print_success "Initialized zzrrtools project with custom base image"
+
+# Step 7: Initialize git repository
+print_status "Step 7: Initializing git repository..."
+git init
+git add .
+git commit -m "🎉 Initial research project setup
+
+- Complete zzrrtools research compendium  
+- Team core images published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
+- Private repository protects unpublished research
+- CI/CD configured for automatic team image updates
+
+🐳 Generated with zzrrtools-init-team
+
+Co-Authored-By: zzrrtools-init-team <noreply@zzrrtools.dev>"
+print_success "Initialized git repository with initial commit"
+
+# Step 8: Create private GitHub repository
+print_status "Step 8: Creating private GitHub repository..."
+gh repo create "${GITHUB_ACCOUNT}/${PROJECT_NAME}" \
+    --private \
+    --description "Research project using ZZRRTOOLS - team core images: ${TEAM_NAME}/${PROJECT_NAME}core" \
+    --source=. \
+    --remote=origin \
+    --push
+
+print_success "Created private GitHub repository: ${GITHUB_ACCOUNT}/${PROJECT_NAME}"
+
+# Final success message
+print_success "🎉 Team setup completed successfully!"
+echo ""
+print_status "What was created:"
+echo "  📁 Project directory: $PROJECT_NAME/"
+echo "  🐳 Docker images:"
+echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+echo "  🔒 Private GitHub repo: https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}"
+echo "  📦 Complete zzrrtools research compendium"
+echo ""
+print_status "Next steps:"
+echo "  1. cd $PROJECT_NAME"
+echo "  2. make docker-zsh    # Start development environment"
+echo "  3. Start coding your analysis!"
+echo ""
+print_status "Team members can now join with:"
+echo "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
+echo "  cd $PROJECT_NAME"
+echo "  zzrrtools --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles"
+echo "  make docker-zsh"
