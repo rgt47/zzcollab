@@ -43,9 +43,9 @@ ARG ADDITIONAL_PACKAGES=""
 # Add metadata labels
 LABEL maintainer="${TEAM_NAME}"
 LABEL project="${PROJECT_NAME}"
-LABEL org.opencontainers.image.title="ZZRRTOOLS Team Core Image"
+LABEL org.opencontainers.image.title="ZZCOLLAB Team Core Image"
 LABEL org.opencontainers.image.description="Team-specific R environment with core packages"
-LABEL org.opencontainers.image.vendor="ZZRRTOOLS"
+LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 
 # Create non-root user with zsh as default shell
 ARG USERNAME=analyst
