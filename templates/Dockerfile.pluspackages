@@ -1,5 +1,6 @@
+ARG BASE_IMAGE=rocker/r-ver
 ARG R_VERSION=latest
-FROM rocker/r-ver:${R_VERSION}
+FROM ${BASE_IMAGE}:${R_VERSION}
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -34,13 +35,25 @@ RUN R -e "install.packages('tinytex')" && \
     R -e "tinytex::install_tinytex()" && \
     /root/.TinyTeX/bin/*/tlmgr path add
 
+# Build arguments for team customization
+ARG TEAM_NAME=rgt47
+ARG PROJECT_NAME=r-pluspackages
+ARG ADDITIONAL_PACKAGES=""
+
+# Add metadata labels
+LABEL maintainer="${TEAM_NAME}"
+LABEL project="${PROJECT_NAME}"
+LABEL org.opencontainers.image.title="ZZRRTOOLS Team Core Image"
+LABEL org.opencontainers.image.description="Team-specific R environment with core packages"
+LABEL org.opencontainers.image.vendor="ZZRRTOOLS"
+
 # Create non-root user with zsh as default shell
 ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
 # Install common R packages (this layer will be cached)
-# Image name: rgt47/r-pluspackages
-RUN R -e "install.packages(c('renv', 'remotes', 'devtools', 'testthat', 'naniar', 'DT', 'conflicted', 'ggthemes', 'datapasta', 'janitor', 'kableExtra', 'tidytuesdayR', 'tidyverse'), repos = c(CRAN = 'https://cloud.r-project.org'))"
+# Image name: ${TEAM_NAME}/${PROJECT_NAME}
+RUN R -e "base_packages <- c('renv', 'remotes', 'devtools', 'testthat', 'naniar', 'DT', 'conflicted', 'ggthemes', 'datapasta', 'janitor', 'kableExtra', 'tidytuesdayR', 'tidyverse'); additional_packages <- if(nzchar(Sys.getenv('ADDITIONAL_PACKAGES'))) strsplit(Sys.getenv('ADDITIONAL_PACKAGES'), ' ')[[1]] else character(0); all_packages <- c(base_packages, additional_packages); install.packages(all_packages, repos = c(CRAN = 'https://cloud.r-project.org'))"
 
 # Give analyst user write permission to R library directory
 RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
