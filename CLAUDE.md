@@ -54,8 +54,12 @@ make docker-check-renv     # Validate in container
 Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 ```
 
-### Team Collaboration Setup
+### Installation and Setup
 ```bash
+# One-time zzcollab installation
+./install.sh                    # Installs zzcollab and zzcollab-init-team to ~/bin
+export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
+
 # Automated team setup (recommended)
 zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
@@ -114,6 +118,7 @@ zzcollab --base-image team/project-core-shell --dotfiles ~/dotfiles
 ```
 
 ### Key Files
+- **install.sh**: Installation script that copies both main executables to ~/bin
 - **zzcollab.sh**: Main framework executable
 - **zzcollab-init-team**: Automated team setup script  
 - **workflow.md**: Complete team collaboration documentation
