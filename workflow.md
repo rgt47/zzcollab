@@ -1178,6 +1178,7 @@ make docker-zsh                          # Instant development environment
 | **Cache misses** | Slow builds despite caching | Clear GitHub Actions cache, rebuild base layers |
 | **Permission errors** | Push failures to registry | Verify GITHUB_TOKEN permissions |
 | **Platform issues** | Fails on ARM/Intel Macs | Check multi-platform build configuration |
+| **GitHub repo creation fails** | "Name already exists" or "Repository not found" | `gh repo create TEAM/PROJECT --private` |
 
 #### **Debugging Commands**
 ```bash
@@ -1195,6 +1196,10 @@ docker run --rm $(cat .project-name):latest R -e "installed.packages()[,1]"
 # Docker Hub registry inspection
 curl -s "https://hub.docker.com/v2/repositories/team/project/tags/" | \
     jq '.results[].name'
+
+# Manual GitHub repository creation (if automatic creation fails)
+gh repo create TEAM/PROJECT --private
+git push origin main
 ```
 
 ### **🛡️ Security and Privacy Model**
