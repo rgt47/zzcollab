@@ -61,6 +61,8 @@ Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 
 # Automated team setup (recommended)
+# Run from your preferred projects directory (e.g., ~/projects, ~/work)
+cd ~/projects  # or wherever you keep your projects
 zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
 # Manual project initialization
