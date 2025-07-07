@@ -165,16 +165,23 @@ zzcollab --base-image team/project-core-shell --dotfiles ~/dotfiles
 
 ## CI/CD Pipeline
 
-### Automated Checks
-- R package validation (R CMD check)
-- Dependency synchronization (renv status)
-- Critical R options monitoring
-- Multi-platform Docker builds
-- Automatic documentation generation
+### Automated Quality Checks
+- **R package validation**: R CMD check with dependency validation
+- **Comprehensive testing**: Unit tests, integration tests, data validation
+- **Critical monitoring**: R options tracking prevents silent analysis changes
+- **Dependency sync**: renv validation ensures lockfile consistency
+- **Multi-platform builds**: AMD64 and ARM64 Docker images
 
-### Team Image Management
-- Detects package changes in merged PRs
-- Rebuilds Docker images with new dependencies
-- Pushes updated images to container registry
-- Updates docker-compose.yml references
-- Notifies team of new image availability
+### Enterprise-Grade Team Image Management
+- **Intelligent detection**: Monitors renv.lock, DESCRIPTION, Dockerfile changes
+- **Automated rebuilds**: Multi-platform Docker images on package changes
+- **Registry publishing**: Pushes updated images to Docker Hub automatically
+- **Configuration updates**: Auto-updates docker-compose.yml references
+- **Team notifications**: GitHub commit comments with usage instructions
+- **Zero manual intervention**: Complete hands-off Docker image lifecycle
+
+### Professional Collaboration Tools
+- **Pull request templates**: Analysis impact assessment, reproducibility checklist
+- **Issue templates**: Bug reports with environment details, feature requests
+- **Automated workflows**: Fork-based collaboration with comprehensive testing
+- **Documentation**: Self-updating workflow.md with automation status

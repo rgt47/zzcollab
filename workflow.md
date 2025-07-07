@@ -1,4 +1,9 @@
-# Developer Collaboration Workflow Sequence
+---
+title: " Developer Collaboration Workflow Sequence "
+author: "John Doe"
+date: "July 7, 2025"
+output: pdf_document
+--- 
 
 Based on my review of the user guide, here are the specific workflows for developer 
 collaboration using vim as the IDE:
