@@ -197,6 +197,25 @@ test_check(\"$pkg_name\")"
         return 1
     fi
     
+    # Create integration tests directory and copy template integration tests
+    mkdir -p "tests/integration"
+    
+    # Copy integration test templates
+    if copy_template_file "tests/integration/test-data-pipeline.R" "tests/integration/test-data-pipeline.R" "data pipeline integration tests"; then
+        track_file "tests/integration/test-data-pipeline.R"
+        log_info "Created data pipeline integration tests"
+    fi
+    
+    if copy_template_file "tests/integration/test-analysis-scripts.R" "tests/integration/test-analysis-scripts.R" "analysis script integration tests"; then
+        track_file "tests/integration/test-analysis-scripts.R"
+        log_info "Created analysis script integration tests"
+    fi
+    
+    if copy_template_file "tests/integration/test-report-rendering.R" "tests/integration/test-report-rendering.R" "report rendering integration tests"; then
+        track_file "tests/integration/test-report-rendering.R"
+        log_info "Created report rendering integration tests"
+    fi
+    
     log_success "R package core files created successfully"
 }
 
