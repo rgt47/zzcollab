@@ -13,9 +13,10 @@
 10. [Docker Environment](#docker-environment)
 11. [Build System with Make](#build-system-with-make)
 12. [GitHub Actions CI/CD](#github-actions-cicd)
-13. [Common Tasks](#common-tasks)
-14. [Collaboration](#collaboration)
-15. [Troubleshooting](#troubleshooting)
+13. [R Interface Functions](#r-interface-functions)
+14. [Common Tasks](#common-tasks)
+15. [Collaboration](#collaboration)
+16. [Troubleshooting](#troubleshooting)
 
 ## What is rrtools?
 
@@ -399,6 +400,201 @@ Workflows are **optimized for local Docker development**:
 - Focus on validation and paper rendering
 - Minimal, fast execution
 - Easy to customize for your needs
+
+## R Interface Functions
+
+ZZCOLLAB provides a comprehensive R interface that allows you to manage your research workflow entirely from within R. These functions provide R-native access to Docker infrastructure, project management, and reproducibility tools.
+
+### Docker Environment Helpers
+
+#### `zzcollab_status()`
+Check the status of running zzcollab containers.
+
+```r
+# Check container status
+zzcollab_status()
+# Returns container information or message if none running
+```
+
+#### `zzcollab_rebuild(target = "docker-build")`
+Trigger a Docker image rebuild for your project.
+
+```r
+# Rebuild the Docker image
+zzcollab_rebuild()
+
+# Rebuild specific target
+zzcollab_rebuild("docker-test")
+```
+
+#### `zzcollab_team_images()`
+List available team Docker images with details.
+
+```r
+# View team images
+images <- zzcollab_team_images()
+print(images)
+# Returns data frame with repository, tag, size, created columns
+```
+
+### Project Management Functions
+
+#### `zzcollab_init_project()`
+Initialize a new zzcollab project from within R.
+
+```r
+# Basic project setup
+zzcollab_init_project(
+  team_name = "rgt47", 
+  project_name = "myproject"
+)
+
+# With dotfiles that already have dots
+zzcollab_init_project(
+  team_name = "rgt47",
+  project_name = "myproject", 
+  dotfiles_path = "~/dotfiles"
+)
+
+# With dotfiles that need dots added
+zzcollab_init_project(
+  team_name = "rgt47",
+  project_name = "myproject",
+  dotfiles_path = "~/Dropbox/dotfiles",
+  dotfiles_nodots = TRUE
+)
+```
+
+#### `zzcollab_add_package(packages, update_snapshot = TRUE)`
+Add R packages to your project with automatic renv integration.
+
+```r
+# Add single package
+zzcollab_add_package("tidyverse")
+
+# Add multiple packages
+zzcollab_add_package(c("brms", "targets", "cmdstanr"))
+
+# Add packages without updating renv.lock immediately
+zzcollab_add_package("ggplot2", update_snapshot = FALSE)
+```
+
+#### `zzcollab_sync_env()`
+Synchronize your R environment across team members.
+
+```r
+# Restore environment from renv.lock
+zzcollab_sync_env()
+# Automatically checks if Docker rebuild is needed
+```
+
+### Analysis Workflow Functions
+
+#### `zzcollab_run_script(script_path, container_cmd = "docker-r")`
+Execute R scripts inside Docker containers.
+
+```r
+# Run analysis script in container
+zzcollab_run_script("scripts/01_data_processing.R")
+
+# Run with specific container command
+zzcollab_run_script("scripts/02_modeling.R", "docker-rstudio")
+```
+
+#### `zzcollab_render_report(report_path = NULL)`
+Render analysis reports in containerized environment.
+
+```r
+# Render default report
+zzcollab_render_report()
+
+# Render specific report
+zzcollab_render_report("analysis/paper/manuscript.Rmd")
+```
+
+#### `zzcollab_validate_repro()`
+Check reproducibility of your research project.
+
+```r
+# Run all reproducibility checks
+is_reproducible <- zzcollab_validate_repro()
+
+if (is_reproducible) {
+  message("✅ Project is fully reproducible")
+} else {
+  message("❌ Reproducibility issues detected")
+}
+```
+
+### Example R Workflow
+
+Here's a complete workflow using only R functions:
+
+```r
+# Load zzcollab functions
+library(zzcollab)
+
+# 1. Initialize new project
+zzcollab_init_project(
+  team_name = "mylab",
+  project_name = "study2024",
+  dotfiles_path = "~/dotfiles"
+)
+
+# Change to project directory
+setwd("study2024")
+
+# 2. Add required packages
+zzcollab_add_package(c(
+  "tidyverse", "brms", "targets", 
+  "rmarkdown", "here"
+))
+
+# 3. Check environment status
+zzcollab_status()
+zzcollab_team_images()
+
+# 4. Run analysis pipeline
+zzcollab_run_script("scripts/01_data_import.R")
+zzcollab_run_script("scripts/02_data_analysis.R") 
+zzcollab_run_script("scripts/03_visualization.R")
+
+# 5. Render final report
+zzcollab_render_report("analysis/paper/paper.Rmd")
+
+# 6. Validate reproducibility
+zzcollab_validate_repro()
+
+# 7. Sync environment for team
+zzcollab_sync_env()
+```
+
+### Integration with RStudio
+
+These functions work seamlessly in RStudio:
+
+```r
+# Quick project setup from RStudio console
+zzcollab_init_project("myteam", "newproject")
+
+# Add packages interactively
+zzcollab_add_package("package_name")
+
+# Run scripts with progress in RStudio
+zzcollab_run_script("my_analysis.R")
+
+# Check status during development
+zzcollab_status()
+```
+
+### Benefits of R Interface
+
+- **Native R workflow**: No need to switch between R and terminal
+- **RStudio integration**: Works seamlessly in RStudio environment  
+- **Error handling**: R-style error messages and debugging
+- **Return values**: Functions return logical values for programmatic use
+- **Documentation**: Full R help system with `?zzcollab_status`
+- **Type safety**: R parameter validation and type checking
 
 ## Common Tasks
 
