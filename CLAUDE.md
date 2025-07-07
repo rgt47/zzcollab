@@ -1,32 +1,149 @@
-# ZZCOLLAB Project Context
+# CLAUDE.md
 
-## Package Name Change
-- **Former name**: zzrrtools  
-- **Current name**: zzcollab
-- **Focus**: Research collaboration framework (not generic tools)
-- **Unique value**: Team-based reproducible research with Docker automation
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Recent Updates Completed
-- ✅ Complete package rebrand from zzrrtools → zzcollab
-- ✅ Updated all documentation, scripts, and configuration files
-- ✅ GitHub repository renamed to zzcollab
-- ✅ White paper updated in ~/prj/p25/index.qmd
-- ✅ Added R options CI monitoring (check_rprofile_options.R)
-- ✅ Created zzcollab-init-team automation script
-- ✅ Fixed Dockerfile.pluspackages to match workflow.md documentation
+## Architecture Overview
 
-## Key Scripts and Tools
-- **zzcollab-init-team**: Automated team setup script (replaces 10+ manual steps)
-- **check_rprofile_options.R**: Monitors critical R options for changes
-- **workflow.md**: Complete team collaboration documentation
-- **Dockerfile.pluspackages**: Team-customizable Docker template
+ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments. The system consists of:
 
-## Testing Commands
-- `npm run lint` / `npm run typecheck` - Run when available
-- Ask user for lint/typecheck commands if not found in package.json
+### Core Components
+- **Main executable**: `zzcollab-init-team` - Automated team setup script
+- **Modular shell system**: `modules/` directory contains core functionality
+- **Docker-first workflow**: All development happens in containers
+- **R package structure**: Standard R package with testthat for testing
+- **Template system**: `templates/` for project scaffolding
 
-# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+### Key Architecture Patterns
+- **Modular design**: Shell scripts in `modules/` (core.sh, docker.sh, structure.sh, etc.)
+- **Docker inheritance**: Team base images → personal development images
+- **Automated CI/CD**: GitHub Actions for R package validation and image builds
+- **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
+- **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
+
+## Development Commands
+
+### R Package Development
+```bash
+# Native R (requires local R installation)
+make test                    # Run R package tests
+make check                   # R CMD check validation
+make document               # Generate documentation
+make build                  # Build R package
+
+# Docker-based (works without local R)
+make docker-test           # Run tests in container
+make docker-check          # Package validation
+make docker-document       # Generate docs
+make docker-render         # Render analysis reports
+```
+
+### Docker Development Environments
+```bash
+make docker-zsh            # Zsh shell with dotfiles (recommended)
+make docker-rstudio        # RStudio Server at localhost:8787
+make docker-r              # R console only
+make docker-bash           # Bash shell
+```
+
+### Dependency Management
+```bash
+make check-renv            # Check renv status
+make check-renv-fix        # Update renv.lock
+make docker-check-renv     # Validate in container
+Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
+```
+
+### Team Collaboration Setup
+```bash
+./zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+```
+
+## Testing Strategy
+
+### R Package Tests
+- **Unit tests**: `tests/testthat/test-*.R` for package functions
+- **Integration tests**: Test complete analysis pipelines
+- **CI validation**: GitHub Actions runs R CMD check + renv validation
+
+### Critical Monitoring
+- **R options tracking**: `check_rprofile_options.R` monitors analysis-critical settings
+- **Dependency sync**: `check_renv_for_commit.R` ensures renv.lock consistency
+- **Automated validation**: CI fails if critical changes detected
+
+## Development Workflow
+
+### Local Development
+1. Use `make docker-zsh` for shell-based development with vim
+2. Use `make docker-rstudio` for web-based RStudio interface
+3. All package functions go in `R/` directory
+4. Analysis scripts go in `scripts/` directory (template-guided)
+5. Tests are mandatory for all functions and analysis steps
+
+### Team Collaboration
+1. Team lead runs `zzcollab-init-team` to create base images
+2. Team members clone private repo and build personal development images
+3. CI/CD automatically rebuilds team images when dependencies change
+4. Fork-based workflow with pull requests for collaboration
+
+### Docker Image Strategy
+- **Team core images**: Public on Docker Hub (software only, no data)
+- **Personal development images**: Local only (includes dotfiles)
+- **Automated rebuilds**: GitHub Actions triggers on renv.lock changes
+- **Multi-platform**: Supports AMD64 and ARM64 architectures
+
+## Project Structure Conventions
+
+### Standard Layout
+```
+├── R/                     # Package functions (exported to analysis)
+├── analysis/             # Research outputs
+│   ├── paper/           # Manuscript files (paper.Rmd → paper.pdf)
+│   ├── figures/         # Generated plots
+│   └── tables/          # Statistical tables
+├── scripts/             # Analysis scripts (numbered sequence)
+├── tests/               # Package tests (testthat framework)
+├── modules/             # Shell framework components
+├── templates/           # Project scaffolding
+└── Symbolic links (a→analysis, n→analysis, p→paper, etc.)
+```
+
+### Key Files
+- **Dockerfile**: Container definition for development environment
+- **docker-compose.yml**: Service configuration (auto-updated by CI)
+- **renv.lock**: R dependency lockfile (triggers image rebuilds)
+- **DESCRIPTION**: R package metadata
+- **Makefile**: Development automation commands
+
+## Important Development Notes
+
+### Package Name Evolution
+- **Former name**: zzrrtools → **Current name**: zzcollab
+- Focus shifted from generic tools to research collaboration framework
+- All branding and references updated to zzcollab
+
+### Security Model
+- **Private GitHub repos**: Protect unpublished research
+- **Public Docker images**: Enable reproducible methodology sharing
+- **No sensitive data**: Images contain only software packages and configurations
+
+### Environment Consistency
+- Docker-first development ensures identical environments across team
+- Automated image management eliminates manual Docker operations
+- renv.lock changes automatically trigger team image rebuilds
+- Critical R options are monitored to prevent silent analysis changes
+
+## CI/CD Pipeline
+
+### Automated Checks
+- R package validation (R CMD check)
+- Dependency synchronization (renv status)
+- Critical R options monitoring
+- Multi-platform Docker builds
+- Automatic documentation generation
+
+### Team Image Management
+- Detects package changes in merged PRs
+- Rebuilds Docker images with new dependencies
+- Pushes updated images to container registry
+- Updates docker-compose.yml references
+- Notifies team of new image availability
