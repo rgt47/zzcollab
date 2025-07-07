@@ -59,14 +59,39 @@ Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 # One-time zzcollab installation
 ./install.sh                    # Installs zzcollab and zzcollab-init-team to ~/bin
 export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
+```
 
-# Automated team setup (recommended)
+### Team Collaboration Setup
+```bash
+# Developer 1 (Team Lead) - Command Line
 # Run from your preferred projects directory (e.g., ~/projects, ~/work)
 cd ~/projects  # or wherever you keep your projects
 zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
-# Manual project initialization
-zzcollab --base-image team/project-core-shell --dotfiles ~/dotfiles
+# Developer 2+ (Team Members) - Command Line
+git clone https://github.com/TEAM/PROJECT.git
+cd PROJECT
+zzcollab --team TEAM --project-name PROJECT --interface shell --dotfiles ~/dotfiles
+```
+
+### R-Centric Workflow (Alternative)
+```r
+# Developer 1 (Team Lead) - R Interface
+library(zzcollab)
+init_project(
+  team_name = "TEAM",
+  project_name = "PROJECT", 
+  dotfiles_path = "~/dotfiles"
+)
+
+# Developer 2+ (Team Members) - R Interface
+library(zzcollab)
+join_project(
+  team_name = "TEAM",
+  project_name = "PROJECT",
+  interface = "shell",  # or "rstudio"
+  dotfiles_path = "~/dotfiles"
+)
 ```
 
 ## Testing Strategy
@@ -109,26 +134,69 @@ zzcollab --base-image team/project-core-shell --dotfiles ~/dotfiles
 ```
 ├── R/                     # Package functions (exported to analysis)
 ├── analysis/             # Research outputs
-│   ├── paper/           # Manuscript files (paper.Rmd → paper.pdf)
+│   ├── report/          # Main research report (report.Rmd → report.pdf)
 │   ├── figures/         # Generated plots
-│   └── tables/          # Statistical tables
+│   ├── tables/          # Statistical tables
+│   └── templates/       # Analysis templates
 ├── scripts/             # Analysis scripts (numbered sequence)
 ├── tests/               # Package tests (testthat framework)
-├── modules/             # Shell framework components
-├── templates/           # Project scaffolding
-└── Symbolic links (a→analysis, n→analysis, p→paper, etc.)
+│   ├── testthat/        # Unit tests for R functions
+│   └── integration/     # Integration tests for analysis scripts
+├── data/                # Data management
+│   ├── raw_data/        # Original datasets
+│   ├── derived_data/    # Processed datasets
+│   ├── metadata/        # Data documentation
+│   └── validation/      # Data quality checks
+├── modules/             # Shell framework components (zzcollab only)
+├── templates/           # Project scaffolding (zzcollab only)
+└── Symbolic links (a→data, n→analysis, p→analysis/report, etc.)
 ```
 
 ### Key Files
 - **install.sh**: Installation script that copies both main executables to ~/bin
 - **zzcollab.sh**: Main framework executable
 - **zzcollab-init-team**: Automated team setup script  
-- **workflow.md**: Complete team collaboration documentation
+- **R/utils.R**: R interface functions for complete R-centric workflow
+- **workflow.md**: Complete team collaboration documentation (command-line + R interfaces)
+- **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user guide with R workflow examples
 - **Dockerfile**: Container definition for development environment
 - **docker-compose.yml**: Service configuration (auto-updated by CI)
 - **renv.lock**: R dependency lockfile (triggers image rebuilds)
 - **DESCRIPTION**: R package metadata
 - **Makefile**: Development automation commands
+
+## R Interface Functions
+
+ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows developers to manage the entire research workflow from within R:
+
+### Project Management Functions
+- **`init_project()`**: Initialize new team project (Developer 1 only)
+- **`join_project()`**: Join existing team project (Developers 2+)
+- **`add_package()`**: Add R packages with automatic renv integration
+- **`sync_env()`**: Synchronize R environment across team members
+
+### Docker Environment Functions  
+- **`status()`**: Check running zzcollab containers
+- **`rebuild()`**: Trigger Docker image rebuild
+- **`team_images()`**: List available team Docker images
+
+### Analysis Workflow Functions
+- **`run_script()`**: Execute R scripts in containers
+- **`render_report()`**: Render analysis reports (analysis/report/report.Rmd)
+- **`validate_repro()`**: Check project reproducibility
+
+### Git and GitHub Integration Functions
+- **`git_status()`**: Check git status from R
+- **`create_branch()`**: Create feature branches
+- **`git_commit()`**: Create commits with all changes
+- **`git_push()`**: Push commits to GitHub  
+- **`create_pr()`**: Create GitHub pull requests (key collaboration tool)
+
+### R-Centric Development Workflow
+1. **Setup Phase**: Use `init_project()` or `join_project()` 
+2. **Development Phase**: Exit to containerized environment
+3. **Analysis Phase**: All git operations from R using above functions
+4. **Collaboration**: Use `create_pr()` to contribute back to main repository
 
 ## Automation Features
 
