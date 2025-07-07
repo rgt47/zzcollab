@@ -260,8 +260,9 @@ build_docker_image() {
     # Build the Docker command with all necessary arguments
     # DOCKER_BUILDKIT=1: Enable BuildKit for faster builds and better caching
     # --build-arg R_VERSION: Pass R version to Dockerfile
+    # --build-arg BASE_IMAGE: Pass base image to Dockerfile
     # -t "$PKG_NAME": Tag image with package name for easy reference
-    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" -t \"$PKG_NAME\" ."
+    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" -t \"$PKG_NAME\" ."
     
     log_info "Running: $docker_cmd"
     
