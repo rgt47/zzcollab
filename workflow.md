@@ -39,15 +39,29 @@ which zzcollab                     # Confirm system PATH setup
 
 #### **🚀 AUTOMATED APPROACH (Recommended)**
 
-**The `zzcollab-init-team` script automates the entire workflow below in a single 
-command:**
+**Choose between command-line or R interface:**
 
+**Option A: Command-Line Interface**
 ```bash
 # Complete automated setup - replaces all manual Docker and git commands below
 zzcollab-init-team --team-name rgt47 --project-name research-study \
     --dotfiles ~/dotfiles
+```
 
-# This single command automatically:
+**Option B: R Interface (R-Centric Workflow)**
+```r
+# From R console
+library(zzcollab)
+
+# Complete automated setup from within R
+init_project(
+  team_name = "rgt47",
+  project_name = "research-study",
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+**Both approaches automatically:**
 # ✅ Creates project directory
 # ✅ Sets up customizable Dockerfile.teamcore 
 # ✅ Builds shell and RStudio core images
@@ -55,7 +69,6 @@ zzcollab-init-team --team-name rgt47 --project-name research-study \
 # ✅ Initializes zzcollab project with base image
 # ✅ Creates private GitHub repository
 # ✅ Sets up initial commit with proper structure
-```
 
 #### **🔧 MANUAL APPROACH (For customization or learning)**
 
@@ -317,9 +330,23 @@ git clone https://github.com/rgt47/png1.git  # Use actual team/project names
 cd png1
 
 # 2. Build your personal development environment
-# Uses the team core image created by Developer 1
+# Choose between command-line or R interface:
+
+# Option A: Command-Line Interface
 zzcollab --team rgt47 --project-name png1 --interface shell --dotfiles ~/dotfiles
-# This automatically pulls the team image from Docker Hub and adds your personal dotfiles
+
+# Option B: R Interface (R-Centric Workflow)  
+# R
+# library(zzcollab)
+# join_project(
+#   team_name = "rgt47",
+#   project_name = "png1", 
+#   interface = "shell",
+#   dotfiles_path = "~/dotfiles"
+# )
+# quit()
+
+# Both approaches automatically pull the team image from Docker Hub and add your personal dotfiles
 
 # 3. Start development immediately  
 make docker-zsh                   # Shell interface with vim/tmux
@@ -355,6 +382,9 @@ R
 exit
 
 # 8. Commit and push your changes (code + tests together)
+# Choose between command-line or R interface:
+
+# Option A: Command-Line Interface
 git add .
 git commit -m "Add visualization analysis with tests
 
@@ -364,10 +394,30 @@ git commit -m "Add visualization analysis with tests
 - All tests passing"
 git push origin feature/visualization-analysis
 
+# Option B: R Interface (R-Centric Workflow)
+# R
+# library(zzcollab)
+# git_status()  # Check changes
+# git_commit("Add visualization analysis with tests - Created scripts/02_visualization_analysis.R - Added ggplot2 for data visualization - Added integration tests for visualization pipeline - All tests passing")
+# git_push("feature/visualization-analysis")
+# quit()
+
 # 9. Create pull request
+# Choose between command-line or R interface:
+
+# Option A: Command-Line Interface  
 gh pr create --title "Add visualization analysis with tests" \
     --body "Added visualization analysis script with comprehensive tests" \
     --base main
+
+# Option B: R Interface (R-Centric Workflow)
+# R
+# library(zzcollab)
+# create_pr(
+#   title = "Add visualization analysis with tests",
+#   body = "Added visualization analysis script with comprehensive tests"
+# )
+# quit()
 
 # 10. CI automatically handles the rest!
 # - If new packages detected: renv::snapshot() runs
