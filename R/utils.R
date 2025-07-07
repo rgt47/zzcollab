@@ -88,6 +88,34 @@ zzcollab_init_project <- function(team_name, project_name,
   return(result == 0)
 }
 
+#' Join existing zzcollab project (R interface for Developers 2+)
+#'
+#' @param team_name Team name (Docker Hub organization)
+#' @param project_name Project name
+#' @param interface Interface type: "shell" or "rstudio"
+#' @param dotfiles_path Path to dotfiles directory
+#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
+#' @return Logical indicating success
+#' @export
+zzcollab_join_project <- function(team_name, project_name, interface = "shell",
+                                  dotfiles_path = NULL, dotfiles_nodots = FALSE) {
+  
+  # Build command with new user-friendly interface
+  cmd <- paste("zzcollab --team", team_name, "--project-name", project_name, "--interface", interface)
+  
+  if (!is.null(dotfiles_path)) {
+    if (dotfiles_nodots) {
+      cmd <- paste(cmd, "--dotfiles-nodot", shQuote(dotfiles_path))
+    } else {
+      cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
+    }
+  }
+  
+  message("Running: ", cmd)
+  result <- system(cmd)
+  return(result == 0)
+}
+
 #' Add R package to renv
 #'
 #' @param packages Character vector of package names

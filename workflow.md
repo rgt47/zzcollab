@@ -318,8 +318,8 @@ cd png1
 
 # 2. Build your personal development environment
 # Uses the team core image created by Developer 1
-zzcollab --base-image rgt47/png1core-shell --dotfiles ~/dotfiles
-# This pulls the team image from Docker Hub and adds your personal dotfiles
+zzcollab --team rgt47 --project-name png1 --interface shell --dotfiles ~/dotfiles
+# This automatically pulls the team image from Docker Hub and adds your personal dotfiles
 
 # 3. Start development immediately  
 make docker-zsh                   # Shell interface with vim/tmux

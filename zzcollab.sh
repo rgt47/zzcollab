@@ -43,6 +43,11 @@ DOTFILES_DIR=""
 DOTFILES_NODOT=false
 BASE_IMAGE="rocker/r-ver"
 
+# New user-friendly interface variables
+TEAM_NAME=""
+PROJECT_NAME=""
+INTERFACE=""
+
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -66,6 +71,21 @@ while [[ $# -gt 0 ]]; do
             BASE_IMAGE="$2"
             shift 2
             ;;
+        --team)
+            require_arg "$1" "$2"
+            TEAM_NAME="$2"
+            shift 2
+            ;;
+        --project-name|--project)
+            require_arg "$1" "$2"
+            PROJECT_NAME="$2"
+            shift 2
+            ;;
+        --interface)
+            require_arg "$1" "$2"
+            INTERFACE="$2"
+            shift 2
+            ;;
         --next-steps)
             # We'll implement this after modules are loaded
             SHOW_NEXT_STEPS=true
@@ -83,6 +103,34 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+#=============================================================================
+# USER-FRIENDLY INTERFACE PROCESSING
+#=============================================================================
+
+# Convert user-friendly flags to BASE_IMAGE if provided
+if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
+    case "$INTERFACE" in
+        shell)
+            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-shell"
+            ;;
+        rstudio)
+            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-rstudio"
+            ;;
+        *)
+            echo "❌ Error: Unknown interface '$INTERFACE'" >&2
+            echo "Valid interfaces: shell, rstudio" >&2
+            exit 1
+            ;;
+    esac
+    echo "ℹ️  Using team image: $BASE_IMAGE"
+elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
+    # If some team flags are provided but not all, show error
+    echo "❌ Error: When using team interface, all flags are required:" >&2
+    echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
+    echo "  Valid interfaces: shell, rstudio" >&2
+    exit 1
+fi
 
 #=============================================================================
 # MODULE LOADING SYSTEM
@@ -183,18 +231,30 @@ USAGE:
     $0 [OPTIONS]
 
 OPTIONS:
-    --no-docker              Skip Docker image build during setup
+    User-friendly team interface:
+    --team NAME              Team name (Docker Hub organization)
+    --project-name NAME      Project name  
+    --interface TYPE         Interface type: shell, rstudio
     --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
     --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
+    
+    Advanced options:
     --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
+    --no-docker              Skip Docker image build during setup
     --next-steps             Show development workflow and next steps
     --help, -h               Show this help message
 
 EXAMPLES:
-    $0                                              # Basic setup
-    $0 --dotfiles ~/dotfiles                        # Include personal dotfiles
-    $0 --dotfiles-nodot ~/dotfiles                  # Dotfiles without leading dots
-    $0 --base-image rocker/tidyverse                # Use tidyverse base image
+    # Team member joining existing project (recommended)
+    $0 --team rgt47 --project-name png1 --interface shell --dotfiles ~/dotfiles
+    $0 --team mylab --project study2024 --interface rstudio --dotfiles ~/dotfiles
+    
+    # Advanced usage with custom base images
+    $0 --base-image rocker/tidyverse --dotfiles ~/dotfiles
+    $0 --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
+    
+    # Basic setup for standalone projects
+    $0 --dotfiles ~/dotfiles                        # Basic setup with dotfiles
     $0 --no-docker                                  # Setup without Docker build
 
 MODULES INCLUDED:
