@@ -96,7 +96,7 @@ substitute_variables() {
     # envsubst < "$file" - reads file and substitutes ${VAR} with environment variable values
     # > "$file.tmp" - writes output to temporary file
     # && mv "$file.tmp" "$file" - if substitution succeeds, replace original with processed version
-    if ! envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"; then
+    if ! (envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"  # Clean up temporary file on failure
         return 1
