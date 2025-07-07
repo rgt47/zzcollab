@@ -198,7 +198,8 @@ PKG_NAME=$(validate_package_name)
 readonly PKG_NAME
 
 # Export variables for template substitution
-export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
+USERNAME="${USERNAME:-analyst}"  # Default Docker user
+export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME
 
 log_info "Package name determined: $PKG_NAME"
 
