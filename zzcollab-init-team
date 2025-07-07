@@ -60,7 +60,7 @@ REQUIRED:
 OPTIONAL:
     --github-account NAME   GitHub account name (default: same as team-name)
     --dotfiles PATH         Path to dotfiles directory (files already have dots)
-    --dotfiles-nodots PATH  Path to dotfiles directory (files need dots added)
+    --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
     --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
     --help                 Show this help message
 
@@ -75,7 +75,7 @@ EXAMPLES:
     zzcollab-init-team --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
 
     # With dotfiles that need dots added (files like: bashrc, vimrc, etc.)
-    zzcollab-init-team --team-name rgt47 --project-name research-study --dotfiles-nodots ~/Dropbox/dotfiles
+    zzcollab-init-team --team-name rgt47 --project-name research-study --dotfiles-nodot ~/Dropbox/dotfiles
 
 WORKFLOW:
     1. Create project directory
@@ -115,7 +115,7 @@ while [[ $# -gt 0 ]]; do
             USE_DOTFILES=true
             shift 2
             ;;
-        --dotfiles-nodots)
+        --dotfiles-nodot)
             DOTFILES_NODOTS_PATH="$2"
             USE_DOTFILES=true
             shift 2
@@ -345,7 +345,7 @@ if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then
         --dotfiles "$DOTFILES_PATH"
 elif [[ "$USE_DOTFILES" == true && -n "$DOTFILES_NODOTS_PATH" ]]; then
     zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell" \
-        --dotfiles-nodots "$DOTFILES_NODOTS_PATH"
+        --dotfiles-nodot "$DOTFILES_NODOTS_PATH"
 else
     zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
 fi
@@ -401,5 +401,5 @@ echo "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
 echo "  cd $PROJECT_NAME"
 echo "  zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles"
 echo "  # OR if dotfiles don't have dots:"
-echo "  zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles-nodots ~/dotfiles"
+echo "  zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles-nodot ~/dotfiles"
 echo "  make docker-zsh"
