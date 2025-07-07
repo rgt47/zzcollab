@@ -91,6 +91,7 @@ substitute_variables() {
     # envsubst only substitutes variables that are in the environment
     export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     export R_VERSION="${R_VERSION:-latest}"  # Provide default value if not set
+    export USERNAME="${USERNAME:-analyst}"   # Default Docker user
     
     # Process the file: read it, substitute variables, write to temp file, then replace original
     # envsubst < "$file" - reads file and substitutes ${VAR} with environment variable values
