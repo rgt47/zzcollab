@@ -554,12 +554,60 @@ if (is_reproducible) {
 }
 ```
 
-### Example R Workflows
+### Git and GitHub Integration Functions
 
-#### **Developer 1 (Team Lead) Workflow:**
+#### `git_status()`
+Check the current git status of your project.
 
 ```r
-# Load zzcollab functions
+# Check for uncommitted changes
+git_status()
+```
+
+#### `create_branch(branch_name)`
+Create and switch to a new feature branch.
+
+```r
+# Create feature branch for new analysis
+create_branch("feature/advanced-modeling")
+```
+
+#### `git_commit(message, add_all = TRUE)`
+Create a git commit with all changes.
+
+```r
+# Commit your analysis work
+git_commit("Add multilevel modeling analysis with comprehensive tests")
+```
+
+#### `git_push(branch = NULL)`
+Push commits to GitHub.
+
+```r
+# Push current branch to GitHub
+git_push()
+
+# Push specific branch
+git_push("feature/advanced-modeling")
+```
+
+#### `create_pr(title, body = NULL, base = "main")`
+Create a GitHub pull request.
+
+```r
+# Create pull request
+create_pr(
+  title = "Add advanced multilevel modeling analysis",
+  body = "This PR adds comprehensive multilevel modeling with full test coverage and reproducibility validation."
+)
+```
+
+### Example R Workflows
+
+#### **Developer 1 (Team Lead) Complete R Workflow:**
+
+```r
+# === SETUP PHASE (R Console) ===
 library(zzcollab)
 
 # 1. Initialize new team project (creates team infrastructure)
@@ -568,67 +616,105 @@ init_project(
   project_name = "study2024",
   dotfiles_path = "~/dotfiles"
 )
+# This creates Docker images, GitHub repo, and full project structure
 
-# Change to project directory
+# Change to project directory and exit R for containerized development
 setwd("study2024")
+quit()
+```
+
+```bash
+# === DEVELOPMENT PHASE (Container) ===
+# Enter containerized development environment  
+make docker-zsh  # or make docker-rstudio
+```
+
+```r
+# === ANALYSIS PHASE (Back in R - now containerized) ===
+library(zzcollab)
 
 # 2. Add required packages
-add_package(c(
-  "tidyverse", "brms", "targets", 
-  "rmarkdown", "here"
-))
+add_package(c("tidyverse", "brms", "targets", "rmarkdown", "here"))
 
-# 3. Check environment status
-status()
-team_images()
-
-# 4. Run analysis pipeline
+# 3. Run analysis pipeline
 run_script("scripts/01_data_import.R")
 run_script("scripts/02_data_analysis.R") 
 run_script("scripts/03_visualization.R")
 
-# 5. Render final report
+# 4. Render final report
 render_report("analysis/paper/paper.Rmd")
 
-# 6. Validate reproducibility
+# 5. Validate reproducibility
 validate_repro()
+
+# 6. Git workflow - all from R!
+git_status()  # Check what changed
+git_commit("Initial analysis pipeline with reproducibility validation")
+git_push()   # Push to GitHub
 
 # 7. Sync environment for team
 sync_env()
 ```
 
-#### **Developers 2+ (Team Members) Workflow:**
+#### **Developers 2+ (Team Members) Complete R Workflow:**
+
+```bash
+# === INITIAL SETUP (Command Line) ===
+git clone https://github.com/mylab/study2024.git
+cd study2024
+```
 
 ```r
-# Load zzcollab functions 
+# === PROJECT JOIN (R Console) ===
 library(zzcollab)
 
-# 1. Join the project (after cloning the repo)
+# 1. Join the project  
 join_project(
   team_name = "mylab",
   project_name = "study2024",
-  interface = "shell",
+  interface = "shell",  # or "rstudio"
   dotfiles_path = "~/dotfiles"
 )
+
+# Exit R to enter containerized environment
+quit()
+```
+
+```bash
+# === DEVELOPMENT PHASE (Container) ===
+make docker-zsh  # Enter containerized development with team packages
+```
+
+```r
+# === ANALYSIS PHASE (Back in R - now containerized) ===
+library(zzcollab)
 
 # 2. Sync with team environment
 sync_env()
 
-# 3. Add any additional packages needed for your analysis
-add_package("specific_package_for_my_analysis")
+# 3. Create feature branch for your work
+create_branch("feature/visualization-analysis")
 
-# 4. Check team status
-status()
-team_images()
+# 4. Add any additional packages needed
+add_package("ggridges")  # Example: specific package for your analysis
 
 # 5. Run your analysis pipeline
-run_script("scripts/my_analysis.R")
-
-# 6. Render reports
+run_script("scripts/my_visualization_analysis.R")
 render_report("analysis/my_section.Rmd")
 
-# 7. Validate reproducibility before submitting PR
+# 6. Validate reproducibility
 validate_repro()
+
+# 7. Complete R-based git workflow
+git_status()  # Check your changes
+git_commit("Add visualization analysis with ridge plots and comprehensive tests")
+git_push("feature/visualization-analysis")
+
+# 8. Create pull request - all from R!
+create_pr(
+  title = "Add visualization analysis with ridge plots",
+  body = "This PR adds new visualization analysis using ggridges with full test coverage and reproducibility validation."
+)
 ```
 
 ### Integration with RStudio
