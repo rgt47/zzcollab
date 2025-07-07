@@ -440,10 +440,10 @@ print(images)
 ### Project Management Functions
 
 #### `zzcollab_init_project()`
-Initialize a new zzcollab project from within R.
+Initialize a new zzcollab project from within R. **Note**: This is the R interface to `zzcollab-init-team` and should only be used by **Developer 1 (team lead)** to create the initial team infrastructure.
 
 ```r
-# Basic project setup
+# Developer 1: Complete team setup (creates team images + GitHub repo)
 zzcollab_init_project(
   team_name = "rgt47", 
   project_name = "myproject"
@@ -463,6 +463,13 @@ zzcollab_init_project(
   dotfiles_path = "~/Dropbox/dotfiles",
   dotfiles_nodots = TRUE
 )
+```
+
+**For Developers 2+**: Use the command line for joining existing projects:
+```bash
+git clone https://github.com/rgt47/myproject.git
+cd myproject
+zzcollab --base-image rgt47/myprojectcore-shell --dotfiles ~/dotfiles
 ```
 
 #### `zzcollab_add_package(packages, update_snapshot = TRUE)`

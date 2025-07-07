@@ -313,28 +313,15 @@ git push                        # → Triggers GitHub Actions validation
 ```bash
 # 1. Get access to PRIVATE repository and clone
 # Team lead must add you as collaborator to private GitHub repo first
-# Clone the PRIVATE repo - requires access
-git clone https://github.com/[TEAM]/project.git
-cd project
+git clone https://github.com/rgt47/png1.git  # Use actual team/project names
+cd png1
 
-# 2. Choose your preferred development interface
-PROJECT_NAME=$(basename $(pwd))    # Get current directory name
+# 2. Build your personal development environment
+# Uses the team core image created by Developer 1
+zzcollab --base-image rgt47/png1core-shell --dotfiles ~/dotfiles
+# This pulls the team image from Docker Hub and adds your personal dotfiles
 
-# Option A: Shell-based development (lightweight, fast)
-# Edit docker-compose.yml to reference shell core:
-# image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
-
-# Option B: RStudio-based development (web interface)  
-# Edit docker-compose.yml to reference RStudio core:
-# image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
-
-# 3. Build local image with your dotfiles (inherits from chosen core image)
-zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
-    --dotfiles ~/dotfiles
-# This builds on top of your chosen team core image, adding personal 
-# dotfiles
-
-# 4. Start development with your preferred interface
+# 3. Start development immediately  
 make docker-zsh                   # Shell interface with vim/tmux
 # OR
 make docker-rstudio              # RStudio Server at localhost:8787
