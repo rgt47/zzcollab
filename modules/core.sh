@@ -17,10 +17,10 @@
 #=============================================================================
 
 # Author information can be customized via environment variables
-readonly AUTHOR_NAME="${RRTOOLS_AUTHOR_NAME:-Ronald G. Thomas}"
-readonly AUTHOR_EMAIL="${RRTOOLS_AUTHOR_EMAIL:-rgthomas@ucsd.edu}"
-readonly AUTHOR_INSTITUTE="${RRTOOLS_INSTITUTE:-UCSD}"
-readonly AUTHOR_INSTITUTE_FULL="${RRTOOLS_INSTITUTE_FULL:-University of California, San Diego}"
+readonly AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Ronald G. Thomas}"
+readonly AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-rgthomas@ucsd.edu}"
+readonly AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-UCSD}"
+readonly AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-University of California, San Diego}"
 
 #=============================================================================
 # LOGGING AND OUTPUT FUNCTIONS (extracted from lines 219-248)
