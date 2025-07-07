@@ -5,7 +5,7 @@
 #'
 #' @return Character vector with container status information
 #' @export
-zzcollab_status <- function() {
+status <- function() {
   result <- system("docker ps --filter 'label=zzcollab' --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'", 
                    intern = TRUE)
   if (length(result) == 0) {
@@ -20,7 +20,7 @@ zzcollab_status <- function() {
 #' @param target Build target (default: "docker-build")
 #' @return Logical indicating success
 #' @export
-zzcollab_rebuild <- function(target = "docker-build") {
+rebuild <- function(target = "docker-build") {
   if (!file.exists("Makefile")) {
     stop("No Makefile found. Are you in a zzcollab project directory?")
   }
@@ -33,7 +33,7 @@ zzcollab_rebuild <- function(target = "docker-build") {
 #'
 #' @return Data frame with image information
 #' @export
-zzcollab_team_images <- function() {
+team_images <- function() {
   result <- system("docker images --filter 'label=zzcollab.team' --format '{{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}'", 
                    intern = TRUE)
   
@@ -63,10 +63,10 @@ zzcollab_team_images <- function() {
 #' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
 #' @return Logical indicating success
 #' @export
-zzcollab_init_project <- function(team_name, project_name, 
-                                  github_account = NULL, 
-                                  dotfiles_path = NULL,
-                                  dotfiles_nodots = FALSE) {
+init_project <- function(team_name, project_name, 
+                         github_account = NULL, 
+                         dotfiles_path = NULL,
+                         dotfiles_nodots = FALSE) {
   
   # Build command
   cmd <- paste("zzcollab-init-team --team-name", team_name, "--project-name", project_name)
@@ -97,8 +97,8 @@ zzcollab_init_project <- function(team_name, project_name,
 #' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
 #' @return Logical indicating success
 #' @export
-zzcollab_join_project <- function(team_name, project_name, interface = "shell",
-                                  dotfiles_path = NULL, dotfiles_nodots = FALSE) {
+join_project <- function(team_name, project_name, interface = "shell",
+                         dotfiles_path = NULL, dotfiles_nodots = FALSE) {
   
   # Build command with new user-friendly interface
   cmd <- paste("zzcollab --team", team_name, "--project-name", project_name, "--interface", interface)
@@ -122,7 +122,7 @@ zzcollab_join_project <- function(team_name, project_name, interface = "shell",
 #' @param update_snapshot Logical, update renv.lock after installation
 #' @return Logical indicating success
 #' @export
-zzcollab_add_package <- function(packages, update_snapshot = TRUE) {
+add_package <- function(packages, update_snapshot = TRUE) {
   if (!requireNamespace("renv", quietly = TRUE)) {
     stop("renv package is required for this function")
   }
@@ -146,7 +146,7 @@ zzcollab_add_package <- function(packages, update_snapshot = TRUE) {
 #'
 #' @return Logical indicating success
 #' @export
-zzcollab_sync_env <- function() {
+sync_env <- function() {
   if (!requireNamespace("renv", quietly = TRUE)) {
     stop("renv package is required for this function")
   }
@@ -162,7 +162,7 @@ zzcollab_sync_env <- function() {
   result <- system("make docker-check-renv", intern = TRUE)
   if (attr(result, "status") %||% 0 != 0) {
     message("Environment sync may require Docker image rebuild")
-    message("Run zzcollab_rebuild() or 'make docker-build' to update Docker environment")
+    message("Run rebuild() or 'make docker-build' to update Docker environment")
   }
   
   return(TRUE)
@@ -174,7 +174,7 @@ zzcollab_sync_env <- function() {
 #' @param container_cmd Container command (default: "docker-r")
 #' @return Logical indicating success
 #' @export
-zzcollab_run_script <- function(script_path, container_cmd = "docker-r") {
+run_script <- function(script_path, container_cmd = "docker-r") {
   if (!file.exists(script_path)) {
     stop("Script file not found: ", script_path)
   }
@@ -195,7 +195,7 @@ zzcollab_run_script <- function(script_path, container_cmd = "docker-r") {
 #' @param report_path Path to R Markdown file (optional)
 #' @return Logical indicating success
 #' @export
-zzcollab_render_report <- function(report_path = NULL) {
+render_report <- function(report_path = NULL) {
   if (!file.exists("Makefile")) {
     stop("No Makefile found. Are you in a zzcollab project directory?")
   }
@@ -220,7 +220,7 @@ zzcollab_render_report <- function(report_path = NULL) {
 #'
 #' @return Logical indicating if environment is reproducible
 #' @export
-zzcollab_validate_repro <- function() {
+validate_repro <- function() {
   scripts_to_check <- c(
     "scripts/99_reproducibility_check.R",
     "check_renv_for_commit.R",
@@ -257,4 +257,125 @@ zzcollab_validate_repro <- function() {
   }
   
   return(all_passed)
+}
+
+#' Create and push git commit
+#'
+#' @param message Commit message
+#' @param add_all Logical, add all files (default: TRUE)
+#' @return Logical indicating success
+#' @export
+git_commit <- function(message, add_all = TRUE) {
+  if (add_all) {
+    result1 <- system("git add .")
+    if (result1 != 0) {
+      stop("Failed to add files to git")
+    }
+  }
+  
+  # Create commit with proper formatting
+  commit_cmd <- sprintf('git commit -m "%s"', message)
+  result2 <- system(commit_cmd)
+  
+  if (result2 == 0) {
+    message("✅ Commit created: ", message)
+    return(TRUE)
+  } else {
+    message("❌ Commit failed")
+    return(FALSE)
+  }
+}
+
+#' Push commits to GitHub
+#'
+#' @param branch Branch name (default: current branch)
+#' @return Logical indicating success  
+#' @export
+git_push <- function(branch = NULL) {
+  if (is.null(branch)) {
+    cmd <- "git push"
+  } else {
+    cmd <- paste("git push origin", branch)
+  }
+  
+  result <- system(cmd)
+  
+  if (result == 0) {
+    message("✅ Successfully pushed to GitHub")
+    return(TRUE)
+  } else {
+    message("❌ Push failed")
+    return(FALSE)
+  }
+}
+
+#' Create GitHub pull request
+#'
+#' @param title Pull request title
+#' @param body Pull request body (optional)
+#' @param base Base branch (default: "main")
+#' @return Logical indicating success
+#' @export
+create_pr <- function(title, body = NULL, base = "main") {
+  if (!nzchar(system.file(package = "gh"))) {
+    # Check if gh CLI is available
+    if (system("which gh", ignore.stdout = TRUE, ignore.stderr = TRUE) != 0) {
+      stop("GitHub CLI (gh) is required. Install with: brew install gh")
+    }
+  }
+  
+  cmd <- paste("gh pr create --title", shQuote(title), "--base", base)
+  
+  if (!is.null(body)) {
+    cmd <- paste(cmd, "--body", shQuote(body))
+  }
+  
+  result <- system(cmd)
+  
+  if (result == 0) {
+    message("✅ Pull request created successfully")
+    return(TRUE)
+  } else {
+    message("❌ Failed to create pull request")
+    return(FALSE)
+  }
+}
+
+#' Check git status
+#'
+#' @return Character vector with git status output
+#' @export
+git_status <- function() {
+  result <- system("git status --porcelain", intern = TRUE)
+  
+  if (length(result) == 0) {
+    message("✅ Working directory clean")
+    return(character(0))
+  } else {
+    message("📝 Changes detected:")
+    print(result)
+    return(result)
+  }
+}
+
+#' Create feature branch
+#'
+#' @param branch_name Name of the new branch
+#' @return Logical indicating success
+#' @export
+create_branch <- function(branch_name) {
+  # Ensure we're on main and up to date
+  system("git checkout main", ignore.stdout = TRUE)
+  system("git pull", ignore.stdout = TRUE)
+  
+  # Create and checkout new branch
+  result <- system(paste("git checkout -b", branch_name))
+  
+  if (result == 0) {
+    message("✅ Created and switched to branch: ", branch_name)
+    return(TRUE)
+  } else {
+    message("❌ Failed to create branch: ", branch_name)
+    return(FALSE)
+  }
 }
