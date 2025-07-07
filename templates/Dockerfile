@@ -1,3 +1,4 @@
+ARG BASE_IMAGE=rocker/r-ver
 ARG R_VERSION=latest
 FROM ${BASE_IMAGE}:${R_VERSION}
 
