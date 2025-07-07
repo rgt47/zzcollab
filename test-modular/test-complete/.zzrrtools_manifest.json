@@ -45,7 +45,7 @@
     "tests/testthat.R",
     "tests/testthat/test-utils.R",
     "setup_renv.R",
-    "zzrrtools-uninstall.sh"
+    "zzcollab-uninstall.sh"
   ],
   "template_files": [
     {
@@ -81,8 +81,8 @@
       "destination": "check_renv_for_commit.R"
     },
     {
-      "template": "ZZRRTOOLS_USER_GUIDE.md",
-      "destination": "ZZRRTOOLS_USER_GUIDE.md"
+      "template": "ZZCOLLAB_USER_GUIDE.md",
+      "destination": "ZZCOLLAB_USER_GUIDE.md"
     },
     {
       "template": "paper.Rmd",
