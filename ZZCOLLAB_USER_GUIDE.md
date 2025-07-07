@@ -465,11 +465,32 @@ zzcollab_init_project(
 )
 ```
 
-**For Developers 2+**: Use the command line for joining existing projects:
+#### `zzcollab_join_project()`
+Join an existing zzcollab project (for **Developers 2+**).
+
+```r
+# Join existing project with shell interface
+zzcollab_join_project(
+  team_name = "rgt47",
+  project_name = "myproject", 
+  interface = "shell",
+  dotfiles_path = "~/dotfiles"
+)
+
+# Join with RStudio interface
+zzcollab_join_project(
+  team_name = "rgt47",
+  project_name = "myproject",
+  interface = "rstudio",
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+**Command line alternative** for Developers 2+:
 ```bash
 git clone https://github.com/rgt47/myproject.git
 cd myproject
-zzcollab --base-image rgt47/myprojectcore-shell --dotfiles ~/dotfiles
+zzcollab --team rgt47 --project-name myproject --interface shell --dotfiles ~/dotfiles
 ```
 
 #### `zzcollab_add_package(packages, update_snapshot = TRUE)`
@@ -533,15 +554,15 @@ if (is_reproducible) {
 }
 ```
 
-### Example R Workflow
+### Example R Workflows
 
-Here's a complete workflow using only R functions:
+#### **Developer 1 (Team Lead) Workflow:**
 
 ```r
 # Load zzcollab functions
 library(zzcollab)
 
-# 1. Initialize new project
+# 1. Initialize new team project (creates team infrastructure)
 zzcollab_init_project(
   team_name = "mylab",
   project_name = "study2024",
@@ -574,6 +595,40 @@ zzcollab_validate_repro()
 
 # 7. Sync environment for team
 zzcollab_sync_env()
+```
+
+#### **Developers 2+ (Team Members) Workflow:**
+
+```r
+# Load zzcollab functions 
+library(zzcollab)
+
+# 1. Join the project (after cloning the repo)
+zzcollab_join_project(
+  team_name = "mylab",
+  project_name = "study2024",
+  interface = "shell",
+  dotfiles_path = "~/dotfiles"
+)
+
+# 2. Sync with team environment
+zzcollab_sync_env()
+
+# 3. Add any additional packages needed for your analysis
+zzcollab_add_package("specific_package_for_my_analysis")
+
+# 4. Check team status
+zzcollab_status()
+zzcollab_team_images()
+
+# 5. Run your analysis pipeline
+zzcollab_run_script("scripts/my_analysis.R")
+
+# 6. Render reports
+zzcollab_render_report("analysis/my_section.Rmd")
+
+# 7. Validate reproducibility before submitting PR
+zzcollab_validate_repro()
 ```
 
 ### Integration with RStudio
