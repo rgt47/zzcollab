@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments. The system consists of:
 
 ### Core Components
-- **Main executable**: `zzcollab-init-team` - Automated team setup script
+- **Main executable**: `zzcollab.sh` - Primary framework script
+- **Team automation**: `zzcollab-init-team` - Automated team setup script
 - **Modular shell system**: `modules/` directory contains core functionality
 - **Docker-first workflow**: All development happens in containers
 - **R package structure**: Standard R package with testthat for testing
@@ -55,7 +56,11 @@ Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 
 ### Team Collaboration Setup
 ```bash
-./zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+# Automated team setup (recommended)
+zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+
+# Manual project initialization
+zzcollab --base-image team/project-core-shell --dotfiles ~/dotfiles
 ```
 
 ## Testing Strategy
@@ -80,10 +85,11 @@ Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 5. Tests are mandatory for all functions and analysis steps
 
 ### Team Collaboration
-1. Team lead runs `zzcollab-init-team` to create base images
-2. Team members clone private repo and build personal development images
-3. CI/CD automatically rebuilds team images when dependencies change
-4. Fork-based workflow with pull requests for collaboration
+1. **Team lead**: Runs `zzcollab-init-team` to create base images and project
+2. **Team members**: Clone private repo and build personal development images
+3. **Automated workflow**: CI/CD rebuilds team images when dependencies change
+4. **Collaboration**: Fork-based workflow with pull requests and automated testing
+5. **Documentation**: Complete workflow documented in `workflow.md`
 
 ### Docker Image Strategy
 - **Team core images**: Public on Docker Hub (software only, no data)
@@ -108,11 +114,36 @@ Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 ```
 
 ### Key Files
+- **zzcollab.sh**: Main framework executable
+- **zzcollab-init-team**: Automated team setup script  
+- **workflow.md**: Complete team collaboration documentation
 - **Dockerfile**: Container definition for development environment
 - **docker-compose.yml**: Service configuration (auto-updated by CI)
 - **renv.lock**: R dependency lockfile (triggers image rebuilds)
 - **DESCRIPTION**: R package metadata
 - **Makefile**: Development automation commands
+
+## Automation Features
+
+### zzcollab-init-team Script
+- **Purpose**: Automates entire Developer 1 setup workflow
+- **Replaces**: 10+ manual Docker and git commands
+- **Creates**: Team core images, project structure, private GitHub repo
+- **Usage**: `zzcollab-init-team --team-name TEAM --project-name PROJECT`
+- **Benefits**: Reduces setup time from hours to minutes
+
+### Automated Docker Image Management
+- **Triggers**: Changes to renv.lock, DESCRIPTION, Dockerfile
+- **Builds**: Multi-platform Docker images (AMD64, ARM64)
+- **Publishes**: Updated images to Docker Hub automatically
+- **Notifies**: Team members via GitHub commit comments
+- **Documentation**: Complete workflow in `.github/workflows/update-team-image.yml`
+
+### Zero-Friction Collaboration
+- **Setup**: Single command team initialization
+- **Development**: Automated environment consistency
+- **Testing**: Comprehensive CI/CD with quality gates
+- **Documentation**: Self-updating with automation status
 
 ## Important Development Notes
 

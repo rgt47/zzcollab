@@ -1,6 +1,7 @@
 # Developer Collaboration Workflow Sequence
 
-Based on my review of the user guide, here are the specific workflows for developer collaboration using vim as the IDE:
+Based on my review of the user guide, here are the specific workflows for developer 
+collaboration using vim as the IDE:
 
 ## **🚀 Streamlined Team Collaboration Workflow**
 
@@ -30,6 +31,31 @@ which zzcollab                     # Confirm system PATH setup
 - [ ] Write integration tests for analysis script
 - [ ] Run tests to verify everything works
 - [ ] Commit and push code + tests together
+
+#### **🚀 AUTOMATED APPROACH (Recommended)**
+
+**The `zzcollab-init-team` script automates the entire workflow below in a single 
+command:**
+
+```bash
+# Complete automated setup - replaces all manual Docker and git commands below
+zzcollab-init-team --team-name rgt47 --project-name research-study \
+    --dotfiles ~/dotfiles
+
+# This single command automatically:
+# ✅ Creates project directory
+# ✅ Sets up customizable Dockerfile.teamcore 
+# ✅ Builds shell and RStudio core images
+# ✅ Tags and pushes images to Docker Hub
+# ✅ Initializes zzcollab project with base image
+# ✅ Creates private GitHub repository
+# ✅ Sets up initial commit with proper structure
+```
+
+#### **🔧 MANUAL APPROACH (For customization or learning)**
+
+**If you need custom control or want to understand the underlying process, you can 
+run the individual commands:**
 
 ```bash
 # 1. Create new analysis project
@@ -92,7 +118,8 @@ git add .
 git commit -m "🎉 Initial research project setup
 
 - Complete zzcollab research compendium  
-- Team core image published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
+- Team core image published to Docker Hub: 
+  ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
 - Private repository protects unpublished research
 - CI/CD configured for automatic team image updates"
 
@@ -101,7 +128,8 @@ git remote add origin https://github.com/[TEAM]/project.git  # PRIVATE repo
 git push -u origin main
 
 # 7. Start development immediately
-make docker-zsh                   # Enter containerized development environment with your dotfiles
+# Enter containerized development environment with your dotfiles
+make docker-zsh
 ```
 
 ### **📊 Developer 1: Analysis Development Cycle**
@@ -117,7 +145,8 @@ vim tests/integration/test-01_initial_analysis.R
 # Write integration tests:
 # test_that("initial analysis script runs without errors", {
 #   expect_no_error(source(here("scripts", "01_initial_analysis.R")))
-#   expect_true(file.exists(here("data", "derived_data", "analysis_output.rds")))
+#   expect_true(file.exists(here("data", "derived_data", 
+#                                 "analysis_output.rds")))
 # })
 
 # 3. Run tests to verify everything works
@@ -155,15 +184,20 @@ make docker-zsh                   # Back to development environment
 - **⚡ Faster onboarding**: New developers get started in minutes, not hours
 - **🔒 Environment consistency**: Everyone uses identical package versions
 - **💾 Bandwidth efficiency**: ~500MB pull vs ~2GB+ rebuild
-- **🛠️ CI/CD optimization**: Faster automated testing with pre-built dependencies
+- **🛠️ CI/CD optimization**: Faster automated testing with pre-built 
+  dependencies
 - **📦 Package management**: Centralized control over research environment
 - **🔄 Version control**: Tag images for different analysis phases
-- **🤖 Automated updates**: Team image rebuilds automatically when packages change
-- **🚫 Zero manual intervention**: Developers never worry about image management
+- **🤖 Automated updates**: Team image rebuilds automatically when packages 
+  change
+- **🚫 Zero manual intervention**: Developers never worry about image 
+  management
 
 ### **🤖 Automated Team Image Updates**
 
-ZZCOLLAB includes automated GitHub Actions workflows that rebuild and publish the team Docker image whenever package dependencies change. This ensures all team members always have access to the latest, consistent development environment.
+ZZCOLLAB includes automated GitHub Actions workflows that rebuild and publish the 
+team Docker image whenever package dependencies change. This ensures all team members 
+always have access to the latest, consistent development environment.
 
 **Key Benefits:**
 
@@ -173,7 +207,9 @@ ZZCOLLAB includes automated GitHub Actions workflows that rebuild and publish th
 - **Team notification** system for new image availability
 - **Build caching** for faster rebuild times
 
-*Full documentation and implementation details are provided in the [Automated Docker Image Management](#automated-docker-image-management) section at the end of this document.*
+*Full documentation and implementation details are provided in the 
+[Automated Docker Image Management](#automated-docker-image-management) section at the 
+end of this document.*
 
 ## **Developer Collaboration Workflow Sequence**
 
@@ -244,7 +280,8 @@ exit                            # Exit container
 make docker-check-renv-fix      # Validate dependencies
 make docker-test                # Run package tests
 make docker-render              # Test report rendering
-# Rscript scripts/99_reproducibility_check.R  # Optional: Check reproducibility
+# Optional: Check reproducibility
+# Rscript scripts/99_reproducibility_check.R
 
 # 5. Commit changes with CI/CD trigger
 git add .
@@ -271,7 +308,8 @@ git push                        # → Triggers GitHub Actions validation
 ```bash
 # 1. Get access to PRIVATE repository and clone
 # Team lead must add you as collaborator to private GitHub repo first
-git clone https://github.com/[TEAM]/project.git  # PRIVATE repo - requires access
+# Clone the PRIVATE repo - requires access
+git clone https://github.com/[TEAM]/project.git
 cd project
 
 # 2. Choose your preferred development interface
@@ -288,7 +326,8 @@ PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # 3. Build local image with your dotfiles (inherits from chosen core image)
 zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
     --dotfiles ~/dotfiles
-# This builds on top of your chosen team core image, adding personal dotfiles
+# This builds on top of your chosen team core image, adding personal 
+# dotfiles
 
 # 4. Start development with your preferred interface
 make docker-zsh                   # Shell interface with vim/tmux
@@ -357,7 +396,8 @@ git push origin main            # Update your fork's main branch
 
 # 3. Get latest team Docker image (automatically updated by GitHub Actions)
 docker pull [TEAM]/$(cat .project-name):latest  # Pull from Docker Hub (public)
-# Note: If Dev 2 added packages, GitHub Actions already rebuilt and pushed the image!
+# Note: If Dev 2 added packages, GitHub Actions already rebuilt 
+# and pushed the image!
 
 # 4. Validate environment consistency
 make docker-check-renv-fix     # Ensure all dependencies are properly tracked
@@ -371,7 +411,8 @@ make docker-zsh                # → Environment now includes Dev 2's packages
 # 7. Add more analysis work using vim
 # (In zsh container with vim)
 R                              # Start R session
-# renv::restore()              # Ensure all packages from Dev 2 are available
+# Ensure all packages from Dev 2 are available
+# renv::restore()
 # devtools::load_all()         # Load updated package with new functions
 # quit()
 
@@ -421,14 +462,16 @@ vim analysis/report/report.Rmd  # Update manuscript
 vim tests/integration/test-report_rendering.R  # Create report rendering tests
 # Write tests for report compilation:
 # test_that("report renders successfully", {
-#   expect_no_error(rmarkdown::render(here("analysis", "report", "report.Rmd")))
+#   expect_no_error(rmarkdown::render(here("analysis", "report", 
+#                                         "report.Rmd")))
 #   expect_true(file.exists(here("analysis", "report", "report.pdf")))
 # })
 
 # Test report rendering
 R                              # Test report compilation
 # rmarkdown::render("analysis/report/report.Rmd")  # Verify report compiles
-# testthat::test_dir("tests/integration")         # Run all integration tests
+# Run all integration tests
+# testthat::test_dir("tests/integration")
 # quit()
 
 # 11. Enhanced collaboration workflow with proper PR
@@ -485,12 +528,14 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
              --base main
 ```
 
-### **🔄 Key Collaboration Features (Professional Git Workflow + Test-Driven Development)**
+### **🔄 Key Collaboration Features**
+**(Professional Git Workflow + Test-Driven Development)**
 
 #### **Automated Quality Assurance on Every Push:**
 
 - ✅ **R Package Validation**: R CMD check with dependency validation
-- ✅ **Comprehensive Testing Suite**: Unit tests, integration tests, and data validation
+- ✅ **Comprehensive Testing Suite**: Unit tests, integration tests, and data 
+  validation
 - ✅ **Paper Rendering**: Automated PDF generation and artifact upload
 - ✅ **Multi-platform Testing**: Ensures compatibility across environments
 - ✅ **Dependency Sync**: renv validation and DESCRIPTION file updates
@@ -498,15 +543,20 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
 #### **Test-Driven Development Workflow:**
 
 - **Unit Tests**: Every R function has corresponding tests in `tests/testthat/`
-- **Integration Tests**: Analysis scripts tested end-to-end in `tests/integration/`
-- **Data Validation**: Automated data quality checks using `scripts/02_data_validation.R`
-- **Reproducibility Testing**: Environment validation with `scripts/99_reproducibility_check.R`
+- **Integration Tests**: Analysis scripts tested end-to-end in 
+  `tests/integration/`
+- **Data Validation**: Automated data quality checks using 
+  `scripts/02_data_validation.R`
+- **Reproducibility Testing**: Environment validation with 
+  `scripts/99_reproducibility_check.R`
 - **Paper Testing**: Manuscript rendering validation for each commit
 
 #### **Enhanced GitHub Templates:**
 
-- **Pull Request Template**: Analysis impact assessment, reproducibility checklist
-- **Issue Templates**: Bug reports with environment details, feature requests with research use cases
+- **Pull Request Template**: Analysis impact assessment, reproducibility 
+  checklist
+- **Issue Templates**: Bug reports with environment details, feature requests 
+  with research use cases
 - **Collaboration Guidelines**: Research-specific workflow standards
 
 #### **Fully Automated Professional Workflow:**
@@ -720,8 +770,9 @@ The automated system is implemented through a comprehensive GitHub Actions workf
 # .github/workflows/update-team-image.yml
 # Automated Team Docker Image Management for ZZCOLLAB Research Projects
 # 
-# PURPOSE: Automatically rebuild and publish team Docker images when R package
-#          dependencies change, ensuring consistent environments across team members
+# PURPOSE: Automatically rebuild and publish team Docker images when R 
+#          package dependencies change, ensuring consistent environments 
+#          across team members
 #
 # TRIGGERS: 
 #   - Push to main branch with changes to renv.lock or DESCRIPTION
@@ -990,15 +1041,21 @@ jobs:
 ### **🔧 Key Features**
 
 #### **1. Intelligent Change Detection**
-- **Monitors**: `renv.lock`, `DESCRIPTION`, `Dockerfile`, `docker-compose.yml`
+- **Monitors**: `renv.lock`, `DESCRIPTION`, `Dockerfile`, 
+  `docker-compose.yml`
 - **Smart analysis**: Compares package lists between commits
-- **Detailed reporting**: Tracks new packages, removed packages, and configuration changes
-- **Skip unnecessary builds**: Only rebuilds when actual changes are detected
+- **Detailed reporting**: Tracks new packages, removed packages, and 
+  configuration changes
+- **Skip unnecessary builds**: Only rebuilds when actual changes are 
+  detected
 
 #### **2. Multi-Platform Support**
-- **Architectures**: AMD64 (Intel/AMD) and ARM64 (Apple Silicon, ARM servers)
-- **Cross-platform compatibility**: Works on all modern development machines
-- **Universal deployment**: Single image works across different team hardware
+- **Architectures**: AMD64 (Intel/AMD) and ARM64 (Apple Silicon, ARM 
+  servers)
+- **Cross-platform compatibility**: Works on all modern development 
+  machines
+- **Universal deployment**: Single image works across different team 
+  hardware
 
 #### **3. Advanced Caching Strategy**
 - **GitHub Actions cache**: Reuses Docker layers across builds
@@ -1119,11 +1176,15 @@ ZZCOLLAB implements a **hybrid privacy approach** optimized for research collabo
 
 #### **Security Features**
 
-- **Docker Hub authentication**: Uses repository secrets for secure publishing
-- **SBOM generation**: Software Bill of Materials for vulnerability tracking  
+- **Docker Hub authentication**: Uses repository secrets for secure 
+  publishing
+- **SBOM generation**: Software Bill of Materials for vulnerability 
+  tracking  
 - **Provenance attestation**: Cryptographic proof of build integrity
-- **Multi-platform signing**: Ensures image authenticity across architectures
-- **Separate credentials**: GitHub and Docker Hub use different authentication systems
+- **Multi-platform signing**: Ensures image authenticity across 
+  architectures
+- **Separate credentials**: GitHub and Docker Hub use different 
+  authentication systems
 
 #### **Repository Secrets Setup**
 For automated Docker Hub publishing, configure these secrets in your **private** GitHub repository:
@@ -1150,8 +1211,10 @@ DOCKERHUB_TOKEN: your-dockerhub-access-token  # Create at hub.docker.com/setting
 - **Use .dockerignore**: Exclude unnecessary files from build context
 - **Regular security updates**: Leverage dependabot for base image updates
 - **Monitor build times**: Optimize when builds exceed reasonable duration
-- **Docker Hub organization**: Use team/organization account for professional projects
-- **Image naming**: Follow consistent naming convention: `[team]/[project]:latest`
+- **Docker Hub organization**: Use team/organization account for 
+  professional projects
+- **Image naming**: Follow consistent naming convention: 
+  `[team]/[project]:latest`
 
 ### **🔧 Customization Options**
 
@@ -1199,7 +1262,8 @@ build-args: |
 
 - ✅ **Custom base images**: Use team-specific R environments
 - ✅ **Consistent builds**: Same base image across all team members
-- ✅ **Automated propagation**: BASE_IMAGE automatically passed to Docker build
+- ✅ **Automated propagation**: BASE_IMAGE automatically passed to Docker 
+  build
 - ✅ **Version tracking**: Base image changes trigger rebuilds
 
 #### **Notification Customization**
