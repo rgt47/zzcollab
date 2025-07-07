@@ -41,7 +41,8 @@ TEAM_NAME=""
 PROJECT_NAME=""
 GITHUB_ACCOUNT=""
 DOTFILES_PATH=""
-USE_DOTFILES=true
+DOTFILES_NODOTS_PATH=""
+USE_DOTFILES=false
 DOCKERFILE_PATH=""
 
 # Help function
@@ -58,8 +59,8 @@ REQUIRED:
 
 OPTIONAL:
     --github-account NAME   GitHub account name (default: same as team-name)
-    --dotfiles PATH         Path to dotfiles directory (default: none)
-    --nodots               Skip dotfiles integration entirely
+    --dotfiles PATH         Path to dotfiles directory (files already have dots)
+    --dotfiles-nodots PATH  Path to dotfiles directory (files need dots added)
     --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
     --help                 Show this help message
 
@@ -70,11 +71,11 @@ EXAMPLES:
     # With custom GitHub account
     zzcollab-init-team --team-name rgt47 --project-name research-study --github-account mylab
 
-    # With dotfiles
+    # With dotfiles (files already have dots: .bashrc, .vimrc, etc.)
     zzcollab-init-team --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
 
-    # Skip dotfiles explicitly
-    zzcollab-init-team --team-name rgt47 --project-name research-study --nodots
+    # With dotfiles that need dots added (files like: bashrc, vimrc, etc.)
+    zzcollab-init-team --team-name rgt47 --project-name research-study --dotfiles-nodots ~/Dropbox/dotfiles
 
 WORKFLOW:
     1. Create project directory
@@ -114,9 +115,10 @@ while [[ $# -gt 0 ]]; do
             USE_DOTFILES=true
             shift 2
             ;;
-        --nodots)
-            USE_DOTFILES=false
-            shift
+        --dotfiles-nodots)
+            DOTFILES_NODOTS_PATH="$2"
+            USE_DOTFILES=true
+            shift 2
             ;;
         --dockerfile)
             DOCKERFILE_PATH="$2"
@@ -235,9 +237,13 @@ if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then
         print_error "Dotfiles path does not exist: $DOTFILES_PATH"
         exit 1
     fi
-    print_status "Using dotfiles from: $DOTFILES_PATH"
-elif [[ "$USE_DOTFILES" == false ]]; then
-    print_status "Skipping dotfiles integration (--nodots specified)"
+    print_status "Using dotfiles from: $DOTFILES_PATH (files already have dots)"
+elif [[ "$USE_DOTFILES" == true && -n "$DOTFILES_NODOTS_PATH" ]]; then
+    if [[ ! -d "$DOTFILES_NODOTS_PATH" ]]; then
+        print_error "Dotfiles path does not exist: $DOTFILES_NODOTS_PATH"
+        exit 1
+    fi
+    print_status "Using dotfiles from: $DOTFILES_NODOTS_PATH (dots will be added)"
 else
     print_status "No dotfiles specified, proceeding without dotfiles integration"
 fi
@@ -249,7 +255,7 @@ print_status "Configuration Summary:"
 echo "  Team Name: $TEAM_NAME"
 echo "  Project Name: $PROJECT_NAME"
 echo "  GitHub Account: $GITHUB_ACCOUNT"
-echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then echo "$DOTFILES_PATH"; elif [[ "$USE_DOTFILES" == false ]]; then echo "disabled"; else echo "none"; fi)"
+echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then echo "$DOTFILES_PATH (with dots)"; elif [[ "$USE_DOTFILES" == true && -n "$DOTFILES_NODOTS_PATH" ]]; then echo "$DOTFILES_NODOTS_PATH (dots will be added)"; else echo "none"; fi)"
 echo "  Dockerfile: $DOCKERFILE_PATH"
 echo ""
 
@@ -322,8 +328,9 @@ print_status "Step 6: Initializing zzcollab project..."
 if [[ "$USE_DOTFILES" == true && -n "$DOTFILES_PATH" ]]; then
     zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell" \
         --dotfiles "$DOTFILES_PATH"
-elif [[ "$USE_DOTFILES" == false ]]; then
-    zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
+elif [[ "$USE_DOTFILES" == true && -n "$DOTFILES_NODOTS_PATH" ]]; then
+    zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell" \
+        --dotfiles-nodots "$DOTFILES_NODOTS_PATH"
 else
     zzcollab --base-image "${TEAM_NAME}/${PROJECT_NAME}core-shell"
 fi
@@ -378,4 +385,6 @@ print_status "Team members can now join with:"
 echo "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
 echo "  cd $PROJECT_NAME"
 echo "  zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles ~/dotfiles"
+echo "  # OR if dotfiles don't have dots:"
+echo "  zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell --dotfiles-nodots ~/dotfiles"
 echo "  make docker-zsh"
