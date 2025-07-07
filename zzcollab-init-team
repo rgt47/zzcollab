@@ -156,13 +156,28 @@ if [[ -z "$GITHUB_ACCOUNT" ]]; then
 fi
 
 if [[ -z "$DOCKERFILE_PATH" ]]; then
-    # Try to find the Dockerfile template
-    if [[ -f "templates/Dockerfile.pluspackages" ]]; then
-        DOCKERFILE_PATH="templates/Dockerfile.pluspackages"
-    elif [[ -f "$(dirname "$0")/templates/Dockerfile.pluspackages" ]]; then
-        DOCKERFILE_PATH="$(dirname "$0")/templates/Dockerfile.pluspackages"
-    else
+    # Try to find the Dockerfile template in multiple locations
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    POSSIBLE_PATHS=(
+        "templates/Dockerfile.pluspackages"                                    # Current directory
+        "$SCRIPT_DIR/templates/Dockerfile.pluspackages"                       # Same directory as script
+        "$SCRIPT_DIR/zzcollab-support/templates/Dockerfile.pluspackages"      # Installed location
+        "$(dirname "$SCRIPT_DIR")/templates/Dockerfile.pluspackages"          # Parent directory
+    )
+    
+    for path in "${POSSIBLE_PATHS[@]}"; do
+        if [[ -f "$path" ]]; then
+            DOCKERFILE_PATH="$path"
+            break
+        fi
+    done
+    
+    if [[ -z "$DOCKERFILE_PATH" ]]; then
         print_error "Could not find Dockerfile.pluspackages template"
+        print_error "Searched in:"
+        for path in "${POSSIBLE_PATHS[@]}"; do
+            print_error "  - $path"
+        done
         print_error "Please specify --dockerfile path or ensure templates/Dockerfile.pluspackages exists"
         exit 1
     fi
