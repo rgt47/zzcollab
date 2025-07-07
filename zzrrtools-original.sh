@@ -500,7 +500,7 @@ create_docker_files() {
     
     # Copy additional support files
     copy_template_file "check_renv_for_commit.R" "check_renv_for_commit.R" "renv validation script"
-    copy_template_file "ZZRRTOOLS_USER_GUIDE.md" "ZZRRTOOLS_USER_GUIDE.md" "comprehensive user guide"
+    copy_template_file "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide"
     
     log_success "Docker configuration files created"
 }
@@ -722,7 +722,7 @@ show_workflow_help() {
     echo "  - 'make docker-test' - Run tests"
     echo "  - 'make docker-render' - Render paper"
     echo
-    echo "📚 More info: Read ZZRRTOOLS_USER_GUIDE.md for comprehensive documentation"
+    echo "📚 More info: Read ZZCOLLAB_USER_GUIDE.md for comprehensive documentation"
 }
 
 #=============================================================================
