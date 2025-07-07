@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libtiff5-dev \
     libjpeg-dev \
+    libgit2-dev \
     man-db \
     pandoc \
     && rm -rf /var/lib/apt/lists/*
