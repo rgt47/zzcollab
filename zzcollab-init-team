@@ -369,6 +369,23 @@ print_success "Initialized git repository with initial commit"
 
 # Step 8: Create private GitHub repository
 print_status "Step 8: Creating private GitHub repository..."
+
+# Check if repository already exists
+if gh repo view "${GITHUB_ACCOUNT}/${PROJECT_NAME}" >/dev/null 2>&1; then
+    print_error "❌ Repository ${GITHUB_ACCOUNT}/${PROJECT_NAME} already exists on GitHub!"
+    echo ""
+    print_status "Options to resolve this:"
+    echo "  1. Delete existing repository: gh repo delete ${GITHUB_ACCOUNT}/${PROJECT_NAME} --confirm"
+    echo "  2. Use a different project name: --project-name PROJECT_NAME_V2"
+    echo "  3. Manual setup: Skip automatic creation and push manually"
+    echo ""
+    print_status "If you want to push to existing repository:"
+    echo "  git remote add origin https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
+    echo "  git push origin main --force  # WARNING: This will overwrite existing content"
+    echo ""
+    exit 1
+fi
+
 gh repo create "${GITHUB_ACCOUNT}/${PROJECT_NAME}" \
     --private \
     --description "Research project using ZZCOLLAB - team core images: ${TEAM_NAME}/${PROJECT_NAME}core" \
