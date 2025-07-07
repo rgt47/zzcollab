@@ -79,14 +79,14 @@ create_github_workflows() {
     # Create paper rendering workflow
     # Automatically renders research paper when analysis files change
     # Uploads rendered PDFs as artifacts for easy access
-    if copy_template_file "workflows/render-paper.yml" ".github/workflows/render-paper.yml" "Paper rendering workflow"; then
-        track_template_file "workflows/render-paper.yml" ".github/workflows/render-paper.yml"
-        log_info "Created automated paper rendering workflow"
+    if copy_template_file "workflows/render-report.yml" ".github/workflows/render-report.yml" "Report rendering workflow"; then
+        track_template_file "workflows/render-report.yml" ".github/workflows/render-report.yml"
+        log_info "Created automated report rendering workflow"
         log_info "  - Triggers: changes to analysis/paper/, R/ directories"
         log_info "  - Actions: render paper.Rmd to PDF, upload artifacts"
         log_info "  - Output: downloadable PDF from GitHub Actions tab"
     else
-        log_error "Failed to create paper rendering workflow"
+        log_error "Failed to create report rendering workflow"
         return 1
     fi
     
