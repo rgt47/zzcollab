@@ -25,7 +25,14 @@ RUN apt-get update && apt-get install -y \
     libgit2-dev \
     man-db \
     pandoc \
+    tree \
+    ripgrep \
     && rm -rf /var/lib/apt/lists/*
+
+# Install broot (not available in standard Ubuntu repos)
+RUN curl -o /tmp/broot.deb -L "https://github.com/Canop/broot/releases/latest/download/broot_$(dpkg --print-architecture).deb" \
+    && dpkg -i /tmp/broot.deb \
+    && rm /tmp/broot.deb
 
 # Install Node.js (required for coc.nvim and other vim plugins)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
