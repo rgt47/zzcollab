@@ -477,12 +477,12 @@ main <- function() {
   unused_in_desc <- setdiff(desc_result$packages, validated_packages)
   unused_in_desc <- unused_in_desc[!unused_in_desc %in% invalid_in_desc]
   if (length(unused_in_desc) > 0L) {
-    log_msg("Unused packages in DESCRIPTION: ", length(unused_in_desc), " packages", level = "warning")
+    log_msg("Unused packages in DESCRIPTION: ", paste(sort(unused_in_desc), collapse = ", "), level = "warning")
   }
   
   extra_in_renv <- setdiff(renv_result$packages, desc_result$packages)
   if (length(extra_in_renv) > 0L) {
-    log_msg("Extra packages in renv.lock: ", length(extra_in_renv), " packages", level = "warning")
+    log_msg("Extra packages in renv.lock: ", paste(sort(extra_in_renv), collapse = ", "), level = "warning")
   }
   
   # Handle fixes
