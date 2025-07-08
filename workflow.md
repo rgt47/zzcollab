@@ -246,6 +246,8 @@ R                               # Start R session
 # install.packages("additional_package") # Only if needed
 # renv::snapshot()              # Update if packages added
 # quit()                        # Exit R
+# 
+# NOTE: renv.lock is automatically created during project initialization
 
 # 3. Test-driven development workflow using vim
 # First, learn testing patterns
