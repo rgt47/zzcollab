@@ -8,7 +8,7 @@ zstyle ':vcs_info:git:*' formats '%b '
 setopt PROMPT_SUBST
 
 # Prompt (adapted for container)
-PROMPT='%F{green}%*%f %F{yellow}${${PWD:A}/$HOME/~}%f %F{red}${vcs_info_msg_0_}%f$ %(?:☕  :☔  )'
+PROMPT='🐳[${CONTAINER_NAME:-${PKG_NAME}}] %F{cyan}%*%f %F{magenta}${${PWD:A}/$HOME/~}%f %F{red}${vcs_info_msg_0_}%f$ %(?:☕  :☔  )'
 
 # Vi mode
 bindkey -v
