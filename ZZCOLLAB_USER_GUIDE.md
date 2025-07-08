@@ -242,11 +242,11 @@ make docker-build             # Rebuild environment with new packages
 ## Package Management with renv
 
 ### Automatic Package Management
-rrtools includes **automated renv setup**:
+ZZCOLLAB includes **automated renv setup**:
 
-1. **Initial setup**: `source("setup_renv.R")` in container
+1. **Initial setup**: `renv.lock` created automatically during project initialization
 2. **Install packages**: Use normal `install.packages()` or `renv::install()`
-3. **Snapshot environment**: `renv::snapshot()` when ready
+3. **Snapshot environment**: `renv::snapshot()` when adding packages
 4. **Validate sync**: `make docker-check-renv-fix` before commits
 
 ### renv Validation System
@@ -282,6 +282,8 @@ make docker-check-renv-fix        # Validate and update DESCRIPTION
 git add .                         # Commit changes
 git commit -m "Add tidymodels"
 ```
+
+**Note**: The initial `renv.lock` file is automatically created during project initialization with the base packages from your team's core Docker image.
 
 ## Docker Environment
 
