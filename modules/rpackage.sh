@@ -92,6 +92,16 @@ create_core_files() {
         return 1
     fi
 
+    # .Rbuildignore file - Specifies files to exclude from R package build
+    # Essential for excluding symbolic links and development files
+    if copy_template_file ".Rbuildignore" ".Rbuildignore" ".Rbuildignore file"; then
+        track_template_file ".Rbuildignore" ".Rbuildignore"
+        log_info "Created .Rbuildignore file with exclusion patterns"
+    else
+        log_error "Failed to create .Rbuildignore file"
+        return 1
+    fi
+
     # LICENSE file - GPL-3 license information
     # Note: GPL-3 doesn't require a separate LICENSE file, but we create a reference note
     local license_content="This package is licensed under GPL-3.
@@ -307,6 +317,7 @@ validate_r_package_structure() {
     
     local -r required_files=(
         "DESCRIPTION"
+        ".Rbuildignore"
         "NAMESPACE" 
         "LICENSE"
         "R/utils.R"
@@ -340,6 +351,7 @@ show_rpackage_summary() {
 📦 R PACKAGE STRUCTURE CREATED:
 
 ├── DESCRIPTION              # Package metadata and dependencies
+├── .Rbuildignore           # Files to exclude from package build
 ├── NAMESPACE               # Function exports (managed by roxygen2)
 ├── LICENSE                 # GPL-3 license reference
 ├── setup_renv.R           # Package management initialization
