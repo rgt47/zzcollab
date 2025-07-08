@@ -482,6 +482,18 @@ main() {
         log_info "⏭️ Skipping Docker image build (--no-docker specified)"
     fi
     
+    # Initialize renv with snapshot of current environment
+    log_info "📦 Creating renv.lock file..."
+    if command -v R >/dev/null 2>&1; then
+        if R --slave -e "renv::init(bare = TRUE, restart = FALSE); renv::snapshot(prompt = FALSE)" 2>/dev/null; then
+            log_success "Created renv.lock with current package environment"
+        else
+            log_warning "Failed to create renv.lock - run 'renv::init(); renv::snapshot()' manually"
+        fi
+    else
+        log_warning "R not found - run 'renv::init(); renv::snapshot()' after installing R"
+    fi
+    
     # Final success message and summary
     echo ""
     log_success "🎉 Modular project setup completed successfully!"
