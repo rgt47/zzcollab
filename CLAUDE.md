@@ -36,6 +36,10 @@ make docker-test           # Run tests in container
 make docker-check          # Package validation
 make docker-document       # Generate docs
 make docker-render         # Render analysis reports
+
+# CI/CD validation (matches GitHub Actions)
+Rscript check_renv_for_commit.R --quiet --fail-on-issues  # Dependency validation
+Rscript check_rprofile_options.R                          # R options monitoring
 ```
 
 ### Docker Development Environments
@@ -61,6 +65,34 @@ Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 ```
 
+### Core Image Building Workflow
+```bash
+# Automated team setup (recommended) - handles all image building
+zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+
+# Manual core image building (if needed)
+cd /path/to/zzcollab
+cp templates/Dockerfile.pluspackages ./Dockerfile.teamcore
+
+# Build shell variant
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/r-ver \
+    --build-arg TEAM_NAME="TEAM" \
+    --build-arg PROJECT_NAME="PROJECT" \
+    -t "TEAM/PROJECTcore-shell:v1.0.0" .
+
+# Build RStudio variant
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/rstudio \
+    --build-arg TEAM_NAME="TEAM" \
+    --build-arg PROJECT_NAME="PROJECT" \
+    -t "TEAM/PROJECTcore-rstudio:v1.0.0" .
+
+# Push to Docker Hub
+docker push "TEAM/PROJECTcore-shell:v1.0.0"
+docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
+```
+
 ### Team Collaboration Setup
 ```bash
 # Developer 1 (Team Lead) - Command Line
@@ -72,6 +104,10 @@ zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfile
 git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
 zzcollab --team TEAM --project-name PROJECT --interface shell --dotfiles ~/dotfiles
+
+# Note: New projects include expanded package ecosystem (22 packages pre-installed)
+# Including: usethis, pkgdown, rcmdcheck, broom, lme4, survival, car, skimr, visdat, 
+# naniar, targets, rmarkdown, bookdown, knitr, DT, jsonlite, DBI, RSQLite, etc.
 ```
 
 ### R-Centric Workflow (Alternative)
@@ -260,3 +296,40 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Issue templates**: Bug reports with environment details, feature requests
 - **Automated workflows**: Fork-based collaboration with comprehensive testing
 - **Documentation**: Self-updating workflow.md with automation status
+
+## Recent Framework Improvements (2025)
+
+### Enhanced CI/CD Templates
+- **GitHub Actions optimization**: Fixed YAML syntax errors, removed problematic parameters
+- **Dependency management**: Replaced setup-renv@v2 with setup-r-dependencies@v2 for better compatibility
+- **Error handling**: Removed error-on parameter causing parsing failures
+- **Caching improvements**: Added proper cache-version and timeout settings
+- **Template validation**: All workflows now pass CI from project creation
+
+### Expanded Package Ecosystem
+- **Core development tools**: usethis, pkgdown, rcmdcheck for package development
+- **Statistical analysis**: broom, lme4, survival, car for common research scenarios
+- **Data quality tools**: skimr, visdat, naniar for data exploration and cleaning
+- **Reproducibility stack**: targets, here, conflicted for workflow management
+- **Reporting ecosystem**: rmarkdown, bookdown, knitr, DT for publication-ready outputs
+- **Data connectivity**: jsonlite, DBI, RSQLite for diverse data sources
+- **Pre-installed in Docker images**: 22 packages (vs 13 previously) for faster development
+
+### Template Robustness
+- **Minimal R package structure**: Removed template artifacts that confused users
+- **Comprehensive .Rbuildignore**: Prevents symbolic links and project files from breaking builds
+- **Clean test templates**: Simple package loading tests instead of complex examples
+- **Better error messages**: Improved user experience during setup and development
+
+### CI Debugging Lessons Applied
+- **YAML syntax validation**: Proper quoting and parameter formatting
+- **Dependency resolution**: Streamlined package installation in CI
+- **Build optimization**: Faster CI runs through better caching and dependency management
+- **Error prevention**: Template improvements prevent common CI failures
+
+These improvements ensure new projects created with ZZCOLLAB have:
+- ✅ Passing CI from day one
+- ✅ Rich package ecosystem pre-installed
+- ✅ Modern GitHub Actions best practices
+- ✅ Clean, minimal R package structure
+- ✅ Robust build and deployment workflows
