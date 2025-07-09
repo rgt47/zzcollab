@@ -20,7 +20,8 @@ jobs:
           r-version: 'release'
           use-public-rspm: true
       
-      - uses: r-lib/actions/setup-renv@v2
+      # Skip renv setup for CI - use standard GitHub Actions dependency management
+      # - uses: r-lib/actions/setup-renv@v2
       
       - name: Check renv synchronization
         run: |
@@ -29,7 +30,8 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
-          needs: check
+          cache-version: 5
+        timeout-minutes: 8
       
       - uses: r-lib/actions/check-r-package@v2
         with:
