@@ -58,7 +58,24 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 # Install common R packages (this layer will be cached)
 # Image name: ${TEAM_NAME}/${PROJECT_NAME}
 RUN --mount=type=cache,target=/tmp/downloaded_packages \
-    R -e "base_packages <- c('renv', 'remotes', 'devtools', 'testthat', 'naniar', 'DT', 'conflicted', 'ggthemes', 'datapasta', 'janitor', 'kableExtra', 'tidytuesdayR', 'tidyverse'); \
+    R -e "base_packages <- c( \
+        # Core development tools \
+        'renv', 'remotes', 'devtools', 'testthat', 'usethis', 'pkgdown', 'rcmdcheck', \
+        # Data science essentials \
+        'tidyverse', 'here', 'conflicted', \
+        # Statistical analysis \
+        'broom', 'lme4', 'survival', 'car', \
+        # Data manipulation and cleaning \
+        'janitor', 'naniar', 'skimr', 'visdat', \
+        # Visualization and reporting \
+        'ggthemes', 'kableExtra', 'DT', 'rmarkdown', 'bookdown', 'knitr', \
+        # Data formats and connectivity \
+        'jsonlite', 'DBI', 'RSQLite', \
+        # Reproducibility and workflow \
+        'targets', 'datapasta', 'palmerpenguins', \
+        # Utility packages \
+        'tidytuesdayR' \
+    ); \
     additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else character(0); \
     all_packages <- c(base_packages, additional_packages); \
     install.packages(all_packages, repos = c(CRAN = 'https://cloud.r-project.org'))"
