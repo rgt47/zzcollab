@@ -20,6 +20,21 @@ Suggests:
     knitr,
     kableExtra,
     rmarkdown,
-    bookdown
+    bookdown,
+    naniar,
+    skimr,
+    visdat,
+    janitor,
+    targets,
+    usethis,
+    pkgdown,
+    rcmdcheck,
+    DT,
+    jsonlite,
+    DBI,
+    RSQLite,
+    car,
+    survival,
+    lme4
 Config/testthat/edition: 3
 VignetteBuilder: knitr
