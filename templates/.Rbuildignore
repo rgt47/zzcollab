@@ -21,14 +21,5 @@
 ^zzcollab-init-team$
 ^modules$
 ^templates$
-^a$
-^c$
-^e$
-^f$
-^m$
-^n$
-^o$
-^p$
-^s$
-^t$
+^[a-z]$
 ^.*\.Rproj$
