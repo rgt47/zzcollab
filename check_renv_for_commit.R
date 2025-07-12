@@ -11,12 +11,14 @@
 #   CI/CD automation:     Rscript check_renv_for_commit.R --fix --fail-on-issues
 #   Quick snapshot:       Rscript check_renv_for_commit.R --snapshot
 #   Silent checking:      Rscript check_renv_for_commit.R --quiet --fail-on-issues
+#   Strict mode:          Rscript check_renv_for_commit.R --fix --strict-imports
 #
 # FLAGS:
 #   --fix, --auto-fix     Automatically fix DESCRIPTION and run renv::snapshot()
 #   --fail-on-issues      Exit with code 1 if critical issues found (for CI/CD)
 #   --snapshot           Only run renv::snapshot() and exit
 #   --quiet              Minimal output, only show critical errors
+#   --strict-imports     Scan all directories and put all packages in Imports
 #
 # EXIT CODES:
 #   0 = Success, no critical issues
@@ -28,7 +30,8 @@ config <- list(
   auto_fix = any(c("--fix", "--auto-fix") %in% args),
   fail_on_issues = "--fail-on-issues" %in% args,
   snapshot_only = "--snapshot" %in% args,
-  quiet = "--quiet" %in% args
+  quiet = "--quiet" %in% args,
+  strict_imports = "--strict-imports" %in% args
 )
 
 # Validate argument combinations
@@ -51,7 +54,8 @@ log_msg <- function(..., level = "info", force = FALSE) {
 # Constants following R conventions
 .BASE_PKGS <- c("base", "utils", "stats", "graphics", "grDevices", "methods", "datasets", "tools")
 .TARGET_DIRS <- c("R", "scripts", "analysis")
-.FILE_PATTERN <- "\\.(R|Rmd|qmd)$"
+.STRICT_TARGET_DIRS <- c("R", "scripts", "analysis", "tests", "vignettes", "inst")
+.FILE_PATTERN <- "\\.(R|Rmd|qmd|Rnw)$"
 .PKG_NAME_PATTERN <- "^[a-zA-Z][a-zA-Z0-9._]*$"
 .MIN_PKG_LENGTH <- 3L
 
