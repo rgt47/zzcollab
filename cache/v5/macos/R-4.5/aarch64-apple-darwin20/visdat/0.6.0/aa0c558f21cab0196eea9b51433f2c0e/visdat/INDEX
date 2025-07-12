@@ -1,0 +1,19 @@
+abbreviate_vars         Abbreviate all variables in a data frame
+dat_bin                 A small toy dataset of binary data with
+                        missings.
+data-vis-cor            Return data used to create vis_cor plot
+data-vis-dat            Return data used to create vis_dat plot
+data-vis-miss           Return data used to create vis_miss plot
+typical_data            A small toy dataset of imaginary people
+typical_data_large      A small toy dataset of imaginary people
+vis_binary              Visualise binary values
+vis_compare             Visually compare two dataframes and see where
+                        they are different.
+vis_cor                 Visualise correlations amongst variables in
+                        your data as a heatmap
+vis_dat                 Visualises a data.frame to tell you what it
+                        contains.
+vis_expect              Visualise whether a value is in a data frame
+vis_guess               Visualise type guess in a data.frame
+vis_miss                Visualise a data.frame to display missingness.
+vis_value               Visualise the value of data values

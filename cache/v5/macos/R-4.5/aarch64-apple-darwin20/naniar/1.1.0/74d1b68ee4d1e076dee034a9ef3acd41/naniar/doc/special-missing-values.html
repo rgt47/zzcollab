@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Nicholas Tierney" />
+
+<meta name="date" content="2024-03-05" />
+
+<title>Special Missing Values</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Special Missing Values</h1>
+<h4 class="author">Nicholas Tierney</h4>
+<h4 class="date">2024-03-05</h4>
+
+
+
+<p>Data sometimes have special missing values to indicate specific
+reasons for missingness. For example, “9999” is sometimes used in
+weather data, say for for example, the <a href="https://www.ncei.noaa.gov/products/land-based-station/global-historical-climatology-network-daily">Global
+Historical Climate Network (GHCN) data</a>, to indicate specific types
+of missingness, such as instrument failure.</p>
+<p>You might be interested in creating your own special missing values
+so that you can mark specific, known reasons for missingness. For
+example, an individual dropping out of a study, known instrument failure
+in weather instruments, or for values being censored in analysis. In
+these cases, the data is missing, but we have information about
+<em>why</em> it is missing. Coding these cases as <code>NA</code> would
+cause us to lose this valuable information. Other stats programming
+languages like STATA, SAS, and SPSS have this capacity, but currently
+<code>R</code> does not. So, we need a way to create these special
+missing values.</p>
+<p>We can use <code>recode_shadow</code> to recode missingness by
+recoding the special missing value as something like
+<code>NA_reason</code>. <code>naniar</code> records these values in the
+<code>shadow</code> part of <code>nabular</code> data, which is a
+special dataframe that contains missingness information.</p>
+<p>This vignette describes how to add special missing values using the
+<code>recode_shadow()</code> function. First we consider some
+terminology to explain these ideas, if you are not familiar with the
+workflows in <code>naniar</code>.</p>
+<div id="terminology" class="section level1">
+<h1>Terminology</h1>
+<p>Missing data can be represented as a binary matrix of “missing” or
+“not missing”, which in <code>naniar</code> we call a “shadow matrix”, a
+term borrowed from <a href="https://www.researchgate.net/publication/2758672_Missing_Data_in_Interactive_High-Dimensional_Data_Visualization">Swayne
+and Buja, 1998</a>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(naniar)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">as_shadow</span>(oceanbuoys)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 736 × 8</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#&gt;    year_NA latitude_NA longitude_NA sea_temp_c_NA air_temp_c_NA humidity_NA</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt;    &lt;fct&gt;   &lt;fct&gt;       &lt;fct&gt;        &lt;fct&gt;         &lt;fct&gt;         &lt;fct&gt;      </span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt;  1 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt;  2 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt;  3 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt;  4 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co">#&gt;  5 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt;  6 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt;  7 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt;  8 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="co">#&gt;  9 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="co">#&gt; 10 !NA     !NA         !NA          !NA           !NA           !NA        </span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co">#&gt; # ℹ 726 more rows</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: wind_ew_NA &lt;fct&gt;, wind_ns_NA &lt;fct&gt;</span></span></code></pre></div>
+<p>The <code>shadow matrix</code> has three key features to facilitate
+analysis</p>
+<ol style="list-style-type: decimal">
+<li><p>Coordinated names: Variables in the shadow matrix gain the same
+name as in the data, with the suffix “_NA”.</p></li>
+<li><p>Special missing values: Values in the shadow matrix can be
+“special” missing values, indicated as <code>NA_suffix</code>, where
+“suffix” is a very short message of the type of missings.</p></li>
+<li><p>Cohesiveness: Binding the shadow matrix column-wise to the
+original data creates a cohesive “nabular” data form, useful for
+visualization and summaries.</p></li>
+</ol>
+<p>We create <code>nabular</code> data by <code>bind</code>ing the
+shadow to the data:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">bind_shadow</span>(oceanbuoys)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 736 × 16</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt;     year latitude longitude sea_temp_c air_temp_c humidity wind_ew wind_ns</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;  1  1997        0      -110       27.6       27.1     79.6   -6.40    5.40</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;  2  1997        0      -110       27.5       27.0     75.8   -5.30    5.30</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt;  3  1997        0      -110       27.6       27       76.5   -5.10    4.5 </span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt;  4  1997        0      -110       27.6       26.9     76.2   -4.90    2.5 </span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt;  5  1997        0      -110       27.6       26.8     76.4   -3.5     4.10</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;  6  1997        0      -110       27.8       26.9     76.7   -4.40    1.60</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt;  7  1997        0      -110       28.0       27.0     76.5   -2       3.5 </span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt;  8  1997        0      -110       28.0       27.1     78.3   -3.70    4.5 </span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;  9  1997        0      -110       28.0       27.2     78.6   -4.20    5   </span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; 10  1997        0      -110       28.0       27.2     76.9   -3.60    3.5 </span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; # ℹ 726 more rows</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; # ℹ 8 more variables: year_NA &lt;fct&gt;, latitude_NA &lt;fct&gt;, longitude_NA &lt;fct&gt;,</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; #   sea_temp_c_NA &lt;fct&gt;, air_temp_c_NA &lt;fct&gt;, humidity_NA &lt;fct&gt;,</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; #   wind_ew_NA &lt;fct&gt;, wind_ns_NA &lt;fct&gt;</span></span></code></pre></div>
+<p>This keeps the data values tied to their missingness, and has great
+benefits for exploring missing and imputed values in data. See the
+vignettes <a href="http://naniar.njtierney.com/articles/getting-started-w-naniar.html">Getting
+Started with naniar</a> and <a href="http://naniar.njtierney.com/articles/exploring-imputed-values.html">Exploring
+Imputations with naniar</a> for more details.</p>
+</div>
+<div id="recoding-missing-values" class="section level1">
+<h1>Recoding missing values</h1>
+<p>To demonstrate recoding of missing values, we use a toy dataset,
+<code>dat</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>df <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tribble</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="sc">~</span>wind, <span class="sc">~</span>temp,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="sc">-</span><span class="dv">99</span>,    <span class="dv">45</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="dv">68</span>,    <span class="cn">NA</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="dv">72</span>,    <span class="dv">25</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>df</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 2</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt;    wind  temp</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; 1   -99    45</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt; 2    68    NA</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt; 3    72    25</span></span></code></pre></div>
+<p>To recode the value -99 as a missing value “broken_machine”, we first
+create nabular data with <code>bind_shadow</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>dfs <span class="ot">&lt;-</span> <span class="fu">bind_shadow</span>(df)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>dfs</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 4</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt;    wind  temp wind_NA temp_NA</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;   &lt;fct&gt;  </span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; 1   -99    45 !NA     !NA    </span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; 2    68    NA !NA     NA     </span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; 3    72    25 !NA     !NA</span></span></code></pre></div>
+<p>Special types of missingness are encoded in the shadow part nabular
+data, using the <code>recode_shadow</code> function, we can recode the
+missing values like so:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>dfs_recode <span class="ot">&lt;-</span> dfs <span class="sc">%&gt;%</span> </span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="fu">recode_shadow</span>(<span class="at">wind =</span> <span class="fu">.where</span>(wind <span class="sc">==</span> <span class="sc">-</span><span class="dv">99</span> <span class="sc">~</span> <span class="st">&quot;broken_machine&quot;</span>))</span></code></pre></div>
+<p>This reads as “recode shadow for wind where wind is equal to -99, and
+give it the label”broken_machine”. The <code>.where</code> function is
+used to help make our intent clearer, and reads very much like the
+<code>dplyr::case_when()</code> function, but takes care of encoding
+extra factor levels into the missing data.</p>
+<p>The extra types of missingness are recoded in the shadow part of the
+nabular data as additional factor levels:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">levels</span>(dfs_recode<span class="sc">$</span>wind_NA)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt; [1] &quot;!NA&quot;               &quot;NA&quot;                &quot;NA_broken_machine&quot;</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">levels</span>(dfs_recode<span class="sc">$</span>temp_NA)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;!NA&quot;               &quot;NA&quot;                &quot;NA_broken_machine&quot;</span></span></code></pre></div>
+<p>All additional types of missingness are recorded across all shadow
+variables, even if those variables don’t contain that special missing
+value. This ensures all flavours of missingness are known.</p>
+<p>To summarise, to use <code>recode_shadow</code>, the user provides
+the following information:</p>
+<ul>
+<li>A variable that they want to effect
+(<code>recode_shadow(var = ...)</code>)</li>
+<li>A condition that they want to implement
+(<code>.where(condition ~ ...)</code>)</li>
+<li>A suffix for the new type of missing value
+(<code>.where(condition ~ suffix)</code>)</li>
+</ul>
+<p>Under the hood, this special missing value is recoded as a new factor
+level in the shadow matrix, so that every column is aware of all
+possible new values of missingness.</p>
+<p>Some examples of using <code>recode_shadow</code> in a workflow will
+be discussed in more detail in the near future, for the moment, here is
+a recommended workflow:</p>
+<ul>
+<li>Use <code>recode_shadow()</code> with actual data</li>
+<li>Replacing the previous actual values using
+<code>replace_with_na()</code> (see the vignette on <a href="http://naniar.njtierney.com/articles/replace-with-na.html">replacing
+values with NA</a>)</li>
+<li>Explore missings where special cases are considered</li>
+<li>Explore imputed values, looking at these special cases</li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
