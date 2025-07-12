@@ -24,7 +24,7 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rmarkdown
-          cache-version: 5
+          cache-version: 6
       
       - name: Render report
         run: |

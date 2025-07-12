@@ -35,6 +35,18 @@ Suggests:
     RSQLite,
     car,
     survival,
-    lme4
+    lme4,
+    devtools,
+    digest,
+    doParallel,
+    foreach,
+    furrr,
+    future,
+    odbc,
+    readr,
+    RMySQL,
+    RPostgres,
+    sessioninfo,
+    covr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
