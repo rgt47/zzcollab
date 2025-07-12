@@ -1,130 +1,193 @@
-# rrtools Framework User Guide v2.0
+# ZZCOLLAB Framework User Guide v3.0
 
 ## Table of Contents
-1. [What is rrtools?](#what-is-rrtools)
+1. [What is ZZCOLLAB?](#what-is-zzcollab)
 2. [Getting Started](#getting-started)
 3. [Installation & Distribution](#installation--distribution)
-4. [Configuration](#configuration)
+4. [Team Collaboration Setup](#team-collaboration-setup)
 5. [Directory Structure](#directory-structure)
 6. [Navigation Shortcuts](#navigation-shortcuts)
-7. [Workflow Overview](#workflow-overview)
-8. [Development Environments](#development-environments)
-9. [Package Management with renv](#package-management-with-renv)
-10. [Docker Environment](#docker-environment)
-11. [Build System with Make](#build-system-with-make)
-12. [GitHub Actions CI/CD](#github-actions-cicd)
-13. [R Interface Functions](#r-interface-functions)
+7. [Development Environments](#development-environments)
+8. [Package Management with renv](#package-management-with-renv)
+9. [Docker Environment](#docker-environment)
+10. [Build System with Make](#build-system-with-make)
+11. [GitHub Actions CI/CD](#github-actions-cicd)
+12. [R Interface Functions](#r-interface-functions)
+13. [Team Collaboration Workflows](#team-collaboration-workflows)
 14. [Common Tasks](#common-tasks)
-15. [Collaboration](#collaboration)
-16. [Troubleshooting](#troubleshooting)
+15. [Troubleshooting](#troubleshooting)
 
-## What is rrtools?
+## What is ZZCOLLAB?
 
-**rrtools** is a framework for creating **research compendia** - self-contained, reproducible research projects that combine:
+**ZZCOLLAB** is a framework for creating **research compendia** with **enterprise-grade team collaboration** - self-contained, reproducible research projects that combine:
 - R package structure for code organization
 - Data management and documentation
 - Analysis scripts and notebooks
 - Manuscript preparation
 - Docker containerization for reproducibility
-- Version control integration
+- **Automated team collaboration workflows**
+- **Zero-friction package management**
+- **Professional Git/GitHub integration**
 
 ### Key Benefits
+- **Team Collaboration**: Automated workflows for multiple developers
 - **Reproducibility**: Anyone can recreate your analysis
 - **Organization**: Clear structure for all project components
-- **Collaboration**: Standards for team-based research
 - **Publication**: Direct path from analysis to manuscript
 - **Portability**: Works across different computing environments
 - **Docker-first**: No local R installation required
+- **Automated CI/CD**: Professional development workflows
 
 ## Getting Started
 
 ### Prerequisites
 - **Docker** (required for containerized workflow)
-- **Git** (recommended for version control)
-- **R & RStudio** (optional - can work entirely in Docker)
+- **Git** (required for collaboration)
+- **GitHub CLI** (`gh`) for automated repository management
+- **Docker Hub account** for team image publishing
 
-### Quick Start
+### Quick Start for Teams
+
+#### Developer 1 (Team Lead) - Automated Setup
 ```bash
-# 1. Get rrtools.sh (one-time setup)
-curl -fsSL https://raw.githubusercontent.com/your-org/rrtools/main/rrtools.sh -o rrtools.sh
-chmod +x rrtools.sh
+# 1. Install zzcollab (one-time)
+git clone https://github.com/your-org/zzcollab.git
+cd zzcollab
+./install.sh                    # Installs to ~/bin
 
-# 2. Create your project
-cd your-project-directory
-./rrtools.sh
+# 2. Create team project (automated)
+cd ~/projects                   # Your preferred projects directory
+zzcollab-init-team --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 
 # 3. Start developing immediately
-make docker-rstudio  # → http://localhost:8787
-# OR
-make docker-r        # → R console in container
+cd study2024
+make docker-zsh                # → Enhanced development environment
+```
+
+#### Developers 2+ (Team Members) - Join Project
+```bash
+# 1. Clone team repository (private)
+git clone https://github.com/mylab/study2024.git
+cd study2024
+
+# 2. Join project with one command
+zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
+
+# 3. Start developing immediately
+make docker-zsh                # → Same environment as team lead
 ```
 
 ## Installation & Distribution
 
 ### One-Time Installation
 ```bash
-# Install globally
-curl -fsSL https://raw.githubusercontent.com/your-org/rrtools/main/install.sh | bash
+# Clone and install globally
+git clone https://github.com/your-org/zzcollab.git
+cd zzcollab
+./install.sh                   # Installs zzcollab and zzcollab-init-team to ~/bin
 
-# Then use anywhere
-cd my-project
-rrtools.sh
+# Verify installation
+which zzcollab                 # Should show ~/bin/zzcollab
+which zzcollab-init-team       # Should show ~/bin/zzcollab-init-team
 ```
 
-### Self-Replicating Strategy
-rrtools.sh **copies itself** to each project automatically:
-- Project creator runs `rrtools.sh` once
-- Script copies itself to `./rrtools.sh` in the project
-- When pushed to Git, collaborators get the script automatically
+### Self-Replicating Team Strategy
+ZZCOLLAB uses **automated team distribution**:
+- Team lead runs `zzcollab-init-team` once
+- Creates private GitHub repository with full project structure
+- Team members clone and get everything automatically
 - No separate installation needed for team members
 
-### Collaboration Workflow
+### Team Collaboration Workflow
 ```bash
-# Collaborator workflow
-git clone https://github.com/team/research-project
-cd research-project
-./rrtools.sh  # Script is already there!
+# Team member workflow
+git clone https://github.com/mylab/study2024.git  # Private repo
+cd study2024
+zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
 ```
 
-## Configuration
+## Team Collaboration Setup
 
-### Environment Variables
-Customize rrtools behavior with environment variables:
+### Developer 1 (Team Lead): Complete Project Initialization
 
+#### Automated Approach (Recommended)
+**Choose between command-line or R interface:**
+
+**Option A: Command-Line Interface**
 ```bash
-# Author information
-export RRTOOLS_AUTHOR_NAME="Jane Smith"
-export RRTOOLS_AUTHOR_EMAIL="jane@university.edu"
-export RRTOOLS_INSTITUTE="MIT"
-export RRTOOLS_INSTITUTE_FULL="Massachusetts Institute of Technology"
-
-# File locations
-export RRTOOLS_BASE_PATH="/path/to/rrtools/files"
-
-# Then run
-./rrtools.sh
+# Complete automated setup - replaces 10+ manual Docker and git commands
+zzcollab-init-team --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 ```
 
-### Command-Line Options
-```bash
-./rrtools.sh [OPTIONS]
+**Option B: R Interface (R-Centric Workflow)**
+```r
+# From R console
+library(zzcollab)
 
-OPTIONS:
-  --no-docker    Skip Docker image build during setup
-  --help, -h     Show help message
-
-EXAMPLES:
-  ./rrtools.sh                                    # Full setup with Docker
-  ./rrtools.sh --no-docker                       # Setup without Docker build
-  RRTOOLS_AUTHOR_NAME="Jane Doe" ./rrtools.sh    # Custom author
+# Complete automated setup from within R
+init_project(
+  team_name = "mylab",
+  project_name = "study2024",
+  dotfiles_path = "~/dotfiles"
+)
 ```
 
-### Safety Features
-- **Input validation**: Package names sanitized and validated
-- **Error handling**: Comprehensive error checking with graceful fallbacks
-- **Backup creation**: Automatic backups before file overwrites
-- **Docker validation**: Checks Docker availability before use
-- **Permission checking**: Verifies write permissions before starting
+**Both approaches automatically:**
+- ✅ Creates project directory with complete R package structure
+- ✅ Sets up customizable Dockerfile.teamcore for team's packages
+- ✅ Builds shell and RStudio core images (multi-platform)
+- ✅ Tags and pushes images to Docker Hub (public for reproducibility)
+- ✅ Initializes zzcollab project with team base image
+- ✅ Creates private GitHub repository
+- ✅ Sets up initial commit with proper structure
+- ✅ Configures automated CI/CD for team image management
+
+### Developers 2+ (Team Members): Join Existing Project
+
+**Choose between command-line or R interface:**
+
+**Option A: Command-Line Interface**
+```bash
+# 1. Clone team repository (must be added as collaborator first)
+git clone https://github.com/mylab/study2024.git
+cd study2024
+
+# 2. Join project with automated environment setup
+zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
+# OR for RStudio interface:
+# zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+
+# 3. Start development immediately
+make docker-zsh                # Shell interface with vim/tmux
+# OR
+make docker-rstudio            # RStudio Server at localhost:8787
+```
+
+**Option B: R Interface (R-Centric Workflow)**
+```r
+# From R console after cloning repository
+library(zzcollab)
+
+# Join the project
+join_project(
+  team_name = "mylab",
+  project_name = "study2024",
+  interface = "shell",          # or "rstudio"
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+### Configuration Options
+```bash
+# Team lead with custom GitHub account
+zzcollab-init-team --team-name mylab --project-name study2024 --github-account myuniversity
+
+# With dotfiles that need dots added (files like: bashrc, vimrc)
+zzcollab-init-team --team-name mylab --project-name study2024 --dotfiles-nodot ~/Dropbox/dotfiles
+
+# Team member with specific interface preference
+zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+```
 
 ## Directory Structure
 
@@ -134,7 +197,7 @@ EXAMPLES:
 your-project/
 ├── R/                          # Package functions (exported to users)
 ├── man/                        # Function documentation (auto-generated)
-├── scripts/                    # Working R scripts and analysis code  
+├── scripts/                    # Working R scripts and analysis code
 ├── data/                       # All data files and documentation
 │   ├── raw_data/              # Original, unmodified datasets
 │   ├── derived_data/          # Processed, analysis-ready data
@@ -142,15 +205,17 @@ your-project/
 │   ├── validation/            # Data quality reports
 │   └── external_data/         # Third-party datasets
 ├── analysis/                   # Research analysis components
-│   ├── paper/                 # Manuscript files
+│   ├── report/                # Manuscript files (report.Rmd → report.pdf)
 │   ├── figures/               # Generated plots and figures
 │   ├── tables/                # Generated tables
 │   └── templates/             # Document templates
 ├── tests/                      # Unit tests for R functions
+│   ├── testthat/              # Unit tests for package functions
+│   └── integration/           # Integration tests for analysis scripts
 ├── vignettes/                  # Package tutorials and examples
 ├── docs/                       # Project documentation and outputs
 ├── archive/                    # Moved files and legacy code
-├── .github/workflows/          # GitHub Actions CI/CD
+├── .github/workflows/          # GitHub Actions CI/CD (automated team image management)
 └── Key files (DESCRIPTION, Makefile, Docker files, etc.)
 ```
 
@@ -161,13 +226,14 @@ your-project/
 | **Reusable functions** | `R/` | Functions you want others to use |
 | **Function documentation** | `man/` | Auto-generated help files (.Rd) |
 | **Analysis scripts** | `scripts/` | Working code, exploratory analysis |
-| **Research paper** | `analysis/paper/` | Manuscript and publication files |
+| **Research paper** | `analysis/report/` | Manuscript and publication files |
 | **Generated figures** | `analysis/figures/` | Plots and visualizations |
 | **Generated tables** | `analysis/tables/` | Statistical tables |
 | **Raw data** | `data/raw_data/` | Original, unmodified datasets |
 | **Clean data** | `data/derived_data/` | Processed, analysis-ready data |
 | **Data documentation** | `data/metadata/` | Data dictionaries, codebooks |
-| **Unit tests** | `tests/` | Tests for your R functions |
+| **Unit tests** | `tests/testthat/` | Tests for your R functions |
+| **Integration tests** | `tests/integration/` | Tests for analysis scripts |
 | **Tutorials** | `vignettes/` | Package examples and tutorials |
 
 ## Navigation Shortcuts
@@ -176,7 +242,7 @@ Convenient symbolic links for quick navigation:
 
 ```bash
 a     # → ./data              (data files)
-n     # → ./analysis          (analysis files)  
+n     # → ./analysis          (analysis files)
 f     # → ./analysis/figures  (figures)
 t     # → ./analysis/tables   (tables)
 s     # → ./scripts           (working R scripts)
@@ -184,55 +250,54 @@ m     # → ./man               (function documentation)
 e     # → ./tests             (tests)
 o     # → ./docs              (documentation)
 c     # → ./archive           (archived files)
-p     # → ./analysis/paper    (research paper)
+p     # → ./analysis/report   (research paper)
 ```
 
 **Usage**: `cd a` to go to data directory, `ls f` to see figures, etc.
 
-## Workflow Overview
+## Development Environments
 
-### Docker-First Development Workflow
+### Team Development Workflow
 
-#### Initial Setup (One Time)
+#### Daily Development Cycle (All Team Members)
 ```bash
-cd your-project
-./rrtools.sh                    # Creates structure + builds Docker image
-```
+# 1. Sync with latest team changes
+git pull                        # Get latest code changes
+docker pull mylab/study2024:latest  # Get latest team environment
 
-#### Daily Development Cycle
-```bash
-# 1. Start development environment
-make docker-rstudio            # → RStudio at http://localhost:8787
+# 2. Start development environment
+make docker-zsh                # → Enhanced zsh shell with vim/tmux
 # OR
-make docker-r                  # → R console
-# OR  
-make docker-bash               # → Shell access
+make docker-rstudio            # → RStudio at http://localhost:8787
 
-# 2. Do your analysis, install packages as needed
-# 3. Exit container when done
+# 3. Do your analysis, install packages as needed
+# Inside container: install.packages("package_name")
+# 4. When done, exit container
 exit
 
-# 4. Validate dependencies before committing
+# 5. Validate dependencies before committing
 make docker-check-renv-fix
 
-# 5. Commit your work
+# 6. Commit and push your work
 git add .
-git commit -m "Analysis update"
+git commit -m "Analysis update with comprehensive tests"
 git push
 ```
 
-#### Collaboration Sync
+#### Team Synchronization (When Dependencies Change)
 ```bash
-# When collaborators push changes
-git pull                       # Get latest code
-make docker-build             # Rebuild environment with new packages
-# Continue development...
+# When any team member adds packages and pushes changes:
+git pull                        # Get latest renv.lock changes
+# GitHub Actions automatically rebuilds team image
+docker pull mylab/study2024:latest  # Get updated environment
+make docker-zsh                # Continue development with new packages
 ```
 
 ### Development Environment Options
 
 | Environment | Command | Use Case |
 |-------------|---------|----------|
+| **Enhanced Shell** | `make docker-zsh` | Vim/tmux development with dotfiles |
 | **RStudio Server** | `make docker-rstudio` | GUI-based development |
 | **R Console** | `make docker-r` | Command-line R work |
 | **Bash Shell** | `make docker-bash` | File management, git operations |
@@ -241,37 +306,18 @@ make docker-build             # Rebuild environment with new packages
 
 ## Package Management with renv
 
-### Automatic Package Management
-ZZCOLLAB includes **automated renv setup**:
+### Automated Team Package Management
+ZZCOLLAB includes **enterprise-grade automated package management**:
 
-1. **Initial setup**: `renv.lock` created automatically during project initialization
-2. **Install packages**: Use normal `install.packages()` or `renv::install()`
-3. **Snapshot environment**: `renv::snapshot()` when adding packages
-4. **Validate sync**: `make docker-check-renv-fix` before commits
+1. **Team image creation**: Base packages pre-installed in team Docker images
+2. **Individual additions**: Use normal `install.packages()` in development
+3. **Automatic synchronization**: `renv::snapshot()` when adding packages
+4. **Team notification**: GitHub Actions rebuilds and notifies team
+5. **Zero friction sync**: Team members get updates automatically
 
-### renv Validation System
-**Automated validation** ensures package consistency:
-
+### Package Workflow (Any Team Member)
 ```bash
-# Check if packages are in sync
-make check-renv
-
-# Auto-fix any issues  
-make check-renv-fix
-
-# Silent check for CI/CD
-make check-renv-ci
-```
-
-**What it checks**:
-- All packages used in code are in DESCRIPTION
-- All packages in DESCRIPTION exist on CRAN
-- renv.lock is synchronized with DESCRIPTION
-- No circular dependencies
-
-### Package Workflow
-```bash
-# In Docker container:
+# Inside Docker container:
 install.packages("tidymodels")    # Install new package
 # Use package in your analysis...
 renv::snapshot()                  # Save to renv.lock
@@ -280,10 +326,38 @@ exit
 # Outside container:
 make docker-check-renv-fix        # Validate and update DESCRIPTION
 git add .                         # Commit changes
-git commit -m "Add tidymodels"
+git commit -m "Add tidymodels for machine learning analysis"
+git push                          # → Triggers automatic team image rebuild
 ```
 
-**Note**: The initial `renv.lock` file is automatically created during project initialization with the base packages from your team's core Docker image.
+### Automated Team Image Management
+When any team member adds packages:
+1. **Push triggers GitHub Actions** → detects renv.lock changes
+2. **New Docker image built** → includes all team packages
+3. **Image pushed to Docker Hub** → available to all team members
+4. **Team notification** → commit comment with update instructions
+5. **Team members sync** → `docker pull` gets new environment
+
+### renv Validation System
+**Automated validation** ensures package consistency:
+
+```bash
+# Check if packages are in sync
+make check-renv
+
+# Auto-fix any issues
+make check-renv-fix
+
+# Silent check for CI/CD (with --strict-imports for comprehensive scanning)
+Rscript check_renv_for_commit.R --fix --strict-imports --fail-on-issues
+```
+
+**What the enhanced script checks**:
+- All packages used in code (R/, scripts/, analysis/, tests/, vignettes/, inst/) are in DESCRIPTION
+- All packages in DESCRIPTION exist on CRAN
+- renv.lock is synchronized with DESCRIPTION
+- No circular dependencies
+- **Strict mode**: Scans all directories for maximum reproducibility
 
 ## Docker Environment
 
@@ -292,6 +366,7 @@ Docker Compose provides **multiple specialized environments**:
 
 | Service | Purpose | Access |
 |---------|---------|---------|
+| `zsh` | Enhanced shell development | `make docker-zsh` |
 | `rstudio` | GUI development | http://localhost:8787 |
 | `r-session` | R console | `make docker-r` |
 | `bash` | Shell access | `make docker-bash` |
@@ -299,11 +374,17 @@ Docker Compose provides **multiple specialized environments**:
 | `test` | Package testing | `make docker-test` |
 | `check` | Package validation | `make docker-check` |
 
+### Team Docker Image Strategy
+- **Team core images**: Public on Docker Hub (software only, no data)
+- **Personal development images**: Local only (includes dotfiles)
+- **Automated rebuilds**: GitHub Actions triggers on renv.lock changes
+- **Multi-platform**: Supports AMD64 and ARM64 architectures
+
 ### Docker Features
 - **Automatic R version detection** from renv.lock
-- **3-phase build process**: Bootstrap → renv init → production image
+- **Team base image integration**: Inherits from custom team environments
 - **Persistent package cache** for faster rebuilds
-- **Developer tools included**: vim, tmux, ripgrep, fzf, etc.
+- **Developer tools included**: vim, tmux, ripgrep, fzf, zsh, etc.
 - **Dotfiles support**: Your `.vimrc`, `.zshrc`, etc. copied to container
 
 ### Docker Commands
@@ -311,19 +392,20 @@ Docker Compose provides **multiple specialized environments**:
 # Build/rebuild environment
 make docker-build
 
-# Development environments  
-make docker-rstudio              # RStudio GUI
-make docker-r                    # R console
-make docker-bash                 # Shell
+# Development environments
+make docker-zsh                 # Enhanced zsh with dotfiles (recommended)
+make docker-rstudio             # RStudio GUI
+make docker-r                   # R console
+make docker-bash                # Shell
 
 # Automated tasks
-make docker-render               # Render paper
-make docker-test                 # Run tests
-make docker-check               # Validate package
-make docker-check-renv          # Check dependencies
+make docker-render              # Render paper
+make docker-test                # Run tests
+make docker-check              # Validate package
+make docker-check-renv         # Check dependencies
 
 # Cleanup
-make docker-clean               # Remove images and volumes
+make docker-clean              # Remove images and volumes
 ```
 
 ## Build System with Make
@@ -354,6 +436,7 @@ make docker-build              # Build Docker image
 make docker-document           # Generate docs in container
 make docker-test               # Run tests in container
 make docker-check-renv         # Validate deps in container
+make docker-check-renv-fix     # Fix deps in container
 make docker-render             # Render paper in container
 ```
 
@@ -370,38 +453,101 @@ make help                      # Show all available targets
 
 ## GitHub Actions CI/CD
 
-### Simplified Workflows
-rrtools provides **streamlined GitHub Actions** for the Docker-first approach:
+### Automated Team Image Management
 
-#### 1. R Package Check (`.github/workflows/r-package.yml`)
+ZZCOLLAB includes sophisticated automated Docker image management that eliminates manual container maintenance while ensuring perfect environment consistency across research teams.
+
+#### Complete GitHub Actions Workflow
+
+The system automatically detects package changes, rebuilds Docker images, and notifies team members through a comprehensive GitHub Actions workflow:
+
+**Key Features:**
+- **Intelligent change detection**: Monitors `renv.lock`, `DESCRIPTION`, `Dockerfile`, `docker-compose.yml`
+- **Multi-platform support**: AMD64 and ARM64 architectures
+- **Advanced caching**: GitHub Actions cache with BuildKit optimization
+- **Comprehensive tagging**: `latest`, `r4.3.0`, `abc1234`, `2024-01-15` tags
+- **Automated configuration**: Updates docker-compose.yml references
+- **Team communication**: Detailed commit comments with usage instructions
+
+#### Workflow Triggers
+```yaml
+# Automatic triggers
+on:
+  push:
+    branches: [main]
+    paths: 
+      - 'renv.lock'           # R package dependency changes
+      - 'DESCRIPTION'         # Package metadata changes
+      - 'Dockerfile'          # Container definition changes
+      - 'docker-compose.yml'  # Service configuration changes
+  workflow_dispatch:           # Manual triggering
+```
+
+#### Usage Scenarios
+
+**Scenario 1: Developer Adds New Package**
+```bash
+# Developer workflow
+R
+install.packages("tidymodels")
+renv::snapshot()
+# Create PR and merge
+
+# Automatic result:
+# ✅ GitHub Actions detects renv.lock changes
+# ✅ Rebuilds image with tidymodels
+# ✅ Pushes to mylab/study2024:latest on Docker Hub
+# ✅ Updates docker-compose.yml
+# ✅ Notifies team via commit comment
+```
+
+**Scenario 2: Team Member Gets Updates**
+```bash
+# Team member workflow
+git pull                        # Gets latest changes
+docker pull mylab/study2024:latest  # Gets updated environment
+make docker-zsh                # Instant access to new packages
+```
+
+### Security and Privacy Model
+
+**🔒 PRIVATE GitHub Repository:**
+- Protects unpublished research and sensitive methodologies
+- Secures proprietary data analysis and preliminary results
+- Controls access to research collaborators only
+
+**🌍 PUBLIC Docker Images (Docker Hub):**
+- Enables reproducible research by sharing computational environments
+- Supports open science through transparent methodology
+- No sensitive data included - only software packages and configurations
+
+### Repository Secrets Setup
+For automated Docker Hub publishing, configure these secrets in your **private** GitHub repository:
+
+```bash
+# In GitHub repository: Settings → Secrets and variables → Actions
+DOCKERHUB_USERNAME: your-dockerhub-username
+DOCKERHUB_TOKEN: your-dockerhub-access-token  # Create at hub.docker.com/settings/security
+```
+
+### Standard R Package Validation
+
+#### R Package Check (`.github/workflows/r-package.yml`)
 - **Triggers**: Push/PR to main/master
 - **Purpose**: Validate package structure and dependencies
 - **Features**:
-  - Native R setup (no Docker in CI)
-  - renv synchronization validation
+  - Native R setup (fast execution)
+  - renv synchronization validation with enhanced dependency scanning
   - Package checks across platforms
-  - Dependency validation with `check_renv_for_commit.R`
+  - Dependency validation with `check_renv_for_commit.R --strict-imports`
 
-#### 2. Paper Rendering (`.github/workflows/render-paper.yml`)
+#### Paper Rendering (`.github/workflows/render-report.yml`)
 - **Triggers**: Manual dispatch, changes to analysis files
-- **Purpose**: Generate research paper automatically  
+- **Purpose**: Generate research paper automatically
 - **Features**:
   - Automatic PDF generation
   - Artifact upload
   - Native R environment (faster than Docker)
-
-### CI/CD Features
-- **Dependency validation**: Ensures all packages are properly declared
-- **Cross-platform testing**: Ubuntu, macOS, Windows
-- **Artifact management**: Automatic PDF upload
-- **Fast execution**: Uses native R (not Docker) for speed
-
-### Customization
-Workflows are **optimized for local Docker development**:
-- No Docker builds in CI (use local Docker instead)
-- Focus on validation and paper rendering
-- Minimal, fast execution
-- Easy to customize for your needs
 
 ## R Interface Functions
 
@@ -447,21 +593,21 @@ Initialize a new zzcollab project from within R. **Note**: This is the R interfa
 ```r
 # Developer 1: Complete team setup (creates team images + GitHub repo)
 init_project(
-  team_name = "rgt47", 
-  project_name = "myproject"
+  team_name = "mylab", 
+  project_name = "study2024"
 )
 
 # With dotfiles that already have dots
 init_project(
-  team_name = "rgt47",
-  project_name = "myproject", 
+  team_name = "mylab",
+  project_name = "study2024", 
   dotfiles_path = "~/dotfiles"
 )
 
 # With dotfiles that need dots added
 init_project(
-  team_name = "rgt47",
-  project_name = "myproject",
+  team_name = "mylab",
+  project_name = "study2024",
   dotfiles_path = "~/Dropbox/dotfiles",
   dotfiles_nodots = TRUE
 )
@@ -473,26 +619,19 @@ Join an existing zzcollab project (for **Developers 2+**).
 ```r
 # Join existing project with shell interface
 join_project(
-  team_name = "rgt47",
-  project_name = "myproject", 
+  team_name = "mylab",
+  project_name = "study2024", 
   interface = "shell",
   dotfiles_path = "~/dotfiles"
 )
 
 # Join with RStudio interface
 join_project(
-  team_name = "rgt47",
-  project_name = "myproject",
+  team_name = "mylab",
+  project_name = "study2024",
   interface = "rstudio",
   dotfiles_path = "~/dotfiles"
 )
-```
-
-**Command line alternative** for Developers 2+:
-```bash
-git clone https://github.com/rgt47/myproject.git
-cd myproject
-zzcollab --team rgt47 --project-name myproject --interface shell --dotfiles ~/dotfiles
 ```
 
 #### `add_package(packages, update_snapshot = TRUE)`
@@ -539,7 +678,7 @@ Render analysis reports in containerized environment.
 render_report()
 
 # Render specific report
-render_report("analysis/paper/manuscript.Rmd")
+render_report("analysis/report/manuscript.Rmd")
 ```
 
 #### `validate_repro()`
@@ -604,12 +743,21 @@ create_pr(
 )
 ```
 
-### Example R Workflows
+### Benefits of R Interface
 
-#### **Developer 1 (Team Lead) Complete R Workflow:**
+- **Native R workflow**: No need to switch between R and terminal
+- **RStudio integration**: Works seamlessly in RStudio environment
+- **Error handling**: R-style error messages and debugging
+- **Return values**: Functions return logical values for programmatic use
+- **Documentation**: Full R help system with `?status`
+- **Type safety**: R parameter validation and type checking
 
+## Team Collaboration Workflows
+
+### Developer 1 (Team Lead): Complete R Workflow
+
+#### Setup Phase (R Console)
 ```r
-# === SETUP PHASE (R Console) ===
 library(zzcollab)
 
 # 1. Initialize new team project (creates team infrastructure)
@@ -625,14 +773,14 @@ setwd("study2024")
 quit()
 ```
 
+#### Development Phase (Container)
 ```bash
-# === DEVELOPMENT PHASE (Container) ===
-# Enter containerized development environment  
+# Enter containerized development environment
 make docker-zsh  # or make docker-rstudio
 ```
 
+#### Analysis Phase (Back in R - now containerized)
 ```r
-# === ANALYSIS PHASE (Back in R - now containerized) ===
 library(zzcollab)
 
 # 2. Add required packages
@@ -644,7 +792,7 @@ run_script("scripts/02_data_analysis.R")
 run_script("scripts/03_visualization.R")
 
 # 4. Render final report
-render_report("analysis/paper/paper.Rmd")
+render_report("analysis/report/report.Rmd")
 
 # 5. Validate reproducibility
 validate_repro()
@@ -658,19 +806,19 @@ git_push()   # Push to GitHub
 sync_env()
 ```
 
-#### **Developers 2+ (Team Members) Complete R Workflow:**
+### Developers 2+ (Team Members): Complete R Workflow
 
+#### Initial Setup (Command Line)
 ```bash
-# === INITIAL SETUP (Command Line) ===
 git clone https://github.com/mylab/study2024.git
 cd study2024
 ```
 
+#### Project Join (R Console)
 ```r
-# === PROJECT JOIN (R Console) ===
 library(zzcollab)
 
-# 1. Join the project  
+# 1. Join the project
 join_project(
   team_name = "mylab",
   project_name = "study2024",
@@ -682,13 +830,13 @@ join_project(
 quit()
 ```
 
+#### Development Phase (Container)
 ```bash
-# === DEVELOPMENT PHASE (Container) ===
 make docker-zsh  # Enter containerized development with team packages
 ```
 
+#### Analysis Phase (Back in R - now containerized)
 ```r
-# === ANALYSIS PHASE (Back in R - now containerized) ===
 library(zzcollab)
 
 # 2. Sync with team environment
@@ -719,54 +867,48 @@ create_pr(
 )
 ```
 
-### Integration with RStudio
+### Professional Collaboration Features
 
-These functions work seamlessly in RStudio:
+#### Automated Quality Assurance on Every Push
+- ✅ **R Package Validation**: R CMD check with dependency validation
+- ✅ **Comprehensive Testing Suite**: Unit tests, integration tests, and data validation
+- ✅ **Paper Rendering**: Automated PDF generation and artifact upload
+- ✅ **Multi-platform Testing**: Ensures compatibility across environments
+- ✅ **Dependency Sync**: renv validation and DESCRIPTION file updates
 
-```r
-# Quick project setup from RStudio console (Developer 1)
-init_project("myteam", "newproject")
+#### Test-Driven Development Workflow
+- **Unit Tests**: Every R function has corresponding tests in `tests/testthat/`
+- **Integration Tests**: Analysis scripts tested end-to-end in `tests/integration/`
+- **Data Validation**: Automated data quality checks
+- **Reproducibility Testing**: Environment validation with enhanced dependency scanning
+- **Paper Testing**: Manuscript rendering validation for each commit
 
-# Join existing project (Developers 2+)  
-join_project("myteam", "existingproject", "rstudio")
-
-# Add packages interactively
-add_package("package_name")
-
-# Run scripts with progress in RStudio
-run_script("my_analysis.R")
-
-# Check status during development
-status()
-```
-
-### Benefits of R Interface
-
-- **Native R workflow**: No need to switch between R and terminal
-- **RStudio integration**: Works seamlessly in RStudio environment  
-- **Error handling**: R-style error messages and debugging
-- **Return values**: Functions return logical values for programmatic use
-- **Documentation**: Full R help system with `?status`
-- **Type safety**: R parameter validation and type checking
+#### Enhanced GitHub Templates
+- **Pull Request Template**: Analysis impact assessment, reproducibility checklist
+- **Issue Templates**: Bug reports with environment details, feature requests with research use cases
+- **Collaboration Guidelines**: Research-specific workflow standards
 
 ## Common Tasks
 
 ### Starting a New Analysis
 ```bash
 # 1. Start development environment
-make docker-rstudio
+make docker-zsh
 
-# 2. Create new analysis script
-# In RStudio: File → New File → R Script
-# Save as: scripts/01_data_exploration.R
+# 2. Create new analysis script (in container with vim/tmux)
+vim scripts/01_data_exploration.R
 
 # 3. Install needed packages
+R
 install.packages(c("tidyverse", "ggplot2"))
+renv::snapshot()
+quit()
 
 # 4. Write your analysis...
 
-# 5. When done, snapshot environment
-renv::snapshot()
+# 5. Exit container and validate
+exit
+make docker-check-renv-fix
 ```
 
 ### Rendering Your Paper
@@ -775,7 +917,7 @@ renv::snapshot()
 make docker-render
 
 # View generated paper
-open analysis/paper/paper.pdf
+open analysis/report/report.pdf
 ```
 
 ### Running Tests
@@ -790,103 +932,43 @@ make docker-check
 ### Adding a New Function
 ```bash
 # 1. Start R environment
-make docker-r
+make docker-zsh
 
-# 2. Create function file
-# Edit R/my_function.R with your function
+# 2. Create function file (in container)
+vim R/my_function.R
 
-# 3. Document the function
+# 3. Document and test the function
+R
 devtools::document()
-
-# 4. Test the function
 devtools::load_all()
 my_function(test_data)
 
-# 5. Add unit tests
+# 4. Add unit tests
 # Edit tests/testthat/test-my_function.R
 
-# 6. Run tests
+# 5. Run tests
 devtools::test()
+quit()
 ```
 
-### Managing Dependencies
+### Team Package Management
 ```bash
-# Install new packages
-make docker-r
-# In R: install.packages("new_package")
-# In R: renv::snapshot()
-# Exit R
+# Add packages (any team member)
+make docker-zsh
+R
+install.packages("new_package")
+renv::snapshot()
+quit()
 
-# Validate dependencies
+# Validate and commit
 make docker-check-renv-fix
-
-# Commit changes
 git add .
-git commit -m "Add new_package dependency"
+git commit -m "Add new_package for advanced modeling"
+git push
+
+# Other team members sync automatically:
+# GitHub Actions rebuilds image → team gets notification → docker pull gets updates
 ```
-
-## Collaboration
-
-### Team Setup Workflow
-
-#### Project Creator
-```bash
-# 1. Initial setup
-./rrtools.sh                    # Creates structure, copies script
-git init
-git add .
-git commit -m "Initial rrtools setup"
-git remote add origin https://github.com/team/project.git
-git push -u origin main
-```
-
-#### Team Members
-```bash
-# 1. Clone and setup (one time)
-git clone https://github.com/team/project.git
-cd project
-./rrtools.sh                    # Script already in repo!
-
-# 2. Start developing immediately
-make docker-rstudio
-```
-
-### Ongoing Collaboration
-
-#### Staying in Sync
-```bash
-# Daily sync routine
-git pull                        # Get latest changes
-make docker-build              # Rebuild environment if needed
-# Continue development...
-```
-
-#### Adding New Packages
-```bash
-# Developer A adds packages
-make docker-r
-# install.packages("newpackage")
-# renv::snapshot()
-# exit
-make docker-check-renv-fix      # Update DESCRIPTION
-git add . && git commit -m "Add newpackage" && git push
-
-# Developer B syncs
-git pull                        # Gets renv.lock and DESCRIPTION updates
-make docker-build              # Rebuilds with new packages
-```
-
-#### Conflict Resolution
-- **renv.lock conflicts**: Use `renv::restore()` then `renv::snapshot()`
-- **DESCRIPTION conflicts**: Use `make docker-check-renv-fix`
-- **Analysis conflicts**: Standard Git merge resolution
-
-### Team Guidelines
-1. **Always run** `make docker-check-renv-fix` before committing
-2. **Rebuild environment** after pulling: `make docker-build`
-3. **Use semantic commit messages** for package changes
-4. **Document new functions** with roxygen2 comments
-5. **Add tests** for new functions
 
 ## Troubleshooting
 
@@ -922,6 +1004,21 @@ Error: renv cache corrupted
 Solution: renv::restore(), renv::rebuild()
 ```
 
+#### Team Collaboration Issues
+```bash
+# Team image not found
+Error: Unable to pull team/project:latest
+Solution: Check Docker Hub permissions, verify team member has access
+
+# GitHub repository creation fails
+Error: Repository creation failed
+Solution: Check GitHub CLI authentication: gh auth login
+
+# Environment inconsistency across team
+Error: Package versions differ between team members
+Solution: All team members run: git pull && docker pull team/project:latest
+```
+
 #### Build Issues
 ```bash
 # Make targets fail
@@ -940,7 +1037,7 @@ Solution: Check function implementations, update tests
 #### Performance Issues
 ```bash
 # Slow Docker builds
-Solution: Use .dockerignore, clean up large files
+Solution: Use .dockerignore, clean up large files, leverage team images
 
 # RStudio slow in browser
 Solution: Check available RAM, close other containers
@@ -949,52 +1046,89 @@ Solution: Check available RAM, close other containers
 Solution: Use .gitignore for data files, Git LFS for large files
 ```
 
+### Team Workflow Debugging
+```bash
+# Check team image status
+docker images | grep mylab/study2024
+
+# Verify team environment
+docker run --rm mylab/study2024:latest R --version
+docker run --rm mylab/study2024:latest R -e "installed.packages()[,1]"
+
+# Manual team image pull
+docker pull mylab/study2024:latest
+
+# Check GitHub Actions status
+gh run list --workflow=update-team-image.yml
+```
+
 ### Getting Help
 
 1. **Check this guide** for common workflows
 2. **Use `make help`** to see available targets
-3. **Check script help**: `./rrtools.sh --help`
+3. **Check script help**: `zzcollab --help` or `zzcollab-init-team --help`
 4. **Validate environment**: `make docker-check-renv`
 5. **Clean and rebuild**: `make docker-clean && make docker-build`
+6. **Team sync**: `git pull && docker pull team/project:latest`
 
 ### Advanced Configuration
 
-#### Custom Docker Environment
+#### Custom Team Docker Environment
 ```bash
-# Modify Dockerfile for custom needs
-# Rebuild: make docker-build
-
-# Add custom R packages to setup_renv.R
-# Rebuild: make docker-build
+# Modify templates/Dockerfile.pluspackages for team needs
+# Add domain-specific R packages, system tools, etc.
+# Team lead rebuilds: zzcollab-init-team rebuilds and pushes new images
 ```
 
 #### Custom Build Targets
 ```bash
 # Add to Makefile:
 my-analysis:
-	docker run --rm -v $(PWD):/project $(PKG_NAME) Rscript scripts/my_analysis.R
+	docker run --rm -v $(PWD):/project $(TEAM_NAME)/$(PROJECT_NAME):latest Rscript scripts/my_analysis.R
 
 .PHONY: my-analysis
 ```
 
-#### Environment Variables
+#### Environment Variables for Team Setup
 ```bash
-# Set in .env file or shell:
-export RRTOOLS_AUTHOR_NAME="Your Name"
-export RRTOOLS_AUTHOR_EMAIL="your.email@org.edu"
-export RRTOOLS_BASE_PATH="/custom/path"
+# Set in shell or .env file:
+export DOCKERHUB_USERNAME="mylab"
+export GITHUB_ACCOUNT="myuniversity"
+export DOTFILES_PATH="~/dotfiles"
 ```
 
 ---
 
 ## Summary
 
-rrtools provides a **complete research environment** with:
+ZZCOLLAB provides a **complete research collaboration platform** with:
+
+- **Enterprise-grade team collaboration** with automated workflows
 - **Docker-first development** (no local R required)
-- **Automatic dependency management** with renv
-- **Professional collaboration tools** via Git/GitHub
+- **Automatic dependency management** with renv and intelligent scanning
+- **Professional collaboration tools** via Git/GitHub with CI/CD
 - **Publication-ready workflows** from analysis to manuscript
 - **Reproducible environments** across team members
-- **Enterprise-grade reliability** with comprehensive error handling
+- **Zero-friction package management** with automated team image updates
+- **Comprehensive R interface** for R-centric workflows
+- **Professional testing infrastructure** with unit and integration tests
 
-The framework handles the technical complexity so you can **focus on your research**.
+### Automation Benefits
+
+| Traditional Workflow | Automated ZZCOLLAB Workflow |
+|----------------------|------------------------------|
+| Manual image rebuilds | ✅ **Automatic rebuilds on package changes** |
+| Inconsistent environments | ✅ **Guaranteed environment consistency** |
+| 30-60 min setup per developer | ✅ **3-5 min setup with pre-built images** |
+| Manual dependency management | ✅ **Automated dependency tracking** |
+| Docker expertise required | ✅ **Zero Docker knowledge needed** |
+| Build failures block development | ✅ **Centralized, tested builds** |
+
+### Developer Experience
+- **Researchers focus on research** - not DevOps
+- **Onboarding new team members** takes minutes, not hours
+- **Package management** happens transparently
+- **Environment drift** is impossible
+- **Collaboration friction** eliminated entirely
+
+The framework handles the technical complexity so you can **focus on your research** while maintaining **enterprise-grade collaboration standards** and **perfect reproducibility** across your entire research team.

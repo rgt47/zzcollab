@@ -1,7 +1,7 @@
 ---
 title: " Developer Collaboration Workflow Sequence "
-author: "John Doe"
-date: "July 7, 2025"
+author: "RG Thomas"
+date: "July 11, 2025"
 output: pdf_document
 --- 
 
