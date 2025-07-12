@@ -56,6 +56,7 @@ make check-renv            # Check renv status
 make check-renv-fix        # Update renv.lock
 make docker-check-renv     # Validate in container
 Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
+Rscript check_renv_for_commit.R --fix --fail-on-issues    # Auto-fix missing packages
 ```
 
 ### Installation and Setup
@@ -305,6 +306,13 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Error handling**: Removed error-on parameter causing parsing failures
 - **Caching improvements**: Added proper cache-version and timeout settings
 - **Template validation**: All workflows now pass CI from project creation
+
+### R Script Bug Fixes
+- **check_renv_for_commit.R**: Fixed logical operator errors in configuration validation
+- **Improved error handling**: Resolved `config && config` invalid type errors
+- **Better flag parsing**: Proper use of `config$field` instead of bare `config` references
+- **Enhanced CI reliability**: Script now runs without bootstrap errors in GitHub Actions
+- **Auto-fix capability**: Added `--fix` flag documentation for automatic DESCRIPTION updates
 
 ### Expanded Package Ecosystem
 - **Core development tools**: usethis, pkgdown, rcmdcheck for package development
