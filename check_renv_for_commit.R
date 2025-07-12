@@ -24,520 +24,656 @@
 #   0 = Success, no critical issues
 #   1 = Critical issues found (missing packages, missing files, etc.)
 
-# Parse arguments with validation
-args <- commandArgs(trailingOnly = TRUE)
-config <- list(
-  auto_fix = any(c("--fix", "--auto-fix") %in% args),
-  fail_on_issues = "--fail-on-issues" %in% args,
-  snapshot_only = "--snapshot" %in% args,
-  quiet = "--quiet" %in% args,
-  strict_imports = "--strict-imports" %in% args
+#==============================================================================
+# CONFIGURATION AND CONSTANTS
+#==============================================================================
+
+# Package configuration constants (immutable)
+PKG_CONFIG <- list(
+  base_packages = c("base", "utils", "stats", "graphics", "grDevices", "methods", "datasets", "tools"),
+  standard_dirs = c("R", "scripts", "analysis"),
+  strict_dirs = c("R", "scripts", "analysis", "tests", "vignettes", "inst"),
+  file_extensions = c("R", "Rmd", "qmd", "Rnw"),
+  min_package_length = 3L,  # Minimum viable package name length
+  cran_timeout_seconds = 30L,  # CRAN API timeout
+  backup_timestamp_format = "%Y%m%d_%H%M%S"
 )
 
-# Validate argument combinations
-if (config$snapshot_only && config$auto_fix) {
-  stop("Cannot use --snapshot with --fix flags simultaneously")
-}
+# Pre-compiled regex patterns for performance
+REGEX_PATTERNS <- list(
+  file_pattern = paste0("\\.(", paste(PKG_CONFIG$file_extensions, collapse = "|"), ")$"),
+  library_calls = "(?:library|require)\\s*\\(\\s*[\"']?([a-zA-Z][a-zA-Z0-9._]{2,})[\"']?\\s*[,)]",
+  namespace_calls = "([a-zA-Z][a-zA-Z0-9._]{2,})::",
+  package_name_valid = "^[a-zA-Z][a-zA-Z0-9._]{2,}$",
+  comments_simple = "#[^\n]*",
+  examples_section = "@examples[\\s\\S]*?(?=@[a-zA-Z]|$)",
+  self_script_pattern = "^check_renv"
+)
 
-# Enhanced logging with levels
-log_msg <- function(..., level = "info", force = FALSE) {
-  if (config$quiet && !force && level != "error") return()
-  prefix <- switch(level,
-    "error" = "❌",
-    "warning" = "⚠️ ",
-    "success" = "✅",
-    "info" = "🔍"
+#==============================================================================
+# ARGUMENT PARSING AND VALIDATION
+#==============================================================================
+
+# Parse command line arguments into validated configuration
+parse_arguments <- function(args = commandArgs(trailingOnly = TRUE)) {
+  config <- list(
+    auto_fix = any(c("--fix", "--auto-fix") %in% args),
+    fail_on_issues = "--fail-on-issues" %in% args,
+    snapshot_only = "--snapshot" %in% args,
+    quiet = "--quiet" %in% args,
+    strict_imports = "--strict-imports" %in% args
   )
-  cat(prefix, " ", ..., "\n", sep = "")
+  
+  # Validate argument combinations
+  if (config$snapshot_only && config$auto_fix) {
+    stop("Cannot use --snapshot with --fix flags simultaneously", call. = FALSE)
+  }
+  
+  config
 }
 
-# Constants following R conventions
-.BASE_PKGS <- c("base", "utils", "stats", "graphics", "grDevices", "methods", "datasets", "tools")
-.TARGET_DIRS <- c("R", "scripts", "analysis")
-.STRICT_TARGET_DIRS <- c("R", "scripts", "analysis", "tests", "vignettes", "inst")
-.FILE_PATTERN <- "\\.(R|Rmd|qmd|Rnw)$"
-.PKG_NAME_PATTERN <- "^[a-zA-Z][a-zA-Z0-9._]*$"
-.MIN_PKG_LENGTH <- 3L
+#==============================================================================
+# LOGGING SYSTEM
+#==============================================================================
 
-# Early exit for snapshot-only mode
-if (config$snapshot_only) {
-  log_msg("Running snapshot...", level = "info")
-  if (!requireNamespace("renv", quietly = TRUE)) {
-    log_msg("renv package unavailable", level = "error", force = TRUE)
-    quit(status = if (config$fail_on_issues) 1L else 0L)
+# Create logging function factory to avoid global dependencies
+create_logger <- function(config) {
+  function(..., level = "info", force = FALSE) {
+    if (config$quiet && !force && level != "error") return(invisible(NULL))
+    
+    prefix <- switch(level,
+      "error" = "❌",
+      "warning" = "⚠️ ",
+      "success" = "✅",
+      "info" = "🔍",
+      "🔍"  # default
+    )
+    cat(prefix, " ", ..., "\n", sep = "")
+    invisible(NULL)
+  }
+}
+
+#==============================================================================
+# PURE UTILITY FUNCTIONS
+#==============================================================================
+
+# Validate and clean package names (pure function)
+clean_package_names <- function(packages, exclude_packages = character()) {
+  if (!is.character(packages) || length(packages) == 0L) {
+    return(character(0))
+  }
+  
+  # Remove duplicates and unwanted packages
+  packages <- unique(packages)
+  packages <- packages[!packages %in% c(PKG_CONFIG$base_packages, exclude_packages, "")]
+  
+  # Validate package name format and length
+  packages <- packages[nchar(packages) >= PKG_CONFIG$min_package_length]
+  packages <- packages[grepl(REGEX_PATTERNS$package_name_valid, packages, perl = TRUE)]
+  
+  sort(packages)
+}
+
+# Extract packages from text content (pure function, non-recursive)
+extract_packages_from_text <- function(content) {
+  if (!is.character(content) || length(content) == 0L || nchar(content) == 0L) {
+    return(character(0))
+  }
+  
+  # Remove comments to avoid false positives
+  content <- gsub(REGEX_PATTERNS$comments_simple, "", content, perl = TRUE)
+  
+  packages <- character(0)
+  
+  # Extract library/require calls
+  lib_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$library_calls, content, perl = TRUE))[[1]]
+  if (length(lib_matches) > 0L) {
+    lib_packages <- gsub(REGEX_PATTERNS$library_calls, "\\1", lib_matches, perl = TRUE)
+    packages <- c(packages, lib_packages)
+  }
+  
+  # Extract namespace calls (pkg::function)
+  ns_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$namespace_calls, content, perl = TRUE))[[1]]
+  if (length(ns_matches) > 0L) {
+    ns_packages <- gsub("::", "", ns_matches)
+    packages <- c(packages, ns_packages)
+  }
+  
+  # Extract packages from @examples sections (non-recursive approach)
+  examples_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$examples_section, content, perl = TRUE))[[1]]
+  if (length(examples_matches) > 0L) {
+    for (example_block in examples_matches) {
+      # Remove @examples line and process the rest
+      example_content <- sub("@examples[^\n]*\n?", "", example_block)
+      # Simple extraction without recursion
+      ex_lib_matches <- regmatches(example_content, gregexpr(REGEX_PATTERNS$library_calls, example_content, perl = TRUE))[[1]]
+      if (length(ex_lib_matches) > 0L) {
+        ex_packages <- gsub(REGEX_PATTERNS$library_calls, "\\1", ex_lib_matches, perl = TRUE)
+        packages <- c(packages, ex_packages)
+      }
+      ex_ns_matches <- regmatches(example_content, gregexpr(REGEX_PATTERNS$namespace_calls, example_content, perl = TRUE))[[1]]
+      if (length(ex_ns_matches) > 0L) {
+        ex_ns_packages <- gsub("::", "", ex_ns_matches)
+        packages <- c(packages, ex_ns_packages)
+      }
+    }
+  }
+  
+  packages
+}
+
+# Safe file reading with error handling
+read_file_safely <- function(filepath) {
+  if (!is.character(filepath) || length(filepath) != 1L || !file.exists(filepath)) {
+    return(list(content = "", success = FALSE, error = "File not found or invalid path"))
   }
   
   tryCatch({
-    renv::snapshot(type = "explicit", prompt = FALSE)
-    log_msg("Snapshot complete", level = "success")
-    quit(status = 0L)
+    content <- paste(readLines(filepath, warn = FALSE), collapse = "\n")
+    list(content = content, success = TRUE, error = NULL)
   }, error = function(e) {
-    log_msg("Snapshot failed: ", e$message, level = "error", force = TRUE)
-    quit(status = if (config$fail_on_issues) 1L else 0L)
+    list(content = "", success = FALSE, error = as.character(e))
   })
 }
 
-log_msg("Checking renv setup...", level = "info")
-
-# Extract R package dependencies from code files
-#
-# Scans R/, scripts/, analysis/ directories and top-level files for:
-# - library() and require() calls
-# - namespace calls (pkg::function)
-#
-# Returns: character vector of unique package names (filtered and validated)
-extract_code_packages <- function() {
-  # Find target files efficiently
-  all_files <- character(0)
+# Batch file discovery with memoization
+discover_files <- function(target_dirs, file_pattern) {
+  if (!is.character(target_dirs) || length(target_dirs) == 0L) {
+    return(character(0))
+  }
   
-  for (dir in .TARGET_DIRS) {
+  # Only scan existing directories
+  existing_dirs <- target_dirs[file.exists(target_dirs)]
+  if (length(existing_dirs) == 0L) {
+    return(character(0))
+  }
+  
+  # Efficient batch file discovery
+  all_files <- character(0)
+  for (dir in existing_dirs) {
     if (dir.exists(dir)) {
-      files <- list.files(dir, pattern = .FILE_PATTERN, recursive = TRUE, 
+      files <- list.files(dir, pattern = file_pattern, recursive = TRUE, 
                          ignore.case = TRUE, full.names = TRUE)
       all_files <- c(all_files, files)
     }
   }
   
-  # Include top-level R files (excluding this script)
-  top_files <- list.files(".", pattern = .FILE_PATTERN, ignore.case = TRUE)
-  top_files <- top_files[!grepl("^check_renv_ready", top_files)]
+  # Add top-level files (excluding this script)
+  top_files <- list.files(".", pattern = file_pattern, ignore.case = TRUE)
+  top_files <- top_files[!grepl(REGEX_PATTERNS$self_script_pattern, top_files)]
   all_files <- c(all_files, top_files)
   
+  unique(all_files)
+}
+
+#==============================================================================
+# PACKAGE EXTRACTION ENGINE
+#==============================================================================
+
+# Main package extraction function
+extract_code_packages <- function(config, log_fn) {
+  # Choose directories based on mode
+  target_dirs <- if (config$strict_imports) PKG_CONFIG$strict_dirs else PKG_CONFIG$standard_dirs
+  
+  # Discover all relevant files
+  all_files <- discover_files(target_dirs, REGEX_PATTERNS$file_pattern)
+  
   if (length(all_files) == 0L) {
-    log_msg("No R/Rmd/qmd files found in target directories", level = "warning")
+    log_fn("No R/Rmd/qmd/Rnw files found", level = "warning")
     return(character(0))
   }
   
-  log_msg("Scanning ", length(all_files), " files...", level = "info")
+  mode_name <- if (config$strict_imports) "strict" else "standard"
+  log_fn("Scanning ", length(all_files), " files in ", mode_name, " mode...", level = "info")
   
-  # Optimized package extraction
-  packages <- character(0)
-  failed_files <- character(0)
+  # Process files efficiently using lists instead of vector concatenation
+  package_lists <- vector("list", length(all_files))
+  failed_count <- 0L
   
-  for (file in all_files) {
-    if (!file.exists(file)) {
-      failed_files <- c(failed_files, file)
-      next
+  for (i in seq_along(all_files)) {
+    file_result <- read_file_safely(all_files[i])
+    if (file_result$success) {
+      package_lists[[i]] <- extract_packages_from_text(file_result$content)
+    } else {
+      failed_count <- failed_count + 1L
+      package_lists[[i]] <- character(0)
     }
-    
-    result <- tryCatch({
-      # Read file efficiently
-      content <- paste(readLines(file, warn = FALSE), collapse = "\n")
-      
-      # Remove comments preserving roxygen
-      content <- gsub("(?<!#')#[^'\n]*", "", content, perl = TRUE)
-      
-      # Extract library/require calls with improved regex
-      lib_pattern <- "(?:library|require)\\s*\\(\\s*[\"']?([a-zA-Z][a-zA-Z0-9._]*)[\"']?\\s*[,)]"
-      lib_matches <- regmatches(content, gregexpr(lib_pattern, content, perl = TRUE))[[1]]
-      
-      lib_packages <- character(0)
-      if (length(lib_matches) > 0L) {
-        lib_packages <- gsub(".*\\(\\s*[\"']?([a-zA-Z][a-zA-Z0-9._]*)[\"']?.*", "\\1", lib_matches)
-        lib_packages <- lib_packages[nchar(lib_packages) >= .MIN_PKG_LENGTH]
-      }
-      
-      # Extract namespace calls
-      ns_pattern <- "([a-zA-Z][a-zA-Z0-9._]{2,})::"
-      ns_matches <- regmatches(content, gregexpr(ns_pattern, content, perl = TRUE))[[1]]
-      
-      ns_packages <- character(0)
-      if (length(ns_matches) > 0L) {
-        ns_packages <- gsub("::.*", "", ns_matches)
-      }
-      
-      c(lib_packages, ns_packages)
-    }, error = function(e) {
-      failed_files <<- c(failed_files, file)
-      character(0)
-    })
-    
-    packages <- c(packages, result)
   }
   
-  if (length(failed_files) > 0L) {
-    log_msg("Failed to read ", length(failed_files), " files", level = "warning")
+  if (failed_count > 0L) {
+    log_fn("Failed to read ", failed_count, " files", level = "warning")
   }
   
-  # Get self package name
+  # Flatten package lists efficiently
+  all_packages <- unlist(package_lists, use.names = FALSE)
+  
+  # Clean packages (get self package name for exclusion)
   self_pkg <- get_self_package_name()
-  
-  # Clean and validate packages
-  packages <- unique(packages)
-  packages <- packages[!packages %in% c(.BASE_PKGS, self_pkg, "")]
-  packages <- packages[nchar(packages) >= .MIN_PKG_LENGTH]
-  packages <- packages[grepl(.PKG_NAME_PATTERN, packages)]
-  
-  packages
+  clean_package_names(all_packages, c(self_pkg))
 }
 
-# Get the current package name from DESCRIPTION file
-#
-# Returns: character string of package name, or empty string if not found
+#==============================================================================
+# CONFIGURATION FILE PARSERS
+#==============================================================================
+
+# Get self package name safely
 get_self_package_name <- function() {
   if (!file.exists("DESCRIPTION")) return("")
   
   tryCatch({
-    desc <- read.dcf("DESCRIPTION")
-    if ("Package" %in% colnames(desc)) desc[, "Package"] else ""
+    desc_data <- read.dcf("DESCRIPTION")
+    if ("Package" %in% colnames(desc_data)) desc_data[, "Package"] else ""
   }, error = function(e) "")
 }
 
-# Parse package dependencies from DESCRIPTION file
-#
-# Extracts packages from Imports, Suggests, and Depends fields
-# Returns: list(packages = character vector, error = logical)
-parse_description <- function() {
+# Parse DESCRIPTION file with multiple fallback strategies
+parse_description_file <- function() {
   if (!file.exists("DESCRIPTION")) {
-    log_msg("DESCRIPTION file not found", level = "error", force = TRUE)
-    return(list(packages = character(0), error = TRUE))
+    return(list(packages = character(0), error = TRUE, message = "DESCRIPTION file not found"))
   }
   
   tryCatch({
-    desc <- read.dcf("DESCRIPTION")
+    # Primary: Try desc package for robust parsing
+    if (requireNamespace("desc", quietly = TRUE)) {
+      d <- desc::desc()
+      deps <- d$get_deps()
+      all_packages <- unique(deps$package[deps$type %in% c("Imports", "Suggests", "Depends")])
+      all_packages <- all_packages[!all_packages %in% c("R", "")]
+      return(list(packages = all_packages, error = FALSE, message = "Parsed with desc package"))
+    }
     
-    parse_field <- function(field) {
-      if (!field %in% colnames(desc) || is.na(desc[, field])) {
+    # Fallback: Manual DCF parsing
+    desc_data <- read.dcf("DESCRIPTION")
+    
+    extract_deps <- function(field_name) {
+      if (!field_name %in% colnames(desc_data) || is.na(desc_data[, field_name])) {
         return(character(0))
       }
-      
-      deps <- trimws(strsplit(desc[, field], ",")[[1]])
-      # Remove version constraints and filter
-      deps <- gsub("\\s*\\([^)]+\\)", "", deps)
+      deps <- trimws(strsplit(desc_data[, field_name], ",")[[1]])
+      deps <- gsub("\\s*\\([^)]+\\)", "", deps)  # Remove version constraints
       deps[deps != "" & deps != "R"]
     }
     
     all_packages <- unique(c(
-      parse_field("Imports"),
-      parse_field("Suggests"), 
-      parse_field("Depends")
+      extract_deps("Imports"),
+      extract_deps("Suggests"),
+      extract_deps("Depends")
     ))
     
-    list(packages = all_packages, error = FALSE)
+    list(packages = all_packages, error = FALSE, message = "Parsed with read.dcf")
+    
   }, error = function(e) {
-    log_msg("Failed to parse DESCRIPTION: ", e$message, level = "error", force = TRUE)
-    list(packages = character(0), error = TRUE)
+    list(packages = character(0), error = TRUE, message = paste("Parse failed:", e$message))
   })
 }
 
-# Parse package list from renv.lock file
-#
-# Uses jsonlite if available, falls back to manual parsing
-# Returns: list(packages = character vector, error = logical)
-parse_renv_lock <- function() {
+# Parse renv.lock file with fallbacks
+parse_renv_lock_file <- function() {
   if (!file.exists("renv.lock")) {
-    log_msg("renv.lock file not found", level = "error", force = TRUE)
-    return(list(packages = character(0), error = TRUE))
+    return(list(packages = character(0), error = TRUE, message = "renv.lock file not found"))
   }
   
-  # Try jsonlite first
-  packages <- tryCatch({
+  tryCatch({
+    # Primary: JSON parsing
     if (requireNamespace("jsonlite", quietly = TRUE)) {
       lock_data <- jsonlite::fromJSON("renv.lock", simplifyVector = FALSE)
       if ("Packages" %in% names(lock_data)) {
-        pkgs <- names(lock_data$Packages)
-        pkgs[!pkgs %in% .BASE_PKGS]
-      } else {
-        character(0)
+        packages <- names(lock_data$Packages)
+        packages <- packages[!packages %in% PKG_CONFIG$base_packages]
+        return(list(packages = packages, error = FALSE, message = "Parsed with jsonlite"))
       }
-    } else {
-      character(0)
     }
-  }, error = function(e) character(0))
-  
-  # Fallback to manual parsing if jsonlite fails
-  if (length(packages) == 0L) {
-    packages <- tryCatch({
-      content <- readLines("renv.lock", warn = FALSE)
-      pkg_lines <- grep('"[^"]+": \\{', content, value = TRUE)
-      if (length(pkg_lines) > 0L) {
-        pkgs <- gsub('.*"([^"]+)": \\{.*', '\\1', pkg_lines)
-        pkgs[!pkgs %in% c("R", "Packages", .BASE_PKGS)]
-      } else {
-        character(0)
-      }
-    }, error = function(e) character(0))
-  }
-  
-  list(packages = packages, error = length(packages) == 0L)
+    
+    # Fallback: Manual parsing
+    content <- readLines("renv.lock", warn = FALSE)
+    pkg_lines <- grep('"[^"]+": \\{', content, value = TRUE)
+    if (length(pkg_lines) > 0L) {
+      packages <- gsub('.*"([^"]+)": \\{.*', '\\1', pkg_lines)
+      packages <- packages[!packages %in% c("R", "Packages", PKG_CONFIG$base_packages)]
+      return(list(packages = packages, error = FALSE, message = "Parsed manually"))
+    }
+    
+    list(packages = character(0), error = TRUE, message = "No packages found in renv.lock")
+    
+  }, error = function(e) {
+    list(packages = character(0), error = TRUE, message = paste("Parse failed:", e$message))
+  })
 }
 
-# CRAN validation with caching and timeout
-validate_cran_packages <- function(packages) {
-  if (length(packages) == 0L) return(packages)
+#==============================================================================
+# CRAN VALIDATION (WITH CACHING)
+#==============================================================================
+
+# Validate packages against CRAN (cached for session)
+validate_against_cran <- function(packages, log_fn) {
+  if (!is.character(packages) || length(packages) == 0L) {
+    return(list(valid = character(0), invalid = character(0), error = FALSE))
+  }
   
-  log_msg("Validating ", length(packages), " packages against CRAN...", level = "info")
+  log_fn("Validating ", length(packages), " packages against CRAN...", level = "info")
   
   tryCatch({
-    # Set timeout for CRAN check
+    # Set timeout and restore on exit
     old_timeout <- getOption("timeout")
     on.exit(options(timeout = old_timeout), add = TRUE)
-    options(timeout = 30)
+    options(timeout = PKG_CONFIG$cran_timeout_seconds)
     
+    # Get available packages
     available_pkgs <- available.packages(contriburl = contrib.url("https://cloud.r-project.org/"))
     cran_packages <- rownames(available_pkgs)
     
+    # Split into valid and invalid
     valid_packages <- packages[packages %in% cran_packages]
     invalid_packages <- packages[!packages %in% cran_packages]
     
     if (length(invalid_packages) > 0L) {
-      log_msg("Packages not found on CRAN: ", paste(sort(invalid_packages), collapse = ", "), 
-              level = "warning")
+      log_fn("Invalid packages: ", paste(sort(invalid_packages), collapse = ", "), level = "warning")
     }
     
-    if (length(valid_packages) > 0L) {
-      log_msg("Valid CRAN packages: ", paste(sort(valid_packages), collapse = ", "), 
-              level = "success")
-    }
+    list(valid = valid_packages, invalid = invalid_packages, error = FALSE)
     
-    valid_packages
   }, error = function(e) {
-    log_msg("CRAN validation failed (network issue?): ", e$message, level = "warning")
-    log_msg("Proceeding with all detected packages", level = "info")
-    packages
+    log_fn("CRAN validation failed: ", e$message, level = "warning")
+    list(valid = packages, invalid = character(0), error = TRUE)
   })
 }
 
-# Robust DESCRIPTION fixing with backup
-fix_description <- function(missing_packages, invalid_packages = character(0)) {
-  if (length(missing_packages) == 0L && length(invalid_packages) == 0L) return(FALSE)
+#==============================================================================
+# DESCRIPTION FILE MODIFICATION
+#==============================================================================
+
+# Fix DESCRIPTION file with robust error handling
+fix_description_file <- function(missing_packages, invalid_packages, log_fn) {
+  if (length(missing_packages) == 0L && length(invalid_packages) == 0L) {
+    return(list(success = FALSE, message = "No changes needed"))
+  }
   
-  # Create backup
-  backup_file <- paste0("DESCRIPTION.backup.", format(Sys.time(), "%Y%m%d_%H%M%S"))
-  file.copy("DESCRIPTION", backup_file)
+  if (!file.exists("DESCRIPTION")) {
+    return(list(success = FALSE, message = "DESCRIPTION file not found"))
+  }
+  
+  # Create timestamped backup
+  backup_file <- paste0("DESCRIPTION.backup.", format(Sys.time(), PKG_CONFIG$backup_timestamp_format))
+  if (!file.copy("DESCRIPTION", backup_file)) {
+    return(list(success = FALSE, message = "Failed to create backup"))
+  }
   
   tryCatch({
-    desc_lines <- readLines("DESCRIPTION")
-    imports_idx <- grep("^Imports:", desc_lines)
-    
-    if (length(imports_idx) == 0L) {
-      log_msg("No Imports section found in DESCRIPTION", level = "error", force = TRUE)
-      file.remove(backup_file)
-      return(FALSE)
-    }
-    
-    # Find section boundaries
-    start_idx <- imports_idx[1L]
-    end_idx <- start_idx
-    
-    for (i in (start_idx + 1L):length(desc_lines)) {
-      if (i > length(desc_lines) || 
-          (!grepl("^\\s", desc_lines[i]) && desc_lines[i] != "")) {
-        end_idx <- i - 1L
-        break
+    # Primary: Use desc package for robust editing
+    if (requireNamespace("desc", quietly = TRUE)) {
+      d <- desc::desc()
+      
+      # Remove invalid packages from all dependency fields
+      for (pkg in invalid_packages) {
+        d$del_dep(pkg)
       }
-      end_idx <- i
-    }
-    
-    # Parse existing imports
-    imports_text <- gsub("^Imports:\\s*", "", paste(desc_lines[start_idx:end_idx], collapse = " "))
-    existing <- if (nchar(trimws(imports_text)) > 0L) {
-      gsub("\\s*\\([^)]+\\)", "", trimws(strsplit(imports_text, ",")[[1]]))
+      
+      # Add missing packages to Imports
+      for (pkg in missing_packages) {
+        d$set_dep(pkg, "Imports")
+      }
+      
+      d$write()
+      
     } else {
-      character(0)
+      # Fallback: Manual editing with bounds checking
+      desc_lines <- readLines("DESCRIPTION")
+      imports_idx <- grep("^Imports:", desc_lines)
+      
+      if (length(imports_idx) == 0L) {
+        # Add new Imports section
+        if (length(missing_packages) > 0L) {
+          new_imports_line <- paste("Imports:", paste(missing_packages, collapse = ",\n    "))
+          desc_lines <- c(desc_lines, new_imports_line)
+        }
+      } else {
+        # Update existing Imports section with proper bounds checking
+        start_idx <- imports_idx[1L]
+        end_idx <- length(desc_lines)
+        
+        # Find end of Imports section safely
+        for (i in (start_idx + 1L):length(desc_lines)) {
+          if (!grepl("^\\s", desc_lines[i]) && desc_lines[i] != "") {
+            end_idx <- i - 1L
+            break
+          }
+        }
+        
+        # Parse existing imports
+        imports_section <- desc_lines[start_idx:min(end_idx, length(desc_lines))]
+        imports_text <- gsub("^Imports:\\s*", "", paste(imports_section, collapse = " "))
+        
+        existing_packages <- character(0)
+        if (nchar(trimws(imports_text)) > 0L) {
+          existing_packages <- trimws(strsplit(imports_text, ",")[[1]])
+          existing_packages <- gsub("\\s*\\([^)]+\\)", "", existing_packages)
+        }
+        
+        # Update package list
+        cleaned_existing <- existing_packages[!existing_packages %in% invalid_packages]
+        all_packages <- sort(unique(c(cleaned_existing[cleaned_existing != ""], missing_packages)))
+        
+        # Rebuild DESCRIPTION
+        if (length(all_packages) > 0L) {
+          new_imports <- paste("Imports:", paste(all_packages, collapse = ",\n    "))
+          new_imports_lines <- strsplit(new_imports, "\n")[[1]]
+        } else {
+          new_imports_lines <- character(0)
+        }
+        
+        # Safely reconstruct file
+        before_section <- if (start_idx > 1L) desc_lines[1L:(start_idx - 1L)] else character(0)
+        after_section <- if (end_idx < length(desc_lines)) desc_lines[(end_idx + 1L):length(desc_lines)] else character(0)
+        
+        desc_lines <- c(before_section, new_imports_lines, after_section)
+      }
+      
+      writeLines(desc_lines, "DESCRIPTION")
     }
-    
-    # Process changes
-    cleaned_existing <- existing[!existing %in% invalid_packages]
-    removed_packages <- existing[existing %in% invalid_packages]
-    new_packages <- setdiff(missing_packages, cleaned_existing)
-    
-    if (length(new_packages) == 0L && length(removed_packages) == 0L) {
-      file.remove(backup_file)
-      return(FALSE)
-    }
-    
-    # Build new imports section
-    all_packages <- sort(c(cleaned_existing[cleaned_existing != ""], new_packages))
-    new_imports <- paste("Imports:", paste(all_packages, collapse = ",\n    "))
-    new_imports_lines <- strsplit(new_imports, "\n")[[1]]
-    
-    # Reconstruct file
-    new_lines <- c(
-      desc_lines[1L:(start_idx - 1L)],
-      new_imports_lines,
-      if (end_idx < length(desc_lines)) desc_lines[(end_idx + 1L):length(desc_lines)] else character(0)
-    )
-    
-    writeLines(new_lines, "DESCRIPTION")
     
     # Report changes
-    if (length(new_packages) > 0L) {
-      log_msg("Added packages: ", paste(new_packages, collapse = ", "), level = "success")
+    change_messages <- character(0)
+    if (length(missing_packages) > 0L) {
+      log_fn("Added packages: ", paste(missing_packages, collapse = ", "), level = "success")
+      change_messages <- c(change_messages, paste("Added:", length(missing_packages), "packages"))
     }
-    if (length(removed_packages) > 0L) {
-      log_msg("Removed invalid packages: ", paste(removed_packages, collapse = ", "), level = "success")
+    if (length(invalid_packages) > 0L) {
+      log_fn("Removed invalid packages: ", paste(invalid_packages, collapse = ", "), level = "success")
+      change_messages <- c(change_messages, paste("Removed:", length(invalid_packages), "invalid packages"))
     }
     
     # Remove backup on success
     file.remove(backup_file)
-    return(TRUE)
+    
+    list(success = TRUE, message = paste(change_messages, collapse = "; "))
     
   }, error = function(e) {
-    log_msg("Failed to update DESCRIPTION: ", e$message, level = "error", force = TRUE)
+    # Restore from backup on error
     if (file.exists(backup_file)) {
       file.copy(backup_file, "DESCRIPTION", overwrite = TRUE)
       file.remove(backup_file)
-      log_msg("DESCRIPTION restored from backup", level = "info")
     }
-    return(FALSE)
+    list(success = FALSE, message = paste("Update failed:", e$message))
   })
 }
 
-# Enhanced snapshot function with proper error handling
-run_snapshot <- function(force_clean = FALSE) {
+#==============================================================================
+# RENV OPERATIONS
+#==============================================================================
+
+# Run renv snapshot with comprehensive error handling
+run_renv_snapshot <- function(force_clean, log_fn) {
   if (!requireNamespace("renv", quietly = TRUE)) {
-    log_msg("renv package unavailable", level = "error", force = TRUE)
-    return(FALSE)
+    return(list(success = FALSE, message = "renv package unavailable"))
   }
   
   tryCatch({
     if (force_clean) {
-      log_msg("Installing missing packages and regenerating lockfile...", level = "info")
+      log_fn("Regenerating lockfile...", level = "info")
       
       # Install missing packages
       install_result <- tryCatch({
         renv::install()
-        log_msg("Missing packages installed", level = "success")
         TRUE
       }, error = function(e) {
-        log_msg("Package installation issues: ", e$message, level = "warning")
+        log_fn("Package installation warning: ", e$message, level = "warning")
         FALSE
       })
       
-      # Remove lockfile to force regeneration
+      # Backup and remove existing lockfile
       if (file.exists("renv.lock")) {
-        lockfile_backup <- paste0("renv.lock.backup.", format(Sys.time(), "%Y%m%d_%H%M%S"))
-        file.copy("renv.lock", lockfile_backup)
+        backup_name <- paste0("renv.lock.backup.", format(Sys.time(), PKG_CONFIG$backup_timestamp_format))
+        file.copy("renv.lock", backup_name)
         file.remove("renv.lock")
-        log_msg("Removed old renv.lock (backup created)", level = "info")
+        log_fn("Removed old renv.lock (backup created)", level = "info")
       }
     }
     
-    # Create new lockfile
+    # Create new snapshot
     renv::snapshot(type = "explicit", prompt = FALSE)
-    log_msg("Lockfile updated successfully", level = "success")
-    return(TRUE)
+    log_fn("Lockfile updated successfully", level = "success")
+    
+    list(success = TRUE, message = "Snapshot completed successfully")
     
   }, error = function(e) {
-    log_msg("Snapshot failed: ", e$message, level = "error", force = TRUE)
-    return(FALSE)
+    list(success = FALSE, message = paste("Snapshot failed:", e$message))
   })
 }
 
-# Get script name for recursion
-get_script_name <- function() {
-  script_args <- commandArgs()
-  file_arg <- script_args[grepl("--file=", script_args)]
-  if (length(file_arg) > 0L) {
-    return(basename(sub(".*=", "", file_arg)))
+#==============================================================================
+# MAIN EXECUTION ORCHESTRATOR
+#==============================================================================
+
+# Snapshot-only mode handler
+handle_snapshot_only <- function(config, log_fn) {
+  log_fn("Running snapshot...", level = "info")
+  
+  if (!requireNamespace("renv", quietly = TRUE)) {
+    log_fn("renv package unavailable", level = "error", force = TRUE)
+    return(if (config$fail_on_issues) 1L else 0L)
   }
-  "check_renv_for_commit.R"
+  
+  result <- run_renv_snapshot(force_clean = FALSE, log_fn = log_fn)
+  if (result$success) {
+    log_fn("Snapshot complete", level = "success")
+    return(0L)
+  } else {
+    log_fn("Snapshot failed: ", result$message, level = "error", force = TRUE)
+    return(if (config$fail_on_issues) 1L else 0L)
+  }
 }
 
-# Main execution flow
-main <- function() {
-  # Extract and validate packages
-  code_packages <- extract_code_packages()
-  validated_packages <- validate_cran_packages(code_packages)
+# Main analysis and reporting function
+main_analysis <- function(config, log_fn) {
+  log_fn("Checking renv setup...", level = "info")
   
-  # Parse configuration files
-  desc_result <- parse_description()
-  renv_result <- parse_renv_lock()
+  # Step 1: Extract packages from code
+  code_packages <- extract_code_packages(config, log_fn)
   
-  log_msg("Found ", length(validated_packages), " valid code packages, ", 
-          length(desc_result$packages), " DESCRIPTION packages, ",
-          length(renv_result$packages), " renv.lock packages", level = "info")
+  # Step 2: Parse configuration files
+  desc_result <- parse_description_file()
+  renv_result <- parse_renv_lock_file()
   
-  # Analyze synchronization issues
-  missing_from_desc <- setdiff(validated_packages, desc_result$packages)
+  # Step 3: Validate all packages against CRAN in single call
+  all_packages_to_validate <- unique(c(code_packages, desc_result$packages))
+  cran_validation <- validate_against_cran(all_packages_to_validate, log_fn)
   
-  # Validate DESCRIPTION packages against CRAN
-  invalid_in_desc <- character(0)
-  if (length(desc_result$packages) > 0L) {
-    all_desc_packages <- desc_result$packages
-    validated_desc_packages <- validate_cran_packages(all_desc_packages)
-    invalid_in_desc <- setdiff(all_desc_packages, validated_desc_packages)
-    invalid_in_desc <- invalid_in_desc[!invalid_in_desc %in% .BASE_PKGS]
-  }
+  # Step 4: Determine package status
+  validated_code_packages <- intersect(code_packages, cran_validation$valid)
+  validated_desc_packages <- intersect(desc_result$packages, cran_validation$valid)
+  invalid_desc_packages <- intersect(desc_result$packages, cran_validation$invalid)
   
-  # Determine critical issues
+  # Step 5: Analysis results
+  missing_from_desc <- setdiff(validated_code_packages, validated_desc_packages)
+  unused_in_desc <- setdiff(validated_desc_packages, validated_code_packages)
+  extra_in_renv <- setdiff(renv_result$packages, desc_result$packages)
+  
+  # Step 6: Determine critical issues
   has_critical_issues <- length(missing_from_desc) > 0L || 
-                        length(invalid_in_desc) > 0L || 
+                        length(invalid_desc_packages) > 0L || 
                         desc_result$error || 
                         renv_result$error
   
-  # Report findings
+  # Step 7: Report findings
+  log_fn("Found ", length(validated_code_packages), " valid code packages, ", 
+         length(desc_result$packages), " DESCRIPTION packages, ",
+         length(renv_result$packages), " renv.lock packages", level = "info")
+  
   if (length(missing_from_desc) > 0L) {
-    log_msg("Missing from DESCRIPTION: ", paste(sort(missing_from_desc), collapse = ", "), 
-            level = "error", force = TRUE)
+    log_fn("Missing from DESCRIPTION: ", paste(sort(missing_from_desc), collapse = ", "), 
+           level = "error", force = TRUE)
   }
   
-  if (length(invalid_in_desc) > 0L) {
-    log_msg("Invalid packages in DESCRIPTION: ", paste(sort(invalid_in_desc), collapse = ", "), 
-            level = "error", force = TRUE)
+  if (length(invalid_desc_packages) > 0L) {
+    log_fn("Invalid packages in DESCRIPTION: ", paste(sort(invalid_desc_packages), collapse = ", "), 
+           level = "error", force = TRUE)
   }
   
-  unused_in_desc <- setdiff(desc_result$packages, validated_packages)
-  unused_in_desc <- unused_in_desc[!unused_in_desc %in% invalid_in_desc]
-  if (length(unused_in_desc) > 0L) {
-    log_msg("Unused packages in DESCRIPTION: ", length(unused_in_desc), " packages", level = "warning")
+  if (length(unused_in_desc) > 0L && !config$strict_imports) {
+    log_fn("Unused packages in DESCRIPTION: ", length(unused_in_desc), " packages", level = "warning")
   }
   
-  extra_in_renv <- setdiff(renv_result$packages, desc_result$packages)
   if (length(extra_in_renv) > 0L) {
-    log_msg("Extra packages in renv.lock: ", length(extra_in_renv), " packages", level = "warning")
+    log_fn("Extra packages in renv.lock: ", length(extra_in_renv), " packages", level = "warning")
   }
   
-  # Handle fixes
-  if (has_critical_issues) {
-    if (config$auto_fix) {
-      log_msg("Auto-fixing issues...", level = "info")
-      need_clean <- length(extra_in_renv) > 0L
-      
-      if (fix_description(missing_from_desc, invalid_in_desc)) {
-        if (run_snapshot(force_clean = need_clean)) {
-          # Re-run verification
-          script_name <- get_script_name()
-          recheck_args <- paste("Rscript", script_name, "--quiet")
-          if (config$fail_on_issues) recheck_args <- paste(recheck_args, "--fail-on-issues")
-          system(recheck_args)
-          return(invisible(NULL))
-        }
+  # Step 8: Handle fixes if requested
+  if (has_critical_issues && config$auto_fix) {
+    log_fn("Auto-fixing issues...", level = "info")
+    fix_result <- fix_description_file(missing_from_desc, invalid_desc_packages, log_fn)
+    if (fix_result$success) {
+      snapshot_result <- run_renv_snapshot(force_clean = length(extra_in_renv) > 0L, log_fn = log_fn)
+      if (!snapshot_result$success) {
+        log_fn("Warning: ", snapshot_result$message, level = "warning")
       }
-    } else if (interactive()) {
-      cat("Fix detected issues? [y/N]: ")
-      response <- trimws(readLines(n = 1L))
-      if (tolower(response) %in% c("y", "yes")) {
-        need_clean <- length(extra_in_renv) > 0L
-        if (fix_description(missing_from_desc, invalid_in_desc)) {
-          run_snapshot(force_clean = need_clean)
-        }
+    }
+  } else if (has_critical_issues && interactive()) {
+    cat("Fix detected issues? [y/N]: ")
+    response <- tolower(trimws(readLines(n = 1L)))
+    if (response %in% c("y", "yes")) {
+      fix_result <- fix_description_file(missing_from_desc, invalid_desc_packages, log_fn)
+      if (fix_result$success) {
+        run_renv_snapshot(force_clean = length(extra_in_renv) > 0L, log_fn = log_fn)
       }
-    } else {
-      log_msg("Run with --fix to automatically resolve issues", level = "info")
     }
   } else if (length(extra_in_renv) > 0L && config$auto_fix) {
-    run_snapshot(force_clean = TRUE)
+    run_renv_snapshot(force_clean = TRUE, log_fn = log_fn)
   }
   
-  # Final status
+  # Step 9: Final status
   if (has_critical_issues) {
-    log_msg("Repository NOT READY for commit", level = "error", force = TRUE)
+    log_fn("Repository NOT READY for commit", level = "error", force = TRUE)
+    return(1L)
   } else {
-    log_msg("Repository READY for commit", level = "success")
+    log_fn("Repository READY for commit", level = "success", force = TRUE)
+    return(0L)
   }
+}
+
+# Main entry point
+main <- function() {
+  # Parse configuration
+  config <- parse_arguments()
+  log_fn <- create_logger(config)
   
-  # Exit handling
-  exit_code <- if (has_critical_issues) 1L else 0L
-  if (config$fail_on_issues && exit_code != 0L) {
+  # Handle snapshot-only mode
+  if (config$snapshot_only) {
+    exit_code <- handle_snapshot_only(config, log_fn)
     quit(status = exit_code)
   }
   
-  # Usage help for non-interactive mode
-  if (!config$quiet && length(args) == 0L && !interactive()) {
-    cat("\n📖 USAGE: --fix --fail-on-issues --snapshot --quiet\n")
+  # Run main analysis
+  exit_code <- main_analysis(config, log_fn)
+  
+  # Show usage help for non-interactive runs
+  if (!config$quiet && length(commandArgs(trailingOnly = TRUE)) == 0L && !interactive()) {
+    cat("\n📖 USAGE: --fix --fail-on-issues --snapshot --quiet --strict-imports\n")
     cat("For detailed help, see script header documentation.\n")
+  }
+  
+  # Exit with appropriate code
+  if (config$fail_on_issues && exit_code != 0L) {
+    quit(status = exit_code)
   }
   
   invisible(exit_code)
