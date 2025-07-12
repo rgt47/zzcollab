@@ -70,6 +70,110 @@ init_project(
 # ✅ Creates private GitHub repository
 # ✅ Sets up initial commit with proper structure
 
+#### **🔍 DETAILED STEPWISE BREAKDOWN**
+
+**The `zzcollab-init-team` script provides real-time console feedback matching this exact sequence:**
+
+```bash
+🔵 [INFO] Validating prerequisites...
+# Checks: docker, gh CLI, zzcollab availability and authentication
+✅ [SUCCESS] Docker Hub account 'TEAM' verified
+✅ [SUCCESS] GitHub account 'TEAM' verified  
+✅ [SUCCESS] All prerequisites validated
+
+🔵 [INFO] Configuration Summary:
+#   Team Name: TEAM
+#   Project Name: PROJECT  
+#   GitHub Account: TEAM
+#   Dotfiles: [path or none]
+#   Dockerfile: [template path]
+# User prompt: "Proceed with team setup? [y/N]"
+
+🔵 [INFO] Starting automated team setup...
+
+🔵 [INFO] Step 1: Creating project directory...
+mkdir PROJECT_NAME && cd PROJECT_NAME
+✅ [SUCCESS] Created project directory: PROJECT_NAME
+
+🔵 [INFO] Step 2: Setting up team Dockerfile...
+cp ../templates/Dockerfile.pluspackages ./Dockerfile.teamcore
+✅ [SUCCESS] Copied Dockerfile template to Dockerfile.teamcore
+
+🔵 [INFO] Step 3: Building shell core image...
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/r-ver \
+    --build-arg TEAM_NAME="TEAM" \
+    --build-arg PROJECT_NAME="PROJECT" \
+    -t "TEAM/PROJECTcore-shell:v1.0.0" .
+docker tag "TEAM/PROJECTcore-shell:v1.0.0" "TEAM/PROJECTcore-shell:latest"
+✅ [SUCCESS] Built shell core image: TEAM/PROJECTcore-shell:v1.0.0
+
+🔵 [INFO] Step 4: Building RStudio core image...
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/rstudio \
+    --build-arg TEAM_NAME="TEAM" \
+    --build-arg PROJECT_NAME="PROJECT" \
+    -t "TEAM/PROJECTcore-rstudio:v1.0.0" .
+docker tag "TEAM/PROJECTcore-rstudio:v1.0.0" "TEAM/PROJECTcore-rstudio:latest"
+✅ [SUCCESS] Built RStudio core image: TEAM/PROJECTcore-rstudio:v1.0.0
+
+🔵 [INFO] Step 5: Pushing images to Docker Hub...
+docker push "TEAM/PROJECTcore-shell:v1.0.0"
+docker push "TEAM/PROJECTcore-shell:latest"
+docker push "TEAM/PROJECTcore-rstudio:v1.0.0" 
+docker push "TEAM/PROJECTcore-rstudio:latest"
+✅ [SUCCESS] Pushed all images to Docker Hub
+
+🔵 [INFO] Step 6: Initializing zzcollab project...
+zzcollab --base-image "TEAM/PROJECTcore-shell" [--dotfiles PATH]
+# Creates: R package structure, analysis/ directories, symbolic links,
+#          Makefile, docker-compose.yml, GitHub Actions workflows
+✅ [SUCCESS] Initialized zzcollab project with custom base image
+
+🔵 [INFO] Step 7: Initializing git repository...
+git init
+git add .
+git commit -m "🎉 Initial research project setup..."
+✅ [SUCCESS] Initialized git repository with initial commit
+
+🔵 [INFO] Step 8: Creating private GitHub repository...
+gh repo create "TEAM/PROJECT" --private --source=. --remote=origin --push
+✅ [SUCCESS] Created private GitHub repository: TEAM/PROJECT
+
+✅ [SUCCESS] 🎉 Team setup completed successfully!
+
+🔵 [INFO] What was created:
+#   📁 Project directory: PROJECT/
+#   🐳 Docker images: TEAM/PROJECTcore-shell:v1.0.0, TEAM/PROJECTcore-rstudio:v1.0.0
+#   🔒 Private GitHub repo: https://github.com/TEAM/PROJECT
+#   📦 Complete zzcollab research compendium
+
+🔵 [INFO] Next steps:
+#   1. cd PROJECT
+#   2. make docker-zsh    # Start development environment
+#   3. Start coding your analysis!
+
+🔵 [INFO] Team members can now join with:
+#   git clone https://github.com/TEAM/PROJECT.git
+#   cd PROJECT  
+#   zzcollab --base-image TEAM/PROJECTcore-shell --dotfiles ~/dotfiles
+#   make docker-zsh
+```
+
+**Key Technical Details:**
+- **Pre-flight checks** prevent partial failures by validating all dependencies upfront
+- **Dual image builds** provide both shell and web-based development options  
+- **Argument passing** ensures team/project names are embedded in Docker images
+- **Public image registry** enables team members to pull images without authentication
+- **Private code repository** protects unpublished research while sharing methodology
+- **Atomic operations** with rollback capability if any step fails
+
+**Error Handling:**
+- All commands use `set -euo pipefail` for strict error detection
+- Pre-existing directories trigger user confirmation prompts
+- Failed Docker builds halt execution before invalid images are pushed
+- GitHub API failures are caught before local git operations
+
 #### **🔧 MANUAL APPROACH (For customization or learning)**
 
 **If you need custom control or want to understand the underlying process, you can 
