@@ -5,8 +5,8 @@ date: "July 11, 2025"
 output: pdf_document
 --- 
 
-Based on my review of the user guide, here are the specific workflows for developer 
-collaboration using vim as the IDE:
+Based on my review of the user guide, here are the specific workflows for 
+developer collaboration using vim as the IDE:
 
 ## **🚀 Streamlined Team Collaboration Workflow**
 
@@ -18,9 +18,9 @@ cd zzcollab
 ./install.sh                        # Install to ~/bin (default)
 
 # 2. Verify installation
-zzcollab --help                    # Test installation from anywhere
-zzcollab --init --help             # Test team initialization mode
-which zzcollab                     # Confirm system PATH setup
+zzcollab --help                     # Test installation from anywhere
+zzcollab --init --help              # Test team initialization mode
+which zzcollab                      # Confirm system PATH setup
 ```
 
 ### **📦 Developer 1 (Team Lead): Project Initialization**
@@ -44,15 +44,16 @@ which zzcollab                     # Confirm system PATH setup
 
 **Option A: Command-Line Interface**
 ```bash
-# Complete automated setup - replaces all manual Docker and git commands below
-zzcollab.sh --init --team-name rgt47 --project-name research-study \
+# Complete automated setup - replaces all manual Docker and git commands
+zzcollab --init --team-name rgt47 --project-name research-study \
     --dotfiles ~/dotfiles
 
 # OR with Dockerfile customization (two-step process):
 # Step 1: Prepare project and Dockerfile for editing
-zzcollab.sh --init --team-name rgt47 --project-name research-study --prepare-dockerfile
+zzcollab --init --team-name rgt47 --project-name research-study \
+    --prepare-dockerfile
 # Step 2: Edit research-study/Dockerfile.teamcore, then run:
-zzcollab.sh --init --team-name rgt47 --project-name research-study \
+zzcollab --init --team-name rgt47 --project-name research-study \
     --dotfiles ~/dotfiles
 ```
 
@@ -70,24 +71,26 @@ init_project(
 ```
 
 **Both approaches automatically:**
-# ✅ Creates project directory
-# ✅ Sets up customizable Dockerfile.teamcore 
-# ✅ Builds shell and RStudio core images
-# ✅ Tags and pushes images to Docker Hub
-# ✅ Initializes zzcollab project with base image
-# ✅ Creates private GitHub repository
-# ✅ Sets up initial commit with proper structure
+
+- ✅ Creates project directory
+- ✅ Sets up customizable Dockerfile.teamcore 
+- ✅ Builds shell and RStudio core images
+- ✅ Tags and pushes images to Docker Hub
+- ✅ Initializes zzcollab project with base image
+- ✅ Creates private GitHub repository
+- ✅ Sets up initial commit with proper structure
 
 #### **🔍 DETAILED STEPWISE BREAKDOWN**
 
-**The `zzcollab.sh --init` command provides real-time console feedback matching this exact sequence:**
+**The `zzcollab --init` command provides real-time console feedback 
+matching this exact sequence:**
 
 ```bash
-🔵 [INFO] Validating prerequisites...
+🔵 [INFO] Validating preliminary requirements...
 # Checks: docker, gh CLI, zzcollab availability and authentication
 ✅ [SUCCESS] Docker Hub account 'TEAM' verified
 ✅ [SUCCESS] GitHub account 'TEAM' verified  
-✅ [SUCCESS] All prerequisites validated
+✅ [SUCCESS] All preliminary requirements validated
 
 🔵 [INFO] Configuration Summary:
 #   Team Name: TEAM
@@ -113,7 +116,8 @@ docker build -f Dockerfile.teamcore \
     --build-arg TEAM_NAME="TEAM" \
     --build-arg PROJECT_NAME="PROJECT" \
     -t "TEAM/PROJECTcore-shell:v1.0.0" .
-docker tag "TEAM/PROJECTcore-shell:v1.0.0" "TEAM/PROJECTcore-shell:latest"
+docker tag "TEAM/PROJECTcore-shell:v1.0.0" \
+    "TEAM/PROJECTcore-shell:latest"
 ✅ [SUCCESS] Built shell core image: TEAM/PROJECTcore-shell:v1.0.0
 
 🔵 [INFO] Step 4: Building RStudio core image...
@@ -122,7 +126,8 @@ docker build -f Dockerfile.teamcore \
     --build-arg TEAM_NAME="TEAM" \
     --build-arg PROJECT_NAME="PROJECT" \
     -t "TEAM/PROJECTcore-rstudio:v1.0.0" .
-docker tag "TEAM/PROJECTcore-rstudio:v1.0.0" "TEAM/PROJECTcore-rstudio:latest"
+docker tag "TEAM/PROJECTcore-rstudio:v1.0.0" \
+    "TEAM/PROJECTcore-rstudio:latest"
 ✅ [SUCCESS] Built RStudio core image: TEAM/PROJECTcore-rstudio:v1.0.0
 
 🔵 [INFO] Step 5: Pushing images to Docker Hub...
@@ -145,14 +150,16 @@ git commit -m "🎉 Initial research project setup..."
 ✅ [SUCCESS] Initialized git repository with initial commit
 
 🔵 [INFO] Step 8: Creating private GitHub repository...
-gh repo create "TEAM/PROJECT" --private --source=. --remote=origin --push
+gh repo create "TEAM/PROJECT" --private --source=. --remote=origin \
+    --push
 ✅ [SUCCESS] Created private GitHub repository: TEAM/PROJECT
 
 ✅ [SUCCESS] 🎉 Team setup completed successfully!
 
 🔵 [INFO] What was created:
 #   📁 Project directory: PROJECT/
-#   🐳 Docker images: TEAM/PROJECTcore-shell:v1.0.0, TEAM/PROJECTcore-rstudio:v1.0.0
+#   🐳 Docker images: 
+#       TEAM/PROJECTcore-shell:v1.0.0, TEAM/PROJECTcore-rstudio:v1.0.0
 #   🔒 Private GitHub repo: https://github.com/TEAM/PROJECT
 #   📦 Complete zzcollab research compendium
 
@@ -164,19 +171,27 @@ gh repo create "TEAM/PROJECT" --private --source=. --remote=origin --push
 🔵 [INFO] Team members can now join with:
 #   git clone https://github.com/TEAM/PROJECT.git
 #   cd PROJECT  
-#   zzcollab --base-image TEAM/PROJECTcore-shell --dotfiles ~/dotfiles
+#   zzcollab --team TEAM --project-name PROJECT --interface shell \
+#       --dotfiles ~/dotfiles
 #   make docker-zsh
 ```
 
 **Key Technical Details:**
-- **Pre-flight checks** prevent partial failures by validating all dependencies upfront
-- **Dual image builds** provide both shell and web-based development options  
-- **Argument passing** ensures team/project names are embedded in Docker images
-- **Public image registry** enables team members to pull images without authentication
-- **Private code repository** protects unpublished research while sharing methodology
+
+- **Preliminary checks** prevent partial failures by validating all 
+  dependencies upfront
+- **Dual image builds** provide both shell and web-based development 
+  options  
+- **Argument passing** ensures team/project names are embedded in Docker 
+  images
+- **Public image registry** enables team members to pull images without 
+  authentication
+- **Private code repository** protects unpublished research while sharing 
+  methodology
 - **Atomic operations** with rollback capability if any step fails
 
 **Error Handling:**
+
 - All commands use `set -euo pipefail` for strict error detection
 - Pre-existing directories trigger user confirmation prompts
 - Failed Docker builds halt execution before invalid images are pushed
@@ -184,8 +199,8 @@ gh repo create "TEAM/PROJECT" --private --source=. --remote=origin --push
 
 #### **🔧 MANUAL APPROACH (For customization or learning)**
 
-**If you need custom control or want to understand the underlying process, you can 
-run the individual commands:**
+**If you need custom control or want to understand the underlying process, 
+you can run the individual commands:**
 
 ```bash
 # 1. Create new analysis project
@@ -196,8 +211,7 @@ cd research-project
 TEAM_NAME="rgt47" # the account on dockerhub for hosting the core images
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # Copy and customize Dockerfile.pluspackages for your team's needs
-cp ~/bin/zzcollab-support/templates/Dockerfile.pluspackages \
-    ./Dockerfile.teamcore
+cp templates/Dockerfile.pluspackages ./Dockerfile.teamcore
 
 # Edit Dockerfile.teamcore to add your team's specific R packages and tools:
 vim Dockerfile.teamcore
@@ -214,14 +228,20 @@ vim Dockerfile.teamcore
 
 # 3. Build TWO team core images for different interfaces  
 # Shell-optimized core (rocker/r-ver base - lightweight, fast startup)
-docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/r-ver \
-              -t ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 .
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/r-ver \
+    --build-arg TEAM_NAME="$TEAM_NAME" \
+    --build-arg PROJECT_NAME="$PROJECT_NAME" \
+    -t ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 .
 docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 \
     ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
 
 # RStudio-optimized core (rocker/rstudio base - includes RStudio Server)
-docker build -f Dockerfile.teamcore --build-arg BASE_IMAGE=rocker/rstudio \
-              -t ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 .
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/rstudio \
+    --build-arg TEAM_NAME="$TEAM_NAME" \
+    --build-arg PROJECT_NAME="$PROJECT_NAME" \
+    -t ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 .
 docker tag ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 \
     ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
 
@@ -288,7 +308,7 @@ R
 # 4. Exit container when iteration is complete
 exit
 
-# 5. Commit and push changes (code + tests together)
+# 5. Commit changes with CI/CD trigger
 git add .
 git commit -m "Add initial analysis script with tests
 
@@ -296,7 +316,7 @@ git commit -m "Add initial analysis script with tests
 - Created scripts/01_initial_analysis.R
 - Added integration tests for analysis pipeline
 - All tests passing"
-git push
+git push                        # → Triggers GitHub Actions validation
 
 # 6. CI automatically handles package updates
 # - If new packages detected: renv::snapshot() runs
@@ -325,9 +345,10 @@ make docker-zsh                   # Back to development environment
 
 ### **🤖 Automated Team Image Updates**
 
-ZZCOLLAB includes automated GitHub Actions workflows that rebuild and publish the 
-team Docker image whenever package dependencies change. This ensures all team members 
-always have access to the latest, consistent development environment.
+ZZCOLLAB includes automated GitHub Actions workflows that rebuild and 
+publish the team Docker image whenever package dependencies change. This 
+ensures all team members always have access to the latest, consistent 
+development environment.
 
 **Key Benefits:**
 
@@ -338,8 +359,8 @@ always have access to the latest, consistent development environment.
 - **Build caching** for faster rebuild times
 
 *Full documentation and implementation details are provided in the 
-[Automated Docker Image Management](#automated-docker-image-management) section at the 
-end of this document.*
+[Automated Docker Image Management](#automated-docker-image-management) 
+section at the end of this document.*
 
 ## **Developer Collaboration Workflow Sequence**
 
@@ -409,7 +430,7 @@ R                                   # Start R session
 
 # 4. Quality assurance and commit
 exit                            # Exit container
-make docker-check-renv-fix      # Validate dependencies
+make docker-check-renv          # Validate dependencies
 make docker-test                # Run package tests
 make docker-render              # Test report rendering
 # Optional: Check reproducibility
@@ -447,7 +468,8 @@ cd png1
 # Choose between command-line or R interface:
 
 # Option A: Command-Line Interface
-zzcollab --team rgt47 --project-name png1 --interface shell --dotfiles ~/dotfiles
+zzcollab --team rgt47 --project-name png1 --interface shell \
+    --dotfiles ~/dotfiles
 
 # Option B: R Interface (R-Centric Workflow)  
 # R
@@ -460,7 +482,8 @@ zzcollab --team rgt47 --project-name png1 --interface shell --dotfiles ~/dotfile
 # )
 # quit()
 
-# Both approaches automatically pull the team image from Docker Hub and add your personal dotfiles
+# Both approaches automatically pull the team image from Docker Hub and 
+# add your personal dotfiles
 
 # 3. Start development immediately  
 make docker-zsh                   # Shell interface with vim/tmux
@@ -483,7 +506,8 @@ vim scripts/02_visualization_analysis.R
 vim tests/integration/test-02_visualization_analysis.R
 # Write integration tests:
 # test_that("visualization analysis runs successfully", {
-#   expect_no_error(source(here("scripts", "02_visualization_analysis.R")))
+#   expect_no_error(source(here("scripts", 
+#                               "02_visualization_analysis.R")))
 #   expect_true(file.exists(here("analysis", "figures", "plot1.png")))
 # })
 
@@ -512,7 +536,10 @@ git push origin feature/visualization-analysis
 # R
 # library(zzcollab)
 # git_status()  # Check changes
-# git_commit("Add visualization analysis with tests - Created scripts/02_visualization_analysis.R - Added ggplot2 for data visualization - Added integration tests for visualization pipeline - All tests passing")
+# git_commit("Add visualization analysis with tests - Created 
+#     scripts/02_visualization_analysis.R - Added ggplot2 for data 
+#     visualization - Added integration tests for visualization pipeline - 
+#     All tests passing")
 # git_push("feature/visualization-analysis")
 # quit()
 
@@ -547,16 +574,16 @@ gh pr create --title "Add visualization analysis with tests" \
 
 # 2. Sync with Developer 2's merged changes
 git checkout main               # Switch to main branch
-git pull upstream main          # Get latest changes from team repo
-git push origin main            # Update your fork's main branch
+git pull origin main           # Get latest changes from main repo
+# Note: Use 'origin' not 'upstream' for single-repository workflow
 
 # 3. Get latest team Docker image (automatically updated by GitHub Actions)
-docker pull [TEAM]/$(cat .project-name):latest  # Pull from Docker Hub (public)
+docker pull rgt47/png1:latest  # Pull from Docker Hub (public)
 # Note: If Dev 2 added packages, GitHub Actions already rebuilt 
 # and pushed the image!
 
 # 4. Validate environment consistency
-make docker-check-renv-fix     # Ensure all dependencies are properly tracked
+make docker-check-renv          # Ensure all dependencies are properly tracked
 
 # 5. Create new feature branch for advanced modeling
 git checkout -b feature/advanced-models
@@ -576,7 +603,7 @@ R                              # Start R session
 vim R/modeling_functions.R     # Add statistical modeling functions
 # Write multilevel model functions
 
-vim tests/testthat/test-modeling_functions.R  # Write tests for modeling functions
+vim tests/testthat/test-modeling_functions.R  # Write tests for modeling 
 # Write unit tests for statistical models:
 # test_that("multilevel_model function works", {
 #   model <- fit_multilevel_model(test_data)
@@ -593,7 +620,7 @@ R                              # Start R for testing
 vim scripts/03_advanced_models.R  # Create modeling script
 # Write analysis using both Dev 1 and Dev 2's functions
 
-vim tests/integration/test-complete_pipeline.R  # Create comprehensive integration tests
+vim tests/integration/test-complete_pipeline.R  # Create comprehensive tests
 # Write end-to-end pipeline tests:
 # test_that("complete analysis pipeline works", {
 #   expect_no_error(source(here("scripts", "01_data_import.R")))
@@ -643,7 +670,7 @@ git commit -m "Add advanced multilevel modeling with integrated visualization
 - Update research report with new analysis results
 - Test complete workflow integration"
 
-# Push feature branch to your fork
+# Push feature branch to origin
 git push origin feature/advanced-models
 
 # 13. Create pull request with detailed review checklist
@@ -690,15 +717,16 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
 #### **Automated Quality Assurance on Every Push:**
 
 - ✅ **R Package Validation**: R CMD check with dependency validation
-- ✅ **Comprehensive Testing Suite**: Unit tests, integration tests, and data 
-  validation
+- ✅ **Comprehensive Testing Suite**: Unit tests, integration tests, and 
+  data validation
 - ✅ **Paper Rendering**: Automated PDF generation and artifact upload
 - ✅ **Multi-platform Testing**: Ensures compatibility across environments
 - ✅ **Dependency Sync**: renv validation and DESCRIPTION file updates
 
 #### **Test-Driven Development Workflow:**
 
-- **Unit Tests**: Every R function has corresponding tests in `tests/testthat/`
+- **Unit Tests**: Every R function has corresponding tests in 
+  `tests/testthat/`
 - **Integration Tests**: Analysis scripts tested end-to-end in 
   `tests/integration/`
 - **Data Validation**: Automated data quality checks using 
@@ -711,23 +739,22 @@ gh pr create --title "Add advanced multilevel modeling analysis" \
 
 - **Pull Request Template**: Analysis impact assessment, reproducibility 
   checklist
-- **Issue Templates**: Bug reports with environment details, feature requests 
-  with research use cases
+- **Issue Templates**: Bug reports with environment details, feature 
+  requests with research use cases
 - **Collaboration Guidelines**: Research-specific workflow standards
 
 #### **Fully Automated Professional Workflow:**
 ```bash
-# Fork-based collaboration with pull requests:
-git clone https://github.com/[YOUR-USERNAME]/project.git  # Clone your fork
-git remote add upstream https://github.com/[TEAM]/project.git  # Add team repo
+# Single repository collaboration with feature branches:
+git clone https://github.com/[TEAM]/project.git  # Clone team repo
 git checkout -b feature/your-analysis    # Create feature branch
 # ... do development work with tests ...
-git push origin feature/your-analysis   # Push to your fork
+git push origin feature/your-analysis   # Push to team repo
 gh pr create --title "Add analysis" --body "..."  # Create pull request
 
 # After PR merge - ZERO manual image management needed:
 git checkout main             # Switch to main branch  
-git pull upstream main        # Get latest from team repo
+git pull origin main         # Get latest from team repo
 docker pull team/project:latest  # Get auto-updated team image from Docker Hub
 make docker-zsh              # → Instantly ready with all new packages!
 
@@ -755,6 +782,7 @@ data/
 The containerized environment includes a fully configured vim IDE with:
 
 #### **Vim Plugin Ecosystem:**
+
 - **vim-plug**: Plugin manager (automatically installed)
 - **R Language Support**: Syntax highlighting and R integration
 - **File Navigation**: Project file browser and fuzzy finding
@@ -767,7 +795,7 @@ The containerized environment includes a fully configured vim IDE with:
 vim R/analysis.R               # Open R file
 :Explore                       # File browser
 :split scripts/data.R          # Split window editing
-:vsplit analysis/report.Rmd     # Vertical split for manuscript
+:vsplit analysis/report.Rmd    # Vertical split for manuscript
 
 # Vim + R integration:
 :terminal                      # Open terminal in vim
@@ -845,14 +873,14 @@ vim man/new_function.Rd                 # Check documentation
 :!make docker-check                     # Package validation
 
 # Open multiple files for TDD:
-vim -p R/my_function.R tests/testthat/test-my_function.R  # Side-by-side development
+vim -p R/my_function.R tests/testthat/test-my_function.R  # Side-by-side dev
 ```
 
 #### **Testing Workflow Tips:**
 ```bash
 # Quick testing commands in vim:
 :!devtools::test()                      # Run all package tests
-:!testthat::test_file("tests/testthat/test-my_function.R")  # Test specific file
+:!testthat::test_file("tests/testthat/test-my_function.R")  # Test specific
 :!Rscript scripts/02_data_validation.R # Validate data quality
 :!Rscript scripts/99_reproducibility_check.R  # Check reproducibility
 
@@ -863,14 +891,17 @@ vim -p R/my_function.R tests/testthat/test-my_function.R  # Side-by-side develop
 
 ## **🚀 Automation Summary: Zero-Friction Collaboration**
 
-This fully automated workflow provides **enterprise-grade collaboration** for research teams:
+This fully automated workflow provides **enterprise-grade collaboration** 
+for research teams:
 
 ### **🔄 Complete Automation Cycle:**
+
 1. **Developer adds packages** → `renv::snapshot()` → commits `renv.lock`
 2. **Pull request merged** → **GitHub Actions triggered automatically**
 3. **New Docker image built** → **pushed to container registry**  
 4. **docker-compose.yml updated** → **team notified via commit comment**
-5. **Other developers sync** → `docker pull` → **instant access to new packages**
+5. **Other developers sync** → `docker pull` → **instant access to new 
+   packages**
 
 ### **📊 Automation Benefits:**
 
@@ -884,13 +915,18 @@ This fully automated workflow provides **enterprise-grade collaboration** for re
 | Build failures block development | ✅ **Centralized, tested builds** |
 
 ### **🎯 Developer Experience:**
+
 - **Researchers focus on research** - not DevOps
 - **Onboarding new team members** takes minutes, not hours
 - **Package management** happens transparently
 - **Environment drift** is impossible
 - **Collaboration friction** eliminated entirely
 
-This workflow ensures **perfect reproducibility** across team members while providing **fully automated infrastructure management**, **professional collaboration tools**, and **comprehensive testing frameworks** - all accessible through a powerful vim-based development environment with **zero manual Docker management required**.
+This workflow ensures **perfect reproducibility** across team members 
+while providing **fully automated infrastructure management**, 
+**professional collaboration tools**, and **comprehensive testing 
+frameworks** - all accessible through a powerful vim-based development 
+environment with **zero manual Docker management required**.
 
 ---
 
@@ -898,7 +934,11 @@ This workflow ensures **perfect reproducibility** across team members while prov
 
 ### **Overview**
 
-ZZCOLLAB includes a sophisticated automated Docker image management system that eliminates manual container maintenance while ensuring perfect environment consistency across research teams. This system automatically detects package changes, rebuilds Docker images, and notifies team members - providing enterprise-grade DevOps automation for research workflows.
+ZZCOLLAB includes a sophisticated automated Docker image management system 
+that eliminates manual container maintenance while ensuring perfect 
+environment consistency across research teams. This system automatically 
+detects package changes, rebuilds Docker images, and notifies team members 
+- providing enterprise-grade DevOps automation for research workflows.
 
 ### **🏗️ Architecture**
 
@@ -920,7 +960,8 @@ flowchart TD
 
 ### **📋 Complete GitHub Actions Workflow**
 
-The automated system is implemented through a comprehensive GitHub Actions workflow located at `.github/workflows/update-team-image.yml`:
+The automated system is implemented through a comprehensive GitHub Actions 
+workflow located at `.github/workflows/update-team-image.yml`:
 
 ```yaml
 # .github/workflows/update-team-image.yml
@@ -961,7 +1002,7 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: [TEAM]/$(cat .project-name)  # Docker Hub public repository
-  BASE_IMAGE: [TEAM]/$(cat .project-name)core-shell  # Team's custom base image
+  BASE_IMAGE: [TEAM]/$(cat .project-name)core-shell  # Team's custom base
 
 jobs:
   update-team-image:
@@ -970,7 +1011,8 @@ jobs:
     permissions:
       contents: write          # Needed to update docker-compose.yml
       actions: read           # Needed for caching
-      # Note: Docker Hub publishing uses repository secrets, not GitHub permissions
+      # Note: Docker Hub publishing uses repository secrets, not GitHub 
+      #       permissions
     
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
@@ -1197,6 +1239,7 @@ jobs:
 ### **🔧 Key Features**
 
 #### **1. Intelligent Change Detection**
+
 - **Monitors**: `renv.lock`, `DESCRIPTION`, `Dockerfile`, 
   `docker-compose.yml`
 - **Smart analysis**: Compares package lists between commits
@@ -1206,6 +1249,7 @@ jobs:
   detected
 
 #### **2. Multi-Platform Support**
+
 - **Architectures**: AMD64 (Intel/AMD) and ARM64 (Apple Silicon, ARM 
   servers)
 - **Cross-platform compatibility**: Works on all modern development 
@@ -1214,12 +1258,14 @@ jobs:
   hardware
 
 #### **3. Advanced Caching Strategy**
+
 - **GitHub Actions cache**: Reuses Docker layers across builds
 - **BuildKit inline cache**: Optimizes local Docker builds
 - **Layer optimization**: Minimizes rebuild time for incremental changes
 - **Cache invalidation**: Smart cache management based on package changes
 
 #### **4. Comprehensive Tagging System**
+
 - **`latest`**: Most recent build (recommended for development)
 - **`r4.3.0`**: R version specific (for reproducibility)
 - **`abc1234`**: Commit SHA (for exact version tracking)
@@ -1227,14 +1273,17 @@ jobs:
 - **`main-abc1234`**: Branch and commit combination
 
 #### **5. Automated Configuration Management**
+
 - **docker-compose.yml updates**: Automatically points to new image
 - **Git integration**: Commits configuration changes automatically
 - **Change tracking**: Documents what triggered the rebuild
 - **Rollback capability**: Git history preserves all image references
 
 #### **6. Team Communication System**
+
 - **Commit comments**: Detailed notifications on the triggering commit
-- **Change summaries**: Lists new/removed packages and configuration changes
+- **Change summaries**: Lists new/removed packages and configuration 
+  changes
 - **Usage instructions**: Provides exact commands for team members
 - **Build links**: Direct access to build logs and container registry
 
@@ -1273,12 +1322,13 @@ gh workflow run update-team-image.yml -f force_rebuild=true
 git clone https://github.com/team/project.git
 cd project
 docker pull team/project:latest  # Gets latest team image from Docker Hub
-make docker-zsh                          # Instant development environment
+make docker-zsh                  # Instant development environment
 ```
 
 ### **🔍 Monitoring and Troubleshooting**
 
 #### **Build Status Monitoring**
+
 - **GitHub Actions tab**: Real-time build progress and logs
 - **Container registry**: Image versions and download statistics
 - **Commit comments**: Success/failure notifications with details
@@ -1301,7 +1351,7 @@ docker images | grep team/project
 
 # Verify image contents
 docker run --rm team/project:latest R --version
-docker run --rm team/project:latest renv::status()
+docker run --rm team/project:latest R -e "renv::status()"
 
 # Manual build testing
 make docker-build
@@ -1319,9 +1369,11 @@ git push origin main
 ### **🛡️ Security and Privacy Model**
 
 #### **Repository Privacy Strategy**
-ZZCOLLAB implements a **hybrid privacy approach** optimized for research collaboration:
+ZZCOLLAB implements a **hybrid privacy approach** optimized for research 
+collaboration:
 
 **🔒 PRIVATE GitHub Repository:**
+
 - **Protects unpublished research** and sensitive methodologies
 - **Secures proprietary data analysis** and preliminary results
 - **Controls access** to research collaborators only
@@ -1329,11 +1381,13 @@ ZZCOLLAB implements a **hybrid privacy approach** optimized for research collabo
 - **Preserves intellectual property** before publication
 
 **🌍 PUBLIC Docker Images (Docker Hub):**
+
 - **Enables reproducible research** by sharing computational environments
 - **Supports open science** through transparent methodology
 - **Allows validation** of analytical approaches by reviewers
 - **Facilitates replication** after publication
-- **No sensitive data included** - only software packages and configurations
+- **No sensitive data included** - only software packages and 
+  configurations
 
 #### **Security Features**
 
@@ -1348,7 +1402,8 @@ ZZCOLLAB implements a **hybrid privacy approach** optimized for research collabo
   authentication systems
 
 #### **Repository Secrets Setup**
-For automated Docker Hub publishing, configure these secrets in your **private** GitHub repository:
+For automated Docker Hub publishing, configure these secrets in your 
+**private** GitHub repository:
 
 ```bash
 # In GitHub repository: Settings → Secrets and variables → Actions
@@ -1448,4 +1503,7 @@ build-args: |
       }
 ```
 
-This automated Docker image management system transforms ZZCOLLAB from a manual development tool into an enterprise-grade research collaboration platform with zero-friction package management and perfect environment consistency.
+This automated Docker image management system transforms ZZCOLLAB from a 
+manual development tool into an enterprise-grade research collaboration 
+platform with zero-friction package management and perfect environment 
+consistency.
