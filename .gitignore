@@ -34,6 +34,16 @@ Thumbs.db
 # Log files
 *.log
 
+# Package caches (auto-generated, platform-specific)
+binary/
+cache/
+source/
+p3m/
+index/
+
+# Test artifacts and development directories
+test-*/
+
 # Archives
 *.tar.gz
 *.zip
