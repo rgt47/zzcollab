@@ -47,6 +47,13 @@ which zzcollab                     # Confirm system PATH setup
 # Complete automated setup - replaces all manual Docker and git commands below
 zzcollab.sh --init --team-name rgt47 --project-name research-study \
     --dotfiles ~/dotfiles
+
+# OR with Dockerfile customization (two-step process):
+# Step 1: Prepare project and Dockerfile for editing
+zzcollab.sh --init --team-name rgt47 --project-name research-study --prepare-dockerfile
+# Step 2: Edit research-study/Dockerfile.teamcore, then run:
+zzcollab.sh --init --team-name rgt47 --project-name research-study \
+    --dotfiles ~/dotfiles
 ```
 
 **Option B: R Interface (R-Centric Workflow)**

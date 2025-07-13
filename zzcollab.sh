@@ -53,6 +53,7 @@ DOCKERFILE_PATH=""
 # Initialization mode variables
 INIT_MODE=false
 USE_DOTFILES=false
+PREPARE_DOCKERFILE=false
 
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
@@ -110,6 +111,10 @@ while [[ $# -gt 0 ]]; do
             require_arg "$1" "$2"
             DOCKERFILE_PATH="$2"
             shift 2
+            ;;
+        --prepare-dockerfile)
+            PREPARE_DOCKERFILE=true
+            shift
             ;;
         --next-steps)
             # We'll implement this after modules are loaded
@@ -484,11 +489,17 @@ OPTIONAL:
     --dotfiles PATH         Path to dotfiles directory (files already have dots)
     --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
     --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
+    --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
     --help                 Show this help message
 
 EXAMPLES:
-    # Minimal setup (no dotfiles)
+    # Prepare project for Dockerfile editing (Developer 1 workflow)
+    $0 --init --team-name rgt47 --project-name research-study --prepare-dockerfile
+    # Edit research-study/Dockerfile.teamcore as needed, then run:
     $0 --init --team-name rgt47 --project-name research-study
+
+    # Direct setup (no Dockerfile editing)
+    $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
 
     # With custom GitHub account
     $0 --init --team-name rgt47 --project-name research-study --github-account mylab
@@ -651,6 +662,7 @@ run_team_initialization() {
     echo "  GitHub Account: $GITHUB_ACCOUNT"
     echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
     echo "  Dockerfile: $DOCKERFILE_PATH"
+    echo "  Mode: $(if [[ "$PREPARE_DOCKERFILE" == true ]]; then echo "Prepare for editing"; else echo "Complete setup"; fi)"
     echo ""
 
     # Confirm before proceeding
@@ -662,18 +674,28 @@ run_team_initialization() {
     fi
 
     # Start the setup process
-    print_status "Starting automated team setup..."
+    if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+        print_status "Preparing project for Dockerfile editing..."
+    else
+        print_status "Starting automated team setup..."
+    fi
 
     # Step 1: Create project directory
     print_status "Step 1: Creating project directory..."
     if [[ -d "$PROJECT_NAME" ]]; then
-        print_error "Directory $PROJECT_NAME already exists"
-        exit 1
+        if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+            print_error "Directory $PROJECT_NAME already exists"
+            print_error "Remove it first or run without --prepare-dockerfile to continue with existing project"
+            exit 1
+        else
+            print_status "Using existing project directory: $PROJECT_NAME"
+            cd "$PROJECT_NAME"
+        fi
+    else
+        mkdir "$PROJECT_NAME"
+        cd "$PROJECT_NAME"
+        print_success "Created project directory: $PROJECT_NAME"
     fi
-
-    mkdir "$PROJECT_NAME"
-    cd "$PROJECT_NAME"
-    print_success "Created project directory: $PROJECT_NAME"
 
     # Step 2: Copy and customize Dockerfile
     print_status "Step 2: Setting up team Dockerfile..."
@@ -682,8 +704,34 @@ run_team_initialization() {
         exit 1
     fi
 
-    cp "$DOCKERFILE_PATH" ./Dockerfile.teamcore
-    print_success "Copied Dockerfile template to Dockerfile.teamcore"
+    if [[ ! -f "./Dockerfile.teamcore" ]]; then
+        cp "$DOCKERFILE_PATH" ./Dockerfile.teamcore
+        print_success "Copied Dockerfile template to Dockerfile.teamcore"
+    else
+        if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+            print_status "Dockerfile.teamcore already exists - you can edit it directly"
+        else
+            print_status "Using existing Dockerfile.teamcore"
+        fi
+    fi
+
+    # If prepare mode, exit with instructions
+    if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+        print_success "🎉 Project prepared for Dockerfile editing!"
+        echo ""
+        print_status "📝 NEXT STEPS:"
+        echo "  1. Edit $PROJECT_NAME/Dockerfile.teamcore to add your team's packages and tools"
+        echo "  2. Common customizations:"
+        echo "     - Add R packages: RUN R -e \"install.packages('packagename')\""
+        echo "     - Add system tools: RUN apt-get update && apt-get install -y tool-name"
+        echo "     - Set environment variables: ENV VARIABLE_NAME=value"
+        echo "  3. When done editing, run:"
+        echo "     zzcollab --init --team-name $TEAM_NAME --project-name $PROJECT_NAME$(if [[ "$USE_DOTFILES" == true ]]; then if [[ "$DOTFILES_NODOT" == true ]]; then echo " --dotfiles-nodot $DOTFILES_DIR"; else echo " --dotfiles $DOTFILES_DIR"; fi; fi)$(if [[ -n "$GITHUB_ACCOUNT" && "$GITHUB_ACCOUNT" != "$TEAM_NAME" ]]; then echo " --github-account $GITHUB_ACCOUNT"; fi)"
+        echo ""
+        print_status "💡 TIP: Test your Dockerfile locally with:"
+        echo "     docker build -f Dockerfile.teamcore -t test-image ."
+        exit 0
+    fi
 
     # Step 3: Build shell core image
     print_status "Step 3: Building shell core image..."

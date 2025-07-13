@@ -59,6 +59,11 @@ cd zzcollab
 cd ~/projects                   # Your preferred projects directory
 zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 
+# For teams needing custom packages - two-step process:
+# zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
+# Edit study2024/Dockerfile.teamcore to add packages, then:
+# zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+
 # 3. Start developing immediately
 cd study2024
 make docker-zsh                # → Enhanced development environment
@@ -116,6 +121,11 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 **Option A: Command-Line Interface**
 ```bash
 # Complete automated setup - replaces 10+ manual Docker and git commands
+zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+
+# OR with custom Dockerfile editing:
+zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
+# Edit study2024/Dockerfile.teamcore as needed, then:
 zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 ```
 
