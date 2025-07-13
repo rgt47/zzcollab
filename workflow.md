@@ -497,6 +497,7 @@ git checkout -b feature/visualization-analysis
 # (In zsh container with vim)
 vim scripts/02_visualization_analysis.R
 # Write visualization analysis code
+
 # If you need new packages, just install them:
 # R
 # install.packages("ggplot2")   # Add new package  
@@ -642,7 +643,7 @@ R                              # Comprehensive integration testing
 vim analysis/report/report.Rmd  # Update manuscript
 # Add new results and figures
 
-vim tests/integration/test-report_rendering.R  # Create report rendering tests
+vim tests/integration/test-report_rendering.R  # Create report tests
 # Write tests for report compilation:
 # test_that("report renders successfully", {
 #   expect_no_error(rmarkdown::render(here("analysis", "report", 
@@ -755,7 +756,7 @@ gh pr create --title "Add analysis" --body "..."  # Create pull request
 # After PR merge - ZERO manual image management needed:
 git checkout main             # Switch to main branch  
 git pull origin main         # Get latest from team repo
-docker pull team/project:latest  # Get auto-updated team image from Docker Hub
+docker pull team/project:latest  # Get auto-updated team image from Hub
 make docker-zsh              # → Instantly ready with all new packages!
 
 # 🤖 GitHub Actions automatically:
@@ -797,192 +798,145 @@ vim R/analysis.R               # Open R file
 :split scripts/data.R          # Split window editing
 :vsplit analysis/report.Rmd    # Vertical split for manuscript
 
-# Vim + R integration:
-:terminal                      # Open terminal in vim
-R                             # Start R session in terminal
-# devtools::load_all()         # Load package functions (in R)
-# :q                           # Exit R, back to vim
+# File navigation shortcuts:
+:e scripts/                    # Quick script navigation
+:find model                    # Fuzzy file finding
+:b                             # Buffer switching
 
-# Git workflow in vim:
-:!git status                   # Check git status
-:!git add %                    # Add current file
-:!git commit -m "Update analysis"  # Commit changes
+# R integration:
+# Define custom key mappings in .vimrc for:
+# - Send R code to tmux pane
+# - Run current function/selection
+# - Insert R function templates
 ```
 
-#### **Productive Development Cycle:**
+#### **Tmux Integration for Multi-pane Development:**
 ```bash
-# 1. Start development environment
-make docker-zsh               # → Enhanced zsh with vim
+# Standard tmux layout automatically configured:
+# ┌─────────────────┬─────────────────┐
+# │                 │                 │
+# │  VIM Editor     │   File Browser  │
+# │  (R scripts)    │   (project)     │
+# │                 │                 │
+# ├─────────────────┼─────────────────┤
+# │                 │                 │
+# │  R Console      │   Git Status    │
+# │  (testing)      │   (version ctrl)│
+# │                 │                 │
+# └─────────────────┴─────────────────┘
 
-# 2. Multi-file development workflow
-vim -p R/functions.R scripts/analysis.R analysis/report/report.Rmd
-# Opens multiple files in tabs
-
-# 3. Interactive R testing
-:terminal                     # Open terminal in vim
-R                            # Start R
-# devtools::load_all()        # Test functions
-# source("scripts/analysis.R") # Test scripts
-# quit()                      # Exit R
-
-# 4. File navigation and editing
-# gt (next tab), gT (previous tab)
-# Ctrl+w+w (switch windows)
-# :Explore (file browser)
-
-# 5. Test-driven development cycle from vim
-:!make docker-test           # Run all package tests from vim
-:!make docker-render         # Render report from vim
-:terminal                    # Open terminal for interactive testing
-R                           # Start R in terminal
-# devtools::load_all()       # Load package functions
-# devtools::test()           # Run specific tests
-# testthat::test_dir("tests/integration")  # Run integration tests
-# quit()                     # Exit R, back to vim
+# Tmux session management:
+tmux list-sessions             # Show active sessions
+tmux attach -t analysis        # Attach to analysis session
+tmux kill-session -t analysis  # End session
 ```
 
-### **Vim + R Development Tips:**
+### **Advanced Development Workflow Features**
 
-#### **File Organization in Vim:**
+#### **Integrated Testing Environment:**
 ```bash
-# Open related files simultaneously:
-vim -O R/analysis_functions.R scripts/01_analysis.R    # Side by side
-vim -o R/plotting.R analysis/figures/                  # Horizontal split
-vim -p R/*.R scripts/*.R                               # All R files in tabs
+# Real-time test-driven development cycle:
+# 1. Edit R function in vim (top pane)
+vim R/analysis_functions.R
+
+# 2. Update corresponding test (split pane)
+:split tests/testthat/test-analysis_functions.R
+
+# 3. Run tests immediately (bottom tmux pane)
+# Ctrl+b then down arrow to switch to R console pane
+# devtools::test()
+
+# 4. View test results, iterate on function
+# Ctrl+b then up arrow to return to vim pane
 ```
 
 #### **Git Integration Workflow:**
 ```bash
-# In vim, check git status frequently:
-:!git status                  # See changed files
-:!git diff %                  # Diff current file
-:!git add %                   # Stage current file
-:!git commit -m "Add function"  # Commit from vim
+# Enhanced git workflow in vim:
+vim +Git                       # Git fugitive interface
+:Gstatus                       # View changed files
+:Gdiff                         # View file differences
+:Gcommit                       # Create commits from vim
 
-# View git log:
-:!git log --oneline -10       # Recent commits
+# Command line git workflow:
+git status                     # Check working directory
+git add scripts/new_analysis.R tests/integration/test-new_analysis.R
+git commit -m "Add new analysis with tests"
+git push origin feature/new-analysis
 ```
 
-#### **Test-Driven R Package Development in Vim:**
+#### **Package Development Integration:**
 ```bash
-# Test-driven development cycle:
-vim tests/testthat/test-new_function.R  # Write test first
-vim R/new_function.R                    # Write function to pass test
-:!make docker-test                      # Run tests from vim
-vim man/new_function.Rd                 # Check documentation
-:!make docker-check                     # Package validation
+# R package development workflow in vim:
+vim DESCRIPTION                # Edit package metadata
+vim R/package_function.R       # Write package functions  
+vim man/function.Rd           # Edit documentation (auto-generated)
 
-# Open multiple files for TDD:
-vim -p R/my_function.R tests/testthat/test-my_function.R  # Side-by-side dev
+# Test package in R console:
+# devtools::load_all()         # Load package functions
+# devtools::document()         # Generate documentation
+# devtools::test()             # Run all tests
+# devtools::check()            # R CMD check validation
 ```
 
-#### **Testing Workflow Tips:**
+### **Research Report Writing Environment**
+
+#### **R Markdown Integration:**
 ```bash
-# Quick testing commands in vim:
-:!devtools::test()                      # Run all package tests
-:!testthat::test_file("tests/testthat/test-my_function.R")  # Test specific
-:!Rscript scripts/02_data_validation.R # Validate data quality
-:!Rscript scripts/99_reproducibility_check.R  # Check reproducibility
+# Manuscript development workflow:
+vim analysis/report/report.Rmd  # Write research report
+:set filetype=rmarkdown         # Enable R Markdown syntax highlighting
 
-# Testing with different data:
-:!R -e "testthat::test_dir('tests/integration')"  # Integration tests
-:!R -e "source('scripts/01_data_import.R')"       # Test analysis scripts
+# Split pane for reference management:
+:vsplit analysis/report/references.bib  # Bibliography file
+
+# Live preview workflow:
+# Bottom tmux pane for rendering:
+# rmarkdown::render("analysis/report/report.Rmd")
+# system("open analysis/report/report.pdf")  # Mac
+# system("xdg-open analysis/report/report.pdf")  # Linux
 ```
 
-## **🚀 Automation Summary: Zero-Friction Collaboration**
+#### **Figure and Table Management:**
+```bash
+# Structured output management:
+vim scripts/05_generate_figures.R  # Figure generation script
+# Figures automatically saved to: analysis/figures/
 
-This fully automated workflow provides **enterprise-grade collaboration** 
-for research teams:
+vim scripts/06_generate_tables.R   # Table generation script  
+# Tables automatically saved to: analysis/tables/
 
-### **🔄 Complete Automation Cycle:**
-
-1. **Developer adds packages** → `renv::snapshot()` → commits `renv.lock`
-2. **Pull request merged** → **GitHub Actions triggered automatically**
-3. **New Docker image built** → **pushed to container registry**  
-4. **docker-compose.yml updated** → **team notified via commit comment**
-5. **Other developers sync** → `docker pull` → **instant access to new 
-   packages**
-
-### **📊 Automation Benefits:**
-
-| Traditional Workflow | Automated ZZCOLLAB Workflow |
-|----------------------|------------------------------|
-| Manual image rebuilds | ✅ **Automatic rebuilds on package changes** |
-| Inconsistent environments | ✅ **Guaranteed environment consistency** |
-| 30-60 min setup per developer | ✅ **3-5 min setup with pre-built images** |
-| Manual dependency management | ✅ **Automated dependency tracking** |
-| Docker expertise required | ✅ **Zero Docker knowledge needed** |
-| Build failures block development | ✅ **Centralized, tested builds** |
-
-### **🎯 Developer Experience:**
-
-- **Researchers focus on research** - not DevOps
-- **Onboarding new team members** takes minutes, not hours
-- **Package management** happens transparently
-- **Environment drift** is impossible
-- **Collaboration friction** eliminated entirely
-
-This workflow ensures **perfect reproducibility** across team members 
-while providing **fully automated infrastructure management**, 
-**professional collaboration tools**, and **comprehensive testing 
-frameworks** - all accessible through a powerful vim-based development 
-environment with **zero manual Docker management required**.
-
----
-
-## **Automated Docker Image Management**
-
-### **Overview**
-
-ZZCOLLAB includes a sophisticated automated Docker image management system 
-that eliminates manual container maintenance while ensuring perfect 
-environment consistency across research teams. This system automatically 
-detects package changes, rebuilds Docker images, and notifies team members 
-- providing enterprise-grade DevOps automation for research workflows.
-
-### **🏗️ Architecture**
-
-```mermaid
-flowchart TD
-    A[Developer adds packages] --> B[renv::snapshot]
-    B --> C[Commit renv.lock]
-    C --> D[Create Pull Request]
-    D --> E[PR Merged to main]
-    E --> F{renv.lock changed?}
-    F -->|Yes| G[GitHub Actions Triggered]
-    F -->|No| H[No rebuild needed]
-    G --> I[Build new Docker image]
-    I --> J[Push to Container Registry]
-    J --> K[Update docker-compose.yml]
-    K --> L[Notify team members]
-    L --> M[Team pulls updated image]
+# Reference in report.Rmd:
+# ![Figure 1](../figures/main_results.png)
+# kable(readRDS("../tables/summary_stats.rds"))
 ```
 
-### **📋 Complete GitHub Actions Workflow**
+## **🤖 Automated Docker Image Management**
 
-The automated system is implemented through a comprehensive GitHub Actions 
-workflow located at `.github/workflows/update-team-image.yml`:
+### **Comprehensive GitHub Actions Workflow**
 
+ZZCOLLAB includes sophisticated automated Docker image management that 
+eliminates manual container maintenance while ensuring perfect environment 
+consistency across research teams.
+
+#### **Complete GitHub Actions Workflow**
+
+The system automatically detects package changes, rebuilds Docker images, 
+and notifies team members through a comprehensive GitHub Actions workflow:
+
+**Key Features:**
+
+- **Intelligent change detection**: Monitors `renv.lock`, `DESCRIPTION`, 
+  `Dockerfile`, `docker-compose.yml`
+- **Multi-platform support**: AMD64 and ARM64 architectures
+- **Advanced caching**: GitHub Actions cache with BuildKit optimization
+- **Comprehensive tagging**: `latest`, `r4.3.0`, `abc1234`, `2024-01-15` tags
+- **Automated configuration**: Updates docker-compose.yml references
+- **Team communication**: Detailed commit comments with usage instructions
+
+#### **Workflow Triggers**
 ```yaml
-# .github/workflows/update-team-image.yml
-# Automated Team Docker Image Management for ZZCOLLAB Research Projects
-# 
-# PURPOSE: Automatically rebuild and publish team Docker images when R 
-#          package dependencies change, ensuring consistent environments 
-#          across team members
-#
-# TRIGGERS: 
-#   - Push to main branch with changes to renv.lock or DESCRIPTION
-#   - Manual workflow dispatch for on-demand builds
-#
-# OUTPUTS:
-#   - Updated Docker image in GitHub Container Registry
-#   - Multiple image tags for different use cases
-#   - Automatic docker-compose.yml updates
-#   - Team notification via commit comments
-
-name: Update Team Docker Image
-
+# Automatic triggers
 on:
   push:
     branches: [main]
@@ -991,305 +945,12 @@ on:
       - 'DESCRIPTION'         # Package metadata changes
       - 'Dockerfile'          # Container definition changes
       - 'docker-compose.yml'  # Service configuration changes
-  workflow_dispatch:           # Allow manual triggering
-    inputs:
-      force_rebuild:
-        description: 'Force rebuild even if no package changes'
-        required: false
-        default: false
-        type: boolean
-
-env:
-  REGISTRY: docker.io
-  IMAGE_NAME: [TEAM]/$(cat .project-name)  # Docker Hub public repository
-  BASE_IMAGE: [TEAM]/$(cat .project-name)core-shell  # Team's custom base
-
-jobs:
-  update-team-image:
-    name: Build and Publish Team Docker Image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write          # Needed to update docker-compose.yml
-      actions: read           # Needed for caching
-      # Note: Docker Hub publishing uses repository secrets, not GitHub 
-      #       permissions
-    
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      r-version: ${{ steps.r-version.outputs.version }}
-      
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 2       # Needed for git diff comparison
-      
-      - name: Check if rebuild is needed
-        id: check-rebuild
-        run: |
-          if [ "${{ github.event.inputs.force_rebuild }}" == "true" ]; then
-            echo "rebuild=true" >> $GITHUB_OUTPUT
-            echo "reason=Manual force rebuild requested" >> $GITHUB_OUTPUT
-          elif git diff HEAD~1 --name-only | \
-               grep -E "(renv\.lock|DESCRIPTION|Dockerfile|docker-compose\.yml)"; then
-            echo "rebuild=true" >> $GITHUB_OUTPUT
-            echo "reason=Package or container configuration changes detected" >> $GITHUB_OUTPUT
-          else
-            echo "rebuild=false" >> $GITHUB_OUTPUT
-            echo "reason=No relevant changes detected" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Extract R version and package info
-        id: r-version
-        if: steps.check-rebuild.outputs.rebuild == 'true'
-        run: |
-          if [ -f "renv.lock" ]; then
-            R_VERSION=$(jq -r '.R.Version // "4.3.0"' renv.lock)
-            PACKAGE_COUNT=$(jq '.Packages | length' renv.lock)
-          else
-            R_VERSION="4.3.0"
-            PACKAGE_COUNT="0"
-          fi
-          echo "version=${R_VERSION}" >> $GITHUB_OUTPUT
-          echo "package-count=${PACKAGE_COUNT}" >> $GITHUB_OUTPUT
-          
-          # Extract package names for change detection
-          if [ -f "renv.lock" ]; then
-            jq -r '.Packages | keys[]' renv.lock | sort > current_packages.txt
-          else
-            touch current_packages.txt
-          fi
-          
-          # Compare with previous version if available
-          if git show HEAD~1:renv.lock 2>/dev/null | \
-             jq -r '.Packages | keys[]' | sort > previous_packages.txt; then
-            NEW_PACKAGES=$(comm -13 previous_packages.txt current_packages.txt | tr '\n' ' ')
-            REMOVED_PACKAGES=$(comm -23 previous_packages.txt current_packages.txt | tr '\n' ' ')
-            echo "new-packages=${NEW_PACKAGES}" >> $GITHUB_OUTPUT
-            echo "removed-packages=${REMOVED_PACKAGES}" >> $GITHUB_OUTPUT
-          else
-            echo "new-packages=" >> $GITHUB_OUTPUT
-            echo "removed-packages=" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Set up Docker Buildx
-        if: steps.check-rebuild.outputs.rebuild == 'true'
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: linux/amd64,linux/arm64  # Multi-platform support
-      
-      - name: Log in to Docker Hub
-        if: steps.check-rebuild.outputs.rebuild == 'true'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
-      - name: Extract metadata for Docker
-        if: steps.check-rebuild.outputs.rebuild == 'true'
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest
-            type=raw,value=r${{ steps.r-version.outputs.version }}
-            type=raw,value={{date 'YYYY-MM-DD'}}
-          labels: |
-            org.opencontainers.image.title=ZZCOLLAB Research Environment
-            org.opencontainers.image.description=Automated team Docker image for research collaboration
-            org.opencontainers.image.vendor=ZZCOLLAB
-            research.zzcollab.r-version=${{ steps.r-version.outputs.version }}
-            research.zzcollab.package-count=${{ steps.r-version.outputs.package-count }}
-      
-      - name: Build and push Docker image
-        if: steps.check-rebuild.outputs.rebuild == 'true'
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            R_VERSION=${{ steps.r-version.outputs.version }}
-            BASE_IMAGE=${{ env.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
-          provenance: true
-          sbom: true
-      
-      - name: Update docker-compose.yml with new image
-        if: steps.check-rebuild.outputs.rebuild == 'true'
-        run: |
-          # Update image reference in docker-compose.yml
-          sed -i "s|image: .*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest|g" \
-              docker-compose.yml
-          
-          # Check if there are actual changes
-          if git diff --quiet docker-compose.yml; then
-            echo "No changes needed to docker-compose.yml"
-          else
-            echo "Updating docker-compose.yml with new image reference"
-            
-            # Configure git for automated commit
-            git config --local user.email "action@github.com"
-            git config --local user.name "ZZCOLLAB AutoBot"
-            
-            # Commit the updated docker-compose.yml
-            git add docker-compose.yml
-            git commit -m "🤖 Auto-update team Docker image reference
-
-            - Updated docker-compose.yml to use latest team image
-            - Triggered by: ${{ steps.check-rebuild.outputs.reason }}
-            - Commit: ${{ github.sha }}
-            - R version: ${{ steps.r-version.outputs.version }}
-            - Total packages: ${{ steps.r-version.outputs.package-count }}
-            - Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            
-            Changes:
-            - New packages: ${{ steps.r-version.outputs.new-packages }}
-            - Removed packages: ${{ steps.r-version.outputs.removed-packages }}"
-            
-            # Push the changes
-            git push
-          fi
-      
-      - name: Create detailed team notification
-        if: steps.check-rebuild.outputs.rebuild == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const sha = context.sha.substring(0, 7);
-            const rVersion = '${{ steps.r-version.outputs.version }}';
-            const packageCount = '${{ steps.r-version.outputs.package-count }}';
-            const newPackages = '${{ steps.r-version.outputs.new-packages }}'.trim();
-            const removedPackages = '${{ steps.r-version.outputs.removed-packages }}'.trim();
-            const reason = '${{ steps.check-rebuild.outputs.reason }}';
-            
-            let changeDetails = '';
-            if (newPackages) {
-              changeDetails += `**📦 New packages added**: ${newPackages}\n`;
-            }
-            if (removedPackages) {
-              changeDetails += `**🗑️ Packages removed**: ${removedPackages}\n`;
-            }
-            if (!newPackages && !removedPackages) {
-              changeDetails = '**🔄 Configuration or container changes detected**\n';
-            }
-            
-            github.rest.repos.createCommitComment({
-              owner,
-              repo,
-              commit_sha: context.sha,
-              body: `🐳 **Team Docker Image Updated Successfully**
-              
-              **📊 Build Summary**:
-              - **R Version**: ${rVersion}
-              - **Total Packages**: ${packageCount}
-              - **Trigger**: ${reason}
-              - **Build ID**: ${sha}
-              
-              ${changeDetails}
-              
-              **🚀 For Team Members**:
-              \`\`\`bash
-              # Get the updated environment
-              docker pull ${owner}/${repo}:latest
-              
-              # Start development with new packages
-              make docker-zsh
-              # OR
-              make docker-rstudio
-              \`\`\`
-              
-              **🏷️ Available Image Tags**:
-              - \`latest\` - Most recent build (recommended)
-              - \`r${rVersion}\` - R version specific
-              - \`${sha}\` - This exact commit
-              - \`$(date +%Y-%m-%d)\` - Today's date
-              
-              **✅ Environment Status**:
-              - ✅ All package dependencies are now available
-              - ✅ Multi-platform support (AMD64, ARM64)  
-              - ✅ Build cache optimized for faster updates
-              - ✅ docker-compose.yml automatically updated
-              
-              **🔍 View Details**:
-              - [Build logs](https://github.com/${owner}/${repo}/actions/runs/${{ github.run_id }})
-              - [Container registry](https://github.com/${owner}/${repo}/pkgs/container/${repo.toLowerCase()})
-              
-              Happy researching! 🎉`
-            });
-      
-      - name: Skip notification for no-rebuild
-        if: steps.check-rebuild.outputs.rebuild == 'false'
-        run: |
-          echo "ℹ️ Skipping Docker image rebuild: ${{ steps.check-rebuild.outputs.reason }}"
-          echo "Current team image is up to date."
+  workflow_dispatch:           # Manual triggering
 ```
 
-### **🔧 Key Features**
+#### **Usage Scenarios**
 
-#### **1. Intelligent Change Detection**
-
-- **Monitors**: `renv.lock`, `DESCRIPTION`, `Dockerfile`, 
-  `docker-compose.yml`
-- **Smart analysis**: Compares package lists between commits
-- **Detailed reporting**: Tracks new packages, removed packages, and 
-  configuration changes
-- **Skip unnecessary builds**: Only rebuilds when actual changes are 
-  detected
-
-#### **2. Multi-Platform Support**
-
-- **Architectures**: AMD64 (Intel/AMD) and ARM64 (Apple Silicon, ARM 
-  servers)
-- **Cross-platform compatibility**: Works on all modern development 
-  machines
-- **Universal deployment**: Single image works across different team 
-  hardware
-
-#### **3. Advanced Caching Strategy**
-
-- **GitHub Actions cache**: Reuses Docker layers across builds
-- **BuildKit inline cache**: Optimizes local Docker builds
-- **Layer optimization**: Minimizes rebuild time for incremental changes
-- **Cache invalidation**: Smart cache management based on package changes
-
-#### **4. Comprehensive Tagging System**
-
-- **`latest`**: Most recent build (recommended for development)
-- **`r4.3.0`**: R version specific (for reproducibility)
-- **`abc1234`**: Commit SHA (for exact version tracking)
-- **`2024-01-15`**: Date-based (for time-based rollbacks)
-- **`main-abc1234`**: Branch and commit combination
-
-#### **5. Automated Configuration Management**
-
-- **docker-compose.yml updates**: Automatically points to new image
-- **Git integration**: Commits configuration changes automatically
-- **Change tracking**: Documents what triggered the rebuild
-- **Rollback capability**: Git history preserves all image references
-
-#### **6. Team Communication System**
-
-- **Commit comments**: Detailed notifications on the triggering commit
-- **Change summaries**: Lists new/removed packages and configuration 
-  changes
-- **Usage instructions**: Provides exact commands for team members
-- **Build links**: Direct access to build logs and container registry
-
-### **📊 Usage Scenarios**
-
-#### **Scenario 1: Developer Adds New Package**
+**Scenario 1: Developer Adds New Package**
 ```bash
 # Developer workflow
 R
@@ -1300,210 +961,210 @@ renv::snapshot()
 # Automatic result:
 # ✅ GitHub Actions detects renv.lock changes
 # ✅ Rebuilds image with tidymodels
-# ✅ Pushes to team/project:latest on Docker Hub
+# ✅ Pushes to mylab/study2024:latest on Docker Hub
 # ✅ Updates docker-compose.yml
 # ✅ Notifies team via commit comment
 ```
 
-#### **Scenario 2: Manual Force Rebuild**
+**Scenario 2: Team Member Gets Updates**
 ```bash
-# Team lead can trigger manual rebuild
-gh workflow run update-team-image.yml -f force_rebuild=true
-
-# Use cases:
-# - Base image security updates
-# - Docker configuration changes
-# - Periodic refresh of build cache
+# Team member workflow
+git pull                        # Gets latest changes
+docker pull mylab/study2024:latest  # Gets updated environment
+make docker-zsh                # Instant access to new packages
 ```
 
-#### **Scenario 3: New Team Member Onboarding**
-```bash
-# New developer setup
-git clone https://github.com/team/project.git
-cd project
-docker pull team/project:latest  # Gets latest team image from Docker Hub
-make docker-zsh                  # Instant development environment
-```
-
-### **🔍 Monitoring and Troubleshooting**
-
-#### **Build Status Monitoring**
-
-- **GitHub Actions tab**: Real-time build progress and logs
-- **Container registry**: Image versions and download statistics
-- **Commit comments**: Success/failure notifications with details
-
-#### **Common Issues and Solutions**
-
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| **Build failures** | Red X on GitHub Actions | Check build logs, verify Dockerfile syntax |
-| **Large image sizes** | Slow pull times | Review installed packages, optimize Dockerfile |
-| **Cache misses** | Slow builds despite caching | Clear GitHub Actions cache, rebuild base layers |
-| **Permission errors** | Push failures to registry | Verify GITHUB_TOKEN permissions |
-| **Platform issues** | Fails on ARM/Intel Macs | Check multi-platform build configuration |
-| **GitHub repo creation fails** | "Name already exists" or "Repository not found" | `gh repo create TEAM/PROJECT --private` |
-
-#### **Debugging Commands**
-```bash
-# Check current image status
-docker images | grep team/project
-
-# Verify image contents
-docker run --rm team/project:latest R --version
-docker run --rm team/project:latest R -e "renv::status()"
-
-# Manual build testing
-make docker-build
-docker run --rm $(cat .project-name):latest R -e "installed.packages()[,1]"
-
-# Docker Hub registry inspection
-curl -s "https://hub.docker.com/v2/repositories/team/project/tags/" | \
-    jq '.results[].name'
-
-# Manual GitHub repository creation (if automatic creation fails)
-gh repo create TEAM/PROJECT --private
-git push origin main
-```
-
-### **🛡️ Security and Privacy Model**
-
-#### **Repository Privacy Strategy**
-ZZCOLLAB implements a **hybrid privacy approach** optimized for research 
-collaboration:
+### **Security and Privacy Model**
 
 **🔒 PRIVATE GitHub Repository:**
 
-- **Protects unpublished research** and sensitive methodologies
-- **Secures proprietary data analysis** and preliminary results
-- **Controls access** to research collaborators only
-- **Maintains confidentiality** during peer review process
-- **Preserves intellectual property** before publication
+- Protects unpublished research and sensitive methodologies
+- Secures proprietary data analysis and preliminary results
+- Controls access to research collaborators only
 
 **🌍 PUBLIC Docker Images (Docker Hub):**
 
-- **Enables reproducible research** by sharing computational environments
-- **Supports open science** through transparent methodology
-- **Allows validation** of analytical approaches by reviewers
-- **Facilitates replication** after publication
-- **No sensitive data included** - only software packages and 
-  configurations
+- Enables reproducible research by sharing computational environments
+- Supports open science through transparent methodology
+- No sensitive data included - only software packages and configurations
 
-#### **Security Features**
-
-- **Docker Hub authentication**: Uses repository secrets for secure 
-  publishing
-- **SBOM generation**: Software Bill of Materials for vulnerability 
-  tracking  
-- **Provenance attestation**: Cryptographic proof of build integrity
-- **Multi-platform signing**: Ensures image authenticity across 
-  architectures
-- **Separate credentials**: GitHub and Docker Hub use different 
-  authentication systems
-
-#### **Repository Secrets Setup**
+### **Repository Secrets Setup**
 For automated Docker Hub publishing, configure these secrets in your 
 **private** GitHub repository:
 
 ```bash
 # In GitHub repository: Settings → Secrets and variables → Actions
-
 DOCKERHUB_USERNAME: your-dockerhub-username
 DOCKERHUB_TOKEN: your-dockerhub-access-token  # Create at hub.docker.com/settings/security
 ```
 
-**Access Token Creation:**
+### **Standard R Package Validation**
 
-1. Visit [Docker Hub Security Settings](https://hub.docker.com/settings/security)
-2. Click "New Access Token"
-3. Name: "GitHub Actions - [PROJECT-NAME]"
-4. Permissions: "Read, Write, Delete"
-5. Copy token to GitHub repository secrets
+#### **R Package Check (`.github/workflows/r-package.yml`)**
 
-#### **Best Practices**
+- **Triggers**: Push/PR to main/master
+- **Purpose**: Validate package structure and dependencies
+- **Features**:
+  - Native R setup (fast execution)
+  - renv synchronization validation with enhanced dependency scanning
+  - Package checks across platforms
+  - Dependency validation with `check_renv_for_commit.R --strict-imports`
 
-- **Pin base image versions**: Use specific R version tags in Dockerfile
-- **Minimize image layers**: Combine RUN commands to reduce image size
-- **Use .dockerignore**: Exclude unnecessary files from build context
-- **Regular security updates**: Leverage dependabot for base image updates
-- **Monitor build times**: Optimize when builds exceed reasonable duration
-- **Docker Hub organization**: Use team/organization account for 
-  professional projects
-- **Image naming**: Follow consistent naming convention: 
-  `[team]/[project]:latest`
+#### **Paper Rendering (`.github/workflows/render-report.yml`)**
 
-### **🔧 Customization Options**
+- **Triggers**: Manual dispatch, changes to analysis files
+- **Purpose**: Generate research paper automatically
+- **Features**:
+  - Automatic PDF generation
+  - Artifact upload
+  - Native R environment (faster than Docker)
 
-#### **Trigger Customization**
+### **Advanced Workflow Implementation**
+
+#### **Package Change Detection Logic**
 ```yaml
-# Custom trigger patterns
-on:
-  push:
-    branches: [main, develop]           # Multiple branches
-    paths: 
-      - 'renv.lock'
-      - 'custom-packages.txt'          # Custom package files
-      - 'requirements/**'              # Directory-based triggers
-  schedule:
-    - cron: '0 6 * * 1'               # Weekly rebuilds on Monday 6 AM
+# .github/workflows/update-team-image.yml
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      packages-changed: ${{ steps.changes.outputs.packages }}
+      reason: ${{ steps.changes.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Check for package or container changes
+        id: changes
+        run: |
+          if git diff HEAD~1 --name-only | \
+               grep -E "(renv\.lock|DESCRIPTION|Dockerfile|docker-compose\.yml)"; then
+            echo "packages=true" >> $GITHUB_OUTPUT
+            echo "reason=Package or container configuration changes detected" >> $GITHUB_OUTPUT
+          else
+            echo "packages=false" >> $GITHUB_OUTPUT
+          fi
 ```
 
-#### **Build Customization**
+#### **Multi-Platform Docker Build**
 ```yaml
-# Custom build arguments
-build-args: |
-  R_VERSION=${{ steps.r-version.outputs.version }}
-  BASE_IMAGE=${{ env.BASE_IMAGE }}
-  CUSTOM_PACKAGES="additional_package1 additional_package2"
-  BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  build-and-push:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.packages-changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build and push team images
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.TEAM_NAME }}/${{ env.PROJECT_NAME }}:latest
+            ${{ env.TEAM_NAME }}/${{ env.PROJECT_NAME }}:${{ env.R_VERSION }}
+            ${{ env.TEAM_NAME }}/${{ env.PROJECT_NAME }}:${{ github.sha }}
+            ${{ env.TEAM_NAME }}/${{ env.PROJECT_NAME }}:${{ env.DATE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 ```
 
-#### **BASE_IMAGE Integration**
-The automated workflow now supports custom base images:
-
+#### **Package Comparison and Notification**
 ```yaml
-# Environment variables for BASE_IMAGE support
-env:
-  REGISTRY: docker.io
-  IMAGE_NAME: team/project
-  BASE_IMAGE: team/projectcore-shell  # Custom team base image
-
-# Build arguments automatically include BASE_IMAGE
-build-args: |
-  R_VERSION=${{ steps.r-version.outputs.version }}
-  BASE_IMAGE=${{ env.BASE_IMAGE }}  # Passes custom base to Dockerfile
+      - name: Compare packages and notify
+        run: |
+          # Extract package lists
+          if [ -f renv.lock.backup ]; then
+            jq -r '.Packages | keys[]' renv.lock.backup | sort > previous_packages.txt
+          else
+            touch previous_packages.txt
+          fi
+          
+          if [ -f renv.lock ]; then
+            jq -r '.Packages | keys[]' renv.lock | sort > current_packages.txt
+          fi
+          
+          # Calculate differences
+          NEW_PACKAGES=$(comm -13 previous_packages.txt current_packages.txt | tr '\n' ' ')
+          REMOVED_PACKAGES=$(comm -23 previous_packages.txt current_packages.txt | tr '\n' ' ')
+          
+          # Post detailed comment
+          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+            --field body="🐳 **Team Docker Image Updated**
+          
+          **New Image Tags:**
+          - \`${{ env.TEAM_NAME }}/${{ env.PROJECT_NAME }}:latest\`
+          - \`${{ env.TEAM_NAME }}/${{ env.PROJECT_NAME }}:${{ env.R_VERSION }}\`
+          
+          **Package Changes:**
+          ${NEW_PACKAGES:+- **Added:** $NEW_PACKAGES}
+          ${REMOVED_PACKAGES:+- **Removed:** $REMOVED_PACKAGES}
+          
+          **Team Members:** Update your environment with:
+          \`\`\`bash
+          git pull
+          docker pull ${{ env.TEAM_NAME }}/${{ env.PROJECT_NAME }}:latest
+          make docker-zsh
+          \`\`\`"
 ```
 
-**Key Benefits:**
+### **Team Collaboration Benefits**
 
-- ✅ **Custom base images**: Use team-specific R environments
-- ✅ **Consistent builds**: Same base image across all team members
-- ✅ **Automated propagation**: BASE_IMAGE automatically passed to Docker 
-  build
-- ✅ **Version tracking**: Base image changes trigger rebuilds
+#### **Automated Workflow Benefits**
 
-#### **Notification Customization**
-```yaml
-# Custom notification channels
-- name: Slack notification
-  uses: 8398a7/action-slack@v3
-  with:
-    status: custom
-    custom_payload: |
-      {
-        text: "Docker image updated for ${{ github.repository }}",
-        attachments: [{
-          color: 'good',
-          fields: [{
-            title: 'New packages',
-            value: '${{ steps.r-version.outputs.new-packages }}',
-            short: true
-          }]
-        }]
-      }
+| Traditional Workflow | Automated ZZCOLLAB Workflow |
+|----------------------|------------------------------|
+| Manual image rebuilds | ✅ **Automatic rebuilds on package changes** |
+| Inconsistent environments | ✅ **Guaranteed environment consistency** |
+| 30-60 min setup per developer | ✅ **3-5 min setup with pre-built images** |
+| Manual dependency management | ✅ **Automated dependency tracking** |
+| Docker expertise required | ✅ **Zero Docker knowledge needed** |
+| Build failures block development | ✅ **Centralized, tested builds** |
+
+#### **Developer Experience**
+
+- **Researchers focus on research** - not DevOps
+- **Onboarding new team members** takes minutes, not hours
+- **Package management** happens transparently
+- **Environment drift** is impossible
+- **Collaboration friction** eliminated entirely
+
+#### **Quality Assurance Integration**
+
+```bash
+# Complete automated quality pipeline:
+git push                       # Developer pushes code
+
+# GitHub Actions automatically:
+# 1. Run R package validation
+# 2. Execute comprehensive test suite
+# 3. Render research paper
+# 4. Detect package changes
+# 5. Rebuild Docker images if needed
+# 6. Push updated images to registry
+# 7. Notify team of environment updates
+# 8. Update project configuration
 ```
 
-This automated Docker image management system transforms ZZCOLLAB from a 
-manual development tool into an enterprise-grade research collaboration 
-platform with zero-friction package management and perfect environment 
-consistency.
+### **Production-Ready Research Infrastructure**
+
+ZZCOLLAB provides enterprise-grade research collaboration infrastructure 
+that handles the technical complexity automatically, allowing research teams 
+to focus entirely on their scientific work while maintaining perfect 
+reproducibility and professional development standards.
+
+**The framework ensures:**
+
+- **Zero-friction collaboration** with automated environment management
+- **Enterprise-grade quality** with comprehensive testing and validation
+- **Perfect reproducibility** across all team members and time
+- **Professional workflows** with automated CI/CD and documentation
+- **Research focus** by eliminating technical barriers and manual processes
+
+This automated infrastructure transforms research team collaboration from 
+a technical challenge into a seamless, professional workflow that supports 
+scientific discovery and reproducible research practices.
