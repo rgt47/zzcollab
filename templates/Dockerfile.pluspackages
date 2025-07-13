@@ -71,11 +71,9 @@ RUN --mount=type=cache,target=/tmp/downloaded_packages \
         # Visualization and reporting \
         'ggthemes', 'kableExtra', 'DT', 'rmarkdown', 'bookdown', 'knitr', \
         # Data formats and connectivity \
-        'jsonlite', 'DBI', 'RSQLite', \
+        'jsonlite', \
         # Reproducibility and workflow \
-        'targets', 'datapasta', 'palmerpenguins', \
-        # Utility packages \
-        'tidytuesdayR' \
+        'targets', 'datapasta' \
     ); \
     additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else character(0); \
     all_packages <- c(base_packages, additional_packages); \
