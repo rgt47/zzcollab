@@ -19,6 +19,7 @@ cd zzcollab
 
 # 2. Verify installation
 zzcollab --help                    # Test installation from anywhere
+zzcollab --init --help             # Test team initialization mode
 which zzcollab                     # Confirm system PATH setup
 ```
 
@@ -44,7 +45,7 @@ which zzcollab                     # Confirm system PATH setup
 **Option A: Command-Line Interface**
 ```bash
 # Complete automated setup - replaces all manual Docker and git commands below
-zzcollab-init-team --team-name rgt47 --project-name research-study \
+zzcollab.sh --init --team-name rgt47 --project-name research-study \
     --dotfiles ~/dotfiles
 ```
 
@@ -72,7 +73,7 @@ init_project(
 
 #### **🔍 DETAILED STEPWISE BREAKDOWN**
 
-**The `zzcollab-init-team` script provides real-time console feedback matching this exact sequence:**
+**The `zzcollab.sh --init` command provides real-time console feedback matching this exact sequence:**
 
 ```bash
 🔵 [INFO] Validating prerequisites...

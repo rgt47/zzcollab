@@ -48,8 +48,8 @@ EXAMPLES:
 
 INSTALLATION STRUCTURE:
     INSTALL_DIR/
-    ├── zzcollab           # Main executable script
-    ├── zzcollab/          # Support files directory
+    ├── zzcollab           # Main executable script (includes --init functionality)
+    ├── zzcollab-support/  # Support files directory
     │   ├── modules/        # Module files
     │   └── templates/      # Template files
     └── README_zzcollab.md # Installation info
@@ -104,10 +104,6 @@ if [[ ! -f "$SCRIPT_DIR/zzcollab.sh" ]]; then
     exit 1
 fi
 
-if [[ ! -f "$SCRIPT_DIR/zzcollab-init-team" ]]; then
-    log_error "zzcollab-init-team not found in $SCRIPT_DIR"
-    exit 1
-fi
 
 # Check required directories exist
 for dir in "modules" "templates"; do
@@ -185,10 +181,6 @@ tail -n +18 "$SCRIPT_DIR/zzcollab.sh" | grep -v "^readonly SCRIPT_DIR=" | grep -
 # Make the main executable
 chmod +x "$INSTALL_DIR/zzcollab"
 
-# Copy zzcollab-init-team script
-log_info "Copying zzcollab-init-team script..."
-cp "$SCRIPT_DIR/zzcollab-init-team" "$INSTALL_DIR/zzcollab-init-team"
-chmod +x "$INSTALL_DIR/zzcollab-init-team"
 
 # Create installation info file
 cat > "$INSTALL_DIR/README_zzcollab.md" << EOF
@@ -203,19 +195,17 @@ This directory contains a complete installation of zzcollab.
 - Support files: $ZZCOLLAB_SUPPORT_DIR
 
 ## Files
-- \`zzcollab\` - Main executable
-- \`zzcollab-init-team\` - Automated team setup script
+- \`zzcollab\` - Main executable (includes --init for team setup)
 - \`zzcollab-support/\` - Support files directory
 - \`README_zzcollab.md\` - This file
 
 ## Usage
-Run \`zzcollab --help\` from anywhere to get started.
+Run \`zzcollab --help\` for regular usage or \`zzcollab --init --help\` for team setup.
 
 ## Uninstall
 To remove zzcollab:
 \`\`\`bash
 rm -f $INSTALL_DIR/zzcollab
-rm -f $INSTALL_DIR/zzcollab-init-team
 rm -rf $ZZCOLLAB_SUPPORT_DIR
 rm -f $INSTALL_DIR/README_zzcollab.md
 \`\`\`
@@ -225,7 +215,6 @@ log_success "Installation complete!"
 echo ""
 log_info "📁 Installed files:"
 log_info "   Main executable: $INSTALL_DIR/zzcollab"
-log_info "   Team setup script: $INSTALL_DIR/zzcollab-init-team"
 log_info "   Support files: $ZZCOLLAB_SUPPORT_DIR"
 log_info "   Documentation: $INSTALL_DIR/README_zzcollab.md"
 echo ""

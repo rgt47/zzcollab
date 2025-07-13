@@ -57,7 +57,7 @@ cd zzcollab
 
 # 2. Create team project (automated)
 cd ~/projects                   # Your preferred projects directory
-zzcollab-init-team --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 
 # 3. Start developing immediately
 cd study2024
@@ -84,16 +84,16 @@ make docker-zsh                # → Same environment as team lead
 # Clone and install globally
 git clone https://github.com/your-org/zzcollab.git
 cd zzcollab
-./install.sh                   # Installs zzcollab and zzcollab-init-team to ~/bin
+./install.sh                   # Installs zzcollab and zzcollab --init to ~/bin
 
 # Verify installation
 which zzcollab                 # Should show ~/bin/zzcollab
-which zzcollab-init-team       # Should show ~/bin/zzcollab-init-team
+which zzcollab --init       # Should show ~/bin/zzcollab --init
 ```
 
 ### Self-Replicating Team Strategy
 ZZCOLLAB uses **automated team distribution**:
-- Team lead runs `zzcollab-init-team` once
+- Team lead runs `zzcollab --init` once
 - Creates private GitHub repository with full project structure
 - Team members clone and get everything automatically
 - No separate installation needed for team members
@@ -116,7 +116,7 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 **Option A: Command-Line Interface**
 ```bash
 # Complete automated setup - replaces 10+ manual Docker and git commands
-zzcollab-init-team --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 ```
 
 **Option B: R Interface (R-Centric Workflow)**
@@ -180,10 +180,10 @@ join_project(
 ### Configuration Options
 ```bash
 # Team lead with custom GitHub account
-zzcollab-init-team --team-name mylab --project-name study2024 --github-account myuniversity
+zzcollab --init --team-name mylab --project-name study2024 --github-account myuniversity
 
 # With dotfiles that need dots added (files like: bashrc, vimrc)
-zzcollab-init-team --team-name mylab --project-name study2024 --dotfiles-nodot ~/Dropbox/dotfiles
+zzcollab --init --team-name mylab --project-name study2024 --dotfiles-nodot ~/Dropbox/dotfiles
 
 # Team member with specific interface preference
 zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
@@ -588,7 +588,7 @@ print(images)
 ### Project Management Functions
 
 #### `init_project()`
-Initialize a new zzcollab project from within R. **Note**: This is the R interface to `zzcollab-init-team` and should only be used by **Developer 1 (team lead)** to create the initial team infrastructure.
+Initialize a new zzcollab project from within R. **Note**: This is the R interface to `zzcollab --init` and should only be used by **Developer 1 (team lead)** to create the initial team infrastructure.
 
 ```r
 # Developer 1: Complete team setup (creates team images + GitHub repo)
@@ -1066,7 +1066,7 @@ gh run list --workflow=update-team-image.yml
 
 1. **Check this guide** for common workflows
 2. **Use `make help`** to see available targets
-3. **Check script help**: `zzcollab --help` or `zzcollab-init-team --help`
+3. **Check script help**: `zzcollab --help` or `zzcollab --init --help`
 4. **Validate environment**: `make docker-check-renv`
 5. **Clean and rebuild**: `make docker-clean && make docker-build`
 6. **Team sync**: `git pull && docker pull team/project:latest`
@@ -1077,7 +1077,7 @@ gh run list --workflow=update-team-image.yml
 ```bash
 # Modify templates/Dockerfile.pluspackages for team needs
 # Add domain-specific R packages, system tools, etc.
-# Team lead rebuilds: zzcollab-init-team rebuilds and pushes new images
+# Team lead rebuilds: zzcollab --init rebuilds and pushes new images
 ```
 
 #### Custom Build Targets

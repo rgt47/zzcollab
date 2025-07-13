@@ -47,6 +47,12 @@ BASE_IMAGE="rocker/r-ver"
 TEAM_NAME=""
 PROJECT_NAME=""
 INTERFACE=""
+GITHUB_ACCOUNT=""
+DOCKERFILE_PATH=""
+
+# Initialization mode variables
+INIT_MODE=false
+USE_DOTFILES=false
 
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
@@ -86,6 +92,25 @@ while [[ $# -gt 0 ]]; do
             INTERFACE="$2"
             shift 2
             ;;
+        --init)
+            INIT_MODE=true
+            shift
+            ;;
+        --team-name)
+            require_arg "$1" "$2"
+            TEAM_NAME="$2"
+            shift 2
+            ;;
+        --github-account)
+            require_arg "$1" "$2"
+            GITHUB_ACCOUNT="$2"
+            shift 2
+            ;;
+        --dockerfile)
+            require_arg "$1" "$2"
+            DOCKERFILE_PATH="$2"
+            shift 2
+            ;;
         --next-steps)
             # We'll implement this after modules are loaded
             SHOW_NEXT_STEPS=true
@@ -108,28 +133,30 @@ done
 # USER-FRIENDLY INTERFACE PROCESSING
 #=============================================================================
 
-# Convert user-friendly flags to BASE_IMAGE if provided
-if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
-    case "$INTERFACE" in
-        shell)
-            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-shell"
-            ;;
-        rstudio)
-            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-rstudio"
-            ;;
-        *)
-            echo "❌ Error: Unknown interface '$INTERFACE'" >&2
-            echo "Valid interfaces: shell, rstudio" >&2
-            exit 1
-            ;;
-    esac
-    echo "ℹ️  Using team image: $BASE_IMAGE"
-elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
-    # If some team flags are provided but not all, show error
-    echo "❌ Error: When using team interface, all flags are required:" >&2
-    echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
-    echo "  Valid interfaces: shell, rstudio" >&2
-    exit 1
+# Convert user-friendly flags to BASE_IMAGE if provided (only for non-init mode)
+if [[ "$INIT_MODE" != "true" ]]; then
+    if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
+        case "$INTERFACE" in
+            shell)
+                BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-shell"
+                ;;
+            rstudio)
+                BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-rstudio"
+                ;;
+            *)
+                echo "❌ Error: Unknown interface '$INTERFACE'" >&2
+                echo "Valid interfaces: shell, rstudio" >&2
+                exit 1
+                ;;
+        esac
+        echo "ℹ️  Using team image: $BASE_IMAGE"
+    elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
+        # If some team flags are provided but not all, show error (only for non-init mode)
+        echo "❌ Error: When using team interface, all flags are required:" >&2
+        echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
+        echo "  Valid interfaces: shell, rstudio" >&2
+        exit 1
+    fi
 fi
 
 #=============================================================================
@@ -232,10 +259,18 @@ USAGE:
     $0 [OPTIONS]
 
 OPTIONS:
-    User-friendly team interface:
+    Team initialization (Developer 1 - Team Lead):
+    --init                   Initialize new team project with Docker images and GitHub repo
+    --team-name NAME         Team name (Docker Hub organization) [required with --init]
+    --project-name NAME      Project name [required with --init]
+    --github-account NAME    GitHub account (default: same as team-name)
+    
+    Team collaboration (Developer 2+ - Team Members):
     --team NAME              Team name (Docker Hub organization)
     --project-name NAME      Project name  
     --interface TYPE         Interface type: shell, rstudio
+    
+    Common options:
     --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
     --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
     
@@ -246,9 +281,13 @@ OPTIONS:
     --help, -h               Show this help message
 
 EXAMPLES:
-    # Team member joining existing project (recommended)
-    $0 --team rgt47 --project-name png1 --interface shell --dotfiles ~/dotfiles
-    $0 --team mylab --project study2024 --interface rstudio --dotfiles ~/dotfiles
+    # Team Lead - Initialize new team project (Developer 1)
+    $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+    $0 --init --team-name mylab --project-name study2024 --github-account myorg
+    
+    # Team Members - Join existing project (Developer 2+)
+    $0 --team rgt47 --project-name research-study --interface shell --dotfiles ~/dotfiles
+    $0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
     
     # Advanced usage with custom base images
     $0 --base-image rocker/tidyverse --dotfiles ~/dotfiles
@@ -402,11 +441,391 @@ install_uninstall_script() {
 }
 
 #=============================================================================
+# INITIALIZATION MODE FUNCTIONS (from zzcollab-init-team)
+#=============================================================================
+
+# Color codes for output (from zzcollab-init-team)
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Print colored output functions
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+show_init_help() {
+    cat << EOF
+$0 --init - Team initialization for ZZCOLLAB research collaboration
+
+USAGE:
+    $0 --init --team-name TEAM --project-name PROJECT [OPTIONS]
+
+REQUIRED:
+    --team-name NAME        Docker Hub team/organization name
+    --project-name NAME     Project name (will be used for directories and images)
+
+OPTIONAL:
+    --github-account NAME   GitHub account name (default: same as team-name)
+    --dotfiles PATH         Path to dotfiles directory (files already have dots)
+    --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
+    --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
+    --help                 Show this help message
+
+EXAMPLES:
+    # Minimal setup (no dotfiles)
+    $0 --init --team-name rgt47 --project-name research-study
+
+    # With custom GitHub account
+    $0 --init --team-name rgt47 --project-name research-study --github-account mylab
+
+    # With dotfiles (files already have dots: .bashrc, .vimrc, etc.)
+    $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+
+    # With dotfiles that need dots added (files like: bashrc, vimrc, etc.)
+    $0 --init --team-name rgt47 --project-name research-study --dotfiles-nodot ~/Dropbox/dotfiles
+
+WORKFLOW:
+    1. Create project directory
+    2. Copy and customize Dockerfile.teamcore
+    3. Build shell and RStudio core images
+    4. Push images to Docker Hub
+    5. Initialize zzcollab project
+    6. Create private GitHub repository
+    7. Push initial commit
+
+PREREQUISITES:
+    - Docker installed and running
+    - Docker Hub account and logged in (docker login)
+    - GitHub CLI installed and authenticated (gh auth login)
+    - zzcollab installed and available in PATH
+
+EOF
+}
+
+validate_init_prerequisites() {
+    print_status "Validating prerequisites..."
+
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker is not installed or not in PATH"
+        exit 1
+    fi
+
+    if ! docker info &> /dev/null; then
+        print_error "Docker is not running or not accessible"
+        exit 1
+    fi
+
+    if ! command -v gh &> /dev/null; then
+        print_error "GitHub CLI (gh) is not installed or not in PATH"
+        exit 1
+    fi
+
+    if ! gh auth status &> /dev/null; then
+        print_error "GitHub CLI is not authenticated. Please run: gh auth login"
+        exit 1
+    fi
+
+    # Check Docker Hub login status
+    if ! docker info | grep -q "Username:"; then
+        print_warning "Docker Hub login status unclear. You may need to run: docker login"
+    fi
+
+    # Verify Docker Hub account exists and is accessible
+    print_status "Verifying Docker Hub account: $TEAM_NAME"
+    if ! docker pull hello-world &> /dev/null; then
+        print_error "Cannot pull from Docker Hub. Please check your Docker Hub login with: docker login"
+        exit 1
+    fi
+
+    # Try to verify the Docker Hub account exists (best effort)
+    if command -v curl &> /dev/null; then
+        if curl -s "https://hub.docker.com/v2/users/${TEAM_NAME}/" | grep -q "User not found"; then
+            print_warning "Docker Hub user '$TEAM_NAME' may not exist. Please verify the account exists."
+            read -p "Continue anyway? [y/N] " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        else
+            print_success "Docker Hub account '$TEAM_NAME' verified"
+        fi
+    fi
+
+    # Verify GitHub account exists
+    print_status "Verifying GitHub account: $GITHUB_ACCOUNT"
+    if ! gh api "users/${GITHUB_ACCOUNT}" &> /dev/null; then
+        print_error "GitHub account '$GITHUB_ACCOUNT' does not exist or is not accessible"
+        print_error "Please verify the account exists and you have proper permissions"
+        exit 1
+    fi
+    print_success "GitHub account '$GITHUB_ACCOUNT' verified"
+
+    print_success "All prerequisites validated"
+}
+
+validate_init_parameters() {
+    # Validate required parameters
+    if [[ -z "$TEAM_NAME" ]]; then
+        print_error "Required parameter --team-name is missing"
+        show_init_help
+        exit 1
+    fi
+
+    if [[ -z "$PROJECT_NAME" ]]; then
+        print_error "Required parameter --project-name is missing"
+        show_init_help
+        exit 1
+    fi
+
+    # Set defaults
+    if [[ -z "$GITHUB_ACCOUNT" ]]; then
+        GITHUB_ACCOUNT="$TEAM_NAME"
+        print_status "Using default GitHub account: $GITHUB_ACCOUNT"
+    fi
+
+    if [[ -z "$DOCKERFILE_PATH" ]]; then
+        # Try to find the Dockerfile template in multiple locations
+        POSSIBLE_PATHS=(
+            "templates/Dockerfile.pluspackages"                                    # Current directory
+            "$SCRIPT_DIR/templates/Dockerfile.pluspackages"                       # Same directory as script
+            "$SCRIPT_DIR/zzcollab-support/templates/Dockerfile.pluspackages"      # Installed location
+            "$(dirname "$SCRIPT_DIR")/templates/Dockerfile.pluspackages"          # Parent directory
+        )
+        
+        for path in "${POSSIBLE_PATHS[@]}"; do
+            if [[ -f "$path" ]]; then
+                DOCKERFILE_PATH="$path"
+                break
+            fi
+        done
+        
+        if [[ -z "$DOCKERFILE_PATH" ]]; then
+            print_error "Could not find Dockerfile.pluspackages template"
+            print_error "Searched in:"
+            for path in "${POSSIBLE_PATHS[@]}"; do
+                print_error "  - $path"
+            done
+            print_error "Please specify --dockerfile path or ensure templates/Dockerfile.pluspackages exists"
+            exit 1
+        fi
+    fi
+
+    # Set dotfiles flags based on which option was used
+    if [[ -n "$DOTFILES_DIR" ]]; then
+        USE_DOTFILES=true
+        if [[ "$DOTFILES_NODOT" == "true" ]]; then
+            print_status "Using dotfiles from: $DOTFILES_DIR (dots will be added)"
+        else
+            print_status "Using dotfiles from: $DOTFILES_DIR (files already have dots)"
+        fi
+    else
+        print_status "No dotfiles specified, proceeding without dotfiles integration"
+    fi
+
+    # Validate dotfiles path if specified
+    if [[ "$USE_DOTFILES" == true && ! -d "$DOTFILES_DIR" ]]; then
+        print_error "Dotfiles path does not exist: $DOTFILES_DIR"
+        exit 1
+    fi
+}
+
+run_team_initialization() {
+    print_status "Configuration Summary:"
+    echo "  Team Name: $TEAM_NAME"
+    echo "  Project Name: $PROJECT_NAME"
+    echo "  GitHub Account: $GITHUB_ACCOUNT"
+    echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
+    echo "  Dockerfile: $DOCKERFILE_PATH"
+    echo ""
+
+    # Confirm before proceeding
+    read -p "Proceed with team setup? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Setup cancelled by user"
+        exit 0
+    fi
+
+    # Start the setup process
+    print_status "Starting automated team setup..."
+
+    # Step 1: Create project directory
+    print_status "Step 1: Creating project directory..."
+    if [[ -d "$PROJECT_NAME" ]]; then
+        print_error "Directory $PROJECT_NAME already exists"
+        exit 1
+    fi
+
+    mkdir "$PROJECT_NAME"
+    cd "$PROJECT_NAME"
+    print_success "Created project directory: $PROJECT_NAME"
+
+    # Step 2: Copy and customize Dockerfile
+    print_status "Step 2: Setting up team Dockerfile..."
+    if [[ ! -f "$DOCKERFILE_PATH" ]]; then
+        print_error "Dockerfile template not found: $DOCKERFILE_PATH"
+        exit 1
+    fi
+
+    cp "$DOCKERFILE_PATH" ./Dockerfile.teamcore
+    print_success "Copied Dockerfile template to Dockerfile.teamcore"
+
+    # Step 3: Build shell core image
+    print_status "Step 3: Building shell core image..."
+    docker build -f Dockerfile.teamcore \
+        --build-arg BASE_IMAGE=rocker/r-ver \
+        --build-arg TEAM_NAME="$TEAM_NAME" \
+        --build-arg PROJECT_NAME="$PROJECT_NAME" \
+        -t "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" .
+
+    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" \
+        "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+    print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+
+    # Step 4: Build RStudio core image
+    print_status "Step 4: Building RStudio core image..."
+    docker build -f Dockerfile.teamcore \
+        --build-arg BASE_IMAGE=rocker/rstudio \
+        --build-arg TEAM_NAME="$TEAM_NAME" \
+        --build-arg PROJECT_NAME="$PROJECT_NAME" \
+        -t "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" .
+
+    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" \
+        "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+
+    # Step 5: Push images to Docker Hub
+    print_status "Step 5: Pushing images to Docker Hub..."
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    print_success "Pushed all images to Docker Hub"
+
+    # Step 6: Initialize zzcollab project
+    print_status "Step 6: Initializing zzcollab project..."
+    
+    # Prepare zzcollab arguments
+    ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell"
+    if [[ "$USE_DOTFILES" == true ]]; then
+        if [[ "$DOTFILES_NODOT" == "true" ]]; then
+            ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --dotfiles-nodot $DOTFILES_DIR"
+        else
+            ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --dotfiles $DOTFILES_DIR"
+        fi
+    fi
+    
+    # Run zzcollab setup (calling ourselves recursively but without --init)
+    eval "$0 $ZZCOLLAB_ARGS"
+    print_success "Initialized zzcollab project with custom base image"
+
+    # Step 7: Initialize git repository
+    print_status "Step 7: Initializing git repository..."
+    git init
+    git add .
+    git commit -m "🎉 Initial research project setup
+
+- Complete zzcollab research compendium  
+- Team core images published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
+- Private repository protects unpublished research
+- CI/CD configured for automatic team image updates
+
+🐳 Generated with zzcollab --init
+
+Co-Authored-By: zzcollab <noreply@zzcollab.dev>"
+    print_success "Initialized git repository with initial commit"
+
+    # Step 8: Create private GitHub repository
+    print_status "Step 8: Creating private GitHub repository..."
+
+    # Check if repository already exists
+    if gh repo view "${GITHUB_ACCOUNT}/${PROJECT_NAME}" >/dev/null 2>&1; then
+        print_error "❌ Repository ${GITHUB_ACCOUNT}/${PROJECT_NAME} already exists on GitHub!"
+        echo ""
+        print_status "Options to resolve this:"
+        echo "  1. Delete existing repository: gh repo delete ${GITHUB_ACCOUNT}/${PROJECT_NAME} --confirm"
+        echo "  2. Use a different project name: --project-name PROJECT_NAME_V2"
+        echo "  3. Manual setup: Skip automatic creation and push manually"
+        echo ""
+        print_status "If you want to push to existing repository:"
+        echo "  git remote add origin https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
+        echo "  git push origin main --force  # WARNING: This will overwrite existing content"
+        echo ""
+        exit 1
+    fi
+
+    gh repo create "${GITHUB_ACCOUNT}/${PROJECT_NAME}" \
+        --private \
+        --description "Research project using ZZCOLLAB - team core images: ${TEAM_NAME}/${PROJECT_NAME}core" \
+        --source=. \
+        --remote=origin \
+        --push
+
+    print_success "Created private GitHub repository: ${GITHUB_ACCOUNT}/${PROJECT_NAME}"
+
+    # Final success message
+    print_success "🎉 Team setup completed successfully!"
+    echo ""
+    print_status "What was created:"
+    echo "  📁 Project directory: $PROJECT_NAME/"
+    echo "  🐳 Docker images:"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    echo "  🔒 Private GitHub repo: https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}"
+    echo "  📦 Complete zzcollab research compendium"
+    echo ""
+    print_status "Next steps:"
+    echo "  1. cd $PROJECT_NAME"
+    echo "  2. make docker-zsh    # Start development environment"
+    echo "  3. Start coding your analysis!"
+    echo ""
+    print_status "Team members can now join with:"
+    echo "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
+    echo "  cd $PROJECT_NAME"
+    echo "  zzcollab --team $TEAM_NAME --project-name $PROJECT_NAME --interface shell --dotfiles ~/dotfiles"
+    echo "  make docker-zsh"
+}
+
+#=============================================================================
 # MAIN EXECUTION FUNCTION (identical workflow to original zzcollab.sh)
 #=============================================================================
 
 main() {
-    # Handle help and next-steps options early
+    # Handle initialization mode first
+    if [[ "$INIT_MODE" == "true" ]]; then
+        # Handle help for init mode
+        if [[ "${SHOW_HELP:-false}" == "true" ]]; then
+            show_init_help
+            exit 0
+        fi
+        
+        # Validate init parameters and prerequisites
+        validate_init_parameters
+        validate_init_prerequisites
+        
+        # Run team initialization
+        run_team_initialization
+        exit 0
+    fi
+    
+    # Handle help and next-steps options for normal mode
     if [[ "${SHOW_HELP:-false}" == "true" ]]; then
         show_help
         exit 0
