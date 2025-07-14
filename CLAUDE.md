@@ -7,8 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments. The system consists of:
 
 ### Core Components
-- **Main executable**: `zzcollab.sh` - Primary framework script
-- **Team automation**: `zzcollab-init-team` - Automated team setup script
+- **Main executable**: `zzcollab.sh` - Primary framework script with integrated team initialization
 - **Modular shell system**: `modules/` directory contains core functionality
 - **Docker-first workflow**: All development happens in containers
 - **R package structure**: Standard R package with testthat for testing
@@ -62,14 +61,14 @@ Rscript check_renv_for_commit.R --fix --fail-on-issues    # Auto-fix missing pac
 ### Installation and Setup
 ```bash
 # One-time zzcollab installation
-./install.sh                    # Installs zzcollab and zzcollab-init-team to ~/bin
+./install.sh                    # Installs zzcollab to ~/bin
 export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 ```
 
 ### Core Image Building Workflow
 ```bash
 # Automated team setup (recommended) - handles all image building
-zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
 # Manual core image building (if needed)
 cd /path/to/zzcollab
@@ -99,16 +98,16 @@ docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
 # Developer 1 (Team Lead) - Command Line
 # Run from your preferred projects directory (e.g., ~/projects, ~/work)
 cd ~/projects  # or wherever you keep your projects
-zzcollab-init-team --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
 # Developer 2+ (Team Members) - Command Line
 git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
 zzcollab --team TEAM --project-name PROJECT --interface shell --dotfiles ~/dotfiles
 
-# Note: New projects include expanded package ecosystem (22 packages pre-installed)
+# Note: New projects include expanded package ecosystem (27 packages pre-installed)
 # Including: usethis, pkgdown, rcmdcheck, broom, lme4, survival, car, skimr, visdat, 
-# naniar, targets, rmarkdown, bookdown, knitr, DT, jsonlite, DBI, RSQLite, etc.
+# naniar, targets, rmarkdown, bookdown, knitr, DT, jsonlite, etc.
 ```
 
 ### R-Centric Workflow (Alternative)
@@ -153,10 +152,10 @@ join_project(
 5. Tests are mandatory for all functions and analysis steps
 
 ### Team Collaboration
-1. **Team lead**: Runs `zzcollab-init-team` to create base images and project
+1. **Team lead**: Runs `zzcollab --init` to create base images and project
 2. **Team members**: Clone private repo and build personal development images
 3. **Automated workflow**: CI/CD rebuilds team images when dependencies change
-4. **Collaboration**: Fork-based workflow with pull requests and automated testing
+4. **Collaboration**: Single-repository workflow with pull requests and automated testing
 5. **Documentation**: Complete workflow documented in `workflow.md`
 
 ### Docker Image Strategy
@@ -190,9 +189,8 @@ join_project(
 ```
 
 ### Key Files
-- **install.sh**: Installation script that copies both main executables to ~/bin
-- **zzcollab.sh**: Main framework executable
-- **zzcollab-init-team**: Automated team setup script  
+- **install.sh**: Installation script that copies main executable to ~/bin
+- **zzcollab.sh**: Main framework executable with integrated team initialization
 - **R/utils.R**: R interface functions for complete R-centric workflow
 - **workflow.md**: Complete team collaboration documentation (command-line + R interfaces)
 - **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user guide with R workflow examples
@@ -237,11 +235,11 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 
 ## Automation Features
 
-### zzcollab-init-team Script
+### Consolidated Team Initialization
 - **Purpose**: Automates entire Developer 1 setup workflow
 - **Replaces**: 10+ manual Docker and git commands
 - **Creates**: Team core images, project structure, private GitHub repo
-- **Usage**: `zzcollab-init-team --team-name TEAM --project-name PROJECT`
+- **Usage**: `zzcollab --init --team-name TEAM --project-name PROJECT`
 - **Benefits**: Reduces setup time from hours to minutes
 
 ### Automated Docker Image Management
@@ -300,6 +298,13 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 
 ## Recent Framework Improvements (2025)
 
+### Script Consolidation (January 2025)
+- **Consolidated initialization**: Merged `zzcollab-init-team` functionality into main `zzcollab.sh` script
+- **Unified interface**: Single `--init` flag handles complete team setup workflow
+- **Simplified installation**: Only one script to install and maintain
+- **Improved UX**: Consistent command structure and error handling
+- **Enhanced workflow**: Optional `--prepare-dockerfile` flag for customization workflow
+
 ### Enhanced CI/CD Templates
 - **GitHub Actions optimization**: Fixed YAML syntax errors, removed problematic parameters
 - **Dependency management**: Replaced setup-renv@v2 with setup-r-dependencies@v2 for better compatibility
@@ -320,8 +325,8 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Data quality tools**: skimr, visdat, naniar for data exploration and cleaning
 - **Reproducibility stack**: targets, here, conflicted for workflow management
 - **Reporting ecosystem**: rmarkdown, bookdown, knitr, DT for publication-ready outputs
-- **Data connectivity**: jsonlite, DBI, RSQLite for diverse data sources
-- **Pre-installed in Docker images**: 22 packages (vs 13 previously) for faster development
+- **Data connectivity**: jsonlite for diverse data sources
+- **Pre-installed in Docker images**: 27 packages (vs 13 previously) for faster development
 
 ### Template Robustness
 - **Minimal R package structure**: Removed template artifacts that confused users
