@@ -305,6 +305,13 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Improved UX**: Consistent command structure and error handling
 - **Enhanced workflow**: Optional `--prepare-dockerfile` flag for customization workflow
 
+### Package Ecosystem Refinement (January 2025)
+- **Removed database packages**: Dropped DBI and RSQLite from default template for leaner core
+- **Removed tutorial packages**: Removed tidytuesdayR and palmerpenguins to focus on core analysis tools
+- **Maintained core functionality**: Kept essential packages for data analysis, visualization, and reporting
+- **Updated documentation**: Modified workflow.md and external documentation to reflect package changes
+- **Current package count**: 27 packages optimized for research workflows
+
 ### Enhanced CI/CD Templates
 - **GitHub Actions optimization**: Fixed YAML syntax errors, removed problematic parameters
 - **Dependency management**: Replaced setup-renv@v2 with setup-r-dependencies@v2 for better compatibility
