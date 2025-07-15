@@ -362,6 +362,14 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Force push**: Updated remote repository with cleaned history
 - **Storage efficiency**: Improved repository performance and reduced clone times
 
+### Module Loading Order Optimization (July 2025)
+- **Problem**: Analysis module loaded during startup showed confusing warnings about missing directories
+- **Root cause**: Analysis module checked for directories that structure module creates later
+- **Solution**: Moved analysis module loading to occur after directory structure creation
+- **Loading sequence**: Early modules (core, templates, structure, rpackage, docker, cicd, devtools) → create directories → load analysis module
+- **User experience**: Eliminates misleading warnings during initialization process
+- **Benefits**: Cleaner initialization output, reduced user confusion, logical dependency order
+
 These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Passing CI from day one
 - ✅ Rich package ecosystem pre-installed
@@ -370,3 +378,4 @@ These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Robust build and deployment workflows
 - ✅ Consistent terminology throughout framework
 - ✅ Optimized git history without unnecessary files
+- ✅ Clean initialization process without confusing warnings

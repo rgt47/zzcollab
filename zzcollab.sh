@@ -236,7 +236,8 @@ export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL 
 log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
-modules_to_load=("rpackage" "docker" "analysis" "cicd" "devtools")
+# Note: analysis module is loaded later after directory structure is created
+modules_to_load=("rpackage" "docker" "cicd" "devtools")
 
 for module in "${modules_to_load[@]}"; do
     if [[ -f "$MODULES_DIR/${module}.sh" ]]; then
@@ -902,6 +903,16 @@ main() {
     # Execute setup in same order as original zzcollab.sh
     log_info "📁 Creating project structure..."
     create_directory_structure || exit 1
+    
+    # Load analysis module after directory structure is created
+    if [[ -f "$MODULES_DIR/analysis.sh" ]]; then
+        log_info "Loading analysis module..."
+        # shellcheck source=modules/analysis.sh
+        source "$MODULES_DIR/analysis.sh"
+    else
+        log_error "Analysis module not found: $MODULES_DIR/analysis.sh"
+        exit 1
+    fi
     
     log_info "📦 Creating R package files..."
     create_core_files || exit 1
