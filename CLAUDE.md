@@ -347,9 +347,26 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Build optimization**: Faster CI runs through better caching and dependency management
 - **Error prevention**: Template improvements prevent common CI failures
 
+### Terminology Standardization (July 2025)
+- **Unified naming convention**: Replaced all "paper" references with "report" throughout codebase
+- **Directory structure**: `analysis/paper/` → `analysis/report/` for consistency
+- **Template files**: `paper.Rmd` → `report.Rmd` across all templates and documentation
+- **Configuration updates**: Updated Makefile, docker-compose.yml, and shell modules
+- **Documentation alignment**: All references now use consistent "report" terminology
+- **Benefits**: Eliminates confusion between academic papers and research reports
+
+### Repository Cleanup (July 2025)
+- **Git history optimization**: Removed accidentally committed R package cache files
+- **Size reduction**: Cleaned up binary files and debug symbols from git history
+- **Filter-branch cleanup**: Used git filter-branch to remove cache/ and binary/ directories
+- **Force push**: Updated remote repository with cleaned history
+- **Storage efficiency**: Improved repository performance and reduced clone times
+
 These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Passing CI from day one
 - ✅ Rich package ecosystem pre-installed
 - ✅ Modern GitHub Actions best practices
 - ✅ Clean, minimal R package structure
 - ✅ Robust build and deployment workflows
+- ✅ Consistent terminology throughout framework
+- ✅ Optimized git history without unnecessary files
