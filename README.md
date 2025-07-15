@@ -70,7 +70,7 @@ make help             # See all available commands
 your-project/
 ├── R/                     # Package functions (exported to users)
 ├── analysis/              # Research analysis components
-│   ├── paper/            # Research paper (paper.Rmd → paper.pdf)
+│   ├── report/           # Research report (report.Rmd → report.pdf)
 │   ├── figures/          # Generated plots and visualizations
 │   └── tables/           # Generated statistical tables
 ├── data/                  # Data management

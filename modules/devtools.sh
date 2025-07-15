@@ -415,15 +415,15 @@ dev_test() {
     log_info "Development testing complete!"
 }
 
-# Function: render paper
+# Function: render report
 dev_render() {
-    log_info "Rendering research paper..."
+    log_info "Rendering research report..."
     
-    if [ -f "analysis/paper/paper.Rmd" ]; then
-        Rscript -e "rmarkdown::render('\''analysis/paper/paper.Rmd'\'')" || log_error "Paper rendering failed"
-        log_info "Paper rendered successfully!"
+    if [ -f "analysis/report/report.Rmd" ]; then
+        Rscript -e "rmarkdown::render('\''analysis/report/report.Rmd'\'')" || log_error "Report rendering failed"
+        log_info "Report rendered successfully!"
     else
-        log_error "No paper.Rmd found in analysis/paper/"
+        log_error "No report.Rmd found in analysis/report/"
     fi
 }
 

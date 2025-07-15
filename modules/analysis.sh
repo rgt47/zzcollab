@@ -103,7 +103,7 @@ validate_analysis_structure() {
     )
     
     local -r required_dirs=(
-        "analysis/paper"
+        "analysis/report"
         "analysis/figures"
         "analysis/tables"
         "analysis/templates"
@@ -911,8 +911,8 @@ cat("5. Check test coverage with covr package\\n")'
 
 # Validate that required directories exist for analysis files
 # These should be created by the structure module
-if [[ ! -d "analysis/paper" ]]; then
-    log_warn "analysis/paper directory not found - may need to run structure module first"
+if [[ ! -d "analysis/report" ]]; then
+    log_warn "analysis/report directory not found - may need to run structure module first"
 fi
 
 if [[ ! -d "analysis/figures" ]]; then

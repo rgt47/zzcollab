@@ -82,8 +82,8 @@ create_github_workflows() {
     if copy_template_file "workflows/render-report.yml" ".github/workflows/render-report.yml" "Report rendering workflow"; then
         track_template_file "workflows/render-report.yml" ".github/workflows/render-report.yml"
         log_info "Created automated report rendering workflow"
-        log_info "  - Triggers: changes to analysis/paper/, R/ directories"
-        log_info "  - Actions: render paper.Rmd to PDF, upload artifacts"
+        log_info "  - Triggers: changes to analysis/report/, R/ directories"
+        log_info "  - Actions: render report.Rmd to PDF, upload artifacts"
         log_info "  - Output: downloadable PDF from GitHub Actions tab"
     else
         log_error "Failed to create report rendering workflow"
@@ -321,9 +321,9 @@ show_cicd_summary() {
 - Platform: Ubuntu (configurable for multi-platform)
 - Artifacts: test results and check logs
 
-📄 Paper Rendering:
-- Triggers: changes to analysis/paper/, R/ directories
-- Actions: render paper.Rmd to PDF
+📄 Report Rendering:
+- Triggers: changes to analysis/report/, R/ directories
+- Actions: render report.Rmd to PDF
 - Artifacts: downloadable PDF from Actions tab
 - Integration: automatic on manuscript updates
 
