@@ -59,6 +59,10 @@ cd zzcollab
 cd ~/projects                   # Your preferred projects directory
 zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 
+# Alternative: Auto-detect project name from directory
+mkdir study2024 && cd study2024
+zzcollab --init --team-name mylab --dotfiles ~/dotfiles
+
 # For teams needing custom packages - two-step process:
 # zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
 # Edit study2024/Dockerfile.teamcore to add packages, then:
@@ -77,6 +81,7 @@ cd study2024
 
 # 2. Join project with one command
 zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
+# Note: --project-name can be omitted if current directory name matches project
 
 # 3. Start developing immediately
 make docker-zsh                # → Same environment as team lead
@@ -123,6 +128,10 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 # Complete automated setup - replaces 10+ manual Docker and git commands
 zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 
+# OR auto-detect project name from current directory
+mkdir study2024 && cd study2024
+zzcollab --init --team-name mylab --dotfiles ~/dotfiles
+
 # OR with custom Dockerfile editing:
 zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
 # Edit study2024/Dockerfile.teamcore as needed, then:
@@ -166,6 +175,7 @@ cd study2024
 zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
 # OR for RStudio interface:
 # zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+# Note: --project-name can be omitted if current directory name matches project
 
 # 3. Start development immediately
 make docker-zsh                # Shell interface with vim/tmux

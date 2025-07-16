@@ -44,9 +44,13 @@ which zzcollab                      # Confirm system PATH setup
 
 **Option A: Command-Line Interface**
 ```bash
-# Complete automated setup - replaces all manual Docker and git commands
+# Method 1: Complete automated setup - replaces all manual Docker and git commands
 zzcollab --init --team-name rgt47 --project-name research-study \
     --dotfiles ~/dotfiles
+
+# Method 2: Auto-detect project name from current directory
+mkdir research-study && cd research-study
+zzcollab --init --team-name rgt47 --dotfiles ~/dotfiles
 
 # OR with Dockerfile customization (two-step process):
 # Step 1: Prepare project and Dockerfile for editing
@@ -214,6 +218,7 @@ cd research-project
 # 2. Customize team core image for your project
 TEAM_NAME="rgt47" # the account on dockerhub for hosting the core images
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
+# Note: With new auto-detection, you can also just run: zzcollab --init --team-name rgt47
 # Copy and customize Dockerfile.pluspackages for your team's needs
 cp templates/Dockerfile.pluspackages ./Dockerfile.teamcore
 
@@ -474,6 +479,7 @@ cd png1
 # Option A: Command-Line Interface
 zzcollab --team rgt47 --project-name png1 --interface shell \
     --dotfiles ~/dotfiles
+# Note: --project-name can be omitted if current directory name matches project
 
 # Option B: R Interface (R-Centric Workflow)  
 # R
