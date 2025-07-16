@@ -185,7 +185,7 @@ join_project(
 │   └── validation/      # Data quality checks
 ├── modules/             # Shell framework components (zzcollab only)
 ├── templates/           # Project scaffolding (zzcollab only)
-└── Symbolic links (a→data, n→analysis, p→analysis/report, etc.)
+└── Navigation scripts (optional: navigation_scripts.sh creates a, n, p, etc.)
 ```
 
 ### Key Files
@@ -337,7 +337,7 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 
 ### Template Robustness
 - **Minimal R package structure**: Removed template artifacts that confused users
-- **Comprehensive .Rbuildignore**: Prevents symbolic links and project files from breaking builds
+- **Comprehensive .Rbuildignore**: Prevents project files from breaking R package builds
 - **Clean test templates**: Simple package loading tests instead of complex examples
 - **Better error messages**: Improved user experience during setup and development
 
@@ -378,6 +378,14 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **CI reliability**: Script now runs without type errors in GitHub Actions environment
 - **Benefits**: Stable CI/CD pipeline, cleaner output, reliable dependency validation
 
+### Navigation Scripts Replace Symbolic Links (July 2025)
+- **Problem**: One-letter symbolic links (a, n, p, etc.) were causing `devtools::check()` to fail
+- **Root cause**: R package builds don't handle symbolic links well in package structure
+- **Solution**: Replaced symbolic link creation with `navigation_scripts.sh` generator
+- **Implementation**: Creates shell scripts that use `exec "$SHELL"` to navigate directories
+- **Usage**: Run `./navigation_scripts.sh` to create navigation shortcuts, then use `./a`, `./n`, etc.
+- **Benefits**: Maintains convenient navigation while avoiding R package build conflicts
+
 These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Passing CI from day one
 - ✅ Rich package ecosystem pre-installed
@@ -387,3 +395,4 @@ These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Consistent terminology throughout framework
 - ✅ Optimized git history without unnecessary files
 - ✅ Clean initialization process without confusing warnings
+- ✅ Navigation scripts compatible with R package builds
