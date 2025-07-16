@@ -54,6 +54,7 @@ DOCKERFILE_PATH=""
 INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
+MINIMAL_PACKAGES=false
 
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
@@ -114,6 +115,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --prepare-dockerfile)
             PREPARE_DOCKERFILE=true
+            shift
+            ;;
+        --minimal)
+            MINIMAL_PACKAGES=true
             shift
             ;;
         --next-steps)
@@ -637,11 +642,17 @@ validate_init_parameters() {
 
     if [[ -z "$DOCKERFILE_PATH" ]]; then
         # Try to find the Dockerfile template in multiple locations
+        # Choose template based on minimal flag
+        TEMPLATE_NAME="Dockerfile.pluspackages"
+        if [[ "$MINIMAL_PACKAGES" == "true" ]]; then
+            TEMPLATE_NAME="Dockerfile.minimal"
+        fi
+        
         POSSIBLE_PATHS=(
-            "templates/Dockerfile.pluspackages"                                    # Current directory
-            "$SCRIPT_DIR/templates/Dockerfile.pluspackages"                       # Same directory as script
-            "$SCRIPT_DIR/zzcollab-support/templates/Dockerfile.pluspackages"      # Installed location
-            "$(dirname "$SCRIPT_DIR")/templates/Dockerfile.pluspackages"          # Parent directory
+            "templates/$TEMPLATE_NAME"                                    # Current directory
+            "$SCRIPT_DIR/templates/$TEMPLATE_NAME"                       # Same directory as script
+            "$SCRIPT_DIR/zzcollab-support/templates/$TEMPLATE_NAME"      # Installed location
+            "$(dirname "$SCRIPT_DIR")/templates/$TEMPLATE_NAME"          # Parent directory
         )
         
         for path in "${POSSIBLE_PATHS[@]}"; do
@@ -652,12 +663,12 @@ validate_init_parameters() {
         done
         
         if [[ -z "$DOCKERFILE_PATH" ]]; then
-            print_error "Could not find Dockerfile.pluspackages template"
+            print_error "Could not find $TEMPLATE_NAME template"
             print_error "Searched in:"
             for path in "${POSSIBLE_PATHS[@]}"; do
                 print_error "  - $path"
             done
-            print_error "Please specify --dockerfile path or ensure templates/Dockerfile.pluspackages exists"
+            print_error "Please specify --dockerfile path or ensure templates/$TEMPLATE_NAME exists"
             exit 1
         fi
     fi

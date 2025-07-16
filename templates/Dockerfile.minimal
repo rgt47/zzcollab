@@ -1,0 +1,81 @@
+ARG BASE_IMAGE=rocker/r-ver
+ARG R_VERSION=latest
+FROM ${BASE_IMAGE}:${R_VERSION}
+
+# Install system dependencies
+RUN apt-get update --allow-insecure-repositories && \
+    apt-get install -y --allow-unauthenticated \
+    git \
+    ssh \
+    curl \
+    wget \
+    vim \
+    tmux \
+    zsh \
+    build-essential \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    libgit2-dev \
+    man-db \
+    pandoc \
+    tree \
+    ripgrep \
+    eza \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (required for coc.nvim and other vim plugins)
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs
+
+# Install TinyTeX
+RUN R -e "install.packages('tinytex')" && \
+    R -e "tinytex::install_tinytex()" && \
+    /root/.TinyTeX/bin/*/tlmgr path add
+
+# Build arguments for team customization
+ARG TEAM_NAME=rgt47
+ARG PROJECT_NAME=r-minimal
+ARG ADDITIONAL_PACKAGES=""
+
+# Add metadata labels
+LABEL maintainer="${TEAM_NAME}"
+LABEL project="${PROJECT_NAME}"
+LABEL org.opencontainers.image.title="ZZCOLLAB Team Core Image (Minimal)"
+LABEL org.opencontainers.image.description="Team-specific R environment with minimal core packages"
+LABEL org.opencontainers.image.vendor="ZZCOLLAB"
+
+# Create non-root user with zsh as default shell
+ARG USERNAME=analyst
+RUN useradd --create-home --shell /bin/zsh ${USERNAME}
+
+# Install minimal R packages for fast initialization
+# Additional packages should be added through iterative development workflow
+RUN --mount=type=cache,target=/tmp/downloaded_packages \
+    R -e "minimal_packages <- c( \
+        # Essential package management \
+        'renv', 'remotes', \
+        # Core development tools \
+        'devtools', 'usethis', \
+        # Project management \
+        'here', 'conflicted', \
+        # Basic reporting \
+        'rmarkdown', 'knitr' \
+    ); \
+    additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else character(0); \
+    all_packages <- c(minimal_packages, additional_packages); \
+    install.packages(all_packages, repos = c(CRAN = 'https://cloud.r-project.org'))"
+
+# Give analyst user write permission to R library directory
+RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+
+# Set working directory and ensure user owns it
+WORKDIR /home/${USERNAME}/project
+RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/project
