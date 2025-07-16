@@ -86,7 +86,8 @@ RUN vim +PlugInstall +qall || true
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 # Install the research compendium as a package (analyst has write permissions)
-RUN R -e "remotes::install_local('.', dependencies = TRUE)"
+# Use standard R installation approach that works with any R setup
+RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
 
 # Set default shell and working directory
 WORKDIR /home/${USERNAME}/project
