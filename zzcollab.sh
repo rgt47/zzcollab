@@ -936,8 +936,8 @@ main() {
     log_info "🛠️ Creating development tools..."
     create_makefile || exit 1
     
-    log_info "🔗 Creating symbolic links..."
-    create_symbolic_links || exit 1
+    log_info "🔗 Creating navigation scripts..."
+    create_navigation_scripts || exit 1
     
     # Extract R version for Docker build
     log_info "🔍 Detecting R version..."

@@ -123,14 +123,14 @@ create_directory_structure() {
 }
 
 #=============================================================================
-# SYMBOLIC LINKS CREATION (extracted from lines 623-646)
+# NAVIGATION SCRIPTS CREATION (replaces symbolic links)
 #=============================================================================
 
-# Function: create_symbolic_links
-# Purpose: Creates convenience symbolic links for quick navigation
-# Creates: 10 single-letter symlinks pointing to frequently accessed directories
+# Function: create_navigation_scripts
+# Purpose: Creates navigation_scripts.sh that generates one-letter navigation scripts
+# Creates: A single navigation_scripts.sh file that can create navigation shortcuts
 #
-# Symbolic Links Created:
+# Navigation Scripts Created:
 #   a → ./data                 - Quick access to data directory
 #   n → ./analysis             - Quick access to analysis directory
 #   f → ./analysis/figures     - Quick access to figures
@@ -140,75 +140,137 @@ create_directory_structure() {
 #   e → ./tests                - Quick access to tests
 #   o → ./docs                 - Quick access to documentation
 #   c → ./archive              - Quick access to archive
-#   p → ./analysis/report       - Quick access to paper directory
+#   p → ./analysis/report      - Quick access to report directory
 #
 # Usage Examples:
-#   cd a        # Go to data directory
-#   ls f        # List figures
-#   vim p/*.Rmd # Edit paper files
+#   ./navigation_scripts.sh    # Create navigation scripts
+#   ./a                        # Go to data directory
+#   ./n                        # Go to analysis directory
 #
-# Safety: Removes existing symlinks first to avoid conflicts
-# Tracking: All created symlinks are tracked in manifest for uninstall
-create_symbolic_links() {
-    log_info "Creating symbolic links for convenience..."
+# Note: Creates shell scripts instead of symbolic links to avoid devtools::check() issues
+create_navigation_scripts() {
+    log_info "Creating navigation scripts..."
     
-    # Remove existing symlinks to avoid conflicts
-    # Only remove if they are actually symbolic links (not files or directories)
-    local symlinks=("a" "n" "f" "t" "s" "m" "e" "o" "c" "p")
-    for link in "${symlinks[@]}"; do
-        if [[ -L "$link" ]]; then
-            rm "$link"
-            log_info "Removed existing symlink: $link"
-        fi
-    done
-    
-    # Create new symlinks using exact same approach as original zzcollab.sh
-    # This preserves the exact behavior and avoids associative array issues
-    local created_count=0
-    
-    # Create symlinks one by one (same as original)
-    if [[ -d "./data" ]]; then
-        ln -s ./data a && track_symlink "a" "./data" && log_info "Created symlink: a → ./data" && ((created_count++))
-    fi
-    
-    if [[ -d "./analysis" ]]; then
-        ln -s ./analysis n && track_symlink "n" "./analysis" && log_info "Created symlink: n → ./analysis" && ((created_count++))
-    fi
-    
-    if [[ -d "./analysis/figures" ]]; then
-        ln -s ./analysis/figures f && track_symlink "f" "./analysis/figures" && log_info "Created symlink: f → ./analysis/figures" && ((created_count++))
-    fi
-    
-    if [[ -d "./analysis/tables" ]]; then
-        ln -s ./analysis/tables t && track_symlink "t" "./analysis/tables" && log_info "Created symlink: t → ./analysis/tables" && ((created_count++))
-    fi
-    
-    if [[ -d "./scripts" ]]; then
-        ln -s ./scripts s && track_symlink "s" "./scripts" && log_info "Created symlink: s → ./scripts" && ((created_count++))
-    fi
-    
-    if [[ -d "./man" ]]; then
-        ln -s ./man m && track_symlink "m" "./man" && log_info "Created symlink: m → ./man" && ((created_count++))
-    fi
-    
-    if [[ -d "./tests" ]]; then
-        ln -s ./tests e && track_symlink "e" "./tests" && log_info "Created symlink: e → ./tests" && ((created_count++))
-    fi
-    
-    if [[ -d "./docs" ]]; then
-        ln -s ./docs o && track_symlink "o" "./docs" && log_info "Created symlink: o → ./docs" && ((created_count++))
-    fi
-    
-    if [[ -d "./archive" ]]; then
-        ln -s ./archive c && track_symlink "c" "./archive" && log_info "Created symlink: c → ./archive" && ((created_count++))
-    fi
-    
-    if [[ -d "./analysis/report" ]]; then
-        ln -s ./analysis/report p && track_symlink "p" "./analysis/report" && log_info "Created symlink: p → ./analysis/report" && ((created_count++))
-    fi
-    
-    log_success "Symbolic links created ($created_count links)"
-    log_info "Quick navigation: cd a (data), cd n (analysis), cd p (report), etc."
+    # Create navigation_scripts.sh that generates one-letter navigation scripts
+    cat > navigation_scripts.sh << 'EOF'
+#!/bin/bash
+# Navigation Scripts Generator
+# Creates one-letter shell scripts for quick directory navigation
+# Usage: ./navigation_scripts.sh
+
+echo "Creating navigation scripts..."
+
+# Remove existing navigation scripts
+rm -f a n f t s m e o c p
+
+# Create navigation scripts for existing directories
+if [[ -d "./data" ]]; then
+    cat > a << 'SCRIPT'
+#!/bin/bash
+cd ./data
+exec "$SHELL"
+SCRIPT
+    chmod +x a
+    echo "Created: a → ./data"
+fi
+
+if [[ -d "./analysis" ]]; then
+    cat > n << 'SCRIPT'
+#!/bin/bash
+cd ./analysis
+exec "$SHELL"
+SCRIPT
+    chmod +x n
+    echo "Created: n → ./analysis"
+fi
+
+if [[ -d "./analysis/figures" ]]; then
+    cat > f << 'SCRIPT'
+#!/bin/bash
+cd ./analysis/figures
+exec "$SHELL"
+SCRIPT
+    chmod +x f
+    echo "Created: f → ./analysis/figures"
+fi
+
+if [[ -d "./analysis/tables" ]]; then
+    cat > t << 'SCRIPT'
+#!/bin/bash
+cd ./analysis/tables
+exec "$SHELL"
+SCRIPT
+    chmod +x t
+    echo "Created: t → ./analysis/tables"
+fi
+
+if [[ -d "./scripts" ]]; then
+    cat > s << 'SCRIPT'
+#!/bin/bash
+cd ./scripts
+exec "$SHELL"
+SCRIPT
+    chmod +x s
+    echo "Created: s → ./scripts"
+fi
+
+if [[ -d "./man" ]]; then
+    cat > m << 'SCRIPT'
+#!/bin/bash
+cd ./man
+exec "$SHELL"
+SCRIPT
+    chmod +x m
+    echo "Created: m → ./man"
+fi
+
+if [[ -d "./tests" ]]; then
+    cat > e << 'SCRIPT'
+#!/bin/bash
+cd ./tests
+exec "$SHELL"
+SCRIPT
+    chmod +x e
+    echo "Created: e → ./tests"
+fi
+
+if [[ -d "./docs" ]]; then
+    cat > o << 'SCRIPT'
+#!/bin/bash
+cd ./docs
+exec "$SHELL"
+SCRIPT
+    chmod +x o
+    echo "Created: o → ./docs"
+fi
+
+if [[ -d "./archive" ]]; then
+    cat > c << 'SCRIPT'
+#!/bin/bash
+cd ./archive
+exec "$SHELL"
+SCRIPT
+    chmod +x c
+    echo "Created: c → ./archive"
+fi
+
+if [[ -d "./analysis/report" ]]; then
+    cat > p << 'SCRIPT'
+#!/bin/bash
+cd ./analysis/report
+exec "$SHELL"
+SCRIPT
+    chmod +x p
+    echo "Created: p → ./analysis/report"
+fi
+
+echo "Navigation scripts created successfully!"
+echo "Usage: ./a (data), ./n (analysis), ./p (report), etc."
+EOF
+
+    chmod +x navigation_scripts.sh
+    log_success "Navigation scripts generator created: navigation_scripts.sh"
+    log_info "Run './navigation_scripts.sh' to create navigation shortcuts"
 }
 
 #=============================================================================
