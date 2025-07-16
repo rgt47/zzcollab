@@ -511,6 +511,7 @@ OPTIONAL:
     -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
     -m, --minimal              Use minimal package set for faster initialization (8 packages vs 27)
     -u, --ultra-minimal        Use ultra-minimal package set for fastest initialization (2 packages vs 27)
+    -B, --bare-minimum         Use bare-minimum package set for fastest initialization (0 packages, no TinyTeX)
     -h, --help                 Show this help message
 
 EXAMPLES:
@@ -527,6 +528,9 @@ EXAMPLES:
     
     # Ultra-fast setup with ultra-minimal packages (2 packages vs 27 - fastest initialization)
     $0 -i -t rgt47 -p research-study -u -d ~/dotfiles
+    
+    # Bare-minimum setup (0 packages, no TinyTeX - fastest possible initialization)
+    $0 -i -t rgt47 -p research-study -B -d ~/dotfiles
     
     # Alternative: Create directory first, then auto-detect project name
     mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
@@ -662,7 +666,9 @@ validate_init_parameters() {
         # Try to find the Dockerfile template in multiple locations
         # Choose template based on minimal flags
         TEMPLATE_NAME="Dockerfile.pluspackages"
-        if [[ "$ULTRA_MINIMAL_PACKAGES" == "true" ]]; then
+        if [[ "$BARE_MINIMUM_PACKAGES" == "true" ]]; then
+            TEMPLATE_NAME="Dockerfile.bare-minimum"
+        elif [[ "$ULTRA_MINIMAL_PACKAGES" == "true" ]]; then
             TEMPLATE_NAME="Dockerfile.ultra-minimal"
         elif [[ "$MINIMAL_PACKAGES" == "true" ]]; then
             TEMPLATE_NAME="Dockerfile.minimal"
@@ -719,7 +725,7 @@ run_team_initialization() {
     echo "  GitHub Account: $GITHUB_ACCOUNT"
     echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
     echo "  Dockerfile: $DOCKERFILE_PATH"
-    echo "  Package Set: $(if [[ "$ULTRA_MINIMAL_PACKAGES" == true ]]; then echo "Ultra-Minimal (2 packages)"; elif [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (8 packages)"; else echo "Full (27 packages)"; fi)"
+    echo "  Package Set: $(if [[ "$BARE_MINIMUM_PACKAGES" == true ]]; then echo "Bare-Minimum (0 packages, no TinyTeX)"; elif [[ "$ULTRA_MINIMAL_PACKAGES" == true ]]; then echo "Ultra-Minimal (2 packages)"; elif [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (8 packages)"; else echo "Full (27 packages)"; fi)"
     echo "  Mode: $(if [[ "$PREPARE_DOCKERFILE" == true ]]; then echo "Prepare for editing"; else echo "Complete setup"; fi)"
     echo ""
 

@@ -35,10 +35,9 @@ RUN apt-get update --allow-insecure-repositories && \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install TinyTeX
-RUN R -e "install.packages('tinytex')" && \
-    R -e "tinytex::install_tinytex()" && \
-    /root/.TinyTeX/bin/*/tlmgr path add
+# SKIP TinyTeX installation for fastest possible build
+# TinyTeX can be installed during development if needed:
+# R -e "install.packages('tinytex'); tinytex::install_tinytex()"
 
 # Build arguments for team customization
 ARG TEAM_NAME=rgt47
