@@ -122,6 +122,10 @@ while [[ $# -gt 0 ]]; do
             MINIMAL_PACKAGES=true
             shift
             ;;
+        --ultra-minimal|-u)
+            ULTRA_MINIMAL_PACKAGES=true
+            shift
+            ;;
         --next-steps)
             # We'll implement this after modules are loaded
             SHOW_NEXT_STEPS=true
@@ -501,6 +505,7 @@ OPTIONAL:
     -f, --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
     -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
     -m, --minimal              Use minimal package set for faster initialization (8 packages vs 27)
+    -u, --ultra-minimal        Use ultra-minimal package set for fastest initialization (2 packages vs 27)
     -h, --help                 Show this help message
 
 EXAMPLES:
@@ -514,6 +519,9 @@ EXAMPLES:
     
     # Fast setup with minimal packages (8 packages vs 27 - faster initialization)
     $0 -i -t rgt47 -p research-study -m -d ~/dotfiles
+    
+    # Ultra-fast setup with ultra-minimal packages (2 packages vs 27 - fastest initialization)
+    $0 -i -t rgt47 -p research-study -u -d ~/dotfiles
     
     # Alternative: Create directory first, then auto-detect project name
     mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
@@ -647,9 +655,11 @@ validate_init_parameters() {
 
     if [[ -z "$DOCKERFILE_PATH" ]]; then
         # Try to find the Dockerfile template in multiple locations
-        # Choose template based on minimal flag
+        # Choose template based on minimal flags
         TEMPLATE_NAME="Dockerfile.pluspackages"
-        if [[ "$MINIMAL_PACKAGES" == "true" ]]; then
+        if [[ "$ULTRA_MINIMAL_PACKAGES" == "true" ]]; then
+            TEMPLATE_NAME="Dockerfile.ultra-minimal"
+        elif [[ "$MINIMAL_PACKAGES" == "true" ]]; then
             TEMPLATE_NAME="Dockerfile.minimal"
         fi
         
@@ -704,7 +714,7 @@ run_team_initialization() {
     echo "  GitHub Account: $GITHUB_ACCOUNT"
     echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
     echo "  Dockerfile: $DOCKERFILE_PATH"
-    echo "  Package Set: $(if [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (8 packages)"; else echo "Full (27 packages)"; fi)"
+    echo "  Package Set: $(if [[ "$ULTRA_MINIMAL_PACKAGES" == true ]]; then echo "Ultra-Minimal (2 packages)"; elif [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (8 packages)"; else echo "Full (27 packages)"; fi)"
     echo "  Mode: $(if [[ "$PREPARE_DOCKERFILE" == true ]]; then echo "Prepare for editing"; else echo "Complete setup"; fi)"
     echo ""
 
