@@ -57,23 +57,23 @@ cd zzcollab
 
 # 2. Create team project (automated)
 cd ~/projects                   # Your preferred projects directory
-zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
 # Fast setup with minimal packages (8 vs 27 packages - ~70% faster)
-zzcollab --init --team-name mylab --project-name study2024 --minimal --dotfiles ~/dotfiles
+zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
 
 # Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
-zzcollab --init --team-name mylab --dotfiles ~/dotfiles
+zzcollab -i -t mylab -d ~/dotfiles
 
 # Auto-detect with minimal packages
 mkdir study2024 && cd study2024
-zzcollab --init --team-name mylab --minimal --dotfiles ~/dotfiles
+zzcollab -i -t mylab -m -d ~/dotfiles
 
 # For teams needing custom packages - two-step process:
-# zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
+# zzcollab -i -t mylab -p study2024 -P
 # Edit study2024/Dockerfile.teamcore to add packages, then:
-# zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+# zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
 # 3. Start developing immediately
 cd study2024
@@ -87,7 +87,7 @@ git clone https://github.com/mylab/study2024.git
 cd study2024
 
 # 2. Join project with one command
-zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles
 # Note: --project-name can be omitted if current directory name matches project
 
 # 3. Start developing immediately
@@ -133,23 +133,23 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 **Option A: Command-Line Interface**
 ```bash
 # Complete automated setup - replaces 10+ manual Docker and git commands
-zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
 # Fast setup with minimal packages (8 vs 27 packages - ~70% faster initialization)
-zzcollab --init --team-name mylab --project-name study2024 --minimal --dotfiles ~/dotfiles
+zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
 
 # OR auto-detect project name from current directory
 mkdir study2024 && cd study2024
-zzcollab --init --team-name mylab --dotfiles ~/dotfiles
+zzcollab -i -t mylab -d ~/dotfiles
 
 # Auto-detect with minimal packages
 mkdir study2024 && cd study2024
-zzcollab --init --team-name mylab --minimal --dotfiles ~/dotfiles
+zzcollab -i -t mylab -m -d ~/dotfiles
 
 # OR with custom Dockerfile editing:
-zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
+zzcollab -i -t mylab -p study2024 -P
 # Edit study2024/Dockerfile.teamcore as needed, then:
-zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 ```
 
 **Option B: R Interface (R-Centric Workflow)**
@@ -186,9 +186,9 @@ git clone https://github.com/mylab/study2024.git
 cd study2024
 
 # 2. Join project with automated environment setup
-zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles
 # OR for RStudio interface:
-# zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+# zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles
 # Note: --project-name can be omitted if current directory name matches project
 
 # 3. Start development immediately

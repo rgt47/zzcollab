@@ -45,28 +45,24 @@ which zzcollab                      # Confirm system PATH setup
 **Option A: Command-Line Interface**
 ```bash
 # Method 1: Complete automated setup - replaces all manual Docker and git commands
-zzcollab --init --team-name rgt47 --project-name research-study \
-    --dotfiles ~/dotfiles
+zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 
 # Method 1a: Fast setup with minimal packages (8 packages vs 27 - faster initialization)
-zzcollab --init --team-name rgt47 --project-name research-study \
-    --minimal --dotfiles ~/dotfiles
+zzcollab -i -t rgt47 -p research-study -m -d ~/dotfiles
 
 # Method 2: Auto-detect project name from current directory
 mkdir research-study && cd research-study
-zzcollab --init --team-name rgt47 --dotfiles ~/dotfiles
+zzcollab -i -t rgt47 -d ~/dotfiles
 
 # Method 2a: Auto-detect with minimal packages
 mkdir research-study && cd research-study
-zzcollab --init --team-name rgt47 --minimal --dotfiles ~/dotfiles
+zzcollab -i -t rgt47 -m -d ~/dotfiles
 
 # OR with Dockerfile customization (two-step process):
 # Step 1: Prepare project and Dockerfile for editing
-zzcollab --init --team-name rgt47 --project-name research-study \
-    --prepare-dockerfile
+zzcollab -i -t rgt47 -p research-study -P
 # Step 2: Edit research-study/Dockerfile.teamcore, then run:
-zzcollab --init --team-name rgt47 --project-name research-study \
-    --dotfiles ~/dotfiles
+zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 ```
 
 **Option B: R Interface (R-Centric Workflow)**

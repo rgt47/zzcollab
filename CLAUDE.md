@@ -392,8 +392,18 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Time savings**: Reduces initialization time by ~70% (5-10 minutes → 2-3 minutes)
 - **Iterative workflow**: Teams add packages incrementally through normal development process
 - **Templates**: Created `Dockerfile.minimal` with core packages: renv, remotes, devtools, usethis, here, conflicted, rmarkdown, knitr
-- **Usage**: `zzcollab --init --team-name mylab --project-name study --minimal`
+- **Usage**: `zzcollab -i -t mylab -p study -m` (short flags) or `zzcollab --init --team-name mylab --project-name study --minimal`
 - **Benefits**: Faster setup for teams who prefer lean base images and iterative package addition
+
+### One-Letter Flag Implementation (July 2025)
+- **CLI best practices**: Added comprehensive one-letter flags for all major options
+- **Improved UX**: Faster typing and more intuitive command structure following Unix conventions
+- **Key mappings**: `-i` (--init), `-t` (--team-name), `-p` (--project-name), `-m` (--minimal), `-d` (--dotfiles)
+- **Full compatibility**: All long flags continue to work alongside short flags
+- **Mixed usage**: Can combine short and long flags in same command
+- **Capital letters**: Used for variants: `-d` vs `-D` (dotfiles-nodot), `-I` (interface), `-P` (prepare-dockerfile)
+- **Documentation**: Updated all help text, examples, and documentation with short flag usage
+- **Benefits**: Faster team setup commands, better developer experience, industry-standard CLI interface
 
 These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Passing CI from day one
