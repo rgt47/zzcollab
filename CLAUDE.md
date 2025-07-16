@@ -72,14 +72,9 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
 # OR with long flags: zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
-# Fast setup with minimal packages (8 vs 27 packages - ~70% faster)
+# Fast setup with minimal packages (5 vs 39 packages - no Docker packages, faster initialization)
 zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
 
-# Ultra-fast setup with ultra-minimal packages (2 vs 27 packages - ~90% faster)
-zzcollab -i -t TEAM -p PROJECT -u -d ~/dotfiles
-
-# Bare-minimum setup (0 packages, no TinyTeX - fastest possible initialization)
-zzcollab -i -t TEAM -p PROJECT -B -d ~/dotfiles
 
 # Manual core image building (if needed)
 cd /path/to/zzcollab
@@ -111,8 +106,6 @@ docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
 cd ~/projects  # or wherever you keep your projects
 zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
 # Fast setup with minimal packages: zzcollab -i -t TEAM -p PROJECT -m [-d ~/dotfiles]
-# Ultra-fast setup with ultra-minimal packages: zzcollab -i -t TEAM -p PROJECT -u [-d ~/dotfiles]
-# Bare-minimum setup (fastest possible): zzcollab -i -t TEAM -p PROJECT -B [-d ~/dotfiles]
 
 # Developer 2+ (Team Members) - Command Line
 git clone https://github.com/TEAM/PROJECT.git

@@ -47,14 +47,9 @@ which zzcollab                      # Confirm system PATH setup
 # Method 1: Complete automated setup - replaces all manual Docker and git commands
 zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 
-# Method 1a: Fast setup with minimal packages (8 packages vs 27 - faster initialization)
+# Method 1a: Fast setup with minimal packages (5 packages vs 39 - no Docker packages, faster initialization)
 zzcollab -i -t rgt47 -p research-study -m -d ~/dotfiles
 
-# Method 1b: Ultra-fast setup with ultra-minimal packages (2 packages vs 27 - fastest initialization)
-zzcollab -i -t rgt47 -p research-study -u -d ~/dotfiles
-
-# Method 1c: Bare-minimum setup (0 packages, no TinyTeX - fastest possible initialization)
-zzcollab -i -t rgt47 -p research-study -B -d ~/dotfiles
 
 # Method 2: Auto-detect project name from current directory
 mkdir research-study && cd research-study
@@ -64,13 +59,6 @@ zzcollab -i -t rgt47 -d ~/dotfiles
 mkdir research-study && cd research-study
 zzcollab -i -t rgt47 -m -d ~/dotfiles
 
-# Method 2b: Auto-detect with ultra-minimal packages
-mkdir research-study && cd research-study
-zzcollab -i -t rgt47 -u -d ~/dotfiles
-
-# Method 2c: Auto-detect with bare-minimum packages
-mkdir research-study && cd research-study
-zzcollab -i -t rgt47 -B -d ~/dotfiles
 
 # OR with Dockerfile customization (two-step process):
 # Step 1: Prepare project and Dockerfile for editing
@@ -240,12 +228,8 @@ PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # Copy and customize Dockerfile for your team's needs
 # For full package set (27 packages):
 cp templates/Dockerfile.pluspackages ./Dockerfile.teamcore
-# OR for minimal package set (8 packages - faster builds):
+# OR for minimal package set (5 packages, no Docker packages - faster builds):
 cp templates/Dockerfile.minimal ./Dockerfile.teamcore
-# OR for ultra-minimal package set (2 packages - fastest builds):
-cp templates/Dockerfile.ultra-minimal ./Dockerfile.teamcore
-# OR for bare-minimum package set (0 packages, no TinyTeX - fastest possible builds):
-cp templates/Dockerfile.bare-minimum ./Dockerfile.teamcore
 
 # Edit Dockerfile.teamcore to add your team's specific R packages and tools:
 vim Dockerfile.teamcore

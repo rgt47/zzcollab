@@ -59,14 +59,9 @@ cd zzcollab
 cd ~/projects                   # Your preferred projects directory
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
-# Fast setup with minimal packages (8 vs 27 packages - ~70% faster)
+# Fast setup with minimal packages (5 vs 39 packages - no Docker packages, faster initialization)
 zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
 
-# Ultra-fast setup with ultra-minimal packages (2 vs 27 packages - ~90% faster)
-zzcollab -i -t mylab -p study2024 -u -d ~/dotfiles
-
-# Bare-minimum setup (0 packages, no TinyTeX - fastest possible initialization)
-zzcollab -i -t mylab -p study2024 -B -d ~/dotfiles
 
 # Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
@@ -76,13 +71,6 @@ zzcollab -i -t mylab -d ~/dotfiles
 mkdir study2024 && cd study2024
 zzcollab -i -t mylab -m -d ~/dotfiles
 
-# Auto-detect with ultra-minimal packages
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -u -d ~/dotfiles
-
-# Auto-detect with bare-minimum packages
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -B -d ~/dotfiles
 
 # For teams needing custom packages - two-step process:
 # zzcollab -i -t mylab -p study2024 -P
@@ -149,14 +137,9 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 # Complete automated setup - replaces 10+ manual Docker and git commands
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
-# Fast setup with minimal packages (8 vs 27 packages - ~70% faster initialization)
+# Fast setup with minimal packages (5 vs 39 packages - no Docker packages, faster initialization)
 zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
 
-# Ultra-fast setup with ultra-minimal packages (2 vs 27 packages - ~90% faster initialization)
-zzcollab -i -t mylab -p study2024 -u -d ~/dotfiles
-
-# Bare-minimum setup (0 packages, no TinyTeX - fastest possible initialization)
-zzcollab -i -t mylab -p study2024 -B -d ~/dotfiles
 
 # OR auto-detect project name from current directory
 mkdir study2024 && cd study2024
@@ -166,13 +149,6 @@ zzcollab -i -t mylab -d ~/dotfiles
 mkdir study2024 && cd study2024
 zzcollab -i -t mylab -m -d ~/dotfiles
 
-# Auto-detect with ultra-minimal packages
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -u -d ~/dotfiles
-
-# Auto-detect with bare-minimum packages
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -B -d ~/dotfiles
 
 # OR with custom Dockerfile editing:
 zzcollab -i -t mylab -p study2024 -P

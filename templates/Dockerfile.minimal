@@ -56,22 +56,9 @@ LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
-# Install minimal R packages for fast initialization
-# Additional packages should be added through iterative development workflow
-RUN --mount=type=cache,target=/tmp/downloaded_packages \
-    R -e "minimal_packages <- c( \
-        # Essential package management \
-        'renv', 'remotes', \
-        # Core development tools \
-        'devtools', 'usethis', \
-        # Project management \
-        'here', 'conflicted', \
-        # Basic reporting \
-        'rmarkdown', 'knitr' \
-    ); \
-    additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else character(0); \
-    all_packages <- c(minimal_packages, additional_packages); \
-    install.packages(all_packages, repos = c(CRAN = 'https://cloud.r-project.org'))"
+# MINIMAL APPROACH: No R packages installed at build time
+# Only essential packages installed via renv.lock during runtime
+# This eliminates Docker build time while maintaining functionality
 
 # Give analyst user write permission to R library directory
 RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library

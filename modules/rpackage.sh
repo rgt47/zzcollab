@@ -83,9 +83,15 @@ create_core_files() {
     log_info "Creating core R package files..."
     
     # DESCRIPTION file - R package metadata and dependencies
-    # Uses template with variable substitution for author info, package name, etc.
-    if copy_template_file "DESCRIPTION" "DESCRIPTION" "DESCRIPTION file"; then
-        track_template_file "DESCRIPTION" "DESCRIPTION"
+    # Choose template based on minimal flag for optimized package sets
+    local description_template="DESCRIPTION"
+    if [[ "${MINIMAL_PACKAGES:-}" == "true" ]]; then
+        description_template="DESCRIPTION.minimal"
+        log_info "Using minimal DESCRIPTION template for faster initialization"
+    fi
+    
+    if copy_template_file "$description_template" "DESCRIPTION" "DESCRIPTION file"; then
+        track_template_file "$description_template" "DESCRIPTION"
         log_info "Created DESCRIPTION file with package metadata"
     else
         log_error "Failed to create DESCRIPTION file"
