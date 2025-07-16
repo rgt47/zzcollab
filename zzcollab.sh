@@ -291,6 +291,9 @@ EXAMPLES:
     $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
     $0 --init --team-name mylab --project-name study2024 --github-account myorg
     
+    # Alternative: Create directory first, then run in it (project name auto-detected)
+    mkdir png1 && cd png1 && $0 --init --team-name rgt47 --dotfiles ~/dotfiles
+    
     # Team Members - Join existing project (Developer 2+)
     $0 --team rgt47 --project-name research-study --interface shell --dotfiles ~/dotfiles
     $0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
@@ -501,6 +504,9 @@ EXAMPLES:
 
     # Direct setup (no Dockerfile editing)
     $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+    
+    # Alternative: Create directory first, then auto-detect project name
+    mkdir png1 && cd png1 && $0 --init --team-name rgt47 --dotfiles ~/dotfiles
 
     # With custom GitHub account
     $0 --init --team-name rgt47 --project-name research-study --github-account mylab
@@ -599,9 +605,28 @@ validate_init_parameters() {
     fi
 
     if [[ -z "$PROJECT_NAME" ]]; then
-        print_error "Required parameter --project-name is missing"
-        show_init_help
-        exit 1
+        # Try to infer project name from current directory if it's empty or minimal
+        current_dir=$(basename "$PWD")
+        
+        # Check if current directory is suitable for project setup
+        if [[ "$current_dir" != "zzcollab" ]] && [[ "$current_dir" != "." ]] && [[ "$current_dir" != "/" ]]; then
+            # Check if directory is empty or contains only basic files
+            file_count=$(find . -maxdepth 1 -type f | wc -l)
+            if [[ $file_count -le 3 ]]; then  # Allow for .gitignore, README, etc.
+                PROJECT_NAME="$current_dir"
+                print_status "Inferred project name from current directory: $PROJECT_NAME"
+                print_status "Using current directory for project setup"
+            else
+                print_error "Current directory '$current_dir' contains too many files for auto-detection"
+                print_error "Please specify --project-name explicitly or use an empty directory"
+                show_init_help
+                exit 1
+            fi
+        else
+            print_error "Required parameter --project-name is missing"
+            show_init_help
+            exit 1
+        fi
     fi
 
     # Set defaults
@@ -682,8 +707,13 @@ run_team_initialization() {
     fi
 
     # Step 1: Create project directory
-    print_status "Step 1: Creating project directory..."
-    if [[ -d "$PROJECT_NAME" ]]; then
+    print_status "Step 1: Setting up project directory..."
+    current_dir=$(basename "$PWD")
+    
+    if [[ "$current_dir" == "$PROJECT_NAME" ]]; then
+        # Already in the target directory
+        print_status "Using current directory: $PROJECT_NAME"
+    elif [[ -d "$PROJECT_NAME" ]]; then
         if [[ "$PREPARE_DOCKERFILE" == true ]]; then
             print_error "Directory $PROJECT_NAME already exists"
             print_error "Remove it first or run without --prepare-dockerfile to continue with existing project"
