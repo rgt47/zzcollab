@@ -272,22 +272,28 @@ your-project/
 
 ## Navigation Shortcuts
 
-Convenient symbolic links for quick navigation:
+Convenient navigation scripts for quick directory access:
 
 ```bash
-a     # → ./data              (data files)
-n     # → ./analysis          (analysis files)
-f     # → ./analysis/figures  (figures)
-t     # → ./analysis/tables   (tables)
-s     # → ./scripts           (working R scripts)
-m     # → ./man               (function documentation)
-e     # → ./tests             (tests)
-o     # → ./docs              (documentation)
-c     # → ./archive           (archived files)
-p     # → ./analysis/report   (research paper)
+# First, generate the navigation scripts (one-time setup)
+./navigation_scripts.sh
+
+# Then use the generated navigation shortcuts
+./a     # → Navigate to ./data              (data files)
+./n     # → Navigate to ./analysis          (analysis files)
+./f     # → Navigate to ./analysis/figures  (figures)
+./t     # → Navigate to ./analysis/tables   (tables)
+./s     # → Navigate to ./scripts           (working R scripts)
+./m     # → Navigate to ./man               (function documentation)
+./e     # → Navigate to ./tests             (tests)
+./o     # → Navigate to ./docs              (documentation)
+./c     # → Navigate to ./archive           (archived files)
+./p     # → Navigate to ./analysis/report   (research paper)
 ```
 
-**Usage**: `cd a` to go to data directory, `ls f` to see figures, etc.
+**Setup**: Run `./navigation_scripts.sh` once to create the navigation shortcuts.
+
+**Usage**: `./a` to go to data directory, `./n` to go to analysis, etc. Each command opens a new shell in the target directory.
 
 ## Development Environments
 
