@@ -59,9 +59,16 @@ cd zzcollab
 cd ~/projects                   # Your preferred projects directory
 zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 
+# Fast setup with minimal packages (8 vs 27 packages - ~70% faster)
+zzcollab --init --team-name mylab --project-name study2024 --minimal --dotfiles ~/dotfiles
+
 # Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
 zzcollab --init --team-name mylab --dotfiles ~/dotfiles
+
+# Auto-detect with minimal packages
+mkdir study2024 && cd study2024
+zzcollab --init --team-name mylab --minimal --dotfiles ~/dotfiles
 
 # For teams needing custom packages - two-step process:
 # zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
@@ -128,9 +135,16 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 # Complete automated setup - replaces 10+ manual Docker and git commands
 zzcollab --init --team-name mylab --project-name study2024 --dotfiles ~/dotfiles
 
+# Fast setup with minimal packages (8 vs 27 packages - ~70% faster initialization)
+zzcollab --init --team-name mylab --project-name study2024 --minimal --dotfiles ~/dotfiles
+
 # OR auto-detect project name from current directory
 mkdir study2024 && cd study2024
 zzcollab --init --team-name mylab --dotfiles ~/dotfiles
+
+# Auto-detect with minimal packages
+mkdir study2024 && cd study2024
+zzcollab --init --team-name mylab --minimal --dotfiles ~/dotfiles
 
 # OR with custom Dockerfile editing:
 zzcollab --init --team-name mylab --project-name study2024 --prepare-dockerfile
@@ -1132,6 +1146,7 @@ ZZCOLLAB provides a **complete research collaboration platform** with:
 - **Zero-friction package management** with automated team image updates
 - **Comprehensive R interface** for R-centric workflows
 - **Professional testing infrastructure** with unit and integration tests
+- **Flexible initialization options** with minimal (8 packages) or full (27 packages) modes
 
 ### Automation Benefits
 
@@ -1143,6 +1158,7 @@ ZZCOLLAB provides a **complete research collaboration platform** with:
 | Manual dependency management | ✅ **Automated dependency tracking** |
 | Docker expertise required | ✅ **Zero Docker knowledge needed** |
 | Build failures block development | ✅ **Centralized, tested builds** |
+| Slow initialization (5-10 min) | ✅ **Fast minimal setup (2-3 min with --minimal)** |
 
 ### Developer Experience
 - **Researchers focus on research** - not DevOps

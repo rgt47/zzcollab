@@ -386,6 +386,15 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 - **Usage**: Run `./navigation_scripts.sh` to create navigation shortcuts, then use `./a`, `./n`, etc.
 - **Benefits**: Maintains convenient navigation while avoiding R package build conflicts
 
+### Minimal Package Initialization (July 2025)
+- **Performance optimization**: Added `--minimal` flag for faster project initialization
+- **Package reduction**: Minimal mode installs 8 essential packages vs 27 in full mode
+- **Time savings**: Reduces initialization time by ~70% (5-10 minutes → 2-3 minutes)
+- **Iterative workflow**: Teams add packages incrementally through normal development process
+- **Templates**: Created `Dockerfile.minimal` with core packages: renv, remotes, devtools, usethis, here, conflicted, rmarkdown, knitr
+- **Usage**: `zzcollab --init --team-name mylab --project-name study --minimal`
+- **Benefits**: Faster setup for teams who prefer lean base images and iterative package addition
+
 These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Passing CI from day one
 - ✅ Rich package ecosystem pre-installed

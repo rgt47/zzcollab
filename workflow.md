@@ -48,9 +48,17 @@ which zzcollab                      # Confirm system PATH setup
 zzcollab --init --team-name rgt47 --project-name research-study \
     --dotfiles ~/dotfiles
 
+# Method 1a: Fast setup with minimal packages (8 packages vs 27 - faster initialization)
+zzcollab --init --team-name rgt47 --project-name research-study \
+    --minimal --dotfiles ~/dotfiles
+
 # Method 2: Auto-detect project name from current directory
 mkdir research-study && cd research-study
 zzcollab --init --team-name rgt47 --dotfiles ~/dotfiles
+
+# Method 2a: Auto-detect with minimal packages
+mkdir research-study && cd research-study
+zzcollab --init --team-name rgt47 --minimal --dotfiles ~/dotfiles
 
 # OR with Dockerfile customization (two-step process):
 # Step 1: Prepare project and Dockerfile for editing
@@ -219,8 +227,11 @@ cd research-project
 TEAM_NAME="rgt47" # the account on dockerhub for hosting the core images
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # Note: With new auto-detection, you can also just run: zzcollab --init --team-name rgt47
-# Copy and customize Dockerfile.pluspackages for your team's needs
+# Copy and customize Dockerfile for your team's needs
+# For full package set (27 packages):
 cp templates/Dockerfile.pluspackages ./Dockerfile.teamcore
+# OR for minimal package set (8 packages - faster builds):
+cp templates/Dockerfile.minimal ./Dockerfile.teamcore
 
 # Edit Dockerfile.teamcore to add your team's specific R packages and tools:
 vim Dockerfile.teamcore

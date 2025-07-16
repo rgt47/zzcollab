@@ -59,42 +59,42 @@ MINIMAL_PACKAGES=false
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --no-docker)
+        --no-docker|-n)
             BUILD_DOCKER=false
             shift
             ;;
-        --dotfiles)
+        --dotfiles|-d)
             require_arg "$1" "$2"
             DOTFILES_DIR="$2"
             shift 2
             ;;
-        --dotfiles-nodot)
+        --dotfiles-nodot|-D)
             require_arg "$1" "$2"
             DOTFILES_DIR="$2"
             DOTFILES_NODOT=true
             shift 2
             ;;
-        --base-image)
+        --base-image|-b)
             require_arg "$1" "$2"
             BASE_IMAGE="$2"
             shift 2
             ;;
-        --team)
+        --team|-t)
             require_arg "$1" "$2"
             TEAM_NAME="$2"
             shift 2
             ;;
-        --project-name|--project)
+        --project-name|--project|-p)
             require_arg "$1" "$2"
             PROJECT_NAME="$2"
             shift 2
             ;;
-        --interface)
+        --interface|-I)
             require_arg "$1" "$2"
             INTERFACE="$2"
             shift 2
             ;;
-        --init)
+        --init|-i)
             INIT_MODE=true
             shift
             ;;
@@ -103,21 +103,21 @@ while [[ $# -gt 0 ]]; do
             TEAM_NAME="$2"
             shift 2
             ;;
-        --github-account)
+        --github-account|-g)
             require_arg "$1" "$2"
             GITHUB_ACCOUNT="$2"
             shift 2
             ;;
-        --dockerfile)
+        --dockerfile|-f)
             require_arg "$1" "$2"
             DOCKERFILE_PATH="$2"
             shift 2
             ;;
-        --prepare-dockerfile)
+        --prepare-dockerfile|-P)
             PREPARE_DOCKERFILE=true
             shift
             ;;
-        --minimal)
+        --minimal|-m)
             MINIMAL_PACKAGES=true
             shift
             ;;
@@ -271,45 +271,45 @@ USAGE:
 
 OPTIONS:
     Team initialization (Developer 1 - Team Lead):
-    --init                   Initialize new team project with Docker images and GitHub repo
-    --team-name NAME         Team name (Docker Hub organization) [required with --init]
-    --project-name NAME      Project name [required with --init]
-    --github-account NAME    GitHub account (default: same as team-name)
+    -i, --init                   Initialize new team project with Docker images and GitHub repo
+    -t, --team-name NAME         Team name (Docker Hub organization) [required with --init]
+    -p, --project-name NAME      Project name [required with --init]
+    -g, --github-account NAME    GitHub account (default: same as team-name)
     
     Team collaboration (Developer 2+ - Team Members):
-    --team NAME              Team name (Docker Hub organization)
-    --project-name NAME      Project name  
-    --interface TYPE         Interface type: shell, rstudio
+    -t, --team NAME              Team name (Docker Hub organization)
+    -p, --project-name NAME      Project name  
+    -I, --interface TYPE         Interface type: shell, rstudio
     
     Common options:
-    --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
-    --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
+    -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
+    -D, --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
     
     Advanced options:
-    --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
-    --no-docker              Skip Docker image build during setup
-    --next-steps             Show development workflow and next steps
-    --help, -h               Show this help message
+    -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
+    -n, --no-docker              Skip Docker image build during setup
+        --next-steps             Show development workflow and next steps
+    -h, --help                   Show this help message
 
 EXAMPLES:
     # Team Lead - Initialize new team project (Developer 1)
-    $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+    $0 -i -t rgt47 -p research-study -d ~/dotfiles
     $0 --init --team-name mylab --project-name study2024 --github-account myorg
     
     # Alternative: Create directory first, then run in it (project name auto-detected)
-    mkdir png1 && cd png1 && $0 --init --team-name rgt47 --dotfiles ~/dotfiles
+    mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
     
     # Team Members - Join existing project (Developer 2+)
-    $0 --team rgt47 --project-name research-study --interface shell --dotfiles ~/dotfiles
+    $0 -t rgt47 -p research-study -I shell -d ~/dotfiles
     $0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
     
     # Advanced usage with custom base images
-    $0 --base-image rocker/tidyverse --dotfiles ~/dotfiles
+    $0 -b rocker/tidyverse -d ~/dotfiles
     $0 --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
     
     # Basic setup for standalone projects
-    $0 --dotfiles ~/dotfiles                        # Basic setup with dotfiles
-    $0 --no-docker                                  # Setup without Docker build
+    $0 -d ~/dotfiles                                # Basic setup with dotfiles
+    $0 -n                                           # Setup without Docker build
 
 MODULES INCLUDED:
     core         - Logging, validation, utilities
@@ -490,28 +490,32 @@ USAGE:
     $0 --init --team-name TEAM --project-name PROJECT [OPTIONS]
 
 REQUIRED:
-    --team-name NAME        Docker Hub team/organization name
-    --project-name NAME     Project name (will be used for directories and images)
+    -t, --team-name NAME        Docker Hub team/organization name
+    -p, --project-name NAME     Project name (will be used for directories and images)
 
 OPTIONAL:
-    --github-account NAME   GitHub account name (default: same as team-name)
-    --dotfiles PATH         Path to dotfiles directory (files already have dots)
-    --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
-    --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
-    --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
-    --help                 Show this help message
+    -g, --github-account NAME   GitHub account name (default: same as team-name)
+    -d, --dotfiles PATH         Path to dotfiles directory (files already have dots)
+    -D, --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
+    -f, --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
+    -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
+    -m, --minimal              Use minimal package set for faster initialization (8 packages vs 27)
+    -h, --help                 Show this help message
 
 EXAMPLES:
     # Prepare project for Dockerfile editing (Developer 1 workflow)
-    $0 --init --team-name rgt47 --project-name research-study --prepare-dockerfile
+    $0 -i -t rgt47 -p research-study -P
     # Edit research-study/Dockerfile.teamcore as needed, then run:
-    $0 --init --team-name rgt47 --project-name research-study
+    $0 -i -t rgt47 -p research-study
 
     # Direct setup (no Dockerfile editing)
-    $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+    $0 -i -t rgt47 -p research-study -d ~/dotfiles
+    
+    # Fast setup with minimal packages (8 packages vs 27 - faster initialization)
+    $0 -i -t rgt47 -p research-study -m -d ~/dotfiles
     
     # Alternative: Create directory first, then auto-detect project name
-    mkdir png1 && cd png1 && $0 --init --team-name rgt47 --dotfiles ~/dotfiles
+    mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
 
     # With custom GitHub account
     $0 --init --team-name rgt47 --project-name research-study --github-account mylab
@@ -520,7 +524,7 @@ EXAMPLES:
     $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
 
     # With dotfiles that need dots added (files like: bashrc, vimrc, etc.)
-    $0 --init --team-name rgt47 --project-name research-study --dotfiles-nodot ~/Dropbox/dotfiles
+    $0 -i -t rgt47 -p research-study -D ~/Dropbox/dotfiles
 
 WORKFLOW:
     1. Create project directory
@@ -699,6 +703,7 @@ run_team_initialization() {
     echo "  GitHub Account: $GITHUB_ACCOUNT"
     echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
     echo "  Dockerfile: $DOCKERFILE_PATH"
+    echo "  Package Set: $(if [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (8 packages)"; else echo "Full (27 packages)"; fi)"
     echo "  Mode: $(if [[ "$PREPARE_DOCKERFILE" == true ]]; then echo "Prepare for editing"; else echo "Complete setup"; fi)"
     echo ""
 
