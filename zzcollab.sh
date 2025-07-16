@@ -55,6 +55,7 @@ INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
 MINIMAL_PACKAGES=false
+ULTRA_MINIMAL_PACKAGES=false
 
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
