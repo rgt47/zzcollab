@@ -171,7 +171,7 @@ create_logger <- function(config) {
   # Return a closure that "remembers" the config settings
   function(..., level = "info", force = FALSE) {
     # Respect quiet mode unless this is critical (force = TRUE)
-    if (script_config$quiet && !force && level != "error") return(invisible(NULL))
+    if (config$quiet && !force && level != "error") return(invisible(NULL))
     
     # Visual prefixes make output scannable and parseable
     # Each level gets a distinctive emoji for quick visual scanning
