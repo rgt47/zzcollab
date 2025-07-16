@@ -382,7 +382,7 @@ extract_code_packages <- function(config, log_fn) {
   # Step 1: Choose directories based on mode
   # Standard mode: core package functionality only (R/, scripts/, analysis/)
   # Strict mode: everything including tests and vignettes for maximum coverage
-  target_dirs <- if (script_config$strict_imports) PKG_CONFIG$strict_dirs else PKG_CONFIG$standard_dirs
+  target_dirs <- if (config$strict_imports) PKG_CONFIG$strict_dirs else PKG_CONFIG$standard_dirs
   
   # Step 2: Discover all relevant files
   # This is where we find every R file that could contain package dependencies
@@ -395,7 +395,7 @@ extract_code_packages <- function(config, log_fn) {
   }
   
   # Report what we're doing (helps with debugging and progress tracking)
-  mode_name <- if (script_config$strict_imports) "strict" else "standard"
+  mode_name <- if (config$strict_imports) "strict" else "standard"
   log_fn("Scanning ", length(all_files), " files in ", mode_name, " mode...", level = "info")
   
   # Step 3: Process files efficiently using lists instead of vector concatenation
@@ -833,7 +833,7 @@ handle_snapshot_only <- function(config, log_fn) {
   # Quick check: ensure renv is available
   if (!requireNamespace("renv", quietly = TRUE)) {
     log_fn("renv package unavailable", level = "error", force = TRUE)
-    return(if (script_config$fail_on_issues) 1L else 0L)
+    return(if (config$fail_on_issues) 1L else 0L)
   }
   
   # Run snapshot and return appropriate exit code
@@ -843,7 +843,7 @@ handle_snapshot_only <- function(config, log_fn) {
     return(0L)
   } else {
     log_fn("Snapshot failed: ", result$message, level = "error", force = TRUE)
-    return(if (script_config$fail_on_issues) 1L else 0L)
+    return(if (config$fail_on_issues) 1L else 0L)
   }
 }
 
@@ -903,7 +903,7 @@ main_analysis <- function(config, log_fn) {
   }
   
   # Report warnings (these are cleanup opportunities but not critical)
-  if (length(unused_in_desc) > 0L && !script_config$strict_imports) {
+  if (length(unused_in_desc) > 0L && !config$strict_imports) {
     # In strict mode, we don't warn about unused packages since we're being comprehensive
     log_fn("Unused packages in DESCRIPTION: ", length(unused_in_desc), " packages", level = "warning")
   }
@@ -914,7 +914,7 @@ main_analysis <- function(config, log_fn) {
   
   # PHASE 6: AUTOMATED FIXES
   # Handle fixes based on configuration and execution mode
-  if (has_critical_issues && script_config$auto_fix) {
+  if (has_critical_issues && config$auto_fix) {
     # Automated mode: fix issues without asking
     log_fn("Auto-fixing issues...", level = "info")
     fix_result <- fix_description_file(missing_from_desc, invalid_desc_packages, log_fn)
@@ -935,7 +935,7 @@ main_analysis <- function(config, log_fn) {
         run_renv_snapshot(force_clean = length(extra_in_renv) > 0L, log_fn = log_fn)
       }
     }
-  } else if (length(extra_in_renv) > 0L && script_config$auto_fix) {
+  } else if (length(extra_in_renv) > 0L && config$auto_fix) {
     # Even if no critical issues, clean up lockfile if requested
     run_renv_snapshot(force_clean = TRUE, log_fn = log_fn)
   }
