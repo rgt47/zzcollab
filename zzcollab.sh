@@ -56,6 +56,7 @@ USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
 MINIMAL_PACKAGES=false
 ULTRA_MINIMAL_PACKAGES=false
+BARE_MINIMUM_PACKAGES=false
 
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
@@ -124,6 +125,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --ultra-minimal|-u)
             ULTRA_MINIMAL_PACKAGES=true
+            shift
+            ;;
+        --bare-minimum|-B)
+            BARE_MINIMUM_PACKAGES=true
             shift
             ;;
         --next-steps)
