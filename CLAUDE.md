@@ -19,6 +19,7 @@ ZZCOLLAB is a research collaboration framework that creates Docker-based reprodu
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
+- **CLI best practices**: One-letter flags for all major options (-i, -t, -p, -m, -d)
 
 ## Development Commands
 
@@ -68,7 +69,8 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 ### Core Image Building Workflow
 ```bash
 # Automated team setup (recommended) - handles all image building
-zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
+# OR with long flags: zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
 # Manual core image building (if needed)
 cd /path/to/zzcollab
@@ -98,16 +100,17 @@ docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
 # Developer 1 (Team Lead) - Command Line
 # Run from your preferred projects directory (e.g., ~/projects, ~/work)
 cd ~/projects  # or wherever you keep your projects
-zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
+# Fast setup with minimal packages: zzcollab -i -t TEAM -p PROJECT -m [-d ~/dotfiles]
 
 # Developer 2+ (Team Members) - Command Line
 git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
-zzcollab --team TEAM --project-name PROJECT --interface shell --dotfiles ~/dotfiles
+zzcollab -t TEAM -p PROJECT -I shell [-d ~/dotfiles]
 
-# Note: New projects include expanded package ecosystem (27 packages pre-installed)
-# Including: usethis, pkgdown, rcmdcheck, broom, lme4, survival, car, skimr, visdat, 
-# naniar, targets, rmarkdown, bookdown, knitr, DT, jsonlite, etc.
+# Note: Full mode includes 27 packages pre-installed, minimal mode has 8 essential packages
+# Full: usethis, pkgdown, rcmdcheck, broom, lme4, survival, car, skimr, visdat, etc.
+# Minimal: renv, remotes, devtools, usethis, here, conflicted, rmarkdown, knitr
 ```
 
 ### R-Centric Workflow (Alternative)
@@ -407,7 +410,7 @@ ZZCOLLAB provides a comprehensive R interface (`R/utils.R`) that allows develope
 
 These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Passing CI from day one
-- ✅ Rich package ecosystem pre-installed
+- ✅ Rich package ecosystem pre-installed (27 packages) or minimal setup (8 packages)
 - ✅ Modern GitHub Actions best practices
 - ✅ Clean, minimal R package structure
 - ✅ Robust build and deployment workflows
@@ -415,3 +418,5 @@ These improvements ensure new projects created with ZZCOLLAB have:
 - ✅ Optimized git history without unnecessary files
 - ✅ Clean initialization process without confusing warnings
 - ✅ Navigation scripts compatible with R package builds
+- ✅ Unix-standard CLI with one-letter flags for improved developer experience
+- ✅ Flexible initialization options for different team workflows
