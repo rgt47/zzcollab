@@ -59,7 +59,7 @@ cd zzcollab
 cd ~/projects                   # Your preferred projects directory
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
-# Fast setup with minimal packages (5 vs 39 packages - no Docker packages, faster initialization)
+# Fast setup with minimal packages and lightweight CI (5 vs 39 packages - faster initialization)
 zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
 
 
@@ -137,7 +137,7 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 # Complete automated setup - replaces 10+ manual Docker and git commands
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
-# Fast setup with minimal packages (5 vs 39 packages - no Docker packages, faster initialization)
+# Fast setup with minimal packages and lightweight CI (5 vs 39 packages - faster initialization)
 zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
 
 

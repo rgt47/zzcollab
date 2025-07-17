@@ -63,13 +63,24 @@ create_github_workflows() {
     fi
     
     # Create R package check workflow
-    # Automatically runs R CMD check on push/pull request events
-    # Validates package structure, dependencies, tests, and documentation
-    if copy_template_file "workflows/r-package.yml" ".github/workflows/r-package.yml" "R package check workflow"; then
-        track_template_file "workflows/r-package.yml" ".github/workflows/r-package.yml"
-        log_info "Created R package validation workflow"
+    # Choose between full validation or minimal research-focused workflow
+    local workflow_template="workflows/r-package.yml"
+    local workflow_description="R package validation workflow"
+    
+    if [[ "${MINIMAL_PACKAGES:-}" == "true" ]]; then
+        workflow_template="workflows/r-package-minimal.yml"
+        workflow_description="Minimal research project workflow"
+    fi
+    
+    if copy_template_file "$workflow_template" ".github/workflows/r-package.yml" "R package check workflow"; then
+        track_template_file "$workflow_template" ".github/workflows/r-package.yml"
+        log_info "Created $workflow_description"
         log_info "  - Triggers: push/PR to main branch"
-        log_info "  - Actions: R CMD check, dependency validation, test execution"
+        if [[ "${MINIMAL_PACKAGES:-}" == "true" ]]; then
+            log_info "  - Actions: renv sync, structure validation (minimal/fast)"
+        else
+            log_info "  - Actions: R CMD check, dependency validation, test execution"
+        fi
         log_info "  - Platforms: Ubuntu (primary), with optional multi-platform"
     else
         log_error "Failed to create R package workflow"

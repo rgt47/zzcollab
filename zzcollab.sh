@@ -501,7 +501,7 @@ OPTIONAL:
     -D, --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
     -f, --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
     -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
-    -m, --minimal              Use minimal package set for faster initialization (5 packages vs 39 - no Docker packages)
+    -m, --minimal              Use minimal package set and CI for faster initialization (5 packages vs 39 - lightweight CI)
     -h, --help                 Show this help message
 
 EXAMPLES:
@@ -706,7 +706,7 @@ run_team_initialization() {
     echo "  GitHub Account: $GITHUB_ACCOUNT"
     echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
     echo "  Dockerfile: $DOCKERFILE_PATH"
-    echo "  Package Set: $(if [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (5 packages, no Docker packages)"; else echo "Full (39 packages)"; fi)"
+    echo "  Package Set: $(if [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (5 packages, lightweight CI)"; else echo "Full (39 packages, comprehensive CI)"; fi)"
     echo "  Mode: $(if [[ "$PREPARE_DOCKERFILE" == true ]]; then echo "Prepare for editing"; else echo "Complete setup"; fi)"
     echo ""
 

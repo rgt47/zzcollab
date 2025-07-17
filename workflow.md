@@ -47,7 +47,7 @@ which zzcollab                      # Confirm system PATH setup
 # Method 1: Complete automated setup - replaces all manual Docker and git commands
 zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 
-# Method 1a: Fast setup with minimal packages (5 packages vs 39 - no Docker packages, faster initialization)
+# Method 1a: Fast setup with minimal packages and lightweight CI (5 packages vs 39 - faster initialization)
 zzcollab -i -t rgt47 -p research-study -m -d ~/dotfiles
 
 
