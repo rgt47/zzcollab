@@ -21,10 +21,10 @@ jobs:
           r-version: 'release'
           use-public-rspm: true
       
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rmarkdown
-          cache-version: 6
+      - name: Install minimal packages for rendering
+        run: |
+          install.packages(c("rmarkdown", "bookdown", "knitr"), repos = "https://cloud.r-project.org")
+        shell: Rscript {0}
       
       - name: Render report
         run: |
