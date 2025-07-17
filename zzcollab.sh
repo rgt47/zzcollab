@@ -55,6 +55,7 @@ INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
 MINIMAL_PACKAGES=false
+EXTRA_PACKAGES=false
 ULTRA_MINIMAL_PACKAGES=false
 BARE_MINIMUM_PACKAGES=false
 
@@ -121,6 +122,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --minimal|-m)
             MINIMAL_PACKAGES=true
+            shift
+            ;;
+        --extra-packages|-x)
+            EXTRA_PACKAGES=true
             shift
             ;;
         --next-steps)
@@ -242,7 +247,7 @@ readonly PKG_NAME
 
 # Export variables for template substitution
 USERNAME="${USERNAME:-analyst}"  # Default Docker user
-export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME MINIMAL_PACKAGES
+export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME MINIMAL_PACKAGES EXTRA_PACKAGES
 
 log_info "Package name determined: $PKG_NAME"
 
@@ -503,9 +508,10 @@ OPTIONAL:
     -g, --github-account NAME   GitHub account name (default: same as team-name)
     -d, --dotfiles PATH         Path to dotfiles directory (files already have dots)
     -D, --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
-    -f, --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile.pluspackages)
+    -f, --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile)
     -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
     -m, --minimal              Use minimal package set and CI for faster initialization (5 packages vs 39 - lightweight CI)
+    -x, --extra-packages       Use extra packages in team Docker image (Dockerfile.pluspackages)
     -h, --help                 Show this help message
 
 EXAMPLES:
@@ -514,10 +520,13 @@ EXAMPLES:
     # Edit research-study/Dockerfile.teamcore as needed, then run:
     $0 -i -t rgt47 -p research-study
 
-    # Direct setup (no Dockerfile editing)
+    # Direct setup with standard Dockerfile
     $0 -i -t rgt47 -p research-study -d ~/dotfiles
     
-    # Fast setup with minimal packages (5 packages vs 39 - no Docker packages, faster initialization)
+    # Setup with extra packages (Dockerfile.pluspackages - comprehensive package set)
+    $0 -i -t rgt47 -p research-study -x -d ~/dotfiles
+    
+    # Fast setup with minimal packages (Dockerfile.minimal - fastest builds)
     $0 -i -t rgt47 -p research-study -m -d ~/dotfiles
     
     
@@ -653,10 +662,12 @@ validate_init_parameters() {
 
     if [[ -z "$DOCKERFILE_PATH" ]]; then
         # Try to find the Dockerfile template in multiple locations
-        # Choose template based on minimal flag
-        TEMPLATE_NAME="Dockerfile.pluspackages"
-        if [[ "$MINIMAL_PACKAGES" == "true" ]]; then
-            TEMPLATE_NAME="Dockerfile.minimal"
+        # Choose template based on flags
+        TEMPLATE_NAME="Dockerfile"  # Default: standard Dockerfile
+        if [[ "$EXTRA_PACKAGES" == "true" ]]; then
+            TEMPLATE_NAME="Dockerfile.pluspackages"  # -x flag: extra packages
+        elif [[ "$MINIMAL_PACKAGES" == "true" ]]; then
+            TEMPLATE_NAME="Dockerfile.minimal"  # -m flag: minimal packages
         fi
         
         POSSIBLE_PATHS=(
@@ -709,8 +720,7 @@ run_team_initialization() {
     echo "  Project Name: $PROJECT_NAME"
     echo "  GitHub Account: $GITHUB_ACCOUNT"
     echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
-    echo "  Dockerfile: $DOCKERFILE_PATH"
-    echo "  Package Set: $(if [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (5 packages, lightweight CI)"; else echo "Full (39 packages, comprehensive CI)"; fi)"
+    echo "  Dockerfile: $(if [[ "$EXTRA_PACKAGES" == true ]]; then echo "Extra packages (Dockerfile.pluspackages)"; elif [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (Dockerfile.minimal)"; else echo "Standard (Dockerfile)"; fi)"
     echo "  Mode: $(if [[ "$PREPARE_DOCKERFILE" == true ]]; then echo "Prepare for editing"; else echo "Complete setup"; fi)"
     echo ""
 
