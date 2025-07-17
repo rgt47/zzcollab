@@ -188,6 +188,10 @@ log_success() {
     printf "✅ %s\n" "$*" >&2
 }
 
+log_warning() {
+    printf "⚠️  %s\n" "$*" >&2
+}
+
 # Validate modules directory exists
 if [[ ! -d "$MODULES_DIR" ]]; then
     log_error "Modules directory not found: $MODULES_DIR"
@@ -902,6 +906,66 @@ Co-Authored-By: zzcollab <noreply@zzcollab.dev>"
 }
 
 #=============================================================================
+# DIRECTORY VALIDATION FUNCTION
+#=============================================================================
+
+validate_directory_for_setup() {
+    local current_dir
+    current_dir=$(basename "$PWD")
+    
+    # Skip validation for certain directories that are expected to be non-empty
+    if [[ "$current_dir" == "zzcollab" ]]; then
+        log_warning "Running zzcollab setup in the zzcollab source directory"
+        log_warning "This will create project files alongside the zzcollab source code"
+        read -p "Are you sure you want to continue? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_info "Setup cancelled by user"
+            exit 0
+        fi
+        return 0
+    fi
+    
+    # Check if directory is empty or contains only basic files
+    local file_count
+    file_count=$(find . -maxdepth 1 -type f | wc -l)
+    
+    if [[ $file_count -le 3 ]]; then
+        log_info "Directory validation passed ($file_count files found)"
+        return 0
+    fi
+    
+    # If more than 3 files, show warning and ask for confirmation
+    log_warning "Current directory contains $file_count files"
+    log_warning "Running zzcollab setup here may overwrite existing files"
+    
+    # Show some of the files that would be affected
+    log_info "Files in current directory:"
+    ls -la | head -10
+    if [[ $file_count -gt 7 ]]; then
+        log_info "... and $(($file_count - 7)) more files"
+    fi
+    
+    echo ""
+    log_warning "zzcollab will create many files and directories in this location"
+    log_warning "Consider running in an empty directory or using a subdirectory"
+    echo ""
+    
+    read -p "Continue with setup in this directory? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Setup cancelled by user"
+        log_info "To run zzcollab safely:"
+        log_info "  1. Create a new directory: mkdir my-project && cd my-project"
+        log_info "  2. Run zzcollab there: zzcollab [options]"
+        exit 0
+    fi
+    
+    log_info "Proceeding with setup as requested"
+    return 0
+}
+
+#=============================================================================
 # MAIN EXECUTION FUNCTION (identical workflow to original zzcollab.sh)
 #=============================================================================
 
@@ -945,6 +1009,9 @@ main() {
         log_error "Please ensure you're running this script from the zzcollab directory"
         exit 1
     fi
+    
+    # Validate directory is safe for setup
+    validate_directory_for_setup
     
     # Initialize manifest tracking
     init_manifest
