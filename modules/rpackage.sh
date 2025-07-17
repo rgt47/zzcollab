@@ -83,9 +83,9 @@ create_core_files() {
     log_info "Creating core R package files..."
     
     # DESCRIPTION file - R package metadata and dependencies
-    # Choose template based on minimal flag for optimized package sets
+    # Choose template based on package-specific flags for maximum flexibility
     local description_template="DESCRIPTION"
-    if [[ "${MINIMAL_PACKAGES:-}" == "true" ]]; then
+    if [[ "${MINIMAL_PACKAGES_ONLY:-}" == "true" ]]; then
         description_template="DESCRIPTION.minimal"
         log_info "Using minimal DESCRIPTION template for faster initialization"
     fi

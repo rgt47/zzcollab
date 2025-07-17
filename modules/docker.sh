@@ -133,10 +133,20 @@ create_docker_files() {
     export R_VERSION="$r_version"
     
     # Create Dockerfile from template
+    # Choose template based on Docker-specific flags for maximum flexibility
+    local dockerfile_template="Dockerfile"
+    if [[ "${MINIMAL_DOCKER:-}" == "true" ]]; then
+        dockerfile_template="Dockerfile.minimal"
+        log_info "Using minimal Dockerfile template for fastest builds"
+    elif [[ "${EXTRA_DOCKER:-}" == "true" ]]; then
+        dockerfile_template="Dockerfile.pluspackages"
+        log_info "Using extended Dockerfile template with comprehensive packages"
+    fi
+    
     # Contains: R environment, system dependencies, development tools, project setup
-    if copy_template_file "Dockerfile" "Dockerfile" "Dockerfile"; then
-        track_template_file "Dockerfile" "Dockerfile"
-        log_info "Created Dockerfile with R version $r_version"
+    if copy_template_file "$dockerfile_template" "Dockerfile" "Dockerfile"; then
+        track_template_file "$dockerfile_template" "Dockerfile"
+        log_info "Created Dockerfile from $dockerfile_template with R version $r_version"
     else
         log_error "Failed to create Dockerfile"
         return 1

@@ -59,6 +59,11 @@ EXTRA_PACKAGES=false
 ULTRA_MINIMAL_PACKAGES=false
 BARE_MINIMUM_PACKAGES=false
 
+# Separated Docker and package control flags
+MINIMAL_DOCKER=false     # --minimal-docker: Use Dockerfile.minimal (fastest builds)
+EXTRA_DOCKER=false       # --extra-docker: Use Dockerfile.pluspackages (comprehensive packages)
+MINIMAL_PACKAGES_ONLY=false  # --minimal-packages: Use DESCRIPTION.minimal (lightweight packages)
+
 # Process all command line arguments (identical to original zzcollab.sh)
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -126,6 +131,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --extra-packages|-x)
             EXTRA_PACKAGES=true
+            shift
+            ;;
+        --minimal-docker)
+            MINIMAL_DOCKER=true
+            shift
+            ;;
+        --extra-docker)
+            EXTRA_DOCKER=true
+            shift
+            ;;
+        --minimal-packages)
+            MINIMAL_PACKAGES_ONLY=true
             shift
             ;;
         --next-steps)
@@ -247,7 +264,7 @@ readonly PKG_NAME
 
 # Export variables for template substitution
 USERNAME="${USERNAME:-analyst}"  # Default Docker user
-export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME MINIMAL_PACKAGES EXTRA_PACKAGES
+export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME MINIMAL_PACKAGES EXTRA_PACKAGES MINIMAL_DOCKER EXTRA_DOCKER MINIMAL_PACKAGES_ONLY
 
 log_info "Package name determined: $PKG_NAME"
 
@@ -300,6 +317,12 @@ OPTIONS:
     -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
     -n, --no-docker              Skip Docker image build during setup
         --next-steps             Show development workflow and next steps
+    
+    Separated Docker and Package Control (for maximum flexibility):
+    --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
+    --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
+    --minimal-packages         Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+    
     -h, --help                   Show this help message
 
 EXAMPLES:
@@ -320,6 +343,11 @@ EXAMPLES:
     
     # Basic setup for standalone projects
     $0 -d ~/dotfiles                                # Basic setup with dotfiles
+    
+    # NEW: Separated Docker and package control (maximum flexibility)
+    $0 -i -t rgt47 -p study --minimal-packages -d ~/dotfiles      # Standard Docker + lightweight packages
+    $0 -i -t rgt47 -p study --minimal-docker -d ~/dotfiles        # Fastest Docker + standard packages
+    $0 -i -t rgt47 -p study --extra-docker --minimal-packages -d ~/dotfiles   # Comprehensive Docker + lightweight packages
     $0 -n                                           # Setup without Docker build
 
 MODULES INCLUDED:
@@ -512,6 +540,12 @@ OPTIONAL:
     -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
     -m, --minimal              Use minimal package set and CI for faster initialization (5 packages vs 39 - lightweight CI)
     -x, --extra-packages       Use extra packages in team Docker image (Dockerfile.pluspackages)
+    
+    # Separated Docker and Package Control (for maximum flexibility):
+    --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
+    --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
+    --minimal-packages         Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+    
     -h, --help                 Show this help message
 
 EXAMPLES:
@@ -528,6 +562,16 @@ EXAMPLES:
     
     # Fast setup with minimal packages (Dockerfile.minimal - fastest builds)
     $0 -i -t rgt47 -p research-study -m -d ~/dotfiles
+    
+    # NEW: Separated Docker and package control examples (maximum flexibility)
+    # Standard Dockerfile + minimal packages (5 packages)
+    $0 -i -t rgt47 -p research-study --minimal-packages -d ~/dotfiles
+    
+    # Minimal Dockerfile + standard packages (fastest builds with full package set)
+    $0 -i -t rgt47 -p research-study --minimal-docker -d ~/dotfiles
+    
+    # Extended Dockerfile + minimal packages (comprehensive Docker, lightweight packages)
+    $0 -i -t rgt47 -p research-study --extra-docker --minimal-packages -d ~/dotfiles
     
     
     # Alternative: Create directory first, then auto-detect project name
