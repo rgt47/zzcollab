@@ -59,8 +59,14 @@ confirm() {
     local message="$1"
     local response
     
-    echo -e "${YELLOW}$message [y/N]: ${NC}"
-    read -r response
+    # Ensure we're reading from the terminal, not stdin
+    if [[ -t 0 ]]; then
+        echo -e "${YELLOW}$message [y/N]: ${NC}"
+        read -r response
+    else
+        echo -e "${YELLOW}$message [y/N]: ${NC}"
+        read -r response </dev/tty
+    fi
     [[ "$response" =~ ^[Yy]$ ]]
 }
 
