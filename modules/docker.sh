@@ -122,15 +122,21 @@ create_docker_files() {
     export R_VERSION="$r_version"
     
     # Create Dockerfile from template
-    # Choose template based on Docker-specific flags for maximum flexibility
-    local dockerfile_template="Dockerfile"
-    if [[ "${MINIMAL_DOCKER:-}" == "true" ]]; then
-        dockerfile_template="Dockerfile.minimal"
-        log_info "Using minimal Dockerfile template for fastest builds"
-    elif [[ "${EXTRA_DOCKER:-}" == "true" ]]; then
-        dockerfile_template="Dockerfile.pluspackages"
-        log_info "Using extended Dockerfile template with comprehensive packages"
-    fi
+    # Choose template based on build mode (with legacy compatibility)
+    local dockerfile_template
+    dockerfile_template=$(get_dockerfile_template)
+    
+    case "$BUILD_MODE" in
+        fast)
+            log_info "Using minimal Dockerfile template for fastest builds"
+            ;;
+        comprehensive)
+            log_info "Using extended Dockerfile template with comprehensive packages"
+            ;;
+        *)
+            log_info "Using standard Dockerfile template"
+            ;;
+    esac
     
     # Contains: R environment, system dependencies, development tools, project setup
     if copy_template_file "$dockerfile_template" "Dockerfile" "Dockerfile"; then
@@ -303,18 +309,15 @@ build_docker_image() {
 # Purpose: Comprehensive validation of Docker setup and configuration
 # Checks: Docker installation, daemon status, required files, image existence
 validate_docker_environment() {
-    log_info "Validating Docker environment..."
-    
-    local validation_errors=()
-    
-    # Check Docker installation
-    if ! command_exists docker; then
-        validation_errors+=("Docker is not installed or not in PATH")
+    # Check Docker installation and daemon
+    if ! validate_commands_exist "Docker environment" "docker"; then
+        return 1
     fi
     
-    # Check Docker daemon
+    # Check Docker daemon is running
     if ! docker info >/dev/null 2>&1; then
-        validation_errors+=("Docker daemon is not running")
+        log_error "Docker daemon is not running"
+        return 1
     fi
     
     # Check required files
@@ -324,31 +327,18 @@ validate_docker_environment() {
         ".zshrc_docker"
     )
     
-    for file in "${required_files[@]}"; do
-        if [[ ! -f "$file" ]]; then
-            validation_errors+=("Missing Docker file: $file")
-        fi
-    done
-    
-    # Report validation results
-    if [[ ${#validation_errors[@]} -eq 0 ]]; then
-        log_success "Docker environment validation passed"
-        
-        # Check if image exists
-        if docker image inspect "$PKG_NAME" >/dev/null 2>&1; then
-            log_success "Docker image '$PKG_NAME' exists and ready to use"
-        else
-            log_info "Docker image '$PKG_NAME' not built yet - run build_docker_image()"
-        fi
-        
-        return 0
-    else
-        log_error "Docker environment validation failed:"
-        for error in "${validation_errors[@]}"; do
-            log_error "  - $error"
-        done
+    if ! validate_files_exist "Docker configuration" "${required_files[@]}"; then
         return 1
     fi
+    
+    # Check if image exists
+    if docker image inspect "$PKG_NAME" >/dev/null 2>&1; then
+        log_success "Docker image '$PKG_NAME' exists and ready to use"
+    else
+        log_info "Docker image '$PKG_NAME' not built yet - run build_docker_image()"
+    fi
+    
+    return 0
 }
 
 # Function: show_docker_summary

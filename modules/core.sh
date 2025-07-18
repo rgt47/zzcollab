@@ -195,6 +195,101 @@ track_dotfile() { track_item "dotfile" "$1"; }
 track_docker_image() { track_item "docker_image" "$1"; }
 
 #=============================================================================
+# UNIFIED VALIDATION SYSTEM
+#=============================================================================
+
+# Function: validate_files_exist
+# Purpose: Check that required files exist
+# Arguments: $1 - description, $2+ - file paths
+validate_files_exist() {
+    local description="$1"
+    shift
+    local files=("$@")
+    local missing_files=()
+    
+    for file in "${files[@]}"; do
+        if [[ ! -f "$file" ]]; then
+            missing_files+=("$file")
+        fi
+    done
+    
+    if [[ ${#missing_files[@]} -eq 0 ]]; then
+        log_success "$description: all files exist"
+        return 0
+    else
+        log_error "$description: missing files: ${missing_files[*]}"
+        return 1
+    fi
+}
+
+# Function: validate_directories_exist
+# Purpose: Check that required directories exist
+# Arguments: $1 - description, $2+ - directory paths
+validate_directories_exist() {
+    local description="$1"
+    shift
+    local directories=("$@")
+    local missing_dirs=()
+    
+    for dir in "${directories[@]}"; do
+        if [[ ! -d "$dir" ]]; then
+            missing_dirs+=("$dir")
+        fi
+    done
+    
+    if [[ ${#missing_dirs[@]} -eq 0 ]]; then
+        log_success "$description: all directories exist"
+        return 0
+    else
+        log_error "$description: missing directories: ${missing_dirs[*]}"
+        return 1
+    fi
+}
+
+# Function: validate_commands_exist
+# Purpose: Check that required commands are available
+# Arguments: $1 - description, $2+ - command names
+validate_commands_exist() {
+    local description="$1"
+    shift
+    local commands=("$@")
+    local missing_commands=()
+    
+    for cmd in "${commands[@]}"; do
+        if ! command_exists "$cmd"; then
+            missing_commands+=("$cmd")
+        fi
+    done
+    
+    if [[ ${#missing_commands[@]} -eq 0 ]]; then
+        log_success "$description: all commands available"
+        return 0
+    else
+        log_error "$description: missing commands: ${missing_commands[*]}"
+        return 1
+    fi
+}
+
+# Function: validate_with_callback
+# Purpose: Generic validation with custom validation function
+# Arguments: $1 - description, $2 - validation function, $3+ - arguments to validation function
+validate_with_callback() {
+    local description="$1"
+    local validation_func="$2"
+    shift 2
+    
+    log_info "Validating $description..."
+    
+    if "$validation_func" "$@"; then
+        log_success "$description validation passed"
+        return 0
+    else
+        log_error "$description validation failed"
+        return 1
+    fi
+}
+
+#=============================================================================
 # CORE MODULE VALIDATION
 #=============================================================================
 

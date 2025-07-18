@@ -256,8 +256,6 @@ EOF
 # Purpose: Verify that all required directories were created successfully
 # Returns: 0 if all directories exist, 1 if any are missing
 validate_directory_structure() {
-    log_info "Validating directory structure..."
-    
     local -r required_dirs=(
         "R" "man" "tests/testthat" "vignettes" "data" "data/raw_data"
         "data/derived_data" "data/metadata" "data/validation" "analysis"
@@ -265,20 +263,7 @@ validate_directory_structure() {
         "scripts" "archive" "docs" ".github/workflows"
     )
     
-    local missing_dirs=()
-    for dir in "${required_dirs[@]}"; do
-        if [[ ! -d "$dir" ]]; then
-            missing_dirs+=("$dir")
-        fi
-    done
-    
-    if [[ ${#missing_dirs[@]} -eq 0 ]]; then
-        log_success "All required directories exist"
-        return 0
-    else
-        log_error "Missing directories: ${missing_dirs[*]}"
-        return 1
-    fi
+    validate_directories_exist "Directory structure" "${required_dirs[@]}"
 }
 
 # Function: show_structure_summary

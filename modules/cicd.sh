@@ -65,22 +65,37 @@ create_github_workflows() {
     # Create R package check workflow
     # Choose between full validation or minimal research-focused workflow
     local workflow_template="workflows/r-package.yml"
-    local workflow_description="R package validation workflow"
+    # Choose workflow template based on build mode
+    workflow_template=$(get_workflow_template)
     
-    if [[ "${MINIMAL_PACKAGES:-}" == "true" ]]; then
-        workflow_template="workflows/r-package-minimal.yml"
-        workflow_description="Minimal research project workflow"
-    fi
+    local workflow_description
+    case "$BUILD_MODE" in
+        fast)
+            workflow_description="Minimal research project workflow"
+            ;;
+        comprehensive)
+            workflow_description="Comprehensive R package validation workflow"
+            ;;
+        *)
+            workflow_description="Standard R package validation workflow"
+            ;;
+    esac
     
     if copy_template_file "$workflow_template" ".github/workflows/r-package.yml" "R package check workflow"; then
         track_template_file "$workflow_template" ".github/workflows/r-package.yml"
         log_info "Created $workflow_description"
         log_info "  - Triggers: push/PR to main branch"
-        if [[ "${MINIMAL_PACKAGES:-}" == "true" ]]; then
-            log_info "  - Actions: renv sync, structure validation (minimal/fast)"
-        else
-            log_info "  - Actions: R CMD check, dependency validation, test execution"
-        fi
+        case "$BUILD_MODE" in
+            fast)
+                log_info "  - Actions: renv sync, structure validation (minimal/fast)"
+                ;;
+            comprehensive)
+                log_info "  - Actions: Full R CMD check, extensive testing, coverage analysis"
+                ;;
+            *)
+                log_info "  - Actions: R CMD check, dependency validation, test execution"
+                ;;
+        esac
         log_info "  - Platforms: Ubuntu (primary), with optional multi-platform"
     else
         log_error "Failed to create R package workflow"

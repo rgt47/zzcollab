@@ -7,19 +7,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments. The system consists of:
 
 ### Core Components
-- **Main executable**: `zzcollab.sh` - Primary framework script with integrated team initialization
+- **Main executable**: `zzcollab.sh` - Primary framework script (439 lines, 64% reduction from original)
 - **Modular shell system**: `modules/` directory contains core functionality
 - **Docker-first workflow**: All development happens in containers
 - **R package structure**: Standard R package with testthat for testing
 - **Template system**: `templates/` for project scaffolding
 
 ### Key Architecture Patterns
-- **Modular design**: Shell scripts in `modules/` (core.sh, docker.sh, structure.sh, etc.)
+- **Modular design**: Shell scripts in `modules/` (core.sh, cli.sh, docker.sh, structure.sh, etc.)
 - **Docker inheritance**: Team base images → personal development images
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **CLI best practices**: One-letter flags for all major options (-i, -t, -p, -m, -d)
+- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) replacing 8+ complex flags
+- **Unified systems**: Single tracking, validation, and logging systems across all modules
 
 ## Development Commands
 
@@ -76,18 +77,18 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
 # OR with long flags: zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
-# Fast setup with minimal packages and lightweight CI (5 vs 39 packages - faster initialization)
+# NEW: Simplified build modes (recommended approach)
+# Fast mode: minimal Docker + lightweight packages (fastest setup)
+zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles
+
+# Standard mode: balanced Docker + standard packages (default, recommended)
+zzcollab -i -t TEAM -p PROJECT -S -d ~/dotfiles
+
+# Comprehensive mode: extended Docker + full packages (kitchen sink)
+zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles
+
+# Legacy: Fast setup with minimal packages (deprecated - use -F instead)
 zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
-
-# NEW: Separated Docker and package control (maximum flexibility - 6 combinations)
-# Standard Dockerfile + minimal packages (lightweight packages with full Docker environment)
-zzcollab -i -t TEAM -p PROJECT -M -d ~/dotfiles
-
-# Minimal Dockerfile + standard packages (fastest builds with comprehensive packages)
-zzcollab -i -t TEAM -p PROJECT --minimal-docker -d ~/dotfiles
-
-# Extended Dockerfile + minimal packages (comprehensive Docker with lightweight packages)
-zzcollab -i -t TEAM -p PROJECT --extra-docker -M -d ~/dotfiles
 
 
 # Manual core image building (if needed)
@@ -118,22 +119,36 @@ docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
 # Developer 1 (Team Lead) - Command Line
 # Run from your preferred projects directory (e.g., ~/projects, ~/work)
 cd ~/projects  # or wherever you keep your projects
-zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
-# Fast setup with minimal packages and lightweight CI: zzcollab -i -t TEAM -p PROJECT -m [-d ~/dotfiles]
+
+# NEW: Simplified build modes (recommended)
+zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles     # Fast mode
+zzcollab -i -t TEAM -p PROJECT -S -d ~/dotfiles     # Standard mode (default)
+zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles     # Comprehensive mode
+
+# Legacy (deprecated): zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
 
 # Developer 2+ (Team Members) - Command Line
 git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
 zzcollab -t TEAM -p PROJECT -I shell [-d ~/dotfiles]
 
-# Note: Full mode includes 27 packages pre-installed, minimal mode has 8 essential packages
-# Full: usethis, pkgdown, rcmdcheck, broom, lme4, survival, car, skimr, visdat, etc.
-# Minimal: renv, remotes, devtools, usethis, here, conflicted, rmarkdown, knitr
+# Note: Build modes comparison:
+# Fast (-F): Minimal Docker + lightweight packages (fastest builds, 5 packages)
+# Standard (-S): Balanced Docker + standard packages (recommended, 27 packages)
+# Comprehensive (-C): Extended Docker + full packages (kitchen sink, 39+ packages)
 ```
 
-### Separated Docker and Package Control (NEW)
+### Simplified Build Modes (NEW)
 
-ZZCOLLAB now supports independent control of Docker environments and R package sets for maximum flexibility. This provides 6 possible combinations instead of the previous 3.
+ZZCOLLAB now uses a simplified 3-mode system that replaces the previous complex flag combinations. This provides clear, intuitive choices for users:
+
+#### Build Modes:
+- **Fast (-F)**: Minimal Docker + lightweight packages (fastest builds, 5 packages)
+- **Standard (-S)**: Balanced Docker + standard packages (recommended, 27 packages)  
+- **Comprehensive (-C)**: Extended Docker + full packages (kitchen sink, 39+ packages)
+
+#### Legacy Compatibility:
+The old flags (`-m`, `-x`, `--minimal-docker`, etc.) still work but show deprecation warnings. Users are encouraged to migrate to the new simplified modes.
 
 #### Available Flags:
 - `--minimal-docker`: Use Dockerfile.minimal (fastest builds, no R packages pre-installed)

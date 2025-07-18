@@ -46,13 +46,19 @@ DOCKERFILE_PATH=""
 INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
+
+# Simplified build mode system (replaces complex flag system)
+BUILD_MODE="standard"    # Options: fast, standard, comprehensive
+# fast        = minimal Docker + minimal packages (fastest builds)
+# standard    = standard Docker + standard packages (balanced)
+# comprehensive = extended Docker + full packages (kitchen sink)
+
+# Legacy compatibility flags (deprecated but maintained for backward compatibility)
 MINIMAL_PACKAGES=false
 EXTRA_PACKAGES=false
-
-# Separated Docker and package control flags
-MINIMAL_DOCKER=false     # --minimal-docker: Use Dockerfile.minimal (fastest builds)
-EXTRA_DOCKER=false       # --extra-docker: Use Dockerfile.pluspackages (comprehensive packages)
-MINIMAL_PACKAGES_ONLY=false  # --minimal-packages: Use DESCRIPTION.minimal (lightweight packages)
+MINIMAL_DOCKER=false
+EXTRA_DOCKER=false
+MINIMAL_PACKAGES_ONLY=false
 
 # Show flags (processed after modules are loaded)
 SHOW_HELP=false
@@ -127,24 +133,46 @@ parse_cli_arguments() {
                 PREPARE_DOCKERFILE=true
                 shift
                 ;;
+            --fast|-F)
+                BUILD_MODE="fast"
+                shift
+                ;;
+            --standard|-S)
+                BUILD_MODE="standard"
+                shift
+                ;;
+            --comprehensive|-C)
+                BUILD_MODE="comprehensive"
+                shift
+                ;;
             --minimal|-m)
+                # Legacy compatibility: maps to fast mode
+                BUILD_MODE="fast"
                 MINIMAL_PACKAGES=true
                 shift
                 ;;
             --extra-packages|-x)
+                # Legacy compatibility: maps to comprehensive mode
+                BUILD_MODE="comprehensive"
                 EXTRA_PACKAGES=true
                 shift
                 ;;
             --minimal-docker)
+                # Legacy compatibility: set Docker flag and use fast mode
                 MINIMAL_DOCKER=true
+                BUILD_MODE="fast"
                 shift
                 ;;
             --extra-docker)
+                # Legacy compatibility: set Docker flag and use comprehensive mode
                 EXTRA_DOCKER=true
+                BUILD_MODE="comprehensive"
                 shift
                 ;;
             --minimal-packages|-M)
+                # Legacy compatibility: set package flag and use fast mode
                 MINIMAL_PACKAGES_ONLY=true
+                BUILD_MODE="fast"
                 shift
                 ;;
             --next-steps)
@@ -214,12 +242,12 @@ export_cli_variables() {
     export TEAM_NAME PROJECT_NAME INTERFACE GITHUB_ACCOUNT DOCKERFILE_PATH
     
     # Mode and behavior flags
-    export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE
+    export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE BUILD_MODE
     
-    # Package configuration flags
+    # Legacy package configuration flags (deprecated)
     export MINIMAL_PACKAGES EXTRA_PACKAGES
     
-    # Separated Docker and package control flags
+    # Legacy Docker and package control flags (deprecated)
     export MINIMAL_DOCKER EXTRA_DOCKER MINIMAL_PACKAGES_ONLY
     
     # Show/display flags
@@ -233,43 +261,17 @@ export_cli_variables() {
 # Function: validate_cli_arguments
 # Purpose: Validate CLI argument combinations and required values
 validate_cli_arguments() {
-    # Validate conflicting flags
-    if [[ "$MINIMAL_PACKAGES" == "true" && "$MINIMAL_PACKAGES_ONLY" == "true" ]]; then
-        echo "❌ Error: Cannot use both --minimal (-m) and --minimal-packages (-M) flags" >&2
-        echo "   Use --minimal (-m) for legacy behavior or --minimal-packages (-M) for separated control" >&2
+    # Validate BUILD_MODE is valid
+    if [[ "$BUILD_MODE" != "fast" && "$BUILD_MODE" != "standard" && "$BUILD_MODE" != "comprehensive" ]]; then
+        echo "❌ Error: Invalid build mode '$BUILD_MODE'" >&2
+        echo "   Valid modes: fast, standard, comprehensive" >&2
         exit 1
     fi
     
-    if [[ "$EXTRA_PACKAGES" == "true" && "$EXTRA_DOCKER" == "true" ]]; then
-        echo "❌ Error: Cannot use both --extra-packages (-x) and --extra-docker flags" >&2
-        echo "   Use --extra-packages (-x) for legacy behavior or --extra-docker for separated control" >&2
-        exit 1
-    fi
-    
-    # Validate Docker-related flag combinations
-    if [[ "$MINIMAL_DOCKER" == "true" && "$EXTRA_DOCKER" == "true" ]]; then
-        echo "❌ Error: Cannot use both --minimal-docker and --extra-docker flags" >&2
-        exit 1
-    fi
-    
-    # For init mode, validate that we don't mix legacy and new flags inappropriately
-    if [[ "$INIT_MODE" == "true" ]]; then
-        local legacy_flags_used=false
-        local new_flags_used=false
-        
-        if [[ "$MINIMAL_PACKAGES" == "true" || "$EXTRA_PACKAGES" == "true" ]]; then
-            legacy_flags_used=true
-        fi
-        
-        if [[ "$MINIMAL_DOCKER" == "true" || "$EXTRA_DOCKER" == "true" || "$MINIMAL_PACKAGES_ONLY" == "true" ]]; then
-            new_flags_used=true
-        fi
-        
-        if [[ "$legacy_flags_used" == "true" && "$new_flags_used" == "true" ]]; then
-            echo "⚠️  Warning: Mixing legacy flags (-m, -x) with new separated flags" >&2
-            echo "   For maximum clarity, consider using only the new separated flags:" >&2
-            echo "   --minimal-docker, --extra-docker, --minimal-packages" >&2
-        fi
+    # Warn about deprecated flag usage (informational only)
+    if [[ "$MINIMAL_PACKAGES" == "true" || "$EXTRA_PACKAGES" == "true" || "$MINIMAL_DOCKER" == "true" || "$EXTRA_DOCKER" == "true" || "$MINIMAL_PACKAGES_ONLY" == "true" ]]; then
+        echo "ℹ️  Note: Legacy flags detected. Consider using simplified build modes:" >&2
+        echo "   --fast (minimal), --standard (balanced), --comprehensive (kitchen sink)" >&2
     fi
 }
 
@@ -303,6 +305,7 @@ process_cli() {
 show_cli_debug() {
     echo "🔧 CLI Debug Information:"
     echo "  BUILD_DOCKER: $BUILD_DOCKER"
+    echo "  BUILD_MODE: $BUILD_MODE"
     echo "  DOTFILES_DIR: $DOTFILES_DIR"
     echo "  DOTFILES_NODOT: $DOTFILES_NODOT" 
     echo "  BASE_IMAGE: $BASE_IMAGE"
@@ -311,13 +314,44 @@ show_cli_debug() {
     echo "  INTERFACE: $INTERFACE"
     echo "  GITHUB_ACCOUNT: $GITHUB_ACCOUNT"
     echo "  INIT_MODE: $INIT_MODE"
+    echo "  SHOW_HELP: $SHOW_HELP"
+    echo "  SHOW_NEXT_STEPS: $SHOW_NEXT_STEPS"
+    echo "  --- Legacy flags (deprecated) ---"
     echo "  MINIMAL_PACKAGES: $MINIMAL_PACKAGES"
     echo "  EXTRA_PACKAGES: $EXTRA_PACKAGES"
     echo "  MINIMAL_DOCKER: $MINIMAL_DOCKER"
     echo "  EXTRA_DOCKER: $EXTRA_DOCKER"
     echo "  MINIMAL_PACKAGES_ONLY: $MINIMAL_PACKAGES_ONLY"
-    echo "  SHOW_HELP: $SHOW_HELP"
-    echo "  SHOW_NEXT_STEPS: $SHOW_NEXT_STEPS"
+}
+
+# Helper functions for modules to use simplified build modes
+is_fast_mode() { [[ "$BUILD_MODE" == "fast" ]]; }
+is_standard_mode() { [[ "$BUILD_MODE" == "standard" ]]; }
+is_comprehensive_mode() { [[ "$BUILD_MODE" == "comprehensive" ]]; }
+
+# Helper functions for template selection
+get_dockerfile_template() {
+    case "$BUILD_MODE" in
+        fast) echo "Dockerfile.minimal" ;;
+        comprehensive) echo "Dockerfile.pluspackages" ;;
+        *) echo "Dockerfile" ;;
+    esac
+}
+
+get_description_template() {
+    case "$BUILD_MODE" in
+        fast) echo "DESCRIPTION.minimal" ;;
+        comprehensive) echo "DESCRIPTION.full" ;;
+        *) echo "DESCRIPTION" ;;
+    esac
+}
+
+get_workflow_template() {
+    case "$BUILD_MODE" in
+        fast) echo "r-package-minimal.yml" ;;
+        comprehensive) echo "r-package-full.yml" ;;
+        *) echo "r-package.yml" ;;
+    esac
 }
 
 #=============================================================================

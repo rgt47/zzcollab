@@ -58,12 +58,21 @@ create_core_files() {
     log_info "Creating core R package files..."
     
     # DESCRIPTION file - R package metadata and dependencies
-    # Choose template based on package-specific flags for maximum flexibility
-    local description_template="DESCRIPTION"
-    if [[ "${MINIMAL_PACKAGES_ONLY:-}" == "true" ]]; then
-        description_template="DESCRIPTION.minimal"
-        log_info "Using minimal DESCRIPTION template for faster initialization"
-    fi
+    # Choose template based on build mode (with legacy compatibility)
+    local description_template
+    description_template=$(get_description_template)
+    
+    case "$BUILD_MODE" in
+        fast)
+            log_info "Using minimal DESCRIPTION template for faster initialization"
+            ;;
+        comprehensive)
+            log_info "Using comprehensive DESCRIPTION template with full dependencies"
+            ;;
+        *)
+            log_info "Using standard DESCRIPTION template"
+            ;;
+    esac
     
     if copy_template_file "$description_template" "DESCRIPTION" "DESCRIPTION file"; then
         track_template_file "$description_template" "DESCRIPTION"

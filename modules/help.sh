@@ -57,7 +57,12 @@ OPTIONS:
     -n, --no-docker              Skip Docker image build during setup
         --next-steps             Show development workflow and next steps
     
-    Separated Docker and Package Control (for maximum flexibility):
+    Build modes (simplified control):
+    -F, --fast                 Fast mode: minimal Docker + lightweight packages (fastest setup)
+    -S, --standard             Standard mode: balanced Docker + standard packages (default)
+    -C, --comprehensive        Comprehensive mode: extended Docker + full packages (kitchen sink)
+    
+    Legacy flags (deprecated - use build modes above):
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
     --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
     -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
@@ -83,11 +88,11 @@ EXAMPLES:
     # Basic setup for standalone projects
     $0 -d ~/dotfiles                                # Basic setup with dotfiles
     
-    # NEW: Separated Docker and package control (maximum flexibility)
-    $0 -i -t rgt47 -p study -M -d ~/dotfiles                      # Standard Docker + lightweight packages
-    $0 -i -t rgt47 -p study --minimal-docker -d ~/dotfiles        # Fastest Docker + standard packages
-    $0 -i -t rgt47 -p study --extra-docker -M -d ~/dotfiles       # Comprehensive Docker + lightweight packages
-    $0 -n                                           # Setup without Docker build
+    # NEW: Simplified build modes (recommended)
+    $0 -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages
+    $0 -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
+    $0 -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
+    $0 -n                                                          # Setup without Docker build
 
 MODULES INCLUDED:
     core         - Logging, validation, utilities
@@ -140,7 +145,12 @@ OPTIONAL:
     -m, --minimal              Use minimal package set and CI for faster initialization (5 packages vs 39 - lightweight CI)
     -x, --extra-packages       Use extra packages in team Docker image (Dockerfile.pluspackages)
     
-    # Separated Docker and Package Control (for maximum flexibility):
+    # Build modes (simplified control):
+    -F, --fast                 Fast mode: minimal Docker + lightweight packages (fastest setup)
+    -S, --standard             Standard mode: balanced Docker + standard packages (default)
+    -C, --comprehensive        Comprehensive mode: extended Docker + full packages (kitchen sink)
+    
+    # Legacy flags (deprecated - use build modes above):
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
     --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
     -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
@@ -162,15 +172,15 @@ EXAMPLES:
     # Fast setup with minimal packages (Dockerfile.minimal - fastest builds)
     $0 -i -t rgt47 -p research-study -m -d ~/dotfiles
     
-    # NEW: Separated Docker and package control examples (maximum flexibility)
-    # Standard Dockerfile + minimal packages (5 packages)
-    $0 -i -t rgt47 -p research-study -M -d ~/dotfiles
+    # NEW: Simplified build modes (recommended)
+    # Fast mode: minimal Docker + lightweight packages
+    $0 -i -t rgt47 -p research-study -F -d ~/dotfiles
     
-    # Minimal Dockerfile + standard packages (fastest builds with full package set)
-    $0 -i -t rgt47 -p research-study --minimal-docker -d ~/dotfiles
+    # Standard mode: balanced setup (default)
+    $0 -i -t rgt47 -p research-study -S -d ~/dotfiles
     
-    # Extended Dockerfile + minimal packages (comprehensive Docker, lightweight packages)
-    $0 -i -t rgt47 -p research-study --extra-docker -M -d ~/dotfiles
+    # Comprehensive mode: extended Docker + full packages
+    $0 -i -t rgt47 -p research-study -C -d ~/dotfiles
     
     
     # Alternative: Create directory first, then auto-detect project name
