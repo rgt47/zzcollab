@@ -134,7 +134,6 @@ create_docker_files() {
     
     # Create Dockerfile from template
     # Choose template based on Docker-specific flags for maximum flexibility
-    log_info "DEBUG: MINIMAL_DOCKER=${MINIMAL_DOCKER:-unset}, EXTRA_DOCKER=${EXTRA_DOCKER:-unset}"
     local dockerfile_template="Dockerfile"
     if [[ "${MINIMAL_DOCKER:-}" == "true" ]]; then
         dockerfile_template="Dockerfile.minimal"
