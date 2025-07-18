@@ -1,22 +1,146 @@
-# ZZCOLLAB
+# zzcollab: Docker-based Research Collaboration Framework
 
-[![License: GPL-3](https://img.shields.io/badge/License-GPL%203-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![R-CMD-check](https://github.com/rgt47/zzcollab/workflows/R-CMD-check/badge.svg)](https://github.com/rgt47/zzcollab/actions)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](https://www.docker.com/)
 [![R](https://img.shields.io/badge/R-4.0+-276DC3?logo=r)](https://www.r-project.org/)
 
-A tool for creating reproducible research compendia with R package structure, Docker integration, and automated workflows.
+A comprehensive framework for reproducible research collaboration using Docker containers. `zzcollab` provides both command-line tools and R interfaces to create, manage, and collaborate on research projects with standardized Docker environments, automated CI/CD workflows, and team collaboration tools.
 
 ## Features
 
-- Docker-based development environment
-- R package structure with documentation
-- renv dependency management
-- Analysis templates and paper generation
-- Make-based automation
-- GitHub Actions CI/CD workflows
-- Personal dotfiles integration
-- Symbolic links for navigation
-- Safe file operations (no overwrites)
+- **🐳 Docker-based environments** for reproducible research
+- **👥 Team collaboration** with shared base images
+- **📦 R package interface** for seamless integration
+- **🔄 Automated CI/CD** workflows
+- **📊 Analysis and reporting** tools
+- **🌐 Git integration** for version control
+- **🔧 Three build modes** (fast, standard, comprehensive)
+- **🛠️ Command-line tools** for automation
+- **📚 Comprehensive documentation** and examples
+
+## Installation
+
+### Command Line Tool
+
+```bash
+# Install zzcollab command-line tool
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab
+./install.sh
+```
+
+### R Package
+
+```r
+# Install from GitHub
+devtools::install_github("rgt47/zzcollab")
+
+# Load the package
+library(zzcollab)
+```
+
+## Quick Start with R Interface
+
+### For Team Leaders: Initialize a New Project
+
+```r
+library(zzcollab)
+
+# Initialize a new research project with team collaboration
+init_project(
+  team_name = "myteam",
+  project_name = "myproject",
+  build_mode = "standard",
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+### For Team Members: Join an Existing Project
+
+```r
+# Join an existing project
+join_project(
+  team_name = "myteam",
+  project_name = "myproject",
+  interface = "shell",
+  build_mode = "standard"
+)
+```
+
+### For Individual Use: Setup a Project
+
+```r
+# Setup a project in the current directory
+setup_project(
+  build_mode = "standard",
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+## Build Modes
+
+zzcollab supports three build modes to optimize for different use cases:
+
+| Mode | Description | Docker Size | Package Count | Build Time |
+|------|-------------|-------------|---------------|------------|
+| **Fast** (`-F`) | Minimal setup for quick development | Small | ~8 packages | Fast |
+| **Standard** (`-S`) | Balanced approach (default) | Medium | ~15 packages | Medium |
+| **Comprehensive** (`-C`) | Full-featured environment | Large | ~27 packages | Slow |
+
+## Core R Functions
+
+### Project Management
+- `init_project()` - Initialize team project
+- `join_project()` - Join existing project
+- `setup_project()` - Setup individual project
+
+### Docker Management
+- `status()` - Check container status
+- `rebuild()` - Rebuild Docker images
+- `team_images()` - List team images
+
+### Package Management
+- `add_package()` - Add R packages
+- `sync_env()` - Sync environment with renv
+
+### Analysis & Reporting
+- `run_script()` - Execute R scripts in container
+- `render_report()` - Render analysis reports
+- `validate_repro()` - Check reproducibility
+
+### Git Integration
+- `git_status()` - Check git status
+- `git_commit()` - Create commits
+- `git_push()` - Push to GitHub
+- `create_pr()` - Create pull requests
+- `create_branch()` - Create feature branches
+
+## Example R Workflow
+
+```r
+# 1. Initialize project
+init_project("datascience", "covid-analysis", build_mode = "standard")
+
+# 2. Add required packages
+add_package(c("tidyverse", "lubridate", "plotly"))
+
+# 3. Create feature branch
+create_branch("feature/exploratory-analysis")
+
+# 4. Run analysis
+run_script("scripts/exploratory_analysis.R")
+
+# 5. Render report
+render_report("analysis/covid_report.Rmd")
+
+# 6. Validate reproducibility
+validate_repro()
+
+# 7. Commit and push
+git_commit("Add COVID-19 exploratory analysis")
+git_push()
+```
 
 ## Installation
 

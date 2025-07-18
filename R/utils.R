@@ -121,11 +121,11 @@ init_project <- function(team_name, project_name,
   
   # Add build mode flag
   if (build_mode == "fast") {
-    cmd <- paste(cmd, "--fast")
+    cmd <- paste(cmd, "-F")
   } else if (build_mode == "comprehensive") {
-    cmd <- paste(cmd, "--comprehensive")
+    cmd <- paste(cmd, "-C")
   } else {
-    cmd <- paste(cmd, "--standard")
+    cmd <- paste(cmd, "-S")
   }
   
   message("Running: ", cmd)
@@ -163,11 +163,11 @@ join_project <- function(team_name, project_name, interface = "shell",
   
   # Add build mode flag
   if (build_mode == "fast") {
-    cmd <- paste(cmd, "--fast")
+    cmd <- paste(cmd, "-F")
   } else if (build_mode == "comprehensive") {
-    cmd <- paste(cmd, "--comprehensive")
+    cmd <- paste(cmd, "-C")
   } else {
-    cmd <- paste(cmd, "--standard")
+    cmd <- paste(cmd, "-S")
   }
   
   message("Running: ", cmd)
@@ -470,11 +470,11 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = FALSE,
   
   # Add build mode flag
   if (build_mode == "fast") {
-    cmd <- paste(cmd, "--fast")
+    cmd <- paste(cmd, "-F")
   } else if (build_mode == "comprehensive") {
-    cmd <- paste(cmd, "--comprehensive")
+    cmd <- paste(cmd, "-C")
   } else {
-    cmd <- paste(cmd, "--standard")
+    cmd <- paste(cmd, "-S")
   }
   
   message("Running: ", cmd)
