@@ -30,166 +30,48 @@ readonly MANIFEST_FILE=".zzcollab_manifest.json"
 readonly MANIFEST_TXT=".zzcollab_manifest.txt"
 
 #=============================================================================
-# COMMAND LINE ARGUMENT PARSING (preserved from original)
+# CLI MODULE LOADING AND PROCESSING
 #=============================================================================
 
-require_arg() {
-    [[ -n "${2:-}" ]] || { echo "❌ Error: $1 requires an argument" >&2; exit 1; }
-}
+# Load CLI module first (before other modules)
+if [[ -f "$MODULES_DIR/cli.sh" ]]; then
+    # shellcheck source=modules/cli.sh
+    source "$MODULES_DIR/cli.sh"
+else
+    log_error "CLI module not found: $MODULES_DIR/cli.sh"
+    exit 1
+fi
 
-# Initialize variables for command line options with same defaults as original
-BUILD_DOCKER=true
-DOTFILES_DIR=""
-DOTFILES_NODOT=false
-BASE_IMAGE="rocker/r-ver"
-
-# New user-friendly interface variables
-TEAM_NAME=""
-PROJECT_NAME=""
-INTERFACE=""
-GITHUB_ACCOUNT=""
-DOCKERFILE_PATH=""
-
-# Initialization mode variables
-INIT_MODE=false
-USE_DOTFILES=false
-PREPARE_DOCKERFILE=false
-MINIMAL_PACKAGES=false
-EXTRA_PACKAGES=false
-ULTRA_MINIMAL_PACKAGES=false
-BARE_MINIMUM_PACKAGES=false
-
-# Separated Docker and package control flags
-MINIMAL_DOCKER=false     # --minimal-docker: Use Dockerfile.minimal (fastest builds)
-EXTRA_DOCKER=false       # --extra-docker: Use Dockerfile.pluspackages (comprehensive packages)
-MINIMAL_PACKAGES_ONLY=false  # --minimal-packages: Use DESCRIPTION.minimal (lightweight packages)
-
-# Process all command line arguments (identical to original zzcollab.sh)
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --no-docker|-n)
-            BUILD_DOCKER=false
-            shift
-            ;;
-        --dotfiles|-d)
-            require_arg "$1" "$2"
-            DOTFILES_DIR="$2"
-            shift 2
-            ;;
-        --dotfiles-nodot|-D)
-            require_arg "$1" "$2"
-            DOTFILES_DIR="$2"
-            DOTFILES_NODOT=true
-            shift 2
-            ;;
-        --base-image|-b)
-            require_arg "$1" "$2"
-            BASE_IMAGE="$2"
-            shift 2
-            ;;
-        --team|-t)
-            require_arg "$1" "$2"
-            TEAM_NAME="$2"
-            shift 2
-            ;;
-        --project-name|--project|-p)
-            require_arg "$1" "$2"
-            PROJECT_NAME="$2"
-            shift 2
-            ;;
-        --interface|-I)
-            require_arg "$1" "$2"
-            INTERFACE="$2"
-            shift 2
-            ;;
-        --init|-i)
-            INIT_MODE=true
-            shift
-            ;;
-        --team-name)
-            require_arg "$1" "$2"
-            TEAM_NAME="$2"
-            shift 2
-            ;;
-        --github-account|-g)
-            require_arg "$1" "$2"
-            GITHUB_ACCOUNT="$2"
-            shift 2
-            ;;
-        --dockerfile|-f)
-            require_arg "$1" "$2"
-            DOCKERFILE_PATH="$2"
-            shift 2
-            ;;
-        --prepare-dockerfile|-P)
-            PREPARE_DOCKERFILE=true
-            shift
-            ;;
-        --minimal|-m)
-            MINIMAL_PACKAGES=true
-            shift
-            ;;
-        --extra-packages|-x)
-            EXTRA_PACKAGES=true
-            shift
-            ;;
-        --minimal-docker)
-            MINIMAL_DOCKER=true
-            shift
-            ;;
-        --extra-docker)
-            EXTRA_DOCKER=true
-            shift
-            ;;
-        --minimal-packages|-M)
-            MINIMAL_PACKAGES_ONLY=true
-            shift
-            ;;
-        --next-steps)
-            # We'll implement this after modules are loaded
-            SHOW_NEXT_STEPS=true
-            shift
-            ;;
-        --help|-h)
-            # We'll implement this after modules are loaded
-            SHOW_HELP=true
-            shift
-            ;;
-        *)
-            echo "❌ Error: Unknown option '$1'" >&2
-            echo "Use --help for usage information" >&2
-            exit 1
-            ;;
-    esac
-done
+# Process all CLI arguments using CLI module
+process_cli "$@"
 
 #=============================================================================
-# USER-FRIENDLY INTERFACE PROCESSING
+# EARLY EXIT FOR HELP AND NEXT STEPS (before loading heavy modules)
 #=============================================================================
 
-# Convert user-friendly flags to BASE_IMAGE if provided (only for non-init mode)
+# For init mode help, we need team_init and help modules loaded
+# For regular help and next-steps, we can show immediately
 if [[ "$INIT_MODE" != "true" ]]; then
-    if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
-        case "$INTERFACE" in
-            shell)
-                BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-shell"
-                ;;
-            rstudio)
-                BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-rstudio"
-                ;;
-            *)
-                echo "❌ Error: Unknown interface '$INTERFACE'" >&2
-                echo "Valid interfaces: shell, rstudio" >&2
-                exit 1
-                ;;
-        esac
-        echo "ℹ️  Using team image: $BASE_IMAGE"
-    elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
-        # If some team flags are provided but not all, show error (only for non-init mode)
-        echo "❌ Error: When using team interface, all flags are required:" >&2
-        echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
-        echo "  Valid interfaces: shell, rstudio" >&2
-        exit 1
+    if [[ "${SHOW_HELP:-false}" == "true" ]] || [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
+        # Load core module first (required by help module)
+        if [[ -f "$MODULES_DIR/core.sh" ]]; then
+            source "$MODULES_DIR/core.sh" >/dev/null 2>&1
+        fi
+        
+        # Load help module
+        if [[ -f "$MODULES_DIR/help.sh" ]]; then
+            source "$MODULES_DIR/help.sh" >/dev/null 2>&1
+            
+            if [[ "${SHOW_HELP:-false}" == "true" ]]; then
+                show_help
+                exit 0
+            fi
+            
+            if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
+                show_next_steps
+                exit 0
+            fi
+        fi
     fi
 fi
 
@@ -270,7 +152,7 @@ log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
 # Note: analysis module is loaded later after directory structure is created
-modules_to_load=("rpackage" "docker" "cicd" "devtools" "team_init")
+modules_to_load=("rpackage" "docker" "cicd" "devtools" "team_init" "help")
 
 for module in "${modules_to_load[@]}"; do
     if [[ -f "$MODULES_DIR/${module}.sh" ]]; then
@@ -284,245 +166,13 @@ for module in "${modules_to_load[@]}"; do
 done
 
 #=============================================================================
-# HELP AND NEXT STEPS (to be extracted to modules/help.sh in Priority 2)
+# HELP AND NEXT STEPS (extracted to modules/help.sh)
 #=============================================================================
 
-show_help() {
-    cat << EOF
-$0 - Complete Research Compendium Setup (Modular Implementation)
-
-Creates a comprehensive research compendium with R package structure, Docker integration,
-analysis templates, and reproducible workflows.
-
-USAGE:
-    $0 [OPTIONS]
-
-OPTIONS:
-    Team initialization (Developer 1 - Team Lead):
-    -i, --init                   Initialize new team project with Docker images and GitHub repo
-    -t, --team-name NAME         Team name (Docker Hub organization) [required with --init]
-    -p, --project-name NAME      Project name [required with --init]
-    -g, --github-account NAME    GitHub account (default: same as team-name)
-    
-    Team collaboration (Developer 2+ - Team Members):
-    -t, --team NAME              Team name (Docker Hub organization)
-    -p, --project-name NAME      Project name  
-    -I, --interface TYPE         Interface type: shell, rstudio
-    
-    Common options:
-    -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
-    -D, --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
-    
-    Advanced options:
-    -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
-    -n, --no-docker              Skip Docker image build during setup
-        --next-steps             Show development workflow and next steps
-    
-    Separated Docker and Package Control (for maximum flexibility):
-    --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
-    --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
-    -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
-    
-    -h, --help                   Show this help message
-
-EXAMPLES:
-    # Team Lead - Initialize new team project (Developer 1)
-    $0 -i -t rgt47 -p research-study -d ~/dotfiles
-    $0 --init --team-name mylab --project-name study2024 --github-account myorg
-    
-    # Alternative: Create directory first, then run in it (project name auto-detected)
-    mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
-    
-    # Team Members - Join existing project (Developer 2+)
-    $0 -t rgt47 -p research-study -I shell -d ~/dotfiles
-    $0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
-    
-    # Advanced usage with custom base images
-    $0 -b rocker/tidyverse -d ~/dotfiles
-    $0 --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
-    
-    # Basic setup for standalone projects
-    $0 -d ~/dotfiles                                # Basic setup with dotfiles
-    
-    # NEW: Separated Docker and package control (maximum flexibility)
-    $0 -i -t rgt47 -p study -M -d ~/dotfiles                      # Standard Docker + lightweight packages
-    $0 -i -t rgt47 -p study --minimal-docker -d ~/dotfiles        # Fastest Docker + standard packages
-    $0 -i -t rgt47 -p study --extra-docker -M -d ~/dotfiles       # Comprehensive Docker + lightweight packages
-    $0 -n                                           # Setup without Docker build
-
-MODULES INCLUDED:
-    core         - Logging, validation, utilities
-    templates    - Template processing and file creation
-    structure    - Directory structure and navigation
-    rpackage     - R package development framework
-    docker       - Container integration and builds
-    analysis     - Research report and analysis templates
-    cicd         - GitHub Actions workflows
-    devtools     - Makefile, configs, development tools
-    team_init    - Team setup and initialization workflows
-
-CREATED STRUCTURE:
-    ├── R/                     # Package functions
-    ├── analysis/              # Research workflow
-    ├── data/                  # Data management
-    ├── tests/                 # Unit tests
-    ├── .github/workflows/     # CI/CD automation
-    ├── Dockerfile             # Container definition
-    ├── Makefile              # Build automation
-    └── Symbolic links (a→data, n→analysis, etc.)
-
-For detailed documentation, see ZZCOLLAB_USER_GUIDE.md after setup.
-EOF
-}
-
-show_next_steps() {
-    cat << 'EOF'
-🚀 ZZCOLLAB NEXT STEPS
-
-After running the modular setup script, here's how to get started:
-
-📁 PROJECT STRUCTURE:
-   Your project now has a complete research compendium with:
-   - R package structure with functions and tests
-   - Analysis workflow with report templates
-   - Docker environment for reproducibility
-   - CI/CD workflows for automation
-
-🐳 DOCKER DEVELOPMENT:
-   Start your development environment:
-   
-   make docker-build          # Build the Docker image
-   make docker-rstudio        # → http://localhost:8787 (user: analyst, pass: analyst)
-   make docker-r              # R console in container
-   make docker-zsh            # Interactive shell with your dotfiles
-   
-📝 ANALYSIS WORKFLOW:
-   1. Place raw data in data/raw_data/
-   2. Develop analysis scripts in scripts/
-   3. Write your report in analysis/report/report.Rmd
-   4. Use 'make docker-render' to generate PDF
-
-🔧 PACKAGE DEVELOPMENT:
-   make check                 # R CMD check validation
-   make test                  # Run testthat tests
-   make document              # Generate documentation
-   ./dev.sh setup             # Quick development setup
-
-📊 DATA MANAGEMENT:
-   - Document datasets in data/metadata/
-   - Use analysis/templates/ for common patterns
-   - Validate data with scripts in data/validation/
-
-🤝 COLLABORATION:
-   git init                   # Initialize version control
-   git add .                  # Stage all files
-   git commit -m "Initial zzcollab setup"
-   # Push to GitHub to activate CI/CD workflows
-
-🔄 AUTOMATION:
-   - GitHub Actions will run package checks automatically
-   - Papers render automatically when analysis/ changes
-   - Use pre-commit hooks for code quality
-
-📄 DOCUMENTATION:
-   - See ZZCOLLAB_USER_GUIDE.md for comprehensive guide
-   - Use make help for all available commands
-   - Check .github/workflows/ for CI/CD documentation
-
-🆘 GETTING HELP:
-   make help                 # See all available commands
-   ./zzcollab-uninstall.sh  # Remove created files if needed
-   
-🧹 UNINSTALL:
-   All created files are tracked in .zzcollab_manifest.json
-   Run './zzcollab-uninstall.sh' to remove everything cleanly
-
-Happy researching! 🎉
-EOF
-}
-
-show_init_help() {
-    cat << EOF
-$0 --init - Team initialization for ZZCOLLAB research collaboration
-
-USAGE:
-    $0 --init --team-name TEAM --project-name PROJECT [OPTIONS]
-
-REQUIRED:
-    -t, --team-name NAME        Docker Hub team/organization name
-    -p, --project-name NAME     Project name (will be used for directories and images)
-
-OPTIONAL:
-    -g, --github-account NAME   GitHub account name (default: same as team-name)
-    -d, --dotfiles PATH         Path to dotfiles directory (files already have dots)
-    -D, --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
-    -f, --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile)
-    -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
-    -m, --minimal              Use minimal package set and CI for faster initialization (5 packages vs 39 - lightweight CI)
-    -x, --extra-packages       Use extra packages in team Docker image (Dockerfile.pluspackages)
-    
-    # Separated Docker and Package Control (for maximum flexibility):
-    --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
-    --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
-    -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
-    
-    -h, --help                 Show this help message
-
-EXAMPLES:
-    # Prepare project for Dockerfile editing (Developer 1 workflow)
-    $0 -i -t rgt47 -p research-study -P
-    # Edit research-study/Dockerfile.teamcore as needed, then run:
-    $0 -i -t rgt47 -p research-study
-
-    # Direct setup with standard Dockerfile
-    $0 -i -t rgt47 -p research-study -d ~/dotfiles
-    
-    # Setup with extra packages (Dockerfile.pluspackages - comprehensive package set)
-    $0 -i -t rgt47 -p research-study -x -d ~/dotfiles
-    
-    # Fast setup with minimal packages (Dockerfile.minimal - fastest builds)
-    $0 -i -t rgt47 -p research-study -m -d ~/dotfiles
-    
-    # NEW: Separated Docker and package control examples (maximum flexibility)
-    # Standard Dockerfile + minimal packages (5 packages)
-    $0 -i -t rgt47 -p research-study -M -d ~/dotfiles
-    
-    # Minimal Dockerfile + standard packages (fastest builds with full package set)
-    $0 -i -t rgt47 -p research-study --minimal-docker -d ~/dotfiles
-    
-    # Extended Dockerfile + minimal packages (comprehensive Docker, lightweight packages)
-    $0 -i -t rgt47 -p research-study --extra-docker -M -d ~/dotfiles
-    
-    
-    # Alternative: Create directory first, then auto-detect project name
-    mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
-
-    # With custom GitHub account
-    $0 --init --team-name rgt47 --project-name research-study --github-account mylab
-
-    # With dotfiles (files already have dots: .bashrc, .vimrc, etc.)
-    $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
-
-    # With dotfiles that need dots added (files like: bashrc, vimrc, etc.)
-    $0 -i -t rgt47 -p research-study -D ~/Dropbox/dotfiles
-
-WORKFLOW:
-    1. Create project directory
-    2. Copy and customize Dockerfile.teamcore
-    3. Build shell and RStudio core images
-    4. Push images to Docker Hub
-    5. Initialize zzcollab project
-    6. Create private GitHub repository
-    7. Push initial commit
-
-PREREQUISITES:
-    - Docker installed and running
-    - Docker Hub account and logged in (docker login)
-    - GitHub CLI installed and authenticated (gh auth login)
-    - zzcollab installed and available in PATH
-
-EOF
-}
+# Help functions now loaded from modules/help.sh:
+# - show_help()
+# - show_init_help() 
+# - show_next_steps()
 
 #=============================================================================
 # MANIFEST INITIALIZATION
@@ -797,5 +447,5 @@ main() {
 
 # Only run main if script is executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
+    main
 fi
