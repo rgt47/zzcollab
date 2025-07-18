@@ -141,7 +141,7 @@ while [[ $# -gt 0 ]]; do
             EXTRA_DOCKER=true
             shift
             ;;
-        --minimal-packages)
+        --minimal-packages|-M)
             MINIMAL_PACKAGES_ONLY=true
             shift
             ;;
@@ -321,7 +321,7 @@ OPTIONS:
     Separated Docker and Package Control (for maximum flexibility):
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
     --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
-    --minimal-packages         Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+    -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
     
     -h, --help                   Show this help message
 
@@ -345,9 +345,9 @@ EXAMPLES:
     $0 -d ~/dotfiles                                # Basic setup with dotfiles
     
     # NEW: Separated Docker and package control (maximum flexibility)
-    $0 -i -t rgt47 -p study --minimal-packages -d ~/dotfiles      # Standard Docker + lightweight packages
+    $0 -i -t rgt47 -p study -M -d ~/dotfiles                      # Standard Docker + lightweight packages
     $0 -i -t rgt47 -p study --minimal-docker -d ~/dotfiles        # Fastest Docker + standard packages
-    $0 -i -t rgt47 -p study --extra-docker --minimal-packages -d ~/dotfiles   # Comprehensive Docker + lightweight packages
+    $0 -i -t rgt47 -p study --extra-docker -M -d ~/dotfiles       # Comprehensive Docker + lightweight packages
     $0 -n                                           # Setup without Docker build
 
 MODULES INCLUDED:
@@ -544,7 +544,7 @@ OPTIONAL:
     # Separated Docker and Package Control (for maximum flexibility):
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
     --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
-    --minimal-packages         Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+    -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
     
     -h, --help                 Show this help message
 
@@ -565,13 +565,13 @@ EXAMPLES:
     
     # NEW: Separated Docker and package control examples (maximum flexibility)
     # Standard Dockerfile + minimal packages (5 packages)
-    $0 -i -t rgt47 -p research-study --minimal-packages -d ~/dotfiles
+    $0 -i -t rgt47 -p research-study -M -d ~/dotfiles
     
     # Minimal Dockerfile + standard packages (fastest builds with full package set)
     $0 -i -t rgt47 -p research-study --minimal-docker -d ~/dotfiles
     
     # Extended Dockerfile + minimal packages (comprehensive Docker, lightweight packages)
-    $0 -i -t rgt47 -p research-study --extra-docker --minimal-packages -d ~/dotfiles
+    $0 -i -t rgt47 -p research-study --extra-docker -M -d ~/dotfiles
     
     
     # Alternative: Create directory first, then auto-detect project name
@@ -841,8 +841,50 @@ run_team_initialization() {
         exit 0
     fi
 
-    # Step 3: Build shell core image
-    print_status "Step 3: Building shell core image..."
+    # Step 3: Create basic project structure for Docker build
+    print_status "Step 3: Creating basic project structure..."
+    
+    # Create basic files needed for Docker build
+    # We need to create minimal versions of files that the Dockerfile expects
+    
+    # Create minimal DESCRIPTION file
+    if [[ ! -f "DESCRIPTION" ]]; then
+        cat > DESCRIPTION << EOF
+Package: ${PROJECT_NAME}
+Title: Research Compendium for ${PROJECT_NAME}
+Version: 0.0.0.9000
+Authors@R: 
+    person("Team Lead", email = "lead@example.com", role = c("aut", "cre"))
+Description: This is a research compendium for the ${PROJECT_NAME} project.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    here,
+    renv
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+EOF
+        print_success "Created basic DESCRIPTION file"
+    fi
+    
+    # Create minimal .zshrc_docker file
+    if [[ ! -f ".zshrc_docker" ]]; then
+        cat > .zshrc_docker << 'EOF'
+# Basic zsh configuration for Docker container
+# This is a minimal version for team image building
+export PS1="%F{blue}%n@%m%f:%F{green}%~%f$ "
+EOF
+        print_success "Created basic .zshrc_docker file"
+    fi
+    
+    # Step 4: Build shell core image
+    print_status "Step 4: Building shell core image..."
     docker build -f Dockerfile.teamcore \
         --build-arg BASE_IMAGE=rocker/r-ver \
         --build-arg TEAM_NAME="$TEAM_NAME" \
@@ -853,8 +895,8 @@ run_team_initialization() {
         "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
     print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
 
-    # Step 4: Build RStudio core image
-    print_status "Step 4: Building RStudio core image..."
+    # Step 5: Build RStudio core image
+    print_status "Step 5: Building RStudio core image..."
     docker build -f Dockerfile.teamcore \
         --build-arg BASE_IMAGE=rocker/rstudio \
         --build-arg TEAM_NAME="$TEAM_NAME" \
@@ -865,16 +907,16 @@ run_team_initialization() {
         "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
     print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
 
-    # Step 5: Push images to Docker Hub
-    print_status "Step 5: Pushing images to Docker Hub..."
+    # Step 6: Push images to Docker Hub
+    print_status "Step 6: Pushing images to Docker Hub..."
     docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
     docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
     docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
     docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
     print_success "Pushed all images to Docker Hub"
 
-    # Step 6: Initialize zzcollab project
-    print_status "Step 6: Initializing zzcollab project..."
+    # Step 7: Initialize full zzcollab project
+    print_status "Step 7: Initializing full zzcollab project..."
     
     # Prepare zzcollab arguments
     ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell"
@@ -886,12 +928,23 @@ run_team_initialization() {
         fi
     fi
     
+    # Add the new flags if they were passed to the original command
+    if [[ "${MINIMAL_DOCKER:-}" == "true" ]]; then
+        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --minimal-docker"
+    fi
+    if [[ "${EXTRA_DOCKER:-}" == "true" ]]; then
+        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --extra-docker"
+    fi
+    if [[ "${MINIMAL_PACKAGES_ONLY:-}" == "true" ]]; then
+        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --minimal-packages"
+    fi
+    
     # Run zzcollab setup (calling ourselves recursively but without --init)
     eval "$0 $ZZCOLLAB_ARGS"
     print_success "Initialized zzcollab project with custom base image"
 
-    # Step 7: Initialize git repository
-    print_status "Step 7: Initializing git repository..."
+    # Step 8: Initialize git repository
+    print_status "Step 8: Initializing git repository..."
     git init
     git add .
     git commit -m "🎉 Initial research project setup
@@ -906,8 +959,8 @@ run_team_initialization() {
 Co-Authored-By: zzcollab <noreply@zzcollab.dev>"
     print_success "Initialized git repository with initial commit"
 
-    # Step 8: Create private GitHub repository
-    print_status "Step 8: Creating private GitHub repository..."
+    # Step 9: Create private GitHub repository
+    print_status "Step 9: Creating private GitHub repository..."
 
     # Check if repository already exists
     if gh repo view "${GITHUB_ACCOUNT}/${PROJECT_NAME}" >/dev/null 2>&1; then
