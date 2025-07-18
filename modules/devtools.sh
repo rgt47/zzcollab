@@ -29,18 +29,7 @@ fi
 # MANIFEST TRACKING FUNCTIONS
 #=============================================================================
 
-# Track dotfiles for uninstall capability
-# Arguments: $1 - dotfile path that was created
-track_dotfile() {
-    local file="$1"
-    if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
-        local tmp
-        tmp=$(mktemp)
-        jq --arg file "$file" '.dotfiles += [$file]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
-    elif [[ -f "$MANIFEST_TXT" ]]; then
-        echo "dotfile:$file" >> "$MANIFEST_TXT"
-    fi
-}
+# Tracking functions are now provided by core.sh
 
 #=============================================================================
 # MAKEFILE CREATION (extracted from lines 561-569)

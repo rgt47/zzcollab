@@ -111,6 +111,90 @@ command_exists() {
 }
 
 #=============================================================================
+# UNIFIED TRACKING SYSTEM
+#=============================================================================
+
+# Function: track_item
+# Purpose: Universal tracking function for all manifest items
+# Arguments: $1 - type (directory, file, template, symlink, dotfile, docker_image)
+#           $2 - primary data (path, file, template, etc.)
+#           $3 - secondary data (for symlinks: target, templates: dest)
+track_item() {
+    local type="$1"
+    local data1="$2"
+    local data2="${3:-}"
+    
+    case "$type" in
+        directory)
+            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+                local tmp
+                tmp=$(mktemp)
+                jq --arg dir "$data1" '.directories += [$dir]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
+            elif [[ -f "$MANIFEST_TXT" ]]; then
+                echo "directory:$data1" >> "$MANIFEST_TXT"
+            fi
+            ;;
+        file)
+            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+                local tmp
+                tmp=$(mktemp)
+                jq --arg file "$data1" '.files += [$file]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
+            elif [[ -f "$MANIFEST_TXT" ]]; then
+                echo "file:$data1" >> "$MANIFEST_TXT"
+            fi
+            ;;
+        template)
+            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+                local tmp
+                tmp=$(mktemp)
+                jq --arg template "$data1" --arg dest "$data2" '.template_files += [{"template": $template, "destination": $dest}]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
+            elif [[ -f "$MANIFEST_TXT" ]]; then
+                echo "template:$data1:$data2" >> "$MANIFEST_TXT"
+            fi
+            ;;
+        symlink)
+            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+                local tmp
+                tmp=$(mktemp)
+                jq --arg link "$data1" --arg target "$data2" '.symlinks += [{"link": $link, "target": $target}]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
+            elif [[ -f "$MANIFEST_TXT" ]]; then
+                echo "symlink:$data1:$data2" >> "$MANIFEST_TXT"
+            fi
+            ;;
+        dotfile)
+            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+                local tmp
+                tmp=$(mktemp)
+                jq --arg dotfile "$data1" '.dotfiles += [$dotfile]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
+            elif [[ -f "$MANIFEST_TXT" ]]; then
+                echo "dotfile:$data1" >> "$MANIFEST_TXT"
+            fi
+            ;;
+        docker_image)
+            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+                local tmp
+                tmp=$(mktemp)
+                jq --arg image "$data1" '.docker_image = $image' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
+            elif [[ -f "$MANIFEST_TXT" ]]; then
+                echo "docker_image:$data1" >> "$MANIFEST_TXT"
+            fi
+            ;;
+        *)
+            log_error "Unknown tracking type: $type"
+            return 1
+            ;;
+    esac
+}
+
+# Legacy wrapper functions for backward compatibility
+track_directory() { track_item "directory" "$1"; }
+track_file() { track_item "file" "$1"; }
+track_template_file() { track_item "template" "$1" "$2"; }
+track_symlink() { track_item "symlink" "$1" "$2"; }
+track_dotfile() { track_item "dotfile" "$1"; }
+track_docker_image() { track_item "docker_image" "$1"; }
+
+#=============================================================================
 # CORE MODULE VALIDATION
 #=============================================================================
 

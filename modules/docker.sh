@@ -30,18 +30,7 @@ fi
 # MANIFEST TRACKING FUNCTIONS
 #=============================================================================
 
-# Track Docker image creation for uninstall capability
-# Arguments: $1 - Docker image name/tag
-track_docker_image() {
-    local image="$1"
-    if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
-        local tmp
-        tmp=$(mktemp)
-        jq --arg image "$image" '.docker_image = $image' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
-    elif [[ -f "$MANIFEST_TXT" ]]; then
-        echo "docker_image:$image" >> "$MANIFEST_TXT"
-    fi
-}
+# Tracking functions are now provided by core.sh
 
 #=============================================================================
 # R VERSION DETECTION (extracted from lines 508-523)

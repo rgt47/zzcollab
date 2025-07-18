@@ -31,32 +31,7 @@ fi
 # MANIFEST TRACKING FUNCTIONS
 #=============================================================================
 
-# Track file creation for uninstall capability
-# Arguments: $1 - file path that was created
-track_file() {
-    local file="$1"
-    if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
-        local tmp
-        tmp=$(mktemp)
-        jq --arg file "$file" '.files += [$file]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
-    elif [[ -f "$MANIFEST_TXT" ]]; then
-        echo "file:$file" >> "$MANIFEST_TXT"
-    fi
-}
-
-# Track template file usage for uninstall capability
-# Arguments: $1 - template name, $2 - destination file
-track_template_file() {
-    local template="$1"
-    local dest="$2"
-    if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
-        local tmp
-        tmp=$(mktemp)
-        jq --arg template "$template" --arg dest "$dest" '.template_files += [{"template": $template, "destination": $dest}]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
-    elif [[ -f "$MANIFEST_TXT" ]]; then
-        echo "template:$template:$dest" >> "$MANIFEST_TXT"
-    fi
-}
+# Tracking functions are now provided by core.sh
 
 #=============================================================================
 # R PACKAGE CORE FILES CREATION (extracted from lines 418-477)

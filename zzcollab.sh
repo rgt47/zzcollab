@@ -79,22 +79,11 @@ fi
 # MODULE LOADING SYSTEM
 #=============================================================================
 
-# Basic logging before modules are loaded
-log_info() {
-    printf "ℹ️  %s\n" "$*" >&2
-}
-
-log_error() {
-    printf "❌ %s\n" "$*" >&2
-}
-
-log_success() {
-    printf "✅ %s\n" "$*" >&2
-}
-
-log_warning() {
-    printf "⚠️  %s\n" "$*" >&2
-}
+# Basic logging before modules are loaded (will be replaced by core.sh functions)
+log_info() { printf "ℹ️  %s\n" "$*" >&2; }
+log_error() { printf "❌ %s\n" "$*" >&2; }
+log_success() { printf "✅ %s\n" "$*" >&2; }
+log_warning() { printf "⚠️  %s\n" "$*" >&2; }
 
 # Validate modules directory exists
 if [[ ! -d "$MODULES_DIR" ]]; then

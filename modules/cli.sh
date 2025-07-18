@@ -48,8 +48,6 @@ USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
 MINIMAL_PACKAGES=false
 EXTRA_PACKAGES=false
-ULTRA_MINIMAL_PACKAGES=false
-BARE_MINIMUM_PACKAGES=false
 
 # Separated Docker and package control flags
 MINIMAL_DOCKER=false     # --minimal-docker: Use Dockerfile.minimal (fastest builds)
@@ -219,7 +217,7 @@ export_cli_variables() {
     export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE
     
     # Package configuration flags
-    export MINIMAL_PACKAGES EXTRA_PACKAGES ULTRA_MINIMAL_PACKAGES BARE_MINIMUM_PACKAGES
+    export MINIMAL_PACKAGES EXTRA_PACKAGES
     
     # Separated Docker and package control flags
     export MINIMAL_DOCKER EXTRA_DOCKER MINIMAL_PACKAGES_ONLY

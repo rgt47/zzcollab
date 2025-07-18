@@ -23,32 +23,7 @@ fi
 # MANIFEST TRACKING FUNCTIONS
 #=============================================================================
 
-# Track directory creation for uninstall capability
-# Arguments: $1 - directory path that was created
-track_directory() {
-    local dir="$1"
-    if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
-        local tmp
-        tmp=$(mktemp)
-        jq --arg dir "$dir" '.directories += [$dir]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
-    elif [[ -f "$MANIFEST_TXT" ]]; then
-        echo "directory:$dir" >> "$MANIFEST_TXT"
-    fi
-}
-
-# Track symbolic link creation for uninstall capability
-# Arguments: $1 - link name, $2 - target path
-track_symlink() {
-    local link="$1"
-    local target="$2"
-    if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
-        local tmp
-        tmp=$(mktemp)
-        jq --arg link "$link" --arg target "$target" '.symlinks += [{"link": $link, "target": $target}]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
-    elif [[ -f "$MANIFEST_TXT" ]]; then
-        echo "symlink:$link:$target" >> "$MANIFEST_TXT"
-    fi
-}
+# Tracking functions are now provided by core.sh
 
 #=============================================================================
 # DIRECTORY STRUCTURE CREATION (extracted from lines 386-416)
