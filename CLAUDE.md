@@ -79,6 +79,16 @@ zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
 # Fast setup with minimal packages and lightweight CI (5 vs 39 packages - faster initialization)
 zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
 
+# NEW: Separated Docker and package control (maximum flexibility - 6 combinations)
+# Standard Dockerfile + minimal packages (lightweight packages with full Docker environment)
+zzcollab -i -t TEAM -p PROJECT --minimal-packages -d ~/dotfiles
+
+# Minimal Dockerfile + standard packages (fastest builds with comprehensive packages)
+zzcollab -i -t TEAM -p PROJECT --minimal-docker -d ~/dotfiles
+
+# Extended Dockerfile + minimal packages (comprehensive Docker with lightweight packages)
+zzcollab -i -t TEAM -p PROJECT --extra-docker --minimal-packages -d ~/dotfiles
+
 
 # Manual core image building (if needed)
 cd /path/to/zzcollab
@@ -120,6 +130,39 @@ zzcollab -t TEAM -p PROJECT -I shell [-d ~/dotfiles]
 # Full: usethis, pkgdown, rcmdcheck, broom, lme4, survival, car, skimr, visdat, etc.
 # Minimal: renv, remotes, devtools, usethis, here, conflicted, rmarkdown, knitr
 ```
+
+### Separated Docker and Package Control (NEW)
+
+ZZCOLLAB now supports independent control of Docker environments and R package sets for maximum flexibility. This provides 6 possible combinations instead of the previous 3.
+
+#### Available Flags:
+- `--minimal-docker`: Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
+- `--extra-docker`: Use Dockerfile.pluspackages (comprehensive package set pre-installed)
+- `--minimal-packages`: Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+
+#### All 6 Combinations:
+```bash
+# 1. Standard Dockerfile + Standard DESCRIPTION (default)
+zzcollab -i -t TEAM -p PROJECT -d ~/dotfiles
+
+# 2. Standard Dockerfile + Minimal DESCRIPTION (lightweight packages with full Docker)
+zzcollab -i -t TEAM -p PROJECT --minimal-packages -d ~/dotfiles
+
+# 3. Minimal Dockerfile + Standard DESCRIPTION (fastest builds with comprehensive packages)
+zzcollab -i -t TEAM -p PROJECT --minimal-docker -d ~/dotfiles
+
+# 4. Minimal Dockerfile + Minimal DESCRIPTION (fastest builds + lightweight packages)
+zzcollab -i -t TEAM -p PROJECT --minimal-docker --minimal-packages -d ~/dotfiles
+
+# 5. Extended Dockerfile + Standard DESCRIPTION (comprehensive Docker with full packages)
+zzcollab -i -t TEAM -p PROJECT --extra-docker -d ~/dotfiles
+
+# 6. Extended Dockerfile + Minimal DESCRIPTION (comprehensive Docker + lightweight packages)
+zzcollab -i -t TEAM -p PROJECT --extra-docker --minimal-packages -d ~/dotfiles
+```
+
+#### Legacy Compatibility:
+The existing `-m` flag is preserved and continues to work as before (minimal packages + minimal CI).
 
 ### R-Centric Workflow (Alternative)
 ```r
