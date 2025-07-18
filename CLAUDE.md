@@ -150,34 +150,27 @@ ZZCOLLAB now uses a simplified 3-mode system that replaces the previous complex 
 #### Legacy Compatibility:
 The old flags (`-m`, `-x`, `--minimal-docker`, etc.) still work but show deprecation warnings. Users are encouraged to migrate to the new simplified modes.
 
-#### Available Flags:
-- `--minimal-docker`: Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
-- `--extra-docker`: Use Dockerfile.pluspackages (comprehensive package set pre-installed)
-- `-M, --minimal-packages`: Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+## Major Refactoring and Simplification (2024)
 
-#### All 6 Combinations:
-```bash
-# 1. Standard Dockerfile + Standard DESCRIPTION (default)
-zzcollab -i -t TEAM -p PROJECT -d ~/dotfiles
+ZZCOLLAB has undergone comprehensive refactoring to improve maintainability and user experience:
 
-# 2. Standard Dockerfile + Minimal DESCRIPTION (lightweight packages with full Docker)
-zzcollab -i -t TEAM -p PROJECT -M -d ~/dotfiles
+### Code Architecture Improvements:
+- **Modular design**: Extracted functionality into focused modules (cli.sh, team_init.sh, help.sh, etc.)
+- **Unified systems**: Single tracking, validation, and logging systems across all modules
+- **Code reduction**: Main script reduced from 1,235 to 439 lines (64% reduction)
+- **Total cleanup**: Removed 3,000+ lines of duplicate/dead code
 
-# 3. Minimal Dockerfile + Standard DESCRIPTION (fastest builds with comprehensive packages)
-zzcollab -i -t TEAM -p PROJECT --minimal-docker -d ~/dotfiles
+### User Experience Enhancements:
+- **Simplified CLI**: 3 clear build modes (-F, -S, -C) replace 8+ complex flags
+- **Comprehensive shortcuts**: All major flags now have single-letter shortcuts
+- **Better error messages**: Clear, actionable error messages with helpful guidance
+- **Backward compatibility**: Legacy flags still work with deprecation warnings
 
-# 4. Minimal Dockerfile + Minimal DESCRIPTION (fastest builds + lightweight packages)
-zzcollab -i -t TEAM -p PROJECT --minimal-docker -M -d ~/dotfiles
-
-# 5. Extended Dockerfile + Standard DESCRIPTION (comprehensive Docker with full packages)
-zzcollab -i -t TEAM -p PROJECT --extra-docker -d ~/dotfiles
-
-# 6. Extended Dockerfile + Minimal DESCRIPTION (comprehensive Docker + lightweight packages)
-zzcollab -i -t TEAM -p PROJECT --extra-docker -M -d ~/dotfiles
-```
-
-#### Legacy Compatibility:
-The existing `-m` flag is preserved and continues to work as before (minimal packages + minimal CI).
+### Technical Improvements:
+- **Unified tracking**: Single `track_item()` function replaces 6 duplicates
+- **Unified validation**: Standardized validation patterns across modules
+- **Clean dependencies**: Proper module loading order and dependency management
+- **Consistent patterns**: Standardized error handling and logging throughout
 
 ### R-Centric Workflow (Alternative)
 ```r
