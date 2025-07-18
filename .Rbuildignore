@@ -23,3 +23,13 @@
 ^templates$
 ^[a-z]$
 ^.*\.Rproj$
+^\.shellcheckrc$
+^\.vimrc$
+^\.zshrc_docker$
+^\.claude$
+^docs$
+^test_dir$
+^navigation_scripts\.sh$
+^temp$
+^workflow\.pdf$
+^DATA_ANALYSIS_TESTING_GUIDE\.pdf$
