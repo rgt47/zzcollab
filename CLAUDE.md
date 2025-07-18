@@ -93,13 +93,14 @@ zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
 
 # Manual core image building (if needed)
 cd /path/to/zzcollab
-cp templates/Dockerfile.pluspackages ./Dockerfile.teamcore
+cp templates/Dockerfile.unified ./Dockerfile.teamcore
 
 # Build shell variant
 docker build -f Dockerfile.teamcore \
     --build-arg BASE_IMAGE=rocker/r-ver \
     --build-arg TEAM_NAME="TEAM" \
     --build-arg PROJECT_NAME="PROJECT" \
+    --build-arg PACKAGE_MODE="standard" \
     -t "TEAM/PROJECTcore-shell:v1.0.0" .
 
 # Build RStudio variant
@@ -107,7 +108,21 @@ docker build -f Dockerfile.teamcore \
     --build-arg BASE_IMAGE=rocker/rstudio \
     --build-arg TEAM_NAME="TEAM" \
     --build-arg PROJECT_NAME="PROJECT" \
+    --build-arg PACKAGE_MODE="standard" \
     -t "TEAM/PROJECTcore-rstudio:v1.0.0" .
+
+# Build with different package modes
+# Fast mode (minimal packages)
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/r-ver \
+    --build-arg PACKAGE_MODE="fast" \
+    -t "TEAM/PROJECTcore-shell:fast" .
+
+# Comprehensive mode (full packages)
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/r-ver \
+    --build-arg PACKAGE_MODE="comprehensive" \
+    -t "TEAM/PROJECTcore-shell:comprehensive" .
 
 # Push to Docker Hub
 docker push "TEAM/PROJECTcore-shell:v1.0.0"

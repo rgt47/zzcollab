@@ -141,7 +141,7 @@ log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
 # Note: analysis module is loaded later after directory structure is created
-modules_to_load=("rpackage" "docker" "cicd" "devtools" "team_init" "help")
+modules_to_load=("utils" "rpackage" "docker" "cicd" "devtools" "team_init" "help")
 
 for module in "${modules_to_load[@]}"; do
     if [[ -f "$MODULES_DIR/${module}.sh" ]]; then

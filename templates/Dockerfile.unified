@@ -1,0 +1,137 @@
+ARG BASE_IMAGE=rocker/r-ver
+ARG R_VERSION=latest
+FROM ${BASE_IMAGE}:${R_VERSION}
+
+# Build arguments for package selection
+ARG PACKAGE_MODE=standard
+ARG TEAM_NAME=rgt47
+ARG PROJECT_NAME=r-project
+ARG ADDITIONAL_PACKAGES=""
+ARG USERNAME=analyst
+
+# Install system dependencies (common to all modes)
+RUN apt-get update && \
+    apt-get install -y \
+    git \
+    ssh \
+    curl \
+    wget \
+    vim \
+    tmux \
+    zsh \
+    build-essential \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    libgit2-dev \
+    man-db \
+    pandoc \
+    tree \
+    ripgrep \
+    eza \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (required for coc.nvim and other vim plugins)
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs
+
+# Install TinyTeX (skip if using custom base image that already has it)
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+        R -e "install.packages('tinytex')" && \
+        R -e "tinytex::install_tinytex()" && \
+        /root/.TinyTeX/bin/*/tlmgr path add; \
+    fi
+
+# Add metadata labels
+LABEL maintainer="${TEAM_NAME}"
+LABEL project="${PROJECT_NAME}"
+LABEL package.mode="${PACKAGE_MODE}"
+LABEL org.opencontainers.image.title="ZZCOLLAB Docker Image"
+LABEL org.opencontainers.image.description="R environment with ${PACKAGE_MODE} package configuration"
+LABEL org.opencontainers.image.vendor="ZZCOLLAB"
+
+# Create non-root user with zsh as default shell (skip if using custom base image)
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+        useradd --create-home --shell /bin/zsh ${USERNAME}; \
+    fi
+
+# Install R packages based on PACKAGE_MODE
+# fast/minimal: Only essential packages (renv, remotes)
+# standard: Essential packages + common development tools
+# comprehensive: Full development stack with analysis packages
+RUN if [ "${PACKAGE_MODE}" = "fast" ] || [ "${PACKAGE_MODE}" = "minimal" ]; then \
+        # Fast mode: minimal packages only \
+        if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+            R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"; \
+        fi; \
+    elif [ "${PACKAGE_MODE}" = "comprehensive" ] || [ "${PACKAGE_MODE}" = "pluspackages" ]; then \
+        # Comprehensive mode: full package suite \
+        R -e "base_packages <- c( \
+            'renv', 'remotes', 'devtools', 'testthat', 'usethis', 'pkgdown', 'rcmdcheck', \
+            'tidyverse', 'here', 'conflicted', \
+            'broom', 'lme4', 'survival', 'car', \
+            'janitor', 'naniar', 'skimr', 'visdat', \
+            'ggthemes', 'kableExtra', 'DT', 'rmarkdown', 'bookdown', 'knitr', \
+            'jsonlite', 'targets', 'datapasta' \
+        ); \
+        additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else character(0); \
+        all_packages <- c(base_packages, additional_packages); \
+        install.packages(all_packages, repos = c(CRAN = 'https://cloud.r-project.org'))"; \
+    else \
+        # Standard mode: essential development packages \
+        if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+            R -e "install.packages(c('renv', 'remotes', 'devtools', 'usethis', 'here', 'conflicted', 'rmarkdown', 'knitr'), repos = c(CRAN = 'https://cloud.r-project.org'))"; \
+        fi; \
+    fi
+
+# Give analyst user write permission to R library directory (skip if using custom base image)
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+        chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library; \
+    fi
+
+# Set working directory and ensure user owns it
+WORKDIR /home/${USERNAME}/project
+RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/project
+
+# Copy project files first (for better Docker layer caching)
+COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
+COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
+COPY --chown=${USERNAME}:${USERNAME} .Rprofile* ./
+COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
+
+# Switch to non-root user for R package installation
+USER ${USERNAME}
+
+# Copy dotfiles (consolidated with wildcards)
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
+COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
+
+# Install zsh plugins
+RUN mkdir -p /home/${USERNAME}/.zsh && \
+    git clone https://github.com/zsh-users/zsh-autosuggestions /home/${USERNAME}/.zsh/zsh-autosuggestions && \
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting /home/${USERNAME}/.zsh/zsh-syntax-highlighting
+
+# Install vim-plug
+RUN curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+# Install vim plugins (suppress interactive mode)
+RUN vim +PlugInstall +qall || true
+
+# Copy rest of project
+COPY --chown=${USERNAME}:${USERNAME} . .
+
+# Install the research compendium as a package (analyst has write permissions)
+# Use standard R installation approach that works with any R setup
+RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
+
+# Set default shell and working directory
+WORKDIR /home/${USERNAME}/project
+CMD ["/bin/zsh"]

@@ -332,10 +332,19 @@ is_comprehensive_mode() { [[ "$BUILD_MODE" == "comprehensive" ]]; }
 # Helper functions for template selection
 get_template() {
     local template_type="$1"
-    case "$BUILD_MODE" in
-        fast) echo "${template_type}.minimal" ;;
-        comprehensive) echo "${template_type}.pluspackages" ;;
-        *) echo "$template_type" ;;
+    case "$template_type" in
+        Dockerfile)
+            # Use unified Dockerfile for all modes
+            echo "Dockerfile.unified"
+            ;;
+        *)
+            # For other templates, use original logic
+            case "$BUILD_MODE" in
+                fast) echo "${template_type}.minimal" ;;
+                comprehensive) echo "${template_type}.pluspackages" ;;
+                *) echo "$template_type" ;;
+            esac
+            ;;
     esac
 }
 

@@ -128,6 +128,12 @@ validate_init_parameters() {
         GITHUB_ACCOUNT="$TEAM_NAME"
         log_info "Using default GitHub account: $GITHUB_ACCOUNT"
     fi
+    
+    # Set default Dockerfile path to unified template
+    if [[ -z "$DOCKERFILE_PATH" ]]; then
+        DOCKERFILE_PATH="$SCRIPT_DIR/templates/Dockerfile.unified"
+        log_info "Using unified Dockerfile template: $DOCKERFILE_PATH"
+    fi
 
     # Validate dotfiles
     if [[ -n "$DOTFILES_DIR" ]]; then
@@ -274,6 +280,7 @@ build_team_images() {
         --build-arg BASE_IMAGE=rocker/r-ver \
         --build-arg TEAM_NAME="$TEAM_NAME" \
         --build-arg PROJECT_NAME="$PROJECT_NAME" \
+        --build-arg PACKAGE_MODE="$BUILD_MODE" \
         -t "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" .
 
     docker tag "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" \
@@ -286,6 +293,7 @@ build_team_images() {
         --build-arg BASE_IMAGE=rocker/rstudio \
         --build-arg TEAM_NAME="$TEAM_NAME" \
         --build-arg PROJECT_NAME="$PROJECT_NAME" \
+        --build-arg PACKAGE_MODE="$BUILD_MODE" \
         -t "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" .
 
     docker tag "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" \
