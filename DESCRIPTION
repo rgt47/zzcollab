@@ -1,16 +1,19 @@
 Package: zzcollab
-Title: Research Compendium for zzcollab
+Title: Docker-based Research Collaboration Framework
 Version: 0.0.0.9000
 Authors@R: 
     person("Ronald G. Thomas", email = "rgthomas@ucsd.edu", role = c("aut", "cre"))
-Description: This is a research compendium for the zzcollab project.
+Description: A comprehensive framework for reproducible research collaboration using Docker containers. 
+    Provides R interfaces to create, manage, and collaborate on research projects with standardized 
+    Docker environments, automated CI/CD workflows, and team collaboration tools.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Imports:
     renv,
-    jsonlite
+    jsonlite,
+    utils
 Suggests: 
     testthat (>= 3.0.0),
     RMySQL,
@@ -28,6 +31,9 @@ Suggests:
     odbc,
     readr,
     sessioninfo,
-    knitr
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+URL: https://github.com/rgt47/zzcollab
+BugReports: https://github.com/rgt47/zzcollab/issues

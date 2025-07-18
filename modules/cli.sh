@@ -33,7 +33,8 @@ require_arg() {
 BUILD_DOCKER=true
 DOTFILES_DIR=""
 DOTFILES_NODOT=false
-BASE_IMAGE="rocker/r-ver"
+readonly DEFAULT_BASE_IMAGE="rocker/r-ver"
+BASE_IMAGE="$DEFAULT_BASE_IMAGE"
 
 # New user-friendly interface variables
 TEAM_NAME=""
@@ -48,7 +49,8 @@ USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
 
 # Simplified build mode system (replaces complex flag system)
-BUILD_MODE="standard"    # Options: fast, standard, comprehensive
+readonly DEFAULT_BUILD_MODE="standard"
+BUILD_MODE="$DEFAULT_BUILD_MODE"    # Options: fast, standard, comprehensive
 # fast        = minimal Docker + minimal packages (fastest builds)
 # standard    = standard Docker + standard packages (balanced)
 # comprehensive = extended Docker + full packages (kitchen sink)

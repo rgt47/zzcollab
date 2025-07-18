@@ -1,0 +1,26 @@
+# ShellCheck configuration for zzcollab
+# See https://github.com/koalaman/shellcheck/blob/master/shellcheck.1.md
+
+# Disable specific warnings that are acceptable in this codebase
+disable=SC1091   # Not following: file not found (for sourced modules)
+disable=SC2034   # Variable appears unused (for exported variables)
+disable=SC2155   # Declare and assign separately (acceptable pattern)
+
+# Enable optional checks
+enable=quote-safe-variables
+enable=require-variable-braces
+
+# External sources (modules)
+source-path=SCRIPTDIR/modules
+
+# Shell to target
+shell=bash
+
+# Severity level (error, warning, info, style)
+severity=style
+
+# Format for output
+format=tty
+
+# Color support
+color=auto

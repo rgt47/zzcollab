@@ -26,29 +26,78 @@ readonly AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-University of Califor
 # LOGGING AND OUTPUT FUNCTIONS (extracted from lines 219-248)
 #=============================================================================
 
-# Function: log_info
-# Purpose: Display informational messages with an icon
-# All log functions send output to stderr (&2) so they don't interfere with script output
+##############################################################################
+# FUNCTION: log_info
+# PURPOSE:  Display informational messages with an icon
+# USAGE:    log_info "message text"
+# ARGS:     
+#   $* - Message text to display
+# RETURNS:  
+#   0 - Always succeeds
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs to stderr)
+# EXAMPLE:
+#   log_info "Starting process..."
+#   log_info "Found $count files"
+##############################################################################
 log_info() {
-    # $* expands to all function arguments as a single string
-    # printf is safer than echo for consistent formatting across different shells
     printf "ℹ️  %s\n" "$*" >&2
 }
 
-# Function: log_warn  
-# Purpose: Display warning messages that don't stop execution
+##############################################################################
+# FUNCTION: log_warn
+# PURPOSE:  Display warning messages that don't stop execution
+# USAGE:    log_warn "warning message"
+# ARGS:     
+#   $* - Warning message text to display
+# RETURNS:  
+#   0 - Always succeeds
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs to stderr)
+# EXAMPLE:
+#   log_warn "Configuration file not found, using defaults"
+#   log_warn "Deprecated option used: $option"
+##############################################################################
 log_warn() {
     printf "⚠️  %s\n" "$*" >&2
 }
 
-# Function: log_error
-# Purpose: Display error messages (typically before exiting)
+##############################################################################
+# FUNCTION: log_error
+# PURPOSE:  Display error messages (typically before exiting)
+# USAGE:    log_error "error message"
+# ARGS:     
+#   $* - Error message text to display
+# RETURNS:  
+#   0 - Always succeeds
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs to stderr)
+# EXAMPLE:
+#   log_error "Failed to create directory: $dir"
+#   log_error "Invalid argument: $arg"
+##############################################################################
 log_error() {
     printf "❌ %s\n" "$*" >&2
 }
 
-# Function: log_success
-# Purpose: Display success messages for completed operations
+##############################################################################
+# FUNCTION: log_success
+# PURPOSE:  Display success messages for completed operations
+# USAGE:    log_success "success message"
+# ARGS:     
+#   $* - Success message text to display
+# RETURNS:  
+#   0 - Always succeeds
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs to stderr)
+# EXAMPLE:
+#   log_success "Package installed successfully"
+#   log_success "Created $count files"
+##############################################################################
 log_success() {
     printf "✅ %s\n" "$*" >&2
 }
@@ -57,41 +106,44 @@ log_success() {
 # PACKAGE NAME VALIDATION FUNCTIONS (extracted from lines 51-97)
 #=============================================================================
 
-# Function: validate_package_name
-# Purpose: Converts current directory name into a valid R package name
-# R package naming rules: Only letters, numbers, and periods; must start with a letter
-# Returns: A valid package name string or exits with error
+##############################################################################
+# FUNCTION: validate_package_name
+# PURPOSE:  Converts current directory name into a valid R package name
+# USAGE:    validate_package_name
+# ARGS:     
+#   None - Uses current working directory
+# RETURNS:  
+#   0 - Success, outputs valid package name to stdout
+#   1 - Error, cannot create valid package name
+# GLOBALS:  
+#   READ:  PWD (current working directory)
+#   WRITE: None
+# EXAMPLE:
+#   pkg_name=$(validate_package_name)
+#   if validate_package_name >/dev/null; then
+#       echo "Valid directory name"
+#   fi
+##############################################################################
 validate_package_name() {
-    # Declare local variables to avoid affecting global scope
     local dir_name
-    # basename extracts the final directory name from the current working directory path
-    # $(pwd) returns the current working directory as an absolute path
     dir_name=$(basename "$(pwd)")
     
     local pkg_name
-    # Clean the directory name to create a valid R package name:
-    # printf '%s' "$dir_name" - outputs the directory name without adding newlines
-    # tr -cd '[:alnum:].' - removes all characters EXCEPT alphanumeric and periods
-    # head -c 50 - limits to first 50 characters to avoid overly long names
+    # Clean directory name: keep only alphanumeric and periods, limit to 50 chars
     pkg_name=$(printf '%s' "$dir_name" | tr -cd '[:alnum:].' | head -c 50)
     
-    # Check if the cleaning process resulted in an empty string
+    # Check if cleaning resulted in empty string
     if [[ -z "$pkg_name" ]]; then
-        # >&2 redirects output to stderr (standard error stream)
         echo "❌ Error: Cannot determine valid package name from directory '$dir_name'" >&2
-        return 1  # Exit function with error status
+        return 1
     fi
     
-    # R packages must start with a letter (not a number or special character)
-    # =~ operator performs regex pattern matching
-    # ^[[:alpha:]] means "starts with any alphabetic character"
-    # The ! negates the condition, so this checks if it does NOT start with a letter
+    # R packages must start with a letter
     if [[ ! "$pkg_name" =~ ^[[:alpha:]] ]]; then
         echo "❌ Error: Package name must start with a letter: '$pkg_name'" >&2
         return 1
     fi
     
-    # Output the valid package name (this becomes the return value when called with $())
     printf '%s' "$pkg_name"
 }
 

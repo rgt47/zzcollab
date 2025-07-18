@@ -1,6 +1,37 @@
 # ZZCOLLAB R Interface Functions
 # Provides R functions to interact with zzcollab Docker infrastructure
 
+#' Find zzcollab script
+#'
+#' @return Path to zzcollab script
+#' @keywords internal
+find_zzcollab_script <- function() {
+  # Check if zzcollab is in PATH
+  if (Sys.which("zzcollab") != "") {
+    return("zzcollab")
+  }
+  
+  # Check if we're in the zzcollab source directory
+  if (file.exists("zzcollab.sh")) {
+    return("./zzcollab.sh")
+  }
+  
+  # Check common installation locations
+  possible_paths <- c(
+    file.path(Sys.getenv("HOME"), "bin", "zzcollab"),
+    "/usr/local/bin/zzcollab",
+    "/usr/bin/zzcollab"
+  )
+  
+  for (path in possible_paths) {
+    if (file.exists(path)) {
+      return(path)
+    }
+  }
+  
+  stop("zzcollab script not found. Please install zzcollab or ensure it's in your PATH.")
+}
+
 #' Check Docker container status
 #'
 #' @return Character vector with container status information
@@ -61,15 +92,20 @@ team_images <- function() {
 #' @param github_account GitHub account (defaults to team_name)
 #' @param dotfiles_path Path to dotfiles directory
 #' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
+#' @param build_mode Build mode: "fast", "standard", or "comprehensive"
 #' @return Logical indicating success
 #' @export
 init_project <- function(team_name, project_name, 
                          github_account = NULL, 
                          dotfiles_path = NULL,
-                         dotfiles_nodots = FALSE) {
+                         dotfiles_nodots = FALSE,
+                         build_mode = "standard") {
   
-  # Build command
-  cmd <- paste("zzcollab-init-team --team-name", team_name, "--project-name", project_name)
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  # Build command with --init flag
+  cmd <- paste(zzcollab_path, "--init --team-name", team_name, "--project-name", project_name)
   
   if (!is.null(github_account)) {
     cmd <- paste(cmd, "--github-account", github_account)
@@ -77,10 +113,19 @@ init_project <- function(team_name, project_name,
   
   if (!is.null(dotfiles_path)) {
     if (dotfiles_nodots) {
-      cmd <- paste(cmd, "--dotfiles-nodots", shQuote(dotfiles_path))
+      cmd <- paste(cmd, "--dotfiles-nodot", shQuote(dotfiles_path))
     } else {
       cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
     }
+  }
+  
+  # Add build mode flag
+  if (build_mode == "fast") {
+    cmd <- paste(cmd, "--fast")
+  } else if (build_mode == "comprehensive") {
+    cmd <- paste(cmd, "--comprehensive")
+  } else {
+    cmd <- paste(cmd, "--standard")
   }
   
   message("Running: ", cmd)
@@ -95,13 +140,18 @@ init_project <- function(team_name, project_name,
 #' @param interface Interface type: "shell" or "rstudio"
 #' @param dotfiles_path Path to dotfiles directory
 #' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
+#' @param build_mode Build mode: "fast", "standard", or "comprehensive"
 #' @return Logical indicating success
 #' @export
 join_project <- function(team_name, project_name, interface = "shell",
-                         dotfiles_path = NULL, dotfiles_nodots = FALSE) {
+                         dotfiles_path = NULL, dotfiles_nodots = FALSE,
+                         build_mode = "standard") {
+  
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
   
   # Build command with new user-friendly interface
-  cmd <- paste("zzcollab --team", team_name, "--project-name", project_name, "--interface", interface)
+  cmd <- paste(zzcollab_path, "--team", team_name, "--project-name", project_name, "--interface", interface)
   
   if (!is.null(dotfiles_path)) {
     if (dotfiles_nodots) {
@@ -109,6 +159,15 @@ join_project <- function(team_name, project_name, interface = "shell",
     } else {
       cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
     }
+  }
+  
+  # Add build mode flag
+  if (build_mode == "fast") {
+    cmd <- paste(cmd, "--fast")
+  } else if (build_mode == "comprehensive") {
+    cmd <- paste(cmd, "--comprehensive")
+  } else {
+    cmd <- paste(cmd, "--standard")
   }
   
   message("Running: ", cmd)
@@ -378,4 +437,79 @@ create_branch <- function(branch_name) {
     message("❌ Failed to create branch: ", branch_name)
     return(FALSE)
   }
+}
+
+#' Setup zzcollab project (standard setup, non-init mode)
+#'
+#' @param dotfiles_path Path to dotfiles directory
+#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
+#' @param build_mode Build mode: "fast", "standard", or "comprehensive"
+#' @param base_image Base Docker image to use (optional)
+#' @return Logical indicating success
+#' @export
+setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = FALSE,
+                         build_mode = "standard", base_image = NULL) {
+  
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  # Build command (no --init flag)
+  cmd <- zzcollab_path
+  
+  if (!is.null(dotfiles_path)) {
+    if (dotfiles_nodots) {
+      cmd <- paste(cmd, "--dotfiles-nodot", shQuote(dotfiles_path))
+    } else {
+      cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
+    }
+  }
+  
+  if (!is.null(base_image)) {
+    cmd <- paste(cmd, "--base-image", base_image)
+  }
+  
+  # Add build mode flag
+  if (build_mode == "fast") {
+    cmd <- paste(cmd, "--fast")
+  } else if (build_mode == "comprehensive") {
+    cmd <- paste(cmd, "--comprehensive")
+  } else {
+    cmd <- paste(cmd, "--standard")
+  }
+  
+  message("Running: ", cmd)
+  result <- system(cmd)
+  return(result == 0)
+}
+
+#' Get zzcollab help
+#'
+#' @param init_help Logical, show initialization help instead of general help
+#' @return Character vector with help text
+#' @export
+zzcollab_help <- function(init_help = FALSE) {
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  if (init_help) {
+    cmd <- paste(zzcollab_path, "--init --help")
+  } else {
+    cmd <- paste(zzcollab_path, "--help")
+  }
+  
+  result <- system(cmd, intern = TRUE)
+  return(result)
+}
+
+#' Get zzcollab next steps
+#'
+#' @return Character vector with next steps information
+#' @export
+zzcollab_next_steps <- function() {
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  cmd <- paste(zzcollab_path, "--next-steps")
+  result <- system(cmd, intern = TRUE)
+  return(result)
 }
