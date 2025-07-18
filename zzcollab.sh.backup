@@ -270,7 +270,7 @@ log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
 # Note: analysis module is loaded later after directory structure is created
-modules_to_load=("rpackage" "docker" "cicd" "devtools" "team_init")
+modules_to_load=("rpackage" "docker" "cicd" "devtools")
 
 for module in "${modules_to_load[@]}"; do
     if [[ -f "$MODULES_DIR/${module}.sh" ]]; then
@@ -284,7 +284,7 @@ for module in "${modules_to_load[@]}"; do
 done
 
 #=============================================================================
-# HELP AND NEXT STEPS (to be extracted to modules/help.sh in Priority 2)
+# HELP AND NEXT STEPS (from original zzcollab.sh)
 #=============================================================================
 
 show_help() {
@@ -359,7 +359,6 @@ MODULES INCLUDED:
     analysis     - Research report and analysis templates
     cicd         - GitHub Actions workflows
     devtools     - Makefile, configs, development tools
-    team_init    - Team setup and initialization workflows
 
 CREATED STRUCTURE:
     ├── R/                     # Package functions
@@ -439,6 +438,87 @@ After running the modular setup script, here's how to get started:
 
 Happy researching! 🎉
 EOF
+}
+
+#=============================================================================
+# MANIFEST INITIALIZATION
+#=============================================================================
+
+init_manifest() {
+    if command -v jq >/dev/null 2>&1; then
+        cat > "$MANIFEST_FILE" <<EOF
+{
+  "version": "1.0",
+  "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "package_name": "$PKG_NAME",
+  "modules_loaded": ["core", "templates", "structure", "rpackage", "docker", "analysis", "cicd", "devtools"],
+  "command_line_options": {
+    "build_docker": $BUILD_DOCKER,
+    "dotfiles_dir": "${DOTFILES_DIR}",
+    "dotfiles_nodot": $DOTFILES_NODOT,
+    "base_image": "$BASE_IMAGE"
+  },
+  "directories": [],
+  "files": [],
+  "template_files": [],
+  "symlinks": [],
+  "dotfiles": [],
+  "docker_image": null
+}
+EOF
+        log_success "Initialized JSON manifest file: $MANIFEST_FILE"
+    else
+        {
+            echo "# ZZCOLLAB MANIFEST - Created $(date)"
+            echo "# Package: $PKG_NAME"
+            echo "# Modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools"
+            echo "# Build Docker: $BUILD_DOCKER"
+            echo "# Dotfiles: $DOTFILES_DIR"
+            echo "# Base Image: $BASE_IMAGE"
+            echo "# Format: type:path"
+        } > "$MANIFEST_TXT"
+        log_success "Initialized text manifest file: $MANIFEST_TXT (jq not available)"
+    fi
+}
+
+install_uninstall_script() {
+    local uninstall_script="zzcollab-uninstall.sh"
+    if [[ -f "$TEMPLATES_DIR/$uninstall_script" ]]; then
+        cp "$TEMPLATES_DIR/$uninstall_script" "./$uninstall_script"
+        chmod +x "./$uninstall_script"
+        track_file "$uninstall_script"
+        log_success "Uninstall script installed: ./$uninstall_script"
+    else
+        log_warning "Uninstall script template not found"
+    fi
+}
+
+#=============================================================================
+# INITIALIZATION MODE FUNCTIONS (from zzcollab-init-team)
+#=============================================================================
+
+# Color codes for output (from zzcollab-init-team)
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Print colored output functions
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 show_init_help() {
@@ -524,57 +604,346 @@ PREREQUISITES:
 EOF
 }
 
-#=============================================================================
-# MANIFEST INITIALIZATION
-#=============================================================================
+# Team initialization functions moved to modules/team_init.sh
+# Functions: validate_init_prerequisites, validate_init_parameters, run_team_initialization
 
-init_manifest() {
-    if command -v jq >/dev/null 2>&1; then
-        cat > "$MANIFEST_FILE" <<EOF
-{
-  "version": "1.0",
-  "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "package_name": "$PKG_NAME",
-  "modules_loaded": ["core", "templates", "structure", "rpackage", "docker", "analysis", "cicd", "devtools", "team_init"],
-  "command_line_options": {
-    "build_docker": $BUILD_DOCKER,
-    "dotfiles_dir": "${DOTFILES_DIR}",
-    "dotfiles_nodot": $DOTFILES_NODOT,
-    "base_image": "$BASE_IMAGE"
-  },
-  "directories": [],
-  "files": [],
-  "template_files": [],
-  "symlinks": [],
-  "dotfiles": [],
-  "docker_image": null
+#=============================================================================
+# DIRECTORY VALIDATION FUNCTION
+#=============================================================================
+        
+        # Check if current directory is suitable for project setup
+        if [[ "$current_dir" != "zzcollab" ]] && [[ "$current_dir" != "." ]] && [[ "$current_dir" != "/" ]]; then
+            # Check if directory is empty or contains only basic files
+            file_count=$(find . -maxdepth 1 -type f | wc -l)
+            if [[ $file_count -le 3 ]]; then  # Allow for .gitignore, README, etc.
+                PROJECT_NAME="$current_dir"
+                print_status "Inferred project name from current directory: $PROJECT_NAME"
+                print_status "Using current directory for project setup"
+            else
+                print_error "Current directory '$current_dir' contains too many files for auto-detection"
+                print_error "Please specify --project-name explicitly or use an empty directory"
+                show_init_help
+                exit 1
+            fi
+        else
+            print_error "Required parameter --project-name is missing"
+            show_init_help
+            exit 1
+        fi
+    fi
+
+    # Set defaults
+    if [[ -z "$GITHUB_ACCOUNT" ]]; then
+        GITHUB_ACCOUNT="$TEAM_NAME"
+        print_status "Using default GitHub account: $GITHUB_ACCOUNT"
+    fi
+
+    if [[ -z "$DOCKERFILE_PATH" ]]; then
+        # Try to find the Dockerfile template in multiple locations
+        # Choose template based on flags
+        TEMPLATE_NAME="Dockerfile"  # Default: standard Dockerfile
+        if [[ "$EXTRA_PACKAGES" == "true" ]]; then
+            TEMPLATE_NAME="Dockerfile.pluspackages"  # -x flag: extra packages
+        elif [[ "$MINIMAL_PACKAGES" == "true" ]]; then
+            TEMPLATE_NAME="Dockerfile.minimal"  # -m flag: minimal packages
+        fi
+        
+        POSSIBLE_PATHS=(
+            "templates/$TEMPLATE_NAME"                                    # Current directory
+            "$SCRIPT_DIR/templates/$TEMPLATE_NAME"                       # Same directory as script
+            "$SCRIPT_DIR/zzcollab-support/templates/$TEMPLATE_NAME"      # Installed location
+            "$(dirname "$SCRIPT_DIR")/templates/$TEMPLATE_NAME"          # Parent directory
+        )
+        
+        for path in "${POSSIBLE_PATHS[@]}"; do
+            if [[ -f "$path" ]]; then
+                DOCKERFILE_PATH="$path"
+                break
+            fi
+        done
+        
+        if [[ -z "$DOCKERFILE_PATH" ]]; then
+            print_error "Could not find $TEMPLATE_NAME template"
+            print_error "Searched in:"
+            for path in "${POSSIBLE_PATHS[@]}"; do
+                print_error "  - $path"
+            done
+            print_error "Please specify --dockerfile path or ensure templates/$TEMPLATE_NAME exists"
+            exit 1
+        fi
+    fi
+
+    # Set dotfiles flags based on which option was used
+    if [[ -n "$DOTFILES_DIR" ]]; then
+        USE_DOTFILES=true
+        if [[ "$DOTFILES_NODOT" == "true" ]]; then
+            print_status "Using dotfiles from: $DOTFILES_DIR (dots will be added)"
+        else
+            print_status "Using dotfiles from: $DOTFILES_DIR (files already have dots)"
+        fi
+    else
+        print_status "No dotfiles specified, proceeding without dotfiles integration"
+    fi
+
+    # Validate dotfiles path if specified
+    if [[ "$USE_DOTFILES" == true && ! -d "$DOTFILES_DIR" ]]; then
+        print_error "Dotfiles path does not exist: $DOTFILES_DIR"
+        exit 1
+    fi
 }
+
+run_team_initialization() {
+    print_status "Configuration Summary:"
+    echo "  Team Name: $TEAM_NAME"
+    echo "  Project Name: $PROJECT_NAME"
+    echo "  GitHub Account: $GITHUB_ACCOUNT"
+    echo "  Dotfiles: $(if [[ "$USE_DOTFILES" == true ]]; then echo "$DOTFILES_DIR"; else echo "none"; fi)"
+    echo "  Dockerfile: $(if [[ "$EXTRA_PACKAGES" == true ]]; then echo "Extra packages (Dockerfile.pluspackages)"; elif [[ "$MINIMAL_PACKAGES" == true ]]; then echo "Minimal (Dockerfile.minimal)"; else echo "Standard (Dockerfile)"; fi)"
+    echo "  Mode: $(if [[ "$PREPARE_DOCKERFILE" == true ]]; then echo "Prepare for editing"; else echo "Complete setup"; fi)"
+    echo ""
+
+    # Confirm before proceeding
+    read -p "Proceed with team setup? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Setup cancelled by user"
+        exit 0
+    fi
+
+    # Start the setup process
+    if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+        print_status "Preparing project for Dockerfile editing..."
+    else
+        print_status "Starting automated team setup..."
+    fi
+
+    # Step 1: Create project directory
+    print_status "Step 1: Setting up project directory..."
+    current_dir=$(basename "$PWD")
+    
+    if [[ "$current_dir" == "$PROJECT_NAME" ]]; then
+        # Already in the target directory
+        print_status "Using current directory: $PROJECT_NAME"
+    elif [[ -d "$PROJECT_NAME" ]]; then
+        if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+            print_error "Directory $PROJECT_NAME already exists"
+            print_error "Remove it first or run without --prepare-dockerfile to continue with existing project"
+            exit 1
+        else
+            print_status "Using existing project directory: $PROJECT_NAME"
+            cd "$PROJECT_NAME"
+        fi
+    else
+        mkdir "$PROJECT_NAME"
+        cd "$PROJECT_NAME"
+        print_success "Created project directory: $PROJECT_NAME"
+    fi
+
+    # Step 2: Copy and customize Dockerfile
+    print_status "Step 2: Setting up team Dockerfile..."
+    if [[ ! -f "$DOCKERFILE_PATH" ]]; then
+        print_error "Dockerfile template not found: $DOCKERFILE_PATH"
+        exit 1
+    fi
+
+    if [[ ! -f "./Dockerfile.teamcore" ]]; then
+        cp "$DOCKERFILE_PATH" ./Dockerfile.teamcore
+        print_success "Copied Dockerfile template to Dockerfile.teamcore"
+    else
+        if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+            print_status "Dockerfile.teamcore already exists - you can edit it directly"
+        else
+            print_status "Using existing Dockerfile.teamcore"
+        fi
+    fi
+
+    # If prepare mode, exit with instructions
+    if [[ "$PREPARE_DOCKERFILE" == true ]]; then
+        print_success "🎉 Project prepared for Dockerfile editing!"
+        echo ""
+        print_status "📝 NEXT STEPS:"
+        echo "  1. Edit $PROJECT_NAME/Dockerfile.teamcore to add your team's packages and tools"
+        echo "  2. Common customizations:"
+        echo "     - Add R packages: RUN R -e \"install.packages('packagename')\""
+        echo "     - Add system tools: RUN apt-get update && apt-get install -y tool-name"
+        echo "     - Set environment variables: ENV VARIABLE_NAME=value"
+        echo "  3. When done editing, run:"
+        echo "     zzcollab --init --team-name $TEAM_NAME --project-name $PROJECT_NAME$(if [[ "$USE_DOTFILES" == true ]]; then if [[ "$DOTFILES_NODOT" == true ]]; then echo " --dotfiles-nodot $DOTFILES_DIR"; else echo " --dotfiles $DOTFILES_DIR"; fi; fi)$(if [[ -n "$GITHUB_ACCOUNT" && "$GITHUB_ACCOUNT" != "$TEAM_NAME" ]]; then echo " --github-account $GITHUB_ACCOUNT"; fi)"
+        echo ""
+        print_status "💡 TIP: Test your Dockerfile locally with:"
+        echo "     docker build -f Dockerfile.teamcore -t test-image ."
+        exit 0
+    fi
+
+    # Step 3: Create basic project structure for Docker build
+    print_status "Step 3: Creating basic project structure..."
+    
+    # Create basic files needed for Docker build
+    # We need to create minimal versions of files that the Dockerfile expects
+    
+    # Create minimal DESCRIPTION file
+    if [[ ! -f "DESCRIPTION" ]]; then
+        cat > DESCRIPTION << EOF
+Package: ${PROJECT_NAME}
+Title: Research Compendium for ${PROJECT_NAME}
+Version: 0.0.0.9000
+Authors@R: 
+    person("Team Lead", email = "lead@example.com", role = c("aut", "cre"))
+Description: This is a research compendium for the ${PROJECT_NAME} project.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    here,
+    renv
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr
 EOF
-        log_success "Initialized JSON manifest file: $MANIFEST_FILE"
-    else
-        {
-            echo "# ZZCOLLAB MANIFEST - Created $(date)"
-            echo "# Package: $PKG_NAME"
-            echo "# Modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools, team_init"
-            echo "# Build Docker: $BUILD_DOCKER"
-            echo "# Dotfiles: $DOTFILES_DIR"
-            echo "# Base Image: $BASE_IMAGE"
-            echo "# Format: type:path"
-        } > "$MANIFEST_TXT"
-        log_success "Initialized text manifest file: $MANIFEST_TXT (jq not available)"
+        print_success "Created basic DESCRIPTION file"
     fi
-}
+    
+    # Create minimal .zshrc_docker file
+    if [[ ! -f ".zshrc_docker" ]]; then
+        cat > .zshrc_docker << 'EOF'
+# Basic zsh configuration for Docker container
+# This is a minimal version for team image building
+export PS1="%F{blue}%n@%m%f:%F{green}%~%f$ "
+EOF
+        print_success "Created basic .zshrc_docker file"
+    fi
+    
+    # Step 4: Build shell core image
+    print_status "Step 4: Building shell core image..."
+    docker build -f Dockerfile.teamcore \
+        --build-arg BASE_IMAGE=rocker/r-ver \
+        --build-arg TEAM_NAME="$TEAM_NAME" \
+        --build-arg PROJECT_NAME="$PROJECT_NAME" \
+        -t "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" .
 
-install_uninstall_script() {
-    local uninstall_script="zzcollab-uninstall.sh"
-    if [[ -f "$TEMPLATES_DIR/$uninstall_script" ]]; then
-        cp "$TEMPLATES_DIR/$uninstall_script" "./$uninstall_script"
-        chmod +x "./$uninstall_script"
-        track_file "$uninstall_script"
-        log_success "Uninstall script installed: ./$uninstall_script"
-    else
-        log_warning "Uninstall script template not found"
+    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" \
+        "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+    print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+
+    # Step 5: Build RStudio core image
+    print_status "Step 5: Building RStudio core image..."
+    docker build -f Dockerfile.teamcore \
+        --build-arg BASE_IMAGE=rocker/rstudio \
+        --build-arg TEAM_NAME="$TEAM_NAME" \
+        --build-arg PROJECT_NAME="$PROJECT_NAME" \
+        -t "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" .
+
+    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" \
+        "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+
+    # Step 6: Push images to Docker Hub
+    print_status "Step 6: Pushing images to Docker Hub..."
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    print_success "Pushed all images to Docker Hub"
+
+    # Step 7: Initialize full zzcollab project
+    print_status "Step 7: Initializing full zzcollab project..."
+    
+    # Prepare zzcollab arguments
+    ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell"
+    if [[ "$USE_DOTFILES" == true ]]; then
+        if [[ "$DOTFILES_NODOT" == "true" ]]; then
+            ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --dotfiles-nodot $DOTFILES_DIR"
+        else
+            ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --dotfiles $DOTFILES_DIR"
+        fi
     fi
+    
+    # Add the new flags if they were passed to the original command
+    if [[ "${MINIMAL_DOCKER:-}" == "true" ]]; then
+        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --minimal-docker"
+    fi
+    if [[ "${EXTRA_DOCKER:-}" == "true" ]]; then
+        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --extra-docker"
+    fi
+    if [[ "${MINIMAL_PACKAGES_ONLY:-}" == "true" ]]; then
+        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --minimal-packages"
+    fi
+    
+    # Run zzcollab setup (calling ourselves recursively but without --init)
+    eval "$0 $ZZCOLLAB_ARGS"
+    print_success "Initialized zzcollab project with custom base image"
+
+    # Step 8: Initialize git repository
+    print_status "Step 8: Initializing git repository..."
+    git init
+    git add .
+    git commit -m "🎉 Initial research project setup
+
+- Complete zzcollab research compendium  
+- Team core images published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
+- Private repository protects unpublished research
+- CI/CD configured for automatic team image updates
+
+🐳 Generated with zzcollab --init
+
+Co-Authored-By: zzcollab <noreply@zzcollab.dev>"
+    print_success "Initialized git repository with initial commit"
+
+    # Step 9: Create private GitHub repository
+    print_status "Step 9: Creating private GitHub repository..."
+
+    # Check if repository already exists
+    if gh repo view "${GITHUB_ACCOUNT}/${PROJECT_NAME}" >/dev/null 2>&1; then
+        print_error "❌ Repository ${GITHUB_ACCOUNT}/${PROJECT_NAME} already exists on GitHub!"
+        echo ""
+        print_status "Options to resolve this:"
+        echo "  1. Delete existing repository: gh repo delete ${GITHUB_ACCOUNT}/${PROJECT_NAME} --confirm"
+        echo "  2. Use a different project name: --project-name PROJECT_NAME_V2"
+        echo "  3. Manual setup: Skip automatic creation and push manually"
+        echo ""
+        print_status "If you want to push to existing repository:"
+        echo "  git remote add origin https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
+        echo "  git push origin main --force  # WARNING: This will overwrite existing content"
+        echo ""
+        exit 1
+    fi
+
+    gh repo create "${GITHUB_ACCOUNT}/${PROJECT_NAME}" \
+        --private \
+        --description "Research project using ZZCOLLAB - team core images: ${TEAM_NAME}/${PROJECT_NAME}core" \
+        --source=. \
+        --remote=origin \
+        --push
+
+    print_success "Created private GitHub repository: ${GITHUB_ACCOUNT}/${PROJECT_NAME}"
+
+    # Final success message
+    print_success "🎉 Team setup completed successfully!"
+    echo ""
+    print_status "What was created:"
+    echo "  📁 Project directory: $PROJECT_NAME/"
+    echo "  🐳 Docker images:"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+    echo "    - ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    echo "  🔒 Private GitHub repo: https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}"
+    echo "  📦 Complete zzcollab research compendium"
+    echo ""
+    print_status "Next steps:"
+    echo "  1. cd $PROJECT_NAME"
+    echo "  2. make docker-zsh    # Start development environment"
+    echo "  3. Start coding your analysis!"
+    echo ""
+    print_status "Team members can now join with:"
+    echo "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
+    echo "  cd $PROJECT_NAME"
+    echo "  zzcollab --team $TEAM_NAME --project-name $PROJECT_NAME --interface shell --dotfiles ~/dotfiles"
+    echo "  make docker-zsh"
 }
 
 #=============================================================================
