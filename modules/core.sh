@@ -290,6 +290,45 @@ validate_with_callback() {
 }
 
 #=============================================================================
+# LEGACY COMPATIBILITY FUNCTIONS (for team_init.sh)
+#=============================================================================
+
+# Function: print_error
+# Purpose: Legacy alias for log_error (used by team_init.sh)
+print_error() {
+    log_error "$@"
+}
+
+# Function: print_warning
+# Purpose: Legacy alias for log_warning (used by team_init.sh)
+print_warning() {
+    log_warning "$@"
+}
+
+# Function: print_success
+# Purpose: Legacy alias for log_success (used by team_init.sh)
+print_success() {
+    log_success "$@"
+}
+
+# Function: print_status
+# Purpose: Legacy alias for log_info (used by team_init.sh)
+print_status() {
+    log_info "$@"
+}
+
+# Function: confirm
+# Purpose: Interactive confirmation prompt
+# Arguments: $1 - prompt message (optional)
+# Returns: 0 if user confirms (y/Y), 1 otherwise
+confirm() {
+    local prompt="${1:-Continue?}"
+    read -p "$prompt [y/N] " -n 1 -r
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]]
+}
+
+#=============================================================================
 # CORE MODULE VALIDATION
 #=============================================================================
 

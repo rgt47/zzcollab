@@ -323,7 +323,20 @@ initialize_full_project() {
         fi
     fi
     
-    # Add the new flags if they were passed to the original command
+    # Add build mode based on current configuration
+    case "$BUILD_MODE" in
+        fast)
+            ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --fast"
+            ;;
+        comprehensive)
+            ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --comprehensive"
+            ;;
+        *)
+            ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --standard"
+            ;;
+    esac
+    
+    # Legacy compatibility: Add legacy flags if they were passed to the original command
     if [[ "${MINIMAL_DOCKER:-}" == "true" ]]; then
         ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --minimal-docker"
     fi

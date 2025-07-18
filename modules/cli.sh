@@ -330,27 +330,23 @@ is_standard_mode() { [[ "$BUILD_MODE" == "standard" ]]; }
 is_comprehensive_mode() { [[ "$BUILD_MODE" == "comprehensive" ]]; }
 
 # Helper functions for template selection
-get_dockerfile_template() {
+get_template() {
+    local template_type="$1"
     case "$BUILD_MODE" in
-        fast) echo "Dockerfile.minimal" ;;
-        comprehensive) echo "Dockerfile.pluspackages" ;;
-        *) echo "Dockerfile" ;;
+        fast) echo "${template_type}.minimal" ;;
+        comprehensive) echo "${template_type}.pluspackages" ;;
+        *) echo "$template_type" ;;
     esac
 }
 
-get_description_template() {
+# Legacy wrapper functions for backward compatibility
+get_dockerfile_template() { get_template "Dockerfile"; }
+get_description_template() { get_template "DESCRIPTION"; }
+get_workflow_template() { 
     case "$BUILD_MODE" in
-        fast) echo "DESCRIPTION.minimal" ;;
-        comprehensive) echo "DESCRIPTION.full" ;;
-        *) echo "DESCRIPTION" ;;
-    esac
-}
-
-get_workflow_template() {
-    case "$BUILD_MODE" in
-        fast) echo "r-package-minimal.yml" ;;
-        comprehensive) echo "r-package-full.yml" ;;
-        *) echo "r-package.yml" ;;
+        fast) echo "workflows/r-package-minimal.yml" ;;
+        comprehensive) echo "workflows/r-package-full.yml" ;;
+        *) echo "workflows/r-package.yml" ;;
     esac
 }
 
