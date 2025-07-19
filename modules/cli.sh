@@ -43,10 +43,16 @@ INTERFACE=""
 GITHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
 
+# Base image selection for team initialization
+readonly DEFAULT_INIT_BASE_IMAGE="all"
+INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, all
+
 # Initialization mode variables
 INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
+BUILD_VARIANT_MODE=false
+BUILD_VARIANT=""
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="standard"
@@ -95,6 +101,19 @@ parse_cli_arguments() {
             --base-image|-b)
                 require_arg "$1" "$2"
                 BASE_IMAGE="$2"
+                shift 2
+                ;;
+            --init-base-image)
+                require_arg "$1" "$2"
+                case "$2" in
+                    r-ver|rstudio|verse|all)
+                        INIT_BASE_IMAGE="$2"
+                        ;;
+                    *)
+                        echo "❌ Error: Invalid base image '$2'. Valid options: r-ver, rstudio, verse, all" >&2
+                        exit 1
+                        ;;
+                esac
                 shift 2
                 ;;
             --team|-t)
@@ -181,6 +200,20 @@ parse_cli_arguments() {
                 # Will be processed after modules are loaded
                 SHOW_NEXT_STEPS=true
                 shift
+                ;;
+            --build-variant)
+                require_arg "$1" "$2"
+                case "$2" in
+                    r-ver|rstudio|verse)
+                        BUILD_VARIANT_MODE=true
+                        BUILD_VARIANT="$2"
+                        ;;
+                    *)
+                        echo "❌ Error: Invalid build variant '$2'. Valid options: r-ver, rstudio, verse" >&2
+                        exit 1
+                        ;;
+                esac
+                shift 2
                 ;;
             --help|-h)
                 # Will be processed after modules are loaded

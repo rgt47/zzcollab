@@ -272,44 +272,97 @@ EOF
 #=============================================================================
 
 # Function: build_team_images
-# Purpose: Build shell and RStudio core images for the team
+# Purpose: Build core images for the team based on INIT_BASE_IMAGE selection
 build_team_images() {
-    # Step 4: Build shell core image
-    print_status "Step 4: Building shell core image..."
+    local step_counter=4
+    
+    case "$INIT_BASE_IMAGE" in
+        "r-ver")
+            print_status "Step $step_counter: Building shell core image..."
+            build_single_team_image "rocker/r-ver" "shell"
+            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+            ;;
+        "rstudio")
+            print_status "Step $step_counter: Building RStudio core image..."
+            build_single_team_image "rocker/rstudio" "rstudio"
+            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+            ;;
+        "verse")
+            print_status "Step $step_counter: Building verse core image..."
+            build_single_team_image "rocker/verse" "verse"
+            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0"
+            ;;
+        "all")
+            # Build all variants (original behavior)
+            print_status "Step $step_counter: Building shell core image..."
+            build_single_team_image "rocker/r-ver" "shell"
+            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+            
+            ((step_counter++))
+            print_status "Step $step_counter: Building RStudio core image..."
+            build_single_team_image "rocker/rstudio" "rstudio"
+            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+            ;;
+        *)
+            print_error "Invalid INIT_BASE_IMAGE: $INIT_BASE_IMAGE"
+            exit 1
+            ;;
+    esac
+}
+
+# Function: build_single_team_image
+# Purpose: Build a single team core image with specified base
+# Arguments: $1 = base image (e.g. rocker/r-ver), $2 = variant name (e.g. shell)
+build_single_team_image() {
+    local base_image="$1"
+    local variant="$2"
+    
     docker build -f Dockerfile.teamcore \
-        --build-arg BASE_IMAGE=rocker/r-ver \
+        --build-arg BASE_IMAGE="$base_image" \
         --build-arg TEAM_NAME="$TEAM_NAME" \
         --build-arg PROJECT_NAME="$PROJECT_NAME" \
         --build-arg PACKAGE_MODE="$BUILD_MODE" \
-        -t "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" .
+        -t "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" .
 
-    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0" \
-        "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
-    print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
-
-    # Step 5: Build RStudio core image
-    print_status "Step 5: Building RStudio core image..."
-    docker build -f Dockerfile.teamcore \
-        --build-arg BASE_IMAGE=rocker/rstudio \
-        --build-arg TEAM_NAME="$TEAM_NAME" \
-        --build-arg PROJECT_NAME="$PROJECT_NAME" \
-        --build-arg PACKAGE_MODE="$BUILD_MODE" \
-        -t "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" .
-
-    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0" \
-        "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
-    print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" \
+        "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest"
 }
 
 # Function: push_team_images  
-# Purpose: Push team images to Docker Hub
+# Purpose: Push team images to Docker Hub based on what was built
 push_team_images() {
-    print_status "Step 6: Pushing images to Docker Hub..."
-    docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
-    docker push "${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
-    docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
-    docker push "${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    local step_counter=5
+    if [[ "$INIT_BASE_IMAGE" == "all" ]]; then
+        step_counter=6  # Adjust for multiple builds
+    fi
+    
+    print_status "Step $step_counter: Pushing images to Docker Hub..."
+    
+    case "$INIT_BASE_IMAGE" in
+        "r-ver")
+            push_single_team_image "shell"
+            ;;
+        "rstudio")
+            push_single_team_image "rstudio"
+            ;;
+        "verse")
+            push_single_team_image "verse"
+            ;;
+        "all")
+            push_single_team_image "shell"
+            push_single_team_image "rstudio"
+            ;;
+    esac
     print_success "Pushed all images to Docker Hub"
+}
+
+# Function: push_single_team_image
+# Purpose: Push a single team image variant to Docker Hub
+# Arguments: $1 = variant name (e.g. shell, rstudio, verse)
+push_single_team_image() {
+    local variant="$1"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest"
 }
 
 #=============================================================================
@@ -321,8 +374,23 @@ push_team_images() {
 initialize_full_project() {
     print_status "Step 7: Initializing full zzcollab project..."
     
-    # Prepare zzcollab arguments
-    local ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell"
+    # Prepare zzcollab arguments - select appropriate base image
+    local base_variant
+    case "$INIT_BASE_IMAGE" in
+        "r-ver")
+            base_variant="shell"
+            ;;
+        "rstudio")
+            base_variant="rstudio"
+            ;;
+        "verse")
+            base_variant="verse"
+            ;;
+        "all")
+            base_variant="shell"  # Default to shell for personal development
+            ;;
+    esac
+    local ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}core-${base_variant}"
     if [[ "$USE_DOTFILES" == true ]]; then
         if [[ "$DOTFILES_NODOT" == "true" ]]; then
             ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --dotfiles-nodot $DOTFILES_DIR"
@@ -429,6 +497,83 @@ create_github_repository() {
 }
 
 #=============================================================================
+# BUILD VARIANT FUNCTIONS
+#=============================================================================
+
+# Function: build_additional_variant
+# Purpose: Build additional team image variants after initial setup
+# Arguments: $1 = variant (r-ver, rstudio, verse)
+build_additional_variant() {
+    local variant="$1"
+    
+    # Validate variant
+    case "$variant" in
+        r-ver|rstudio|verse)
+            ;;
+        *)
+            print_error "Invalid variant '$variant'. Valid options: r-ver, rstudio, verse"
+            exit 1
+            ;;
+    esac
+    
+    # Check if we're in a zzcollab project directory
+    if [[ ! -f "Dockerfile.teamcore" ]]; then
+        print_error "Dockerfile.teamcore not found. Run from a zzcollab project directory."
+        exit 1
+    fi
+    
+    # Detect team and project names from existing images or directory
+    if [[ -z "$TEAM_NAME" ]]; then
+        TEAM_NAME=$(docker images --format "table {{.Repository}}" | grep "core-" | head -1 | cut -d'/' -f1)
+        if [[ -z "$TEAM_NAME" ]]; then
+            print_error "Could not detect team name. Use --team flag."
+            exit 1
+        fi
+    fi
+    
+    if [[ -z "$PROJECT_NAME" ]]; then
+        PROJECT_NAME=$(basename "$(pwd)")
+    fi
+    
+    # Set up base image and variant name mappings
+    local base_image variant_name
+    case "$variant" in
+        r-ver)
+            base_image="rocker/r-ver"
+            variant_name="shell"
+            ;;
+        rstudio)
+            base_image="rocker/rstudio"
+            variant_name="rstudio"
+            ;;
+        verse)
+            base_image="rocker/verse"
+            variant_name="verse"
+            ;;
+    esac
+    
+    print_status "Building additional team image variant: $variant_name"
+    print_status "Team: $TEAM_NAME, Project: $PROJECT_NAME"
+    
+    # Build the image
+    build_single_team_image "$base_image" "$variant_name"
+    print_success "Built ${variant_name} core image: ${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}:v1.0.0"
+    
+    # Ask if user wants to push to Docker Hub
+    echo ""
+    if confirm "Push ${variant_name} image to Docker Hub?"; then
+        push_single_team_image "$variant_name"
+        print_success "Pushed ${variant_name} image to Docker Hub"
+    else
+        print_status "Image built locally only. To push later, run:"
+        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}:v1.0.0"
+        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}:latest"
+    fi
+    
+    print_success "Additional variant '${variant_name}' ready for use!"
+}
+
+#=============================================================================
 # MAIN TEAM INITIALIZATION FUNCTION
 #=============================================================================
 
@@ -441,6 +586,8 @@ run_team_initialization() {
   Team Name: $TEAM_NAME
   Project Name: $PROJECT_NAME
   GitHub Account: $GITHUB_ACCOUNT
+  Base Image(s): $INIT_BASE_IMAGE
+  Build Mode: $BUILD_MODE
   Dotfiles: ${DOTFILES_DIR:-"None"}
   Dockerfile: ${DOCKERFILE_PATH##*/}
   Mode: Complete setup

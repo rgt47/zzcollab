@@ -42,6 +42,7 @@ OPTIONS:
     -t, --team-name NAME         Team name (Docker Hub organization) [required with --init]
     -p, --project-name NAME      Project name [required with --init]
     -g, --github-account NAME    GitHub account (default: same as team-name)
+        --init-base-image TYPE   Base image for team setup: r-ver, rstudio, verse, all (default: all)
     
     Team collaboration (Developer 2+ - Team Members):
     -t, --team NAME              Team name (Docker Hub organization)
@@ -55,6 +56,7 @@ OPTIONS:
     Advanced options:
     -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
     -n, --no-docker              Skip Docker image build during setup
+        --build-variant TYPE     Build additional team image variant: r-ver, rstudio, verse
         --next-steps             Show development workflow and next steps
     
     Build modes (simplified control):
@@ -77,6 +79,11 @@ EXAMPLES:
     # Alternative: Create directory first, then run in it (project name auto-detected)
     mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
     
+    # NEW: Initialize with specific base image only
+    $0 -i -t rgt47 -p study --init-base-image r-ver -d ~/dotfiles          # Build only shell variant
+    $0 -i -t rgt47 -p study --init-base-image rstudio -d ~/dotfiles        # Build only RStudio variant  
+    $0 -i -t rgt47 -p study --init-base-image verse -d ~/dotfiles          # Build only verse variant
+    
     # Team Members - Join existing project (Developer 2+)
     $0 -t rgt47 -p research-study -I shell -d ~/dotfiles
     $0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
@@ -93,6 +100,11 @@ EXAMPLES:
     $0 -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
     $0 -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
     $0 -n                                                          # Setup without Docker build
+    
+    # Build additional team image variants after initialization
+    $0 --build-variant rstudio                                    # Build RStudio variant after r-ver-only init
+    $0 --build-variant verse                                      # Build verse variant
+    $0 --build-variant r-ver -t rgt47                             # Build shell variant (with explicit team name)
 
 MODULES INCLUDED:
     core         - Logging, validation, utilities

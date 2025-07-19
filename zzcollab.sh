@@ -298,6 +298,23 @@ main() {
         exit 0
     fi
     
+    # Handle build variant mode
+    if [[ "${BUILD_VARIANT_MODE:-false}" == "true" ]]; then
+        # Load team_init module for build_additional_variant function
+        if [[ -f "$MODULES_DIR/team_init.sh" ]]; then
+            # Load required modules first
+            source "$MODULES_DIR/core.sh" >/dev/null 2>&1
+            source "$MODULES_DIR/team_init.sh" >/dev/null 2>&1
+            
+            # Call build variant function
+            build_additional_variant "$BUILD_VARIANT"
+            exit 0
+        else
+            log_error "Team initialization module not found"
+            exit 1
+        fi
+    fi
+    
     # Handle help and next-steps options for normal mode
     if [[ "${SHOW_HELP:-false}" == "true" ]]; then
         show_help
