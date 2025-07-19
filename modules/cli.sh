@@ -103,7 +103,7 @@ parse_cli_arguments() {
                 BASE_IMAGE="$2"
                 shift 2
                 ;;
-            --init-base-image)
+            --init-base-image|-B)
                 require_arg "$1" "$2"
                 case "$2" in
                     r-ver|rstudio|verse|all)
@@ -201,7 +201,7 @@ parse_cli_arguments() {
                 SHOW_NEXT_STEPS=true
                 shift
                 ;;
-            --build-variant)
+            --build-variant|-V)
                 require_arg "$1" "$2"
                 case "$2" in
                     r-ver|rstudio|verse)
@@ -312,7 +312,7 @@ check_team_image_availability() {
                 echo "      zzcollab -t $team_name -p $project_name -I $variant -d ~/dotfiles"
             done
             echo "   2. Ask team lead to build $interface variant:"
-            echo "      zzcollab --build-variant $(interface_to_variant "$interface")"
+            echo "      zzcollab -V $(interface_to_variant "$interface")"
             echo "   3. List all available images:"
             echo "      docker images | grep ${team_name}/${project_name}core"
         else
@@ -320,7 +320,7 @@ check_team_image_availability() {
             echo ""
             echo "💡 Solutions:"
             echo "   1. Check if team lead has run initial setup:"
-            echo "      zzcollab -i -t $team_name -p $project_name --init-base-image all"
+            echo "      zzcollab -i -t $team_name -p $project_name -B all"
             echo "   2. Verify team and project names are correct"
             echo "   3. Check Docker Hub for available images:"
             echo "      https://hub.docker.com/r/$team_name/$project_name"
