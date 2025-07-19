@@ -59,17 +59,24 @@ cd zzcollab
 cd ~/projects                   # Your preferred projects directory
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
-# Fast setup with minimal packages and lightweight CI (5 vs 39 packages - faster initialization)
-zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
+# Fast setup with minimal packages for quick development (8 vs 27 packages)
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles
+
+# Comprehensive setup with full package ecosystem (27+ packages)
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles
 
 
 # Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
 zzcollab -i -t mylab -d ~/dotfiles
 
-# Auto-detect with minimal packages
+# Auto-detect with fast build mode
 mkdir study2024 && cd study2024
-zzcollab -i -t mylab -m -d ~/dotfiles
+zzcollab -i -t mylab -F -d ~/dotfiles
+
+# Auto-detect with comprehensive build mode
+mkdir study2024 && cd study2024
+zzcollab -i -t mylab -C -d ~/dotfiles
 
 
 # For teams needing custom packages - two-step process:
@@ -90,7 +97,11 @@ cd study2024
 
 # 2. Join project with one command
 zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles
-# Note: --project-name can be omitted if current directory name matches project
+# Note: -p can be omitted if current directory name matches project
+
+# Alternative build modes for team members:
+# zzcollab -t mylab -p study2024 -I shell -F -d ~/dotfiles  # Fast mode
+# zzcollab -t mylab -p study2024 -I shell -C -d ~/dotfiles  # Comprehensive mode
 
 # 3. Start developing immediately
 make docker-zsh                # → Same environment as team lead
@@ -137,17 +148,24 @@ zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/do
 # Complete automated setup - replaces 10+ manual Docker and git commands
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles
 
-# Fast setup with minimal packages and lightweight CI (5 vs 39 packages - faster initialization)
-zzcollab -i -t mylab -p study2024 -m -d ~/dotfiles
+# Fast setup with minimal packages for quick development (8 vs 27 packages)
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles
+
+# Comprehensive setup with full package ecosystem (27+ packages)
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles
 
 
 # OR auto-detect project name from current directory
 mkdir study2024 && cd study2024
 zzcollab -i -t mylab -d ~/dotfiles
 
-# Auto-detect with minimal packages
+# Auto-detect with fast build mode
 mkdir study2024 && cd study2024
-zzcollab -i -t mylab -m -d ~/dotfiles
+zzcollab -i -t mylab -F -d ~/dotfiles
+
+# Auto-detect with comprehensive build mode
+mkdir study2024 && cd study2024
+zzcollab -i -t mylab -C -d ~/dotfiles
 
 
 # OR with custom Dockerfile editing:
@@ -206,25 +224,58 @@ make docker-rstudio            # RStudio Server at localhost:8787
 # From R console after cloning repository
 library(zzcollab)
 
-# Join the project
+# Standard join
 join_project(
   team_name = "mylab",
   project_name = "study2024",
   interface = "shell",          # or "rstudio"
   dotfiles_path = "~/dotfiles"
 )
+
+# With specific build mode
+join_project(
+  team_name = "mylab",
+  project_name = "study2024",
+  interface = "shell",
+  build_mode = "fast",          # or "comprehensive"
+  dotfiles_path = "~/dotfiles"
+)
 ```
 
 ### Configuration Options
+
+#### Build Modes
+zzcollab supports three build modes optimized for different use cases:
+
+| Mode | Flag | Packages | Build Time | Use Case |
+|------|------|----------|------------|----------|
+| **Fast** | `-F` | ~8 packages | Fast | Quick development, CI/CD |
+| **Standard** | `-S` (default) | ~15 packages | Medium | Balanced workflows |
+| **Comprehensive** | `-C` | ~27 packages | Slow | Full feature environments |
+
+```bash
+# Build mode examples
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles    # Fast mode
+zzcollab -i -t mylab -p study2024 -S -d ~/dotfiles    # Standard mode (default)
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles    # Comprehensive mode
+
+# Build mode detection via environment variable
+ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t mylab -p study2024 -d ~/dotfiles
+
+# Team member with specific build mode
+zzcollab -t mylab -p study2024 -I shell -F -d ~/dotfiles
+```
+
+#### Advanced Configuration
 ```bash
 # Team lead with custom GitHub account
-zzcollab --init --team-name mylab --project-name study2024 --github-account myuniversity
+zzcollab -i -t mylab -p study2024 --github-account myuniversity
 
 # With dotfiles that need dots added (files like: bashrc, vimrc)
-zzcollab --init --team-name mylab --project-name study2024 --dotfiles-nodot ~/Dropbox/dotfiles
+zzcollab -i -t mylab -p study2024 --dotfiles-nodot ~/Dropbox/dotfiles
 
 # Team member with specific interface preference
-zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles
 ```
 
 ## Directory Structure
@@ -392,15 +443,30 @@ make check-renv
 # Auto-fix any issues
 make check-renv-fix
 
-# Silent check for CI/CD (with --strict-imports for comprehensive scanning)
+# Silent check for CI/CD (with build mode awareness)
 Rscript check_renv_for_commit.R --fix --strict-imports --fail-on-issues
+
+# With explicit build mode override
+Rscript check_renv_for_commit.R --fix --build-mode fast --fail-on-issues
+
+# Using environment variable for build mode detection
+ZZCOLLAB_BUILD_MODE=comprehensive Rscript check_renv_for_commit.R --fix --fail-on-issues
 ```
 
-**What the enhanced script checks**:
+**Enhanced validation features**:
+- **Build mode awareness**: Adapts validation rules based on fast/standard/comprehensive modes
+- **Robust package extraction**: Handles wrapped calls like `suppressMessages(library(pkg))`
+- **Enhanced edge case handling**: Detects conditional package loading, roxygen imports
+- **Comprehensive error handling**: Structured exit codes and detailed error messages
+- **zzcollab integration**: Uses zzcollab logging and respects system configuration
+- **Base package filtering**: Automatically excludes R base packages from CRAN validation
+- **Network resilience**: Graceful handling of CRAN API failures
+
+**What it validates**:
 - All packages used in code (R/, scripts/, analysis/, tests/, vignettes/, inst/) are in DESCRIPTION
-- All packages in DESCRIPTION exist on CRAN
+- All packages in DESCRIPTION exist on CRAN (with base package exclusion)
 - renv.lock is synchronized with DESCRIPTION
-- No circular dependencies
+- Build mode compatibility (fast mode limits to essential packages)
 - **Strict mode**: Scans all directories for maximum reproducibility
 
 ## Docker Environment
@@ -641,19 +707,28 @@ init_project(
   project_name = "study2024"
 )
 
-# With dotfiles that already have dots
+# With dotfiles and specific build mode
 init_project(
   team_name = "mylab",
   project_name = "study2024", 
+  build_mode = "standard",        # "fast", "standard", or "comprehensive"
   dotfiles_path = "~/dotfiles"
 )
 
-# With dotfiles that need dots added
+# Fast setup for quick development (8 packages)
 init_project(
   team_name = "mylab",
   project_name = "study2024",
-  dotfiles_path = "~/Dropbox/dotfiles",
-  dotfiles_nodots = TRUE
+  build_mode = "fast",
+  dotfiles_path = "~/dotfiles"
+)
+
+# Comprehensive setup for full ecosystem (27+ packages)
+init_project(
+  team_name = "mylab",
+  project_name = "study2024",
+  build_mode = "comprehensive",
+  dotfiles_path = "~/dotfiles"
 )
 ```
 
@@ -669,11 +744,21 @@ join_project(
   dotfiles_path = "~/dotfiles"
 )
 
-# Join with RStudio interface
+# Join with RStudio interface and specific build mode
 join_project(
   team_name = "mylab",
   project_name = "study2024",
   interface = "rstudio",
+  build_mode = "standard",        # "fast", "standard", or "comprehensive"
+  dotfiles_path = "~/dotfiles"
+)
+
+# Join with fast build mode for quick setup
+join_project(
+  team_name = "mylab",
+  project_name = "study2024",
+  interface = "shell",
+  build_mode = "fast",
   dotfiles_path = "~/dotfiles"
 )
 ```

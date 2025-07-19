@@ -47,17 +47,24 @@ which zzcollab                      # Confirm system PATH setup
 # Method 1: Complete automated setup - replaces all manual Docker and git commands
 zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 
-# Method 1a: Fast setup with minimal packages and lightweight CI (5 packages vs 39 - faster initialization)
-zzcollab -i -t rgt47 -p research-study -m -d ~/dotfiles
+# Method 1a: Fast setup with minimal packages for quick development (8 vs 27 packages)
+zzcollab -i -t rgt47 -p research-study -F -d ~/dotfiles
+
+# Method 1b: Comprehensive setup with full package ecosystem (27+ packages)
+zzcollab -i -t rgt47 -p research-study -C -d ~/dotfiles
 
 
 # Method 2: Auto-detect project name from current directory
 mkdir research-study && cd research-study
 zzcollab -i -t rgt47 -d ~/dotfiles
 
-# Method 2a: Auto-detect with minimal packages
+# Method 2a: Auto-detect with fast build mode
 mkdir research-study && cd research-study
-zzcollab -i -t rgt47 -m -d ~/dotfiles
+zzcollab -i -t rgt47 -F -d ~/dotfiles
+
+# Method 2b: Auto-detect with comprehensive build mode
+mkdir research-study && cd research-study
+zzcollab -i -t rgt47 -C -d ~/dotfiles
 
 
 # OR with Dockerfile customization (two-step process):
@@ -72,10 +79,26 @@ zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 # From R console
 library(zzcollab)
 
-# Complete automated setup from within R
+# Standard automated setup from within R
 init_project(
   team_name = "rgt47",
   project_name = "research-study",
+  dotfiles_path = "~/dotfiles"
+)
+
+# Fast setup with minimal packages (8 core packages)
+init_project(
+  team_name = "rgt47",
+  project_name = "research-study",
+  build_mode = "fast",
+  dotfiles_path = "~/dotfiles"
+)
+
+# Comprehensive setup with full ecosystem (27+ packages)
+init_project(
+  team_name = "rgt47",
+  project_name = "research-study", 
+  build_mode = "comprehensive",
   dotfiles_path = "~/dotfiles"
 )
 ```
