@@ -140,7 +140,7 @@ mkdir PROJECT_NAME && cd PROJECT_NAME
 ✅ [SUCCESS] Created project directory: PROJECT_NAME
 
 🔵 [INFO] Step 2: Setting up team Dockerfile...
-cp ../templates/Dockerfile.pluspackages ./Dockerfile.teamcore
+cp ../templates/Dockerfile.unified ./Dockerfile.teamcore
 ✅ [SUCCESS] Copied Dockerfile template to Dockerfile.teamcore
 
 🔵 [INFO] Step 3: Building shell core image...
@@ -249,19 +249,17 @@ TEAM_NAME="rgt47" # the account on dockerhub for hosting the core images
 PROJECT_NAME=$(basename $(pwd))    # Get current directory name
 # Note: With new auto-detection, you can also just run: zzcollab --init --team-name rgt47
 # Copy and customize Dockerfile for your team's needs
-# For full package set (27 packages):
-cp templates/Dockerfile.pluspackages ./Dockerfile.teamcore
-# OR for minimal package set (5 packages, no Docker packages - faster builds):
-cp templates/Dockerfile.minimal ./Dockerfile.teamcore
+# Use unified template that supports all build modes:
+cp templates/Dockerfile.unified ./Dockerfile.teamcore
 
 # Edit Dockerfile.teamcore to add your team's specific R packages and tools:
 vim Dockerfile.teamcore
 # Key customizations:
 #
-# 1. Ensure first lines support base image argument:
-#    ARG BASE_IMAGE=rocker/r-ver
-#    ARG R_VERSION=latest  
-#    FROM ${BASE_IMAGE}:${R_VERSION}
+# 1. The unified template supports build modes via PACKAGE_MODE argument:
+#    - fast/minimal: Only essential packages (renv, remotes)
+#    - standard: Essential development packages (8 packages)  
+#    - comprehensive: Full package suite (27+ packages)
 # 2. Add domain-specific R packages (e.g., 'brms', 'targets', 'cmdstanr')
 # 3. Include specialized system tools (e.g., JAGS, Stan, ImageMagick)
 # 4. Set team-specific R options and configurations
