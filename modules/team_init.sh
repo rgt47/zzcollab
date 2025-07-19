@@ -293,7 +293,7 @@ build_team_images() {
             print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0"
             ;;
         "all")
-            # Build all variants (original behavior)
+            # Build all three variants (r-ver, rstudio, verse)
             print_status "Step $step_counter: Building shell core image..."
             build_single_team_image "rocker/r-ver" "shell"
             print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
@@ -302,6 +302,11 @@ build_team_images() {
             print_status "Step $step_counter: Building RStudio core image..."
             build_single_team_image "rocker/rstudio" "rstudio"
             print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+            
+            ((step_counter++))
+            print_status "Step $step_counter: Building verse core image..."
+            build_single_team_image "rocker/verse" "verse"
+            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0"
             ;;
         *)
             print_error "Invalid INIT_BASE_IMAGE: $INIT_BASE_IMAGE"
@@ -333,7 +338,7 @@ build_single_team_image() {
 push_team_images() {
     local step_counter=5
     if [[ "$INIT_BASE_IMAGE" == "all" ]]; then
-        step_counter=6  # Adjust for multiple builds
+        step_counter=7  # Adjust for three builds
     fi
     
     print_status "Step $step_counter: Pushing images to Docker Hub..."
@@ -351,6 +356,7 @@ push_team_images() {
         "all")
             push_single_team_image "shell"
             push_single_team_image "rstudio"
+            push_single_team_image "verse"
             ;;
     esac
     print_success "Pushed all images to Docker Hub"

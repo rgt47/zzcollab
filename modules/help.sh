@@ -42,7 +42,7 @@ OPTIONS:
     -t, --team-name NAME         Team name (Docker Hub organization) [required with --init]
     -p, --project-name NAME      Project name [required with --init]
     -g, --github-account NAME    GitHub account (default: same as team-name)
-        --init-base-image TYPE   Base image for team setup: r-ver, rstudio, verse, all (default: all)
+        --init-base-image TYPE   Base image for team setup: r-ver, rstudio, verse, all (default: all - builds all 3)
     
     Team collaboration (Developer 2+ - Team Members):
     -t, --team NAME              Team name (Docker Hub organization)
