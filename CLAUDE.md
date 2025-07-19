@@ -38,8 +38,10 @@ make docker-check          # Package validation
 make docker-document       # Generate docs
 make docker-render         # Render analysis reports
 
-# CI/CD validation (matches GitHub Actions container workflows)
+# CI/CD validation (enhanced with build mode awareness)
 Rscript check_renv_for_commit.R --quiet --fail-on-issues  # Dependency validation
+Rscript check_renv_for_commit.R --build-mode fast --quiet --fail-on-issues  # Fast mode validation
+ZZCOLLAB_BUILD_MODE=comprehensive Rscript check_renv_for_commit.R --fix --fail-on-issues  # Environment variable
 Rscript check_rprofile_options.R                          # R options monitoring
 
 # Container-based CI commands (used in GitHub Actions)
@@ -62,6 +64,7 @@ make check-renv-fix        # Update renv.lock
 make docker-check-renv     # Validate in container
 Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
 Rscript check_renv_for_commit.R --fix --fail-on-issues    # Auto-fix missing packages
+Rscript check_renv_for_commit.R --build-mode fast --fix   # Build mode aware validation
 ```
 
 ### Installation and Setup
@@ -77,18 +80,18 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
 # OR with long flags: zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
 
-# NEW: Simplified build modes (recommended approach)
-# Fast mode: minimal Docker + lightweight packages (fastest setup)
+# Build Modes (Current System)
+# Fast mode: 8 essential packages, quick development builds
 zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles
 
-# Standard mode: balanced Docker + standard packages (default, recommended)
-zzcollab -i -t TEAM -p PROJECT -S -d ~/dotfiles
+# Standard mode: 15 balanced packages, recommended default
+zzcollab -i -t TEAM -p PROJECT -S -d ~/dotfiles  # (or just omit flag for default)
 
-# Comprehensive mode: extended Docker + full packages (kitchen sink)
+# Comprehensive mode: 27+ packages, full ecosystem
 zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles
 
-# Legacy: Fast setup with minimal packages (deprecated - use -F instead)
-zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
+# Environment variable support for build mode detection
+ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t TEAM -p PROJECT -d ~/dotfiles
 
 
 # Manual core image building (if needed)
@@ -158,9 +161,9 @@ zzcollab -t TEAM -p PROJECT -I shell [-d ~/dotfiles]
 ZZCOLLAB now uses a simplified 3-mode system that replaces the previous complex flag combinations. This provides clear, intuitive choices for users:
 
 #### Build Modes:
-- **Fast (-F)**: Minimal Docker + lightweight packages (fastest builds, 5 packages)
-- **Standard (-S)**: Balanced Docker + standard packages (recommended, 27 packages)  
-- **Comprehensive (-C)**: Extended Docker + full packages (kitchen sink, 39+ packages)
+- **Fast (-F)**: Essential packages for quick development (8 packages: renv, devtools, usethis, etc.)
+- **Standard (-S)**: Balanced package set for most workflows (15 packages, default)
+- **Comprehensive (-C)**: Full ecosystem for extensive environments (27+ packages)
 
 #### Legacy Compatibility:
 The old flags (`-m`, `-x`, `--minimal-docker`, etc.) still work but show deprecation warnings. Users are encouraged to migrate to the new simplified modes.
@@ -187,22 +190,70 @@ ZZCOLLAB has undergone comprehensive refactoring to improve maintainability and 
 - **Clean dependencies**: Proper module loading order and dependency management
 - **Consistent patterns**: Standardized error handling and logging throughout
 
-### R-Centric Workflow (Alternative)
+## Recent Enhancements (2025)
+
+### Enhanced check_renv_for_commit.R Script
+The dependency validation script has been significantly improved:
+
+**New Features:**
+- **Build mode integration**: Adapts validation rules based on zzcollab build modes
+- **Enhanced package extraction**: Handles wrapped calls, conditional loading, roxygen imports  
+- **Robust error handling**: Structured exit codes (0=success, 1=critical issues, 2=config error)
+- **zzcollab integration**: Uses zzcollab logging and respects system configuration
+- **Base package filtering**: Automatically excludes R base packages from CRAN validation
+- **Network resilience**: Graceful handling of CRAN API failures
+
+**Usage Examples:**
+```bash
+# Build mode aware validation
+Rscript check_renv_for_commit.R --build-mode fast --fix --fail-on-issues
+
+# Environment variable detection
+ZZCOLLAB_BUILD_MODE=comprehensive Rscript check_renv_for_commit.R --fix
+
+# Enhanced edge case handling for complex package patterns
+Rscript check_renv_for_commit.R --strict-imports --fix --fail-on-issues
+```
+
+### Documentation Synchronization
+All documentation has been updated to reflect current system capabilities:
+- **workflow.md**: Updated CLI examples with current build mode flags
+- **ZZCOLLAB_USER_GUIDE.md**: Enhanced with build mode tables and R package documentation
+- **Command consistency**: All examples now use current flag syntax (-F, -S, -C)
+
+### R Package Integration (19 Functions)
+Complete R interface for CLI functionality with build mode support:
 ```r
-# Developer 1 (Team Lead) - R Interface
+# Team Lead with build modes
+init_project(team_name = "mylab", project_name = "study", build_mode = "fast")
+
+# Team Member with build modes  
+join_project(team_name = "mylab", project_name = "study", build_mode = "comprehensive")
+
+# Full R workflow support
+add_package("tidyverse")
+git_commit("Add analysis")
+create_pr("New feature")
+```
+
+### R-Centric Workflow (Enhanced)
+```r
+# Developer 1 (Team Lead) - R Interface with build modes
 library(zzcollab)
 init_project(
   team_name = "TEAM",
   project_name = "PROJECT", 
+  build_mode = "standard",  # "fast", "standard", "comprehensive"
   dotfiles_path = "~/dotfiles"
 )
 
-# Developer 2+ (Team Members) - R Interface
+# Developer 2+ (Team Members) - R Interface with build modes
 library(zzcollab)
 join_project(
   team_name = "TEAM",
   project_name = "PROJECT",
   interface = "shell",  # or "rstudio"
+  build_mode = "fast",  # matches team's preferred mode
   dotfiles_path = "~/dotfiles"
 )
 ```
