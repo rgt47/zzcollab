@@ -47,7 +47,7 @@ OPTIONS:
     Team collaboration (Developer 2+ - Team Members):
     -t, --team NAME              Team name (Docker Hub organization)
     -p, --project-name NAME      Project name  
-    -I, --interface TYPE         Interface type: shell, rstudio
+    -I, --interface TYPE         Interface type: shell, rstudio, verse
     
     Common options:
     -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
@@ -87,6 +87,7 @@ EXAMPLES:
     # Team Members - Join existing project (Developer 2+)
     $0 -t rgt47 -p research-study -I shell -d ~/dotfiles
     $0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+    $0 -t rgt47 -p research-study -I verse -d ~/dotfiles                   # Use verse for publishing
     
     # Advanced usage with custom base images
     $0 -b rocker/tidyverse -d ~/dotfiles

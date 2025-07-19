@@ -246,21 +246,100 @@ process_user_friendly_interface() {
                 rstudio)
                     BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-rstudio"
                     ;;
+                verse)
+                    BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-verse"
+                    ;;
                 *)
                     echo "❌ Error: Unknown interface '$INTERFACE'" >&2
-                    echo "Valid interfaces: shell, rstudio" >&2
+                    echo "Valid interfaces: shell, rstudio, verse" >&2
                     exit 1
                     ;;
             esac
+            
+            # Check if team image exists before proceeding
+            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$INTERFACE"
             echo "ℹ️  Using team image: $BASE_IMAGE"
         elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
             # If some team flags are provided but not all, show error (only for non-init mode)
             echo "❌ Error: When using team interface, all flags are required:" >&2
             echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
-            echo "  Valid interfaces: shell, rstudio" >&2
+            echo "  Valid interfaces: shell, rstudio, verse" >&2
             exit 1
         fi
     fi
+}
+
+#=============================================================================
+# TEAM IMAGE AVAILABILITY CHECKING
+#=============================================================================
+
+# Function: check_team_image_availability
+# Purpose: Verify that required team image exists, provide helpful error if not
+# Arguments: $1 = base_image, $2 = team_name, $3 = project_name, $4 = interface
+check_team_image_availability() {
+    local base_image="$1"
+    local team_name="$2"
+    local project_name="$3"
+    local interface="$4"
+    
+    # Try to check if image exists on Docker Hub
+    if ! docker manifest inspect "$base_image:latest" >/dev/null 2>&1; then
+        echo ""
+        echo "❌ Error: Team image '$base_image:latest' not found"
+        echo ""
+        
+        # Check what team images are available
+        echo "ℹ️  Checking available variants for this project..."
+        local available_images=()
+        
+        # Check common variants
+        for variant in shell rstudio verse; do
+            local image_name="${team_name}/${project_name}core-${variant}:latest"
+            if docker manifest inspect "$image_name" >/dev/null 2>&1; then
+                available_images+=("$variant")
+            fi
+        done
+        
+        if [[ ${#available_images[@]} -gt 0 ]]; then
+            echo "✅ Available variants for this project:"
+            for variant in "${available_images[@]}"; do
+                echo "    - ${team_name}/${project_name}core-${variant}:latest"
+            done
+            echo ""
+            echo "💡 Solutions:"
+            echo "   1. Use available variant:"
+            for variant in "${available_images[@]}"; do
+                echo "      zzcollab -t $team_name -p $project_name -I $variant -d ~/dotfiles"
+            done
+            echo "   2. Ask team lead to build $interface variant:"
+            echo "      zzcollab --build-variant $(interface_to_variant "$interface")"
+            echo "   3. List all available images:"
+            echo "      docker images | grep ${team_name}/${project_name}core"
+        else
+            echo "⚠️  No team images found for $team_name/$project_name"
+            echo ""
+            echo "💡 Solutions:"
+            echo "   1. Check if team lead has run initial setup:"
+            echo "      zzcollab -i -t $team_name -p $project_name --init-base-image all"
+            echo "   2. Verify team and project names are correct"
+            echo "   3. Check Docker Hub for available images:"
+            echo "      https://hub.docker.com/r/$team_name/$project_name"
+        fi
+        echo ""
+        exit 1
+    fi
+}
+
+# Function: interface_to_variant
+# Purpose: Convert interface name to build variant name
+# Arguments: $1 = interface (shell, rstudio, verse)
+interface_to_variant() {
+    case "$1" in
+        shell) echo "r-ver" ;;
+        rstudio) echo "rstudio" ;;
+        verse) echo "verse" ;;
+        *) echo "$1" ;;
+    esac
 }
 
 #=============================================================================
