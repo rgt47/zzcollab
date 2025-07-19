@@ -57,10 +57,9 @@ LABEL org.opencontainers.image.title="ZZCOLLAB Docker Image"
 LABEL org.opencontainers.image.description="R environment with ${PACKAGE_MODE} package configuration"
 LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 
-# Create non-root user with zsh as default shell (skip if using custom base image)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
-        useradd --create-home --shell /bin/zsh ${USERNAME}; \
-    fi
+# Create non-root user with zsh as default shell
+# Always create the user since we reference it throughout the Dockerfile
+RUN useradd --create-home --shell /bin/zsh ${USERNAME} || echo "User ${USERNAME} already exists"
 
 # Install R packages based on PACKAGE_MODE
 # fast/minimal: Only essential packages (renv, remotes)
@@ -91,10 +90,8 @@ RUN if [ "${PACKAGE_MODE}" = "fast" ] || [ "${PACKAGE_MODE}" = "minimal" ]; then
         fi; \
     fi
 
-# Give analyst user write permission to R library directory (skip if using custom base image)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
-        chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library; \
-    fi
+# Give user write permission to R library directory
+RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
 
 # Set working directory and ensure user owns it
 WORKDIR /home/${USERNAME}/project
