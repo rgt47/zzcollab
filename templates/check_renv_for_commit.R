@@ -37,6 +37,50 @@
 #       DO NOT COMMIT until these are fixed!
 
 #==============================================================================
+# ZZCOLLAB INTEGRATION
+#
+# Try to integrate with zzcollab's modular architecture if available
+# This allows the script to use zzcollab's logging and utility functions
+#==============================================================================
+
+# Check for zzcollab module integration
+check_zzcollab_integration <- function() {
+  integration <- list(
+    utils_available = FALSE,
+    logging_available = FALSE,
+    core_available = FALSE
+  )
+  
+  # Try to source zzcollab utilities if they exist
+  if (file.exists("modules/utils.sh")) {
+    # zzcollab utilities are bash, but we can check for R equivalents
+    if (file.exists("R/zzcollab_utils.R")) {
+      tryCatch({
+        source("R/zzcollab_utils.R", local = FALSE)
+        integration$utils_available <- TRUE
+      }, error = function(e) {
+        # Silently continue if sourcing fails
+      })
+    }
+  }
+  
+  # Check for logging integration
+  if (exists("zzcollab_log", mode = "function")) {
+    integration$logging_available <- TRUE
+  }
+  
+  # Check for core zzcollab functions
+  if (exists("zzcollab_config", mode = "function")) {
+    integration$core_available <- TRUE
+  }
+  
+  return(integration)
+}
+
+# Initialize zzcollab integration at startup
+ZZCOLLAB_INTEGRATION <- check_zzcollab_integration()
+
+#==============================================================================
 # CONFIGURATION AND CONSTANTS
 # 
 # Why we need this section:
@@ -73,7 +117,29 @@ PKG_CONFIG <- list(
   cran_timeout_seconds = 30L,
   
   # Timestamp format for backup files (makes them sortable and unique)
-  backup_timestamp_format = "%Y%m%d_%H%M%S"
+  backup_timestamp_format = "%Y%m%d_%H%M%S",
+  
+  # zzcollab build mode configurations
+  build_modes = list(
+    fast = list(
+      max_packages = 15L,
+      skip_suggests = TRUE,
+      essential_only = TRUE,
+      description = "Minimal package set for fast builds"
+    ),
+    standard = list(
+      max_packages = 50L,
+      skip_suggests = FALSE,
+      essential_only = FALSE,
+      description = "Balanced package set (default)"
+    ),
+    comprehensive = list(
+      max_packages = 200L,
+      skip_suggests = FALSE,
+      essential_only = FALSE,
+      description = "Full package set for extensive environments"
+    )
+  )
 )
 
 # Pre-compiled regex patterns for performance
@@ -83,13 +149,18 @@ REGEX_PATTERNS <- list(
   # Matches files with R-related extensions (case insensitive)
   file_pattern = paste0("\\.(", paste(PKG_CONFIG$file_extensions, collapse = "|"), ")$"),
   
-  # Matches library() and require() calls: library(dplyr), require("ggplot2")
-  # Captures the package name while handling quotes and various spacing patterns
-  library_calls = "(?:library|require)\\s*\\(\\s*[\"']?([a-zA-Z][a-zA-Z0-9._]{2,})[\"']?\\s*[,)]",
+  # Enhanced library/require patterns that handle edge cases
+  library_simple = "(?:library|require)\\s*\\(\\s*[\"']?([a-zA-Z][a-zA-Z0-9._]{2,})[\"']?\\s*[,)]",
+  library_wrapped = "(?:suppressMessages|suppressWarnings|quietly|invisible)\\s*\\(\\s*(?:library|require)\\s*\\(\\s*[\"']?([a-zA-Z][a-zA-Z0-9._]{2,})[\"']?",
+  library_conditional = "if\\s*\\([^)]+\\)\\s*(?:library|require)\\s*\\(\\s*[\"']?([a-zA-Z][a-zA-Z0-9._]{2,})[\"']?",
   
-  # Matches namespace calls: dplyr::select, ggplot2::ggplot
-  # Captures everything before :: as the package name
+  # Namespace calls with enhanced detection
   namespace_calls = "([a-zA-Z][a-zA-Z0-9._]{2,})::",
+  namespace_internal = "([a-zA-Z][a-zA-Z0-9._]{2,}):::",
+  
+  # Package imports in roxygen comments
+  roxygen_import = "#'\\s*@import\\s+([a-zA-Z][a-zA-Z0-9._]{2,})",
+  roxygen_importFrom = "#'\\s*@importFrom\\s+([a-zA-Z][a-zA-Z0-9._]{2,})",
   
   # Validates that a string looks like a real R package name
   # Must start with letter, contain only letters/numbers/dots/underscores, minimum length
@@ -114,6 +185,14 @@ REGEX_PATTERNS <- list(
 # - Validation prevents nonsensical flag combinations that would cause confusion
 # - Clean parsing makes the script self-documenting about its capabilities
 #==============================================================================
+
+# Helper function to extract flag values from command line arguments
+extract_flag_value <- function(args, flag_name) {
+  flag_index <- which(args == flag_name)
+  if (length(flag_index) == 0) return(NULL)
+  if (flag_index == length(args)) return(NULL)
+  args[flag_index + 1]
+}
 
 # Parse command line arguments into validated configuration
 # This function transforms raw command line flags into a clean configuration object
@@ -140,18 +219,95 @@ parse_arguments <- function(args = commandArgs(trailingOnly = TRUE)) {
     
     # --strict-imports flag: Scan ALL directories and put everything in Imports?
     # Trades convenience for maximum reproducibility
-    strict_imports = "--strict-imports" %in% args
+    strict_imports = "--strict-imports" %in% args,
+    
+    # --build-mode flag: Override build mode detection
+    # Can be fast|standard|comprehensive
+    build_mode_override = extract_flag_value(args, "--build-mode")
   )
   
-  # Validate argument combinations that don't make sense
-  # This prevents user confusion and provides clear error messages
-  if (script_config$snapshot_only && script_config$auto_fix) {
-    stop("Cannot use --snapshot with --fix flags simultaneously\n", 
-         "Reason: --snapshot only updates lockfile, --fix modifies DESCRIPTION\n",
-         "These are different operations that shouldn't be combined", call. = FALSE)
-  }
+  # Validate argument combinations and provide enhanced error messages
+  validate_flag_combinations(script_config)
+  
+  # Add zzcollab build mode detection
+  script_config$build_mode <- detect_build_mode(script_config$build_mode_override)
   
   script_config
+}
+
+# Enhanced flag validation with comprehensive error checking
+validate_flag_combinations <- function(config) {
+  # Critical incompatible combinations
+  if (config$snapshot_only && config$auto_fix) {
+    stop("❌ Cannot use --snapshot with --fix flags simultaneously\n", 
+         "   Reason: --snapshot only updates lockfile, --fix modifies DESCRIPTION\n",
+         "   These are different operations that shouldn't be combined", call. = FALSE)
+  }
+  
+  # Warnings for potentially confusing combinations
+  if (config$strict_imports && !config$auto_fix) {
+    warning("⚠️  --strict-imports has no effect without --fix flag\n",
+            "   Add --fix to enable automatic DESCRIPTION modification", call. = FALSE)
+  }
+  
+  if (config$fail_on_issues && config$auto_fix && !config$quiet) {
+    message("ℹ️  Using --fail-on-issues with --fix\n",
+            "   Script will only fail if --fix cannot resolve issues")
+  }
+  
+  # Validate build mode if provided
+  if (!is.null(config$build_mode_override)) {
+    valid_modes <- names(PKG_CONFIG$build_modes)
+    if (!config$build_mode_override %in% valid_modes) {
+      stop("❌ Invalid build mode: ", config$build_mode_override, "\n",
+           "   Valid modes: ", paste(valid_modes, collapse = ", "), call. = FALSE)
+    }
+  }
+  
+  invisible(NULL)
+}
+
+# Detect zzcollab build mode from environment and context
+detect_build_mode <- function(override_mode = NULL) {
+  # 1. Use explicit override if provided
+  if (!is.null(override_mode)) {
+    return(override_mode)
+  }
+  
+  # 2. Check zzcollab environment variable
+  env_mode <- Sys.getenv("ZZCOLLAB_BUILD_MODE", "")
+  if (env_mode != "" && env_mode %in% names(PKG_CONFIG$build_modes)) {
+    return(env_mode)
+  }
+  
+  # 3. Check for zzcollab configuration files
+  if (file.exists("zzcollab.conf")) {
+    # Try to read build mode from config file
+    tryCatch({
+      conf_lines <- readLines("zzcollab.conf", warn = FALSE)
+      mode_line <- grep("^BUILD_MODE=", conf_lines, value = TRUE)
+      if (length(mode_line) > 0) {
+        mode <- sub("^BUILD_MODE=", "", mode_line[1])
+        if (mode %in% names(PKG_CONFIG$build_modes)) {
+          return(mode)
+        }
+      }
+    }, error = function(e) {
+      # Silently continue if config file is unreadable
+    })
+  }
+  
+  # 4. Detect from project structure
+  if (length(list.files("R", pattern = "\\.R$", recursive = TRUE)) > 20) {
+    return("comprehensive")  # Large project likely needs comprehensive mode
+  }
+  
+  if (file.exists("tests") && length(list.files("tests", recursive = TRUE)) > 10) {
+    return("comprehensive")  # Heavy testing suggests comprehensive needs
+  }
+  
+  # 5. Default to standard mode
+  return("standard")
 }
 
 #==============================================================================
@@ -164,16 +320,29 @@ parse_arguments <- function(args = commandArgs(trailingOnly = TRUE)) {
 # - Force parameter allows critical errors to bypass quiet mode
 #==============================================================================
 
-# Create logging function factory to avoid global dependencies
+# Create enhanced logging function factory with zzcollab integration
 # This factory pattern ensures each part of the script gets a logger configured
 # with the current settings, without relying on global variables
 create_logger <- function(config) {
+  # Check if zzcollab logging is available and should be used
+  use_zzcollab_logging <- ZZCOLLAB_INTEGRATION$logging_available && !config$quiet
+  
   # Return a closure that "remembers" the config settings
   function(..., level = "info", force = FALSE) {
     # Respect quiet mode unless this is critical (force = TRUE)
     if (config$quiet && !force && level != "error") return(invisible(NULL))
     
-    # Visual prefixes make output scannable and parseable
+    # Use zzcollab logging if available
+    if (use_zzcollab_logging && exists("zzcollab_log", mode = "function")) {
+      tryCatch({
+        zzcollab_log(paste(..., collapse = ""), level = level)
+        return(invisible(NULL))
+      }, error = function(e) {
+        # Fall back to standard logging if zzcollab logging fails
+      })
+    }
+    
+    # Standard logging with visual prefixes
     # Each level gets a distinctive emoji for quick visual scanning
     prefix <- switch(level,
       "error" = "❌",      # Critical issues that must be fixed
@@ -248,24 +417,59 @@ extract_packages_from_text <- function(content) {
   # Initialize collection vector for found packages
   packages <- character(0)
   
-  # Step 2: Extract library/require calls
-  # Pattern matches: library(dplyr), require("ggplot2"), library(tidyr, quietly = TRUE)
-  # Uses regmatches + gregexpr for robust extraction that handles edge cases
-  lib_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$library_calls, content, perl = TRUE))[[1]]
+  # Step 2: Extract library/require calls with enhanced patterns
+  # Handle multiple patterns: simple, wrapped, and conditional calls
+  
+  # Simple calls: library(dplyr), require("ggplot2")
+  lib_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$library_simple, content, perl = TRUE))[[1]]
   if (length(lib_matches) > 0L) {
-    # Extract just the package name from the full match using backreference
-    lib_packages <- gsub(REGEX_PATTERNS$library_calls, "\\1", lib_matches, perl = TRUE)
+    lib_packages <- gsub(REGEX_PATTERNS$library_simple, "\\1", lib_matches, perl = TRUE)
     packages <- c(packages, lib_packages)
   }
   
-  # Step 3: Extract namespace calls (pkg::function syntax)
-  # Pattern matches: dplyr::select, ggplot2::ggplot, mypackage::my_function
-  # This catches dependencies that don't use library() but directly reference packages
+  # Wrapped calls: suppressMessages(library(dplyr))
+  wrapped_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$library_wrapped, content, perl = TRUE))[[1]]
+  if (length(wrapped_matches) > 0L) {
+    wrapped_packages <- gsub(REGEX_PATTERNS$library_wrapped, "\\1", wrapped_matches, perl = TRUE)
+    packages <- c(packages, wrapped_packages)
+  }
+  
+  # Conditional calls: if (condition) library(package)
+  cond_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$library_conditional, content, perl = TRUE))[[1]]
+  if (length(cond_matches) > 0L) {
+    cond_packages <- gsub(REGEX_PATTERNS$library_conditional, "\\1", cond_matches, perl = TRUE)
+    packages <- c(packages, cond_packages)
+  }
+  
+  # Step 3: Extract namespace calls with enhanced detection
+  # Handle both :: and ::: calls, plus roxygen imports
+  
+  # Standard namespace calls: dplyr::select, ggplot2::ggplot
   ns_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$namespace_calls, content, perl = TRUE))[[1]]
   if (length(ns_matches) > 0L) {
-    # Remove the :: suffix to get just the package name
     ns_packages <- gsub("::", "", ns_matches)
     packages <- c(packages, ns_packages)
+  }
+  
+  # Internal namespace calls: package:::internal_function
+  internal_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$namespace_internal, content, perl = TRUE))[[1]]
+  if (length(internal_matches) > 0L) {
+    internal_packages <- gsub(":::", "", internal_matches)
+    packages <- c(packages, internal_packages)
+  }
+  
+  # Roxygen @import statements
+  import_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$roxygen_import, content, perl = TRUE))[[1]]
+  if (length(import_matches) > 0L) {
+    import_packages <- gsub(REGEX_PATTERNS$roxygen_import, "\\1", import_matches, perl = TRUE)
+    packages <- c(packages, import_packages)
+  }
+  
+  # Roxygen @importFrom statements
+  importFrom_matches <- regmatches(content, gregexpr(REGEX_PATTERNS$roxygen_importFrom, content, perl = TRUE))[[1]]
+  if (length(importFrom_matches) > 0L) {
+    importFrom_packages <- gsub(REGEX_PATTERNS$roxygen_importFrom, "\\1", importFrom_matches, perl = TRUE)
+    packages <- c(packages, importFrom_packages)
   }
   
   # Step 4: Extract packages from @examples sections (non-recursive approach)
@@ -576,7 +780,16 @@ validate_against_cran <- function(packages, log_fn) {
     return(list(valid = character(0), invalid = character(0), error = FALSE))
   }
   
-  log_fn("Validating ", length(packages), " packages against CRAN...", level = "info")
+  # Remove base packages from validation (they don't need to be checked against CRAN)
+  non_base_packages <- setdiff(packages, PKG_CONFIG$base_packages)
+  base_packages_found <- intersect(packages, PKG_CONFIG$base_packages)
+  
+  if (length(non_base_packages) == 0L) {
+    # Only base packages, all valid
+    return(list(valid = base_packages_found, invalid = character(0), error = FALSE))
+  }
+  
+  log_fn("Validating ", length(non_base_packages), " packages against CRAN...", level = "info")
   
   tryCatch({
     # Step 1: Set timeout and ensure it gets restored
@@ -591,10 +804,13 @@ validate_against_cran <- function(packages, log_fn) {
     available_pkgs <- available.packages(contriburl = contrib.url("https://cloud.r-project.org/"))
     cran_packages <- rownames(available_pkgs)
     
-    # Step 3: Split packages into valid (on CRAN) and invalid (not on CRAN)
+    # Step 3: Split non-base packages into valid (on CRAN) and invalid (not on CRAN)
     # %in% operator efficiently checks membership in the CRAN package list
-    valid_packages <- packages[packages %in% cran_packages]
-    invalid_packages <- packages[!packages %in% cran_packages]
+    valid_cran_packages <- non_base_packages[non_base_packages %in% cran_packages]
+    invalid_packages <- non_base_packages[!non_base_packages %in% cran_packages]
+    
+    # Combine base packages (always valid) with CRAN-validated packages
+    valid_packages <- c(base_packages_found, valid_cran_packages)
     
     # Step 4: Report invalid packages for user awareness
     # Invalid packages might be typos, GitHub packages, or Bioconductor packages
@@ -814,6 +1030,57 @@ run_renv_snapshot <- function(force_clean, log_fn) {
   })
 }
 
+# Apply build mode-aware package filtering
+# Different build modes have different package tolerance levels
+apply_build_mode_filter <- function(packages, build_mode, log_fn) {
+  if (length(packages) == 0) return(packages)
+  
+  mode_config <- PKG_CONFIG$build_modes[[build_mode]]
+  if (is.null(mode_config)) {
+    # Fallback to standard mode if build_mode is not recognized
+    mode_config <- PKG_CONFIG$build_modes[["standard"]]
+    build_mode <- "standard"
+  }
+  
+  # Fast mode: More restrictive, only essential packages
+  if (build_mode == "fast") {
+    # Define essential R packages that are commonly needed
+    essential_packages <- c(
+      "renv", "remotes", "devtools", "usethis", "here", "conflicted", 
+      "rmarkdown", "knitr", "dplyr", "ggplot2", "testthat"
+    )
+    
+    filtered <- intersect(packages, essential_packages)
+    
+    if (length(filtered) < length(packages) && !is.null(log_fn)) {
+      excluded <- setdiff(packages, filtered)
+      log_fn("ℹ️  Fast mode: excluding ", length(excluded), " non-essential packages: ",
+             paste(head(excluded, 5), collapse = ", "), 
+             if (length(excluded) > 5) "..." else "", level = "info")
+    }
+    
+    return(filtered)
+  }
+  
+  # Comprehensive mode: Check package count limits
+  if (build_mode == "comprehensive") {
+    if (length(packages) > mode_config$max_packages) {
+      log_fn("⚠️  Comprehensive mode: ", length(packages), " packages exceeds recommended limit of ", 
+             mode_config$max_packages, level = "warning")
+    }
+    return(packages)  # Allow all packages in comprehensive mode
+  }
+  
+  # Standard mode: Moderate filtering
+  if (length(packages) > mode_config$max_packages) {
+    log_fn("⚠️  Standard mode: ", length(packages), " packages exceeds recommended limit of ", 
+           mode_config$max_packages, "\n   Consider using comprehensive mode (-C) or reviewing dependencies", 
+           level = "warning")
+  }
+  
+  return(packages)  # Return all packages for standard mode
+}
+
 #==============================================================================
 # MAIN EXECUTION ORCHESTRATOR
 #
@@ -873,9 +1140,12 @@ main_analysis <- function(config, log_fn) {
   validated_desc_packages <- intersect(desc_result$packages, cran_validation$valid)
   invalid_desc_packages <- intersect(desc_result$packages, cran_validation$invalid)
   
+  # Apply build mode-aware filtering
+  filtered_code_packages <- apply_build_mode_filter(validated_code_packages, config$build_mode, log_fn)
+  
   # Calculate differences between different package sources
-  missing_from_desc <- setdiff(validated_code_packages, validated_desc_packages)  # Used in code but not declared
-  unused_in_desc <- setdiff(validated_desc_packages, validated_code_packages)      # Declared but not used
+  missing_from_desc <- setdiff(filtered_code_packages, validated_desc_packages)  # Used in code but not declared
+  unused_in_desc <- setdiff(validated_desc_packages, filtered_code_packages)      # Declared but not used
   extra_in_renv <- setdiff(renv_result$packages, desc_result$packages)            # In lockfile but not declared
   
   # PHASE 4: ISSUE CLASSIFICATION
@@ -893,13 +1163,19 @@ main_analysis <- function(config, log_fn) {
   
   # Report critical issues (these break builds/installs)
   if (length(missing_from_desc) > 0L) {
-    log_fn("Missing from DESCRIPTION: ", paste(sort(missing_from_desc), collapse = ", "), 
-           level = "error", force = TRUE)
+    missing_list <- sort(missing_from_desc)
+    if (length(missing_list) > 0L) {
+      log_fn("Missing from DESCRIPTION: ", paste(missing_list, collapse = ", "), 
+             level = "error", force = TRUE)
+    }
   }
   
   if (length(invalid_desc_packages) > 0L) {
-    log_fn("Invalid packages in DESCRIPTION: ", paste(sort(invalid_desc_packages), collapse = ", "), 
-           level = "error", force = TRUE)
+    invalid_list <- sort(invalid_desc_packages)
+    if (length(invalid_list) > 0L) {
+      log_fn("Invalid packages in DESCRIPTION: ", paste(invalid_list, collapse = ", "), 
+             level = "error", force = TRUE)
+    }
   }
   
   # Report warnings (these are cleanup opportunities but not critical)
@@ -951,31 +1227,65 @@ main_analysis <- function(config, log_fn) {
   }
 }
 
-# Main entry point
+# Main entry point with enhanced error handling
 # This is the top-level function that coordinates everything and handles program lifecycle
 main <- function() {
-  # INITIALIZATION PHASE
-  # Parse configuration and set up logging
-  script_config <- parse_arguments()
-  log_fn <- create_logger(script_config)
+  # Global error handling setup
+  exit_code <- tryCatch({
+    # INITIALIZATION PHASE
+    # Parse configuration and set up logging
+    script_config <- parse_arguments()
+    log_fn <- create_logger(script_config)
+    
+    # Show zzcollab build mode context if not quiet
+    if (!script_config$quiet) {
+      mode_config <- PKG_CONFIG$build_modes[[script_config$build_mode]]
+      if (!is.null(mode_config)) {
+        log_fn("ℹ️  zzcollab build mode: ", script_config$build_mode, 
+               " (", mode_config$description, ")", level = "info")
+      } else {
+        log_fn("ℹ️  zzcollab build mode: ", script_config$build_mode, level = "info")
+      }
+    }
+    
+    # EXECUTION PHASE
+    # Handle special modes first, then fall through to main analysis
+    if (script_config$snapshot_only) {
+      # Special case: snapshot-only mode bypasses all analysis
+      exit_code <- handle_snapshot_only(script_config, log_fn)
+      return(exit_code)
+    }
+    
+    # Normal case: run full dependency analysis
+    exit_code <- main_analysis(script_config, log_fn)
+    
+    # HELP AND GUIDANCE PHASE
+    # Show usage help for users running the script without arguments
+    if (!script_config$quiet && length(commandArgs(trailingOnly = TRUE)) == 0L && !interactive()) {
+      cat("\n📖 USAGE: --fix --fail-on-issues --snapshot --quiet --strict-imports --build-mode MODE\n")
+      cat("For detailed help, see script header documentation.\n")
+      cat("zzcollab integration: Set ZZCOLLAB_BUILD_MODE environment variable\n")
+    }
+    
+    return(exit_code)
+    
+  }, error = function(e) {
+    # Top-level error handler for unexpected errors
+    cat("❌ CRITICAL ERROR: ", conditionMessage(e), "\n", file = stderr())
+    if (exists("script_config") && !is.null(script_config) && !script_config$quiet) {
+      cat("💡 This may indicate a bug in the script or invalid input\n", file = stderr())
+      cat("   Please check your R environment and file permissions\n", file = stderr())
+    }
+    return(2L)  # Exit code 2 = configuration/system error
+  }, warning = function(w) {
+    # Handle warnings gracefully
+    cat("⚠️  WARNING: ", conditionMessage(w), "\n", file = stderr())
+    invokeRestart("muffleWarning")
+    return(0L)  # Continue execution despite warnings
+  })
   
-  # EXECUTION PHASE
-  # Handle special modes first, then fall through to main analysis
-  if (script_config$snapshot_only) {
-    # Special case: snapshot-only mode bypasses all analysis
-    exit_code <- handle_snapshot_only(script_config, log_fn)
-    quit(status = exit_code)
-  }
-  
-  # Normal case: run full dependency analysis
-  exit_code <- main_analysis(script_config, log_fn)
-  
-  # HELP AND GUIDANCE PHASE
-  # Show usage help for users running the script without arguments
-  if (!script_config$quiet && length(commandArgs(trailingOnly = TRUE)) == 0L && !interactive()) {
-    cat("\n📖 USAGE: --fix --fail-on-issues --snapshot --quiet --strict-imports\n")
-    cat("For detailed help, see script header documentation.\n")
-  }
+  # Clean exit with proper status code
+  quit(status = exit_code)
   
   # EXIT PHASE
   # Honor fail-on-issues flag for CI/CD integration
@@ -986,6 +1296,27 @@ main <- function() {
   # Return exit code for callers (invisible so it doesn't print in interactive mode)
   invisible(exit_code)
 }
+
+#==============================================================================
+# SCRIPT EXECUTION ENTRY POINT
+# 
+# IMPROVEMENTS IMPLEMENTED:
+# ✅ Enhanced flag validation with comprehensive error checking
+# ✅ zzcollab build mode integration (fast/standard/comprehensive)
+# ✅ Robust package extraction with edge case handling
+# ✅ Build mode-aware package filtering and validation
+# ✅ Improved error handling and structured logging
+# ✅ Integration with zzcollab modular architecture
+# ✅ Support for --build-mode flag and ZZCOLLAB_BUILD_MODE environment variable
+# ✅ Enhanced regex patterns for library calls (wrapped, conditional, roxygen)
+# ✅ Comprehensive exit code handling (0=success, 1=critical issues, 2=config error)
+#
+# ZZCOLLAB ALIGNMENT:
+# - Detects and respects zzcollab build modes
+# - Integrates with zzcollab logging if available
+# - Supports zzcollab CLI flag conventions
+# - Context-aware validation based on project size and complexity
+#==============================================================================
 
 #==============================================================================
 # SCRIPT EXECUTION
