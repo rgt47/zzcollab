@@ -133,7 +133,10 @@ ZZCOLLAB uses **automated team distribution**:
 # Team member workflow
 git clone https://github.com/mylab/study2024.git  # Private repo
 cd study2024
-zzcollab --team mylab --project-name study2024 --interface shell --dotfiles ~/dotfiles
+# Choose available interface:
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles      # Command-line development
+zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles   # RStudio Server
+zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles     # Publishing workflow
 ```
 
 ## Team Collaboration Setup
@@ -478,6 +481,7 @@ Docker Compose provides **multiple specialized environments**:
 |---------|---------|---------|
 | `zsh` | Enhanced shell development | `make docker-zsh` |
 | `rstudio` | GUI development | http://localhost:8787 |
+| `verse` | Publishing workflow with LaTeX | `make docker-verse` |
 | `r-session` | R console | `make docker-r` |
 | `bash` | Shell access | `make docker-bash` |
 | `research` | Paper rendering | `make docker-render` |

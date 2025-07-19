@@ -29,14 +29,15 @@ which zzcollab                      # Confirm system PATH setup
 
 - [ ] Create new analysis project directory
 - [ ] Customize Dockerfile.teamcore for team's R packages and tools
-- [ ] Build and push shell core image to Docker Hub
-- [ ] Build and push RStudio core image to Docker Hub  
+- [ ] Choose base image strategy (single variant vs all variants)
+- [ ] Build and push selected team core images to Docker Hub
 - [ ] Run zzcollab with dotfiles to create local development image
 - [ ] Initialize private GitHub repository and push code
 - [ ] Create first analysis script in scripts/ directory
 - [ ] Write integration tests for analysis script
 - [ ] Run tests to verify everything works
 - [ ] Commit and push code + tests together
+- [ ] Communicate available variants to team members
 
 #### **🚀 AUTOMATED APPROACH (Recommended)**
 
@@ -44,27 +45,26 @@ which zzcollab                      # Confirm system PATH setup
 
 **Option A: Command-Line Interface**
 ```bash
-# Method 1: Complete automated setup - replaces all manual Docker and git commands
-zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
+# Method 1: Team setup with selective base images (NEW - faster, more efficient)
+zzcollab -i -t rgt47 -p research-study -B r-ver -S -d ~/dotfiles      # Shell only (fastest)
+zzcollab -i -t rgt47 -p research-study -B rstudio -S -d ~/dotfiles    # RStudio only
+zzcollab -i -t rgt47 -p research-study -B verse -S -d ~/dotfiles      # Verse only (publishing)
+zzcollab -i -t rgt47 -p research-study -B all -S -d ~/dotfiles        # All 3 variants (default)
 
-# Method 1a: Fast setup with minimal packages for quick development (8 vs 27 packages)
-zzcollab -i -t rgt47 -p research-study -F -d ~/dotfiles
+# Method 1a: Fast mode with selective images (minimal packages)
+zzcollab -i -t rgt47 -p research-study -B rstudio -F -d ~/dotfiles    # RStudio with minimal packages
 
-# Method 1b: Comprehensive setup with full package ecosystem (27+ packages)
-zzcollab -i -t rgt47 -p research-study -C -d ~/dotfiles
-
+# Method 1b: Comprehensive mode with selective images (full packages)
+zzcollab -i -t rgt47 -p research-study -B all -C -d ~/dotfiles        # All variants with full packages
 
 # Method 2: Auto-detect project name from current directory
 mkdir research-study && cd research-study
-zzcollab -i -t rgt47 -d ~/dotfiles
+zzcollab -i -t rgt47 -B rstudio -S -d ~/dotfiles                      # Team setup with RStudio only
 
-# Method 2a: Auto-detect with fast build mode
-mkdir research-study && cd research-study
-zzcollab -i -t rgt47 -F -d ~/dotfiles
-
-# Method 2b: Auto-detect with comprehensive build mode
-mkdir research-study && cd research-study
-zzcollab -i -t rgt47 -C -d ~/dotfiles
+# Method 3: Add variants later (incremental workflow)
+# After initial setup, add more variants as needed:
+zzcollab -V rstudio                                                    # Add RStudio variant
+zzcollab -V verse                                                      # Add verse variant for publishing
 
 
 # OR with Dockerfile customization (two-step process):
@@ -204,9 +204,15 @@ gh repo create "TEAM/PROJECT" --private --source=. --remote=origin \
 🔵 [INFO] Team members can now join with:
 #   git clone https://github.com/TEAM/PROJECT.git
 #   cd PROJECT  
-#   zzcollab --team TEAM --project-name PROJECT --interface shell \
-#       --dotfiles ~/dotfiles
+#   zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles     # If shell variant available
+#   zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles  # If rstudio variant available
+#   zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles    # If verse variant available
 #   make docker-zsh
+
+🔵 [INFO] If team member needs unavailable variant:
+#   Team lead can build additional variant with:
+#   zzcollab -V rstudio  # Build RStudio variant
+#   zzcollab -V verse    # Build verse variant
 ```
 
 **Key Technical Details:**
@@ -265,7 +271,10 @@ vim Dockerfile.teamcore
 # 4. Set team-specific R options and configurations
 # 5. Add database drivers or cloud SDKs
 
-# 3. Build TWO team core images for different interfaces  
+# 3. Build team core images (choose your strategy)
+# NEW: Selective building - much faster and more efficient
+
+# Strategy A: Build only what you need (recommended)
 # Shell-optimized core (rocker/r-ver base - lightweight, fast startup)
 docker build -f Dockerfile.teamcore \
     --build-arg BASE_IMAGE=rocker/r-ver \
@@ -275,21 +284,33 @@ docker build -f Dockerfile.teamcore \
 docker tag ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0 \
     ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
 
-# RStudio-optimized core (rocker/rstudio base - includes RStudio Server)
-docker build -f Dockerfile.teamcore \
-    --build-arg BASE_IMAGE=rocker/rstudio \
-    --build-arg TEAM_NAME="$TEAM_NAME" \
-    --build-arg PROJECT_NAME="$PROJECT_NAME" \
-    -t ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 .
-docker tag ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 \
-    ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
+# Optional: Add RStudio variant later if needed
+# docker build -f Dockerfile.teamcore \
+#     --build-arg BASE_IMAGE=rocker/rstudio \
+#     --build-arg TEAM_NAME="$TEAM_NAME" \
+#     --build-arg PROJECT_NAME="$PROJECT_NAME" \
+#     -t ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0 .
 
-# 4. Push both team core images to Docker Hub (PUBLIC for reproducibility)
+# Optional: Add verse variant for publishing workflows
+# docker build -f Dockerfile.teamcore \
+#     --build-arg BASE_IMAGE=rocker/verse \
+#     --build-arg TEAM_NAME="$TEAM_NAME" \
+#     --build-arg PROJECT_NAME="$PROJECT_NAME" \
+#     -t ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0 .
+
+# Strategy B: Build all variants (traditional approach)
+# Use this if team needs multiple interfaces from start
+# (Same commands as above, but build all three variants)
+
+# 4. Push selected team core images to Docker Hub (PUBLIC for reproducibility)
 docker login                       # Login to Docker Hub
 docker push ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0
 docker push ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest
-docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0
-docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
+# Push additional variants if built:
+# docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0
+# docker push ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest
+# docker push ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0
+# docker push ${TEAM_NAME}/${PROJECT_NAME}core-verse:latest
 
 # 5. Initialize zzcollab project with custom base image
 zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
@@ -487,8 +508,8 @@ git push                        # → Triggers GitHub Actions validation
 
 - [ ] Get access to private GitHub repository from team lead
 - [ ] Clone the private repository to local machine
-- [ ] Choose preferred development interface (shell or RStudio)
-- [ ] Update docker-compose.yml to reference chosen core image
+- [ ] Choose preferred development interface (shell, rstudio, or verse)
+- [ ] Check available team image variants
 - [ ] Build local development image with personal dotfiles
 - [ ] Create feature branch for your analysis work
 - [ ] Write analysis script in scripts/ directory
@@ -507,9 +528,19 @@ cd png1
 # Choose between command-line or R interface:
 
 # Option A: Command-Line Interface
-zzcollab --team rgt47 --project-name png1 --interface shell \
-    --dotfiles ~/dotfiles
+# Standard interfaces:
+zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles       # Command-line development
+zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles    # RStudio Server
+zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles      # Publishing workflow
 # Note: --project-name can be omitted if current directory name matches project
+
+# If team image variant not available, you'll get helpful error message:
+# ❌ Error: Team image 'rgt47/png1core-rstudio:latest' not found
+# ✅ Available variants for this project:
+#     - rgt47/png1core-shell:latest
+# 💡 Solutions:
+#    1. Use available variant: zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles
+#    2. Ask team lead to build rstudio variant: zzcollab -V rstudio
 
 # Option B: R Interface (R-Centric Workflow)  
 # R
@@ -517,7 +548,7 @@ zzcollab --team rgt47 --project-name png1 --interface shell \
 # join_project(
 #   team_name = "rgt47",
 #   project_name = "png1", 
-#   interface = "shell",
+#   interface = "shell",     # or "rstudio" or "verse"
 #   dotfiles_path = "~/dotfiles"
 # )
 # quit()
@@ -529,6 +560,8 @@ zzcollab --team rgt47 --project-name png1 --interface shell \
 make docker-zsh                   # Shell interface with vim/tmux
 # OR
 make docker-rstudio              # RStudio Server at localhost:8787
+# OR for publishing workflows:
+make docker-verse                 # Verse environment with LaTeX
 
 # 4. Create feature branch for your work
 git checkout -b feature/visualization-analysis
