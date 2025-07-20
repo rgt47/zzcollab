@@ -19,7 +19,7 @@ ZZCOLLAB is a research collaboration framework that creates Docker-based reprodu
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) replacing 8+ complex flags
+- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and selective base image building (-B, -V, -I)
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
 
 ## Development Commands
@@ -53,6 +53,7 @@ docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck
 ```bash
 make docker-zsh            # Zsh shell with dotfiles (recommended)
 make docker-rstudio        # RStudio Server at localhost:8787
+make docker-verse          # Verse environment with LaTeX (publishing)
 make docker-r              # R console only
 make docker-bash           # Bash shell
 ```
@@ -76,22 +77,29 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 
 ### Core Image Building Workflow
 ```bash
-# Automated team setup (recommended) - handles all image building
-zzcollab -i -t TEAM -p PROJECT [-d ~/dotfiles]
-# OR with long flags: zzcollab --init --team-name TEAM --project-name PROJECT [--dotfiles ~/dotfiles]
+# NEW: Selective Base Image Building (recommended) - faster, more efficient
+# Build only what your team needs:
+zzcollab -i -t TEAM -p PROJECT -B r-ver -S -d ~/dotfiles      # Shell only (fastest)
+zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # RStudio only
+zzcollab -i -t TEAM -p PROJECT -B verse -S -d ~/dotfiles      # Verse only (publishing)
+zzcollab -i -t TEAM -p PROJECT -B all -S -d ~/dotfiles        # All 3 variants (traditional)
 
-# Build Modes (Current System)
-# Fast mode: 8 essential packages, quick development builds
-zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles
+# Combine selective building with build modes:
+zzcollab -i -t TEAM -p PROJECT -B rstudio -F -d ~/dotfiles    # RStudio with minimal packages (8)
+zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # All variants with full packages (27+)
 
-# Standard mode: 15 balanced packages, recommended default
-zzcollab -i -t TEAM -p PROJECT -S -d ~/dotfiles  # (or just omit flag for default)
-
-# Comprehensive mode: 27+ packages, full ecosystem
-zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles
+# Incremental approach - start small, add variants later:
+zzcollab -i -t TEAM -p PROJECT -B r-ver -S -d ~/dotfiles      # Start with shell only
+# Later, add more variants as needed:
+zzcollab -V rstudio                                            # Add RStudio variant
+zzcollab -V verse                                              # Add verse variant for publishing
 
 # Environment variable support for build mode detection
-ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t TEAM -p PROJECT -d ~/dotfiles
+ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t TEAM -p PROJECT -B r-ver -d ~/dotfiles
+
+# Legacy: Traditional approach (builds all variants)
+# zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles              # Fast mode, all variants
+# zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles              # Comprehensive mode, all variants
 
 
 # Manual core image building (if needed)
@@ -114,6 +122,14 @@ docker build -f Dockerfile.teamcore \
     --build-arg PACKAGE_MODE="standard" \
     -t "TEAM/PROJECTcore-rstudio:v1.0.0" .
 
+# Build verse variant (publishing workflow)
+docker build -f Dockerfile.teamcore \
+    --build-arg BASE_IMAGE=rocker/verse \
+    --build-arg TEAM_NAME="TEAM" \
+    --build-arg PROJECT_NAME="PROJECT" \
+    --build-arg PACKAGE_MODE="standard" \
+    -t "TEAM/PROJECTcore-verse:v1.0.0" .
+
 # Build with different package modes
 # Fast mode (minimal packages)
 docker build -f Dockerfile.teamcore \
@@ -130,6 +146,7 @@ docker build -f Dockerfile.teamcore \
 # Push to Docker Hub
 docker push "TEAM/PROJECTcore-shell:v1.0.0"
 docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
+docker push "TEAM/PROJECTcore-verse:v1.0.0"
 ```
 
 ### Team Collaboration Setup
@@ -138,22 +155,37 @@ docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
 # Run from your preferred projects directory (e.g., ~/projects, ~/work)
 cd ~/projects  # or wherever you keep your projects
 
-# NEW: Simplified build modes (recommended)
-zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles     # Fast mode
-zzcollab -i -t TEAM -p PROJECT -S -d ~/dotfiles     # Standard mode (default)
-zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles     # Comprehensive mode
+# NEW: Selective base image building with build modes (recommended)
+zzcollab -i -t TEAM -p PROJECT -B r-ver -F -d ~/dotfiles      # Shell only with fast mode
+zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # RStudio only with standard mode
+zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # All variants with comprehensive mode
+
+# Add variants later (incremental workflow)
+zzcollab -V rstudio                                            # Add RStudio variant
+zzcollab -V verse                                              # Add verse variant
 
 # Legacy (deprecated): zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
 
 # Developer 2+ (Team Members) - Command Line
 git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
-zzcollab -t TEAM -p PROJECT -I shell [-d ~/dotfiles]
+# Choose available interface:
+zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles             # Command-line development
+zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles           # RStudio Server
+zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing workflow
+
+# Error handling: If team image variant not available, you'll get helpful guidance:
+# ❌ Error: Team image 'TEAM/PROJECTcore-rstudio:latest' not found
+# ✅ Available variants for this project:
+#     - TEAM/PROJECTcore-shell:latest
+# 💡 Solutions:
+#    1. Use available variant: zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles
+#    2. Ask team lead to build rstudio variant: zzcollab -V rstudio
 
 # Note: Build modes comparison:
-# Fast (-F): Minimal Docker + lightweight packages (fastest builds, 5 packages)
-# Standard (-S): Balanced Docker + standard packages (recommended, 27 packages)
-# Comprehensive (-C): Extended Docker + full packages (kitchen sink, 39+ packages)
+# Fast (-F): Minimal Docker + lightweight packages (fastest builds, 8 packages)
+# Standard (-S): Balanced Docker + standard packages (recommended, 15 packages)
+# Comprehensive (-C): Extended Docker + full packages (kitchen sink, 27+ packages)
 ```
 
 ### Simplified Build Modes (NEW)
@@ -192,6 +224,36 @@ ZZCOLLAB has undergone comprehensive refactoring to improve maintainability and 
 
 ## Recent Enhancements (2025)
 
+### Selective Base Image Building System
+Major improvement to team initialization workflow with selective base image building:
+
+**New Features:**
+- **Selective building**: Teams can build only needed variants (r-ver, rstudio, verse) instead of all
+- **Incremental workflow**: Start with one variant, add others later with `-V` flag  
+- **Enhanced error handling**: Helpful guidance when team members request unavailable variants
+- **Short flags**: All major options now have one-letter shortcuts (-i, -t, -p, -I, -B, -V)
+- **Verse support**: Publishing workflow with LaTeX support via rocker/verse
+- **Team communication**: Clear coordination between team leads and members about available tooling
+
+**CLI Improvements:**
+```bash
+# New selective base image flags
+-B, --init-base-image TYPE   # r-ver, rstudio, verse, all (for team initialization)
+-V, --build-variant TYPE     # r-ver, rstudio, verse (for adding variants later)
+-I, --interface TYPE         # shell, rstudio, verse (for team members joining)
+
+# Examples
+zzcollab -i -t mylab -p study -B rstudio -S -d ~/dotfiles    # RStudio only
+zzcollab -V verse                                             # Add verse variant later
+zzcollab -t mylab -p study -I shell -d ~/dotfiles           # Join with shell interface
+```
+
+**Error Handling Enhancements:**
+- **Image availability checking**: Validates team images exist before proceeding
+- **Helpful error messages**: Shows available variants and provides solutions
+- **Team coordination**: Guides team members on how to request missing variants
+- **Docker Hub integration**: Checks image availability via `docker manifest inspect`
+
 ### Enhanced check_renv_for_commit.R Script
 The dependency validation script has been significantly improved:
 
@@ -217,9 +279,11 @@ Rscript check_renv_for_commit.R --strict-imports --fix --fail-on-issues
 
 ### Documentation Synchronization
 All documentation has been updated to reflect current system capabilities:
-- **workflow.md**: Updated CLI examples with current build mode flags
-- **ZZCOLLAB_USER_GUIDE.md**: Enhanced with build mode tables and R package documentation
-- **Command consistency**: All examples now use current flag syntax (-F, -S, -C)
+- **workflow.md**: Updated with selective base image building and error handling examples
+- **ZZCOLLAB_USER_GUIDE.md**: Enhanced with new flags, interface options, and team coordination guidance
+- **~/prj/p25/index.qmd**: Updated team collaboration examples with current CLI syntax
+- **Command consistency**: All examples now use current flag syntax (-F, -S, -C, -B, -V, -I)
+- **Error handling**: Comprehensive examples of helpful guidance when team images unavailable
 
 ### R Package Integration (19 Functions)
 Complete R interface for CLI functionality with build mode support:
@@ -252,7 +316,7 @@ library(zzcollab)
 join_project(
   team_name = "TEAM",
   project_name = "PROJECT",
-  interface = "shell",  # or "rstudio"
+  interface = "shell",  # or "rstudio" or "verse"
   build_mode = "fast",  # matches team's preferred mode
   dotfiles_path = "~/dotfiles"
 )
