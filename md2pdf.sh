@@ -1,22 +1,7 @@
 #!/bin/bash
 
 ##############################################################################
-# md2pdf.sh - Convert Markdown to PDF with Title and Date
-##############################################################################
-#
-# PURPOSE: Add title and date to markdown file, then convert to PDF using pandoc
-#
-# USAGE: ./md2pdf.sh [OPTIONS] <markdown_file>
-#
-# OPTIONS:
-#   -t, --title TITLE    Document title (optional)
-#   -h, --help          Show this help message
-#
-# EXAMPLES:
-#   ./md2pdf.sh workflow_mini.md
-#   ./md2pdf.sh -t "ZZCOLLAB Workflow Guide" workflow_mini.md
-#   ./md2pdf.sh --title "Team Collaboration Guide" ZZCOLLAB_USER_GUIDE.md
-#
+# md2pdf_simple.sh - Simple Markdown to PDF with basic emoji fallback
 ##############################################################################
 
 set -euo pipefail
@@ -35,32 +20,25 @@ readonly GREEN='\033[0;32m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m' # No Color
 
-# Control emoji usage
-readonly USE_EMOJI="${MD2PDF_USE_EMOJI:-true}"
+# Function: log_info
+log_info() {
+    printf "${BLUE}INFO: %s${NC}\n" "$*" >&2
+}
 
-# Function: get_icon
-get_icon() {
-    if [[ "$USE_EMOJI" == "true" ]]; then
-        case "$1" in
-            info) echo "ℹ️ " ;;
-            success) echo "✅ " ;;
-            error) echo "❌ " ;;
-            *) echo "" ;;
-        esac
-    else
-        case "$1" in
-            info) echo "[INFO] " ;;
-            success) echo "[SUCCESS] " ;;
-            error) echo "[ERROR] " ;;
-            *) echo "" ;;
-        esac
-    fi
+# Function: log_success
+log_success() {
+    printf "${GREEN}SUCCESS: %s${NC}\n" "$*" >&2
+}
+
+# Function: log_error
+log_error() {
+    printf "${RED}ERROR: %s${NC}\n" "$*" >&2
 }
 
 # Function: print_help
 print_help() {
     cat << EOF
-$SCRIPT_NAME - Convert Markdown to PDF with Title and Date
+$SCRIPT_NAME - Simple Markdown to PDF converter
 
 USAGE:
     $SCRIPT_NAME [OPTIONS] <markdown_file>
@@ -71,67 +49,30 @@ OPTIONS:
 
 EXAMPLES:
     $SCRIPT_NAME workflow_mini.md
-    $SCRIPT_NAME -t "ZZCOLLAB Workflow Guide" workflow_mini.md
-    $SCRIPT_NAME --title "Team Collaboration Guide" ZZCOLLAB_USER_GUIDE.md
+    $SCRIPT_NAME -t "ZZCOLLAB Guide" workflow_mini.md
 
-ENVIRONMENT VARIABLES:
-    MD2PDF_USE_EMOJI    Set to 'false' to disable emoji icons (default: true)
-
-REQUIREMENTS:
-    - pandoc installed with XeLaTeX support
-    - DejaVu fonts installed on system
-    - Color emoji font (Apple Color Emoji, Noto Color Emoji, or Segoe UI Emoji) for emoji support
-
-OUTPUT:
-    Creates PDF file with same name as input markdown file
-
-EMOJI CONTROL:
-    # Use emoji icons (default)
-    $SCRIPT_NAME workflow_mini.md
-    
-    # Disable emoji icons
-    MD2PDF_USE_EMOJI=false $SCRIPT_NAME workflow_mini.md
+NOTE:
+    This script converts emoji to text equivalents for reliable PDF generation.
 EOF
 }
 
-# Function: log_info
-log_info() {
-    local icon
-    icon="$(get_icon info)"
-    printf "${BLUE}%s%s${NC}\n" "$icon" "$*" >&2
-}
-
-# Function: log_success
-log_success() {
-    local icon
-    icon="$(get_icon success)"
-    printf "${GREEN}%s%s${NC}\n" "$icon" "$*" >&2
-}
-
-# Function: log_error
-log_error() {
-    local icon
-    icon="$(get_icon error)"
-    printf "${RED}%s%s${NC}\n" "$icon" "$*" >&2
-}
-
-# Function: check_prerequisites
-check_prerequisites() {
-    # Check if pandoc is installed
-    if ! command -v pandoc >/dev/null 2>&1; then
-        log_error "pandoc is not installed"
-        log_error "Install with: brew install pandoc (macOS) or apt-get install pandoc (Ubuntu)"
-        exit 1
-    fi
+# Function: replace_emoji_with_text
+replace_emoji_with_text() {
+    local input_file="$1"
+    local output_file="$2"
     
-    # Check if XeLaTeX is available
-    if ! command -v xelatex >/dev/null 2>&1; then
-        log_error "XeLaTeX is not installed"
-        log_error "Install with: brew install --cask mactex (macOS) or apt-get install texlive-xetex (Ubuntu)"
-        exit 1
-    fi
-    
-    log_info "Prerequisites check passed"
+    # Replace common emoji with text equivalents
+    sed -e 's/✅/[CHECKMARK]/g' \
+        -e 's/❌/[X]/g' \
+        -e 's/ℹ️/[INFO]/g' \
+        -e 's/🚀/[ROCKET]/g' \
+        -e 's/🐳/[WHALE]/g' \
+        -e 's/🎉/[PARTY]/g' \
+        -e 's/⚠️/[WARNING]/g' \
+        -e 's/📝/[MEMO]/g' \
+        -e 's/💡/[BULB]/g' \
+        -e 's/🔧/[WRENCH]/g' \
+        "$input_file" > "$output_file"
 }
 
 # Function: parse_arguments
@@ -190,11 +131,10 @@ parse_arguments() {
 # Function: create_temp_file
 create_temp_file() {
     local temp_file
-    # Create temp file with .md extension for pandoc format detection
+    # Create temp file with .md extension
     if command -v mktemp >/dev/null 2>&1 && mktemp --help 2>&1 | grep -q -- '--suffix'; then
         temp_file="$(mktemp --suffix=.md)"
     else
-        # Fallback for systems without --suffix support
         temp_file="$(mktemp).md"
     fi
     
@@ -210,8 +150,16 @@ linestretch: 1.2
 
 EOF
     
-    # Append original markdown content
-    cat "$MARKDOWN_FILE" >> "$temp_file"
+    # Create emoji-free version of the markdown
+    local emoji_free_file
+    emoji_free_file="$(mktemp)"
+    replace_emoji_with_text "$MARKDOWN_FILE" "$emoji_free_file"
+    
+    # Append processed markdown content
+    cat "$emoji_free_file" >> "$temp_file"
+    
+    # Clean up intermediate file
+    rm "$emoji_free_file"
     
     echo "$temp_file"
 }
@@ -221,47 +169,20 @@ convert_to_pdf() {
     local temp_file="$1"
     local output_file="${MARKDOWN_FILE%.*}.pdf"
     
-    log_info "Converting $MARKDOWN_FILE to PDF..."
+    log_info "Converting $MARKDOWN_FILE to PDF (emoji converted to text)..."
     log_info "Title: $TITLE"
     log_info "Date: $TODAY"
     
-    # Create LaTeX header for emoji support
-    local latex_header
-    latex_header=$(mktemp)
-    cat > "$latex_header" << 'EOF'
-\usepackage{fontspec}
-\usepackage{polyglossia}
-\setmainfont{DejaVu Serif}
-\setmonofont{DejaVu Sans Mono}
-
-% Try different emoji fonts based on system
-\IfFontExistsTF{Apple Color Emoji}{
-  \newfontfamily\emojifont{Apple Color Emoji}[Renderer=Harfbuzz]
-}{
-  \IfFontExistsTF{Noto Color Emoji}{
-    \newfontfamily\emojifont{Noto Color Emoji}[Renderer=Harfbuzz]
-  }{
-    \IfFontExistsTF{Segoe UI Emoji}{
-      \newfontfamily\emojifont{Segoe UI Emoji}[Renderer=Harfbuzz]
-    }{
-      \newfontfamily\emojifont{DejaVu Sans}[Renderer=Harfbuzz]
-    }
-  }
-}
-
-% Enable emoji rendering
-\DeclareTextFontCommand{\emoji}{\emojifont}
-EOF
-
-    # Run pandoc with emoji support
+    # Use simple pandoc conversion
     pandoc "$temp_file" \
         --from=markdown \
         --pdf-engine=xelatex \
-        --include-in-header="$latex_header" \
+        -V mainfont="DejaVu Serif" \
+        -V monofont="DejaVu Sans Mono" \
         -o "$output_file"
     
-    # Clean up temp files
-    rm "$temp_file" "$latex_header"
+    # Clean up temp file
+    rm "$temp_file"
     
     log_success "PDF created: $output_file"
     
@@ -275,15 +196,22 @@ EOF
 
 # Main function
 main() {
+    # Check if pandoc is installed
+    if ! command -v pandoc >/dev/null 2>&1; then
+        log_error "pandoc is not installed"
+        log_error "Install with: brew install pandoc (macOS) or apt-get install pandoc (Ubuntu)"
+        exit 1
+    fi
+    
     parse_arguments "$@"
-    check_prerequisites
     
     local temp_file
     temp_file=$(create_temp_file)
     
     convert_to_pdf "$temp_file"
     
-    log_success "Conversion completed successfully!"
+    log_success "PDF conversion completed!"
+    log_info "Note: Emoji characters were converted to text equivalents for reliable PDF generation"
 }
 
 # Only run main if script is executed directly (not sourced)
