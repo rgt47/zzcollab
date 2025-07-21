@@ -43,26 +43,33 @@ which zzcollab                      # Confirm system PATH setup
 
 **Choose between command-line or R interface:**
 
-**Option A: Command-Line Interface**
+**Option A: Command-Line Interface (Two-Step Process)**
+
+**Step 1: Create Team Images Only**
 ```bash
-# Method 1: Team setup with selective base images (NEW - faster, more efficient)
-zzcollab -i -t rgt47 -p research-study -B r-ver -S -d ~/dotfiles      # Shell only (fastest)
-zzcollab -i -t rgt47 -p research-study -B rstudio -S -d ~/dotfiles    # RStudio only
-zzcollab -i -t rgt47 -p research-study -B verse -S -d ~/dotfiles      # Verse only (publishing)
-zzcollab -i -t rgt47 -p research-study -B all -S -d ~/dotfiles        # All 3 variants (default)
+# NEW: -i flag now ONLY creates and pushes team Docker images, then stops
+zzcollab -i -t rgt47 -p research-study -B r-ver -S -d ~/dotfiles      # Creates rgt47/research-studycore-shell:latest only
+zzcollab -i -t rgt47 -p research-study -B rstudio -S -d ~/dotfiles    # Creates rgt47/research-studycore-rstudio:latest only  
+zzcollab -i -t rgt47 -p research-study -B verse -S -d ~/dotfiles      # Creates rgt47/research-studycore-verse:latest only
+zzcollab -i -t rgt47 -p research-study -B all -S -d ~/dotfiles        # Creates all 3 variants (shell, rstudio, verse)
 
-# Method 1a: Fast mode with selective images (minimal packages)
-zzcollab -i -t rgt47 -p research-study -B rstudio -F -d ~/dotfiles    # RStudio with minimal packages
+# Build mode options:
+zzcollab -i -t rgt47 -p research-study -B rstudio -F -d ~/dotfiles    # Fast mode: minimal packages
+zzcollab -i -t rgt47 -p research-study -B all -C -d ~/dotfiles        # Comprehensive mode: full packages
 
-# Method 1b: Comprehensive mode with selective images (full packages)
-zzcollab -i -t rgt47 -p research-study -B all -C -d ~/dotfiles        # All variants with full packages
-
-# Method 2: Auto-detect project name from current directory
+# Auto-detect project name from current directory:
 mkdir research-study && cd research-study
 zzcollab -i -t rgt47 -B rstudio -S -d ~/dotfiles                      # Team setup with RStudio only
+```
 
-# Method 3: Add variants later (incremental workflow)
-# After initial setup, add more variants as needed:
+**Step 2: Create Full Project Structure**
+```bash
+# After team images are created and pushed, create project structure separately:
+mkdir research-study && cd research-study  # or git clone if repo exists
+zzcollab -t rgt47 -p research-study -I shell -d ~/dotfiles            # Full project setup with shell interface
+zzcollab -t rgt47 -p research-study -I rstudio -d ~/dotfiles          # Or with RStudio interface
+
+# Add more image variants later (incremental workflow):
 zzcollab -V rstudio                                                    # Add RStudio variant
 zzcollab -V verse                                                      # Add verse variant for publishing
 
@@ -74,15 +81,31 @@ zzcollab -i -t rgt47 -p research-study -P
 zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 ```
 
-**Option B: R Interface (R-Centric Workflow)**
-```r
-# From R console
-library(zzcollab)
+**Option B: R Interface (Two-Step Process)**
 
-# Standard automated setup from within R
+**Step 1: Create Team Images Only**
+```r
+# NEW: R interface now separates team image creation from project setup
+library(zzcollab)
+# Create and push team Docker images only
+create_team_images(
+  team_name = "rgt47",
+  project_name = "research-study",
+  base_images = "rstudio",    # or c("r-ver", "rstudio", "verse") for all
+  build_mode = "standard",    # "fast", "standard", "comprehensive"
+  dotfiles_path = "~/dotfiles"
+)
+# This stops after pushing team images to Docker Hub
+```
+
+**Step 2: Create Full Project Structure**
+```r
+# After team images exist, create full project setup separately
+library(zzcollab)
 init_project(
   team_name = "rgt47",
   project_name = "research-study",
+  interface = "rstudio",      # "shell", "rstudio", "verse"
   dotfiles_path = "~/dotfiles"
 )
 

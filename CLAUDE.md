@@ -151,28 +151,27 @@ docker push "TEAM/PROJECTcore-verse:v1.0.0"
 
 ### Team Collaboration Setup
 ```bash
-# Developer 1 (Team Lead) - Command Line
-# Run from your preferred projects directory (e.g., ~/projects, ~/work)
-cd ~/projects  # or wherever you keep your projects
+# Developer 1 (Team Lead) - Team Image Creation Only
+# Step 1: Create and push team Docker images (this is all -i does now)
+zzcollab -i -t TEAM -p PROJECT -B r-ver -F -d ~/dotfiles      # Creates TEAM/PROJECTcore-shell:latest only
+zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # Creates TEAM/PROJECTcore-rstudio:latest only  
+zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # Creates all variants (shell, rstudio, verse)
 
-# NEW: Selective base image building with build modes (recommended)
-zzcollab -i -t TEAM -p PROJECT -B r-ver -F -d ~/dotfiles      # Shell only with fast mode
-zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # RStudio only with standard mode
-zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # All variants with comprehensive mode
+# Step 2: Create full project structure (run separately)
+mkdir PROJECT && cd PROJECT  # or git clone if repo exists
+zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles            # Full project setup with shell interface
 
-# Add variants later (incremental workflow)
+# Add more image variants later (incremental workflow)
 zzcollab -V rstudio                                            # Add RStudio variant
 zzcollab -V verse                                              # Add verse variant
 
-# Legacy (deprecated): zzcollab -i -t TEAM -p PROJECT -m -d ~/dotfiles
-
-# Developer 2+ (Team Members) - Command Line
-git clone https://github.com/TEAM/PROJECT.git
+# Developer 2+ (Team Members) - Join Existing Project
+git clone https://github.com/TEAM/PROJECT.git                 # Clone existing project
 cd PROJECT
 # Choose available interface:
 zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles             # Command-line development
-zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles           # RStudio Server
-zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing workflow
+zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles           # RStudio Server (if variant available)
+zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing workflow (if variant available)
 
 # Error handling: If team image variant not available, you'll get helpful guidance:
 # ❌ Error: Team image 'TEAM/PROJECTcore-rstudio:latest' not found

@@ -615,9 +615,33 @@ EOF
     create_basic_files
     build_team_images
     push_team_images
-    initialize_full_project
-    setup_git_repository
-    create_github_repository
+    
+    # Team initialization complete - stop here for -i flag
+    # Team members will run zzcollab without -i to do full project setup
+    log_info "✅ 🎉 Team initialization complete!"
+    log_info ""
+    log_info "ℹ️  Team images created and pushed to Docker Hub:"
+    
+    # List the created images
+    if [[ "$BASE_IMAGES" == "all" ]] || [[ "$BASE_IMAGES" == *"r-ver"* ]]; then
+        log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+    fi
+    if [[ "$BASE_IMAGES" == "all" ]] || [[ "$BASE_IMAGES" == *"rstudio"* ]]; then
+        log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    fi
+    if [[ "$BASE_IMAGES" == "all" ]] || [[ "$BASE_IMAGES" == *"verse"* ]]; then
+        log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-verse:latest"
+    fi
+    
+    log_info ""
+    log_info "ℹ️  Next steps:"
+    log_info "  1. Create your project repository manually or"
+    log_info "  2. Run full project setup: zzcollab -t ${TEAM_NAME} -p ${PROJECT_NAME} [options]"
+    log_info ""
+    log_info "ℹ️  Team members can now join with:"
+    log_info "  git clone https://github.com/${TEAM_NAME}/${PROJECT_NAME}.git"
+    log_info "  cd ${PROJECT_NAME}"
+    log_info "  zzcollab -t ${TEAM_NAME} -p ${PROJECT_NAME} -I shell"
 }
 
 #=============================================================================
