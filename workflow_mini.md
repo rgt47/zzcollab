@@ -55,16 +55,21 @@ gh repo invite rgt47/png1 dev3-github-username
 ### For Dev 2 and Dev 3 to Join:
 
 ```bash
-# 1. Clone the project
+# 1. Accept GitHub collaboration invitation
+# Check email for invitation from rgt47/png1 repository
+# OR visit: https://github.com/rgt47/png1/invitations
+# Click "Accept invitation"
+
+# 2. Clone the project
 git clone https://github.com/rgt47/png1.git
 cd png1
 
-# 2. Join with available interface (they'll get helpful errors if variant unavailable)
+# 3. Join with available interface (they'll get helpful errors if variant unavailable)
 zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles      # If shell variant available
 zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles    # If RStudio variant available  
 zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles      # If verse variant available
 
-# 3. Start development
+# 4. Start development
 make docker-zsh        # or make docker-rstudio, make docker-verse
 ```
 
