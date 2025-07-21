@@ -453,8 +453,13 @@ get_template() {
     local template_type="$1"
     case "$template_type" in
         Dockerfile)
-            # Use unified Dockerfile for all modes
-            echo "Dockerfile.unified"
+            # Use personal Dockerfile when building from team base images
+            if [[ "$BASE_IMAGE" == *"core-"* ]]; then
+                echo "Dockerfile.personal"
+            else
+                # Use unified Dockerfile for standard rocker base images
+                echo "Dockerfile.unified"
+            fi
             ;;
         *)
             # For other templates, use original logic
