@@ -34,7 +34,23 @@ zzcollab -i -t rgt47 -p png1 -B all -S
 3. **Initializes zzcollab project structure**: Complete R package with analysis framework
 4. **Creates private GitHub repository**: `https://github.com/rgt47/png1`
 5. **Sets up automated CI/CD**: GitHub Actions for team image management
-6. **Enables team collaboration**: Dev 2 and Dev 3 can join immediately
+6. **Invite team collaborators**: Grant repository access to team members
+7. **Enables team collaboration**: Dev 2 and Dev 3 can join immediately
+
+### Required: Invite Team Members
+
+After project initialization, Dev 1 must invite collaborators:
+
+```bash
+# Invite team members to the private GitHub repository
+gh repo invite rgt47/png1 dev2-github-username
+gh repo invite rgt47/png1 dev3-github-username
+
+# Alternative: Via GitHub web interface
+# 1. Go to https://github.com/rgt47/png1/settings/access
+# 2. Click "Invite a collaborator"
+# 3. Add dev2-github-username and dev3-github-username with "Write" access
+```
 
 ### For Dev 2 and Dev 3 to Join:
 
