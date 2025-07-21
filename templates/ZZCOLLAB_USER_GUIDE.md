@@ -55,28 +55,21 @@ git clone https://github.com/your-org/zzcollab.git
 cd zzcollab
 ./install.sh                    # Installs to ~/bin
 
-# 2. Create team project (automated)
+# 2a. Create team Docker images only (two-step process)
 cd ~/projects                   # Your preferred projects directory
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles
-
-# Fast setup with minimal packages for quick development (8 vs 27 packages)
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles
-
-# Comprehensive setup with full package ecosystem (27+ packages)
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles
-
+# NEW: -i flag now ONLY creates and pushes team Docker images, then stops
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates team images, stops
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode: minimal packages
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive: full packages
+zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio variant only
 
 # Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
-zzcollab -i -t mylab -d ~/dotfiles
+zzcollab -i -t mylab -B all -d ~/dotfiles                           # All variants (shell, rstudio, verse)
 
-# Auto-detect with fast build mode
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -F -d ~/dotfiles
-
-# Auto-detect with comprehensive build mode
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -C -d ~/dotfiles
+# 2b. Create full project structure separately
+mkdir study2024 && cd study2024  # or git clone if repo exists
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full project setup
 
 
 # For teams needing custom packages - two-step process:
@@ -146,21 +139,30 @@ zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles     # Publishing workflow
 #### Automated Approach (Recommended)
 **Choose between command-line or R interface:**
 
-**Option A: Command-Line Interface**
+**Option A: Command-Line Interface (Two-Step Process)**
+
+**Step 1: Create Team Docker Images Only**
 ```bash
-# Complete automated setup - replaces 10+ manual Docker and git commands
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles
+# NEW: -i flag now ONLY creates and pushes team Docker images, then stops
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates team images with standard packages
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode: minimal packages (8 vs 27)  
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive mode: full packages (27+)
 
-# Fast setup with minimal packages for quick development (8 vs 27 packages)
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles
+# Selective base image building:
+zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio variant only
+zzcollab -i -t mylab -p study2024 -B all -d ~/dotfiles              # All variants (shell, rstudio, verse)
 
-# Comprehensive setup with full package ecosystem (27+ packages)
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles
-
-
-# OR auto-detect project name from current directory
+# Auto-detect project name from current directory:
 mkdir study2024 && cd study2024
-zzcollab -i -t mylab -d ~/dotfiles
+zzcollab -i -t mylab -B rstudio -d ~/dotfiles                       # Team images only with RStudio variant
+```
+
+**Step 2: Create Full Project Structure Separately**
+```bash
+# After team images are created and pushed, create project structure:
+mkdir study2024 && cd study2024  # or git clone if repository exists
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full project setup with shell interface
+zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles             # Or with RStudio interface
 
 # Auto-detect with fast build mode
 mkdir study2024 && cd study2024
@@ -206,19 +208,24 @@ init_project(
 
 **Option A: Command-Line Interface**
 ```bash
-# 1. Clone team repository (must be added as collaborator first)
+# 1. Clone team repository (must be added as collaborator first or use public repo)
 git clone https://github.com/mylab/study2024.git
 cd study2024
 
-# 2. Join project with automated environment setup
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles
-# OR for RStudio interface:
-# zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles
+# 2. Join project with automated environment setup using existing team images
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles             # Shell interface
+zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles           # RStudio interface (if team built this variant)
+zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles             # Publishing interface (if available)
 # Note: --project-name can be omitted if current directory name matches project
+
+# If team image variant not available, you'll get helpful guidance:
+# ❌ Error: Team image 'mylab/study2024core-rstudio:latest' not found
+# ✅ Available variants: mylab/study2024core-shell:latest  
+# 💡 Solutions: Use available variant or ask team lead to build missing variant
 
 # 3. Start development immediately
 make docker-zsh                # Shell interface with vim/tmux
-# OR
+# OR (if RStudio variant was built by team)
 make docker-rstudio            # RStudio Server at localhost:8787
 ```
 

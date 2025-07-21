@@ -529,11 +529,11 @@ git push                        # → Triggers GitHub Actions validation
 
 **📋 Developer 2 Checklist:**
 
-- [ ] Get access to private GitHub repository from team lead
-- [ ] Clone the private repository to local machine
+- [ ] Get access to private GitHub repository from team lead (or team creates public project)
+- [ ] Clone the repository to local machine
+- [ ] Check available team image variants (team lead should communicate what's available)
 - [ ] Choose preferred development interface (shell, rstudio, or verse)
-- [ ] Check available team image variants
-- [ ] Build local development image with personal dotfiles
+- [ ] Build local development image with personal dotfiles using existing team images
 - [ ] Create feature branch for your analysis work
 - [ ] Write analysis script in scripts/ directory
 - [ ] Write integration tests for your analysis script
