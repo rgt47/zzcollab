@@ -505,11 +505,12 @@ Each interface provides access to specialized development tasks:
 # Build/rebuild environment
 make docker-build
 
-# Development environments
-make docker-zsh                 # Enhanced zsh with dotfiles (recommended)
-make docker-rstudio             # RStudio GUI
-make docker-r                   # R console
-make docker-bash                # Shell
+# Development environments (interface-specific)
+make docker-zsh                 # Enhanced zsh with dotfiles (shell interface)
+make docker-rstudio             # RStudio GUI (rstudio interface)
+make docker-verse               # Publishing workflow (verse interface)
+make docker-r                   # R console (all interfaces)
+make docker-bash                # Shell access (all interfaces)
 
 # Automated tasks
 make docker-render              # Render paper
@@ -575,11 +576,11 @@ ZZCOLLAB includes sophisticated automated Docker image management that eliminate
 The system automatically detects package changes, rebuilds Docker images, and notifies team members through a comprehensive GitHub Actions workflow:
 
 **Key Features:**
-- **Intelligent change detection**: Monitors `renv.lock`, `DESCRIPTION`, `Dockerfile`, `docker-compose.yml`
+- **Intelligent change detection**: Monitors `renv.lock`, `DESCRIPTION`, `Dockerfile`
 - **Multi-platform support**: AMD64 and ARM64 architectures
 - **Advanced caching**: GitHub Actions cache with BuildKit optimization
 - **Comprehensive tagging**: `latest`, `r4.3.0`, `abc1234`, `2024-01-15` tags
-- **Automated configuration**: Updates docker-compose.yml references
+- **Automated configuration**: Updates Dockerfile references
 - **Team communication**: Detailed commit comments with usage instructions
 
 #### Workflow Triggers
@@ -592,7 +593,6 @@ on:
       - 'renv.lock'           # R package dependency changes
       - 'DESCRIPTION'         # Package metadata changes
       - 'Dockerfile'          # Container definition changes
-      - 'docker-compose.yml'  # Service configuration changes
   workflow_dispatch:           # Manual triggering
 ```
 
@@ -610,7 +610,7 @@ renv::snapshot()
 # ✅ GitHub Actions detects renv.lock changes
 # ✅ Rebuilds image with tidymodels
 # ✅ Pushes to mylab/study2024:latest on Docker Hub
-# ✅ Updates docker-compose.yml
+# ✅ Updates Dockerfile configuration
 # ✅ Notifies team via commit comment
 ```
 
