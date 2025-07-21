@@ -1,6 +1,9 @@
 ARG R_VERSION=latest
 FROM rgt47/r-pluspackages:latest
 
+# Ensure we're running as root for system package installation
+USER root
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
@@ -61,10 +64,10 @@ USER ${USERNAME}
 COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
 COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
 
-# Install zsh plugins
+# Install zsh plugins (skip if already exist)
 RUN mkdir -p /home/${USERNAME}/.zsh && \
-    git clone https://github.com/zsh-users/zsh-autosuggestions /home/${USERNAME}/.zsh/zsh-autosuggestions && \
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting /home/${USERNAME}/.zsh/zsh-syntax-highlighting
+    (git clone https://github.com/zsh-users/zsh-autosuggestions /home/${USERNAME}/.zsh/zsh-autosuggestions || echo "zsh-autosuggestions already exists") && \
+    (git clone https://github.com/zsh-users/zsh-syntax-highlighting /home/${USERNAME}/.zsh/zsh-syntax-highlighting || echo "zsh-syntax-highlighting already exists")
 
 # Install vim-plug
 RUN curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim --create-dirs \
