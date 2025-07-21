@@ -68,6 +68,7 @@ OPTIONS:
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
     --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
     -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+    -y, --yes                   Skip confirmation prompt (for automation)
     
     -h, --help                   Show this help message
 
@@ -75,6 +76,7 @@ EXAMPLES:
     # Team Lead - Initialize new team project (Developer 1)
     $0 -i -t rgt47 -p research-study -d ~/dotfiles
     $0 --init --team-name mylab --project-name study2024 --github-account myorg
+    $0 -i -t rgt47 -p research-study -y -d ~/dotfiles                          # Skip confirmation (automation)
     
     # Alternative: Create directory first, then run in it (project name auto-detected)
     mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
@@ -167,6 +169,7 @@ OPTIONAL:
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
     --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
     -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
+    -y, --yes                  Skip confirmation prompt (for automation)
     
     -h, --help                 Show this help message
 

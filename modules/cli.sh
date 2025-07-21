@@ -53,6 +53,7 @@ USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
 BUILD_VARIANT_MODE=false
 BUILD_VARIANT=""
+SKIP_CONFIRMATION=false
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="standard"
@@ -218,6 +219,10 @@ parse_cli_arguments() {
             --help|-h)
                 # Will be processed after modules are loaded
                 SHOW_HELP=true
+                shift
+                ;;
+            --yes|-y)
+                SKIP_CONFIRMATION=true
                 shift
                 ;;
             *)

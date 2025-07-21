@@ -600,9 +600,13 @@ run_team_initialization() {
 EOF
 
     echo ""
-    if ! confirm "Proceed with team setup?"; then
-        print_status "Team setup cancelled by user"
-        exit 0
+    if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
+        if ! confirm "Proceed with team setup?"; then
+            print_status "Team setup cancelled by user"
+            exit 0
+        fi
+    else
+        log_info "ℹ️  Proceeding with team setup (--yes flag provided)"
     fi
 
     if [[ "$PREPARE_DOCKERFILE" != true ]]; then
@@ -623,13 +627,13 @@ EOF
     log_info "ℹ️  Team images created and pushed to Docker Hub:"
     
     # List the created images
-    if [[ "$BASE_IMAGES" == "all" ]] || [[ "$BASE_IMAGES" == *"r-ver"* ]]; then
+    if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"r-ver"* ]]; then
         log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
     fi
-    if [[ "$BASE_IMAGES" == "all" ]] || [[ "$BASE_IMAGES" == *"rstudio"* ]]; then
+    if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"rstudio"* ]]; then
         log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
     fi
-    if [[ "$BASE_IMAGES" == "all" ]] || [[ "$BASE_IMAGES" == *"verse"* ]]; then
+    if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"verse"* ]]; then
         log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-verse:latest"
     fi
     
