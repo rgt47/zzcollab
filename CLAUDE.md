@@ -321,6 +321,38 @@ join_project(
 )
 ```
 
+### Critical Bug Fix: -i Flag Behavior (July 2025)
+**Issue**: The `-i` (team initialization) flag was incorrectly continuing with full project setup instead of stopping after team image creation.
+
+**Root Cause**: In `modules/team_init.sh`, the `run_team_initialization` function was calling:
+- `initialize_full_project` (line 618)
+- `setup_git_repository` 
+- `create_github_repository`
+
+This caused `-i` to create team images AND run full project setup, defeating the purpose of separating team image creation from project setup.
+
+**Fix Applied**: 
+- **Modified**: `modules/team_init.sh:612-644`
+- **Removed**: Calls to `initialize_full_project`, `setup_git_repository`, `create_github_repository`
+- **Added**: Clear completion message with next steps guidance
+- **Result**: `-i` now stops after `push_team_images` as intended
+
+**New Correct Behavior**:
+```bash
+# Team Lead (Dev 1) - Two-Step Process
+zzcollab -i -t mylab -p study -B rstudio -S    # Step 1: Creates & pushes team images, then stops
+mkdir study && cd study                         # Step 2a: Create project directory  
+zzcollab -t mylab -p study -I rstudio -S       # Step 2b: Full project setup
+```
+
+**Documentation Updated**:
+- `workflow.md`: Updated team collaboration workflows
+- `ZZCOLLAB_USER_GUIDE.md`: Clarified two-step process for team leads
+- `templates/ZZCOLLAB_USER_GUIDE.md`: Updated template examples
+- `CLAUDE.md`: Updated team collaboration examples
+
+**Testing**: Verified that `-i` flag now stops after team image creation with helpful guidance messages.
+
 ## Troubleshooting Memories
 
 ### renv Initialization Errors
