@@ -474,19 +474,18 @@ ZZCOLLAB_BUILD_MODE=comprehensive Rscript check_renv_for_commit.R --fix --fail-o
 
 ## Docker Environment
 
-### Multi-Service Architecture
-Docker Compose provides **multiple specialized environments**:
+### Single-Image Interface Architecture
+ZZCOLLAB uses a **single Docker image approach** where you select one interface type at setup time:
 
-| Service | Purpose | Access |
-|---------|---------|---------|
-| `zsh` | Enhanced shell development | `make docker-zsh` |
-| `rstudio` | GUI development | http://localhost:8787 |
-| `verse` | Publishing workflow with LaTeX | `make docker-verse` |
-| `r-session` | R console | `make docker-r` |
-| `bash` | Shell access | `make docker-bash` |
-| `research` | Paper rendering | `make docker-render` |
-| `test` | Package testing | `make docker-test` |
-| `check` | Package validation | `make docker-check` |
+| Interface | Purpose | Setup Command | Access |
+|-----------|---------|---------------|---------|
+| `shell` | Enhanced shell development | `zzcollab -I shell` | `make docker-zsh` |
+| `rstudio` | GUI development | `zzcollab -I rstudio` | http://localhost:8787 |
+| `verse` | Publishing workflow with LaTeX | `zzcollab -I verse` | `make docker-verse` |
+
+Each interface provides access to specialized development tasks:
+- **Research tasks**: `make docker-render`, `make docker-test`, `make docker-check`
+- **Shell access**: `make docker-bash`, `make docker-r` (R console)
 
 ### Team Docker Image Strategy
 - **Team core images**: Public on Docker Hub (software only, no data)
