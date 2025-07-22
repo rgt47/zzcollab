@@ -54,6 +54,7 @@ PREPARE_DOCKERFILE=false
 BUILD_VARIANT_MODE=false
 BUILD_VARIANT=""
 SKIP_CONFIRMATION=false
+CREATE_GITHUB_REPO=false
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="standard"
@@ -225,6 +226,10 @@ parse_cli_arguments() {
                 SKIP_CONFIRMATION=true
                 shift
                 ;;
+            --github)
+                CREATE_GITHUB_REPO=true
+                shift
+                ;;
             *)
                 echo "❌ Error: Unknown option '$1'" >&2
                 echo "Use --help for usage information" >&2
@@ -362,6 +367,9 @@ export_cli_variables() {
     
     # Mode and behavior flags
     export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE BUILD_MODE
+    
+    # GitHub integration flags
+    export CREATE_GITHUB_REPO SKIP_CONFIRMATION
     
     # Legacy package configuration flags (deprecated)
     export MINIMAL_PACKAGES EXTRA_PACKAGES
