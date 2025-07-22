@@ -2,13 +2,14 @@
 
 ## Developer 1: Team Lead Project Initialization
 
-### Commands for initiating a new analysis project without building a local workspace
+### Two-Step Process for Team Lead (Fixed -i Flag Behavior)
 
 ```bash
-# 1. Navigate to projects directory
+# Step 1: Create and push team Docker images ONLY
+# Navigate to projects directory first
 cd ~/projects  # or your preferred projects directory
 
-# 2. Initialize team project with selective base image building
+# Create team images with selective base image building
 # Choose one approach based on team needs:
 
 # Option A: Build only shell variant (fastest - recommended for command-line teams)
@@ -23,23 +24,30 @@ zzcollab -i -t rgt47 -p png1 -B verse -S
 # Option D: Build all variants (traditional approach - takes longer)
 zzcollab -i -t rgt47 -p png1 -B all -S
 
-# Note: Omitting -d ~/dotfiles means no local workspace is built
+# Step 2: Create full project structure (run separately)
+mkdir png1 && cd png1  # or git clone if repo exists
+zzcollab -t rgt47 -p png1 -I shell  # Full project setup (use appropriate interface)
+
+# Note: Step 1 (-i flag) now stops after team image creation
+# Step 2 creates the actual project structure and GitHub repository
 ```
 
-### What This Does:
+### What Each Step Does:
 
+**Step 1 (-i flag):**
+1. **Builds team Docker images**: Creates and pushes to Docker Hub as `rgt47/png1core-shell:latest` (and/or other variants)
+2. **Stops after image creation**: Provides guidance for next steps
+
+**Step 2 (separate project setup):**
 1. **Creates project directory**: `png1/`
-2. **Sets up team Docker images**: 
-   - Builds and pushes to Docker Hub as `rgt47/png1core-shell:latest` (and/or other variants)
-3. **Initializes zzcollab project structure**: Complete R package with analysis framework
-4. **Creates private GitHub repository**: `https://github.com/rgt47/png1`
-5. **Sets up automated CI/CD**: GitHub Actions for team image management
-6. **Invite team collaborators**: Grant repository access to team members
-7. **Enables team collaboration**: Dev 2 and Dev 3 can join immediately
+2. **Initializes zzcollab project structure**: Complete R package with analysis framework
+3. **Creates private GitHub repository**: `https://github.com/rgt47/png1`
+4. **Sets up automated CI/CD**: GitHub Actions for team image management
+5. **Enables team collaboration**: Dev 2 and Dev 3 can join immediately
 
 ### Required: Invite Team Members
 
-After project initialization, Dev 1 must invite collaborators:
+After completing both steps, Dev 1 must invite collaborators:
 
 ```bash
 # Invite team members to the private GitHub repository
