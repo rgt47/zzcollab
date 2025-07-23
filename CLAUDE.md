@@ -356,6 +356,105 @@ zzcollab -t mylab -p study -I rstudio -S       # Step 2b: Full project setup
 
 **Testing**: Verified that `-i` flag now stops after team image creation with helpful guidance messages.
 
+## Docker Image Architecture and Custom Images
+
+### ARM64 Compatibility Issues and Solutions
+
+**Problem**: rocker/verse only supports AMD64 architecture, causing build failures on Apple Silicon (ARM64).
+
+**Architecture Support Matrix**:
+```
+✅ ARM64 Compatible:
+- rocker/r-ver     (Both AMD64 and ARM64)
+- rocker/rstudio   (Both AMD64 and ARM64)
+
+❌ AMD64 Only:
+- rocker/verse     (Publishing workflow with LaTeX)
+- rocker/tidyverse (AMD64 only)
+- rocker/geospatial (AMD64 only)
+- rocker/shiny     (AMD64 only)
+```
+
+**Solutions for ARM64 Users**:
+
+1. **Use compatible base images only**:
+   ```bash
+   zzcollab -i -t TEAM -p PROJECT -B r-ver,rstudio -S    # Skip verse
+   ```
+
+2. **Build custom ARM64 verse equivalent**:
+   ```dockerfile
+   # Dockerfile.verse-arm64 - ARM64 compatible verse + shiny image
+   FROM rocker/tidyverse:latest
+   
+   # Install system dependencies (from official rocker install_verse.sh)
+   RUN apt-get update && apt-get install -y \
+       cmake \
+       default-jdk \
+       fonts-roboto \
+       ghostscript \
+       hugo \
+       less \
+       libglpk-dev \
+       libgmp3-dev \
+       libfribidi-dev \
+       libharfbuzz-dev \
+       libmagick++-dev \
+       qpdf \
+       texinfo \
+       vim \
+       wget \
+       && rm -rf /var/lib/apt/lists/*
+   
+   # Install R packages (official verse packages)
+   RUN install2.r --error --skipinstalled --ncpus -1 \
+       blogdown \
+       bookdown \
+       distill \
+       rticles \
+       rmdshower \
+       rJava \
+       xaringan \
+       redland \
+       tinytex \
+       && rm -rf /tmp/downloaded_packages
+   
+   # Add Shiny support (not in official verse)
+   RUN install2.r --error --skipinstalled --ncpus -1 \
+       shiny \
+       shinydashboard \
+       DT \
+       && rm -rf /tmp/downloaded_packages
+   
+   # Install TinyTeX for LaTeX support
+   RUN R -e "tinytex::install_tinytex()"
+   ```
+
+3. **Build and deploy custom image**:
+   ```bash
+   # Build ARM64 compatible verse+shiny image
+   docker build -f Dockerfile.verse-arm64 -t rgt47/verse-arm64:latest .
+   
+   # Test locally
+   docker run --rm -p 8787:8787 rgt47/verse-arm64:latest
+   
+   # Push to Docker Hub (free for public images)
+   docker login
+   docker push rgt47/verse-arm64:latest
+   ```
+
+4. **Use in zzcollab workflows**:
+   ```bash
+   # Modify team Dockerfile to use custom image for verse variant
+   # In Dockerfile.teamcore, conditionally use rgt47/verse-arm64 instead of rocker/verse
+   ```
+
+**Key Insights**:
+- **Public Docker Hub storage is free** - no cost for hosting custom ARM64 images
+- **rocker/verse** = rocker/tidyverse + publishing tools (bookdown, blogdown, LaTeX)
+- **rocker/rstudio does NOT include Shiny** by default
+- **Custom images can combine** verse + shiny functionality for complete publishing workflow
+
 ## Troubleshooting Memories
 
 ### renv Initialization Errors
