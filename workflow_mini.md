@@ -1,5 +1,47 @@
 # ZZCOLLAB Mini Workflow Guide
 
+## Solo Developer: Complete Analysis Workspace
+
+### Single Developer Setup (Complete Environment)
+
+For solo developers who want a complete, reproducible analysis environment:
+
+```bash
+# Option A: Two-step approach (recommended for flexibility)
+
+# Step 1: Create team images (builds all variants: shell, rstudio, verse)
+zzcollab -i -t rgt47 -p c275 -B all -S
+
+# Step 2: Create full project with personal workspace
+mkdir c275 && cd c275
+zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
+```
+
+**What this creates:**
+- ✅ **Complete Docker environment**: All variants (shell, rstudio, verse) available
+- ✅ **Personal workspace**: Your dotfiles integrated
+- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with CI/CD
+- ✅ **Ready-to-code**: Start immediately with `make docker-zsh`
+
+**Alternative: One-command setup**
+```bash
+# Single command for complete solo setup
+zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
+```
+
+**Build modes:** `-F` (Fast), `-S` (Standard), `-C` (Comprehensive)  
+**Interfaces:** `-I shell` (vim/tmux), `-I rstudio` (web), `-I verse` (publishing)
+
+### Daily Workflow
+```bash
+make docker-zsh          # Start development
+# ... analysis work ...
+exit                     # Exit container
+git add . && git commit -m "Add analysis" && git push
+```
+
+---
+
 ## Developer 1: Team Lead Project Initialization
 
 ### Two-Step Process for Team Lead (Fixed -i Flag Behavior)

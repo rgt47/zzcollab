@@ -8,7 +8,67 @@ output: pdf_document
 Based on my review of the user guide, here are the specific workflows for 
 developer collaboration using vim as the IDE:
 
-## **🚀 Streamlined Team Collaboration Workflow**
+## **🚀 Solo Developer Workflow**
+
+### **👨‍💻 Single Developer: Complete Analysis Workspace Setup**
+
+For solo developers who want a complete, reproducible analysis environment:
+
+```bash
+# Option A: Two-step approach (recommended for flexibility)
+
+# Step 1: Create team images (builds all variants: shell, rstudio, verse)
+zzcollab -i -t rgt47 -p c275 -B all -S
+
+# Step 2: Create full project with personal workspace
+mkdir c275 && cd c275
+zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
+```
+
+**What this creates:**
+- ✅ **Complete Docker environment**: All variants (shell, rstudio, verse) built and available
+- ✅ **Personal workspace**: Your dotfiles integrated into development environment  
+- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with automated CI/CD
+- ✅ **Ready-to-code setup**: Start analysis immediately with `make docker-zsh`
+
+**Alternative: One-command setup (builds all variants automatically)**
+```bash
+# Single command for complete solo setup
+zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
+
+# This automatically:
+# - Creates team images (all variants)
+# - Sets up project structure  
+# - Creates GitHub repository
+# - Configures personal development environment
+```
+
+**Build mode options:**
+- `-F` (Fast): Essential packages for quick development
+- `-S` (Standard): Balanced package set (recommended)  
+- `-C` (Comprehensive): Full ecosystem for complex analyses
+
+**Interface options:**
+- `-I shell`: Command-line development with vim/tmux
+- `-I rstudio`: RStudio Server at localhost:8787
+- `-I verse`: Publishing workflow with LaTeX support
+
+### **🔄 Solo Developer Daily Workflow**
+```bash
+# Start development environment
+make docker-zsh                    # or make docker-rstudio, make docker-verse
+
+# Inside container: write analysis, tests, reports
+# ... development work ...
+exit
+
+# Commit and push (triggers automated CI/CD)
+git add .
+git commit -m "Add analysis with tests"
+git push                           # Automatically rebuilds Docker image if packages changed
+```
+
+## **🚀 Team Collaboration Workflow**
 
 ### **🛠️ Initial ZZCOLLAB Setup (One-time)**
 ```bash
