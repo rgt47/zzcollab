@@ -28,6 +28,7 @@ zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
 ```
 
 **What this creates:**
+
 - ✅ **Complete Docker environment**: All variants (shell, rstudio,
   verse) available
 - ✅ **Personal workspace**: Your dotfiles integrated
@@ -95,11 +96,13 @@ zzcollab -t rgt47 -p png1 -I shell  # Full project setup
 ### What Each Step Does:
 
 **Step 1 (-i flag):**
+
 1. **Builds team Docker images**: Creates and pushes to Docker Hub as
    `rgt47/png1core-shell:latest` (and/or other variants)
 2. **Stops after image creation**: Provides guidance for next steps
 
 **Step 2 (separate project setup):**
+
 1. **Creates project directory**: `png1/`
 2. **Initializes zzcollab project structure**: Complete R package with
    analysis framework
@@ -267,6 +270,7 @@ When Dev 2 pushes changes:
    - ✅ **Detects if new packages were added**
 
 2. **If new packages detected**:
+
    - ✅ **Rebuilds team Docker image** with new packages
    - ✅ **Pushes updated image** to Docker Hub (`rgt47/png1core-*:latest`)
    - ✅ **Notifies team** via commit comment with update instructions
@@ -314,6 +318,7 @@ git push origin main              # Direct push triggers team image rebuild
 ## Dev 2's Work is Done! 🎉
 
 Once Dev 2 pushes their changes:
+
 - **Code is integrated** into the main project
 - **Team environment is updated** automatically  
 - **Other developers are notified** and can sync
@@ -508,11 +513,13 @@ git push origin main                       # Triggers automatic
 ## What Happens Next:
 
 1. **GitHub Actions automatically**:
+
    - ✅ Tests complete integration (all team code + Dev 1's additions)
    - ✅ Rebuilds team image if new packages added
    - ✅ Notifies team of updated environment
 
 2. **Team members sync**:
+
    ```bash
    git pull                              # Get Dev 1's integration work
    docker pull rgt47/png1core-shell:latest  # Get any env updates
