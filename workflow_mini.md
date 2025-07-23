@@ -28,13 +28,16 @@ zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
 ```
 
 **What this creates:**
-- ✅ **Complete Docker environment**: All variants (shell, rstudio, verse) available
+- ✅ **Complete Docker environment**: All variants (shell, rstudio,
+  verse) available
 - ✅ **Personal workspace**: Your dotfiles integrated
-- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with CI/CD
+- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275`
+  with CI/CD
 - ✅ **Ready-to-code**: Start immediately with `make docker-zsh`
 
 **Build modes:** `-F` (Fast), `-S` (Standard), `-C` (Comprehensive)  
-**Interfaces:** `-I shell` (vim/tmux), `-I rstudio` (web), `-I verse` (publishing)
+**Interfaces:** `-I shell` (vim/tmux), `-I rstudio` (web),
+`-I verse` (publishing)
 
 ### Daily Workflow
 ```bash
@@ -68,7 +71,8 @@ cd ~/projects  # or your preferred projects directory
 # Create team images with selective base image building
 # Choose one approach based on team needs:
 
-# Option A: Build only shell variant (fastest - recommended for command-line teams)
+# Option A: Build only shell variant (fastest - recommended for CLI
+#          teams)
 zzcollab -i -t rgt47 -p png1 -B r-ver -S
 
 # Option B: Build only RStudio variant (for GUI-focused teams)
@@ -82,7 +86,7 @@ zzcollab -i -t rgt47 -p png1 -B all -S
 
 # Step 2: Create full project structure (run separately)
 mkdir png1 && cd png1  # or git clone if repo exists
-zzcollab -t rgt47 -p png1 -I shell  # Full project setup (use appropriate interface)
+zzcollab -t rgt47 -p png1 -I shell  # Full project setup
 
 # Note: Step 1 (-i flag) now stops after team image creation
 # Step 2 creates the actual project structure and GitHub repository
@@ -91,12 +95,14 @@ zzcollab -t rgt47 -p png1 -I shell  # Full project setup (use appropriate interf
 ### What Each Step Does:
 
 **Step 1 (-i flag):**
-1. **Builds team Docker images**: Creates and pushes to Docker Hub as `rgt47/png1core-shell:latest` (and/or other variants)
+1. **Builds team Docker images**: Creates and pushes to Docker Hub as
+   `rgt47/png1core-shell:latest` (and/or other variants)
 2. **Stops after image creation**: Provides guidance for next steps
 
 **Step 2 (separate project setup):**
 1. **Creates project directory**: `png1/`
-2. **Initializes zzcollab project structure**: Complete R package with analysis framework
+2. **Initializes zzcollab project structure**: Complete R package with
+   analysis framework
 3. **Creates private GitHub repository**: `https://github.com/rgt47/png1`
 4. **Sets up automated CI/CD**: GitHub Actions for team image management
 5. **Enables team collaboration**: Dev 2 and Dev 3 can join immediately
@@ -135,10 +141,11 @@ cd zzcollab && ./install.sh && zzcollab --help
 git clone https://github.com/rgt47/png1.git
 cd png1
 
-# 3. Join with available interface (they'll get helpful errors if variant unavailable)
-zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles      # If shell variant available
-zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles    # If RStudio variant available  
-zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles      # If verse variant available
+# 3. Join with available interface (helpful errors if variant
+#    unavailable)
+zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles    # If shell available
+zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles  # If RStudio available
+zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles    # If verse available
 
 # 4. Start development
 make docker-zsh        # or make docker-rstudio, make docker-verse
@@ -146,11 +153,15 @@ make docker-zsh        # or make docker-rstudio, make docker-verse
 
 ### Key Benefits of This Approach:
 
-- ✅ **No local workspace for Dev 1**: Team infrastructure created without personal development setup
+- ✅ **No local workspace for Dev 1**: Team infrastructure created
+  without personal development setup
 - ✅ **Faster initialization**: Only builds needed variants, not all three
-- ✅ **Immediate team access**: Dev 2 & 3 can join as soon as GitHub repo is created
-- ✅ **Flexible team scaling**: Can add more variants later with `zzcollab -V rstudio`
-- ✅ **Error guidance**: Team members get helpful messages if requesting unavailable variants
+- ✅ **Immediate team access**: Dev 2 & 3 can join as soon as
+  GitHub repo is created
+- ✅ **Flexible team scaling**: Can add more variants later with
+  `zzcollab -V rstudio`
+- ✅ **Error guidance**: Team members get helpful messages if
+  requesting unavailable variants
 
 ### If Team Needs Multiple Interfaces Later:
 
@@ -162,7 +173,8 @@ zzcollab -V rstudio    # Add RStudio variant
 zzcollab -V verse      # Add verse variant for publishing
 ```
 
-This approach optimizes for **team coordination** while minimizing **setup overhead** for the team lead! 🚀
+This approach optimizes for **team coordination** while minimizing
+**setup overhead** for the team lead! 🚀
 
 ---
 
@@ -175,7 +187,8 @@ git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab && ./install.sh && zzcollab --help
 ```
 
-When **Developer 2** finishes their development work, here's the complete workflow:
+When **Developer 2** finishes their development work, here's the
+complete workflow:
 
 ### 1. Final Testing & Validation (Inside Container)
 ```bash
@@ -306,7 +319,8 @@ Once Dev 2 pushes their changes:
 - **Other developers are notified** and can sync
 - **Dev 2 can start next feature** or analysis
 
-This workflow ensures **zero-friction collaboration** while maintaining **enterprise-grade quality standards**! 🚀
+This workflow ensures **zero-friction collaboration** while maintaining
+**enterprise-grade quality standards**! 🚀
 
 ---
 
@@ -319,7 +333,8 @@ git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab && ./install.sh && zzcollab --help
 ```
 
-Here are the commands **Developer 1 (Team Lead)** uses to react to Dev 2 and Dev 3's additions and then add their own code:
+Here are the commands **Developer 1 (Team Lead)** uses to react to
+Dev 2 and Dev 3's additions and then add their own code:
 
 ### 1. Sync with Team Changes
 ```bash
@@ -358,7 +373,7 @@ make docker-zsh                           # All team packages now available
 R
 installed.packages()[,1]                   # Check available packages
 devtools::load_all()                      # Load all team functions
-devtools::test()                          # Run all tests to ensure compatibility
+devtools::test()                        # Run tests for compatibility
 quit()
 ```
 
@@ -392,7 +407,8 @@ git checkout -b feature/dev1-integration
 vim scripts/04_advanced_modeling.R        # Create your analysis
 
 # Example: Build on team's work
-vim R/integration_functions.R             # Add functions that use team's work
+vim R/integration_functions.R               # Add functions using
+                                            # team's work
 
 # Write tests for your additions
 vim tests/testthat/test-integration_functions.R
@@ -400,7 +416,7 @@ vim tests/integration/test-04_advanced_modeling.R
 
 # Test your new code
 R
-devtools::load_all()                      # Load all functions (yours + team's)
+devtools::load_all()                        # Load all functions
 source("scripts/04_advanced_modeling.R") # Test your script
 devtools::test()                          # Run all tests
 quit()
@@ -436,7 +452,8 @@ git diff
 
 # Commit your work
 git add .
-git commit -m "Add advanced modeling integration building on team contributions
+git commit -m "Add advanced modeling integration building on team
+contributions
 
 - Integrate Dev 2's analysis patterns with advanced modeling
 - Extend Dev 3's visualization framework for model results  
@@ -475,8 +492,9 @@ gh pr create --title "Add advanced modeling integration" \
 ```bash
 # For simple additions, skip PR process
 git add .
-git commit -m "Add modeling integration - builds on team's excellent foundation"
-git push origin main                     # Triggers automatic team image rebuild
+git commit -m "Add modeling integration - builds on team foundation"
+git push origin main                       # Triggers automatic
+                                            # team image rebuild
 ```
 
 ## Key Benefits of This Workflow:
@@ -501,7 +519,8 @@ git push origin main                     # Triggers automatic team image rebuild
    make docker-zsh                       # Continue with enhanced codebase
    ```
 
-This workflow ensures **Dev 1 can lead and integrate** while **building on the team's excellent contributions**! 🚀
+This workflow ensures **Dev 1 can lead and integrate** while
+**building on the team's excellent contributions**! 🚀
 
 ---
 
@@ -509,7 +528,9 @@ This workflow ensures **Dev 1 can lead and integrate** while **building on the t
 
 ### New Developer Environment Setup (Ubuntu)
 
-When **Developer 2** gets a brand new Lenovo ThinkPad with fresh Ubuntu installation, here are all the required setup steps to join the team analysis:
+When **Developer 2** gets a brand new Lenovo ThinkPad with fresh
+Ubuntu installation, here are all the required setup steps to join the
+team analysis:
 
 ### Prerequisites: System Setup (One-time Ubuntu Installation)
 
@@ -530,27 +551,37 @@ sudo apt install -y \
 # 3. Install Docker Engine (official Ubuntu installation)
 # Add Docker's official GPG key
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg \
+  --dearmor -o /etc/apt/keyrings/docker.gpg
 
 # Add Docker repository
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo "deb [arch=$(dpkg --print-architecture) \
+  signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # Install Docker
 sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
 
 # Add user to docker group (avoid sudo for docker commands)
 sudo usermod -aG docker $USER
 
 # 4. Install GitHub CLI
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+echo "deb [arch=$(dpkg --print-architecture) \
+  signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
+  https://cli.github.com/packages stable main" | \
+  sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 sudo apt update
 sudo apt install -y gh
 
 # 5. Logout and login again (or restart) to activate docker group membership
-echo "🔄 Please logout and login again (or restart) to activate Docker permissions"
+echo "🔄 Please logout and login again (or restart) to activate"
+echo "   Docker permissions"
 echo "After reboot, continue with the next section..."
 ```
 
@@ -567,7 +598,7 @@ gh auth login
 # - What is your preferred protocol? HTTPS
 # - Authenticate Git with your GitHub credentials? Yes
 # - How would you like to authenticate? Login with a web browser
-# (Copy the one-time code, open browser, paste code, complete authentication)
+# (Copy the one-time code, open browser, paste code, complete auth)
 
 # 3. Verify GitHub authentication
 gh auth status
@@ -601,7 +632,7 @@ git clone https://github.com/rgt47/png1.git
 cd png1
 
 # 3. Set up development environment with team base image
-# Try available interfaces (you'll get helpful errors if variant unavailable):
+# Try available interfaces (helpful errors if variant unavailable):
 
 # Option A: Shell interface (command line development)
 zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles
@@ -638,7 +669,8 @@ exit                              # Exit container
 # Git workflow
 git add .
 git commit -m "Add my analysis with tests"
-git push origin main              # Triggers automatic team environment updates
+git push origin main                # Triggers automatic team env
+                                    # updates
 ```
 
 ### Troubleshooting Ubuntu-Specific Issues
@@ -667,14 +699,18 @@ sudo systemctl enable docker  # Start automatically on boot
 - ✅ **Complete development environment**: Docker + GitHub + ZZCOLLAB
 - ✅ **Team integration ready**: Can immediately join existing projects  
 - ✅ **Professional toolchain**: Same tools as macOS/Windows team members
-- ✅ **Zero configuration differences**: Identical development experience across platforms
+- ✅ **Zero configuration differences**: Identical development
+  experience across platforms
 - ✅ **Enterprise security**: Proper user permissions and authentication
 
 ### Ubuntu-Specific Advantages:
 
-- ✅ **Native Docker performance**: Better than Docker Desktop on macOS/Windows
+- ✅ **Native Docker performance**: Better than Docker Desktop on
+  macOS/Windows
 - ✅ **Package manager integration**: Official repositories for all tools
 - ✅ **Lightweight system**: More resources available for analysis containers
-- ✅ **Perfect for development**: Many data scientists prefer Linux environments
+- ✅ **Perfect for development**: Many data scientists prefer Linux
+  environments
 
-Once complete, **Developer 2** on Ubuntu has identical capabilities to team members on macOS or Windows! 🐧🚀
+Once complete, **Developer 2** on Ubuntu has identical capabilities to
+team members on macOS or Windows! 🐧🚀
