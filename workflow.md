@@ -84,10 +84,12 @@ git push                           # Automatically rebuilds Docker image if pack
 
 ## **🚀 Team Collaboration Workflow**
 
-### **🛠️ Initial ZZCOLLAB Setup (One-time)**
+### **📦 Developer 1 (Team Lead): Project Initialization**
+
+#### **🛠️ Prerequisites: Install ZZCOLLAB (One-time)**
 ```bash
 # 1. Clone and install zzcollab system
-git clone https://github.com/[OWNER]/zzcollab.git
+git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab
 ./install.sh                        # Install to ~/bin (default)
 
@@ -96,8 +98,6 @@ zzcollab --help                     # Test installation from anywhere
 zzcollab --init --help              # Test team initialization mode
 which zzcollab                      # Confirm system PATH setup
 ```
-
-### **📦 Developer 1 (Team Lead): Project Initialization**
 
 **📋 Developer 1 Checklist:**
 
@@ -601,8 +601,21 @@ git push                        # → Triggers GitHub Actions validation
 
 ### **👩‍💻 Developer 2 (Joining Project)**
 
+#### **🛠️ Prerequisites: Install ZZCOLLAB (One-time)**
+```bash
+# 1. Clone and install zzcollab system  
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab
+./install.sh                        # Install to ~/bin (default)
+
+# 2. Verify installation
+zzcollab --help                     # Test installation from anywhere
+which zzcollab                      # Confirm system PATH setup
+```
+
 **📋 Developer 2 Checklist:**
 
+- [ ] Install zzcollab system (see prerequisites above)
 - [ ] Get access to private GitHub repository from team lead (or team creates public project)
 - [ ] Clone the repository to local machine
 - [ ] Check available team image variants (team lead should communicate what's available)

@@ -2,6 +2,16 @@
 
 ## Solo Developer: Complete Analysis Workspace
 
+### Prerequisites: Install ZZCOLLAB (One-time)
+```bash
+# 1. Clone and install zzcollab system
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh
+
+# 2. Verify installation  
+zzcollab --help && which zzcollab
+```
+
 ### Single Developer Setup (Complete Environment)
 
 For solo developers who want a complete, reproducible analysis environment:
@@ -23,12 +33,6 @@ zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
 - ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with CI/CD
 - ✅ **Ready-to-code**: Start immediately with `make docker-zsh`
 
-**Alternative: One-command setup**
-```bash
-# Single command for complete solo setup
-zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
-```
-
 **Build modes:** `-F` (Fast), `-S` (Standard), `-C` (Comprehensive)  
 **Interfaces:** `-I shell` (vim/tmux), `-I rstudio` (web), `-I verse` (publishing)
 
@@ -43,6 +47,16 @@ git add . && git commit -m "Add analysis" && git push
 ---
 
 ## Developer 1: Team Lead Project Initialization
+
+### Prerequisites: Install ZZCOLLAB (One-time)
+```bash
+# 1. Clone and install zzcollab system
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh
+
+# 2. Verify installation
+zzcollab --help && which zzcollab
+```
 
 ### Two-Step Process for Team Lead (Fixed -i Flag Behavior)
 
@@ -104,6 +118,13 @@ gh repo invite rgt47/png1 dev3-github-username
 
 ### For Dev 2 and Dev 3 to Join:
 
+#### Prerequisites: Install ZZCOLLAB (One-time)
+```bash
+# 0. Clone and install zzcollab system
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh && zzcollab --help
+```
+
 ```bash
 # 1. Accept GitHub collaboration invitation
 # Check email for invitation from rgt47/png1 repository
@@ -146,6 +167,13 @@ This approach optimizes for **team coordination** while minimizing **setup overh
 ---
 
 ## Developer 2: Development Completion Workflow
+
+### Prerequisites: Install ZZCOLLAB (One-time)
+```bash
+# 1. Clone and install zzcollab system
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh && zzcollab --help
+```
 
 When **Developer 2** finishes their development work, here's the complete workflow:
 
@@ -283,6 +311,13 @@ This workflow ensures **zero-friction collaboration** while maintaining **enterp
 ---
 
 ## Developer 1: Reacting to Team Contributions & Adding Own Work
+
+### Prerequisites: Install ZZCOLLAB (One-time)
+```bash
+# 1. Clone and install zzcollab system
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh && zzcollab --help
+```
 
 Here are the commands **Developer 1 (Team Lead)** uses to react to Dev 2 and Dev 3's additions and then add their own code:
 
