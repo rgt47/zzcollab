@@ -282,10 +282,12 @@ Rscript check_renv_for_commit.R --strict-imports --fix --fail-on-issues
 ### Documentation Synchronization
 All documentation has been updated to reflect current system capabilities:
 - **workflow.md**: Updated with selective base image building and error handling examples
+- **workflow_mini.md**: Added comprehensive Ubuntu setup scenario for new developers with fresh systems
 - **ZZCOLLAB_USER_GUIDE.md**: Enhanced with new flags, interface options, and team coordination guidance
 - **~/prj/p25/index.qmd**: Updated team collaboration examples with current CLI syntax
 - **Command consistency**: All examples now use current flag syntax (-F, -S, -C, -B, -V, -I)
 - **Error handling**: Comprehensive examples of helpful guidance when team images unavailable
+- **Platform coverage**: Complete setup instructions for macOS, Windows, and Ubuntu systems
 
 ### R Package Integration (19 Functions)
 Complete R interface for CLI functionality with build mode support:
