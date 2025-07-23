@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libgit2-dev \
     libssh2-1-dev \
+    librdf0-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install tidyverse packages first (since we're starting from rstudio, not tidyverse)
@@ -34,13 +35,12 @@ RUN install2.r --error --skipinstalled --ncpus -1 \
     rmarkdown \
     && rm -rf /tmp/downloaded_packages
 
-# Install R packages (official verse packages)
+# Install R packages (official verse packages, excluding problematic ones)
 RUN install2.r --error --skipinstalled --ncpus -1 \
     blogdown \
     bookdown \
     distill \
     rticles \
-    rmdshower \
     rJava \
     xaringan \
     redland \
