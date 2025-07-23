@@ -12,6 +12,20 @@ developer collaboration using vim as the IDE:
 
 ### **👨‍💻 Single Developer: Complete Analysis Workspace Setup**
 
+#### **📦 Prerequisites: Install ZZCOLLAB (One-time)**
+```bash
+# 1. Clone and install zzcollab system
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab
+./install.sh                        # Install to ~/bin (default)
+
+# 2. Verify installation
+zzcollab --help                     # Test installation from anywhere
+which zzcollab                      # Confirm system PATH setup
+```
+
+#### **🚀 Solo Workspace Setup**
+
 For solo developers who want a complete, reproducible analysis environment:
 
 ```bash
