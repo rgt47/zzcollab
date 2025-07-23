@@ -502,3 +502,179 @@ git push origin main                     # Triggers automatic team image rebuild
    ```
 
 This workflow ensures **Dev 1 can lead and integrate** while **building on the team's excellent contributions**! 🚀
+
+---
+
+## Developer 2: Ubuntu Setup - Fresh Lenovo ThinkPad
+
+### New Developer Environment Setup (Ubuntu)
+
+When **Developer 2** gets a brand new Lenovo ThinkPad with fresh Ubuntu installation, here are all the required setup steps to join the team analysis:
+
+### Prerequisites: System Setup (One-time Ubuntu Installation)
+
+```bash
+# 1. Update system packages
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install essential development tools
+sudo apt install -y \
+    git \
+    curl \
+    wget \
+    build-essential \
+    ca-certificates \
+    gnupg \
+    lsb-release
+
+# 3. Install Docker Engine (official Ubuntu installation)
+# Add Docker's official GPG key
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+# Add Docker repository
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Add user to docker group (avoid sudo for docker commands)
+sudo usermod -aG docker $USER
+
+# 4. Install GitHub CLI
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update
+sudo apt install -y gh
+
+# 5. Logout and login again (or restart) to activate docker group membership
+echo "🔄 Please logout and login again (or restart) to activate Docker permissions"
+echo "After reboot, continue with the next section..."
+```
+
+### After Reboot: Authentication Setup
+
+```bash
+# 1. Verify Docker works without sudo
+docker run hello-world
+
+# 2. Authenticate with GitHub CLI
+gh auth login
+# Follow prompts:
+# - What account do you want to log into? GitHub.com
+# - What is your preferred protocol? HTTPS
+# - Authenticate Git with your GitHub credentials? Yes
+# - How would you like to authenticate? Login with a web browser
+# (Copy the one-time code, open browser, paste code, complete authentication)
+
+# 3. Verify GitHub authentication
+gh auth status
+```
+
+### Install ZZCOLLAB System
+
+```bash
+# 1. Clone and install zzcollab
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh
+
+# 2. Add zzcollab to PATH (add to ~/.bashrc or ~/.zshrc)
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# 3. Verify zzcollab installation
+zzcollab --help && which zzcollab
+```
+
+### Join Team Project (Standard Workflow)
+
+```bash
+# 1. Accept GitHub collaboration invitation
+# Check email for invitation from rgt47/png1 repository
+# OR visit: https://github.com/rgt47/png1/invitations
+# Click "Accept invitation"
+
+# 2. Clone the team project
+git clone https://github.com/rgt47/png1.git
+cd png1
+
+# 3. Set up development environment with team base image
+# Try available interfaces (you'll get helpful errors if variant unavailable):
+
+# Option A: Shell interface (command line development)
+zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles
+
+# Option B: RStudio interface (web-based IDE at localhost:8787)
+zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles
+
+# Option C: Publishing interface (LaTeX support for reports)
+zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles
+
+# 4. Start development environment
+make docker-zsh        # For shell interface
+# OR
+make docker-rstudio    # For RStudio interface (then visit localhost:8787)
+# OR  
+make docker-verse      # For publishing interface
+
+# 5. Verify everything works
+R
+# Test that you can load the project
+devtools::load_all()   # Load all project functions
+devtools::test()       # Run project tests
+quit()
+```
+
+### Development Workflow (Same as Other Platforms)
+
+```bash
+# Daily development cycle
+make docker-zsh                    # Start development container
+# ... do analysis work inside container ...
+exit                              # Exit container
+
+# Git workflow
+git add .
+git commit -m "Add my analysis with tests"
+git push origin main              # Triggers automatic team environment updates
+```
+
+### Troubleshooting Ubuntu-Specific Issues
+
+```bash
+# If Docker permission denied errors persist:
+sudo systemctl restart docker
+sudo usermod -aG docker $USER
+# Then logout/login again
+
+# If GitHub CLI authentication fails:
+gh auth refresh --hostname github.com --scopes repo,read:org
+
+# If zzcollab command not found:
+echo $PATH  # Verify ~/bin is in PATH
+ls ~/bin/zzcollab  # Verify zzcollab binary exists
+chmod +x ~/bin/zzcollab  # Make executable if needed
+
+# If Docker daemon not running:
+sudo systemctl start docker
+sudo systemctl enable docker  # Start automatically on boot
+```
+
+### What This Ubuntu Setup Provides:
+
+- ✅ **Complete development environment**: Docker + GitHub + ZZCOLLAB
+- ✅ **Team integration ready**: Can immediately join existing projects  
+- ✅ **Professional toolchain**: Same tools as macOS/Windows team members
+- ✅ **Zero configuration differences**: Identical development experience across platforms
+- ✅ **Enterprise security**: Proper user permissions and authentication
+
+### Ubuntu-Specific Advantages:
+
+- ✅ **Native Docker performance**: Better than Docker Desktop on macOS/Windows
+- ✅ **Package manager integration**: Official repositories for all tools
+- ✅ **Lightweight system**: More resources available for analysis containers
+- ✅ **Perfect for development**: Many data scientists prefer Linux environments
+
+Once complete, **Developer 2** on Ubuntu has identical capabilities to team members on macOS or Windows! 🐧🚀
