@@ -289,7 +289,9 @@ build_team_images() {
             ;;
         "verse")
             print_status "Step $step_counter: Building verse core image..."
-            build_single_team_image "rocker/verse" "verse"
+            local verse_image
+            verse_image=$(get_multiarch_base_image "verse")
+            build_single_team_image "$verse_image" "verse"
             print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0"
             ;;
         "all")
@@ -305,7 +307,9 @@ build_team_images() {
             
             ((step_counter++))
             print_status "Step $step_counter: Building verse core image..."
-            build_single_team_image "rocker/verse" "verse"
+            local verse_image
+            verse_image=$(get_multiarch_base_image "verse")
+            build_single_team_image "$verse_image" "verse"
             print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0"
             ;;
         *)
@@ -553,7 +557,7 @@ build_additional_variant() {
             variant_name="rstudio"
             ;;
         verse)
-            base_image="rocker/verse"
+            base_image=$(get_multiarch_base_image "verse")
             variant_name="verse"
             ;;
     esac

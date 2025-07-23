@@ -33,6 +33,96 @@ fi
 # Tracking functions are now provided by core.sh
 
 #=============================================================================
+# MULTI-ARCHITECTURE SUPPORT FUNCTIONS
+#=============================================================================
+
+# Function: get_multiarch_base_image
+# Purpose: Select appropriate base image based on architecture and requirements
+# Arguments: $1 - requested variant (r-ver, rstudio, verse, etc.)
+# Returns: Multi-architecture compatible base image name
+get_multiarch_base_image() {
+    local requested_variant="$1"
+    local architecture="$(uname -m)"
+    
+    case "$requested_variant" in
+        "r-ver")
+            echo "rocker/r-ver"  # Multi-arch available
+            ;;
+        "rstudio") 
+            echo "rocker/rstudio"  # Multi-arch available
+            ;;
+        "verse")
+            case "$architecture" in
+                arm64|aarch64)
+                    # Use custom ARM64-compatible alternative
+                    echo "${MULTIARCH_VERSE_IMAGE}"
+                    ;;
+                *)
+                    echo "rocker/verse"
+                    ;;
+            esac
+            ;;
+        "tidyverse")
+            case "$architecture" in
+                arm64|aarch64)
+                    # tidyverse only supports AMD64
+                    echo "rocker/tidyverse"
+                    ;;
+                *)
+                    echo "rocker/tidyverse"
+                    ;;
+            esac
+            ;;
+        *)
+            # Pass through custom images or other variants
+            echo "$requested_variant"
+            ;;
+    esac
+}
+
+# Function: get_docker_platform_args
+# Purpose: Get platform arguments for Docker build/run commands
+# Arguments: $1 - base image name (optional)
+# Returns: Platform arguments for Docker commands
+get_docker_platform_args() {
+    local base_image="${1:-}"
+    local architecture="$(uname -m)"
+    
+    case "$FORCE_PLATFORM" in
+        "auto")
+            case "$architecture" in
+                arm64|aarch64) 
+                    # Check if this is a known ARM64-incompatible image
+                    if [[ "$base_image" == "rocker/verse" ]] || 
+                       [[ "$base_image" == "rocker/tidyverse" ]] ||
+                       [[ "$base_image" == "rocker/geospatial" ]] ||
+                       [[ "$base_image" == "rocker/shiny" ]]; then
+                        echo "--platform linux/amd64"  # Force AMD64 for incompatible images
+                    else
+                        echo ""  # Use native platform for multi-arch images
+                    fi
+                    ;;
+                *)
+                    echo ""  # Use native platform
+                    ;;
+            esac
+            ;;
+        "amd64")
+            echo "--platform linux/amd64"
+            ;;
+        "arm64")
+            echo "--platform linux/arm64"
+            ;;
+        "native")
+            echo ""
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
+#=============================================================================
 # R VERSION DETECTION (extracted from lines 508-523)
 #=============================================================================
 
@@ -246,21 +336,16 @@ build_docker_image() {
     fi
     
     # Auto-detect platform and set appropriate Docker build arguments
-    # ARM64 (Apple Silicon) systems need --platform linux/amd64 for compatibility
-    local DOCKER_PLATFORM=""
-    case "$(uname -m)" in
-        arm64|aarch64) 
-            DOCKER_PLATFORM="--platform linux/amd64"
-            log_info "Detected ARM64 system - using linux/amd64 platform for compatibility"
-            log_info "This ensures compatibility with R packages that may not have ARM64 binaries"
-            ;;
-        x86_64|amd64)
-            log_info "Detected x86_64 system - using native platform"
-            ;;
-        *)
-            log_info "Unknown architecture: $(uname -m) - using default platform"
-            ;;
-    esac
+    # Use new multi-architecture support functions
+    local DOCKER_PLATFORM
+    DOCKER_PLATFORM=$(get_docker_platform_args "$BASE_IMAGE")
+    
+    if [[ -n "$DOCKER_PLATFORM" ]]; then
+        log_info "Using platform override: $DOCKER_PLATFORM"
+        log_info "This ensures compatibility with images that may not support native architecture"
+    else
+        log_info "Using native platform for architecture: $(uname -m)"
+    fi
     
     # Build the Docker command with all necessary arguments
     # DOCKER_BUILDKIT=1: Enable BuildKit for faster builds and better caching

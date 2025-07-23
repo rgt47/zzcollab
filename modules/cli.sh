@@ -36,6 +36,11 @@ DOTFILES_NODOT=false
 readonly DEFAULT_BASE_IMAGE="rocker/r-ver"
 BASE_IMAGE="$DEFAULT_BASE_IMAGE"
 
+# Multi-architecture support configuration
+MULTIARCH_VERSE_IMAGE="${MULTIARCH_VERSE_IMAGE:-rocker/verse}"
+FORCE_PLATFORM="${FORCE_PLATFORM:-auto}"
+export MULTIARCH_VERSE_IMAGE FORCE_PLATFORM
+
 # New user-friendly interface variables
 TEAM_NAME=""
 PROJECT_NAME=""

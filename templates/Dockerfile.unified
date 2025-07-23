@@ -42,8 +42,12 @@ RUN apt-get update && \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install TinyTeX (skip if using custom base image that already has it)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+# Install TinyTeX (skip if using base images that already have LaTeX support)
+RUN if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" >/dev/null; then \
+        R -e "install.packages('tinytex')" && \
+        R -e "tinytex::install_tinytex()" && \
+        /root/.TinyTeX/bin/*/tlmgr path add; \
+    elif echo "${BASE_IMAGE}" | grep -v -E "(verse|tidyverse)" >/dev/null; then \
         R -e "install.packages('tinytex')" && \
         R -e "tinytex::install_tinytex()" && \
         /root/.TinyTeX/bin/*/tlmgr path add; \
@@ -67,7 +71,7 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME} || echo "User ${USERNAME}
 # comprehensive: Full development stack with analysis packages
 RUN if [ "${PACKAGE_MODE}" = "fast" ] || [ "${PACKAGE_MODE}" = "minimal" ]; then \
         # Fast mode: minimal packages only \
-        if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+        if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" >/dev/null; then \
             R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"; \
         fi; \
     elif [ "${PACKAGE_MODE}" = "comprehensive" ] || [ "${PACKAGE_MODE}" = "pluspackages" ]; then \
@@ -85,7 +89,7 @@ RUN if [ "${PACKAGE_MODE}" = "fast" ] || [ "${PACKAGE_MODE}" = "minimal" ]; then
         install.packages(all_packages, repos = c(CRAN = 'https://cloud.r-project.org'))"; \
     else \
         # Standard mode: essential development packages \
-        if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+        if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" >/dev/null; then \
             R -e "install.packages(c('renv', 'remotes', 'devtools', 'usethis', 'here', 'conflicted', 'rmarkdown', 'knitr'), repos = c(CRAN = 'https://cloud.r-project.org'))"; \
         fi; \
     fi
