@@ -42,7 +42,8 @@ ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
 # Install essential R packages (remotes is much faster than devtools)
-RUN R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"
+RUN R -e "install.packages(c('renv', 'remotes'), \
+      repos = c(CRAN = 'https://cloud.r-project.org'))"
 
 # Give analyst user write permission to R library directory
 RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
@@ -61,13 +62,19 @@ COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
 USER ${USERNAME}
 
 # Copy dotfiles (consolidated with wildcards)
-COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* \
+     .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
+     .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
 COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
 
 # Install zsh plugins (skip if already exist)
 RUN mkdir -p /home/${USERNAME}/.zsh && \
-    (git clone https://github.com/zsh-users/zsh-autosuggestions /home/${USERNAME}/.zsh/zsh-autosuggestions || echo "zsh-autosuggestions already exists") && \
-    (git clone https://github.com/zsh-users/zsh-syntax-highlighting /home/${USERNAME}/.zsh/zsh-syntax-highlighting || echo "zsh-syntax-highlighting already exists")
+    (git clone https://github.com/zsh-users/zsh-autosuggestions \
+     /home/${USERNAME}/.zsh/zsh-autosuggestions || \
+     echo "zsh-autosuggestions already exists") && \
+    (git clone https://github.com/zsh-users/zsh-syntax-highlighting \
+     /home/${USERNAME}/.zsh/zsh-syntax-highlighting || \
+     echo "zsh-syntax-highlighting already exists")
 
 # Install vim-plug
 RUN curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim --create-dirs \

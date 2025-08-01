@@ -37,13 +37,15 @@ RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
         /root/.TinyTeX/bin/*/tlmgr path add; \
     fi
 
-# Create non-root user with zsh as default shell (skip if using custom base image)
+# Create non-root user with zsh as default shell (skip if using custom
+# base image)
 ARG USERNAME=analyst
 RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
         useradd --create-home --shell /bin/zsh ${USERNAME}; \
     fi
 
-# Install essential R packages (skip if using custom base image that already has them)
+# Install essential R packages (skip if using custom base image that
+# already has them)
 RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
         R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"; \
     fi
