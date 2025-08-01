@@ -49,7 +49,8 @@ ARG ADDITIONAL_PACKAGES=""
 LABEL maintainer="${TEAM_NAME}"
 LABEL project="${PROJECT_NAME}"
 LABEL org.opencontainers.image.title="ZZCOLLAB Team Core Image"
-LABEL org.opencontainers.image.description="Team-specific R environment with core packages"
+LABEL org.opencontainers.image.description="Team-specific R environment \
+      with core packages"
 LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 
 # Create non-root user with zsh as default shell
@@ -61,7 +62,8 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 RUN --mount=type=cache,target=/tmp/downloaded_packages \
     R -e "base_packages <- c( \
         # Core development tools \
-        'renv', 'remotes', 'devtools', 'testthat', 'usethis', 'pkgdown', 'rcmdcheck', \
+        'renv', 'remotes', 'devtools', 'testthat', 'usethis', \
+        'pkgdown', 'rcmdcheck', \
         # Data science essentials \
         'tidyverse', 'here', 'conflicted', \
         # Statistical analysis \
@@ -75,9 +77,11 @@ RUN --mount=type=cache,target=/tmp/downloaded_packages \
         # Reproducibility and workflow \
         'targets', 'datapasta' \
     ); \
-    additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else character(0); \
+    additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) \
+        strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else character(0); \
     all_packages <- c(base_packages, additional_packages); \
-    install.packages(all_packages, repos = c(CRAN = 'https://cloud.r-project.org'))"
+    install.packages(all_packages, \
+        repos = c(CRAN = 'https://cloud.r-project.org'))"
 
 # Give analyst user write permission to R library directory
 RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library

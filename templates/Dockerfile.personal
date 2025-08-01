@@ -14,11 +14,14 @@ LABEL maintainer="${TEAM_NAME}"
 LABEL project="${PROJECT_NAME}"
 LABEL package.mode="${PACKAGE_MODE}"
 LABEL org.opencontainers.image.title="ZZCOLLAB Docker Image"
-LABEL org.opencontainers.image.description="R environment with ${PROJECT_NAME} package configuration"
+LABEL org.opencontainers.image.description="R environment with \
+      ${PROJECT_NAME} package configuration"
 LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 
 # Install system dependencies (only if using standard rocker images)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         apt-get update && \
         apt-get install -y \
         git \
@@ -49,26 +52,36 @@ RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstud
     fi
 
 # Install Node.js (only if using standard rocker images)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
         apt-get install -y nodejs; \
     fi
 
 # Install TinyTeX (skip if using custom base image that already has it)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ]; then \
         R -e "install.packages('tinytex')" && \
         R -e "tinytex::install_tinytex()" && \
         /root/.TinyTeX/bin/*/tlmgr path add; \
     fi
 
-# Create non-root user with zsh as default shell (skip if using custom base image)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+# Create non-root user with zsh as default shell (skip if using custom
+# base image)
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         useradd --create-home --shell /bin/zsh ${USERNAME}; \
     fi
 
-# Install R packages based on PACKAGE_MODE (skip if using custom team image with packages)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
-        if [ "${PACKAGE_MODE}" = "fast" ] || [ "${PACKAGE_MODE}" = "minimal" ]; then \
+# Install R packages based on PACKAGE_MODE (skip if using custom team
+# image with packages)
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+        if [ "${PACKAGE_MODE}" = "fast" ] || \
+           [ "${PACKAGE_MODE}" = "minimal" ]; then \
             # Fast mode: minimal packages only \
             R -e "install.packages(c('renv', 'remotes'), repos = c(CRAN = 'https://cloud.r-project.org'))"; \
         elif [ "${PACKAGE_MODE}" = "comprehensive" ] || [ "${PACKAGE_MODE}" = "pluspackages" ]; then \
@@ -91,7 +104,9 @@ RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstud
     fi
 
 # Give analyst user write permission to R library directory (skip if using custom base image)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library; \
     fi
 
@@ -113,20 +128,26 @@ COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .
 COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
 
 # Install zsh plugins (only if using standard rocker images)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         mkdir -p /home/${USERNAME}/.zsh && \
         git clone https://github.com/zsh-users/zsh-autosuggestions /home/${USERNAME}/.zsh/zsh-autosuggestions && \
         git clone https://github.com/zsh-users/zsh-syntax-highlighting /home/${USERNAME}/.zsh/zsh-syntax-highlighting; \
     fi
 
 # Install vim-plug (only if using standard rocker images)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim --create-dirs \
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim; \
     fi
 
 # Install vim plugins (only if using standard rocker images)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || [ "${BASE_IMAGE}" = "rocker/rstudio" ] || [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
+RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
+       [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
+       [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         vim +PlugInstall +qall || true; \
     fi
 

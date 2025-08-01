@@ -49,7 +49,8 @@ ARG ADDITIONAL_PACKAGES=""
 LABEL maintainer="${TEAM_NAME}"
 LABEL project="${PROJECT_NAME}"
 LABEL org.opencontainers.image.title="ZZCOLLAB Team Core Image (Minimal)"
-LABEL org.opencontainers.image.description="Team-specific R environment with minimal core packages"
+LABEL org.opencontainers.image.description="Team-specific R environment \
+      with minimal core packages"
 LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 
 # Create non-root user with zsh as default shell
