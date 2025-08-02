@@ -534,7 +534,10 @@ build_additional_variant() {
     
     # Detect team and project names from existing images or directory
     if [[ -z "$TEAM_NAME" ]]; then
-        TEAM_NAME=$(docker images --format "table {{.Repository}}" | grep "core-" | head -1 | cut -d'/' -f1)
+        # Simplified Docker detection to avoid hanging
+        if docker images --format "{{.Repository}}" | grep -q "core-"; then
+            TEAM_NAME=$(docker images --format "{{.Repository}}" | grep "core-" | head -1 | cut -d'/' -f1)
+        fi
         if [[ -z "$TEAM_NAME" ]]; then
             print_error "Could not detect team name. Use --team flag."
             exit 1

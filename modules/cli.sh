@@ -275,11 +275,13 @@ process_user_friendly_interface() {
             check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$INTERFACE"
             echo "ℹ️  Using team image: $BASE_IMAGE"
         elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
-            # If some team flags are provided but not all, show error (only for non-init mode)
-            echo "❌ Error: When using team interface, all flags are required:" >&2
-            echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
-            echo "  Valid interfaces: shell, rstudio, verse" >&2
-            exit 1
+            # If some team flags are provided but not all, show error (only for non-init, non-build-variant mode)
+            if [[ "$BUILD_VARIANT_MODE" != "true" ]]; then
+                echo "❌ Error: When using team interface, all flags are required:" >&2
+                echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
+                echo "  Valid interfaces: shell, rstudio, verse" >&2
+                exit 1
+            fi
         fi
     fi
 }
