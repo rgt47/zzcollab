@@ -1,9 +1,9 @@
-Package: ${PKG_NAME}
-Title: Research Compendium for ${PKG_NAME}
+Package: teststandardmode
+Title: Research Compendium for teststandardmode
 Version: 0.0.0.9000
 Authors@R: 
-    person("${AUTHOR_NAME}", email = "${AUTHOR_EMAIL}", role = c("aut", "cre"))
-Description: This is a research compendium for the ${PKG_NAME} project analyzing allometric relationships in Palmer penguins using regression analysis.
+    person("Ronald G. Thomas", email = "rgthomas@ucsd.edu", role = c("aut", "cre"))
+Description: This is a research compendium for the teststandardmode project analyzing allometric relationships in Palmer penguins using regression analysis.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

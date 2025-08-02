@@ -10,10 +10,13 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Imports:
     here,
-    renv
+    renv,
+    usethis,
+    devtools
 Suggests: 
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    targets
 Config/testthat/edition: 3
 VignetteBuilder: knitr
