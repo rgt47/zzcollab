@@ -100,6 +100,10 @@ zzcollab -V verse                                              # Add verse varia
 # Environment variable support for build mode detection
 ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t TEAM -p PROJECT -B r-ver -d ~/dotfiles
 
+# GitHub repository creation shortcuts
+zzcollab -d ~/dotfiles -G                                     # Basic setup with automatic GitHub repo creation
+zzcollab -i -t TEAM -p PROJECT -B rstudio -S -G -d ~/dotfiles # Team setup with automatic GitHub repo
+
 # Legacy: Traditional approach (builds all variants)
 # zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles              # Fast mode, all variants
 # zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles              # Comprehensive mode, all variants

@@ -57,7 +57,7 @@ OPTIONS:
     -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
     -n, --no-docker              Skip Docker image build during setup
     -V, --build-variant TYPE     Build additional team image variant: r-ver, rstudio, verse
-        --github                 Automatically create private GitHub repository and push
+    -G, --github                 Automatically create private GitHub repository and push
         --next-steps             Show development workflow and next steps
     
     Build modes (simplified control):
@@ -98,7 +98,7 @@ EXAMPLES:
     
     # Basic setup for standalone projects
     $0 -d ~/dotfiles                                # Basic setup with dotfiles
-    $0 -d ~/dotfiles --github                       # Setup with automatic GitHub repository creation
+    $0 -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
     
     # NEW: Simplified build modes (recommended)
     $0 -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages

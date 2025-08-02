@@ -231,7 +231,7 @@ parse_cli_arguments() {
                 SKIP_CONFIRMATION=true
                 shift
                 ;;
-            --github)
+            --github|-G)
                 CREATE_GITHUB_REPO=true
                 shift
                 ;;
