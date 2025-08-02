@@ -394,19 +394,9 @@ main() {
     
     # Handle build variant mode
     if [[ "${BUILD_VARIANT_MODE:-false}" == "true" ]]; then
-        # Load team_init module for build_additional_variant function
-        if [[ -f "$MODULES_DIR/team_init.sh" ]]; then
-            # Load required modules first
-            source "$MODULES_DIR/core.sh" >/dev/null 2>&1
-            source "$MODULES_DIR/team_init.sh" >/dev/null 2>&1
-            
-            # Call build variant function
-            build_additional_variant "$BUILD_VARIANT"
-            exit 0
-        else
-            log_error "Team initialization module not found"
-            exit 1
-        fi
+        # Note: All modules including team_init are loaded in the main loading section below
+        # We just need to call the build variant function after modules are loaded
+        BUILD_VARIANT_DEFERRED=true
     fi
     
     # Handle help and next-steps options for normal mode
@@ -417,6 +407,13 @@ main() {
     
     if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
         show_next_steps
+        exit 0
+    fi
+    
+    # Handle deferred build variant execution (after all modules loaded)
+    if [[ "${BUILD_VARIANT_DEFERRED:-false}" == "true" ]]; then
+        # All modules are now loaded, call build variant function
+        build_additional_variant "$BUILD_VARIANT"
         exit 0
     fi
     
