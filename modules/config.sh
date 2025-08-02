@@ -34,9 +34,22 @@ readonly CONFIG_USER_FILE="$CONFIG_USER_DIR/config.yaml"
 readonly CONFIG_SYSTEM_FILE="/etc/zzcollab/config.yaml"
 
 # Configuration variables (will be populated from files)
-declare -A CONFIG_DEFAULTS
-declare -A CONFIG_BUILD_MODES
-declare -A CONFIG_CUSTOM_MODES
+# Using simple variables instead of associative arrays for compatibility
+CONFIG_TEAM_NAME=""
+CONFIG_GITHUB_ACCOUNT=""
+CONFIG_BUILD_MODE="standard"
+CONFIG_DOTFILES_DIR=""
+CONFIG_DOTFILES_NODOT="false"
+CONFIG_AUTO_GITHUB="false"
+CONFIG_SKIP_CONFIRMATION="false"
+
+# Package list cache (loaded from config files)
+CONFIG_FAST_DOCKER_PACKAGES=""
+CONFIG_FAST_RENV_PACKAGES=""
+CONFIG_STANDARD_DOCKER_PACKAGES=""
+CONFIG_STANDARD_RENV_PACKAGES=""
+CONFIG_COMPREHENSIVE_DOCKER_PACKAGES=""
+CONFIG_COMPREHENSIVE_RENV_PACKAGES=""
 
 #=============================================================================
 # YAML PARSING FUNCTIONS
@@ -46,10 +59,11 @@ declare -A CONFIG_CUSTOM_MODES
 # Purpose: Check if yq is available for YAML parsing
 check_yq_dependency() {
     if ! command -v yq >/dev/null 2>&1; then
-        log_warning "yq not found - config file features limited"
-        log_warning "Install yq for full configuration support:"
-        log_warning "  macOS: brew install yq"
-        log_warning "  Ubuntu: snap install yq"
+        # Use echo instead of log functions which may not be loaded yet
+        echo "⚠️  yq not found - config file features limited" >&2
+        echo "⚠️  Install yq for full configuration support:" >&2
+        echo "⚠️    macOS: brew install yq" >&2
+        echo "⚠️    Ubuntu: snap install yq" >&2
         return 1
     fi
     return 0
@@ -98,6 +112,43 @@ yaml_get_array() {
 # CONFIGURATION LOADING FUNCTIONS
 #=============================================================================
 
+# Function: load_custom_package_lists
+# Purpose: Load custom package lists from config file build_modes section
+# Arguments: $1 = config file path
+load_custom_package_lists() {
+    local config_file="$1"
+    
+    if [[ ! -f "$config_file" ]]; then
+        return 1
+    fi
+    
+    # Load build mode package lists if they exist
+    for mode in fast standard comprehensive; do
+        if check_yq_dependency; then
+            # Try to get docker and renv packages for this mode
+            local docker_packages=$(yaml_get_array "$config_file" "build_modes.$mode.docker_packages")
+            local renv_packages=$(yaml_get_array "$config_file" "build_modes.$mode.renv_packages")
+            
+            # Store in global variables if found
+            if [[ -n "$docker_packages" && "$docker_packages" != "null" ]]; then
+                case "$mode" in
+                    fast) CONFIG_FAST_DOCKER_PACKAGES="$docker_packages" ;;
+                    standard) CONFIG_STANDARD_DOCKER_PACKAGES="$docker_packages" ;;
+                    comprehensive) CONFIG_COMPREHENSIVE_DOCKER_PACKAGES="$docker_packages" ;;
+                esac
+            fi
+            
+            if [[ -n "$renv_packages" && "$renv_packages" != "null" ]]; then
+                case "$mode" in
+                    fast) CONFIG_FAST_RENV_PACKAGES="$renv_packages" ;;
+                    standard) CONFIG_STANDARD_RENV_PACKAGES="$renv_packages" ;;
+                    comprehensive) CONFIG_COMPREHENSIVE_RENV_PACKAGES="$renv_packages" ;;
+                esac
+            fi
+        fi
+    done
+}
+
 # Function: load_config_file
 # Purpose: Load configuration from a specific file
 # Arguments: $1 = config file path
@@ -119,14 +170,17 @@ load_config_file() {
     local auto_github=$(yaml_get "$config_file" "defaults.auto_github")
     local skip_confirmation=$(yaml_get "$config_file" "defaults.skip_confirmation")
     
-    # Store in global config arrays (only if not "null")
-    [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_DEFAULTS[team_name]="$team_name"
-    [[ "$github_account" != "null" && -n "$github_account" ]] && CONFIG_DEFAULTS[github_account]="$github_account"
-    [[ "$build_mode" != "null" && -n "$build_mode" ]] && CONFIG_DEFAULTS[build_mode]="$build_mode"
-    [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DEFAULTS[dotfiles_dir]="$dotfiles_dir"
-    [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DEFAULTS[dotfiles_nodot]="$dotfiles_nodot"
-    [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_DEFAULTS[auto_github]="$auto_github"
-    [[ "$skip_confirmation" != "null" && -n "$skip_confirmation" ]] && CONFIG_DEFAULTS[skip_confirmation]="$skip_confirmation"
+    # Store in global config variables (only if not "null")
+    [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_TEAM_NAME="$team_name"
+    [[ "$github_account" != "null" && -n "$github_account" ]] && CONFIG_GITHUB_ACCOUNT="$github_account"
+    [[ "$build_mode" != "null" && -n "$build_mode" ]] && CONFIG_BUILD_MODE="$build_mode"
+    [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DOTFILES_DIR="$dotfiles_dir"
+    [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DOTFILES_NODOT="$dotfiles_nodot"
+    [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
+    [[ "$skip_confirmation" != "null" && -n "$skip_confirmation" ]] && CONFIG_SKIP_CONFIRMATION="$skip_confirmation"
+    
+    # Load custom package lists from build_modes section
+    load_custom_package_lists "$config_file"
     
     return 0
 }
@@ -134,14 +188,14 @@ load_config_file() {
 # Function: load_all_configs
 # Purpose: Load configuration from all available files in priority order
 load_all_configs() {
-    # Start with hard-coded defaults
-    CONFIG_DEFAULTS[team_name]=""
-    CONFIG_DEFAULTS[github_account]=""
-    CONFIG_DEFAULTS[build_mode]="standard"
-    CONFIG_DEFAULTS[dotfiles_dir]=""
-    CONFIG_DEFAULTS[dotfiles_nodot]="false"
-    CONFIG_DEFAULTS[auto_github]="false"
-    CONFIG_DEFAULTS[skip_confirmation]="false"
+    # Start with hard-coded defaults (already set in variable declarations)
+    CONFIG_TEAM_NAME=""
+    CONFIG_GITHUB_ACCOUNT=""
+    CONFIG_BUILD_MODE="standard"
+    CONFIG_DOTFILES_DIR=""
+    CONFIG_DOTFILES_NODOT="false"
+    CONFIG_AUTO_GITHUB="false"
+    CONFIG_SKIP_CONFIRMATION="false"
     
     # Load configs in reverse priority order (later files override earlier ones)
     load_config_file "$CONFIG_SYSTEM_FILE" 2>/dev/null || true
@@ -159,19 +213,19 @@ load_all_configs() {
 # Purpose: Apply configuration defaults to CLI variables if they're not already set
 apply_config_defaults() {
     # Only set values if they haven't been set by CLI arguments
-    [[ -z "$TEAM_NAME" && -n "${CONFIG_DEFAULTS[team_name]}" ]] && TEAM_NAME="${CONFIG_DEFAULTS[team_name]}"
-    [[ -z "$GITHUB_ACCOUNT" && -n "${CONFIG_DEFAULTS[github_account]}" ]] && GITHUB_ACCOUNT="${CONFIG_DEFAULTS[github_account]}"
-    [[ "$BUILD_MODE" == "standard" && -n "${CONFIG_DEFAULTS[build_mode]}" ]] && BUILD_MODE="${CONFIG_DEFAULTS[build_mode]}"
-    [[ -z "$DOTFILES_DIR" && -n "${CONFIG_DEFAULTS[dotfiles_dir]}" ]] && DOTFILES_DIR="${CONFIG_DEFAULTS[dotfiles_dir]}"
+    [[ -z "$TEAM_NAME" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
+    [[ -z "$GITHUB_ACCOUNT" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
+    [[ "$BUILD_MODE" == "standard" && -n "$CONFIG_BUILD_MODE" ]] && BUILD_MODE="$CONFIG_BUILD_MODE"
+    [[ -z "$DOTFILES_DIR" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
     
     # Handle boolean flags
-    if [[ "${CONFIG_DEFAULTS[dotfiles_nodot]}" == "true" ]]; then
+    if [[ "$CONFIG_DOTFILES_NODOT" == "true" ]]; then
         DOTFILES_NODOT=true
     fi
-    if [[ "${CONFIG_DEFAULTS[auto_github]}" == "true" ]]; then
+    if [[ "$CONFIG_AUTO_GITHUB" == "true" ]]; then
         CREATE_GITHUB_REPO=true
     fi
-    if [[ "${CONFIG_DEFAULTS[skip_confirmation]}" == "true" ]]; then
+    if [[ "$CONFIG_SKIP_CONFIRMATION" == "true" ]]; then
         SKIP_CONFIRMATION=true
     fi
     
@@ -183,7 +237,16 @@ apply_config_defaults() {
 # Arguments: $1 = key (e.g., "team_name")
 get_config_value() {
     local key="$1"
-    echo "${CONFIG_DEFAULTS[$key]:-}"
+    case "$key" in
+        team_name) echo "$CONFIG_TEAM_NAME" ;;
+        github_account) echo "$CONFIG_GITHUB_ACCOUNT" ;;
+        build_mode) echo "$CONFIG_BUILD_MODE" ;;
+        dotfiles_dir) echo "$CONFIG_DOTFILES_DIR" ;;
+        dotfiles_nodot) echo "$CONFIG_DOTFILES_NODOT" ;;
+        auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
+        skip_confirmation) echo "$CONFIG_SKIP_CONFIRMATION" ;;
+        *) echo "" ;;
+    esac
 }
 
 #=============================================================================
@@ -287,7 +350,7 @@ config_set() {
 # Arguments: $1 = key
 config_get() {
     local key="$1"
-    local value="${CONFIG_DEFAULTS[$key]:-}"
+    local value=$(get_config_value "$key")
     
     if [[ -n "$value" ]]; then
         echo "$value"
@@ -299,16 +362,19 @@ config_get() {
 # Function: config_list
 # Purpose: List all configuration values
 config_list() {
+    # Make sure config is loaded
+    load_all_configs
+    
     echo "Current zzcollab configuration:"
     echo ""
     echo "Defaults:"
-    echo "  team_name: $(config_get team_name)"
-    echo "  github_account: $(config_get github_account)"
-    echo "  build_mode: $(config_get build_mode)"
-    echo "  dotfiles_dir: $(config_get dotfiles_dir)"
-    echo "  dotfiles_nodot: $(config_get dotfiles_nodot)"
-    echo "  auto_github: $(config_get auto_github)"
-    echo "  skip_confirmation: $(config_get skip_confirmation)"
+    echo "  team_name: $(get_config_value team_name)"
+    echo "  github_account: $(get_config_value github_account)"
+    echo "  build_mode: $(get_config_value build_mode)"
+    echo "  dotfiles_dir: $(get_config_value dotfiles_dir)"
+    echo "  dotfiles_nodot: $(get_config_value dotfiles_nodot)"
+    echo "  auto_github: $(get_config_value auto_github)"
+    echo "  skip_confirmation: $(get_config_value skip_confirmation)"
     echo ""
     echo "Configuration files (in priority order):"
     [[ -f "$CONFIG_PROJECT_FILE" ]] && echo "  ✓ $CONFIG_PROJECT_FILE" || echo "  ✗ $CONFIG_PROJECT_FILE"
@@ -408,6 +474,86 @@ init_config_system() {
     apply_config_defaults
     
     log_info "Configuration system initialized"
+}
+
+#=============================================================================
+# PACKAGE LIST FUNCTIONS
+#=============================================================================
+
+# Function: get_docker_packages_for_mode
+# Purpose: Get Docker packages for a specific build mode (custom or default)
+# Arguments: $1 = build mode (fast, standard, comprehensive)
+get_docker_packages_for_mode() {
+    local mode="$1"
+    
+    case "$mode" in
+        fast)
+            if [[ -n "$CONFIG_FAST_DOCKER_PACKAGES" ]]; then
+                echo "$CONFIG_FAST_DOCKER_PACKAGES"
+            else
+                # Return default fast mode packages
+                echo "renv,remotes,here,usethis,devtools"
+            fi
+            ;;
+        standard)
+            if [[ -n "$CONFIG_STANDARD_DOCKER_PACKAGES" ]]; then
+                echo "$CONFIG_STANDARD_DOCKER_PACKAGES"
+            else
+                # Return default standard mode packages
+                echo "renv,remotes,tidyverse,here,usethis,devtools"
+            fi
+            ;;
+        comprehensive)
+            if [[ -n "$CONFIG_COMPREHENSIVE_DOCKER_PACKAGES" ]]; then
+                echo "$CONFIG_COMPREHENSIVE_DOCKER_PACKAGES"
+            else
+                # Return default comprehensive mode packages
+                echo "renv,remotes,tidyverse,targets,usethis,devtools,conflicted,ggthemes"
+            fi
+            ;;
+        *)
+            log_error "Unknown build mode: $mode"
+            return 1
+            ;;
+    esac
+}
+
+# Function: get_renv_packages_for_mode
+# Purpose: Get renv packages for a specific build mode (custom or default)
+# Arguments: $1 = build mode (fast, standard, comprehensive)
+get_renv_packages_for_mode() {
+    local mode="$1"
+    
+    case "$mode" in
+        fast)
+            if [[ -n "$CONFIG_FAST_RENV_PACKAGES" ]]; then
+                echo "$CONFIG_FAST_RENV_PACKAGES"
+            else
+                # Return default fast mode packages (9 packages)
+                echo "renv,here,usethis,devtools,testthat,knitr,rmarkdown,targets,palmerpenguins"
+            fi
+            ;;
+        standard)
+            if [[ -n "$CONFIG_STANDARD_RENV_PACKAGES" ]]; then
+                echo "$CONFIG_STANDARD_RENV_PACKAGES"
+            else
+                # Return default standard mode packages (17 packages)
+                echo "renv,here,usethis,devtools,dplyr,ggplot2,tidyr,testthat,palmerpenguins,broom,janitor,DT,conflicted,knitr,rmarkdown,targets,pkgdown"
+            fi
+            ;;
+        comprehensive)
+            if [[ -n "$CONFIG_COMPREHENSIVE_RENV_PACKAGES" ]]; then
+                echo "$CONFIG_COMPREHENSIVE_RENV_PACKAGES"
+            else
+                # Return default comprehensive mode packages (47 packages)
+                echo "renv,here,usethis,devtools,dplyr,ggplot2,tidyr,tidymodels,shiny,plotly,quarto,flexdashboard,survival,lme4,testthat,knitr,rmarkdown,targets,janitor,DT,conflicted,palmerpenguins,broom,kableExtra,bookdown,naniar,skimr,visdat,pkgdown,rcmdcheck,jsonlite,DBI,RSQLite,car,digest,doParallel,foreach,furrr,future,odbc,readr,RMySQL,RPostgres,sessioninfo,covr,ggthemes,datapasta"
+            fi
+            ;;
+        *)
+            log_error "Unknown build mode: $mode"
+            return 1
+            ;;
+    esac
 }
 
 #=============================================================================

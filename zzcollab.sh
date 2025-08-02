@@ -51,25 +51,19 @@ process_cli "$@"
 
 # Handle config commands early (they need minimal dependencies)
 if [[ "${CONFIG_COMMAND:-false}" == "true" ]]; then
-    echo "DEBUG: Config command detected: $CONFIG_SUBCOMMAND" >&2
     # Load core module for logging
     if [[ -f "$MODULES_DIR/core.sh" ]]; then
-        source "$MODULES_DIR/core.sh" >/dev/null 2>&1
-        echo "DEBUG: Core module loaded" >&2
+        source "$MODULES_DIR/core.sh"
     fi
     
     # Load config module
     if [[ -f "$MODULES_DIR/config.sh" ]]; then
-        source "$MODULES_DIR/config.sh" >/dev/null 2>&1
-        echo "DEBUG: Config module loaded" >&2
+        source "$MODULES_DIR/config.sh"
         if [[ ${#CONFIG_ARGS[@]} -gt 0 ]]; then
-            echo "DEBUG: Calling with args: ${CONFIG_ARGS[*]}" >&2
             handle_config_command "$CONFIG_SUBCOMMAND" "${CONFIG_ARGS[@]}"
         else
-            echo "DEBUG: Calling without args" >&2
             handle_config_command "$CONFIG_SUBCOMMAND"
         fi
-        echo "DEBUG: About to exit" >&2
         exit 0
     else
         echo "❌ Error: Config module not found: $MODULES_DIR/config.sh"
