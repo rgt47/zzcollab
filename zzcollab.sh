@@ -46,6 +46,38 @@ fi
 process_cli "$@"
 
 #=============================================================================
+# HANDLE CONFIG COMMANDS (before loading heavy modules)
+#=============================================================================
+
+# Handle config commands early (they need minimal dependencies)
+if [[ "${CONFIG_COMMAND:-false}" == "true" ]]; then
+    echo "DEBUG: Config command detected: $CONFIG_SUBCOMMAND" >&2
+    # Load core module for logging
+    if [[ -f "$MODULES_DIR/core.sh" ]]; then
+        source "$MODULES_DIR/core.sh" >/dev/null 2>&1
+        echo "DEBUG: Core module loaded" >&2
+    fi
+    
+    # Load config module
+    if [[ -f "$MODULES_DIR/config.sh" ]]; then
+        source "$MODULES_DIR/config.sh" >/dev/null 2>&1
+        echo "DEBUG: Config module loaded" >&2
+        if [[ ${#CONFIG_ARGS[@]} -gt 0 ]]; then
+            echo "DEBUG: Calling with args: ${CONFIG_ARGS[*]}" >&2
+            handle_config_command "$CONFIG_SUBCOMMAND" "${CONFIG_ARGS[@]}"
+        else
+            echo "DEBUG: Calling without args" >&2
+            handle_config_command "$CONFIG_SUBCOMMAND"
+        fi
+        echo "DEBUG: About to exit" >&2
+        exit 0
+    else
+        echo "❌ Error: Config module not found: $MODULES_DIR/config.sh"
+        exit 1
+    fi
+fi
+
+#=============================================================================
 # EARLY EXIT FOR HELP AND NEXT STEPS (before loading heavy modules)
 #=============================================================================
 
@@ -103,6 +135,17 @@ if [[ -f "$MODULES_DIR/core.sh" ]]; then
 else
     log_error "Core module not found: $MODULES_DIR/core.sh"
     exit 1
+fi
+
+# Load config module (depends on core, provides defaults for CLI)
+if [[ -f "$MODULES_DIR/config.sh" ]]; then
+    log_info "Loading config module..."
+    # shellcheck source=modules/config.sh
+    source "$MODULES_DIR/config.sh"
+    # Initialize config system and apply defaults
+    init_config_system
+else
+    log_info "Config module not found - using hard-coded defaults"
 fi
 
 # Load templates module (depends on core)

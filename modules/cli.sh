@@ -79,6 +79,11 @@ MINIMAL_PACKAGES_ONLY=false
 SHOW_HELP=false
 SHOW_NEXT_STEPS=false
 
+# Config command variables
+CONFIG_COMMAND=false
+CONFIG_SUBCOMMAND=""
+CONFIG_ARGS=()
+
 #=============================================================================
 # CLI ARGUMENT PARSING FUNCTION
 #=============================================================================
@@ -234,6 +239,19 @@ parse_cli_arguments() {
             --github|-G)
                 CREATE_GITHUB_REPO=true
                 shift
+                ;;
+            config)
+                # Handle config subcommands
+                CONFIG_COMMAND=true
+                shift
+                if [[ $# -gt 0 ]]; then
+                    CONFIG_SUBCOMMAND="$1"
+                    shift
+                    CONFIG_ARGS=("$@")
+                else
+                    CONFIG_SUBCOMMAND=""
+                fi
+                break  # Stop processing other arguments
                 ;;
             *)
                 echo "❌ Error: Unknown option '$1'" >&2
