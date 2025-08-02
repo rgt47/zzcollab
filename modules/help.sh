@@ -62,8 +62,13 @@ OPTIONS:
     
     Build modes (simplified control):
     -F, --fast                 Fast mode: minimal Docker + lightweight packages (fastest setup)
+                              → 9 packages: renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
     -S, --standard             Standard mode: balanced Docker + standard packages (default)
+                              → 17 packages: renv, here, usethis, devtools, dplyr, ggplot2, tidyr,
+                                testthat, palmerpenguins, broom, knitr, rmarkdown, targets, janitor, DT, conflicted
     -C, --comprehensive        Comprehensive mode: extended Docker + full packages (kitchen sink)
+                              → 47 packages: includes tidymodels, shiny, plotly, quarto, flexdashboard,
+                                survival, lme4, database connectors, parallel processing, and more
     
     Legacy flags (deprecated - use build modes above):
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
@@ -164,8 +169,13 @@ OPTIONAL:
     
     # Build modes (simplified control):
     -F, --fast                 Fast mode: minimal Docker + lightweight packages (fastest setup)
+                              → 9 packages: renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
     -S, --standard             Standard mode: balanced Docker + standard packages (default)
+                              → 17 packages: renv, here, usethis, devtools, dplyr, ggplot2, tidyr,
+                                testthat, palmerpenguins, broom, knitr, rmarkdown, targets, janitor, DT, conflicted
     -C, --comprehensive        Comprehensive mode: extended Docker + full packages (kitchen sink)
+                              → 47 packages: includes tidymodels, shiny, plotly, quarto, flexdashboard,
+                                survival, lme4, database connectors, parallel processing, and more
     
     # Legacy flags (deprecated - use build modes above):
     --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)

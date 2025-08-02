@@ -189,9 +189,12 @@ zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing work
 #    2. Ask team lead to build rstudio variant: zzcollab -V rstudio
 
 # Note: Build modes comparison:
-# Fast (-F): Minimal Docker + lightweight packages (fastest builds, 8 packages)
-# Standard (-S): Balanced Docker + standard packages (recommended, 15 packages)
-# Comprehensive (-C): Extended Docker + full packages (kitchen sink, 27+ packages)
+# Fast (-F): Minimal Docker + lightweight packages (fastest builds, 9 packages)
+#   → renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
+# Standard (-S): Balanced Docker + standard packages (recommended, 17 packages)
+#   → + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted
+# Comprehensive (-C): Extended Docker + full packages (kitchen sink, 47 packages)
+#   → + tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases
 ```
 
 ### Simplified Build Modes (NEW)
@@ -199,9 +202,15 @@ zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing work
 ZZCOLLAB now uses a simplified 3-mode system that replaces the previous complex flag combinations. This provides clear, intuitive choices for users:
 
 #### Build Modes:
-- **Fast (-F)**: Essential packages for quick development (8 packages: renv, devtools, usethis, etc.)
-- **Standard (-S)**: Balanced package set for most workflows (15 packages, default)
-- **Comprehensive (-C)**: Full ecosystem for extensive environments (27+ packages)
+- **Fast (-F)**: Essential packages for quick development (9 packages)
+  - Core: renv, here, usethis, devtools
+  - Analysis: testthat, knitr, rmarkdown, targets
+- **Standard (-S)**: Balanced package set for most workflows (17 packages, default)
+  - Fast packages + tidyverse core: dplyr, ggplot2, tidyr
+  - Research tools: palmerpenguins, broom, janitor, DT, conflicted
+- **Comprehensive (-C)**: Full ecosystem for extensive environments (47 packages)
+  - Standard packages + advanced tools: tidymodels, shiny, plotly, quarto
+  - Specialized: flexdashboard, survival, lme4, database connectors, parallel processing
 
 #### Legacy Compatibility:
 The old flags (`-m`, `-x`, `--minimal-docker`, etc.) still work but show deprecation warnings. Users are encouraged to migrate to the new simplified modes.

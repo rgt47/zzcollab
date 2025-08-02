@@ -82,11 +82,11 @@ setup_project(
 
 zzcollab supports three build modes to optimize for different use cases:
 
-| Mode | Description | Docker Size | Package Count | Build Time |
-|------|-------------|-------------|---------------|------------|
-| **Fast** (`-F`) | Minimal setup for quick development | Small | ~8 packages | Fast |
-| **Standard** (`-S`) | Balanced approach (default) | Medium | ~15 packages | Medium |
-| **Comprehensive** (`-C`) | Full-featured environment | Large | ~27 packages | Slow |
+| Mode | Description | Docker Size | Package Count | Key Packages | Build Time |
+|------|-------------|-------------|---------------|--------------|------------|
+| **Fast** (`-F`) | Minimal setup for quick development | Small | 9 packages | renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets | Fast |
+| **Standard** (`-S`) | Balanced approach (default) | Medium | 17 packages | + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted | Medium |
+| **Comprehensive** (`-C`) | Full-featured environment | Large | 47 packages | + tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases | Slow |
 
 ## Core R Functions
 
