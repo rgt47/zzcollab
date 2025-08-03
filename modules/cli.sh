@@ -88,12 +88,6 @@ BUILD_MODE="$DEFAULT_BUILD_MODE"    # Options: fast, standard, comprehensive
 # standard    = standard Docker + standard packages (balanced)
 # comprehensive = extended Docker + full packages (kitchen sink)
 
-# Legacy compatibility flags (deprecated but maintained for backward compatibility)
-MINIMAL_PACKAGES=false
-EXTRA_PACKAGES=false
-MINIMAL_DOCKER=false
-EXTRA_DOCKER=false
-MINIMAL_PACKAGES_ONLY=false
 
 # Show flags (processed after modules are loaded)
 SHOW_HELP=false
@@ -189,36 +183,6 @@ parse_cli_arguments() {
                 ;;
             --comprehensive|-C)
                 BUILD_MODE="comprehensive"
-                shift
-                ;;
-            --minimal|-m)
-                # Legacy compatibility: maps to fast mode
-                BUILD_MODE="fast"
-                MINIMAL_PACKAGES=true
-                shift
-                ;;
-            --extra-packages|-x)
-                # Legacy compatibility: maps to comprehensive mode
-                BUILD_MODE="comprehensive"
-                EXTRA_PACKAGES=true
-                shift
-                ;;
-            --minimal-docker)
-                # Legacy compatibility: set Docker flag and use fast mode
-                MINIMAL_DOCKER=true
-                BUILD_MODE="fast"
-                shift
-                ;;
-            --extra-docker)
-                # Legacy compatibility: set Docker flag and use comprehensive mode
-                EXTRA_DOCKER=true
-                BUILD_MODE="comprehensive"
-                shift
-                ;;
-            --minimal-packages|-M)
-                # Legacy compatibility: set package flag and use fast mode
-                MINIMAL_PACKAGES_ONLY=true
-                BUILD_MODE="fast"
                 shift
                 ;;
             --next-steps)
@@ -402,11 +366,6 @@ export_cli_variables() {
     # GitHub integration flags
     export CREATE_GITHUB_REPO SKIP_CONFIRMATION
     
-    # Legacy package configuration flags (deprecated)
-    export MINIMAL_PACKAGES EXTRA_PACKAGES
-    
-    # Legacy Docker and package control flags (deprecated)
-    export MINIMAL_DOCKER EXTRA_DOCKER MINIMAL_PACKAGES_ONLY
     
     # Show/display flags
     export SHOW_HELP SHOW_NEXT_STEPS
@@ -426,11 +385,6 @@ validate_cli_arguments() {
         exit 1
     fi
     
-    # Warn about deprecated flag usage (informational only)
-    if [[ "$MINIMAL_PACKAGES" == "true" || "$EXTRA_PACKAGES" == "true" || "$MINIMAL_DOCKER" == "true" || "$EXTRA_DOCKER" == "true" || "$MINIMAL_PACKAGES_ONLY" == "true" ]]; then
-        echo "ℹ️  Note: Legacy flags detected. Consider using simplified build modes:" >&2
-        echo "   --fast (minimal), --standard (balanced), --comprehensive (kitchen sink)" >&2
-    fi
 }
 
 #=============================================================================
@@ -474,12 +428,6 @@ show_cli_debug() {
     echo "  INIT_MODE: $INIT_MODE"
     echo "  SHOW_HELP: $SHOW_HELP"
     echo "  SHOW_NEXT_STEPS: $SHOW_NEXT_STEPS"
-    echo "  --- Legacy flags (deprecated) ---"
-    echo "  MINIMAL_PACKAGES: $MINIMAL_PACKAGES"
-    echo "  EXTRA_PACKAGES: $EXTRA_PACKAGES"
-    echo "  MINIMAL_DOCKER: $MINIMAL_DOCKER"
-    echo "  EXTRA_DOCKER: $EXTRA_DOCKER"
-    echo "  MINIMAL_PACKAGES_ONLY: $MINIMAL_PACKAGES_ONLY"
 }
 
 # Helper functions for modules to use simplified build modes

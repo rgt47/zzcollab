@@ -1336,7 +1336,7 @@ ZZCOLLAB provides a **complete research collaboration platform** with:
 | Manual dependency management | ✅ **Automated dependency tracking** |
 | Docker expertise required | ✅ **Zero Docker knowledge needed** |
 | Build failures block development | ✅ **Centralized, tested builds** |
-| Slow initialization (5-10 min) | ✅ **Fast minimal setup (2-3 min with --minimal)** |
+| Slow initialization (5-10 min) | ✅ **Fast setup (2-3 min with --fast mode)** |
 
 ### Developer Experience
 - **Researchers focus on research** - not DevOps

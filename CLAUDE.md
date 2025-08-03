@@ -300,8 +300,6 @@ ZZCOLLAB now uses a simplified 3-mode system that replaces the previous complex 
   - Standard packages + advanced tools: tidymodels, shiny, plotly, quarto
   - Specialized: flexdashboard, survival, lme4, database connectors, parallel processing
 
-#### Legacy Compatibility:
-The old flags (`-m`, `-x`, `--minimal-docker`, etc.) still work but show deprecation warnings. Users are encouraged to migrate to the new simplified modes.
 
 ## Major Refactoring and Simplification (2024)
 

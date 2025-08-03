@@ -70,10 +70,6 @@ OPTIONS:
                               → 47 packages: includes tidymodels, shiny, plotly, quarto, flexdashboard,
                                 survival, lme4, database connectors, parallel processing, and more
     
-    Legacy flags (deprecated - use build modes above):
-    --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
-    --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
-    -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
     -y, --yes                   Skip confirmation prompt (for automation)
     
     -h, --help                   Show this help message
@@ -164,8 +160,6 @@ OPTIONAL:
     -D, --dotfiles-nodot PATH   Path to dotfiles directory (files need dots added)
     -f, --dockerfile PATH       Custom Dockerfile path (default: templates/Dockerfile)
     -P, --prepare-dockerfile    Set up project and Dockerfile for editing, then exit
-    -m, --minimal              Use minimal package set and CI for faster initialization (5 packages vs 39 - lightweight CI)
-    -x, --extra-packages       Use extra packages in team Docker image (Dockerfile.pluspackages)
     
     # Build modes (simplified control):
     -F, --fast                 Fast mode: minimal Docker + lightweight packages (fastest setup)
@@ -177,10 +171,6 @@ OPTIONAL:
                               → 47 packages: includes tidymodels, shiny, plotly, quarto, flexdashboard,
                                 survival, lme4, database connectors, parallel processing, and more
     
-    # Legacy flags (deprecated - use build modes above):
-    --minimal-docker           Use Dockerfile.minimal (fastest builds, no R packages pre-installed)
-    --extra-docker             Use Dockerfile.pluspackages (comprehensive package set pre-installed)
-    -M, --minimal-packages     Use DESCRIPTION.minimal (lightweight packages - 5 vs 39 packages)
     -y, --yes                  Skip confirmation prompt (for automation)
     
     -h, --help                 Show this help message
@@ -194,13 +184,6 @@ EXAMPLES:
     # Direct setup with standard Dockerfile
     $0 -i -t rgt47 -p research-study -d ~/dotfiles
     
-    # Setup with extra packages (Dockerfile.pluspackages - comprehensive package set)
-    $0 -i -t rgt47 -p research-study -x -d ~/dotfiles
-    
-    # Fast setup with minimal packages (Dockerfile.minimal - fastest builds)
-    $0 -i -t rgt47 -p research-study -m -d ~/dotfiles
-    
-    # NEW: Simplified build modes (recommended)
     # Fast mode: minimal Docker + lightweight packages
     $0 -i -t rgt47 -p research-study -F -d ~/dotfiles
     
