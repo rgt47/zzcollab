@@ -56,9 +56,7 @@ create_analysis_files() {
     
     # Create research report template from R Markdown template
     # Template includes: YAML header, author info, bibliography setup, standard sections
-    if copy_template_file "report.Rmd" "analysis/report/report.Rmd" "Research report template"; then
-        track_template_file "report.Rmd" "analysis/report/report.Rmd"
-        log_info "Created research report template with academic structure"
+    if install_template "report.Rmd" "analysis/report/report.Rmd" "Research report template" "Created research report template with academic structure"; then
     else
         log_error "Failed to create research report template"
         return 1
@@ -66,9 +64,7 @@ create_analysis_files() {
     
     # Create bibliography file for citations and references
     # BibTeX format for academic reference management
-    if copy_template_file "references.bib" "analysis/report/references.bib" "references.bib file"; then
-        track_template_file "references.bib" "analysis/report/references.bib"
-        log_info "Created bibliography file for citation management"
+    if install_template "references.bib" "analysis/report/references.bib" "references.bib file" "Created bibliography file for citation management"; then
     else
         log_error "Failed to create bibliography file"
         return 1
@@ -76,9 +72,7 @@ create_analysis_files() {
     
     # Create citation style file for academic journals
     # CSL (Citation Style Language) file for formatting citations
-    if copy_template_file "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file"; then
-        track_template_file "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl"
-        log_info "Created citation style file for academic formatting"
+    if install_template "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
     else
         log_warn "Citation style file not found - citations will use default format"
     fi
@@ -919,7 +913,5 @@ if [[ ! -d "analysis/figures" ]]; then
     log_warn "analysis/figures directory not found - may need to run structure module first"
 fi
 
-# Set analysis module loaded flag
-readonly ZZCOLLAB_ANALYSIS_LOADED=true
 
 log_info "Analysis module loaded successfully"

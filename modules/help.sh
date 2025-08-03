@@ -300,7 +300,5 @@ EOF
 # MODULE VALIDATION AND LOADING
 #=============================================================================
 
-# Set help module loaded flag
-readonly ZZCOLLAB_HELP_LOADED=true
 
 log_info "Help module loaded successfully"

@@ -342,7 +342,5 @@ benchmark() {
 # MODULE VALIDATION AND LOADING
 #=============================================================================
 
-# Set utils module loaded flag
-readonly ZZCOLLAB_UTILS_LOADED=true
 
 log_info "Utilities module loaded successfully"

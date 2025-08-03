@@ -395,7 +395,5 @@ if [[ -z "${PKG_NAME:-}" ]]; then
     exit 1
 fi
 
-# Set rpackage module loaded flag
-readonly ZZCOLLAB_RPACKAGE_LOADED=true
 
 log_info "R package module loaded successfully"

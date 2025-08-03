@@ -431,9 +431,7 @@ show_cli_debug() {
 }
 
 # Helper functions for modules to use simplified build modes
-is_fast_mode() { [[ "$BUILD_MODE" == "fast" ]]; }
-is_standard_mode() { [[ "$BUILD_MODE" == "standard" ]]; }
-is_comprehensive_mode() { [[ "$BUILD_MODE" == "comprehensive" ]]; }
+# Note: Modules can directly check $BUILD_MODE instead of using helper functions
 
 # Helper functions for template selection
 get_template() {
@@ -474,7 +472,5 @@ get_workflow_template() {
 # MODULE VALIDATION AND LOADING
 #=============================================================================
 
-# Set cli module loaded flag
-readonly ZZCOLLAB_CLI_LOADED=true
 
 # Note: No logging here since core.sh may not be loaded yet

@@ -481,7 +481,5 @@ if [[ -z "${BASE_IMAGE:-}" ]]; then
     log_info "BASE_IMAGE not defined - using default: $BASE_IMAGE"
 fi
 
-# Set docker module loaded flag
-readonly ZZCOLLAB_DOCKER_LOADED=true
 
 log_info "Docker module loaded successfully"

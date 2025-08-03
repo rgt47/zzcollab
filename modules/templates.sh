@@ -149,6 +149,26 @@ create_file_if_missing() {
     log_info "Created $description"
 }
 
+# Function: install_template
+# Purpose: Consolidated template installation with tracking and error handling
+# Arguments: $1 - template file, $2 - destination, $3 - description, $4 - success message (optional)
+# Returns: 0 on success, 1 on failure
+install_template() {
+    local template="$1"
+    local dest="$2" 
+    local description="$3"
+    local success_msg="${4:-"Created $description"}"
+    
+    if copy_template_file "$template" "$dest" "$description"; then
+        track_template_file "$template" "$dest"
+        log_info "$success_msg"
+        return 0
+    else
+        log_error "Failed to create $description"
+        return 1
+    fi
+}
+
 #=============================================================================
 # TEMPLATES MODULE VALIDATION
 #=============================================================================

@@ -648,7 +648,5 @@ EOF
 # MODULE VALIDATION AND LOADING
 #=============================================================================
 
-# Set team_init module loaded flag
-readonly ZZCOLLAB_TEAM_INIT_LOADED=true
 
 log_info "Team initialization module loaded successfully"

@@ -62,9 +62,7 @@ create_makefile() {
     
     # Copy comprehensive Makefile from template
     # Template includes: Docker targets, R package targets, help system, platform detection
-    if copy_template_file "Makefile" "Makefile" "Makefile for Docker workflow"; then
-        track_template_file "Makefile" "Makefile"
-        log_success "Created Makefile with development automation"
+    if install_template "Makefile" "Makefile" "Makefile for Docker workflow" "Created Makefile with development automation"; then
         log_info "Available targets:"
         log_info "  - Docker: make docker-build, make docker-rstudio, make docker-r"
         log_info "  - Package: make check, make test, make document"
@@ -198,9 +196,7 @@ create_config_files() {
     
     # Create comprehensive .gitignore for R projects
     # Includes: R-specific files, Docker artifacts, IDE files, OS files, data files
-    if copy_template_file ".gitignore" ".gitignore" ".gitignore file"; then
-        track_template_file ".gitignore" ".gitignore"
-        log_info "Created comprehensive .gitignore for R projects"
+    if install_template ".gitignore" ".gitignore" ".gitignore file" "Created comprehensive .gitignore for R projects"; then
         log_info "  - Ignores: R artifacts, Docker files, IDE configs, OS files"
         log_info "  - Protects: large data files, credentials, temporary files"
     else
@@ -210,9 +206,7 @@ create_config_files() {
 
     # Create R session configuration file
     # Includes: renv activation, CRAN mirror, development package loading
-    if copy_template_file ".Rprofile" ".Rprofile" ".Rprofile file"; then
-        track_template_file ".Rprofile" ".Rprofile"
-        log_info "Created .Rprofile for R session configuration"
+    if install_template ".Rprofile" ".Rprofile" ".Rprofile file" "Created .Rprofile for R session configuration"; then
         log_info "  - Activates renv for package management"
         log_info "  - Sets CRAN mirror for package downloads"
         log_info "  - Loads development tools in interactive sessions"
@@ -346,12 +340,6 @@ create_development_scripts() {
 
 set -e
 
-# Colors for output
-readonly RED="\033[0;31m"
-readonly GREEN="\033[0;32m"
-readonly YELLOW="\033[1;33m"
-readonly NC="\033[0m" # No Color
-
 # Logging functions are provided by core.sh
 
 # Function: quick setup for new development session
@@ -450,7 +438,5 @@ if [[ -n "${DOTFILES_DIR:-}" ]] && [[ ! -d "${DOTFILES_DIR}" ]]; then
     log_warn "DOTFILES_DIR specified but directory not found: $DOTFILES_DIR"
 fi
 
-# Set devtools module loaded flag
-readonly ZZCOLLAB_DEVTOOLS_LOADED=true
 
 log_info "Development tools module loaded successfully"

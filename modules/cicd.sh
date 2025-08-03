@@ -390,7 +390,5 @@ if [[ ! -d ".github" ]] && ! mkdir -p ".github/workflows"; then
     log_warn "Cannot create .github directory - CI/CD setup may fail"
 fi
 
-# Set cicd module loaded flag
-readonly ZZCOLLAB_CICD_LOADED=true
 
 log_info "CI/CD module loaded successfully"

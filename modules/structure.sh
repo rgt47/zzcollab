@@ -282,7 +282,5 @@ if [[ -z "${MANIFEST_TXT:-}" ]]; then
     log_warn "MANIFEST_TXT not defined - fallback tracking will be disabled"
 fi
 
-# Set structure module loaded flag
-readonly ZZCOLLAB_STRUCTURE_LOADED=true
 
 log_info "Structure module loaded successfully"
