@@ -1,22 +1,38 @@
 # ZZCOLLAB R Interface Functions
 # Provides R functions to interact with zzcollab Docker infrastructure
 
+#' Null-coalescing operator
+#'
+#' @param lhs Left-hand side
+#' @param rhs Right-hand side
+#' @return lhs if not NULL, else rhs
+#' @keywords internal
+`%||%` <- function(lhs, rhs) {
+  if (!is.null(lhs)) lhs else rhs
+}
+
 #' Find zzcollab script
 #'
 #' @return Path to zzcollab script
 #' @keywords internal
 find_zzcollab_script <- function() {
-  # Check if zzcollab is in PATH
-  if (Sys.which("zzcollab") != "") {
-    return("zzcollab")
-  }
-  
-  # Check if we're in the zzcollab source directory
+  # First priority: Check if we're in the zzcollab source directory
   if (file.exists("zzcollab.sh")) {
     return("./zzcollab.sh")
   }
   
-  # Check common installation locations
+  # Second priority: Check if zzcollab is in PATH (but only if it supports config)
+  zzcollab_path <- Sys.which("zzcollab")
+  if (zzcollab_path != "") {
+    # Test if this version supports config commands
+    test_result <- system(paste(zzcollab_path, "config --help"), 
+                         ignore.stdout = TRUE, ignore.stderr = TRUE)
+    if (test_result == 0) {
+      return("zzcollab")
+    }
+  }
+  
+  # Third priority: Check common installation locations
   possible_paths <- c(
     file.path(Sys.getenv("HOME"), "bin", "zzcollab"),
     "/usr/local/bin/zzcollab",
@@ -25,11 +41,16 @@ find_zzcollab_script <- function() {
   
   for (path in possible_paths) {
     if (file.exists(path)) {
-      return(path)
+      # Test if this version supports config commands
+      test_result <- system(paste(path, "config --help"), 
+                           ignore.stdout = TRUE, ignore.stderr = TRUE)
+      if (test_result == 0) {
+        return(path)
+      }
     }
   }
   
-  stop("zzcollab script not found. Please install zzcollab or ensure it's in your PATH.")
+  stop("zzcollab script with config support not found. Please use zzcollab from source directory or install updated version.")
 }
 
 #' Check Docker container status
@@ -87,19 +108,34 @@ team_images <- function() {
 
 #' Initialize zzcollab project (R interface)
 #'
-#' @param team_name Docker Hub team/organization name
+#' @param team_name Docker Hub team/organization name (uses config default if NULL)
 #' @param project_name Project name
-#' @param github_account GitHub account (defaults to team_name)
-#' @param dotfiles_path Path to dotfiles directory
-#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
-#' @param build_mode Build mode: "fast", "standard", or "comprehensive"
+#' @param github_account GitHub account (uses config default or team_name if NULL)
+#' @param dotfiles_path Path to dotfiles directory (uses config default if NULL)
+#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added (uses config default)
+#' @param build_mode Build mode: "fast", "standard", or "comprehensive" (uses config default)
 #' @return Logical indicating success
 #' @export
-init_project <- function(team_name, project_name, 
+init_project <- function(team_name = NULL, project_name = NULL, 
                          github_account = NULL, 
                          dotfiles_path = NULL,
-                         dotfiles_nodots = FALSE,
-                         build_mode = "standard") {
+                         dotfiles_nodots = NULL,
+                         build_mode = NULL) {
+  
+  # Apply config defaults for missing parameters
+  team_name <- team_name %||% get_config_default("team_name")
+  github_account <- github_account %||% get_config_default("github_account") %||% team_name
+  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
+  build_mode <- build_mode %||% get_config_default("build_mode", "standard")
+  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
+  
+  # Validate required parameters
+  if (is.null(team_name)) {
+    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')")
+  }
+  if (is.null(project_name)) {
+    stop("project_name is required")
+  }
   
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
@@ -135,17 +171,31 @@ init_project <- function(team_name, project_name,
 
 #' Join existing zzcollab project (R interface for Developers 2+)
 #'
-#' @param team_name Team name (Docker Hub organization)
+#' @param team_name Team name (Docker Hub organization) (uses config default if NULL)
 #' @param project_name Project name
-#' @param interface Interface type: "shell" or "rstudio"
-#' @param dotfiles_path Path to dotfiles directory
-#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
-#' @param build_mode Build mode: "fast", "standard", or "comprehensive"
+#' @param interface Interface type: "shell", "rstudio", or "verse" (default: "shell")
+#' @param dotfiles_path Path to dotfiles directory (uses config default if NULL)
+#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added (uses config default)
+#' @param build_mode Build mode: "fast", "standard", or "comprehensive" (uses config default)
 #' @return Logical indicating success
 #' @export
-join_project <- function(team_name, project_name, interface = "shell",
-                         dotfiles_path = NULL, dotfiles_nodots = FALSE,
-                         build_mode = "standard") {
+join_project <- function(team_name = NULL, project_name = NULL, interface = "shell",
+                         dotfiles_path = NULL, dotfiles_nodots = NULL,
+                         build_mode = NULL) {
+  
+  # Apply config defaults for missing parameters
+  team_name <- team_name %||% get_config_default("team_name")
+  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
+  build_mode <- build_mode %||% get_config_default("build_mode", "standard")
+  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
+  
+  # Validate required parameters
+  if (is.null(team_name)) {
+    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')")
+  }
+  if (is.null(project_name)) {
+    stop("project_name is required")
+  }
   
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
@@ -441,14 +491,19 @@ create_branch <- function(branch_name) {
 
 #' Setup zzcollab project (standard setup, non-init mode)
 #'
-#' @param dotfiles_path Path to dotfiles directory
-#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added
-#' @param build_mode Build mode: "fast", "standard", or "comprehensive"
+#' @param dotfiles_path Path to dotfiles directory (uses config default if NULL)
+#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added (uses config default)
+#' @param build_mode Build mode: "fast", "standard", or "comprehensive" (uses config default)
 #' @param base_image Base Docker image to use (optional)
 #' @return Logical indicating success
 #' @export
-setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = FALSE,
-                         build_mode = "standard", base_image = NULL) {
+setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
+                         build_mode = NULL, base_image = NULL) {
+  
+  # Apply config defaults for missing parameters
+  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
+  build_mode <- build_mode %||% get_config_default("build_mode", "standard")
+  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
   
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
@@ -512,4 +567,96 @@ zzcollab_next_steps <- function() {
   cmd <- paste(zzcollab_path, "--next-steps")
   result <- system(cmd, intern = TRUE)
   return(result)
+}
+
+#=============================================================================
+# CONFIGURATION SYSTEM R INTERFACE
+#=============================================================================
+
+#' Get configuration value
+#'
+#' @param key Configuration key (e.g., "team_name", "build_mode")
+#' @return Configuration value or NULL if not set
+#' @export
+get_config <- function(key) {
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  cmd <- paste(zzcollab_path, "config get", key)
+  result <- system(cmd, intern = TRUE)
+  
+  if (length(result) > 0 && !grepl("\\(not set\\)", result[1])) {
+    return(result[1])
+  } else {
+    return(NULL)
+  }
+}
+
+#' Set configuration value
+#'
+#' @param key Configuration key
+#' @param value Configuration value
+#' @return Logical indicating success
+#' @export
+set_config <- function(key, value) {
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  cmd <- paste(zzcollab_path, "config set", key, shQuote(value))
+  result <- system(cmd)
+  return(result == 0)
+}
+
+#' List all configuration values
+#'
+#' @return Character vector with configuration listing
+#' @export
+list_config <- function() {
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  cmd <- paste(zzcollab_path, "config list")
+  result <- system(cmd, intern = TRUE)
+  return(result)
+}
+
+#' Validate configuration files
+#'
+#' @return Logical indicating if all config files are valid
+#' @export
+validate_config <- function() {
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  cmd <- paste(zzcollab_path, "config validate")
+  result <- system(cmd)
+  return(result == 0)
+}
+
+#' Initialize default configuration file
+#'
+#' @return Logical indicating success
+#' @export
+init_config <- function() {
+  # Find zzcollab script
+  zzcollab_path <- find_zzcollab_script()
+  
+  cmd <- paste(zzcollab_path, "config init")
+  result <- system(cmd)
+  return(result == 0)
+}
+
+#' Get configuration-aware default value
+#'
+#' @param key Configuration key
+#' @param default Default value if config not set
+#' @return Configuration value or default
+#' @keywords internal
+get_config_default <- function(key, default = NULL) {
+  config_value <- get_config(key)
+  if (!is.null(config_value)) {
+    return(config_value)
+  } else {
+    return(default)
+  }
 }

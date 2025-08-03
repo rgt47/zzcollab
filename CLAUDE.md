@@ -22,6 +22,94 @@ ZZCOLLAB is a research collaboration framework that creates Docker-based reprodu
 - **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and selective base image building (-B, -V, -I)
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
 
+## Configuration System
+
+ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive typing and set project defaults.
+
+### Configuration Commands
+```bash
+# Create default configuration file
+zzcollab config init
+
+# Set configuration values  
+zzcollab config set team_name "myteam"
+zzcollab config set github_account "myusername"
+zzcollab config set build_mode "fast"
+zzcollab config set dotfiles_dir "~/dotfiles"
+
+# Get configuration values
+zzcollab config get team_name
+zzcollab config get build_mode
+
+# List all configuration
+zzcollab config list
+
+# Validate configuration files
+zzcollab config validate
+```
+
+### Configuration Files
+- **User config**: `~/.zzcollab/config.yaml` (your personal defaults)
+- **Project config**: `./zzcollab.yaml` (project-specific overrides)
+- **Priority order**: project config > user config > built-in defaults
+
+### Example Configuration File
+```yaml
+defaults:
+  # Team and GitHub settings
+  team_name: "myteam"                  # Docker Hub team/organization name
+  github_account: "myusername"         # GitHub account name
+  
+  # Build and environment settings  
+  build_mode: "standard"               # Default build mode: fast, standard, comprehensive
+  dotfiles_dir: "~/dotfiles"           # Path to dotfiles directory
+  dotfiles_nodot: false                # Whether dotfiles need dots added
+  
+  # Automation settings
+  auto_github: false                   # Automatically create GitHub repository
+  skip_confirmation: false             # Skip confirmation prompts
+
+# Custom package lists for build modes (optional)
+build_modes:
+  fast:
+    description: "Quick development setup"
+    docker_packages: [renv, remotes, here, usethis]
+    renv_packages: [renv, here, usethis, devtools, testthat]
+  
+  standard:
+    description: "Balanced research workflow"
+    docker_packages: [renv, remotes, tidyverse, here, usethis, devtools]
+    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, testthat, palmerpenguins]
+```
+
+### R Interface for Configuration
+```r
+# Configuration management from R
+library(zzcollab)
+
+# Initialize config
+init_config()
+
+# Set configuration values
+set_config("team_name", "myteam")
+set_config("build_mode", "fast")
+
+# Get configuration values
+get_config("team_name")
+get_config("build_mode")
+
+# List all configuration
+list_config()
+
+# Validate configuration
+validate_config()
+
+# Use config-aware functions (parameters use config defaults)
+init_project(project_name = "my-analysis")   # Uses team_name from config
+join_project(project_name = "my-analysis")   # Uses team_name and build_mode from config
+setup_project()                              # Uses all defaults from config
+```
+
 ## Development Commands
 
 ### R Package Development
@@ -317,10 +405,27 @@ git_commit("Add analysis")
 create_pr("New feature")
 ```
 
-### R-Centric Workflow (Enhanced)
+### R-Centric Workflow (Enhanced with Configuration)
 ```r
-# Developer 1 (Team Lead) - R Interface with build modes
+# Method 1: Using Configuration (Recommended)
 library(zzcollab)
+
+# One-time setup for team lead
+init_config()                                      # Initialize config file
+set_config("team_name", "TEAM")                    # Set team name
+set_config("build_mode", "standard")               # Set preferred mode
+set_config("dotfiles_dir", "~/dotfiles")           # Set dotfiles path
+
+# Developer 1 (Team Lead) - Simplified with config
+init_project(project_name = "PROJECT")             # Uses config defaults
+
+# Developer 2+ (Team Members) - Simplified with config  
+set_config("team_name", "TEAM")                    # Match team settings
+join_project(project_name = "PROJECT", interface = "shell")  # Uses config defaults
+
+# Method 2: Traditional Explicit Parameters
+library(zzcollab)
+# Developer 1 (Team Lead) - R Interface with build modes
 init_project(
   team_name = "TEAM",
   project_name = "PROJECT", 
@@ -329,7 +434,6 @@ init_project(
 )
 
 # Developer 2+ (Team Members) - R Interface with build modes
-library(zzcollab)
 join_project(
   team_name = "TEAM",
   project_name = "PROJECT",

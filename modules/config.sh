@@ -556,6 +556,78 @@ get_renv_packages_for_mode() {
     esac
 }
 
+# Function: generate_description_content
+# Purpose: Generate DESCRIPTION file content with custom or default packages
+# Arguments: $1 = build mode, $2 = package name, $3 = author name, $4 = author email
+generate_description_content() {
+    local mode="$1"
+    local pkg_name="$2"
+    local author_name="$3"
+    local author_email="$4"
+    
+    # Get package lists for the mode
+    local renv_packages=$(get_renv_packages_for_mode "$mode")
+    
+    # Convert comma-separated list to arrays for processing
+    IFS=',' read -ra packages <<< "$renv_packages"
+    
+    # Separate into Imports and Suggests
+    # Core packages go to Imports, others to Suggests
+    local imports=()
+    local suggests=()
+    
+    for pkg in "${packages[@]}"; do
+        case "$pkg" in
+            renv|here|usethis|devtools|dplyr|ggplot2|tidyr)
+                imports+=("$pkg")
+                ;;
+            *)
+                suggests+=("$pkg")
+                ;;
+        esac
+    done
+    
+    # Generate DESCRIPTION content
+    cat << EOF
+Package: ${pkg_name}
+Title: Research Compendium for ${pkg_name}
+Version: 0.0.0.9000
+Authors@R: 
+    person("${author_name}", email = "${author_email}", role = c("aut", "cre"))
+Description: This is a research compendium for the ${pkg_name} project.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+EOF
+
+    # Add Imports section if we have imports
+    if [[ ${#imports[@]} -gt 0 ]]; then
+        echo "Imports:"
+        for pkg in "${imports[@]}"; do
+            echo "    ${pkg},"
+        done | sed '$ s/,$//'  # Remove comma from last item
+    fi
+    
+    # Add Suggests section if we have suggests
+    if [[ ${#suggests[@]} -gt 0 ]]; then
+        echo "Suggests:"
+        for pkg in "${suggests[@]}"; do
+            if [[ "$pkg" == "testthat" ]]; then
+                echo "    testthat (>= 3.0.0),"
+            else
+                echo "    ${pkg},"
+            fi
+        done | sed '$ s/,$//'  # Remove comma from last item
+    fi
+    
+    # Add standard footer
+    cat << EOF
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+EOF
+}
+
 #=============================================================================
 # MODULE VALIDATION AND LOADING
 #=============================================================================

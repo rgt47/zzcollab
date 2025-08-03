@@ -58,28 +58,42 @@ create_core_files() {
     log_info "Creating core R package files..."
     
     # DESCRIPTION file - R package metadata and dependencies
-    # Choose template based on build mode (with legacy compatibility)
-    local description_template
-    description_template=$(get_description_template)
-    
+    # Generate dynamic content based on build mode and config
     case "$BUILD_MODE" in
         fast)
-            log_info "Using minimal DESCRIPTION template for faster initialization"
+            log_info "Creating dynamic DESCRIPTION with fast mode packages"
             ;;
         comprehensive)
-            log_info "Using comprehensive DESCRIPTION template with full dependencies"
+            log_info "Creating dynamic DESCRIPTION with comprehensive mode packages"
             ;;
         *)
-            log_info "Using standard DESCRIPTION template"
+            log_info "Creating dynamic DESCRIPTION with standard mode packages"
             ;;
     esac
     
-    if copy_template_file "$description_template" "DESCRIPTION" "DESCRIPTION file"; then
-        track_template_file "$description_template" "DESCRIPTION"
-        log_info "Created DESCRIPTION file with package metadata"
+    # Check if config module is available for dynamic generation
+    if [[ "${ZZCOLLAB_CONFIG_LOADED:-}" == "true" ]] && command -v generate_description_content >/dev/null 2>&1; then
+        # Use dynamic generation with config system
+        if generate_description_content "$BUILD_MODE" "$PKG_NAME" "$AUTHOR_NAME" "$AUTHOR_EMAIL" > "DESCRIPTION"; then
+            track_file "DESCRIPTION"
+            log_info "Created dynamic DESCRIPTION file with config-based packages"
+        else
+            log_error "Failed to generate dynamic DESCRIPTION file"
+            return 1
+        fi
     else
-        log_error "Failed to create DESCRIPTION file"
-        return 1
+        # Fallback to template-based approach
+        local description_template
+        description_template=$(get_description_template)
+        log_warning "Config module not available, using template fallback: $description_template"
+        
+        if copy_template_file "$description_template" "DESCRIPTION" "DESCRIPTION file"; then
+            track_template_file "$description_template" "DESCRIPTION"
+            log_info "Created DESCRIPTION file from template"
+        else
+            log_error "Failed to create DESCRIPTION file"
+            return 1
+        fi
     fi
 
     # .Rbuildignore file - Specifies files to exclude from R package build

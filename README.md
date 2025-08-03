@@ -42,12 +42,28 @@ library(zzcollab)
 
 ## Quick Start with R Interface
 
-### For Team Leaders: Initialize a New Project
+### Configuration Setup (One-time)
 
 ```r
 library(zzcollab)
 
-# Initialize a new research project with team collaboration
+# Set up your defaults once
+set_config("team_name", "myteam")
+set_config("build_mode", "standard")
+set_config("dotfiles_dir", "~/dotfiles")
+set_config("github_account", "myusername")
+
+# View your configuration
+list_config()
+```
+
+### For Team Leaders: Initialize a New Project
+
+```r
+# Using config defaults (recommended)
+init_project(project_name = "myproject")
+
+# Or with explicit parameters (overrides config)
 init_project(
   team_name = "myteam",
   project_name = "myproject",
@@ -59,7 +75,10 @@ init_project(
 ### For Team Members: Join an Existing Project
 
 ```r
-# Join an existing project
+# Using config defaults (recommended)
+join_project(project_name = "myproject", interface = "shell")
+
+# Or with explicit parameters
 join_project(
   team_name = "myteam",
   project_name = "myproject",
@@ -71,7 +90,10 @@ join_project(
 ### For Individual Use: Setup a Project
 
 ```r
-# Setup a project in the current directory
+# Using config defaults (recommended)
+setup_project()
+
+# Or with explicit parameters
 setup_project(
   build_mode = "standard",
   dotfiles_path = "~/dotfiles"
@@ -88,12 +110,59 @@ zzcollab supports three build modes to optimize for different use cases:
 | **Standard** (`-S`) | Balanced approach (default) | Medium | 17 packages | + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted | Medium |
 | **Comprehensive** (`-C`) | Full-featured environment | Large | 47 packages | + tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases | Slow |
 
+## Configuration System
+
+zzcollab includes a powerful configuration system to eliminate repetitive typing and set project defaults.
+
+### Configuration Files
+- **User config**: `~/.zzcollab/config.yaml` (your personal defaults)
+- **Project config**: `./zzcollab.yaml` (project-specific overrides)
+- **Priority**: project > user > built-in defaults
+
+### Configuration Commands
+```bash
+zzcollab config init                    # Create default config file
+zzcollab config set team_name "myteam"  # Set a configuration value
+zzcollab config get team_name           # Get a configuration value
+zzcollab config list                    # List all configuration
+zzcollab config validate               # Validate YAML syntax
+```
+
+### Customizable Settings
+- **Team settings**: `team_name`, `github_account`
+- **Build settings**: `build_mode`, `dotfiles_dir`, `dotfiles_nodot`
+- **Automation**: `auto_github`, `skip_confirmation`
+- **Custom package lists**: Override default packages for each build mode
+
+### Custom Package Lists
+Edit your config file to customize packages for different build modes:
+
+```yaml
+build_modes:
+  fast:
+    description: "Quick development setup"
+    docker_packages: [renv, remotes, here, usethis]
+    renv_packages: [renv, here, usethis, devtools, testthat]
+  
+  standard:
+    description: "Balanced research workflow"  
+    docker_packages: [renv, remotes, tidyverse, here, usethis, devtools]
+    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, testthat, palmerpenguins]
+```
+
 ## Core R Functions
 
+### Configuration Management
+- `get_config()` - Get configuration values
+- `set_config()` - Set configuration values
+- `list_config()` - List all configuration
+- `validate_config()` - Validate configuration files
+- `init_config()` - Initialize default config
+
 ### Project Management
-- `init_project()` - Initialize team project
-- `join_project()` - Join existing project
-- `setup_project()` - Setup individual project
+- `init_project()` - Initialize team project (config-aware)
+- `join_project()` - Join existing project (config-aware)
+- `setup_project()` - Setup individual project (config-aware)
 
 ### Docker Management
 - `status()` - Check container status
@@ -119,8 +188,13 @@ zzcollab supports three build modes to optimize for different use cases:
 ## Example R Workflow
 
 ```r
-# 1. Initialize project
-init_project("datascience", "covid-analysis", build_mode = "standard")
+# 0. One-time setup (configure your defaults)
+set_config("team_name", "datascience")
+set_config("build_mode", "standard")
+set_config("dotfiles_dir", "~/dotfiles")
+
+# 1. Initialize project (uses config defaults)
+init_project(project_name = "covid-analysis")
 
 # 2. Add required packages
 add_package(c("tidyverse", "lubridate", "plotly"))
@@ -216,19 +290,45 @@ your-project/
 
 ```bash
 zzcollab [OPTIONS]
+zzcollab config [SUBCOMMAND]
 
 OPTIONS:
-  --dotfiles DIR       Copy dotfiles from directory (files with leading dots)
+  --dotfiles DIR, -d   Copy dotfiles from directory (files with leading dots)
   --dotfiles-nodot DIR Copy dotfiles from directory (files without leading dots) 
   --base-image NAME    Use custom Docker base image (default: rocker/r-ver)
-  --no-docker          Skip Docker image build during setup
+  --no-docker, -n      Skip Docker image build during setup
+  --fast, -F           Fast build mode (minimal packages)
+  --standard, -S       Standard build mode (balanced packages, default)
+  --comprehensive, -C  Comprehensive build mode (full packages)
+  --team NAME, -t      Team name for collaboration
+  --project NAME, -p   Project name
+  --interface TYPE, -I Interface type (shell, rstudio, verse)
+  --init, -i           Initialize team base images
   --next-steps         Show development workflow and next steps
   --help, -h           Show help message
 
+CONFIG COMMANDS:
+  zzcollab config init                    # Create default config file
+  zzcollab config set KEY VALUE           # Set configuration value
+  zzcollab config get KEY                 # Get configuration value  
+  zzcollab config list                    # List all configuration
+  zzcollab config validate               # Validate YAML syntax
+
 EXAMPLES:
-  zzcollab                                    # Basic setup
+  # Configuration setup
+  zzcollab config init                        # One-time setup
+  zzcollab config set team_name "myteam"      # Set team default
+  zzcollab config set build_mode "fast"       # Set build mode default
+  
+  # Basic usage (uses config defaults)
+  zzcollab --fast                             # Fast mode setup
   zzcollab --dotfiles ~/dotfiles              # Include personal dotfiles
-  zzcollab --dotfiles-nodot ~/dotfiles        # Dotfiles without leading dots
+  
+  # Team collaboration  
+  zzcollab -i -t myteam -p study -B rstudio   # Team lead: create images
+  zzcollab -t myteam -p study -I rstudio      # Team member: join project
+  
+  # Traditional usage
   zzcollab --base-image rgt47/r-pluspackages  # Use custom base image
   zzcollab --no-docker                        # Setup without Docker build
 ```

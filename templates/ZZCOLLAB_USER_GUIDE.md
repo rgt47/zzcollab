@@ -2,20 +2,21 @@
 
 ## Table of Contents
 1. [What is ZZCOLLAB?](#what-is-zzcollab)
-2. [Getting Started](#getting-started)
-3. [Installation & Distribution](#installation--distribution)
-4. [Team Collaboration Setup](#team-collaboration-setup)
-5. [Directory Structure](#directory-structure)
-6. [Navigation Shortcuts](#navigation-shortcuts)
-7. [Development Environments](#development-environments)
-8. [Package Management with renv](#package-management-with-renv)
-9. [Docker Environment](#docker-environment)
-10. [Build System with Make](#build-system-with-make)
-11. [GitHub Actions CI/CD](#github-actions-cicd)
-12. [R Interface Functions](#r-interface-functions)
-13. [Team Collaboration Workflows](#team-collaboration-workflows)
-14. [Common Tasks](#common-tasks)
-15. [Troubleshooting](#troubleshooting)
+2. [Configuration System](#configuration-system)
+3. [Getting Started](#getting-started)
+4. [Installation & Distribution](#installation--distribution)
+5. [Team Collaboration Setup](#team-collaboration-setup)
+6. [Directory Structure](#directory-structure)
+7. [Navigation Shortcuts](#navigation-shortcuts)
+8. [Development Environments](#development-environments)
+9. [Package Management with renv](#package-management-with-renv)
+10. [Docker Environment](#docker-environment)
+11. [Build System with Make](#build-system-with-make)
+12. [GitHub Actions CI/CD](#github-actions-cicd)
+13. [R Interface Functions](#r-interface-functions)
+14. [Team Collaboration Workflows](#team-collaboration-workflows)
+15. [Common Tasks](#common-tasks)
+16. [Troubleshooting](#troubleshooting)
 
 ## What is ZZCOLLAB?
 
@@ -37,6 +38,78 @@
 - **Portability**: Works across different computing environments
 - **Docker-first**: No local R installation required
 - **Automated CI/CD**: Professional development workflows
+
+## Configuration System
+
+ZZCOLLAB includes a powerful configuration system to eliminate repetitive typing and set project defaults.
+
+### Configuration Files
+- **User config**: `~/.zzcollab/config.yaml` (your personal defaults)
+- **Project config**: `./zzcollab.yaml` (project-specific overrides)
+- **Priority**: project > user > built-in defaults
+
+### Configuration Commands
+```bash
+zzcollab config init                    # Create default config file
+zzcollab config set team_name "myteam"  # Set a configuration value
+zzcollab config get team_name           # Get a configuration value
+zzcollab config list                    # List all configuration
+zzcollab config validate               # Validate YAML syntax
+```
+
+### One-time Setup
+```bash
+# Initialize configuration
+zzcollab config init
+
+# Set your team defaults
+zzcollab config set team_name "myteam"
+zzcollab config set github_account "myusername"
+zzcollab config set build_mode "standard"
+zzcollab config set dotfiles_dir "~/dotfiles"
+
+# View your configuration
+zzcollab config list
+```
+
+### Customizable Settings
+- **Team settings**: `team_name`, `github_account`
+- **Build settings**: `build_mode`, `dotfiles_dir`, `dotfiles_nodot`
+- **Automation**: `auto_github`, `skip_confirmation`
+- **Custom package lists**: Override default packages for each build mode
+
+### Custom Package Lists
+Edit your config file (`~/.zzcollab/config.yaml`) to customize packages:
+
+```yaml
+build_modes:
+  fast:
+    description: "Quick development setup"
+    docker_packages: [renv, remotes, here, usethis]
+    renv_packages: [renv, here, usethis, devtools, testthat]
+  
+  standard:
+    description: "Balanced research workflow"  
+    docker_packages: [renv, remotes, tidyverse, here, usethis, devtools]
+    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, testthat, palmerpenguins]
+```
+
+### R Interface for Configuration
+```r
+library(zzcollab)
+
+# Configuration management
+init_config()                           # Initialize config file
+set_config("team_name", "myteam")       # Set configuration values
+get_config("team_name")                 # Get configuration values
+list_config()                           # List all configuration
+validate_config()                       # Validate configuration files
+
+# Use config-aware functions
+init_project(project_name = "my-analysis")   # Uses config defaults
+join_project(project_name = "my-analysis")   # Uses config defaults
+setup_project()                              # Uses all defaults from config
+```
 
 ## Getting Started
 
