@@ -25,6 +25,26 @@ require_arg() {
     [[ -n "${2:-}" ]] || { echo "❌ Error: $1 requires an argument" >&2; exit 1; }
 }
 
+# Function: validate_enum
+# Purpose: Validate that a value is one of allowed options
+# Arguments: $1 - flag name, $2 - value, $3 - description, $4+ - valid options
+validate_enum() {
+    local flag="$1"
+    local value="$2"
+    local description="$3"
+    shift 3
+    local valid_options=("$@")
+    
+    for option in "${valid_options[@]}"; do
+        if [[ "$value" == "$option" ]]; then
+            return 0
+        fi
+    done
+    
+    echo "❌ Error: Invalid $description '$value'. Valid options: ${valid_options[*]}" >&2
+    exit 1
+}
+
 #=============================================================================
 # CLI VARIABLE INITIALIZATION
 #=============================================================================
@@ -117,15 +137,8 @@ parse_cli_arguments() {
                 ;;
             --init-base-image|-B)
                 require_arg "$1" "$2"
-                case "$2" in
-                    r-ver|rstudio|verse|all)
-                        INIT_BASE_IMAGE="$2"
-                        ;;
-                    *)
-                        echo "❌ Error: Invalid base image '$2'. Valid options: r-ver, rstudio, verse, all" >&2
-                        exit 1
-                        ;;
-                esac
+                validate_enum "$1" "$2" "base image" "r-ver" "rstudio" "verse" "all"
+                INIT_BASE_IMAGE="$2"
                 shift 2
                 ;;
             --team|-t)
@@ -215,16 +228,9 @@ parse_cli_arguments() {
                 ;;
             --build-variant|-V)
                 require_arg "$1" "$2"
-                case "$2" in
-                    r-ver|rstudio|verse)
-                        BUILD_VARIANT_MODE=true
-                        BUILD_VARIANT="$2"
-                        ;;
-                    *)
-                        echo "❌ Error: Invalid build variant '$2'. Valid options: r-ver, rstudio, verse" >&2
-                        exit 1
-                        ;;
-                esac
+                validate_enum "$1" "$2" "build variant" "r-ver" "rstudio" "verse"
+                BUILD_VARIANT_MODE=true
+                BUILD_VARIANT="$2"
                 shift 2
                 ;;
             --help|-h)

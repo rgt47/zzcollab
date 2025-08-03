@@ -105,11 +105,10 @@ fi
 # MODULE LOADING SYSTEM
 #=============================================================================
 
-# Basic logging before modules are loaded (will be replaced by core.sh functions)
+# Basic logging before modules are loaded
+# Note: Use printf directly until core.sh is loaded to avoid function conflicts
 log_info() { printf "ℹ️  %s\n" "$*" >&2; }
 log_error() { printf "❌ %s\n" "$*" >&2; }
-log_success() { printf "✅ %s\n" "$*" >&2; }
-log_warning() { printf "⚠️  %s\n" "$*" >&2; }
 
 # Validate modules directory exists
 if [[ ! -d "$MODULES_DIR" ]]; then
@@ -118,49 +117,45 @@ if [[ ! -d "$MODULES_DIR" ]]; then
     exit 1
 fi
 
+# Function: load_module
+# Purpose: Unified module loading with consistent error handling
+# Arguments: $1 - module name, $2 - required (true/false), $3 - post-load function (optional)
+load_module() {
+    local module="$1"
+    local required="${2:-true}"
+    local post_load_func="${3:-}"
+    
+    if [[ -f "$MODULES_DIR/${module}.sh" ]]; then
+        log_info "Loading ${module} module..."
+        # shellcheck source=/dev/null
+        source "$MODULES_DIR/${module}.sh"
+        
+        # Run post-load function if specified
+        if [[ -n "$post_load_func" && "$(type -t "$post_load_func")" == "function" ]]; then
+            "$post_load_func"
+        fi
+    else
+        if [[ "$required" == "true" ]]; then
+            log_error "${module^} module not found: $MODULES_DIR/${module}.sh"
+            exit 1
+        else
+            log_info "${module^} module not found - using defaults"
+        fi
+    fi
+}
+
 # Load modules in dependency order
 log_info "Loading all zzcollab modules..."
 
 # Load core module first (required by all others)
-if [[ -f "$MODULES_DIR/core.sh" ]]; then
-    log_info "Loading core module..."
-    # shellcheck source=modules/core.sh
-    source "$MODULES_DIR/core.sh"
-else
-    log_error "Core module not found: $MODULES_DIR/core.sh"
-    exit 1
-fi
+load_module "core" "true"
 
 # Load config module (depends on core, provides defaults for CLI)
-if [[ -f "$MODULES_DIR/config.sh" ]]; then
-    log_info "Loading config module..."
-    # shellcheck source=modules/config.sh
-    source "$MODULES_DIR/config.sh"
-    # Initialize config system and apply defaults
-    init_config_system
-else
-    log_info "Config module not found - using hard-coded defaults"
-fi
+load_module "config" "false" "init_config_system"
 
-# Load templates module (depends on core)
-if [[ -f "$MODULES_DIR/templates.sh" ]]; then
-    log_info "Loading templates module..."
-    # shellcheck source=modules/templates.sh
-    source "$MODULES_DIR/templates.sh"
-else
-    log_error "Templates module not found: $MODULES_DIR/templates.sh"
-    exit 1
-fi
-
-# Load structure module (depends on core)
-if [[ -f "$MODULES_DIR/structure.sh" ]]; then
-    log_info "Loading structure module..."
-    # shellcheck source=modules/structure.sh
-    source "$MODULES_DIR/structure.sh"
-else
-    log_error "Structure module not found: $MODULES_DIR/structure.sh"
-    exit 1
-fi
+# Load essential modules (depends on core)
+load_module "templates" "true"
+load_module "structure" "true"
 
 #=============================================================================
 # PACKAGE NAME VALIDATION (must be done before rpackage module)
@@ -172,7 +167,7 @@ readonly PKG_NAME
 
 # Export variables for template substitution
 USERNAME="${USERNAME:-analyst}"  # Default Docker user
-export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME MINIMAL_PACKAGES EXTRA_PACKAGES MINIMAL_DOCKER EXTRA_DOCKER MINIMAL_PACKAGES_ONLY
+export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME
 
 log_info "Package name determined: $PKG_NAME"
 
@@ -181,14 +176,7 @@ log_info "Package name determined: $PKG_NAME"
 modules_to_load=("utils" "rpackage" "docker" "cicd" "devtools" "team_init" "help")
 
 for module in "${modules_to_load[@]}"; do
-    if [[ -f "$MODULES_DIR/${module}.sh" ]]; then
-        log_info "Loading ${module} module..."
-        # shellcheck source=/dev/null
-        source "$MODULES_DIR/${module}.sh"
-    else
-        log_error "${module^} module not found: $MODULES_DIR/${module}.sh"
-        exit 1
-    fi
+    load_module "$module" "true"
 done
 
 #=============================================================================
@@ -477,14 +465,7 @@ main() {
     create_directory_structure || exit 1
     
     # Load analysis module after directory structure is created
-    if [[ -f "$MODULES_DIR/analysis.sh" ]]; then
-        log_info "Loading analysis module..."
-        # shellcheck source=modules/analysis.sh
-        source "$MODULES_DIR/analysis.sh"
-    else
-        log_error "Analysis module not found: $MODULES_DIR/analysis.sh"
-        exit 1
-    fi
+    load_module "analysis" "true"
     
     log_info "📦 Creating R package files..."
     create_core_files || exit 1

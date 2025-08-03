@@ -422,17 +422,6 @@ initialize_full_project() {
             ;;
     esac
     
-    # Legacy compatibility: Add legacy flags if they were passed to the original command
-    if [[ "${MINIMAL_DOCKER:-}" == "true" ]]; then
-        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --minimal-docker"
-    fi
-    if [[ "${EXTRA_DOCKER:-}" == "true" ]]; then
-        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --extra-docker"
-    fi
-    if [[ "${MINIMAL_PACKAGES_ONLY:-}" == "true" ]]; then
-        ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --minimal-packages"
-    fi
-    
     # Run zzcollab setup (calling main script recursively but without --init)
     eval "$0 $ZZCOLLAB_ARGS"
     print_success "Initialized zzcollab project with custom base image"
