@@ -15,15 +15,7 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: analysis.sh requires core.sh to be loaded first" >&2
-    exit 1
-fi
-
-if [[ "${ZZCOLLAB_TEMPLATES_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: analysis.sh requires templates.sh to be loaded first" >&2
-    exit 1
-fi
+require_module "core" "templates"
 
 #=============================================================================
 # ANALYSIS FILES CREATION (extracted from lines 525-536)

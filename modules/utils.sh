@@ -14,10 +14,7 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: utils.sh requires core.sh to be loaded first" >&2
-    exit 1
-fi
+require_module "core"
 
 #=============================================================================
 # CORE FILE AND DIRECTORY OPERATIONS

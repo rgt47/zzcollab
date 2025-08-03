@@ -12,10 +12,8 @@
 ##############################################################################
 
 # Validate core module is loaded
-if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: templates.sh requires core.sh to be loaded first" >&2
-    exit 1
-fi
+# Validate required modules are loaded
+require_module "core"
 
 #=============================================================================
 # TEMPLATE FILE PROCESSING FUNCTIONS (extracted from lines 250-334)

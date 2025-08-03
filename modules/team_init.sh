@@ -15,10 +15,8 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: team_init.sh requires core.sh to be loaded first" >&2
-    exit 1
-fi
+# Validate required modules are loaded
+require_module "core"
 
 #=============================================================================
 # TEAM INITIALIZATION VALIDATION FUNCTIONS

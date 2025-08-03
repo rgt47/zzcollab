@@ -15,15 +15,7 @@
 ##############################################################################
 
 # Validate required modules are loaded
-if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: cicd.sh requires core.sh to be loaded first" >&2
-    exit 1
-fi
-
-if [[ "${ZZCOLLAB_TEMPLATES_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: cicd.sh requires templates.sh to be loaded first" >&2
-    exit 1
-fi
+require_module "core" "templates"
 
 #=============================================================================
 # GITHUB ACTIONS WORKFLOWS CREATION (extracted from lines 538-549)

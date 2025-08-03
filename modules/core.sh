@@ -345,6 +345,24 @@ validate_with_callback() {
 # LEGACY COMPATIBILITY FUNCTIONS (for team_init.sh)
 #=============================================================================
 
+# Function: require_module
+# Purpose: Validate that required modules are loaded, with standardized error handling
+# Arguments: $1+ - module names to check (e.g., "core", "templates")
+# Usage: require_module "core" "templates"
+# Note: This replaces the repeated validation patterns across all modules
+require_module() {
+    local current_module="${BASH_SOURCE[2]##*/}"  # Get calling module name
+    current_module="${current_module%.sh}"
+    
+    for module in "$@"; do
+        local module_var="ZZCOLLAB_${module^^}_LOADED"
+        if [[ "${!module_var:-}" != "true" ]]; then
+            echo "❌ Error: ${current_module}.sh requires ${module}.sh to be loaded first" >&2
+            exit 1
+        fi
+    done
+}
+
 # Function: print_error
 # Purpose: Legacy alias for log_error (used by team_init.sh)
 print_error() {

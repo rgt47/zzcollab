@@ -14,10 +14,8 @@
 ##############################################################################
 
 # Validate core module is loaded
-if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
-    echo "❌ Error: structure.sh requires core.sh to be loaded first" >&2
-    exit 1
-fi
+# Validate required modules are loaded
+require_module "core"
 
 #=============================================================================
 # MANIFEST TRACKING FUNCTIONS
