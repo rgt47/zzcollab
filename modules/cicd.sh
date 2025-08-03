@@ -57,8 +57,7 @@ create_github_workflows() {
     # Ensure .github/workflows directory exists
     # This directory is the standard location for GitHub Actions workflows
     local workflows_dir=".github/workflows"
-    if ! mkdir -p "$workflows_dir"; then
-        log_error "Failed to create workflows directory: $workflows_dir"
+    if ! safe_mkdir "$workflows_dir" "GitHub workflows directory"; then
         return 1
     fi
     
@@ -172,7 +171,7 @@ Add any other context about the pull request here.'
     
     # Create issue templates directory
     local issue_templates_dir=".github/ISSUE_TEMPLATE"
-    mkdir -p "$issue_templates_dir"
+    safe_mkdir "$issue_templates_dir" "GitHub issue templates directory"
     
     # Bug report template
     local bug_template='---

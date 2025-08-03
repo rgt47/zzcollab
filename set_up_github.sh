@@ -5,7 +5,7 @@
 echo "Setting up GitHub repository..."
 
 # Initialize git if not already done
-if [ ! -d ".git" ]; then
+if [[ ! -d ".git" ]]; then
     echo "Initializing git repository..."
     git init
 fi
@@ -34,7 +34,7 @@ fi
 while true; do
     read -p "Enter GitHub username to invite as collaborator (or press Enter to skip): " username
     
-    if [ -z "$username" ]; then
+    if [[ -z "$username" ]]; then
         echo "Skipping collaborator invitation."
         break
     fi

@@ -87,8 +87,7 @@ create_core_files() {
         description_template=$(get_description_template)
         log_warning "Config module not available, using template fallback: $description_template"
         
-        if install_template "$description_template" "DESCRIPTION" "DESCRIPTION file" "Created DESCRIPTION file from template"; then
-        else
+        if ! install_template "$description_template" "DESCRIPTION" "DESCRIPTION file" "Created DESCRIPTION file from template"; then
             log_error "Failed to create DESCRIPTION file"
             return 1
         fi
@@ -96,8 +95,7 @@ create_core_files() {
 
     # .Rbuildignore file - Specifies files to exclude from R package build
     # Essential for excluding symbolic links and development files
-    if install_template ".Rbuildignore" ".Rbuildignore" ".Rbuildignore file" "Created .Rbuildignore file with exclusion patterns"; then
-    else
+    if ! install_template ".Rbuildignore" ".Rbuildignore" ".Rbuildignore file" "Created .Rbuildignore file with exclusion patterns"; then
         log_error "Failed to create .Rbuildignore file"
         return 1
     fi
@@ -130,8 +128,7 @@ See https://www.gnu.org/licenses/gpl-3.0.en.html for details."
 
     # Copy R utility functions from template
     # Template contains example functions and proper roxygen2 documentation
-    if install_template "R/utils.R" "R/utils.R" "R utility functions" "Created R utility functions from template"; then
-    else
+    if ! install_template "R/utils.R" "R/utils.R" "R utility functions" "Created R utility functions from template"; then
         log_error "Failed to create R utility functions"
         return 1
     fi
@@ -172,7 +169,7 @@ PackageInstallArgs: --no-multiarch --with-keep.source"
     
     # Main test runner file
     # Ensures tests directory exists (should already exist from structure module)
-    mkdir -p "tests"
+    safe_mkdir "tests" "tests directory"
     local testthat_runner="library(testthat)
 library($pkg_name)
 
@@ -188,7 +185,7 @@ test_check(\"$pkg_name\")"
 
     # Basic test file for utility functions
     # Ensures tests/testthat directory exists (should already exist from structure module)
-    mkdir -p "tests/testthat"
+    safe_mkdir "tests/testthat" "testthat directory"
     local test_utils="test_that(\"package loads correctly\", {
   expect_true(TRUE)
 })"
@@ -202,17 +199,14 @@ test_check(\"$pkg_name\")"
     fi
     
     # Create integration tests directory and copy template integration tests
-    mkdir -p "tests/integration"
+    safe_mkdir "tests/integration" "integration tests directory"
     
-    # Copy integration test templates
-    if install_template "tests/integration/test-data-pipeline.R" "tests/integration/test-data-pipeline.R" "data pipeline integration tests" "Created data pipeline integration tests"; then
-    fi
+    # Copy integration test templates (optional)
+    install_template "tests/integration/test-data-pipeline.R" "tests/integration/test-data-pipeline.R" "data pipeline integration tests" "Created data pipeline integration tests" || true
     
-    if install_template "tests/integration/test-analysis-scripts.R" "tests/integration/test-analysis-scripts.R" "analysis script integration tests" "Created analysis script integration tests"; then
-    fi
+    install_template "tests/integration/test-analysis-scripts.R" "tests/integration/test-analysis-scripts.R" "analysis script integration tests" "Created analysis script integration tests" || true
     
-    if install_template "tests/integration/test-report-rendering.R" "tests/integration/test-report-rendering.R" "report rendering integration tests" "Created report rendering integration tests"; then
-    fi
+    install_template "tests/integration/test-report-rendering.R" "tests/integration/test-report-rendering.R" "report rendering integration tests" "Created report rendering integration tests" || true
     
     log_success "R package core files created successfully"
 }

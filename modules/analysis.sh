@@ -56,24 +56,21 @@ create_analysis_files() {
     
     # Create research report template from R Markdown template
     # Template includes: YAML header, author info, bibliography setup, standard sections
-    if install_template "report.Rmd" "analysis/report/report.Rmd" "Research report template" "Created research report template with academic structure"; then
-    else
+    if ! install_template "report.Rmd" "analysis/report/report.Rmd" "Research report template" "Created research report template with academic structure"; then
         log_error "Failed to create research report template"
         return 1
     fi
     
     # Create bibliography file for citations and references
     # BibTeX format for academic reference management
-    if install_template "references.bib" "analysis/report/references.bib" "references.bib file" "Created bibliography file for citation management"; then
-    else
+    if ! install_template "references.bib" "analysis/report/references.bib" "references.bib file" "Created bibliography file for citation management"; then
         log_error "Failed to create bibliography file"
         return 1
     fi
     
     # Create citation style file for academic journals
     # CSL (Citation Style Language) file for formatting citations
-    if install_template "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
-    else
+    if ! install_template "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
         log_warn "Citation style file not found - citations will use default format"
     fi
     
@@ -306,7 +303,7 @@ create_scripts_directory() {
     log_info "Creating essential research scripts..."
     
     # Ensure scripts directory exists
-    mkdir -p "scripts"
+    safe_mkdir "scripts" "research scripts directory"
     
     # 1. Data validation script
     local data_validation_script='# Data Validation Script

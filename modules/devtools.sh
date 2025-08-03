@@ -338,7 +338,7 @@ create_development_scripts() {
 # Development Helper Script
 # Common tasks for R package development
 
-set -e
+set -euo pipefail
 
 # Logging functions are provided by core.sh
 
@@ -347,7 +347,7 @@ dev_setup() {
     log_info "Setting up development environment..."
     
     # Load renv if available
-    if [ -f "renv/activate.R" ]; then
+    if [[ -f "renv/activate.R" ]]; then
         log_info "Activating renv..."
         Rscript -e "source('\''renv/activate.R'\'')"
     fi
@@ -386,7 +386,7 @@ dev_test() {
 dev_render() {
     log_info "Rendering research report..."
     
-    if [ -f "analysis/report/report.Rmd" ]; then
+    if [[ -f "analysis/report/report.Rmd" ]]; then
         Rscript -e "rmarkdown::render('\''analysis/report/report.Rmd'\'')" || log_error "Report rendering failed"
         log_info "Report rendered successfully!"
     else
