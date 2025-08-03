@@ -459,4 +459,3 @@ if [[ -z "${BASE_IMAGE:-}" ]]; then
 fi
 
 
-log_info "Docker module loaded successfully"

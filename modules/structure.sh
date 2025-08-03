@@ -281,4 +281,3 @@ if [[ -z "${MANIFEST_TXT:-}" ]]; then
 fi
 
 
-log_info "Structure module loaded successfully"

@@ -431,4 +431,3 @@ if [[ -n "${DOTFILES_DIR:-}" ]] && [[ ! -d "${DOTFILES_DIR}" ]]; then
 fi
 
 
-log_info "Development tools module loaded successfully"

@@ -119,4 +119,3 @@ is_git_repo() {
 # MODULE VALIDATION
 #=============================================================================
 
-log_info "Utilities module (simplified) loaded successfully"

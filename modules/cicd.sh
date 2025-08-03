@@ -378,4 +378,3 @@ if [[ ! -d ".github" ]] && ! mkdir -p ".github/workflows"; then
 fi
 
 
-log_info "CI/CD module loaded successfully"

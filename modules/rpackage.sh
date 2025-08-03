@@ -370,4 +370,3 @@ if [[ -z "${PKG_NAME:-}" ]]; then
 fi
 
 
-log_info "R package module loaded successfully"

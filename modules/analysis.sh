@@ -903,4 +903,3 @@ if [[ ! -d "analysis/figures" ]]; then
 fi
 
 
-log_info "Analysis module loaded successfully"

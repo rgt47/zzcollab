@@ -647,4 +647,3 @@ EOF
 #=============================================================================
 
 
-log_info "Team initialization module loaded successfully"

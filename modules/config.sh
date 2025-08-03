@@ -633,4 +633,3 @@ EOF
 # Set config module loaded flag
 readonly ZZCOLLAB_CONFIG_LOADED=true
 
-log_info "Configuration module loaded successfully"
