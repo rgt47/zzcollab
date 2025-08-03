@@ -46,6 +46,13 @@ require_module "core" "templates"
 create_analysis_files() {
     log_info "Creating analysis and paper files..."
     
+    # Ensure analysis directories exist (self-contained module)
+    safe_mkdir "analysis" "analysis directory"
+    safe_mkdir "analysis/report" "analysis report directory"
+    safe_mkdir "analysis/figures" "analysis figures directory"
+    safe_mkdir "analysis/tables" "analysis tables directory"
+    safe_mkdir "analysis/templates" "analysis templates directory"
+    
     # Create research report template from R Markdown template
     # Template includes: YAML header, author info, bibliography setup, standard sections
     if ! install_template "report.Rmd" "analysis/report/report.Rmd" "Research report template" "Created research report template with academic structure"; then
@@ -892,14 +899,7 @@ cat("5. Check test coverage with covr package\\n")'
 # ANALYSIS MODULE VALIDATION
 #=============================================================================
 
-# Validate that required directories exist for analysis files
-# These should be created by the structure module
-if [[ ! -d "analysis/report" ]]; then
-    log_warn "analysis/report directory not found - may need to run structure module first"
-fi
-
-if [[ ! -d "analysis/figures" ]]; then
-    log_warn "analysis/figures directory not found - may need to run structure module first"
-fi
+# Set analysis module loaded flag
+readonly ZZCOLLAB_ANALYSIS_LOADED=true
 
 

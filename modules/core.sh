@@ -22,6 +22,9 @@ readonly AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-rgthomas@ucsd.edu}"
 readonly AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-UCSD}"
 readonly AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-University of California, San Diego}"
 
+# Cache command availability checks for performance optimization
+readonly JQ_AVAILABLE=$(command -v jq >/dev/null 2>&1 && echo "true" || echo "false")
+
 #=============================================================================
 # LOGGING AND OUTPUT FUNCTIONS (extracted from lines 219-248)
 #=============================================================================
@@ -178,7 +181,7 @@ track_item() {
     
     case "$type" in
         directory)
-            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
                 local tmp
                 tmp=$(mktemp)
                 jq --arg dir "$data1" '.directories += [$dir]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
@@ -187,7 +190,7 @@ track_item() {
             fi
             ;;
         file)
-            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
                 local tmp
                 tmp=$(mktemp)
                 jq --arg file "$data1" '.files += [$file]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
@@ -196,7 +199,7 @@ track_item() {
             fi
             ;;
         template)
-            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
                 local tmp
                 tmp=$(mktemp)
                 jq --arg template "$data1" --arg dest "$data2" '.template_files += [{"template": $template, "destination": $dest}]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
@@ -205,7 +208,7 @@ track_item() {
             fi
             ;;
         symlink)
-            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
                 local tmp
                 tmp=$(mktemp)
                 jq --arg link "$data1" --arg target "$data2" '.symlinks += [{"link": $link, "target": $target}]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
@@ -214,7 +217,7 @@ track_item() {
             fi
             ;;
         dotfile)
-            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
                 local tmp
                 tmp=$(mktemp)
                 jq --arg dotfile "$data1" '.dotfiles += [$dotfile]' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"
@@ -223,7 +226,7 @@ track_item() {
             fi
             ;;
         docker_image)
-            if command -v jq >/dev/null 2>&1 && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
                 local tmp
                 tmp=$(mktemp)
                 jq --arg image "$data1" '.docker_image = $image' "$MANIFEST_FILE" > "$tmp" && mv "$tmp" "$MANIFEST_FILE"

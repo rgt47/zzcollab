@@ -24,6 +24,14 @@ require_module "core"
 # Function: show_help
 # Purpose: Display comprehensive help for main zzcollab usage
 show_help() {
+    show_help_header
+    show_help_examples  
+    show_help_config
+    show_help_footer
+}
+
+# Original large function preserved for reference (can be removed later)
+_original_show_help() {
     cat << EOF
 $0 - Complete Research Compendium Setup (Modular Implementation)
 
@@ -290,6 +298,134 @@ After running the modular setup script, here's how to get started:
    Run './zzcollab-uninstall.sh' to remove everything cleanly
 
 Happy researching! 🎉
+EOF
+}
+
+#=============================================================================
+# HELPER FUNCTIONS FOR MODULAR HELP DISPLAY
+#=============================================================================
+
+# Function: show_help_header
+# Purpose: Display main usage and options section
+show_help_header() {
+    cat << EOF
+\$0 - Complete Research Compendium Setup (Modular Implementation)
+
+Creates a comprehensive research compendium with R package structure, Docker integration,
+analysis templates, and reproducible workflows.
+
+USAGE:
+    \$0 [OPTIONS]
+
+OPTIONS:
+    Team initialization (Developer 1 - Team Lead):
+    -i, --init                   Initialize new team project with Docker images and GitHub repo
+    -t, --team-name NAME         Team name (Docker Hub organization) [required with --init]
+    -p, --project-name NAME      Project name [required with --init]
+    -g, --github-account NAME    GitHub account (default: same as team-name)
+    -B, --init-base-image TYPE   Base image for team setup: r-ver, rstudio, verse, all (default: all - builds all 3)
+    
+    Team collaboration (Developer 2+ - Team Members):
+    -t, --team NAME              Team name (Docker Hub organization)
+    -p, --project-name NAME      Project name  
+    -I, --interface TYPE         Interface type: shell, rstudio, verse
+    
+    Common options:
+    -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
+    -D, --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
+    
+    Advanced options:
+    -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
+    -n, --no-docker              Skip Docker image build during setup
+    -V, --build-variant TYPE     Build additional team image variant: r-ver, rstudio, verse
+    -G, --github                 Automatically create private GitHub repository and push
+        --next-steps             Show development workflow and next steps
+    
+    Simplified build modes:
+    -F, --fast                   Fast mode: minimal Docker (8 packages)
+    -S, --standard               Standard mode: balanced packages (15 packages) [default]
+    -C, --comprehensive          Comprehensive mode: full ecosystem (27+ packages)
+    
+    Utilities:
+    -h, --help                   Show this help message
+        --help-init              Show team initialization help specifically
+        --config CMD             Configuration management (get, set, list, reset)
+EOF
+}
+
+# Function: show_help_examples  
+# Purpose: Display usage examples section
+show_help_examples() {
+    cat << EOF
+    
+EXAMPLES:
+    Team Lead - Create new team project (runs once per team):
+    \$0 -i -t rgt47 -p research-study -d ~/dotfiles         # Team init with all 3 image variants
+    # Alternative: Create directory first, then run in it (project name auto-detected)
+    mkdir png1 && cd png1 && \$0 -i -t rgt47 -d ~/dotfiles
+    
+    # NEW: Initialize with specific base image only
+    \$0 -i -t rgt47 -p study -B r-ver -d ~/dotfiles                         # Build only shell variant
+    \$0 -i -t rgt47 -p study -B rstudio -d ~/dotfiles                       # Build only RStudio variant  
+    \$0 -i -t rgt47 -p study -B verse -d ~/dotfiles                         # Build only verse variant
+    
+    # Team Members - Join existing project (Developer 2+)
+    \$0 -t rgt47 -p research-study -I shell -d ~/dotfiles
+    \$0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+    \$0 -t rgt47 -p research-study -I verse -d ~/dotfiles                   # Use verse for publishing
+    
+    # Advanced usage with custom base images
+    \$0 -b rocker/tidyverse -d ~/dotfiles
+    \$0 --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
+    
+    # Basic setup for standalone projects
+    \$0 -d ~/dotfiles                                # Basic setup with dotfiles
+    \$0 -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
+    
+    # NEW: Simplified build modes (recommended)
+    \$0 -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages
+    \$0 -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
+    \$0 -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
+    \$0 -n                                                          # Setup without Docker build
+    
+    # Build additional team image variants after initialization
+    \$0 -V rstudio                                                 # Build RStudio variant after r-ver-only init
+    \$0 -V verse                                                   # Build verse variant
+EOF
+}
+
+# Function: show_help_config
+# Purpose: Display configuration system section  
+show_help_config() {
+    cat << EOF
+    
+CONFIGURATION SYSTEM:
+    zzcollab supports configuration files for common settings.
+    
+    \$0 --config get team-name                       # Get current team name
+    \$0 --config set team-name mylab                 # Set default team name
+    \$0 --config set build-mode fast                 # Set default build mode
+    \$0 --config list                                # Show all current settings
+    \$0 --config reset                               # Reset to defaults
+    
+    Configuration files:
+    - User-level: ~/.config/zzcollab/config.yaml
+    - Team-level: .zzcollab/config.yaml (if present)
+    
+    Settings: team-name, github-account, build-mode, dotfiles-dir, 
+              dotfiles-nodot, auto-github, skip-confirmation
+EOF
+}
+
+# Function: show_help_footer
+# Purpose: Display footer with additional resources
+show_help_footer() {
+    cat << EOF
+
+For more specific help with team initialization, run: \$0 --help-init
+For development workflow guidance, run: \$0 --next-steps
+
+Project website: https://github.com/rgt47/zzcollab
 EOF
 }
 

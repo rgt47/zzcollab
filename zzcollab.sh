@@ -172,8 +172,7 @@ export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL 
 log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
-# Note: analysis module is loaded later after directory structure is created
-modules_to_load=("utils" "rpackage" "docker" "cicd" "devtools" "team_init" "help" "github")
+modules_to_load=("utils" "rpackage" "docker" "analysis" "cicd" "devtools" "team_init" "help" "github")
 
 for module in "${modules_to_load[@]}"; do
     load_module "$module" "true"
@@ -195,7 +194,7 @@ done
 #=============================================================================
 
 init_manifest() {
-    if command -v jq >/dev/null 2>&1; then
+    if [[ "$JQ_AVAILABLE" == "true" ]]; then
         cat > "$MANIFEST_FILE" <<EOF
 {
   "version": "1.0",
@@ -381,9 +380,6 @@ execute_project_creation_workflow() {
     # Execute setup in same order as original zzcollab.sh
     log_info "📁 Creating project structure..."
     create_directory_structure || exit 1
-    
-    # Load analysis module after directory structure is created
-    load_module "analysis" "true"
     
     log_info "📦 Creating R package files..."
     create_core_files || exit 1
