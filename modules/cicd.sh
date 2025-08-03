@@ -81,9 +81,7 @@ create_github_workflows() {
             ;;
     esac
     
-    if copy_template_file "$workflow_template" ".github/workflows/r-package.yml" "R package check workflow"; then
-        track_template_file "$workflow_template" ".github/workflows/r-package.yml"
-        log_info "Created $workflow_description"
+    if install_template "$workflow_template" ".github/workflows/r-package.yml" "R package check workflow" "Created $workflow_description"; then
         log_info "  - Triggers: push/PR to main branch"
         case "$BUILD_MODE" in
             fast)
@@ -105,9 +103,7 @@ create_github_workflows() {
     # Create paper rendering workflow
     # Automatically renders research paper when analysis files change
     # Uploads rendered PDFs as artifacts for easy access
-    if copy_template_file "workflows/render-report.yml" ".github/workflows/render-report.yml" "Report rendering workflow"; then
-        track_template_file "workflows/render-report.yml" ".github/workflows/render-report.yml"
-        log_info "Created automated report rendering workflow"
+    if install_template "workflows/render-report.yml" ".github/workflows/render-report.yml" "Report rendering workflow" "Created automated report rendering workflow"; then
         log_info "  - Triggers: changes to analysis/report/, R/ directories"
         log_info "  - Actions: render report.Rmd to PDF, upload artifacts"
         log_info "  - Output: downloadable PDF from GitHub Actions tab"

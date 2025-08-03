@@ -87,9 +87,7 @@ create_core_files() {
         description_template=$(get_description_template)
         log_warning "Config module not available, using template fallback: $description_template"
         
-        if copy_template_file "$description_template" "DESCRIPTION" "DESCRIPTION file"; then
-            track_template_file "$description_template" "DESCRIPTION"
-            log_info "Created DESCRIPTION file from template"
+        if install_template "$description_template" "DESCRIPTION" "DESCRIPTION file" "Created DESCRIPTION file from template"; then
         else
             log_error "Failed to create DESCRIPTION file"
             return 1
@@ -98,9 +96,7 @@ create_core_files() {
 
     # .Rbuildignore file - Specifies files to exclude from R package build
     # Essential for excluding symbolic links and development files
-    if copy_template_file ".Rbuildignore" ".Rbuildignore" ".Rbuildignore file"; then
-        track_template_file ".Rbuildignore" ".Rbuildignore"
-        log_info "Created .Rbuildignore file with exclusion patterns"
+    if install_template ".Rbuildignore" ".Rbuildignore" ".Rbuildignore file" "Created .Rbuildignore file with exclusion patterns"; then
     else
         log_error "Failed to create .Rbuildignore file"
         return 1
@@ -134,9 +130,7 @@ See https://www.gnu.org/licenses/gpl-3.0.en.html for details."
 
     # Copy R utility functions from template
     # Template contains example functions and proper roxygen2 documentation
-    if copy_template_file "R/utils.R" "R/utils.R" "R utility functions"; then
-        track_template_file "R/utils.R" "R/utils.R"
-        log_info "Created R utility functions from template"
+    if install_template "R/utils.R" "R/utils.R" "R utility functions" "Created R utility functions from template"; then
     else
         log_error "Failed to create R utility functions"
         return 1
@@ -211,19 +205,13 @@ test_check(\"$pkg_name\")"
     mkdir -p "tests/integration"
     
     # Copy integration test templates
-    if copy_template_file "tests/integration/test-data-pipeline.R" "tests/integration/test-data-pipeline.R" "data pipeline integration tests"; then
-        track_file "tests/integration/test-data-pipeline.R"
-        log_info "Created data pipeline integration tests"
+    if install_template "tests/integration/test-data-pipeline.R" "tests/integration/test-data-pipeline.R" "data pipeline integration tests" "Created data pipeline integration tests"; then
     fi
     
-    if copy_template_file "tests/integration/test-analysis-scripts.R" "tests/integration/test-analysis-scripts.R" "analysis script integration tests"; then
-        track_file "tests/integration/test-analysis-scripts.R"
-        log_info "Created analysis script integration tests"
+    if install_template "tests/integration/test-analysis-scripts.R" "tests/integration/test-analysis-scripts.R" "analysis script integration tests" "Created analysis script integration tests"; then
     fi
     
-    if copy_template_file "tests/integration/test-report-rendering.R" "tests/integration/test-report-rendering.R" "report rendering integration tests"; then
-        track_file "tests/integration/test-report-rendering.R"
-        log_info "Created report rendering integration tests"
+    if install_template "tests/integration/test-report-rendering.R" "tests/integration/test-report-rendering.R" "report rendering integration tests" "Created report rendering integration tests"; then
     fi
     
     log_success "R package core files created successfully"

@@ -173,7 +173,7 @@ log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
 # Note: analysis module is loaded later after directory structure is created
-modules_to_load=("utils" "rpackage" "docker" "cicd" "devtools" "team_init" "help")
+modules_to_load=("utils" "rpackage" "docker" "cicd" "devtools" "team_init" "help" "github")
 
 for module in "${modules_to_load[@]}"; do
     load_module "$module" "true"
@@ -188,99 +188,7 @@ done
 # - show_init_help() 
 # - show_next_steps()
 
-#=============================================================================
-# GITHUB REPOSITORY CREATION
-#=============================================================================
-
-# Function: create_github_repository_workflow
-# Purpose: Create GitHub repository and push project
-create_github_repository_workflow() {
-    # Validate prerequisites
-    if ! command -v gh >/dev/null 2>&1; then
-        log_error "GitHub CLI (gh) is not installed. Please install it:"
-        log_error "  brew install gh  (macOS) or see https://cli.github.com/"
-        return 1
-    fi
-    
-    if ! gh auth status >/dev/null 2>&1; then
-        log_error "GitHub CLI is not authenticated. Please run: gh auth login"
-        return 1
-    fi
-    
-    # Set GitHub account (use team name if not specified)
-    local github_account="${GITHUB_ACCOUNT:-$TEAM_NAME}"
-    if [[ -z "$github_account" ]]; then
-        log_error "GitHub account not specified. Use --github-account or --team flag"
-        return 1
-    fi
-    
-    # Determine project name (use current directory if not specified)
-    local project_name="${PROJECT_NAME:-$(basename "$(pwd)")}"
-    
-    log_info "Creating GitHub repository: ${github_account}/${project_name}"
-    
-    # Check if repository already exists
-    if gh repo view "${github_account}/${project_name}" >/dev/null 2>&1; then
-        log_error "Repository ${github_account}/${project_name} already exists on GitHub!"
-        log_info "Options:"
-        log_info "  1. Delete existing: gh repo delete ${github_account}/${project_name} --confirm"
-        log_info "  2. Use different name: --project-name NEW_NAME"
-        log_info "  3. Push manually: git remote add origin https://github.com/${github_account}/${project_name}.git"
-        return 1
-    fi
-    
-    # Initialize git if not already done
-    if [[ ! -d ".git" ]]; then
-        log_info "Initializing git repository..."
-        git init
-    fi
-    
-    # Stage and commit all files
-    log_info "Staging and committing project files..."
-    git add .
-    if git diff --staged --quiet; then
-        log_info "No changes to commit"
-    else
-        git commit -m "🎉 Initial zzcollab project setup
-
-- Complete research compendium structure
-- Docker containerization ready
-- CI/CD workflows configured
-- Private repository for collaborative development
-
-🤖 Generated with [zzcollab](https://github.com/rgt47/zzcollab) --github
-
-Co-Authored-By: zzcollab <noreply@zzcollab.dev>"
-    fi
-    
-    # Create private GitHub repository
-    log_info "Creating private repository on GitHub..."
-    gh repo create "${github_account}/${project_name}" \
-        --private \
-        --description "Research compendium for ${project_name} project" \
-        --clone=false
-    
-    # Add remote and push
-    log_info "Adding remote and pushing to GitHub..."
-    git remote add origin "https://github.com/${github_account}/${project_name}.git"
-    git branch -M main
-    git push -u origin main
-    
-    log_success "✅ GitHub repository created: https://github.com/${github_account}/${project_name}"
-    log_info ""
-    log_info "🎉 Team collaboration ready!"
-    log_info ""
-    log_info "Team members can now join with:"
-    log_info "  git clone https://github.com/${github_account}/${project_name}.git"
-    log_info "  cd ${project_name}"
-    if [[ -n "$TEAM_NAME" ]]; then
-        log_info "  zzcollab -t ${TEAM_NAME} -p ${project_name} -I shell -d ~/dotfiles"
-    else
-        log_info "  zzcollab -d ~/dotfiles"
-    fi
-    
-    return 0
-}
+# GitHub functions now in modules/github.sh
 
 #=============================================================================
 # MANIFEST INITIALIZATION
@@ -396,10 +304,12 @@ validate_directory_for_setup() {
 }
 
 #=============================================================================
-# MAIN EXECUTION FUNCTION (identical workflow to original zzcollab.sh)
+# MAIN EXECUTION HELPER FUNCTIONS
 #=============================================================================
 
-main() {
+# Function: handle_special_modes
+# Purpose: Handle init, build variant, help modes that exit early
+handle_special_modes() {
     # Handle initialization mode first
     if [[ "$INIT_MODE" == "true" ]]; then
         # Handle help for init mode
@@ -441,7 +351,11 @@ main() {
         build_additional_variant "$BUILD_VARIANT"
         exit 0
     fi
-    
+}
+
+# Function: validate_and_setup_environment
+# Purpose: Validate prerequisites and setup environment
+validate_and_setup_environment() {
     log_info "🚀 Starting modular rrtools project setup..."
     log_info "📦 Package name: '$PKG_NAME'"
     log_info "🔧 All modules loaded successfully"
@@ -459,7 +373,11 @@ main() {
     
     # Initialize manifest tracking
     init_manifest
-    
+}
+
+# Function: execute_project_creation_workflow
+# Purpose: Execute the main project creation steps
+execute_project_creation_workflow() {
     # Execute setup in same order as original zzcollab.sh
     log_info "📁 Creating project structure..."
     create_directory_structure || exit 1
@@ -491,7 +409,11 @@ main() {
     
     log_info "🔗 Creating navigation scripts..."
     create_navigation_scripts || exit 1
-    
+}
+
+# Function: finalize_and_report_results  
+# Purpose: Complete setup with Docker build, renv, GitHub, and reporting
+finalize_and_report_results() {
     # Extract R version for Docker build
     log_info "🔍 Detecting R version..."
     R_VERSION=$(extract_r_version_from_lockfile)
@@ -564,6 +486,17 @@ main() {
     log_info "🆘 Run './zzcollab-uninstall.sh' if you need to remove created files"
     log_info "📖 See ZZCOLLAB_USER_GUIDE.md for comprehensive documentation"
     echo ""
+}
+
+#=============================================================================
+# MAIN EXECUTION FUNCTION (refactored for clarity)
+#=============================================================================
+
+main() {
+    handle_special_modes
+    validate_and_setup_environment
+    execute_project_creation_workflow
+    finalize_and_report_results
 }
 
 # Only run main if script is executed directly (not sourced)

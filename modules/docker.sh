@@ -229,30 +229,21 @@ create_docker_files() {
     esac
     
     # Contains: R environment, system dependencies, development tools, project setup
-    if copy_template_file "$dockerfile_template" "Dockerfile" "Dockerfile"; then
-        track_template_file "$dockerfile_template" "Dockerfile"
-        log_info "Created Dockerfile from $dockerfile_template with R version $r_version"
-    else
+    if ! install_template "$dockerfile_template" "Dockerfile" "Dockerfile" "Created Dockerfile from $dockerfile_template with R version $r_version"; then
         log_error "Failed to create Dockerfile"
         return 1
     fi
     
     # Create docker-compose.yml from template
     # Defines: rstudio service, development services, volume mounts, networking
-    if copy_template_file "docker-compose.yml" "docker-compose.yml" "Docker Compose configuration"; then
-        track_template_file "docker-compose.yml" "docker-compose.yml" 
-        log_info "Created Docker Compose configuration"
-    else
+    if ! install_template "docker-compose.yml" "docker-compose.yml" "Docker Compose configuration" "Created Docker Compose configuration"; then
         log_error "Failed to create docker-compose.yml"
         return 1
     fi
     
     # Create .zshrc_docker for container shell configuration
     # Provides: custom prompt, aliases, development tools setup in container
-    if copy_template_file ".zshrc_docker" ".zshrc_docker" "zsh configuration for Docker container"; then
-        track_template_file ".zshrc_docker" ".zshrc_docker"
-        log_info "Created container shell configuration"
-    else
+    if ! install_template ".zshrc_docker" ".zshrc_docker" "zsh configuration for Docker container" "Created container shell configuration"; then
         log_error "Failed to create .zshrc_docker"
         return 1
     fi
@@ -260,20 +251,14 @@ create_docker_files() {
     # Create renv validation script
     # Used by: CI/CD workflows, development workflow validation
     # Purpose: Ensures package dependencies are properly synchronized
-    if copy_template_file "check_renv_for_commit.R" "check_renv_for_commit.R" "renv validation script"; then
-        track_template_file "check_renv_for_commit.R" "check_renv_for_commit.R"
-        log_info "Created renv validation script"
-    else
+    if ! install_template "check_renv_for_commit.R" "check_renv_for_commit.R" "renv validation script" "Created renv validation script"; then
         log_error "Failed to create renv validation script"
         return 1
     fi
     
     # Create comprehensive user guide
     # Contains: detailed usage instructions, troubleshooting, best practices
-    if copy_template_file "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide"; then
-        track_template_file "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md"
-        log_info "Created comprehensive user guide"
-    else
+    if ! install_template "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide" "Created comprehensive user guide"; then
         log_error "Failed to create user guide"
         return 1
     fi
