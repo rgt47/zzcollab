@@ -28,10 +28,29 @@ require_module "core" "templates"
 # MULTI-ARCHITECTURE SUPPORT FUNCTIONS
 #=============================================================================
 
-# Function: get_multiarch_base_image
-# Purpose: Select appropriate base image based on architecture and requirements
-# Arguments: $1 - requested variant (r-ver, rstudio, verse, etc.)
-# Returns: Multi-architecture compatible base image name
+##############################################################################
+# FUNCTION: get_multiarch_base_image
+# PURPOSE:  Select appropriate Docker base image based on architecture and requirements
+# USAGE:    get_multiarch_base_image "variant_name"
+# ARGS:     
+#   $1 - requested_variant: Docker image variant (r-ver, rstudio, verse, tidyverse)
+# RETURNS:  
+#   0 - Always succeeds, outputs multi-architecture compatible base image name
+# GLOBALS:  
+#   READ:  MULTIARCH_VERSE_IMAGE (custom ARM64 verse alternative)
+#   WRITE: None (outputs to stdout)
+# DESCRIPTION:
+#   This function handles the complexity of Docker image architecture compatibility.
+#   Some rocker images (verse, tidyverse) only support AMD64, while others (r-ver, rstudio)
+#   support both AMD64 and ARM64. This function automatically selects the appropriate
+#   image based on the requested variant and current system architecture.
+# ARCHITECTURE SUPPORT:
+#   ✅ Multi-arch: rocker/r-ver, rocker/rstudio
+#   ❌ AMD64 only: rocker/verse, rocker/tidyverse, rocker/geospatial, rocker/shiny
+# EXAMPLE:
+#   base_image=$(get_multiarch_base_image "rstudio")
+#   echo "Selected: $base_image"
+##############################################################################
 get_multiarch_base_image() {
     local requested_variant="$1"
     local architecture="$(uname -m)"
@@ -72,10 +91,30 @@ get_multiarch_base_image() {
     esac
 }
 
-# Function: get_docker_platform_args
-# Purpose: Get platform arguments for Docker build/run commands
-# Arguments: $1 - base image name (optional)
-# Returns: Platform arguments for Docker commands
+##############################################################################
+# FUNCTION: get_docker_platform_args
+# PURPOSE:  Generate Docker platform arguments for cross-architecture compatibility
+# USAGE:    get_docker_platform_args [base_image_name]
+# ARGS:     
+#   $1 - base_image: Optional Docker base image name for compatibility checking
+# RETURNS:  
+#   0 - Always succeeds, outputs platform arguments for Docker commands
+# GLOBALS:  
+#   READ:  FORCE_PLATFORM (auto|amd64|arm64|native), uname -m output
+#   WRITE: None (outputs to stdout)
+# DESCRIPTION:
+#   This function determines the appropriate --platform argument for Docker build/run
+#   commands based on system architecture and image compatibility. It handles the
+#   complexity of running AMD64-only images on ARM64 systems through emulation.
+# PLATFORM LOGIC:
+#   - auto: Automatically detect best platform based on image compatibility
+#   - amd64: Force AMD64 platform (works on both architectures via emulation)
+#   - arm64: Force ARM64 platform (only works on ARM64 systems)
+#   - native: Use system native platform without override
+# EXAMPLE:
+#   platform_args=$(get_docker_platform_args "rocker/verse")
+#   docker build $platform_args -t my-image .
+##############################################################################
 get_docker_platform_args() {
     local base_image="${1:-}"
     local architecture="$(uname -m)"
@@ -164,6 +203,38 @@ except:
         fi
         echo "latest"
     fi
+}
+
+#=============================================================================
+# DOCKER TEMPLATE SELECTION
+#=============================================================================
+
+##############################################################################
+# FUNCTION: get_dockerfile_template
+# PURPOSE:  Select appropriate Dockerfile template based on build mode
+# USAGE:    get_dockerfile_template
+# ARGS:     
+#   None (uses global BUILD_MODE variable)
+# RETURNS:  
+#   0 - Always succeeds, outputs template filename
+# GLOBALS:  
+#   READ:  BUILD_MODE (fast|standard|comprehensive)
+#   WRITE: None (outputs to stdout)
+# DESCRIPTION:
+#   This function maps build modes to their corresponding Dockerfile templates.
+#   The unified Dockerfile system uses a single template with build arguments
+#   to control package installation, replacing the previous multiple template approach.
+# TEMPLATE MAPPING:
+#   - All modes: "Dockerfile.unified" (single template with PACKAGE_MODE arg)
+#   - Legacy support maintained for backward compatibility
+# EXAMPLE:
+#   template=$(get_dockerfile_template)
+#   echo "Using template: $template"
+##############################################################################
+get_dockerfile_template() {
+    # Use unified Dockerfile template for all build modes
+    # The template uses PACKAGE_MODE build argument to control package installation
+    echo "Dockerfile.unified"
 }
 
 #=============================================================================
@@ -368,9 +439,39 @@ build_docker_image() {
 # DOCKER UTILITIES AND VALIDATION
 #=============================================================================
 
-# Function: validate_docker_environment
-# Purpose: Comprehensive validation of Docker setup and configuration
-# Checks: Docker installation, daemon status, required files, image existence
+##############################################################################
+# FUNCTION: validate_docker_environment
+# PURPOSE:  Comprehensive validation of Docker setup and configuration
+# USAGE:    validate_docker_environment
+# ARGS:     
+#   None
+# RETURNS:  
+#   0 - All Docker environment validations passed
+#   1 - One or more validations failed
+# GLOBALS:  
+#   READ:  PKG_NAME (for image name validation)
+#   WRITE: None (outputs validation messages)
+# DESCRIPTION:
+#   This function performs a comprehensive health check of the Docker development
+#   environment, validating that all necessary components are properly installed,
+#   configured, and ready for use. It's typically called before attempting Docker
+#   operations to provide early failure detection and helpful error messages.
+# VALIDATION STEPS:
+#   1. Docker command availability and installation
+#   2. Docker daemon running status
+#   3. Required configuration files existence
+#   4. Docker image build status
+# FILES CHECKED:
+#   - Dockerfile (container definition)
+#   - docker-compose.yml (service orchestration)
+#   - .zshrc_docker (container shell configuration)
+# EXAMPLE:
+#   if validate_docker_environment; then
+#       echo "Docker environment ready"
+#   else
+#       echo "Docker environment needs setup"
+#   fi
+##############################################################################
 validate_docker_environment() {
     # Check Docker installation and daemon
     if ! validate_commands_exist "Docker environment" "docker"; then
@@ -404,8 +505,31 @@ validate_docker_environment() {
     return 0
 }
 
-# Function: show_docker_summary
-# Purpose: Display Docker setup summary and usage instructions
+##############################################################################
+# FUNCTION: show_docker_summary
+# PURPOSE:  Display comprehensive Docker environment summary and usage instructions
+# USAGE:    show_docker_summary
+# ARGS:     
+#   None
+# RETURNS:  
+#   0 - Always succeeds
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs formatted summary to stdout)
+# DESCRIPTION:
+#   This function provides a comprehensive overview of the Docker development
+#   environment that has been created, including file structure, available services,
+#   common commands, and troubleshooting information. It serves as both documentation
+#   and quick reference for users.
+# OUTPUT SECTIONS:
+#   - File structure: Shows all created Docker configuration files
+#   - Container services: Lists available Docker Compose services
+#   - Common commands: Most frequently used make/docker commands
+#   - Credentials: Default login information for services
+#   - Troubleshooting: Common issues and solutions
+# EXAMPLE:
+#   show_docker_summary  # Display complete environment overview
+##############################################################################
 show_docker_summary() {
     log_info "Docker environment summary:"
     cat << 'EOF'

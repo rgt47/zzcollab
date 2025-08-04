@@ -18,16 +18,66 @@
 # CLI ARGUMENT VALIDATION FUNCTIONS
 #=============================================================================
 
-# Function: require_arg
-# Purpose: Validate that a flag has a required argument
-# Arguments: $1 - flag name, $2 - argument value
+##############################################################################
+# FUNCTION: require_arg
+# PURPOSE:  Validate that a command line flag has a required argument
+# USAGE:    require_arg "--flag-name" "$argument_value"
+# ARGS:     
+#   $1 - flag_name: Name of the command line flag for error reporting
+#   $2 - argument_value: The argument value to validate (may be empty)
+# RETURNS:  
+#   0 - Argument is present and non-empty
+#   1 - Argument is missing or empty (exits with error message)
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs error to stderr, then exits)
+# DESCRIPTION:
+#   This function provides standardized validation for command line arguments
+#   that are required for specific flags. It prevents silent failures when
+#   users provide flags without their required arguments.
+# ERROR BEHAVIOR:
+#   - Exits immediately with code 1 if argument is missing
+#   - Provides clear error message identifying the problematic flag
+#   - Uses stderr for error output to avoid interfering with normal output
+# EXAMPLE:
+#   require_arg "--team-name" "$team_name_value"
+#   require_arg "--dotfiles" "$dotfiles_path"
+##############################################################################
 require_arg() {
     [[ -n "${2:-}" ]] || { echo "❌ Error: $1 requires an argument" >&2; exit 1; }
 }
 
-# Function: validate_enum
-# Purpose: Validate that a value is one of allowed options
-# Arguments: $1 - flag name, $2 - value, $3 - description, $4+ - valid options
+##############################################################################
+# FUNCTION: validate_enum
+# PURPOSE:  Validate that a command line argument value is from allowed set
+# USAGE:    validate_enum "--flag" "value" "description" "option1" "option2" ...
+# ARGS:     
+#   $1 - flag: Command line flag name for error reporting
+#   $2 - value: The value to validate against allowed options
+#   $3 - description: Human-readable description of what the value represents
+#   $4+ - valid_options: List of allowed values for this parameter
+# RETURNS:  
+#   0 - Value matches one of the valid options
+#   1 - Value is not in allowed set (exits with error message)
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs error to stderr, then exits)
+# DESCRIPTION:
+#   This function provides standardized validation for enumerated command line
+#   arguments, ensuring users provide only valid values and giving helpful
+#   error messages when invalid values are provided.
+# VALIDATION LOGIC:
+#   - Iterates through all valid options
+#   - Performs exact string match comparison
+#   - Case-sensitive matching ("Fast" != "fast")
+# ERROR BEHAVIOR:
+#   - Exits immediately with code 1 if value is invalid
+#   - Shows the invalid value and lists all valid options
+#   - Uses stderr to avoid interfering with normal program output
+# EXAMPLE:
+#   validate_enum "--build-mode" "$mode" "build mode" "fast" "standard" "comprehensive"
+#   validate_enum "--interface" "$interface" "interface type" "shell" "rstudio" "verse"
+##############################################################################
 validate_enum() {
     local flag="$1"
     local value="$2"

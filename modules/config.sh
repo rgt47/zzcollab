@@ -54,8 +54,38 @@ CONFIG_COMPREHENSIVE_RENV_PACKAGES=""
 # YAML PARSING FUNCTIONS
 #=============================================================================
 
-# Function: check_yq_dependency
-# Purpose: Check if yq is available for YAML parsing
+##############################################################################
+# FUNCTION: check_yq_dependency
+# PURPOSE:  Verify that yq YAML parser is available for configuration processing
+# USAGE:    check_yq_dependency
+# ARGS:     
+#   None
+# RETURNS:  
+#   0 - yq command is available in PATH
+#   1 - yq command not found (provides installation instructions)
+# GLOBALS:  
+#   READ:  PATH (via command -v)
+#   WRITE: None (outputs installation guidance to stderr)
+# DESCRIPTION:
+#   This function checks for the availability of the yq YAML processing tool,
+#   which is required for full configuration file support. Without yq, the
+#   configuration system falls back to basic grep-based parsing with limited
+#   functionality.
+# FALLBACK BEHAVIOR:
+#   - Provides helpful installation instructions for common platforms
+#   - Returns error code but doesn't terminate the program
+#   - Configuration system continues with reduced functionality
+# INSTALLATION GUIDANCE:
+#   - macOS: brew install yq
+#   - Ubuntu: snap install yq
+#   - Other platforms: See https://github.com/mikefarah/yq#install
+# EXAMPLE:
+#   if check_yq_dependency; then
+#       echo "Full YAML configuration support available"
+#   else
+#       echo "Using fallback configuration parsing"
+#   fi
+##############################################################################
 check_yq_dependency() {
     if ! command -v yq >/dev/null 2>&1; then
         # Use echo instead of log functions which may not be loaded yet
@@ -68,9 +98,35 @@ check_yq_dependency() {
     return 0
 }
 
-# Function: yaml_get
-# Purpose: Get value from YAML file using yq
-# Arguments: $1 = file path, $2 = yaml path (e.g., "defaults.team_name")
+##############################################################################
+# FUNCTION: yaml_get
+# PURPOSE:  Extract a value from YAML configuration file with fallback parsing
+# USAGE:    yaml_get "config.yaml" "defaults.team_name"
+# ARGS:     
+#   $1 - file: Path to YAML configuration file
+#   $2 - path: YAML path specification (e.g., "defaults.team_name", "build_modes.fast.packages")
+# RETURNS:  
+#   0 - Always succeeds, outputs extracted value or "null"
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs extracted value to stdout)
+# DESCRIPTION:
+#   This function provides robust YAML value extraction with intelligent fallback.
+#   When yq is available, it uses proper YAML parsing. When yq is not available,
+#   it falls back to grep-based parsing for simple key-value pairs.
+# PARSING METHODS:
+#   - Primary: yq eval (full YAML specification support)
+#   - Fallback: grep + sed (basic key-value parsing only)
+# ERROR HANDLING:
+#   - Returns "null" for missing files or keys
+#   - Handles nested keys by extracting the final component
+#   - Suppresses error output to avoid user confusion
+# EXAMPLE:
+#   team=$(yaml_get "zzcollab.yaml" "defaults.team_name")
+#   if [[ "$team" != "null" ]]; then
+#       echo "Team: $team"
+#   fi
+##############################################################################
 yaml_get() {
     local file="$1"
     local path="$2"
@@ -88,9 +144,36 @@ yaml_get() {
     fi
 }
 
-# Function: yaml_get_array
-# Purpose: Get array values from YAML file
-# Arguments: $1 = file path, $2 = yaml path
+##############################################################################
+# FUNCTION: yaml_get_array
+# PURPOSE:  Extract array values from YAML configuration file
+# USAGE:    yaml_get_array "config.yaml" "build_modes.fast.packages"
+# ARGS:     
+#   $1 - file: Path to YAML configuration file
+#   $2 - path: YAML path to array (e.g., "build_modes.fast.packages")
+# RETURNS:  
+#   0 - Always succeeds, outputs comma-separated array values or empty string
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (outputs comma-separated values to stdout)
+# DESCRIPTION:
+#   This function extracts YAML array values and formats them as comma-separated
+#   strings for easy processing by shell scripts. It requires yq for proper
+#   array parsing and returns empty string when yq is not available.
+# OUTPUT FORMAT:
+#   - Comma-separated values: "item1,item2,item3"
+#   - Empty string for missing arrays or when yq unavailable
+#   - No trailing comma in output
+# LIMITATIONS:
+#   - Fallback parsing does not support arrays (returns empty string)
+#   - Requires yq for full functionality
+# EXAMPLE:
+#   packages=$(yaml_get_array "config.yaml" "build_modes.fast.docker_packages")
+#   IFS=',' read -ra PACKAGE_ARRAY <<< "$packages"
+#   for pkg in "${PACKAGE_ARRAY[@]}"; do
+#       echo "Package: $pkg"
+#   done
+##############################################################################
 yaml_get_array() {
     local file="$1"
     local path="$2"
@@ -111,9 +194,45 @@ yaml_get_array() {
 # CONFIGURATION LOADING FUNCTIONS
 #=============================================================================
 
-# Function: load_custom_package_lists
-# Purpose: Load custom package lists from config file build_modes section
-# Arguments: $1 = config file path
+##############################################################################
+# FUNCTION: load_custom_package_lists
+# PURPOSE:  Load custom package lists from configuration file build_modes section
+# USAGE:    load_custom_package_lists "zzcollab.yaml"
+# ARGS:     
+#   $1 - config_file: Path to YAML configuration file
+# RETURNS:  
+#   0 - Successfully processed configuration file
+#   1 - Configuration file not found or not readable
+# GLOBALS:  
+#   READ:  None
+#   WRITE: CONFIG_*_DOCKER_PACKAGES, CONFIG_*_RENV_PACKAGES variables
+# DESCRIPTION:
+#   This function loads custom package lists for different build modes from
+#   configuration files. It populates global variables that are used by the
+#   Docker and R package management systems to install appropriate packages
+#   for each build mode.
+# CONFIGURATION STRUCTURE:
+#   build_modes:
+#     fast:
+#       docker_packages: ["package1", "package2"]
+#       renv_packages: ["pkg1", "pkg2"]
+#     standard:
+#       docker_packages: [...]
+#       renv_packages: [...]
+#     comprehensive:
+#       docker_packages: [...]
+#       renv_packages: [...]
+# GLOBAL VARIABLES SET:
+#   - CONFIG_FAST_DOCKER_PACKAGES
+#   - CONFIG_FAST_RENV_PACKAGES
+#   - CONFIG_STANDARD_DOCKER_PACKAGES
+#   - CONFIG_STANDARD_RENV_PACKAGES
+#   - CONFIG_COMPREHENSIVE_DOCKER_PACKAGES
+#   - CONFIG_COMPREHENSIVE_RENV_PACKAGES
+# EXAMPLE:
+#   load_custom_package_lists "./zzcollab.yaml"
+#   echo "Fast mode Docker packages: $CONFIG_FAST_DOCKER_PACKAGES"
+##############################################################################
 load_custom_package_lists() {
     local config_file="$1"
     
@@ -148,9 +267,38 @@ load_custom_package_lists() {
     done
 }
 
-# Function: load_config_file
-# Purpose: Load configuration from a specific file
-# Arguments: $1 = config file path
+##############################################################################
+# FUNCTION: load_config_file
+# PURPOSE:  Load configuration values from a specific YAML configuration file
+# USAGE:    load_config_file "~/.zzcollab/config.yaml"
+# ARGS:     
+#   $1 - config_file: Path to YAML configuration file to load
+# RETURNS:  
+#   0 - Successfully loaded configuration from file
+#   1 - Configuration file not found or not readable
+# GLOBALS:  
+#   READ:  None
+#   WRITE: CONFIG_* variables (team_name, github_account, build_mode, etc.)
+# DESCRIPTION:
+#   This function loads configuration values from a single YAML file and
+#   populates the global CONFIG_* variables. It processes the 'defaults'
+#   section of the configuration file and handles custom package lists.
+# CONFIGURATION SECTIONS PROCESSED:
+#   - defaults.team_name: Docker Hub team/organization name
+#   - defaults.github_account: GitHub account for repository creation
+#   - defaults.build_mode: Default build mode (fast/standard/comprehensive)
+#   - defaults.dotfiles_dir: Path to personal dotfiles directory
+#   - defaults.dotfiles_nodot: Whether dotfiles need leading dots added
+#   - defaults.auto_github: Automatically create GitHub repositories
+#   - defaults.skip_confirmation: Skip confirmation prompts
+# VALIDATION:
+#   - Only sets CONFIG_* variables if values are not "null" and non-empty
+#   - Preserves existing values if new file doesn't contain a key
+#   - Gracefully handles missing files without error
+# EXAMPLE:
+#   load_config_file "./zzcollab.yaml"
+#   echo "Team: $CONFIG_TEAM_NAME, Mode: $CONFIG_BUILD_MODE"
+##############################################################################
 load_config_file() {
     local config_file="$1"
     
