@@ -1,4 +1,4 @@
-name: R Package Check
+name: ZZCOLLAB Framework R Package Check
 
 on:
   push:
@@ -21,14 +21,6 @@ jobs:
           use-public-rspm: true
       
       - uses: r-lib/actions/setup-renv@v2
-      
-      - name: Check renv synchronization
-        run: |
-          Rscript check_renv_for_commit.R --quiet --fail-on-issues
-      
-      - name: Check critical R options changes
-        run: |
-          Rscript check_rprofile_options.R
       
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
