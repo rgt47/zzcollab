@@ -407,6 +407,11 @@ gh repo create "TEAM/PROJECT" --private --source=. --remote=origin \
 🔵 [INFO] Team members can now join with:
 #   git clone https://github.com/TEAM/PROJECT.git
 #   cd PROJECT  
+#   With Configuration:
+#   zzcollab -p PROJECT -I shell      # If shell variant available
+#   zzcollab -p PROJECT -I rstudio    # If rstudio variant available
+#   zzcollab -p PROJECT -I verse      # If verse variant available
+#   Traditional Verbose:
 #   zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles     # If shell variant available
 #   zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles  # If rstudio variant available
 #   zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles    # If verse variant available
@@ -717,6 +722,12 @@ cd zzcollab
 # 2. Verify installation
 zzcollab --help                     # Test installation from anywhere
 which zzcollab                      # Confirm system PATH setup
+
+# 3. Optional: Set up configuration for easier commands
+zzcollab --config init
+zzcollab --config set team-name "rgt47"          # Match team settings
+zzcollab --config set build-mode "fast"          # Your preferred mode
+zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
 
 **📋 Developer 2 Checklist:**
@@ -744,7 +755,12 @@ cd png1
 # Choose between command-line or R interface:
 
 # Option A: Command-Line Interface
-# Standard interfaces:
+# With Configuration (Recommended):
+zzcollab -p png1 -I shell      # Command-line development
+zzcollab -p png1 -I rstudio    # RStudio Server
+zzcollab -p png1 -I verse      # Publishing workflow
+
+# Traditional Verbose Approach:
 zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles       # Command-line development
 zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles    # RStudio Server
 zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles      # Publishing workflow
@@ -755,10 +771,21 @@ zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles      # Publishing workflow
 # ✅ Available variants for this project:
 #     - rgt47/png1core-shell:latest
 # 💡 Solutions:
-#    1. Use available variant: zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles
+#    1. Use available variant: zzcollab -p png1 -I shell (config) or zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles (verbose)
 #    2. Ask team lead to build rstudio variant: zzcollab -V rstudio
 
 # Option B: R Interface (R-Centric Workflow)  
+# With Configuration (Recommended):
+# R
+# library(zzcollab)
+# set_config("team_name", "rgt47")     # Match team settings
+# join_project(
+#   project_name = "png1", 
+#   interface = "shell"     # or "rstudio" or "verse"
+# )
+# quit()
+
+# Traditional Explicit Parameters:
 # R
 # library(zzcollab)
 # join_project(
@@ -823,6 +850,18 @@ git commit -m "Add visualization analysis with tests
 git push origin feature/visualization-analysis
 
 # Option B: R Interface (R-Centric Workflow)
+# With Configuration (uses config defaults):
+# R
+# library(zzcollab)
+# git_status()  # Check changes
+# git_commit("Add visualization analysis with tests - Created 
+#     scripts/02_visualization_analysis.R - Added ggplot2 for data 
+#     visualization - Added integration tests for visualization pipeline - 
+#     All tests passing")
+# git_push("feature/visualization-analysis")
+# quit()
+
+# Traditional Explicit Parameters:
 # R
 # library(zzcollab)
 # git_status()  # Check changes
