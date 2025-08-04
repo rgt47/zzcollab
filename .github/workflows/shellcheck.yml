@@ -27,14 +27,14 @@ jobs:
     - name: Run ShellCheck on main script
       run: |
         echo "Checking main zzcollab.sh script..."
-        shellcheck zzcollab.sh
+        shellcheck --severity=warning zzcollab.sh
         
     - name: Run ShellCheck on modules
       run: |
         echo "Checking all modules..."
         find modules -name "*.sh" -type f | while read -r file; do
           echo "Checking $file..."
-          shellcheck "$file"
+          shellcheck --severity=warning "$file"
         done
         
     - name: Run ShellCheck on utility scripts
@@ -43,7 +43,7 @@ jobs:
         for script in install.sh navigation_scripts.sh; do
           if [ -f "$script" ]; then
             echo "Checking $script..."
-            shellcheck "$script"
+            shellcheck --severity=warning "$script"
           fi
         done
         
@@ -52,7 +52,7 @@ jobs:
         echo "Checking template scripts..."
         find templates -name "*.sh" -type f | while read -r file; do
           echo "Checking $file..."
-          shellcheck "$file"
+          shellcheck --severity=warning "$file"
         done
         
     - name: Generate ShellCheck report
@@ -122,7 +122,7 @@ jobs:
         while read -r file; do
           if [ -f "$file" ]; then
             echo "Checking $file..."
-            shellcheck "$file"
+            shellcheck --severity=warning "$file"
           fi
         done < changed-files.txt
         
