@@ -1,74 +1,107 @@
 #!/bin/bash
 ##############################################################################
-# ZZCOLLAB COMPLETE MODULAR IMPLEMENTATION
+# ZZCOLLAB - DOCKER-BASED RESEARCH COLLABORATION FRAMEWORK
 ##############################################################################
 # 
-# PURPOSE: Complete modular implementation of zzcollab functionality
-#          - All 7 modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools
-#          - 100% functionality preservation from original zzcollab.sh
-#          - Comprehensive manifest tracking for uninstall
-#          - Modular architecture with dependency management
+# PURPOSE: Creates reproducible research compendia with containerized workflows
+#          - Modular architecture with 15 specialized shell modules
+#          - Docker-first development with team collaboration support
+#          - R package structure with automated testing and CI/CD
+#          - Configuration system for user defaults and team settings
+#          - Enterprise-grade dependency validation and environment management
+#
+# ARCHITECTURE:
+#          Main Script (zzcollab.sh) 
+#          ├── Module Loading (constants → core → cli → config → others)
+#          ├── Command Processing (CLI argument parsing and validation)
+#          ├── Workflow Execution (team init, individual setup, help system)
+#          └── Cleanup and Exit (manifest tracking, error handling)
 #
 # USAGE:   ./zzcollab.sh [OPTIONS]
+#          Examples:
+#          ./zzcollab.sh -i -t myteam -p study -d ~/dotfiles    # Team lead setup
+#          ./zzcollab.sh -t myteam -p study -I shell            # Team member join
+#          ./zzcollab.sh --help                                 # Show all options
+#          ./zzcollab.sh config list                            # Configuration management
 #
-# OPTIONS: All original zzcollab.sh options preserved:
-#          --no-docker, --dotfiles DIR, --dotfiles-nodot DIR, --base-image NAME
+# DEPENDENCIES: Docker, Git, optional: GitHub CLI (gh), yq for config files
 ##############################################################################
 
+# Bash strict mode: exit on errors, undefined variables, pipe failures
+# -e: exit immediately if any command fails
+# -u: exit if undefined variable is used  
+# -o pipefail: exit if any command in pipeline fails
 set -euo pipefail
 
 #=============================================================================
-# SCRIPT CONSTANTS AND SETUP
+# SCRIPT CONSTANTS AND DIRECTORY SETUP
 #=============================================================================
 
-# Load constants first (before any other modules)
+# Determine script location using portable method
+# ${BASH_SOURCE[0]} = full path to this script file
+# dirname = extract directory path only
+# cd + pwd = resolve to absolute path (handles symlinks)
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODULES_DIR="$SCRIPT_DIR/modules"
 
-# Load centralized constants
+# Load centralized constants module first (provides global configuration)
+# This module contains all color codes, paths, defaults, and system constants
 if [[ -f "$MODULES_DIR/constants.sh" ]]; then
+    # shellcheck directive tells linter where to find this file
     # shellcheck source=modules/constants.sh
     source "$MODULES_DIR/constants.sh"
     
-    # Use centralized constants
-    readonly TEMPLATES_DIR="$ZZCOLLAB_TEMPLATES_DIR"
-    readonly MANIFEST_FILE="$ZZCOLLAB_MANIFEST_JSON" 
-    readonly MANIFEST_TXT="$ZZCOLLAB_MANIFEST_TXT"
+    # Use centralized constants from constants.sh module
+    # These are defined in modules/constants.sh and provide consistent paths
+    readonly TEMPLATES_DIR="$ZZCOLLAB_TEMPLATES_DIR"    # templates/ directory
+    readonly MANIFEST_FILE="$ZZCOLLAB_MANIFEST_JSON"    # .zzcollab_manifest.json
+    readonly MANIFEST_TXT="$ZZCOLLAB_MANIFEST_TXT"      # .zzcollab_manifest.txt
 else
-    # Fallback to local constants if constants module not available
+    # Fallback constants if constants module not available (backwards compatibility)
+    # This should rarely happen in normal operation
     readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
     readonly MANIFEST_FILE=".zzcollab_manifest.json"
     readonly MANIFEST_TXT=".zzcollab_manifest.txt"
 fi
 
 #=============================================================================
-# CLI MODULE LOADING AND PROCESSING
+# CLI MODULE LOADING AND ARGUMENT PROCESSING
 #=============================================================================
 
-# Load CLI module first (before other modules)
+# Load CLI module first (handles all command-line argument parsing)
+# The CLI module must be loaded before other modules because it sets global variables
+# that other modules depend on (like TEAM_NAME, PROJECT_NAME, BUILD_MODE, etc.)
 if [[ -f "$MODULES_DIR/cli.sh" ]]; then
     # shellcheck source=modules/cli.sh
     source "$MODULES_DIR/cli.sh"
 else
-    log_error "CLI module not found: $MODULES_DIR/cli.sh"
+    # If CLI module missing, we can't continue as we need argument parsing
+    echo "❌ Error: CLI module not found: $MODULES_DIR/cli.sh" >&2
     exit 1
 fi
 
-# Process all CLI arguments using CLI module
+# Process all command-line arguments passed to this script
+# This function (from cli.sh) parses flags like -i, -t, -p, --help, etc.
+# and sets global variables that control script behavior
+# "$@" passes all script arguments to the function
 process_cli "$@"
 
 #=============================================================================
-# HANDLE CONFIG COMMANDS (before loading heavy modules)
+# EARLY CONFIG COMMAND HANDLING (before loading heavy modules)
 #=============================================================================
 
-# Handle config commands early (they need minimal dependencies)
+# Handle configuration commands early to avoid loading unnecessary modules
+# Config commands like "zzcollab config list" should run quickly
+# CONFIG_COMMAND is set by process_cli() if user ran something like "zzcollab config get team-name"
 if [[ "${CONFIG_COMMAND:-false}" == "true" ]]; then
-    # Load core module for logging
+    # Load minimal modules needed for config operations
+    
+    # Load core module for logging functions (log_info, log_error, etc.)
     if [[ -f "$MODULES_DIR/core.sh" ]]; then
         source "$MODULES_DIR/core.sh"
     fi
     
-    # Load config module
+    # Load config module for configuration file management
     if [[ -f "$MODULES_DIR/config.sh" ]]; then
         source "$MODULES_DIR/config.sh"
         if [[ ${#CONFIG_ARGS[@]} -gt 0 ]]; then

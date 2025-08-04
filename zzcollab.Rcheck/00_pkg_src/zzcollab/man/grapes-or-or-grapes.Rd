@@ -17,4 +17,3 @@ lhs if not NULL, else rhs
 \description{
 Null-coalescing operator
 }
-\keyword{internal}

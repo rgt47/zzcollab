@@ -19,6 +19,6 @@ VignetteBuilder: knitr
 URL: https://github.com/rgt47/zzcollab
 BugReports: https://github.com/rgt47/zzcollab/issues
 NeedsCompilation: no
-Packaged: 2025-08-04 16:28:28 UTC; zenn
+Packaged: 2025-08-04 16:32:16 UTC; zenn
 Author: Ronald G. Thomas [aut, cre]
 Maintainer: Ronald G. Thomas <rgthomas@ucsd.edu>

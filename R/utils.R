@@ -6,7 +6,7 @@
 #' @param lhs Left-hand side
 #' @param rhs Right-hand side
 #' @return lhs if not NULL, else rhs
-#' @keywords internal
+#' @export
 `%||%` <- function(lhs, rhs) {
   if (!is.null(lhs)) lhs else rhs
 }
