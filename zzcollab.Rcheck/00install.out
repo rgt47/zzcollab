@@ -1,0 +1,15 @@
+* installing *source* package ‘zzcollab’ ...
+** this is package ‘zzcollab’ version ‘0.0.0.9000’
+** using staged installation
+** inst
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+Error: package or namespace load failed for ‘zzcollab’ in namespaceExport(ns, exports):
+ undefined exports: add_package, create_branch, create_pr, get_config, git_commit, git_push, git_status, init_config, init_project, join_project, list_config, rebuild, render_report, run_script, set_config, setup_project, status, sync_env, team_images, validate_config, validate_repro, zzcollab_help, zzcollab_next_steps
+Error: loading failed
+Execution halted
+ERROR: loading failed
+* removing ‘/Users/zenn/Dropbox/prj/zzcollab/zzcollab.Rcheck/zzcollab’

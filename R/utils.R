@@ -25,7 +25,7 @@ find_zzcollab_script <- function() {
   zzcollab_path <- Sys.which("zzcollab")
   if (zzcollab_path != "") {
     # Test if this version supports config commands
-    test_result <- system(paste(zzcollab_path, "config --help"), 
+    test_result <- system(paste(zzcollab_path, "config list"), 
                          ignore.stdout = TRUE, ignore.stderr = TRUE)
     if (test_result == 0) {
       return("zzcollab")
@@ -42,7 +42,7 @@ find_zzcollab_script <- function() {
   for (path in possible_paths) {
     if (file.exists(path)) {
       # Test if this version supports config commands
-      test_result <- system(paste(path, "config --help"), 
+      test_result <- system(paste(path, "config list"), 
                            ignore.stdout = TRUE, ignore.stderr = TRUE)
       if (test_result == 0) {
         return(path)

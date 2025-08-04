@@ -93,7 +93,6 @@ while IFS= read -r -d '' file; do
                     printf "  ${GREEN}✅ %s${NC}: %d lines\n" "$func_name" "$func_lines"
                 fi
             fi
-        fi
     done < <(grep -n "^[a-zA-Z_][a-zA-Z0-9_]*()[[:space:]]*{[[:space:]]*$" "$file")
     
     echo

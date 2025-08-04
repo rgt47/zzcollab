@@ -1,0 +1,305 @@
+---
+title: "Using zzcollab from R"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using zzcollab from R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE  # Don't evaluate code chunks by default
+)
+```
+
+# Introduction
+
+The `zzcollab` package provides R interfaces to the zzcollab Docker-based research collaboration framework. This vignette demonstrates how to use the R functions to create, manage, and collaborate on research projects.
+
+## Installation
+
+First, install the zzcollab command-line tool and then load the R package:
+
+```{r setup}
+library(zzcollab)
+```
+
+## Quick Start
+
+### For Team Leaders: Initialize a New Project
+
+```{r init-project}
+# Initialize a new research project with team collaboration
+init_project(
+  team_name = "myteam",
+  project_name = "myproject",
+  build_mode = "standard",
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+### For Team Members: Join an Existing Project
+
+```{r join-project}
+# Join an existing project
+join_project(
+  team_name = "myteam",
+  project_name = "myproject",
+  interface = "shell",
+  build_mode = "standard"
+)
+```
+
+### For Individual Use: Setup a Project
+
+```{r setup-project}
+# Setup a project in the current directory
+setup_project(
+  build_mode = "standard",
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+## Build Modes
+
+The zzcollab framework supports three build modes:
+
+- **`"fast"`**: Minimal Docker + minimal packages (fastest builds)
+- **`"standard"`**: Standard Docker + standard packages (balanced, default)
+- **`"comprehensive"`**: Extended Docker + full packages (kitchen sink)
+
+```{r build-modes}
+# Fast mode - minimal setup for quick development
+init_project("team", "project", build_mode = "fast")
+
+# Standard mode - balanced approach (default)
+init_project("team", "project", build_mode = "standard")
+
+# Comprehensive mode - full featured environment
+init_project("team", "project", build_mode = "comprehensive")
+```
+
+## Docker Container Management
+
+### Check Container Status
+
+```{r status}
+# Check running zzcollab containers
+status()
+```
+
+### Rebuild Docker Images
+
+```{r rebuild}
+# Rebuild Docker image after dependency changes
+rebuild()
+```
+
+### List Team Images
+
+```{r team-images}
+# List available team Docker images
+team_images()
+```
+
+## Package Management
+
+### Add New Packages
+
+```{r add-package}
+# Add packages to the project
+add_package(c("dplyr", "ggplot2"))
+```
+
+### Sync Environment
+
+```{r sync-env}
+# Sync environment with renv.lock
+sync_env()
+```
+
+## Analysis and Reporting
+
+### Run Analysis Scripts
+
+```{r run-script}
+# Execute R script in container
+run_script("analysis/my_analysis.R")
+```
+
+### Render Reports
+
+```{r render-report}
+# Render analysis reports
+render_report("analysis/report.Rmd")
+```
+
+### Validate Reproducibility
+
+```{r validate-repro}
+# Check if environment is reproducible
+validate_repro()
+```
+
+## Git Integration
+
+### Check Git Status
+
+```{r git-status}
+# Check git status
+git_status()
+```
+
+### Create Feature Branch
+
+```{r create-branch}
+# Create and switch to feature branch
+create_branch("feature/new-analysis")
+```
+
+### Commit Changes
+
+```{r git-commit}
+# Commit changes
+git_commit("Add new analysis results")
+```
+
+### Push Changes
+
+```{r git-push}
+# Push to GitHub
+git_push()
+```
+
+### Create Pull Request
+
+```{r create-pr}
+# Create pull request
+create_pr(
+  title = "Add new analysis results",
+  body = "This PR adds the results from our latest analysis."
+)
+```
+
+## Getting Help
+
+### Get Help Information
+
+```{r help}
+# Get general help
+zzcollab_help()
+
+# Get initialization help
+zzcollab_help(init_help = TRUE)
+```
+
+### Get Next Steps
+
+```{r next-steps}
+# Get next steps guidance
+zzcollab_next_steps()
+```
+
+## Complete Workflow Example
+
+Here's a complete example of a typical zzcollab workflow:
+
+```{r complete-workflow}
+# 1. Initialize project (team leader)
+init_project(
+  team_name = "datascience",
+  project_name = "covid-analysis",
+  build_mode = "standard",
+  dotfiles_path = "~/dotfiles"
+)
+
+# 2. Add required packages
+add_package(c("tidyverse", "lubridate", "plotly"))
+
+# 3. Create feature branch
+create_branch("feature/exploratory-analysis")
+
+# 4. Run analysis
+run_script("scripts/exploratory_analysis.R")
+
+# 5. Render report
+render_report("analysis/covid_report.Rmd")
+
+# 6. Validate reproducibility
+if (validate_repro()) {
+  message("✅ Environment is reproducible")
+} else {
+  message("❌ Environment needs attention")
+}
+
+# 7. Commit and push
+git_commit("Add COVID-19 exploratory analysis")
+git_push()
+
+# 8. Create pull request
+create_pr(
+  title = "Add COVID-19 Exploratory Analysis",
+  body = "This PR adds exploratory analysis of COVID-19 data with visualizations."
+)
+```
+
+## Advanced Usage
+
+### Custom Base Images
+
+```{r custom-base}
+# Use custom base image
+setup_project(
+  base_image = "myteam/myproject-base:latest",
+  build_mode = "fast"
+)
+```
+
+### Team Collaboration Workflow
+
+```{r team-workflow}
+# Team leader initializes
+init_project("datascience", "covid-analysis", build_mode = "standard")
+
+# Team members join
+join_project("datascience", "covid-analysis", interface = "rstudio")
+
+# Everyone can now work with the same environment
+status()  # Check container status
+sync_env()  # Sync with latest dependencies
+```
+
+## Best Practices
+
+1. **Use consistent build modes** across your team
+2. **Always validate reproducibility** before committing
+3. **Use feature branches** for new analyses
+4. **Keep your environment synchronized** with `sync_env()`
+5. **Document your workflow** in your analysis scripts
+
+## Troubleshooting
+
+### Common Issues
+
+If you encounter issues:
+
+1. Check that zzcollab is installed and in your PATH
+2. Verify Docker is running
+3. Ensure you're in a zzcollab project directory
+4. Check that all dependencies are synchronized
+
+```{r troubleshooting}
+# Check if zzcollab is available
+try(zzcollab_help())
+
+# Check Docker status
+status()
+
+# Validate environment
+validate_repro()
+```
+
+For more detailed information, see the zzcollab documentation and GitHub repository.

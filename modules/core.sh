@@ -366,7 +366,8 @@ require_module() {
     current_module="${current_module%.sh}"
     
     for module in "$@"; do
-        local module_var="ZZCOLLAB_${module^^}_LOADED"
+        local module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
+        local module_var="ZZCOLLAB_${module_upper}_LOADED"
         if [[ "${!module_var:-}" != "true" ]]; then
             echo "❌ Error: ${current_module}.sh requires ${module}.sh to be loaded first" >&2
             exit 1
