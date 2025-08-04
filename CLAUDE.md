@@ -1,26 +1,38 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working
+with code in this repository.
 
 ## Architecture Overview
 
-ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments. The system consists of:
+ZZCOLLAB is a research collaboration framework that creates Docker-based
+reproducible research environments. The system consists of:
 
 ### Core Components
-- **Main executable**: `zzcollab.sh` - Primary framework script (512 lines, streamlined and modular)
-- **Modular shell system**: 15 modules in `modules/` directory containing all functionality
+- **Main executable**: `zzcollab.sh` - Primary framework script
+  (512 lines, streamlined and modular)
+- **Modular shell system**: 15 modules in `modules/` directory containing
+  all functionality
 - **Docker-first workflow**: All development happens in containers
 - **R package structure**: Standard R package with testthat for testing
 - **Template system**: `templates/` for project scaffolding
-- **Configuration system**: Centralized constants and user configuration management
+- **Configuration system**: Centralized constants and user configuration
+  management
 
 ### Key Architecture Patterns
-- **Modular design**: 15 shell modules (constants.sh, core.sh, cli.sh, config.sh, templates.sh, structure.sh, rpackage.sh, docker.sh, analysis.sh, cicd.sh, devtools.sh, team_init.sh, help.sh, github.sh, utils.sh)
+- **Modular design**: 15 shell modules (constants.sh, core.sh, cli.sh,
+  config.sh, templates.sh, structure.sh, rpackage.sh, docker.sh,
+  analysis.sh, cicd.sh, devtools.sh, team_init.sh, help.sh, github.sh,
+  utils.sh)
 - **Docker inheritance**: Team base images → personal development images
-- **Automated CI/CD**: GitHub Actions for R package validation and image builds
-- **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
-- **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and selective base image building (-B, -V, -I)
+- **Automated CI/CD**: GitHub Actions for R package validation and image
+  builds
+- **Test-driven development**: Unit tests in `tests/testthat/`,
+  integration tests expected
+- **Environment monitoring**: Critical R options tracking with
+  `check_rprofile_options.R`
+- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and
+  selective base image building (-B, -V, -I)
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
 - **Centralized constants**: Global variables and configuration managed in constants.sh
 - **Function modularity**: All functions follow single responsibility principle (<60 lines each)

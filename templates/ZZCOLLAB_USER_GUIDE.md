@@ -20,7 +20,9 @@
 
 ## What is ZZCOLLAB?
 
-**ZZCOLLAB** is a framework for creating **research compendia** with **enterprise-grade team collaboration** - self-contained, reproducible research projects that combine:
+**ZZCOLLAB** is a framework for creating **research compendia** with
+**enterprise-grade team collaboration** - self-contained, reproducible
+research projects that combine:
 - R package structure for code organization
 - Data management and documentation
 - Analysis scripts and notebooks
@@ -41,7 +43,8 @@
 
 ## Configuration System
 
-ZZCOLLAB includes a powerful configuration system to eliminate repetitive typing and set project defaults.
+ZZCOLLAB includes a powerful configuration system to eliminate repetitive
+typing and set project defaults.
 
 ### Configuration Files
 - **User config**: `~/.zzcollab/config.yaml` (your personal defaults)
@@ -131,18 +134,28 @@ cd zzcollab
 # 2a. Create team Docker images only (two-step process)
 cd ~/projects                   # Your preferred projects directory
 # NEW: -i flag now ONLY creates and pushes team Docker images, then stops
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates team images, stops
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode: minimal packages
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive: full packages
-zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio variant only
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates
+                                                                      # team images,
+                                                                      # stops
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode:
+                                                                      # minimal
+                                                                      # packages
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive:
+                                                                      # full packages
+zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio
+                                                                      # variant only
 
 # Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
-zzcollab -i -t mylab -B all -d ~/dotfiles                           # All variants (shell, rstudio, verse)
+zzcollab -i -t mylab -B all -d ~/dotfiles                           # All variants
+                                                                     # (shell, rstudio,
+                                                                     # verse)
 
 # 2b. Create full project structure separately
 mkdir study2024 && cd study2024  # or git clone if repo exists
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full project setup
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full
+                                                                       # project
+                                                                       # setup
 
 
 # For teams needing custom packages - two-step process:
@@ -167,7 +180,8 @@ zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles
 
 # Alternative build modes for team members:
 # zzcollab -t mylab -p study2024 -I shell -F -d ~/dotfiles  # Fast mode
-# zzcollab -t mylab -p study2024 -I shell -C -d ~/dotfiles  # Comprehensive mode
+# zzcollab -t mylab -p study2024 -I shell -C -d ~/dotfiles  # Comprehensive
+                                                              # mode
 
 # 3. Start developing immediately
 make docker-zsh                # → Same environment as team lead
@@ -180,7 +194,8 @@ make docker-zsh                # → Same environment as team lead
 # Clone and install globally
 git clone https://github.com/your-org/zzcollab.git
 cd zzcollab
-./install.sh                   # Installs zzcollab and zzcollab --init to ~/bin
+./install.sh                   # Installs zzcollab and zzcollab --init
+                                # to ~/bin
 
 # Verify installation
 which zzcollab                 # Should show ~/bin/zzcollab
@@ -200,9 +215,11 @@ ZZCOLLAB uses **automated team distribution**:
 git clone https://github.com/mylab/study2024.git  # Private repo
 cd study2024
 # Choose available interface:
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles      # Command-line development
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles      # Command-line
+                                                              # development
 zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles   # RStudio Server
-zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles     # Publishing workflow
+zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles     # Publishing
+                                                             # workflow
 ```
 
 ## Team Collaboration Setup
@@ -217,13 +234,23 @@ zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles     # Publishing workflow
 **Step 1: Create Team Docker Images Only**
 ```bash
 # NEW: -i flag now ONLY creates and pushes team Docker images, then stops
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates team images with standard packages
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode: minimal packages (8 vs 27)  
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive mode: full packages (27+)
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates
+                                                                      # team images
+                                                                      # with standard
+                                                                      # packages
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode:
+                                                                      # minimal packages
+                                                                      # (8 vs 27)  
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive
+                                                                      # mode: full
+                                                                      # packages (27+)
 
 # Selective base image building:
-zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio variant only
-zzcollab -i -t mylab -p study2024 -B all -d ~/dotfiles              # All variants (shell, rstudio, verse)
+zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio
+                                                                      # variant only
+zzcollab -i -t mylab -p study2024 -B all -d ~/dotfiles              # All variants
+                                                                      # (shell, rstudio,
+                                                                      # verse)
 
 # Auto-detect project name from current directory:
 mkdir study2024 && cd study2024
@@ -234,7 +261,9 @@ zzcollab -i -t mylab -B rstudio -d ~/dotfiles                       # Team image
 ```bash
 # After team images are created and pushed, create project structure:
 mkdir study2024 && cd study2024  # or git clone if repository exists
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full project setup with shell interface
+zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full
+                                                                       # project
+                                                                       # setup with shell interface
 zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles             # Or with RStudio interface
 
 # Auto-detect with fast build mode
