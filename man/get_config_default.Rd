@@ -2,19 +2,59 @@
 % Please edit documentation in R/utils.R
 \name{get_config_default}
 \alias{get_config_default}
-\title{Get configuration-aware default value}
+\title{Get configuration value with fallback default}
 \usage{
 get_config_default(key, default = NULL)
 }
 \arguments{
-\item{key}{Configuration key}
+\item{key}{Character string specifying the configuration key to retrieve.
+Should match keys used in the zzcollab configuration system (e.g.,
+\"team_name\", \"build_mode\", \"dotfiles_dir\").}
 
-\item{default}{Default value if config not set}
+\item{default}{Default value to return if the configuration key is not set
+or if \\code{get_config()} returns NULL. Can be any type, but typically
+a character string to match configuration values. Default is NULL.}
 }
 \value{
-Configuration value or default
+The configuration value if set, otherwise the default value.
+The return type matches the type of the configuration value or default.
 }
 \description{
-Get configuration-aware default value
+Retrieves a configuration value from the zzcollab configuration system,
+returning a specified default value if the configuration key is not set.
+This function provides a convenient way to handle optional configuration
+with sensible fallbacks.
+}
+\details{
+This internal function implements the \"null-coalescing\" pattern commonly
+used throughout zzcollab for configuration management. It provides a clean
+way to specify fallback values when configuration keys might not be set.
+
+The function is particularly useful in other zzcollab functions that need
+to handle optional configuration parameters gracefully. It eliminates the
+need for repeated NULL checking and provides consistent behavior across
+the codebase.
+
+\strong{Usage Pattern:}
+This function is typically used internally by other zzcollab functions
+to provide sensible defaults when users haven't configured specific values.
+}
+\examples{
+\\dontrun{\n#' # Internal usage pattern in zzcollab functions
+team_name <- get_config_default(\"team_name\", \"defaultteam\")
+build_mode <- get_config_default(\"build_mode\", \"standard\")
+
+# Equivalent to using the \%||\% operator
+team_name <- get_config(\"team_name\") \%||\% \"defaultteam\"
+
+# Common usage with multiple fallbacks
+dotfiles_path <- get_config_default(\"dotfiles_dir\", \"~/dotfiles\")
+github_account <- get_config_default(\"github_account\", team_name)
+}
+
+}
+\seealso{
+\\code{\\link{get_config}} for basic configuration retrieval
+\\code{\\link{\%||\%}} for the null-coalescing operator used internally
 }
 \keyword{internal}

@@ -2,18 +2,75 @@
 % Please edit documentation in R/utils.R
 \name{set_config}
 \alias{set_config}
-\title{Set configuration value}
+\title{Set configuration value in zzcollab configuration system}
 \usage{
 set_config(key, value)
 }
 \arguments{
-\item{key}{Configuration key}
+\item{key}{Character string specifying the configuration key to set.
+Recommended keys include:
+\itemize{
+\item "team_name": Your Docker Hub team/organization name
+\item "build_mode": Preferred package mode ("fast", "standard", "comprehensive")
+\item "dotfiles_dir": Path to your personal dotfiles directory
+\item "github_account": Your GitHub account for repository creation
+\item "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")
+}}
 
-\item{value}{Configuration value}
+\item{value}{Character string specifying the configuration value to set.
+The value will be stored as a string in the YAML configuration file.
+Boolean values should be passed as "true" or "false" strings.}
 }
 \value{
-Logical indicating success
+Logical value indicating success (TRUE) or failure (FALSE) of the
+configuration operation. Returns FALSE if the zzcollab script cannot be
+found or if the configuration write operation fails.
 }
 \description{
-Set configuration value
+Sets or updates configuration values in the zzcollab user-level configuration file.
+This function writes to ~/.zzcollab/config.yaml, creating the directory and file
+if they don't exist. Configuration values set here become defaults for future
+zzcollab operations.
+}
+\details{
+This function provides a convenient R interface to the zzcollab configuration
+system. It's particularly useful for setting up your personal defaults once,
+then using them across multiple projects without repeatedly specifying the
+same parameters.
+
+The function creates the ~/.zzcollab directory if it doesn't exist and
+initializes a default config.yaml file. Values are stored in YAML format
+for easy editing and cross-platform compatibility.
+
+\strong{Configuration Strategy:}
+\itemize{
+\item Set personal defaults once using this function
+\item Use project-specific settings in ./zzcollab.yaml for project overrides
+\item Let the hierarchy system handle precedence automatically
+}
+}
+\examples{
+\dontrun{
+# Set up your personal defaults (run once)
+set_config("team_name", "mylab")
+set_config("build_mode", "standard")
+set_config("dotfiles_dir", "~/dotfiles")
+set_config("github_account", "myuniversity")
+
+# Check if configuration was successful
+if (set_config("team_name", "newteam")) {
+  cat("Team name updated successfully\n")
+} else {
+  cat("Failed to update configuration\n")
+}
+
+# Configure dotfiles preferences
+set_config("dotfiles_nodot", "false")  # Files already have leading dots
+}
+
+}
+\seealso{
+\code{\link{get_config}} for retrieving configuration values
+\code{\link{list_config}} for viewing all current configuration
+\code{\link{init_config}} for initializing default configuration
 }
