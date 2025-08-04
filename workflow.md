@@ -191,24 +191,42 @@ zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 **Step 1: Create Team Images Only**
 ```bash
 # With Configuration (Recommended - much simpler):
-zzcollab -i -p research-study -B r-ver          # Creates rgt47/research-studycore-shell:latest only
-zzcollab -i -p research-study -B rstudio        # Creates rgt47/research-studycore-rstudio:latest only
-zzcollab -i -p research-study -B verse          # Creates rgt47/research-studycore-verse:latest only
-zzcollab -i -p research-study -B all            # Creates all 3 variants (shell, rstudio, verse)
+zzcollab -i -p research-study -B r-ver          # Creates
+                                                 # rgt47/research-studycore-shell:latest
+                                                 # only
+zzcollab -i -p research-study -B rstudio        # Creates
+                                                 # rgt47/research-studycore-rstudio:latest
+                                                 # only
+zzcollab -i -p research-study -B verse          # Creates
+                                                 # rgt47/research-studycore-verse:latest
+                                                 # only
+zzcollab -i -p research-study -B all            # Creates all 3 variants
+                                                 # (shell, rstudio, verse)
 
 # Build mode options with config:
-zzcollab -i -p research-study -B rstudio -F     # Fast mode: minimal packages
-zzcollab -i -p research-study -B all -C         # Comprehensive mode: full packages
+zzcollab -i -p research-study -B rstudio -F     # Fast mode: minimal
+                                                 # packages
+zzcollab -i -p research-study -B all -C         # Comprehensive mode:
+                                                 # full packages
 
 # Auto-detect project name from current directory:
 mkdir research-study && cd research-study
-zzcollab -i -B rstudio                          # Team setup with RStudio only
+zzcollab -i -B rstudio                          # Team setup with
+                                                 # RStudio only
 
 # Traditional Verbose Approach:
-zzcollab -i -t rgt47 -p research-study -B r-ver -S -d ~/dotfiles      # Creates rgt47/research-studycore-shell:latest only
-zzcollab -i -t rgt47 -p research-study -B rstudio -S -d ~/dotfiles    # Creates rgt47/research-studycore-rstudio:latest only  
-zzcollab -i -t rgt47 -p research-study -B verse -S -d ~/dotfiles      # Creates rgt47/research-studycore-verse:latest only
-zzcollab -i -t rgt47 -p research-study -B all -S -d ~/dotfiles        # Creates all 3 variants (shell, rstudio, verse)
+zzcollab -i -t rgt47 -p research-study -B r-ver -S -d ~/dotfiles      # Creates
+                                                                  # rgt47/research-studycore-shell:latest
+                                                                  # only
+zzcollab -i -t rgt47 -p research-study -B rstudio -S -d ~/dotfiles    # Creates
+                                                                  # rgt47/research-studycore-rstudio:latest
+                                                                  # only  
+zzcollab -i -t rgt47 -p research-study -B verse -S -d ~/dotfiles      # Creates
+                                                                  # rgt47/research-studycore-verse:latest
+                                                                  # only
+zzcollab -i -t rgt47 -p research-study -B all -S -d ~/dotfiles        # Creates
+                                                                  # all 3 variants
+                                                                  # (shell, rstudio, verse)
 
 # Build mode options verbose:
 zzcollab -i -t rgt47 -p research-study -B rstudio -F -d ~/dotfiles    # Fast mode: minimal packages

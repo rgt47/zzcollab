@@ -1246,7 +1246,8 @@ test_that("penguin analysis produces biologically meaningful results", {
   
   # Check that body mass model is significant
   model_summary <- summary(results$models$body_mass_model)
-  expect_true(model_summary$r.squared > 0.1)  # At least some explanatory power
+  expect_true(model_summary$r.squared > 0.1)  # At least some explanatory
+                                              # power
   expect_true(model_summary$fstatistic[1] > 1)  # F-statistic should be > 1
   
   # Check that species differences in flipper length are significant
