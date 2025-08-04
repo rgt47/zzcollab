@@ -296,7 +296,7 @@ cat("Use create_example_figure() and save_figure() in your analysis\\n")'
 }
 
 # Function: create_scripts_directory
-# Purpose: Create essential research scripts in the scripts/ directory
+# Purpose: Create essential research scripts in the scripts/ directory (coordinating function)
 # Creates data validation, parallel computing, database setup, and reproducibility scripts
 create_scripts_directory() {
     log_info "Creating essential research scripts..."
@@ -304,6 +304,19 @@ create_scripts_directory() {
     # Ensure scripts directory exists
     safe_mkdir "scripts" "research scripts directory"
     
+    # Create all research scripts
+    create_data_validation_script
+    create_parallel_computing_script
+    create_database_setup_script
+    create_reproducibility_check_script
+    create_testing_guide_script
+    
+    log_success "Essential research scripts created in scripts/ directory"
+}
+
+# Function: create_data_validation_script
+# Purpose: Create comprehensive data validation script
+create_data_validation_script() {
     # 1. Data validation script
     local data_validation_script='# Data Validation Script
 # This script performs comprehensive data quality checks
