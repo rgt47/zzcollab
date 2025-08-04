@@ -384,15 +384,107 @@ init_project <- function(team_name = NULL, project_name = NULL,
   return(result == 0)
 }
 
-#' Join existing zzcollab project (R interface for Developers 2+)
+#' Join an existing zzcollab team project
 #'
-#' @param team_name Team name (Docker Hub organization) (uses config default if NULL)
-#' @param project_name Project name
-#' @param interface Interface type: "shell", "rstudio", or "verse" (default: "shell")
-#' @param dotfiles_path Path to dotfiles directory (uses config default if NULL)
-#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added (uses config default)
-#' @param build_mode Build mode: "fast", "standard", or "comprehensive" (uses config default)
-#' @return Logical indicating success
+#' Allows team members (Developers 2+) to join an existing zzcollab project by
+#' setting up their local development environment using the team's shared Docker
+#' images and project structure. This function is the R interface to team
+#' collaboration workflows.
+#'
+#' @param team_name Character string specifying the Docker Hub team/organization name.
+#'   This should match the team name used when the project was initialized.
+#'   If NULL, uses value from configuration file via \code{get_config("team_name")}.
+#'   
+#' @param project_name Character string specifying the project name.
+#'   Must match the project name used during initialization.
+#'   Used to identify the correct team Docker images and repository.
+#'   
+#' @param interface Character string specifying the development interface:
+#'   - "shell": Command-line development with enhanced shell (zsh/bash)
+#'   - "rstudio": RStudio Server GUI at http://localhost:8787
+#'   - "verse": Publishing workflow with LaTeX support
+#'   Default is "shell" for broad compatibility.
+#'   
+#' @param dotfiles_path Character string specifying path to personal dotfiles.
+#'   These configuration files (.vimrc, .zshrc, etc.) personalize your
+#'   development environment within the team's standardized setup.
+#'   If NULL, uses config default.
+#'   
+#' @param dotfiles_nodots Logical indicating whether dotfiles need leading dots added.
+#'   Set to TRUE if your dotfiles are stored without leading dots.
+#'   If NULL, uses config default.
+#'   
+#' @param build_mode Character string specifying package installation mode:
+#'   - "fast": Minimal packages for quick setup
+#'   - "standard": Balanced package set (default)
+#'   - "comprehensive": Full ecosystem for complex analyses
+#'   If NULL, uses config default or "standard".
+#'
+#' @return Logical value indicating success (TRUE) or failure (FALSE).
+#'   The function validates team images exist before proceeding with setup.
+#'
+#' @details
+#' This function is designed for team members joining existing projects.
+#' The team lead should have already run \code{init_project()} to create
+#' the necessary team infrastructure.
+#' 
+#' **Setup Process:**
+#' 1. **Validation**: Checks that team Docker images exist and are accessible
+#' 2. **Project Setup**: Creates local project structure and configuration
+#' 3. **Environment**: Sets up development environment with chosen interface
+#' 4. **Integration**: Configures local tools and personal dotfiles
+#' 
+#' **Prerequisites:**
+#' - Team lead has run \code{init_project()} and shared repository access
+#' - Docker installed and running locally
+#' - Access to team's Docker images (usually public on Docker Hub)
+#' - Git repository cloned locally (typically done before calling this function)
+#' 
+#' **Error Handling:**
+#' The function provides helpful error messages when team images are not
+#' available, including suggestions for resolution and alternative interfaces.
+#'
+#' @examples
+#' \dontrun{
+#' # Basic team project joining
+#' success <- join_project(
+#'   team_name = "mylab",
+#'   project_name = "covid-study",
+#'   interface = "shell"
+#' )
+#' 
+#' # Join with RStudio interface
+#' join_project(
+#'   team_name = "datascience",
+#'   project_name = "market-analysis",
+#'   interface = "rstudio",
+#'   dotfiles_path = "~/dotfiles"
+#' )
+#' 
+#' # Using configuration defaults (recommended)
+#' set_config("team_name", "mylab")
+#' set_config("dotfiles_dir", "~/dotfiles")
+#' 
+#' # Then join projects easily
+#' join_project(project_name = "new-study", interface = "shell")
+#' 
+#' # Complete workflow for team member
+#' # 1. Clone repository (outside R)
+#' # system("git clone https://github.com/mylab/study.git")
+#' # setwd("study")
+#' 
+#' # 2. Join project
+#' join_project(team_name = "mylab", project_name = "study")
+#' 
+#' # 3. Start development (outside R)
+#' # system("make docker-zsh")  # or make docker-rstudio
+#' }
+#'
+#' @seealso
+#' \code{\link{init_project}} for team leads initializing projects
+#' \code{\link{set_config}} for setting up configuration defaults
+#' \code{\link{team_images}} for checking available team images
+#'
 #' @export
 join_project <- function(team_name = NULL, project_name = NULL, interface = "shell",
                          dotfiles_path = NULL, dotfiles_nodots = NULL,
@@ -788,10 +880,57 @@ zzcollab_next_steps <- function() {
 # CONFIGURATION SYSTEM R INTERFACE
 #=============================================================================
 
-#' Get configuration value
+#' Get configuration value from zzcollab configuration system
 #'
-#' @param key Configuration key (e.g., "team_name", "build_mode")
-#' @return Configuration value or NULL if not set
+#' Retrieves configuration values from the zzcollab configuration hierarchy.
+#' The system uses a three-tier configuration system with priority order:
+#' project-level (./zzcollab.yaml) > user-level (~/.zzcollab/config.yaml) > system-level (/etc/zzcollab/config.yaml).
+#'
+#' @param key Character string specifying the configuration key to retrieve.
+#'   Common keys include:
+#'   - "team_name": Docker Hub team/organization name
+#'   - "build_mode": Package installation mode ("fast", "standard", "comprehensive")
+#'   - "dotfiles_dir": Path to personal dotfiles directory
+#'   - "github_account": GitHub account for repository creation
+#'   - "dotfiles_nodot": Whether dotfiles need leading dots added ("true"/"false")
+#'   
+#' @return Character string with the configuration value, or NULL if the key is not set
+#'   in any configuration file. Returns the highest priority value if the key exists
+#'   in multiple configuration files.
+#'   
+#' @details
+#' The function interfaces with the zzcollab shell script's configuration system,
+#' which manages YAML configuration files across project, user, and system levels.
+#' This provides consistent configuration management between R and shell interfaces.
+#' 
+#' Configuration precedence (highest to lowest):
+#' 1. Project-level: ./zzcollab.yaml (project-specific overrides)
+#' 2. User-level: ~/.zzcollab/config.yaml (personal defaults)
+#' 3. System-level: /etc/zzcollab/config.yaml (system-wide defaults)
+#'
+#' @examples
+#' \dontrun{
+#' # Get current team name
+#' team <- get_config("team_name")
+#' if (!is.null(team)) {
+#'   cat("Current team:", team, "\n")
+#' } else {
+#'   cat("No team name configured\n")
+#' }
+#' 
+#' # Check build mode setting
+#' mode <- get_config("build_mode")
+#' cat("Build mode:", mode %||% "standard", "\n")
+#' 
+#' # Get dotfiles directory with fallback
+#' dotfiles <- get_config("dotfiles_dir") %||% "~/dotfiles"
+#' }
+#'
+#' @seealso
+#' \code{\link{set_config}} for setting configuration values
+#' \code{\link{list_config}} for viewing all configuration
+#' \code{\link{get_config_default}} for configuration with defaults
+#'
 #' @export
 get_config <- function(key) {
   # Find zzcollab script
@@ -807,11 +946,68 @@ get_config <- function(key) {
   }
 }
 
-#' Set configuration value
+#' Set configuration value in zzcollab configuration system
 #'
-#' @param key Configuration key
-#' @param value Configuration value
-#' @return Logical indicating success
+#' Sets or updates configuration values in the zzcollab user-level configuration file.
+#' This function writes to ~/.zzcollab/config.yaml, creating the directory and file
+#' if they don't exist. Configuration values set here become defaults for future
+#' zzcollab operations.
+#'
+#' @param key Character string specifying the configuration key to set.
+#'   Recommended keys include:
+#'   - "team_name": Your Docker Hub team/organization name
+#'   - "build_mode": Preferred package mode ("fast", "standard", "comprehensive")
+#'   - "dotfiles_dir": Path to your personal dotfiles directory
+#'   - "github_account": Your GitHub account for repository creation
+#'   - "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")
+#'   
+#' @param value Character string specifying the configuration value to set.
+#'   The value will be stored as a string in the YAML configuration file.
+#'   Boolean values should be passed as "true" or "false" strings.
+#'   
+#' @return Logical value indicating success (TRUE) or failure (FALSE) of the
+#'   configuration operation. Returns FALSE if the zzcollab script cannot be
+#'   found or if the configuration write operation fails.
+#'   
+#' @details
+#' This function provides a convenient R interface to the zzcollab configuration
+#' system. It's particularly useful for setting up your personal defaults once,
+#' then using them across multiple projects without repeatedly specifying the
+#' same parameters.
+#' 
+#' The function creates the ~/.zzcollab directory if it doesn't exist and
+#' initializes a default config.yaml file. Values are stored in YAML format
+#' for easy editing and cross-platform compatibility.
+#' 
+#' **Configuration Strategy:**
+#' - Set personal defaults once using this function
+#' - Use project-specific settings in ./zzcollab.yaml for project overrides
+#' - Let the hierarchy system handle precedence automatically
+#'
+#' @examples
+#' \dontrun{
+#' # Set up your personal defaults (run once)
+#' set_config("team_name", "mylab")
+#' set_config("build_mode", "standard")
+#' set_config("dotfiles_dir", "~/dotfiles")
+#' set_config("github_account", "myuniversity")
+#' 
+#' # Check if configuration was successful
+#' if (set_config("team_name", "newteam")) {
+#'   cat("Team name updated successfully\n")
+#' } else {
+#'   cat("Failed to update configuration\n")
+#' }
+#' 
+#' # Configure dotfiles preferences
+#' set_config("dotfiles_nodot", "false")  # Files already have leading dots
+#' }
+#'
+#' @seealso
+#' \code{\link{get_config}} for retrieving configuration values
+#' \code{\link{list_config}} for viewing all current configuration
+#' \code{\link{init_config}} for initializing default configuration
+#'
 #' @export
 set_config <- function(key, value) {
   # Find zzcollab script
@@ -822,9 +1018,57 @@ set_config <- function(key, value) {
   return(result == 0)
 }
 
-#' List all configuration values
+#' List all configuration values from zzcollab configuration system
 #'
-#' @return Character vector with configuration listing
+#' Displays all configuration values from the zzcollab configuration hierarchy,
+#' showing the effective configuration that would be used for zzcollab operations.
+#' This includes values from project, user, and system configuration files with
+#' proper precedence resolution.
+#'
+#' @return Character vector containing the formatted configuration listing.
+#'   Each element represents a configuration key-value pair in the format
+#'   "key: value". The output shows the effective configuration after resolving
+#'   the hierarchy of project > user > system configuration files.
+#'   Returns empty character vector if no configuration is found.
+#'   
+#' @details
+#' This function provides a comprehensive view of your zzcollab configuration,
+#' making it easy to understand what settings are active and where they come from.
+#' It's particularly useful for:
+#' 
+#' - **Debugging configuration issues**: See exactly what values are being used
+#' - **Understanding precedence**: See which configuration level is providing each value
+#' - **Setup verification**: Confirm your configuration changes took effect
+#' - **Team coordination**: Share configuration examples with team members
+#' 
+#' The output format is human-readable and suitable for documentation or
+#' sharing configuration examples with team members.
+#'
+#' @examples
+#' \dontrun{
+#' # View all current configuration
+#' config <- list_config()
+#' cat("Current zzcollab configuration:\n")
+#' cat(paste(config, collapse = "\n"), "\n")
+#' 
+#' # Check if specific keys are configured
+#' config <- list_config()
+#' if (any(grepl("team_name:", config))) {
+#'   cat("Team name is configured\n")
+#' } else {
+#'   cat("Team name needs to be set\n")
+#' }
+#' 
+#' # Save configuration for documentation
+#' config <- list_config()
+#' writeLines(config, "my-zzcollab-config.txt")
+#' }
+#'
+#' @seealso
+#' \code{\link{get_config}} for retrieving specific configuration values
+#' \code{\link{set_config}} for setting configuration values
+#' \code{\link{validate_config}} for validating configuration files
+#'
 #' @export
 list_config <- function() {
   # Find zzcollab script
@@ -835,9 +1079,68 @@ list_config <- function() {
   return(result)
 }
 
-#' Validate configuration files
+#' Validate zzcollab configuration files
 #'
-#' @return Logical indicating if all config files are valid
+#' Performs comprehensive validation of all zzcollab configuration files in the
+#' configuration hierarchy, checking for syntax errors, invalid values, and
+#' structural problems. This helps ensure your configuration is valid before
+#' running zzcollab operations.
+#'
+#' @return Logical value indicating whether all configuration files are valid (TRUE)
+#'   or if validation errors were found (FALSE). Returns TRUE if all configuration
+#'   files that exist are syntactically correct and contain valid values.
+#'   Missing configuration files are not considered errors.
+#'   
+#' @details
+#' The validation process checks multiple aspects of configuration files:
+#' 
+#' **Syntax Validation:**
+#' - YAML syntax correctness in all configuration files
+#' - Proper key-value structure and indentation
+#' - No duplicate keys or invalid characters
+#' 
+#' **Value Validation:**
+#' - Build mode values are one of: "fast", "standard", "comprehensive"
+#' - Boolean values are properly formatted as "true" or "false"
+#' - Path values are syntactically valid (though may not exist)
+#' 
+#' **File Structure:**
+#' - Configuration directory permissions and accessibility
+#' - File permissions for reading and writing
+#' - Backup file integrity (*.backup files)
+#' 
+#' This function is particularly useful for:
+#' - **Pre-flight checks**: Validate configuration before important operations
+#' - **Troubleshooting**: Identify configuration problems causing failures
+#' - **Setup verification**: Confirm configuration files are properly structured
+#' - **CI/CD pipelines**: Automated validation of configuration in workflows
+#'
+#' @examples
+#' \dontrun{
+#' # Validate configuration before important operations
+#' if (validate_config()) {
+#'   cat("Configuration is valid, proceeding...\n")
+#'   init_project(project_name = "my-study")
+#' } else {
+#'   cat("Configuration has errors, please fix before proceeding\n")
+#'   list_config()  # Show current config for debugging
+#' }
+#' 
+#' # Use in automated workflows
+#' validate_config() || stop("Invalid zzcollab configuration")
+#' 
+#' # Validation after making changes
+#' set_config("build_mode", "comprehensive")
+#' if (!validate_config()) {
+#'   warning("Configuration may have issues")
+#' }
+#' }
+#'
+#' @seealso
+#' \code{\link{list_config}} for viewing current configuration
+#' \code{\link{init_config}} for initializing default configuration
+#' \code{\link{set_config}} for setting configuration values
+#'
 #' @export
 validate_config <- function() {
   # Find zzcollab script
@@ -848,9 +1151,69 @@ validate_config <- function() {
   return(result == 0)
 }
 
-#' Initialize default configuration file
+#' Initialize default zzcollab configuration file
 #'
-#' @return Logical indicating success
+#' Creates a default zzcollab configuration file in the user's home directory
+#' (~/.zzcollab/config.yaml) with template values and helpful comments. This
+#' function sets up the foundation for personalized zzcollab configuration.
+#'
+#' @return Logical value indicating success (TRUE) or failure (FALSE) of the
+#'   initialization process. Returns TRUE if the configuration directory and
+#'   file were created successfully, FALSE if there were permission issues
+#'   or other errors during creation.
+#' 
+#' @details
+#' This function creates the complete zzcollab user configuration infrastructure:
+#' 
+#' **Directory Creation:**
+#' - Creates ~/.zzcollab directory if it doesn't exist
+#' - Sets appropriate permissions for security
+#' - Creates any necessary parent directories
+#' 
+#' **Configuration File:**
+#' - Creates ~/.zzcollab/config.yaml with template structure
+#' - Includes helpful comments explaining each configuration option
+#' - Sets reasonable default values where appropriate
+#' - Uses YAML format for human readability and easy editing
+#' 
+#' **Template Content Includes:**
+#' - team_name: (empty, to be filled by user)
+#' - build_mode: "standard" (balanced default)
+#' - dotfiles_dir: (empty, commonly ~/dotfiles)
+#' - github_account: (empty, for repository creation)
+#' - dotfiles_nodot: "false" (assumes dotfiles have leading dots)
+#' 
+#' This function is typically run once per system to establish your personal
+#' zzcollab configuration. After initialization, use \code{set_config()} to
+#' set your specific values.
+#'
+#' @examples
+#' \dontrun{
+#' # Initialize configuration (typically run once)
+#' if (init_config()) {
+#'   cat("Configuration initialized successfully\n")
+#'   cat("Edit ~/.zzcollab/config.yaml to set your preferences\n")
+#' } else {
+#'   cat("Failed to initialize configuration\n")
+#' }
+#' 
+#' # Complete setup workflow
+#' init_config()  # Create template
+#' set_config("team_name", "mylab")  # Set your values
+#' set_config("dotfiles_dir", "~/dotfiles")
+#' validate_config()  # Verify everything is correct
+#' 
+#' # Check if initialization is needed
+#' if (is.null(get_config("team_name"))) {
+#'   cat("Consider running init_config() to set up defaults\n")
+#' }
+#' }
+#'
+#' @seealso
+#' \code{\link{set_config}} for setting configuration values after initialization
+#' \code{\link{list_config}} for viewing the initialized configuration
+#' \code{\link{validate_config}} for validating the configuration file
+#'
 #' @export
 init_config <- function() {
   # Find zzcollab script
@@ -861,11 +1224,55 @@ init_config <- function() {
   return(result == 0)
 }
 
-#' Get configuration-aware default value
+#' Get configuration value with fallback default
 #'
-#' @param key Configuration key
-#' @param default Default value if config not set
-#' @return Configuration value or default
+#' Retrieves a configuration value from the zzcollab configuration system,
+#' returning a specified default value if the configuration key is not set.
+#' This function provides a convenient way to handle optional configuration
+#' with sensible fallbacks.
+#'
+#' @param key Character string specifying the configuration key to retrieve.
+#'   Should match keys used in the zzcollab configuration system (e.g.,
+#'   \"team_name\", \"build_mode\", \"dotfiles_dir\").
+#'   
+#' @param default Default value to return if the configuration key is not set
+#'   or if \\code{get_config()} returns NULL. Can be any type, but typically
+#'   a character string to match configuration values. Default is NULL.
+#'   
+#' @return The configuration value if set, otherwise the default value.
+#'   The return type matches the type of the configuration value or default.
+#'   
+#' @details
+#' This internal function implements the \"null-coalescing\" pattern commonly
+#' used throughout zzcollab for configuration management. It provides a clean
+#' way to specify fallback values when configuration keys might not be set.
+#' 
+#' The function is particularly useful in other zzcollab functions that need
+#' to handle optional configuration parameters gracefully. It eliminates the
+#' need for repeated NULL checking and provides consistent behavior across
+#' the codebase.
+#' 
+#' **Usage Pattern:**
+#' This function is typically used internally by other zzcollab functions
+#' to provide sensible defaults when users haven't configured specific values.
+#'
+#' @examples
+#' \\dontrun{\n#' # Internal usage pattern in zzcollab functions
+#' team_name <- get_config_default(\"team_name\", \"defaultteam\")
+#' build_mode <- get_config_default(\"build_mode\", \"standard\")
+#' 
+#' # Equivalent to using the %||% operator
+#' team_name <- get_config(\"team_name\") %||% \"defaultteam\"
+#' 
+#' # Common usage with multiple fallbacks
+#' dotfiles_path <- get_config_default(\"dotfiles_dir\", \"~/dotfiles\")
+#' github_account <- get_config_default(\"github_account\", team_name)
+#' }
+#'
+#' @seealso
+#' \\code{\\link{get_config}} for basic configuration retrieval
+#' \\code{\\link{\%||\%}} for the null-coalescing operator used internally
+#'
 #' @keywords internal
 get_config_default <- function(key, default = NULL) {
   config_value <- get_config(key)
