@@ -2,7 +2,9 @@
 
 ## Configuration System (Recommended)
 
-ZZCOLLAB includes a configuration system to eliminate repetitive typing and set project defaults. **Set this up once and simplify all subsequent commands.**
+ZZCOLLAB includes a configuration system to eliminate repetitive typing and
+set project defaults. **Set this up once and simplify all subsequent
+commands.**
 
 ### One-Time Configuration Setup
 ```bash
@@ -10,10 +12,14 @@ ZZCOLLAB includes a configuration system to eliminate repetitive typing and set 
 zzcollab --config init
 
 # 2. Set your defaults (customize as needed)
-zzcollab --config set team-name "rgt47"              # Your Docker Hub account
-zzcollab --config set github-account "rgt47"        # Your GitHub username  
-zzcollab --config set build-mode "standard"         # fast, standard, comprehensive
-zzcollab --config set dotfiles-dir "~/dotfiles"     # Path to your dotfiles
+zzcollab --config set team-name "rgt47"              # Your Docker Hub
+                                                       # account
+zzcollab --config set github-account "rgt47"        # Your GitHub
+                                                       # username  
+zzcollab --config set build-mode "standard"         # fast, standard,
+                                                       # comprehensive
+zzcollab --config set dotfiles-dir "~/dotfiles"     # Path to your
+                                                       # dotfiles
 
 # 3. View your configuration
 zzcollab --config list
@@ -128,8 +134,10 @@ cd ~/projects  # or your preferred projects directory
 
 # With Configuration (Recommended - much simpler):
 zzcollab -i -p png1 -B r-ver          # Build only shell variant (fastest)
-zzcollab -i -p png1 -B rstudio        # Build only RStudio variant (GUI teams)
-zzcollab -i -p png1 -B verse          # Build only verse variant (publishing)
+zzcollab -i -p png1 -B rstudio        # Build only RStudio variant
+                                       # (GUI teams)
+zzcollab -i -p png1 -B verse          # Build only verse variant
+                                       # (publishing)
 zzcollab -i -p png1 -B all            # Build all variants (traditional)
 
 # Traditional Verbose Approach:
@@ -142,10 +150,12 @@ zzcollab -i -t rgt47 -p png1 -B all -S       # Build all variants
 mkdir png1 && cd png1  # or git clone if repo exists
 
 # With Configuration:
-zzcollab -p png1 -I shell             # Full project setup with shell interface
+zzcollab -p png1 -I shell             # Full project setup with shell
+                                       # interface
 
 # Traditional Verbose:
-zzcollab -t rgt47 -p png1 -I shell    # Full project setup with shell interface
+zzcollab -t rgt47 -p png1 -I shell    # Full project setup with shell
+                                       # interface
 
 # Note: Step 1 (-i flag) now stops after team image creation
 # Step 2 creates the actual project structure and GitHub repository
@@ -259,7 +269,8 @@ cd zzcollab && ./install.sh && zzcollab --help
 
 # 2. Optional: Set up configuration for simplified commands
 zzcollab --config init
-zzcollab --config set team-name "rgt47"          # Team name for this project
+zzcollab --config set team-name "rgt47"          # Team name for this
+                                               # project
 zzcollab --config set build-mode "fast"          # Your preferred mode
 zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
@@ -383,10 +394,13 @@ git push origin main              # Direct push triggers team image rebuild
 
 ## Key Benefits of This Workflow:
 
-- ✅ **Zero manual image management**: GitHub Actions handles Docker rebuilds
-- ✅ **Automatic team notification**: Everyone knows when environment updates
+- ✅ **Zero manual image management**: GitHub Actions handles Docker
+  rebuilds
+- ✅ **Automatic team notification**: Everyone knows when environment
+  updates
 - ✅ **Dependency validation**: Prevents environment drift before commit
-- ✅ **Professional quality**: Tests, validation, and documentation required
+- ✅ **Professional quality**: Tests, validation, and documentation
+  required
 - ✅ **Team coordination**: Clear communication about changes and impacts
 
 ## Dev 2's Work is Done! 🎉
@@ -588,7 +602,8 @@ git push origin main                       # Triggers automatic
 - ✅ **Automatic environment sync**: GitHub Actions handled package updates
 - ✅ **Code compatibility**: Testing ensures nothing breaks
 - ✅ **Team coordination**: PR process enables feedback and discussion
-- ✅ **Professional quality**: Integration testing validates entire pipeline
+- ✅ **Professional quality**: Integration testing validates entire
+  pipeline
 
 ## What Happens Next:
 
@@ -728,7 +743,8 @@ cd png1
 
 # With Configuration (Recommended):
 zzcollab -p png1 -I shell      # Shell interface (command line development)
-zzcollab -p png1 -I rstudio    # RStudio interface (web-based IDE at localhost:8787)
+zzcollab -p png1 -I rstudio    # RStudio interface (web-based IDE at
+                               # localhost:8787)
 zzcollab -p png1 -I verse      # Publishing interface (LaTeX support for reports)
 
 # Traditional Verbose Approach:

@@ -10,7 +10,9 @@ developer collaboration using vim as the IDE:
 
 ## **🎯 Configuration System (Recommended)**
 
-ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive typing and set project defaults. **Set this up once and dramatically simplify all subsequent commands.**
+ZZCOLLAB includes a comprehensive configuration system to eliminate
+repetitive typing and set project defaults. **Set this up once and
+dramatically simplify all subsequent commands.**
 
 ### **⚙️ One-Time Configuration Setup**
 ```bash
@@ -18,11 +20,14 @@ ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive t
 zzcollab --config init
 
 # 2. Set your defaults (customize as needed)
-zzcollab --config set team-name "rgt47"              # Your Docker Hub account
+zzcollab --config set team-name "rgt47"              # Your Docker Hub
+                                                       # account
 zzcollab --config set github-account "rgt47"        # Your GitHub username  
-zzcollab --config set build-mode "standard"         # fast, standard, comprehensive
+zzcollab --config set build-mode "standard"         # fast, standard,
+                                                       # comprehensive
 zzcollab --config set dotfiles-dir "~/dotfiles"     # Path to your dotfiles
-zzcollab --config set dotfiles-nodot "false"        # Whether dotfiles need dots added
+zzcollab --config set dotfiles-nodot "false"        # Whether dotfiles
+                                                       # need dots added
 
 # 3. View your configuration
 zzcollab --config list
@@ -88,10 +93,14 @@ zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
 ```
 
 **What this creates:**
-- ✅ **Complete Docker environment**: All variants (shell, rstudio, verse) built and available
-- ✅ **Personal workspace**: Your dotfiles integrated into development environment  
-- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with automated CI/CD
-- ✅ **Ready-to-code setup**: Start analysis immediately with `make docker-zsh`
+- ✅ **Complete Docker environment**: All variants (shell, rstudio, verse)
+  built and available
+- ✅ **Personal workspace**: Your dotfiles integrated into development
+  environment  
+- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with
+  automated CI/CD
+- ✅ **Ready-to-code setup**: Start analysis immediately with
+  `make docker-zsh`
 
 **Alternative: One-command setup (builds all variants automatically)**
 ```bash
@@ -121,7 +130,8 @@ zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
 ### **🔄 Solo Developer Daily Workflow**
 ```bash
 # Start development environment
-make docker-zsh                    # or make docker-rstudio, make docker-verse
+make docker-zsh                    # or make docker-rstudio,
+                                   # make docker-verse
 
 # Inside container: write analysis, tests, reports
 # ... development work ...
@@ -130,7 +140,8 @@ exit
 # Commit and push (triggers automated CI/CD)
 git add .
 git commit -m "Add analysis with tests"
-git push                           # Automatically rebuilds Docker image if packages changed
+git push                           # Automatically rebuilds Docker image
+                                   # if packages changed
 ```
 
 ## **🚀 Team Collaboration Workflow**
@@ -881,6 +892,16 @@ gh pr create --title "Add visualization analysis with tests" \
     --base main
 
 # Option B: R Interface (R-Centric Workflow)
+# With Configuration (uses config defaults):
+# R
+# library(zzcollab)
+# create_pr(
+#   title = "Add visualization analysis with tests",
+#   body = "Added visualization analysis script with comprehensive tests"
+# )
+# quit()
+
+# Traditional Explicit Parameters:
 # R
 # library(zzcollab)
 # create_pr(

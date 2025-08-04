@@ -5,7 +5,10 @@
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](https://www.docker.com/)
 [![R](https://img.shields.io/badge/R-4.0+-276DC3?logo=r)](https://www.r-project.org/)
 
-A comprehensive framework for reproducible research collaboration using Docker containers. `zzcollab` provides both command-line tools and R interfaces to create, manage, and collaborate on research projects with standardized Docker environments, automated CI/CD workflows, and team collaboration tools.
+A comprehensive framework for reproducible research collaboration using Docker
+containers. `zzcollab` provides both command-line tools and R interfaces to
+create, manage, and collaborate on research projects with standardized Docker
+environments, automated CI/CD workflows, and team collaboration tools.
 
 ## Features
 
