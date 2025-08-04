@@ -8,6 +8,41 @@ output: pdf_document
 Based on my review of the user guide, here are the specific workflows for 
 developer collaboration using vim as the IDE:
 
+## **🎯 Configuration System (Recommended)**
+
+ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive typing and set project defaults. **Set this up once and dramatically simplify all subsequent commands.**
+
+### **⚙️ One-Time Configuration Setup**
+```bash
+# 1. Initialize configuration file
+zzcollab --config init
+
+# 2. Set your defaults (customize as needed)
+zzcollab --config set team-name "rgt47"              # Your Docker Hub account
+zzcollab --config set github-account "rgt47"        # Your GitHub username  
+zzcollab --config set build-mode "standard"         # fast, standard, comprehensive
+zzcollab --config set dotfiles-dir "~/dotfiles"     # Path to your dotfiles
+zzcollab --config set dotfiles-nodot "false"        # Whether dotfiles need dots added
+
+# 3. View your configuration
+zzcollab --config list
+```
+
+### **🚀 Config-Aware Workflows**
+With configuration set up, commands become dramatically simpler:
+
+```bash
+# Traditional verbose approach:
+zzcollab -i -t rgt47 -p myproject -B rstudio -S -d ~/dotfiles
+
+# Config-simplified approach (identical result):
+zzcollab -i -p myproject -B rstudio
+```
+
+**All workflows below show both approaches - use whichever you prefer!**
+
+---
+
 ## **🚀 Solo Developer Workflow**
 
 ### **👨‍💻 Single Developer: Complete Analysis Workspace Setup**
@@ -22,6 +57,12 @@ cd zzcollab
 # 2. Verify installation
 zzcollab --help                     # Test installation from anywhere
 which zzcollab                      # Confirm system PATH setup
+
+# 3. Optional: Set up configuration (recommended)
+zzcollab --config init
+zzcollab --config set team-name "rgt47"
+zzcollab --config set build-mode "standard" 
+zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 #### **🚀 Solo Workspace Setup**
@@ -29,8 +70,15 @@ which zzcollab                      # Confirm system PATH setup
 For solo developers who want a complete, reproducible analysis environment:
 
 ```bash
-# Option A: Two-step approach (recommended for flexibility)
+# Option A: With Configuration (Recommended - much simpler)
+# Step 1: Create team images (builds all variants: shell, rstudio, verse)
+zzcollab -i -p c275 -B all
 
+# Step 2: Create full project with personal workspace
+mkdir c275 && cd c275
+zzcollab -p c275 -F --github -I shell
+
+# Option B: Traditional Verbose Approach
 # Step 1: Create team images (builds all variants: shell, rstudio, verse)
 zzcollab -i -t rgt47 -p c275 -B all -S
 
@@ -47,14 +95,17 @@ zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
 
 **Alternative: One-command setup (builds all variants automatically)**
 ```bash
-# Single command for complete solo setup
+# With Configuration (Recommended):
+zzcollab -p c275 -F --github -I shell
+
+# Traditional Verbose Approach:
 zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
 
-# This automatically:
-# - Creates team images (all variants)
-# - Sets up project structure  
-# - Creates GitHub repository
-# - Configures personal development environment
+# Both approaches automatically:
+# - Create team images (all variants)
+# - Set up project structure  
+# - Create GitHub repository
+# - Configure personal development environment
 ```
 
 **Build mode options:**
@@ -97,6 +148,13 @@ cd zzcollab
 zzcollab --help                     # Test installation from anywhere
 zzcollab --init --help              # Test team initialization mode
 which zzcollab                      # Confirm system PATH setup
+
+# 3. Optional: Set up configuration (recommended for team leads)
+zzcollab --config init
+zzcollab --config set team-name "rgt47"          # Your Docker Hub team name
+zzcollab --config set github-account "rgt47"     # Your GitHub account
+zzcollab --config set build-mode "standard"      # Default build mode
+zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
 
 **📋 Developer 1 Checklist:**
@@ -121,24 +179,41 @@ which zzcollab                      # Confirm system PATH setup
 
 **Step 1: Create Team Images Only**
 ```bash
-# NEW: -i flag now ONLY creates and pushes team Docker images, then stops
+# With Configuration (Recommended - much simpler):
+zzcollab -i -p research-study -B r-ver          # Creates rgt47/research-studycore-shell:latest only
+zzcollab -i -p research-study -B rstudio        # Creates rgt47/research-studycore-rstudio:latest only
+zzcollab -i -p research-study -B verse          # Creates rgt47/research-studycore-verse:latest only
+zzcollab -i -p research-study -B all            # Creates all 3 variants (shell, rstudio, verse)
+
+# Build mode options with config:
+zzcollab -i -p research-study -B rstudio -F     # Fast mode: minimal packages
+zzcollab -i -p research-study -B all -C         # Comprehensive mode: full packages
+
+# Auto-detect project name from current directory:
+mkdir research-study && cd research-study
+zzcollab -i -B rstudio                          # Team setup with RStudio only
+
+# Traditional Verbose Approach:
 zzcollab -i -t rgt47 -p research-study -B r-ver -S -d ~/dotfiles      # Creates rgt47/research-studycore-shell:latest only
 zzcollab -i -t rgt47 -p research-study -B rstudio -S -d ~/dotfiles    # Creates rgt47/research-studycore-rstudio:latest only  
 zzcollab -i -t rgt47 -p research-study -B verse -S -d ~/dotfiles      # Creates rgt47/research-studycore-verse:latest only
 zzcollab -i -t rgt47 -p research-study -B all -S -d ~/dotfiles        # Creates all 3 variants (shell, rstudio, verse)
 
-# Build mode options:
+# Build mode options verbose:
 zzcollab -i -t rgt47 -p research-study -B rstudio -F -d ~/dotfiles    # Fast mode: minimal packages
 zzcollab -i -t rgt47 -p research-study -B all -C -d ~/dotfiles        # Comprehensive mode: full packages
-
-# Auto-detect project name from current directory:
-mkdir research-study && cd research-study
-zzcollab -i -t rgt47 -B rstudio -S -d ~/dotfiles                      # Team setup with RStudio only
 ```
 
 **Step 2: Create Full Project Structure**
 ```bash
 # After team images are created and pushed, create project structure separately:
+
+# With Configuration (Recommended):
+mkdir research-study && cd research-study  # or git clone if repo exists
+zzcollab -p research-study -I shell        # Full project setup with shell interface
+zzcollab -p research-study -I rstudio      # Or with RStudio interface
+
+# Traditional Verbose Approach:
 mkdir research-study && cd research-study  # or git clone if repo exists
 zzcollab -t rgt47 -p research-study -I shell -d ~/dotfiles            # Full project setup with shell interface
 zzcollab -t rgt47 -p research-study -I rstudio -d ~/dotfiles          # Or with RStudio interface
@@ -149,6 +224,13 @@ zzcollab -V verse                                                      # Add ver
 
 
 # OR with Dockerfile customization (two-step process):
+# With Configuration:
+# Step 1: Prepare project and Dockerfile for editing
+zzcollab -i -p research-study -P
+# Step 2: Edit research-study/Dockerfile.teamcore, then run:
+zzcollab -i -p research-study
+
+# Traditional Verbose:
 # Step 1: Prepare project and Dockerfile for editing
 zzcollab -i -t rgt47 -p research-study -P
 # Step 2: Edit research-study/Dockerfile.teamcore, then run:
@@ -159,7 +241,22 @@ zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
 
 **Step 1: Create Team Images Only**
 ```r
-# NEW: R interface now separates team image creation from project setup
+# Method 1: Using Configuration (Recommended)
+library(zzcollab)
+
+# One-time setup for team lead
+init_config()                                      # Initialize config file
+set_config("team_name", "rgt47")                   # Set team name
+set_config("build_mode", "standard")               # Set preferred mode
+set_config("dotfiles_dir", "~/dotfiles")           # Set dotfiles path
+
+# Create and push team Docker images only (uses config defaults)
+create_team_images(
+  project_name = "research-study",
+  base_images = "rstudio"    # or c("r-ver", "rstudio", "verse") for all
+)
+
+# Method 2: Traditional Explicit Parameters
 library(zzcollab)
 # Create and push team Docker images only
 create_team_images(
@@ -174,8 +271,17 @@ create_team_images(
 
 **Step 2: Create Full Project Structure**
 ```r
-# After team images exist, create full project setup separately
+# Method 1: Using Configuration (Recommended)
 library(zzcollab)
+# After team images exist, create full project setup (uses config defaults)
+init_project(
+  project_name = "research-study",
+  interface = "rstudio"      # "shell", "rstudio", "verse"
+)
+
+# Method 2: Traditional Explicit Parameters
+library(zzcollab)
+# After team images exist, create full project setup separately
 init_project(
   team_name = "rgt47",
   project_name = "research-study",

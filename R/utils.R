@@ -1257,7 +1257,8 @@ init_config <- function() {
 #' to provide sensible defaults when users haven't configured specific values.
 #'
 #' @examples
-#' \\dontrun{\n#' # Internal usage pattern in zzcollab functions
+#' \dontrun{
+#' # Internal usage pattern in zzcollab functions
 #' team_name <- get_config_default(\"team_name\", \"defaultteam\")
 #' build_mode <- get_config_default(\"build_mode\", \"standard\")
 #' 

@@ -1,0 +1,78 @@
+# Dockerfile.verse-multiarch - ARM64 and AMD64 compatible verse + shiny
+# image
+# Based on official rocker project install_verse.sh script
+# Note: Using rocker/rstudio as base since rocker/tidyverse doesn't support
+# ARM64
+FROM rocker/rstudio:latest
+
+# System dependencies (from official rocker install_verse.sh + tidyverse
+# requirements)
+RUN apt-get update && apt-get install -y \
+    cmake \
+    default-jdk \
+    fonts-roboto \
+    ghostscript \
+    hugo \
+    less \
+    libglpk-dev \
+    libgmp3-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
+    libmagick++-dev \
+    qpdf \
+    texinfo \
+    vim \
+    wget \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    libgit2-dev \
+    libssh2-1-dev \
+    librdf0-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install tidyverse packages first (since we're starting from rstudio, not
+# tidyverse)
+RUN install2.r --error --skipinstalled --ncpus -1 \
+    tidyverse \
+    devtools \
+    rmarkdown \
+    && rm -rf /tmp/downloaded_packages
+
+# Install R packages (official verse packages, excluding problematic ones)
+RUN install2.r --error --skipinstalled --ncpus -1 \
+    blogdown \
+    bookdown \
+    distill \
+    rticles \
+    rJava \
+    xaringan \
+    redland \
+    tinytex \
+    && rm -rf /tmp/downloaded_packages
+
+# Add Shiny support (enhancement over official verse)
+RUN install2.r --error --skipinstalled --ncpus -1 \
+    shiny \
+    shinydashboard \
+    DT \
+    plotly \
+    && rm -rf /tmp/downloaded_packages
+
+# Install TinyTeX for LaTeX support
+RUN R -e "tinytex::install_tinytex()"
+
+# Set working directory
+WORKDIR /home/rstudio
+
+# Expose RStudio port (inherited from rocker/tidyverse)
+EXPOSE 8787
+
+# Default command (inherited from rocker/tidyverse)
+CMD ["/init"]
+
+# Metadata
+LABEL maintainer="rgt47"
+LABEL description="Multi-architecture verse + shiny image for zzcollab"
+LABEL version="1.0.0"
+LABEL architecture="linux/amd64,linux/arm64"
