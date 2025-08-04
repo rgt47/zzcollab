@@ -1,15 +1,25 @@
 #!/bin/bash
 ##############################################################################
-# ZZCOLLAB CORE MODULE
+# ZZCOLLAB CORE MODULE - FOUNDATION INFRASTRUCTURE
 ##############################################################################
 # 
-# PURPOSE: Core infrastructure functions required by all other modules
-#          - Logging system
-#          - Package name validation
-#          - Utility functions
-#          - Constants and environment setup
+# PURPOSE: Provides core infrastructure functions required by all other modules
+#          This is the foundation module that must be loaded before others
 #
-# DEPENDENCIES: None (this is the foundation module)
+# FEATURES:
+#          - Unified logging system (log_info, log_error, log_success, log_warning)
+#          - Module dependency validation system (require_module function)
+#          - Package name validation and sanitization
+#          - Item tracking system for manifest generation
+#          - File safety utilities (safe_mkdir, safe_copy)
+#          - Command availability caching
+#          - Cross-platform compatibility helpers
+#
+# ARCHITECTURE: This module provides the basic building blocks that other
+#               modules depend on. It establishes consistent patterns for
+#               error handling, logging, and validation across the codebase.
+#
+# DEPENDENCIES: modules/constants.sh (optional, has fallbacks)
 ##############################################################################
 
 #=============================================================================
@@ -357,18 +367,65 @@ validate_with_callback() {
 #=============================================================================
 
 # Function: require_module
-# Purpose: Validate that required modules are loaded, with standardized error handling
-# Arguments: $1+ - module names to check (e.g., "core", "templates")
-# Usage: require_module "core" "templates"
-# Note: This replaces the repeated validation patterns across all modules
+# Purpose: Unified module dependency validation system
+#
+# DESCRIPTION:
+#   This function provides centralized dependency checking for all zzcollab modules.
+#   It replaces 17 duplicate validation patterns that were scattered across modules,
+#   providing consistent error handling and dependency management.
+#
+# ARCHITECTURE:
+#   Each module sets a flag like "ZZCOLLAB_MODULENAME_LOADED=true" when it loads.
+#   This function checks those flags to ensure dependencies are met before proceeding.
+#   This prevents runtime errors from missing functions and provides clear error messages.
+#
+# ARGUMENTS:
+#   $1+ - Module names to check (e.g., "core", "templates", "config")
+#         Module names should be lowercase, matching the filename without .sh extension
+#
+# VALIDATION PROCESS:
+#   1. Determines the calling module name from BASH_SOURCE stack
+#   2. For each required module, checks if ZZCOLLAB_MODULENAME_LOADED=true
+#   3. If any dependency is missing, shows clear error and exits
+#   4. If all dependencies are satisfied, function returns normally
+#
+# USAGE EXAMPLES:
+#   require_module "core"                    # Single dependency  
+#   require_module "core" "templates"        # Multiple dependencies
+#   require_module "constants" "core" "cli"  # Chain of dependencies
+#
+# ERROR BEHAVIOR:
+#   - Exits with code 1 if any dependency is missing
+#   - Provides clear error message showing which module needs which dependency
+#   - Uses stderr for error output to avoid interfering with function returns
+#
+# BENEFITS:
+#   - Eliminates 136+ lines of duplicate validation code
+#   - Provides consistent error messages across all modules  
+#   - Enables fail-fast behavior when dependencies are missing
+#   - Makes module loading order explicit and enforceable
+#
 require_module() {
-    local current_module="${BASH_SOURCE[2]##*/}"  # Get calling module name
-    current_module="${current_module%.sh}"
+    # Extract the name of the calling module from the call stack
+    # BASH_SOURCE[2] = script that called the function that called this function
+    # This gives us the actual module doing the validation
+    local current_module="${BASH_SOURCE[2]##*/}"  # Get filename only
+    current_module="${current_module%.sh}"        # Remove .sh extension
     
+    # Check each required module dependency
     for module in "$@"; do
+        # Convert module name to uppercase for flag variable
+        # Use tr command for compatibility across shell versions
         local module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
+        
+        # Construct the flag variable name (e.g., ZZCOLLAB_CORE_LOADED)
         local module_var="ZZCOLLAB_${module_upper}_LOADED"
+        
+        # Check if the required module has been loaded
+        # ${!module_var:-} uses indirect variable expansion with default empty value
         if [[ "${!module_var:-}" != "true" ]]; then
+            # Provide clear error message and exit
+            # Use >&2 to send to stderr so it doesn't interfere with return values
             echo "❌ Error: ${current_module}.sh requires ${module}.sh to be loaded first" >&2
             exit 1
         fi

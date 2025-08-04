@@ -400,9 +400,48 @@ clean_package_names <- function(packages, exclude_packages = character()) {
   sort(packages)
 }
 
+#==============================================================================
+# CORE PACKAGE EXTRACTION ENGINE
+#==============================================================================
+
 # Extract packages from text content (pure function, non-recursive)
-# This is the core "parsing engine" that finds package dependencies in R code
-# It handles multiple patterns: library() calls, namespace calls (::), and @examples
+#
+# DESCRIPTION:
+#   This is the core "parsing engine" that finds package dependencies in R code.
+#   It's the heart of the dependency validation system, responsible for accurately
+#   detecting all the ways R packages can be referenced in code.
+#
+# ARCHITECTURE:
+#   Uses a multi-step regex-based approach to handle different patterns:
+#   1. Comment removal (while preserving roxygen documentation)
+#   2. Library/require calls (simple, wrapped, conditional)
+#   3. Namespace calls (::, :::)
+#   4. Roxygen imports (@importFrom, @import)
+#   5. Cleanup and deduplication
+#
+# HANDLES THESE PATTERNS:
+#   - library(dplyr), require("ggplot2")           # Standard loading
+#   - suppressMessages(library(package))           # Wrapped calls
+#   - if (condition) library(package)              # Conditional loading  
+#   - dplyr::select(), package::function()         # Namespace calls
+#   - package:::internal_function()                # Internal namespace
+#   - @importFrom dplyr select mutate              # Roxygen imports
+#   - @import ggplot2                             # Full roxygen imports
+#
+# EDGE CASES HANDLED:
+#   - Comments containing fake library calls
+#   - Nested function calls
+#   - Multi-line expressions
+#   - Mixed quote styles (single/double)
+#   - Base R packages (automatically filtered)
+#
+# ARGUMENTS:
+#   content - Character vector containing R code text to parse
+#
+# RETURNS:
+#   Character vector of unique package names found in the code
+#   Returns empty character(0) if no packages found or invalid input
+#
 extract_packages_from_text <- function(content) {
   # Input validation: ensure we have text content to parse
   if (!is.character(content) || length(content) == 0L || nchar(content) == 0L) {

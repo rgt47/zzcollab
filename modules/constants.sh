@@ -13,37 +13,47 @@
 ##############################################################################
 
 #=============================================================================
-# COLOR CONSTANTS (used across multiple scripts)
+# COLOR CONSTANTS (ANSI escape codes for terminal output formatting)
 #=============================================================================
 
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
+# These ANSI escape sequences provide colored terminal output
+# Used throughout zzcollab for consistent visual feedback to users
+# ANSI format: \033[<style>;<color>m where style 0=normal, 1=bold
+
+readonly RED='\033[0;31m'      # Red text - used for errors and failures
+readonly GREEN='\033[0;32m'    # Green text - used for success messages
+readonly YELLOW='\033[1;33m'   # Bold yellow text - used for warnings
+readonly BLUE='\033[0;34m'     # Blue text - used for information messages
+readonly NC='\033[0m'          # No Color - resets terminal to default
 
 #=============================================================================
-# PATH CONSTANTS
+# PATH CONSTANTS (computed once for efficiency)
 #=============================================================================
 
-# Core script directories (computed once)
+# Main zzcollab script directory
+# ${BASH_SOURCE[1]} refers to the calling script (not this constants file)
+# This allows modules to find the main zzcollab directory regardless of
+# where they are called from
 readonly ZZCOLLAB_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
-readonly ZZCOLLAB_TEMPLATES_DIR="$ZZCOLLAB_SCRIPT_DIR/templates"
-readonly ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_SCRIPT_DIR/modules"
+# Derived directories - built from main script directory
+readonly ZZCOLLAB_TEMPLATES_DIR="$ZZCOLLAB_SCRIPT_DIR/templates"    # Template files location
+readonly ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_SCRIPT_DIR/modules"        # Shell modules location
 
 #=============================================================================
-# MANIFEST AND CONFIGURATION FILES
+# MANIFEST AND CONFIGURATION FILES (for project tracking and user settings)
 #=============================================================================
 
-# Manifest files for tracking created items
-readonly ZZCOLLAB_MANIFEST_JSON=".zzcollab_manifest.json"
-readonly ZZCOLLAB_MANIFEST_TXT=".zzcollab_manifest.txt"
+# Manifest files track all files created during zzcollab setup
+# These enable clean uninstallation and prevent conflicts
+readonly ZZCOLLAB_MANIFEST_JSON=".zzcollab_manifest.json"  # Machine-readable manifest
+readonly ZZCOLLAB_MANIFEST_TXT=".zzcollab_manifest.txt"    # Human-readable manifest
 
-# Configuration file paths
-readonly ZZCOLLAB_CONFIG_PROJECT="./zzcollab.yaml"
-readonly ZZCOLLAB_CONFIG_USER_DIR="$HOME/.zzcollab"
-readonly ZZCOLLAB_CONFIG_USER="$ZZCOLLAB_CONFIG_USER_DIR/config.yaml"
-readonly ZZCOLLAB_CONFIG_SYSTEM="/etc/zzcollab/config.yaml"
+# Configuration file hierarchy (loaded in priority order)
+# Project-level config overrides user-level, which overrides system-level
+readonly ZZCOLLAB_CONFIG_PROJECT="./zzcollab.yaml"                  # Project-specific settings
+readonly ZZCOLLAB_CONFIG_USER_DIR="$HOME/.zzcollab"                 # User config directory
+readonly ZZCOLLAB_CONFIG_USER="$ZZCOLLAB_CONFIG_USER_DIR/config.yaml"  # User-level settings
+readonly ZZCOLLAB_CONFIG_SYSTEM="/etc/zzcollab/config.yaml"         # System-wide settings
 
 #=============================================================================
 # DEFAULT VALUES
