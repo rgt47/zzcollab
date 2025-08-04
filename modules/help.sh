@@ -146,14 +146,14 @@ EOF
 # TEAM INITIALIZATION HELP FUNCTION
 #=============================================================================
 
-# Function: show_init_help
-# Purpose: Display help specifically for team initialization mode
-show_init_help() {
+# Function: show_init_usage_and_options
+# Purpose: Display init command usage and options
+show_init_usage_and_options() {
     cat << EOF
-$0 --init - Team initialization for ZZCOLLAB research collaboration
+\$0 --init - Team initialization for ZZCOLLAB research collaboration
 
 USAGE:
-    $0 --init --team-name TEAM --project-name PROJECT [OPTIONS]
+    \$0 --init --team-name TEAM --project-name PROJECT [OPTIONS]
 
 REQUIRED:
     -t, --team-name NAME        Docker Hub team/organization name
@@ -179,37 +179,51 @@ OPTIONAL:
     -y, --yes                  Skip confirmation prompt (for automation)
     
     -h, --help                 Show this help message
+EOF
+}
+
+# Function: show_init_examples
+# Purpose: Display team initialization examples
+show_init_examples() {
+    cat << EOF
 
 EXAMPLES:
     # Prepare project for Dockerfile editing (Developer 1 workflow)
-    $0 -i -t rgt47 -p research-study -P
+    \$0 -i -t rgt47 -p research-study -P
     # Edit research-study/Dockerfile.teamcore as needed, then run:
-    $0 -i -t rgt47 -p research-study
+    \$0 -i -t rgt47 -p research-study
 
     # Direct setup with standard Dockerfile
-    $0 -i -t rgt47 -p research-study -d ~/dotfiles
+    \$0 -i -t rgt47 -p research-study -d ~/dotfiles
     
     # Fast mode: minimal Docker + lightweight packages
-    $0 -i -t rgt47 -p research-study -F -d ~/dotfiles
+    \$0 -i -t rgt47 -p research-study -F -d ~/dotfiles
     
     # Standard mode: balanced setup (default)
-    $0 -i -t rgt47 -p research-study -S -d ~/dotfiles
+    \$0 -i -t rgt47 -p research-study -S -d ~/dotfiles
     
     # Comprehensive mode: extended Docker + full packages
-    $0 -i -t rgt47 -p research-study -C -d ~/dotfiles
+    \$0 -i -t rgt47 -p research-study -C -d ~/dotfiles
     
     
     # Alternative: Create directory first, then auto-detect project name
-    mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
+    mkdir png1 && cd png1 && \$0 -i -t rgt47 -d ~/dotfiles
 
     # With custom GitHub account
-    $0 --init --team-name rgt47 --project-name research-study --github-account mylab
+    \$0 --init --team-name rgt47 --project-name research-study --github-account mylab
 
     # With dotfiles (files already have dots: .bashrc, .vimrc, etc.)
-    $0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+    \$0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
 
     # With dotfiles that need dots added (files like: bashrc, vimrc, etc.)
-    $0 -i -t rgt47 -p research-study -D ~/Dropbox/dotfiles
+    \$0 -i -t rgt47 -p research-study -D ~/Dropbox/dotfiles
+EOF
+}
+
+# Function: show_init_workflow_and_prerequisites
+# Purpose: Display workflow steps and prerequisites
+show_init_workflow_and_prerequisites() {
+    cat << EOF
 
 WORKFLOW:
     1. Create project directory
@@ -225,17 +239,24 @@ PREREQUISITES:
     - Docker Hub account and logged in (docker login)
     - GitHub CLI installed and authenticated (gh auth login)
     - zzcollab installed and available in PATH
-
 EOF
+}
+
+# Function: show_init_help
+# Purpose: Display help specifically for team initialization mode (coordinating function)
+show_init_help() {
+    show_init_usage_and_options
+    show_init_examples
+    show_init_workflow_and_prerequisites
 }
 
 #=============================================================================
 # NEXT STEPS GUIDANCE FUNCTION
 #=============================================================================
 
-# Function: show_next_steps
-# Purpose: Display comprehensive guidance for next steps after setup
-show_next_steps() {
+# Function: show_project_structure_overview
+# Purpose: Display project structure information
+show_project_structure_overview() {
     cat << 'EOF'
 🚀 ZZCOLLAB NEXT STEPS
 
@@ -247,6 +268,13 @@ After running the modular setup script, here's how to get started:
    - Analysis workflow with report templates
    - Docker environment for reproducibility
    - CI/CD workflows for automation
+EOF
+}
+
+# Function: show_development_workflows
+# Purpose: Display Docker and development workflow information
+show_development_workflows() {
+    cat << 'EOF'
 
 🐳 DOCKER DEVELOPMENT:
    Start your development environment:
@@ -272,6 +300,13 @@ After running the modular setup script, here's how to get started:
    - Document datasets in data/metadata/
    - Use analysis/templates/ for common patterns
    - Validate data with scripts in data/validation/
+EOF
+}
+
+# Function: show_collaboration_and_automation
+# Purpose: Display collaboration and automation information
+show_collaboration_and_automation() {
+    cat << 'EOF'
 
 🤝 COLLABORATION:
    git init                   # Initialize version control
@@ -283,6 +318,13 @@ After running the modular setup script, here's how to get started:
    - GitHub Actions will run package checks automatically
    - Papers render automatically when analysis/ changes
    - Use pre-commit hooks for code quality
+EOF
+}
+
+# Function: show_help_and_cleanup_info
+# Purpose: Display help and cleanup information
+show_help_and_cleanup_info() {
+    cat << 'EOF'
 
 📄 DOCUMENTATION:
    - See ZZCOLLAB_USER_GUIDE.md for comprehensive guide
@@ -299,6 +341,15 @@ After running the modular setup script, here's how to get started:
 
 Happy researching! 🎉
 EOF
+}
+
+# Function: show_next_steps
+# Purpose: Display comprehensive guidance for next steps after setup (coordinating function)
+show_next_steps() {
+    show_project_structure_overview
+    show_development_workflows
+    show_collaboration_and_automation
+    show_help_and_cleanup_info
 }
 
 #=============================================================================

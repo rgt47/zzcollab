@@ -251,10 +251,9 @@ validate_devtools_structure() {
     fi
 }
 
-# Function: show_devtools_summary
-# Purpose: Display development tools summary and usage instructions
-show_devtools_summary() {
-    log_info "Development tools summary:"
+# Function: show_devtools_files_created
+# Purpose: Display created development files
+show_devtools_files_created() {
     cat << 'EOF'
 🛠️ DEVELOPMENT TOOLS CREATED:
 
@@ -262,6 +261,13 @@ show_devtools_summary() {
 ├── .gitignore                   # Comprehensive ignore patterns
 ├── .Rprofile                    # R session configuration
 └── Personal dotfiles (optional) # Development environment configs
+EOF
+}
+
+# Function: show_makefile_targets
+# Purpose: Display Makefile target documentation
+show_makefile_targets() {
+    cat << 'EOF'
 
 ⚡ MAKEFILE TARGETS:
 
@@ -288,6 +294,13 @@ show_devtools_summary() {
 - make clean                 # Remove build artifacts
 - make docker-clean          # Remove Docker image and containers
 - make help                  # Show all available targets
+EOF
+}
+
+# Function: show_configuration_files_info
+# Purpose: Display configuration files documentation
+show_configuration_files_info() {
+    cat << 'EOF'
 
 🔧 CONFIGURATION FILES:
 
@@ -309,6 +322,13 @@ show_devtools_summary() {
 - Shell configurations (.bashrc, .aliases, .functions)
 - Development tools (.tmux.conf, .gitconfig)
 - Available in both native and Docker environments
+EOF
+}
+
+# Function: show_getting_started_guide
+# Purpose: Display getting started instructions
+show_getting_started_guide() {
+    cat << 'EOF'
 
 🚀 GETTING STARTED:
 1. Run 'make help' to see all available commands
@@ -317,6 +337,16 @@ show_devtools_summary() {
 4. Develop packages with 'make check' and 'make test'
 5. Render papers with 'make docker-render'
 EOF
+}
+
+# Function: show_devtools_summary
+# Purpose: Display development tools summary and usage instructions (coordinating function)
+show_devtools_summary() {
+    log_info "Development tools summary:"
+    show_devtools_files_created
+    show_makefile_targets
+    show_configuration_files_info
+    show_getting_started_guide
 }
 
 # Function: create_development_scripts

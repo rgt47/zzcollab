@@ -86,19 +86,18 @@ validate_init_prerequisites() {
     return 0
 }
 
-# Function: validate_init_parameters
-# Purpose: Validate required parameters for team initialization
-# Checks: TEAM_NAME, PROJECT_NAME, directory state
-validate_init_parameters() {
-    # Check required parameters
+# Function: validate_required_team_parameters
+# Purpose: Validate required team and project name parameters
+validate_required_team_parameters() {
+    # Check required team name
     if [[ -z "$TEAM_NAME" ]]; then
         print_error "Required parameter --team-name is missing"
         show_init_help
         exit 1
     fi
 
+    # Check or infer project name
     if [[ -z "$PROJECT_NAME" ]]; then
-        # Try to infer project name from current directory if it's empty or minimal
         local current_dir
         current_dir=$(basename "$PWD")
         local file_count
@@ -120,8 +119,12 @@ validate_init_parameters() {
             fi
         fi
     fi
+}
 
-    # Set defaults
+# Function: set_init_parameter_defaults
+# Purpose: Set default values for optional parameters
+set_init_parameter_defaults() {
+    # Set default GitHub account to team name
     if [[ -z "$GITHUB_ACCOUNT" ]]; then
         GITHUB_ACCOUNT="$TEAM_NAME"
         log_info "Using default GitHub account: $GITHUB_ACCOUNT"
@@ -132,26 +135,34 @@ validate_init_parameters() {
         DOCKERFILE_PATH="$SCRIPT_DIR/templates/Dockerfile.unified"
         log_info "Using unified Dockerfile template: $DOCKERFILE_PATH"
     fi
+}
 
-    # Validate dotfiles
+# Function: validate_dotfiles_configuration
+# Purpose: Validate dotfiles directory and set up configuration
+validate_dotfiles_configuration() {
     if [[ -n "$DOTFILES_DIR" ]]; then
         if [[ ! -d "$DOTFILES_DIR" ]]; then
             print_error "Dotfiles directory not found: $DOTFILES_DIR"
             exit 1
         fi
         USE_DOTFILES=true
-        log_info "Using dotfiles from: $DOTFILES_DIR (files already have dots)"
-    elif [[ -n "$DOTFILES_DIR" && "$DOTFILES_NODOT" == "true" ]]; then
-        if [[ ! -d "$DOTFILES_DIR" ]]; then
-            print_error "Dotfiles directory not found: $DOTFILES_DIR"
-            exit 1
+        if [[ "$DOTFILES_NODOT" == "true" ]]; then
+            log_info "Using dotfiles from: $DOTFILES_DIR (files need dots added)"
+        else
+            log_info "Using dotfiles from: $DOTFILES_DIR (files already have dots)"
         fi
-        USE_DOTFILES=true
-        log_info "Using dotfiles from: $DOTFILES_DIR (files need dots added)"
     else
         log_info "No dotfiles specified, proceeding without dotfiles integration"
     fi
+}
 
+# Function: validate_init_parameters
+# Purpose: Validate required parameters for team initialization (coordinating function)
+# Checks: TEAM_NAME, PROJECT_NAME, directory state
+validate_init_parameters() {
+    validate_required_team_parameters
+    set_init_parameter_defaults
+    validate_dotfiles_configuration
     return 0
 }
 
