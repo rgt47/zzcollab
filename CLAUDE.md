@@ -7,20 +7,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments. The system consists of:
 
 ### Core Components
-- **Main executable**: `zzcollab.sh` - Primary framework script (439 lines, 64% reduction from original)
-- **Modular shell system**: `modules/` directory contains core functionality
+- **Main executable**: `zzcollab.sh` - Primary framework script (512 lines, streamlined and modular)
+- **Modular shell system**: 15 modules in `modules/` directory containing all functionality
 - **Docker-first workflow**: All development happens in containers
 - **R package structure**: Standard R package with testthat for testing
 - **Template system**: `templates/` for project scaffolding
+- **Configuration system**: Centralized constants and user configuration management
 
 ### Key Architecture Patterns
-- **Modular design**: Shell scripts in `modules/` (core.sh, cli.sh, docker.sh, structure.sh, etc.)
+- **Modular design**: 15 shell modules (constants.sh, core.sh, cli.sh, config.sh, templates.sh, structure.sh, rpackage.sh, docker.sh, analysis.sh, cicd.sh, devtools.sh, team_init.sh, help.sh, github.sh, utils.sh)
 - **Docker inheritance**: Team base images → personal development images
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
 - **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and selective base image building (-B, -V, -I)
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
+- **Centralized constants**: Global variables and configuration managed in constants.sh
+- **Function modularity**: All functions follow single responsibility principle (<60 lines each)
 
 ## Configuration System
 
@@ -29,23 +32,23 @@ ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive t
 ### Configuration Commands
 ```bash
 # Create default configuration file
-zzcollab config init
+zzcollab --config init
 
 # Set configuration values  
-zzcollab config set team_name "myteam"
-zzcollab config set github_account "myusername"
-zzcollab config set build_mode "fast"
-zzcollab config set dotfiles_dir "~/dotfiles"
+zzcollab --config set team-name "myteam"
+zzcollab --config set github-account "myusername"
+zzcollab --config set build-mode "fast"
+zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Get configuration values
-zzcollab config get team_name
-zzcollab config get build_mode
+zzcollab --config get team-name
+zzcollab --config get build-mode
 
 # List all configuration
-zzcollab config list
+zzcollab --config list
 
 # Validate configuration files
-zzcollab config validate
+zzcollab --config validate
 ```
 
 ### Configuration Files
@@ -388,7 +391,7 @@ All documentation has been updated to reflect current system capabilities:
 - **Error handling**: Comprehensive examples of helpful guidance when team images unavailable
 - **Platform coverage**: Complete setup instructions for macOS, Windows, and Ubuntu systems
 
-### R Package Integration (19 Functions)
+### R Package Integration (25 Functions)
 Complete R interface for CLI functionality with build mode support:
 ```r
 # Team Lead with build modes

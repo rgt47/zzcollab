@@ -410,7 +410,11 @@ cat("Review the output above for any data quality issues\\n")'
     else
         log_warn "Failed to create data validation script"
     fi
-    
+}
+
+# Function: create_parallel_computing_script
+# Purpose: Create high-performance computing setup script
+create_parallel_computing_script() {
     # 2. Parallel computing setup script
     local parallel_setup_script='# High-Performance Computing Setup
 # Configure parallel processing for computationally intensive tasks
@@ -499,7 +503,11 @@ cat("Parallel computing setup complete\\n")'
     else
         log_warn "Failed to create parallel computing setup script"
     fi
-    
+}
+
+# Function: create_database_setup_script
+# Purpose: Create database connection setup script
+create_database_setup_script() {
     # 3. Database setup script
     local database_setup_script='# Database Connection Setup
 # Template for connecting to various database systems
@@ -569,7 +577,11 @@ cat("Use setup_sqlite(), setup_postgresql(), setup_mysql(), or setup_odbc()\\n")
     else
         log_warn "Failed to create database setup script"
     fi
-    
+}
+
+# Function: create_reproducibility_check_script
+# Purpose: Create reproducibility validation script
+create_reproducibility_check_script() {
     # 4. Reproducibility check script
     local reproducibility_script='# Reproducibility Check Script
 # Run this script to verify that the analysis can be fully reproduced
@@ -682,7 +694,11 @@ cat("\\n=== REPRODUCIBILITY CHECK COMPLETE ===\\n")'
     else
         log_warn "Failed to create reproducibility check script"
     fi
-    
+}
+
+# Function: create_testing_guide_script
+# Purpose: Create comprehensive testing guide script
+create_testing_guide_script() {
     # 5. Testing guide script
     local testing_guide_script='# Testing Guide for Research Projects
 # This script provides examples and templates for adding tests to your research repository
@@ -904,8 +920,6 @@ cat("5. Check test coverage with covr package\\n")'
     else
         log_warn "Failed to create testing guide script"
     fi
-
-    log_success "Essential research scripts created in scripts/ directory"
 }
 
 #=============================================================================

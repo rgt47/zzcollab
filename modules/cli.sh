@@ -53,7 +53,8 @@ validate_enum() {
 BUILD_DOCKER=true
 DOTFILES_DIR=""
 DOTFILES_NODOT=false
-readonly DEFAULT_BASE_IMAGE="rocker/r-ver"
+# Use centralized constants if available
+readonly DEFAULT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_BASE_IMAGE:-rocker/r-ver}"
 BASE_IMAGE="$DEFAULT_BASE_IMAGE"
 
 # Multi-architecture support configuration
@@ -69,7 +70,7 @@ GITHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
 
 # Base image selection for team initialization
-readonly DEFAULT_INIT_BASE_IMAGE="all"
+readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-all}"
 INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, all
 
 # Initialization mode variables
@@ -82,7 +83,7 @@ SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 
 # Simplified build mode system (replaces complex flag system)
-readonly DEFAULT_BUILD_MODE="standard"
+readonly DEFAULT_BUILD_MODE="${ZZCOLLAB_DEFAULT_BUILD_MODE:-standard}"
 BUILD_MODE="$DEFAULT_BUILD_MODE"    # Options: fast, standard, comprehensive
 # fast        = minimal Docker + minimal packages (fastest builds)
 # standard    = standard Docker + standard packages (balanced)

@@ -26,10 +26,11 @@ require_module "core"
 #=============================================================================
 
 # Configuration file locations (priority order)
-readonly CONFIG_PROJECT_FILE="./zzcollab.yaml"
-readonly CONFIG_USER_DIR="$HOME/.zzcollab"
-readonly CONFIG_USER_FILE="$CONFIG_USER_DIR/config.yaml"
-readonly CONFIG_SYSTEM_FILE="/etc/zzcollab/config.yaml"
+# Use centralized constants if available
+readonly CONFIG_PROJECT_FILE="${ZZCOLLAB_CONFIG_PROJECT:-./zzcollab.yaml}"
+readonly CONFIG_USER_DIR="${ZZCOLLAB_CONFIG_USER_DIR:-$HOME/.zzcollab}"
+readonly CONFIG_USER_FILE="${ZZCOLLAB_CONFIG_USER:-$CONFIG_USER_DIR/config.yaml}"
+readonly CONFIG_SYSTEM_FILE="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.yaml}"
 
 # Configuration variables (will be populated from files)
 # Using simple variables instead of associative arrays for compatibility

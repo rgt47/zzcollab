@@ -16,14 +16,22 @@
 # CORE CONSTANTS (from original zzcollab.sh)
 #=============================================================================
 
-# Author information can be customized via environment variables
-readonly AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Ronald G. Thomas}"
-readonly AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-rgthomas@ucsd.edu}"
-readonly AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-UCSD}"
-readonly AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-University of California, San Diego}"
-
-# Cache command availability checks for performance optimization
-readonly JQ_AVAILABLE=$(command -v jq >/dev/null 2>&1 && echo "true" || echo "false")
+# Load centralized constants if available, otherwise use local constants
+if [[ "${ZZCOLLAB_CONSTANTS_LOADED:-}" == "true" ]]; then
+    # Use centralized constants
+    readonly AUTHOR_NAME="$ZZCOLLAB_AUTHOR_NAME"
+    readonly AUTHOR_EMAIL="$ZZCOLLAB_AUTHOR_EMAIL"
+    readonly AUTHOR_INSTITUTE="$ZZCOLLAB_AUTHOR_INSTITUTE"
+    readonly AUTHOR_INSTITUTE_FULL="$ZZCOLLAB_AUTHOR_INSTITUTE_FULL"
+    readonly JQ_AVAILABLE="$ZZCOLLAB_JQ_AVAILABLE"
+else
+    # Fallback to local constants
+    readonly AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Ronald G. Thomas}"
+    readonly AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-rgthomas@ucsd.edu}"
+    readonly AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-UCSD}"
+    readonly AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-University of California, San Diego}"
+    readonly JQ_AVAILABLE=$(command -v jq >/dev/null 2>&1 && echo "true" || echo "false")
+fi
 
 #=============================================================================
 # LOGGING AND OUTPUT FUNCTIONS (extracted from lines 219-248)

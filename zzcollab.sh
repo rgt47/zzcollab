@@ -21,13 +21,25 @@ set -euo pipefail
 # SCRIPT CONSTANTS AND SETUP
 #=============================================================================
 
+# Load constants first (before any other modules)
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
 readonly MODULES_DIR="$SCRIPT_DIR/modules"
 
-# Manifest tracking for uninstall functionality
-readonly MANIFEST_FILE=".zzcollab_manifest.json"
-readonly MANIFEST_TXT=".zzcollab_manifest.txt"
+# Load centralized constants
+if [[ -f "$MODULES_DIR/constants.sh" ]]; then
+    # shellcheck source=modules/constants.sh
+    source "$MODULES_DIR/constants.sh"
+    
+    # Use centralized constants
+    readonly TEMPLATES_DIR="$ZZCOLLAB_TEMPLATES_DIR"
+    readonly MANIFEST_FILE="$ZZCOLLAB_MANIFEST_JSON" 
+    readonly MANIFEST_TXT="$ZZCOLLAB_MANIFEST_TXT"
+else
+    # Fallback to local constants if constants module not available
+    readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
+    readonly MANIFEST_FILE=".zzcollab_manifest.json"
+    readonly MANIFEST_TXT=".zzcollab_manifest.txt"
+fi
 
 #=============================================================================
 # CLI MODULE LOADING AND PROCESSING
