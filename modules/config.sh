@@ -183,7 +183,7 @@ yaml_get_array() {
     fi
     
     if check_yq_dependency; then
-        yq eval ".$path[]" "$file" 2>/dev/null | tr '\n' ',' | sed 's/,$//'
+        yq eval ".${path}[]" "$file" 2>/dev/null | tr '\n' ',' | sed 's/,$//'
     else
         # Fallback: basic array parsing
         echo ""
