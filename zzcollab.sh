@@ -47,7 +47,6 @@ readonly MODULES_DIR="$SCRIPT_DIR/modules"
 # Load centralized constants module first (provides global configuration)
 # This module contains all color codes, paths, defaults, and system constants
 if [[ -f "$MODULES_DIR/constants.sh" ]]; then
-    # shellcheck directive tells linter where to find this file
     # shellcheck source=modules/constants.sh
     source "$MODULES_DIR/constants.sh"
     
