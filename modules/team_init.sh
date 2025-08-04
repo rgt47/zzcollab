@@ -186,12 +186,12 @@ create_project_structure() {
             print_error "Remove it first or run without --prepare-dockerfile to continue with existing project"
             exit 1
         else
-            cd "$PROJECT_NAME"
+            cd "$PROJECT_NAME" || exit 1
             print_status "Using existing directory: $PROJECT_NAME"
         fi
     else
         mkdir -p "$PROJECT_NAME"
-        cd "$PROJECT_NAME"
+        cd "$PROJECT_NAME" || exit 1
         print_success "Created project directory: $PROJECT_NAME"
     fi
 }
