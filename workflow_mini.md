@@ -1,5 +1,39 @@
 # ZZCOLLAB Mini Workflow Guide
 
+## Configuration System (Recommended)
+
+ZZCOLLAB includes a configuration system to eliminate repetitive typing and set project defaults. **Set this up once and simplify all subsequent commands.**
+
+### One-Time Configuration Setup
+```bash
+# 1. Initialize configuration file
+zzcollab --config init
+
+# 2. Set your defaults (customize as needed)
+zzcollab --config set team-name "rgt47"              # Your Docker Hub account
+zzcollab --config set github-account "rgt47"        # Your GitHub username  
+zzcollab --config set build-mode "standard"         # fast, standard, comprehensive
+zzcollab --config set dotfiles-dir "~/dotfiles"     # Path to your dotfiles
+
+# 3. View your configuration
+zzcollab --config list
+```
+
+### Config-Aware Workflows
+With configuration set up, commands become much simpler:
+
+```bash
+# Traditional verbose approach:
+zzcollab -i -t rgt47 -p myproject -B rstudio -S -d ~/dotfiles
+
+# Config-simplified approach (identical result):
+zzcollab -i -p myproject -B rstudio
+```
+
+**All workflows below show both approaches - use whichever you prefer!**
+
+---
+
 ## Solo Developer: Complete Analysis Workspace
 
 ### Prerequisites: Install ZZCOLLAB (One-time)
@@ -10,6 +44,12 @@ cd zzcollab && ./install.sh
 
 # 2. Verify installation  
 zzcollab --help && which zzcollab
+
+# 3. Optional: Set up configuration (recommended)
+zzcollab --config init
+zzcollab --config set team-name "rgt47"
+zzcollab --config set build-mode "standard" 
+zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Single Developer Setup (Complete Environment)
@@ -17,8 +57,15 @@ zzcollab --help && which zzcollab
 For solo developers who want a complete, reproducible analysis environment:
 
 ```bash
-# Option A: Two-step approach (recommended for flexibility)
+# Option A: With Configuration (Recommended)
+# Step 1: Create team images (builds all variants: shell, rstudio, verse)
+zzcollab -i -p c275 -B all
 
+# Step 2: Create full project with personal workspace
+mkdir c275 && cd c275
+zzcollab -p c275 -F --github -I shell
+
+# Option B: Traditional Verbose Approach
 # Step 1: Create team images (builds all variants: shell, rstudio, verse)
 zzcollab -i -t rgt47 -p c275 -B all -S
 
@@ -60,6 +107,13 @@ cd zzcollab && ./install.sh
 
 # 2. Verify installation
 zzcollab --help && which zzcollab
+
+# 3. Optional: Set up configuration (recommended for team leads)
+zzcollab --config init
+zzcollab --config set team-name "rgt47"          # Your Docker Hub team name
+zzcollab --config set github-account "rgt47"     # Your GitHub account
+zzcollab --config set build-mode "standard"      # Default build mode
+zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
 
 ### Two-Step Process for Team Lead (Fixed -i Flag Behavior)
@@ -72,22 +126,26 @@ cd ~/projects  # or your preferred projects directory
 # Create team images with selective base image building
 # Choose one approach based on team needs:
 
-# Option A: Build only shell variant (fastest - recommended for CLI
-#          teams)
-zzcollab -i -t rgt47 -p png1 -B r-ver -S
+# With Configuration (Recommended - much simpler):
+zzcollab -i -p png1 -B r-ver          # Build only shell variant (fastest)
+zzcollab -i -p png1 -B rstudio        # Build only RStudio variant (GUI teams)
+zzcollab -i -p png1 -B verse          # Build only verse variant (publishing)
+zzcollab -i -p png1 -B all            # Build all variants (traditional)
 
-# Option B: Build only RStudio variant (for GUI-focused teams)
-zzcollab -i -t rgt47 -p png1 -B rstudio -S
-
-# Option C: Build only verse variant (for publishing-focused teams)
-zzcollab -i -t rgt47 -p png1 -B verse -S
-
-# Option D: Build all variants (traditional approach - takes longer)
-zzcollab -i -t rgt47 -p png1 -B all -S
+# Traditional Verbose Approach:
+zzcollab -i -t rgt47 -p png1 -B r-ver -S     # Build only shell variant
+zzcollab -i -t rgt47 -p png1 -B rstudio -S   # Build only RStudio variant
+zzcollab -i -t rgt47 -p png1 -B verse -S     # Build only verse variant
+zzcollab -i -t rgt47 -p png1 -B all -S       # Build all variants
 
 # Step 2: Create full project structure (run separately)
 mkdir png1 && cd png1  # or git clone if repo exists
-zzcollab -t rgt47 -p png1 -I shell  # Full project setup
+
+# With Configuration:
+zzcollab -p png1 -I shell             # Full project setup with shell interface
+
+# Traditional Verbose:
+zzcollab -t rgt47 -p png1 -I shell    # Full project setup with shell interface
 
 # Note: Step 1 (-i flag) now stops after team image creation
 # Step 2 creates the actual project structure and GitHub repository
@@ -132,6 +190,11 @@ gh repo invite rgt47/png1 dev3-github-username
 # 0. Clone and install zzcollab system
 git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab && ./install.sh && zzcollab --help
+
+# 1. Optional: Set up configuration for easier commands
+zzcollab --config init
+zzcollab --config set team-name "rgt47"         # Match team settings
+zzcollab --config set dotfiles-dir "~/dotfiles" # Your dotfiles path
 ```
 
 ```bash
@@ -144,8 +207,13 @@ cd zzcollab && ./install.sh && zzcollab --help
 git clone https://github.com/rgt47/png1.git
 cd png1
 
-# 3. Join with available interface (helpful errors if variant
-#    unavailable)
+# 3. Join with available interface (helpful errors if variant unavailable)
+# With Configuration (Recommended):
+zzcollab -p png1 -I shell      # If shell available
+zzcollab -p png1 -I rstudio    # If RStudio available
+zzcollab -p png1 -I verse      # If verse available
+
+# Traditional Verbose Approach:
 zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles    # If shell available
 zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles  # If RStudio available
 zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles    # If verse available
@@ -188,6 +256,12 @@ This approach optimizes for **team coordination** while minimizing
 # 1. Clone and install zzcollab system
 git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab && ./install.sh && zzcollab --help
+
+# 2. Optional: Set up configuration for simplified commands
+zzcollab --config init
+zzcollab --config set team-name "rgt47"          # Team name for this project
+zzcollab --config set build-mode "fast"          # Your preferred mode
+zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
 
 When **Developer 2** finishes their development work, here's the
@@ -336,6 +410,12 @@ This workflow ensures **zero-friction collaboration** while maintaining
 # 1. Clone and install zzcollab system
 git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab && ./install.sh && zzcollab --help
+
+# 2. Configuration should already be set up from team initialization
+# If not, set it up:
+zzcollab --config init
+zzcollab --config set team-name "rgt47"
+zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 Here are the commands **Developer 1 (Team Lead)** uses to react to
@@ -624,6 +704,11 @@ source ~/.bashrc
 
 # 3. Verify zzcollab installation
 zzcollab --help && which zzcollab
+
+# 4. Optional: Set up configuration for easier commands
+zzcollab --config init
+zzcollab --config set team-name "rgt47"          # Match team settings
+zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
 
 ### Join Team Project (Standard Workflow)
@@ -641,14 +726,15 @@ cd png1
 # 3. Set up development environment with team base image
 # Try available interfaces (helpful errors if variant unavailable):
 
-# Option A: Shell interface (command line development)
-zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles
+# With Configuration (Recommended):
+zzcollab -p png1 -I shell      # Shell interface (command line development)
+zzcollab -p png1 -I rstudio    # RStudio interface (web-based IDE at localhost:8787)
+zzcollab -p png1 -I verse      # Publishing interface (LaTeX support for reports)
 
-# Option B: RStudio interface (web-based IDE at localhost:8787)
-zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles
-
-# Option C: Publishing interface (LaTeX support for reports)
-zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles
+# Traditional Verbose Approach:
+zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles      # Shell interface
+zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles    # RStudio interface
+zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles      # Publishing interface
 
 # 4. Start development environment
 make docker-zsh        # For shell interface
@@ -721,3 +807,49 @@ sudo systemctl enable docker  # Start automatically on boot
 
 Once complete, **Developer 2** on Ubuntu has identical capabilities to
 team members on macOS or Windows! 🐧🚀
+
+---
+
+## R Interface Alternative (Advanced)
+
+For teams comfortable with R, ZZCOLLAB provides a complete R interface with configuration support:
+
+```r
+# Method 1: Using Configuration (Recommended)
+library(zzcollab)
+
+# One-time setup for team lead
+init_config()                                      # Initialize config file
+set_config("team_name", "rgt47")                   # Set team name
+set_config("build_mode", "standard")               # Set preferred mode
+set_config("dotfiles_dir", "~/dotfiles")           # Set dotfiles path
+
+# Team Lead (Developer 1) - Simplified with config
+init_project(project_name = "png1")                # Uses config defaults
+
+# Team Members (Dev 2 & 3) - Simplified with config  
+set_config("team_name", "rgt47")                   # Match team settings
+join_project(project_name = "png1", interface = "shell")  # Uses config defaults
+
+# Method 2: Traditional Explicit Parameters
+library(zzcollab)
+
+# Team Lead (Developer 1) - R Interface with explicit parameters
+init_project(
+  team_name = "rgt47",
+  project_name = "png1", 
+  build_mode = "standard",
+  dotfiles_path = "~/dotfiles"
+)
+
+# Team Members (Dev 2 & 3) - R Interface with explicit parameters  
+join_project(
+  team_name = "rgt47",
+  project_name = "png1",
+  interface = "shell",
+  build_mode = "fast",
+  dotfiles_path = "~/dotfiles"
+)
+```
+
+The R interface provides identical functionality to the command-line interface but within the familiar R environment. All configuration system benefits apply to the R interface as well.
