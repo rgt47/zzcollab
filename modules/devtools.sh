@@ -152,9 +152,29 @@ copy_dotfiles() {
         done
     fi
     
+    # Special handling for .zshrc with automatic macOS filtering
+    local zshrc_source=""
+    if [[ "${DOTFILES_NODOT:-false}" = "true" ]]; then
+        # Look for zshrc without dot
+        [[ -f "$DOTFILES_DIR/zshrc" ]] && zshrc_source="$DOTFILES_DIR/zshrc"
+    else
+        # Look for .zshrc with dot
+        [[ -f "$DOTFILES_DIR/.zshrc" ]] && zshrc_source="$DOTFILES_DIR/.zshrc"
+    fi
+    
+    if [[ -n "$zshrc_source" ]]; then
+        log_info "Found .zshrc - creating Docker-compatible version with automatic macOS filtering"
+        if create_docker_compatible_zshrc "$zshrc_source" "./.zshrc_docker"; then
+            ((copied_count++))
+        else
+            log_warn "Failed to create Docker-compatible .zshrc"
+        fi
+    fi
+    
     if [[ $copied_count -gt 0 ]]; then
         log_success "Copied $copied_count dotfiles successfully"
         log_info "Dotfiles will be available in Docker containers"
+        [[ -f "./.zshrc_docker" ]] && log_info "✨ .zshrc automatically filtered for Docker compatibility"
     else
         log_warn "No dotfiles found in $DOTFILES_DIR"
     fi
