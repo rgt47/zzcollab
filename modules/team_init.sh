@@ -526,7 +526,23 @@ build_additional_variant() {
     
     # Check if we're in a zzcollab project directory
     if [[ ! -f "Dockerfile.teamcore" ]]; then
-        print_error "Dockerfile.teamcore not found. Run from a zzcollab project directory."
+        # Check if user is trying to run -V from inside a project directory (common mistake)
+        if [[ -f ".zzcollab_team_setup" ]] || [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]]; then
+            print_error "❌ Cannot add Docker variants from inside the project directory!"
+            print_error "The -V flag must be run from the parent directory where team initialization was done."
+            print_error ""
+            print_error "🔍 To add the '${variant}' variant, run:"
+            print_error "   cd .. && zzcollab -V ${variant}"
+            print_error ""
+            print_error "💡 Docker variants are added at the team level, not project level."
+        else
+            print_error "❌ Dockerfile.teamcore not found."
+            print_error "The -V flag must be run from the directory where 'zzcollab -i' was executed."
+            print_error ""
+            print_error "🔍 Make sure you're in the correct directory that contains:"
+            print_error "   - Dockerfile.teamcore"
+            print_error "   - Existing Docker images with team/project naming"
+        fi
         exit 1
     fi
     
@@ -596,12 +612,21 @@ run_team_initialization() {
         log_error "❌ Team initialization already completed in this directory!"
         log_error "Found existing .zzcollab_team_setup marker file."
         log_error ""
-        log_error "🔍 You probably meant to run:"
+        
+        # Check if user is trying to add variants (common mistake)
+        if [[ -n "${INIT_BASE_IMAGE:-}" ]] && [[ "${INIT_BASE_IMAGE}" != "r-ver" ]]; then
+            log_error "🔍 To add additional Docker variants (${INIT_BASE_IMAGE}), use:"
+            log_error "   cd .. && zzcollab -V ${INIT_BASE_IMAGE}    # Add variant from parent directory"
+            log_error ""
+        fi
+        
+        log_error "🔍 To complete the project setup, run:"
         log_error "   zzcollab              # Complete the project setup (no -i flag)"
         log_error "   zzcollab -d ~/dotfiles # With dotfiles"
         log_error "   zzcollab -I rstudio   # With RStudio interface"
         log_error ""
         log_error "💡 The -i flag is only for initial team setup, not project completion."
+        log_error "💡 Use -V flag to add Docker variants after initial setup."
         exit 1
     fi
     
