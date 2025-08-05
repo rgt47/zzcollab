@@ -456,6 +456,30 @@ join_project(
 )
 ```
 
+### Default Base Image Change (August 2025)
+**Change**: Modified default base image from "all" to "r-ver" for faster, more efficient builds.
+
+**Rationale**: 
+- **Faster builds**: r-ver (shell-only) builds significantly faster than all variants
+- **Resource efficiency**: Teams often don't need all 3 variants (shell, rstudio, verse)
+- **Selective approach**: Users can explicitly request additional variants when needed
+- **Backward compatibility**: `-B all` still available for teams that want all variants
+
+**Implementation**:
+- `modules/constants.sh:64`: `ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE="r-ver"`
+- `modules/help.sh`: Updated help text to reflect new default
+- Documentation updated with clarifying comments for examples without explicit `-B`
+
+**Impact**:
+```bash
+# Old behavior (built all 3 variants by default):
+zzcollab -i -t mylab -p study    # Built shell + rstudio + verse
+
+# New behavior (builds shell-only by default):
+zzcollab -i -t mylab -p study    # Builds shell only (faster)
+zzcollab -i -t mylab -p study -B all  # Explicit flag for all variants
+```
+
 ### Critical Bug Fix: -i Flag Behavior (July 2025)
 **Issue**: The `-i` (team initialization) flag was incorrectly continuing with full project setup instead of stopping after team image creation.
 

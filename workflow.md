@@ -257,13 +257,13 @@ zzcollab -V verse                                                      # Add ver
 # Step 1: Prepare project and Dockerfile for editing
 zzcollab -i -p research-study -P
 # Step 2: Edit research-study/Dockerfile.teamcore, then run:
-zzcollab -i -p research-study
+zzcollab -i -p research-study                   # Defaults to r-ver (shell only)
 
 # Traditional Verbose:
 # Step 1: Prepare project and Dockerfile for editing
 zzcollab -i -t rgt47 -p research-study -P
 # Step 2: Edit research-study/Dockerfile.teamcore, then run:
-zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
+zzcollab -i -t rgt47 -p research-study -d ~/dotfiles  # Defaults to r-ver (shell only)
 ```
 
 **Option B: R Interface (Two-Step Process)**

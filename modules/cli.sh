@@ -120,7 +120,7 @@ GITHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
 
 # Base image selection for team initialization
-readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-all}"
+readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
 INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, all
 
 # Initialization mode variables
