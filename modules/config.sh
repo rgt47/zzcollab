@@ -190,6 +190,83 @@ yaml_get_array() {
     fi
 }
 
+##############################################################################
+# FUNCTION: yaml_set
+# PURPOSE:  Set a value in YAML configuration file with fallback editing
+# USAGE:    yaml_set "config.yaml" "defaults.team_name" "myteam"
+# ARGS:     
+#   $1 - file: Path to YAML configuration file
+#   $2 - path: YAML path specification (e.g., "defaults.team_name")
+#   $3 - value: New value to set
+# RETURNS:  
+#   0 - Successfully updated the YAML file
+#   1 - Failed to update (file not writable, yq not available, etc.)
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (modifies the specified YAML file in place)
+# DESCRIPTION:
+#   This function provides automatic YAML value setting with intelligent 
+#   fallback. When yq is available, it uses proper YAML modification. When yq
+#   is not available, it falls back to sed-based editing for simple key-value
+#   pairs.
+# MODIFICATION METHODS:
+#   - Primary: yq eval with in-place editing (full YAML specification support)
+#   - Fallback: sed-based replacement (basic key-value editing only)
+# ERROR HANDLING:
+#   - Returns 1 for missing files or write permission issues
+#   - Handles nested keys by updating the complete path
+#   - Creates backup files during modification to prevent corruption
+# EXAMPLE:
+#   yaml_set "zzcollab.yaml" "defaults.team_name" "rgt47"
+#   yaml_set "config.yaml" "defaults.build_mode" "fast"
+##############################################################################
+yaml_set() {
+    local file="$1"
+    local path="$2" 
+    local value="$3"
+    
+    if [[ ! -f "$file" ]]; then
+        log_error "Configuration file not found: $file"
+        return 1
+    fi
+    
+    if [[ ! -w "$file" ]]; then
+        log_error "Configuration file not writable: $file"
+        return 1
+    fi
+    
+    if check_yq_dependency; then
+        # Use yq for proper YAML modification
+        if yq eval ".$path = \"$value\"" "$file" -i 2>/dev/null; then
+            log_info "Updated $path = \"$value\" in $file"
+            return 0
+        else
+            log_error "Failed to update YAML file with yq"
+            return 1
+        fi
+    else
+        # Fallback: sed-based editing for simple key-value pairs
+        local key="${path##*.}"  # Get last part after dot
+        local temp_file="${file}.tmp"
+        
+        # Use sed to replace the key value
+        if sed "s/^[[:space:]]*${key}:[[:space:]]*.*/${key}: \"${value}\"/" "$file" > "$temp_file"; then
+            if mv "$temp_file" "$file"; then
+                log_info "Updated $key = \"$value\" in $file (fallback mode)"
+                return 0
+            else
+                rm -f "$temp_file" 2>/dev/null
+                log_error "Failed to update configuration file"
+                return 1
+            fi
+        else
+            rm -f "$temp_file" 2>/dev/null
+            log_error "Failed to modify configuration with sed"
+            return 1
+        fi
+    fi
+}
+
 #=============================================================================
 # CONFIGURATION LOADING FUNCTIONS
 #=============================================================================
@@ -392,6 +469,14 @@ get_config_value() {
         dotfiles_nodot) echo "$CONFIG_DOTFILES_NODOT" ;;
         auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
         skip_confirmation) echo "$CONFIG_SKIP_CONFIRMATION" ;;
+        init_base_image) 
+            # Try to get from constants module, fallback to hard-coded default
+            if [[ -n "${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-}" ]]; then
+                echo "$ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE"
+            else
+                echo "r-ver"
+            fi
+            ;;
         *) echo "" ;;
     esac
 }
@@ -486,10 +571,33 @@ config_set() {
         create_default_config
     fi
     
-    # For now, provide instructions for manual editing
-    log_info "To set $key = $value:"
-    log_info "Edit: $CONFIG_USER_FILE"
-    log_info "Set: defaults.$key: \"$value\""
+    # Convert key format (handle both underscore and dash formats)
+    local yaml_key="$key"
+    case "$key" in
+        team-name|team_name) yaml_key="team_name" ;;
+        github-account|github_account) yaml_key="github_account" ;;
+        build-mode|build_mode) yaml_key="build_mode" ;;
+        dotfiles-dir|dotfiles_dir) yaml_key="dotfiles_dir" ;;
+        dotfiles-nodot|dotfiles_nodot) yaml_key="dotfiles_nodot" ;;
+        auto-github|auto_github) yaml_key="auto_github" ;;
+        skip-confirmation|skip_confirmation) yaml_key="skip_confirmation" ;;
+    esac
+    
+    # Automatically update the YAML file
+    if yaml_set "$CONFIG_USER_FILE" "defaults.$yaml_key" "$value"; then
+        log_success "✅ Configuration updated: $yaml_key = \"$value\""
+        
+        # Reload configuration to update global variables
+        load_config_file "$CONFIG_USER_FILE"
+        
+        return 0
+    else
+        log_error "❌ Failed to update configuration"
+        log_info "💡 Manual fallback:"
+        log_info "    Edit: $CONFIG_USER_FILE"
+        log_info "    Set: defaults.$yaml_key: \"$value\""
+        return 1
+    fi
 }
 
 # Function: config_get
@@ -518,6 +626,7 @@ config_list() {
     echo "  team_name: $(get_config_value team_name)"
     echo "  github_account: $(get_config_value github_account)"
     echo "  build_mode: $(get_config_value build_mode)"
+    echo "  init_base_image: $(get_config_value init_base_image) (system default)"
     echo "  dotfiles_dir: $(get_config_value dotfiles_dir)"
     echo "  dotfiles_nodot: $(get_config_value dotfiles_nodot)"
     echo "  auto_github: $(get_config_value auto_github)"
