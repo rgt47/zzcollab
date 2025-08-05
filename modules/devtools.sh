@@ -180,6 +180,73 @@ copy_dotfiles() {
     fi
 }
 
+##############################################################################
+# FUNCTION: cleanup_dotfiles_from_workdir
+# PURPOSE:  Remove dotfiles from working directory after Docker build
+# USAGE:    cleanup_dotfiles_from_workdir
+# ARGS:     None
+# RETURNS:  
+#   0 - Successfully cleaned up dotfiles
+#   1 - No dotfiles to clean up
+# GLOBALS:  
+#   READ:  None
+#   WRITE: None (removes dotfiles from current directory)
+# DESCRIPTION:
+#   This function removes dotfiles from the working directory after they have
+#   been successfully copied into the Docker image. This prevents clutter in
+#   the project directory while maintaining the functionality of having
+#   dotfiles available in containers.
+# CLEANUP STRATEGY:
+#   - Only removes files that are typically dotfiles (not project files)
+#   - Preserves project-specific configurations (.gitignore, etc.)
+#   - Updates manifest tracking to reflect removed files
+#   - Provides user feedback about cleanup actions
+# SAFETY:
+#   - Only removes known dotfile patterns to avoid accidental deletion
+#   - Checks file existence before attempting removal
+#   - Logs all cleanup actions for transparency
+# EXAMPLE:
+#   cleanup_dotfiles_from_workdir  # Called after successful Docker build
+##############################################################################
+cleanup_dotfiles_from_workdir() {
+    log_info "🧹 Cleaning up dotfiles from working directory (they're now in Docker image)"
+    
+    local cleanup_count=0
+    
+    # List of dotfiles to clean up (those copied during dotfiles setup)
+    local dotfiles_to_cleanup=(
+        ".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc"
+        ".profile" ".aliases" ".functions" ".exports" ".editorconfig"
+        ".ctags" ".ackrc" ".ripgreprc" ".zshrc_docker"
+    )
+    
+    for dotfile in "${dotfiles_to_cleanup[@]}"; do
+        if [[ -f "$dotfile" ]]; then
+            if rm "$dotfile" 2>/dev/null; then
+                log_info "Removed: $dotfile"
+                ((cleanup_count++))
+                
+                # Update manifest tracking if available
+                if command -v remove_from_manifest >/dev/null 2>&1; then
+                    remove_from_manifest "$dotfile" 2>/dev/null || true
+                fi
+            else
+                log_warn "Failed to remove: $dotfile"
+            fi
+        fi
+    done
+    
+    if [[ $cleanup_count -gt 0 ]]; then
+        log_success "Cleaned up $cleanup_count dotfiles from working directory"
+        log_info "💡 Dotfiles are preserved in Docker image at /home/analyst/"
+    else
+        log_info "No dotfiles found to clean up"
+        return 1
+    fi
+    
+    return 0
+}
+
 #=============================================================================
 # CONFIGURATION FILES CREATION (extracted from lines 607-621)
 #=============================================================================

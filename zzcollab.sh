@@ -468,11 +468,18 @@ finalize_and_report_results() {
         log_info "🐳 Building Docker image..."
         if build_docker_image; then
             log_success "Docker image built successfully"
+            
+            # Clean up dotfiles from working directory after successful Docker build
+            if command -v cleanup_dotfiles_from_workdir >/dev/null 2>&1; then
+                cleanup_dotfiles_from_workdir
+            fi
         else
             log_warning "Docker build failed - you can build manually later with 'make docker-build'"
+            log_info "💡 Dotfiles kept in working directory for manual Docker build"
         fi
     else
         log_info "⏭️ Skipping Docker image build (--no-docker specified)"
+        log_info "💡 Dotfiles kept in working directory for manual Docker build"
     fi
     
     # Initialize renv with snapshot of current environment

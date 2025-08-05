@@ -17,7 +17,7 @@ help:
 	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo ""
 	@echo "  Cleanup:"
-	@echo "    clean, docker-clean"
+	@echo "    clean, clean-dotfiles, docker-clean, docker-build-clean"
 
 # Native R targets (require local R installation)
 document:
@@ -97,8 +97,15 @@ clean:
 	rm -f *.tar.gz
 	rm -rf *.Rcheck
 
+clean-dotfiles:
+	@echo "Cleaning up dotfiles from working directory..."
+	@rm -f .vimrc .tmux.conf .gitconfig .inputrc .bashrc .profile .aliases .functions .exports .editorconfig .ctags .ackrc .ripgreprc .zshrc_docker 2>/dev/null || true
+	@echo "Dotfiles cleanup complete (preserved in Docker image)"
+
 docker-clean:
 	docker rmi $(PACKAGE_NAME) || true
+
+docker-build-clean: docker-build clean-dotfiles
 	docker system prune -f
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-check-renv docker-check-renv-fix clean docker-clean help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean help
