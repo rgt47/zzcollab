@@ -400,7 +400,7 @@ OPTIONS:
     Utilities:
     -h, --help                   Show this help message
         --help-init              Show team initialization help specifically
-        --config CMD             Configuration management (get, set, list, reset)
+    -c, --config CMD             Configuration management (get, set, list, reset)
 EOF
 }
 
@@ -453,11 +453,11 @@ show_help_config() {
 CONFIGURATION SYSTEM:
     zzcollab supports configuration files for common settings.
     
-    \$0 --config get team-name                       # Get current team name
-    \$0 --config set team-name mylab                 # Set default team name
-    \$0 --config set build-mode fast                 # Set default build mode
-    \$0 --config list                                # Show all current settings
-    \$0 --config reset                               # Reset to defaults
+    \$0 -c get team-name                            # Get current team name
+    \$0 -c set team-name mylab                      # Set default team name
+    \$0 -c set build-mode fast                      # Set default build mode
+    \$0 -c list                                     # Show all current settings
+    \$0 -c reset                                    # Reset to defaults
     
     Configuration files:
     - User-level: ~/.config/zzcollab/config.yaml
