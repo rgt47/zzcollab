@@ -123,6 +123,12 @@ log_success() {
     printf "✅ %s\n" "$*" >&2
 }
 
+# Function: log_warning
+# Purpose: Alias for log_warn (for consistency with documentation)
+log_warning() {
+    log_warn "$@"
+}
+
 #=============================================================================
 # PACKAGE NAME VALIDATION FUNCTIONS (extracted from lines 51-97)
 #=============================================================================
@@ -439,9 +445,9 @@ print_error() {
 }
 
 # Function: print_warning
-# Purpose: Legacy alias for log_warning (used by team_init.sh)
+# Purpose: Legacy alias for log_warn (used by team_init.sh)
 print_warning() {
-    log_warning "$@"
+    log_warn "$@"
 }
 
 # Function: print_success
