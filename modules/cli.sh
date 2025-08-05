@@ -261,7 +261,7 @@ parse_cli_arguments() {
                 CREATE_GITHUB_REPO=true
                 shift
                 ;;
-            config)
+            --config|config)
                 # Handle config subcommands
                 CONFIG_COMMAND=true
                 shift
