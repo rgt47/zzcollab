@@ -591,6 +591,34 @@ build_additional_variant() {
 # Function: run_team_initialization
 # Purpose: Main orchestration function for team setup workflow
 run_team_initialization() {
+    # Check if team initialization was already completed in this directory
+    if [[ -f ".zzcollab_team_setup" ]]; then
+        log_error "❌ Team initialization already completed in this directory!"
+        log_error "Found existing .zzcollab_team_setup marker file."
+        log_error ""
+        log_error "🔍 You probably meant to run:"
+        log_error "   zzcollab              # Complete the project setup (no -i flag)"
+        log_error "   zzcollab -d ~/dotfiles # With dotfiles"
+        log_error "   zzcollab -I rstudio   # With RStudio interface"
+        log_error ""
+        log_error "💡 The -i flag is only for initial team setup, not project completion."
+        exit 1
+    fi
+    
+    # Check if this looks like an existing zzcollab project
+    if [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]] || [[ -f "DESCRIPTION" && -d "R" && -d "analysis" ]]; then
+        log_error "❌ Cannot run team initialization in existing zzcollab project!"
+        log_error "This directory already contains a zzcollab project."
+        log_error ""
+        log_error "🔍 You probably meant to run:"
+        log_error "   zzcollab              # Update project settings"
+        log_error "   zzcollab -S           # Change build mode"
+        log_error "   zzcollab -d ~/dotfiles # Add dotfiles"
+        log_error ""
+        log_error "💡 Use -i only for creating new team images, not updating existing projects."
+        exit 1
+    fi
+    
     # Show configuration summary
     log_info "Configuration Summary:"
     cat << EOF
@@ -625,6 +653,24 @@ EOF
     build_team_images
     push_team_images
     
+    # Create marker file to identify this as a partial zzcollab setup
+    # This allows the next zzcollab run (without -i) to be recognized as safe
+    # ONLY if run in the same directory where -i was executed
+    cat > ".zzcollab_team_setup" << EOF
+# ZZCOLLAB Team Setup Marker
+# This file indicates that team initialization was completed here.
+# The next 'zzcollab' run will complete the full project setup.
+# IMPORTANT: Must be run in the same directory as the -i command.
+created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+team_name=$TEAM_NAME
+project_name=$PROJECT_NAME
+build_mode=$BUILD_MODE
+init_base_image=$INIT_BASE_IMAGE
+team_setup_complete=true
+full_project_setup_needed=true
+setup_directory=$PWD
+EOF
+
     # Team initialization complete - stop here for -i flag
     # Team members will run zzcollab without -i to do full project setup
     log_info "✅ 🎉 Team initialization complete!"
@@ -643,9 +689,15 @@ EOF
     fi
     
     log_info ""
-    log_info "ℹ️  Next steps:"
-    log_info "  1. Create your project repository manually or"
-    log_info "  2. Run full project setup: zzcollab -t ${TEAM_NAME} -p ${PROJECT_NAME} [options]"
+    log_info "ℹ️  Next steps for complete project setup:"
+    log_info "  ⚠️  IMPORTANT: Must cd into the project directory first!"
+    log_info "  1. cd ${PROJECT_NAME}"
+    log_info "  2. zzcollab                     # Basic setup"
+    log_info "  3. zzcollab -d ~/dotfiles -S    # With dotfiles and standard mode"
+    log_info "  4. zzcollab -I rstudio          # With RStudio interface"
+    log_info ""
+    log_info "💡 Correct workflow: zzcollab -i -p png1 && cd png1 && zzcollab"
+    log_info "❌ Wrong workflow: zzcollab -i -p png1 && zzcollab  # Forgets to cd!"
     log_info ""
     log_info "ℹ️  Team members can now join with:"
     log_info "  git clone https://github.com/${TEAM_NAME}/${PROJECT_NAME}.git"

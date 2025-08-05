@@ -76,6 +76,7 @@ OPTIONS:
                                 survival, lme4, database connectors, parallel processing, and more
     
     -y, --yes                   Skip confirmation prompt (for automation)
+        --force                 Skip directory validation (advanced users - use with caution)
     
     -h, --help                   Show this help message
 
@@ -177,6 +178,7 @@ OPTIONAL:
                                 survival, lme4, database connectors, parallel processing, and more
     
     -y, --yes                  Skip confirmation prompt (for automation)
+        --force                Skip directory validation (advanced users - use with caution)
     
     -h, --help                 Show this help message
 EOF

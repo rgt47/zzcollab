@@ -131,6 +131,7 @@ BUILD_VARIANT_MODE=false
 BUILD_VARIANT=""
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
+FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="${ZZCOLLAB_DEFAULT_BUILD_MODE:-standard}"
@@ -259,6 +260,10 @@ parse_cli_arguments() {
                 ;;
             --github|-G)
                 CREATE_GITHUB_REPO=true
+                shift
+                ;;
+            --force)
+                FORCE_DIRECTORY=true
                 shift
                 ;;
             --config|-c|config)

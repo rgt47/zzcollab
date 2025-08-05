@@ -209,6 +209,11 @@ load_module "structure" "true"
 PKG_NAME=$(validate_package_name)
 readonly PKG_NAME
 
+# Check if user specified redundant project name
+if [[ -n "${PROJECT_NAME:-}" ]] && [[ "$PROJECT_NAME" == "$PKG_NAME" ]]; then
+    log_info "💡 Project name '$PROJECT_NAME' matches directory name - you can omit -p flag"
+fi
+
 # Export variables for template substitution
 USERNAME="${USERNAME:-analyst}"  # Default Docker user
 export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE USERNAME
@@ -290,9 +295,43 @@ install_uninstall_script() {
 # DIRECTORY VALIDATION FUNCTION
 #=============================================================================
 
+# Function: validate_directory_for_setup
+# Purpose: Prevent accidental zzcollab runs while allowing parameter updates in existing projects
+# 
+# Safety Features:
+# 1. Detects existing zzcollab projects (allows parameter changes)
+# 2. Warns about directories with many files (prevents accidents)
+# 3. Provides --force flag for advanced users
+# 4. Shows helpful guidance for safe usage
+#
+# Project Detection:
+# - Looks for .zzcollab_manifest.json or .zzcollab_manifest.txt
+# - Checks for R package structure (DESCRIPTION + R/ + analysis/)
+# - Allows updates like changing base images, build modes, etc.
 validate_directory_for_setup() {
     local current_dir
     current_dir=$(basename "$PWD")
+    
+    # Skip all directory validation if --force is used (advanced users)
+    if [[ "${FORCE_DIRECTORY:-false}" == "true" ]]; then
+        log_warning "⚠️  Directory validation skipped due to --force flag"
+        log_info "Proceeding with setup in current directory: $PWD"
+        return 0
+    fi
+    
+    # Check if this is an existing zzcollab project (allow parameter updates)
+    if [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]] || [[ -f "DESCRIPTION" && -d "R" && -d "analysis" ]]; then
+        log_info "✅ Detected existing zzcollab project - allowing parameter updates"
+        log_info "You can safely run zzcollab here to modify build settings, base images, etc."
+        return 0
+    fi
+    
+    # Check if this is a directory where team initialization was completed (common workflow)
+    if [[ -f ".zzcollab_team_setup" ]]; then
+        log_info "✅ Detected directory with completed team initialization"
+        log_info "Proceeding with full project setup (this is the intended workflow after -i)"
+        return 0
+    fi
     
     # Skip validation for certain directories that are expected to be non-empty
     if [[ "$current_dir" == "zzcollab" ]]; then
@@ -316,9 +355,10 @@ validate_directory_for_setup() {
         return 0
     fi
     
-    # If more than 3 files, show warning and ask for confirmation
-    log_warning "Current directory contains $file_count files"
-    log_warning "Running zzcollab setup here may overwrite existing files"
+    # Enhanced warning for non-zzcollab directories with many files
+    log_warning "⚠️  DIRECTORY SAFETY CHECK:"
+    log_warning "Current directory contains $file_count files and doesn't appear to be a zzcollab project"
+    log_warning "Running zzcollab here may overwrite existing files or create conflicts"
     
     # Show some of the files that would be affected
     log_info "Files in current directory:"
@@ -328,21 +368,27 @@ validate_directory_for_setup() {
     fi
     
     echo ""
-    log_warning "zzcollab will create many files and directories in this location"
-    log_warning "Consider running in an empty directory or using a subdirectory"
+    log_warning "🔍 RECOMMENDED ACTIONS:"
+    log_warning "1. If this IS a zzcollab project, ensure manifest files exist (.zzcollab_manifest.*)"
+    log_warning "2. If this is NOT a zzcollab project, create a new directory:"
+    log_warning "   mkdir my-project && cd my-project && zzcollab [options]"
+    log_warning "3. For advanced users who want to override this check:"
+    log_warning "   zzcollab --force [options]"
+    log_warning "4. If you're certain this is the right location, you can proceed"
     echo ""
     
-    read -p "Continue with setup in this directory? [y/N] " -n 1 -r
+    read -p "Continue with setup in this directory anyway? [y/N] " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_info "Setup cancelled by user"
-        log_info "To run zzcollab safely:"
+        log_info "Setup cancelled by user - good choice for safety!"
+        log_info "💡 To run zzcollab safely:"
         log_info "  1. Create a new directory: mkdir my-project && cd my-project"
         log_info "  2. Run zzcollab there: zzcollab [options]"
+        log_info "  3. Or navigate to an existing zzcollab project directory"
         exit 0
     fi
     
-    log_info "Proceeding with setup as requested"
+    log_info "Proceeding with setup as requested (user confirmed)"
     return 0
 }
 
@@ -498,6 +544,12 @@ finalize_and_report_results() {
     if [[ "$CREATE_GITHUB_REPO" == "true" ]]; then
         log_info "🐙 Creating GitHub repository..."
         create_github_repository_workflow
+    fi
+    
+    # Clean up team setup marker if it exists (workflow completed)
+    if [[ -f ".zzcollab_team_setup" ]]; then
+        rm ".zzcollab_team_setup"
+        log_info "🧹 Cleaned up team initialization marker (full setup now complete)"
     fi
     
     # Final success message and summary
