@@ -139,6 +139,12 @@ cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_SUPPORT_DIR/"
 log_info "Copying templates directory..."
 cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_SUPPORT_DIR/"
 
+# Update constants.sh for installed version
+log_info "Updating constants.sh for installed version..."
+sed "s|readonly ZZCOLLAB_SCRIPT_DIR=.*|readonly ZZCOLLAB_SCRIPT_DIR=\"$ZZCOLLAB_SUPPORT_DIR\"|" \
+    "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh" > "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh.tmp" \
+    && mv "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh.tmp" "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh"
+
 # Create the main zzcollab executable
 log_info "Creating main executable..."
 cat > "$INSTALL_DIR/zzcollab" << 'EOF'
@@ -176,7 +182,7 @@ EOF
 
 # Append the main zzcollab.sh content (excluding the shebang and initial setup)
 # Filter out duplicate readonly declarations that would conflict
-tail -n +18 "$SCRIPT_DIR/zzcollab.sh" | grep -v "^readonly SCRIPT_DIR=" | grep -v "^readonly TEMPLATES_DIR=" | grep -v "^readonly MODULES_DIR=" >> "$INSTALL_DIR/zzcollab"
+tail -n +18 "$SCRIPT_DIR/zzcollab.sh" | grep -v "^readonly SCRIPT_DIR=" | grep -v "^readonly TEMPLATES_DIR=" | grep -v "^readonly MODULES_DIR=" | grep -v "^readonly ZZCOLLAB_SCRIPT_DIR=" >> "$INSTALL_DIR/zzcollab"
 
 # Make the main executable
 chmod +x "$INSTALL_DIR/zzcollab"
