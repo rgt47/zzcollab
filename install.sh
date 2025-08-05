@@ -154,9 +154,9 @@ INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ZZCOLLAB_SUPPORT_DIR="$INSTALL_DIR/zzcollab-support"
 
 # Set up paths for the installed version
-readonly SCRIPT_DIR="$ZZCOLLAB_SUPPORT_DIR"
-readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
-readonly MODULES_DIR="$SCRIPT_DIR/modules"
+SCRIPT_DIR="$ZZCOLLAB_SUPPORT_DIR"
+TEMPLATES_DIR="$SCRIPT_DIR/templates"
+MODULES_DIR="$SCRIPT_DIR/modules"
 
 # Validate installation
 if [[ ! -d "$MODULES_DIR" ]]; then
