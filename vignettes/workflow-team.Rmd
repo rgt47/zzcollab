@@ -1,8 +1,30 @@
+---
+title: "Team Collaboration Workflow Guide"
+author: "ZZCOLLAB Team"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Team Collaboration Workflow Guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
 # ZZCOLLAB Team Collaboration Workflow Guide
 
-## Team Setup Overview
+This vignette demonstrates a complete team collaboration workflow using the same penguin bill analysis from the solo workflow, but with multiple developers contributing different aspects of the analysis.
 
-This guide demonstrates a complete team collaboration workflow using the same penguin bill analysis from the solo workflow, but with multiple developers contributing different aspects of the analysis.
+## Team Setup Overview
 
 **Team Structure:**
 - **Dev 1 (Team Lead)**: Creates initial analysis framework and coordinates
@@ -14,6 +36,7 @@ This guide demonstrates a complete team collaboration workflow using the same pe
 ## Dev 1: Team Lead - Project Initialization & Initial Analysis
 
 ### Prerequisites: Install ZZCOLLAB (One-Time)
+
 ```bash
 # Clone and install zzcollab system
 git clone https://github.com/rgt47/zzcollab.git
@@ -31,6 +54,7 @@ zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
 
 ### Step 1: Create Team Images and Project Structure
+
 ```bash
 # Navigate to projects directory
 cd ~/projects
@@ -45,6 +69,7 @@ zzcollab -i -p penguin-analysis -B analysis --github
 ```
 
 ### Step 2: Set Up Project Structure and Initial Analysis
+
 ```bash
 # Clone the created repository
 git clone https://github.com/mylab/penguin-analysis.git
@@ -58,12 +83,14 @@ make docker-zsh
 ```
 
 ### Step 3: Create Initial Analysis Framework (Inside Container)
+
 ```bash
 # Create initial analysis script
 vim scripts/01_penguin_exploration.R
 ```
 
 **Contents of `scripts/01_penguin_exploration.R`:**
+
 ```r
 #' Penguin Bill Analysis - Initial Framework
 #' Created by: Dev 1 (Team Lead)
@@ -104,11 +131,13 @@ cat("Ready for team collaboration - Dev 2 can add statistical analysis\n")
 ```
 
 **Create the function file:**
+
 ```bash
 vim R/penguin_functions.R
 ```
 
 **Contents of `R/penguin_functions.R`:**
+
 ```r
 #' Create scatter plot of bill depth vs log(bill length)
 #' 
@@ -142,11 +171,13 @@ create_bill_plot <- function(data = palmerpenguins::penguins) {
 ```
 
 **Create tests:**
+
 ```bash
 vim tests/testthat/test-penguin_functions.R
 ```
 
 **Contents of `tests/testthat/test-penguin_functions.R`:**
+
 ```r
 test_that("create_bill_plot works correctly", {
   # Test with default data
@@ -176,6 +207,7 @@ test_that("create_bill_plot handles custom data", {
 ```
 
 ### Step 4: Test and Commit Initial Framework
+
 ```bash
 # Install required packages and test
 R
@@ -208,6 +240,7 @@ git push origin main
 ```
 
 ### Step 5: Invite Team Members
+
 ```bash
 # Invite collaborators to the private GitHub repository
 gh repo invite mylab/penguin-analysis dev2-github-username
@@ -241,6 +274,7 @@ Questions? Check the README or ask in #penguin-analysis channel."
 ## Dev 2: Statistical Analysis & Regression Modeling
 
 ### Prerequisites: Join Team Project
+
 ```bash
 # Install ZZCOLLAB (if not already done)
 git clone https://github.com/rgt47/zzcollab.git
@@ -260,6 +294,7 @@ zzcollab -t mylab -p penguin-analysis -I analysis -d ~/dotfiles
 ```
 
 ### Step 1: Review Dev 1's Work
+
 ```bash
 # Start development environment
 make docker-zsh
@@ -277,12 +312,14 @@ quit()
 ```
 
 ### Step 2: Add Regression Analysis (Inside Container)
+
 ```bash
 # Update the main analysis script with regression
 vim scripts/01_penguin_exploration.R
 ```
 
 **Updated `scripts/01_penguin_exploration.R` (Dev 2's additions):**
+
 ```r
 #' Penguin Bill Analysis - Enhanced with Regression
 #' Created by: Dev 1 (Team Lead), Enhanced by: Dev 2 (Statistical Analysis)
@@ -382,11 +419,13 @@ cat("Ready for Dev 3 to enhance visualizations and create final report\n")
 ```
 
 ### Step 3: Add Statistical Functions to R Package
+
 ```bash
 vim R/penguin_functions.R
 ```
 
 **Add to `R/penguin_functions.R` (Dev 2's contributions):**
+
 ```r
 #' Create enhanced scatter plot with regression line
 #' Added by: Dev 2
@@ -449,11 +488,13 @@ fit_bill_model <- function(data = palmerpenguins::penguins) {
 ```
 
 ### Step 4: Add Tests for New Functions
+
 ```bash
 vim tests/testthat/test-penguin_functions.R
 ```
 
 **Add to test file (Dev 2's tests):**
+
 ```r
 # === Tests for Dev 2's functions ===
 
@@ -507,6 +548,7 @@ test_that("statistical analysis produces reasonable results", {
 ```
 
 ### Step 5: Test and Commit Regression Analysis
+
 ```bash
 # Install new package and test
 R
@@ -546,6 +588,7 @@ git push origin main
 ## Dev 3: Enhanced Visualizations & Final Report
 
 ### Prerequisites: Join Team Project
+
 ```bash
 # Install ZZCOLLAB and join project (similar to Dev 2)
 git clone https://github.com/mylab/penguin-analysis.git
@@ -560,6 +603,7 @@ make docker-zsh
 ```
 
 ### Step 1: Review Team's Work
+
 ```bash
 # Review complete analysis
 cat scripts/01_penguin_exploration.R
@@ -574,12 +618,14 @@ quit()
 ```
 
 ### Step 2: Create Enhanced Visualizations & Report
+
 ```bash
 vim analysis/penguin_bill_report.Rmd
 ```
 
 **Contents of `analysis/penguin_bill_report.Rmd` (Dev 3's contribution):**
-```markdown
+
+````markdown
 ---
 title: "Penguin Bill Morphology Analysis"
 author: "Team Analysis: Dev 1 (Framework), Dev 2 (Statistics), Dev 3 (Visualization)"
@@ -716,14 +762,16 @@ Through collaborative development, the team successfully characterized penguin b
 - **Dev 1**: Framework, initial visualization, project setup
 - **Dev 2**: Statistical modeling, regression analysis, model validation  
 - **Dev 3**: Enhanced visualization, comprehensive reporting, final integration
-```
+````
 
 ### Step 3: Add Advanced Visualization Functions
+
 ```bash
 vim R/penguin_functions.R
 ```
 
 **Add to `R/penguin_functions.R` (Dev 3's contributions):**
+
 ```r
 #' Create comprehensive visualization dashboard
 #' Added by: Dev 3
@@ -789,6 +837,7 @@ generate_analysis_summary <- function(data = palmerpenguins::penguins) {
 ```
 
 ### Step 4: Test and Generate Final Report
+
 ```bash
 # Install additional packages
 R
@@ -811,6 +860,7 @@ make docker-render  # Ensure report renders
 ```
 
 ### Step 5: Final Team Commit
+
 ```bash
 git add .
 git commit -m "Add comprehensive visualization and final report (Dev 3)
@@ -865,3 +915,32 @@ This demonstrates how ZZCOLLAB enables **enterprise-grade team collaboration** w
 - ✅ **Knowledge sharing**: Team learns from each other's approaches
 - ✅ **Scalable**: Framework supports teams of any size
 - ✅ **Professional**: Matches industry software development practices
+
+## Using the R Interface for Team Coordination
+
+```{r, eval = FALSE}
+# Team lead setup
+library(zzcollab)
+init_config()
+set_config("team_name", "mylab")
+
+# Initialize team project
+init_project(project_name = "penguin-analysis", 
+             build_mode = "standard")
+
+# Team members join
+join_project(team_name = "mylab", 
+             project_name = "penguin-analysis",
+             interface = "analysis")
+
+# Check project status
+status()
+team_images()
+```
+
+## Next Steps
+
+- **Scale the team**: Add more developers with specialized roles (data engineering, deployment, documentation)
+- **Advanced workflows**: Implement feature branches, pull request reviews, and automated testing
+- **Production deployment**: Use the lightweight Alpine variants for production environments
+- **Documentation**: Create comprehensive project documentation with pkgdown

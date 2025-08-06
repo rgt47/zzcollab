@@ -48,8 +48,8 @@ OPTIONS:
     -h, --help          Show this help message
 
 EXAMPLES:
-    $SCRIPT_NAME workflow_mini.md
-    $SCRIPT_NAME -t "ZZCOLLAB Guide" workflow_mini.md
+    $SCRIPT_NAME workflow.md
+    $SCRIPT_NAME -t "ZZCOLLAB Guide" workflow.md
 
 NOTE:
     This script converts emoji to text equivalents for reliable PDF generation.

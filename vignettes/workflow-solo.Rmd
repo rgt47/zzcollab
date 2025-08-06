@@ -1,8 +1,33 @@
+---
+title: "Solo Developer Workflow Guide"
+author: "ZZCOLLAB Team"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Solo Developer Workflow Guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
 # ZZCOLLAB Solo Developer Workflow Guide
+
+This vignette demonstrates the complete workflow for solo developers using ZZCOLLAB to create reproducible research environments with professional-grade practices.
 
 ## Initial Setup (One-Time)
 
 ### 1. Install ZZCOLLAB System
+
 ```bash
 # Clone and install zzcollab
 git clone https://github.com/rgt47/zzcollab.git
@@ -13,9 +38,8 @@ zzcollab --help && which zzcollab
 ```
 
 ### 2. Configuration Setup (Recommended)
-ZZCOLLAB includes a configuration system to eliminate repetitive typing and 
-set project defaults. **Set this up once and simplify all subsequent 
-commands.**
+
+ZZCOLLAB includes a configuration system to eliminate repetitive typing and set project defaults. **Set this up once and simplify all subsequent commands.**
 
 ```bash
 # Initialize configuration file
@@ -36,12 +60,14 @@ zzcollab --config list
 ### Choose Your Development Environment
 
 **Quick Start (Recommended):**
+
 ```bash
 # Creates optimal variants automatically + GitHub repo
 zzcollab -i -p myproject --github    # Creates: minimal + analysis variants
 ```
 
 **Interactive Variant Selection (Power Users):**
+
 ```bash
 mkdir myproject && cd myproject
 zzcollab -i -p myproject             # Creates project + config.yaml
@@ -75,13 +101,15 @@ zzcollab --variants-config config.yaml --github
 ```
 
 **Legacy Approach (Limited to 3 variants):**
+
 ```bash
 # Traditional: Limited to shell/rstudio/verse only
 zzcollab -i -p myproject -B rstudio --github    # RStudio interface
 zzcollab -i -p myproject -B all --github        # All 3 legacy variants
 ```
 
-### Recommended Variant Combinations by Use Case:
+### Recommended Variant Combinations by Use Case
+
 - **Data Analysts**: `analysis` + `publishing` (tidyverse + reporting)
 - **Bioinformaticians**: `bioinformatics` + `alpine_minimal` (research + CI/CD)
 - **Package Developers**: `minimal` + `rhub_ubuntu` (development + testing)
@@ -91,6 +119,7 @@ zzcollab -i -p myproject -B all --github        # All 3 legacy variants
 ## Daily Development Workflow
 
 ### 1. Start Development Environment
+
 ```bash
 cd myproject
 
@@ -104,6 +133,7 @@ make docker-verse       # Publishing workflow with LaTeX (if publishing variant)
 ### 2. Iterative Development (Inside Container)
 
 **Working in the container:**
+
 ```bash
 # You're now inside the Docker container with all packages pre-installed
 # Your project directory is mounted at /home/analyst/project
@@ -141,6 +171,7 @@ git diff --cached            # Review staged changes
 ```
 
 ### 3. Exit Container and Commit
+
 ```bash
 # Exit the development container
 exit
@@ -182,6 +213,7 @@ When you push changes to GitHub:
    - ✅ Next time you run `make docker-zsh`, you get the updated environment
 
 ### 5. Continue Development Cycle
+
 ```bash
 # Start next iteration
 make docker-zsh              # Continue with updated environment
@@ -193,6 +225,7 @@ exit
 ## Advanced Development Patterns
 
 ### Working with Different Variants
+
 ```bash
 # Switch between different environments for different tasks
 make docker-zsh              # Use analysis variant for data exploration
@@ -203,6 +236,7 @@ make docker-verse            # Use publishing variant for report writing
 ```
 
 ### Testing and Validation Workflow
+
 ```bash
 # Before committing, validate your work:
 make docker-test             # Run all automated tests
@@ -216,6 +250,7 @@ exit
 ```
 
 ### Package Development Focus
+
 ```bash
 # Inside container - R package development workflow
 R
@@ -230,39 +265,12 @@ make docker-document         # Generate documentation
 make docker-check           # Full package validation
 ```
 
-## Benefits of This Workflow
-
-- ✅ **Reproducible**: Every development session uses identical environment
-- ✅ **Isolated**: No conflicts with your host system R installation
-- ✅ **Collaborative-ready**: Easy to share exact environment with others
-- ✅ **Professional**: Automated testing, validation, and CI/CD
-- ✅ **Flexible**: 14+ variants for different research domains
-- ✅ **Lightweight options**: Alpine variants ~200MB vs standard ~1GB+
-- ✅ **Automatic dependency tracking**: Never lose track of required packages
-- ✅ **Version controlled**: Complete project history including environment
-
-## Solo to Team Transition
-
-If you later want to collaborate:
-
-1. **Your project is already team-ready** - others can join with:
-   ```bash
-   git clone https://github.com/yourname/myproject.git
-   cd myproject
-   zzcollab -t yourname -p myproject -I analysis  # Join with analysis variant
-   ```
-
-2. **No migration needed** - the same Docker images and workflow work for teams
-
-This workflow provides **enterprise-grade reproducibility** with **solo developer simplicity**! 🚀
-
----
-
-## Practical Example: Penguin Analysis Project
+## Practical Example: Penguin Bill Analysis
 
 Let's walk through a complete example using the Palmer penguins dataset to demonstrate the iterative development workflow.
 
 ### Step 1: Create Project and Initial Analysis
+
 ```bash
 # Set up the project
 zzcollab -i -p penguin-analysis --github
@@ -273,12 +281,14 @@ make docker-zsh
 ```
 
 **Inside the container - Create initial analysis script:**
+
 ```bash
 # Create the analysis script
 vim scripts/01_penguin_exploration.R
 ```
 
 **Contents of `scripts/01_penguin_exploration.R`:**
+
 ```r
 #' Penguin Bill Analysis
 #' Explore relationship between bill depth and log of bill length
@@ -316,12 +326,14 @@ cat("Analysis complete! Plot saved to figures/bill_analysis.png\n")
 ```
 
 **Create the function file:**
+
 ```bash
 # Create R function file
 vim R/penguin_functions.R
 ```
 
 **Contents of `R/penguin_functions.R`:**
+
 ```r
 #' Create scatter plot of bill depth vs log(bill length)
 #' 
@@ -355,12 +367,14 @@ create_bill_plot <- function(data = palmerpenguins::penguins) {
 ```
 
 **Create tests for the function:**
+
 ```bash
 # Create test file
 vim tests/testthat/test-penguin_functions.R
 ```
 
 **Contents of `tests/testthat/test-penguin_functions.R`:**
+
 ```r
 test_that("create_bill_plot works correctly", {
   # Test with default data
@@ -405,6 +419,7 @@ test_that("create_bill_plot handles missing values", {
 ```
 
 **Test and run the analysis:**
+
 ```bash
 # Install required packages
 R
@@ -428,6 +443,7 @@ git diff --cached
 ```
 
 ### Step 2: Exit Container and First Commit
+
 ```bash
 # Exit the development container
 exit
@@ -461,6 +477,7 @@ vim scripts/01_penguin_exploration.R
 ```
 
 **Updated `scripts/01_penguin_exploration.R`:**
+
 ```r
 #' Penguin Bill Analysis - Enhanced with Regression
 #' Explore relationship between bill depth and log of bill length
@@ -530,11 +547,13 @@ cat("Model: results/bill_model.rds\n")
 ```
 
 **Update the function file:**
+
 ```bash
 vim R/penguin_functions.R
 ```
 
 **Add to `R/penguin_functions.R`:**
+
 ```r
 #' Create enhanced scatter plot with regression line
 #' 
@@ -594,11 +613,13 @@ fit_bill_model <- function(data = palmerpenguins::penguins) {
 ```
 
 **Add tests for new functions:**
+
 ```bash
 vim tests/testthat/test-penguin_functions.R
 ```
 
 **Add to test file:**
+
 ```r
 test_that("create_enhanced_bill_plot works correctly", {
   plot <- create_enhanced_bill_plot()
@@ -637,6 +658,7 @@ test_that("fit_bill_model handles custom data", {
 ```
 
 **Test and run the enhanced analysis:**
+
 ```bash
 # Install new package
 R
@@ -659,6 +681,7 @@ git diff
 ```
 
 ### Step 4: Second Commit with Enhancement
+
 ```bash
 # Exit container
 exit
@@ -681,7 +704,7 @@ git commit -m "Add regression analysis to penguin bill study
 git push origin main
 ```
 
-### What This Example Demonstrates:
+### What This Example Demonstrates
 
 1. **Complete workflow**: From initial analysis to enhanced version
 2. **Professional practices**: Functions, tests, documentation
@@ -693,7 +716,31 @@ git push origin main
 
 This example shows how ZZCOLLAB supports **professional data science workflows** with **minimal overhead**! 🐧📊
 
----
+## Benefits of Solo Workflow
+
+- ✅ **Reproducible**: Every development session uses identical environment
+- ✅ **Isolated**: No conflicts with your host system R installation
+- ✅ **Collaborative-ready**: Easy to share exact environment with others
+- ✅ **Professional**: Automated testing, validation, and CI/CD
+- ✅ **Flexible**: 14+ variants for different research domains
+- ✅ **Lightweight options**: Alpine variants ~200MB vs standard ~1GB+
+- ✅ **Automatic dependency tracking**: Never lose track of required packages
+- ✅ **Version controlled**: Complete project history including environment
+
+## Solo to Team Transition
+
+If you later want to collaborate:
+
+1. **Your project is already team-ready** - others can join with:
+   ```bash
+   git clone https://github.com/yourname/myproject.git
+   cd myproject
+   zzcollab -t yourname -p myproject -I analysis  # Join with analysis variant
+   ```
+
+2. **No migration needed** - the same Docker images and workflow work for teams
+
+This workflow provides **enterprise-grade reproducibility** with **solo developer simplicity**! 🚀
 
 ## Configuration System Benefits
 
@@ -711,3 +758,26 @@ zzcollab -i -p myproject --github    # Creates default variants automatically
 ```
 
 The configuration system eliminates repetitive typing while maintaining full flexibility for custom workflows.
+
+## Using the R Interface
+
+```{r, eval = FALSE}
+# Load the zzcollab R package
+library(zzcollab)
+
+# Configuration-based approach (recommended)
+init_config()
+set_config("team_name", "myteam")
+set_config("build_mode", "standard")
+
+# Create and manage projects from R
+init_project(project_name = "penguin-analysis")
+status()  # Check project status
+```
+
+## Next Steps
+
+- **Learn team collaboration**: See `vignette("workflow-team", "zzcollab")` for multi-developer workflows
+- **R package development**: Explore the built-in R package structure and testing framework
+- **Advanced variants**: Try specialized variants for bioinformatics, geospatial analysis, or web applications
+- **CI/CD integration**: Leverage the automated testing and Docker image management
