@@ -330,17 +330,19 @@ build_team_images() {
 
 # Function: build_single_team_image
 # Purpose: Build a single team core image with specified base
-# Arguments: $1 = base image (e.g. rocker/r-ver), $2 = variant name (e.g. shell)
+# Arguments: $1 = base image (e.g. rocker/r-ver), $2 = variant name (e.g. shell), $3 = dockerfile path, $4 = build context
 build_single_team_image() {
     local base_image="$1"
     local variant="$2"
+    local dockerfile="${3:-Dockerfile.teamcore}"
+    local context="${4:-.}"
     
-    docker build -f Dockerfile.teamcore \
+    docker build -f "$dockerfile" \
         --build-arg BASE_IMAGE="$base_image" \
         --build-arg TEAM_NAME="$TEAM_NAME" \
         --build-arg PROJECT_NAME="$PROJECT_NAME" \
         --build-arg PACKAGE_MODE="$BUILD_MODE" \
-        -t "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" .
+        -t "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" "$context"
 
     docker tag "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" \
         "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest"
@@ -524,26 +526,34 @@ build_additional_variant() {
             ;;
     esac
     
-    # Check if we're in a zzcollab project directory
+    # Check if we're in a zzcollab project directory, and handle both parent and project directory cases
+    local dockerfile_path="Dockerfile.teamcore"
+    local build_context="."
+    
     if [[ ! -f "Dockerfile.teamcore" ]]; then
-        # Check if user is trying to run -V from inside a project directory (common mistake)
+        # Check if we're inside a project directory and can find Dockerfile.teamcore in parent
         if [[ -f ".zzcollab_team_setup" ]] || [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]]; then
-            print_error "❌ Cannot add Docker variants from inside the project directory!"
-            print_error "The -V flag must be run from the parent directory where team initialization was done."
-            print_error ""
-            print_error "🔍 To add the '${variant}' variant, run:"
-            print_error "   cd .. && zzcollab -V ${variant}"
-            print_error ""
-            print_error "💡 Docker variants are added at the team level, not project level."
+            if [[ -f "../Dockerfile.teamcore" ]]; then
+                print_status "📁 Running from project directory - using parent directory's Dockerfile.teamcore"
+                dockerfile_path="../Dockerfile.teamcore"
+                build_context=".."
+            else
+                print_error "❌ Dockerfile.teamcore not found in parent directory!"
+                print_error "The team initialization files may have been moved or deleted."
+                print_error ""
+                print_error "🔍 Expected to find: ../Dockerfile.teamcore"
+                print_error "💡 Ensure the parent directory contains the team initialization files."
+                exit 1
+            fi
         else
             print_error "❌ Dockerfile.teamcore not found."
-            print_error "The -V flag must be run from the directory where 'zzcollab -i' was executed."
+            print_error "The -V flag must be run from either:"
+            print_error "   1. The directory where 'zzcollab -i' was executed (contains Dockerfile.teamcore)"
+            print_error "   2. Inside a zzcollab project directory (looks for ../Dockerfile.teamcore)"
             print_error ""
-            print_error "🔍 Make sure you're in the correct directory that contains:"
-            print_error "   - Dockerfile.teamcore"
-            print_error "   - Existing Docker images with team/project naming"
+            print_error "🔍 Make sure you're in a directory that contains or is within a zzcollab setup."
+            exit 1
         fi
-        exit 1
     fi
     
     # Detect team and project names from existing images or directory
@@ -582,8 +592,8 @@ build_additional_variant() {
     print_status "Building additional team image variant: $variant_name"
     print_status "Team: $TEAM_NAME, Project: $PROJECT_NAME"
     
-    # Build the image
-    build_single_team_image "$base_image" "$variant_name"
+    # Build the image using the detected dockerfile and build context
+    build_single_team_image "$base_image" "$variant_name" "$dockerfile_path" "$build_context"
     print_success "Built ${variant_name} core image: ${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}:v1.0.0"
     
     # Ask if user wants to push to Docker Hub

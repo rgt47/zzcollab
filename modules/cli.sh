@@ -48,6 +48,50 @@ require_arg() {
 }
 
 ##############################################################################
+# FUNCTION: parse_base_image_list
+# PURPOSE:  Parse and validate comma-separated base image list
+# USAGE:    parse_base_image_list "r-ver,rstudio"
+# ARGS:     
+#   $1 - input: Comma-separated list of base images or "all"
+# RETURNS:  
+#   0 - All images in list are valid
+#   1 - One or more invalid images (exits with error message)
+# DESCRIPTION:
+#   Parses comma-separated base image lists and validates each image.
+#   Supports both single values and comma-separated lists.
+#   Special handling for "all" keyword.
+# EXAMPLE:
+#   parse_base_image_list "r-ver,rstudio,verse"
+#   parse_base_image_list "all"
+##############################################################################
+parse_base_image_list() {
+    local input="$1"
+    
+    # Handle special "all" case
+    if [[ "$input" == "all" ]]; then
+        return 0
+    fi
+    
+    # Split comma-separated values and validate each
+    IFS=',' read -ra images <<< "$input"
+    for image in "${images[@]}"; do
+        # Trim whitespace
+        image=$(echo "$image" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # Validate each image
+        case "$image" in
+            r-ver|rstudio|verse)
+                ;;
+            *)
+                echo "❌ Error: Invalid base image '$image'. Valid options: r-ver, rstudio, verse, all" >&2
+                echo "💡 Use comma-separated list for multiple images: r-ver,rstudio,verse" >&2
+                exit 1
+                ;;
+        esac
+    done
+}
+
+##############################################################################
 # FUNCTION: validate_enum
 # PURPOSE:  Validate that a command line argument value is from allowed set
 # USAGE:    validate_enum "--flag" "value" "description" "option1" "option2" ...
@@ -183,7 +227,8 @@ parse_cli_arguments() {
                 ;;
             --init-base-image|-B)
                 require_arg "$1" "$2"
-                validate_enum "$1" "$2" "base image" "r-ver" "rstudio" "verse" "all"
+                # Parse comma-separated values or validate single values
+                parse_base_image_list "$2"
                 INIT_BASE_IMAGE="$2"
                 shift 2
                 ;;
