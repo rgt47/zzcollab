@@ -611,19 +611,46 @@ parse_config_variants() {
 }
 
 # Function: build_config_variant  
-# Purpose: Build a single variant defined in config.yaml
+# Purpose: Build a single variant, merging from variant_examples.yaml if needed
 build_config_variant() {
     local config_file="$1"
     local variant_name="$2"
     
     print_status "🐳 Building variant: $variant_name"
     
-    # Extract variant configuration
-    local base_image description packages system_deps
-    base_image=$(yq eval ".variants.${variant_name}.base_image" "$config_file")
-    description=$(yq eval ".variants.${variant_name}.description" "$config_file")
-    packages=$(yq eval ".variants.${variant_name}.packages[]" "$config_file" | tr '\n' ' ')
-    system_deps=$(yq eval ".variants.${variant_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
+    # NEW: Check if variant has full definition or just enabled flag
+    local has_full_definition
+    has_full_definition=$(yq eval ".variants.${variant_name}.base_image" "$config_file")
+    
+    local base_image description packages system_deps variant_library
+    
+    if [[ "$has_full_definition" == "null" || -z "$has_full_definition" ]]; then
+        # Variant only has enabled flag - get definition from variant_examples.yaml
+        variant_library=$(yq eval ".build.variant_library // \"variant_examples.yaml\"" "$config_file")
+        
+        if [[ ! -f "$variant_library" ]]; then
+            print_error "❌ Variant library not found: $variant_library"
+            return 1
+        fi
+        
+        print_status "  🔗 Loading definition from $variant_library"
+        base_image=$(yq eval ".${variant_name}.base_image" "$variant_library")
+        description=$(yq eval ".${variant_name}.description" "$variant_library")
+        packages=$(yq eval ".${variant_name}.packages[]" "$variant_library" | tr '\n' ' ')
+        system_deps=$(yq eval ".${variant_name}.system_deps[]?" "$variant_library" | tr '\n' ' ')
+        
+        if [[ "$base_image" == "null" || -z "$base_image" ]]; then
+            print_error "❌ Variant '$variant_name' not found in $variant_library"
+            return 1
+        fi
+    else
+        # Variant has full definition in config.yaml (legacy support)
+        print_status "  📝 Using full definition from config.yaml"
+        base_image=$(yq eval ".variants.${variant_name}.base_image" "$config_file")
+        description=$(yq eval ".variants.${variant_name}.description" "$config_file")
+        packages=$(yq eval ".variants.${variant_name}.packages[]" "$config_file" | tr '\n' ' ')
+        system_deps=$(yq eval ".variants.${variant_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
+    fi
     
     print_status "  Base image: $base_image"
     print_status "  Description: $description"

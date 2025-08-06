@@ -129,31 +129,31 @@ show_variant_menu() {
 }
 
 # Function: get_variant_yaml
-# Purpose: Extract full YAML definition for a variant
+# Purpose: Generate simplified YAML for config.yaml (references variant_examples.yaml)
 get_variant_yaml() {
     local variant_name="$1"
-    local team_variant_name="${variant_name}_team"
     
-    # Extract the variant definition and modify it for team use
-    yq eval ".${variant_name}" "$VARIANT_EXAMPLES" | \
-    sed "s/^/${team_variant_name}:/" | \
-    sed '/^[[:space:]]*category:/d' | \
-    sed '/^[[:space:]]*size:/d' | \
-    sed '/^[[:space:]]*notes:/d' | \
-    sed 's/enabled: .*/enabled: true/'
+    # NEW APPROACH: Just enable the variant, definition comes from variant_examples.yaml
+    local description=$(yq eval ".${variant_name}.description" "$VARIANT_EXAMPLES")
+    local size=$(yq eval ".${variant_name}.size // \"~1GB\"" "$VARIANT_EXAMPLES")
+    
+    cat << EOF
+${variant_name}:
+    enabled: true    # ${description} (${size})
+    # Full definition in variant_examples.yaml
+EOF
 }
 
 # Function: add_variant_to_config
 # Purpose: Add selected variant to config.yaml
 add_variant_to_config() {
     local variant_name="$1"
-    local team_variant_name="${variant_name}_team"
     
-    log_info "Adding variant '$variant_name' as '$team_variant_name' to $CONFIG_FILE..."
+    log_info "Adding variant '$variant_name' to $CONFIG_FILE..."
     
     # Check if variant already exists
-    if yq eval ".variants.${team_variant_name}" "$CONFIG_FILE" >/dev/null 2>&1; then
-        log_warning "Variant '$team_variant_name' already exists in $CONFIG_FILE"
+    if yq eval ".variants.${variant_name}" "$CONFIG_FILE" >/dev/null 2>&1; then
+        log_warning "Variant '$variant_name' already exists in $CONFIG_FILE"
         read -p "Overwrite existing variant? [y/N] " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
