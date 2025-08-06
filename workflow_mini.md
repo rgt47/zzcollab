@@ -63,33 +63,64 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 
 ### Single Developer Setup (Complete Environment)
 
-For solo developers who want a complete, reproducible analysis environment:
+For solo developers who want a complete, reproducible analysis environment with **unlimited variant options**:
 
+#### **🎯 Choose Your Analysis Environment**
+
+**Quick Start (Recommended):**
 ```bash
-# Option A: With Configuration (Recommended)
-# Step 1: Create team images (builds all variants: shell, rstudio, verse)
-zzcollab -i -p c275 -B all
-
-# Step 2: Create full project with personal workspace
-mkdir c275 && cd c275
-zzcollab -p c275 -F --github -I shell
-
-# Option B: Traditional Verbose Approach
-# Step 1: Create team images (builds all variants: shell, rstudio, verse)
-zzcollab -i -t rgt47 -p c275 -B all -S
-
-# Step 2: Create full project with personal workspace
-mkdir c275 && cd c275
-zzcollab -t rgt47 -p c275 -F -d ~/dotfiles --github -I shell
+# Modern approach: Creates optimal variants automatically
+zzcollab -i -p c275 --github    # Creates: minimal + analysis variants + GitHub repo
 ```
 
-**What this creates:**
+**Interactive Variant Selection (Power Users):**
+```bash
+mkdir c275 && cd c275
+zzcollab -i -p c275             # Creates project + config.yaml
+./add_variant.sh               # Browse comprehensive variant library
 
-- ✅ **Complete Docker environment**: All variants (shell, rstudio,
-  verse) available
+# Interactive menu shows:
+# 📦 STANDARD RESEARCH ENVIRONMENTS
+#  1) minimal              ~800MB  - Essential R packages only
+#  2) analysis             ~1.2GB  - Tidyverse + data analysis tools  
+#  3) modeling             ~1.5GB  - Machine learning with tidymodels
+#  4) publishing           ~3GB    - LaTeX, Quarto, bookdown, blogdown
+#
+# 🔬 SPECIALIZED DOMAINS
+#  5) bioinformatics       ~2GB    - Bioconductor genomics packages
+#  6) geospatial           ~2.5GB  - sf, terra, leaflet mapping tools
+#
+# 🏔️ LIGHTWEIGHT ALPINE VARIANTS  
+#  7) alpine_minimal       ~200MB  - Ultra-lightweight for CI/CD
+#  8) alpine_analysis      ~400MB  - Essential analysis in tiny container
+#
+# 🧪 R-HUB TESTING ENVIRONMENTS
+#  9) rhub_ubuntu          ~1GB    - CRAN-compatible package testing
+# 10) rhub_fedora          ~1.2GB  - Test against R-devel
+
+# Select variants that match your workflow, then:
+zzcollab --variants-config config.yaml --github
+```
+
+**Legacy Approach (Limited Variants):**
+```bash
+# Traditional: Limited to shell/rstudio/verse only
+zzcollab -i -p c275 -B all --github              # All 3 legacy variants
+zzcollab -i -p c275 -B rstudio --github          # RStudio only (GUI users)
+```
+
+**🏆 Recommended Solo Developer Variants:**
+- **Data Analysts**: `analysis` + `publishing` (tidyverse + reporting)
+- **Bioinformaticians**: `bioinformatics` + `alpine_minimal` (research + CI/CD)
+- **Package Developers**: `minimal` + `rhub_ubuntu` (development + testing)
+- **Academic Researchers**: `modeling` + `publishing` (analysis + manuscripts)
+
+**What this creates:**
+- ✅ **Specialized Docker environments**: Tailored to your research domain
+- ✅ **Lightweight options**: Alpine variants for fast deployment/CI/CD
+- ✅ **Professional testing**: R-hub environments matching CRAN standards
 - ✅ **Personal workspace**: Your dotfiles integrated
-- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275`
-  with CI/CD
+- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with CI/CD
 - ✅ **Ready-to-code**: Start immediately with `make docker-zsh`
 
 **Build modes:** `-F` (Fast), `-S` (Standard), `-C` (Comprehensive)  
@@ -217,32 +248,102 @@ zzcollab --config set dotfiles-dir "~/dotfiles" # Your dotfiles path
 git clone https://github.com/rgt47/png1.git
 cd png1
 
-# 3. Join with available interface (helpful errors if variant unavailable)
-# With Configuration (Recommended):
-zzcollab -p png1 -I shell      # If shell available
-zzcollab -p png1 -I rstudio    # If RStudio available
-zzcollab -p png1 -I verse      # If verse available
+# 3. Discover available team variants and join
+# MODERN APPROACH: Check what variants your team lead created
+ls -la                          # Look for config.yaml
+cat config.yaml                 # See enabled variants (if using modern system)
 
-# Traditional Verbose Approach:
-zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles    # If shell available
-zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles  # If RStudio available
-zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles    # If verse available
+# Join with any available variant:
+zzcollab -p png1 -I minimal     # Modern: Minimal development environment  
+zzcollab -p png1 -I analysis    # Modern: Tidyverse analysis environment
+zzcollab -p png1 -I bioinformatics  # Modern: Bioconductor environment (if enabled)
+zzcollab -p png1 -I alpine_minimal  # Modern: Ultra-lightweight (~200MB)
 
-# 4. Start development
-make docker-zsh        # or make docker-rstudio, make docker-verse
+# LEGACY APPROACH: Limited to 3 traditional variants
+zzcollab -p png1 -I shell       # Legacy: Command-line development
+zzcollab -p png1 -I rstudio     # Legacy: RStudio Server interface  
+zzcollab -p png1 -I verse       # Legacy: Publishing workflow with LaTeX
+
+# 🔍 HELPFUL ERROR HANDLING:
+# If you request an unavailable variant, you'll see:
+# ❌ Error: Team image 'rgt47/png1core-bioinformatics:latest' not found
+# ✅ Available variants for this project:
+#     - rgt47/png1core-minimal:latest
+#     - rgt47/png1core-analysis:latest
+# 💡 Solutions:
+#    1. Use available variant: zzcollab -p png1 -I minimal
+#    2. Ask team lead to build bioinformatics variant
+
+# 4. Start development with your chosen environment
+make docker-zsh                 # Shell/vim interface (works with any variant)
+make docker-rstudio             # RStudio Server (if team built rstudio-compatible variant)
+make docker-r                   # R console only
 ```
 
-### Key Benefits of This Approach:
+### 🎯 Team Variant Selection Strategy
 
-- ✅ **No local workspace for Dev 1**: Team infrastructure created
-  without personal development setup
-- ✅ **Faster initialization**: Only builds needed variants, not all three
-- ✅ **Immediate team access**: Dev 2 & 3 can join as soon as
-  GitHub repo is created
-- ✅ **Flexible team scaling**: Can add more variants later with
-  `zzcollab -V rstudio`
-- ✅ **Error guidance**: Team members get helpful messages if
-  requesting unavailable variants
+**For Team Leads: How to Choose Variants for Your Team**
+
+```bash
+# 💡 DECISION FRAMEWORK:
+# Consider your team's research domain, technical skills, and resource constraints
+
+# 🔬 RESEARCH DOMAIN-BASED SELECTION:
+# Genomics/Bioinformatics Team:
+./add_variant.sh  # Select: bioinformatics + alpine_minimal (research + CI/CD)
+
+# Geospatial Analysis Team:  
+./add_variant.sh  # Select: geospatial + analysis (specialized + general)
+
+# Machine Learning Team:
+./add_variant.sh  # Select: modeling + rhub_ubuntu (ML + testing)
+
+# Publishing/Academic Team:
+./add_variant.sh  # Select: analysis + publishing (data + manuscripts)
+
+# 👥 TEAM SKILL-BASED SELECTION:
+# Mixed technical skills: analysis + rstudio (GUI option)
+# Advanced users only: minimal + alpine_minimal (lightweight)
+# Package developers: minimal + rhub_ubuntu + rhub_fedora (comprehensive testing)
+
+# 💰 RESOURCE-CONSCIOUS SELECTION:
+# Limited Docker Hub storage: alpine_minimal only (~200MB)
+# Fast CI/CD priority: alpine_analysis (~400MB)
+# Full-featured team: analysis + modeling + publishing (~6GB total)
+```
+
+**Team Communication Template:**
+```markdown
+## PNG1 Project - Available Development Environments
+
+Our team has these Docker variants available:
+
+🔬 **analysis** (~1.2GB) - Main development environment
+   - Tidyverse data analysis stack
+   - Use: `zzcollab -p png1 -I analysis`
+   - Interface: `make docker-zsh` or `make docker-rstudio`
+
+🏔️ **alpine_minimal** (~200MB) - CI/CD and quick testing  
+   - Ultra-lightweight for fast deployment
+   - Use: `zzcollab -p png1 -I alpine_minimal`
+   - Interface: `make docker-zsh` only
+
+📊 **modeling** (~1.5GB) - Machine learning work
+   - Tidymodels, xgboost, randomForest
+   - Use: `zzcollab -p png1 -I modeling`
+   - Interface: `make docker-zsh`
+
+Choose based on your task. Questions? Ask in #png1-dev channel.
+```
+
+### Key Benefits of Modern Variant System:
+
+- ✅ **Domain-specific environments**: Bioinformatics, geospatial, ML, publishing workflows
+- ✅ **Resource optimization**: Alpine variants use 5x less storage than rocker images
+- ✅ **Professional testing**: R-hub environments match CRAN check infrastructure  
+- ✅ **Flexible team scaling**: Add variants anytime with `./add_variant.sh`
+- ✅ **Intelligent error guidance**: Team members get helpful messages with available options
+- ✅ **No vendor lock-in**: Can use any Docker base image (rocker, Alpine, R-hub, Bioconductor)
 
 ### If Team Needs Multiple Interfaces Later:
 
