@@ -667,9 +667,9 @@ validate_repro <- function() {
   }
   
   if (all_passed) {
-    message("✅ All reproducibility checks passed")
+    message("\u2705 All reproducibility checks passed")
   } else {
-    message("❌ Some reproducibility checks failed")
+    message("\u274c Some reproducibility checks failed")
   }
   
   return(all_passed)
@@ -694,10 +694,10 @@ git_commit <- function(message, add_all = TRUE) {
   result2 <- system(commit_cmd)
   
   if (result2 == 0) {
-    message("✅ Commit created: ", message)
+    message("\u2705 Commit created: ", message)
     return(TRUE)
   } else {
-    message("❌ Commit failed")
+    message("\u274c Commit failed")
     return(FALSE)
   }
 }
@@ -717,10 +717,10 @@ git_push <- function(branch = NULL) {
   result <- system(cmd)
   
   if (result == 0) {
-    message("✅ Successfully pushed to GitHub")
+    message("\u2705 Successfully pushed to GitHub")
     return(TRUE)
   } else {
-    message("❌ Push failed")
+    message("\u274c Push failed")
     return(FALSE)
   }
 }
@@ -749,10 +749,10 @@ create_pr <- function(title, body = NULL, base = "main") {
   result <- system(cmd)
   
   if (result == 0) {
-    message("✅ Pull request created successfully")
+    message("\u2705 Pull request created successfully")
     return(TRUE)
   } else {
-    message("❌ Failed to create pull request")
+    message("\u274c Failed to create pull request")
     return(FALSE)
   }
 }
@@ -765,10 +765,10 @@ git_status <- function() {
   result <- system("git status --porcelain", intern = TRUE)
   
   if (length(result) == 0) {
-    message("✅ Working directory clean")
+    message("\u2705 Working directory clean")
     return(character(0))
   } else {
-    message("📝 Changes detected:")
+    message("\ud83d\udcdd Changes detected:")
     print(result)
     return(result)
   }
@@ -788,10 +788,10 @@ create_branch <- function(branch_name) {
   result <- system(paste("git checkout -b", branch_name))
   
   if (result == 0) {
-    message("✅ Created and switched to branch: ", branch_name)
+    message("\u2705 Created and switched to branch: ", branch_name)
     return(TRUE)
   } else {
-    message("❌ Failed to create branch: ", branch_name)
+    message("\u274c Failed to create branch: ", branch_name)
     return(FALSE)
   }
 }

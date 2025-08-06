@@ -702,7 +702,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, 
                       fig.width = 10, fig.height = 6, dpi = 300)
-library(penguinanalysis)  # Load our package
+# library(penguinanalysis)  # Load our package (not needed for demo)
 library(palmerpenguins)
 library(ggplot2)
 library(dplyr)

@@ -8,6 +8,7 @@
 # 
 # This script helps teams easily discover and add Docker variants from the
 # variant library to their project's config.yaml file.
+# Version: 1.0.0
 ##############################################################################
 
 set -euo pipefail
