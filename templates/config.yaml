@@ -340,6 +340,49 @@ variants:
     enabled: false       # Set to true to build this variant
     notes: "Migrated from ~/.zzcollab/config.yaml custom_modes"
 
+  # Copy personal variants here and set enabled: true to build them
+  # Example: Copy from ~/.zzcollab/config.yaml personal variants
+  
+  # personal_bioinformatics_team:
+  #   base_image: "bioconductor/bioconductor_docker:latest"
+  #   description: "Personal bioinformatics research workflow"
+  #   packages:
+  #     - "renv"
+  #     - "remotes" 
+  #     - "tidyverse"
+  #     - "BiocManager"
+  #     - "Biostrings"
+  #     - "GenomicRanges"
+  #     - "DESeq2"
+  #     - "edgeR"
+  #     - "limma"
+  #     - "devtools"
+  #   system_deps:
+  #     - "libxml2-dev"
+  #     - "libcurl4-openssl-dev"
+  #     - "libssl-dev"
+  #     - "zlib1g-dev"
+  #     - "libbz2-dev"
+  #     - "liblzma-dev"
+  #   enabled: true    # SET TO TRUE TO BUILD THIS TEAM IMAGE
+  
+  # personal_alpine_minimal_team:
+  #   base_image: "velaco/alpine-r:latest"
+  #   description: "Ultra-lightweight Alpine Linux with R for CI/CD"
+  #   packages:
+  #     - "renv"
+  #     - "devtools"
+  #     - "testthat"
+  #     - "here"
+  #   system_deps:
+  #     - "git"
+  #     - "make"
+  #     - "curl"
+  #     - "curl-dev"
+  #     - "openssl-dev"
+  #     - "libxml2-dev"
+  #   enabled: true    # SET TO TRUE TO BUILD THIS TEAM IMAGE
+  
   # Example custom variant - uncomment and modify as needed
   # custom_example:
   #   base_image: "rocker/r-ver:latest"  # REQUIRED: Docker base image
