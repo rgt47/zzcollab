@@ -9,33 +9,24 @@ ZZCOLLAB is a research collaboration framework that creates Docker-based
 reproducible research environments. The system consists of:
 
 ### Core Components
-- **Main executable**: `zzcollab.sh` - Primary framework script
-  (512 lines, streamlined and modular)
-- **Modular shell system**: 15 modules in `modules/` directory containing
-  all functionality
+- **Main executable**: `zzcollab.sh` - Primary framework script (439 lines, 64% reduction from original)
+- **Modular shell system**: `modules/` directory contains core functionality
 - **Docker-first workflow**: All development happens in containers
 - **R package structure**: Standard R package with testthat for testing
 - **Template system**: `templates/` for project scaffolding
-- **Configuration system**: Centralized constants and user configuration
-  management
+- **Variant system**: Single source of truth with 14+ Docker variants
+- **Configuration system**: Centralized constants and user configuration management
 
 ### Key Architecture Patterns
-- **Modular design**: 15 shell modules (constants.sh, core.sh, cli.sh,
-  config.sh, templates.sh, structure.sh, rpackage.sh, docker.sh,
-  analysis.sh, cicd.sh, devtools.sh, team_init.sh, help.sh, github.sh,
-  utils.sh)
+- **Modular design**: Shell scripts in `modules/` (core.sh, cli.sh, docker.sh, structure.sh, etc.)
 - **Docker inheritance**: Team base images → personal development images
-- **Automated CI/CD**: GitHub Actions for R package validation and image
-  builds
-- **Test-driven development**: Unit tests in `tests/testthat/`,
-  integration tests expected
-- **Environment monitoring**: Critical R options tracking with
-  `check_rprofile_options.R`
-- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and
-  selective base image building (-B, -V, -I)
+- **Automated CI/CD**: GitHub Actions for R package validation and image builds
+- **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
+- **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
+- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and selective base image building (-B, -V, -I)
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
-- **Centralized constants**: Global variables and configuration managed in constants.sh
-- **Function modularity**: All functions follow single responsibility principle (<60 lines each)
+- **Single source of truth**: Variant definitions in `variant_examples.yaml` eliminate duplication
+- **14+ Docker variants**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
 
 ## Configuration System
 
@@ -123,6 +114,265 @@ validate_config()
 init_project(project_name = "my-analysis")   # Uses team_name from config
 join_project(project_name = "my-analysis")   # Uses team_name and build_mode from config
 setup_project()                              # Uses all defaults from config
+```
+
+## Docker Variant System (Enhanced 2025)
+
+ZZCOLLAB now supports **14+ specialized Docker variants** with a single source of truth architecture that eliminates duplication and provides unlimited customization options.
+
+### Variant Library Overview
+
+**📦 Standard Research Environments (6 variants)**
+- **minimal** (~800MB) - Essential R packages only  
+- **analysis** (~1.2GB) - Tidyverse + data analysis tools
+- **modeling** (~1.5GB) - Machine learning with tidymodels
+- **publishing** (~3GB) - LaTeX, Quarto, bookdown, blogdown
+- **shiny** (~1.8GB) - Interactive web applications
+- **shiny_verse** (~3.5GB) - Shiny with tidyverse + publishing
+
+**🔬 Specialized Domains (2 variants)**
+- **bioinformatics** (~2GB) - Bioconductor genomics packages
+- **geospatial** (~2.5GB) - sf, terra, leaflet mapping tools
+
+**🏔️ Lightweight Alpine Variants (3 variants)**  
+- **alpine_minimal** (~200MB) - Ultra-lightweight for CI/CD
+- **alpine_analysis** (~400MB) - Essential analysis in tiny container
+- **hpc_alpine** (~600MB) - High-performance parallel processing
+
+**🧪 R-Hub Testing Environments (3 variants)**
+- **rhub_ubuntu** (~1GB) - CRAN-compatible package testing
+- **rhub_fedora** (~1.2GB) - Test against R-devel
+- **rhub_windows** (~1.5GB) - Windows compatibility testing
+
+### Single Source of Truth Architecture
+
+All variant definitions are centralized in `variant_examples.yaml` with team configurations referencing them:
+
+**Master Library**: `templates/variant_examples.yaml`
+```yaml
+minimal:
+  base_image: "rocker/r-ver:latest"
+  description: "Minimal development environment with essential R packages"  
+  packages: [renv, devtools, usethis, testthat, roxygen2]
+  system_deps: [libxml2-dev, libcurl4-openssl-dev, libssl-dev]
+  category: "standard"
+  size: "~800MB"
+
+modeling:  
+  base_image: "rocker/r-ver:latest"
+  description: "Machine learning and statistical modeling environment"
+  packages: [renv, devtools, tidyverse, tidymodels, xgboost, randomForest]
+  system_deps: [libxml2-dev, libssl-dev, build-essential, gfortran]
+  category: "standard"
+  size: "~1.5GB"
+```
+
+**Team Configuration**: `templates/config.yaml`
+```yaml
+variants:
+  minimal:
+    enabled: true    # Essential development environment (~800MB)
+    # Full definition in variant_examples.yaml
+  
+  modeling:
+    enabled: false   # Machine learning environment (~1.5GB)  
+    # Full definition in variant_examples.yaml
+
+build:
+  use_config_variants: true
+  variant_library: "variant_examples.yaml"
+```
+
+### Interactive Variant Management
+
+**Browse and Add Variants**:
+```bash
+# Interactive variant browser with 14 options
+./add_variant.sh
+
+# Displays categorized menu:
+# 📦 STANDARD RESEARCH ENVIRONMENTS
+#  1) minimal          ~800MB  - Essential R packages
+#  2) analysis         ~1.2GB  - Tidyverse + data analysis  
+#  3) modeling         ~1.5GB  - Machine learning with tidymodels
+#  4) publishing       ~3GB    - LaTeX, Quarto, bookdown
+#  5) shiny            ~1.8GB  - Interactive web applications
+#  6) shiny_verse      ~3.5GB  - Shiny with tidyverse + publishing
+
+# Select variants and they're automatically added to config.yaml
+```
+
+### Modern Workflow Commands
+
+**Team Initialization**:
+```bash
+# Quick start - creates optimal default variants
+zzcollab -i -p myproject --github    # Creates: minimal + analysis variants
+
+# Custom variants via config file
+zzcollab -i -p myproject             # Creates project + config.yaml
+./add_variant.sh                     # Browse and select variants
+zzcollab --variants-config config.yaml --github  # Build selected variants
+
+# Legacy approach (limited to 3 variants)  
+zzcollab -i -p myproject -B rstudio --github     # Traditional RStudio only
+```
+
+**Solo Developer Workflow**:
+```bash
+# Configuration-based (recommended)
+zzcollab --config set team-name "myteam"
+zzcollab -i -p analysis-project      # Uses config defaults
+
+# Traditional explicit
+zzcollab -i -t myteam -p analysis-project -B analysis -d ~/dotfiles
+```
+
+### Benefits of New Variant System
+
+- ✅ **Eliminates duplication** - Single source of truth in `variant_examples.yaml`
+- ✅ **14+ specialized environments** - From 200MB Alpine to 3.5GB full-featured
+- ✅ **Domain-specific variants** - Bioinformatics, geospatial, HPC, web apps
+- ✅ **Professional testing** - R-hub environments match CRAN infrastructure
+- ✅ **Lightweight options** - Alpine variants 5x smaller than standard images
+- ✅ **Interactive discovery** - Browse variants with `./add_variant.sh`
+- ✅ **Backward compatibility** - Legacy full definitions still supported
+- ✅ **Easy maintenance** - Update variant in one place, propagates everywhere
+
+## Solo Developer Workflow (Enhanced 2025)
+
+ZZCOLLAB provides a streamlined workflow for solo developers with professional-grade reproducibility and minimal overhead.
+
+### Quick Start Solo Workflow
+
+**1. Initial Setup (One-Time)**:
+```bash
+# Install ZZCOLLAB
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh
+
+# Configure defaults (eliminates repetitive typing)
+zzcollab --config init
+zzcollab --config set team-name "myteam"
+zzcollab --config set build-mode "standard"
+zzcollab --config set dotfiles-dir "~/dotfiles"
+```
+
+**2. Project Creation**:
+```bash
+# Quick start - optimal variants automatically
+zzcollab -i -p penguin-analysis --github
+
+# Power users - browse 14+ variants interactively
+mkdir penguin-analysis && cd penguin-analysis
+zzcollab -i -p penguin-analysis
+./add_variant.sh    # Select from bioinformatics, geospatial, alpine, etc.
+```
+
+**3. Daily Development Cycle**:
+```bash
+# Start development environment
+cd penguin-analysis
+make docker-zsh     # Enter container with all packages pre-installed
+
+# Work inside container (example):
+vim scripts/01_penguin_exploration.R    # Create analysis
+vim R/penguin_functions.R              # Add reusable functions  
+vim tests/testthat/test-functions.R     # Write tests
+
+# Test and run analysis
+R
+devtools::load_all()
+devtools::test()
+source("scripts/01_penguin_exploration.R")
+quit()
+
+# Exit container
+exit
+
+# Validate and commit
+make docker-test                        # Run tests in clean environment
+git add . && git commit -m "Add analysis" && git push
+```
+
+### Practical Example: Penguin Bill Analysis
+
+**Complete iterative development example with bill_depth vs log(bill_length) analysis**:
+
+**Initial Analysis (First Iteration)**:
+```r
+# scripts/01_penguin_exploration.R
+library(palmerpenguins)
+library(ggplot2) 
+library(dplyr)
+
+create_bill_plot <- function() {
+  penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    geom_point(aes(color = species), alpha = 0.7, size = 2) +
+    labs(title = "Penguin Bill Depth vs Log(Bill Length)",
+         x = "Log(Bill Length) (mm)", y = "Bill Depth (mm)") +
+    theme_minimal()
+}
+
+bill_plot <- create_bill_plot()
+ggsave("figures/bill_analysis.png", bill_plot, width = 8, height = 6)
+```
+
+**Function + Tests**:
+```r
+# R/penguin_functions.R  
+#' Create scatter plot of bill depth vs log(bill length)
+#' @export
+create_bill_plot <- function(data = palmerpenguins::penguins) {
+  # Implementation with proper error handling
+}
+
+# tests/testthat/test-penguin_functions.R
+test_that("create_bill_plot works correctly", {
+  plot <- create_bill_plot()
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title, "Penguin Bill Depth vs Log(Bill Length)")
+})
+```
+
+**Enhanced Analysis (Second Iteration)**:
+```r
+# Add regression analysis
+create_enhanced_bill_plot <- function() {
+  penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    geom_point(aes(color = species), alpha = 0.7, size = 2) +
+    geom_smooth(method = "lm", se = TRUE) +  # Add regression line
+    labs(title = "Penguin Bill Analysis with Regression")
+}
+
+fit_bill_model <- function() {
+  # Linear regression with model diagnostics
+  # Returns list with model, r_squared, coefficients
+}
+```
+
+### Solo Developer Benefits
+
+- ✅ **Reproducible**: Identical environment every development session
+- ✅ **Professional**: Automated testing, validation, CI/CD
+- ✅ **Flexible**: 14+ variants for different research domains  
+- ✅ **Lightweight**: Alpine variants ~200MB vs standard ~1GB+
+- ✅ **Team-ready**: Easy transition to collaboration later
+- ✅ **Container-based**: No conflicts with host system R
+
+### From Solo to Team Transition
+
+Solo projects are automatically team-ready:
+```bash
+# Others can join your project immediately
+git clone https://github.com/yourname/penguin-analysis.git
+cd penguin-analysis
+zzcollab -t yourname -p penguin-analysis -I analysis
+make docker-zsh    # Same environment, instant collaboration
 ```
 
 ## Development Commands
@@ -357,6 +607,23 @@ ZZCOLLAB has undergone comprehensive refactoring to improve maintainability and 
 
 ## Recent Enhancements (2025)
 
+### Docker Variant System Refactoring (Latest)
+Major architectural improvement implementing single source of truth for variant management:
+
+**Key Changes:**
+- **Eliminated duplication**: Variant definitions centralized in `variant_examples.yaml`
+- **14+ variants available**: Added shiny, shiny_verse, and comprehensive specialized options
+- **Interactive variant browser**: `./add_variant.sh` with categorized 14-option menu
+- **Single source of truth**: Team configs reference central library instead of duplicating
+- **Backward compatibility**: Legacy full variant definitions still supported
+- **Verified system libraries**: Fixed missing dependencies across all variants
+
+**Technical Implementation:**
+- **Simplified config.yaml**: Reduced from 455 to 154 lines (66% reduction) 
+- **Enhanced add_variant.sh**: Generates lightweight YAML entries with library references
+- **Updated team_init.sh**: Dynamic variant loading during build process
+- **Comprehensive testing**: Validated new format, legacy compatibility, and integration
+
 ### Selective Base Image Building System
 Major improvement to team initialization workflow with selective base image building:
 
@@ -477,12 +744,20 @@ Rscript check_renv_for_commit.R --strict-imports --fix --fail-on-issues
 ### Documentation Synchronization
 All documentation has been updated to reflect current system capabilities:
 - **workflow.md**: Updated with selective base image building and error handling examples
-- **workflow_mini.md**: Added comprehensive Ubuntu setup scenario for new developers with fresh systems
+- **workflow_mini.md**: Complete rewrite focusing on solo developer workflow with practical penguin analysis example
 - **ZZCOLLAB_USER_GUIDE.md**: Enhanced with new flags, interface options, and team coordination guidance
 - **~/prj/p25/index.qmd**: Updated team collaboration examples with current CLI syntax
 - **Command consistency**: All examples now use current flag syntax (-F, -S, -C, -B, -V, -I)
 - **Error handling**: Comprehensive examples of helpful guidance when team images unavailable
 - **Platform coverage**: Complete setup instructions for macOS, Windows, and Ubuntu systems
+
+**workflow_mini.md Enhancements:**
+- **Solo developer focus**: Streamlined workflow from config setup through iterative development
+- **Practical example**: Complete penguin bill analysis with bill_depth vs log(bill_length) 
+- **Two-iteration demo**: Initial scatter plot → enhanced with regression analysis
+- **Professional practices**: Function development, comprehensive testing, reproducible outputs
+- **14+ variant showcase**: Interactive variant selection with use case recommendations
+- **Container-based development**: Clear enter-container → work → exit-container → commit pattern
 
 ### R Package Integration (25 Functions)
 Complete R interface for CLI functionality with build mode support:
