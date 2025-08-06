@@ -288,6 +288,58 @@ variants:
   # CUSTOM VARIANTS (Add your own below)
   #---------------------------------------------------------------------------
   
+  # Migrated from user config: Bioinformatics research workflow
+  bioinformatics_user:
+    base_image: "bioconductor/bioconductor_docker:latest"
+    description: "Bioinformatics research workflow (migrated from user config)"
+    packages:
+      - "renv"
+      - "remotes"
+      - "tidyverse"     # User specified tidyverse
+      - "BiocManager"   # For Bioconductor packages
+      - "Biostrings"    # From user's renv_packages
+      - "GenomicRanges" # From user's renv_packages
+      - "DESeq2"        # From user's renv_packages
+      - "edgeR"         # From user's renv_packages
+      - "limma"         # From user's renv_packages
+      - "devtools"      # Standard development
+    system_deps:
+      - "libxml2-dev"   # Required for XML parsing
+      - "libcurl4-openssl-dev"  # Required for web requests
+      - "libssl-dev"    # Required for secure connections
+      - "zlib1g-dev"    # Compression library
+      - "libbz2-dev"    # Compression library
+      - "liblzma-dev"   # LZMA compression
+    enabled: false       # Set to true to build this variant
+    notes: "Migrated from ~/.zzcollab/config.yaml custom_modes"
+  
+  # Migrated from user config: Geospatial analysis workflow
+  geospatial_user:
+    base_image: "rocker/geospatial:latest"
+    description: "Geospatial analysis workflow (migrated from user config)"
+    packages:
+      - "renv"
+      - "remotes"
+      - "tidyverse"     # User specified tidyverse
+      - "sf"            # From user's docker_packages and renv_packages
+      - "terra"         # From user's docker_packages and renv_packages
+      - "raster"        # From user's renv_packages
+      - "leaflet"       # From user's renv_packages
+      - "tmap"          # From user's renv_packages
+      - "mapview"       # From user's renv_packages
+      - "devtools"      # Standard development
+    system_deps:
+      - "gdal-bin"      # Geospatial library (usually included in rocker/geospatial)
+      - "proj-bin"      # Projection library (usually included in rocker/geospatial)
+      - "libgeos-dev"   # Geometry library
+      - "libproj-dev"   # Projection library development headers
+      - "libgdal-dev"   # GDAL development headers
+      - "libudunits2-dev" # Units library
+      - "netcdf-bin"    # NetCDF tools
+      - "libxml2-dev"   # Required for XML parsing
+    enabled: false       # Set to true to build this variant
+    notes: "Migrated from ~/.zzcollab/config.yaml custom_modes"
+
   # Example custom variant - uncomment and modify as needed
   # custom_example:
   #   base_image: "rocker/r-ver:latest"  # REQUIRED: Docker base image
