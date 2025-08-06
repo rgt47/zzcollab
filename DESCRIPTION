@@ -34,5 +34,6 @@ Suggests:
     knitr,
     rmarkdown
 Config/testthat/edition: 3
+VignetteBuilder: knitr
 URL: https://github.com/rgt47/zzcollab
 BugReports: https://github.com/rgt47/zzcollab/issues

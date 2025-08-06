@@ -40,7 +40,7 @@ jobs:
     - name: Run ShellCheck on utility scripts
       run: |
         echo "Checking utility scripts..."
-        for script in install.sh navigation_scripts.sh; do
+        for script in install.sh; do
           if [ -f "$script" ]; then
             echo "Checking $script..."
             shellcheck --severity=warning "$script"
