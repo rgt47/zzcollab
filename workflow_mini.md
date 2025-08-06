@@ -1,972 +1,713 @@
-# ZZCOLLAB Mini Workflow Guide
+# ZZCOLLAB Solo Developer Workflow Guide
 
-## Configuration System (Recommended)
+## Initial Setup (One-Time)
 
-ZZCOLLAB includes a configuration system to eliminate repetitive typing and
-set project defaults. **Set this up once and simplify all subsequent
-commands.**
-
-### One-Time Configuration Setup
+### 1. Install ZZCOLLAB System
 ```bash
-# 1. Initialize configuration file
-zzcollab --config init
-
-# 2. Set your defaults (customize as needed)
-zzcollab --config set team-name "rgt47"              # Your Docker Hub
-                                                       # account
-zzcollab --config set github-account "rgt47"        # Your GitHub
-                                                       # username  
-zzcollab --config set build-mode "standard"         # fast, standard,
-                                                       # comprehensive
-zzcollab --config set dotfiles-dir "~/dotfiles"     # Path to your
-                                                       # dotfiles
-
-# 3. View your configuration
-zzcollab --config list
-```
-
-### Config-Aware Workflows
-With configuration set up, commands become much simpler:
-
-```bash
-# Traditional verbose approach:
-zzcollab -i -t rgt47 -p myproject -B rstudio -S -d ~/dotfiles
-
-# Config-simplified approach (identical result):
-zzcollab -i -p myproject -B rstudio
-
-# NEW: Modern variant approach (uses config.yaml with unlimited custom variants):
-zzcollab -i -p myproject    # Creates default variants: minimal + analysis
-```
-
-**All workflows below show legacy, config-simplified, and modern variant approaches!**
-
----
-
-## Solo Developer: Complete Analysis Workspace
-
-### Prerequisites: Install ZZCOLLAB (One-time)
-```bash
-# 1. Clone and install zzcollab system
+# Clone and install zzcollab
 git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab && ./install.sh
 
-# 2. Verify installation  
+# Verify installation  
 zzcollab --help && which zzcollab
-
-# 3. Optional: Set up configuration (recommended)
-zzcollab --config init
-zzcollab --config set team-name "rgt47"
-zzcollab --config set build-mode "standard" 
-zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
-### Single Developer Setup (Complete Environment)
+### 2. Configuration Setup (Recommended)
+ZZCOLLAB includes a configuration system to eliminate repetitive typing and 
+set project defaults. **Set this up once and simplify all subsequent 
+commands.**
 
-For solo developers who want a complete, reproducible analysis environment with **unlimited variant options**:
+```bash
+# Initialize configuration file
+zzcollab --config init
 
-#### **🎯 Choose Your Analysis Environment**
+# Set your defaults (customize as needed)
+zzcollab --config set team-name "rgt47"              # Your Docker Hub account
+zzcollab --config set github-account "rgt47"        # Your GitHub username  
+zzcollab --config set build-mode "standard"         # fast, standard, comprehensive
+zzcollab --config set dotfiles-dir "~/dotfiles"     # Path to your dotfiles
+
+# View your configuration
+zzcollab --config list
+```
+
+## Project Creation
+
+### Choose Your Development Environment
 
 **Quick Start (Recommended):**
 ```bash
-# Modern approach: Creates optimal variants automatically
-zzcollab -i -p c275 --github    # Creates: minimal + analysis variants + GitHub repo
+# Creates optimal variants automatically + GitHub repo
+zzcollab -i -p myproject --github    # Creates: minimal + analysis variants
 ```
 
 **Interactive Variant Selection (Power Users):**
 ```bash
-mkdir c275 && cd c275
-zzcollab -i -p c275             # Creates project + config.yaml
-./add_variant.sh               # Browse comprehensive variant library
+mkdir myproject && cd myproject
+zzcollab -i -p myproject             # Creates project + config.yaml
+./add_variant.sh                     # Browse comprehensive variant library
 
-# Interactive menu shows:
+# Interactive menu shows 14 variants:
 # 📦 STANDARD RESEARCH ENVIRONMENTS
-#  1) minimal              ~800MB  - Essential R packages only
-#  2) analysis             ~1.2GB  - Tidyverse + data analysis tools  
-#  3) modeling             ~1.5GB  - Machine learning with tidymodels
-#  4) publishing           ~3GB    - LaTeX, Quarto, bookdown, blogdown
+#  1) minimal          ~800MB  - Essential R packages only
+#  2) analysis         ~1.2GB  - Tidyverse + data analysis tools  
+#  3) modeling         ~1.5GB  - Machine learning with tidymodels
+#  4) publishing       ~3GB    - LaTeX, Quarto, bookdown, blogdown
+#  5) shiny            ~1.8GB  - Interactive web applications
+#  6) shiny_verse      ~3.5GB  - Shiny with tidyverse + publishing
 #
 # 🔬 SPECIALIZED DOMAINS
-#  5) bioinformatics       ~2GB    - Bioconductor genomics packages
-#  6) geospatial           ~2.5GB  - sf, terra, leaflet mapping tools
+#  7) bioinformatics   ~2GB    - Bioconductor genomics packages
+#  8) geospatial       ~2.5GB  - sf, terra, leaflet mapping tools
 #
 # 🏔️ LIGHTWEIGHT ALPINE VARIANTS  
-#  7) alpine_minimal       ~200MB  - Ultra-lightweight for CI/CD
-#  8) alpine_analysis      ~400MB  - Essential analysis in tiny container
+#  9) alpine_minimal   ~200MB  - Ultra-lightweight for CI/CD
+# 10) alpine_analysis  ~400MB  - Essential analysis in tiny container
+# 11) hpc_alpine       ~600MB  - High-performance parallel processing
 #
 # 🧪 R-HUB TESTING ENVIRONMENTS
-#  9) rhub_ubuntu          ~1GB    - CRAN-compatible package testing
-# 10) rhub_fedora          ~1.2GB  - Test against R-devel
+# 12) rhub_ubuntu      ~1GB    - CRAN-compatible package testing
+# 13) rhub_fedora      ~1.2GB  - Test against R-devel
+# 14) rhub_windows     ~1.5GB  - Windows compatibility testing
 
 # Select variants that match your workflow, then:
 zzcollab --variants-config config.yaml --github
 ```
 
-**Legacy Approach (Limited Variants):**
+**Legacy Approach (Limited to 3 variants):**
 ```bash
 # Traditional: Limited to shell/rstudio/verse only
-zzcollab -i -p c275 -B all --github              # All 3 legacy variants
-zzcollab -i -p c275 -B rstudio --github          # RStudio only (GUI users)
+zzcollab -i -p myproject -B rstudio --github    # RStudio interface
+zzcollab -i -p myproject -B all --github        # All 3 legacy variants
 ```
 
-**🏆 Recommended Solo Developer Variants:**
+### Recommended Variant Combinations by Use Case:
 - **Data Analysts**: `analysis` + `publishing` (tidyverse + reporting)
 - **Bioinformaticians**: `bioinformatics` + `alpine_minimal` (research + CI/CD)
 - **Package Developers**: `minimal` + `rhub_ubuntu` (development + testing)
+- **Web App Developers**: `shiny_verse` + `alpine_minimal` (apps + deployment)
 - **Academic Researchers**: `modeling` + `publishing` (analysis + manuscripts)
 
-**What this creates:**
-- ✅ **Specialized Docker environments**: Tailored to your research domain
-- ✅ **Lightweight options**: Alpine variants for fast deployment/CI/CD
-- ✅ **Professional testing**: R-hub environments matching CRAN standards
-- ✅ **Personal workspace**: Your dotfiles integrated
-- ✅ **Private GitHub repository**: `https://github.com/rgt47/c275` with CI/CD
-- ✅ **Ready-to-code**: Start immediately with `make docker-zsh`
+## Daily Development Workflow
 
-**Build modes:** `-F` (Fast), `-S` (Standard), `-C` (Comprehensive)  
-**Interfaces:** `-I shell` (vim/tmux), `-I rstudio` (web),
-`-I verse` (publishing)
-
-### Daily Workflow
+### 1. Start Development Environment
 ```bash
-make docker-zsh          # Start development
-# ... analysis work ...
-exit                     # Exit container
-git add . && git commit -m "Add analysis" && git push
+cd myproject
+
+# Choose your interface based on selected variants:
+make docker-zsh         # Shell interface (works with any variant)
+make docker-rstudio     # RStudio Server at localhost:8787 (if rstudio/shiny variants)
+make docker-r           # R console only
+make docker-verse       # Publishing workflow with LaTeX (if publishing variant)
 ```
 
----
+### 2. Iterative Development (Inside Container)
 
-## Developer 1: Team Lead Project Initialization
-
-### Prerequisites: Install ZZCOLLAB (One-time)
+**Working in the container:**
 ```bash
-# 1. Clone and install zzcollab system
-git clone https://github.com/rgt47/zzcollab.git
-cd zzcollab && ./install.sh
+# You're now inside the Docker container with all packages pre-installed
+# Your project directory is mounted at /home/analyst/project
 
-# 2. Verify installation
-zzcollab --help && which zzcollab
-
-# 3. Optional: Set up configuration (recommended for team leads)
-zzcollab --config init
-zzcollab --config set team-name "rgt47"          # Your Docker Hub team name
-zzcollab --config set github-account "rgt47"     # Your GitHub account
-zzcollab --config set build-mode "standard"      # Default build mode
-zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
-```
-
-### Three Approaches for Team Lead
-
-```bash
-# Navigate to projects directory first
-cd ~/projects  # or your preferred projects directory
-
-# APPROACH 1: Modern Variant System (NEW - Recommended)
-# Create unlimited custom Docker environments from variant library
-zzcollab -i -p png1                    # Creates: minimal + analysis variants (default)
-
-# Or browse and add custom variants interactively:
-mkdir png1 && cd png1
-zzcollab -i -p png1                    # Creates default project + config.yaml
-./add_variant.sh                       # Interactive variant browser
-# Choose from: Alpine (~200MB), R-hub testing, bioinformatics, geospatial, HPC, etc.
-
-# APPROACH 2: Legacy Selective Building (Config-Simplified)
-zzcollab -i -p png1 -B r-ver          # Build only shell variant (fastest)
-zzcollab -i -p png1 -B rstudio        # Build only RStudio variant (GUI teams)
-zzcollab -i -p png1 -B verse          # Build only verse variant (publishing)
-zzcollab -i -p png1 -B all            # Build all variants (traditional)
-
-# APPROACH 3: Legacy Verbose (Traditional)
-zzcollab -i -t rgt47 -p png1 -B r-ver -S     # Build only shell variant
-zzcollab -i -t rgt47 -p png1 -B rstudio -S   # Build only RStudio variant
-zzcollab -i -t rgt47 -p png1 -B verse -S     # Build only verse variant
-zzcollab -i -t rgt47 -p png1 -B all -S       # Build all variants
-
-# Traditional Verbose:
-zzcollab -t rgt47 -p png1 -I shell    # Full project setup with shell
-                                       # interface
-
-# Note: Step 1 (-i flag) now stops after team image creation
-# Step 2 creates the actual project structure and GitHub repository
-```
-
-### What Each Step Does:
-
-**Step 1 (-i flag):**
-
-1. **Builds team Docker images**: Creates and pushes to Docker Hub as
-   `rgt47/png1core-shell:latest` (and/or other variants)
-2. **Stops after image creation**: Provides guidance for next steps
-
-**Step 2 (separate project setup):**
-
-1. **Creates project directory**: `png1/`
-2. **Initializes zzcollab project structure**: Complete R package with
-   analysis framework
-3. **Creates private GitHub repository**: `https://github.com/rgt47/png1`
-4. **Sets up automated CI/CD**: GitHub Actions for team image management
-5. **Enables team collaboration**: Dev 2 and Dev 3 can join immediately
-
-### Required: Invite Team Members
-
-After completing both steps, Dev 1 must invite collaborators:
-
-```bash
-# Invite team members to the private GitHub repository
-gh repo invite rgt47/png1 dev2-github-username
-gh repo invite rgt47/png1 dev3-github-username
-
-# Alternative: Via GitHub web interface
-# 1. Go to https://github.com/rgt47/png1/settings/access
-# 2. Click "Invite a collaborator"
-# 3. Add dev2-github-username and dev3-github-username with "Write" access
-```
-
-### For Dev 2 and Dev 3 to Join:
-
-#### Prerequisites: Install ZZCOLLAB (One-time)
-```bash
-# 0. Clone and install zzcollab system
-git clone https://github.com/rgt47/zzcollab.git
-cd zzcollab && ./install.sh && zzcollab --help
-
-# 1. Optional: Set up configuration for easier commands
-zzcollab --config init
-zzcollab --config set team-name "rgt47"         # Match team settings
-zzcollab --config set dotfiles-dir "~/dotfiles" # Your dotfiles path
-```
-
-```bash
-# 1. Accept GitHub collaboration invitation
-# Check email for invitation from rgt47/png1 repository
-# OR visit: https://github.com/rgt47/png1/invitations
-# Click "Accept invitation"
-
-# 2. Clone the project
-git clone https://github.com/rgt47/png1.git
-cd png1
-
-# 3. Discover available team variants and join
-# MODERN APPROACH: Check what variants your team lead created
-ls -la                          # Look for config.yaml
-cat config.yaml                 # See enabled variants (if using modern system)
-
-# Join with any available variant:
-zzcollab -p png1 -I minimal     # Modern: Minimal development environment  
-zzcollab -p png1 -I analysis    # Modern: Tidyverse analysis environment
-zzcollab -p png1 -I bioinformatics  # Modern: Bioconductor environment (if enabled)
-zzcollab -p png1 -I alpine_minimal  # Modern: Ultra-lightweight (~200MB)
-
-# LEGACY APPROACH: Limited to 3 traditional variants
-zzcollab -p png1 -I shell       # Legacy: Command-line development
-zzcollab -p png1 -I rstudio     # Legacy: RStudio Server interface  
-zzcollab -p png1 -I verse       # Legacy: Publishing workflow with LaTeX
-
-# 🔍 HELPFUL ERROR HANDLING:
-# If you request an unavailable variant, you'll see:
-# ❌ Error: Team image 'rgt47/png1core-bioinformatics:latest' not found
-# ✅ Available variants for this project:
-#     - rgt47/png1core-minimal:latest
-#     - rgt47/png1core-analysis:latest
-# 💡 Solutions:
-#    1. Use available variant: zzcollab -p png1 -I minimal
-#    2. Ask team lead to build bioinformatics variant
-
-# 4. Start development with your chosen environment
-make docker-zsh                 # Shell/vim interface (works with any variant)
-make docker-rstudio             # RStudio Server (if team built rstudio-compatible variant)
-make docker-r                   # R console only
-```
-
-### 🎯 Team Variant Selection Strategy
-
-**For Team Leads: How to Choose Variants for Your Team**
-
-```bash
-# 💡 DECISION FRAMEWORK:
-# Consider your team's research domain, technical skills, and resource constraints
-
-# 🔬 RESEARCH DOMAIN-BASED SELECTION:
-# Genomics/Bioinformatics Team:
-./add_variant.sh  # Select: bioinformatics + alpine_minimal (research + CI/CD)
-
-# Geospatial Analysis Team:  
-./add_variant.sh  # Select: geospatial + analysis (specialized + general)
-
-# Machine Learning Team:
-./add_variant.sh  # Select: modeling + rhub_ubuntu (ML + testing)
-
-# Publishing/Academic Team:
-./add_variant.sh  # Select: analysis + publishing (data + manuscripts)
-
-# 👥 TEAM SKILL-BASED SELECTION:
-# Mixed technical skills: analysis + rstudio (GUI option)
-# Advanced users only: minimal + alpine_minimal (lightweight)
-# Package developers: minimal + rhub_ubuntu + rhub_fedora (comprehensive testing)
-
-# 💰 RESOURCE-CONSCIOUS SELECTION:
-# Limited Docker Hub storage: alpine_minimal only (~200MB)
-# Fast CI/CD priority: alpine_analysis (~400MB)
-# Full-featured team: analysis + modeling + publishing (~6GB total)
-```
-
-**Team Communication Template:**
-```markdown
-## PNG1 Project - Available Development Environments
-
-Our team has these Docker variants available:
-
-🔬 **analysis** (~1.2GB) - Main development environment
-   - Tidyverse data analysis stack
-   - Use: `zzcollab -p png1 -I analysis`
-   - Interface: `make docker-zsh` or `make docker-rstudio`
-
-🏔️ **alpine_minimal** (~200MB) - CI/CD and quick testing  
-   - Ultra-lightweight for fast deployment
-   - Use: `zzcollab -p png1 -I alpine_minimal`
-   - Interface: `make docker-zsh` only
-
-📊 **modeling** (~1.5GB) - Machine learning work
-   - Tidymodels, xgboost, randomForest
-   - Use: `zzcollab -p png1 -I modeling`
-   - Interface: `make docker-zsh`
-
-Choose based on your task. Questions? Ask in #png1-dev channel.
-```
-
-### Key Benefits of Modern Variant System:
-
-- ✅ **Domain-specific environments**: Bioinformatics, geospatial, ML, publishing workflows
-- ✅ **Resource optimization**: Alpine variants use 5x less storage than rocker images
-- ✅ **Professional testing**: R-hub environments match CRAN check infrastructure  
-- ✅ **Flexible team scaling**: Add variants anytime with `./add_variant.sh`
-- ✅ **Intelligent error guidance**: Team members get helpful messages with available options
-- ✅ **No vendor lock-in**: Can use any Docker base image (rocker, Alpine, R-hub, Bioconductor)
-
-### If Team Needs Multiple Interfaces Later:
-
-Developer 1 can add variants incrementally:
-
-```bash
-cd png1
-zzcollab -V rstudio    # Add RStudio variant
-zzcollab -V verse      # Add verse variant for publishing
-```
-
-This approach optimizes for **team coordination** while minimizing
-**setup overhead** for the team lead! 🚀
-
----
-
-## Developer 2: Development Completion Workflow
-
-### Prerequisites: Install ZZCOLLAB (One-time)
-```bash
-# 1. Clone and install zzcollab system
-git clone https://github.com/rgt47/zzcollab.git
-cd zzcollab && ./install.sh && zzcollab --help
-
-# 2. Optional: Set up configuration for simplified commands
-zzcollab --config init
-zzcollab --config set team-name "rgt47"          # Team name for this
-                                               # project
-zzcollab --config set build-mode "fast"          # Your preferred mode
-zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
-```
-
-When **Developer 2** finishes their development work, here's the
-complete workflow:
-
-### 1. Final Testing & Validation (Inside Container)
-```bash
-# Still in development container (make docker-zsh)
+# R package development
 R
-# Run final tests
-devtools::load_all()           # Load all package functions
-devtools::test()               # Run unit tests
-testthat::test_dir("tests/integration")  # Run integration tests
-source("scripts/my_analysis.R")  # Test your analysis script
+devtools::load_all()           # Load your package functions
+devtools::test()              # Run tests
+devtools::document()          # Generate documentation
 quit()
+
+# Analysis scripts
+vim scripts/01_data_analysis.R    # Create/edit analysis
+R --vanilla < scripts/01_data_analysis.R  # Run script
+
+# Create new functions
+vim R/my_functions.R          # Add R functions
+vim tests/testthat/test-my_functions.R  # Write tests
+
+# Install additional packages (will be tracked automatically)
+R
+install.packages("newpackage")
+quit()
+
+# Work on reports
+vim analysis/report.Rmd       # Edit R Markdown report
+R
+rmarkdown::render("analysis/report.Rmd")  # Generate report
+quit()
+
+# Git workflow (from inside container)
+git status                    # Check changes
+git add .                    # Stage changes
+git diff --cached            # Review staged changes
 ```
 
-### 2. Exit Container & Validate Dependencies
+### 3. Exit Container and Commit
 ```bash
 # Exit the development container
 exit
 
-# Validate all dependencies are properly tracked
-make docker-check-renv-fix     # Auto-fix any dependency issues
-make docker-test               # Run all tests in clean environment
-make docker-render             # Ensure reports render correctly
-```
+# You're now back on your host system
+# Validate dependencies and run final tests
+make docker-check-renv-fix    # Auto-fix any dependency issues
+make docker-test             # Run all tests in clean environment
+make docker-render           # Ensure reports render correctly
 
-### 3. Git Workflow - Commit Changes
-```bash
-# Check what you've changed
-git status
-git diff
+# Git workflow - commit and push
+git status                   # Check what changed
+git diff                    # Review changes
 
-# Stage and commit your work
 git add .
-git commit -m "Add [feature description] with comprehensive tests
+git commit -m "Add data analysis with visualization
 
-- [Describe what you implemented]
-- [List any new packages added]
-- [Mention test coverage]
-- All tests passing and dependencies validated"
+- Implement customer segmentation analysis
+- Add clustering functions with tests
+- Generate summary report with plots
+- All tests passing, dependencies validated"
 
-# Push to your feature branch (if using feature branches - recommended)
-git push origin feature/my-analysis
-
-# OR push directly to main (if using simple workflow)
-git push origin main
+git push origin main        # Push to GitHub
 ```
 
-### 4. Create Pull Request (Recommended Team Workflow)
-```bash
-# Create PR for team review
-gh pr create --title "Add [feature description]" \
-    --body "## Summary
-- [Describe your contribution]
-- [List any new analysis scripts/functions]
-- [Mention if new packages were added]
+### 4. What Happens Automatically
 
-## Testing
-- [x] All unit tests pass
-- [x] Integration tests pass  
-- [x] Analysis scripts run without errors
-- [x] Report renders successfully
-- [x] Dependencies validated
-
-## Impact
-- [Describe how this affects the project]
-- [Any breaking changes or requirements for other devs]"
-```
-
-### 5. What Happens Next (Automated)
-
-When Dev 2 pushes changes:
+When you push changes to GitHub:
 
 1. **GitHub Actions automatically**:
    - ✅ Runs R package validation
    - ✅ Executes all tests
    - ✅ Renders analysis reports
-   - ✅ **Detects if new packages were added**
+   - ✅ Detects if new packages were added
 
 2. **If new packages detected**:
+   - ✅ Rebuilds Docker image with new packages
+   - ✅ Pushes updated image to Docker Hub
+   - ✅ Next time you run `make docker-zsh`, you get the updated environment
 
-   - ✅ **Rebuilds team Docker image** with new packages
-   - ✅ **Pushes updated image** to Docker Hub (`rgt47/png1core-*:latest`)
-   - ✅ **Notifies team** via commit comment with update instructions
-
-3. **Team gets notification**:
-   ```
-   🐳 Team Docker Image Updated
-   
-   New packages detected: tidymodels, plotly
-   
-   Team members: Update your environment with:
-   git pull
-   docker pull rgt47/png1core-shell:latest
-   make docker-zsh
-   ```
-
-### 6. Team Synchronization (Dev 1 & Dev 3)
-
-Other team members sync automatically:
+### 5. Continue Development Cycle
 ```bash
-# Dev 1 and Dev 3 run when they see the notification:
-git pull                           # Get latest code changes
-docker pull rgt47/png1core-shell:latest  # Get updated team environment  
-make docker-zsh                   # Continue development with new packages
+# Start next iteration
+make docker-zsh              # Continue with updated environment
+# ... more development inside container ...
+exit
+# ... commit and push changes ...
 ```
 
-## Alternative: Simple Direct Push Workflow
+## Advanced Development Patterns
 
-If not using pull requests:
+### Working with Different Variants
 ```bash
-# After validation (steps 1-2 above)
-git add .
-git commit -m "Add my analysis with tests - all dependencies validated"
-git push origin main              # Direct push triggers team image rebuild
+# Switch between different environments for different tasks
+make docker-zsh              # Use analysis variant for data exploration
+make docker-rstudio          # Use RStudio for interactive development
+make docker-verse            # Use publishing variant for report writing
+
+# Each environment has specialized packages for its purpose
 ```
 
-## Key Benefits of This Workflow:
+### Testing and Validation Workflow
+```bash
+# Before committing, validate your work:
+make docker-test             # Run all automated tests
+make docker-check            # R CMD check validation
+make docker-render           # Ensure all reports render
 
-- ✅ **Zero manual image management**: GitHub Actions handles Docker
-  rebuilds
-- ✅ **Automatic team notification**: Everyone knows when environment
-  updates
-- ✅ **Dependency validation**: Prevents environment drift before commit
-- ✅ **Professional quality**: Tests, validation, and documentation
-  required
-- ✅ **Team coordination**: Clear communication about changes and impacts
+# Fix any issues before committing
+make docker-zsh
+# ... fix issues inside container ...
+exit
+```
 
-## Dev 2's Work is Done! 🎉
+### Package Development Focus
+```bash
+# Inside container - R package development workflow
+R
+devtools::check()            # Full package check
+devtools::build()            # Build package
+devtools::install()          # Install your package
+usethis::use_test("myfunction")  # Create test file
+quit()
 
-Once Dev 2 pushes their changes:
+# Document and check
+make docker-document         # Generate documentation
+make docker-check           # Full package validation
+```
 
-- **Code is integrated** into the main project
-- **Team environment is updated** automatically  
-- **Other developers are notified** and can sync
-- **Dev 2 can start next feature** or analysis
+## Benefits of This Workflow
 
-This workflow ensures **zero-friction collaboration** while maintaining
-**enterprise-grade quality standards**! 🚀
+- ✅ **Reproducible**: Every development session uses identical environment
+- ✅ **Isolated**: No conflicts with your host system R installation
+- ✅ **Collaborative-ready**: Easy to share exact environment with others
+- ✅ **Professional**: Automated testing, validation, and CI/CD
+- ✅ **Flexible**: 14+ variants for different research domains
+- ✅ **Lightweight options**: Alpine variants ~200MB vs standard ~1GB+
+- ✅ **Automatic dependency tracking**: Never lose track of required packages
+- ✅ **Version controlled**: Complete project history including environment
+
+## Solo to Team Transition
+
+If you later want to collaborate:
+
+1. **Your project is already team-ready** - others can join with:
+   ```bash
+   git clone https://github.com/yourname/myproject.git
+   cd myproject
+   zzcollab -t yourname -p myproject -I analysis  # Join with analysis variant
+   ```
+
+2. **No migration needed** - the same Docker images and workflow work for teams
+
+This workflow provides **enterprise-grade reproducibility** with **solo developer simplicity**! 🚀
 
 ---
 
-## Developer 1: Reacting to Team Contributions & Adding Own Work
+## Practical Example: Penguin Analysis Project
 
-### Prerequisites: Install ZZCOLLAB (One-time)
+Let's walk through a complete example using the Palmer penguins dataset to demonstrate the iterative development workflow.
+
+### Step 1: Create Project and Initial Analysis
 ```bash
-# 1. Clone and install zzcollab system
-git clone https://github.com/rgt47/zzcollab.git
-cd zzcollab && ./install.sh && zzcollab --help
+# Set up the project
+zzcollab -i -p penguin-analysis --github
 
-# 2. Configuration should already be set up from team initialization
-# If not, set it up:
-zzcollab --config init
-zzcollab --config set team-name "rgt47"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+# Start development environment
+cd penguin-analysis
+make docker-zsh
 ```
 
-Here are the commands **Developer 1 (Team Lead)** uses to react to
-Dev 2 and Dev 3's additions and then add their own code:
-
-### 1. Sync with Team Changes
+**Inside the container - Create initial analysis script:**
 ```bash
-# Navigate to project directory
-cd png1
+# Create the analysis script
+vim scripts/01_penguin_exploration.R
+```
 
-# Get latest code changes from team
-git pull origin main
+**Contents of `scripts/01_penguin_exploration.R`:**
+```r
+#' Penguin Bill Analysis
+#' Explore relationship between bill depth and log of bill length
 
-# Get latest team environment (automatically updated by GitHub Actions)
-docker pull rgt47/png1core-shell:latest   # or whatever variant you use
+# Load required packages
+library(palmerpenguins)
+library(ggplot2)
+library(dplyr)
+
+#' Create scatter plot of bill depth vs log(bill length)
+#' @return ggplot object
+create_bill_plot <- function() {
+  penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    geom_point(aes(color = species), alpha = 0.7, size = 2) +
+    labs(
+      title = "Penguin Bill Depth vs Log(Bill Length)",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+# Create and display the plot
+bill_plot <- create_bill_plot()
+print(bill_plot)
+
+# Save the plot
+ggsave("figures/bill_analysis.png", bill_plot, width = 8, height = 6, dpi = 300)
+
+cat("Analysis complete! Plot saved to figures/bill_analysis.png\n")
+```
+
+**Create the function file:**
+```bash
+# Create R function file
+vim R/penguin_functions.R
+```
+
+**Contents of `R/penguin_functions.R`:**
+```r
+#' Create scatter plot of bill depth vs log(bill length)
+#' 
+#' @param data Data frame containing penguin data (default: palmerpenguins::penguins)
+#' @return ggplot object
+#' @export
+#' @examples
+#' plot <- create_bill_plot()
+#' print(plot)
+create_bill_plot <- function(data = palmerpenguins::penguins) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("ggplot2 package is required")
+  }
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("dplyr package is required")
+  }
+  
+  data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    ggplot2::geom_point(ggplot2::aes(color = species), alpha = 0.7, size = 2) +
+    ggplot2::labs(
+      title = "Penguin Bill Depth vs Log(Bill Length)",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "bottom")
+}
+```
+
+**Create tests for the function:**
+```bash
+# Create test file
+vim tests/testthat/test-penguin_functions.R
+```
+
+**Contents of `tests/testthat/test-penguin_functions.R`:**
+```r
+test_that("create_bill_plot works correctly", {
+  # Test with default data
+  plot <- create_bill_plot()
+  
+  # Check that it returns a ggplot object
+  expect_s3_class(plot, "ggplot")
+  
+  # Check plot components
+  expect_equal(plot$labels$title, "Penguin Bill Depth vs Log(Bill Length)")
+  expect_equal(plot$labels$x, "Log(Bill Length) (mm)")
+  expect_equal(plot$labels$y, "Bill Depth (mm)")
+  expect_equal(plot$labels$colour, "Species")
+})
+
+test_that("create_bill_plot handles custom data", {
+  # Create test data
+  test_data <- data.frame(
+    bill_length_mm = c(40, 45, 50),
+    bill_depth_mm = c(18, 20, 22),
+    species = c("A", "B", "C")
+  )
+  
+  plot <- create_bill_plot(test_data)
+  expect_s3_class(plot, "ggplot")
+})
+
+test_that("create_bill_plot handles missing values", {
+  # Create test data with NA values
+  test_data <- data.frame(
+    bill_length_mm = c(40, NA, 50),
+    bill_depth_mm = c(18, 20, NA),
+    species = c("A", "B", "C")
+  )
+  
+  plot <- create_bill_plot(test_data)
+  expect_s3_class(plot, "ggplot")
+  
+  # Should have only 1 point after filtering NAs
+  expect_equal(nrow(plot$data), 1)
+})
+```
+
+**Test and run the analysis:**
+```bash
+# Install required packages
+R
+install.packages(c("palmerpenguins", "ggplot2", "dplyr"))
+quit()
+
+# Test the function
+R
+devtools::load_all()
+devtools::test()
+quit()
+
+# Run the analysis script
+mkdir -p figures
+R --vanilla < scripts/01_penguin_exploration.R
+
+# Check the git status
+git status
+git add .
+git diff --cached
+```
+
+### Step 2: Exit Container and First Commit
+```bash
+# Exit the development container
+exit
+
+# Validate dependencies and test
+make docker-check-renv-fix    # Auto-add new packages to renv.lock
+make docker-test             # Run tests in clean environment
+
+# First commit and push
+git add .
+git commit -m "Add initial penguin bill analysis
+
+- Create scatter plot of bill depth vs log(bill length)
+- Add create_bill_plot() function with comprehensive tests
+- Generate publication-quality figure
+- All tests passing, dependencies tracked"
+
+git push origin main
+```
+
+### Step 3: Continue Analysis - Add Regression Line
+
+After the first push, continue with enhanced analysis:
+
+```bash
+# Start development environment again
+make docker-zsh
+
+# Update the analysis script
+vim scripts/01_penguin_exploration.R
+```
+
+**Updated `scripts/01_penguin_exploration.R`:**
+```r
+#' Penguin Bill Analysis - Enhanced with Regression
+#' Explore relationship between bill depth and log of bill length
+
+# Load required packages
+library(palmerpenguins)
+library(ggplot2)
+library(dplyr)
+library(broom)
+
+#' Create enhanced scatter plot with regression line
+#' @return ggplot object
+create_enhanced_bill_plot <- function() {
+  penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    geom_point(aes(color = species), alpha = 0.7, size = 2) +
+    geom_smooth(method = "lm", se = TRUE, color = "black", linetype = "dashed") +
+    labs(
+      title = "Penguin Bill Depth vs Log(Bill Length) with Regression Line",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species",
+      caption = "Dashed line shows linear regression fit with 95% confidence interval"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+#' Fit linear model for bill depth vs log(bill length)
+#' @return list with model object and summary statistics
+fit_bill_model <- function() {
+  clean_data <- penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    mutate(log_bill_length = log(bill_length_mm))
+  
+  model <- lm(bill_depth_mm ~ log_bill_length, data = clean_data)
+  
+  list(
+    model = model,
+    summary = summary(model),
+    r_squared = summary(model)$r.squared,
+    coefficients = tidy(model)
+  )
+}
+
+# Create enhanced plot
+enhanced_plot <- create_enhanced_bill_plot()
+print(enhanced_plot)
+
+# Fit regression model
+model_results <- fit_bill_model()
+cat("\nRegression Results:\n")
+cat("R-squared:", round(model_results$r_squared, 3), "\n")
+print(model_results$coefficients)
+
+# Save outputs
+ggsave("figures/bill_analysis_with_regression.png", enhanced_plot, 
+       width = 8, height = 6, dpi = 300)
+
+# Save model results
+saveRDS(model_results, "results/bill_model.rds")
+
+cat("\nEnhanced analysis complete!\n")
+cat("Plot: figures/bill_analysis_with_regression.png\n")
+cat("Model: results/bill_model.rds\n")
+```
+
+**Update the function file:**
+```bash
+vim R/penguin_functions.R
+```
+
+**Add to `R/penguin_functions.R`:**
+```r
+#' Create enhanced scatter plot with regression line
+#' 
+#' @param data Data frame containing penguin data (default: palmerpenguins::penguins)
+#' @return ggplot object
+#' @export
+create_enhanced_bill_plot <- function(data = palmerpenguins::penguins) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("ggplot2 package is required")
+  }
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("dplyr package is required")
+  }
+  
+  data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    ggplot2::geom_point(ggplot2::aes(color = species), alpha = 0.7, size = 2) +
+    ggplot2::geom_smooth(method = "lm", se = TRUE, color = "black", linetype = "dashed") +
+    ggplot2::labs(
+      title = "Penguin Bill Depth vs Log(Bill Length) with Regression Line",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species",
+      caption = "Dashed line shows linear regression fit with 95% confidence interval"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+#' Fit linear model for bill depth vs log(bill length)
+#' 
+#' @param data Data frame containing penguin data (default: palmerpenguins::penguins)
+#' @return list with model object and summary statistics
+#' @export
+fit_bill_model <- function(data = palmerpenguins::penguins) {
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("dplyr package is required")
+  }
+  if (!requireNamespace("broom", quietly = TRUE)) {
+    stop("broom package is required")
+  }
+  
+  clean_data <- data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    dplyr::mutate(log_bill_length = log(bill_length_mm))
+  
+  model <- lm(bill_depth_mm ~ log_bill_length, data = clean_data)
+  
+  list(
+    model = model,
+    summary = summary(model),
+    r_squared = summary(model)$r.squared,
+    coefficients = broom::tidy(model)
+  )
+}
+```
+
+**Add tests for new functions:**
+```bash
+vim tests/testthat/test-penguin_functions.R
+```
+
+**Add to test file:**
+```r
+test_that("create_enhanced_bill_plot works correctly", {
+  plot <- create_enhanced_bill_plot()
+  
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title, 
+               "Penguin Bill Depth vs Log(Bill Length) with Regression Line")
+  expect_true(grepl("regression", plot$labels$caption, ignore.case = TRUE))
+})
+
+test_that("fit_bill_model returns correct structure", {
+  model_results <- fit_bill_model()
+  
+  expect_type(model_results, "list")
+  expect_true("model" %in% names(model_results))
+  expect_true("summary" %in% names(model_results))
+  expect_true("r_squared" %in% names(model_results))
+  expect_true("coefficients" %in% names(model_results))
+  
+  expect_s3_class(model_results$model, "lm")
+  expect_type(model_results$r_squared, "double")
+  expect_s3_class(model_results$coefficients, "data.frame")
+})
+
+test_that("fit_bill_model handles custom data", {
+  test_data <- data.frame(
+    bill_length_mm = c(40, 45, 50, 55),
+    bill_depth_mm = c(18, 19, 20, 21),
+    species = c("A", "B", "C", "A")
+  )
+  
+  model_results <- fit_bill_model(test_data)
+  expect_s3_class(model_results$model, "lm")
+  expect_true(model_results$r_squared >= 0 && model_results$r_squared <= 1)
+})
+```
+
+**Test and run the enhanced analysis:**
+```bash
+# Install new package
+R
+install.packages("broom")
+quit()
+
+# Test the new functions
+R
+devtools::load_all()
+devtools::test()
+quit()
+
+# Create results directory and run enhanced analysis
+mkdir -p results
+R --vanilla < scripts/01_penguin_exploration.R
 
 # Check what changed
-git log --oneline -10                      # See recent commits
-git diff HEAD~3                            # See changes since 3 commits ago
-```
-
-### 2. Review Team Contributions (Optional)
-```bash
-# Review specific team member changes
-git log --author="dev2" --oneline -5       # See Dev 2's recent commits
-git log --author="dev3" --oneline -5       # See Dev 3's recent commits
-
-# Look at specific files that changed
-git show HEAD~1                            # Show last commit details
-git diff HEAD~2..HEAD scripts/             # See script changes
-git diff HEAD~2..HEAD R/                   # See function changes
-```
-
-### 3. Start Development Environment with Updated Team Packages
-```bash
-# Enter updated development environment
-make docker-zsh                           # All team packages now available
-
-# Verify environment is up to date
-R
-installed.packages()[,1]                   # Check available packages
-devtools::load_all()                      # Load all team functions
-devtools::test()                        # Run tests for compatibility
-quit()
-```
-
-### 4. Explore Team's New Code (Inside Container)
-```bash
-# Review what Dev 2 and Dev 3 added
-ls scripts/                               # See new analysis scripts
-ls R/                                     # See new functions
-ls tests/                                 # See new tests
-
-# Test their analysis scripts
-R
-source("scripts/dev2_analysis.R")         # Run Dev 2's analysis
-source("scripts/dev3_visualization.R")    # Run Dev 3's work
-# Understand their approach and results
-quit()
-```
-
-### 5. Create Feature Branch for Own Work
-```bash
-# Create branch for your new work
-git checkout -b feature/dev1-integration
-
-# OR work directly on main (simpler workflow)
-# git checkout main
-```
-
-### 6. Add Your Own Code (Inside Container)
-```bash
-# Still in development container
-vim scripts/04_advanced_modeling.R        # Create your analysis
-
-# Example: Build on team's work
-vim R/integration_functions.R               # Add functions using
-                                            # team's work
-
-# Write tests for your additions
-vim tests/testthat/test-integration_functions.R
-vim tests/integration/test-04_advanced_modeling.R
-
-# Test your new code
-R
-devtools::load_all()                        # Load all functions
-source("scripts/04_advanced_modeling.R") # Test your script
-devtools::test()                          # Run all tests
-quit()
-```
-
-### 7. Exit Container & Validate Complete Integration
-```bash
-# Exit development container
-exit
-
-# Validate entire project works together
-make docker-check-renv-fix               # Ensure dependencies are tracked
-make docker-test                         # Run all tests (team's + yours)
-make docker-render                       # Ensure reports still render
-
-# Test end-to-end workflow
-make docker-zsh
-R
-# Run complete analysis pipeline
-source("scripts/01_data_import.R")       # Original work
-source("scripts/dev2_analysis.R")        # Dev 2's contribution  
-source("scripts/dev3_visualization.R")   # Dev 3's contribution
-source("scripts/04_advanced_modeling.R") # Your new integration
-quit()
-exit
-```
-
-### 8. Commit Your Integration Work
-```bash
-# Check what you've added
 git status
 git diff
-
-# Commit your work
-git add .
-git commit -m "Add advanced modeling integration building on team
-contributions
-
-- Integrate Dev 2's analysis patterns with advanced modeling
-- Extend Dev 3's visualization framework for model results  
-- Add comprehensive integration tests for complete pipeline
-- All team code compatibility maintained and tested"
-
-# Push to feature branch
-git push origin feature/dev1-integration
-
-# OR push directly to main
-# git push origin main
 ```
 
-### 9. Create Pull Request for Team Review
+### Step 4: Second Commit with Enhancement
 ```bash
-# Create PR for team feedback
-gh pr create --title "Add advanced modeling integration" \
-    --body "## Summary
-- Built advanced modeling on top of Dev 2's analysis framework
-- Extended Dev 3's visualization tools for model interpretation
-- Added comprehensive integration testing
+# Exit container
+exit
 
-## Integration Testing
-- [x] All existing team code runs without modification
-- [x] New code integrates seamlessly with team contributions
-- [x] Complete analysis pipeline tested end-to-end
-- [x] All dependencies validated
+# Validate enhanced analysis
+make docker-check-renv-fix    # Track new broom package
+make docker-test             # Ensure all tests pass
 
-## Team Impact  
-- Enhances existing analysis without breaking changes
-- Provides advanced modeling capabilities for future work
-- Maintains all existing functionality"
-```
-
-### 10. Alternative: Quick Integration (Direct Push)
-```bash
-# For simple additions, skip PR process
+# Commit the enhancement
 git add .
-git commit -m "Add modeling integration - builds on team foundation"
-git push origin main                       # Triggers automatic
-                                            # team image rebuild
+git commit -m "Add regression analysis to penguin bill study
+
+- Add linear regression line to scatter plot
+- Implement fit_bill_model() function with model diagnostics
+- Include R-squared and coefficient estimates
+- Add comprehensive tests for regression functionality  
+- Save model results for reproducibility
+- All tests passing, broom package added to dependencies"
+
+git push origin main
 ```
 
-## Key Benefits of This Workflow:
+### What This Example Demonstrates:
 
-- ✅ **Seamless integration**: Dev 1 builds on team work without conflicts
-- ✅ **Automatic environment sync**: GitHub Actions handled package updates
-- ✅ **Code compatibility**: Testing ensures nothing breaks
-- ✅ **Team coordination**: PR process enables feedback and discussion
-- ✅ **Professional quality**: Integration testing validates entire
-  pipeline
+1. **Complete workflow**: From initial analysis to enhanced version
+2. **Professional practices**: Functions, tests, documentation
+3. **Iterative development**: Build on previous work incrementally  
+4. **Dependency tracking**: Automatic renv.lock updates
+5. **Reproducible outputs**: Saved plots and model objects
+6. **Quality assurance**: Tests validate function behavior
+7. **Version control**: Clear commit messages with detailed changes
 
-## What Happens Next:
-
-1. **GitHub Actions automatically**:
-
-   - ✅ Tests complete integration (all team code + Dev 1's additions)
-   - ✅ Rebuilds team image if new packages added
-   - ✅ Notifies team of updated environment
-
-2. **Team members sync**:
-
-   ```bash
-   git pull                              # Get Dev 1's integration work
-   docker pull rgt47/png1core-shell:latest  # Get any env updates
-   make docker-zsh                       # Continue with enhanced codebase
-   ```
-
-This workflow ensures **Dev 1 can lead and integrate** while
-**building on the team's excellent contributions**! 🚀
+This example shows how ZZCOLLAB supports **professional data science workflows** with **minimal overhead**! 🐧📊
 
 ---
 
-## Developer 2: Ubuntu Setup - Fresh Lenovo ThinkPad
+## Configuration System Benefits
 
-### New Developer Environment Setup (Ubuntu)
-
-When **Developer 2** gets a brand new Lenovo ThinkPad with fresh
-Ubuntu installation, here are all the required setup steps to join the
-team analysis:
-
-### Prerequisites: System Setup (One-time Ubuntu Installation)
+With configuration set up, all commands become simpler:
 
 ```bash
-# 1. Update system packages
-sudo apt update && sudo apt upgrade -y
+# Traditional verbose approach:
+zzcollab -i -t rgt47 -p myproject -B analysis -S -d ~/dotfiles --github
 
-# 2. Install essential development tools
-sudo apt install -y \
-    git \
-    curl \
-    wget \
-    build-essential \
-    ca-certificates \
-    gnupg \
-    lsb-release
+# Config-simplified approach (identical result):
+zzcollab -i -p myproject -B analysis --github
 
-# 3. Install Docker Engine (official Ubuntu installation)
-# Add Docker's official GPG key
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg \
-  --dearmor -o /etc/apt/keyrings/docker.gpg
-
-# Add Docker repository
-echo "deb [arch=$(dpkg --print-architecture) \
-  signed-by=/etc/apt/keyrings/docker.gpg] \
-  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io \
-  docker-buildx-plugin docker-compose-plugin
-
-# Add user to docker group (avoid sudo for docker commands)
-sudo usermod -aG docker $USER
-
-# 4. Install GitHub CLI
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-  | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) \
-  signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
-  https://cli.github.com/packages stable main" | \
-  sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-sudo apt update
-sudo apt install -y gh
-
-# 5. Logout and login again (or restart) to activate docker group membership
-echo "🔄 Please logout and login again (or restart) to activate"
-echo "   Docker permissions"
-echo "After reboot, continue with the next section..."
+# Modern variant approach (uses config.yaml):
+zzcollab -i -p myproject --github    # Creates default variants automatically
 ```
 
-### After Reboot: Authentication Setup
-
-```bash
-# 1. Verify Docker works without sudo
-docker run hello-world
-
-# 2. Authenticate with GitHub CLI
-gh auth login
-# Follow prompts:
-# - What account do you want to log into? GitHub.com
-# - What is your preferred protocol? HTTPS
-# - Authenticate Git with your GitHub credentials? Yes
-# - How would you like to authenticate? Login with a web browser
-# (Copy the one-time code, open browser, paste code, complete auth)
-
-# 3. Verify GitHub authentication
-gh auth status
-```
-
-### Install ZZCOLLAB System
-
-```bash
-# 1. Clone and install zzcollab
-git clone https://github.com/rgt47/zzcollab.git
-cd zzcollab && ./install.sh
-
-# 2. Add zzcollab to PATH (add to ~/.bashrc or ~/.zshrc)
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-
-# 3. Verify zzcollab installation
-zzcollab --help && which zzcollab
-
-# 4. Optional: Set up configuration for easier commands
-zzcollab --config init
-zzcollab --config set team-name "rgt47"          # Match team settings
-zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
-```
-
-### Join Team Project (Standard Workflow)
-
-```bash
-# 1. Accept GitHub collaboration invitation
-# Check email for invitation from rgt47/png1 repository
-# OR visit: https://github.com/rgt47/png1/invitations
-# Click "Accept invitation"
-
-# 2. Clone the team project
-git clone https://github.com/rgt47/png1.git
-cd png1
-
-# 3. Set up development environment with team base image
-# Try available interfaces (helpful errors if variant unavailable):
-
-# With Configuration (Recommended):
-zzcollab -p png1 -I shell      # Shell interface (command line development)
-zzcollab -p png1 -I rstudio    # RStudio interface (web-based IDE at
-                               # localhost:8787)
-zzcollab -p png1 -I verse      # Publishing interface (LaTeX support for reports)
-
-# Traditional Verbose Approach:
-zzcollab -t rgt47 -p png1 -I shell -d ~/dotfiles      # Shell interface
-zzcollab -t rgt47 -p png1 -I rstudio -d ~/dotfiles    # RStudio interface
-zzcollab -t rgt47 -p png1 -I verse -d ~/dotfiles      # Publishing interface
-
-# 4. Start development environment
-make docker-zsh        # For shell interface
-# OR
-make docker-rstudio    # For RStudio interface (then visit localhost:8787)
-# OR  
-make docker-verse      # For publishing interface
-
-# 5. Verify everything works
-R
-# Test that you can load the project
-devtools::load_all()   # Load all project functions
-devtools::test()       # Run project tests
-quit()
-```
-
-### Development Workflow (Same as Other Platforms)
-
-```bash
-# Daily development cycle
-make docker-zsh                    # Start development container
-# ... do analysis work inside container ...
-exit                              # Exit container
-
-# Git workflow
-git add .
-git commit -m "Add my analysis with tests"
-git push origin main                # Triggers automatic team env
-                                    # updates
-```
-
-### Troubleshooting Ubuntu-Specific Issues
-
-```bash
-# If Docker permission denied errors persist:
-sudo systemctl restart docker
-sudo usermod -aG docker $USER
-# Then logout/login again
-
-# If GitHub CLI authentication fails:
-gh auth refresh --hostname github.com --scopes repo,read:org
-
-# If zzcollab command not found:
-echo $PATH  # Verify ~/bin is in PATH
-ls ~/bin/zzcollab  # Verify zzcollab binary exists
-chmod +x ~/bin/zzcollab  # Make executable if needed
-
-# If Docker daemon not running:
-sudo systemctl start docker
-sudo systemctl enable docker  # Start automatically on boot
-```
-
-### What This Ubuntu Setup Provides:
-
-- ✅ **Complete development environment**: Docker + GitHub + ZZCOLLAB
-- ✅ **Team integration ready**: Can immediately join existing projects  
-- ✅ **Professional toolchain**: Same tools as macOS/Windows team members
-- ✅ **Zero configuration differences**: Identical development
-  experience across platforms
-- ✅ **Enterprise security**: Proper user permissions and authentication
-
-### Ubuntu-Specific Advantages:
-
-- ✅ **Native Docker performance**: Better than Docker Desktop on
-  macOS/Windows
-- ✅ **Package manager integration**: Official repositories for all tools
-- ✅ **Lightweight system**: More resources available for analysis containers
-- ✅ **Perfect for development**: Many data scientists prefer Linux
-  environments
-
-Once complete, **Developer 2** on Ubuntu has identical capabilities to
-team members on macOS or Windows! 🐧🚀
-
----
-
-## R Interface Alternative (Advanced)
-
-For teams comfortable with R, ZZCOLLAB provides a complete R interface with configuration support:
-
-```r
-# Method 1: Using Configuration (Recommended)
-library(zzcollab)
-
-# One-time setup for team lead
-init_config()                                      # Initialize config file
-set_config("team_name", "rgt47")                   # Set team name
-set_config("build_mode", "standard")               # Set preferred mode
-set_config("dotfiles_dir", "~/dotfiles")           # Set dotfiles path
-
-# Team Lead (Developer 1) - Simplified with config
-init_project(project_name = "png1")                # Uses config defaults
-
-# Team Members (Dev 2 & 3) - Simplified with config  
-set_config("team_name", "rgt47")                   # Match team settings
-join_project(project_name = "png1", interface = "shell")  # Uses config defaults
-
-# Method 2: Traditional Explicit Parameters
-library(zzcollab)
-
-# Team Lead (Developer 1) - R Interface with explicit parameters
-init_project(
-  team_name = "rgt47",
-  project_name = "png1", 
-  build_mode = "standard",
-  dotfiles_path = "~/dotfiles"
-)
-
-# Team Members (Dev 2 & 3) - R Interface with explicit parameters  
-join_project(
-  team_name = "rgt47",
-  project_name = "png1",
-  interface = "shell",
-  build_mode = "fast",
-  dotfiles_path = "~/dotfiles"
-)
-```
-
-The R interface provides identical functionality to the command-line interface but within the familiar R environment. All configuration system benefits apply to the R interface as well.
+The configuration system eliminates repetitive typing while maintaining full flexibility for custom workflows.
