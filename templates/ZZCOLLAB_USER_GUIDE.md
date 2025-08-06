@@ -226,35 +226,38 @@ zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles     # Publishing
 
 ### Developer 1 (Team Lead): Complete Project Initialization
 
-#### Automated Approach (Recommended)
-**Choose between command-line or R interface:**
+#### Automated Approach (Three Options)
+**Choose between modern variant system, legacy approach, or R interface:**
 
-**Option A: Command-Line Interface (Two-Step Process)**
-
-**Step 1: Create Team Docker Images Only**
+**Option A: Modern Variant System (NEW - Recommended)**
 ```bash
-# NEW: -i flag now ONLY creates and pushes team Docker images, then stops
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates
-                                                                      # team images
-                                                                      # with standard
-                                                                      # packages
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode:
-                                                                      # minimal packages
-                                                                      # (8 vs 27)  
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive
-                                                                      # mode: full
-                                                                      # packages (27+)
+# Revolutionary: Create unlimited custom Docker environments
+# Default: Creates minimal + analysis variants automatically
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Modern approach
 
-# Selective base image building:
-zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio
-                                                                      # variant only
-zzcollab -i -t mylab -p study2024 -B all -d ~/dotfiles              # All variants
-                                                                      # (shell, rstudio,
-                                                                      # verse)
-
-# Auto-detect project name from current directory:
+# Interactive variant discovery and management:
 mkdir study2024 && cd study2024
-zzcollab -i -t mylab -B rstudio -d ~/dotfiles                       # Team images only with RStudio variant
+zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Creates config.yaml
+./add_variant.sh                                                    # Interactive variant browser
+
+# Variant categories available:
+# 📦 Standard: minimal, analysis, modeling, publishing (~800MB-3GB)
+# 🔬 Specialized: bioinformatics (Bioconductor), geospatial (sf/terra) (~2-2.5GB)
+# 🏔️ Alpine: ultra-lightweight for CI/CD (~200-600MB vs ~1GB rocker)
+# 🧪 R-hub: CRAN-compatible testing (Ubuntu, Fedora, Windows environments)
+
+# Manual variant configuration (edit config.yaml):
+# Set enabled: true for variants you want built
+# Customize packages and system dependencies as needed
+```
+
+**Option B: Legacy Selective Building**
+```bash
+# Traditional approach: limited to r-ver, rstudio, verse variants
+zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio only
+zzcollab -i -t mylab -p study2024 -B all -S -d ~/dotfiles           # All 3 variants
+zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                  # Fast mode (8 packages)
+zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                  # Comprehensive (27+ packages)
 ```
 
 **Step 2: Create Full Project Structure Separately**

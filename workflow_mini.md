@@ -34,9 +34,12 @@ zzcollab -i -t rgt47 -p myproject -B rstudio -S -d ~/dotfiles
 
 # Config-simplified approach (identical result):
 zzcollab -i -p myproject -B rstudio
+
+# NEW: Modern variant approach (uses config.yaml with unlimited custom variants):
+zzcollab -i -p myproject    # Creates default variants: minimal + analysis
 ```
 
-**All workflows below show both approaches - use whichever you prefer!**
+**All workflows below show legacy, config-simplified, and modern variant approaches!**
 
 ---
 
@@ -122,36 +125,33 @@ zzcollab --config set build-mode "standard"      # Default build mode
 zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 ```
 
-### Two-Step Process for Team Lead (Fixed -i Flag Behavior)
+### Three Approaches for Team Lead
 
 ```bash
-# Step 1: Create and push team Docker images ONLY
 # Navigate to projects directory first
 cd ~/projects  # or your preferred projects directory
 
-# Create team images with selective base image building
-# Choose one approach based on team needs:
+# APPROACH 1: Modern Variant System (NEW - Recommended)
+# Create unlimited custom Docker environments from variant library
+zzcollab -i -p png1                    # Creates: minimal + analysis variants (default)
 
-# With Configuration (Recommended - much simpler):
+# Or browse and add custom variants interactively:
+mkdir png1 && cd png1
+zzcollab -i -p png1                    # Creates default project + config.yaml
+./add_variant.sh                       # Interactive variant browser
+# Choose from: Alpine (~200MB), R-hub testing, bioinformatics, geospatial, HPC, etc.
+
+# APPROACH 2: Legacy Selective Building (Config-Simplified)
 zzcollab -i -p png1 -B r-ver          # Build only shell variant (fastest)
-zzcollab -i -p png1 -B rstudio        # Build only RStudio variant
-                                       # (GUI teams)
-zzcollab -i -p png1 -B verse          # Build only verse variant
-                                       # (publishing)
+zzcollab -i -p png1 -B rstudio        # Build only RStudio variant (GUI teams)
+zzcollab -i -p png1 -B verse          # Build only verse variant (publishing)
 zzcollab -i -p png1 -B all            # Build all variants (traditional)
 
-# Traditional Verbose Approach:
+# APPROACH 3: Legacy Verbose (Traditional)
 zzcollab -i -t rgt47 -p png1 -B r-ver -S     # Build only shell variant
 zzcollab -i -t rgt47 -p png1 -B rstudio -S   # Build only RStudio variant
 zzcollab -i -t rgt47 -p png1 -B verse -S     # Build only verse variant
 zzcollab -i -t rgt47 -p png1 -B all -S       # Build all variants
-
-# Step 2: Create full project structure (run separately)
-mkdir png1 && cd png1  # or git clone if repo exists
-
-# With Configuration:
-zzcollab -p png1 -I shell             # Full project setup with shell
-                                       # interface
 
 # Traditional Verbose:
 zzcollab -t rgt47 -p png1 -I shell    # Full project setup with shell

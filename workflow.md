@@ -182,19 +182,32 @@ zzcollab --config set dotfiles-dir "~/dotfiles"  # Your dotfiles path
 - [ ] Commit and push code + tests together
 - [ ] Communicate available variants to team members
 
-#### **🚀 AUTOMATED APPROACH (Recommended)**
+#### **🚀 AUTOMATED APPROACH (Three Options)**
 
-**Choose between command-line or R interface:**
+**Choose between modern variant system, legacy selective building, or R interface:**
 
-**Option A: Command-Line Interface (Two-Step Process)**
-
-**Step 1: Create Team Images Only**
+**Option A: Modern Variant System (NEW - Recommended)**
 ```bash
-# With Configuration (Recommended - much simpler):
-zzcollab -i -p research-study -B r-ver          # Creates
-                                                 # rgt47/research-studycore-shell:latest
-                                                 # only
-zzcollab -i -p research-study -B rstudio        # Creates
+# Creates unlimited custom Docker environments from comprehensive library
+# Default: Creates minimal + analysis variants
+zzcollab -i -p research-study              # Uses config.yaml automatically
+
+# Interactive variant discovery and addition:
+mkdir research-study && cd research-study
+zzcollab -i -p research-study              # Creates project + config.yaml
+./add_variant.sh                           # Browse variant library interactively
+
+# Available categories:
+# 📦 Standard: minimal, analysis, modeling, publishing (~800MB-3GB)
+# 🔬 Specialized: bioinformatics, geospatial (~2-2.5GB)  
+# 🏔️ Alpine: ultra-lightweight for CI/CD (~200-600MB)
+# 🧪 R-hub: CRAN-compatible testing (Ubuntu, Fedora, Windows)
+```
+
+**Option B: Legacy Selective Building (Config-Simplified)**
+```bash
+zzcollab -i -p research-study -B r-ver     # Creates shell variant only
+zzcollab -i -p research-study -B rstudio   # Creates RStudio variant only
                                                  # rgt47/research-studycore-rstudio:latest
                                                  # only
 zzcollab -i -p research-study -B verse          # Creates
