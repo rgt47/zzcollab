@@ -176,6 +176,8 @@ BUILD_VARIANT=""
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
+USE_CONFIG_VARIANTS=false    # Use config.yaml for variant definitions
+VARIANTS_CONFIG=""           # Path to variants config file
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="${ZZCOLLAB_DEFAULT_BUILD_MODE:-standard}"
@@ -310,6 +312,12 @@ parse_cli_arguments() {
             --force)
                 FORCE_DIRECTORY=true
                 shift
+                ;;
+            --variants-config)
+                require_arg "$1" "$2"
+                VARIANTS_CONFIG="$2"
+                USE_CONFIG_VARIANTS=true
+                shift 2
                 ;;
             --config|-c|config)
                 # Handle config subcommands

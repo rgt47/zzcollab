@@ -1,0 +1,194 @@
+# ZZCOLLAB Team Configuration
+# This file defines Docker variants and team settings for your zzcollab project.
+# Edit this file to customize your team's development environment.
+
+#=============================================================================
+# TEAM METADATA
+#=============================================================================
+
+team:
+  name: "${TEAM_NAME}"
+  project: "${PROJECT_NAME}"
+  description: "Research collaboration environment for ${PROJECT_NAME}"
+  maintainer: "${AUTHOR_NAME} <${AUTHOR_EMAIL}>"
+  created: "${CREATION_DATE}"
+
+#=============================================================================
+# DOCKER VARIANTS CONFIGURATION
+#=============================================================================
+# Define unlimited custom Docker environments for your team.
+# Each variant creates a Docker image: ${TEAM_NAME}/${PROJECT_NAME}core-{variant_name}:latest
+
+variants:
+  
+  #---------------------------------------------------------------------------
+  # PREDEFINED VARIANTS (Ready to use)
+  #---------------------------------------------------------------------------
+  
+  # Minimal development environment - fastest builds, essential packages only
+  minimal:
+    base_image: "rocker/r-ver:latest"
+    description: "Minimal development environment with essential R packages"
+    packages:
+      - "renv"         # Package management
+      - "devtools"     # Development tools
+      - "usethis"      # Project setup utilities
+      - "testthat"     # Unit testing
+      - "roxygen2"     # Documentation
+    system_deps: []
+    enabled: true
+  
+  # Standard analysis environment - balanced for most research workflows
+  analysis:
+    base_image: "rocker/tidyverse:latest" 
+    description: "Data analysis environment with tidyverse and common packages"
+    packages:
+      - "renv"
+      - "devtools"
+      - "here"         # Path management
+      - "janitor"      # Data cleaning
+      - "scales"       # Plot scaling
+      - "patchwork"    # Plot composition
+      - "gt"           # Table generation
+      - "DT"           # Interactive tables
+    system_deps: []
+    enabled: true
+    
+  # Machine learning and modeling environment
+  modeling:
+    base_image: "rocker/r-ver:latest"
+    description: "Machine learning and statistical modeling environment" 
+    packages:
+      - "renv"
+      - "devtools"
+      - "tidymodels"   # ML framework
+      - "xgboost"      # Gradient boosting
+      - "randomForest" # Random forests
+      - "glmnet"       # Regularized regression
+      - "caret"        # Classification and regression
+      - "MASS"         # Statistical functions
+    system_deps:
+      - "libxml2-dev"  # Required for some ML packages
+    enabled: false    # Disabled by default (large image)
+    
+  # Publishing and reporting environment
+  publishing:
+    base_image: "rocker/verse:latest"
+    description: "Document publishing with LaTeX, Quarto, and web tools"
+    packages:
+      - "renv"
+      - "devtools" 
+      - "quarto"       # Modern publishing
+      - "bookdown"     # Book publishing
+      - "blogdown"     # Website creation
+      - "distill"      # Scientific articles
+      - "flexdashboard" # Interactive dashboards
+      - "shiny"        # Web applications
+    system_deps: []
+    enabled: false    # Disabled by default (very large image)
+    
+  # Geospatial analysis environment
+  geospatial:
+    base_image: "rocker/geospatial:latest"
+    description: "Geospatial analysis with sf, terra, and mapping tools"
+    packages:
+      - "renv"
+      - "devtools"
+      - "sf"           # Simple features
+      - "terra"        # Spatial data
+      - "leaflet"      # Interactive maps
+      - "mapview"      # Quick spatial visualization
+      - "tmap"         # Thematic maps
+    system_deps:
+      - "gdal-bin"     # Geospatial library
+      - "proj-bin"     # Projection library
+    enabled: false
+    
+  # Bioinformatics environment  
+  bioinformatics:
+    base_image: "bioconductor/bioconductor_docker:latest"
+    description: "Bioinformatics analysis with Bioconductor packages"
+    packages:
+      - "renv"
+      - "devtools"
+      - "BiocManager"
+      - "DESeq2"       # Differential expression
+      - "edgeR"        # RNA-seq analysis
+      - "limma"        # Linear models
+      - "GenomicRanges" # Genomic intervals
+    system_deps: []
+    enabled: false
+
+  #---------------------------------------------------------------------------
+  # CUSTOM VARIANTS (Add your own below)
+  #---------------------------------------------------------------------------
+  
+  # Example custom variant - uncomment and modify as needed
+  # custom_example:
+  #   base_image: "rocker/r-ver:latest"
+  #   description: "Custom environment for specific project needs"
+  #   packages:
+  #     - "renv"
+  #     - "your_package_here"
+  #   system_deps:
+  #     - "your_system_dependency_here"
+  #   enabled: false
+
+#=============================================================================
+# BUILD CONFIGURATION
+#=============================================================================
+
+build:
+  # Default variants to build (only enabled variants with these names)
+  default_variants:
+    - "minimal"
+    - "analysis"
+  
+  # Docker build options
+  docker:
+    platform: "auto"  # auto, linux/amd64, linux/arm64
+    no_cache: false
+    parallel_builds: true
+    
+  # Package installation options  
+  packages:
+    repos: "https://cran.rstudio.com/"
+    install_suggests: false
+    dependencies: ["Depends", "Imports", "LinkingTo"]
+    
+#=============================================================================
+# DEVELOPMENT SETTINGS  
+#=============================================================================
+
+development:
+  # Default interface for team members
+  default_interface: "minimal"  # Which variant to use by default
+  
+  # Shared development settings
+  dotfiles:
+    auto_filter_macos: true    # Filter macOS commands for Docker
+    preserve_permissions: true
+    
+  # Container settings
+  container:
+    default_user: "analyst"
+    working_dir: "/home/analyst/project"
+    shared_volumes:
+      - "${PWD}:/home/analyst/project"
+      
+#=============================================================================
+# TEAM COLLABORATION
+#=============================================================================
+
+collaboration:
+  # GitHub integration
+  github:
+    auto_create_repo: false
+    default_visibility: "private"
+    enable_actions: true
+    
+  # Documentation
+  documentation:
+    auto_generate_readme: true
+    include_variant_docs: true
+    update_user_guide: true

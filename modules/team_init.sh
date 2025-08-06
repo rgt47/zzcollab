@@ -215,6 +215,25 @@ setup_team_dockerfile() {
             print_status "Using existing Dockerfile.teamcore"
         fi
     fi
+    
+    # Copy config.yaml template if using config-based variants
+    if [[ "${USE_CONFIG_VARIANTS:-false}" == "true" ]] && [[ ! -f "./config.yaml" ]]; then
+        local config_template="${TEMPLATES_DIR}/config.yaml"
+        if [[ -f "$config_template" ]]; then
+            # Substitute variables in config template
+            sed -e "s/\${TEAM_NAME}/$TEAM_NAME/g" \
+                -e "s/\${PROJECT_NAME}/$PROJECT_NAME/g" \
+                -e "s/\${AUTHOR_NAME}/${AUTHOR_NAME:-Team}/g" \
+                -e "s/\${AUTHOR_EMAIL}/${AUTHOR_EMAIL:-team@example.com}/g" \
+                -e "s/\${CREATION_DATE}/$(date -u +%Y-%m-%dT%H:%M:%SZ)/g" \
+                "$config_template" > ./config.yaml
+            print_success "Created config.yaml with predefined variants"
+            print_status "💡 Edit config.yaml to customize variants before building"
+        else
+            print_error "Config template not found: $config_template"
+            return 1
+        fi
+    fi
 
     # If --prepare-dockerfile, exit here for manual editing
     if [[ "$PREPARE_DOCKERFILE" == true ]]; then
@@ -281,10 +300,28 @@ EOF
 #=============================================================================
 
 # Function: build_team_images
-# Purpose: Build core images for the team based on INIT_BASE_IMAGE selection
+# Purpose: Build core images for the team based on INIT_BASE_IMAGE selection or config.yaml
 build_team_images() {
     local step_counter=4
     
+    # Check if using config-based variants
+    if [[ "${USE_CONFIG_VARIANTS:-false}" == "true" ]]; then
+        print_status "Step $step_counter: Building variants from configuration..."
+        
+        # Default to config.yaml if no specific file provided
+        local config_file="${VARIANTS_CONFIG:-config.yaml}"
+        
+        if parse_config_variants "$config_file"; then
+            print_success "✅ All configured variants built successfully"
+        else
+            print_error "❌ Failed to build some configured variants"
+            return 1
+        fi
+        return 0
+    fi
+    
+    # Legacy mode: build based on INIT_BASE_IMAGE flag
+    print_status "Step $step_counter: Building images using legacy mode..."
     case "$INIT_BASE_IMAGE" in
         "r-ver")
             print_status "Step $step_counter: Building shell core image..."
@@ -507,7 +544,162 @@ create_github_repository() {
 }
 
 #=============================================================================
-# BUILD VARIANT FUNCTIONS
+# YAML CONFIGURATION FUNCTIONS
+#=============================================================================
+
+# Function: parse_config_variants
+# Purpose: Parse variants from config.yaml and build enabled ones
+parse_config_variants() {
+    local config_file="${1:-config.yaml}"
+    
+    if [[ ! -f "$config_file" ]]; then
+        print_error "Configuration file not found: $config_file"
+        print_error "Run with traditional flags or create config.yaml first."
+        return 1
+    fi
+    
+    # Check if yq is available for YAML parsing
+    if ! command -v yq >/dev/null 2>&1; then
+        print_error "yq is required for YAML configuration parsing"
+        print_error "Install with: brew install yq (macOS) or apt install yq (Ubuntu)"
+        print_error "Alternatively, use traditional command-line flags."
+        return 1
+    fi
+    
+    print_status "📋 Parsing variants from $config_file..."
+    
+    # Get list of enabled variants
+    local enabled_variants
+    enabled_variants=$(yq eval '.variants | to_entries | map(select(.value.enabled == true)) | .[].key' "$config_file")
+    
+    if [[ -z "$enabled_variants" ]]; then
+        print_warning "No enabled variants found in $config_file"
+        print_status "💡 Set 'enabled: true' for variants you want to build"
+        return 1
+    fi
+    
+    print_status "Found enabled variants: $(echo "$enabled_variants" | tr '\n' ' ')"
+    
+    # Build each enabled variant
+    echo "$enabled_variants" | while read -r variant_name; do
+        [[ -n "$variant_name" ]] || continue
+        build_config_variant "$config_file" "$variant_name"
+    done
+}
+
+# Function: build_config_variant  
+# Purpose: Build a single variant defined in config.yaml
+build_config_variant() {
+    local config_file="$1"
+    local variant_name="$2"
+    
+    print_status "🐳 Building variant: $variant_name"
+    
+    # Extract variant configuration
+    local base_image description packages system_deps
+    base_image=$(yq eval ".variants.${variant_name}.base_image" "$config_file")
+    description=$(yq eval ".variants.${variant_name}.description" "$config_file")
+    packages=$(yq eval ".variants.${variant_name}.packages[]" "$config_file" | tr '\n' ' ')
+    system_deps=$(yq eval ".variants.${variant_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
+    
+    print_status "  Base image: $base_image"
+    print_status "  Description: $description"
+    print_status "  Packages: $packages"
+    [[ -n "$system_deps" ]] && print_status "  System deps: $system_deps"
+    
+    # Create temporary Dockerfile for this variant
+    create_variant_dockerfile "$variant_name" "$base_image" "$packages" "$system_deps"
+    
+    # Build the Docker image
+    local image_name="${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}"
+    print_status "  Building: $image_name:latest"
+    
+    if docker build -f "Dockerfile.variant.${variant_name}" \
+        --build-arg TEAM_NAME="$TEAM_NAME" \
+        --build-arg PROJECT_NAME="$PROJECT_NAME" \
+        --build-arg VARIANT_NAME="$variant_name" \
+        --build-arg VARIANT_DESCRIPTION="$description" \
+        -t "${image_name}:latest" \
+        -t "${image_name}:v1.0.0" .; then
+        
+        print_success "✅ Built $variant_name variant: ${image_name}:latest"
+        
+        # Clean up temporary Dockerfile
+        rm -f "Dockerfile.variant.${variant_name}"
+    else
+        print_error "❌ Failed to build $variant_name variant"
+        return 1
+    fi
+}
+
+# Function: create_variant_dockerfile
+# Purpose: Generate Dockerfile for a specific variant
+create_variant_dockerfile() {
+    local variant_name="$1"
+    local base_image="$2" 
+    local packages="$3"
+    local system_deps="$4"
+    local dockerfile="Dockerfile.variant.${variant_name}"
+    
+    cat > "$dockerfile" << EOF
+# Generated Dockerfile for variant: $variant_name
+# Base: $base_image
+# Created: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+FROM $base_image
+
+# Build arguments
+ARG TEAM_NAME
+ARG PROJECT_NAME
+ARG VARIANT_NAME
+ARG VARIANT_DESCRIPTION
+
+# Labels for identification
+LABEL org.zzcollab.team="\$TEAM_NAME"
+LABEL org.zzcollab.project="\$PROJECT_NAME"
+LABEL org.zzcollab.variant="\$VARIANT_NAME"
+LABEL org.zzcollab.description="\$VARIANT_DESCRIPTION"
+LABEL org.zzcollab.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Install system dependencies if specified
+EOF
+
+    if [[ -n "$system_deps" ]]; then
+        cat >> "$dockerfile" << EOF
+RUN apt-get update && apt-get install -y \\
+$(echo "$system_deps" | sed 's/ / \\\n    /g') \\
+    && rm -rf /var/lib/apt/lists/*
+
+EOF
+    fi
+
+    if [[ -n "$packages" ]]; then
+        cat >> "$dockerfile" << EOF
+# Install R packages
+RUN install2.r --error --skipinstalled --ncpus -1 \\
+$(echo "$packages" | sed 's/ / \\\n    /g') \\
+    && rm -rf /tmp/downloaded_packages
+
+EOF
+    fi
+
+    cat >> "$dockerfile" << EOF
+# Copy any dotfiles that were provided
+COPY .vimrc* .tmux.conf* .gitconfig* .bashrc* .zshrc* /home/\$USER/ 2>/dev/null || true
+COPY .zshrc_docker /home/\$USER/.zshrc 2>/dev/null || true
+
+# Set working directory
+WORKDIR /home/\$USER/project
+
+# Default command
+CMD ["/bin/bash"]
+EOF
+
+    print_status "  Generated: $dockerfile"
+}
+
+#=============================================================================
+# BUILD VARIANT FUNCTIONS (Legacy for -V flag)
 #=============================================================================
 
 # Function: build_additional_variant

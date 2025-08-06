@@ -48,6 +48,7 @@ OPTIONS:
     -p, --project-name NAME      Project name [required with --init]
     -g, --github-account NAME    GitHub account (default: same as team-name)
     -B, --init-base-image TYPE   Base image for team setup: r-ver, rstudio, verse, all (default: r-ver - shell only)
+        --variants-config FILE   Use config.yaml for unlimited custom variants (supersedes -B)
     
     Team collaboration (Developer 2+ - Team Members):
     -t, --team NAME              Team name (Docker Hub organization)
@@ -207,6 +208,8 @@ EXAMPLES:
     # Comprehensive mode: extended Docker + full packages
     \$0 -i -t rgt47 -p research-study -C -d ~/dotfiles
     
+    # Config-based variants: unlimited custom environments
+    \$0 -i -t rgt47 -p research-study --variants-config config.yaml
     
     # Alternative: Create directory first, then auto-detect project name
     mkdir png1 && cd png1 && \$0 -i -t rgt47 -d ~/dotfiles
@@ -377,6 +380,7 @@ OPTIONS:
     -p, --project-name NAME      Project name [required with --init]
     -g, --github-account NAME    GitHub account (default: same as team-name)
     -B, --init-base-image TYPE   Base image for team setup: r-ver, rstudio, verse, all (default: r-ver - shell only)
+        --variants-config FILE   Use config.yaml for unlimited custom variants (supersedes -B)
     
     Team collaboration (Developer 2+ - Team Members):
     -t, --team NAME              Team name (Docker Hub organization)
