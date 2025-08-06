@@ -161,6 +161,23 @@ make docker-r              # R console only
 make docker-bash           # Bash shell
 ```
 
+### Variant Management (New)
+```bash
+# Interactive variant discovery and addition
+./add_variant.sh           # Browse and add variants from comprehensive library
+
+# Manual variant management
+./variant_examples.yaml    # View all available variant definitions
+vim config.yaml            # Edit team variants (set enabled: true to build)
+
+# Build custom variants
+zzcollab --variants-config config.yaml              # Build enabled variants
+zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml  # Team init with custom variants
+
+# Default behavior (uses config.yaml automatically if use_config_variants: true)
+zzcollab -i -p PROJECT     # Builds default variants (minimal + analysis)
+```
+
 ### Dependency Management
 ```bash
 make check-renv            # Check renv status
@@ -369,6 +386,70 @@ zzcollab -t mylab -p study -I shell -d ~/dotfiles           # Join with shell in
 - **Helpful error messages**: Shows available variants and provides solutions
 - **Team coordination**: Guides team members on how to request missing variants
 - **Docker Hub integration**: Checks image availability via `docker manifest inspect`
+
+### Revolutionary Docker Variant Management System
+Complete transformation from fixed 3-variant system to unlimited custom environments:
+
+**Unlimited Custom Variants:**
+- **YAML-based configuration**: Define any number of Docker variants with custom base images and R packages
+- **Comprehensive variant library**: 12+ predefined variants (standard, Alpine, R-hub, specialized domains)
+- **Interactive variant manager**: `add_variant.sh` script for easy discovery and addition of variants
+- **Variant examples library**: `variant_examples.yaml` with complete definitions organized by category
+
+**New Configuration Architecture:**
+```yaml
+# Team-level config.yaml supports unlimited variants
+variants:
+  bioinformatics:
+    base_image: "bioconductor/bioconductor_docker:latest"
+    packages: ["renv", "BiocManager", "DESeq2", "edgeR", "limma"]
+    system_deps: ["libxml2-dev", "zlib1g-dev", "libbz2-dev"]
+    enabled: true
+    
+  alpine_minimal:
+    base_image: "velaco/alpine-r:latest"  
+    packages: ["renv", "devtools", "testthat"]
+    system_deps: ["git", "make", "curl-dev"]
+    enabled: true
+    size: "~200MB"  # vs ~1GB for rocker images
+```
+
+**Variant Categories Available:**
+- **Standard**: minimal, analysis, modeling, publishing (rocker-based, ~800MB-3GB)
+- **Specialized**: bioinformatics, geospatial (domain-specific, ~2-2.5GB)
+- **Alpine**: ultra-lightweight variants for CI/CD (~200-600MB)
+- **R-hub**: CRAN-compatible testing environments (Ubuntu, Fedora, Windows)
+
+**Interactive Variant Management:**
+```bash
+# Discover and add variants interactively
+./add_variant.sh
+
+# Menu shows categorized variants with size estimates:
+# 🏔️ LIGHTWEIGHT ALPINE VARIANTS
+#  7) alpine_minimal       ~200MB  - Ultra-lightweight CI/CD
+#  8) alpine_analysis      ~400MB  - Lightweight data analysis
+# 🧪 R-HUB TESTING ENVIRONMENTS  
+# 10) rhub_ubuntu          ~1GB    - CRAN-compatible testing
+
+# Automatically copies YAML to config.yaml with enabled: true
+```
+
+**Two-Level Configuration System:**
+- **User config** (`~/.zzcollab/config.yaml`): Personal preferences and variant library
+- **Team config** (project's `config.yaml`): Which variants actually get built as Docker images
+
+**Legacy vs Modern System:**
+```bash
+# Legacy approach (overrides config.yaml)
+zzcollab -i -p png1 -B r-ver        # Creates: png1core-shell:latest only
+
+# Modern approach (uses config.yaml)  
+zzcollab -i -p png1                  # Creates: minimal + analysis variants (default)
+zzcollab -i -p png1 --variants-config config.yaml  # Explicit config usage
+```
+
+**Key Innovation**: Teams can now create specialized environments (bioinformatics with Bioconductor, geospatial with sf/terra, HPC with parallel processing, CI/CD with Alpine Linux) instead of being limited to generic r-ver/rstudio/verse variants.
 
 ### Enhanced check_renv_for_commit.R Script
 The dependency validation script has been significantly improved:
