@@ -743,7 +743,7 @@ Rscript check_renv_for_commit.R --strict-imports --fix --fail-on-issues
 
 ### Documentation Synchronization
 All documentation has been updated to reflect current system capabilities:
-- **workflow.md**: Updated with selective base image building and error handling examples
+- **vignettes/workflow-comprehensive.Rmd**: Updated with selective base image building and error handling examples
 - **workflow vignettes**: Moved to vignettes/ directory as proper R package documentation
 - **ZZCOLLAB_USER_GUIDE.md**: Enhanced with new flags, interface options, and team coordination guidance
 - **~/prj/p25/index.qmd**: Updated team collaboration examples with current CLI syntax
@@ -863,7 +863,7 @@ zzcollab -t mylab -p study -I rstudio -S       # Step 2b: Full project setup
 ```
 
 **Documentation Updated**:
-- `workflow.md`: Updated team collaboration workflows
+- `vignettes/workflow-comprehensive.Rmd`: Updated team collaboration workflows
 - `ZZCOLLAB_USER_GUIDE.md`: Clarified two-step process for team leads
 - `templates/ZZCOLLAB_USER_GUIDE.md`: Updated template examples
 - `CLAUDE.md`: Updated team collaboration examples
