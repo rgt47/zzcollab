@@ -32,7 +32,12 @@ Suggests:
     readr,
     sessioninfo,
     knitr,
-    rmarkdown
+    rmarkdown,
+    palmerpenguins,
+    broom,
+    kableExtra,
+    purrr,
+    patchwork
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 URL: https://github.com/rgt47/zzcollab
