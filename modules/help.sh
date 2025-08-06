@@ -211,6 +211,14 @@ EXAMPLES:
     # Config-based variants: unlimited custom environments
     \$0 -i -t rgt47 -p research-study --variants-config config.yaml
     
+    # Or enable by default in config.yaml (set use_config_variants: true):
+    \$0 -i -t rgt47 -p research-study    # Uses config.yaml automatically
+    
+    # Specialized examples (edit config.yaml to enable):
+    # - Alpine Linux variants (~200MB vs ~1GB, ideal for CI/CD)  
+    # - R-hub testing environments (CRAN-compatible package testing)
+    # - Domain-specific: bioinformatics, geospatial, HPC, etc.
+    
     # Alternative: Create directory first, then auto-detect project name
     mkdir png1 && cd png1 && \$0 -i -t rgt47 -d ~/dotfiles
 

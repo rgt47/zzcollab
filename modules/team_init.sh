@@ -216,8 +216,8 @@ setup_team_dockerfile() {
         fi
     fi
     
-    # Copy config.yaml template if using config-based variants
-    if [[ "${USE_CONFIG_VARIANTS:-false}" == "true" ]] && [[ ! -f "./config.yaml" ]]; then
+    # Always copy config.yaml template for teams to have the option
+    if [[ ! -f "./config.yaml" ]]; then
         local config_template="${TEMPLATES_DIR}/config.yaml"
         if [[ -f "$config_template" ]]; then
             # Substitute variables in config template
@@ -228,10 +228,33 @@ setup_team_dockerfile() {
                 -e "s/\${CREATION_DATE}/$(date -u +%Y-%m-%dT%H:%M:%SZ)/g" \
                 "$config_template" > ./config.yaml
             print_success "Created config.yaml with predefined variants"
-            print_status "💡 Edit config.yaml to customize variants before building"
+            
+            # Check if config.yaml has use_config_variants enabled
+            if command -v yq >/dev/null 2>&1; then
+                local use_config_variants
+                use_config_variants=$(yq eval '.build.use_config_variants // false' ./config.yaml 2>/dev/null)
+                if [[ "$use_config_variants" == "true" ]]; then
+                    print_status "🎯 Config variants enabled by default - will use config.yaml for building"
+                    USE_CONFIG_VARIANTS=true
+                    VARIANTS_CONFIG="./config.yaml"
+                else
+                    print_status "💡 Edit config.yaml to customize variants (set use_config_variants: true to enable)"
+                fi
+            else
+                print_status "💡 Edit config.yaml to customize variants or install yq for automatic detection"
+            fi
         else
             print_error "Config template not found: $config_template"
             return 1
+        fi
+    elif [[ "${USE_CONFIG_VARIANTS:-false}" != "true" ]] && command -v yq >/dev/null 2>&1; then
+        # Check existing config.yaml for use_config_variants setting
+        local use_config_variants
+        use_config_variants=$(yq eval '.build.use_config_variants // false' ./config.yaml 2>/dev/null)
+        if [[ "$use_config_variants" == "true" ]]; then
+            print_status "🎯 Detected config.yaml with use_config_variants: true - enabling config-based variants"
+            USE_CONFIG_VARIANTS=true
+            VARIANTS_CONFIG="./config.yaml"
         fi
     fi
 

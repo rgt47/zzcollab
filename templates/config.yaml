@@ -1,6 +1,20 @@
 # ZZCOLLAB Team Configuration
 # This file defines Docker variants and team settings for your zzcollab project.
 # Edit this file to customize your team's development environment.
+#
+# VARIANT CATEGORIES:
+# - Standard: Rocker-based images (full-featured, ~1GB)
+# - Alpine: Ultra-lightweight images (~200MB) - ideal for CI/CD and resource-constrained environments  
+# - R-hub: CRAN-compatible testing environments for package development
+# - Specialized: Domain-specific environments (bioinformatics, geospatial, etc.)
+#
+# USAGE:
+# 1. Set `enabled: true` for variants you want to build
+# 2. Customize packages and system_deps as needed
+# 3. Choose your approach:
+#    a) Set `use_config_variants: true` below - uses this file automatically
+#    b) Use flag: zzcollab -i -t myteam -p myproject --variants-config config.yaml
+#    c) Legacy: zzcollab -i -t myteam -p myproject -B r-ver,rstudio
 
 #=============================================================================
 # TEAM METADATA
@@ -51,7 +65,10 @@ variants:
       - "patchwork"    # Plot composition
       - "gt"           # Table generation
       - "DT"           # Interactive tables
-    system_deps: []
+    system_deps:
+      - "libxml2-dev"  # Required for XML parsing
+      - "libcurl4-openssl-dev"  # Required for web requests
+      - "libssl-dev"   # Required for secure connections
     enabled: true
     
   # Machine learning and modeling environment
@@ -61,14 +78,21 @@ variants:
     packages:
       - "renv"
       - "devtools"
+      - "tidyverse"    # Data manipulation for ML
       - "tidymodels"   # ML framework
       - "xgboost"      # Gradient boosting
       - "randomForest" # Random forests
       - "glmnet"       # Regularized regression
       - "caret"        # Classification and regression
       - "MASS"         # Statistical functions
+      - "mlr3"         # Modern ML framework
     system_deps:
-      - "libxml2-dev"  # Required for some ML packages
+      - "libxml2-dev"  # Required for XML parsing
+      - "libcurl4-openssl-dev"  # Required for web requests
+      - "libssl-dev"   # Required for secure connections
+      - "libgsl-dev"   # GNU Scientific Library for advanced algorithms
+      - "libblas-dev"  # Basic Linear Algebra Subprograms
+      - "liblapack-dev" # Linear Algebra PACKage
     enabled: false    # Disabled by default (large image)
     
   # Publishing and reporting environment
@@ -84,7 +108,13 @@ variants:
       - "distill"      # Scientific articles
       - "flexdashboard" # Interactive dashboards
       - "shiny"        # Web applications
-    system_deps: []
+      - "DT"           # Interactive tables
+      - "plotly"       # Interactive plots
+    system_deps:
+      - "pandoc"       # Document conversion (usually included in verse)
+      - "texlive-full" # Complete LaTeX distribution (usually included in verse)
+      - "libxml2-dev"  # Required for XML processing
+      - "libcurl4-openssl-dev"  # Required for web requests
     enabled: false    # Disabled by default (very large image)
     
   # Geospatial analysis environment
@@ -116,8 +146,143 @@ variants:
       - "edgeR"        # RNA-seq analysis
       - "limma"        # Linear models
       - "GenomicRanges" # Genomic intervals
-    system_deps: []
+      - "Biostrings"   # String manipulation for sequences
+      - "rtracklayer"  # Interface to genome browsers
+    system_deps:
+      - "libxml2-dev"  # Required for XML parsing
+      - "libcurl4-openssl-dev"  # Required for web requests
+      - "libssl-dev"   # Required for secure connections
+      - "zlib1g-dev"   # Compression library
+      - "libbz2-dev"   # Compression library
+      - "liblzma-dev"  # LZMA compression
     enabled: false
+
+  #---------------------------------------------------------------------------
+  # LIGHTWEIGHT & SPECIALIZED VARIANTS
+  #---------------------------------------------------------------------------
+  
+  # Ultra-lightweight Alpine Linux based environment
+  alpine_minimal:
+    base_image: "velaco/alpine-r:latest"
+    description: "Ultra-lightweight Alpine Linux with R (small footprint for CI/CD)"
+    packages:
+      - "renv"
+      - "devtools"     # Core development only
+      - "testthat"     # Testing
+    system_deps:
+      - "git"          # Version control
+      - "make"         # Build tools
+    enabled: false
+    notes: "~200MB vs ~1GB for rocker images - excellent for CI/CD pipelines"
+  
+  # Alpine with essential analysis packages
+  alpine_analysis:
+    base_image: "velaco/alpine-r:latest"
+    description: "Lightweight Alpine with core data analysis packages"
+    packages:
+      - "renv"
+      - "dplyr"        # Data manipulation
+      - "ggplot2"      # Plotting
+      - "readr"        # Data import
+      - "tidyr"        # Data tidying
+      - "here"         # Path management
+      - "janitor"      # Data cleaning
+      - "devtools"     # Development tools
+    system_deps:
+      - "git"
+      - "make"
+      - "curl"         # For downloading data
+      - "curl-dev"     # Development headers for curl
+      - "openssl-dev"  # Required for secure connections
+      - "libxml2-dev"  # Required for XML parsing
+    enabled: false
+    
+  # R-hub Linux (Ubuntu-based testing environment)
+  rhub_ubuntu:
+    base_image: "rhub/ubuntu-gcc-release:latest"
+    description: "R-hub Ubuntu environment for package testing and CI/CD"
+    packages:
+      - "renv"
+      - "devtools"
+      - "testthat"
+      - "rcmdcheck"    # Package checking
+      - "covr"         # Code coverage
+      - "pkgdown"      # Documentation sites
+      - "roxygen2"     # Documentation generation
+    system_deps:
+      - "qpdf"         # PDF tools for R CMD check
+      - "pandoc"       # Document conversion
+      - "libxml2-dev"  # Required for XML parsing
+      - "libcurl4-openssl-dev"  # Required for web requests
+      - "libssl-dev"   # Required for secure connections
+      - "libgit2-dev"  # Required for git operations
+    enabled: false
+    notes: "Matches CRAN check environment for reliable package testing"
+    
+  # R-hub Fedora (alternative Linux distribution)
+  rhub_fedora:
+    base_image: "rhub/fedora-gcc-devel:latest" 
+    description: "R-hub Fedora environment with latest R-devel for cutting-edge testing"
+    packages:
+      - "renv"
+      - "devtools"
+      - "testthat"
+      - "rcmdcheck"
+      - "roxygen2"     # Documentation generation
+    system_deps:
+      - "pandoc"
+      - "qpdf"
+      - "which"        # Required by some packages
+      - "libxml2-devel" # Fedora naming for XML development headers
+      - "libcurl-devel" # Fedora naming for curl development headers
+      - "openssl-devel" # Fedora naming for SSL development headers
+      - "libgit2-devel" # Fedora naming for git2 development headers
+    enabled: false
+    notes: "Tests against R-devel to catch future compatibility issues"
+    
+  # R-hub Windows (Wine-based Windows simulation on Linux)
+  rhub_windows:
+    base_image: "rhub/windows-x86_64-mingw-w64:latest"
+    description: "R-hub Windows environment for cross-platform package testing"
+    packages:
+      - "renv"
+      - "devtools"
+      - "testthat"
+      - "rcmdcheck"
+      - "roxygen2"     # Documentation generation
+    system_deps:
+      # Note: Windows environment has different system dependency management
+      # Most dependencies are pre-installed or handled via Rtools
+      - "qpdf"         # PDF tools (if available)
+    enabled: false
+    notes: "Tests Windows-specific package behavior without needing Windows"
+    
+  # High-performance computing variant
+  hpc_alpine:
+    base_image: "velaco/alpine-r:latest"
+    description: "HPC-focused environment with parallel processing and lightweight footprint"
+    packages:
+      - "renv"
+      - "devtools"
+      - "parallel"     # Built-in parallel processing
+      - "foreach"      # Parallel loops
+      - "doParallel"   # Parallel backend
+      - "future"       # Asynchronous processing
+      - "furrr"        # Parallel purrr
+      - "data.table"   # High-performance data manipulation
+      - "Rcpp"         # C++ integration
+      - "RcppArmadillo" # Linear algebra library
+    system_deps:
+      - "make"
+      - "g++"          # C++ compiler
+      - "git"
+      - "gfortran"     # Fortran compiler for numerical libraries
+      - "openblas-dev" # Optimized BLAS library
+      - "lapack-dev"   # Linear algebra package
+      - "cmake"        # Build system for complex packages
+      - "curl-dev"     # Development headers for curl
+    enabled: false
+    notes: "Optimized for computational efficiency and container orchestration"
 
   #---------------------------------------------------------------------------
   # CUSTOM VARIANTS (Add your own below)
@@ -125,24 +290,47 @@ variants:
   
   # Example custom variant - uncomment and modify as needed
   # custom_example:
-  #   base_image: "rocker/r-ver:latest"
+  #   base_image: "rocker/r-ver:latest"  # REQUIRED: Docker base image
   #   description: "Custom environment for specific project needs"
-  #   packages:
-  #     - "renv"
-  #     - "your_package_here"
-  #   system_deps:
-  #     - "your_system_dependency_here"
+  #   packages:                           # REQUIRED: R packages to install
+  #     - "renv"                         # Always include renv for reproducibility
+  #     - "devtools"                     # Recommended for development
+  #     - "your_package_here"            # Add your specific packages
+  #   system_deps:                       # IMPORTANT: System libraries your R packages need
+  #     - "libxml2-dev"                  # Common: required by many R packages
+  #     - "libcurl4-openssl-dev"         # Common: required for web requests
+  #     - "your_system_dependency_here"  # Add specific system libraries
   #   enabled: false
+  #
+  # IMPORTANT NOTES FOR CUSTOM VARIANTS:
+  # - base_image: Choose appropriate Docker base (rocker/r-ver, rocker/tidyverse, etc.)
+  # - packages: Always include "renv" for reproducibility
+  # - system_deps: Critical for R packages with compiled code or system dependencies
+  #   Common system dependencies:
+  #   * libxml2-dev: Required by xml2, httr, rvest, and many web-related packages
+  #   * libcurl4-openssl-dev: Required by curl, httr, and web-related packages  
+  #   * libssl-dev: Required for secure connections and crypto packages
+  #   * libgit2-dev: Required by git2r and related packages
+  #   * build-essential: Required for packages with compiled C/C++ code
+  #   * gfortran: Required for packages with Fortran code
+  # - Check package documentation for specific system requirements
 
 #=============================================================================
 # BUILD CONFIGURATION
 #=============================================================================
 
 build:
+  # Use variants defined in this config file by default
+  use_config_variants: true   # If true, uses variants from this file instead of -B flag
+  
   # Default variants to build (only enabled variants with these names)
   default_variants:
-    - "minimal"
-    - "analysis"
+    - "minimal"      # Standard rocker-based minimal environment
+    - "analysis"     # Standard rocker-based analysis environment
+    # Uncomment below for specialized environments:
+    # - "alpine_minimal"   # Ultra-lightweight (~200MB vs ~1GB)
+    # - "rhub_ubuntu"      # CRAN-compatible testing environment
+    # - "hpc_alpine"       # High-performance computing
   
   # Docker build options
   docker:
