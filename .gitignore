@@ -43,6 +43,18 @@ index/
 
 # Test artifacts and development directories
 test-*/
+*test/
+*_test/
+temp_*/
+*_check/
+
+# Development artifacts
+*.pdf
+*.txt
+workflow-*.md
+test.md
+*-mini.*
+dev-archive/
 
 # Archives
 *.tar.gz
