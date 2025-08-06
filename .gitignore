@@ -47,6 +47,7 @@ test-*/
 *_test/
 temp_*/
 *_check/
+*.Rcheck/
 
 # Development artifacts
 *.pdf
