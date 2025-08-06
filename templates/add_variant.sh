@@ -206,7 +206,7 @@ add_variant_to_config() {
     fi
     
     rm "$temp_file"
-    log_success "Added variant '$team_variant_name' to $CONFIG_FILE"
+    log_success "Added variant '$variant_name' to $CONFIG_FILE"
     
     # Show next steps
     echo ""
