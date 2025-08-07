@@ -1052,6 +1052,51 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 - Vignette chunks with `eval = FALSE` prevent inline R expressions from accessing defined variables
 - Unicode characters in R source code must use escape sequences for CRAN compliance
 
+### R-Only Workflow Vignettes for Non-Docker Users (August 2025)
+**Comprehensive R-native interface expansion** - making ZZCOLLAB accessible to R developers without Docker/bash knowledge:
+
+**New Vignette Documentation System:**
+- **r-solo-workflow.Rmd**: Pure R interface for solo developers using only R functions (`init_project()`, `start_rstudio()`, `git_commit()`)
+- **r-team-workflow.Rmd**: Team collaboration workflow with role-based approach (team lead vs members) using R-only functions
+- **Complete workflow coverage**: From project setup to daily development to team coordination, all through familiar R interface
+- **Real-world examples**: Penguin analysis (solo) and customer churn analysis (3-person team collaboration)
+
+**Target Audience Expansion:**
+- **R users familiar with RStudio/tidyverse** but unfamiliar with Docker/bash commands
+- **Research teams** wanting reproducibility without DevOps complexity
+- **Data scientists** focused on analysis rather than infrastructure management
+- **Academic labs** needing seamless collaboration across different skill levels
+
+**R-Native Interface Design:**
+- **Zero Docker exposure**: Users never see Docker commands or concepts, all handled transparently
+- **Familiar R patterns**: `library()`, `install.packages()`, RStudio workflows, Git through R functions
+- **Transparent reproducibility**: Perfect environment consistency without manual Docker management
+- **Professional workflows**: Feature branching (`create_branch()`), pull requests (`create_pr()`), team coordination
+
+**Key Innovation - Pure R Development Experience:**
+```r
+# Solo workflow - feels like regular R development
+library(zzcollab)
+init_project("my-analysis")        # Creates reproducible project
+start_rstudio()                    # Opens RStudio at localhost:8787
+# ... familiar R development in RStudio ...
+git_commit("Add analysis")         # Version control through R
+git_push()                         # Sharing through R
+
+# Team workflow - seamless collaboration
+init_project("team-project", team_name = "lab")  # Team lead setup
+join_project("lab", "team-project")              # Team members join
+start_rstudio()                                   # Identical environments
+```
+
+**Documentation Quality Achievements:**
+- **Complete examples**: Full analysis workflows from project creation to results publication
+- **Role-based guidance**: Clear separation of team lead vs team member responsibilities  
+- **Troubleshooting sections**: Common issues and R-based solutions
+- **Best practices integration**: Professional development patterns without complexity exposure
+
+This expansion makes ZZCOLLAB accessible to the broader R community by eliminating the need to learn Docker/bash while maintaining all reproducibility benefits.
+
 ### Security Assessment Results
 **Comprehensive security audit completed** - zzcollab codebase demonstrates excellent security practices:
 - ✅ **No unsafe cd commands** - All use proper error handling (`|| exit 1`)
