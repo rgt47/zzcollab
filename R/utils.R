@@ -3,6 +3,8 @@
 
 #' Null-coalescing operator
 #'
+#' @name grapes-or-or-grapes
+#' @rdname grapes-or-or-grapes
 #' @param lhs Left-hand side
 #' @param rhs Right-hand side
 #' @return lhs if not NULL, else rhs
@@ -1236,7 +1238,7 @@ init_config <- function() {
 #'   \"team_name\", \"build_mode\", \"dotfiles_dir\").
 #'   
 #' @param default Default value to return if the configuration key is not set
-#'   or if \\code{get_config()} returns NULL. Can be any type, but typically
+#'   or if \code{get_config()} returns NULL. Can be any type, but typically
 #'   a character string to match configuration values. Default is NULL.
 #'   
 #' @return The configuration value if set, otherwise the default value.
@@ -1271,8 +1273,8 @@ init_config <- function() {
 #' }
 #'
 #' @seealso
-#' \\code{\\link{get_config}} for basic configuration retrieval
-#' \\code{\\link{\%||\%}} for the null-coalescing operator used internally
+#' \code{\link{get_config}} for basic configuration retrieval
+#' \code{\link{\%||\%}} for the null-coalescing operator used internally
 #'
 #' @keywords internal
 get_config_default <- function(key, default = NULL) {

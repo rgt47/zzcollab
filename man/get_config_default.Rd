@@ -12,7 +12,7 @@ Should match keys used in the zzcollab configuration system (e.g.,
 \"team_name\", \"build_mode\", \"dotfiles_dir\").}
 
 \item{default}{Default value to return if the configuration key is not set
-or if \\code{get_config()} returns NULL. Can be any type, but typically
+or if \code{get_config()} returns NULL. Can be any type, but typically
 a character string to match configuration values. Default is NULL.}
 }
 \value{
@@ -55,7 +55,7 @@ github_account <- get_config_default(\"github_account\", team_name)
 
 }
 \seealso{
-\\code{\\link{get_config}} for basic configuration retrieval
-\\code{\\link{\%||\%}} for the null-coalescing operator used internally
+\code{\link{get_config}} for basic configuration retrieval
+\code{\link{\%||\%}} for the null-coalescing operator used internally
 }
 \keyword{internal}
