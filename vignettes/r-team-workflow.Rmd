@@ -22,18 +22,18 @@ knitr::opts_chunk$set(
 
 # ZZCOLLAB for R Users: Team Collaboration Workflow
 
-This vignette shows R developers how to collaborate on reproducible research projects using **only R functions** - no Docker or bash commands required. Perfect for teams where everyone knows R but not everyone knows DevOps.
+This vignette describes collaborative research workflows using R functions that abstract containerization technologies. This approach is suitable for research teams with R expertise who require reproducible computational environments.
 
 ## The Team Collaboration Challenge
 
-**Common scenario:** You have a great analysis in R, and you want to collaborate with teammates, but:
+**Common challenges in collaborative research:**
 
-- 😤 "It works on my machine" - Different R versions, package versions, system libraries
-- 🤔 "What packages did you use?" - Unclear dependencies and requirements
-- 😰 "I can't reproduce your results" - Different random seeds, package behaviors
-- ⏰ "It takes 30 minutes to set up" - Complex installation instructions
+- Version inconsistencies across different computational environments
+- Unclear dependency specifications and requirements
+- Non-reproducible analytical results due to environmental differences
+- Complex setup procedures for new collaborators
 
-**ZZCOLLAB solution:** Everyone gets the **exact same environment** with simple R function calls.
+**ZZCOLLAB approach:** Standardized computational environments accessible through R function calls.
 
 ## Team Roles and Workflow
 
@@ -556,23 +556,23 @@ start_rstudio()
 # Result: Identical environments, reproducible science, 6-month project completed in 3 months
 ```
 
-**Benefits achieved:**
-- ✅ **Zero "works on my machine" issues**
-- ✅ **Seamless collaboration** across different operating systems
-- ✅ **Perfect reproducibility** for paper submission
-- ✅ **Easy onboarding** for new team members
-- ✅ **Professional development practices** without DevOps overhead
+**Observed benefits:**
+- **Environmental consistency** across different systems
+- **Cross-platform collaboration** independent of operating system
+- **Reproducible research** suitable for publication requirements
+- **Streamlined onboarding** for new team members
+- **Standardized practices** without specialized technical knowledge requirements
 
 ## Summary for R Teams
 
-ZZCOLLAB transforms team collaboration into a familiar R experience:
+ZZCOLLAB implements team collaboration through standard R interfaces:
 
-✅ **Team Lead:** Create shared environment with `init_project()`
-✅ **Team Members:** Join with `join_project()`, start with `start_rstudio()`  
-✅ **Perfect Reproducibility:** Everyone gets identical environments
-✅ **Familiar Workflow:** RStudio, R functions, Git integration
-✅ **No DevOps Required:** Docker managed automatically behind the scenes
-✅ **Scale Naturally:** From 2-person projects to 10+ member labs
+**Team Lead:** Create shared environment with `init_project()`
+**Team Members:** Join with `join_project()`, access via `start_rstudio()`  
+**Reproducible Environments:** Consistent computational environments across team
+**Standard Workflow:** Integration with RStudio, R functions, and Git
+**Abstracted Complexity:** Container management handled programmatically
+**Scalable Framework:** Supports varying team sizes from small groups to large research laboratories
 
 Start your next team research project:
 
@@ -587,4 +587,4 @@ start_rstudio()
 # Begin collaborative analysis!
 ```
 
-Your team's research will be reproducible, collaborative, and professional-grade, all through the R interface your team already knows.
+This framework provides systematic reproducibility and collaborative workflows through established R programming interfaces.
