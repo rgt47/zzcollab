@@ -292,8 +292,111 @@ install_uninstall_script() {
 }
 
 #=============================================================================
-# DIRECTORY VALIDATION FUNCTION
+# DIRECTORY VALIDATION FUNCTIONS
 #=============================================================================
+
+# Function: get_zzcollab_files
+# Purpose: Get list of files and directories that zzcollab creates
+get_zzcollab_files() {
+    local files=(
+        # Core project files
+        "DESCRIPTION" "NAMESPACE" "Makefile" ".gitignore" ".Rprofile" 
+        "renv.lock" "setup_renv.R" "LICENSE"
+        
+        # Docker files
+        "Dockerfile" "docker-compose.yml" "Dockerfile.teamcore" "Dockerfile.personal"
+        ".zshrc_docker"
+        
+        # Documentation and guides
+        "ZZCOLLAB_USER_GUIDE.md" "check_renv_for_commit.R"
+        
+        # Configuration files
+        "zzcollab.yaml" "config.yaml" "dev.sh"
+        
+        # R project file (dynamic based on package name)
+        "${PKG_NAME}.Rproj"
+    )
+    
+    local directories=(
+        # R package structure
+        "R" "tests" "tests/testthat" "tests/integration" "data" "data/raw_data"
+        "inst" "man" "vignettes"
+        
+        # Analysis structure  
+        "analysis" "analysis/report" "analysis/templates" "scripts"
+        "figures" "output"
+        
+        # Development and CI
+        ".github" ".github/workflows" ".github/ISSUE_TEMPLATE"
+        
+        # renv
+        "renv"
+    )
+    
+    printf '%s\n' "${files[@]}" "${directories[@]}"
+}
+
+# Function: detect_file_conflicts
+# Purpose: Check for actual file conflicts between existing files and zzcollab files
+detect_file_conflicts() {
+    local conflicts=()
+    local zzcollab_files
+    
+    # Get list of files that zzcollab would create
+    mapfile -t zzcollab_files < <(get_zzcollab_files)
+    
+    # Check for existing files that would conflict
+    for item in "${zzcollab_files[@]}"; do
+        if [[ -f "$item" ]] || [[ -d "$item" ]]; then
+            conflicts+=("$item")
+        fi
+    done
+    
+    # Return conflicts
+    printf '%s\n' "${conflicts[@]}"
+}
+
+# Function: confirm_overwrite_conflicts
+# Purpose: Ask user about overwriting conflicting files
+confirm_overwrite_conflicts() {
+    local conflicts
+    mapfile -t conflicts < <(detect_file_conflicts)
+    
+    if [[ ${#conflicts[@]} -eq 0 ]]; then
+        log_info "✅ No file conflicts detected - safe to proceed"
+        return 0
+    fi
+    
+    echo ""
+    log_warning "⚠️  FILE CONFLICT DETECTION:"
+    log_warning "Found ${#conflicts[@]} existing files/directories that zzcollab would modify:"
+    echo ""
+    
+    for conflict in "${conflicts[@]}"; do
+        if [[ -f "$conflict" ]]; then
+            echo "  📄 $conflict (file)"
+        elif [[ -d "$conflict" ]]; then
+            echo "  📁 $conflict (directory)"
+        fi
+    done
+    
+    echo ""
+    log_info "ℹ️  What happens with conflicts:"
+    log_info "  • Files: zzcollab skips existing files (won't overwrite your work)"
+    log_info "  • Directories: zzcollab adds to existing directories (safe)"
+    log_info "  • Only new zzcollab files will be created"
+    echo ""
+    
+    read -p "Continue with setup? Existing files will be preserved [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        log_info "Setup cancelled by user"
+        exit 0
+    fi
+    
+    log_info "✅ Proceeding with setup - existing files will be preserved"
+    return 0
+}
 
 # Function: validate_directory_for_setup
 # Purpose: Prevent accidental zzcollab runs while allowing parameter updates in existing projects
@@ -346,49 +449,8 @@ validate_directory_for_setup() {
         return 0
     fi
     
-    # Check if directory is empty or contains only basic files
-    local file_count
-    file_count=$(find . -maxdepth 1 -type f | wc -l)
-    
-    if [[ $file_count -le 3 ]]; then
-        log_info "Directory validation passed ($file_count files found)"
-        return 0
-    fi
-    
-    # Enhanced warning for non-zzcollab directories with many files
-    log_warning "⚠️  DIRECTORY SAFETY CHECK:"
-    log_warning "Current directory contains $file_count files and doesn't appear to be a zzcollab project"
-    log_warning "Running zzcollab here may overwrite existing files or create conflicts"
-    
-    # Show some of the files that would be affected
-    log_info "Files in current directory:"
-    ls -la | head -10
-    if [[ $file_count -gt 7 ]]; then
-        log_info "... and $(($file_count - 7)) more files"
-    fi
-    
-    echo ""
-    log_warning "🔍 RECOMMENDED ACTIONS:"
-    log_warning "1. If this IS a zzcollab project, ensure manifest files exist (.zzcollab_manifest.*)"
-    log_warning "2. If this is NOT a zzcollab project, create a new directory:"
-    log_warning "   mkdir my-project && cd my-project && zzcollab [options]"
-    log_warning "3. For advanced users who want to override this check:"
-    log_warning "   zzcollab --force [options]"
-    log_warning "4. If you're certain this is the right location, you can proceed"
-    echo ""
-    
-    read -p "Continue with setup in this directory anyway? [y/N] " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_info "Setup cancelled by user - good choice for safety!"
-        log_info "💡 To run zzcollab safely:"
-        log_info "  1. Create a new directory: mkdir my-project && cd my-project"
-        log_info "  2. Run zzcollab there: zzcollab [options]"
-        log_info "  3. Or navigate to an existing zzcollab project directory"
-        exit 0
-    fi
-    
-    log_info "Proceeding with setup as requested (user confirmed)"
+    # Use intelligent conflict detection instead of generic file count
+    confirm_overwrite_conflicts
     return 0
 }
 
