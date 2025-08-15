@@ -158,7 +158,7 @@ remove_files() {
     files=$(get_created_items "files")
     
     # Add standard zzcollab files that may not be in manifest
-    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile"
+    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .Rprofile renv.lock Makefile .gitignore zzcollab.yaml config.yaml"
     if [[ -n "$files" ]]; then
         files="$(echo -e "${files}\n${standard_files}")"
     else
@@ -200,7 +200,7 @@ should_remove_file() {
     
     # Always confirm removal of certain important files
     case "$file" in
-        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile|docker-compose.yml|ZZCOLLAB_USER_GUIDE.md)
+        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile*|docker-compose.yml|ZZCOLLAB_USER_GUIDE.md|.Rprofile|renv.lock|*.yaml)
             confirm "Remove $file (may contain custom changes)?"
             return $?
             ;;
@@ -260,30 +260,76 @@ is_directory_empty() {
     [[ -z "$(ls -A "$dir" 2>/dev/null)" ]]
 }
 
-remove_docker_image() {
-    local image
-    image=$(get_created_items "docker_image")
+remove_renv_directory() {
+    log_info "Checking for renv directory..."
     
-    if [[ -z "$image" ]]; then
-        log_info "No Docker image found in manifest"
-        return 0
+    if [[ -d "renv" ]]; then
+        if confirm "Remove renv directory (contains R package cache)?"; then
+            log_info "Removing renv directory and cache..."
+            rm -rf renv
+            log_success "Removed renv directory"
+        else
+            log_info "Keeping renv directory"
+        fi
+    else
+        log_info "No renv directory found"
     fi
+}
+
+remove_docker_images() {
+    log_info "Checking for Docker images to remove..."
+    
+    # Check manifest first
+    local manifest_image
+    manifest_image=$(get_created_items "docker_image")
     
     if ! command_exists docker; then
         log_warning "Docker not available, skipping image removal"
         return 0
     fi
     
-    if docker image inspect "$image" >/dev/null 2>&1; then
-        if confirm "Remove Docker image '$image'?"; then
-            log_info "Removing Docker image: $image"
-            docker rmi "$image" || log_warning "Failed to remove Docker image"
-            log_success "Docker image removed"
-        else
-            log_info "Keeping Docker image: $image"
+    # Look for common zzcollab Docker images
+    local project_name
+    if [[ -f "DESCRIPTION" ]]; then
+        project_name=$(grep "^Package:" DESCRIPTION 2>/dev/null | cut -d: -f2 | tr -d ' ')
+    fi
+    
+    local images_to_check=()
+    [[ -n "$manifest_image" ]] && images_to_check+=("$manifest_image")
+    [[ -n "$project_name" ]] && images_to_check+=("$project_name" "${project_name}:latest")
+    
+    # Also check for team images if we can determine team name
+    if [[ -f "zzcollab.yaml" ]] || [[ -f "config.yaml" ]]; then
+        local team_name=$(grep -E "team_name|team-name" *.yaml 2>/dev/null | head -1 | cut -d: -f2 | tr -d ' "'"'" || true)
+        if [[ -n "$team_name" && -n "$project_name" ]]; then
+            images_to_check+=("${team_name}/${project_name}core-shell:latest")
+            images_to_check+=("${team_name}/${project_name}core-rstudio:latest") 
+            images_to_check+=("${team_name}/${project_name}core-verse:latest")
         fi
+    fi
+    
+    local removed_count=0
+    for image in "${images_to_check[@]}"; do
+        [[ -z "$image" ]] && continue
+        
+        if docker image inspect "$image" >/dev/null 2>&1; then
+            if confirm "Remove Docker image '$image'?"; then
+                log_info "Removing Docker image: $image"
+                if docker rmi "$image" 2>/dev/null; then
+                    ((removed_count++))
+                else
+                    log_warning "Failed to remove Docker image: $image"
+                fi
+            else
+                log_info "Keeping Docker image: $image"
+            fi
+        fi
+    done
+    
+    if [[ $removed_count -gt 0 ]]; then
+        log_success "Removed $removed_count Docker images"
     else
-        log_info "Docker image not found: $image"
+        log_info "No Docker images removed"
     fi
 }
 
@@ -324,20 +370,21 @@ EXAMPLES:
     $SCRIPT_NAME --keep-docker      # Keep Docker image
 
 DESCRIPTION:
-    This script removes files and directories created by zzcollab based on 
-    the manifest file (.zzcollab_manifest.json or .zzcollab_manifest.txt).
+    This script removes files and directories created by zzcollab. It checks
+    both manifest files and common zzcollab-generated files.
     
     It will:
     - Remove symbolic links first
-    - Remove files (with confirmation for important ones)
+    - Remove zzcollab files (Dockerfile, docker-compose.yml, .Rprofile, renv.lock, etc.)
     - Remove directories (empty ones first, then ask about non-empty)
-    - Remove Docker image (with confirmation)
+    - Remove renv directory and package cache
+    - Remove Docker images (project and team images)
     - Remove the manifest file itself
     
     Safety features:
     - Confirms before removing non-empty directories
     - Confirms before removing potentially customized files
-    - Skips removal of files that appear to be modified
+    - Detects and removes team Docker images automatically
     - Can run in dry-run mode to preview changes
 
 EOF
@@ -428,14 +475,27 @@ main() {
         get_created_items "symlinks" | sed 's/^/  /'
         
         echo "Files:"
-        get_created_items "files" | sed 's/^/  /'
+        (get_created_items "files"; echo -e "ZZCOLLAB_USER_GUIDE.md\nDockerfile\ndocker-compose.yml\nDockerfile.teamcore\nDockerfile.personal\n.Rprofile\nrenv.lock\nMakefile\n.gitignore\nzzcollab.yaml\nconfig.yaml") | sort -u | sed 's/^/  /'
         
         echo "Directories:"
-        get_created_items "directories" | sort -r | sed 's/^/  /'
+        (get_created_items "directories"; [[ -d "renv" ]] && echo "renv") | sort -ru | sed 's/^/  /'
+        
+        echo "Docker images:"
+        local project_name team_name
+        [[ -f "DESCRIPTION" ]] && project_name=$(grep "^Package:" DESCRIPTION 2>/dev/null | cut -d: -f2 | tr -d ' ')
+        if [[ -f "zzcollab.yaml" ]] || [[ -f "config.yaml" ]]; then
+            team_name=$(grep -E "team_name|team-name" *.yaml 2>/dev/null | head -1 | cut -d: -f2 | tr -d ' "'"'" || true)
+        fi
         
         local docker_image
         docker_image=$(get_created_items "docker_image")
-        [[ -n "$docker_image" ]] && echo "Docker image: $docker_image"
+        [[ -n "$docker_image" ]] && echo "  $docker_image"
+        [[ -n "$project_name" ]] && echo "  $project_name:latest"
+        if [[ -n "$team_name" && -n "$project_name" ]]; then
+            echo "  ${team_name}/${project_name}core-shell:latest"
+            echo "  ${team_name}/${project_name}core-rstudio:latest"
+            echo "  ${team_name}/${project_name}core-verse:latest"
+        fi
         
         exit 0
     fi
@@ -457,8 +517,11 @@ main() {
     
     remove_directories
     
+    # Remove renv directory
+    remove_renv_directory
+    
     if [[ "$keep_docker" == false ]]; then
-        remove_docker_image
+        remove_docker_images
     fi
     
     remove_manifest
