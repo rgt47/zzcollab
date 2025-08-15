@@ -157,6 +157,14 @@ remove_files() {
     local files
     files=$(get_created_items "files")
     
+    # Add standard zzcollab files that may not be in manifest
+    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile"
+    if [[ -n "$files" ]]; then
+        files="$(echo -e "${files}\n${standard_files}")"
+    else
+        files="$standard_files"
+    fi
+    
     if [[ -z "$files" ]]; then
         log_info "No files found in manifest"
         return 0
@@ -192,7 +200,7 @@ should_remove_file() {
     
     # Always confirm removal of certain important files
     case "$file" in
-        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile|docker-compose.yml)
+        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile|docker-compose.yml|ZZCOLLAB_USER_GUIDE.md)
             confirm "Remove $file (may contain custom changes)?"
             return $?
             ;;
