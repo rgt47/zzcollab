@@ -96,6 +96,24 @@ create_directory_structure() {
 }
 
 #=============================================================================
+# DATA DIRECTORY TEMPLATES
+#=============================================================================
+
+# Function: create_data_templates
+# Purpose: Create documentation templates for data directory
+create_data_templates() {
+    log_info "Creating data directory templates..."
+    
+    # Install data README template to document data structure and processing
+    if install_template "data_README.md" "data/README.md" "data directory documentation" "Created data directory README with Palmer Penguins example"; then
+        log_success "Data README template created"
+    else
+        log_error "Failed to create data README template"
+        return 1
+    fi
+}
+
+#=============================================================================
 # NAVIGATION SCRIPTS CREATION (replaces symbolic links)
 #=============================================================================
 
