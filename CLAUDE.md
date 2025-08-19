@@ -116,6 +116,62 @@ join_project(project_name = "my-analysis")   # Uses team_name and build_mode fro
 setup_project()                              # Uses all defaults from config
 ```
 
+## Data Documentation System (NEW 2025)
+
+ZZCOLLAB now includes automated data documentation templates that follow research best practices for data management and reproducibility.
+
+### Automated Data README Creation
+
+Every new zzcollab project automatically includes a comprehensive `data/README.md` template with:
+
+**Data Organization Structure**:
+```
+data/
+├── raw_data/           # Original, untouched data files
+├── derived_data/       # Cleaned and processed data files
+└── README.md          # Comprehensive data documentation
+```
+
+**Template Features**:
+- **Complete data dictionary**: Column descriptions, types, valid ranges, missing value codes
+- **Processing documentation**: Links derived files to their creating scripts
+- **Quality notes**: Known issues, validation checks, reproducibility instructions
+- **Palmer Penguins example**: Ready-to-customize template with realistic data scenario
+
+### Example Data Workflow Documentation
+
+The template includes practical examples for common data preparation tasks:
+
+```r
+# scripts/01_data_preparation.R
+library(here)
+library(dplyr)
+
+# Read raw penguins data
+penguins_raw <- read.csv(here("data", "raw_data", "penguins.csv"))
+
+# Create subset with first 50 records and log transformation
+penguins_subset <- penguins_raw %>%
+  slice_head(n = 50) %>%                    # First 50 records
+  filter(!is.na(body_mass_g)) %>%           # Remove missing body mass
+  mutate(log_body_mass_g = log(body_mass_g)) # Add log transformation
+
+# Save processed data
+write.csv(penguins_subset, 
+         here("data", "derived_data", "penguins_subset.csv"),
+         row.names = FALSE)
+```
+
+### Benefits for Reproducible Research
+
+✅ **Standardized documentation**: All projects follow consistent data documentation patterns  
+✅ **Traceability**: Clear links between raw data, processing scripts, and derived datasets  
+✅ **Quality assurance**: Built-in data validation and quality check documentation  
+✅ **Research best practices**: Follows academic standards for data management  
+✅ **Collaboration ready**: Team members can immediately understand data structure and processing
+
+The data README template is automatically created during project initialization and integrated into the uninstall process for complete lifecycle management.
+
 ## Docker Variant System (Enhanced 2025)
 
 ZZCOLLAB now supports **14+ specialized Docker variants** with a single source of truth architecture that eliminates duplication and provides unlimited customization options.
@@ -1004,6 +1060,20 @@ For detailed information about the improvements, see:
 - **scripts/check-function-sizes.sh**: Quality assurance tool for function size monitoring
 
 ## Recent Work Completed (August 2025)
+
+### Automated Data Documentation System and Safety Enhancements
+
+**Data Documentation Templates (NEW)**:
+- **Automated README creation**: Every new zzcollab project includes comprehensive `data/README.md` with Palmer Penguins example
+- **Research best practices**: Complete data dictionary, processing documentation, quality notes, and reproducibility instructions
+- **Workflow integration**: Template creation integrated into project initialization and uninstall processes
+- **Standardized structure**: `raw_data/`, `derived_data/`, and comprehensive documentation for all projects
+
+**Critical Safety Improvements**:
+- **Home directory protection**: Prevents accidental installation in `$HOME` with clear error messages and actionable guidance
+- **System directory protection**: Blocks installation in dangerous directories (`/Users`, `/home`, `/root`, `/tmp`, etc.)
+- **Intelligent conflict detection**: Replaced generic file count warnings with precise conflict detection showing only actual zzcollab file conflicts
+- **Enhanced uninstall**: Added missing files (`.Rbuildignore`, `navigation_scripts.sh`, `data/README.md`) for complete cleanup
 
 ### Complete CI/CD Pipeline Resolution and Production Readiness
 Comprehensive resolution of all GitHub Actions workflow failures, bringing the repository to production-ready status:
