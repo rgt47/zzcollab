@@ -4,6 +4,89 @@
 
 This guide outlines the complete workflow for data receipt, preparation, validation, and testing in a zzcollab project. Follow this process to ensure reproducible, well-tested data pipelines that meet research standards.
 
+## Why Data Testing is Critical for Reproducible Research
+
+**Data testing is fundamental to scientific integrity and reproducible research.** Raw datasets often contain unexpected issues: missing values, encoding errors, duplicates, or values outside expected ranges. Without systematic validation, these problems can silently propagate through your analysis, leading to incorrect conclusions that appear statistically significant but are actually artifacts of data quality issues. For example, a single miscoded body mass measurement (e.g., 37500g instead of 3750g for a penguin) could dramatically skew regression results or correlation analyses.
+
+**The consequences of inadequate data testing compound throughout the research pipeline.** When you process raw data without validation, transformation errors can introduce systematic biases that are difficult to detect later. Missing validation of derived datasets means you cannot verify that your processing logic worked correctly - you might unknowingly exclude important subgroups, incorrectly handle missing values, or introduce computational errors during transformations. These issues become particularly problematic in collaborative research environments where team members rely on processed datasets without understanding their provenance. Furthermore, without comprehensive testing, you cannot confidently share your data processing pipeline with other researchers, undermining the reproducibility that is essential for scientific credibility.
+
+**Systematic data testing provides the foundation for trustworthy research outputs.** By implementing validation checks for both raw and processed datasets, you create a documented trail that demonstrates data quality and transformation correctness. This testing framework enables you to catch errors early (when they're easier to fix), provides confidence in your results, and creates transparent documentation that allows others to understand and reproduce your work. In collaborative settings, data tests serve as contracts between team members, ensuring that everyone can rely on shared datasets and processing functions to behave consistently and correctly.
+
+## 📁 Documentation Structure & Best Practices
+
+All documentation follows a structured approach for reproducible research:
+
+### Primary Documentation Hub
+- **`data/README.md`** - Central documentation for all data-related information with these sections:
+  - **Data Source** - Origin, collection method, date received
+  - **Known Issues** - Problems identified by source or during assessment  
+  - **File Information** - File sizes, record counts, basic structure
+  - **Data Dictionary** - Column descriptions, types, valid ranges
+  - **Data Quality Assessment** - Missing data patterns, validation results
+  - **Processing Plan** - Planned transformations and logic
+  - **Processing Decisions** - Choices made for missing values, outliers
+  - **Derived Data Dictionary** - New variables created during processing
+  - **Processing Summary** - Final transformation details
+  - **Reproduction** - Step-by-step instructions to recreate data
+  - **Scripts** - Links to processing scripts
+  - **Testing** - Links to validation tests
+
+### Supporting Documentation Locations
+- **`data/correspondence/`** - Email communications, data transfer notes
+- **`figures/data_quality/`** - Diagnostic plots, quality assessment visualizations
+- **`R/data_prep.R`** - Function documentation (roxygen2 comments)
+- **`scripts/01_data_preparation.R`** - Inline processing comments
+- **`tests/testthat/test-data_prep.R`** - Test documentation and examples
+
+### Documentation Workflow
+1. **Immediate documentation** (during data receipt) → `data/README.md`
+2. **Ongoing updates** (during analysis) → Add to appropriate sections
+3. **Final documentation** (before deployment) → Complete all sections
+
+### Example README Section Structure (Palmer Penguins)
+```markdown
+# Palmer Penguins Data Documentation
+
+## Data Source
+- **Origin**: palmerpenguins R package, Allison Horst et al.
+- **Collection**: Palmer Station LTER penguin census data (2007-2009)
+- **Date Received**: 2024-08-19 (via R package installation)
+- **Contact**: Dr. Kristen Gorman, Palmer Station LTER
+- **Citation**: Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data.
+
+## Known Issues
+- Missing sex data for 11 penguins 
+- Missing bill measurements for 2 penguins (rows 4, 272)
+- Missing body mass for 2 penguins (rows 4, 272)
+- Missing flipper length for 2 penguins (rows 4, 272)
+
+## File Information
+- **Raw file**: `data/raw_data/penguins.csv`
+- **File size**: 13.8 KB
+- **Records**: 344 penguins
+- **Columns**: 8 variables
+- **Years**: 2007, 2008, 2009
+
+## Data Dictionary
+| Column | Type | Description | Valid Range | Missing Code |
+|--------|------|-------------|-------------|--------------|
+| species | character | Penguin species | Adelie, Chinstrap, Gentoo | NA |
+| island | character | Island name | Biscoe, Dream, Torgersen | NA |
+| bill_length_mm | numeric | Bill length in millimeters | 32.1-59.6 | NA |
+| bill_depth_mm | numeric | Bill depth in millimeters | 13.1-21.5 | NA |
+| flipper_length_mm | integer | Flipper length in millimeters | 172-231 | NA |
+| body_mass_g | integer | Body mass in grams | 2700-6300 | NA |
+| sex | character | Penguin sex | female, male | NA |
+| year | integer | Study year | 2007, 2008, 2009 | NA |
+
+## Processing Decisions
+- Create subset with first 50 records for initial analysis
+- Remove penguins with missing body mass (affects 2 records)
+- Add log transformation: log_body_mass_g = log(body_mass_g)
+- Retain all species (Adelie: 152, Chinstrap: 68, Gentoo: 124)
+- Keep original units (grams) for body mass
+```
+
 ## 🎯 Workflow Phases
 
 1. **Data Receipt & Initial Setup**
@@ -30,26 +113,32 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 - [ ] **Receive and document data source (HOST)**
   - [ ] Obtain data files from collaborator/source
-  - [ ] Document data origin, collection method, date received
-  - [ ] Note any known issues or preprocessing by source
-  - [ ] Save email/communication about data context
+  - [ ] **Document data origin, collection method, date received** → `data/README.md` (Data Source section)
+  - [ ] **Note any known issues or preprocessing by source** → `data/README.md` (Known Issues section)
+  - [ ] **Save email/communication about data context** → `data/correspondence/` directory (create if needed)
 
 - [ ] **Place raw data in proper location (HOST)**
   ```bash
-  # Copy data to raw_data directory - NEVER modify these files
+  # Copy Palmer Penguins data to raw_data directory - NEVER modify these files
   # This creates persistent storage on host filesystem
-  cp /path/to/received/data.csv data/raw_data/
+  cp /path/to/received/penguins.csv data/raw_data/
+  
+  # Or if extracting from R package:
+  # R -e "write.csv(palmerpenguins::penguins, 'data/raw_data/penguins.csv', row.names = FALSE)"
   ```
 
 - [ ] **Update data README with source information (HOST)**
   ```bash
   # Edit on host system using your preferred editor
   vim data/README.md    # or nano, code, etc.
+  
+  # Create correspondence directory for communications
+  mkdir -p data/correspondence
   ```
-  - [ ] Edit `data/README.md` with actual data source details
-  - [ ] Document expected vs. actual column names and types
-  - [ ] Note file size, number of records received
-  - [ ] Document any known data quality issues from source
+  - [ ] **Edit `data/README.md` with actual data source details** → Data Source section
+  - [ ] **Document expected vs. actual column names and types** → Data Dictionary section  
+  - [ ] **Note file size, number of records received** → File Information section
+  - [ ] **Document any known data quality issues from source** → Known Issues section
 
 - [ ] **Enter Docker container for data analysis**
   ```bash
@@ -59,11 +148,18 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 - [ ] **Initial data inspection (CONTAINER)**
   ```r
-  # Inside container - quick look at data structure
-  raw_data <- read.csv("data/raw_data/your_data.csv")
-  head(raw_data)
-  str(raw_data)
-  summary(raw_data)
+  # Inside container - quick look at Palmer Penguins data structure
+  library(here)
+  penguins_raw <- read.csv(here("data", "raw_data", "penguins.csv"))
+  
+  head(penguins_raw)
+  str(penguins_raw)
+  summary(penguins_raw)
+  
+  # Check specific penguin data characteristics
+  table(penguins_raw$species)      # Species counts
+  table(penguins_raw$island)       # Island distribution
+  sum(is.na(penguins_raw))         # Total missing values
   
   # Exit container when done with initial inspection
   # Type 'exit' to return to host system
@@ -96,30 +192,41 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   library(here)
   source(here("R", "data_prep.R"))
   
-  # Load raw data
-  raw_data <- read.csv(here("data", "raw_data", "your_data.csv"))
+  # Load Palmer Penguins raw data
+  penguins_raw <- read.csv(here("data", "raw_data", "penguins.csv"))
   
-  # Run validation
-  is_valid <- validate_penguin_data(raw_data)  # Adapt function for your data
+  # Run validation (using actual Palmer Penguins validation function)
+  is_valid <- validate_penguin_data(penguins_raw)
   if (!is_valid) {
     cat("Validation errors:\n")
-    cat(paste(attr(raw_data, "validation_errors"), collapse = "\n"))
+    cat(paste(attr(penguins_raw, "validation_errors"), collapse = "\n"))
   }
+  
+  # Specific Palmer Penguins checks
+  cat("Species found:", paste(unique(penguins_raw$species), collapse = ", "), "\n")
+  cat("Islands found:", paste(unique(penguins_raw$island), collapse = ", "), "\n")
+  cat("Year range:", min(penguins_raw$year, na.rm = TRUE), "-", max(penguins_raw$year, na.rm = TRUE), "\n")
   ```
 
-- [ ] **Generate data quality report**
+- [ ] **Generate data quality report (CONTAINER)**
   ```r
-  # Check missing data patterns
-  missing_summary <- sapply(raw_data, function(x) sum(is.na(x)))
+  # Palmer Penguins specific quality checks
+  missing_summary <- sapply(penguins_raw, function(x) sum(is.na(x)))
   print(missing_summary)
   
   # Check for duplicates
-  duplicate_count <- nrow(raw_data) - nrow(unique(raw_data))
+  duplicate_count <- nrow(penguins_raw) - nrow(unique(penguins_raw))
   cat("Duplicate rows:", duplicate_count, "\n")
   
-  # Check value ranges for numeric columns
-  numeric_cols <- sapply(raw_data, is.numeric)
-  summary(raw_data[numeric_cols])
+  # Check value ranges for Palmer Penguins numeric columns
+  numeric_cols <- c("bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g")
+  summary(penguins_raw[numeric_cols])
+  
+  # Palmer Penguins specific checks
+  cat("Body mass range:", min(penguins_raw$body_mass_g, na.rm = TRUE), "-", 
+      max(penguins_raw$body_mass_g, na.rm = TRUE), "grams\n")
+  cat("Bill length range:", min(penguins_raw$bill_length_mm, na.rm = TRUE), "-",
+      max(penguins_raw$bill_length_mm, na.rm = TRUE), "mm\n")
   ```
 
 - [ ] **Document data quality findings (HOST/CONTAINER)**
@@ -133,20 +240,44 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   # Re-enter container to continue analysis
   make docker-zsh
   ```
-  - [ ] Update `data/README.md` with quality assessment results
-  - [ ] Note any data cleaning needs identified
-  - [ ] Document decisions about handling missing values, outliers
+  - [ ] **Update `data/README.md` with quality assessment results** → Data Quality Assessment section
+  - [ ] **Note any data cleaning needs identified** → Processing Notes section
+  - [ ] **Document decisions about handling missing values, outliers** → Processing Decisions section
+  - [ ] **Save quality assessment plots/reports** → `figures/data_quality/` directory
 
-- [ ] **Create initial data visualization**
+- [ ] **Create initial data visualization (CONTAINER)**
   ```r
-  # Basic plots to understand data distribution
-  if (require(ggplot2)) {
-    # Adapt to your specific data columns
-    ggplot(raw_data, aes(x = your_numeric_column)) + 
-      geom_histogram(bins = 30) + 
-      labs(title = "Distribution of [Column Name]")
+  # Palmer Penguins exploratory plots
+  library(ggplot2)
+  
+  # Create figures directory if needed
+  if (!dir.exists("figures/data_quality")) {
+    dir.create("figures/data_quality", recursive = TRUE)
   }
+  
+  # Body mass distribution by species
+  p1 <- ggplot(penguins_raw, aes(x = body_mass_g, fill = species)) + 
+    geom_histogram(bins = 30, alpha = 0.7) + 
+    labs(title = "Palmer Penguins: Body Mass Distribution by Species",
+         x = "Body Mass (g)", y = "Count") +
+    facet_wrap(~species)
+  ggsave("figures/data_quality/body_mass_distribution.png", p1, width = 10, height = 6)
+  
+  # Bill dimensions scatter plot
+  p2 <- ggplot(penguins_raw, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+    geom_point(alpha = 0.7) +
+    labs(title = "Palmer Penguins: Bill Dimensions by Species",
+         x = "Bill Length (mm)", y = "Bill Depth (mm)")
+  ggsave("figures/data_quality/bill_dimensions.png", p2, width = 8, height = 6)
+  
+  # Missing data pattern
+  library(dplyr)
+  missing_pattern <- penguins_raw %>%
+    summarise(across(everything(), ~sum(is.na(.))))
+  print(missing_pattern)
   ```
+  - [ ] **Save diagnostic plots** → `figures/data_quality/` directory
+  - [ ] **Reference plots in README** → `data/README.md` Data Quality section
 
 ### ❓ Quality Assessment Questions
 
@@ -164,34 +295,40 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ### 🛠 Data Processing Development Checklist
 
-- [ ] **Design data processing pipeline**
+- [ ] **Design data processing pipeline (CONTAINER)**
   - [ ] Define transformation requirements (subset, aggregation, derivation)
   - [ ] Identify which columns need processing
   - [ ] Plan handling of missing values and outliers
-  - [ ] Document expected output structure
+  - [ ] **Document expected output structure** → `data/README.md` Processing Plan section
+  - [ ] **Document transformation logic** → Function documentation in `R/data_prep.R`
 
 - [ ] **Develop data preparation functions (CONTAINER)** 
   ```r
-  # Inside container - edit R/data_prep.R to add your specific functions
-  # Example structure:
-  prepare_your_data <- function(data, param1 = default_value) {
+  # Inside container - edit R/data_prep.R for Palmer Penguins processing
+  # Actual Palmer Penguins data preparation function:
+  prepare_penguin_data <- function(data, n_records = 50) {
     # Input validation
     if (!is.data.frame(data)) {
       stop("Input must be a data frame")
     }
     
-    # Required columns check
-    required_cols <- c("col1", "col2", "col3")
+    # Required columns check for Palmer Penguins
+    required_cols <- c("species", "island", "bill_length_mm", "bill_depth_mm", 
+                       "flipper_length_mm", "body_mass_g", "sex", "year")
     missing_cols <- setdiff(required_cols, names(data))
     if (length(missing_cols) > 0) {
       stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
     }
     
-    # Data processing steps
+    # Palmer Penguins specific processing steps
+    library(dplyr)
     result <- data %>%
-      # Your transformations here
-      filter(!is.na(important_column)) %>%
-      mutate(new_column = log(numeric_column))
+      slice_head(n = n_records) %>%                    # First n records
+      filter(!is.na(body_mass_g)) %>%                  # Remove missing body mass
+      mutate(log_body_mass_g = log(body_mass_g)) %>%   # Add log transformation
+      mutate(species = as.factor(species),             # Ensure factors
+             island = as.factor(island),
+             sex = as.factor(sex))
     
     return(result)
   }
@@ -201,26 +338,29 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   ```r
   # Inside container - create scripts/01_data_preparation.R
   library(here)
-  library(dplyr)  # or other required packages
+  library(dplyr)
   
   source(here("R", "data_prep.R"))
   
-  # Load raw data
-  raw_data <- read.csv(here("data", "raw_data", "your_data.csv"))
+  # Load Palmer Penguins raw data
+  penguins_raw <- read.csv(here("data", "raw_data", "penguins.csv"))
   
-  # Apply processing
-  processed_data <- prepare_your_data(raw_data, param1 = your_value)
+  # Apply Palmer Penguins processing (first 50 records with log transformation)
+  penguins_subset <- prepare_penguin_data(penguins_raw, n_records = 50)
   
   # Save processed data
-  write.csv(processed_data, 
-           here("data", "derived_data", "processed_data.csv"),
+  write.csv(penguins_subset, 
+           here("data", "derived_data", "penguins_subset.csv"),
            row.names = FALSE)
   
   # Generate processing summary
-  cat("Processing completed:\n")
-  cat("Input rows:", nrow(raw_data), "\n")
-  cat("Output rows:", nrow(processed_data), "\n")
-  cat("Columns added:", setdiff(names(processed_data), names(raw_data)), "\n")
+  cat("Palmer Penguins processing completed:\n")
+  cat("Input rows:", nrow(penguins_raw), "\n")
+  cat("Output rows:", nrow(penguins_subset), "\n")
+  cat("Species distribution:", table(penguins_subset$species), "\n")
+  cat("Columns added:", setdiff(names(penguins_subset), names(penguins_raw)), "\n")
+  cat("Log body mass range:", min(penguins_subset$log_body_mass_g), "-", 
+      max(penguins_subset$log_body_mass_g), "\n")
   ```
 
 - [ ] **Test data processing interactively (CONTAINER)**
@@ -247,78 +387,122 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 - [ ] **Create unit tests for data functions (CONTAINER)**
   ```r
   # Inside container - edit tests/testthat/test-data_prep.R
-  test_that("prepare_your_data works with valid input", {
-    # Create test data
-    test_data <- data.frame(
-      col1 = c("A", "B", "C"),
-      col2 = c(1, 2, 3),
-      col3 = c(10, 20, 30)
+  test_that("prepare_penguin_data works with valid Palmer Penguins input", {
+    # Create Palmer Penguins test data
+    test_penguins <- data.frame(
+      species = c("Adelie", "Chinstrap", "Gentoo"),
+      island = c("Torgersen", "Dream", "Biscoe"),
+      bill_length_mm = c(39.1, 48.7, 46.1),
+      bill_depth_mm = c(18.7, 14.1, 13.2),
+      flipper_length_mm = c(181, 196, 211),
+      body_mass_g = c(3750, 3800, 4500),
+      sex = c("male", "female", "male"),
+      year = c(2007, 2008, 2009)
     )
     
-    # Test function
-    result <- prepare_your_data(test_data)
+    # Test Palmer Penguins function
+    result <- prepare_penguin_data(test_penguins, n_records = 3)
     
-    # Assertions
+    # Palmer Penguins specific assertions
     expect_s3_class(result, "data.frame")
     expect_equal(nrow(result), 3)
-    expect_true("new_column" %in% names(result))
+    expect_true("log_body_mass_g" %in% names(result))
+    expect_true(all(result$species %in% c("Adelie", "Chinstrap", "Gentoo")))
+    expect_true(is.factor(result$species))
+    expect_true(all(result$log_body_mass_g > 0))  # Log values should be positive
   })
   ```
 
-- [ ] **Test input validation**
+- [ ] **Test input validation (CONTAINER)**
   ```r
-  test_that("prepare_your_data validates inputs correctly", {
+  test_that("prepare_penguin_data validates inputs correctly", {
     # Test invalid input types
     expect_error(
-      prepare_your_data("not a dataframe"),
+      prepare_penguin_data("not a dataframe"),
       "Input must be a data frame"
     )
     
-    # Test missing required columns
-    incomplete_data <- data.frame(col1 = "A")
+    # Test missing required Palmer Penguins columns
+    incomplete_penguins <- data.frame(species = "Adelie", island = "Torgersen")
     expect_error(
-      prepare_your_data(incomplete_data),
+      prepare_penguin_data(incomplete_penguins),
       "Missing required columns"
+    )
+    
+    # Test with missing body_mass_g column specifically
+    no_body_mass <- data.frame(
+      species = "Adelie", island = "Torgersen", bill_length_mm = 39.1,
+      bill_depth_mm = 18.7, flipper_length_mm = 181, sex = "male", year = 2007
+    )
+    expect_error(
+      prepare_penguin_data(no_body_mass),
+      "Missing required columns.*body_mass_g"
     )
   })
   ```
 
-- [ ] **Test edge cases**
+- [ ] **Test edge cases (CONTAINER)**
   ```r
-  test_that("prepare_your_data handles edge cases", {
-    # Empty data
-    empty_data <- data.frame(col1 = character(0), col2 = numeric(0), col3 = numeric(0))
-    result <- prepare_your_data(empty_data)
+  test_that("prepare_penguin_data handles edge cases", {
+    # Empty Palmer Penguins data
+    empty_penguins <- data.frame(
+      species = character(0), island = character(0), bill_length_mm = numeric(0),
+      bill_depth_mm = numeric(0), flipper_length_mm = integer(0), 
+      body_mass_g = integer(0), sex = character(0), year = integer(0)
+    )
+    result <- prepare_penguin_data(empty_penguins)
     expect_equal(nrow(result), 0)
+    expect_true("log_body_mass_g" %in% names(result))
     
-    # Single row
-    single_row <- data.frame(col1 = "A", col2 = 1, col3 = 10)
-    result <- prepare_your_data(single_row)
+    # Single penguin
+    single_penguin <- data.frame(
+      species = "Adelie", island = "Torgersen", bill_length_mm = 39.1,
+      bill_depth_mm = 18.7, flipper_length_mm = 181, body_mass_g = 3750,
+      sex = "male", year = 2007
+    )
+    result <- prepare_penguin_data(single_penguin, n_records = 1)
     expect_equal(nrow(result), 1)
+    expect_equal(result$log_body_mass_g, log(3750))
     
-    # Missing values
-    data_with_na <- data.frame(col1 = c("A", NA), col2 = c(1, 2), col3 = c(10, NA))
-    result <- prepare_your_data(data_with_na)
-    # Add appropriate expectations based on your missing value handling
+    # Penguins with missing body mass (should be filtered out)
+    penguins_with_na <- data.frame(
+      species = c("Adelie", "Chinstrap"), island = c("Torgersen", "Dream"),
+      bill_length_mm = c(39.1, NA), bill_depth_mm = c(18.7, 14.1),
+      flipper_length_mm = c(181, 196), body_mass_g = c(3750, NA),
+      sex = c("male", "female"), year = c(2007, 2008)
+    )
+    result <- prepare_penguin_data(penguins_with_na, n_records = 2)
+    expect_equal(nrow(result), 1)  # Only one penguin with valid body mass
+    expect_equal(result$species, factor("Adelie"))
   })
   ```
 
-- [ ] **Create data file validation tests**
+- [ ] **Create data file validation tests (CONTAINER)**
   ```r
   # Edit tests/testthat/test-data_files.R
-  test_that("raw data file has expected structure", {
-    data_file <- here("data", "raw_data", "your_data.csv")
-    skip_if_not(file.exists(data_file), "Raw data file not found")
+  test_that("Palmer Penguins raw data file has expected structure", {
+    data_file <- here("data", "raw_data", "penguins.csv")
+    skip_if_not(file.exists(data_file), "Palmer Penguins data file not found")
     
-    raw_data <- read.csv(data_file, stringsAsFactors = FALSE)
+    penguins_raw <- read.csv(data_file, stringsAsFactors = FALSE)
     
-    # Test structure
-    expect_s3_class(raw_data, "data.frame")
-    expect_gt(nrow(raw_data), 0)
+    # Test Palmer Penguins structure
+    expect_s3_class(penguins_raw, "data.frame")
+    expect_equal(nrow(penguins_raw), 344)  # Known Palmer Penguins count
     
-    # Test expected columns
-    expected_cols <- c("col1", "col2", "col3")
-    expect_true(all(expected_cols %in% names(raw_data)))
+    # Test expected Palmer Penguins columns
+    expected_cols <- c("species", "island", "bill_length_mm", "bill_depth_mm", 
+                       "flipper_length_mm", "body_mass_g", "sex", "year")
+    expect_true(all(expected_cols %in% names(penguins_raw)))
+    
+    # Test species values
+    expect_true(all(penguins_raw$species %in% c("Adelie", "Chinstrap", "Gentoo")))
+    
+    # Test island values
+    expect_true(all(penguins_raw$island %in% c("Torgersen", "Biscoe", "Dream")))
+    
+    # Test year range
+    expect_true(all(penguins_raw$year %in% c(2007, 2008, 2009)))
   })
   ```
 
@@ -407,10 +591,12 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   # Re-enter container if needed for more testing
   make docker-zsh
   ```
-  - [ ] Complete `data/README.md` with final processing details
-  - [ ] Document all derived variables and their creation
-  - [ ] Include data quality assessment results
-  - [ ] Add reproduction instructions
+  - [ ] **Complete `data/README.md` with final processing details** → Processing Summary section
+  - [ ] **Document all derived variables and their creation** → Derived Data Dictionary section
+  - [ ] **Include data quality assessment results** → Data Quality section
+  - [ ] **Add reproduction instructions** → Reproduction section
+  - [ ] **Link to processing scripts** → Scripts section (`scripts/01_data_preparation.R`)
+  - [ ] **Reference test files** → Testing section (`tests/testthat/test-data_prep.R`)
 
 ### 📊 Integration Requirements
 
@@ -424,29 +610,42 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ## Phase 6: Final Validation & Deployment
 
+> **🐳 CONTAINER + HOST OPERATIONS** - Final validation uses both environments.
+
 ### 🚀 Final Validation Checklist
 
-- [ ] **Run complete test suite**
+- [ ] **Run complete test suite (HOST)**
   ```bash
-  # Run all tests in clean environment
+  # From host system - runs all tests in clean environment
   make docker-test
   
-  # Check test coverage
+  # Check test coverage inside container
+  make docker-zsh
   R -e "covr::package_coverage()"
+  exit
   ```
 
-- [ ] **Validate reproducibility**
+- [ ] **Validate reproducibility (HOST)**
   ```bash
-  # Delete derived data and recreate
+  # Delete derived data and recreate - on host system
   rm data/derived_data/*
+  
+  # Enter container to recreate data
+  make docker-zsh
   source("scripts/01_data_preparation.R")
+  exit
   
   # Run tests again to ensure consistency
-  make test
+  make docker-test
   ```
 
-- [ ] **Generate final data quality report**
+- [ ] **Generate final data quality report (CONTAINER)**
+  ```bash
+  # Enter container for final reporting
+  make docker-zsh
+  ```
   ```r
+  # Inside container
   source(here("R", "data_prep.R"))
   
   # Load final processed data
@@ -460,9 +659,9 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   write.csv(summary_stats, here("data", "derived_data", "quality_report.csv"))
   ```
 
-- [ ] **Create data processing log**
+- [ ] **Create data processing log (CONTAINER)**
   ```r
-  # Document processing metadata
+  # Inside container - document processing metadata
   processing_log <- data.frame(
     step = c("data_received", "quality_check", "processing", "validation"),
     date = Sys.Date(),
@@ -471,6 +670,9 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   )
   
   write.csv(processing_log, here("data", "processing_log.csv"), row.names = FALSE)
+  
+  # Exit container
+  exit
   ```
 
 - [ ] **Final checklist review**
@@ -493,55 +695,73 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ## 🎯 Quick Start Checklist Summary
 
-### For New Data Receipt:
-1. [ ] Place raw data in `data/raw_data/`
-2. [ ] Run initial inspection (`str()`, `summary()`)
-3. [ ] Update `data/README.md` with source info
-4. [ ] Run data validation functions
-5. [ ] Document quality issues
+### For New Data Receipt (HOST SYSTEM):
+1. [ ] **HOST**: Place raw data in `data/raw_data/`
+2. [ ] **HOST**: Update `data/README.md` with source info
+3. [ ] **CONTAINER**: Enter container (`make docker-zsh`)
+4. [ ] **CONTAINER**: Run initial inspection (`str()`, `summary()`)
+5. [ ] **HOST**: Document quality issues in README
 
-### For Data Processing:
-1. [ ] Design processing pipeline
-2. [ ] Develop functions in `R/data_prep.R` 
-3. [ ] Create processing script `scripts/01_data_preparation.R`
-4. [ ] Test interactively with sample data
-5. [ ] Save processed data to `data/derived_data/`
+### For Data Processing (CONTAINER):
+1. [ ] **CONTAINER**: Design processing pipeline
+2. [ ] **CONTAINER**: Develop functions in `R/data_prep.R` 
+3. [ ] **CONTAINER**: Create processing script `scripts/01_data_preparation.R`
+4. [ ] **CONTAINER**: Test interactively with sample data
+5. [ ] **CONTAINER**: Save processed data to `data/derived_data/`
 
-### For Testing:
-1. [ ] Write unit tests in `tests/testthat/test-data_prep.R`
-2. [ ] Write data validation tests in `tests/testthat/test-data_files.R`
-3. [ ] Write integration tests in `tests/integration/test-data_pipeline.R`
-4. [ ] Run all tests: `make test`
-5. [ ] Achieve >90% test coverage
+### For Testing (CONTAINER + HOST):
+1. [ ] **CONTAINER**: Write unit tests in `tests/testthat/test-data_prep.R`
+2. [ ] **CONTAINER**: Write data validation tests in `tests/testthat/test-data_files.R`
+3. [ ] **CONTAINER**: Write integration tests in `tests/integration/test-data_pipeline.R`
+4. [ ] **HOST**: Run all tests: `make docker-test`
+5. [ ] **CONTAINER**: Achieve >90% test coverage
 
-### For Final Validation:
-1. [ ] All tests pass
-2. [ ] Documentation complete in `data/README.md`
-3. [ ] Processing reproducible
-4. [ ] Data quality acceptable
-5. [ ] Code ready for analysis phase
+### For Final Validation (HOST + CONTAINER):
+1. [ ] **HOST**: All tests pass (`make docker-test`)
+2. [ ] **HOST**: Documentation complete in `data/README.md`
+3. [ ] **HOST**: Processing reproducible (delete + recreate test)
+4. [ ] **CONTAINER**: Data quality acceptable
+5. [ ] **READY**: Code ready for analysis phase
 
 ---
 
 ## 🛠 Useful Commands
 
+### Host System Commands
 ```bash
-# Run all tests
-make test
-make docker-test  # In clean container
+# Enter/exit Docker containers
+make docker-zsh      # Enter shell container
+make docker-rstudio  # Enter RStudio container (localhost:8787)
+exit                 # Exit any container
 
-# Run specific test files
+# Run tests from host (clean environment)
+make docker-test     # All tests in clean container
+make test           # Tests in current container (if inside one)
+
+# File operations
+cp /path/to/data.csv data/raw_data/  # Copy data files
+vim data/README.md                   # Edit documentation
+
+# Reproducibility validation
+rm data/derived_data/*  # Delete derived data for testing
+```
+
+### Container Commands
+```bash
+# Inside container - R development
+R                    # Start R session
+devtools::load_all() # Load package functions
+devtools::test()     # Run tests
+
+# Inside container - run scripts
+Rscript scripts/01_data_preparation.R
+
+# Inside container - specific test files
 R -e "testthat::test_file('tests/testthat/test-data_prep.R')"
 R -e "testthat::test_file('tests/integration/test-data_pipeline.R')"
 
-# Check test coverage
+# Inside container - test coverage
 R -e "covr::package_coverage()"
-
-# Generate documentation
-make document
-
-# Run data processing script
-Rscript scripts/01_data_preparation.R
 ```
 
 ## 📞 Troubleshooting
