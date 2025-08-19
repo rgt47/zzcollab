@@ -129,6 +129,7 @@ Every new zzcollab project automatically includes a comprehensive `data/README.m
 data/
 ├── raw_data/           # Original, untouched data files
 ├── derived_data/       # Cleaned and processed data files
+├── correspondence/     # Email communications, data transfer notes
 └── README.md          # Comprehensive data documentation
 ```
 
@@ -138,28 +139,46 @@ data/
 - **Quality notes**: Known issues, validation checks, reproducibility instructions
 - **Palmer Penguins example**: Ready-to-customize template with realistic data scenario
 
+### Comprehensive Data Workflow Guide
+
+ZZCOLLAB includes a detailed **`DATA_WORKFLOW_GUIDE.md`** that provides step-by-step guidance for data management throughout the research lifecycle:
+
+**6-Phase Workflow Process**:
+1. **Data Receipt & Initial Setup** (HOST) - File placement, initial documentation
+2. **Data Exploration & Validation** (CONTAINER) - Quality assessment, diagnostic plots
+3. **Data Preparation Development** (CONTAINER) - Function development, processing scripts
+4. **Unit Testing & Validation** (CONTAINER) - Comprehensive test coverage
+5. **Integration Testing & Documentation** (HOST/CONTAINER) - Pipeline validation
+6. **Final Validation & Deployment** (HOST/CONTAINER) - Production readiness
+
+**Key Features**:
+- **Scientific rationale**: Explains why data testing is critical for reproducible research
+- **HOST vs CONTAINER operations**: Clear separation of file management and analysis tasks
+- **Palmer Penguins examples**: Concrete, working examples throughout
+- **Documentation locations**: Specific guidance on WHERE to document each piece of information
+- **Testing framework**: Unit tests, integration tests, edge case handling
+- **Quality assurance**: >90% test coverage requirements
+
 ### Example Data Workflow Documentation
 
-The template includes practical examples for common data preparation tasks:
+The guide includes practical Palmer Penguins examples for all phases:
 
 ```r
-# scripts/01_data_preparation.R
-library(here)
-library(dplyr)
-
-# Read raw penguins data
-penguins_raw <- read.csv(here("data", "raw_data", "penguins.csv"))
-
-# Create subset with first 50 records and log transformation
-penguins_subset <- penguins_raw %>%
-  slice_head(n = 50) %>%                    # First 50 records
-  filter(!is.na(body_mass_g)) %>%           # Remove missing body mass
-  mutate(log_body_mass_g = log(body_mass_g)) # Add log transformation
-
-# Save processed data
-write.csv(penguins_subset, 
-         here("data", "derived_data", "penguins_subset.csv"),
-         row.names = FALSE)
+# Actual Palmer Penguins data preparation function
+prepare_penguin_data <- function(data, n_records = 50) {
+  # Input validation for Palmer Penguins
+  required_cols <- c("species", "island", "bill_length_mm", "bill_depth_mm", 
+                     "flipper_length_mm", "body_mass_g", "sex", "year")
+  
+  # Processing with log transformation
+  result <- data %>%
+    slice_head(n = n_records) %>%                    # First n records
+    filter(!is.na(body_mass_g)) %>%                  # Remove missing body mass
+    mutate(log_body_mass_g = log(body_mass_g)) %>%   # Add log transformation
+    mutate(species = as.factor(species))             # Ensure factors
+    
+  return(result)
+}
 ```
 
 ### Benefits for Reproducible Research
@@ -168,9 +187,11 @@ write.csv(penguins_subset,
 ✅ **Traceability**: Clear links between raw data, processing scripts, and derived datasets  
 ✅ **Quality assurance**: Built-in data validation and quality check documentation  
 ✅ **Research best practices**: Follows academic standards for data management  
-✅ **Collaboration ready**: Team members can immediately understand data structure and processing
+✅ **Collaboration ready**: Team members can immediately understand data structure and processing  
+✅ **Testing framework**: Comprehensive validation prevents silent data quality issues  
+✅ **Docker workflow integration**: Proper separation of host file management and container analysis
 
-The data README template is automatically created during project initialization and integrated into the uninstall process for complete lifecycle management.
+The data README template is automatically created during project initialization and integrated into the uninstall process for complete lifecycle management. The complete workflow guide ensures systematic, tested data processing that meets scientific reproducibility standards.
 
 ## Docker Variant System (Enhanced 2025)
 
