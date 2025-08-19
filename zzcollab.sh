@@ -558,6 +558,7 @@ execute_project_creation_workflow() {
     # Execute setup in same order as original zzcollab.sh
     log_info "📁 Creating project structure..."
     create_directory_structure || exit 1
+    create_data_templates || exit 1
     
     log_info "📦 Creating R package files..."
     create_core_files || exit 1

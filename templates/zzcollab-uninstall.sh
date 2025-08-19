@@ -158,7 +158,7 @@ remove_files() {
     files=$(get_created_items "files")
     
     # Add standard zzcollab files that may not be in manifest
-    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .Rprofile renv.lock Makefile .gitignore zzcollab.yaml config.yaml .Rbuildignore navigation_scripts.sh check_renv_for_commit.R .zshrc_docker dev.sh setup_renv.R LICENSE"
+    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .Rprofile renv.lock Makefile .gitignore zzcollab.yaml config.yaml .Rbuildignore navigation_scripts.sh check_renv_for_commit.R .zshrc_docker dev.sh setup_renv.R LICENSE data/README.md"
     if [[ -n "$files" ]]; then
         files="$(echo -e "${files}\n${standard_files}")"
     else
@@ -491,7 +491,7 @@ main() {
         get_created_items "symlinks" | sed 's/^/  /'
         
         echo "Files:"
-        (get_created_items "files"; echo -e "ZZCOLLAB_USER_GUIDE.md\nDockerfile\ndocker-compose.yml\nDockerfile.teamcore\nDockerfile.personal\n.Rprofile\nrenv.lock\nMakefile\n.gitignore\nzzcollab.yaml\nconfig.yaml\n.Rbuildignore\nnavigation_scripts.sh\ncheck_renv_for_commit.R\n.zshrc_docker\ndev.sh\nsetup_renv.R\nLICENSE") | sort -u | sed 's/^/  /'
+        (get_created_items "files"; echo -e "ZZCOLLAB_USER_GUIDE.md\nDockerfile\ndocker-compose.yml\nDockerfile.teamcore\nDockerfile.personal\n.Rprofile\nrenv.lock\nMakefile\n.gitignore\nzzcollab.yaml\nconfig.yaml\n.Rbuildignore\nnavigation_scripts.sh\ncheck_renv_for_commit.R\n.zshrc_docker\ndev.sh\nsetup_renv.R\nLICENSE\ndata/README.md") | sort -u | sed 's/^/  /'
         
         echo "Directories:"
         (get_created_items "directories"; [[ -d "renv" ]] && echo "renv"; [[ -d "analysis" ]] && echo "analysis"; [[ -d "tests" ]] && echo "tests"; [[ -d "scripts" ]] && echo "scripts"; [[ -d "R" ]] && echo "R"; [[ -d "data" ]] && echo "data"; [[ -d "figures" ]] && echo "figures"; [[ -d "output" ]] && echo "output"; [[ -d ".github" ]] && echo ".github"; [[ -d "inst" ]] && echo "inst"; [[ -d "man" ]] && echo "man"; [[ -d "vignettes" ]] && echo "vignettes") | sort -ru | sed 's/^/  /'
