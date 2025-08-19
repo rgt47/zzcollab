@@ -17,40 +17,57 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ## Phase 1: Data Receipt & Initial Setup
 
+> **💻 HOST SYSTEM OPERATIONS** - All Phase 1 tasks are performed on your host system, outside of Docker containers.
+
 ### 📥 Data Receipt Checklist
 
-- [ ] **Create project structure**
+- [ ] **Create project structure (HOST)**
   ```bash
-  # If new project
+  # If new project - run on host system
   zzcollab -p your-project-name
   cd your-project-name
   ```
 
-- [ ] **Receive and document data source**
+- [ ] **Receive and document data source (HOST)**
   - [ ] Obtain data files from collaborator/source
   - [ ] Document data origin, collection method, date received
   - [ ] Note any known issues or preprocessing by source
   - [ ] Save email/communication about data context
 
-- [ ] **Place raw data in proper location**
+- [ ] **Place raw data in proper location (HOST)**
   ```bash
   # Copy data to raw_data directory - NEVER modify these files
+  # This creates persistent storage on host filesystem
   cp /path/to/received/data.csv data/raw_data/
   ```
 
-- [ ] **Initial data inspection**
+- [ ] **Update data README with source information (HOST)**
+  ```bash
+  # Edit on host system using your preferred editor
+  vim data/README.md    # or nano, code, etc.
+  ```
+  - [ ] Edit `data/README.md` with actual data source details
+  - [ ] Document expected vs. actual column names and types
+  - [ ] Note file size, number of records received
+  - [ ] Document any known data quality issues from source
+
+- [ ] **Enter Docker container for data analysis**
+  ```bash
+  # NOW enter container - data files are automatically mounted and available
+  make docker-zsh     # or make docker-rstudio for RStudio interface
+  ```
+
+- [ ] **Initial data inspection (CONTAINER)**
   ```r
-  # Quick look at data structure
+  # Inside container - quick look at data structure
   raw_data <- read.csv("data/raw_data/your_data.csv")
   head(raw_data)
   str(raw_data)
   summary(raw_data)
+  
+  # Exit container when done with initial inspection
+  # Type 'exit' to return to host system
   ```
-
-- [ ] **Update data README with source information**
-  - Edit `data/README.md` with actual data source details
-  - Document expected vs. actual column names and types
-  - Note file size, number of records received
 
 ### 📋 Initial Assessment Questions
 
@@ -63,10 +80,19 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ## Phase 2: Data Exploration & Validation
 
+> **🐳 CONTAINER OPERATIONS** - All Phase 2+ tasks are performed inside Docker containers with your R environment.
+
 ### 🔍 Data Quality Assessment Checklist
 
-- [ ] **Run basic data validation**
+- [ ] **Enter container if not already inside**
+  ```bash
+  # On host system
+  make docker-zsh     # or make docker-rstudio
+  ```
+
+- [ ] **Run basic data validation (CONTAINER)**
   ```r
+  # Inside container
   library(here)
   source(here("R", "data_prep.R"))
   
@@ -96,7 +122,17 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   summary(raw_data[numeric_cols])
   ```
 
-- [ ] **Document data quality findings**
+- [ ] **Document data quality findings (HOST/CONTAINER)**
+  ```bash
+  # Exit container to edit documentation on host
+  exit
+  
+  # Edit on host system
+  vim data/README.md    # Add quality assessment results
+  
+  # Re-enter container to continue analysis
+  make docker-zsh
+  ```
   - [ ] Update `data/README.md` with quality assessment results
   - [ ] Note any data cleaning needs identified
   - [ ] Document decisions about handling missing values, outliers
@@ -124,6 +160,8 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ## Phase 3: Data Preparation Development
 
+> **🐳 CONTAINER OPERATIONS** - Development work happens inside containers, with documentation updates on host.
+
 ### 🛠 Data Processing Development Checklist
 
 - [ ] **Design data processing pipeline**
@@ -132,9 +170,9 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   - [ ] Plan handling of missing values and outliers
   - [ ] Document expected output structure
 
-- [ ] **Develop data preparation functions** 
+- [ ] **Develop data preparation functions (CONTAINER)** 
   ```r
-  # Edit R/data_prep.R to add your specific functions
+  # Inside container - edit R/data_prep.R to add your specific functions
   # Example structure:
   prepare_your_data <- function(data, param1 = default_value) {
     # Input validation
@@ -159,9 +197,9 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   }
   ```
 
-- [ ] **Create data processing script**
+- [ ] **Create data processing script (CONTAINER)**
   ```r
-  # Create scripts/01_data_preparation.R
+  # Inside container - create scripts/01_data_preparation.R
   library(here)
   library(dplyr)  # or other required packages
   
@@ -185,7 +223,7 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   cat("Columns added:", setdiff(names(processed_data), names(raw_data)), "\n")
   ```
 
-- [ ] **Test data processing interactively**
+- [ ] **Test data processing interactively (CONTAINER)**
   - [ ] Run processing on small sample first
   - [ ] Verify transformations produce expected results
   - [ ] Check edge cases (empty data, single row, all missing)
@@ -202,11 +240,13 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ## Phase 4: Unit Testing & Validation
 
+> **🐳 CONTAINER OPERATIONS** - Test development and execution happens inside containers.
+
 ### 🧪 Test Development Checklist
 
-- [ ] **Create unit tests for data functions**
+- [ ] **Create unit tests for data functions (CONTAINER)**
   ```r
-  # Edit tests/testthat/test-data_prep.R
+  # Inside container - edit tests/testthat/test-data_prep.R
   test_that("prepare_your_data works with valid input", {
     # Create test data
     test_data <- data.frame(
@@ -282,13 +322,15 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   })
   ```
 
-- [ ] **Run unit tests**
+- [ ] **Run unit tests (CONTAINER or HOST)**
   ```bash
-  # Run all tests
+  # Option 1: Inside container
   make test
-  
-  # Or run specific test file
   R -e "testthat::test_file('tests/testthat/test-data_prep.R')"
+  
+  # Option 2: From host system (runs in clean container)
+  exit  # Exit current container first
+  make docker-test  # Run tests in clean environment
   ```
 
 ### ✅ Unit Testing Standards
@@ -303,11 +345,13 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 ## Phase 5: Integration Testing & Documentation
 
+> **🐳 CONTAINER + HOST OPERATIONS** - Testing in containers, documentation updates on host.
+
 ### 🔄 Integration Testing Checklist
 
-- [ ] **Create full pipeline tests**
+- [ ] **Create full pipeline tests (CONTAINER)**
   ```r
-  # Edit tests/integration/test-data_pipeline.R
+  # Inside container - edit tests/integration/test-data_pipeline.R
   test_that("complete data pipeline runs successfully", {
     # Load raw data
     raw_data_file <- here("data", "raw_data", "your_data.csv")
@@ -346,12 +390,23 @@ This guide outlines the complete workflow for data receipt, preparation, validat
   })
   ```
 
-- [ ] **Run integration tests**
+- [ ] **Run integration tests (CONTAINER)**
   ```bash
+  # Inside container
   R -e "testthat::test_file('tests/integration/test-data_pipeline.R')"
   ```
 
-- [ ] **Update documentation**
+- [ ] **Update documentation (HOST)**
+  ```bash
+  # Exit container to edit documentation
+  exit
+  
+  # Edit comprehensive documentation on host
+  vim data/README.md
+  
+  # Re-enter container if needed for more testing
+  make docker-zsh
+  ```
   - [ ] Complete `data/README.md` with final processing details
   - [ ] Document all derived variables and their creation
   - [ ] Include data quality assessment results
