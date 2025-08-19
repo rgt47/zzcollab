@@ -111,6 +111,14 @@ create_data_templates() {
         log_error "Failed to create data README template"
         return 1
     fi
+    
+    # Install data workflow guide template
+    if install_template "DATA_WORKFLOW_GUIDE.md" "DATA_WORKFLOW_GUIDE.md" "data workflow documentation" "Created comprehensive data development workflow guide"; then
+        log_success "Data workflow guide template created"
+    else
+        log_error "Failed to create data workflow guide template"
+        return 1
+    fi
 }
 
 #=============================================================================
