@@ -436,6 +436,32 @@ validate_directory_for_setup() {
         return 0
     fi
     
+    # Critical protection: Never allow installation in home directory
+    if [[ "$PWD" == "$HOME" ]]; then
+        log_error "🚫 CRITICAL SAFETY CHECK FAILED:"
+        log_error "Cannot run zzcollab in your home directory ($HOME)"
+        log_error "This would clutter your home directory with project files"
+        echo ""
+        log_info "💡 RECOMMENDED ACTIONS:"
+        log_info "  1. Create a projects directory: mkdir ~/projects && cd ~/projects"
+        log_info "  2. Create a specific project directory: mkdir ~/my-analysis && cd ~/my-analysis"
+        log_info "  3. Use a dedicated workspace: cd /path/to/your/workspace"
+        echo ""
+        log_info "Then run zzcollab in the appropriate project directory"
+        exit 1
+    fi
+    
+    # Critical protection: Common problematic directories
+    local problematic_dirs=("/Users" "/home" "/root" "/tmp" "/var" "/usr" "/opt" "/etc")
+    for dir in "${problematic_dirs[@]}"; do
+        if [[ "$PWD" == "$dir" ]]; then
+            log_error "🚫 CRITICAL SAFETY CHECK FAILED:"
+            log_error "Cannot run zzcollab in system directory: $PWD"
+            log_error "This could damage your system or create security issues"
+            exit 1
+        fi
+    done
+    
     # Skip validation for certain directories that are expected to be non-empty
     if [[ "$current_dir" == "zzcollab" ]]; then
         log_warning "Running zzcollab setup in the zzcollab source directory"

@@ -158,7 +158,7 @@ remove_files() {
     files=$(get_created_items "files")
     
     # Add standard zzcollab files that may not be in manifest
-    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .Rprofile renv.lock Makefile .gitignore zzcollab.yaml config.yaml"
+    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .Rprofile renv.lock Makefile .gitignore zzcollab.yaml config.yaml .Rbuildignore navigation_scripts.sh check_renv_for_commit.R .zshrc_docker dev.sh setup_renv.R LICENSE"
     if [[ -n "$files" ]]; then
         files="$(echo -e "${files}\n${standard_files}")"
     else
@@ -334,14 +334,30 @@ remove_docker_images() {
 }
 
 remove_manifest() {
+    local removed=0
+    
     if [[ -f "$MANIFEST_FILE" ]]; then
         log_info "Removing manifest file: $MANIFEST_FILE"
-        rm "$MANIFEST_FILE"
+        if rm "$MANIFEST_FILE" 2>/dev/null; then
+            ((removed++))
+        else
+            log_warning "Failed to remove manifest file: $MANIFEST_FILE"
+        fi
     fi
     
     if [[ -f "$MANIFEST_TXT" ]]; then
         log_info "Removing manifest file: $MANIFEST_TXT"
-        rm "$MANIFEST_TXT"
+        if rm "$MANIFEST_TXT" 2>/dev/null; then
+            ((removed++))
+        else
+            log_warning "Failed to remove manifest file: $MANIFEST_TXT"
+        fi
+    fi
+    
+    if [[ $removed -gt 0 ]]; then
+        log_success "Removed $removed manifest file(s)"
+    else
+        log_info "No manifest files found to remove"
     fi
 }
 
@@ -475,10 +491,10 @@ main() {
         get_created_items "symlinks" | sed 's/^/  /'
         
         echo "Files:"
-        (get_created_items "files"; echo -e "ZZCOLLAB_USER_GUIDE.md\nDockerfile\ndocker-compose.yml\nDockerfile.teamcore\nDockerfile.personal\n.Rprofile\nrenv.lock\nMakefile\n.gitignore\nzzcollab.yaml\nconfig.yaml") | sort -u | sed 's/^/  /'
+        (get_created_items "files"; echo -e "ZZCOLLAB_USER_GUIDE.md\nDockerfile\ndocker-compose.yml\nDockerfile.teamcore\nDockerfile.personal\n.Rprofile\nrenv.lock\nMakefile\n.gitignore\nzzcollab.yaml\nconfig.yaml\n.Rbuildignore\nnavigation_scripts.sh\ncheck_renv_for_commit.R\n.zshrc_docker\ndev.sh\nsetup_renv.R\nLICENSE") | sort -u | sed 's/^/  /'
         
         echo "Directories:"
-        (get_created_items "directories"; [[ -d "renv" ]] && echo "renv") | sort -ru | sed 's/^/  /'
+        (get_created_items "directories"; [[ -d "renv" ]] && echo "renv"; [[ -d "analysis" ]] && echo "analysis"; [[ -d "tests" ]] && echo "tests"; [[ -d "scripts" ]] && echo "scripts"; [[ -d "R" ]] && echo "R"; [[ -d "data" ]] && echo "data"; [[ -d "figures" ]] && echo "figures"; [[ -d "output" ]] && echo "output"; [[ -d ".github" ]] && echo ".github"; [[ -d "inst" ]] && echo "inst"; [[ -d "man" ]] && echo "man"; [[ -d "vignettes" ]] && echo "vignettes") | sort -ru | sed 's/^/  /'
         
         echo "Docker images:"
         local project_name team_name
