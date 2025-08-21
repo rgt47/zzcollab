@@ -139,25 +139,27 @@ data/
 - **Quality notes**: Known issues, validation checks, reproducibility instructions
 - **Palmer Penguins example**: Ready-to-customize template with realistic data scenario
 
-### Comprehensive Data Workflow Guide
+### Comprehensive Data Workflow Guide (Enhanced)
 
-ZZCOLLAB includes a detailed **`DATA_WORKFLOW_GUIDE.md`** that provides step-by-step guidance for data management throughout the research lifecycle:
+ZZCOLLAB includes a detailed **`DATA_WORKFLOW_GUIDE.md`** that provides step-by-step guidance for data management throughout the research lifecycle. The guide is automatically installed with all new projects via the enhanced template system.
 
 **6-Phase Workflow Process**:
-1. **Data Receipt & Initial Setup** (HOST) - File placement, initial documentation
-2. **Data Exploration & Validation** (CONTAINER) - Quality assessment, diagnostic plots
-3. **Data Preparation Development** (CONTAINER) - Function development, processing scripts
-4. **Unit Testing & Validation** (CONTAINER) - Comprehensive test coverage
-5. **Integration Testing & Documentation** (HOST/CONTAINER) - Pipeline validation
-6. **Final Validation & Deployment** (HOST/CONTAINER) - Production readiness
+1. **Data Receipt & Initial Setup** (HOST) - File placement, initial documentation, data source recording
+2. **Data Exploration & Validation** (CONTAINER) - Quality assessment, diagnostic plots, missing data analysis
+3. **Data Preparation Development** (CONTAINER) - Function development, processing scripts, transformation logic
+4. **Unit Testing & Validation** (CONTAINER) - Comprehensive test coverage, edge case testing
+5. **Integration Testing & Documentation** (HOST/CONTAINER) - Pipeline validation, full workflow testing
+6. **Final Validation & Deployment** (HOST/CONTAINER) - Production readiness, reproducibility verification
 
-**Key Features**:
-- **Scientific rationale**: Explains why data testing is critical for reproducible research
-- **HOST vs CONTAINER operations**: Clear separation of file management and analysis tasks
-- **Palmer Penguins examples**: Concrete, working examples throughout
-- **Documentation locations**: Specific guidance on WHERE to document each piece of information
-- **Testing framework**: Unit tests, integration tests, edge case handling
-- **Quality assurance**: >90% test coverage requirements
+**Enhanced Key Features**:
+- **Scientific rationale**: Comprehensive explanation of why data testing prevents research integrity issues
+- **HOST vs CONTAINER operations**: Clear visual separation with 💻 and 🐳 indicators for environment context
+- **Documentation structure**: Complete guidance on structured data documentation with 13 specific sections
+- **Palmer Penguins examples**: Working code examples throughout all 6 phases
+- **Template integration**: Automatically installed via `create_data_templates()` in `modules/structure.sh`
+- **Testing framework**: Unit tests (6,689 lines), integration tests, helper functions, data file validation
+- **Quality assurance**: >90% test coverage requirements with specific validation checks
+- **Container workflow**: Clear guidance on when to exit/enter containers for different operations
 
 ### Example Data Workflow Documentation
 
@@ -183,15 +185,17 @@ prepare_penguin_data <- function(data, n_records = 50) {
 
 ### Benefits for Reproducible Research
 
-✅ **Standardized documentation**: All projects follow consistent data documentation patterns  
-✅ **Traceability**: Clear links between raw data, processing scripts, and derived datasets  
-✅ **Quality assurance**: Built-in data validation and quality check documentation  
-✅ **Research best practices**: Follows academic standards for data management  
-✅ **Collaboration ready**: Team members can immediately understand data structure and processing  
-✅ **Testing framework**: Comprehensive validation prevents silent data quality issues  
-✅ **Docker workflow integration**: Proper separation of host file management and container analysis
+✅ **Standardized documentation**: All projects follow consistent data documentation patterns with 13 structured sections  
+✅ **Traceability**: Clear links between raw data, processing scripts, and derived datasets with explicit file references  
+✅ **Quality assurance**: Built-in data validation and quality check documentation with specific Palmer Penguins examples  
+✅ **Research best practices**: Follows academic standards for data management with scientific integrity emphasis  
+✅ **Collaboration ready**: Team members can immediately understand data structure and processing through comprehensive READMEs  
+✅ **Testing framework**: Comprehensive validation prevents silent data quality issues with >90% coverage requirements  
+✅ **Docker workflow integration**: Proper separation of host file management and container analysis with clear operational guidance  
+✅ **Template automation**: Both `data/README.md` and `DATA_WORKFLOW_GUIDE.md` automatically installed via `create_data_templates()`  
+✅ **Enhanced documentation**: Includes scientific rationale, troubleshooting guidance, and complete command references
 
-The data README template is automatically created during project initialization and integrated into the uninstall process for complete lifecycle management. The complete workflow guide ensures systematic, tested data processing that meets scientific reproducibility standards.
+The enhanced data workflow system provides a complete framework for scientific data processing from receipt to deployment. Both templates are automatically created during project initialization and integrated into the uninstall process for complete lifecycle management. The comprehensive workflow guide ensures systematic, tested data processing that meets scientific reproducibility standards with professional-grade testing and documentation practices.
 
 ## Docker Variant System (Enhanced 2025)
 
