@@ -301,6 +301,16 @@ parse_cli_arguments() {
                 SHOW_HELP=true
                 shift
                 ;;
+            --help-init)
+                # Will be processed after modules are loaded
+                SHOW_HELP_INIT=true
+                shift
+                ;;
+            --help-variants)
+                # Will be processed after modules are loaded
+                SHOW_HELP_VARIANTS=true
+                shift
+                ;;
             --yes|-y)
                 SKIP_CONFIRMATION=true
                 shift

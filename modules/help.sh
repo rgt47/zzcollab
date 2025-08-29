@@ -24,22 +24,34 @@ require_module "core"
 # Function: show_help
 # Purpose: Display comprehensive help for main zzcollab usage
 show_help() {
-    show_help_header
-    show_help_examples  
-    show_help_config
-    show_help_footer
+    # Check if output is being redirected or if we're in a non-interactive terminal
+    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
+        # Direct output for redirects, scripts, or when PAGER=cat
+        show_help_header
+        show_help_examples  
+        show_help_config
+        show_help_footer
+    else
+        # Interactive terminal - use pager for long help output
+        {
+            show_help_header
+            show_help_examples  
+            show_help_config
+            show_help_footer
+        } | "${PAGER:-less}" -R
+    fi
 }
 
 # Original large function preserved for reference (can be removed later)
 _original_show_help() {
     cat << EOF
-$0 - Complete Research Compendium Setup (Modular Implementation)
+zzcollab - Complete Research Compendium Setup (Modular Implementation)
 
 Creates a comprehensive research compendium with R package structure, Docker integration,
 analysis templates, and reproducible workflows.
 
 USAGE:
-    $0 [OPTIONS]
+    zzcollab [OPTIONS]
 
 OPTIONS:
     Team initialization (Developer 1 - Team Lead):
@@ -83,41 +95,41 @@ OPTIONS:
 
 EXAMPLES:
     # Team Lead - Initialize new team project (Developer 1)
-    $0 -i -t rgt47 -p research-study -d ~/dotfiles
-    $0 --init --team-name mylab --project-name study2024 --github-account myorg
-    $0 -i -t rgt47 -p research-study -y -d ~/dotfiles                          # Skip confirmation (automation)
+    zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
+    zzcollab --init --team-name mylab --project-name study2024 --github-account myorg
+    zzcollab -i -t rgt47 -p research-study -y -d ~/dotfiles                          # Skip confirmation (automation)
     
     # Alternative: Create directory first, then run in it (project name auto-detected)
-    mkdir png1 && cd png1 && $0 -i -t rgt47 -d ~/dotfiles
+    mkdir png1 && cd png1 && zzcollab -i -t rgt47 -d ~/dotfiles
     
     # NEW: Initialize with specific base image only
-    $0 -i -t rgt47 -p study -B r-ver -d ~/dotfiles                         # Build only shell variant
-    $0 -i -t rgt47 -p study -B rstudio -d ~/dotfiles                       # Build only RStudio variant  
-    $0 -i -t rgt47 -p study -B verse -d ~/dotfiles                         # Build only verse variant
+    zzcollab -i -t rgt47 -p study -B r-ver -d ~/dotfiles                         # Build only shell variant
+    zzcollab -i -t rgt47 -p study -B rstudio -d ~/dotfiles                       # Build only RStudio variant  
+    zzcollab -i -t rgt47 -p study -B verse -d ~/dotfiles                         # Build only verse variant
     
     # Team Members - Join existing project (Developer 2+)
-    $0 -t rgt47 -p research-study -I shell -d ~/dotfiles
-    $0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
-    $0 -t rgt47 -p research-study -I verse -d ~/dotfiles                   # Use verse for publishing
+    zzcollab -t rgt47 -p research-study -I shell -d ~/dotfiles
+    zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+    zzcollab -t rgt47 -p research-study -I verse -d ~/dotfiles                   # Use verse for publishing
     
     # Advanced usage with custom base images
-    $0 -b rocker/tidyverse -d ~/dotfiles
-    $0 --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
+    zzcollab -b rocker/tidyverse -d ~/dotfiles
+    zzcollab --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
     
     # Basic setup for standalone projects
-    $0 -d ~/dotfiles                                # Basic setup with dotfiles
-    $0 -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
+    zzcollab -d ~/dotfiles                                # Basic setup with dotfiles
+    zzcollab -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
     
     # NEW: Simplified build modes (recommended)
-    $0 -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages
-    $0 -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
-    $0 -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
-    $0 -n                                                          # Setup without Docker build
+    zzcollab -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages
+    zzcollab -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
+    zzcollab -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
+    zzcollab -n                                                          # Setup without Docker build
     
     # Build additional team image variants after initialization
-    $0 -V rstudio                                                 # Build RStudio variant after r-ver-only init
-    $0 -V verse                                                   # Build verse variant
-    $0 -V r-ver -t rgt47                                          # Build shell variant (with explicit team name)
+    zzcollab -V rstudio                                                 # Build RStudio variant after r-ver-only init
+    zzcollab -V verse                                                   # Build verse variant
+    zzcollab -V r-ver -t rgt47                                          # Build shell variant (with explicit team name)
 
 MODULES INCLUDED:
     core         - Logging, validation, utilities
@@ -152,10 +164,10 @@ EOF
 # Purpose: Display init command usage and options
 show_init_usage_and_options() {
     cat << EOF
-\$0 --init - Team initialization for ZZCOLLAB research collaboration
+zzcollab --init - Team initialization for ZZCOLLAB research collaboration
 
 USAGE:
-    \$0 --init --team-name TEAM --project-name PROJECT [OPTIONS]
+    zzcollab --init --team-name TEAM --project-name PROJECT [OPTIONS]
 
 REQUIRED:
     -t, --team-name NAME        Docker Hub team/organization name
@@ -192,27 +204,27 @@ show_init_examples() {
 
 EXAMPLES:
     # Prepare project for Dockerfile editing (Developer 1 workflow)
-    \$0 -i -t rgt47 -p research-study -P
+    zzcollab -i -t rgt47 -p research-study -P
     # Edit research-study/Dockerfile.teamcore as needed, then run:
-    \$0 -i -t rgt47 -p research-study
+    zzcollab -i -t rgt47 -p research-study
 
     # Direct setup with standard Dockerfile
-    \$0 -i -t rgt47 -p research-study -d ~/dotfiles
+    zzcollab -i -t rgt47 -p research-study -d ~/dotfiles
     
     # Fast mode: minimal Docker + lightweight packages
-    \$0 -i -t rgt47 -p research-study -F -d ~/dotfiles
+    zzcollab -i -t rgt47 -p research-study -F -d ~/dotfiles
     
     # Standard mode: balanced setup (default)
-    \$0 -i -t rgt47 -p research-study -S -d ~/dotfiles
+    zzcollab -i -t rgt47 -p research-study -S -d ~/dotfiles
     
     # Comprehensive mode: extended Docker + full packages
-    \$0 -i -t rgt47 -p research-study -C -d ~/dotfiles
+    zzcollab -i -t rgt47 -p research-study -C -d ~/dotfiles
     
     # Config-based variants: unlimited custom environments
-    \$0 -i -t rgt47 -p research-study --variants-config config.yaml
+    zzcollab -i -t rgt47 -p research-study --variants-config config.yaml
     
     # Or enable by default in config.yaml (set use_config_variants: true):
-    \$0 -i -t rgt47 -p research-study    # Uses config.yaml automatically
+    zzcollab -i -t rgt47 -p research-study    # Uses config.yaml automatically
     
     # Specialized examples (edit config.yaml to enable):
     # - Alpine Linux variants (~200MB vs ~1GB, ideal for CI/CD)  
@@ -220,16 +232,16 @@ EXAMPLES:
     # - Domain-specific: bioinformatics, geospatial, HPC, etc.
     
     # Alternative: Create directory first, then auto-detect project name
-    mkdir png1 && cd png1 && \$0 -i -t rgt47 -d ~/dotfiles
+    mkdir png1 && cd png1 && zzcollab -i -t rgt47 -d ~/dotfiles
 
     # With custom GitHub account
-    \$0 --init --team-name rgt47 --project-name research-study --github-account mylab
+    zzcollab --init --team-name rgt47 --project-name research-study --github-account mylab
 
     # With dotfiles (files already have dots: .bashrc, .vimrc, etc.)
-    \$0 --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
+    zzcollab --init --team-name rgt47 --project-name research-study --dotfiles ~/dotfiles
 
     # With dotfiles that need dots added (files like: bashrc, vimrc, etc.)
-    \$0 -i -t rgt47 -p research-study -D ~/Dropbox/dotfiles
+    zzcollab -i -t rgt47 -p research-study -D ~/Dropbox/dotfiles
 EOF
 }
 
@@ -258,9 +270,190 @@ EOF
 # Function: show_init_help
 # Purpose: Display help specifically for team initialization mode (coordinating function)
 show_init_help() {
-    show_init_usage_and_options
-    show_init_examples
-    show_init_workflow_and_prerequisites
+    # Check if output is being redirected or if we're in a non-interactive terminal
+    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
+        # Direct output for redirects, scripts, or when PAGER=cat
+        show_init_usage_and_options
+        show_init_examples
+        show_init_workflow_and_prerequisites
+    else
+        # Interactive terminal - use pager for long help output
+        {
+            show_init_usage_and_options
+            show_init_examples
+            show_init_workflow_and_prerequisites
+        } | "${PAGER:-less}" -R
+    fi
+}
+
+#=============================================================================
+# VARIANTS CONFIGURATION HELP
+#=============================================================================
+
+# Function: show_variants_help
+# Purpose: Display comprehensive help for --variants-config option with examples
+show_variants_help() {
+    # Check if output is being redirected or if we're in a non-interactive terminal
+    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
+        # Direct output for redirects, scripts, or when PAGER=cat
+        show_variants_help_content
+    else
+        # Interactive terminal - use pager for long help output
+        show_variants_help_content | "${PAGER:-less}" -R
+    fi
+}
+
+# Function: show_variants_help_content
+# Purpose: Display the actual variants configuration help content
+show_variants_help_content() {
+    cat << 'EOF'
+zzcollab --variants-config - Docker Variant Configuration System
+
+OVERVIEW:
+    The --variants-config option enables unlimited custom Docker environments beyond
+    the standard 3-variant system (r-ver, rstudio, verse). Define specialized
+    environments for bioinformatics, geospatial analysis, Alpine Linux, R-hub testing,
+    and more using YAML configuration files.
+
+USAGE:
+    zzcollab --variants-config FILE         # Use specified config file
+    zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml    # Team init with custom variants
+
+QUICK START:
+    1. Browse available variants interactively:
+       ./add_variant.sh
+
+    2. Build selected variants:
+       zzcollab --variants-config config.yaml
+
+    3. Team members join with standard interface options:
+       zzcollab -t TEAM -p PROJECT -I shell
+
+CONFIGURATION FILE STRUCTURE:
+    
+    # config.yaml
+    build:
+      use_config_variants: true              # Use this file automatically
+      variant_library: "variant_examples.yaml"   # Source of variant definitions
+    
+    variants:
+      minimal:
+        enabled: true                        # Essential R packages (~800MB)
+        # Full definition in variant_examples.yaml
+      
+      bioinformatics:
+        enabled: true                        # Bioconductor genomics packages (~2GB)
+        # Full definition in variant_examples.yaml
+      
+      alpine_minimal:
+        enabled: false                       # Ultra-lightweight CI/CD (~200MB)
+        # Full definition in variant_examples.yaml
+
+AVAILABLE VARIANT CATEGORIES:
+
+📦 STANDARD RESEARCH ENVIRONMENTS:
+    minimal          ~800MB   - Essential R packages only
+    analysis         ~1.2GB   - Tidyverse + data analysis tools
+    modeling         ~1.5GB   - Machine learning with tidymodels
+    publishing       ~3GB     - LaTeX, Quarto, bookdown, blogdown
+    shiny            ~1.8GB   - Interactive web applications
+    shiny_verse      ~3.5GB   - Shiny with tidyverse + publishing
+
+🔬 SPECIALIZED DOMAINS:
+    bioinformatics   ~2GB     - Bioconductor genomics packages
+    geospatial       ~2.5GB   - sf, terra, leaflet mapping tools
+
+🏔️ LIGHTWEIGHT ALPINE VARIANTS:
+    alpine_minimal   ~200MB   - Ultra-lightweight for CI/CD
+    alpine_analysis  ~400MB   - Essential analysis in tiny container
+    hpc_alpine       ~600MB   - High-performance parallel processing
+
+🧪 R-HUB TESTING ENVIRONMENTS:
+    rhub_ubuntu      ~1GB     - CRAN-compatible package testing
+    rhub_fedora      ~1.2GB   - Test against R-devel
+    rhub_windows     ~1.5GB   - Windows compatibility testing
+
+WORKFLOW EXAMPLES:
+
+1. Interactive Variant Selection:
+   ./add_variant.sh                         # Browse 14+ variants with descriptions
+   # Select variants from categorized menu
+   # Automatically updates config.yaml
+
+2. Team Setup with Custom Variants:
+   # Team lead creates specialized environment
+   zzcollab -i -t mylab -p genomics-study --variants-config config.yaml
+   
+   # Team members join with any available interface
+   zzcollab -t mylab -p genomics-study -I shell      # Command line
+   zzcollab -t mylab -p genomics-study -I rstudio    # RStudio Server
+
+3. Automatic Configuration Usage:
+   # Set use_config_variants: true in config.yaml
+   zzcollab -i -t mylab -p study            # Uses config.yaml automatically
+
+4. Custom Domain-Specific Setup:
+   # Bioinformatics team
+   ./add_variant.sh                         # Select: bioinformatics, rhub_ubuntu
+   zzcollab --variants-config config.yaml
+   
+   # Geospatial analysis team  
+   ./add_variant.sh                         # Select: geospatial, publishing
+   zzcollab --variants-config config.yaml
+   
+   # CI/CD optimized team
+   ./add_variant.sh                         # Select: alpine_minimal, hpc_alpine
+   zzcollab --variants-config config.yaml
+
+5. Legacy vs Modern Comparison:
+   # Legacy approach (limited to 3 variants)
+   zzcollab -i -t mylab -p study -B rstudio,verse
+   
+   # Modern approach (unlimited variants)
+   zzcollab -i -t mylab -p study --variants-config config.yaml
+
+VARIANT DEFINITION STRUCTURE:
+    
+    Each variant in variant_examples.yaml includes:
+    - base_image: Docker base image (rocker/r-ver, bioconductor/devel, etc.)
+    - packages: R packages to install
+    - system_deps: System dependencies (apt packages)
+    - description: Human-readable description
+    - category: Organization category
+    - size: Estimated image size
+
+CONFIGURATION HIERARCHY:
+    
+    1. Command line: --variants-config FILE (highest priority)
+    2. Project config: use_config_variants: true in config.yaml
+    3. Legacy flags: -B r-ver,rstudio,verse (lowest priority)
+
+BENEFITS:
+
+✅ Single source of truth - variant definitions centralized in variant_examples.yaml
+✅ 14+ specialized environments - from 200MB Alpine to 3.5GB full-featured
+✅ Domain-specific variants - bioinformatics, geospatial, HPC, web apps
+✅ Professional testing - R-hub environments match CRAN infrastructure  
+✅ Interactive discovery - browse variants with ./add_variant.sh
+✅ Backward compatibility - legacy full definitions still supported
+✅ Easy maintenance - update variant in one place, propagates everywhere
+
+TROUBLESHOOTING:
+
+Q: How do I see available variants?
+A: Run ./add_variant.sh to browse all 14+ variants with descriptions
+
+Q: Can I customize a variant?
+A: Yes, copy the definition from variant_examples.yaml to config.yaml and modify
+
+Q: How do team members know which variants are available?
+A: Available Docker images are listed when joining fails, with helpful guidance
+
+Q: Can I use both --variants-config and -B flags?
+A: --variants-config supersedes -B flags (modern approach recommended)
+
+For more help: zzcollab -h, zzcollab --help-init
+EOF
 }
 
 #=============================================================================
@@ -373,13 +566,13 @@ show_next_steps() {
 # Purpose: Display main usage and options section
 show_help_header() {
     cat << EOF
-\$0 - Complete Research Compendium Setup (Modular Implementation)
+zzcollab - Complete Research Compendium Setup (Modular Implementation)
 
 Creates a comprehensive research compendium with R package structure, Docker integration,
 analysis templates, and reproducible workflows.
 
 USAGE:
-    \$0 [OPTIONS]
+    zzcollab [OPTIONS]
 
 OPTIONS:
     Team initialization (Developer 1 - Team Lead):
@@ -425,37 +618,37 @@ show_help_examples() {
     
 EXAMPLES:
     Team Lead - Create new team project (runs once per team):
-    \$0 -i -t rgt47 -p research-study -d ~/dotfiles         # Team init with all 3 image variants
+    zzcollab -i -t rgt47 -p research-study -d ~/dotfiles         # Team init with all 3 image variants
     # Alternative: Create directory first, then run in it (project name auto-detected)
-    mkdir png1 && cd png1 && \$0 -i -t rgt47 -d ~/dotfiles
+    mkdir png1 && cd png1 && zzcollab -i -t rgt47 -d ~/dotfiles
     
     # NEW: Initialize with specific base image only
-    \$0 -i -t rgt47 -p study -B r-ver -d ~/dotfiles                         # Build only shell variant
-    \$0 -i -t rgt47 -p study -B rstudio -d ~/dotfiles                       # Build only RStudio variant  
-    \$0 -i -t rgt47 -p study -B verse -d ~/dotfiles                         # Build only verse variant
+    zzcollab -i -t rgt47 -p study -B r-ver -d ~/dotfiles                         # Build only shell variant
+    zzcollab -i -t rgt47 -p study -B rstudio -d ~/dotfiles                       # Build only RStudio variant  
+    zzcollab -i -t rgt47 -p study -B verse -d ~/dotfiles                         # Build only verse variant
     
     # Team Members - Join existing project (Developer 2+)
-    \$0 -t rgt47 -p research-study -I shell -d ~/dotfiles
-    \$0 --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
-    \$0 -t rgt47 -p research-study -I verse -d ~/dotfiles                   # Use verse for publishing
+    zzcollab -t rgt47 -p research-study -I shell -d ~/dotfiles
+    zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
+    zzcollab -t rgt47 -p research-study -I verse -d ~/dotfiles                   # Use verse for publishing
     
     # Advanced usage with custom base images
-    \$0 -b rocker/tidyverse -d ~/dotfiles
-    \$0 --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
+    zzcollab -b rocker/tidyverse -d ~/dotfiles
+    zzcollab --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
     
     # Basic setup for standalone projects
-    \$0 -d ~/dotfiles                                # Basic setup with dotfiles
-    \$0 -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
+    zzcollab -d ~/dotfiles                                # Basic setup with dotfiles
+    zzcollab -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
     
     # NEW: Simplified build modes (recommended)
-    \$0 -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages
-    \$0 -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
-    \$0 -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
-    \$0 -n                                                          # Setup without Docker build
+    zzcollab -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages
+    zzcollab -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
+    zzcollab -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
+    zzcollab -n                                                          # Setup without Docker build
     
     # Build additional team image variants after initialization
-    \$0 -V rstudio                                                 # Build RStudio variant after r-ver-only init
-    \$0 -V verse                                                   # Build verse variant
+    zzcollab -V rstudio                                                 # Build RStudio variant after r-ver-only init
+    zzcollab -V verse                                                   # Build verse variant
 EOF
 }
 
@@ -467,11 +660,11 @@ show_help_config() {
 CONFIGURATION SYSTEM:
     zzcollab supports configuration files for common settings.
     
-    \$0 -c get team-name                            # Get current team name
-    \$0 -c set team-name mylab                      # Set default team name
-    \$0 -c set build-mode fast                      # Set default build mode
-    \$0 -c list                                     # Show all current settings
-    \$0 -c reset                                    # Reset to defaults
+    zzcollab -c get team-name                            # Get current team name
+    zzcollab -c set team-name mylab                      # Set default team name
+    zzcollab -c set build-mode fast                      # Set default build mode
+    zzcollab -c list                                     # Show all current settings
+    zzcollab -c reset                                    # Reset to defaults
     
     Configuration files:
     - User-level: ~/.config/zzcollab/config.yaml
@@ -487,8 +680,8 @@ EOF
 show_help_footer() {
     cat << EOF
 
-For more specific help with team initialization, run: \$0 --help-init
-For development workflow guidance, run: \$0 --next-steps
+For more specific help with team initialization, run: zzcollab --help-init
+For development workflow guidance, run: zzcollab --next-steps
 
 Project website: https://github.com/rgt47/zzcollab
 EOF
