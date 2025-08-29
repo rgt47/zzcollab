@@ -517,6 +517,16 @@ handle_special_modes() {
         exit 0
     fi
     
+    if [[ "${SHOW_HELP_INIT:-false}" == "true" ]]; then
+        show_init_help
+        exit 0
+    fi
+    
+    if [[ "${SHOW_HELP_VARIANTS:-false}" == "true" ]]; then
+        show_variants_help
+        exit 0
+    fi
+    
     if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
         show_next_steps
         exit 0

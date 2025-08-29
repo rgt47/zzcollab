@@ -607,6 +607,7 @@ OPTIONS:
     Utilities:
     -h, --help                   Show this help message
         --help-init              Show team initialization help specifically
+        --help-variants          Show Docker variants configuration help with examples
     -c, --config CMD             Configuration management (get, set, list, reset)
 EOF
 }
@@ -681,6 +682,7 @@ show_help_footer() {
     cat << EOF
 
 For more specific help with team initialization, run: zzcollab --help-init
+For Docker variants configuration help, run: zzcollab --help-variants
 For development workflow guidance, run: zzcollab --next-steps
 
 Project website: https://github.com/rgt47/zzcollab
