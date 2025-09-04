@@ -162,6 +162,7 @@ PROJECT_NAME=""
 INTERFACE=""
 GITHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
+PARADIGM=""  # New: research paradigm (analysis, manuscript, package)
 
 # Base image selection for team initialization
 readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
@@ -242,6 +243,12 @@ parse_cli_arguments() {
             --project-name|--project|-p)
                 require_arg "$1" "$2"
                 PROJECT_NAME="$2"
+                shift 2
+                ;;
+            --paradigm)
+                require_arg "$1" "$2"
+                validate_enum "$1" "$2" "research paradigm" "analysis" "manuscript" "package"
+                PARADIGM="$2"
                 shift 2
                 ;;
             --interface|-I)
@@ -477,7 +484,7 @@ export_cli_variables() {
     export BUILD_DOCKER DOTFILES_DIR DOTFILES_NODOT BASE_IMAGE
     
     # Team interface variables
-    export TEAM_NAME PROJECT_NAME INTERFACE GITHUB_ACCOUNT DOCKERFILE_PATH
+    export TEAM_NAME PROJECT_NAME INTERFACE GITHUB_ACCOUNT DOCKERFILE_PATH PARADIGM
     
     # Mode and behavior flags
     export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE BUILD_MODE
@@ -542,6 +549,7 @@ show_cli_debug() {
     echo "  BASE_IMAGE: $BASE_IMAGE"
     echo "  TEAM_NAME: $TEAM_NAME"
     echo "  PROJECT_NAME: $PROJECT_NAME"
+    echo "  PARADIGM: $PARADIGM"
     echo "  INTERFACE: $INTERFACE"
     echo "  GITHUB_ACCOUNT: $GITHUB_ACCOUNT"
     echo "  INIT_MODE: $INIT_MODE"

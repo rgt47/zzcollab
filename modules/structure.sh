@@ -27,6 +27,62 @@ require_module "core"
 # DIRECTORY STRUCTURE CREATION (extracted from lines 386-416)
 #=============================================================================
 
+# Function: create_paradigm_directory_structure
+# Purpose: Creates paradigm-specific directory structure
+# Arguments: $1 = paradigm (analysis, manuscript, package)
+create_paradigm_directory_structure() {
+    local paradigm="$1"
+    
+    log_info "Creating ${paradigm} paradigm directory structure..."
+    
+    case "$paradigm" in
+        analysis)
+            local -r dirs=(
+                "data/raw" "data/processed" 
+                "analysis/exploratory" "analysis/modeling" "analysis/validation"
+                "reports" "reports/dashboard"
+                "outputs/figures" "outputs/tables"
+                "scripts"
+            )
+            ;;
+        manuscript)
+            local -r dirs=(
+                "R" "tests/testthat" "man"
+                "manuscript/sections" "manuscript/figures" "manuscript/tables" 
+                "manuscript/supplementary"
+                "analysis/reproduce"
+                "data/processed"
+                "submission/journal-format" "submission/preprint"
+                "vignettes"
+            )
+            ;;
+        package)
+            local -r dirs=(
+                "R" "tests/testthat" "man" "vignettes"
+                "inst/examples" "data" "data-raw"
+                "pkgdown"
+            )
+            ;;
+        *)
+            log_error "Unknown paradigm: $paradigm"
+            return 1
+            ;;
+    esac
+    
+    # Create paradigm-specific directories
+    for dir in "${dirs[@]}"; do
+        if mkdir -p "$dir"; then
+            track_directory "$dir"
+            log_info "Created directory: $dir"
+        else
+            log_error "Failed to create directory: $dir"
+            return 1
+        fi
+    done
+    
+    log_success "${paradigm^} paradigm structure created (${#dirs[@]} directories)"
+}
+
 # Function: create_directory_structure
 # Purpose: Creates the complete directory structure for the R research compendium
 # Creates: 18 directories organized for R package development and research workflow

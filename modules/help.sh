@@ -68,6 +68,7 @@ OPTIONS:
     -I, --interface TYPE         Interface type: shell, rstudio, verse
     
     Common options:
+    --paradigm TYPE              Research paradigm: analysis, manuscript, package
     -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
     -D, --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
     
@@ -589,6 +590,7 @@ OPTIONS:
     -I, --interface TYPE         Interface type: shell, rstudio, verse
     
     Common options:
+    --paradigm TYPE              Research paradigm: analysis, manuscript, package
     -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
     -D, --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
     

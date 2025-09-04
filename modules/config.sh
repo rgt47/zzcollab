@@ -37,6 +37,7 @@ readonly CONFIG_SYSTEM_FILE="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.yaml
 CONFIG_TEAM_NAME=""
 CONFIG_GITHUB_ACCOUNT=""
 CONFIG_BUILD_MODE="standard"
+CONFIG_PARADIGM=""  # New: research paradigm (analysis, manuscript, package)
 CONFIG_DOTFILES_DIR=""
 CONFIG_DOTFILES_NODOT="false"
 CONFIG_AUTO_GITHUB="false"
@@ -49,6 +50,14 @@ CONFIG_STANDARD_DOCKER_PACKAGES=""
 CONFIG_STANDARD_RENV_PACKAGES=""
 CONFIG_COMPREHENSIVE_DOCKER_PACKAGES=""
 CONFIG_COMPREHENSIVE_RENV_PACKAGES=""
+
+# Paradigm-specific package configurations
+CONFIG_ANALYSIS_DOCKER_PACKAGES=""
+CONFIG_ANALYSIS_RENV_PACKAGES=""
+CONFIG_MANUSCRIPT_DOCKER_PACKAGES=""
+CONFIG_MANUSCRIPT_RENV_PACKAGES=""
+CONFIG_PACKAGE_DOCKER_PACKAGES=""
+CONFIG_PACKAGE_RENV_PACKAGES=""
 
 #=============================================================================
 # YAML PARSING FUNCTIONS
@@ -389,6 +398,7 @@ load_config_file() {
     local team_name=$(yaml_get "$config_file" "defaults.team_name")
     local github_account=$(yaml_get "$config_file" "defaults.github_account")
     local build_mode=$(yaml_get "$config_file" "defaults.build_mode")
+    local paradigm=$(yaml_get "$config_file" "defaults.paradigm")
     local dotfiles_dir=$(yaml_get "$config_file" "defaults.dotfiles_dir")
     local dotfiles_nodot=$(yaml_get "$config_file" "defaults.dotfiles_nodot")
     local auto_github=$(yaml_get "$config_file" "defaults.auto_github")
@@ -398,6 +408,7 @@ load_config_file() {
     [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_TEAM_NAME="$team_name"
     [[ "$github_account" != "null" && -n "$github_account" ]] && CONFIG_GITHUB_ACCOUNT="$github_account"
     [[ "$build_mode" != "null" && -n "$build_mode" ]] && CONFIG_BUILD_MODE="$build_mode"
+    [[ "$paradigm" != "null" && -n "$paradigm" ]] && CONFIG_PARADIGM="$paradigm"
     [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DOTFILES_DIR="$dotfiles_dir"
     [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DOTFILES_NODOT="$dotfiles_nodot"
     [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
@@ -440,6 +451,7 @@ apply_config_defaults() {
     [[ -z "$TEAM_NAME" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
     [[ -z "$GITHUB_ACCOUNT" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
     [[ "$BUILD_MODE" == "standard" && -n "$CONFIG_BUILD_MODE" ]] && BUILD_MODE="$CONFIG_BUILD_MODE"
+    [[ -z "$PARADIGM" && -n "$CONFIG_PARADIGM" ]] && PARADIGM="$CONFIG_PARADIGM"
     [[ -z "$DOTFILES_DIR" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
     
     # Handle boolean flags

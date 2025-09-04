@@ -567,7 +567,13 @@ validate_and_setup_environment() {
 execute_project_creation_workflow() {
     # Execute setup in same order as original zzcollab.sh
     log_info "📁 Creating project structure..."
-    create_directory_structure || exit 1
+    if [[ -n "$PARADIGM" ]]; then
+        create_paradigm_directory_structure "$PARADIGM" || exit 1
+        # Also include GitHub workflows directory for all paradigms
+        mkdir -p ".github/workflows" && track_directory ".github/workflows"
+    else
+        create_directory_structure || exit 1
+    fi
     create_data_templates || exit 1
     
     log_info "📦 Creating R package files..."
