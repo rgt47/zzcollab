@@ -343,7 +343,12 @@ detect_file_conflicts() {
     local zzcollab_files
     
     # Get list of files that zzcollab would create
-    mapfile -t zzcollab_files < <(get_zzcollab_files)
+    # Using while read loop for broader shell compatibility instead of mapfile
+    local file
+    zzcollab_files=()
+    while IFS= read -r file; do
+        zzcollab_files+=("$file")
+    done < <(get_zzcollab_files)
     
     # Check for existing files that would conflict
     for item in "${zzcollab_files[@]}"; do
@@ -360,7 +365,12 @@ detect_file_conflicts() {
 # Purpose: Ask user about overwriting conflicting files
 confirm_overwrite_conflicts() {
     local conflicts
-    mapfile -t conflicts < <(detect_file_conflicts)
+    # Using while read loop for broader shell compatibility instead of mapfile
+    conflicts=()
+    local conflict
+    while IFS= read -r conflict; do
+        [[ -n "$conflict" ]] && conflicts+=("$conflict")
+    done < <(detect_file_conflicts)
     
     if [[ ${#conflicts[@]} -eq 0 ]]; then
         log_info "✅ No file conflicts detected - safe to proceed"
