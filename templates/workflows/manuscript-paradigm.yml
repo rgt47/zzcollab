@@ -1,0 +1,85 @@
+name: Manuscript Workflow (Academic Paper)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  manuscript:
+    runs-on: ubuntu-latest
+    container: rocker/verse:latest  # Includes LaTeX for PDF generation
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check renv synchronization
+        run: |
+          Rscript check_renv_for_commit.R --quiet --fail-on-issues
+      
+      - name: Test R functions (if present)
+        run: |
+          if [ -d "R" ] && [ -d "tests" ]; then
+            Rscript -e "devtools::test()"
+          else
+            echo "No R functions or tests found - manuscript-only project"
+          fi
+      
+      - name: Run reproduction scripts
+        run: |
+          if [ -d "analysis/reproduce" ]; then
+            if [ -f "analysis/reproduce/run_all.R" ]; then
+              Rscript analysis/reproduce/run_all.R
+            else
+              find analysis/reproduce -name "*.R" | sort | xargs -I {} Rscript {}
+            fi
+          fi
+      
+      - name: Validate manuscript structure
+        run: |
+          Rscript -e "if (dir.exists('manuscript')) cat('✅ manuscript/ directory found\\n')"
+          Rscript -e "if (file.exists('manuscript/main.Rmd') || length(list.files('manuscript', pattern='*.Rmd')) > 0) cat('✅ Manuscript files found\\n')"
+          Rscript -e "if (file.exists('renv.lock')) cat('✅ renv.lock found\\n')"
+      
+      - name: Render manuscript sections
+        run: |
+          if [ -d "manuscript/sections" ]; then
+            find manuscript/sections -name "*.Rmd" -exec Rscript -e "rmarkdown::render('{}')" \;
+          fi
+      
+      - name: Render main manuscript
+        run: |
+          if [ -f "manuscript/main.Rmd" ]; then
+            Rscript -e "rmarkdown::render('manuscript/main.Rmd')"
+          elif [ $(find manuscript -name "*.Rmd" | wc -l) -gt 0 ]; then
+            find manuscript -maxdepth 1 -name "*.Rmd" -exec Rscript -e "rmarkdown::render('{}')" \;
+          fi
+      
+      - name: Check citations and references
+        run: |
+          if [ -f "manuscript/main.Rmd" ]; then
+            # Check for citation syntax
+            grep -n "@" manuscript/main.Rmd || echo "No citations found"
+            # Check for bibliography file
+            find . -name "*.bib" -exec echo "Found bibliography: {}" \;
+          fi
+      
+      - name: Spell check manuscript
+        run: |
+          if [ -f "manuscript/main.Rmd" ]; then
+            Rscript -e "spelling::spell_check_files('manuscript/main.Rmd')" || echo "Spell check completed"
+          fi
+      
+      - name: Upload manuscript outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: manuscript-outputs
+          path: |
+            manuscript/*.pdf
+            manuscript/*.html
+            manuscript/sections/*.pdf
+            manuscript/sections/*.html
+            submission/
+        if: always()

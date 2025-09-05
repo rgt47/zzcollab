@@ -162,7 +162,7 @@ PROJECT_NAME=""
 INTERFACE=""
 GITHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
-PARADIGM=""  # New: research paradigm (analysis, manuscript, package)
+PARADIGM="analysis"  # New: research paradigm (analysis, manuscript, package) - defaults to analysis
 
 # Base image selection for team initialization
 readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
@@ -245,7 +245,7 @@ parse_cli_arguments() {
                 PROJECT_NAME="$2"
                 shift 2
                 ;;
-            --paradigm)
+            --paradigm|-P)
                 require_arg "$1" "$2"
                 validate_enum "$1" "$2" "research paradigm" "analysis" "manuscript" "package"
                 PARADIGM="$2"
@@ -588,11 +588,22 @@ get_template() {
 get_dockerfile_template() { get_template "Dockerfile"; }
 get_description_template() { get_template "DESCRIPTION"; }
 get_workflow_template() { 
-    case "$BUILD_MODE" in
-        fast) echo "workflows/r-package-minimal.yml" ;;
-        comprehensive) echo "workflows/r-package-full.yml" ;;
-        *) echo "workflows/r-package.yml" ;;
-    esac
+    # Paradigm-specific workflows take precedence over build mode
+    if [[ -n "$PARADIGM" && "$PARADIGM" != "analysis" ]]; then
+        case "$PARADIGM" in
+            manuscript) echo "workflows/manuscript-paradigm.yml" ;;
+            package) echo "workflows/package-paradigm.yml" ;;
+            analysis) echo "workflows/analysis-paradigm.yml" ;;
+            *) echo "workflows/r-package.yml" ;;  # fallback
+        esac
+    else
+        # Use paradigm-aware default or build mode selection
+        case "$BUILD_MODE" in
+            fast) echo "workflows/analysis-paradigm.yml" ;;  # analysis is default paradigm
+            comprehensive) echo "workflows/analysis-paradigm.yml" ;;  # analysis is default paradigm  
+            *) echo "workflows/analysis-paradigm.yml" ;;  # analysis is default paradigm
+        esac
+    fi
 }
 
 #=============================================================================

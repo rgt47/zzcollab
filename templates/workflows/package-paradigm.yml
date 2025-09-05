@@ -1,0 +1,82 @@
+name: Package Development Workflow (R Package)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: rocker/tidyverse:latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check renv synchronization
+        run: |
+          Rscript check_renv_for_commit.R --quiet --fail-on-issues
+      
+      - name: Validate R package structure
+        run: |
+          Rscript -e "if (file.exists('DESCRIPTION')) cat('✅ DESCRIPTION found\\n')"
+          Rscript -e "if (dir.exists('R')) cat('✅ R/ directory found\\n')"
+          Rscript -e "if (dir.exists('tests')) cat('✅ tests/ directory found\\n')"
+          Rscript -e "if (dir.exists('man')) cat('✅ man/ directory found\\n')"
+          Rscript -e "if (file.exists('renv.lock')) cat('✅ renv.lock found\\n')"
+      
+      - name: Install package dependencies
+        run: |
+          Rscript -e "devtools::install_deps(dependencies = TRUE)"
+      
+      - name: Document package
+        run: |
+          Rscript -e "devtools::document()"
+      
+      - name: Run R CMD check
+        run: |
+          Rscript -e "rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'warning')"
+      
+      - name: Run unit tests
+        run: |
+          Rscript -e "devtools::test()"
+      
+      - name: Run package linting
+        run: |
+          Rscript -e "lintr::lint_package()" || echo "Linting completed with issues"
+      
+      - name: Check test coverage
+        run: |
+          Rscript -e "covr::package_coverage()" || echo "Coverage check completed"
+      
+      - name: Spell check package
+        run: |
+          Rscript -e "spelling::spell_check_package()" || echo "Spell check completed"
+      
+      - name: Build package website (if pkgdown configured)
+        run: |
+          if [ -f "_pkgdown.yml" ] || [ -f "pkgdown/_pkgdown.yml" ]; then
+            Rscript -e "pkgdown::build_site()"
+          else
+            echo "No pkgdown configuration found"
+          fi
+      
+      - name: Build vignettes
+        run: |
+          if [ -d "vignettes" ] && [ $(ls vignettes/*.Rmd 2>/dev/null | wc -l) -gt 0 ]; then
+            Rscript -e "devtools::build_vignettes()"
+          else
+            echo "No vignettes found"
+          fi
+      
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-outputs
+          path: |
+            docs/
+            *.tar.gz
+            vignettes/*.html
+        if: always()
