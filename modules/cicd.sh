@@ -63,42 +63,25 @@ create_github_workflows() {
     local output_filename
     
     # Determine workflow description and output filename based on paradigm
-    if [[ -n "$PARADIGM" ]]; then
-        case "$PARADIGM" in
-            analysis)
-                workflow_description="Data analysis workflow"
-                output_filename="analysis-workflow.yml"
-                ;;
-            manuscript)
-                workflow_description="Academic manuscript workflow"
-                output_filename="manuscript-workflow.yml"
-                ;;
-            package)
-                workflow_description="R package development workflow"
-                output_filename="package-workflow.yml"
-                ;;
-            *)
-                workflow_description="Standard research workflow"
-                output_filename="r-package.yml"
-                ;;
-        esac
-    else
-        # Fallback to build mode logic
-        case "$BUILD_MODE" in
-            fast)
-                workflow_description="Minimal research project workflow"
-                output_filename="r-package.yml"
-                ;;
-            comprehensive)
-                workflow_description="Comprehensive R package validation workflow"
-                output_filename="r-package.yml"
-                ;;
-            *)
-                workflow_description="Standard R package validation workflow"
-                output_filename="r-package.yml"
-                ;;
-        esac
-    fi
+    # (PARADIGM is always set, defaults to "analysis")
+    case "$PARADIGM" in
+        analysis)
+            workflow_description="Data analysis workflow"
+            output_filename="analysis-workflow.yml"
+            ;;
+        manuscript)
+            workflow_description="Academic manuscript workflow"
+            output_filename="manuscript-workflow.yml"
+            ;;
+        package)
+            workflow_description="R package development workflow"
+            output_filename="package-workflow.yml"
+            ;;
+        *)
+            workflow_description="Data analysis workflow"  # fallback to default
+            output_filename="analysis-workflow.yml"
+            ;;
+    esac
     
     if install_template "$workflow_template" ".github/workflows/$output_filename" "Primary workflow" "Created $workflow_description"; then
         log_info "  - Triggers: push/PR to main branch"

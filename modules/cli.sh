@@ -588,22 +588,13 @@ get_template() {
 get_dockerfile_template() { get_template "Dockerfile"; }
 get_description_template() { get_template "DESCRIPTION"; }
 get_workflow_template() { 
-    # Paradigm-specific workflows take precedence over build mode
-    if [[ -n "$PARADIGM" && "$PARADIGM" != "analysis" ]]; then
-        case "$PARADIGM" in
-            manuscript) echo "workflows/manuscript-paradigm.yml" ;;
-            package) echo "workflows/package-paradigm.yml" ;;
-            analysis) echo "workflows/analysis-paradigm.yml" ;;
-            *) echo "workflows/r-package.yml" ;;  # fallback
-        esac
-    else
-        # Use paradigm-aware default or build mode selection
-        case "$BUILD_MODE" in
-            fast) echo "workflows/analysis-paradigm.yml" ;;  # analysis is default paradigm
-            comprehensive) echo "workflows/analysis-paradigm.yml" ;;  # analysis is default paradigm  
-            *) echo "workflows/analysis-paradigm.yml" ;;  # analysis is default paradigm
-        esac
-    fi
+    # Paradigm determines workflow template (PARADIGM is always set, defaults to "analysis")
+    case "$PARADIGM" in
+        manuscript) echo "workflows/manuscript-paradigm.yml" ;;
+        package) echo "workflows/package-paradigm.yml" ;;
+        analysis) echo "workflows/analysis-paradigm.yml" ;;
+        *) echo "workflows/analysis-paradigm.yml" ;;  # fallback to default
+    esac
 }
 
 #=============================================================================
