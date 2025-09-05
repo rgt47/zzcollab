@@ -80,7 +80,9 @@ create_paradigm_directory_structure() {
         fi
     done
     
-    log_success "${paradigm^} paradigm structure created (${#dirs[@]} directories)"
+    # Capitalize first letter for broader shell compatibility
+    local paradigm_cap="$(echo "${paradigm:0:1}" | tr '[:lower:]' '[:upper:]')${paradigm:1}"
+    log_success "$paradigm_cap paradigm structure created (${#dirs[@]} directories)"
 }
 
 # Function: create_directory_structure
