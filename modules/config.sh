@@ -824,6 +824,86 @@ get_renv_packages_for_mode() {
     esac
 }
 
+#=============================================================================
+# PARADIGM-SPECIFIC PACKAGE FUNCTIONS
+#=============================================================================
+
+# Function: get_docker_packages_for_paradigm
+# Purpose: Get Docker packages for a specific research paradigm
+# Arguments: $1 = paradigm (analysis, manuscript, package)
+get_docker_packages_for_paradigm() {
+    local paradigm="$1"
+    
+    case "$paradigm" in
+        analysis)
+            if [[ -n "$CONFIG_ANALYSIS_DOCKER_PACKAGES" ]]; then
+                echo "$CONFIG_ANALYSIS_DOCKER_PACKAGES"
+            else
+                # Data analysis packages
+                echo "renv,remotes,tidyverse,targets,plotly,DT"
+            fi
+            ;;
+        manuscript)
+            if [[ -n "$CONFIG_MANUSCRIPT_DOCKER_PACKAGES" ]]; then
+                echo "$CONFIG_MANUSCRIPT_DOCKER_PACKAGES"
+            else
+                # Manuscript writing and R development packages
+                echo "renv,remotes,rmarkdown,bookdown,here,usethis,devtools,testthat"
+            fi
+            ;;
+        package)
+            if [[ -n "$CONFIG_PACKAGE_DOCKER_PACKAGES" ]]; then
+                echo "$CONFIG_PACKAGE_DOCKER_PACKAGES"
+            else
+                # R package development packages
+                echo "renv,remotes,devtools,usethis,roxygen2,testthat,pkgdown,covr"
+            fi
+            ;;
+        *)
+            log_error "Unknown paradigm: $paradigm"
+            return 1
+            ;;
+    esac
+}
+
+# Function: get_renv_packages_for_paradigm
+# Purpose: Get renv packages for a specific research paradigm
+# Arguments: $1 = paradigm (analysis, manuscript, package)
+get_renv_packages_for_paradigm() {
+    local paradigm="$1"
+    
+    case "$paradigm" in
+        analysis)
+            if [[ -n "$CONFIG_ANALYSIS_RENV_PACKAGES" ]]; then
+                echo "$CONFIG_ANALYSIS_RENV_PACKAGES"
+            else
+                # Comprehensive data analysis packages
+                echo "renv,here,dplyr,ggplot2,tidyr,targets,plotly,DT,flexdashboard,janitor,skimr,tidymodels,broom"
+            fi
+            ;;
+        manuscript)
+            if [[ -n "$CONFIG_MANUSCRIPT_RENV_PACKAGES" ]]; then
+                echo "$CONFIG_MANUSCRIPT_RENV_PACKAGES"
+            else
+                # Academic manuscript packages with R development
+                echo "renv,here,rmarkdown,bookdown,papaja,knitr,usethis,devtools,testthat,targets,RefManageR,citr"
+            fi
+            ;;
+        package)
+            if [[ -n "$CONFIG_PACKAGE_RENV_PACKAGES" ]]; then
+                echo "$CONFIG_PACKAGE_RENV_PACKAGES"
+            else
+                # R package development ecosystem
+                echo "renv,devtools,usethis,roxygen2,testthat,pkgdown,covr,lintr,goodpractice,spelling,here,knitr,rmarkdown"
+            fi
+            ;;
+        *)
+            log_error "Unknown paradigm: $paradigm"
+            return 1
+            ;;
+    esac
+}
+
 # Function: generate_description_content
 # Purpose: Generate DESCRIPTION file content with custom or default packages
 # Arguments: $1 = build mode, $2 = package name, $3 = author name, $4 = author email

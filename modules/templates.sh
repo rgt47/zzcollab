@@ -168,6 +168,82 @@ install_template() {
 }
 
 #=============================================================================
+# PARADIGM-SPECIFIC TEMPLATE FUNCTIONS
+#=============================================================================
+
+# Function: install_paradigm_template
+# Purpose: Install paradigm-specific template files (Makefile, DESCRIPTION)
+# Arguments: $1 = paradigm (analysis, manuscript, package)
+install_paradigm_template() {
+    local paradigm="$1"
+    
+    [[ -n "$paradigm" ]] || { log_error "install_paradigm_template: paradigm required"; return 1; }
+    
+    log_info "Installing paradigm-specific templates: $paradigm"
+    
+    # Define paradigm template mappings
+    local makefile_template="paradigms/${paradigm}/Makefile.${paradigm}"
+    local description_template="paradigms/${paradigm}/DESCRIPTION.${paradigm}"
+    
+    # Install Makefile template if it exists
+    if [[ -f "$TEMPLATES_DIR/$makefile_template" ]]; then
+        if install_template "$makefile_template" "Makefile.${paradigm}" "Paradigm-specific Makefile" "Created ${paradigm} Makefile"; then
+            log_info "Created paradigm Makefile: Makefile.${paradigm}"
+        else
+            log_error "Failed to create paradigm Makefile"
+            return 1
+        fi
+    fi
+    
+    # Install DESCRIPTION template if it exists  
+    if [[ -f "$TEMPLATES_DIR/$description_template" ]]; then
+        if install_template "$description_template" "DESCRIPTION.${paradigm}" "Paradigm-specific DESCRIPTION" "Created ${paradigm} DESCRIPTION"; then
+            log_info "Created paradigm DESCRIPTION: DESCRIPTION.${paradigm}"
+        else
+            log_error "Failed to create paradigm DESCRIPTION"
+            return 1
+        fi
+    fi
+    
+    log_success "Paradigm templates installed: $paradigm"
+}
+
+# Function: copy_paradigm_structure
+# Purpose: Copy additional paradigm-specific files and create structure
+# Arguments: $1 = paradigm (analysis, manuscript, package)  
+copy_paradigm_structure() {
+    local paradigm="$1"
+    
+    [[ -n "$paradigm" ]] || { log_error "copy_paradigm_structure: paradigm required"; return 1; }
+    
+    log_info "Setting up paradigm-specific structure: $paradigm"
+    
+    case "$paradigm" in
+        manuscript)
+            # Create manuscript-specific files
+            echo "# Main Manuscript" > manuscript/main.Rmd
+            echo "# Analysis reproduction scripts" > analysis/reproduce/README.md  
+            echo "# Processed data for manuscript" > data/processed/README.md
+            log_info "Created manuscript structure files"
+            ;;
+        analysis)
+            # Create analysis-specific files
+            echo "# Data exploration" > analysis/exploratory/README.md
+            echo "# Statistical modeling" > analysis/modeling/README.md
+            echo "# Generated figures" > outputs/figures/README.md
+            log_info "Created analysis structure files" 
+            ;;
+        package)
+            # Create package-specific files  
+            echo "# Package functions" > R/README.md
+            echo "# Package examples" > inst/examples/README.md
+            echo "# Package website configuration" > pkgdown/README.md
+            log_info "Created package structure files"
+            ;;
+    esac
+}
+
+#=============================================================================
 # TEMPLATES MODULE VALIDATION
 #=============================================================================
 

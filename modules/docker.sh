@@ -400,8 +400,17 @@ build_docker_image() {
     # --build-arg R_VERSION: Pass R version to Dockerfile
     # --build-arg BASE_IMAGE: Pass base image to Dockerfile
     # --build-arg PACKAGE_MODE: Pass package mode to unified Dockerfile
+    # --build-arg PARADIGM: Pass research paradigm for paradigm-specific packages
     # -t "$PKG_NAME": Tag image with package name for easy reference
-    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" --build-arg PACKAGE_MODE=\"$BUILD_MODE\" -t \"$PKG_NAME\" ."
+    
+    # Determine package selection mode (paradigm takes precedence over build mode)
+    local package_mode="$BUILD_MODE"
+    if [[ -n "$PARADIGM" ]]; then
+        package_mode="paradigm:$PARADIGM"
+        log_info "Using paradigm-specific packages: $PARADIGM"
+    fi
+    
+    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" --build-arg PACKAGE_MODE=\"$package_mode\" --build-arg PARADIGM=\"${PARADIGM:-}\" -t \"$PKG_NAME\" ."
     
     log_info "Running: $docker_cmd"
     

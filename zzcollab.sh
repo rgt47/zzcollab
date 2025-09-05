@@ -571,10 +571,13 @@ execute_project_creation_workflow() {
         create_paradigm_directory_structure "$PARADIGM" || exit 1
         # Also include GitHub workflows directory for all paradigms
         mkdir -p ".github/workflows" && track_directory ".github/workflows"
+        # Install paradigm-specific templates
+        install_paradigm_template "$PARADIGM" || exit 1
+        copy_paradigm_structure "$PARADIGM" || exit 1
     else
         create_directory_structure || exit 1
+        create_data_templates || exit 1
     fi
-    create_data_templates || exit 1
     
     log_info "📦 Creating R package files..."
     create_core_files || exit 1
