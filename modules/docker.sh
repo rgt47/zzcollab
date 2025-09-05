@@ -326,6 +326,13 @@ create_docker_files() {
         return 1
     fi
     
+    # Create paradigm guide
+    # Contains: paradigm descriptions, when to use each, project structures, examples
+    if ! install_template "PARADIGM_GUIDE.md" "PARADIGM_GUIDE.md" "paradigm selection guide" "Created paradigm selection guide"; then
+        log_error "Failed to create paradigm guide"
+        return 1
+    fi
+    
     log_success "Docker configuration files created successfully"
 }
 

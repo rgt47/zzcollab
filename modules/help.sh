@@ -687,6 +687,12 @@ For more specific help with team initialization, run: zzcollab --help-init
 For Docker variants configuration help, run: zzcollab --help-variants
 For development workflow guidance, run: zzcollab --next-steps
 
+📋 PARADIGM GUIDANCE:
+After project creation, see PARADIGM_GUIDE.md for detailed information about:
+- When to use each research paradigm (analysis, manuscript, package)
+- Project structure explanations and best practices
+- Workflow examples and decision guidelines
+
 Project website: https://github.com/rgt47/zzcollab
 EOF
 }
