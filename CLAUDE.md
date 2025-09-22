@@ -121,9 +121,22 @@ init_project("new-package", paradigm = "package")
 - **Optimized Makefiles**: Build targets and validation specific to each workflow type
 - **Comprehensive Guide**: `PARADIGM_GUIDE.md` automatically included in every project
 
-## Configuration System
+## Advanced Configuration System (Enhanced 2025)
 
-ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive typing and set project defaults.
+ZZCOLLAB features a powerful multi-layered configuration system that controls Docker images, R packages, build modes, and team settings. This system eliminates repetitive typing while providing extensive customization for teams and individuals.
+
+### Configuration Architecture Overview
+
+**Multi-Level Hierarchy** (highest priority first):
+1. **Project config** (`./zzcollab.yaml`) - Team-specific settings for shared projects
+2. **User config** (`~/.zzcollab/config.yaml`) - Personal defaults across all projects
+3. **System config** (`/etc/zzcollab/config.yaml`) - Organization-wide defaults
+4. **Built-in defaults** - Fallback values ensuring system functionality
+
+**Three Configuration Domains**:
+- **🐳 Docker Variant Management** - 14+ specialized environments with custom base images and packages
+- **📦 Package Management** - Build modes (Fast/Standard/Comprehensive) with paradigm-specific packages
+- **⚙️ Development Settings** - Team collaboration, GitHub integration, and automation preferences
 
 ### Configuration Commands
 ```bash
@@ -149,26 +162,86 @@ zzcollab --config list
 zzcollab --config validate
 ```
 
-### Configuration Files
-- **User config**: `~/.zzcollab/config.yaml` (your personal defaults)
-- **Project config**: `./zzcollab.yaml` (project-specific overrides)
-- **Priority order**: project config > user config > built-in defaults
+### 🐳 Docker Variant Configuration System
 
-### Example Configuration File
+ZZCOLLAB's variant system provides 14+ specialized Docker environments with a single source of truth architecture:
+
+**Interactive Variant Management**:
+```bash
+# Browse and add variants interactively
+./add_variant.sh    # Shows categorized menu with 14+ options
+
+# Manual variant management
+vim config.yaml     # Edit team variants (set enabled: true to build)
+
+# Build with custom variants
+zzcollab --variants-config config.yaml
+zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml
+```
+
+**Variant Categories Available**:
+- **📦 Standard Research** (6 variants): minimal (~800MB), analysis (~1.2GB), modeling (~1.5GB), publishing (~3GB), shiny (~1.8GB), shiny_verse (~3.5GB)
+- **🔬 Specialized Domains** (2 variants): bioinformatics (~2GB), geospatial (~2.5GB)
+- **🏔️ Lightweight Alpine** (3 variants): alpine_minimal (~200MB), alpine_analysis (~400MB), hpc_alpine (~600MB)
+- **🧪 R-Hub Testing** (3 variants): rhub_ubuntu (~1GB), rhub_fedora (~1.2GB), rhub_windows (~1.5GB)
+
+**Single Source of Truth**:
+- **Master Library**: `templates/variant_examples.yaml` contains all variant definitions
+- **Team Configuration**: `templates/config.yaml` selects which variants to enable
+- **No Duplication**: Teams reference variants by name, full definitions pulled automatically
+
+### 📦 Package Management System
+
+**Build Mode Package Control**:
+- **Fast Mode (-F)**: Essential packages for quick development (9 packages)
+  - Core: renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
+- **Standard Mode (-S)**: Balanced package set for most workflows (17 packages, default)
+  - Fast packages + tidyverse core: dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted
+- **Comprehensive Mode (-C)**: Full ecosystem for extensive environments (47+ packages)
+  - Standard packages + advanced tools: tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases
+
+**Paradigm-Specific Packages**:
+- **Analysis Paradigm**: Data analysis tools (tidyverse, targets, plotly, DT, flexdashboard)
+- **Manuscript Paradigm**: Academic writing tools (rmarkdown, bookdown, papaja, RefManageR)
+- **Package Paradigm**: Development tools (devtools, roxygen2, testthat, pkgdown, covr, lintr)
+
+**Custom Package Lists** (in configuration files):
+```yaml
+build_modes:
+  fast:
+    description: "Quick development setup"
+    docker_packages: [renv, remotes, here, usethis]
+    renv_packages: [renv, here, usethis, devtools, testthat]
+
+  custom_analysis:
+    description: "Custom data science workflow"
+    docker_packages: [renv, tidyverse, targets, pins]
+    renv_packages: [renv, tidyverse, targets, pins, vetiver, plumber]
+```
+
+### Configuration Files
+
+**File Hierarchy**:
+- **User config**: `~/.zzcollab/config.yaml` (personal defaults across all projects)
+- **Project config**: `./zzcollab.yaml` (team-specific settings for shared projects)
+- **System config**: `/etc/zzcollab/config.yaml` (organization-wide defaults)
+- **Built-in defaults**: Fallback values ensuring system functionality
+
+### Comprehensive Configuration Examples
+
+**User Configuration** (`~/.zzcollab/config.yaml`):
 ```yaml
 defaults:
-  # Team and GitHub settings
-  team_name: "myteam"                  # Docker Hub team/organization name
+  # Personal development preferences
+  team_name: "myteam"                  # Default team for new projects
   github_account: "myusername"         # GitHub account name
-  
-  # Build and environment settings
-  build_mode: "standard"               # Default build mode: fast, standard, comprehensive
-  paradigm: "analysis"                 # Research paradigm: analysis, manuscript, package
+  build_mode: "standard"               # Preferred build mode: fast, standard, comprehensive
+  paradigm: "analysis"                 # Default research paradigm: analysis, manuscript, package
   dotfiles_dir: "~/dotfiles"           # Path to dotfiles directory
   dotfiles_nodot: false                # Whether dotfiles need dots added
-  
-  # Automation settings
-  auto_github: false                   # Automatically create GitHub repository
+
+  # Automation preferences
+  auto_github: false                   # Automatically create GitHub repositories
   skip_confirmation: false             # Skip confirmation prompts
 
 # Custom package lists for build modes (optional)
@@ -177,12 +250,168 @@ build_modes:
     description: "Quick development setup"
     docker_packages: [renv, remotes, here, usethis]
     renv_packages: [renv, here, usethis, devtools, testthat]
-  
-  standard:
-    description: "Balanced research workflow"
-    docker_packages: [renv, remotes, tidyverse, here, usethis, devtools]
-    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, testthat, palmerpenguins]
+
+  custom_analysis:
+    description: "Personal data science workflow"
+    docker_packages: [renv, tidyverse, targets, pins]
+    renv_packages: [renv, tidyverse, targets, pins, vetiver, plumber, shiny]
 ```
+
+**Team Project Configuration** (`./zzcollab.yaml`):
+```yaml
+#=============================================================================
+# TEAM METADATA
+#=============================================================================
+team:
+  name: "datasci-lab"
+  project: "customer-churn-analysis"
+  description: "Machine learning analysis of customer retention patterns"
+  maintainer: "Dr. Smith <smith@university.edu>"
+
+#=============================================================================
+# DOCKER VARIANTS CONFIGURATION
+#=============================================================================
+variants:
+  # Essential development environment
+  minimal:
+    enabled: true    # ~800MB - Essential R packages only
+
+  # Primary analysis environment
+  analysis:
+    enabled: true    # ~1.2GB - Tidyverse + data analysis tools
+
+  # Machine learning environment
+  modeling:
+    enabled: true    # ~1.5GB - ML packages (tidymodels, xgboost, etc.)
+
+  # Lightweight CI/CD environment
+  alpine_minimal:
+    enabled: true    # ~200MB - Ultra-lightweight for testing
+
+  # Advanced environments (disabled by default)
+  publishing:
+    enabled: false   # ~3GB - LaTeX, Quarto, bookdown
+  geospatial:
+    enabled: false   # ~2.5GB - sf, terra, leaflet mapping
+  bioinformatics:
+    enabled: false   # ~2GB - Bioconductor packages
+
+#=============================================================================
+# BUILD CONFIGURATION
+#=============================================================================
+build:
+  # Use variants defined in this config file
+  use_config_variants: true
+  variant_library: "variant_examples.yaml"
+
+  # Docker build settings
+  docker:
+    platform: "auto"              # auto, linux/amd64, linux/arm64
+    no_cache: false
+    parallel_builds: true
+
+  # Package installation settings
+  packages:
+    repos: "https://cran.rstudio.com/"
+    install_suggests: false
+    dependencies: ["Depends", "Imports", "LinkingTo"]
+
+#=============================================================================
+# TEAM COLLABORATION SETTINGS
+#=============================================================================
+collaboration:
+  # GitHub integration
+  github:
+    auto_create_repo: false
+    default_visibility: "private"
+    enable_actions: true
+
+  # Development environment defaults
+  development:
+    default_interface: "analysis"     # Which variant team members use by default
+    container:
+      default_user: "analyst"
+      working_dir: "/home/analyst/project"
+```
+
+### Configuration Workflows
+
+**Solo Developer Setup**:
+```bash
+# 1. Initialize personal configuration
+zzcollab --config init
+zzcollab --config set team-name "myteam"
+zzcollab --config set paradigm "analysis"
+zzcollab --config set build-mode "standard"
+
+# 2. Create projects using defaults
+zzcollab -i -p data-analysis    # Uses config defaults automatically
+
+# 3. Customize variants for specific projects
+cd data-analysis
+./add_variant.sh               # Browse and add specialized environments
+```
+
+**Team Leader Setup**:
+```bash
+# 1. Create team configuration
+mkdir team-project && cd team-project
+zzcollab -i -p team-project    # Creates base config.yaml
+
+# 2. Customize team variants
+./add_variant.sh               # Add modeling, alpine_minimal for CI/CD
+vim config.yaml                # Adjust collaboration settings
+
+# 3. Build and share team images
+zzcollab --variants-config config.yaml --github
+```
+
+**Team Member Joining**:
+```bash
+# 1. Clone team project
+git clone https://github.com/team/team-project.git
+cd team-project
+
+# 2. Join with appropriate interface
+zzcollab -t team -p team-project -I analysis    # Uses team's analysis variant
+make docker-zsh                                 # Start development environment
+```
+
+**Advanced Custom Variants**:
+```bash
+# 1. Copy and modify existing variant
+cp templates/variant_examples.yaml custom_variants.yaml
+vim custom_variants.yaml       # Add custom variants with specific packages
+
+# 2. Reference custom library
+vim config.yaml                # Set variant_library: "custom_variants.yaml"
+
+# 3. Build custom environments
+zzcollab --variants-config config.yaml
+```
+
+### Configuration Validation and Troubleshooting
+
+**Validation Commands**:
+```bash
+# Check configuration syntax and values
+zzcollab --config validate
+
+# Debug configuration loading
+zzcollab --config list         # Shows effective configuration values
+
+# Test variant definitions
+./add_variant.sh --validate    # Check variant_examples.yaml syntax
+
+# Verify Docker platform compatibility
+zzcollab --config get docker.platform
+```
+
+**Common Configuration Issues**:
+- **Missing yq dependency**: Install with `brew install yq` (macOS) or `snap install yq` (Ubuntu)
+- **Variant build failures**: Check Docker platform compatibility (ARM64 vs AMD64)
+- **Package installation errors**: Verify custom package lists in build_modes section
+- **Permission issues**: Ensure proper Docker daemon access and directory permissions
 
 ### R Interface for Configuration
 ```r
