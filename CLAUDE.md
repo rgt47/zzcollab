@@ -28,6 +28,99 @@ reproducible research environments. The system consists of:
 - **Single source of truth**: Variant definitions in `variant_examples.yaml` eliminate duplication
 - **14+ Docker variants**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
 
+## Research Paradigm System (NEW 2025)
+
+ZZCOLLAB now supports **three distinct research paradigms** that optimize project structure and workflows for different stages of the research lifecycle:
+
+### Available Paradigms
+
+**📊 Analysis Paradigm** (Default) - *"From raw data to insights"*
+- **Use for**: Data science projects, research analytics, business intelligence, exploratory analysis
+- **Structure**: `data/raw/`, `data/processed/`, `analysis/`, `outputs/figures/`, `reports/`, `scripts/`
+- **Tools**: tidyverse, targets, plotly, DT, flexdashboard, janitor, skimr
+- **Workflow**: Raw data → Processing → Analysis → Visualization → Reports
+- **Best for**: PhD students analyzing data, data scientists building models, analysts creating reports
+
+**📄 Manuscript Paradigm** - *"From analysis to publication"*
+- **Use for**: Academic papers, research reports, computational research, collaborative writing
+- **Structure**: `R/`, `tests/testthat/`, `manuscript/`, `analysis/reproduce/`, `submission/`
+- **Tools**: rmarkdown, bookdown, papaja, devtools, testthat, RefManageR
+- **Workflow**: Analysis → Writing → Testing → Reproduction → Submission
+- **Best for**: Academic researchers writing papers, graduate students writing thesis chapters
+
+**📦 Package Paradigm** - *"From code to software"*
+- **Use for**: R package development, research software, method implementation, internal tools
+- **Structure**: `R/`, `tests/testthat/`, `man/`, `vignettes/`, `inst/examples/`, `data/`
+- **Tools**: devtools, roxygen2, testthat, pkgdown, covr, lintr
+- **Workflow**: Code → Document → Test → Check → Release
+- **Best for**: R developers creating packages, researchers packaging methods, teams building tools
+
+### Paradigm Usage Commands
+
+```bash
+# Specify paradigm during project creation
+zzcollab --paradigm analysis      # Default: data analysis projects
+zzcollab --paradigm manuscript    # Academic writing projects
+zzcollab --paradigm package       # R package development
+zzcollab -P manuscript            # Short form
+
+# Set default paradigm in configuration
+zzcollab config set paradigm manuscript
+
+# Team initialization with paradigm
+zzcollab -i -t mylab -p study --paradigm manuscript -B rstudio
+```
+
+### R Interface for Paradigms
+
+```r
+library(zzcollab)
+
+# Set default paradigm
+set_config("paradigm", "manuscript")
+
+# Create projects with specific paradigms
+init_project("data-analysis", paradigm = "analysis")
+init_project("research-paper", paradigm = "manuscript")
+init_project("new-package", paradigm = "package")
+```
+
+### Paradigm Best Practices
+
+**Analysis Paradigm:**
+- Keep raw data immutable in `data/raw/`
+- Use meaningful variable names and document data sources
+- Create reproducible analysis scripts in `analysis/`
+- Generate publication-ready figures in `outputs/figures/`
+
+**Manuscript Paradigm:**
+- Write functions in `R/` and test them in `tests/`
+- Keep reproduction scripts in `analysis/reproduce/`
+- Use version control for collaborative writing
+- Automate figure and table generation
+
+**Package Paradigm:**
+- Follow R package conventions strictly
+- Write comprehensive tests for all functions
+- Document everything with roxygen2 comments
+- Use semantic versioning for releases
+
+### Paradigm Decision Framework
+
+**Quick Decision Tree:**
+1. **Primary goal?** → 📊 Analyze data / 📄 Write paper / 📦 Build software
+2. **Main output?** → 📊 Reports & insights / 📄 Published papers / 📦 R packages & tools
+3. **Target audience?** → 📊 Stakeholders / 📄 Academic community / 📦 Other developers
+
+**Common Research Lifecycle:** Many projects progress through paradigms: 📊 Analysis → 📄 Manuscript → 📦 Package
+
+### Paradigm-Specific Features
+
+- **Custom CI/CD Workflows**: Each paradigm gets specialized GitHub Actions (analysis-paradigm.yml, manuscript-paradigm.yml, package-paradigm.yml)
+- **Tailored Dependencies**: Paradigm-specific DESCRIPTION files with appropriate package dependencies
+- **Optimized Makefiles**: Build targets and validation specific to each workflow type
+- **Comprehensive Guide**: `PARADIGM_GUIDE.md` automatically included in every project
+
 ## Configuration System
 
 ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive typing and set project defaults.
@@ -37,10 +130,11 @@ ZZCOLLAB includes a comprehensive configuration system to eliminate repetitive t
 # Create default configuration file
 zzcollab --config init
 
-# Set configuration values  
+# Set configuration values
 zzcollab --config set team-name "myteam"
 zzcollab --config set github-account "myusername"
 zzcollab --config set build-mode "fast"
+zzcollab --config set paradigm "manuscript"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Get configuration values
