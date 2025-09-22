@@ -140,6 +140,7 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 # Get configuration values
 zzcollab --config get team-name
 zzcollab --config get build-mode
+zzcollab --config get paradigm
 
 # List all configuration
 zzcollab --config list
@@ -160,8 +161,9 @@ defaults:
   team_name: "myteam"                  # Docker Hub team/organization name
   github_account: "myusername"         # GitHub account name
   
-  # Build and environment settings  
+  # Build and environment settings
   build_mode: "standard"               # Default build mode: fast, standard, comprehensive
+  paradigm: "analysis"                 # Research paradigm: analysis, manuscript, package
   dotfiles_dir: "~/dotfiles"           # Path to dotfiles directory
   dotfiles_nodot: false                # Whether dotfiles need dots added
   
@@ -193,10 +195,12 @@ init_config()
 # Set configuration values
 set_config("team_name", "myteam")
 set_config("build_mode", "fast")
+set_config("paradigm", "manuscript")
 
 # Get configuration values
 get_config("team_name")
 get_config("build_mode")
+get_config("paradigm")
 
 # List all configuration
 list_config()
@@ -205,8 +209,8 @@ list_config()
 validate_config()
 
 # Use config-aware functions (parameters use config defaults)
-init_project(project_name = "my-analysis")   # Uses team_name from config
-join_project(project_name = "my-analysis")   # Uses team_name and build_mode from config
+init_project(project_name = "my-analysis")   # Uses team_name, paradigm from config
+join_project(project_name = "my-analysis")   # Uses team_name, build_mode, paradigm from config
 setup_project()                              # Uses all defaults from config
 ```
 
@@ -382,14 +386,15 @@ build:
 **Team Initialization**:
 ```bash
 # Quick start - creates optimal default variants
-zzcollab -i -p myproject --github    # Creates: minimal + analysis variants
+zzcollab -i -p myproject --github              # Creates: minimal + analysis variants (analysis paradigm)
+zzcollab -i -p paper-project -P manuscript --github  # Manuscript paradigm with publishing tools
 
 # Custom variants via config file
 zzcollab -i -p myproject             # Creates project + config.yaml
 ./add_variant.sh                     # Browse and select variants
 zzcollab --variants-config config.yaml --github  # Build selected variants
 
-# Legacy approach (limited to 3 variants)  
+# Legacy approach (limited to 3 variants)
 zzcollab -i -p myproject -B rstudio --github     # Traditional RStudio only
 ```
 
@@ -397,10 +402,11 @@ zzcollab -i -p myproject -B rstudio --github     # Traditional RStudio only
 ```bash
 # Configuration-based (recommended)
 zzcollab --config set team-name "myteam"
-zzcollab -i -p analysis-project      # Uses config defaults
+zzcollab --config set paradigm "manuscript"
+zzcollab -i -p research-paper        # Uses config defaults (manuscript paradigm)
 
 # Traditional explicit
-zzcollab -i -t myteam -p analysis-project -B analysis -d ~/dotfiles
+zzcollab -i -t myteam -p analysis-project -P analysis -B rstudio -d ~/dotfiles
 ```
 
 ### Benefits of New Variant System
@@ -430,17 +436,19 @@ cd zzcollab && ./install.sh
 zzcollab --config init
 zzcollab --config set team-name "myteam"
 zzcollab --config set build-mode "standard"
+zzcollab --config set paradigm "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 **2. Project Creation**:
 ```bash
 # Quick start - optimal variants automatically
-zzcollab -i -p penguin-analysis --github
+zzcollab -i -p penguin-analysis --github                    # Analysis paradigm (default)
+zzcollab -i -p research-paper -P manuscript --github        # Manuscript paradigm
 
 # Power users - browse 14+ variants interactively
 mkdir penguin-analysis && cd penguin-analysis
-zzcollab -i -p penguin-analysis
+zzcollab -i -p penguin-analysis -P analysis
 ./add_variant.sh    # Select from bioinformatics, geospatial, alpine, etc.
 ```
 
@@ -939,11 +947,12 @@ All documentation has been updated to reflect current system capabilities:
 ### R Package Integration (25 Functions)
 Complete R interface for CLI functionality with build mode support:
 ```r
-# Team Lead with build modes
-init_project(team_name = "mylab", project_name = "study", build_mode = "fast")
+# Team Lead with build modes and paradigms
+init_project(team_name = "mylab", project_name = "study", build_mode = "fast", paradigm = "analysis")
+init_project(team_name = "mylab", project_name = "paper", build_mode = "standard", paradigm = "manuscript")
 
-# Team Member with build modes  
-join_project(team_name = "mylab", project_name = "study", build_mode = "comprehensive")
+# Team Member with build modes and paradigms
+join_project(team_name = "mylab", project_name = "study", build_mode = "comprehensive", paradigm = "analysis")
 
 # Full R workflow support
 add_package("tidyverse")
@@ -960,31 +969,35 @@ library(zzcollab)
 init_config()                                      # Initialize config file
 set_config("team_name", "TEAM")                    # Set team name
 set_config("build_mode", "standard")               # Set preferred mode
+set_config("paradigm", "analysis")                 # Set research paradigm
 set_config("dotfiles_dir", "~/dotfiles")           # Set dotfiles path
 
 # Developer 1 (Team Lead) - Simplified with config
-init_project(project_name = "PROJECT")             # Uses config defaults
+init_project(project_name = "PROJECT")             # Uses config defaults (team, mode, paradigm)
 
-# Developer 2+ (Team Members) - Simplified with config  
+# Developer 2+ (Team Members) - Simplified with config
 set_config("team_name", "TEAM")                    # Match team settings
+set_config("paradigm", "analysis")                 # Match team paradigm
 join_project(project_name = "PROJECT", interface = "shell")  # Uses config defaults
 
 # Method 2: Traditional Explicit Parameters
 library(zzcollab)
-# Developer 1 (Team Lead) - R Interface with build modes
+# Developer 1 (Team Lead) - R Interface with build modes and paradigms
 init_project(
   team_name = "TEAM",
-  project_name = "PROJECT", 
+  project_name = "PROJECT",
   build_mode = "standard",  # "fast", "standard", "comprehensive"
+  paradigm = "manuscript",  # "analysis", "manuscript", "package"
   dotfiles_path = "~/dotfiles"
 )
 
-# Developer 2+ (Team Members) - R Interface with build modes
+# Developer 2+ (Team Members) - R Interface with build modes and paradigms
 join_project(
   team_name = "TEAM",
   project_name = "PROJECT",
   interface = "shell",  # or "rstudio" or "verse"
   build_mode = "fast",  # matches team's preferred mode
+  paradigm = "manuscript",  # matches team's research paradigm
   dotfiles_path = "~/dotfiles"
 )
 ```
