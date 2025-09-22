@@ -1,0 +1,1737 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={ZZCOLLAB Configuration System Guide},
+  pdfauthor={ZZCOLLAB Team},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{ZZCOLLAB Configuration System Guide}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Advanced Docker and Package Management}
+\author{ZZCOLLAB Team}
+\date{2025-09-22}
+
+\begin{document}
+\maketitle
+
+\section{Overview}\label{overview}
+
+ZZCOLLAB features a sophisticated multi-layered configuration system
+that controls Docker images, R packages, build modes, and team
+collaboration settings. This system enables teams to create
+reproducible, customized research environments while eliminating
+repetitive manual configuration.
+
+\subsection{Key Benefits}\label{key-benefits}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\u2705 Eliminate repetitive typing}: Set defaults once, use
+  across all projects
+\item
+  \textbf{\u2705 Team standardization}: Shared configurations ensure
+  identical environments
+\item
+  \textbf{\u2705 Flexible customization}: 14+ Docker variants, custom
+  package lists, build modes
+\item
+  \textbf{\u2705 Hierarchical control}: User, project, and system-level
+  configurations
+\item
+  \textbf{\u2705 Single source of truth}: Centralized variant
+  definitions prevent duplication
+\end{itemize}
+
+\section{Configuration Architecture}\label{configuration-architecture}
+
+\subsection{Multi-Level Hierarchy}\label{multi-level-hierarchy}
+
+ZZCOLLAB loads configuration from multiple sources in priority order:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Project config} (\texttt{./zzcollab.yaml}) - Team-specific
+  settings for shared projects
+\item
+  \textbf{User config}
+  (\texttt{\textasciitilde{}/.zzcollab/config.yaml}) - Personal defaults
+  across all projects
+\item
+  \textbf{System config} (\texttt{/etc/zzcollab/config.yaml}) -
+  Organization-wide defaults
+\item
+  \textbf{Built-in defaults} - Fallback values ensuring system
+  functionality
+\end{enumerate}
+
+Higher priority configurations override lower priority ones, allowing
+for precise control at each level.
+
+\subsection{Three Configuration
+Domains}\label{three-configuration-domains}
+
+\subsubsection{\texorpdfstring{\U0001F433 Docker Variant
+Management}{001F433 Docker Variant Management}}\label{f433-docker-variant-management}
+
+Control which specialized Docker environments your team uses: -
+\textbf{14+ predefined variants} from minimal (\textasciitilde200MB
+Alpine) to comprehensive (\textasciitilde3.5GB full-featured) -
+\textbf{Domain-specific environments} for bioinformatics, geospatial
+analysis, machine learning - \textbf{Single source of truth}
+architecture eliminates duplication - \textbf{Interactive variant
+browser} for easy discovery and selection
+
+\subsubsection{\texorpdfstring{\U0001F4E6 Package Management
+System}{001F4E6 Package Management System}}\label{f4e6-package-management-system}
+
+Control what R packages are installed and when: - \textbf{Build mode
+control}: Fast (9 packages) vs Standard (17 packages) vs Comprehensive
+(47+ packages) - \textbf{Paradigm-specific packages}: Analysis,
+Manuscript, and Package development workflows - \textbf{Custom package
+lists}: Define your own combinations for specialized workflows -
+\textbf{Dependency management}: Docker packages vs renv packages with
+proper separation
+
+\subsubsection{\texorpdfstring{\u2699\uFE0F Development \& Collaboration
+Settings}{6990F Development \& Collaboration Settings}}\label{f-development-collaboration-settings}
+
+Control team workflows and automation: - \textbf{GitHub integration}:
+Automatic repository creation, visibility settings, Actions enablement -
+\textbf{Container defaults}: User accounts, working directories, shared
+volumes - \textbf{Development preferences}: Default interfaces, dotfiles
+handling, confirmation prompts
+
+\section{Docker Variant System}\label{docker-variant-system}
+
+\subsection{Understanding Variants}\label{understanding-variants}
+
+Docker variants are pre-configured environments with specific base
+images, R packages, and system dependencies. Each variant is optimized
+for particular research workflows.
+
+\subsubsection{Variant Categories}\label{variant-categories}
+
+\textbf{\U0001F4E6 Standard Research Environments (6 variants)}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{minimal}\KeywordTok{:}\CommentTok{          \# \textasciitilde{}800MB  {-} Essential R packages only}
+\FunctionTok{analysis}\KeywordTok{:}\CommentTok{         \# \textasciitilde{}1.2GB  {-} Tidyverse + data analysis tools}
+\FunctionTok{modeling}\KeywordTok{:}\CommentTok{         \# \textasciitilde{}1.5GB  {-} Machine learning with tidymodels}
+\FunctionTok{publishing}\KeywordTok{:}\CommentTok{       \# \textasciitilde{}3GB    {-} LaTeX, Quarto, bookdown, blogdown}
+\FunctionTok{shiny}\KeywordTok{:}\CommentTok{            \# \textasciitilde{}1.8GB  {-} Interactive web applications}
+\FunctionTok{shiny\_verse}\KeywordTok{:}\CommentTok{      \# \textasciitilde{}3.5GB  {-} Shiny with tidyverse + publishing}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{\U0001F52C Specialized Domains (2 variants)}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{bioinformatics}\KeywordTok{:}\CommentTok{   \# \textasciitilde{}2GB    {-} Bioconductor genomics packages}
+\FunctionTok{geospatial}\KeywordTok{:}\CommentTok{       \# \textasciitilde{}2.5GB  {-} sf, terra, leaflet mapping tools}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{\U0001F3D4\uFE0F Lightweight Alpine Variants (3 variants)}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{alpine\_minimal}\KeywordTok{:}\CommentTok{   \# \textasciitilde{}200MB  {-} Ultra{-}lightweight for CI/CD}
+\FunctionTok{alpine\_analysis}\KeywordTok{:}\CommentTok{  \# \textasciitilde{}400MB  {-} Essential analysis in tiny container}
+\FunctionTok{hpc\_alpine}\KeywordTok{:}\CommentTok{       \# \textasciitilde{}600MB  {-} High{-}performance parallel processing}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{\U0001F9EA R-Hub Testing Environments (3 variants)}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{rhub\_ubuntu}\KeywordTok{:}\CommentTok{      \# \textasciitilde{}1GB    {-} CRAN{-}compatible package testing}
+\FunctionTok{rhub\_fedora}\KeywordTok{:}\CommentTok{      \# \textasciitilde{}1.2GB  {-} Test against R{-}devel}
+\FunctionTok{rhub\_windows}\KeywordTok{:}\CommentTok{     \# \textasciitilde{}1.5GB  {-} Windows compatibility testing}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Single Source of Truth
+Architecture}\label{single-source-of-truth-architecture}
+
+\subsubsection{Master Variant Library}\label{master-variant-library}
+
+All variant definitions are stored in
+\texttt{templates/variant\_examples.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Example variant definition}
+\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{base\_image}\KeywordTok{:}\AttributeTok{ }\StringTok{"rocker/tidyverse:latest"}
+\AttributeTok{  }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Data analysis environment with tidyverse and common packages"}
+\AttributeTok{  }\FunctionTok{packages}\KeywordTok{:}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"devtools"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"here"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"janitor"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"scales"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"patchwork"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"gt"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"DT"}
+\AttributeTok{  }\FunctionTok{system\_deps}\KeywordTok{:}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libxml2{-}dev"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libcurl4{-}openssl{-}dev"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libssl{-}dev"}
+\AttributeTok{  }\FunctionTok{category}\KeywordTok{:}\AttributeTok{ }\StringTok{"standard"}
+\AttributeTok{  }\FunctionTok{size}\KeywordTok{:}\AttributeTok{ }\StringTok{"\textasciitilde{}1.2GB"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Team Configuration
+Selection}\label{team-configuration-selection}
+
+Teams select which variants to enable in their \texttt{config.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{variants}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Enable this variant for the team}
+\CommentTok{    \# Full definition automatically pulled from variant\_examples.yaml}
+
+\AttributeTok{  }\FunctionTok{modeling}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{false}\CommentTok{   \# Disable this variant (won\textquotesingle{}t be built)}
+
+\AttributeTok{  }\FunctionTok{custom\_ml}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\CommentTok{    \# Can override or extend definitions from the library}
+\AttributeTok{    }\FunctionTok{packages}\KeywordTok{:}\AttributeTok{ }\KeywordTok{[}\StringTok{"additional\_package"}\KeywordTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Interactive Variant
+Management}\label{interactive-variant-management}
+
+\subsubsection{Using the Variant
+Browser}\label{using-the-variant-browser}
+
+The \texttt{./add\_variant.sh} script provides an interactive interface
+for variant selection:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\BuiltInTok{cd}\NormalTok{ your{-}project}
+\ExtensionTok{./add\_variant.sh}
+\end{Highlighting}
+\end{Shaded}
+
+This displays a categorized menu:
+
+\begin{verbatim}
+📦 STANDARD RESEARCH ENVIRONMENTS
+ 1) minimal          ~800MB  - Essential R packages only
+ 2) analysis         ~1.2GB  - Tidyverse + data analysis
+ 3) modeling         ~1.5GB  - Machine learning with tidymodels
+
+🔬 SPECIALIZED DOMAINS
+ 7) bioinformatics   ~2GB    - Bioconductor genomics packages
+ 8) geospatial       ~2.5GB  - sf, terra, leaflet mapping
+
+🏔️ LIGHTWEIGHT ALPINE VARIANTS
+ 9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
+10) alpine_analysis  ~400MB  - Essential analysis in tiny container
+
+Select variants to add (e.g., 1,3,9):
+\end{verbatim}
+
+Selected variants are automatically added to your \texttt{config.yaml}
+with \texttt{enabled:\ true}.
+
+\subsubsection{Manual Variant
+Management}\label{manual-variant-management}
+
+You can also edit variants directly in \texttt{config.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{variants}\KeywordTok{:}
+\CommentTok{  \# Standard environments}
+\AttributeTok{  }\FunctionTok{minimal}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# Essential development}
+\AttributeTok{  }\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# Primary data analysis}
+\AttributeTok{  }\FunctionTok{modeling}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{false}\CommentTok{    \# Machine learning (disabled)}
+
+\CommentTok{  \# Specialized environments}
+\AttributeTok{  }\FunctionTok{bioinformatics}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# Genomics analysis}
+\AttributeTok{  }\FunctionTok{alpine\_minimal}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# Lightweight CI/CD}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Custom Variant Creation}\label{custom-variant-creation}
+
+\subsubsection{Extending Existing
+Variants}\label{extending-existing-variants}
+
+Add packages to existing variants:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{variants}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\CommentTok{    \# Extend the base analysis variant}
+\AttributeTok{    }\FunctionTok{additional\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"pins"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"vetiver"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"plumber"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Creating New Variants}\label{creating-new-variants}
+
+Define completely custom variants:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{variants}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{custom\_forecast}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{    }\FunctionTok{base\_image}\KeywordTok{:}\AttributeTok{ }\StringTok{"rocker/r{-}ver:latest"}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Time series forecasting environment"}
+\AttributeTok{    }\FunctionTok{packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"devtools"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"forecast"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"fable"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tsibble"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"feasts"}
+\AttributeTok{    }\FunctionTok{system\_deps}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libxml2{-}dev"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libssl{-}dev"}
+\AttributeTok{    }\FunctionTok{category}\KeywordTok{:}\AttributeTok{ }\StringTok{"custom"}
+\AttributeTok{    }\FunctionTok{size}\KeywordTok{:}\AttributeTok{ }\StringTok{"\textasciitilde{}1.3GB"}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Package Management System}\label{package-management-system}
+
+\subsection{Build Mode Package
+Control}\label{build-mode-package-control}
+
+ZZCOLLAB provides three build modes that control the number and type of
+packages installed:
+
+\subsubsection{Fast Mode (-F): 9 Essential
+Packages}\label{fast-mode--f-9-essential-packages}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Core development packages only}
+\NormalTok{packages }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \StringTok{"renv"}\NormalTok{, }\StringTok{"here"}\NormalTok{, }\StringTok{"usethis"}\NormalTok{, }\StringTok{"devtools"}\NormalTok{,}
+  \StringTok{"testthat"}\NormalTok{, }\StringTok{"knitr"}\NormalTok{, }\StringTok{"rmarkdown"}\NormalTok{, }\StringTok{"targets"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Use cases}: - Quick prototyping and testing - CI/CD pipelines
+requiring fast builds - Resource-constrained environments - Initial
+project setup
+
+\subsubsection{Standard Mode (-S): 17 Balanced Packages
+(Default)}\label{standard-mode--s-17-balanced-packages-default}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Essential + common analysis packages}
+\NormalTok{packages }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \CommentTok{\# Fast mode packages}
+  \StringTok{"renv"}\NormalTok{, }\StringTok{"here"}\NormalTok{, }\StringTok{"usethis"}\NormalTok{, }\StringTok{"devtools"}\NormalTok{, }\StringTok{"testthat"}\NormalTok{,}
+  \StringTok{"knitr"}\NormalTok{, }\StringTok{"rmarkdown"}\NormalTok{, }\StringTok{"targets"}\NormalTok{,}
+  \CommentTok{\# Additional analysis packages}
+  \StringTok{"dplyr"}\NormalTok{, }\StringTok{"ggplot2"}\NormalTok{, }\StringTok{"tidyr"}\NormalTok{, }\StringTok{"palmerpenguins"}\NormalTok{,}
+  \StringTok{"broom"}\NormalTok{, }\StringTok{"janitor"}\NormalTok{, }\StringTok{"DT"}\NormalTok{, }\StringTok{"conflicted"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Use cases}: - Most research projects and data analysis -
+Balanced functionality vs build time - Team development environments -
+Standard exploratory data analysis
+
+\subsubsection{Comprehensive Mode (-C): 47+ Full
+Packages}\label{comprehensive-mode--c-47-full-packages}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Complete development and analysis ecosystem}
+\NormalTok{packages }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \CommentTok{\# Standard mode packages + advanced tools}
+  \StringTok{"tidymodels"}\NormalTok{, }\StringTok{"shiny"}\NormalTok{, }\StringTok{"plotly"}\NormalTok{, }\StringTok{"quarto"}\NormalTok{,}
+  \StringTok{"flexdashboard"}\NormalTok{, }\StringTok{"survival"}\NormalTok{, }\StringTok{"lme4"}\NormalTok{, }\StringTok{"car"}\NormalTok{,}
+  \StringTok{"naniar"}\NormalTok{, }\StringTok{"skimr"}\NormalTok{, }\StringTok{"visdat"}\NormalTok{, }\StringTok{"ggthemes"}\NormalTok{,}
+  \StringTok{"kableExtra"}\NormalTok{, }\StringTok{"bookdown"}\NormalTok{, }\StringTok{"jsonlite"}\NormalTok{, }\StringTok{"datapasta"}\NormalTok{,}
+  \CommentTok{\# Database and web packages}
+  \StringTok{"DBI"}\NormalTok{, }\StringTok{"RMariaDB"}\NormalTok{, }\StringTok{"RPostgreSQL"}\NormalTok{, }\StringTok{"httr"}\NormalTok{, }\StringTok{"rvest"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Use cases}: - Comprehensive research environments -
+Multi-paradigm projects (analysis + modeling + publishing) - Teaching
+environments with diverse package needs - Production analysis
+environments
+
+\subsection{Paradigm-Specific Package
+Selection}\label{paradigm-specific-package-selection}
+
+\subsubsection{Analysis Paradigm
+Packages}\label{analysis-paradigm-packages}
+
+Optimized for data exploration and statistical analysis:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{analysis\_packages }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \CommentTok{\# Data manipulation and visualization}
+  \StringTok{"tidyverse"}\NormalTok{, }\StringTok{"here"}\NormalTok{, }\StringTok{"janitor"}\NormalTok{, }\StringTok{"skimr"}\NormalTok{, }\StringTok{"naniar"}\NormalTok{,}
+  \CommentTok{\# Analysis and modeling}
+  \StringTok{"broom"}\NormalTok{, }\StringTok{"infer"}\NormalTok{, }\StringTok{"moderndive"}\NormalTok{,}
+  \CommentTok{\# Reporting and communication}
+  \StringTok{"targets"}\NormalTok{, }\StringTok{"rmarkdown"}\NormalTok{, }\StringTok{"flexdashboard"}\NormalTok{, }\StringTok{"DT"}\NormalTok{, }\StringTok{"plotly"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Manuscript Paradigm
+Packages}\label{manuscript-paradigm-packages}
+
+Focused on academic writing and reproducible research:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{manuscript\_packages }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \CommentTok{\# Core development and testing}
+  \StringTok{"devtools"}\NormalTok{, }\StringTok{"testthat"}\NormalTok{, }\StringTok{"roxygen2"}\NormalTok{,}
+  \CommentTok{\# Academic writing tools}
+  \StringTok{"rmarkdown"}\NormalTok{, }\StringTok{"bookdown"}\NormalTok{, }\StringTok{"papaja"}\NormalTok{, }\StringTok{"RefManageR"}\NormalTok{,}
+  \CommentTok{\# Analysis support}
+  \StringTok{"here"}\NormalTok{, }\StringTok{"conflicted"}\NormalTok{, }\StringTok{"broom"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Package Paradigm
+Packages}\label{package-paradigm-packages}
+
+Designed for R package development:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{package\_packages }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \CommentTok{\# Package development core}
+  \StringTok{"devtools"}\NormalTok{, }\StringTok{"usethis"}\NormalTok{, }\StringTok{"roxygen2"}\NormalTok{, }\StringTok{"testthat"}\NormalTok{,}
+  \CommentTok{\# Documentation and quality}
+  \StringTok{"pkgdown"}\NormalTok{, }\StringTok{"covr"}\NormalTok{, }\StringTok{"lintr"}\NormalTok{, }\StringTok{"styler"}\NormalTok{,}
+  \CommentTok{\# Distribution and checking}
+  \StringTok{"rcmdcheck"}\NormalTok{, }\StringTok{"rhub"}\NormalTok{, }\StringTok{"spelling"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Custom Package Lists}\label{custom-package-lists}
+
+\subsubsection{User-Level Custom
+Packages}\label{user-level-custom-packages}
+
+Define personal package preferences in
+\texttt{\textasciitilde{}/.zzcollab/config.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{my\_datascience}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Personal data science workflow"}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"targets"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"pins"}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"targets"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"pins"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"vetiver"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"plumber"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"shiny"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"shinydashboard"}
+
+\AttributeTok{  }\FunctionTok{my\_stats}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Statistical analysis focus"}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"broom"}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"broom"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"lme4"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"survival"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"car"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"emmeans"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Project-Level Custom
+Packages}\label{project-level-custom-packages}
+
+Override defaults for specific projects in \texttt{./zzcollab.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{project\_specific}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Customer churn analysis packages"}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidymodels"}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidymodels"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"probably"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"workflowsets"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tune"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"recipes"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"parsnip"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"yardstick"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Package Installation
+Separation}\label{package-installation-separation}
+
+ZZCOLLAB distinguishes between two types of package installations:
+
+\textbf{Docker Packages} (\texttt{docker\_packages}): - Installed during
+Docker image build - Available immediately when container starts -
+Shared across all users of the image - Should include essential packages
+needed by everyone
+
+\textbf{renv Packages} (\texttt{renv\_packages}): - Managed by renv for
+reproducibility - Project-specific and version-locked - Include
+analysis-specific packages - Allow for precise dependency management
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{optimal\_separation}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Proper package separation example"}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}
+\CommentTok{      \# Essential system packages everyone needs}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}\CommentTok{          \# Package management}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"devtools"}\CommentTok{      \# Development tools}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"here"}\CommentTok{          \# Path management}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"conflicted"}\CommentTok{    \# Namespace conflicts}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}
+\CommentTok{      \# Project{-}specific analysis packages}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}\CommentTok{     \# Data analysis}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"targets"}\CommentTok{       \# Workflow management}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"palmerpenguins"}\CommentTok{ \# Example data}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"specific\_analysis\_package"}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Team Collaboration
+Configuration}\label{team-collaboration-configuration}
+
+\subsection{GitHub Integration}\label{github-integration}
+
+ZZCOLLAB provides extensive GitHub integration through configuration:
+
+\subsubsection{Repository Management}\label{repository-management}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{collaboration}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{github}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{auto\_create\_repo}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{          \# Automatically create GitHub repositories}
+\AttributeTok{    }\FunctionTok{default\_visibility}\KeywordTok{:}\AttributeTok{ }\StringTok{"private"}\CommentTok{   \# Repository visibility (private/public)}
+\AttributeTok{    }\FunctionTok{enable\_actions}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{            \# Enable GitHub Actions CI/CD}
+\AttributeTok{    }\FunctionTok{branch\_protection}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{         \# Enable branch protection rules}
+
+\CommentTok{    \# Default repository settings}
+\AttributeTok{    }\FunctionTok{repository}\KeywordTok{:}
+\AttributeTok{      }\FunctionTok{allow\_merge\_commits}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{      }\FunctionTok{allow\_squash\_merging}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{      }\FunctionTok{allow\_rebase\_merging}\KeywordTok{:}\AttributeTok{ }\CharTok{false}
+\AttributeTok{      }\FunctionTok{delete\_head\_branches}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Issue and PR Templates}\label{issue-and-pr-templates}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{collaboration}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{github}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{templates}\KeywordTok{:}
+\CommentTok{      \# Enable issue templates}
+\AttributeTok{      }\FunctionTok{issue\_templates}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+
+\CommentTok{      \# Enable pull request template}
+\AttributeTok{      }\FunctionTok{pr\_template}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+
+\CommentTok{      \# Custom template directory}
+\AttributeTok{      }\FunctionTok{template\_dir}\KeywordTok{:}\AttributeTok{ }\StringTok{".github/ISSUE\_TEMPLATE"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Development Environment
+Defaults}\label{development-environment-defaults}
+
+\subsubsection{Container Configuration}\label{container-configuration}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{development}\KeywordTok{:}
+\CommentTok{  \# Default variant for team members joining}
+\AttributeTok{  }\FunctionTok{default\_interface}\KeywordTok{:}\AttributeTok{ }\StringTok{"analysis"}
+
+\CommentTok{  \# Container user and environment settings}
+\AttributeTok{  }\FunctionTok{container}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{default\_user}\KeywordTok{:}\AttributeTok{ }\StringTok{"analyst"}
+\AttributeTok{    }\FunctionTok{working\_dir}\KeywordTok{:}\AttributeTok{ }\StringTok{"/home/analyst/project"}
+\AttributeTok{    }\FunctionTok{shared\_volumes}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"$\{PWD\}:/home/analyst/project"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"$\{HOME\}/.ssh:/home/analyst/.ssh:ro"}
+
+\CommentTok{  \# Dotfiles handling}
+\AttributeTok{  }\FunctionTok{dotfiles}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{auto\_filter\_macos}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{      \# Filter macOS{-}specific commands for Docker}
+\AttributeTok{    }\FunctionTok{preserve\_permissions}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{   \# Maintain file permissions}
+\AttributeTok{    }\FunctionTok{include\_hidden}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{         \# Include hidden dotfiles}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Build and Platform
+Settings}\label{build-and-platform-settings}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{build}\KeywordTok{:}
+\CommentTok{  \# Docker build configuration}
+\AttributeTok{  }\FunctionTok{docker}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{platform}\KeywordTok{:}\AttributeTok{ }\StringTok{"auto"}\CommentTok{            \# auto, linux/amd64, linux/arm64}
+\AttributeTok{    }\FunctionTok{no\_cache}\KeywordTok{:}\AttributeTok{ }\CharTok{false}\CommentTok{             \# Enable Docker build caching}
+\AttributeTok{    }\FunctionTok{parallel\_builds}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{       \# Build variants in parallel}
+\AttributeTok{    }\FunctionTok{memory\_limit}\KeywordTok{:}\AttributeTok{ }\StringTok{"4g"}\CommentTok{          \# Memory limit for builds}
+
+\CommentTok{  \# Package installation settings}
+\AttributeTok{  }\FunctionTok{packages}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{repos}\KeywordTok{:}\AttributeTok{ }\StringTok{"https://cran.rstudio.com/"}
+\AttributeTok{    }\FunctionTok{install\_suggests}\KeywordTok{:}\AttributeTok{ }\CharTok{false}
+\AttributeTok{    }\FunctionTok{dependencies}\KeywordTok{:}\AttributeTok{ }\KeywordTok{[}\StringTok{"Depends"}\KeywordTok{,}\AttributeTok{ }\StringTok{"Imports"}\KeywordTok{,}\AttributeTok{ }\StringTok{"LinkingTo"}\KeywordTok{]}
+\AttributeTok{    }\FunctionTok{parallel\_installs}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Documentation Settings}\label{documentation-settings}
+
+\subsubsection{Automatic Documentation
+Generation}\label{automatic-documentation-generation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{collaboration}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{documentation}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{auto\_generate\_readme}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{       \# Generate project README}
+\AttributeTok{    }\FunctionTok{include\_variant\_docs}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{       \# Document available variants}
+\AttributeTok{    }\FunctionTok{update\_user\_guide}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{          \# Include ZZCOLLAB\_USER\_GUIDE.md}
+
+\CommentTok{    \# Documentation templates}
+\AttributeTok{    }\FunctionTok{readme\_template}\KeywordTok{:}\AttributeTok{ }\StringTok{"README\_TEMPLATE.md"}
+\AttributeTok{    }\FunctionTok{contributing\_guide}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{    }\FunctionTok{code\_of\_conduct}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Practical Configuration
+Workflows}\label{practical-configuration-workflows}
+
+\subsection{Solo Developer Workflow}\label{solo-developer-workflow}
+
+\subsubsection{Initial Setup}\label{initial-setup}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 1. Initialize personal configuration}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ init}
+
+\CommentTok{\# 2. Set personal preferences}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set team{-}name }\StringTok{"myteam"}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set github{-}account }\StringTok{"myusername"}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set paradigm }\StringTok{"analysis"}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set build{-}mode }\StringTok{"standard"}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set dotfiles{-}dir }\StringTok{"\textasciitilde{}/dotfiles"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Custom Package
+Configuration}\label{custom-package-configuration}
+
+Edit \texttt{\textasciitilde{}/.zzcollab/config.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{defaults}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{team\_name}\KeywordTok{:}\AttributeTok{ }\StringTok{"myteam"}
+\AttributeTok{  }\FunctionTok{paradigm}\KeywordTok{:}\AttributeTok{ }\StringTok{"analysis"}
+\AttributeTok{  }\FunctionTok{build\_mode}\KeywordTok{:}\AttributeTok{ }\StringTok{"my\_custom"}
+
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{my\_custom}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"My personal data science stack"}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}\AttributeTok{ }\KeywordTok{[}\StringTok{"renv"}\KeywordTok{,}\AttributeTok{ }\StringTok{"tidyverse"}\KeywordTok{,}\AttributeTok{ }\StringTok{"here"}\KeywordTok{,}\AttributeTok{ }\StringTok{"conflicted"}\KeywordTok{]}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}\AttributeTok{ }\KeywordTok{[}\StringTok{"renv"}\KeywordTok{,}\AttributeTok{ }\StringTok{"tidyverse"}\KeywordTok{,}\AttributeTok{ }\StringTok{"targets"}\KeywordTok{,}\AttributeTok{ }\StringTok{"pins"}\KeywordTok{,}\AttributeTok{ }\StringTok{"vetiver"}\KeywordTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Project Creation}\label{project-creation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Create project using personal defaults}
+\ExtensionTok{zzcollab} \AttributeTok{{-}i} \AttributeTok{{-}p}\NormalTok{ my{-}analysis}
+
+\CommentTok{\# Customize variants for this specific project}
+\BuiltInTok{cd}\NormalTok{ my{-}analysis}
+\ExtensionTok{./add\_variant.sh}    \CommentTok{\# Add alpine\_minimal for CI/CD testing}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Team Leader Workflow}\label{team-leader-workflow}
+
+\subsubsection{Team Configuration Setup}\label{team-configuration-setup}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 1. Create team project directory}
+\FunctionTok{mkdir}\NormalTok{ customer{-}churn{-}analysis}
+\BuiltInTok{cd}\NormalTok{ customer{-}churn{-}analysis}
+
+\CommentTok{\# 2. Initialize with base configuration}
+\ExtensionTok{zzcollab} \AttributeTok{{-}i} \AttributeTok{{-}p}\NormalTok{ customer{-}churn{-}analysis}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Customize Team Variants}\label{customize-team-variants}
+
+Edit the generated \texttt{config.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{team}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{name}\KeywordTok{:}\AttributeTok{ }\StringTok{"datasci{-}lab"}
+\AttributeTok{  }\FunctionTok{project}\KeywordTok{:}\AttributeTok{ }\StringTok{"customer{-}churn{-}analysis"}
+\AttributeTok{  }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"ML analysis of customer retention patterns"}
+
+\FunctionTok{variants}\KeywordTok{:}
+\CommentTok{  \# Core development environment}
+\AttributeTok{  }\FunctionTok{minimal}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# For quick testing and CI/CD}
+
+\CommentTok{  \# Primary analysis environment}
+\AttributeTok{  }\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Main development interface}
+
+\CommentTok{  \# Machine learning environment}
+\AttributeTok{  }\FunctionTok{modeling}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# For model development and evaluation}
+
+\CommentTok{  \# Alpine for CI/CD}
+\AttributeTok{  }\FunctionTok{alpine\_minimal}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Fast CI/CD testing}
+
+\CommentTok{  \# Optional environments (disabled by default)}
+\AttributeTok{  }\FunctionTok{publishing}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{false}\CommentTok{   \# Enable when needed for reports}
+\AttributeTok{  }\FunctionTok{geospatial}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{false}\CommentTok{   \# Not needed for this project}
+
+\FunctionTok{collaboration}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{github}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{auto\_create\_repo}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{    }\FunctionTok{default\_visibility}\KeywordTok{:}\AttributeTok{ }\StringTok{"private"}
+\AttributeTok{    }\FunctionTok{enable\_actions}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+
+\AttributeTok{  }\FunctionTok{development}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{default\_interface}\KeywordTok{:}\AttributeTok{ }\StringTok{"analysis"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Build and Deploy Team
+Images}\label{build-and-deploy-team-images}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Build team images with custom configuration}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}variants{-}config}\NormalTok{ config.yaml }\AttributeTok{{-}{-}github}
+
+\CommentTok{\# Push to GitHub and Docker Hub}
+\FunctionTok{git}\NormalTok{ add . }\KeywordTok{\&\&} \FunctionTok{git}\NormalTok{ commit }\AttributeTok{{-}m} \StringTok{"Initial team configuration"}
+\FunctionTok{git}\NormalTok{ push origin main}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Team Member Workflow}\label{team-member-workflow}
+
+\subsubsection{Joining an Existing Team
+Project}\label{joining-an-existing-team-project}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 1. Clone team repository}
+\FunctionTok{git}\NormalTok{ clone https://github.com/datasci{-}lab/customer{-}churn{-}analysis.git}
+\BuiltInTok{cd}\NormalTok{ customer{-}churn{-}analysis}
+
+\CommentTok{\# 2. Join using team\textquotesingle{}s preferred interface}
+\ExtensionTok{zzcollab} \AttributeTok{{-}t}\NormalTok{ datasci{-}lab }\AttributeTok{{-}p}\NormalTok{ customer{-}churn{-}analysis }\AttributeTok{{-}I}\NormalTok{ analysis}
+
+\CommentTok{\# 3. Start development environment}
+\FunctionTok{make}\NormalTok{ docker{-}zsh}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Understanding Team
+Configuration}\label{understanding-team-configuration}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# View team\textquotesingle{}s available variants}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ list}
+
+\CommentTok{\# See which Docker images are available}
+\ExtensionTok{docker}\NormalTok{ images }\KeywordTok{|} \FunctionTok{grep}\NormalTok{ datasci{-}lab}
+
+\CommentTok{\# Check team\textquotesingle{}s package configuration}
+\FunctionTok{cat}\NormalTok{ config.yaml }\KeywordTok{|} \FunctionTok{grep} \AttributeTok{{-}A}\NormalTok{ 20 }\StringTok{"build:"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Working with Multiple
+Interfaces}\label{working-with-multiple-interfaces}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Use analysis environment for daily work}
+\ExtensionTok{zzcollab} \AttributeTok{{-}t}\NormalTok{ datasci{-}lab }\AttributeTok{{-}p}\NormalTok{ customer{-}churn{-}analysis }\AttributeTok{{-}I}\NormalTok{ analysis}
+\FunctionTok{make}\NormalTok{ docker{-}zsh}
+
+\CommentTok{\# Switch to modeling environment for ML work}
+\BuiltInTok{exit}  \CommentTok{\# Exit current container}
+\ExtensionTok{zzcollab} \AttributeTok{{-}t}\NormalTok{ datasci{-}lab }\AttributeTok{{-}p}\NormalTok{ customer{-}churn{-}analysis }\AttributeTok{{-}I}\NormalTok{ modeling}
+\FunctionTok{make}\NormalTok{ docker{-}zsh}
+
+\CommentTok{\# Use minimal environment for testing}
+\BuiltInTok{exit}
+\ExtensionTok{zzcollab} \AttributeTok{{-}t}\NormalTok{ datasci{-}lab }\AttributeTok{{-}p}\NormalTok{ customer{-}churn{-}analysis }\AttributeTok{{-}I}\NormalTok{ minimal}
+\FunctionTok{make}\NormalTok{ docker{-}test}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Advanced Custom Variant
+Workflow}\label{advanced-custom-variant-workflow}
+
+\subsubsection{Creating Organization-Specific
+Variants}\label{creating-organization-specific-variants}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 1. Copy and customize variant library}
+\FunctionTok{cp}\NormalTok{ templates/variant\_examples.yaml custom\_variants.yaml}
+\end{Highlighting}
+\end{Shaded}
+
+Edit \texttt{custom\_variants.yaml} to add organization variants:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Add to existing variants}
+\FunctionTok{org\_finance}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{base\_image}\KeywordTok{:}\AttributeTok{ }\StringTok{"rocker/r{-}ver:latest"}
+\AttributeTok{  }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Financial analysis environment with specialized packages"}
+\AttributeTok{  }\FunctionTok{packages}\KeywordTok{:}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"devtools"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyquant"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"quantmod"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"PerformanceAnalytics"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"RQuantLib"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"timeDate"}
+\AttributeTok{  }\FunctionTok{system\_deps}\KeywordTok{:}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libxml2{-}dev"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libssl{-}dev"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"libcurl4{-}openssl{-}dev"}
+\AttributeTok{  }\FunctionTok{category}\KeywordTok{:}\AttributeTok{ }\StringTok{"specialized"}
+\AttributeTok{  }\FunctionTok{size}\KeywordTok{:}\AttributeTok{ }\StringTok{"\textasciitilde{}1.8GB"}
+
+\FunctionTok{org\_research}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{base\_image}\KeywordTok{:}\AttributeTok{ }\StringTok{"rocker/verse:latest"}
+\AttributeTok{  }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Academic research environment with LaTeX and publishing tools"}
+\AttributeTok{  }\FunctionTok{packages}\KeywordTok{:}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"devtools"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"rmarkdown"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"bookdown"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"papaja"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"RefManageR"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"citr"}
+\AttributeTok{  }\FunctionTok{system\_deps}\KeywordTok{:}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"texlive{-}full"}
+\AttributeTok{    }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"pandoc"}
+\AttributeTok{  }\FunctionTok{category}\KeywordTok{:}\AttributeTok{ }\StringTok{"specialized"}
+\AttributeTok{  }\FunctionTok{size}\KeywordTok{:}\AttributeTok{ }\StringTok{"\textasciitilde{}4GB"}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Using Custom Variant
+Library}\label{using-custom-variant-library}
+
+Edit team \texttt{config.yaml}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{build}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{use\_config\_variants}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{  }\FunctionTok{variant\_library}\KeywordTok{:}\AttributeTok{ }\StringTok{"custom\_variants.yaml"}\CommentTok{  \# Use custom library}
+
+\FunctionTok{variants}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{minimal}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{  }\FunctionTok{org\_finance}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Use custom finance variant}
+\AttributeTok{  }\FunctionTok{org\_research}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Use custom research variant}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Building and Sharing Custom
+Variants}\label{building-and-sharing-custom-variants}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Build with custom variant library}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}variants{-}config}\NormalTok{ config.yaml}
+
+\CommentTok{\# Verify custom images were created}
+\ExtensionTok{docker}\NormalTok{ images }\KeywordTok{|} \FunctionTok{grep}\NormalTok{ finance}
+\ExtensionTok{docker}\NormalTok{ images }\KeywordTok{|} \FunctionTok{grep}\NormalTok{ research}
+
+\CommentTok{\# Share custom variant library with organization}
+\FunctionTok{git}\NormalTok{ add custom\_variants.yaml config.yaml}
+\FunctionTok{git}\NormalTok{ commit }\AttributeTok{{-}m} \StringTok{"Add organization{-}specific variants"}
+\FunctionTok{git}\NormalTok{ push origin main}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Configuration Validation and
+Troubleshooting}\label{configuration-validation-and-troubleshooting}
+
+\subsection{Validation Commands}\label{validation-commands}
+
+\subsubsection{Comprehensive Configuration
+Checking}\label{comprehensive-configuration-checking}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check all configuration files for syntax and consistency}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ validate}
+
+\CommentTok{\# List effective configuration (merged from all sources)}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ list}
+
+\CommentTok{\# Check specific configuration values}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ get team{-}name}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ get variants.analysis.enabled}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ get build.docker.platform}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Variant Definition
+Validation}\label{variant-definition-validation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Validate variant\_examples.yaml syntax}
+\ExtensionTok{./add\_variant.sh} \AttributeTok{{-}{-}validate}
+
+\CommentTok{\# Check for missing or invalid variant references}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}variants{-}config}\NormalTok{ config.yaml }\AttributeTok{{-}{-}dry{-}run}
+
+\CommentTok{\# Test variant definitions without building}
+\ExtensionTok{./add\_variant.sh} \AttributeTok{{-}{-}test{-}definitions}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Docker and Build
+Validation}\label{docker-and-build-validation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check Docker daemon and permissions}
+\ExtensionTok{docker}\NormalTok{ info}
+
+\CommentTok{\# Verify platform compatibility}
+\ExtensionTok{docker}\NormalTok{ buildx ls}
+
+\CommentTok{\# Test Docker build with specific variant}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}variants{-}config}\NormalTok{ config.yaml }\AttributeTok{{-}{-}build{-}only}\NormalTok{ minimal}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Common Configuration
+Issues}\label{common-configuration-issues}
+
+\subsubsection{Missing Dependencies}\label{missing-dependencies}
+
+\textbf{Issue}: \texttt{yq} command not found
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Error: YAML configuration requires yq but it\textquotesingle{}s not installed}
+\ExtensionTok{Error:}\NormalTok{ Configuration validation failed }\AttributeTok{{-}}\NormalTok{ yq command not found}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Solution}: Install yq YAML processor
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# macOS}
+\ExtensionTok{brew}\NormalTok{ install yq}
+
+\CommentTok{\# Ubuntu/Debian}
+\ExtensionTok{snap}\NormalTok{ install yq}
+\CommentTok{\# or}
+\FunctionTok{wget}\NormalTok{ https://github.com/mikefarah/yq/releases/latest/download/yq\_linux\_amd64 }\AttributeTok{{-}O}\NormalTok{ /usr/bin/yq}
+\FunctionTok{chmod}\NormalTok{ +x /usr/bin/yq}
+
+\CommentTok{\# Verify installation}
+\ExtensionTok{yq} \AttributeTok{{-}{-}version}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Docker Platform Issues}\label{docker-platform-issues}
+
+\textbf{Issue}: ARM64/AMD64 compatibility problems
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Error building variant \textquotesingle{}geospatial\textquotesingle{}: platform not supported}
+\ExtensionTok{Error:}\NormalTok{ rocker/geospatial:latest: no matching manifest for linux/arm64/v8}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Solution}: Configure platform compatibility
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# In config.yaml}
+\FunctionTok{build}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{docker}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{platform}\KeywordTok{:}\AttributeTok{ }\StringTok{"linux/amd64"}\CommentTok{  \# Force AMD64 for compatibility}
+\end{Highlighting}
+\end{Shaded}
+
+Or use ARM64-compatible variants:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{variants}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# ARM64 compatible}
+\AttributeTok{  }\FunctionTok{geospatial}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{false}\CommentTok{    \# AMD64 only {-} disable on ARM64 systems}
+\AttributeTok{  }\FunctionTok{alpine\_analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# ARM64 compatible alternative}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Package Installation
+Failures}\label{package-installation-failures}
+
+\textbf{Issue}: Custom packages fail to install
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Error during Docker build: package \textquotesingle{}obscure\_package\textquotesingle{} not available}
+\ExtensionTok{Error:}\NormalTok{ installation of package }\StringTok{\textquotesingle{}obscure\_package\textquotesingle{}}\NormalTok{ had non{-}zero exit status}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Solution}: Verify package availability and dependencies
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Separate core packages from experimental ones}
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{safe\_custom}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}\CommentTok{  \# Known stable packages}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"experimental\_package"}\CommentTok{  \# Let renv handle experimental packages}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Permission and Access
+Issues}\label{permission-and-access-issues}
+
+\textbf{Issue}: Docker daemon permission denied
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Error: permission denied while trying to connect to Docker daemon}
+\ExtensionTok{Error:}\NormalTok{ Got permission denied while trying to connect to the Docker daemon socket}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Solution}: Configure Docker access
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Add user to docker group (Linux)}
+\FunctionTok{sudo}\NormalTok{ usermod }\AttributeTok{{-}aG}\NormalTok{ docker }\VariableTok{$USER}
+\ExtensionTok{newgrp}\NormalTok{ docker}
+
+\CommentTok{\# Restart Docker daemon (if needed)}
+\FunctionTok{sudo}\NormalTok{ systemctl restart docker}
+
+\CommentTok{\# Verify access}
+\ExtensionTok{docker}\NormalTok{ run hello{-}world}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Configuration Hierarchy
+Conflicts}\label{configuration-hierarchy-conflicts}
+
+\textbf{Issue}: Settings not taking effect as expected
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# User sets paradigm = "manuscript" but projects use "analysis"}
+\CommentTok{\# Project config overriding user config unexpectedly}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Solution}: Understand and verify hierarchy
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check configuration sources and precedence}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ list }\AttributeTok{{-}{-}verbose}
+
+\CommentTok{\# Shows which file each setting comes from:}
+\CommentTok{\# team\_name: "myteam" (from \textasciitilde{}/.zzcollab/config.yaml)}
+\CommentTok{\# paradigm: "analysis" (from ./zzcollab.yaml) [OVERRIDING user config]}
+\end{Highlighting}
+\end{Shaded}
+
+Edit the appropriate configuration file:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# To use user default, remove from project config}
+\ExtensionTok{vim}\NormalTok{ ./zzcollab.yaml  }\CommentTok{\# Remove paradigm setting}
+
+\CommentTok{\# To set project{-}specific override, ensure it\textquotesingle{}s intentional}
+\BuiltInTok{echo} \StringTok{"\# Project uses analysis paradigm instead of user default"} \OperatorTok{\textgreater{}\textgreater{}}\NormalTok{ ./zzcollab.yaml}
+\end{Highlighting}
+\end{Shaded}
+
+\section{R Interface Configuration
+Management}\label{r-interface-configuration-management}
+
+ZZCOLLAB provides a complete R interface for configuration management,
+allowing you to work entirely within R/RStudio environments.
+
+\subsection{Configuration Functions}\label{configuration-functions}
+
+\subsubsection{Basic Configuration
+Management}\label{basic-configuration-management}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(zzcollab)}
+
+\CommentTok{\# Initialize configuration}
+\FunctionTok{init\_config}\NormalTok{()}
+
+\CommentTok{\# Set configuration values}
+\FunctionTok{set\_config}\NormalTok{(}\StringTok{"team\_name"}\NormalTok{, }\StringTok{"datasci{-}lab"}\NormalTok{)}
+\FunctionTok{set\_config}\NormalTok{(}\StringTok{"paradigm"}\NormalTok{, }\StringTok{"analysis"}\NormalTok{)}
+\FunctionTok{set\_config}\NormalTok{(}\StringTok{"build\_mode"}\NormalTok{, }\StringTok{"standard"}\NormalTok{)}
+\FunctionTok{set\_config}\NormalTok{(}\StringTok{"dotfiles\_dir"}\NormalTok{, }\StringTok{"\textasciitilde{}/dotfiles"}\NormalTok{)}
+
+\CommentTok{\# Get configuration values}
+\NormalTok{team }\OtherTok{\textless{}{-}} \FunctionTok{get\_config}\NormalTok{(}\StringTok{"team\_name"}\NormalTok{)}
+\NormalTok{paradigm }\OtherTok{\textless{}{-}} \FunctionTok{get\_config}\NormalTok{(}\StringTok{"paradigm"}\NormalTok{)}
+
+\CommentTok{\# List all configuration}
+\NormalTok{config\_list }\OtherTok{\textless{}{-}} \FunctionTok{list\_config}\NormalTok{()}
+\FunctionTok{print}\NormalTok{(config\_list)}
+
+\CommentTok{\# Validate configuration}
+\NormalTok{validation\_result }\OtherTok{\textless{}{-}} \FunctionTok{validate\_config}\NormalTok{()}
+\ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\NormalTok{validation\_result}\SpecialCharTok{$}\NormalTok{valid) \{}
+  \FunctionTok{message}\NormalTok{(}\StringTok{"Configuration issues found:"}\NormalTok{)}
+  \FunctionTok{print}\NormalTok{(validation\_result}\SpecialCharTok{$}\NormalTok{errors)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Advanced Configuration with Custom
+Variants}\label{advanced-configuration-with-custom-variants}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Set custom build mode with specific packages}
+\FunctionTok{set\_config}\NormalTok{(}\StringTok{"build\_mode"}\NormalTok{, }\StringTok{"my\_analysis"}\NormalTok{)}
+
+\CommentTok{\# This would correspond to a build\_modes section in your YAML:}
+\CommentTok{\# build\_modes:}
+\CommentTok{\#   my\_analysis:}
+\CommentTok{\#     description: "Custom analysis environment"}
+\CommentTok{\#     docker\_packages: ["renv", "tidyverse", "targets"]}
+\CommentTok{\#     renv\_packages: ["renv", "tidyverse", "targets", "pins", "vetiver"]}
+
+\CommentTok{\# Create project with custom configuration}
+\FunctionTok{init\_project}\NormalTok{(}
+  \AttributeTok{team\_name =} \StringTok{"datasci{-}lab"}\NormalTok{,}
+  \AttributeTok{project\_name =} \StringTok{"customer{-}analysis"}\NormalTok{,}
+  \AttributeTok{paradigm =} \StringTok{"analysis"}\NormalTok{,}
+  \AttributeTok{build\_mode =} \StringTok{"my\_analysis"}\NormalTok{,}
+  \AttributeTok{variants =} \FunctionTok{c}\NormalTok{(}\StringTok{"minimal"}\NormalTok{, }\StringTok{"analysis"}\NormalTok{, }\StringTok{"alpine\_minimal"}\NormalTok{)}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Configuration-Aware Project
+Functions}\label{configuration-aware-project-functions}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Functions automatically use configuration defaults}
+\FunctionTok{init\_project}\NormalTok{(}\StringTok{"new{-}analysis"}\NormalTok{)          }\CommentTok{\# Uses configured team\_name, paradigm, build\_mode}
+\FunctionTok{join\_project}\NormalTok{(}\StringTok{"existing{-}project"}\NormalTok{)      }\CommentTok{\# Uses configured team\_name and preferences}
+
+\CommentTok{\# Override specific settings while keeping others}
+\FunctionTok{init\_project}\NormalTok{(}
+  \AttributeTok{project\_name =} \StringTok{"special{-}analysis"}\NormalTok{,}
+  \AttributeTok{paradigm =} \StringTok{"manuscript"}             \CommentTok{\# Override default paradigm}
+  \CommentTok{\# team\_name, build\_mode from config}
+\NormalTok{)}
+
+\CommentTok{\# Explicit configuration for full control}
+\FunctionTok{init\_project}\NormalTok{(}
+  \AttributeTok{team\_name =} \StringTok{"special{-}team"}\NormalTok{,}
+  \AttributeTok{project\_name =} \StringTok{"collaborative{-}analysis"}\NormalTok{,}
+  \AttributeTok{paradigm =} \StringTok{"analysis"}\NormalTok{,}
+  \AttributeTok{build\_mode =} \StringTok{"comprehensive"}\NormalTok{,}
+  \AttributeTok{dotfiles\_path =} \StringTok{"\textasciitilde{}/special{-}dotfiles"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Configuration Inspection and
+Debugging}\label{configuration-inspection-and-debugging}
+
+\subsubsection{Understanding Effective
+Configuration}\label{understanding-effective-configuration}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# See the complete effective configuration}
+\NormalTok{effective\_config }\OtherTok{\textless{}{-}} \FunctionTok{get\_effective\_config}\NormalTok{()}
+\FunctionTok{str}\NormalTok{(effective\_config)}
+
+\CommentTok{\# Check configuration sources for specific values}
+\NormalTok{config\_sources }\OtherTok{\textless{}{-}} \FunctionTok{get\_config\_sources}\NormalTok{()}
+\FunctionTok{print}\NormalTok{(config\_sources}\SpecialCharTok{$}\NormalTok{team\_name)  }\CommentTok{\# Shows which file provides team\_name}
+
+\CommentTok{\# Validate configuration with detailed output}
+\NormalTok{validation }\OtherTok{\textless{}{-}} \FunctionTok{validate\_config}\NormalTok{(}\AttributeTok{verbose =} \ConstantTok{TRUE}\NormalTok{)}
+\ControlFlowTok{if}\NormalTok{ (validation}\SpecialCharTok{$}\NormalTok{has\_warnings) \{}
+  \FunctionTok{message}\NormalTok{(}\StringTok{"Configuration warnings:"}\NormalTok{)}
+  \FunctionTok{sapply}\NormalTok{(validation}\SpecialCharTok{$}\NormalTok{warnings, message)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Working with Multiple
+Configurations}\label{working-with-multiple-configurations}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Save current configuration state}
+\NormalTok{current\_config }\OtherTok{\textless{}{-}} \FunctionTok{save\_config\_state}\NormalTok{()}
+
+\CommentTok{\# Temporarily change configuration for specific project}
+\NormalTok{temp\_config }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \AttributeTok{team\_name =} \StringTok{"temporary{-}team"}\NormalTok{,}
+  \AttributeTok{paradigm =} \StringTok{"package"}\NormalTok{,}
+  \AttributeTok{build\_mode =} \StringTok{"fast"}
+\NormalTok{)}
+\FunctionTok{apply\_temp\_config}\NormalTok{(temp\_config)}
+
+\CommentTok{\# Do work with temporary configuration}
+\FunctionTok{init\_project}\NormalTok{(}\StringTok{"temp{-}package{-}project"}\NormalTok{)}
+
+\CommentTok{\# Restore original configuration}
+\FunctionTok{restore\_config\_state}\NormalTok{(current\_config)}
+
+\CommentTok{\# Verify restoration}
+\FunctionTok{get\_config}\NormalTok{(}\StringTok{"team\_name"}\NormalTok{)  }\CommentTok{\# Should be back to original value}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Best Practices and
+Recommendations}\label{best-practices-and-recommendations}
+
+\subsection{Configuration Strategy by Use
+Case}\label{configuration-strategy-by-use-case}
+
+\subsubsection{Solo Researcher}\label{solo-researcher}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{User config only}: Set personal defaults in
+  \texttt{\textasciitilde{}/.zzcollab/config.yaml}
+\item
+  \textbf{Minimal variants}: Use 2-3 variants (minimal, analysis,
+  alpine\_minimal)
+\item
+  \textbf{Standard build mode}: Balance between functionality and build
+  time
+\item
+  \textbf{Simple package lists}: Stick to well-established packages
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# \textasciitilde{}/.zzcollab/config.yaml for solo researcher}
+\FunctionTok{defaults}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{team\_name}\KeywordTok{:}\AttributeTok{ }\StringTok{"myresearch"}
+\AttributeTok{  }\FunctionTok{paradigm}\KeywordTok{:}\AttributeTok{ }\StringTok{"analysis"}
+\AttributeTok{  }\FunctionTok{build\_mode}\KeywordTok{:}\AttributeTok{ }\StringTok{"standard"}
+
+\CommentTok{\# No custom build\_modes {-} use built{-}in standard mode}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Small Research Team (2-5
+people)}\label{small-research-team-2-5-people}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Project configs}: Share configuration via
+  \texttt{./zzcollab.yaml} in repositories
+\item
+  \textbf{Focused variants}: 3-5 variants covering team's research
+  domains
+\item
+  \textbf{Paradigm alignment}: Team agrees on primary paradigm
+  (analysis/manuscript)
+\item
+  \textbf{Package coordination}: Custom build modes for shared analysis
+  workflows
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# ./zzcollab.yaml for small team}
+\FunctionTok{team}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{name}\KeywordTok{:}\AttributeTok{ }\StringTok{"psychlab"}
+\AttributeTok{  }\FunctionTok{project}\KeywordTok{:}\AttributeTok{ }\StringTok{"attention{-}study"}
+
+\FunctionTok{variants}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{minimal}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Quick testing}
+\AttributeTok{  }\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Primary analysis}
+\AttributeTok{  }\FunctionTok{publishing}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{    \# Manuscript preparation}
+
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{psych\_analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Psychology research workflow"}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}\AttributeTok{ }\KeywordTok{[}\StringTok{"renv"}\KeywordTok{,}\AttributeTok{ }\StringTok{"tidyverse"}\KeywordTok{,}\AttributeTok{ }\StringTok{"here"}\KeywordTok{]}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}\AttributeTok{ }\KeywordTok{[}\StringTok{"renv"}\KeywordTok{,}\AttributeTok{ }\StringTok{"tidyverse"}\KeywordTok{,}\AttributeTok{ }\StringTok{"psych"}\KeywordTok{,}\AttributeTok{ }\StringTok{"lavaan"}\KeywordTok{,}\AttributeTok{ }\StringTok{"sem"}\KeywordTok{,}\AttributeTok{ }\StringTok{"papaja"}\KeywordTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Large Research Organization (10+
+people)}\label{large-research-organization-10-people}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{System configs}: Organization defaults in
+  \texttt{/etc/zzcollab/config.yaml}
+\item
+  \textbf{Extensive variants}: Full variant library available to teams
+\item
+  \textbf{Multiple paradigms}: Support analysis, manuscript, and package
+  paradigms
+\item
+  \textbf{Custom variant library}: Organization-specific variants in
+  custom libraries
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# /etc/zzcollab/config.yaml for organization}
+\FunctionTok{defaults}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{github\_account}\KeywordTok{:}\AttributeTok{ }\StringTok{"university{-}research"}
+
+\CommentTok{\# Custom organization variants}
+\FunctionTok{build}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{variant\_library}\KeywordTok{:}\AttributeTok{ }\StringTok{"/etc/zzcollab/org\_variants.yaml"}
+
+\FunctionTok{collaboration}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{github}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{default\_visibility}\KeywordTok{:}\AttributeTok{ }\StringTok{"private"}
+\AttributeTok{    }\FunctionTok{enable\_actions}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+
+\AttributeTok{  }\FunctionTok{documentation}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{auto\_generate\_readme}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{    }\FunctionTok{contributing\_guide}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Package Management Best
+Practices}\label{package-management-best-practices}
+
+\subsubsection{Docker vs renv Package
+Separation}\label{docker-vs-renv-package-separation}
+
+\textbf{Docker Packages} (installed during image build): - System-wide
+development tools: \texttt{renv}, \texttt{devtools}, \texttt{here},
+\texttt{conflicted} - Essential utilities everyone needs:
+\texttt{usethis}, \texttt{testthat}, \texttt{knitr} - Large, stable
+dependencies: \texttt{tidyverse} (if used by most team members)
+
+\textbf{renv Packages} (project-specific): - Analysis-specific packages:
+domain-specific statistical packages - Experimental or cutting-edge
+packages: newly released packages - Version-sensitive packages: packages
+requiring specific versions - Data-specific packages: packages for
+particular datasets or APIs
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Good separation example}
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{good\_separation}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}\CommentTok{          \# Package management (everyone needs)}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"devtools"}\CommentTok{      \# Development tools (everyone needs)}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"here"}\CommentTok{          \# Path management (everyone needs)}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"conflicted"}\CommentTok{    \# Namespace management (everyone needs)}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"tidyverse"}\CommentTok{     \# Analysis packages (project{-}specific)}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"targets"}\CommentTok{       \# Workflow management (project{-}specific)}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"specific\_analysis\_package"}\CommentTok{  \# Domain{-}specific (project{-}specific)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Version Management
+Strategy}\label{version-management-strategy}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Pin critical package versions in project configs}
+\FunctionTok{build\_modes}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{stable\_analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{description}\KeywordTok{:}\AttributeTok{ }\StringTok{"Stable versions for reproducible analysis"}
+\AttributeTok{    }\FunctionTok{docker\_packages}\KeywordTok{:}\AttributeTok{ }\KeywordTok{[}\StringTok{"renv"}\KeywordTok{,}\AttributeTok{ }\StringTok{"devtools"}\KeywordTok{,}\AttributeTok{ }\StringTok{"here"}\KeywordTok{]}
+\AttributeTok{    }\FunctionTok{renv\_packages}\KeywordTok{:}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"renv"}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"dplyr@1.1.0"}\CommentTok{        \# Pin specific version}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"ggplot2@3.4.0"}\CommentTok{      \# Pin specific version}
+\AttributeTok{      }\KeywordTok{{-}}\AttributeTok{ }\StringTok{"latest\_package"}\CommentTok{     \# Use latest for new packages}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Performance Optimization}\label{performance-optimization}
+
+\subsubsection{Build Time Optimization}\label{build-time-optimization}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Use appropriate build modes}: Fast mode for CI/CD,
+  Comprehensive for production
+\item
+  \textbf{Minimize Docker packages}: Only install widely-used packages
+  in Docker
+\item
+  \textbf{Layer caching}: Order packages by stability (stable packages
+  first)
+\item
+  \textbf{Parallel builds}: Enable parallel variant building in
+  configuration
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Optimized for build performance}
+\FunctionTok{build}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{docker}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{parallel\_builds}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\AttributeTok{    }\FunctionTok{memory\_limit}\KeywordTok{:}\AttributeTok{ }\StringTok{"4g"}
+
+\AttributeTok{  }\FunctionTok{packages}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{parallel\_installs}\KeywordTok{:}\AttributeTok{ }\CharTok{true}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Container Size
+Optimization}\label{container-size-optimization}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Choose appropriate base images}: Use minimal bases when
+  possible
+\item
+  \textbf{Use Alpine variants}: For CI/CD and testing workflows
+\item
+  \textbf{Separate concerns}: Use different variants for different
+  purposes
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Size{-}optimized variant strategy}
+\FunctionTok{variants}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{alpine\_minimal}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# \textasciitilde{}200MB for CI/CD}
+\AttributeTok{  }\FunctionTok{analysis}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{enabled}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# \textasciitilde{}1.2GB for development}
+\CommentTok{  \# Don\textquotesingle{}t enable comprehensive variants unless needed}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Security and Access
+Management}\label{security-and-access-management}
+
+\subsubsection{GitHub Repository
+Settings}\label{github-repository-settings}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{collaboration}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{github}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{default\_visibility}\KeywordTok{:}\AttributeTok{ }\StringTok{"private"}\CommentTok{    \# Default to private repositories}
+\AttributeTok{    }\FunctionTok{branch\_protection}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{          \# Require PR reviews}
+
+\AttributeTok{    }\FunctionTok{repository}\KeywordTok{:}
+\AttributeTok{      }\FunctionTok{allow\_merge\_commits}\KeywordTok{:}\AttributeTok{ }\CharTok{false}\CommentTok{     \# Require clean history}
+\AttributeTok{      }\FunctionTok{allow\_squash\_merging}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# Allow squash merging}
+\AttributeTok{      }\FunctionTok{delete\_head\_branches}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{     \# Clean up after merging}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Container Security}\label{container-security}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{development}\KeywordTok{:}
+\AttributeTok{  }\FunctionTok{container}\KeywordTok{:}
+\AttributeTok{    }\FunctionTok{default\_user}\KeywordTok{:}\AttributeTok{ }\StringTok{"analyst"}\CommentTok{          \# Don\textquotesingle{}t run as root}
+\AttributeTok{    }\FunctionTok{read\_only\_volumes}\KeywordTok{:}\AttributeTok{ }\CharTok{true}\CommentTok{          \# Mount shared volumes read{-}only when possible}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Access Control}\label{access-control}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{User configs}: Personal settings only (team names,
+  preferences)
+\item
+  \textbf{Project configs}: Team settings (variants, collaboration
+  rules)
+\item
+  \textbf{System configs}: Organization policies (security, defaults)
+\end{itemize}
+
+This separation ensures that sensitive organization settings cannot be
+overridden by individual users or projects.
+
+\section{Conclusion}\label{conclusion}
+
+ZZCOLLAB's configuration system provides powerful, flexible control over
+research environments while maintaining simplicity for common use cases.
+The multi-layered hierarchy allows individual preferences, team
+coordination, and organizational policies to coexist seamlessly.
+
+Key takeaways:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Start simple}: Use built-in build modes and standard variants
+  for most projects
+\item
+  \textbf{Customize gradually}: Add custom variants and packages as
+  needs become clear
+\item
+  \textbf{Coordinate with teams}: Use project configs to ensure team
+  consistency
+\item
+  \textbf{Optimize for workflow}: Choose variants and packages that
+  match your research paradigm
+\item
+  \textbf{Validate regularly}: Use configuration validation to catch
+  issues early
+\end{enumerate}
+
+The configuration system scales from solo researchers to large
+organizations, providing reproducible, customizable research
+environments that eliminate configuration drift and enable seamless
+collaboration.
+
+For detailed technical documentation, see: - \texttt{zzcollab\ -\/-help}
+for command-line options - \texttt{help(package\ =\ "zzcollab")} for R
+interface documentation - \texttt{templates/variant\_examples.yaml} for
+available variants - \texttt{PARADIGM\_GUIDE.md} for paradigm-specific
+guidance
+
+\end{document}
