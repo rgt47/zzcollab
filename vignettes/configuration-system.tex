@@ -95,9 +95,23 @@
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\usepackage[utf8]{inputenc}
 \usepackage{fontspec}
-\usepackage{xunicode}
+\usepackage{xcolor}
+\setmainfont{Helvetica Neue}
+\setsansfont{Helvetica Neue}
+\setmonofont{SF Mono}
+\newfontfamily\emojifont{Noto Color Emoji}
+\usepackage{newunicodechar}
+\newunicodechar{🐳}{\textbf{[Docker]}}
+\newunicodechar{📦}{\textbf{[Package]}}
+\newunicodechar{⚙}{\textbf{[Settings]}}
+\newunicodechar{✅}{$\checkmark$}
+\newunicodechar{🔬}{\textbf{[Science]}}
+\newunicodechar{🏔}{\textbf{[Alpine]}}
+\newunicodechar{🧪}{\textbf{[Test]}}
+\newunicodechar{📊}{\textbf{[Analysis]}}
+\newunicodechar{📄}{\textbf{[Document]}}
+\newunicodechar{✓}{$\checkmark$}
 \usepackage{bookmark}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same}
@@ -184,8 +198,8 @@ for precise control at each level.
 \subsection{Three Configuration
 Domains}\label{three-configuration-domains}
 
-\subsubsection{\texorpdfstring{\U0001F433 Docker Variant
-Management}{001F433 Docker Variant Management}}\label{f433-docker-variant-management}
+\subsubsection{🐳 Docker Variant
+Management}\label{docker-variant-management}
 
 Control which specialized Docker environments your team uses: -
 \textbf{14+ predefined variants} from minimal (\textasciitilde200MB
@@ -195,8 +209,8 @@ analysis, machine learning - \textbf{Single source of truth}
 architecture eliminates duplication - \textbf{Interactive variant
 browser} for easy discovery and selection
 
-\subsubsection{\texorpdfstring{\U0001F4E6 Package Management
-System}{001F4E6 Package Management System}}\label{f4e6-package-management-system}
+\subsubsection{📦 Package Management
+System}\label{package-management-system}
 
 Control what R packages are installed and when: - \textbf{Build mode
 control}: Fast (9 packages) vs Standard (17 packages) vs Comprehensive
@@ -206,8 +220,8 @@ lists}: Define your own combinations for specialized workflows -
 \textbf{Dependency management}: Docker packages vs renv packages with
 proper separation
 
-\subsubsection{\texorpdfstring{\u2699\uFE0F Development \& Collaboration
-Settings}{6990F Development \& Collaboration Settings}}\label{f-development-collaboration-settings}
+\subsubsection{Development \& Collaboration
+Settings}\label{development-collaboration-settings}
 
 Control team workflows and automation: - \textbf{GitHub integration}:
 Automatic repository creation, visibility settings, Actions enablement -
@@ -225,7 +239,7 @@ for particular research workflows.
 
 \subsubsection{Variant Categories}\label{variant-categories}
 
-\textbf{\U0001F4E6 Standard Research Environments (6 variants)}
+\textbf{📦 Standard Research Environments (6 variants)}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -238,7 +252,7 @@ for particular research workflows.
 \end{Highlighting}
 \end{Shaded}
 
-\textbf{\U0001F52C Specialized Domains (2 variants)}
+\textbf{🔬 Specialized Domains (2 variants)}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -247,7 +261,7 @@ for particular research workflows.
 \end{Highlighting}
 \end{Shaded}
 
-\textbf{\U0001F3D4\uFE0F Lightweight Alpine Variants (3 variants)}
+\textbf{🏔 Lightweight Alpine Variants (3 variants)}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -257,7 +271,7 @@ for particular research workflows.
 \end{Highlighting}
 \end{Shaded}
 
-\textbf{\U0001F9EA R-Hub Testing Environments (3 variants)}
+\textbf{🧪 R-Hub Testing Environments (3 variants)}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -430,7 +444,7 @@ Define completely custom variants:
 \end{Highlighting}
 \end{Shaded}
 
-\section{Package Management System}\label{package-management-system}
+\section{Package Management System}\label{package-management-system-1}
 
 \subsection{Build Mode Package
 Control}\label{build-mode-package-control}

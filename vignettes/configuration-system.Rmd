@@ -17,19 +17,21 @@ output:
 header-includes:
   - \usepackage{fontspec}
   - \usepackage{xcolor}
-  - \setmainfont{SF Pro Display}[Scale=1.0]
-  - \newfontfamily\emojifont{Apple Color Emoji}[Scale=0.9]
-  - \newcommand{\emoji}[1]{{\emojifont #1}}
+  - \setmainfont{Helvetica Neue}
+  - \setsansfont{Helvetica Neue}
+  - \setmonofont{SF Mono}
+  - \newfontfamily\emojifont{Noto Color Emoji}
   - \usepackage{newunicodechar}
-  - \newunicodechar{🐳}{\emoji{🐳}}
-  - \newunicodechar{📦}{\emoji{📦}}
-  - \newunicodechar{⚙}{\emoji{⚙}}
-  - \newunicodechar{✅}{\emoji{✅}}
-  - \newunicodechar{🔬}{\emoji{🔬}}
-  - \newunicodechar{🏔}{\emoji{🏔}}
-  - \newunicodechar{🧪}{\emoji{🧪}}
-  - \newunicodechar{📊}{\emoji{📊}}
-  - \newunicodechar{📄}{\emoji{📄}}
+  - \newunicodechar{🐳}{\textbf{[Docker]}}
+  - \newunicodechar{📦}{\textbf{[Package]}}
+  - \newunicodechar{⚙}{\textbf{[Settings]}}
+  - \newunicodechar{✅}{$\checkmark$}
+  - \newunicodechar{🔬}{\textbf{[Science]}}
+  - \newunicodechar{🏔}{\textbf{[Alpine]}}
+  - \newunicodechar{🧪}{\textbf{[Test]}}
+  - \newunicodechar{📊}{\textbf{[Analysis]}}
+  - \newunicodechar{📄}{\textbf{[Document]}}
+  - \newunicodechar{✓}{$\checkmark$}
 vignette: >
   %\VignetteIndexEntry{ZZCOLLAB Configuration System Guide}
   %\VignetteEngine{knitr::rmarkdown}
@@ -99,7 +101,7 @@ Docker variants are pre-configured environments with specific base images, R pac
 
 ### Variant Categories
 
-**\U0001F4E6 Standard Research Environments (6 variants)**
+**📦 Standard Research Environments (6 variants)**
 ```yaml
 minimal:          # ~800MB  - Essential R packages only
 analysis:         # ~1.2GB  - Tidyverse + data analysis tools
@@ -109,20 +111,20 @@ shiny:            # ~1.8GB  - Interactive web applications
 shiny_verse:      # ~3.5GB  - Shiny with tidyverse + publishing
 ```
 
-**\U0001F52C Specialized Domains (2 variants)**
+**🔬 Specialized Domains (2 variants)**
 ```yaml
 bioinformatics:   # ~2GB    - Bioconductor genomics packages
 geospatial:       # ~2.5GB  - sf, terra, leaflet mapping tools
 ```
 
-**\U0001F3D4\uFE0F Lightweight Alpine Variants (3 variants)**
+**🏔 Lightweight Alpine Variants (3 variants)**
 ```yaml
 alpine_minimal:   # ~200MB  - Ultra-lightweight for CI/CD
 alpine_analysis:  # ~400MB  - Essential analysis in tiny container
 hpc_alpine:       # ~600MB  - High-performance parallel processing
 ```
 
-**\U0001F9EA R-Hub Testing Environments (3 variants)**
+**🧪 R-Hub Testing Environments (3 variants)**
 ```yaml
 rhub_ubuntu:      # ~1GB    - CRAN-compatible package testing
 rhub_fedora:      # ~1.2GB  - Test against R-devel
