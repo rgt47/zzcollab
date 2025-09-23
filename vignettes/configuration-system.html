@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="ZZCOLLAB Team" />
+
+<meta name="date" content="2025-09-23" />
+
+<title>ZZCOLLAB Configuration System Guide</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">ZZCOLLAB Configuration System Guide</h1>
+<h3 class="subtitle">Advanced Docker and Package Management</h3>
+<h4 class="author">ZZCOLLAB Team</h4>
+<h4 class="date">2025-09-23</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#overview" id="toc-overview"><span class="toc-section-number">1</span> Overview</a>
+<ul>
+<li><a href="#key-benefits" id="toc-key-benefits"><span class="toc-section-number">1.1</span> Key Benefits</a></li>
+</ul></li>
+<li><a href="#configuration-architecture" id="toc-configuration-architecture"><span class="toc-section-number">2</span> Configuration Architecture</a>
+<ul>
+<li><a href="#multi-level-hierarchy" id="toc-multi-level-hierarchy"><span class="toc-section-number">2.1</span> Multi-Level Hierarchy</a></li>
+<li><a href="#three-configuration-domains" id="toc-three-configuration-domains"><span class="toc-section-number">2.2</span> Three Configuration Domains</a>
+<ul>
+<li><a href="#docker-variant-management" id="toc-docker-variant-management"><span class="toc-section-number">2.2.1</span> 🐳 Docker Variant
+Management</a></li>
+<li><a href="#package-management-system" id="toc-package-management-system"><span class="toc-section-number">2.2.2</span> 📦 Package Management
+System</a></li>
+<li><a href="#development-collaboration-settings" id="toc-development-collaboration-settings"><span class="toc-section-number">2.2.3</span> Development &amp; Collaboration
+Settings</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#docker-variant-system" id="toc-docker-variant-system"><span class="toc-section-number">3</span>
+Docker Variant System</a>
+<ul>
+<li><a href="#understanding-variants" id="toc-understanding-variants"><span class="toc-section-number">3.1</span> Understanding Variants</a>
+<ul>
+<li><a href="#variant-categories" id="toc-variant-categories"><span class="toc-section-number">3.1.1</span> Variant Categories</a></li>
+</ul></li>
+<li><a href="#single-source-of-truth-architecture" id="toc-single-source-of-truth-architecture"><span class="toc-section-number">3.2</span> Single Source of Truth
+Architecture</a>
+<ul>
+<li><a href="#master-variant-library" id="toc-master-variant-library"><span class="toc-section-number">3.2.1</span> Master Variant Library</a></li>
+<li><a href="#team-configuration-selection" id="toc-team-configuration-selection"><span class="toc-section-number">3.2.2</span> Team Configuration
+Selection</a></li>
+</ul></li>
+<li><a href="#interactive-variant-management" id="toc-interactive-variant-management"><span class="toc-section-number">3.3</span> Interactive Variant Management</a>
+<ul>
+<li><a href="#using-the-variant-browser" id="toc-using-the-variant-browser"><span class="toc-section-number">3.3.1</span> Using the Variant
+Browser</a></li>
+<li><a href="#manual-variant-management" id="toc-manual-variant-management"><span class="toc-section-number">3.3.2</span> Manual Variant
+Management</a></li>
+</ul></li>
+<li><a href="#custom-variant-creation" id="toc-custom-variant-creation"><span class="toc-section-number">3.4</span> Custom Variant Creation</a>
+<ul>
+<li><a href="#extending-existing-variants" id="toc-extending-existing-variants"><span class="toc-section-number">3.4.1</span> Extending Existing
+Variants</a></li>
+<li><a href="#creating-new-variants" id="toc-creating-new-variants"><span class="toc-section-number">3.4.2</span> Creating New Variants</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#package-management-system-1" id="toc-package-management-system-1"><span class="toc-section-number">4</span> Package Management System</a>
+<ul>
+<li><a href="#build-mode-package-control" id="toc-build-mode-package-control"><span class="toc-section-number">4.1</span> Build Mode Package Control</a>
+<ul>
+<li><a href="#fast-mode--f-9-essential-packages" id="toc-fast-mode--f-9-essential-packages"><span class="toc-section-number">4.1.1</span> Fast Mode (-F): 9 Essential
+Packages</a></li>
+<li><a href="#standard-mode--s-17-balanced-packages-default" id="toc-standard-mode--s-17-balanced-packages-default"><span class="toc-section-number">4.1.2</span> Standard Mode (-S): 17 Balanced
+Packages (Default)</a></li>
+<li><a href="#comprehensive-mode--c-47-full-packages" id="toc-comprehensive-mode--c-47-full-packages"><span class="toc-section-number">4.1.3</span> Comprehensive Mode (-C): 47+
+Full Packages</a></li>
+</ul></li>
+<li><a href="#paradigm-specific-package-selection" id="toc-paradigm-specific-package-selection"><span class="toc-section-number">4.2</span> Paradigm-Specific Package
+Selection</a>
+<ul>
+<li><a href="#analysis-paradigm-packages" id="toc-analysis-paradigm-packages"><span class="toc-section-number">4.2.1</span> Analysis Paradigm
+Packages</a></li>
+<li><a href="#manuscript-paradigm-packages" id="toc-manuscript-paradigm-packages"><span class="toc-section-number">4.2.2</span> Manuscript Paradigm
+Packages</a></li>
+<li><a href="#package-paradigm-packages" id="toc-package-paradigm-packages"><span class="toc-section-number">4.2.3</span> Package Paradigm
+Packages</a></li>
+</ul></li>
+<li><a href="#custom-package-lists" id="toc-custom-package-lists"><span class="toc-section-number">4.3</span> Custom Package Lists</a>
+<ul>
+<li><a href="#user-level-custom-packages" id="toc-user-level-custom-packages"><span class="toc-section-number">4.3.1</span> User-Level Custom
+Packages</a></li>
+<li><a href="#project-level-custom-packages" id="toc-project-level-custom-packages"><span class="toc-section-number">4.3.2</span> Project-Level Custom
+Packages</a></li>
+<li><a href="#package-installation-separation" id="toc-package-installation-separation"><span class="toc-section-number">4.3.3</span> Package Installation
+Separation</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#team-collaboration-configuration" id="toc-team-collaboration-configuration"><span class="toc-section-number">5</span> Team Collaboration Configuration</a>
+<ul>
+<li><a href="#github-integration" id="toc-github-integration"><span class="toc-section-number">5.1</span> GitHub Integration</a>
+<ul>
+<li><a href="#repository-management" id="toc-repository-management"><span class="toc-section-number">5.1.1</span> Repository Management</a></li>
+<li><a href="#issue-and-pr-templates" id="toc-issue-and-pr-templates"><span class="toc-section-number">5.1.2</span> Issue and PR Templates</a></li>
+</ul></li>
+<li><a href="#development-environment-defaults" id="toc-development-environment-defaults"><span class="toc-section-number">5.2</span> Development Environment
+Defaults</a>
+<ul>
+<li><a href="#container-configuration" id="toc-container-configuration"><span class="toc-section-number">5.2.1</span> Container Configuration</a></li>
+<li><a href="#build-and-platform-settings" id="toc-build-and-platform-settings"><span class="toc-section-number">5.2.2</span> Build and Platform
+Settings</a></li>
+</ul></li>
+<li><a href="#documentation-settings" id="toc-documentation-settings"><span class="toc-section-number">5.3</span> Documentation Settings</a>
+<ul>
+<li><a href="#automatic-documentation-generation" id="toc-automatic-documentation-generation"><span class="toc-section-number">5.3.1</span> Automatic Documentation
+Generation</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#practical-configuration-workflows" id="toc-practical-configuration-workflows"><span class="toc-section-number">6</span> Practical Configuration
+Workflows</a>
+<ul>
+<li><a href="#solo-developer-workflow" id="toc-solo-developer-workflow"><span class="toc-section-number">6.1</span> Solo Developer Workflow</a>
+<ul>
+<li><a href="#initial-setup" id="toc-initial-setup"><span class="toc-section-number">6.1.1</span> Initial Setup</a></li>
+<li><a href="#custom-package-configuration" id="toc-custom-package-configuration"><span class="toc-section-number">6.1.2</span> Custom Package
+Configuration</a></li>
+<li><a href="#project-creation" id="toc-project-creation"><span class="toc-section-number">6.1.3</span> Project Creation</a></li>
+</ul></li>
+<li><a href="#team-leader-workflow" id="toc-team-leader-workflow"><span class="toc-section-number">6.2</span> Team Leader Workflow</a>
+<ul>
+<li><a href="#team-configuration-setup" id="toc-team-configuration-setup"><span class="toc-section-number">6.2.1</span> Team Configuration
+Setup</a></li>
+<li><a href="#customize-team-variants" id="toc-customize-team-variants"><span class="toc-section-number">6.2.2</span> Customize Team Variants</a></li>
+<li><a href="#build-and-deploy-team-images" id="toc-build-and-deploy-team-images"><span class="toc-section-number">6.2.3</span> Build and Deploy Team
+Images</a></li>
+</ul></li>
+<li><a href="#team-member-workflow" id="toc-team-member-workflow"><span class="toc-section-number">6.3</span> Team Member Workflow</a>
+<ul>
+<li><a href="#joining-an-existing-team-project" id="toc-joining-an-existing-team-project"><span class="toc-section-number">6.3.1</span> Joining an Existing Team
+Project</a></li>
+<li><a href="#understanding-team-configuration" id="toc-understanding-team-configuration"><span class="toc-section-number">6.3.2</span> Understanding Team
+Configuration</a></li>
+<li><a href="#working-with-multiple-interfaces" id="toc-working-with-multiple-interfaces"><span class="toc-section-number">6.3.3</span> Working with Multiple
+Interfaces</a></li>
+</ul></li>
+<li><a href="#advanced-custom-variant-workflow" id="toc-advanced-custom-variant-workflow"><span class="toc-section-number">6.4</span> Advanced Custom Variant
+Workflow</a>
+<ul>
+<li><a href="#creating-organization-specific-variants" id="toc-creating-organization-specific-variants"><span class="toc-section-number">6.4.1</span> Creating Organization-Specific
+Variants</a></li>
+<li><a href="#using-custom-variant-library" id="toc-using-custom-variant-library"><span class="toc-section-number">6.4.2</span> Using Custom Variant
+Library</a></li>
+<li><a href="#building-and-sharing-custom-variants" id="toc-building-and-sharing-custom-variants"><span class="toc-section-number">6.4.3</span> Building and Sharing Custom
+Variants</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#configuration-validation-and-troubleshooting" id="toc-configuration-validation-and-troubleshooting"><span class="toc-section-number">7</span> Configuration Validation and
+Troubleshooting</a>
+<ul>
+<li><a href="#validation-commands" id="toc-validation-commands"><span class="toc-section-number">7.1</span> Validation Commands</a>
+<ul>
+<li><a href="#comprehensive-configuration-checking" id="toc-comprehensive-configuration-checking"><span class="toc-section-number">7.1.1</span> Comprehensive Configuration
+Checking</a></li>
+<li><a href="#variant-definition-validation" id="toc-variant-definition-validation"><span class="toc-section-number">7.1.2</span> Variant Definition
+Validation</a></li>
+<li><a href="#docker-and-build-validation" id="toc-docker-and-build-validation"><span class="toc-section-number">7.1.3</span> Docker and Build
+Validation</a></li>
+</ul></li>
+<li><a href="#common-configuration-issues" id="toc-common-configuration-issues"><span class="toc-section-number">7.2</span> Common Configuration Issues</a>
+<ul>
+<li><a href="#missing-dependencies" id="toc-missing-dependencies"><span class="toc-section-number">7.2.1</span> Missing Dependencies</a></li>
+<li><a href="#docker-platform-issues" id="toc-docker-platform-issues"><span class="toc-section-number">7.2.2</span> Docker Platform Issues</a></li>
+<li><a href="#package-installation-failures" id="toc-package-installation-failures"><span class="toc-section-number">7.2.3</span> Package Installation
+Failures</a></li>
+<li><a href="#permission-and-access-issues" id="toc-permission-and-access-issues"><span class="toc-section-number">7.2.4</span> Permission and Access
+Issues</a></li>
+<li><a href="#configuration-hierarchy-conflicts" id="toc-configuration-hierarchy-conflicts"><span class="toc-section-number">7.2.5</span> Configuration Hierarchy
+Conflicts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#r-interface-configuration-management" id="toc-r-interface-configuration-management"><span class="toc-section-number">8</span> R Interface Configuration
+Management</a>
+<ul>
+<li><a href="#configuration-functions" id="toc-configuration-functions"><span class="toc-section-number">8.1</span> Configuration Functions</a>
+<ul>
+<li><a href="#basic-configuration-management" id="toc-basic-configuration-management"><span class="toc-section-number">8.1.1</span> Basic Configuration
+Management</a></li>
+<li><a href="#advanced-configuration-with-custom-variants" id="toc-advanced-configuration-with-custom-variants"><span class="toc-section-number">8.1.2</span> Advanced Configuration with
+Custom Variants</a></li>
+<li><a href="#configuration-aware-project-functions" id="toc-configuration-aware-project-functions"><span class="toc-section-number">8.1.3</span> Configuration-Aware Project
+Functions</a></li>
+</ul></li>
+<li><a href="#configuration-inspection-and-debugging" id="toc-configuration-inspection-and-debugging"><span class="toc-section-number">8.2</span> Configuration Inspection and
+Debugging</a>
+<ul>
+<li><a href="#understanding-effective-configuration" id="toc-understanding-effective-configuration"><span class="toc-section-number">8.2.1</span> Understanding Effective
+Configuration</a></li>
+<li><a href="#working-with-multiple-configurations" id="toc-working-with-multiple-configurations"><span class="toc-section-number">8.2.2</span> Working with Multiple
+Configurations</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#best-practices-and-recommendations" id="toc-best-practices-and-recommendations"><span class="toc-section-number">9</span> Best Practices and
+Recommendations</a>
+<ul>
+<li><a href="#configuration-strategy-by-use-case" id="toc-configuration-strategy-by-use-case"><span class="toc-section-number">9.1</span> Configuration Strategy by Use
+Case</a>
+<ul>
+<li><a href="#solo-researcher" id="toc-solo-researcher"><span class="toc-section-number">9.1.1</span> Solo Researcher</a></li>
+<li><a href="#small-research-team-2-5-people" id="toc-small-research-team-2-5-people"><span class="toc-section-number">9.1.2</span> Small Research Team (2-5
+people)</a></li>
+<li><a href="#large-research-organization-10-people" id="toc-large-research-organization-10-people"><span class="toc-section-number">9.1.3</span> Large Research Organization (10+
+people)</a></li>
+</ul></li>
+<li><a href="#package-management-best-practices" id="toc-package-management-best-practices"><span class="toc-section-number">9.2</span> Package Management Best
+Practices</a>
+<ul>
+<li><a href="#docker-vs-renv-package-separation" id="toc-docker-vs-renv-package-separation"><span class="toc-section-number">9.2.1</span> Docker vs renv Package
+Separation</a></li>
+<li><a href="#version-management-strategy" id="toc-version-management-strategy"><span class="toc-section-number">9.2.2</span> Version Management
+Strategy</a></li>
+</ul></li>
+<li><a href="#performance-optimization" id="toc-performance-optimization"><span class="toc-section-number">9.3</span> Performance Optimization</a>
+<ul>
+<li><a href="#build-time-optimization" id="toc-build-time-optimization"><span class="toc-section-number">9.3.1</span> Build Time Optimization</a></li>
+<li><a href="#container-size-optimization" id="toc-container-size-optimization"><span class="toc-section-number">9.3.2</span> Container Size
+Optimization</a></li>
+</ul></li>
+<li><a href="#security-and-access-management" id="toc-security-and-access-management"><span class="toc-section-number">9.4</span> Security and Access Management</a>
+<ul>
+<li><a href="#github-repository-settings" id="toc-github-repository-settings"><span class="toc-section-number">9.4.1</span> GitHub Repository
+Settings</a></li>
+<li><a href="#container-security" id="toc-container-security"><span class="toc-section-number">9.4.2</span> Container Security</a></li>
+<li><a href="#access-control" id="toc-access-control"><span class="toc-section-number">9.4.3</span> Access Control</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#conclusion" id="toc-conclusion"><span class="toc-section-number">10</span> Conclusion</a></li>
+</ul>
+</div>
+
+<div id="overview" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Overview</h1>
+<p>ZZCOLLAB features a sophisticated multi-layered configuration system
+that controls Docker images, R packages, build modes, and team
+collaboration settings. This system enables teams to create
+reproducible, customized research environments while eliminating
+repetitive manual configuration.</p>
+<div id="key-benefits" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> Key Benefits</h2>
+<ul>
+<li><strong>✓ Eliminate repetitive typing</strong>: Set defaults once,
+use across all projects</li>
+<li><strong>✓ Team standardization</strong>: Shared configurations
+ensure identical environments</li>
+<li><strong>✓ Flexible customization</strong>: 14+ Docker variants,
+custom package lists, build modes</li>
+<li><strong>✓ Hierarchical control</strong>: User, project, and
+system-level configurations</li>
+<li><strong>✓ Single source of truth</strong>: Centralized variant
+definitions prevent duplication</li>
+</ul>
+</div>
+</div>
+<div id="configuration-architecture" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Configuration
+Architecture</h1>
+<div id="multi-level-hierarchy" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Multi-Level
+Hierarchy</h2>
+<p>ZZCOLLAB loads configuration from multiple sources in priority
+order:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Project config</strong> (<code>./zzcollab.yaml</code>) -
+Team-specific settings for shared projects</li>
+<li><strong>User config</strong> (<code>~/.zzcollab/config.yaml</code>)
+- Personal defaults across all projects</li>
+<li><strong>System config</strong>
+(<code>/etc/zzcollab/config.yaml</code>) - Organization-wide
+defaults</li>
+<li><strong>Built-in defaults</strong> - Fallback values ensuring system
+functionality</li>
+</ol>
+<p>Higher priority configurations override lower priority ones, allowing
+for precise control at each level.</p>
+</div>
+<div id="three-configuration-domains" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> Three Configuration
+Domains</h2>
+<div id="docker-variant-management" class="section level3" number="2.2.1">
+<h3><span class="header-section-number">2.2.1</span> 🐳 Docker Variant
+Management</h3>
+<p>Control which specialized Docker environments your team uses: -
+<strong>14+ predefined variants</strong> from minimal (~200MB Alpine) to
+comprehensive (~3.5GB full-featured) - <strong>Domain-specific
+environments</strong> for bioinformatics, geospatial analysis, machine
+learning - <strong>Single source of truth</strong> architecture
+eliminates duplication - <strong>Interactive variant browser</strong>
+for easy discovery and selection</p>
+</div>
+<div id="package-management-system" class="section level3" number="2.2.2">
+<h3><span class="header-section-number">2.2.2</span> 📦 Package
+Management System</h3>
+<p>Control what R packages are installed and when: - <strong>Build mode
+control</strong>: Fast (9 packages) vs Standard (17 packages) vs
+Comprehensive (47+ packages) - <strong>Paradigm-specific
+packages</strong>: Analysis, Manuscript, and Package development
+workflows - <strong>Custom package lists</strong>: Define your own
+combinations for specialized workflows - <strong>Dependency
+management</strong>: Docker packages vs renv packages with proper
+separation</p>
+</div>
+<div id="development-collaboration-settings" class="section level3" number="2.2.3">
+<h3><span class="header-section-number">2.2.3</span> Development &amp;
+Collaboration Settings</h3>
+<p>Control team workflows and automation: - <strong>GitHub
+integration</strong>: Automatic repository creation, visibility
+settings, Actions enablement - <strong>Container defaults</strong>: User
+accounts, working directories, shared volumes - <strong>Development
+preferences</strong>: Default interfaces, dotfiles handling,
+confirmation prompts</p>
+</div>
+</div>
+</div>
+<div id="docker-variant-system" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Docker Variant
+System</h1>
+<div id="understanding-variants" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Understanding
+Variants</h2>
+<p>Docker variants are pre-configured environments with specific base
+images, R packages, and system dependencies. Each variant is optimized
+for particular research workflows.</p>
+<div id="variant-categories" class="section level3" number="3.1.1">
+<h3><span class="header-section-number">3.1.1</span> Variant
+Categories</h3>
+<p><strong>📦 Standard Research Environments (6 variants)</strong></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">minimal</span><span class="kw">:</span><span class="co">          # ~800MB  - Essential R packages only</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">analysis</span><span class="kw">:</span><span class="co">         # ~1.2GB  - Tidyverse + data analysis tools</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">modeling</span><span class="kw">:</span><span class="co">         # ~1.5GB  - Machine learning with tidymodels</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">publishing</span><span class="kw">:</span><span class="co">       # ~3GB    - LaTeX, Quarto, bookdown, blogdown</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">shiny</span><span class="kw">:</span><span class="co">            # ~1.8GB  - Interactive web applications</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">shiny_verse</span><span class="kw">:</span><span class="co">      # ~3.5GB  - Shiny with tidyverse + publishing</span></span></code></pre></div>
+<p><strong>🔬 Specialized Domains (2 variants)</strong></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">bioinformatics</span><span class="kw">:</span><span class="co">   # ~2GB    - Bioconductor genomics packages</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">geospatial</span><span class="kw">:</span><span class="co">       # ~2.5GB  - sf, terra, leaflet mapping tools</span></span></code></pre></div>
+<p><strong>🏔 Lightweight Alpine Variants (3 variants)</strong></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">alpine_minimal</span><span class="kw">:</span><span class="co">   # ~200MB  - Ultra-lightweight for CI/CD</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">alpine_analysis</span><span class="kw">:</span><span class="co">  # ~400MB  - Essential analysis in tiny container</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">hpc_alpine</span><span class="kw">:</span><span class="co">       # ~600MB  - High-performance parallel processing</span></span></code></pre></div>
+<p><strong>🧪 R-Hub Testing Environments (3 variants)</strong></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">rhub_ubuntu</span><span class="kw">:</span><span class="co">      # ~1GB    - CRAN-compatible package testing</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">rhub_fedora</span><span class="kw">:</span><span class="co">      # ~1.2GB  - Test against R-devel</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">rhub_windows</span><span class="kw">:</span><span class="co">     # ~1.5GB  - Windows compatibility testing</span></span></code></pre></div>
+</div>
+</div>
+<div id="single-source-of-truth-architecture" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Single Source of
+Truth Architecture</h2>
+<div id="master-variant-library" class="section level3" number="3.2.1">
+<h3><span class="header-section-number">3.2.1</span> Master Variant
+Library</h3>
+<p>All variant definitions are stored in
+<code>templates/variant_examples.yaml</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Example variant definition</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="at">  </span><span class="fu">base_image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;rocker/tidyverse:latest&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="at">  </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Data analysis environment with tidyverse and common packages&quot;</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="at">  </span><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;devtools&quot;</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;here&quot;</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;janitor&quot;</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;scales&quot;</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;patchwork&quot;</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;gt&quot;</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;DT&quot;</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="at">  </span><span class="fu">system_deps</span><span class="kw">:</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libxml2-dev&quot;</span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libcurl4-openssl-dev&quot;</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libssl-dev&quot;</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="at">  </span><span class="fu">category</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;standard&quot;</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="at">  </span><span class="fu">size</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;~1.2GB&quot;</span></span></code></pre></div>
+</div>
+<div id="team-configuration-selection" class="section level3" number="3.2.2">
+<h3><span class="header-section-number">3.2.2</span> Team Configuration
+Selection</h3>
+<p>Teams select which variants to enable in their
+<code>config.yaml</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Enable this variant for the team</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">    # Full definition automatically pulled from variant_examples.yaml</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="at">  </span><span class="fu">modeling</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">   # Disable this variant (won&#39;t be built)</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="at">  </span><span class="fu">custom_ml</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">    # Can override or extend definitions from the library</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="at">    </span><span class="fu">packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;additional_package&quot;</span><span class="kw">]</span></span></code></pre></div>
+</div>
+</div>
+<div id="interactive-variant-management" class="section level2" number="3.3">
+<h2><span class="header-section-number">3.3</span> Interactive Variant
+Management</h2>
+<div id="using-the-variant-browser" class="section level3" number="3.3.1">
+<h3><span class="header-section-number">3.3.1</span> Using the Variant
+Browser</h3>
+<p>The <code>./add_variant.sh</code> script provides an interactive
+interface for variant selection:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="bu">cd</span> your-project</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">./add_variant.sh</span></span></code></pre></div>
+<p>This displays a categorized menu:</p>
+<pre><code>STANDARD RESEARCH ENVIRONMENTS
+ 1) minimal          ~800MB  - Essential R packages only
+ 2) analysis         ~1.2GB  - Tidyverse + data analysis
+ 3) modeling         ~1.5GB  - Machine learning with tidymodels
+
+SPECIALIZED DOMAINS
+ 7) bioinformatics   ~2GB    - Bioconductor genomics packages
+ 8) geospatial       ~2.5GB  - sf, terra, leaflet mapping
+
+LIGHTWEIGHT ALPINE VARIANTS
+ 9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
+10) alpine_analysis  ~400MB  - Essential analysis in tiny container
+
+Select variants to add (e.g., 1,3,9):</code></pre>
+<p>Selected variants are automatically added to your
+<code>config.yaml</code> with <code>enabled: true</code>.</p>
+</div>
+<div id="manual-variant-management" class="section level3" number="3.3.2">
+<h3><span class="header-section-number">3.3.2</span> Manual Variant
+Management</h3>
+<p>You can also edit variants directly in <code>config.yaml</code>:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">  # Standard environments</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="at">  </span><span class="fu">minimal</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # Essential development</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # Primary data analysis</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="at">  </span><span class="fu">modeling</span><span class="kw">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">    # Machine learning (disabled)</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">  # Specialized environments</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="at">  </span><span class="fu">bioinformatics</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # Genomics analysis</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="at">  </span><span class="fu">alpine_minimal</span><span class="kw">:</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # Lightweight CI/CD</span></span></code></pre></div>
+</div>
+</div>
+<div id="custom-variant-creation" class="section level2" number="3.4">
+<h2><span class="header-section-number">3.4</span> Custom Variant
+Creation</h2>
+<div id="extending-existing-variants" class="section level3" number="3.4.1">
+<h3><span class="header-section-number">3.4.1</span> Extending Existing
+Variants</h3>
+<p>Add packages to existing variants:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">    # Extend the base analysis variant</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="at">    </span><span class="fu">additional_packages</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;pins&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;vetiver&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;plumber&quot;</span></span></code></pre></div>
+</div>
+<div id="creating-new-variants" class="section level3" number="3.4.2">
+<h3><span class="header-section-number">3.4.2</span> Creating New
+Variants</h3>
+<p>Define completely custom variants:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="at">  </span><span class="fu">custom_forecast</span><span class="kw">:</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="at">    </span><span class="fu">base_image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;rocker/r-ver:latest&quot;</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Time series forecasting environment&quot;</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="at">    </span><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;devtools&quot;</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;forecast&quot;</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;fable&quot;</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tsibble&quot;</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;feasts&quot;</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="at">    </span><span class="fu">system_deps</span><span class="kw">:</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libxml2-dev&quot;</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libssl-dev&quot;</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="at">    </span><span class="fu">category</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;custom&quot;</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="at">    </span><span class="fu">size</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;~1.3GB&quot;</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="package-management-system-1" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Package Management
+System</h1>
+<div id="build-mode-package-control" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> Build Mode Package
+Control</h2>
+<p>ZZCOLLAB provides three build modes that control the number and type
+of packages installed:</p>
+<div id="fast-mode--f-9-essential-packages" class="section level3" number="4.1.1">
+<h3><span class="header-section-number">4.1.1</span> Fast Mode (-F): 9
+Essential Packages</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Core development packages only</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="st">&quot;renv&quot;</span>, <span class="st">&quot;here&quot;</span>, <span class="st">&quot;usethis&quot;</span>, <span class="st">&quot;devtools&quot;</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="st">&quot;testthat&quot;</span>, <span class="st">&quot;knitr&quot;</span>, <span class="st">&quot;rmarkdown&quot;</span>, <span class="st">&quot;targets&quot;</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>Use cases</strong>: - Quick prototyping and testing - CI/CD
+pipelines requiring fast builds - Resource-constrained environments -
+Initial project setup</p>
+</div>
+<div id="standard-mode--s-17-balanced-packages-default" class="section level3" number="4.1.2">
+<h3><span class="header-section-number">4.1.2</span> Standard Mode (-S):
+17 Balanced Packages (Default)</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Essential + common analysis packages</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="co"># Fast mode packages</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="st">&quot;renv&quot;</span>, <span class="st">&quot;here&quot;</span>, <span class="st">&quot;usethis&quot;</span>, <span class="st">&quot;devtools&quot;</span>, <span class="st">&quot;testthat&quot;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="st">&quot;knitr&quot;</span>, <span class="st">&quot;rmarkdown&quot;</span>, <span class="st">&quot;targets&quot;</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  <span class="co"># Additional analysis packages</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;tidyr&quot;</span>, <span class="st">&quot;palmerpenguins&quot;</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  <span class="st">&quot;broom&quot;</span>, <span class="st">&quot;janitor&quot;</span>, <span class="st">&quot;DT&quot;</span>, <span class="st">&quot;conflicted&quot;</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>Use cases</strong>: - Most research projects and data
+analysis - Balanced functionality vs build time - Team development
+environments - Standard exploratory data analysis</p>
+</div>
+<div id="comprehensive-mode--c-47-full-packages" class="section level3" number="4.1.3">
+<h3><span class="header-section-number">4.1.3</span> Comprehensive Mode
+(-C): 47+ Full Packages</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Complete development and analysis ecosystem</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  <span class="co"># Standard mode packages + advanced tools</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>  <span class="st">&quot;tidymodels&quot;</span>, <span class="st">&quot;shiny&quot;</span>, <span class="st">&quot;plotly&quot;</span>, <span class="st">&quot;quarto&quot;</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>  <span class="st">&quot;flexdashboard&quot;</span>, <span class="st">&quot;survival&quot;</span>, <span class="st">&quot;lme4&quot;</span>, <span class="st">&quot;car&quot;</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>  <span class="st">&quot;naniar&quot;</span>, <span class="st">&quot;skimr&quot;</span>, <span class="st">&quot;visdat&quot;</span>, <span class="st">&quot;ggthemes&quot;</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  <span class="st">&quot;kableExtra&quot;</span>, <span class="st">&quot;bookdown&quot;</span>, <span class="st">&quot;jsonlite&quot;</span>, <span class="st">&quot;datapasta&quot;</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>  <span class="co"># Database and web packages</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>  <span class="st">&quot;DBI&quot;</span>, <span class="st">&quot;RMariaDB&quot;</span>, <span class="st">&quot;RPostgreSQL&quot;</span>, <span class="st">&quot;httr&quot;</span>, <span class="st">&quot;rvest&quot;</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>Use cases</strong>: - Comprehensive research environments -
+Multi-paradigm projects (analysis + modeling + publishing) - Teaching
+environments with diverse package needs - Production analysis
+environments</p>
+</div>
+</div>
+<div id="paradigm-specific-package-selection" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> Paradigm-Specific
+Package Selection</h2>
+<div id="analysis-paradigm-packages" class="section level3" number="4.2.1">
+<h3><span class="header-section-number">4.2.1</span> Analysis Paradigm
+Packages</h3>
+<p>Optimized for data exploration and statistical analysis:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>analysis_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="co"># Data manipulation and visualization</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="st">&quot;tidyverse&quot;</span>, <span class="st">&quot;here&quot;</span>, <span class="st">&quot;janitor&quot;</span>, <span class="st">&quot;skimr&quot;</span>, <span class="st">&quot;naniar&quot;</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="co"># Analysis and modeling</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="st">&quot;broom&quot;</span>, <span class="st">&quot;infer&quot;</span>, <span class="st">&quot;moderndive&quot;</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  <span class="co"># Reporting and communication</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>  <span class="st">&quot;targets&quot;</span>, <span class="st">&quot;rmarkdown&quot;</span>, <span class="st">&quot;flexdashboard&quot;</span>, <span class="st">&quot;DT&quot;</span>, <span class="st">&quot;plotly&quot;</span></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="manuscript-paradigm-packages" class="section level3" number="4.2.2">
+<h3><span class="header-section-number">4.2.2</span> Manuscript Paradigm
+Packages</h3>
+<p>Focused on academic writing and reproducible research:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>manuscript_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="co"># Core development and testing</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="st">&quot;devtools&quot;</span>, <span class="st">&quot;testthat&quot;</span>, <span class="st">&quot;roxygen2&quot;</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="co"># Academic writing tools</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  <span class="st">&quot;rmarkdown&quot;</span>, <span class="st">&quot;bookdown&quot;</span>, <span class="st">&quot;papaja&quot;</span>, <span class="st">&quot;RefManageR&quot;</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>  <span class="co"># Analysis support</span></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>  <span class="st">&quot;here&quot;</span>, <span class="st">&quot;conflicted&quot;</span>, <span class="st">&quot;broom&quot;</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="package-paradigm-packages" class="section level3" number="4.2.3">
+<h3><span class="header-section-number">4.2.3</span> Package Paradigm
+Packages</h3>
+<p>Designed for R package development:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>package_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  <span class="co"># Package development core</span></span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  <span class="st">&quot;devtools&quot;</span>, <span class="st">&quot;usethis&quot;</span>, <span class="st">&quot;roxygen2&quot;</span>, <span class="st">&quot;testthat&quot;</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  <span class="co"># Documentation and quality</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>  <span class="st">&quot;pkgdown&quot;</span>, <span class="st">&quot;covr&quot;</span>, <span class="st">&quot;lintr&quot;</span>, <span class="st">&quot;styler&quot;</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  <span class="co"># Distribution and checking</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  <span class="st">&quot;rcmdcheck&quot;</span>, <span class="st">&quot;rhub&quot;</span>, <span class="st">&quot;spelling&quot;</span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="custom-package-lists" class="section level2" number="4.3">
+<h2><span class="header-section-number">4.3</span> Custom Package
+Lists</h2>
+<div id="user-level-custom-packages" class="section level3" number="4.3.1">
+<h3><span class="header-section-number">4.3.1</span> User-Level Custom
+Packages</h3>
+<p>Define personal package preferences in
+<code>~/.zzcollab/config.yaml</code>:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="at">  </span><span class="fu">my_datascience</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Personal data science workflow&quot;</span></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span></span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;targets&quot;</span></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;pins&quot;</span></span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span></span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;targets&quot;</span></span>
+<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;pins&quot;</span></span>
+<span id="cb18-14"><a href="#cb18-14" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;vetiver&quot;</span></span>
+<span id="cb18-15"><a href="#cb18-15" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;plumber&quot;</span></span>
+<span id="cb18-16"><a href="#cb18-16" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;shiny&quot;</span></span>
+<span id="cb18-17"><a href="#cb18-17" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;shinydashboard&quot;</span></span>
+<span id="cb18-18"><a href="#cb18-18" tabindex="-1"></a></span>
+<span id="cb18-19"><a href="#cb18-19" tabindex="-1"></a><span class="at">  </span><span class="fu">my_stats</span><span class="kw">:</span></span>
+<span id="cb18-20"><a href="#cb18-20" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Statistical analysis focus&quot;</span></span>
+<span id="cb18-21"><a href="#cb18-21" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span></span>
+<span id="cb18-22"><a href="#cb18-22" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb18-23"><a href="#cb18-23" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb18-24"><a href="#cb18-24" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;broom&quot;</span></span>
+<span id="cb18-25"><a href="#cb18-25" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span></span>
+<span id="cb18-26"><a href="#cb18-26" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb18-27"><a href="#cb18-27" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb18-28"><a href="#cb18-28" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;broom&quot;</span></span>
+<span id="cb18-29"><a href="#cb18-29" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;lme4&quot;</span></span>
+<span id="cb18-30"><a href="#cb18-30" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;survival&quot;</span></span>
+<span id="cb18-31"><a href="#cb18-31" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;car&quot;</span></span>
+<span id="cb18-32"><a href="#cb18-32" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;emmeans&quot;</span></span></code></pre></div>
+</div>
+<div id="project-level-custom-packages" class="section level3" number="4.3.2">
+<h3><span class="header-section-number">4.3.2</span> Project-Level
+Custom Packages</h3>
+<p>Override defaults for specific projects in
+<code>./zzcollab.yaml</code>:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="at">  </span><span class="fu">project_specific</span><span class="kw">:</span></span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Customer churn analysis packages&quot;</span></span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidymodels&quot;</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span></span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidymodels&quot;</span></span>
+<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;probably&quot;</span></span>
+<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;workflowsets&quot;</span></span>
+<span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tune&quot;</span></span>
+<span id="cb19-15"><a href="#cb19-15" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;recipes&quot;</span></span>
+<span id="cb19-16"><a href="#cb19-16" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;parsnip&quot;</span></span>
+<span id="cb19-17"><a href="#cb19-17" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;yardstick&quot;</span></span></code></pre></div>
+</div>
+<div id="package-installation-separation" class="section level3" number="4.3.3">
+<h3><span class="header-section-number">4.3.3</span> Package
+Installation Separation</h3>
+<p>ZZCOLLAB distinguishes between two types of package
+installations:</p>
+<p><strong>Docker Packages</strong> (<code>docker_packages</code>): -
+Installed during Docker image build - Available immediately when
+container starts - Shared across all users of the image - Should include
+essential packages needed by everyone</p>
+<p><strong>renv Packages</strong> (<code>renv_packages</code>): -
+Managed by renv for reproducibility - Project-specific and
+version-locked - Include analysis-specific packages - Allow for precise
+dependency management</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a><span class="at">  </span><span class="fu">optimal_separation</span><span class="kw">:</span></span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Proper package separation example&quot;</span></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="co">      # Essential system packages everyone needs</span></span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span><span class="co">          # Package management</span></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;devtools&quot;</span><span class="co">      # Development tools</span></span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;here&quot;</span><span class="co">          # Path management</span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;conflicted&quot;</span><span class="co">    # Namespace conflicts</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co">      # Project-specific analysis packages</span></span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span><span class="co">     # Data analysis</span></span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;targets&quot;</span><span class="co">       # Workflow management</span></span>
+<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;palmerpenguins&quot;</span><span class="co"> # Example data</span></span>
+<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;specific_analysis_package&quot;</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="team-collaboration-configuration" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Team Collaboration
+Configuration</h1>
+<div id="github-integration" class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> GitHub
+Integration</h2>
+<p>ZZCOLLAB provides extensive GitHub integration through
+configuration:</p>
+<div id="repository-management" class="section level3" number="5.1.1">
+<h3><span class="header-section-number">5.1.1</span> Repository
+Management</h3>
+<div class="sourceCode" id="cb21"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="at">    </span><span class="fu">auto_create_repo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">          # Automatically create GitHub repositories</span></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="at">    </span><span class="fu">default_visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;private&quot;</span><span class="co">   # Repository visibility (private/public)</span></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="at">    </span><span class="fu">enable_actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">            # Enable GitHub Actions CI/CD</span></span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="at">    </span><span class="fu">branch_protection</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">         # Enable branch protection rules</span></span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a></span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="co">    # Default repository settings</span></span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="at">    </span><span class="fu">repository</span><span class="kw">:</span></span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a><span class="at">      </span><span class="fu">allow_merge_commits</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a><span class="at">      </span><span class="fu">allow_squash_merging</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="at">      </span><span class="fu">allow_rebase_merging</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a><span class="at">      </span><span class="fu">delete_head_branches</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+</div>
+<div id="issue-and-pr-templates" class="section level3" number="5.1.2">
+<h3><span class="header-section-number">5.1.2</span> Issue and PR
+Templates</h3>
+<div class="sourceCode" id="cb22"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="at">    </span><span class="fu">templates</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="co">      # Enable issue templates</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="at">      </span><span class="fu">issue_templates</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="co">      # Enable pull request template</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="at">      </span><span class="fu">pr_template</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a></span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a><span class="co">      # Custom template directory</span></span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="at">      </span><span class="fu">template_dir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;.github/ISSUE_TEMPLATE&quot;</span></span></code></pre></div>
+</div>
+</div>
+<div id="development-environment-defaults" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Development
+Environment Defaults</h2>
+<div id="container-configuration" class="section level3" number="5.2.1">
+<h3><span class="header-section-number">5.2.1</span> Container
+Configuration</h3>
+<div class="sourceCode" id="cb23"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">development</span><span class="kw">:</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="co">  # Default variant for team members joining</span></span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="at">  </span><span class="fu">default_interface</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;analysis&quot;</span></span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co">  # Container user and environment settings</span></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="at">    </span><span class="fu">default_user</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;analyst&quot;</span></span>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="at">    </span><span class="fu">working_dir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/home/analyst/project&quot;</span></span>
+<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="at">    </span><span class="fu">shared_volumes</span><span class="kw">:</span></span>
+<span id="cb23-10"><a href="#cb23-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;${PWD}:/home/analyst/project&quot;</span></span>
+<span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;${HOME}/.ssh:/home/analyst/.ssh:ro&quot;</span></span>
+<span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" tabindex="-1"></a><span class="co">  # Dotfiles handling</span></span>
+<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a><span class="at">  </span><span class="fu">dotfiles</span><span class="kw">:</span></span>
+<span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a><span class="at">    </span><span class="fu">auto_filter_macos</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">      # Filter macOS-specific commands for Docker</span></span>
+<span id="cb23-16"><a href="#cb23-16" tabindex="-1"></a><span class="at">    </span><span class="fu">preserve_permissions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">   # Maintain file permissions</span></span>
+<span id="cb23-17"><a href="#cb23-17" tabindex="-1"></a><span class="at">    </span><span class="fu">include_hidden</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">         # Include hidden dotfiles</span></span></code></pre></div>
+</div>
+<div id="build-and-platform-settings" class="section level3" number="5.2.2">
+<h3><span class="header-section-number">5.2.2</span> Build and Platform
+Settings</h3>
+<div class="sourceCode" id="cb24"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co">  # Docker build configuration</span></span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="at">  </span><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="at">    </span><span class="fu">platform</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;auto&quot;</span><span class="co">            # auto, linux/amd64, linux/arm64</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="at">    </span><span class="fu">no_cache</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">             # Enable Docker build caching</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="at">    </span><span class="fu">parallel_builds</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">       # Build variants in parallel</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="at">    </span><span class="fu">memory_limit</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4g&quot;</span><span class="co">          # Memory limit for builds</span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="co">  # Package installation settings</span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="at">  </span><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="at">    </span><span class="fu">repos</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;https://cran.rstudio.com/&quot;</span></span>
+<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a><span class="at">    </span><span class="fu">install_suggests</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="at">    </span><span class="fu">dependencies</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;Depends&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;Imports&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;LinkingTo&quot;</span><span class="kw">]</span></span>
+<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a><span class="at">    </span><span class="fu">parallel_installs</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+</div>
+</div>
+<div id="documentation-settings" class="section level2" number="5.3">
+<h2><span class="header-section-number">5.3</span> Documentation
+Settings</h2>
+<div id="automatic-documentation-generation" class="section level3" number="5.3.1">
+<h3><span class="header-section-number">5.3.1</span> Automatic
+Documentation Generation</h3>
+<div class="sourceCode" id="cb25"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="at">  </span><span class="fu">documentation</span><span class="kw">:</span></span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="at">    </span><span class="fu">auto_generate_readme</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">       # Generate project README</span></span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a><span class="at">    </span><span class="fu">include_variant_docs</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">       # Document available variants</span></span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="at">    </span><span class="fu">update_user_guide</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">          # Include ZZCOLLAB_USER_GUIDE.md</span></span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="co">    # Documentation templates</span></span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a><span class="at">    </span><span class="fu">readme_template</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;README_TEMPLATE.md&quot;</span></span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a><span class="at">    </span><span class="fu">contributing_guide</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a><span class="at">    </span><span class="fu">code_of_conduct</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="practical-configuration-workflows" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Practical Configuration
+Workflows</h1>
+<div id="solo-developer-workflow" class="section level2" number="6.1">
+<h2><span class="header-section-number">6.1</span> Solo Developer
+Workflow</h2>
+<div id="initial-setup" class="section level3" number="6.1.1">
+<h3><span class="header-section-number">6.1.1</span> Initial Setup</h3>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># 1. Initialize personal configuration</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> init</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="co"># 2. Set personal preferences</span></span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> set team-name <span class="st">&quot;myteam&quot;</span></span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> set github-account <span class="st">&quot;myusername&quot;</span></span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> set paradigm <span class="st">&quot;analysis&quot;</span></span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> set build-mode <span class="st">&quot;standard&quot;</span></span>
+<span id="cb26-9"><a href="#cb26-9" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> set dotfiles-dir <span class="st">&quot;~/dotfiles&quot;</span></span></code></pre></div>
+</div>
+<div id="custom-package-configuration" class="section level3" number="6.1.2">
+<h3><span class="header-section-number">6.1.2</span> Custom Package
+Configuration</h3>
+<p>Edit <code>~/.zzcollab/config.yaml</code>:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="at">  </span><span class="fu">team_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;myteam&quot;</span></span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="at">  </span><span class="fu">paradigm</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;analysis&quot;</span></span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="at">  </span><span class="fu">build_mode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;my_custom&quot;</span></span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="at">  </span><span class="fu">my_custom</span><span class="kw">:</span></span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;My personal data science stack&quot;</span></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;renv&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;here&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;conflicted&quot;</span><span class="kw">]</span></span>
+<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;renv&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;targets&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pins&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;vetiver&quot;</span><span class="kw">]</span></span></code></pre></div>
+</div>
+<div id="project-creation" class="section level3" number="6.1.3">
+<h3><span class="header-section-number">6.1.3</span> Project
+Creation</h3>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Create project using personal defaults</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-i</span> <span class="at">-p</span> my-analysis</span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="co"># Customize variants for this specific project</span></span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="bu">cd</span> my-analysis</span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="ex">./add_variant.sh</span>    <span class="co"># Add alpine_minimal for CI/CD testing</span></span></code></pre></div>
+</div>
+</div>
+<div id="team-leader-workflow" class="section level2" number="6.2">
+<h2><span class="header-section-number">6.2</span> Team Leader
+Workflow</h2>
+<div id="team-configuration-setup" class="section level3" number="6.2.1">
+<h3><span class="header-section-number">6.2.1</span> Team Configuration
+Setup</h3>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># 1. Create team project directory</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="fu">mkdir</span> customer-churn-analysis</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="bu">cd</span> customer-churn-analysis</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a></span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="co"># 2. Initialize with base configuration</span></span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-i</span> <span class="at">-p</span> customer-churn-analysis</span></code></pre></div>
+</div>
+<div id="customize-team-variants" class="section level3" number="6.2.2">
+<h3><span class="header-section-number">6.2.2</span> Customize Team
+Variants</h3>
+<p>Edit the generated <code>config.yaml</code>:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">team</span><span class="kw">:</span></span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;datasci-lab&quot;</span></span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="at">  </span><span class="fu">project</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;customer-churn-analysis&quot;</span></span>
+<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a><span class="at">  </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;ML analysis of customer retention patterns&quot;</span></span>
+<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="co">  # Core development environment</span></span>
+<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a><span class="at">  </span><span class="fu">minimal</span><span class="kw">:</span></span>
+<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # For quick testing and CI/CD</span></span>
+<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a></span>
+<span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a><span class="co">  # Primary analysis environment</span></span>
+<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Main development interface</span></span>
+<span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a></span>
+<span id="cb30-15"><a href="#cb30-15" tabindex="-1"></a><span class="co">  # Machine learning environment</span></span>
+<span id="cb30-16"><a href="#cb30-16" tabindex="-1"></a><span class="at">  </span><span class="fu">modeling</span><span class="kw">:</span></span>
+<span id="cb30-17"><a href="#cb30-17" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # For model development and evaluation</span></span>
+<span id="cb30-18"><a href="#cb30-18" tabindex="-1"></a></span>
+<span id="cb30-19"><a href="#cb30-19" tabindex="-1"></a><span class="co">  # Alpine for CI/CD</span></span>
+<span id="cb30-20"><a href="#cb30-20" tabindex="-1"></a><span class="at">  </span><span class="fu">alpine_minimal</span><span class="kw">:</span></span>
+<span id="cb30-21"><a href="#cb30-21" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Fast CI/CD testing</span></span>
+<span id="cb30-22"><a href="#cb30-22" tabindex="-1"></a></span>
+<span id="cb30-23"><a href="#cb30-23" tabindex="-1"></a><span class="co">  # Optional environments (disabled by default)</span></span>
+<span id="cb30-24"><a href="#cb30-24" tabindex="-1"></a><span class="at">  </span><span class="fu">publishing</span><span class="kw">:</span></span>
+<span id="cb30-25"><a href="#cb30-25" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">   # Enable when needed for reports</span></span>
+<span id="cb30-26"><a href="#cb30-26" tabindex="-1"></a><span class="at">  </span><span class="fu">geospatial</span><span class="kw">:</span></span>
+<span id="cb30-27"><a href="#cb30-27" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">   # Not needed for this project</span></span>
+<span id="cb30-28"><a href="#cb30-28" tabindex="-1"></a></span>
+<span id="cb30-29"><a href="#cb30-29" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb30-30"><a href="#cb30-30" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb30-31"><a href="#cb30-31" tabindex="-1"></a><span class="at">    </span><span class="fu">auto_create_repo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb30-32"><a href="#cb30-32" tabindex="-1"></a><span class="at">    </span><span class="fu">default_visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;private&quot;</span></span>
+<span id="cb30-33"><a href="#cb30-33" tabindex="-1"></a><span class="at">    </span><span class="fu">enable_actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb30-34"><a href="#cb30-34" tabindex="-1"></a></span>
+<span id="cb30-35"><a href="#cb30-35" tabindex="-1"></a><span class="at">  </span><span class="fu">development</span><span class="kw">:</span></span>
+<span id="cb30-36"><a href="#cb30-36" tabindex="-1"></a><span class="at">    </span><span class="fu">default_interface</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;analysis&quot;</span></span></code></pre></div>
+</div>
+<div id="build-and-deploy-team-images" class="section level3" number="6.2.3">
+<h3><span class="header-section-number">6.2.3</span> Build and Deploy
+Team Images</h3>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Build team images with custom configuration</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--variants-config</span> config.yaml <span class="at">--github</span></span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a></span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="co"># Push to GitHub and Docker Hub</span></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;Initial team configuration&quot;</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="fu">git</span> push origin main</span></code></pre></div>
+</div>
+</div>
+<div id="team-member-workflow" class="section level2" number="6.3">
+<h2><span class="header-section-number">6.3</span> Team Member
+Workflow</h2>
+<div id="joining-an-existing-team-project" class="section level3" number="6.3.1">
+<h3><span class="header-section-number">6.3.1</span> Joining an Existing
+Team Project</h3>
+<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># 1. Clone team repository</span></span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/datasci-lab/customer-churn-analysis.git</span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="bu">cd</span> customer-churn-analysis</span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="co"># 2. Join using team&#39;s preferred interface</span></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> datasci-lab <span class="at">-p</span> customer-churn-analysis <span class="at">-I</span> analysis</span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="co"># 3. Start development environment</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="fu">make</span> docker-zsh</span></code></pre></div>
+</div>
+<div id="understanding-team-configuration" class="section level3" number="6.3.2">
+<h3><span class="header-section-number">6.3.2</span> Understanding Team
+Configuration</h3>
+<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="co"># View team&#39;s available variants</span></span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> list</span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a><span class="co"># See which Docker images are available</span></span>
+<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a><span class="ex">docker</span> images <span class="kw">|</span> <span class="fu">grep</span> datasci-lab</span>
+<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a></span>
+<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a><span class="co"># Check team&#39;s package configuration</span></span>
+<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a><span class="fu">cat</span> config.yaml <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-A</span> 20 <span class="st">&quot;build:&quot;</span></span></code></pre></div>
+</div>
+<div id="working-with-multiple-interfaces" class="section level3" number="6.3.3">
+<h3><span class="header-section-number">6.3.3</span> Working with
+Multiple Interfaces</h3>
+<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Use analysis environment for daily work</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> datasci-lab <span class="at">-p</span> customer-churn-analysis <span class="at">-I</span> analysis</span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="fu">make</span> docker-zsh</span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a></span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a><span class="co"># Switch to modeling environment for ML work</span></span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Exit current container</span></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> datasci-lab <span class="at">-p</span> customer-churn-analysis <span class="at">-I</span> modeling</span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a><span class="fu">make</span> docker-zsh</span>
+<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a></span>
+<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="co"># Use minimal environment for testing</span></span>
+<span id="cb34-11"><a href="#cb34-11" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb34-12"><a href="#cb34-12" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> datasci-lab <span class="at">-p</span> customer-churn-analysis <span class="at">-I</span> minimal</span>
+<span id="cb34-13"><a href="#cb34-13" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
+</div>
+</div>
+<div id="advanced-custom-variant-workflow" class="section level2" number="6.4">
+<h2><span class="header-section-number">6.4</span> Advanced Custom
+Variant Workflow</h2>
+<div id="creating-organization-specific-variants" class="section level3" number="6.4.1">
+<h3><span class="header-section-number">6.4.1</span> Creating
+Organization-Specific Variants</h3>
+<div class="sourceCode" id="cb35"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="co"># 1. Copy and customize variant library</span></span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="fu">cp</span> templates/variant_examples.yaml custom_variants.yaml</span></code></pre></div>
+<p>Edit <code>custom_variants.yaml</code> to add organization
+variants:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Add to existing variants</span></span>
+<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">org_finance</span><span class="kw">:</span></span>
+<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="at">  </span><span class="fu">base_image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;rocker/r-ver:latest&quot;</span></span>
+<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="at">  </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Financial analysis environment with specialized packages&quot;</span></span>
+<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a><span class="at">  </span><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;devtools&quot;</span></span>
+<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyquant&quot;</span></span>
+<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;quantmod&quot;</span></span>
+<span id="cb36-11"><a href="#cb36-11" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;PerformanceAnalytics&quot;</span></span>
+<span id="cb36-12"><a href="#cb36-12" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;RQuantLib&quot;</span></span>
+<span id="cb36-13"><a href="#cb36-13" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;timeDate&quot;</span></span>
+<span id="cb36-14"><a href="#cb36-14" tabindex="-1"></a><span class="at">  </span><span class="fu">system_deps</span><span class="kw">:</span></span>
+<span id="cb36-15"><a href="#cb36-15" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libxml2-dev&quot;</span></span>
+<span id="cb36-16"><a href="#cb36-16" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libssl-dev&quot;</span></span>
+<span id="cb36-17"><a href="#cb36-17" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;libcurl4-openssl-dev&quot;</span></span>
+<span id="cb36-18"><a href="#cb36-18" tabindex="-1"></a><span class="at">  </span><span class="fu">category</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;specialized&quot;</span></span>
+<span id="cb36-19"><a href="#cb36-19" tabindex="-1"></a><span class="at">  </span><span class="fu">size</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;~1.8GB&quot;</span></span>
+<span id="cb36-20"><a href="#cb36-20" tabindex="-1"></a></span>
+<span id="cb36-21"><a href="#cb36-21" tabindex="-1"></a><span class="fu">org_research</span><span class="kw">:</span></span>
+<span id="cb36-22"><a href="#cb36-22" tabindex="-1"></a><span class="at">  </span><span class="fu">base_image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;rocker/verse:latest&quot;</span></span>
+<span id="cb36-23"><a href="#cb36-23" tabindex="-1"></a><span class="at">  </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Academic research environment with LaTeX and publishing tools&quot;</span></span>
+<span id="cb36-24"><a href="#cb36-24" tabindex="-1"></a><span class="at">  </span><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb36-25"><a href="#cb36-25" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb36-26"><a href="#cb36-26" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;devtools&quot;</span></span>
+<span id="cb36-27"><a href="#cb36-27" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb36-28"><a href="#cb36-28" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;rmarkdown&quot;</span></span>
+<span id="cb36-29"><a href="#cb36-29" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;bookdown&quot;</span></span>
+<span id="cb36-30"><a href="#cb36-30" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;papaja&quot;</span></span>
+<span id="cb36-31"><a href="#cb36-31" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;RefManageR&quot;</span></span>
+<span id="cb36-32"><a href="#cb36-32" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;citr&quot;</span></span>
+<span id="cb36-33"><a href="#cb36-33" tabindex="-1"></a><span class="at">  </span><span class="fu">system_deps</span><span class="kw">:</span></span>
+<span id="cb36-34"><a href="#cb36-34" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;texlive-full&quot;</span></span>
+<span id="cb36-35"><a href="#cb36-35" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;pandoc&quot;</span></span>
+<span id="cb36-36"><a href="#cb36-36" tabindex="-1"></a><span class="at">  </span><span class="fu">category</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;specialized&quot;</span></span>
+<span id="cb36-37"><a href="#cb36-37" tabindex="-1"></a><span class="at">  </span><span class="fu">size</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;~4GB&quot;</span></span></code></pre></div>
+</div>
+<div id="using-custom-variant-library" class="section level3" number="6.4.2">
+<h3><span class="header-section-number">6.4.2</span> Using Custom
+Variant Library</h3>
+<p>Edit team <code>config.yaml</code>:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="at">  </span><span class="fu">use_config_variants</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="at">  </span><span class="fu">variant_library</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;custom_variants.yaml&quot;</span><span class="co">  # Use custom library</span></span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a><span class="at">  </span><span class="fu">minimal</span><span class="kw">:</span></span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a><span class="at">  </span><span class="fu">org_finance</span><span class="kw">:</span></span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Use custom finance variant</span></span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="at">  </span><span class="fu">org_research</span><span class="kw">:</span></span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Use custom research variant</span></span></code></pre></div>
+</div>
+<div id="building-and-sharing-custom-variants" class="section level3" number="6.4.3">
+<h3><span class="header-section-number">6.4.3</span> Building and
+Sharing Custom Variants</h3>
+<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Build with custom variant library</span></span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--variants-config</span> config.yaml</span>
+<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a><span class="co"># Verify custom images were created</span></span>
+<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a><span class="ex">docker</span> images <span class="kw">|</span> <span class="fu">grep</span> finance</span>
+<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a><span class="ex">docker</span> images <span class="kw">|</span> <span class="fu">grep</span> research</span>
+<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a></span>
+<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a><span class="co"># Share custom variant library with organization</span></span>
+<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a><span class="fu">git</span> add custom_variants.yaml config.yaml</span>
+<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;Add organization-specific variants&quot;</span></span>
+<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a><span class="fu">git</span> push origin main</span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="configuration-validation-and-troubleshooting" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Configuration
+Validation and Troubleshooting</h1>
+<div id="validation-commands" class="section level2" number="7.1">
+<h2><span class="header-section-number">7.1</span> Validation
+Commands</h2>
+<div id="comprehensive-configuration-checking" class="section level3" number="7.1.1">
+<h3><span class="header-section-number">7.1.1</span> Comprehensive
+Configuration Checking</h3>
+<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Check all configuration files for syntax and consistency</span></span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> validate</span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a></span>
+<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="co"># List effective configuration (merged from all sources)</span></span>
+<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> list</span>
+<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a></span>
+<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a><span class="co"># Check specific configuration values</span></span>
+<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> get team-name</span>
+<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> get variants.analysis.enabled</span>
+<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> get build.docker.platform</span></code></pre></div>
+</div>
+<div id="variant-definition-validation" class="section level3" number="7.1.2">
+<h3><span class="header-section-number">7.1.2</span> Variant Definition
+Validation</h3>
+<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="co"># Validate variant_examples.yaml syntax</span></span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="ex">./add_variant.sh</span> <span class="at">--validate</span></span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="co"># Check for missing or invalid variant references</span></span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--variants-config</span> config.yaml <span class="at">--dry-run</span></span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a><span class="co"># Test variant definitions without building</span></span>
+<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="ex">./add_variant.sh</span> <span class="at">--test-definitions</span></span></code></pre></div>
+</div>
+<div id="docker-and-build-validation" class="section level3" number="7.1.3">
+<h3><span class="header-section-number">7.1.3</span> Docker and Build
+Validation</h3>
+<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># Check Docker daemon and permissions</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="ex">docker</span> info</span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="co"># Verify platform compatibility</span></span>
+<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="ex">docker</span> buildx ls</span>
+<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a></span>
+<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a><span class="co"># Test Docker build with specific variant</span></span>
+<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--variants-config</span> config.yaml <span class="at">--build-only</span> minimal</span></code></pre></div>
+</div>
+</div>
+<div id="common-configuration-issues" class="section level2" number="7.2">
+<h2><span class="header-section-number">7.2</span> Common Configuration
+Issues</h2>
+<div id="missing-dependencies" class="section level3" number="7.2.1">
+<h3><span class="header-section-number">7.2.1</span> Missing
+Dependencies</h3>
+<p><strong>Issue</strong>: <code>yq</code> command not found</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="co"># Error: YAML configuration requires yq but it&#39;s not installed</span></span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="ex">Error:</span> Configuration validation failed <span class="at">-</span> yq command not found</span></code></pre></div>
+<p><strong>Solution</strong>: Install yq YAML processor</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="co"># macOS</span></span>
+<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a><span class="ex">brew</span> install yq</span>
+<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a></span>
+<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a><span class="co"># Ubuntu/Debian</span></span>
+<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a><span class="ex">snap</span> install yq</span>
+<span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a><span class="fu">wget</span> https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 <span class="at">-O</span> /usr/bin/yq</span>
+<span id="cb43-8"><a href="#cb43-8" tabindex="-1"></a><span class="fu">chmod</span> +x /usr/bin/yq</span>
+<span id="cb43-9"><a href="#cb43-9" tabindex="-1"></a></span>
+<span id="cb43-10"><a href="#cb43-10" tabindex="-1"></a><span class="co"># Verify installation</span></span>
+<span id="cb43-11"><a href="#cb43-11" tabindex="-1"></a><span class="ex">yq</span> <span class="at">--version</span></span></code></pre></div>
+</div>
+<div id="docker-platform-issues" class="section level3" number="7.2.2">
+<h3><span class="header-section-number">7.2.2</span> Docker Platform
+Issues</h3>
+<p><strong>Issue</strong>: ARM64/AMD64 compatibility problems</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="co"># Error building variant &#39;geospatial&#39;: platform not supported</span></span>
+<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a><span class="ex">Error:</span> rocker/geospatial:latest: no matching manifest for linux/arm64/v8</span></code></pre></div>
+<p><strong>Solution</strong>: Configure platform compatibility</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="co"># In config.yaml</span></span>
+<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb45-3"><a href="#cb45-3" tabindex="-1"></a><span class="at">  </span><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb45-4"><a href="#cb45-4" tabindex="-1"></a><span class="at">    </span><span class="fu">platform</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;linux/amd64&quot;</span><span class="co">  # Force AMD64 for compatibility</span></span></code></pre></div>
+<p>Or use ARM64-compatible variants:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # ARM64 compatible</span></span>
+<span id="cb46-4"><a href="#cb46-4" tabindex="-1"></a><span class="at">  </span><span class="fu">geospatial</span><span class="kw">:</span></span>
+<span id="cb46-5"><a href="#cb46-5" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">    # AMD64 only - disable on ARM64 systems</span></span>
+<span id="cb46-6"><a href="#cb46-6" tabindex="-1"></a><span class="at">  </span><span class="fu">alpine_analysis</span><span class="kw">:</span></span>
+<span id="cb46-7"><a href="#cb46-7" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # ARM64 compatible alternative</span></span></code></pre></div>
+</div>
+<div id="package-installation-failures" class="section level3" number="7.2.3">
+<h3><span class="header-section-number">7.2.3</span> Package
+Installation Failures</h3>
+<p><strong>Issue</strong>: Custom packages fail to install</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1" tabindex="-1"></a><span class="co"># Error during Docker build: package &#39;obscure_package&#39; not available</span></span>
+<span id="cb47-2"><a href="#cb47-2" tabindex="-1"></a><span class="ex">Error:</span> installation of package <span class="st">&#39;obscure_package&#39;</span> had non-zero exit status</span></code></pre></div>
+<p><strong>Solution</strong>: Verify package availability and
+dependencies</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a><span class="co"># Separate core packages from experimental ones</span></span>
+<span id="cb48-2"><a href="#cb48-2" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb48-3"><a href="#cb48-3" tabindex="-1"></a><span class="at">  </span><span class="fu">safe_custom</span><span class="kw">:</span></span>
+<span id="cb48-4"><a href="#cb48-4" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span></span>
+<span id="cb48-5"><a href="#cb48-5" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb48-6"><a href="#cb48-6" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span><span class="co">  # Known stable packages</span></span>
+<span id="cb48-7"><a href="#cb48-7" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span></span>
+<span id="cb48-8"><a href="#cb48-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb48-9"><a href="#cb48-9" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span></span>
+<span id="cb48-10"><a href="#cb48-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;experimental_package&quot;</span><span class="co">  # Let renv handle experimental packages</span></span></code></pre></div>
+</div>
+<div id="permission-and-access-issues" class="section level3" number="7.2.4">
+<h3><span class="header-section-number">7.2.4</span> Permission and
+Access Issues</h3>
+<p><strong>Issue</strong>: Docker daemon permission denied</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" tabindex="-1"></a><span class="co"># Error: permission denied while trying to connect to Docker daemon</span></span>
+<span id="cb49-2"><a href="#cb49-2" tabindex="-1"></a><span class="ex">Error:</span> Got permission denied while trying to connect to the Docker daemon socket</span></code></pre></div>
+<p><strong>Solution</strong>: Configure Docker access</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a><span class="co"># Add user to docker group (Linux)</span></span>
+<span id="cb50-2"><a href="#cb50-2" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker <span class="va">$USER</span></span>
+<span id="cb50-3"><a href="#cb50-3" tabindex="-1"></a><span class="ex">newgrp</span> docker</span>
+<span id="cb50-4"><a href="#cb50-4" tabindex="-1"></a></span>
+<span id="cb50-5"><a href="#cb50-5" tabindex="-1"></a><span class="co"># Restart Docker daemon (if needed)</span></span>
+<span id="cb50-6"><a href="#cb50-6" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart docker</span>
+<span id="cb50-7"><a href="#cb50-7" tabindex="-1"></a></span>
+<span id="cb50-8"><a href="#cb50-8" tabindex="-1"></a><span class="co"># Verify access</span></span>
+<span id="cb50-9"><a href="#cb50-9" tabindex="-1"></a><span class="ex">docker</span> run hello-world</span></code></pre></div>
+</div>
+<div id="configuration-hierarchy-conflicts" class="section level3" number="7.2.5">
+<h3><span class="header-section-number">7.2.5</span> Configuration
+Hierarchy Conflicts</h3>
+<p><strong>Issue</strong>: Settings not taking effect as expected</p>
+<div class="sourceCode" id="cb51"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a><span class="co"># User sets paradigm = &quot;manuscript&quot; but projects use &quot;analysis&quot;</span></span>
+<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a><span class="co"># Project config overriding user config unexpectedly</span></span></code></pre></div>
+<p><strong>Solution</strong>: Understand and verify hierarchy</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># Check configuration sources and precedence</span></span>
+<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> list <span class="at">--verbose</span></span>
+<span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a></span>
+<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a><span class="co"># Shows which file each setting comes from:</span></span>
+<span id="cb52-5"><a href="#cb52-5" tabindex="-1"></a><span class="co"># team_name: &quot;myteam&quot; (from ~/.zzcollab/config.yaml)</span></span>
+<span id="cb52-6"><a href="#cb52-6" tabindex="-1"></a><span class="co"># paradigm: &quot;analysis&quot; (from ./zzcollab.yaml) [OVERRIDING user config]</span></span></code></pre></div>
+<p>Edit the appropriate configuration file:</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a><span class="co"># To use user default, remove from project config</span></span>
+<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="ex">vim</span> ./zzcollab.yaml  <span class="co"># Remove paradigm setting</span></span>
+<span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a></span>
+<span id="cb53-4"><a href="#cb53-4" tabindex="-1"></a><span class="co"># To set project-specific override, ensure it&#39;s intentional</span></span>
+<span id="cb53-5"><a href="#cb53-5" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;# Project uses analysis paradigm instead of user default&quot;</span> <span class="op">&gt;&gt;</span> ./zzcollab.yaml</span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="r-interface-configuration-management" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> R Interface
+Configuration Management</h1>
+<p>ZZCOLLAB provides a complete R interface for configuration
+management, allowing you to work entirely within R/RStudio
+environments.</p>
+<div id="configuration-functions" class="section level2" number="8.1">
+<h2><span class="header-section-number">8.1</span> Configuration
+Functions</h2>
+<div id="basic-configuration-management" class="section level3" number="8.1.1">
+<h3><span class="header-section-number">8.1.1</span> Basic Configuration
+Management</h3>
+<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a><span class="fu">library</span>(zzcollab)</span>
+<span id="cb54-2"><a href="#cb54-2" tabindex="-1"></a></span>
+<span id="cb54-3"><a href="#cb54-3" tabindex="-1"></a><span class="co"># Initialize configuration</span></span>
+<span id="cb54-4"><a href="#cb54-4" tabindex="-1"></a><span class="fu">init_config</span>()</span>
+<span id="cb54-5"><a href="#cb54-5" tabindex="-1"></a></span>
+<span id="cb54-6"><a href="#cb54-6" tabindex="-1"></a><span class="co"># Set configuration values</span></span>
+<span id="cb54-7"><a href="#cb54-7" tabindex="-1"></a><span class="fu">set_config</span>(<span class="st">&quot;team_name&quot;</span>, <span class="st">&quot;datasci-lab&quot;</span>)</span>
+<span id="cb54-8"><a href="#cb54-8" tabindex="-1"></a><span class="fu">set_config</span>(<span class="st">&quot;paradigm&quot;</span>, <span class="st">&quot;analysis&quot;</span>)</span>
+<span id="cb54-9"><a href="#cb54-9" tabindex="-1"></a><span class="fu">set_config</span>(<span class="st">&quot;build_mode&quot;</span>, <span class="st">&quot;standard&quot;</span>)</span>
+<span id="cb54-10"><a href="#cb54-10" tabindex="-1"></a><span class="fu">set_config</span>(<span class="st">&quot;dotfiles_dir&quot;</span>, <span class="st">&quot;~/dotfiles&quot;</span>)</span>
+<span id="cb54-11"><a href="#cb54-11" tabindex="-1"></a></span>
+<span id="cb54-12"><a href="#cb54-12" tabindex="-1"></a><span class="co"># Get configuration values</span></span>
+<span id="cb54-13"><a href="#cb54-13" tabindex="-1"></a>team <span class="ot">&lt;-</span> <span class="fu">get_config</span>(<span class="st">&quot;team_name&quot;</span>)</span>
+<span id="cb54-14"><a href="#cb54-14" tabindex="-1"></a>paradigm <span class="ot">&lt;-</span> <span class="fu">get_config</span>(<span class="st">&quot;paradigm&quot;</span>)</span>
+<span id="cb54-15"><a href="#cb54-15" tabindex="-1"></a></span>
+<span id="cb54-16"><a href="#cb54-16" tabindex="-1"></a><span class="co"># List all configuration</span></span>
+<span id="cb54-17"><a href="#cb54-17" tabindex="-1"></a>config_list <span class="ot">&lt;-</span> <span class="fu">list_config</span>()</span>
+<span id="cb54-18"><a href="#cb54-18" tabindex="-1"></a><span class="fu">print</span>(config_list)</span>
+<span id="cb54-19"><a href="#cb54-19" tabindex="-1"></a></span>
+<span id="cb54-20"><a href="#cb54-20" tabindex="-1"></a><span class="co"># Validate configuration</span></span>
+<span id="cb54-21"><a href="#cb54-21" tabindex="-1"></a>validation_result <span class="ot">&lt;-</span> <span class="fu">validate_config</span>()</span>
+<span id="cb54-22"><a href="#cb54-22" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span>validation_result<span class="sc">$</span>valid) {</span>
+<span id="cb54-23"><a href="#cb54-23" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&quot;Configuration issues found:&quot;</span>)</span>
+<span id="cb54-24"><a href="#cb54-24" tabindex="-1"></a>  <span class="fu">print</span>(validation_result<span class="sc">$</span>errors)</span>
+<span id="cb54-25"><a href="#cb54-25" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="advanced-configuration-with-custom-variants" class="section level3" number="8.1.2">
+<h3><span class="header-section-number">8.1.2</span> Advanced
+Configuration with Custom Variants</h3>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a><span class="co"># Set custom build mode with specific packages</span></span>
+<span id="cb55-2"><a href="#cb55-2" tabindex="-1"></a><span class="fu">set_config</span>(<span class="st">&quot;build_mode&quot;</span>, <span class="st">&quot;my_analysis&quot;</span>)</span>
+<span id="cb55-3"><a href="#cb55-3" tabindex="-1"></a></span>
+<span id="cb55-4"><a href="#cb55-4" tabindex="-1"></a><span class="co"># This would correspond to a build_modes section in your YAML:</span></span>
+<span id="cb55-5"><a href="#cb55-5" tabindex="-1"></a><span class="co"># build_modes:</span></span>
+<span id="cb55-6"><a href="#cb55-6" tabindex="-1"></a><span class="co">#   my_analysis:</span></span>
+<span id="cb55-7"><a href="#cb55-7" tabindex="-1"></a><span class="co">#     description: &quot;Custom analysis environment&quot;</span></span>
+<span id="cb55-8"><a href="#cb55-8" tabindex="-1"></a><span class="co">#     docker_packages: [&quot;renv&quot;, &quot;tidyverse&quot;, &quot;targets&quot;]</span></span>
+<span id="cb55-9"><a href="#cb55-9" tabindex="-1"></a><span class="co">#     renv_packages: [&quot;renv&quot;, &quot;tidyverse&quot;, &quot;targets&quot;, &quot;pins&quot;, &quot;vetiver&quot;]</span></span>
+<span id="cb55-10"><a href="#cb55-10" tabindex="-1"></a></span>
+<span id="cb55-11"><a href="#cb55-11" tabindex="-1"></a><span class="co"># Create project with custom configuration</span></span>
+<span id="cb55-12"><a href="#cb55-12" tabindex="-1"></a><span class="fu">init_project</span>(</span>
+<span id="cb55-13"><a href="#cb55-13" tabindex="-1"></a>  <span class="at">team_name =</span> <span class="st">&quot;datasci-lab&quot;</span>,</span>
+<span id="cb55-14"><a href="#cb55-14" tabindex="-1"></a>  <span class="at">project_name =</span> <span class="st">&quot;customer-analysis&quot;</span>,</span>
+<span id="cb55-15"><a href="#cb55-15" tabindex="-1"></a>  <span class="at">paradigm =</span> <span class="st">&quot;analysis&quot;</span>,</span>
+<span id="cb55-16"><a href="#cb55-16" tabindex="-1"></a>  <span class="at">build_mode =</span> <span class="st">&quot;my_analysis&quot;</span>,</span>
+<span id="cb55-17"><a href="#cb55-17" tabindex="-1"></a>  <span class="at">variants =</span> <span class="fu">c</span>(<span class="st">&quot;minimal&quot;</span>, <span class="st">&quot;analysis&quot;</span>, <span class="st">&quot;alpine_minimal&quot;</span>)</span>
+<span id="cb55-18"><a href="#cb55-18" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="configuration-aware-project-functions" class="section level3" number="8.1.3">
+<h3><span class="header-section-number">8.1.3</span> Configuration-Aware
+Project Functions</h3>
+<div class="sourceCode" id="cb56"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" tabindex="-1"></a><span class="co"># Functions automatically use configuration defaults</span></span>
+<span id="cb56-2"><a href="#cb56-2" tabindex="-1"></a><span class="fu">init_project</span>(<span class="st">&quot;new-analysis&quot;</span>)          <span class="co"># Uses configured team_name, paradigm, build_mode</span></span>
+<span id="cb56-3"><a href="#cb56-3" tabindex="-1"></a><span class="fu">join_project</span>(<span class="st">&quot;existing-project&quot;</span>)      <span class="co"># Uses configured team_name and preferences</span></span>
+<span id="cb56-4"><a href="#cb56-4" tabindex="-1"></a></span>
+<span id="cb56-5"><a href="#cb56-5" tabindex="-1"></a><span class="co"># Override specific settings while keeping others</span></span>
+<span id="cb56-6"><a href="#cb56-6" tabindex="-1"></a><span class="fu">init_project</span>(</span>
+<span id="cb56-7"><a href="#cb56-7" tabindex="-1"></a>  <span class="at">project_name =</span> <span class="st">&quot;special-analysis&quot;</span>,</span>
+<span id="cb56-8"><a href="#cb56-8" tabindex="-1"></a>  <span class="at">paradigm =</span> <span class="st">&quot;manuscript&quot;</span>             <span class="co"># Override default paradigm</span></span>
+<span id="cb56-9"><a href="#cb56-9" tabindex="-1"></a>  <span class="co"># team_name, build_mode from config</span></span>
+<span id="cb56-10"><a href="#cb56-10" tabindex="-1"></a>)</span>
+<span id="cb56-11"><a href="#cb56-11" tabindex="-1"></a></span>
+<span id="cb56-12"><a href="#cb56-12" tabindex="-1"></a><span class="co"># Explicit configuration for full control</span></span>
+<span id="cb56-13"><a href="#cb56-13" tabindex="-1"></a><span class="fu">init_project</span>(</span>
+<span id="cb56-14"><a href="#cb56-14" tabindex="-1"></a>  <span class="at">team_name =</span> <span class="st">&quot;special-team&quot;</span>,</span>
+<span id="cb56-15"><a href="#cb56-15" tabindex="-1"></a>  <span class="at">project_name =</span> <span class="st">&quot;collaborative-analysis&quot;</span>,</span>
+<span id="cb56-16"><a href="#cb56-16" tabindex="-1"></a>  <span class="at">paradigm =</span> <span class="st">&quot;analysis&quot;</span>,</span>
+<span id="cb56-17"><a href="#cb56-17" tabindex="-1"></a>  <span class="at">build_mode =</span> <span class="st">&quot;comprehensive&quot;</span>,</span>
+<span id="cb56-18"><a href="#cb56-18" tabindex="-1"></a>  <span class="at">dotfiles_path =</span> <span class="st">&quot;~/special-dotfiles&quot;</span></span>
+<span id="cb56-19"><a href="#cb56-19" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="configuration-inspection-and-debugging" class="section level2" number="8.2">
+<h2><span class="header-section-number">8.2</span> Configuration
+Inspection and Debugging</h2>
+<div id="understanding-effective-configuration" class="section level3" number="8.2.1">
+<h3><span class="header-section-number">8.2.1</span> Understanding
+Effective Configuration</h3>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="co"># See the complete effective configuration</span></span>
+<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a>effective_config <span class="ot">&lt;-</span> <span class="fu">get_effective_config</span>()</span>
+<span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a><span class="fu">str</span>(effective_config)</span>
+<span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a></span>
+<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a><span class="co"># Check configuration sources for specific values</span></span>
+<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a>config_sources <span class="ot">&lt;-</span> <span class="fu">get_config_sources</span>()</span>
+<span id="cb57-7"><a href="#cb57-7" tabindex="-1"></a><span class="fu">print</span>(config_sources<span class="sc">$</span>team_name)  <span class="co"># Shows which file provides team_name</span></span>
+<span id="cb57-8"><a href="#cb57-8" tabindex="-1"></a></span>
+<span id="cb57-9"><a href="#cb57-9" tabindex="-1"></a><span class="co"># Validate configuration with detailed output</span></span>
+<span id="cb57-10"><a href="#cb57-10" tabindex="-1"></a>validation <span class="ot">&lt;-</span> <span class="fu">validate_config</span>(<span class="at">verbose =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb57-11"><a href="#cb57-11" tabindex="-1"></a><span class="cf">if</span> (validation<span class="sc">$</span>has_warnings) {</span>
+<span id="cb57-12"><a href="#cb57-12" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&quot;Configuration warnings:&quot;</span>)</span>
+<span id="cb57-13"><a href="#cb57-13" tabindex="-1"></a>  <span class="fu">sapply</span>(validation<span class="sc">$</span>warnings, message)</span>
+<span id="cb57-14"><a href="#cb57-14" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="working-with-multiple-configurations" class="section level3" number="8.2.2">
+<h3><span class="header-section-number">8.2.2</span> Working with
+Multiple Configurations</h3>
+<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a><span class="co"># Save current configuration state</span></span>
+<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a>current_config <span class="ot">&lt;-</span> <span class="fu">save_config_state</span>()</span>
+<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a></span>
+<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a><span class="co"># Temporarily change configuration for specific project</span></span>
+<span id="cb58-5"><a href="#cb58-5" tabindex="-1"></a>temp_config <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb58-6"><a href="#cb58-6" tabindex="-1"></a>  <span class="at">team_name =</span> <span class="st">&quot;temporary-team&quot;</span>,</span>
+<span id="cb58-7"><a href="#cb58-7" tabindex="-1"></a>  <span class="at">paradigm =</span> <span class="st">&quot;package&quot;</span>,</span>
+<span id="cb58-8"><a href="#cb58-8" tabindex="-1"></a>  <span class="at">build_mode =</span> <span class="st">&quot;fast&quot;</span></span>
+<span id="cb58-9"><a href="#cb58-9" tabindex="-1"></a>)</span>
+<span id="cb58-10"><a href="#cb58-10" tabindex="-1"></a><span class="fu">apply_temp_config</span>(temp_config)</span>
+<span id="cb58-11"><a href="#cb58-11" tabindex="-1"></a></span>
+<span id="cb58-12"><a href="#cb58-12" tabindex="-1"></a><span class="co"># Do work with temporary configuration</span></span>
+<span id="cb58-13"><a href="#cb58-13" tabindex="-1"></a><span class="fu">init_project</span>(<span class="st">&quot;temp-package-project&quot;</span>)</span>
+<span id="cb58-14"><a href="#cb58-14" tabindex="-1"></a></span>
+<span id="cb58-15"><a href="#cb58-15" tabindex="-1"></a><span class="co"># Restore original configuration</span></span>
+<span id="cb58-16"><a href="#cb58-16" tabindex="-1"></a><span class="fu">restore_config_state</span>(current_config)</span>
+<span id="cb58-17"><a href="#cb58-17" tabindex="-1"></a></span>
+<span id="cb58-18"><a href="#cb58-18" tabindex="-1"></a><span class="co"># Verify restoration</span></span>
+<span id="cb58-19"><a href="#cb58-19" tabindex="-1"></a><span class="fu">get_config</span>(<span class="st">&quot;team_name&quot;</span>)  <span class="co"># Should be back to original value</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="best-practices-and-recommendations" class="section level1" number="9">
+<h1><span class="header-section-number">9</span> Best Practices and
+Recommendations</h1>
+<div id="configuration-strategy-by-use-case" class="section level2" number="9.1">
+<h2><span class="header-section-number">9.1</span> Configuration
+Strategy by Use Case</h2>
+<div id="solo-researcher" class="section level3" number="9.1.1">
+<h3><span class="header-section-number">9.1.1</span> Solo
+Researcher</h3>
+<ul>
+<li><strong>User config only</strong>: Set personal defaults in
+<code>~/.zzcollab/config.yaml</code></li>
+<li><strong>Minimal variants</strong>: Use 2-3 variants (minimal,
+analysis, alpine_minimal)</li>
+<li><strong>Standard build mode</strong>: Balance between functionality
+and build time</li>
+<li><strong>Simple package lists</strong>: Stick to well-established
+packages</li>
+</ul>
+<div class="sourceCode" id="cb59"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb59-1"><a href="#cb59-1" tabindex="-1"></a><span class="co"># ~/.zzcollab/config.yaml for solo researcher</span></span>
+<span id="cb59-2"><a href="#cb59-2" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb59-3"><a href="#cb59-3" tabindex="-1"></a><span class="at">  </span><span class="fu">team_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;myresearch&quot;</span></span>
+<span id="cb59-4"><a href="#cb59-4" tabindex="-1"></a><span class="at">  </span><span class="fu">paradigm</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;analysis&quot;</span></span>
+<span id="cb59-5"><a href="#cb59-5" tabindex="-1"></a><span class="at">  </span><span class="fu">build_mode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;standard&quot;</span></span>
+<span id="cb59-6"><a href="#cb59-6" tabindex="-1"></a></span>
+<span id="cb59-7"><a href="#cb59-7" tabindex="-1"></a><span class="co"># No custom build_modes - use built-in standard mode</span></span></code></pre></div>
+</div>
+<div id="small-research-team-2-5-people" class="section level3" number="9.1.2">
+<h3><span class="header-section-number">9.1.2</span> Small Research Team
+(2-5 people)</h3>
+<ul>
+<li><strong>Project configs</strong>: Share configuration via
+<code>./zzcollab.yaml</code> in repositories</li>
+<li><strong>Focused variants</strong>: 3-5 variants covering team’s
+research domains</li>
+<li><strong>Paradigm alignment</strong>: Team agrees on primary paradigm
+(analysis/manuscript)</li>
+<li><strong>Package coordination</strong>: Custom build modes for shared
+analysis workflows</li>
+</ul>
+<div class="sourceCode" id="cb60"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb60-1"><a href="#cb60-1" tabindex="-1"></a><span class="co"># ./zzcollab.yaml for small team</span></span>
+<span id="cb60-2"><a href="#cb60-2" tabindex="-1"></a><span class="fu">team</span><span class="kw">:</span></span>
+<span id="cb60-3"><a href="#cb60-3" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;psychlab&quot;</span></span>
+<span id="cb60-4"><a href="#cb60-4" tabindex="-1"></a><span class="at">  </span><span class="fu">project</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;attention-study&quot;</span></span>
+<span id="cb60-5"><a href="#cb60-5" tabindex="-1"></a></span>
+<span id="cb60-6"><a href="#cb60-6" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb60-7"><a href="#cb60-7" tabindex="-1"></a><span class="at">  </span><span class="fu">minimal</span><span class="kw">:</span></span>
+<span id="cb60-8"><a href="#cb60-8" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Quick testing</span></span>
+<span id="cb60-9"><a href="#cb60-9" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb60-10"><a href="#cb60-10" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Primary analysis</span></span>
+<span id="cb60-11"><a href="#cb60-11" tabindex="-1"></a><span class="at">  </span><span class="fu">publishing</span><span class="kw">:</span></span>
+<span id="cb60-12"><a href="#cb60-12" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">    # Manuscript preparation</span></span>
+<span id="cb60-13"><a href="#cb60-13" tabindex="-1"></a></span>
+<span id="cb60-14"><a href="#cb60-14" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb60-15"><a href="#cb60-15" tabindex="-1"></a><span class="at">  </span><span class="fu">psych_analysis</span><span class="kw">:</span></span>
+<span id="cb60-16"><a href="#cb60-16" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Psychology research workflow&quot;</span></span>
+<span id="cb60-17"><a href="#cb60-17" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;renv&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;here&quot;</span><span class="kw">]</span></span>
+<span id="cb60-18"><a href="#cb60-18" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;renv&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;psych&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;lavaan&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sem&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;papaja&quot;</span><span class="kw">]</span></span></code></pre></div>
+</div>
+<div id="large-research-organization-10-people" class="section level3" number="9.1.3">
+<h3><span class="header-section-number">9.1.3</span> Large Research
+Organization (10+ people)</h3>
+<ul>
+<li><strong>System configs</strong>: Organization defaults in
+<code>/etc/zzcollab/config.yaml</code></li>
+<li><strong>Extensive variants</strong>: Full variant library available
+to teams</li>
+<li><strong>Multiple paradigms</strong>: Support analysis, manuscript,
+and package paradigms</li>
+<li><strong>Custom variant library</strong>: Organization-specific
+variants in custom libraries</li>
+</ul>
+<div class="sourceCode" id="cb61"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb61-1"><a href="#cb61-1" tabindex="-1"></a><span class="co"># /etc/zzcollab/config.yaml for organization</span></span>
+<span id="cb61-2"><a href="#cb61-2" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb61-3"><a href="#cb61-3" tabindex="-1"></a><span class="at">  </span><span class="fu">github_account</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;university-research&quot;</span></span>
+<span id="cb61-4"><a href="#cb61-4" tabindex="-1"></a></span>
+<span id="cb61-5"><a href="#cb61-5" tabindex="-1"></a><span class="co"># Custom organization variants</span></span>
+<span id="cb61-6"><a href="#cb61-6" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb61-7"><a href="#cb61-7" tabindex="-1"></a><span class="at">  </span><span class="fu">variant_library</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/zzcollab/org_variants.yaml&quot;</span></span>
+<span id="cb61-8"><a href="#cb61-8" tabindex="-1"></a></span>
+<span id="cb61-9"><a href="#cb61-9" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb61-10"><a href="#cb61-10" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb61-11"><a href="#cb61-11" tabindex="-1"></a><span class="at">    </span><span class="fu">default_visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;private&quot;</span></span>
+<span id="cb61-12"><a href="#cb61-12" tabindex="-1"></a><span class="at">    </span><span class="fu">enable_actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb61-13"><a href="#cb61-13" tabindex="-1"></a></span>
+<span id="cb61-14"><a href="#cb61-14" tabindex="-1"></a><span class="at">  </span><span class="fu">documentation</span><span class="kw">:</span></span>
+<span id="cb61-15"><a href="#cb61-15" tabindex="-1"></a><span class="at">    </span><span class="fu">auto_generate_readme</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb61-16"><a href="#cb61-16" tabindex="-1"></a><span class="at">    </span><span class="fu">contributing_guide</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+</div>
+</div>
+<div id="package-management-best-practices" class="section level2" number="9.2">
+<h2><span class="header-section-number">9.2</span> Package Management
+Best Practices</h2>
+<div id="docker-vs-renv-package-separation" class="section level3" number="9.2.1">
+<h3><span class="header-section-number">9.2.1</span> Docker vs renv
+Package Separation</h3>
+<p><strong>Docker Packages</strong> (installed during image build): -
+System-wide development tools: <code>renv</code>, <code>devtools</code>,
+<code>here</code>, <code>conflicted</code> - Essential utilities
+everyone needs: <code>usethis</code>, <code>testthat</code>,
+<code>knitr</code> - Large, stable dependencies: <code>tidyverse</code>
+(if used by most team members)</p>
+<p><strong>renv Packages</strong> (project-specific): -
+Analysis-specific packages: domain-specific statistical packages -
+Experimental or cutting-edge packages: newly released packages -
+Version-sensitive packages: packages requiring specific versions -
+Data-specific packages: packages for particular datasets or APIs</p>
+<div class="sourceCode" id="cb62"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb62-1"><a href="#cb62-1" tabindex="-1"></a><span class="co"># Good separation example</span></span>
+<span id="cb62-2"><a href="#cb62-2" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb62-3"><a href="#cb62-3" tabindex="-1"></a><span class="at">  </span><span class="fu">good_separation</span><span class="kw">:</span></span>
+<span id="cb62-4"><a href="#cb62-4" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span></span>
+<span id="cb62-5"><a href="#cb62-5" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span><span class="co">          # Package management (everyone needs)</span></span>
+<span id="cb62-6"><a href="#cb62-6" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;devtools&quot;</span><span class="co">      # Development tools (everyone needs)</span></span>
+<span id="cb62-7"><a href="#cb62-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;here&quot;</span><span class="co">          # Path management (everyone needs)</span></span>
+<span id="cb62-8"><a href="#cb62-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;conflicted&quot;</span><span class="co">    # Namespace management (everyone needs)</span></span>
+<span id="cb62-9"><a href="#cb62-9" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span></span>
+<span id="cb62-10"><a href="#cb62-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb62-11"><a href="#cb62-11" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;tidyverse&quot;</span><span class="co">     # Analysis packages (project-specific)</span></span>
+<span id="cb62-12"><a href="#cb62-12" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;targets&quot;</span><span class="co">       # Workflow management (project-specific)</span></span>
+<span id="cb62-13"><a href="#cb62-13" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;specific_analysis_package&quot;</span><span class="co">  # Domain-specific (project-specific)</span></span></code></pre></div>
+</div>
+<div id="version-management-strategy" class="section level3" number="9.2.2">
+<h3><span class="header-section-number">9.2.2</span> Version Management
+Strategy</h3>
+<div class="sourceCode" id="cb63"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb63-1"><a href="#cb63-1" tabindex="-1"></a><span class="co"># Pin critical package versions in project configs</span></span>
+<span id="cb63-2"><a href="#cb63-2" tabindex="-1"></a><span class="fu">build_modes</span><span class="kw">:</span></span>
+<span id="cb63-3"><a href="#cb63-3" tabindex="-1"></a><span class="at">  </span><span class="fu">stable_analysis</span><span class="kw">:</span></span>
+<span id="cb63-4"><a href="#cb63-4" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Stable versions for reproducible analysis&quot;</span></span>
+<span id="cb63-5"><a href="#cb63-5" tabindex="-1"></a><span class="at">    </span><span class="fu">docker_packages</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;renv&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;devtools&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;here&quot;</span><span class="kw">]</span></span>
+<span id="cb63-6"><a href="#cb63-6" tabindex="-1"></a><span class="at">    </span><span class="fu">renv_packages</span><span class="kw">:</span></span>
+<span id="cb63-7"><a href="#cb63-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;renv&quot;</span></span>
+<span id="cb63-8"><a href="#cb63-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;dplyr@1.1.0&quot;</span><span class="co">        # Pin specific version</span></span>
+<span id="cb63-9"><a href="#cb63-9" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;ggplot2@3.4.0&quot;</span><span class="co">      # Pin specific version</span></span>
+<span id="cb63-10"><a href="#cb63-10" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;latest_package&quot;</span><span class="co">     # Use latest for new packages</span></span></code></pre></div>
+</div>
+</div>
+<div id="performance-optimization" class="section level2" number="9.3">
+<h2><span class="header-section-number">9.3</span> Performance
+Optimization</h2>
+<div id="build-time-optimization" class="section level3" number="9.3.1">
+<h3><span class="header-section-number">9.3.1</span> Build Time
+Optimization</h3>
+<ol style="list-style-type: decimal">
+<li><strong>Use appropriate build modes</strong>: Fast mode for CI/CD,
+Comprehensive for production</li>
+<li><strong>Minimize Docker packages</strong>: Only install widely-used
+packages in Docker</li>
+<li><strong>Layer caching</strong>: Order packages by stability (stable
+packages first)</li>
+<li><strong>Parallel builds</strong>: Enable parallel variant building
+in configuration</li>
+</ol>
+<div class="sourceCode" id="cb64"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb64-1"><a href="#cb64-1" tabindex="-1"></a><span class="co"># Optimized for build performance</span></span>
+<span id="cb64-2"><a href="#cb64-2" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb64-3"><a href="#cb64-3" tabindex="-1"></a><span class="at">  </span><span class="fu">docker</span><span class="kw">:</span></span>
+<span id="cb64-4"><a href="#cb64-4" tabindex="-1"></a><span class="at">    </span><span class="fu">parallel_builds</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb64-5"><a href="#cb64-5" tabindex="-1"></a><span class="at">    </span><span class="fu">memory_limit</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4g&quot;</span></span>
+<span id="cb64-6"><a href="#cb64-6" tabindex="-1"></a></span>
+<span id="cb64-7"><a href="#cb64-7" tabindex="-1"></a><span class="at">  </span><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb64-8"><a href="#cb64-8" tabindex="-1"></a><span class="at">    </span><span class="fu">parallel_installs</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+</div>
+<div id="container-size-optimization" class="section level3" number="9.3.2">
+<h3><span class="header-section-number">9.3.2</span> Container Size
+Optimization</h3>
+<ol style="list-style-type: decimal">
+<li><strong>Choose appropriate base images</strong>: Use minimal bases
+when possible</li>
+<li><strong>Use Alpine variants</strong>: For CI/CD and testing
+workflows</li>
+<li><strong>Separate concerns</strong>: Use different variants for
+different purposes</li>
+</ol>
+<div class="sourceCode" id="cb65"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb65-1"><a href="#cb65-1" tabindex="-1"></a><span class="co"># Size-optimized variant strategy</span></span>
+<span id="cb65-2"><a href="#cb65-2" tabindex="-1"></a><span class="fu">variants</span><span class="kw">:</span></span>
+<span id="cb65-3"><a href="#cb65-3" tabindex="-1"></a><span class="at">  </span><span class="fu">alpine_minimal</span><span class="kw">:</span></span>
+<span id="cb65-4"><a href="#cb65-4" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # ~200MB for CI/CD</span></span>
+<span id="cb65-5"><a href="#cb65-5" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span></span>
+<span id="cb65-6"><a href="#cb65-6" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # ~1.2GB for development</span></span>
+<span id="cb65-7"><a href="#cb65-7" tabindex="-1"></a><span class="co">  # Don&#39;t enable comprehensive variants unless needed</span></span></code></pre></div>
+</div>
+</div>
+<div id="security-and-access-management" class="section level2" number="9.4">
+<h2><span class="header-section-number">9.4</span> Security and Access
+Management</h2>
+<div id="github-repository-settings" class="section level3" number="9.4.1">
+<h3><span class="header-section-number">9.4.1</span> GitHub Repository
+Settings</h3>
+<div class="sourceCode" id="cb66"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb66-1"><a href="#cb66-1" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb66-2"><a href="#cb66-2" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb66-3"><a href="#cb66-3" tabindex="-1"></a><span class="at">    </span><span class="fu">default_visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;private&quot;</span><span class="co">    # Default to private repositories</span></span>
+<span id="cb66-4"><a href="#cb66-4" tabindex="-1"></a><span class="at">    </span><span class="fu">branch_protection</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">          # Require PR reviews</span></span>
+<span id="cb66-5"><a href="#cb66-5" tabindex="-1"></a></span>
+<span id="cb66-6"><a href="#cb66-6" tabindex="-1"></a><span class="at">    </span><span class="fu">repository</span><span class="kw">:</span></span>
+<span id="cb66-7"><a href="#cb66-7" tabindex="-1"></a><span class="at">      </span><span class="fu">allow_merge_commits</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">     # Require clean history</span></span>
+<span id="cb66-8"><a href="#cb66-8" tabindex="-1"></a><span class="at">      </span><span class="fu">allow_squash_merging</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # Allow squash merging</span></span>
+<span id="cb66-9"><a href="#cb66-9" tabindex="-1"></a><span class="at">      </span><span class="fu">delete_head_branches</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">     # Clean up after merging</span></span></code></pre></div>
+</div>
+<div id="container-security" class="section level3" number="9.4.2">
+<h3><span class="header-section-number">9.4.2</span> Container
+Security</h3>
+<div class="sourceCode" id="cb67"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb67-1"><a href="#cb67-1" tabindex="-1"></a><span class="fu">development</span><span class="kw">:</span></span>
+<span id="cb67-2"><a href="#cb67-2" tabindex="-1"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
+<span id="cb67-3"><a href="#cb67-3" tabindex="-1"></a><span class="at">    </span><span class="fu">default_user</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;analyst&quot;</span><span class="co">          # Don&#39;t run as root</span></span>
+<span id="cb67-4"><a href="#cb67-4" tabindex="-1"></a><span class="at">    </span><span class="fu">read_only_volumes</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">          # Mount shared volumes read-only when possible</span></span></code></pre></div>
+</div>
+<div id="access-control" class="section level3" number="9.4.3">
+<h3><span class="header-section-number">9.4.3</span> Access Control</h3>
+<ul>
+<li><strong>User configs</strong>: Personal settings only (team names,
+preferences)</li>
+<li><strong>Project configs</strong>: Team settings (variants,
+collaboration rules)</li>
+<li><strong>System configs</strong>: Organization policies (security,
+defaults)</li>
+</ul>
+<p>This separation ensures that sensitive organization settings cannot
+be overridden by individual users or projects.</p>
+</div>
+</div>
+</div>
+<div id="conclusion" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> Conclusion</h1>
+<p>ZZCOLLAB’s configuration system provides powerful, flexible control
+over research environments while maintaining simplicity for common use
+cases. The multi-layered hierarchy allows individual preferences, team
+coordination, and organizational policies to coexist seamlessly.</p>
+<p>Key takeaways:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Start simple</strong>: Use built-in build modes and standard
+variants for most projects</li>
+<li><strong>Customize gradually</strong>: Add custom variants and
+packages as needs become clear</li>
+<li><strong>Coordinate with teams</strong>: Use project configs to
+ensure team consistency</li>
+<li><strong>Optimize for workflow</strong>: Choose variants and packages
+that match your research paradigm</li>
+<li><strong>Validate regularly</strong>: Use configuration validation to
+catch issues early</li>
+</ol>
+<p>The configuration system scales from solo researchers to large
+organizations, providing reproducible, customizable research
+environments that eliminate configuration drift and enable seamless
+collaboration.</p>
+<p>For detailed technical documentation, see: -
+<code>zzcollab --help</code> for command-line options -
+<code>help(package = &quot;zzcollab&quot;)</code> for R interface documentation -
+<code>templates/variant_examples.yaml</code> for available variants -
+<code>PARADIGM_GUIDE.md</code> for paradigm-specific guidance</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

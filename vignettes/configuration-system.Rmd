@@ -4,10 +4,10 @@ subtitle: "Advanced Docker and Package Management"
 author: "ZZCOLLAB Team"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette:
-    toc: true
-    toc_depth: 3
-    number_sections: true
+  # rmarkdown::html_vignette:
+  #   toc: true
+  #   toc_depth: 3
+  #   number_sections: true
   pdf_document:
     toc: true
     toc_depth: 3
@@ -19,7 +19,7 @@ header-includes:
   - \usepackage{xcolor}
   - \setmainfont{Helvetica Neue}
   - \setsansfont{Helvetica Neue}
-  - \setmonofont{SF Mono}
+  # - \setmonofont{SF Mono}
   - \newfontfamily\emojifont{Noto Color Emoji}
   - \usepackage{newunicodechar}
   - \newunicodechar{🐳}{\textbf{[Docker]}}
