@@ -6,7 +6,7 @@
 \usepackage{xcolor}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb}
-\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\setcounter{secnumdepth}{5}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
@@ -95,6 +95,9 @@
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage[utf8]{inputenc}
+\usepackage{fontspec}
+\usepackage{xunicode}
 \usepackage{bookmark}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same}
@@ -118,6 +121,10 @@
 \begin{document}
 \maketitle
 
+{
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
 \section{Overview}\label{overview}
 
 ZZCOLLAB features a sophisticated multi-layered configuration system
@@ -131,20 +138,20 @@ repetitive manual configuration.
 \begin{itemize}
 \tightlist
 \item
-  \textbf{\u2705 Eliminate repetitive typing}: Set defaults once, use
-  across all projects
+  \textbf{✓ Eliminate repetitive typing}: Set defaults once, use across
+  all projects
 \item
-  \textbf{\u2705 Team standardization}: Shared configurations ensure
+  \textbf{✓ Team standardization}: Shared configurations ensure
   identical environments
 \item
-  \textbf{\u2705 Flexible customization}: 14+ Docker variants, custom
-  package lists, build modes
+  \textbf{✓ Flexible customization}: 14+ Docker variants, custom package
+  lists, build modes
 \item
-  \textbf{\u2705 Hierarchical control}: User, project, and system-level
+  \textbf{✓ Hierarchical control}: User, project, and system-level
   configurations
 \item
-  \textbf{\u2705 Single source of truth}: Centralized variant
-  definitions prevent duplication
+  \textbf{✓ Single source of truth}: Centralized variant definitions
+  prevent duplication
 \end{itemize}
 
 \section{Configuration Architecture}\label{configuration-architecture}
@@ -333,16 +340,16 @@ for variant selection:
 This displays a categorized menu:
 
 \begin{verbatim}
-📦 STANDARD RESEARCH ENVIRONMENTS
+STANDARD RESEARCH ENVIRONMENTS
  1) minimal          ~800MB  - Essential R packages only
  2) analysis         ~1.2GB  - Tidyverse + data analysis
  3) modeling         ~1.5GB  - Machine learning with tidymodels
 
-🔬 SPECIALIZED DOMAINS
+SPECIALIZED DOMAINS
  7) bioinformatics   ~2GB    - Bioconductor genomics packages
  8) geospatial       ~2.5GB  - sf, terra, leaflet mapping
 
-🏔️ LIGHTWEIGHT ALPINE VARIANTS
+LIGHTWEIGHT ALPINE VARIANTS
  9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
 10) alpine_analysis  ~400MB  - Essential analysis in tiny container
 

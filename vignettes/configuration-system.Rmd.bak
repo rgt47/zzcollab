@@ -13,23 +13,11 @@ output:
     toc_depth: 3
     number_sections: true
     latex_engine: xelatex
-    keep_tex: true
+    keep_tex: false
 header-includes:
+  - \usepackage[utf8]{inputenc}
   - \usepackage{fontspec}
-  - \usepackage{xcolor}
-  - \setmainfont{SF Pro Display}[Scale=1.0]
-  - \newfontfamily\emojifont{Apple Color Emoji}[Scale=0.9]
-  - \newcommand{\emoji}[1]{{\emojifont #1}}
-  - \usepackage{newunicodechar}
-  - \newunicodechar{🐳}{\emoji{🐳}}
-  - \newunicodechar{📦}{\emoji{📦}}
-  - \newunicodechar{⚙}{\emoji{⚙}}
-  - \newunicodechar{✅}{\emoji{✅}}
-  - \newunicodechar{🔬}{\emoji{🔬}}
-  - \newunicodechar{🏔}{\emoji{🏔}}
-  - \newunicodechar{🧪}{\emoji{🧪}}
-  - \newunicodechar{📊}{\emoji{📊}}
-  - \newunicodechar{📄}{\emoji{📄}}
+  - \usepackage{xunicode}
 vignette: >
   %\VignetteIndexEntry{ZZCOLLAB Configuration System Guide}
   %\VignetteEngine{knitr::rmarkdown}
@@ -50,11 +38,11 @@ ZZCOLLAB features a sophisticated multi-layered configuration system that contro
 
 ## Key Benefits
 
-- **✓ Eliminate repetitive typing**: Set defaults once, use across all projects
-- **✓ Team standardization**: Shared configurations ensure identical environments
-- **✓ Flexible customization**: 14+ Docker variants, custom package lists, build modes
-- **✓ Hierarchical control**: User, project, and system-level configurations
-- **✓ Single source of truth**: Centralized variant definitions prevent duplication
+- **\u2705 Eliminate repetitive typing**: Set defaults once, use across all projects
+- **\u2705 Team standardization**: Shared configurations ensure identical environments
+- **\u2705 Flexible customization**: 14+ Docker variants, custom package lists, build modes
+- **\u2705 Hierarchical control**: User, project, and system-level configurations
+- **\u2705 Single source of truth**: Centralized variant definitions prevent duplication
 
 # Configuration Architecture
 
@@ -71,21 +59,21 @@ Higher priority configurations override lower priority ones, allowing for precis
 
 ## Three Configuration Domains
 
-### 🐳 Docker Variant Management
+### \U0001F433 Docker Variant Management
 Control which specialized Docker environments your team uses:
 - **14+ predefined variants** from minimal (~200MB Alpine) to comprehensive (~3.5GB full-featured)
 - **Domain-specific environments** for bioinformatics, geospatial analysis, machine learning
 - **Single source of truth** architecture eliminates duplication
 - **Interactive variant browser** for easy discovery and selection
 
-### 📦 Package Management System
+### \U0001F4E6 Package Management System
 Control what R packages are installed and when:
 - **Build mode control**: Fast (9 packages) vs Standard (17 packages) vs Comprehensive (47+ packages)
 - **Paradigm-specific packages**: Analysis, Manuscript, and Package development workflows
 - **Custom package lists**: Define your own combinations for specialized workflows
 - **Dependency management**: Docker packages vs renv packages with proper separation
 
-### Development & Collaboration Settings
+### \u2699\uFE0F Development & Collaboration Settings
 Control team workflows and automation:
 - **GitHub integration**: Automatic repository creation, visibility settings, Actions enablement
 - **Container defaults**: User accounts, working directories, shared volumes
@@ -190,16 +178,16 @@ cd your-project
 This displays a categorized menu:
 
 ```
-STANDARD RESEARCH ENVIRONMENTS
+📦 STANDARD RESEARCH ENVIRONMENTS
  1) minimal          ~800MB  - Essential R packages only
  2) analysis         ~1.2GB  - Tidyverse + data analysis
  3) modeling         ~1.5GB  - Machine learning with tidymodels
 
-SPECIALIZED DOMAINS
+🔬 SPECIALIZED DOMAINS
  7) bioinformatics   ~2GB    - Bioconductor genomics packages
  8) geospatial       ~2.5GB  - sf, terra, leaflet mapping
 
-LIGHTWEIGHT ALPINE VARIANTS
+🏔️ LIGHTWEIGHT ALPINE VARIANTS
  9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
 10) alpine_analysis  ~400MB  - Essential analysis in tiny container
 
