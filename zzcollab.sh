@@ -490,6 +490,78 @@ validate_directory_for_setup() {
     return 0
 }
 
+# Function: validate_directory_for_setup_no_conflicts
+# Purpose: Same as validate_directory_for_setup but without conflict detection
+# Used when conflict detection has already been performed separately
+validate_directory_for_setup_no_conflicts() {
+    local current_dir
+    current_dir=$(basename "$PWD")
+
+    # Skip all directory validation if --force is used (advanced users)
+    if [[ "${FORCE_DIRECTORY:-false}" == "true" ]]; then
+        log_warning "⚠️  Directory validation skipped due to --force flag"
+        log_info "Proceeding with setup in current directory: $PWD"
+        return 0
+    fi
+
+    # Check if this is an existing zzcollab project (allow parameter updates)
+    if [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]] || [[ -f "DESCRIPTION" && -d "R" && -d "analysis" ]]; then
+        log_info "✅ Detected existing zzcollab project - allowing parameter updates"
+        log_info "You can safely run zzcollab here to modify build settings, base images, etc."
+        return 0
+    fi
+
+    # Check if this is a directory where team initialization was completed (common workflow)
+    if [[ -f ".zzcollab_team_setup" ]]; then
+        log_info "✅ Detected directory with completed team initialization"
+        log_info "Proceeding with full project setup (this is the intended workflow after -i)"
+        return 0
+    fi
+
+    # Critical protection: Never allow installation in home directory
+    if [[ "$PWD" == "$HOME" ]]; then
+        log_error "🚫 CRITICAL SAFETY CHECK FAILED:"
+        log_error "Cannot run zzcollab in your home directory ($HOME)"
+        log_error "This would clutter your home directory with project files"
+        echo ""
+        log_info "💡 RECOMMENDED ACTIONS:"
+        log_info "  1. Create a projects directory: mkdir ~/projects && cd ~/projects"
+        log_info "  2. Create a specific project directory: mkdir ~/my-analysis && cd ~/my-analysis"
+        log_info "  3. Use a dedicated workspace: cd /path/to/your/workspace"
+        echo ""
+        log_info "Then run zzcollab in the appropriate project directory"
+        exit 1
+    fi
+
+    # Critical protection: Common problematic directories
+    local problematic_dirs=("/Users" "/home" "/root" "/tmp" "/var" "/usr" "/opt" "/etc")
+    for dir in "${problematic_dirs[@]}"; do
+        if [[ "$PWD" == "$dir" ]]; then
+            log_error "🚫 CRITICAL SAFETY CHECK FAILED:"
+            log_error "Cannot run zzcollab in system directory: $PWD"
+            log_error "This could damage your system or create security issues"
+            exit 1
+        fi
+    done
+
+    # Skip validation for certain directories that are expected to be non-empty
+    if [[ "$current_dir" == "zzcollab" ]]; then
+        log_warning "Running zzcollab setup in the zzcollab source directory"
+        log_warning "This will create project files alongside the zzcollab source code"
+        read -p "Are you sure you want to continue? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_info "Setup cancelled by user"
+            exit 0
+        fi
+        return 0
+    fi
+
+    # Note: conflict detection removed - assumed to have been performed separately
+    log_info "✅ Directory validation passed"
+    return 0
+}
+
 #=============================================================================
 # MAIN EXECUTION HELPER FUNCTIONS
 #=============================================================================
@@ -557,17 +629,20 @@ validate_and_setup_environment() {
     log_info "📦 Package name: '$PKG_NAME'"
     log_info "🔧 All modules loaded successfully"
     echo ""
-    
+
     # Validate templates directory
     if [[ ! -d "$TEMPLATES_DIR" ]]; then
         log_error "Templates directory not found: $TEMPLATES_DIR"
         log_error "Please ensure you're running this script from the zzcollab directory"
         exit 1
     fi
-    
-    # Validate directory is safe for setup
-    validate_directory_for_setup
-    
+
+    # Run conflict detection FIRST, before any directory creation
+    confirm_overwrite_conflicts
+
+    # Validate directory is safe for setup (but skip conflict detection since we already did it)
+    validate_directory_for_setup_no_conflicts
+
     # Initialize manifest tracking
     init_manifest
 }

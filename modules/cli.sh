@@ -162,7 +162,7 @@ PROJECT_NAME=""
 INTERFACE=""
 GITHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
-PARADIGM="analysis"  # New: research paradigm (analysis, manuscript, package) - defaults to analysis
+PARADIGM=""  # New: research paradigm (analysis, manuscript, package) - no default to avoid premature directory creation
 
 # Base image selection for team initialization
 readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"

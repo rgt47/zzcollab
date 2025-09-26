@@ -383,9 +383,7 @@ EOF
 # CICD MODULE VALIDATION
 #=============================================================================
 
-# Validate that .github directory structure can be created
-if [[ ! -d ".github" ]] && ! mkdir -p ".github/workflows"; then
-    log_warn "Cannot create .github directory - CI/CD setup may fail"
-fi
+# Note: .github directory creation is handled by individual functions when needed
+# No immediate directory creation during module loading to avoid conflicts
 
 

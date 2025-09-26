@@ -777,16 +777,165 @@ library("ggplot2")
 library("broom")
 library("emmeans")
 
-# Load our analysis functions
-source("../R/data_processing.R")
-source("../R/statistical_analysis.R")
-source("../R/visualization.R")
-
 # Set up figure and table output
 r_refs("../references.bib")
+
+# Preload sample size data for inline references
+penguins_clean <- palmerpenguins::penguins %>%
+  filter(!is.na(bill_length_mm), !is.na(bill_depth_mm),
+         !is.na(flipper_length_mm), !is.na(body_mass_g),
+         !is.na(sex), !is.na(species))
+
+sample_counts <- table(penguins_clean$species)
+```
+
+```{r define-functions, include = FALSE}
+# Define the analysis functions
+
+#' Prepare penguin data for statistical analysis
+prepare_penguin_data <- function(data = palmerpenguins::penguins,
+                                min_sample_size = 10) {
+
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("dplyr package is required")
+  }
+
+  # Clean data and create derived variables
+  cleaned_data <- data %>%
+    dplyr::filter(
+      !is.na(bill_length_mm),
+      !is.na(bill_depth_mm),
+      !is.na(flipper_length_mm),
+      !is.na(body_mass_g),
+      !is.na(sex),
+      !is.na(species)
+    ) %>%
+    dplyr::mutate(
+      # Create standardized measurements (z-scores)
+      bill_length_std = scale(bill_length_mm)[,1],
+      bill_depth_std = scale(bill_depth_mm)[,1],
+      flipper_length_std = scale(flipper_length_mm)[,1],
+      body_mass_std = scale(body_mass_g)[,1],
+
+      # Create bill ratio (length/depth)
+      bill_ratio = bill_length_mm / bill_depth_mm,
+
+      # Body condition index (mass/flipper length)
+      body_condition = body_mass_g / flipper_length_mm,
+
+      # Factor variables
+      species = as.factor(species),
+      sex = as.factor(sex),
+      island = as.factor(island)
+    )
+
+  # Remove species with insufficient sample sizes
+  species_counts <- cleaned_data %>%
+    dplyr::count(species) %>%
+    dplyr::filter(n >= min_sample_size)
+
+  result <- cleaned_data %>%
+    dplyr::filter(species %in% species_counts$species)
+
+  # Add metadata attributes
+  attr(result, "sample_sizes") <- table(result$species)
+  attr(result, "preparation_date") <- Sys.Date()
+
+  return(result)
+}
+
+#' Get summary statistics by species
+summarize_by_species <- function(data) {
+  data %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarise(
+      n = dplyr::n(),
+      bill_length_mean = mean(bill_length_mm, na.rm = TRUE),
+      bill_length_sd = sd(bill_length_mm, na.rm = TRUE),
+      bill_depth_mean = mean(bill_depth_mm, na.rm = TRUE),
+      bill_depth_sd = sd(bill_depth_mm, na.rm = TRUE),
+      body_mass_mean = mean(body_mass_g, na.rm = TRUE),
+      body_mass_sd = sd(body_mass_g, na.rm = TRUE),
+      .groups = "drop"
+    )
+}
+
+#' Perform ANOVA comparing penguin species
+analyze_species_differences <- function(data, response_var) {
+
+  if (!requireNamespace("broom", quietly = TRUE)) {
+    stop("broom package is required")
+  }
+  if (!requireNamespace("emmeans", quietly = TRUE)) {
+    stop("emmeans package is required")
+  }
+
+  # Fit ANOVA model
+  formula_str <- paste(response_var, "~ species")
+  model <- aov(as.formula(formula_str), data = data)
+
+  # ANOVA table
+  anova_results <- broom::tidy(model)
+
+  # Post-hoc comparisons
+  emmeans_obj <- emmeans::emmeans(model, ~ species)
+  pairwise <- emmeans::pairs(emmeans_obj, adjust = "tukey")
+
+  # Effect sizes
+  eta_squared <- anova_results$sumsq[1] / sum(anova_results$sumsq)
+
+  list(
+    model = model,
+    anova_table = anova_results,
+    posthoc_comparisons = broom::tidy(pairwise),
+    eta_squared = eta_squared,
+    sample_size = nrow(data)
+  )
+}
+
+#' Create publication-ready species comparison plot
+create_species_plot <- function(data, x_var, y_var, title = "") {
+
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("ggplot2 package is required")
+  }
+
+  ggplot2::ggplot(data, ggplot2::aes_string(x = x_var, y = y_var)) +
+    ggplot2::geom_boxplot(ggplot2::aes(fill = species), alpha = 0.7) +
+    ggplot2::geom_jitter(ggplot2::aes(color = species),
+                        width = 0.2, alpha = 0.5) +
+    ggplot2::scale_fill_manual(
+      values = c("Adelie" = "#FF6B6B",
+                "Chinstrap" = "#4ECDC4",
+                "Gentoo" = "#45B7D1")
+    ) +
+    ggplot2::scale_color_manual(
+      values = c("Adelie" = "#FF6B6B",
+                "Chinstrap" = "#4ECDC4",
+                "Gentoo" = "#45B7D1")
+    ) +
+    ggplot2::labs(
+      title = title,
+      x = gsub("_", " ", tools::toTitleCase(gsub("_", " ", x_var))),
+      y = gsub("_", " ", tools::toTitleCase(gsub("_", " ", y_var))),
+      fill = "Species",
+      color = "Species"
+    ) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, size = 12, face = "bold"),
+      legend.position = "bottom",
+      axis.text = ggplot2::element_text(size = 10),
+      axis.title = ggplot2::element_text(size = 11)
+    )
+}
 ```
 
 ```{r load-data, include = FALSE}
+# Load required packages
+library(palmerpenguins)
+library(dplyr)
+
 # Prepare the data using our function
 penguin_data <- prepare_penguin_data()
 
@@ -806,7 +955,7 @@ This study examines morphological differentiation among Palmer penguin species u
 
 ## Data and Study System
 
-We analyzed morphological measurements from `r nrow(penguin_data)` penguins representing three species: Adelie (n = `r summary_stats$n[summary_stats$species == "Adelie"]`), Chinstrap (n = `r summary_stats$n[summary_stats$species == "Chinstrap"]`), and Gentoo (n = `r summary_stats$n[summary_stats$species == "Gentoo"]`) collected between 2007-2009 in the Palmer Archipelago, Antarctica.
+We analyzed morphological measurements from `r nrow(penguins_clean)` penguins representing three species: Adelie (n = `r sample_counts["Adelie"]`), Chinstrap (n = `r sample_counts["Chinstrap"]`), and Gentoo (n = `r sample_counts["Gentoo"]`) collected between 2007-2009 in the Palmer Archipelago, Antarctica.
 
 ## Morphological Measurements
 
