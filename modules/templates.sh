@@ -90,6 +90,14 @@ substitute_variables() {
     export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     export R_VERSION="${R_VERSION:-latest}"  # Provide default value if not set
     export USERNAME="${USERNAME:-analyst}"   # Default Docker user
+
+    # Additional variables for manuscript paradigm
+    export PACKAGE_NAME="$PKG_NAME"  # Alias for consistency
+    export AUTHOR_LAST="${AUTHOR_LAST:-}"  # Author last name
+    export AUTHOR_ORCID="${AUTHOR_ORCID:-}"  # ORCID identifier
+    export MANUSCRIPT_TITLE="${MANUSCRIPT_TITLE:-Research Compendium Analysis}"  # Default manuscript title
+    export DATE="$(date +%Y-%m-%d)"  # Current date
+    export GITHUB_ACCOUNT="${GITHUB_ACCOUNT:-}"  # GitHub account name
     
     # Process the file: read it, substitute variables, write to temp file, then replace original
     # envsubst < "$file" - reads file and substitutes ${VAR} with environment variable values
@@ -254,28 +262,27 @@ EOF
             track_file ".Rbuildignore"
             log_info "Created .Rbuildignore file"
 
-            # Create manuscript-specific files
-            echo "# Main Manuscript" > manuscript/paper.Rmd
-            echo "# Supplementary Materials" > manuscript/supplementary.Rmd
-            echo "@article{example2024," > manuscript/references.bib
-            echo "  title={Example Article}," >> manuscript/references.bib
-            echo "  author={Author, A.}," >> manuscript/references.bib
-            echo "  journal={Journal Name}," >> manuscript/references.bib
-            echo "  year={2024}" >> manuscript/references.bib
-            echo "}" >> manuscript/references.bib
+            # Create manuscript-specific files from templates
+            copy_template_file "paradigms/manuscript/paper.Rmd" "manuscript/paper.Rmd" "Main manuscript"
+            copy_template_file "paradigms/manuscript/supplementary.Rmd" "manuscript/supplementary.Rmd" "Supplementary materials"
+            copy_template_file "paradigms/manuscript/references.bib" "manuscript/references.bib" "Bibliography"
             track_file "manuscript/paper.Rmd"
             track_file "manuscript/supplementary.Rmd"
             track_file "manuscript/references.bib"
 
-            # Create analysis reproduction scripts
-            echo "# Data processing workflow" > analysis/reproduce/01_data_preparation.R
-            echo "# Statistical analysis pipeline" > analysis/reproduce/02_statistical_analysis.R
-            echo "# Generate all manuscript outputs" > analysis/reproduce/03_figures_tables.R
-            echo "# Render all manuscript formats" > analysis/reproduce/04_manuscript_render.R
+            # Create analysis reproduction scripts from templates
+            copy_template_file "paradigms/manuscript/01_data_preparation.R" "analysis/reproduce/01_data_preparation.R" "Data preparation script"
+            copy_template_file "paradigms/manuscript/02_statistical_analysis.R" "analysis/reproduce/02_statistical_analysis.R" "Statistical analysis script"
+            copy_template_file "paradigms/manuscript/03_figures_tables.R" "analysis/reproduce/03_figures_tables.R" "Figures and tables script"
+            copy_template_file "paradigms/manuscript/04_manuscript_render.R" "analysis/reproduce/04_manuscript_render.R" "Manuscript rendering script"
             track_file "analysis/reproduce/01_data_preparation.R"
             track_file "analysis/reproduce/02_statistical_analysis.R"
             track_file "analysis/reproduce/03_figures_tables.R"
             track_file "analysis/reproduce/04_manuscript_render.R"
+
+            # Create example R package functions
+            copy_template_file "paradigms/manuscript/example_functions.R" "R/analysis_functions.R" "Example analysis functions"
+            track_file "R/analysis_functions.R"
 
             # Create data documentation
             echo "# Raw Data" > data/raw_data/README.md

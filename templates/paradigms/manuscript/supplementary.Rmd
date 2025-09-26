@@ -1,0 +1,97 @@
+---
+title: "Supplementary Materials: {{MANUSCRIPT_TITLE}}"
+author: "{{AUTHOR_NAME}} {{AUTHOR_LAST}}"
+date: "`r Sys.Date()`"
+output:
+  bookdown::word_document2:
+    number_sections: true
+  bookdown::pdf_document2:
+    latex_engine: xelatex
+    number_sections: true
+  bookdown::html_document2:
+    number_sections: true
+    toc: true
+    toc_float: true
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+# Load required packages
+library({{PACKAGE_NAME}})
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(here)
+
+# Load all package functions
+devtools::load_all()
+```
+
+# Supplementary Methods
+
+## Data Processing Details
+
+This section provides detailed documentation of data processing steps implemented in the R package functions.
+
+```{r data-processing-details}
+# Detailed data processing code
+# show_data_processing_steps()
+```
+
+## Additional Statistical Analyses
+
+Extended statistical analyses that support the main findings.
+
+```{r additional-analyses}
+# Supplementary statistical analyses
+# perform_sensitivity_analysis()
+```
+
+# Supplementary Results
+
+## Additional Figures
+
+```{r supplementary-figures, fig.cap="Supplementary analysis figures"}
+# Generate supplementary figures
+# create_supplementary_figures()
+```
+
+## Additional Tables
+
+```{r supplementary-tables}
+# Generate supplementary tables
+# kable(create_supplementary_tables(), caption = "Detailed results")
+```
+
+## Model Diagnostics
+
+```{r model-diagnostics, fig.cap="Model diagnostic plots"}
+# Generate model diagnostic plots
+# create_diagnostic_plots()
+```
+
+# Code Availability
+
+All analysis code is available as documented R functions in this research compendium:
+
+- Data processing functions: `R/data_processing.R`
+- Statistical analysis functions: `R/statistical_analysis.R`
+- Plotting functions: `R/plotting_functions.R`
+- Utility functions: `R/utils.R`
+
+## Reproduction Scripts
+
+Complete reproduction workflows are available in `analysis/reproduce/`:
+
+1. `01_data_preparation.R` - Data cleaning and preparation
+2. `02_statistical_analysis.R` - Statistical modeling and inference
+3. `03_figures_tables.R` - Generate all manuscript outputs
+4. `04_manuscript_render.R` - Render final manuscript formats
+
+## Testing
+
+All functions include comprehensive unit tests in `tests/testthat/` to ensure computational reproducibility.
+
+# References

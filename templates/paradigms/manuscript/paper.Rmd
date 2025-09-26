@@ -1,0 +1,115 @@
+---
+title: "{{MANUSCRIPT_TITLE}}"
+author:
+  - name: "{{AUTHOR_NAME}} {{AUTHOR_LAST}}"
+    email: "{{AUTHOR_EMAIL}}"
+    affiliation: "{{AUTHOR_INSTITUTE}}"
+    orcid: "{{AUTHOR_ORCID}}"
+date: "`r Sys.Date()`"
+output:
+  bookdown::word_document2:
+    reference_docx: "templates/manuscript_template.docx"
+    number_sections: true
+  bookdown::pdf_document2:
+    latex_engine: xelatex
+    number_sections: true
+  bookdown::html_document2:
+    number_sections: true
+    toc: true
+    toc_float: true
+bibliography: references.bib
+csl: "templates/journal-style.csl"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+# Load required packages and functions
+library({{PACKAGE_NAME}})
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(here)
+
+# Source analysis functions
+devtools::load_all()
+```
+
+# Abstract
+
+This research compendium presents...
+
+**Keywords:** research reproducibility, computational analysis, academic publishing
+
+# Introduction
+
+This manuscript demonstrates a reproducible research workflow using the {{PACKAGE_NAME}} research compendium.
+
+# Methods
+
+## Data Sources
+
+The analysis uses data stored in the `data/raw_data/` directory. Data processing functions are implemented in the R package component of this research compendium.
+
+```{r data-processing}
+# Load and process data using package functions
+# processed_data <- process_raw_data()
+```
+
+## Statistical Analysis
+
+Statistical analyses are implemented as documented functions in the `R/` directory and can be reproduced using the scripts in `analysis/reproduce/`.
+
+```{r analysis-example}
+# Example analysis using package functions
+# results <- perform_statistical_analysis(processed_data)
+```
+
+# Results
+
+## Primary Findings
+
+```{r results-figure, fig.cap="Main analysis results"}
+# Generate figure using package functions
+# create_results_figure(results)
+```
+
+```{r results-table}
+# Generate table using package functions
+# kable(create_results_table(results), caption = "Summary statistics")
+```
+
+# Discussion
+
+The findings demonstrate the effectiveness of the research compendium approach for reproducible research.
+
+# Conclusion
+
+This research compendium provides a complete framework for reproducible computational research.
+
+# Acknowledgments
+
+We thank the contributors to the research reproducibility community.
+
+# References
+
+::: {#refs}
+:::
+
+# Supplementary Materials
+
+See `supplementary.Rmd` for additional analyses and materials.
+
+# Reproducibility Information
+
+This manuscript was generated using the research compendium structure. To reproduce all analyses:
+
+1. Ensure all dependencies are installed: `renv::restore()`
+2. Run the reproduction workflow: `source("analysis/reproduce/04_manuscript_render.R")`
+3. All figures and tables are generated programmatically from the underlying data and analysis functions.
+
+## Session Information
+
+```{r session-info}
+sessionInfo()
+```
