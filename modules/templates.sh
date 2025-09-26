@@ -303,11 +303,75 @@ EOF
             log_info "Created complete research compendium structure"
             ;;
         analysis)
-            # Create analysis-specific files
-            echo "# Data exploration" > analysis/exploratory/README.md
-            echo "# Statistical modeling" > analysis/modeling/README.md
-            echo "# Generated figures" > outputs/figures/README.md
-            log_info "Created analysis structure files" 
+            # Create comprehensive analysis workflow from templates
+            copy_template_file "paradigms/analysis/01_exploratory_analysis.R" "analysis/exploratory/01_exploratory_analysis.R" "Exploratory data analysis script"
+            copy_template_file "paradigms/analysis/02_statistical_modeling.R" "analysis/modeling/02_statistical_modeling.R" "Statistical modeling script"
+            copy_template_file "paradigms/analysis/03_model_validation.R" "analysis/validation/03_model_validation.R" "Model validation script"
+            copy_template_file "paradigms/analysis/04_interactive_dashboard.Rmd" "reports/dashboard/04_interactive_dashboard.Rmd" "Interactive dashboard template"
+            copy_template_file "paradigms/analysis/05_automated_report.Rmd" "reports/05_automated_report.Rmd" "Automated report template"
+            copy_template_file "paradigms/analysis/example_analysis_functions.R" "scripts/analysis_functions.R" "Example analysis utility functions"
+
+            # Track all created files
+            track_file "analysis/exploratory/01_exploratory_analysis.R"
+            track_file "analysis/modeling/02_statistical_modeling.R"
+            track_file "analysis/validation/03_model_validation.R"
+            track_file "reports/dashboard/04_interactive_dashboard.Rmd"
+            track_file "reports/05_automated_report.Rmd"
+            track_file "scripts/analysis_functions.R"
+
+            # Create directory documentation files
+            echo "# Exploratory Data Analysis" > analysis/exploratory/README.md
+            echo "" >> analysis/exploratory/README.md
+            echo "This directory contains systematic exploratory data analysis workflows:" >> analysis/exploratory/README.md
+            echo "- \`01_exploratory_analysis.R\`: Comprehensive EDA with reproducible workflows" >> analysis/exploratory/README.md
+            echo "- Session logs and data quality reports generated automatically" >> analysis/exploratory/README.md
+            track_file "analysis/exploratory/README.md"
+
+            echo "# Statistical Modeling" > analysis/modeling/README.md
+            echo "" >> analysis/modeling/README.md
+            echo "This directory contains statistical modeling workflows:" >> analysis/modeling/README.md
+            echo "- \`02_statistical_modeling.R\`: Model training and hyperparameter tuning" >> analysis/modeling/README.md
+            echo "- Final models and performance metrics saved automatically" >> analysis/modeling/README.md
+            track_file "analysis/modeling/README.md"
+
+            echo "# Model Validation" > analysis/validation/README.md
+            echo "" >> analysis/validation/README.md
+            echo "This directory contains model validation procedures:" >> analysis/validation/README.md
+            echo "- \`03_model_validation.R\`: Cross-validation and robustness testing" >> analysis/validation/README.md
+            echo "- Bootstrap confidence intervals and sensitivity analysis" >> analysis/validation/README.md
+            track_file "analysis/validation/README.md"
+
+            echo "# Generated Figures" > outputs/figures/README.md
+            echo "" >> outputs/figures/README.md
+            echo "This directory contains all generated figures from analysis workflows:" >> outputs/figures/README.md
+            echo "- High-resolution PNG and PDF outputs" >> outputs/figures/README.md
+            echo "- Figures generated with reproducible seeds and session logging" >> outputs/figures/README.md
+            track_file "outputs/figures/README.md"
+
+            echo "# Generated Tables" > outputs/tables/README.md
+            echo "" >> outputs/tables/README.md
+            echo "This directory contains all generated tables from analysis workflows:" >> outputs/tables/README.md
+            echo "- CSV format for data interchange" >> outputs/tables/README.md
+            echo "- Model performance metrics and statistical summaries" >> outputs/tables/README.md
+            track_file "outputs/tables/README.md"
+
+            echo "# Analysis Reports" > reports/README.md
+            echo "" >> reports/README.md
+            echo "This directory contains automated reporting templates:" >> reports/README.md
+            echo "- \`05_automated_report.Rmd\`: Comprehensive analysis report" >> reports/README.md
+            echo "- \`dashboard/\`: Interactive dashboard for data exploration" >> reports/README.md
+            echo "- All reports are parameterized and reproducible" >> reports/README.md
+            track_file "reports/README.md"
+
+            echo "# Analysis Scripts and Utilities" > scripts/README.md
+            echo "" >> scripts/README.md
+            echo "This directory contains utility scripts and helper functions:" >> scripts/README.md
+            echo "- \`analysis_functions.R\`: Reusable analysis utility functions" >> scripts/README.md
+            echo "- Data loading, quality assessment, and visualization helpers" >> scripts/README.md
+            echo "- Standardized themes and session documentation functions" >> scripts/README.md
+            track_file "scripts/README.md"
+
+            log_info "Created comprehensive analysis workflow structure"
             ;;
         package)
             # Create package-specific files  
