@@ -16,14 +16,23 @@ BugReports: https://github.com/{{GITHUB_ACCOUNT}}/{{PACKAGE_NAME}}/issues
 Depends: 
     R (>= 4.0)
 Imports:
+    dplyr,
+    ggplot2,
     here,
     rmarkdown,
-    knitr
-Suggests: 
+    knitr,
+    broom
+Suggests:
     bookdown,
     papaja,
-    targets,
+    devtools,
+    roxygen2,
     testthat (>= 3.0.0),
+    emmeans,
+    corrplot,
+    stringr,
+    palmerpenguins,
+    targets,
     spelling
 Config/testthat/edition: 3
 Language: en-US

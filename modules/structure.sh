@@ -48,12 +48,12 @@ create_paradigm_directory_structure() {
         manuscript)
             local -r dirs=(
                 "R" "tests/testthat" "man"
-                "manuscript/sections" "manuscript/figures" "manuscript/tables" 
-                "manuscript/supplementary"
+                "manuscript" "manuscript/journal_templates"
                 "analysis/reproduce"
-                "data/processed"
-                "submission/journal-format" "submission/preprint"
+                "data/raw_data" "data/derived_data"
+                "submission/figures" "submission/tables" "submission/supplementary" "submission/manuscript_versions"
                 "vignettes"
+                "inst/examples"
             )
             ;;
         package)
