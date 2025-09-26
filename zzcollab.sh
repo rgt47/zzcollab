@@ -339,6 +339,12 @@ get_zzcollab_files() {
 # Function: detect_file_conflicts
 # Purpose: Check for actual file conflicts between existing files and zzcollab files
 detect_file_conflicts() {
+    # DEBUG: Check if .github exists at start of detect_file_conflicts
+    if [[ -d ".github" ]]; then
+        log_error "DEBUG: .github directory exists at START of detect_file_conflicts()"
+        ls -la .github/ || true
+    fi
+
     local conflicts=()
     local zzcollab_files
     
@@ -349,6 +355,12 @@ detect_file_conflicts() {
     while IFS= read -r file; do
         zzcollab_files+=("$file")
     done < <(get_zzcollab_files)
+
+    # DEBUG: Check if .github exists after get_zzcollab_files
+    if [[ -d ".github" ]]; then
+        log_error "DEBUG: .github directory exists AFTER get_zzcollab_files()"
+        ls -la .github/ || true
+    fi
     
     # Check for existing files that would conflict
     for item in "${zzcollab_files[@]}"; do
@@ -393,6 +405,12 @@ detect_file_conflicts() {
 # Function: confirm_overwrite_conflicts
 # Purpose: Ask user about overwriting conflicting files
 confirm_overwrite_conflicts() {
+    # DEBUG: Check if .github exists at start of conflict detection
+    if [[ -d ".github" ]]; then
+        log_error "DEBUG: .github directory exists at START of confirm_overwrite_conflicts()"
+        ls -la .github/ || true
+    fi
+
     local conflicts
     # Using while read loop for broader shell compatibility instead of mapfile
     conflicts=()
@@ -667,6 +685,12 @@ validate_and_setup_environment() {
     fi
 
     # Run conflict detection FIRST, before any directory creation
+    # Check if directories already exist before conflict detection
+    if [[ -d ".github" ]]; then
+        log_error "DEBUG: .github directory already exists before conflict detection!"
+        log_error "This indicates a bug - something created it during validation phase"
+        ls -la .github/ || true
+    fi
     confirm_overwrite_conflicts
 
     # Validate directory is safe for setup (but skip conflict detection since we already did it)
