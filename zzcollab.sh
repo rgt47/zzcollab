@@ -352,8 +352,37 @@ detect_file_conflicts() {
     
     # Check for existing files that would conflict
     for item in "${zzcollab_files[@]}"; do
-        if [[ -f "$item" ]] || [[ -d "$item" ]]; then
+        if [[ -f "$item" ]]; then
+            # Files are always conflicts (zzcollab would skip them)
             conflicts+=("$item")
+        elif [[ -d "$item" ]]; then
+            # For directories, only report as conflict if they contain files
+            # that would interfere with zzcollab's expected structure
+            if [[ "$item" == ".github" ]] || [[ "$item" == ".github/workflows" ]] || [[ "$item" == ".github/ISSUE_TEMPLATE" ]]; then
+                # These are standard zzcollab directories - not conflicts if empty
+                # Only conflict if they contain files zzcollab would create
+                local has_conflict=false
+                case "$item" in
+                    ".github/workflows")
+                        # Check for specific workflow files zzcollab creates
+                        if [[ -f ".github/workflows/r-package.yml" ]] || [[ -f ".github/workflows/render-report.yml" ]]; then
+                            has_conflict=true
+                        fi
+                        ;;
+                    ".github")
+                        # Check for PR template or other GitHub files zzcollab creates
+                        if [[ -f ".github/pull_request_template.md" ]]; then
+                            has_conflict=true
+                        fi
+                        ;;
+                esac
+                if [[ "$has_conflict" == "true" ]]; then
+                    conflicts+=("$item")
+                fi
+            else
+                # For other directories, consider them conflicts if they exist
+                conflicts+=("$item")
+            fi
         fi
     done
     

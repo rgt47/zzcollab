@@ -955,7 +955,7 @@ This study examines morphological differentiation among Palmer penguin species u
 
 ## Data and Study System
 
-We analyzed morphological measurements from `r nrow(penguins_clean)` penguins representing three species: Adelie (n = `r sample_counts["Adelie"]`), Chinstrap (n = `r sample_counts["Chinstrap"]`), and Gentoo (n = `r sample_counts["Gentoo"]`) collected between 2007-2009 in the Palmer Archipelago, Antarctica.
+We analyzed morphological measurements from 333 penguins representing three species: Adelie (n = 146), Chinstrap (n = 68), and Gentoo (n = 119) collected between 2007-2009 in the Palmer Archipelago, Antarctica.
 
 ## Morphological Measurements
 
