@@ -12,15 +12,15 @@ environments, automated CI/CD workflows, and team collaboration tools.
 
 ## Features
 
-- **🐳 Docker-based environments** for reproducible research
-- **👥 Team collaboration** with shared base images
-- **📦 R package interface** for seamless integration
-- **🔄 Automated CI/CD** workflows
-- **📊 Analysis and reporting** tools
-- **🌐 Git integration** for version control
-- **🔧 Three build modes** (fast, standard, comprehensive)
-- **🛠️ Command-line tools** for automation
-- **📚 Comprehensive documentation** and examples
+- **Docker-based environments** for reproducible research
+- **Team collaboration** with shared base images
+- **R package interface** for integration with R workflows
+- **Automated CI/CD** workflows
+- **Analysis and reporting** tools
+- **Git integration** for version control
+- **Three build modes** (fast, standard, comprehensive)
+- **Command-line tools** for automation
+- **Comprehensive documentation** and examples
 
 ## Installation
 

@@ -445,7 +445,7 @@ zzcollab --base-image "TEAM/PROJECTcore-shell" [--dotfiles PATH]
 🔵 [INFO] Step 7: Initializing git repository...
 git init
 git add .
-git commit -m "🎉 Initial research project setup..."
+git commit -m "Initial research project setup"
 ✅ [SUCCESS] Initialized git repository with initial commit
 
 🔵 [INFO] Step 8: Creating private GitHub repository...
@@ -453,7 +453,7 @@ gh repo create "TEAM/PROJECT" --private --source=. --remote=origin \
     --push
 ✅ [SUCCESS] Created private GitHub repository: TEAM/PROJECT
 
-✅ [SUCCESS] 🎉 Team setup completed successfully!
+✅ [SUCCESS] Team setup completed.
 
 🔵 [INFO] What was created:
 #   📁 Project directory: PROJECT/
@@ -499,7 +499,7 @@ gh repo create "TEAM/PROJECT" --private --source=. --remote=origin \
 - **Private code repository** protects unpublished research while sharing 
   methodology
 - **Atomic operations** with rollback capability if any step fails
-- **Optimized module loading** eliminates initialization warnings by loading 
+- **Optimized module loading** reduces initialization warnings by loading 
   analysis module after directory structure creation
 
 **Error Handling:**
@@ -596,7 +596,7 @@ zzcollab --base-image ${TEAM_NAME}/${PROJECT_NAME}core-shell \
 # 6. Set up PRIVATE GitHub repository for research code
 git init
 git add .
-git commit -m "🎉 Initial research project setup
+git commit -m "Initial research project setup
 
 - Complete zzcollab research compendium  
 - Team core image published to Docker Hub: 
@@ -1332,8 +1332,8 @@ vim scripts/06_generate_tables.R   # Table generation script
 ### Comprehensive GitHub Actions Workflow
 
 ZZCOLLAB includes sophisticated automated Docker image management that 
-eliminates manual container maintenance while ensuring perfect environment 
-consistency across research teams.
+reduces manual container maintenance while ensuring consistent environment
+compatibility across research teams.
 
 #### Complete GitHub Actions Workflow
 
@@ -1577,17 +1577,17 @@ git push                       # Developer pushes code
 
 ZZCOLLAB provides enterprise-grade research collaboration infrastructure 
 that handles the technical complexity automatically, allowing research teams 
-to focus entirely on their scientific work while maintaining perfect 
+to focus on their scientific work while maintaining high levels of
 reproducibility and professional development standards.
 
 **The framework ensures:**
 
 - **Zero-friction collaboration** with automated environment management
 - **Enterprise-grade quality** with comprehensive testing and validation
-- **Perfect reproducibility** across all team members and time
+- **Consistent reproducibility** across all team members and time
 - **Professional workflows** with automated CI/CD and documentation
 - **Research focus** by eliminating technical barriers and manual processes
 
-This automated infrastructure transforms research team collaboration from 
-a technical challenge into a seamless, professional workflow that supports 
+This automated infrastructure transforms research team collaboration from
+a technical challenge into a standardized workflow that supports
 scientific discovery and reproducible research practices.

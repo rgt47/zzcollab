@@ -189,7 +189,7 @@ render_report("reports/final_analysis.qmd")
 
 ### Version Control Integration
 
-ZZCOLLAB integrates seamlessly with Git through R functions:
+ZZCOLLAB integrates with Git through R functions:
 
 ```{r eval=FALSE}
 # Check what has changed (like git status)
@@ -322,7 +322,7 @@ git_push()
 
 ## Understanding What Happens Behind the Scenes
 
-For R users curious about the magic:
+For R users interested in the underlying implementation:
 
 ```{r eval=FALSE}
 # These R functions handle Docker automatically:
@@ -363,10 +363,10 @@ install.packages("new_package")  # Just install packages normally
 sync_env()                       # ZZCOLLAB handles the reproducibility
 ```
 
-### 3. Seamless Team Collaboration
+### 3. Team Collaboration
 
 ```{r eval=FALSE}
-# Share projects with perfect reproducibility
+# Share projects with complete reproducibility
 # Your collaborators get identical environments with one function call
 # They just need to run:
 join_project(team_name = "yourname", project_name = "penguin-research")

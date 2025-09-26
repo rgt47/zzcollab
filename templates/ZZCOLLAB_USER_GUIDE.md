@@ -304,8 +304,8 @@ init_project(
 - Tags and pushes images to Docker Hub (public for reproducibility)
 - Initializes zzcollab project with team base image
 - Creates private GitHub repository
-- ✅ Sets up initial commit with proper structure
-- ✅ Configures automated CI/CD for team image management
+- Sets up initial commit with proper structure
+- Configures automated CI/CD for team image management
 
 ### Developers 2+ (Team Members): Join Existing Project
 
@@ -324,9 +324,9 @@ zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles             # Publishing i
 # Note: --project-name can be omitted if current directory name matches project
 
 # If team image variant not available, you'll get helpful guidance:
-# ❌ Error: Team image 'mylab/study2024core-rstudio:latest' not found
-# ✅ Available variants: mylab/study2024core-shell:latest  
-# 💡 Solutions: Use available variant or ask team lead to build missing variant
+# Error: Team image 'mylab/study2024core-rstudio:latest' not found
+# Available variants: mylab/study2024core-shell:latest
+# Solutions: Use available variant or ask team lead to build missing variant
 
 # 3. Start development immediately
 make docker-zsh                # Shell interface with vim/tmux
@@ -681,7 +681,7 @@ make help                      # Show all available targets
 
 ### Automated Team Image Management
 
-ZZCOLLAB includes sophisticated automated Docker image management that eliminates manual container maintenance while ensuring perfect environment consistency across research teams.
+ZZCOLLAB includes sophisticated automated Docker image management that reduces manual container maintenance while ensuring consistent environment compatibility across research teams.
 
 #### Complete GitHub Actions Workflow
 
@@ -719,11 +719,11 @@ renv::snapshot()
 # Create PR and merge
 
 # Automatic result:
-# ✅ GitHub Actions detects renv.lock changes
-# ✅ Rebuilds image with tidymodels
-# ✅ Pushes to mylab/study2024:latest on Docker Hub
-# ✅ Updates Dockerfile configuration
-# ✅ Notifies team via commit comment
+# GitHub Actions detects renv.lock changes
+# Rebuilds image with tidymodels
+# Pushes to mylab/study2024:latest on Docker Hub
+# Updates Dockerfile configuration
+# Notifies team via commit comment
 ```
 
 **Scenario 2: Team Member Gets Updates**
@@ -933,9 +933,9 @@ Check reproducibility of your research project.
 is_reproducible <- validate_repro()
 
 if (is_reproducible) {
-  message("✅ Project is fully reproducible")
+  message("Project is fully reproducible")
 } else {
-  message("❌ Reproducibility issues detected")
+  message("Reproducibility issues detected")
 }
 ```
 

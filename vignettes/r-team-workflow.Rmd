@@ -311,7 +311,7 @@ git_push()
 
 ### Team Collaboration: Combining Contributions
 
-Now all team members can work with each other's contributions seamlessly:
+Team members can now work with each other's contributions:
 
 ```{r eval=FALSE}
 # Any team member can run the complete pipeline
@@ -421,7 +421,7 @@ create_pr("Add customer survival analysis",
 ### Code Review Workflow
 
 ```{r eval=FALSE}
-# Reviewer can perfectly reproduce the analysis
+# Reviewer can reproduce the analysis environment
 join_project("retail-analytics", "churn-prediction-2024")
 git_checkout("feature/survival-analysis")  # Review branch
 start_rstudio()
