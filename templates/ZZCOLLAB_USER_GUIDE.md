@@ -2,27 +2,29 @@
 
 ## Table of Contents
 1. [What is ZZCOLLAB?](#what-is-zzcollab)
-2. [Configuration System](#configuration-system)
-3. [Getting Started](#getting-started)
-4. [Installation & Distribution](#installation--distribution)
-5. [Team Collaboration Setup](#team-collaboration-setup)
-6. [Directory Structure](#directory-structure)
-7. [Navigation Shortcuts](#navigation-shortcuts)
-8. [Development Environments](#development-environments)
-9. [Package Management with renv](#package-management-with-renv)
-10. [Docker Environment](#docker-environment)
-11. [Build System with Make](#build-system-with-make)
-12. [GitHub Actions CI/CD](#github-actions-cicd)
-13. [R Interface Functions](#r-interface-functions)
-14. [Team Collaboration Workflows](#team-collaboration-workflows)
-15. [Common Tasks](#common-tasks)
-16. [Troubleshooting](#troubleshooting)
+2. [Research Paradigm System](#research-paradigm-system)
+3. [Configuration System](#configuration-system)
+4. [Getting Started](#getting-started)
+5. [Installation & Distribution](#installation--distribution)
+6. [Team Collaboration Setup](#team-collaboration-setup)
+7. [Directory Structure](#directory-structure)
+8. [Navigation Shortcuts](#navigation-shortcuts)
+9. [Development Environments](#development-environments)
+10. [Package Management with renv](#package-management-with-renv)
+11. [Docker Environment](#docker-environment)
+12. [Build System with Make](#build-system-with-make)
+13. [GitHub Actions CI/CD](#github-actions-cicd)
+14. [R Interface Functions](#r-interface-functions)
+15. [Team Collaboration Workflows](#team-collaboration-workflows)
+16. [Common Tasks](#common-tasks)
+17. [Troubleshooting](#troubleshooting)
 
 ## What is ZZCOLLAB?
 
 **ZZCOLLAB** is a framework for creating **research compendia** with
 systematic team collaboration capabilities - self-contained, reproducible
 research projects that combine:
+- **Three research paradigms** optimized for different research lifecycles
 - R package structure for code organization
 - Data management and documentation
 - Analysis scripts and notebooks
@@ -33,6 +35,8 @@ research projects that combine:
 - **Integrated Git/GitHub workflows**
 
 ### Key Characteristics
+- **Research Paradigms**: Three specialized workflows (Analysis, Manuscript, Package)
+- **Professional Templates**: 6-9 comprehensive templates per paradigm
 - **Team Collaboration**: Automated workflows for multiple researchers
 - **Reproducibility**: Systematic recreation of analytical procedures
 - **Organization**: Standardized structure for project components
@@ -40,6 +44,152 @@ research projects that combine:
 - **Portability**: Cross-platform compatibility
 - **Containerized**: Isolated computational environments
 - **Automated CI/CD**: Systematic development workflows
+
+## Research Paradigm System
+
+ZZCOLLAB supports **three distinct research paradigms**, each optimized for different stages of the research lifecycle. This paradigm system provides specialized templates, tools, and workflows tailored to your specific research needs.
+
+### 📊 **Analysis Paradigm** (Default)
+*"From raw data to insights"*
+
+**When to Use:**
+- Data science projects and exploratory data analysis
+- Statistical modeling and machine learning workflows
+- Research analytics and business intelligence
+- PhD students analyzing dissertation data
+
+**Professional Template Suite (6 Templates):**
+- `01_exploratory_analysis.R` - Systematic EDA with data quality assessment
+- `02_statistical_modeling.R` - Reproducible ML workflows with tidymodels
+- `03_model_validation.R` - Cross-validation, bootstrap CI, sensitivity analysis
+- `04_interactive_dashboard.Rmd` - Real-time data exploration
+- `05_automated_report.Rmd` - Parameterized reporting
+- `06_data_pipeline.R` - Automated data processing workflows
+
+**Project Structure:**
+```
+your-analysis-project/
+├── data/
+│   ├── raw/               # Original, unmodified datasets
+│   └── processed/         # Clean, analysis-ready data
+├── analysis/
+│   ├── exploratory/       # Initial data exploration (EDA)
+│   ├── modeling/          # Statistical models and ML pipelines
+│   └── validation/        # Model validation and testing
+├── outputs/
+│   ├── figures/           # Publication-quality plots
+│   └── tables/            # Summary statistics and results
+├── reports/
+│   └── dashboard/         # Interactive reports and dashboards
+└── scripts/               # Working analysis scripts
+```
+
+**Tools & Packages:** tidyverse, targets, plotly, DT, flexdashboard, janitor, skimr
+
+---
+
+### 📄 **Manuscript Paradigm**
+*"From analysis to publication"*
+
+**When to Use:**
+- Academic papers and research reports
+- Computational research and collaborative writing
+- Graduate students writing thesis chapters
+- Research teams preparing publications
+
+**Research Compendium Templates (8+ Templates):**
+- `analysis_functions.R` - R package functions with roxygen2 documentation
+- `paper.Rmd` - Professional manuscript template with citations
+- `supplementary.Rmd` - Comprehensive supplementary materials
+- `01-04_reproduction_scripts.R` - Complete reproducibility pipeline
+- `test-analysis_functions.R` - Comprehensive function testing
+- `manuscript/` directory with submission-ready files
+- Academic formatting templates for multiple journals
+
+**Project Structure:**
+```
+your-manuscript-project/
+├── R/                     # Analysis functions (package structure)
+├── tests/testthat/        # Function testing framework
+├── manuscript/
+│   ├── paper.Rmd          # Main manuscript
+│   ├── supplementary.Rmd  # Supplementary materials
+│   └── references.bib     # Bibliography database
+├── analysis/reproduce/    # Reproduction scripts
+├── submission/            # Journal submission files
+└── vignettes/             # Extended documentation
+```
+
+**Tools & Packages:** rmarkdown, bookdown, papaja, devtools, testthat, RefManageR, citr
+
+---
+
+### 📦 **Package Paradigm**
+*"From code to software"*
+
+**When to Use:**
+- R package development and research software
+- Method implementation and internal tools
+- Creating reusable research infrastructure
+- Packaging analysis methods for distribution
+
+**CRAN-Ready Templates (9 Templates):**
+- `example_functions.R` - Professional functions with complete roxygen2 documentation
+- `test-example-functions.R` - Comprehensive testthat suite with 95%+ coverage
+- `test-helpers.R` - Testing utilities and helper functions
+- `getting-started.Rmd` & `advanced-usage.Rmd` - Complete vignette suite
+- `_pkgdown.yml` - Professional documentation website configuration
+- `sample_dataset.R` - Example datasets with comprehensive documentation
+- `dev_workflow.R` - Interactive development workflow with automated tasks
+
+**Project Structure:**
+```
+your-package-project/
+├── R/                     # Package functions
+├── tests/testthat/        # Unit testing framework
+├── man/                   # Documentation (generated by roxygen2)
+├── vignettes/             # Package tutorials and guides
+├── inst/examples/         # Example scripts and data
+├── data/                  # Package datasets
+└── pkgdown/               # Website customization
+```
+
+**Tools & Packages:** devtools, roxygen2, testthat, pkgdown, covr, lintr, usethis
+
+---
+
+### Paradigm Decision Framework
+
+**Quick Decision Tree:**
+1. **Primary goal?** → 📊 Analyze data / 📄 Write paper / 📦 Build software
+2. **Main output?** → 📊 Reports & insights / 📄 Published papers / 📦 R packages & tools
+3. **Target audience?** → 📊 Stakeholders / 📄 Academic community / 📦 Other developers
+
+**Common Research Lifecycle:** Many projects progress through paradigms: 📊 Analysis → 📄 Manuscript → 📦 Package
+
+### Paradigm Selection Commands
+
+**Command Line:**
+```bash
+# Create projects with specific paradigms
+zzcollab -i -p data-analysis --paradigm analysis
+zzcollab -i -p research-paper --paradigm manuscript
+zzcollab -i -p new-package --paradigm package
+
+# Set default paradigm in configuration
+zzcollab --config set paradigm "manuscript"
+```
+
+**R Interface:**
+```r
+# Set default paradigm
+set_config("paradigm", "manuscript")
+
+# Create projects with specific paradigms
+init_project("data-analysis", paradigm = "analysis")
+init_project("research-paper", paradigm = "manuscript")
+init_project("new-package", paradigm = "package")
+```
 
 ## Configuration System
 
@@ -53,30 +203,33 @@ and establishes project defaults.
 
 ### Configuration Commands
 ```bash
-zzcollab config init                    # Create default config file
-zzcollab config set team_name "myteam"  # Set a configuration value
-zzcollab config get team_name           # Get a configuration value
-zzcollab config list                    # List all configuration
-zzcollab config validate               # Validate YAML syntax
+zzcollab --config init                    # Create default config file
+zzcollab --config set team-name "myteam"  # Set a configuration value
+zzcollab --config set paradigm "analysis" # Set research paradigm
+zzcollab --config get team-name           # Get a configuration value
+zzcollab --config list                    # List all configuration
+zzcollab --config validate               # Validate YAML syntax
 ```
 
 ### One-time Setup
 ```bash
 # Initialize configuration
-zzcollab config init
+zzcollab --config init
 
 # Set your team defaults
-zzcollab config set team_name "myteam"
-zzcollab config set github_account "myusername"
-zzcollab config set build_mode "standard"
-zzcollab config set dotfiles_dir "~/dotfiles"
+zzcollab --config set team-name "myteam"
+zzcollab --config set github-account "myusername"
+zzcollab --config set paradigm "analysis"      # analysis, manuscript, package
+zzcollab --config set build-mode "standard"
+zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # View your configuration
-zzcollab config list
+zzcollab --config list
 ```
 
 ### Customizable Settings
 - **Team settings**: `team_name`, `github_account`
+- **Research settings**: `paradigm` (analysis, manuscript, package)
 - **Build settings**: `build_mode`, `dotfiles_dir`, `dotfiles_nodot`
 - **Automation**: `auto_github`, `skip_confirmation`
 - **Custom package lists**: Override default packages for each build mode

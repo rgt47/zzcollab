@@ -12,13 +12,19 @@ environments, automated CI/CD workflows, and team collaboration tools.
 
 ## Features
 
+- **Three Research Paradigms** optimized for different research lifecycles
+  - **Analysis Paradigm**: Data science projects with 6 professional templates
+  - **Manuscript Paradigm**: Academic writing with 8+ research compendium templates
+  - **Package Paradigm**: R package development with 9 CRAN-ready templates
 - **Docker-based environments** for reproducible research
 - **Team collaboration** with shared base images
 - **R package interface** for integration with R workflows
+- **Advanced configuration system** with user/project-level settings
+- **14+ specialized Docker variants** (from 200MB Alpine to 3.5GB full-featured)
+- **Three build modes** (fast, standard, comprehensive) with paradigm-specific packages
 - **Automated CI/CD** workflows
 - **Analysis and reporting** tools
 - **Git integration** for version control
-- **Three build modes** (fast, standard, comprehensive)
 - **Command-line tools** for automation
 - **Comprehensive documentation** and examples
 
@@ -43,6 +49,46 @@ devtools::install_github("rgt47/zzcollab")
 library(zzcollab)
 ```
 
+## Research Paradigm System
+
+ZZCOLLAB supports **three distinct research paradigms**, each optimized for different stages of the research lifecycle:
+
+### 📊 **Analysis Paradigm** (Default)
+*"From raw data to insights"*
+- **Use for**: Data science projects, research analytics, exploratory analysis
+- **Structure**: `data/raw/`, `data/processed/`, `analysis/`, `outputs/figures/`, `reports/`, `scripts/`
+- **Templates**: 6 professional templates including systematic EDA, statistical modeling, interactive dashboards
+- **Tools**: tidyverse, targets, plotly, DT, flexdashboard, janitor, skimr
+- **Best for**: PhD students analyzing data, data scientists building models, analysts creating reports
+
+### 📄 **Manuscript Paradigm**
+*"From analysis to publication"*
+- **Use for**: Academic papers, research reports, computational research, collaborative writing
+- **Structure**: `R/`, `tests/testthat/`, `manuscript/`, `analysis/reproduce/`, `submission/`
+- **Templates**: 8+ research compendium templates with full R package structure, academic writing tools
+- **Tools**: rmarkdown, bookdown, papaja, devtools, testthat, RefManageR
+- **Best for**: Academic researchers writing papers, graduate students writing thesis chapters
+
+### 📦 **Package Paradigm**
+*"From code to software"*
+- **Use for**: R package development, research software, method implementation, internal tools
+- **Structure**: `R/`, `tests/testthat/`, `man/`, `vignettes/`, `inst/examples/`, `data/`
+- **Templates**: 9 CRAN-ready templates with comprehensive testing, professional documentation, pkgdown websites
+- **Tools**: devtools, roxygen2, testthat, pkgdown, covr, lintr
+- **Best for**: R developers creating packages, researchers packaging methods, teams building tools
+
+### Quick Paradigm Selection
+```r
+# Data analysis project
+init_project("data-analysis", paradigm = "analysis")
+
+# Academic paper
+init_project("research-paper", paradigm = "manuscript")
+
+# R package
+init_project("new-package", paradigm = "package")
+```
+
 ## Quick Start with R Interface
 
 ### Configuration Setup (One-time)
@@ -53,6 +99,7 @@ library(zzcollab)
 # Set up your defaults once
 set_config("team_name", "myteam")
 set_config("build_mode", "standard")
+set_config("paradigm", "analysis")        # analysis, manuscript, or package
 set_config("dotfiles_dir", "~/dotfiles")
 set_config("github_account", "myusername")
 
@@ -70,6 +117,7 @@ init_project(project_name = "myproject")
 init_project(
   team_name = "myteam",
   project_name = "myproject",
+  paradigm = "analysis",
   build_mode = "standard",
   dotfiles_path = "~/dotfiles"
 )
@@ -105,13 +153,18 @@ setup_project(
 
 ## Build Modes
 
-zzcollab supports three build modes to optimize for different use cases:
+zzcollab supports three build modes to optimize for different use cases. **Packages are automatically selected based on your chosen research paradigm:**
 
 | Mode | Description | Docker Size | Package Count | Key Packages | Build Time |
 |------|-------------|-------------|---------------|--------------|------------|
 | **Fast** (`-F`) | Minimal setup for quick development | Small | 9 packages | renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets | Fast |
 | **Standard** (`-S`) | Balanced approach (default) | Medium | 17 packages | + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted | Medium |
 | **Comprehensive** (`-C`) | Full-featured environment | Large | 47 packages | + tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases | Slow |
+
+**Paradigm-Specific Packages Automatically Added:**
+- **Analysis**: tidyverse, targets, plotly, DT, flexdashboard, janitor, skimr
+- **Manuscript**: rmarkdown, bookdown, papaja, RefManageR, citr
+- **Package**: devtools, roxygen2, testthat, pkgdown, covr, lintr
 
 ## Configuration System
 
@@ -124,18 +177,21 @@ zzcollab includes a powerful configuration system to eliminate repetitive typing
 
 ### Configuration Commands
 ```bash
-zzcollab config init                    # Create default config file
-zzcollab config set team_name "myteam"  # Set a configuration value
-zzcollab config get team_name           # Get a configuration value
-zzcollab config list                    # List all configuration
-zzcollab config validate               # Validate YAML syntax
+zzcollab --config init                    # Create default config file
+zzcollab --config set team-name "myteam"  # Set a configuration value
+zzcollab --config set paradigm "analysis" # Set research paradigm
+zzcollab --config get team-name           # Get a configuration value
+zzcollab --config list                    # List all configuration
+zzcollab --config validate               # Validate YAML syntax
 ```
 
 ### Customizable Settings
 - **Team settings**: `team_name`, `github_account`
+- **Research settings**: `paradigm` (analysis, manuscript, package)
 - **Build settings**: `build_mode`, `dotfiles_dir`, `dotfiles_nodot`
 - **Automation**: `auto_github`, `skip_confirmation`
 - **Custom package lists**: Override default packages for each build mode
+- **Paradigm-specific packages**: Automatically selected based on research paradigm
 
 ### Custom Package Lists
 Edit your config file to customize packages for different build modes:
