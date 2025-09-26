@@ -1,0 +1,160 @@
+# pkgdown configuration for {{PACKAGE_NAME}}
+# This file configures the package website generation using pkgdown
+# Visit: https://{{GITHUB_ACCOUNT}}.github.io/{{PACKAGE_NAME}}/
+
+url: https://{{GITHUB_ACCOUNT}}.github.io/{{PACKAGE_NAME}}/
+
+template:
+  bootstrap: 5
+  theme: flatly
+  bslib:
+    primary: "#0054AD"
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+
+home:
+  title: "{{PACKAGE_NAME}}"
+  description: >
+    A comprehensive R package for [describe main functionality].
+    Provides tools for [list key capabilities] with emphasis on
+    reproducibility and ease of use.
+
+  sidebar:
+    structure: [links, license, citation, authors, dev]
+
+  links:
+  - text: Learn more
+    href: https://github.com/{{GITHUB_ACCOUNT}}/{{PACKAGE_NAME}}
+  - text: Report a bug
+    href: https://github.com/{{GITHUB_ACCOUNT}}/{{PACKAGE_NAME}}/issues
+
+navbar:
+  structure:
+    left:  [home, intro, reference, articles, tutorials, news]
+    right: [search, github]
+
+  components:
+    home:
+      icon: fas fa-home fa-lg
+      href: index.html
+    intro:
+      text: Get Started
+      href: articles/getting-started.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    articles:
+      text: Articles
+      menu:
+      - text: Getting Started
+        href: articles/getting-started.html
+      - text: Advanced Usage
+        href: articles/advanced-usage.html
+      - text: -------
+      - text: Case Studies
+        href: articles/case-studies.html
+      - text: Best Practices
+        href: articles/best-practices.html
+    tutorials:
+      text: Tutorials
+      href: articles/tutorials/
+    news:
+      text: Changelog
+      href: news/index.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/{{GITHUB_ACCOUNT}}/{{PACKAGE_NAME}}
+
+reference:
+- title: Core Functions
+  desc: Main package functionality for everyday use
+  contents:
+  - hello_world
+  - goodbye_world
+  - add_numbers
+
+- title: Data Analysis
+  desc: Functions for data processing and analysis
+  contents:
+  - summarize_data
+  - load_analysis_data
+  - create_quality_report
+
+- title: Utilities
+  desc: Helper functions and utilities
+  contents:
+  - theme_analysis
+  - save_analysis_plot
+  - document_analysis_session
+
+- title: Internal Functions
+  desc: Internal functions (not typically used directly)
+  contents:
+  - create_greeting
+  - validate_argument
+
+articles:
+- title: Getting Started
+  navbar: Getting Started
+  contents:
+  - getting-started
+
+- title: Advanced Usage
+  navbar: Advanced Usage
+  contents:
+  - advanced-usage
+
+- title: Case Studies
+  navbar: Case Studies
+  contents:
+  - case-studies
+  - real-world-examples
+
+- title: Development
+  navbar: Development
+  contents:
+  - contributing
+  - development-workflow
+
+news:
+  releases:
+  - text: "Version 1.0.0"
+    href: https://github.com/{{GITHUB_ACCOUNT}}/{{PACKAGE_NAME}}/releases/tag/v1.0.0
+  - text: "Version 0.1.0"
+    href: https://github.com/{{GITHUB_ACCOUNT}}/{{PACKAGE_NAME}}/releases/tag/v0.1.0
+
+authors:
+  {{AUTHOR_NAME}} {{AUTHOR_LAST}}:
+    href: "{{AUTHOR_EMAIL}}"
+    html: "<img src='https://github.com/{{GITHUB_ACCOUNT}}.png' width='72' height='72' style='border-radius: 50%;'>"
+
+footer:
+  structure:
+    left: [developed_by, built_with]
+    right: [package_version]
+  components:
+    package_version: "Package version: `r packageVersion('{{PACKAGE_NAME}}')`"
+    developed_by: "Developed by [{{AUTHOR_NAME}} {{AUTHOR_LAST}}]({{AUTHOR_EMAIL}})"
+    built_with: "Built with [pkgdown](https://pkgdown.r-lib.org/)"
+
+development:
+  mode: auto
+  version_label: default
+  version_tooltip: "Version"
+
+search:
+  exclude: ['news/index.html']
+
+deploy:
+  install_metadata: true
+
+figures:
+  dev: ragg::agg_png
+  dpi: 96
+  dev.args: []
+  fig.ext: png
+  fig.width: 7.2916667
+  fig.height: ~
+  fig.retina: 2
+  fig.asp: 1.618
+  bg: NA
