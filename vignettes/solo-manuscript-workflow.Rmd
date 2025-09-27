@@ -221,16 +221,137 @@ saveRDS(results, "results/morphology_analysis.rds")
 # Generate all manuscript tables
 ```
 
+# Reproducibility in Practice: Docker + renv + Configuration
+
+## Daily Workflow with Reproducibility Tools
+
+### Starting Your Manuscript Session
+
+```bash
+# Configuration automatically loads your preferences
+cd penguin-morphology
+
+# Enter identical containerized environment every time
+make docker-zsh
+
+# Inside container: renv ensures identical package versions
+R
+> renv::status()  # Verify all packages consistent
+> library(tidyverse)  # Loads exact version from renv.lock
+```
+
+### Installing New Packages
+
+When you need additional packages for your analysis:
+
+```r
+# Inside the container
+install.packages("brms")  # Install new package
+renv::snapshot()          # Lock the new version
+
+# This updates renv.lock with exact package versions
+# Now all collaborators get the same brms version
+```
+
+### Configuration for Different Manuscript Types
+
+Set up specialized configurations for different types of papers:
+
+```bash
+# For Bayesian analysis papers
+zzcollab --config set build-mode bayesian
+# Custom build mode includes: brms, rstanarm, bayesplot, posterior
+
+# For meta-analysis papers
+zzcollab --config set build-mode meta-analysis
+# Custom build mode includes: metafor, meta, dmetar, forestplot
+
+# Projects inherit these specialized configurations automatically
+```
+
+### Reproducibility Validation
+
+Before submission, validate complete reproducibility:
+
+```bash
+# Exit container and clean everything
+exit
+docker system prune -f  # Remove all cached images
+
+# Start completely fresh
+make docker-zsh  # Rebuilds environment from scratch
+source("analysis/reproduce/run_all.R")  # Should work identically
+
+# If this succeeds, your manuscript is truly reproducible
+```
+
+## Configuration Examples for Manuscript Projects
+
+### Basic Manuscript Configuration
+
+```yaml
+# ~/.zzcollab/config.yaml
+defaults:
+  paradigm: manuscript
+  team_name: "myresearch"
+  build_mode: standard
+  dotfiles_dir: "~/dotfiles"
+
+build_modes:
+  standard:
+    description: "Standard manuscript packages"
+    docker_packages: [renv, tidyverse, rmarkdown, knitr]
+    renv_packages: [renv, tidyverse, rmarkdown, knitr, broom, gt, gtsummary]
+```
+
+### Advanced Analysis Configuration
+
+```yaml
+# For papers requiring advanced statistical methods
+build_modes:
+  advanced_stats:
+    description: "Advanced statistical analysis"
+    docker_packages: [renv, tidyverse, rstan]
+    renv_packages: [
+      renv, tidyverse, brms, rstanarm,
+      bayesplot, posterior, tidybayes,
+      marginaleffects, parameters, performance
+    ]
+```
+
+### Collaborative Manuscript Configuration
+
+```yaml
+# Project-specific zzcollab.yaml for team manuscripts
+team:
+  name: "morphology-lab"
+  project: "penguin-bill-study"
+
+collaboration:
+  github:
+    auto_create_repo: true
+    default_visibility: "private"
+
+build:
+  use_config_variants: true
+
+variants:
+  manuscript:
+    enabled: true
+    base_image: "rocker/verse:latest"
+    packages: [renv, tidyverse, brms, gt, gtsummary]
+```
+
 # Development Commands
 
 ## Package Development
 
 ```bash
-# Run tests
-make test
+# Run tests (in consistent Docker environment)
+make docker-test
 
-# Check package
-make check
+# Check package (in clean environment)
+make docker-check
 
 # Build package
 make build
@@ -242,7 +363,8 @@ make document
 ## Manuscript Rendering
 
 ```bash
-# Render main paper
+# Render main paper (with locked package versions)
+make docker-zsh
 Rscript -e "rmarkdown::render('manuscript/paper.Rmd')"
 
 # Render supplementary materials
@@ -252,17 +374,38 @@ Rscript -e "rmarkdown::render('manuscript/supplementary.Rmd')"
 make manuscript
 ```
 
-## Validation and Testing
+## Reproducibility Validation
 
 ```bash
-# Run full reproduction pipeline
+# Validate package consistency
+make docker-zsh
+Rscript -e "renv::status()"  # Should show no issues
+
+# Run full reproduction pipeline (in clean container)
+make docker-clean  # Start with fresh container
 Rscript analysis/reproduce/01_data_preparation.R
 Rscript analysis/reproduce/02_statistical_analysis.R
 Rscript analysis/reproduce/03_create_figures.R
 Rscript analysis/reproduce/04_create_tables.R
 
-# Validate package structure
-make docker-check
+# Check for any differences in outputs
+git status  # Should show no changes if truly reproducible
+```
+
+## Dependency Management
+
+```bash
+# Check renv status
+Rscript -e "renv::status()"
+
+# Update package snapshot
+Rscript -e "renv::snapshot()"
+
+# Restore exact package environment (for collaborators)
+Rscript -e "renv::restore()"
+
+# Validate dependency consistency before submission
+Rscript check_renv_for_commit.R --build-mode standard --fail-on-issues
 ```
 
 # Publishing Workflow
@@ -300,29 +443,148 @@ git tag v1.0-submission
 
 # Benefits of the Manuscript Paradigm
 
+## Docker-Based Reproducibility
+
+ZZCOLLAB's manuscript paradigm leverages Docker containers to ensure perfect reproducibility:
+
+- **Identical environments**: Your manuscript renders identically on any system (Mac, Windows, Linux)
+- **Version locked dependencies**: R version, system libraries, and package versions are frozen
+- **No "works on my machine" problems**: Reviewers and collaborators get exactly your computing environment
+- **Long-term stability**: Your analysis will work years later, even as R and packages evolve
+- **Journal compliance**: Meets increasing reproducibility requirements from publishers
+
+```bash
+# Your manuscript environment is completely isolated
+make docker-zsh  # Enters containerized R environment
+# All package versions, R version, system dependencies identical across users
+```
+
+## renv Package Management
+
+The manuscript paradigm integrates renv for robust dependency management:
+
+- **Locked package versions**: `renv.lock` captures exact package versions used
+- **Reproducible installs**: Collaborators get identical package versions automatically
+- **Dependency isolation**: Project packages don't interfere with system R libraries
+- **Restoration guarantee**: Perfect package environment restoration months or years later
+
+```r
+# renv automatically manages your project dependencies
+renv::status()     # Check package consistency
+renv::snapshot()   # Lock current package versions
+renv::restore()    # Restore exact package environment
+```
+
+## Configuration System Benefits
+
+ZZCOLLAB's configuration system eliminates repetitive setup and ensures consistency:
+
+### Personal Configuration (`~/.zzcollab/config.yaml`)
+
+Set your defaults once, use everywhere:
+
+```bash
+# Configure your research preferences once
+zzcollab --config set paradigm manuscript
+zzcollab --config set team-name "myresearch"
+zzcollab --config set build-mode standard
+zzcollab --config set dotfiles-dir "~/dotfiles"
+
+# Now all new projects use your preferences automatically
+zzcollab -i -p new-paper  # Uses manuscript paradigm automatically
+```
+
+### Project-Specific Configuration
+
+Each manuscript project can override defaults for specific needs:
+
+```yaml
+# Project's zzcollab.yaml
+defaults:
+  paradigm: manuscript
+  build_mode: comprehensive  # More packages for complex analysis
+
+# Custom package sets for this specific paper
+build_modes:
+  comprehensive:
+    renv_packages: [tidyverse, brms, rstanarm, bayesplot, ggdist]
+```
+
+### Benefits for Manuscript Writing
+
+- **Consistent environments**: All your papers use the same base setup
+- **Easy collaboration**: Team members get identical configurations
+- **Reproducible workflows**: Configuration is version-controlled with your paper
+- **Scalable research**: Templates and settings work across multiple manuscripts
+
+## Complete Reproducibility Stack
+
+The combination of Docker + renv + configuration creates unprecedented reproducibility:
+
+### System-Level Reproducibility (Docker)
+- Operating system, R version, system libraries
+- LaTeX installation for PDF generation
+- Development tools and utilities
+
+### Package-Level Reproducibility (renv)
+- Exact R package versions
+- Package source locations
+- Dependency resolution
+
+### Workflow-Level Reproducibility (Configuration)
+- Project structure and templates
+- Build processes and validation
+- Team collaboration settings
+
+## Publication and Archival Benefits
+
+This reproducibility stack provides significant advantages for scholarly publishing:
+
+### For Authors
+- **Confidence in results**: Identical environment guarantees consistent results
+- **Easy revisions**: Reproduce analysis exactly during peer review
+- **Collaboration support**: Co-authors get identical computational environment
+- **Future-proofing**: Analysis remains runnable years later
+
+### For Journals
+- **Meets reproducibility standards**: Satisfies computational reproducibility requirements
+- **Reviewer access**: Reviewers can run your analysis in identical environment
+- **Editorial efficiency**: Reduces time spent on reproducibility issues
+- **Archive quality**: Complete computational environment preserved
+
+### For the Scientific Community
+- **True reproducibility**: Others can exactly replicate your computational environment
+- **Building on research**: Future work can start from your exact setup
+- **Teaching resource**: Students learn on the same environment as published research
+- **Method validation**: Computational methods can be verified independently
+
 ## Reproducibility
 
 - **Functions in R package format**: Documented, tested, and version-controlled
 - **Complete reproduction scripts**: Step-by-step analysis recreation
 - **Containerized environment**: Identical computing environment for all users
+- **Dependency management**: Exact package versions locked and restorable
 
 ## Collaboration Ready
 
 - **Standard R package structure**: Familiar to R developers
 - **Comprehensive documentation**: Functions documented with roxygen2
 - **Testing framework**: Prevents regressions during collaboration
+- **Configuration sharing**: Team settings version-controlled and synchronized
 
 ## Journal Submission
 
 - **Professional structure**: Research compendium format accepted by journals
 - **Complete documentation**: Meets reproducibility requirements
 - **Archival ready**: All code, data, and outputs organized for long-term storage
+- **Computational reproducibility**: Full environment specification included
 
 ## Long-term Maintenance
 
 - **Package format**: Easy to install and use years later
 - **Version controlled**: Complete history of changes
 - **Self-contained**: All dependencies documented and managed
+- **Environment preservation**: Complete computational environment archived
 
 # Example: Complete Penguin Morphology Study
 
