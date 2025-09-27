@@ -12,7 +12,7 @@ This guide outlines the complete workflow for data receipt, preparation, validat
 
 **Systematic data testing provides the foundation for trustworthy research outputs.** By implementing validation checks for both raw and processed datasets, you create a documented trail that demonstrates data quality and transformation correctness. This testing framework enables you to catch errors early (when they're easier to fix), provides confidence in your results, and creates transparent documentation that allows others to understand and reproduce your work. In collaborative settings, data tests serve as contracts between team members, ensuring that everyone can rely on shared datasets and processing functions to behave consistently and correctly.
 
-## 📁 Documentation Structure & Best Practices
+## Documentation Structure and Best Practices
 
 All documentation follows a structured approach for reproducible research:
 
@@ -87,7 +87,7 @@ All documentation follows a structured approach for reproducible research:
 - Keep original units (grams) for body mass
 ```
 
-## 🎯 Workflow Phases
+## Workflow Phases
 
 1. **Data Receipt & Initial Setup**
 2. **Data Exploration & Validation**  
@@ -100,7 +100,7 @@ All documentation follows a structured approach for reproducible research:
 
 ## Phase 1: Data Receipt & Initial Setup
 
-> **💻 HOST SYSTEM OPERATIONS** - All Phase 1 tasks are performed on your host system, outside of Docker containers.
+> **HOST SYSTEM OPERATIONS** - All Phase 1 tasks are performed on your host system, outside of Docker containers.
 
 ### 📥 Data Receipt Checklist
 
@@ -176,7 +176,7 @@ All documentation follows a structured approach for reproducible research:
 
 ## Phase 2: Data Exploration & Validation
 
-> **🐳 CONTAINER OPERATIONS** - All Phase 2+ tasks are performed inside Docker containers with your R environment.
+> **CONTAINER OPERATIONS** - All Phase 2+ tasks are performed inside Docker containers with your R environment.
 
 ### 🔍 Data Quality Assessment Checklist
 
@@ -291,7 +291,7 @@ All documentation follows a structured approach for reproducible research:
 
 ## Phase 3: Data Preparation Development
 
-> **🐳 CONTAINER OPERATIONS** - Development work happens inside containers, with documentation updates on host.
+> **CONTAINER OPERATIONS** - Development work happens inside containers, with documentation updates on host.
 
 ### 🛠 Data Processing Development Checklist
 
@@ -368,7 +368,7 @@ All documentation follows a structured approach for reproducible research:
   - [ ] Verify transformations produce expected results
   - [ ] Check edge cases (empty data, single row, all missing)
 
-### 🎨 Development Best Practices
+### Development Best Practices
 
 - [ ] Write functions that do one thing well
 - [ ] Include comprehensive input validation
@@ -380,9 +380,9 @@ All documentation follows a structured approach for reproducible research:
 
 ## Phase 4: Unit Testing & Validation
 
-> **🐳 CONTAINER OPERATIONS** - Test development and execution happens inside containers.
+> **CONTAINER OPERATIONS** - Test development and execution happens inside containers.
 
-### 🧪 Test Development Checklist
+### Test Development Checklist
 
 - [ ] **Create unit tests for data functions (CONTAINER)**
   ```r
@@ -529,7 +529,7 @@ All documentation follows a structured approach for reproducible research:
 
 ## Phase 5: Integration Testing & Documentation
 
-> **🐳 CONTAINER + HOST OPERATIONS** - Testing in containers, documentation updates on host.
+> **CONTAINER + HOST OPERATIONS** - Testing in containers, documentation updates on host.
 
 ### 🔄 Integration Testing Checklist
 
@@ -598,7 +598,7 @@ All documentation follows a structured approach for reproducible research:
   - [ ] **Link to processing scripts** → Scripts section (`scripts/01_data_preparation.R`)
   - [ ] **Reference test files** → Testing section (`tests/testthat/test-data_prep.R`)
 
-### 📊 Integration Requirements
+### Integration Requirements
 
 - [ ] All unit tests pass
 - [ ] Integration tests pass
@@ -610,9 +610,9 @@ All documentation follows a structured approach for reproducible research:
 
 ## Phase 6: Final Validation & Deployment
 
-> **🐳 CONTAINER + HOST OPERATIONS** - Final validation uses both environments.
+> **CONTAINER + HOST OPERATIONS** - Final validation uses both environments.
 
-### 🚀 Final Validation Checklist
+### Final Validation Checklist
 
 - [ ] **Run complete test suite (HOST)**
   ```bash
@@ -693,7 +693,7 @@ All documentation follows a structured approach for reproducible research:
 
 ---
 
-## 🎯 Quick Start Checklist Summary
+## Summary Checklist
 
 ### For New Data Receipt (HOST SYSTEM):
 1. [ ] **HOST**: Place raw data in `data/raw_data/`

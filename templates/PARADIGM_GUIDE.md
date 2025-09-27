@@ -1,11 +1,10 @@
 # ZZCOLLAB Paradigm Guide
 
-**Three Research Workflows for Modern Science**
+**Research Workflow Selection Framework**
 
-ZZCOLLAB supports three research paradigms, each optimized for different stages of the research lifecycle. This guide helps you choose the right paradigm for your project and understand what each provides.
+ZZCOLLAB supports three research paradigms, each optimized for different stages of the research lifecycle. This guide provides criteria for paradigm selection and describes the structural components of each approach.
 
-## 📊 **Analysis Paradigm** (Default)
-*"From raw data to insights"*
+## Analysis Paradigm (Default)
 
 ### When to Use
 - **Data Science Projects**: Exploratory data analysis, statistical modeling, machine learning
@@ -45,8 +44,7 @@ your-project/
 
 ---
 
-## 📄 **Manuscript Paradigm**
-*"From analysis to publication"*
+## Manuscript Paradigm
 
 ### When to Use
 - **Academic Papers**: Journal articles, conference papers, dissertations
@@ -92,8 +90,7 @@ your-manuscript/
 
 ---
 
-## 📦 **Package Paradigm**
-*"From code to software"*
+## Package Paradigm
 
 ### When to Use
 - **R Package Development**: Creating reusable R packages for CRAN or GitHub
@@ -105,9 +102,9 @@ your-manuscript/
 ```
 your-package/
 ├── R/                     # Package functions (exported to users)
-├── tests/testthat/        # Comprehensive unit tests
+├── tests/testthat/        # Unit tests
 ├── man/                   # Documentation (auto-generated)
-├── vignettes/             # Long-form tutorials and examples
+├── vignettes/             # Tutorials and examples
 ├── inst/examples/         # Example datasets and scripts
 ├── data/                  # Package datasets (.rda files)
 ├── data-raw/              # Scripts to create package data
@@ -115,12 +112,12 @@ your-package/
 ```
 
 ### Key Features
-- **Optimized for**: Software development with rigorous testing and documentation
+- **Optimized for**: Software development with testing and documentation
 - **Primary Tools**: devtools, roxygen2, testthat, pkgdown, covr, lintr
 - **Workflow**: Code → Document → Test → Check → Release
 - **CI/CD Focus**: R CMD check, test coverage, documentation building, CRAN submission
 
-### Best For
+### Target Users
 - R developers creating packages for community use
 - Researchers packaging methods for publication
 - Teams building internal analysis tools
@@ -128,40 +125,40 @@ your-package/
 
 ---
 
-## 🎯 **Choosing Your Paradigm**
+## Paradigm Selection Framework
 
-### Quick Decision Tree
+### Decision Criteria
 
-1. **What's your primary goal?**
-   - 📊 **Analyze data** → Analysis paradigm
-   - 📄 **Write a paper** → Manuscript paradigm  
-   - 📦 **Build software** → Package paradigm
+1. **Primary objective**
+   - **Analyze data** → Analysis paradigm
+   - **Write a paper** → Manuscript paradigm
+   - **Build software** → Package paradigm
 
-2. **What's your main output?**
-   - 📊 **Reports, dashboards, insights** → Analysis
-   - 📄 **Published papers, articles** → Manuscript
-   - 📦 **R packages, software tools** → Package
+2. **Main deliverable**
+   - **Reports, dashboards, insights** → Analysis
+   - **Published papers, articles** → Manuscript
+   - **R packages, software tools** → Package
 
-3. **Who's your audience?**
-   - 📊 **Stakeholders, decision makers** → Analysis
-   - 📄 **Academic community, peer reviewers** → Manuscript
-   - 📦 **Other developers, R users** → Package
+3. **Target audience**
+   - **Stakeholders, decision makers** → Analysis
+   - **Academic community, peer reviewers** → Manuscript
+   - **Other developers, R users** → Package
 
-### Common Research Lifecycle
+### Research Lifecycle Progression
 
 Many projects progress through paradigms:
 
 ```
-📊 Analysis → 📄 Manuscript → 📦 Package
+Analysis → Manuscript → Package
 ```
 
 1. **Analysis**: Explore data and develop methods
-2. **Manuscript**: Write up findings for publication  
+2. **Manuscript**: Write up findings for publication
 3. **Package**: Share tools with broader community
 
 ---
 
-## 🚀 **Getting Started**
+## Implementation
 
 ### Create Your Project
 

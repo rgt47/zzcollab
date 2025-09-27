@@ -1,6 +1,6 @@
 ---
-title: "ZZCOLLAB Configuration System Guide"
-subtitle: "Advanced Docker and Package Management"
+title: "ZZCOLLAB Configuration System"
+subtitle: "Docker and Package Management Framework"
 author: "ZZCOLLAB Team"
 date: "`r Sys.Date()`"
 output:
@@ -20,20 +20,9 @@ header-includes:
   - \setmainfont{Helvetica Neue}
   - \setsansfont{Helvetica Neue}
   # - \setmonofont{SF Mono}
-  - \newfontfamily\emojifont{Noto Color Emoji}
   - \usepackage{newunicodechar}
-  - \newunicodechar{🐳}{\textbf{[Docker]}}
-  - \newunicodechar{📦}{\textbf{[Package]}}
-  - \newunicodechar{⚙}{\textbf{[Settings]}}
-  - \newunicodechar{✅}{$\checkmark$}
-  - \newunicodechar{🔬}{\textbf{[Science]}}
-  - \newunicodechar{🏔}{\textbf{[Alpine]}}
-  - \newunicodechar{🧪}{\textbf{[Test]}}
-  - \newunicodechar{📊}{\textbf{[Analysis]}}
-  - \newunicodechar{📄}{\textbf{[Document]}}
-  - \newunicodechar{✓}{$\checkmark$}
 vignette: >
-  %\VignetteIndexEntry{ZZCOLLAB Configuration System Guide}
+  %\VignetteIndexEntry{ZZCOLLAB Configuration System}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -73,14 +62,14 @@ Higher priority configurations override lower priority ones, allowing for precis
 
 ## Three Configuration Domains
 
-### 🐳 Docker Variant Management
+### Docker Variant Management
 Control which specialized Docker environments your team uses:
 - **14+ predefined variants** from minimal (~200MB Alpine) to comprehensive (~3.5GB full-featured)
 - **Domain-specific environments** for bioinformatics, geospatial analysis, machine learning
 - **Single source of truth** architecture eliminates duplication
 - **Interactive variant browser** for easy discovery and selection
 
-### 📦 Package Management System
+### Package Management System
 Control what R packages are installed and when:
 - **Build mode control**: Fast (9 packages) vs Standard (17 packages) vs Comprehensive (47+ packages)
 - **Paradigm-specific packages**: Analysis, Manuscript, and Package development workflows
@@ -101,7 +90,7 @@ Docker variants are pre-configured environments with specific base images, R pac
 
 ### Variant Categories
 
-**📦 Standard Research Environments (6 variants)**
+**Standard Research Environments (6 variants)**
 ```yaml
 minimal:          # ~800MB  - Essential R packages only
 analysis:         # ~1.2GB  - Tidyverse + data analysis tools
@@ -111,7 +100,7 @@ shiny:            # ~1.8GB  - Interactive web applications
 shiny_verse:      # ~3.5GB  - Shiny with tidyverse + publishing
 ```
 
-**🔬 Specialized Domains (2 variants)**
+**Specialized Domains (2 variants)**
 ```yaml
 bioinformatics:   # ~2GB    - Bioconductor genomics packages
 geospatial:       # ~2.5GB  - sf, terra, leaflet mapping tools
@@ -124,7 +113,7 @@ alpine_analysis:  # ~400MB  - Essential analysis in tiny container
 hpc_alpine:       # ~600MB  - High-performance parallel processing
 ```
 
-**🧪 R-Hub Testing Environments (3 variants)**
+**R-Hub Testing Environments (3 variants)**
 ```yaml
 rhub_ubuntu:      # ~1GB    - CRAN-compatible package testing
 rhub_fedora:      # ~1.2GB  - Test against R-devel

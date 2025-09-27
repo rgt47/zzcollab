@@ -28,54 +28,54 @@ reproducible research environments. The system consists of:
 - **Single source of truth**: Variant definitions in `variant_examples.yaml` eliminate duplication
 - **14+ Docker variants**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
 
-## Research Paradigm System (COMPREHENSIVE 2025)
+## Research Paradigm System
 
-ZZCOLLAB provides **three fully-featured research paradigms** with comprehensive, professional-grade templates that support complete research workflows from initial analysis to publication or distribution:
+ZZCOLLAB provides three specialized research paradigms with standardized templates that support complete research workflows from initial analysis to publication or distribution:
 
 ### Available Paradigms
 
-**📊 Analysis Paradigm** (Default) - *"From raw data to insights"*
-- **Use for**: Data science projects, research analytics, business intelligence, exploratory analysis
+**Analysis Paradigm** (Default)
+- **Applications**: Data science projects, research analytics, business intelligence, exploratory analysis
 - **Structure**: `data/raw/`, `data/processed/`, `analysis/exploratory/`, `analysis/modeling/`, `analysis/validation/`, `outputs/figures/`, `reports/dashboard/`, `scripts/`
 - **Tools**: tidyverse, tidymodels, targets, plotly, DT, flexdashboard, janitor, skimr
-- **Templates**: 6 comprehensive workflow templates with reproducibility focus
+- **Templates**: Six systematic workflow templates with reproducibility framework
   - `01_exploratory_analysis.R` - Systematic EDA with automated quality assessment
-  - `02_statistical_modeling.R` - Professional modeling pipeline with tidymodels
+  - `02_statistical_modeling.R` - Modeling pipeline with tidymodels
   - `03_model_validation.R` - Cross-validation, bootstrap CI, robustness testing
   - `04_interactive_dashboard.Rmd` - Shiny dashboard for data exploration
   - `05_automated_report.Rmd` - Parameterized reports with multiple output formats
   - `analysis_functions.R` - Reusable utility functions with standardized themes
-- **Workflow**: Raw data → Systematic EDA → Professional modeling → Validation → Interactive reporting
-- **Best for**: PhD students analyzing data, data scientists building models, analysts creating reports
+- **Workflow**: Raw data → Systematic EDA → Statistical modeling → Validation → Interactive reporting
+- **Target Users**: PhD students analyzing data, data scientists building models, analysts creating reports
 
-**📄 Manuscript Paradigm** - *"From analysis to publication"*
-- **Use for**: Academic papers, research reports, computational research, collaborative writing
+**Manuscript Paradigm**
+- **Applications**: Academic papers, research reports, computational research, collaborative writing
 - **Structure**: `R/`, `tests/testthat/`, `man/`, `manuscript/`, `analysis/reproduce/`, `submission/`, `vignettes/`, `inst/examples/`
 - **Tools**: rmarkdown, bookdown, papaja, devtools, testthat, roxygen2, RefManageR
-- **Templates**: 8+ research compendium templates for complete reproducibility
-  - `paper.Rmd` - Professional manuscript template with YAML frontmatter
-  - `supplementary.Rmd` - Comprehensive supplementary materials
+- **Templates**: Eight research compendium templates for complete reproducibility
+  - `paper.Rmd` - Manuscript template with YAML frontmatter
+  - `supplementary.Rmd` - Supplementary materials structure
   - `references.bib` - Academic bibliography with reproducibility citations
   - `01-04_reproduction_scripts.R` - Complete analysis reproduction pipeline
   - `analysis_functions.R` - R package functions with roxygen2 documentation
   - `DESCRIPTION` & `NAMESPACE` - Full R package infrastructure for reproducibility
 - **Workflow**: Analysis functions → Testing → Documentation → Writing → Reproduction → Submission
-- **Best for**: Academic researchers writing papers, graduate students writing thesis chapters
+- **Target Users**: Academic researchers writing papers, graduate students writing thesis chapters
 
-**📦 Package Paradigm** - *"From code to software"*
-- **Use for**: R package development, research software, method implementation, internal tools
+**Package Paradigm**
+- **Applications**: R package development, research software, method implementation, internal tools
 - **Structure**: `R/`, `tests/testthat/`, `man/`, `vignettes/`, `inst/examples/`, `data/`, `data-raw/`, `pkgdown/`
 - **Tools**: devtools, roxygen2, testthat, pkgdown, usethis, covr, lintr
-- **Templates**: 9 professional R package development templates (CRAN-ready)
-  - `example_functions.R` - Professional functions with complete roxygen2 documentation
-  - `test-example-functions.R` - Comprehensive testthat suite with 95%+ coverage
+- **Templates**: Nine R package development templates (CRAN-ready)
+  - `example_functions.R` - Functions with complete roxygen2 documentation
+  - `test-example-functions.R` - testthat suite with 95%+ coverage
   - `test-helpers.R` - Testing utilities and custom expectations
   - `dev_workflow.R` - Interactive development menu with automated tasks
   - `getting-started.Rmd` & `advanced-usage.Rmd` - Complete vignette suite
-  - `_pkgdown.yml` - Professional documentation website configuration
-  - `sample_dataset.R` - Example datasets with comprehensive documentation
+  - `_pkgdown.yml` - Documentation website configuration
+  - `sample_dataset.R` - Example datasets with documentation
 - **Workflow**: Code → Document → Test → Check → Build → Release → Website
-- **Best for**: R developers creating packages, researchers packaging methods, teams building tools
+- **Target Users**: R developers creating packages, researchers packaging methods, teams building tools
 
 ### Paradigm Usage Commands
 

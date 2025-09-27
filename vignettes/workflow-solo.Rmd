@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# ZZCOLLAB Solo Developer Workflow Guide
+# Solo Developer Workflow
 
 This vignette describes the implementation of reproducible computational research environments for individual researchers using the ZZCOLLAB framework.
 

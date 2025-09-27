@@ -51,33 +51,30 @@ library(zzcollab)
 
 ## Research Paradigm System
 
-ZZCOLLAB supports **three distinct research paradigms**, each optimized for different stages of the research lifecycle:
+ZZCOLLAB supports three distinct research paradigms, each optimized for different stages of the research lifecycle:
 
-### 📊 **Analysis Paradigm** (Default)
-*"From raw data to insights"*
-- **Use for**: Data science projects, research analytics, exploratory analysis
+### Analysis Paradigm (Default)
+- **Purpose**: Data science projects, research analytics, exploratory analysis
 - **Structure**: `data/raw/`, `data/processed/`, `analysis/`, `outputs/figures/`, `reports/`, `scripts/`
-- **Templates**: 6 professional templates including systematic EDA, statistical modeling, interactive dashboards
+- **Templates**: Six professional templates including systematic EDA, statistical modeling, interactive dashboards
 - **Tools**: tidyverse, targets, plotly, DT, flexdashboard, janitor, skimr
-- **Best for**: PhD students analyzing data, data scientists building models, analysts creating reports
+- **Applications**: PhD research data analysis, statistical modeling, report generation
 
-### 📄 **Manuscript Paradigm**
-*"From analysis to publication"*
-- **Use for**: Academic papers, research reports, computational research, collaborative writing
+### Manuscript Paradigm
+- **Purpose**: Academic papers, research reports, computational research, collaborative writing
 - **Structure**: `R/`, `tests/testthat/`, `manuscript/`, `analysis/reproduce/`, `submission/`
-- **Templates**: 8+ research compendium templates with full R package structure, academic writing tools
+- **Templates**: Eight research compendium templates with full R package structure, academic writing tools
 - **Tools**: rmarkdown, bookdown, papaja, devtools, testthat, RefManageR
-- **Best for**: Academic researchers writing papers, graduate students writing thesis chapters
+- **Applications**: Academic manuscript preparation, thesis chapter development
 
-### 📦 **Package Paradigm**
-*"From code to software"*
-- **Use for**: R package development, research software, method implementation, internal tools
+### Package Paradigm
+- **Purpose**: R package development, research software, method implementation, internal tools
 - **Structure**: `R/`, `tests/testthat/`, `man/`, `vignettes/`, `inst/examples/`, `data/`
-- **Templates**: 9 CRAN-ready templates with comprehensive testing, professional documentation, pkgdown websites
+- **Templates**: Nine CRAN-ready templates with testing framework, documentation, pkgdown websites
 - **Tools**: devtools, roxygen2, testthat, pkgdown, covr, lintr
-- **Best for**: R developers creating packages, researchers packaging methods, teams building tools
+- **Applications**: Software package development, method implementation, tool distribution
 
-### Quick Paradigm Selection
+### Paradigm Selection
 ```r
 # Data analysis project
 init_project("data-analysis", paradigm = "analysis")
@@ -89,7 +86,7 @@ init_project("research-paper", paradigm = "manuscript")
 init_project("new-package", paradigm = "package")
 ```
 
-## Quick Start with R Interface
+## R Interface Implementation
 
 ### Configuration Setup (One-time)
 
@@ -168,7 +165,7 @@ zzcollab supports three build modes to optimize for different use cases. **Packa
 
 ## Configuration System
 
-zzcollab includes a powerful configuration system to eliminate repetitive typing and set project defaults.
+zzcollab includes a hierarchical configuration system to establish project defaults and reduce parameter specification.
 
 ### Configuration Files
 - **User config**: `~/.zzcollab/config.yaml` (your personal defaults)

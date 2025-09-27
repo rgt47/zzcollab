@@ -1,5 +1,5 @@
 ---
-title: "ZZCOLLAB for R Users: Solo Developer Workflow"
+title: "R Interface for Solo Development"
 author: "ZZCOLLAB Team"
 date: "`r Sys.Date()`"
 output: 
@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{ZZCOLLAB for R Users: Solo Developer Workflow}
+  %\VignetteIndexEntry{R Interface for Solo Development}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,13 +20,13 @@ knitr::opts_chunk$set(
 )
 ```
 
-# ZZCOLLAB for R Users: Solo Developer Workflow
+# R Interface for Solo Development
 
 This vignette describes ZZCOLLAB's reproducible research capabilities for R developers using a functional interface that abstracts underlying containerization technologies.
 
-## Why ZZCOLLAB for R Users?
+## Framework Integration for R Users
 
-As an R developer, you're already comfortable with:
+The framework provides functionality for R developers who require:
 - Installing and managing R packages
 - Working with R projects and `.Rproj` files
 - Using functions and their parameters
