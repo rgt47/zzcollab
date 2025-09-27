@@ -1,0 +1,370 @@
+---
+title: "Solo Manuscript Workflow with ZZCOLLAB"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Solo Manuscript Workflow with ZZCOLLAB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Overview
+
+This vignette demonstrates how solo researchers can use ZZCOLLAB's manuscript paradigm (`-P manuscript`) to create a reproducible framework for writing scholarly papers. The manuscript paradigm provides a complete research compendium structure that integrates analysis, documentation, and publication workflows.
+
+## What is the Manuscript Paradigm?
+
+The manuscript paradigm is designed for academic writing projects where you need to:
+
+- Develop analysis functions alongside your paper
+- Ensure complete reproducibility of results
+- Manage citations and references
+- Create publication-ready figures and tables
+- Prepare supplementary materials
+- Submit to journals with confidence in reproducibility
+
+## Key Features
+
+- **R package structure** for organized, documented functions
+- **Integrated testing** with testthat framework
+- **Academic templates** for papers and supplementary materials
+- **Citation management** with bibliography integration
+- **Reproducible workflows** from data to publication
+- **Version control ready** for collaborative writing
+
+# Getting Started
+
+## 1. Initial Setup
+
+First, configure your ZZCOLLAB defaults for manuscript work:
+
+```bash
+# Set manuscript as your default paradigm
+zzcollab --config set paradigm manuscript
+zzcollab --config set team-name "myresearch"
+zzcollab --config set build-mode standard
+```
+
+## 2. Create a Manuscript Project
+
+Create a new manuscript project:
+
+```bash
+# Create a new manuscript project
+zzcollab -i -p penguin-morphology -P manuscript
+
+# The -P manuscript flag creates the manuscript paradigm structure
+```
+
+This creates a complete research compendium with:
+
+```
+penguin-morphology/
+|-- R/                          # Analysis functions
+|-- tests/testthat/             # Function tests
+|-- man/                        # Documentation
+|-- manuscript/                 # Paper files
+|   |-- paper.Rmd
+|   |-- supplementary.Rmd
+|   `-- references.bib
+|-- analysis/reproduce/         # Reproduction scripts
+|-- submission/                 # Journal submission files
+|-- vignettes/                  # Extended documentation
+|-- inst/examples/              # Example analyses
+|-- data/                       # Data files
+|-- DESCRIPTION                 # Package metadata
+`-- NAMESPACE                   # Function exports
+```
+
+## 3. Enter the Development Environment
+
+```bash
+# Enter the reproducible container environment
+cd penguin-morphology
+make docker-zsh
+```
+
+# Manuscript Development Workflow
+
+## Step 1: Develop Analysis Functions
+
+Start by creating your analysis functions in the `R/` directory:
+
+```r
+# R/data_processing.R
+prepare_penguin_data <- function(data = palmerpenguins::penguins) {
+  data %>%
+    filter(!is.na(bill_length_mm), !is.na(body_mass_g)) %>%
+    mutate(species = as.factor(species))
+}
+
+analyze_morphology <- function(data) {
+  model <- lm(bill_length_mm ~ species + body_mass_g, data = data)
+  broom::tidy(model)
+}
+```
+
+## Step 2: Write Tests
+
+Create comprehensive tests for your functions:
+
+```r
+# tests/testthat/test-data-processing.R
+test_that("prepare_penguin_data works correctly", {
+  result <- prepare_penguin_data()
+  expect_s3_class(result, "data.frame")
+  expect_true(all(!is.na(result$bill_length_mm)))
+})
+
+test_that("analyze_morphology produces valid results", {
+  data <- prepare_penguin_data()
+  result <- analyze_morphology(data)
+  expect_s3_class(result, "data.frame")
+  expect_true("estimate" %in% names(result))
+})
+```
+
+## Step 3: Generate Documentation
+
+Document your functions with roxygen2:
+
+```r
+#' Prepare penguin data for analysis
+#'
+#' @param data Raw penguin dataset
+#' @return Cleaned data frame
+#' @export
+#' @examples
+#' clean_data <- prepare_penguin_data()
+prepare_penguin_data <- function(data = palmerpenguins::penguins) {
+  # Function implementation
+}
+```
+
+Generate documentation:
+
+```bash
+# Generate documentation
+make document
+```
+
+## Step 4: Write Your Manuscript
+
+The manuscript paradigm includes pre-configured templates:
+
+### Main Paper (`manuscript/paper.Rmd`)
+
+```yaml
+---
+title: "Species Differences in Penguin Morphology"
+author: "Your Name"
+output:
+  pdf_document:
+    keep_tex: true
+bibliography: references.bib
+---
+```
+
+```r
+# Setup chunk loads your package functions
+library(penguinmorphology)
+library(dplyr)
+library(ggplot2)
+
+# Use your analysis functions
+data <- prepare_penguin_data()
+results <- analyze_morphology(data)
+```
+
+### Supplementary Materials (`manuscript/supplementary.Rmd`)
+
+Pre-configured template for supplementary analyses, additional figures, and detailed methods.
+
+### Bibliography (`manuscript/references.bib`)
+
+Integrated citation management:
+
+```bibtex
+@article{gorman2014,
+  title={Ecological sexual dimorphism in penguins},
+  author={Gorman, Kristen B and Williams, Tony D},
+  journal={PLoS One},
+  year={2014}
+}
+```
+
+## Step 5: Create Reproducible Analysis Scripts
+
+The `analysis/reproduce/` directory contains numbered scripts that reproduce your entire analysis:
+
+```r
+# analysis/reproduce/01_data_preparation.R
+source("R/data_processing.R")
+data <- prepare_penguin_data()
+saveRDS(data, "data/processed_penguins.rds")
+
+# analysis/reproduce/02_statistical_analysis.R
+data <- readRDS("data/processed_penguins.rds")
+results <- analyze_morphology(data)
+saveRDS(results, "results/morphology_analysis.rds")
+
+# analysis/reproduce/03_create_figures.R
+# Generate all manuscript figures
+
+# analysis/reproduce/04_create_tables.R
+# Generate all manuscript tables
+```
+
+# Development Commands
+
+## Package Development
+
+```bash
+# Run tests
+make test
+
+# Check package
+make check
+
+# Build package
+make build
+
+# Generate documentation
+make document
+```
+
+## Manuscript Rendering
+
+```bash
+# Render main paper
+Rscript -e "rmarkdown::render('manuscript/paper.Rmd')"
+
+# Render supplementary materials
+Rscript -e "rmarkdown::render('manuscript/supplementary.Rmd')"
+
+# Render all manuscript files
+make manuscript
+```
+
+## Validation and Testing
+
+```bash
+# Run full reproduction pipeline
+Rscript analysis/reproduce/01_data_preparation.R
+Rscript analysis/reproduce/02_statistical_analysis.R
+Rscript analysis/reproduce/03_create_figures.R
+Rscript analysis/reproduce/04_create_tables.R
+
+# Validate package structure
+make docker-check
+```
+
+# Publishing Workflow
+
+## 1. Prepare Submission Files
+
+The manuscript paradigm includes a `submission/` directory for journal-ready files:
+
+```bash
+# Copy final files to submission directory
+cp manuscript/paper.pdf submission/
+cp manuscript/supplementary.pdf submission/
+cp -r figures/ submission/
+cp -r tables/ submission/
+```
+
+## 2. Archive Analysis
+
+Create a permanent archive of your analysis:
+
+```bash
+# Create analysis archive
+tar -czf submission/analysis_archive.tar.gz R/ tests/ analysis/ data/
+```
+
+## 3. Version Control
+
+Commit your complete manuscript:
+
+```bash
+git add .
+git commit -m "Complete manuscript ready for submission"
+git tag v1.0-submission
+```
+
+# Benefits of the Manuscript Paradigm
+
+## Reproducibility
+
+- **Functions in R package format**: Documented, tested, and version-controlled
+- **Complete reproduction scripts**: Step-by-step analysis recreation
+- **Containerized environment**: Identical computing environment for all users
+
+## Collaboration Ready
+
+- **Standard R package structure**: Familiar to R developers
+- **Comprehensive documentation**: Functions documented with roxygen2
+- **Testing framework**: Prevents regressions during collaboration
+
+## Journal Submission
+
+- **Professional structure**: Research compendium format accepted by journals
+- **Complete documentation**: Meets reproducibility requirements
+- **Archival ready**: All code, data, and outputs organized for long-term storage
+
+## Long-term Maintenance
+
+- **Package format**: Easy to install and use years later
+- **Version controlled**: Complete history of changes
+- **Self-contained**: All dependencies documented and managed
+
+# Example: Complete Penguin Morphology Study
+
+This example demonstrates the full workflow from project creation to manuscript submission:
+
+## Project Setup
+
+```bash
+zzcollab -i -p penguin-morphology -P manuscript
+cd penguin-morphology
+make docker-zsh
+```
+
+## Analysis Development
+
+```r
+# Develop functions in R/
+# Write tests in tests/testthat/
+# Document with roxygen2
+# Validate with make test && make check
+```
+
+## Manuscript Writing
+
+```r
+# Write paper in manuscript/paper.Rmd
+# Create supplementary materials
+# Manage citations in references.bib
+# Generate figures and tables
+```
+
+## Submission Preparation
+
+```bash
+# Render final manuscripts
+make manuscript
+
+# Run complete reproduction
+source("analysis/reproduce/run_all.R")
+
+# Prepare submission package
+make submission-package
+```
+
+The manuscript paradigm provides a complete framework for scholarly writing that ensures reproducibility, facilitates collaboration, and meets journal requirements for computational research.

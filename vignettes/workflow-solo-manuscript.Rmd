@@ -929,6 +929,20 @@ create_species_plot <- function(data, x_var, y_var, title = "") {
       axis.title = ggplot2::element_text(size = 11)
     )
 }
+
+#' Create publication-ready ANOVA table
+format_anova_table <- function(anova_result) {
+  anova_result$anova_table %>%
+    dplyr::mutate(
+      df = df,
+      `Sum Sq` = round(sumsq, 2),
+      `Mean Sq` = round(meansq, 2),
+      `F value` = round(statistic, 2),
+      `Pr(>F)` = ifelse(p.value < 0.001, "< 0.001",
+                       sprintf("%.3f", p.value))
+    ) %>%
+    dplyr::select(term, df, `Sum Sq`, `Mean Sq`, `F value`, `Pr(>F)`)
+}
 ```
 
 ```{r load-data, include = FALSE}
@@ -971,10 +985,16 @@ Data preparation involved removing observations with missing values and calculat
 
 Species differences were tested using one-way ANOVA for each morphological variable, with Tukey's HSD post-hoc tests for pairwise comparisons. Effect sizes were calculated using eta-squared ($\eta^2$). Statistical significance was set at α = 0.05.
 
-```{r bill-length-analysis, include = FALSE}
+```{r bill-length-analysis, echo = TRUE}
 # Analyze bill length differences
+cat("Creating bill length analysis...\n")
+cat("penguin_data exists:", exists("penguin_data"), "\n")
+if (exists("penguin_data")) {
+  cat("penguin_data rows:", nrow(penguin_data), "\n")
+}
 bill_length_results <- analyze_species_differences(penguin_data, "bill_length_mm")
 bill_length_table <- format_anova_table(bill_length_results)
+cat("bill_length_results created successfully\n")
 ```
 
 ```{r body-mass-analysis, include = FALSE}
