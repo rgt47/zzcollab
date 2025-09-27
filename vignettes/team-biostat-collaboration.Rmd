@@ -1,0 +1,848 @@
+---
+title: "Team Biostatistics Collaboration with ZZCOLLAB"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Team Biostatistics Collaboration with ZZCOLLAB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Overview
+
+This vignette demonstrates how two biostatisticians can collaborate on a research paper using ZZCOLLAB's manuscript paradigm with Docker and GitHub. The scenario involves Dr. Sarah Chen (senior biostatistician) and Dr. Mike Rodriguez (postdoctoral researcher) collaborating on a clinical trial analysis paper.
+
+## Collaboration Scenario
+
+**Project**: "Efficacy of Novel Immunotherapy in Advanced Melanoma: A Randomized Controlled Trial"
+
+**Team Roles**:
+- **Dr. Sarah Chen** (Team Lead): Senior biostatistician, responsible for study design analysis and manuscript oversight
+- **Dr. Mike Rodriguez** (Collaborator): Postdoc specializing in survival analysis and secondary endpoints
+
+**Collaboration Needs**:
+- Identical statistical computing environments
+- Reproducible analysis workflows
+- Version-controlled manuscript development
+- Peer review of statistical methods
+- Synchronized package dependencies
+
+# Team Setup Workflow
+
+## Phase 1: Team Lead Setup (Dr. Chen)
+
+### 1. Configure Team Defaults
+
+Dr. Chen configures her system for biostatistics collaboration:
+
+```bash
+# Set up biostatistics-focused configuration
+zzcollab --config init
+zzcollab --config set team-name "biostat-lab"
+zzcollab --config set paradigm manuscript
+zzcollab --config set build-mode biostatistics
+zzcollab --config set github-account "drchen-biostat"
+zzcollab --config set dotfiles-dir "~/dotfiles"
+```
+
+### 2. Create Team Docker Images
+
+Dr. Chen creates the shared Docker environment that both team members will use:
+
+```bash
+# Create team Docker images optimized for biostatistics
+zzcollab -i -t biostat-lab -p melanoma-trial -B rstudio -P manuscript --github
+
+# This creates and pushes Docker images:
+# - biostat-lab/melanoma-trialcore-rstudio:latest
+# Includes: R, RStudio, survival analysis packages, clinical trial tools
+```
+
+### 3. Initialize Project Structure
+
+Dr. Chen sets up the complete manuscript project:
+
+```bash
+# Create project directory
+mkdir melanoma-trial && cd melanoma-trial
+
+# Initialize full project with manuscript paradigm
+zzcollab -t biostat-lab -p melanoma-trial -I rstudio -P manuscript
+```
+
+This creates a biostatistics-focused project structure:
+
+```
+melanoma-trial/
+|-- R/                          # Statistical analysis functions
+|   |-- data_management.R       # Data cleaning and validation
+|   |-- survival_analysis.R     # Primary endpoint analysis
+|   |-- secondary_endpoints.R   # Secondary outcome analysis
+|   `-- safety_analysis.R       # Adverse event analysis
+|-- tests/testthat/             # Statistical method validation
+|-- manuscript/                 # Paper files
+|   |-- paper.Rmd              # Main manuscript
+|   |-- supplementary.Rmd      # Supplementary analyses
+|   |-- statistical_analysis_plan.Rmd  # SAP documentation
+|   `-- references.bib          # Medical literature
+|-- analysis/reproduce/         # Complete reproduction pipeline
+|   |-- 01_data_import.R
+|   |-- 02_demographics.R
+|   |-- 03_primary_analysis.R
+|   `-- 04_secondary_analysis.R
+|-- data/                       # Clinical trial data
+|   |-- raw_data/              # Original datasets
+|   |-- derived_data/          # Analysis-ready datasets
+|   `-- README.md              # Data documentation
+|-- results/                    # Analysis outputs
+|   |-- tables/                # Clinical tables
+|   |-- figures/               # Kaplan-Meier curves, forest plots
+|   `-- listings/              # Patient listings
+`-- submission/                 # Journal submission files
+```
+
+### 4. Set Up GitHub Repository
+
+```bash
+# Initialize Git and create GitHub repository
+git init
+git add .
+git commit -m "Initial biostatistics manuscript structure"
+
+# Create GitHub repository (automatically via ZZCOLLAB GitHub integration)
+gh repo create biostat-lab/melanoma-trial --private
+git push -u origin main
+```
+
+### 5. Configure Team-Specific Dependencies
+
+Dr. Chen customizes the project for biostatistics needs:
+
+```yaml
+# Create project-specific zzcollab.yaml
+team:
+  name: "biostat-lab"
+  project: "melanoma-trial"
+  description: "Melanoma immunotherapy trial statistical analysis"
+
+# Biostatistics-specific package configuration
+build_modes:
+  biostatistics:
+    description: "Clinical trial biostatistics environment"
+    docker_packages: [renv, survival, cmprsk, survminer]
+    renv_packages: [
+      # Core biostatistics
+      survival, survminer, cmprsk, muhaz,
+      # Clinical trial packages
+      Hmisc, rms, gsDesign, rpact,
+      # Table generation
+      gt, gtsummary, flextable, officer,
+      # Graphics
+      ggplot2, ggsurvfit, forestplot,
+      # Data management
+      tidyverse, haven, REDCapR, labelled
+    ]
+```
+
+## Phase 2: Collaborator Setup (Dr. Rodriguez)
+
+### 1. Clone and Join Project
+
+Dr. Rodriguez joins the established project:
+
+```bash
+# Clone the shared repository
+git clone https://github.com/biostat-lab/melanoma-trial.git
+cd melanoma-trial
+
+# Join the project using the team's Docker environment
+zzcollab -t biostat-lab -p melanoma-trial -I rstudio
+
+# This automatically:
+# - Pulls the biostat-lab/melanoma-trialcore-rstudio:latest image
+# - Sets up identical R environment with all packages
+# - Configures RStudio with team settings
+```
+
+### 2. Verify Environment Consistency
+
+Both team members verify they have identical environments:
+
+```bash
+# Enter the shared Docker environment
+make docker-rstudio
+
+# Access RStudio at http://localhost:8787
+# Username: rstudio, Password: (generated)
+```
+
+Inside RStudio:
+```r
+# Verify package versions are identical
+renv::status()  # Should show synchronized packages
+
+# Check key biostatistics packages
+packageVersion("survival")   # e.g., 3.5.7
+packageVersion("survminer")  # e.g., 0.4.9
+packageVersion("gtsummary")  # e.g., 1.7.2
+
+# Verify R version consistency
+R.version.string  # Should be identical for both team members
+```
+
+# Collaborative Development Workflow
+
+## Week 1: Dr. Chen - Primary Analysis Development
+
+Dr. Chen focuses on the primary endpoint analysis:
+
+### 1. Develop Core Functions
+
+```r
+# R/survival_analysis.R
+#' Perform primary efficacy analysis
+#'
+#' @param data Clinical trial dataset
+#' @param time_var Time to event variable
+#' @param event_var Event indicator variable
+#' @param treatment_var Treatment group variable
+#' @return List containing survival analysis results
+#' @export
+analyze_primary_endpoint <- function(data,
+                                   time_var = "progression_free_survival_days",
+                                   event_var = "progression_event",
+                                   treatment_var = "treatment_group") {
+
+  # Create survival object
+  surv_obj <- survival::Surv(data[[time_var]], data[[event_var]])
+
+  # Fit Cox proportional hazards model
+  cox_model <- survival::coxph(surv_obj ~ get(treatment_var), data = data)
+
+  # Kaplan-Meier analysis
+  km_fit <- survival::survfit(surv_obj ~ get(treatment_var), data = data)
+
+  # Log-rank test
+  logrank_test <- survival::survdiff(surv_obj ~ get(treatment_var), data = data)
+
+  list(
+    cox_model = cox_model,
+    km_fit = km_fit,
+    logrank_test = logrank_test,
+    median_survival = summary(km_fit)$table,
+    hazard_ratio = summary(cox_model)$conf.int
+  )
+}
+```
+
+### 2. Write Comprehensive Tests
+
+```r
+# tests/testthat/test-survival-analysis.R
+test_that("analyze_primary_endpoint works with valid data", {
+  # Create synthetic trial data
+  set.seed(123)
+  test_data <- data.frame(
+    patient_id = 1:200,
+    treatment_group = factor(rep(c("Control", "Treatment"), each = 100)),
+    progression_free_survival_days = rexp(200, rate = 0.01),
+    progression_event = rbinom(200, 1, 0.6)
+  )
+
+  result <- analyze_primary_endpoint(test_data)
+
+  # Validate output structure
+  expect_type(result, "list")
+  expect_s3_class(result$cox_model, "coxph")
+  expect_s3_class(result$km_fit, "survfit")
+
+  # Validate statistical outputs
+  expect_true(is.numeric(result$hazard_ratio[1]))
+  expect_length(result$median_survival, 6)  # 2 groups × 3 statistics
+})
+
+test_that("analyze_primary_endpoint handles missing data appropriately", {
+  # Test with missing values
+  test_data_missing <- data.frame(
+    treatment_group = factor(rep(c("Control", "Treatment"), each = 50)),
+    progression_free_survival_days = c(rexp(90, 0.01), rep(NA, 10)),
+    progression_event = c(rbinom(90, 1, 0.6), rep(NA, 10))
+  )
+
+  result <- analyze_primary_endpoint(test_data_missing)
+  expect_s3_class(result$cox_model, "coxph")
+  # Should complete analysis with available data
+})
+```
+
+### 3. Commit and Push Changes
+
+```bash
+# Run tests to ensure code quality
+make docker-test
+
+# Commit Dr. Chen's primary analysis work
+git add R/survival_analysis.R tests/testthat/test-survival-analysis.R
+git commit -m "Add primary endpoint survival analysis functions
+
+- Implement analyze_primary_endpoint() with Cox regression
+- Include Kaplan-Meier analysis and log-rank test
+- Add comprehensive unit tests with synthetic data
+- Validate handling of missing data scenarios"
+
+git push origin main
+```
+
+## Week 1: Dr. Rodriguez - Secondary Analysis Development
+
+Dr. Rodriguez works on secondary endpoints while Dr. Chen develops primary analysis:
+
+### 1. Pull Latest Changes and Develop Secondary Analysis
+
+```bash
+# Pull any updates from Dr. Chen
+git pull origin main
+
+# Start RStudio environment
+make docker-rstudio
+```
+
+```r
+# R/secondary_endpoints.R
+#' Analyze secondary efficacy endpoints
+#'
+#' @param data Clinical trial dataset
+#' @param endpoints List of secondary endpoint variables
+#' @return List containing analysis results for each endpoint
+#' @export
+analyze_secondary_endpoints <- function(data,
+                                      endpoints = c("overall_survival_days",
+                                                   "response_duration_days",
+                                                   "time_to_response_days")) {
+
+  results <- list()
+
+  for (endpoint in endpoints) {
+    if (!endpoint %in% names(data)) {
+      warning(paste("Endpoint", endpoint, "not found in data"))
+      next
+    }
+
+    # Determine event variable (assume naming convention)
+    event_var <- gsub("_days$", "_event", endpoint)
+
+    if (event_var %in% names(data)) {
+      # Perform survival analysis for time-to-event endpoints
+      surv_obj <- survival::Surv(data[[endpoint]], data[[event_var]])
+      cox_model <- survival::coxph(surv_obj ~ treatment_group, data = data)
+      km_fit <- survival::survfit(surv_obj ~ treatment_group, data = data)
+
+      results[[endpoint]] <- list(
+        cox_model = cox_model,
+        km_fit = km_fit,
+        median_survival = summary(km_fit)$table
+      )
+    } else {
+      # Continuous endpoint analysis
+      model <- lm(get(endpoint) ~ treatment_group, data = data)
+      results[[endpoint]] <- list(
+        linear_model = model,
+        summary = summary(model)
+      )
+    }
+  }
+
+  results
+}
+
+#' Generate safety analysis summary
+#'
+#' @param data Clinical trial dataset with adverse event data
+#' @return Summary table of adverse events by treatment group
+#' @export
+analyze_safety_profile <- function(data) {
+
+  # Assume AE data is in long format
+  ae_summary <- data %>%
+    filter(!is.na(adverse_event_grade)) %>%
+    group_by(treatment_group, adverse_event_grade) %>%
+    summarize(
+      n_events = n(),
+      n_patients = n_distinct(patient_id),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      percentage = round(n_patients / length(unique(data$patient_id)) * 100, 1)
+    )
+
+  # Generate grade 3+ AE summary
+  severe_ae <- ae_summary %>%
+    filter(adverse_event_grade >= 3) %>%
+    arrange(treatment_group, desc(adverse_event_grade))
+
+  list(
+    overall_ae_summary = ae_summary,
+    severe_ae_summary = severe_ae
+  )
+}
+```
+
+### 2. Write Tests for Secondary Analysis
+
+```r
+# tests/testthat/test-secondary-endpoints.R
+test_that("analyze_secondary_endpoints handles multiple endpoints", {
+  set.seed(456)
+  test_data <- data.frame(
+    patient_id = 1:100,
+    treatment_group = factor(rep(c("Control", "Treatment"), each = 50)),
+    overall_survival_days = rexp(100, rate = 0.005),
+    overall_survival_event = rbinom(100, 1, 0.4),
+    response_duration_days = rexp(100, rate = 0.02),
+    response_duration_event = rbinom(100, 1, 0.7)
+  )
+
+  endpoints <- c("overall_survival_days", "response_duration_days")
+  result <- analyze_secondary_endpoints(test_data, endpoints)
+
+  expect_length(result, 2)
+  expect_s3_class(result$overall_survival_days$cox_model, "coxph")
+  expect_s3_class(result$response_duration_days$cox_model, "coxph")
+})
+
+test_that("analyze_safety_profile summarizes adverse events correctly", {
+  # Create synthetic AE data
+  ae_data <- data.frame(
+    patient_id = rep(1:100, each = 2),
+    treatment_group = factor(rep(rep(c("Control", "Treatment"), each = 50), each = 2)),
+    adverse_event_grade = sample(1:4, 200, replace = TRUE, prob = c(0.4, 0.3, 0.2, 0.1))
+  )
+
+  result <- analyze_safety_profile(ae_data)
+
+  expect_s3_class(result$overall_ae_summary, "data.frame")
+  expect_s3_class(result$severe_ae_summary, "data.frame")
+  expect_true("percentage" %in% names(result$overall_ae_summary))
+})
+```
+
+### 3. Commit Secondary Analysis Work
+
+```bash
+# Run tests to ensure quality
+make docker-test
+
+# Commit Dr. Rodriguez's secondary analysis work
+git add R/secondary_endpoints.R tests/testthat/test-secondary-endpoints.R
+git commit -m "Add secondary endpoint and safety analysis functions
+
+- Implement analyze_secondary_endpoints() for multiple time-to-event outcomes
+- Add analyze_safety_profile() for adverse event summarization
+- Include comprehensive unit tests with synthetic clinical data
+- Support both survival and continuous secondary endpoints"
+
+git push origin main
+```
+
+## Week 2: Collaborative Integration and Manuscript Development
+
+### 1. Merge and Integration (Both team members)
+
+Both Dr. Chen and Dr. Rodriguez pull the latest changes:
+
+```bash
+git pull origin main
+
+# Update package dependencies if needed
+make docker-zsh
+Rscript -e "renv::status(); renv::snapshot()"
+```
+
+### 2. Collaborative Manuscript Writing
+
+Dr. Chen starts the manuscript structure while Dr. Rodriguez develops analysis scripts:
+
+#### Dr. Chen: Manuscript Template Development
+
+```yaml
+# manuscript/paper.Rmd
+---
+title: "Efficacy of Novel Immunotherapy in Advanced Melanoma: A Randomized Controlled Trial"
+author:
+  - name: "Sarah Chen, PhD"
+    affiliation: "Department of Biostatistics, Cancer Research Institute"
+  - name: "Mike Rodriguez, PhD"
+    affiliation: "Department of Biostatistics, Cancer Research Institute"
+output:
+  pdf_document:
+    keep_tex: true
+    number_sections: true
+bibliography: references.bib
+---
+```
+
+```r
+# Setup chunk - loads team's analysis functions
+library(melanomatrial)  # Our package with analysis functions
+library(tidyverse)
+library(survival)
+library(gtsummary)
+library(gt)
+
+# Load clinical trial data
+trial_data <- readRDS("data/derived_data/analysis_ready_data.rds")
+```
+
+#### Dr. Rodriguez: Analysis Pipeline Development
+
+```r
+# analysis/reproduce/01_data_import.R
+# Import and clean raw clinical trial data
+source("R/data_management.R")
+
+# Read raw data files
+demographics <- haven::read_sas("data/raw_data/demographics.sas7bdat")
+efficacy <- haven::read_sas("data/raw_data/efficacy_endpoints.sas7bdat")
+safety <- haven::read_sas("data/raw_data/adverse_events.sas7bdat")
+
+# Create analysis-ready dataset
+analysis_data <- prepare_trial_data(demographics, efficacy, safety)
+
+# Save for subsequent analyses
+saveRDS(analysis_data, "data/derived_data/analysis_ready_data.rds")
+
+# analysis/reproduce/02_primary_analysis.R
+source("R/survival_analysis.R")
+
+# Load analysis-ready data
+trial_data <- readRDS("data/derived_data/analysis_ready_data.rds")
+
+# Primary efficacy analysis
+primary_results <- analyze_primary_endpoint(trial_data)
+
+# Save results
+saveRDS(primary_results, "results/primary_analysis_results.rds")
+
+# Generate primary analysis table
+primary_table <- create_primary_analysis_table(primary_results)
+gtsummary::as_gt(primary_table) %>%
+  gt::gtsave("results/tables/table1_primary_analysis.html")
+```
+
+### 3. Peer Review Workflow
+
+#### Code Review Process
+
+Dr. Chen reviews Dr. Rodriguez's secondary analysis code:
+
+```bash
+# Create feature branch for review
+git checkout -b review-secondary-analysis
+
+# Review secondary endpoints code
+# - Check statistical methods appropriateness
+# - Validate test coverage
+# - Ensure consistency with primary analysis
+```
+
+Dr. Rodriguez reviews Dr. Chen's survival analysis:
+
+```bash
+# Review primary analysis implementation
+# - Verify Cox regression assumptions
+# - Check handling of censoring
+# - Validate Kaplan-Meier methodology
+```
+
+#### GitHub Collaboration Features
+
+```bash
+# Create pull request for major features
+git checkout -b feature-km-plots
+# ... develop Kaplan-Meier plotting functions ...
+git commit -m "Add publication-ready Kaplan-Meier plots"
+git push origin feature-km-plots
+
+# Create pull request on GitHub for peer review
+gh pr create --title "Add Kaplan-Meier plotting functions" \
+  --body "Implements survminer-based plotting with:
+- Publication-ready styling
+- Risk tables
+- Confidence intervals
+- Customizable themes for journal submission"
+```
+
+## Week 3: Manuscript Finalization and Reproducibility Validation
+
+### 1. Complete Manuscript Development
+
+Both team members collaborate on finalizing the manuscript:
+
+```r
+# manuscript/paper.Rmd - Results section
+## Primary Efficacy Analysis
+
+A total of 347 patients were randomized to treatment
+(174 patients) or control (173 patients).
+
+```{r primary-analysis, echo=FALSE, eval=FALSE}
+# Load pre-computed results to ensure reproducibility
+primary_results <- readRDS("../results/primary_analysis_results.rds")
+
+# Create publication table
+primary_table <- gtsummary::tbl_survfit(
+  primary_results$km_fit,
+  times = c(6, 12, 18, 24),
+  label_header = "**Month {time}**"
+) %>%
+  gtsummary::add_p(test = "logrank") %>%
+  gtsummary::modify_header(estimate ~ "**Survival Probability (95% CI)**")
+
+primary_table
+
+# Create Kaplan-Meier plot
+km_plot <- create_km_plot(primary_results$km_fit,
+                         title = "Progression-Free Survival by Treatment Group")
+km_plot
+```
+
+*Note: This code demonstrates the analysis workflow. In actual implementation, these results would be generated from the team's analysis pipeline.*
+```
+
+### 2. Reproducibility Validation Pipeline
+
+Both team members validate complete reproducibility:
+
+```bash
+# Clean environment and test complete reproduction
+make docker-clean
+docker system prune -f
+
+# Start fresh container
+make docker-rstudio
+
+# Run complete analysis pipeline
+source("analysis/reproduce/run_all_analyses.R")
+
+# Render manuscript from scratch
+rmarkdown::render("manuscript/paper.Rmd")
+rmarkdown::render("manuscript/supplementary.Rmd")
+
+# Verify no differences in outputs
+git status  # Should show no changes to results/
+```
+
+### 3. Package and Dependency Management
+
+Final package environment synchronization:
+
+```r
+# Both team members ensure identical package environment
+renv::status()
+renv::snapshot()  # Update lock file with any new packages
+
+# Validate package consistency
+check_package_versions <- function() {
+  key_packages <- c("survival", "survminer", "gtsummary", "gt", "tidyverse")
+  versions <- sapply(key_packages, packageVersion)
+  data.frame(
+    package = names(versions),
+    version = as.character(versions)
+  )
+}
+
+package_versions <- check_package_versions()
+write.csv(package_versions, "submission/package_versions.csv", row.names = FALSE)
+```
+
+# Advanced Collaboration Features
+
+## Docker Environment Customization
+
+### Biostatistics-Specific Docker Configuration
+
+The team can customize their Docker environment for clinical trial analysis:
+
+```dockerfile
+# Custom Dockerfile for biostatistics team
+FROM rocker/verse:latest
+
+# Install system dependencies for clinical trial packages
+RUN apt-get update && apt-get install -y \
+    libxml2-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    cmake
+
+# Install biostatistics R packages
+RUN install2.r --error --skipinstalled \
+    survival survminer cmprsk muhaz \
+    Hmisc rms gsDesign rpact \
+    gt gtsummary flextable officer \
+    ggsurvfit forestplot \
+    haven REDCapR labelled
+
+# Configure RStudio for biostatistics workflow
+COPY rstudio-prefs.json /home/rstudio/.config/rstudio/rstudio-prefs.json
+```
+
+### Team Configuration Management
+
+```yaml
+# Shared team configuration (zzcollab.yaml)
+team:
+  name: "biostat-lab"
+  project: "melanoma-trial"
+  description: "Clinical trial biostatistics collaboration"
+
+# Biostatistics-optimized variants
+variants:
+  biostatistics:
+    enabled: true
+    base_image: "rocker/verse:latest"
+    packages: [survival, survminer, gtsummary, gt, Hmisc, rms]
+    system_deps: [libxml2-dev, cmake]
+    size: "~2GB"
+
+  clinical_reporting:
+    enabled: true
+    base_image: "rocker/verse:latest"
+    packages: [flextable, officer, openxlsx, kableExtra]
+    description: "Clinical report generation environment"
+
+build:
+  use_config_variants: true
+  parallel_builds: true
+
+collaboration:
+  github:
+    auto_create_repo: true
+    default_visibility: "private"
+    enable_actions: true
+
+  development:
+    default_interface: "rstudio"
+    container:
+      default_user: "rstudio"
+      working_dir: "/home/rstudio/project"
+```
+
+## GitHub Integration for Biostatistics
+
+### Automated Validation Workflows
+
+```yaml
+# .github/workflows/biostat-validation.yml
+name: Biostatistics Analysis Validation
+
+on: [push, pull_request]
+
+jobs:
+  validate-analysis:
+    runs-on: ubuntu-latest
+    container: biostat-lab/melanoma-trialcore-rstudio:latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Validate Package Environment
+      run: |
+        Rscript -e "renv::status()"
+        Rscript check_renv_for_commit.R --build-mode biostatistics --fail-on-issues
+
+    - name: Run Statistical Tests
+      run: |
+        Rscript -e "devtools::test()"
+
+    - name: Validate Reproducibility
+      run: |
+        Rscript analysis/reproduce/01_data_import.R
+        Rscript analysis/reproduce/02_primary_analysis.R
+        Rscript analysis/reproduce/03_secondary_analysis.R
+
+    - name: Check Analysis Outputs
+      run: |
+        # Verify key results files exist
+        test -f results/primary_analysis_results.rds
+        test -f results/tables/table1_primary_analysis.html
+```
+
+### Code Review Templates
+
+```markdown
+# Pull Request Template for Statistical Analysis
+## Statistical Methods Review Checklist
+
+### Primary Analysis
+- [ ] Cox proportional hazards assumptions verified
+- [ ] Censoring patterns assessed appropriately
+- [ ] Log-rank test implementation correct
+- [ ] Confidence intervals calculated properly
+
+### Secondary Analysis
+- [ ] Multiple comparison adjustments considered
+- [ ] Secondary endpoint definitions clear
+- [ ] Analysis methods appropriate for endpoint type
+
+### Safety Analysis
+- [ ] Adverse event grading consistent
+- [ ] Safety population definition appropriate
+- [ ] Missing data handling documented
+
+### Code Quality
+- [ ] Functions properly documented with roxygen2
+- [ ] Unit tests provide adequate coverage
+- [ ] Code follows team style guidelines
+- [ ] Reproducible examples provided
+
+### Statistical Reporting
+- [ ] Tables follow clinical trial reporting standards
+- [ ] Figures publication-ready with proper labeling
+- [ ] Statistical methodology clearly described
+```
+
+## Benefits of Team Biostatistics Collaboration
+
+### Computational Reproducibility
+- **Identical environments**: Both biostatisticians work in identical Docker containers
+- **Synchronized packages**: renv ensures exact package versions across team
+- **Version-controlled analysis**: Complete statistical workflow under version control
+- **Reproducible manuscripts**: Identical rendering on all systems
+
+### Enhanced Code Quality
+- **Peer review**: Statistical methods reviewed by biostatistics expert
+- **Unit testing**: Comprehensive test coverage for statistical functions
+- **Continuous validation**: Automated testing of analysis pipeline
+- **Documentation standards**: Roxygen2 documentation for all statistical methods
+
+### Efficient Collaboration
+- **Simultaneous development**: Team members work on different components simultaneously
+- **GitHub integration**: Professional software development workflow
+- **Configuration sharing**: Consistent team settings and preferences
+- **Knowledge sharing**: Statistical expertise combined effectively
+
+### Regulatory Compliance
+- **Audit trail**: Complete version history of statistical analysis
+- **Validation documentation**: Comprehensive testing of statistical methods
+- **Reproducible results**: Identical analysis results across reviewers
+- **Documentation standards**: Clinical trial reporting standards compliance
+
+### Long-term Maintainability
+- **Package structure**: Analysis functions organized as R package
+- **Environment preservation**: Complete computational environment archived
+- **Team continuity**: New team members can immediately reproduce work
+- **Method reusability**: Statistical functions available for future studies
+
+## Summary
+
+This collaborative workflow demonstrates how ZZCOLLAB enables biostatisticians to work together effectively on clinical trial analysis and manuscript preparation. The combination of Docker containers, renv package management, GitHub integration, and ZZCOLLAB's configuration system provides a robust foundation for reproducible, high-quality biostatistical collaboration that meets the demanding standards of clinical research and regulatory compliance.
+
+The framework supports the complete lifecycle from initial analysis development through peer review, manuscript writing, and final publication submission, ensuring that statistical methods are properly validated, results are reproducible, and the entire analysis workflow can be preserved for long-term scientific integrity.
