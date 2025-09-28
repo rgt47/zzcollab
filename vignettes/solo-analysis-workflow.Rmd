@@ -1,0 +1,1608 @@
+---
+title: "Solo Analysis Workflow: Complete Reproducible Data Science with zzcollab"
+author: "ZZCOLLAB Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Solo Analysis Workflow: Complete Reproducible Data Science with zzcollab}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Solo Analysis Workflow
+
+This vignette demonstrates how to use the zzcollab framework's **analysis paradigm** to conduct reproducible data science research as a solo developer. The analysis paradigm is specifically designed for data analysis projects, providing specialized templates, packages, and workflows for systematic exploratory data analysis, statistical modeling, and reproducible reporting.
+
+## Analysis Paradigm Overview
+
+The **analysis paradigm** is one of zzcollab's three research paradigms, optimized for data science workflows:
+
+**Key Features:**
+- **Systematic Templates**: Six professional workflow templates (01-06) for complete analysis pipelines
+- **Specialized Packages**: Pre-configured with tidyverse, tidymodels, targets, plotly, DT, and analysis tools
+- **Structured Directories**: Organized for `data/`, `analysis/`, `outputs/`, `scripts/`, and `reports/`
+- **Reproducible Framework**: Built-in seed management, session logging, and dependency tracking
+- **Publication Ready**: Professional visualizations and automated report generation
+
+**Template Structure:**
+- `01_exploratory_analysis.R` - Systematic EDA with quality assessment
+- `02_statistical_modeling.R` - Modeling pipeline with tidymodels
+- `03_model_validation.R` - Cross-validation and robustness testing
+- `04_interactive_dashboard.Rmd` - Shiny dashboard for exploration
+- `05_automated_report.Rmd` - Parameterized reports with multiple formats
+- `example_analysis_functions.R` - Reusable utility functions
+
+## Initial Setup (One-Time)
+
+### 1. Install and Configure zzcollab
+
+```bash
+# Clone and install zzcollab framework
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh
+
+# Initialize personal configuration
+zzcollab --config init
+zzcollab --config set team-name "myname"        # Your Docker Hub account
+zzcollab --config set paradigm "analysis"       # Default to analysis paradigm
+zzcollab --config set build-mode "standard"     # Balanced package set
+zzcollab --config set dotfiles-dir "~/dotfiles" # Optional: your dotfiles
+```
+
+### 2. Verify Installation
+
+```bash
+# Verify zzcollab is properly installed
+zzcollab --help
+which zzcollab
+
+# Check configuration
+zzcollab --config list
+```
+
+## Project Creation and Setup
+
+### Create Analysis Project
+
+```bash
+# Method 1: Quick start with defaults (recommended)
+zzcollab -i -p penguin-analysis --github    # Uses analysis paradigm automatically
+
+# Method 2: Explicit paradigm specification
+zzcollab -i -p penguin-analysis -P analysis --github
+
+# Method 3: Custom variant selection for specialized needs
+mkdir penguin-analysis && cd penguin-analysis
+zzcollab -i -p penguin-analysis -P analysis
+./add_variant.sh    # Select additional variants like modeling or alpine_minimal
+```
+
+**What this creates:**
+- Complete R package structure with analysis-optimized DESCRIPTION
+- Six professional analysis templates (01-06)
+- Docker environment with tidyverse, tidymodels, and analysis packages
+- GitHub repository with analysis-specific CI/CD workflows
+- Systematic directory structure for reproducible data science
+
+### Project Structure Created
+
+```
+penguin-analysis/
+├── data/
+│   ├── raw/              # Original, untouched data
+│   ├── processed/        # Cleaned, analysis-ready data
+│   └── README.md         # Comprehensive data documentation
+├── analysis/
+│   ├── exploratory/      # EDA outputs and diagnostics
+│   ├── modeling/         # Model objects and validation
+│   └── validation/       # Cross-validation and robustness
+├── outputs/
+│   ├── figures/          # Publication-quality plots
+│   └── tables/           # Summary statistics and results
+├── reports/
+│   └── dashboard/        # Interactive reports and dashboards
+├── scripts/
+│   ├── 01_exploratory_analysis.R      # Systematic EDA template
+│   ├── 02_statistical_modeling.R      # tidymodels pipeline
+│   ├── 03_model_validation.R          # Validation framework
+│   ├── 04_interactive_dashboard.Rmd   # Shiny exploration
+│   ├── 05_automated_report.Rmd        # Parameterized reporting
+│   └── example_analysis_functions.R   # Utility functions
+├── R/                    # Package functions for analysis
+├── tests/testthat/       # Comprehensive testing framework
+└── DESCRIPTION           # Analysis-optimized package metadata
+```
+
+## Daily Development Workflow
+
+### 1. Start Development Environment
+
+```bash
+cd penguin-analysis
+
+# Launch development environment (choose your interface)
+make docker-zsh         # Command-line interface (most flexible)
+make docker-rstudio     # RStudio Server at localhost:8787
+make docker-r           # R console only
+```
+
+### 2. Development Cycle (Inside Container)
+
+The analysis paradigm follows a systematic development pattern:
+
+**Phase 1: Data Import and Exploration**
+
+```bash
+# Inside the Docker container with all packages pre-installed
+# Work on exploratory data analysis
+vim scripts/01_exploratory_analysis.R
+```
+
+**Phase 2: Statistical Modeling**
+
+```bash
+# Develop modeling pipeline
+vim scripts/02_statistical_modeling.R
+```
+
+**Phase 3: Validation and Testing**
+
+```bash
+# Create analysis functions and tests
+vim R/analysis_functions.R
+vim tests/testthat/test-analysis_functions.R
+```
+
+**Phase 4: Execute Analysis**
+
+```bash
+# Run the complete analysis pipeline
+R --vanilla < scripts/01_exploratory_analysis.R
+R --vanilla < scripts/02_statistical_modeling.R
+
+# Test your functions
+R
+devtools::load_all()
+devtools::test()
+quit()
+```
+
+### 3. Validation and Commit
+
+```bash
+# Exit development container
+exit
+
+# Back on host system - validate everything works
+make docker-check-renv-fix    # Update dependency tracking
+make docker-test             # Run tests in clean environment
+make docker-render           # Ensure reports render correctly
+
+# Commit your progress
+git add .
+git commit -m "Add systematic penguin analysis
+
+- Implement exploratory data analysis with quality checks
+- Create tidymodels statistical modeling pipeline
+- Add comprehensive function testing framework
+- Generate publication-quality visualizations
+- All dependencies tracked, tests passing"
+
+git push origin main
+```
+
+## Complete Practical Example: Palmer Penguins Analysis
+
+Let's walk through a comprehensive analysis using the Palmer penguins dataset to demonstrate the complete workflow.
+
+### Step 1: Project Setup and Data Import
+
+```bash
+# Create the project
+zzcollab -i -p penguin-analysis -P analysis --github
+cd penguin-analysis
+
+# Start development environment
+make docker-zsh
+```
+
+**Inside container - Set up data:**
+
+```bash
+# Create data structure and import Palmer penguins
+mkdir -p data/raw data/processed
+
+# In R, download and save Palmer penguins data
+R
+library(palmerpenguins)
+library(readr)
+data(penguins)
+write_csv(penguins, "data/raw/penguins.csv")
+quit()
+```
+
+### Step 2: Systematic Exploratory Data Analysis
+
+Edit `scripts/01_exploratory_analysis.R`:
+
+```r
+# Exploratory Data Analysis - Palmer Penguins
+# Project: penguin-analysis
+# Focus: Systematic investigation of penguin bill relationships
+
+# Load required packages (pre-installed in analysis paradigm)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(skimr)
+library(janitor)
+library(readr)
+library(plotly)
+library(DT)
+
+# Set reproducible seed
+set.seed(42)
+
+# Create session log for reproducibility
+session_log <- list(
+  script = "01_exploratory_analysis.R",
+  start_time = Sys.time(),
+  r_version = R.version.string,
+  random_seed = 42,
+  focus = "Palmer penguins bill dimension relationships"
+)
+
+# Set up paths
+raw_data_dir <- here("data", "raw")
+processed_data_dir <- here("data", "processed")
+figures_dir <- here("outputs", "figures")
+
+# Create output directories
+for (dir in c(processed_data_dir, figures_dir)) {
+  if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+}
+
+message("Starting Palmer Penguins exploratory analysis...")
+
+# =============================================================================
+# DATA IMPORT AND INITIAL INSPECTION
+# =============================================================================
+
+message("\n1. DATA IMPORT AND INITIAL INSPECTION")
+
+# Load Palmer penguins data
+penguins_raw <- read_csv(file.path(raw_data_dir, "penguins.csv"))
+
+# Basic data inspection
+message("Dataset dimensions: ", nrow(penguins_raw), " rows × ", ncol(penguins_raw), " columns")
+message("Variables: ", paste(names(penguins_raw), collapse = ", "))
+
+# Data structure overview
+glimpse(penguins_raw)
+
+# =============================================================================
+# DATA QUALITY ASSESSMENT
+# =============================================================================
+
+message("\n2. DATA QUALITY ASSESSMENT")
+
+# Comprehensive data summary
+skim_summary <- skim(penguins_raw)
+print(skim_summary)
+
+# Detailed quality assessment
+quality_report <- list(
+  total_rows = nrow(penguins_raw),
+  total_cols = ncol(penguins_raw),
+  missing_data = sapply(penguins_raw, function(x) sum(is.na(x))),
+  missing_percent = round(sapply(penguins_raw, function(x) sum(is.na(x))/length(x) * 100), 2),
+  duplicate_rows = sum(duplicated(penguins_raw)),
+  unique_values = sapply(penguins_raw, function(x) length(unique(x))),
+  species_counts = table(penguins_raw$species),
+  island_counts = table(penguins_raw$island),
+  sex_counts = table(penguins_raw$sex, useNA = "ifany")
+)
+
+# Print quality summary
+message("Missing data summary:")
+print(quality_report$missing_data[quality_report$missing_data > 0])
+
+message("Species distribution:")
+print(quality_report$species_counts)
+
+# Save quality report
+saveRDS(quality_report, file.path(here("analysis", "exploratory"), "quality_report.rds"))
+
+# =============================================================================
+# DATA CLEANING AND PREPARATION
+# =============================================================================
+
+message("\n3. DATA CLEANING AND PREPARATION")
+
+# Create analysis-ready dataset
+penguins_clean <- penguins_raw %>%
+  # Remove rows with missing bill measurements (our focus variables)
+  filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+  # Clean column names
+  clean_names() %>%
+  # Add derived variables for analysis
+  mutate(
+    # Bill ratio for shape analysis
+    bill_ratio = bill_length_mm / bill_depth_mm,
+    # Total bill size proxy
+    bill_area_proxy = bill_length_mm * bill_depth_mm,
+    # Body condition index
+    body_condition = body_mass_g / flipper_length_mm,
+    # Year as factor for temporal analysis
+    year = as.factor(year),
+    # Comprehensive ID for tracking
+    penguin_id = paste(species, island, row_number(), sep = "_")
+  ) %>%
+  # Arrange by species for systematic analysis
+  arrange(species, island)
+
+message("Clean dataset: ", nrow(penguins_clean), " complete observations")
+message("Derived variables added: bill_ratio, bill_area_proxy, body_condition")
+
+# Save processed dataset
+write_csv(penguins_clean, file.path(processed_data_dir, "penguins_clean.csv"))
+
+# =============================================================================
+# SYSTEMATIC UNIVARIATE ANALYSIS
+# =============================================================================
+
+message("\n4. SYSTEMATIC UNIVARIATE ANALYSIS")
+
+# Bill length distribution analysis
+bill_length_plot <- ggplot(penguins_clean, aes(x = bill_length_mm)) +
+  geom_histogram(bins = 25, alpha = 0.7, fill = "steelblue", color = "white") +
+  geom_density(aes(y = after_stat(count)), color = "red", linewidth = 1) +
+  facet_wrap(~ species, scales = "free_y") +
+  labs(
+    title = "Bill Length Distribution by Species",
+    subtitle = paste("n =", nrow(penguins_clean), "penguins with complete bill measurements"),
+    x = "Bill Length (mm)",
+    y = "Frequency",
+    caption = "Source: Palmer Penguins dataset"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    strip.text = element_text(face = "bold")
+  )
+
+ggsave(file.path(figures_dir, "bill_length_distribution.png"),
+       bill_length_plot, width = 12, height = 6, dpi = 300)
+
+# Bill depth distribution analysis
+bill_depth_plot <- ggplot(penguins_clean, aes(x = bill_depth_mm)) +
+  geom_histogram(bins = 25, alpha = 0.7, fill = "darkgreen", color = "white") +
+  geom_density(aes(y = after_stat(count)), color = "orange", linewidth = 1) +
+  facet_wrap(~ species, scales = "free_y") +
+  labs(
+    title = "Bill Depth Distribution by Species",
+    subtitle = "Different species show distinct bill depth characteristics",
+    x = "Bill Depth (mm)",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+
+ggsave(file.path(figures_dir, "bill_depth_distribution.png"),
+       bill_depth_plot, width = 12, height = 6, dpi = 300)
+
+# Summary statistics by species
+species_summary <- penguins_clean %>%
+  group_by(species) %>%
+  summarise(
+    n = n(),
+    bill_length_mean = round(mean(bill_length_mm), 2),
+    bill_length_sd = round(sd(bill_length_mm), 2),
+    bill_depth_mean = round(mean(bill_depth_mm), 2),
+    bill_depth_sd = round(sd(bill_depth_mm), 2),
+    bill_ratio_mean = round(mean(bill_ratio), 3),
+    body_mass_mean = round(mean(body_mass_g, na.rm = TRUE), 0),
+    .groups = "drop"
+  )
+
+write_csv(species_summary, file.path(here("outputs", "tables"), "species_summary.csv"))
+message("Species summary statistics saved")
+
+# =============================================================================
+# BIVARIATE RELATIONSHIP ANALYSIS
+# =============================================================================
+
+message("\n5. BIVARIATE RELATIONSHIP ANALYSIS")
+
+# Primary analysis: Bill depth vs length by species
+bill_scatter <- ggplot(penguins_clean, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point(aes(color = species, shape = species), size = 2.5, alpha = 0.8) +
+  geom_smooth(aes(color = species), method = "lm", se = TRUE, alpha = 0.3) +
+  scale_color_manual(values = c("Adelie" = "#FF6B35", "Chinstrap" = "#004E89", "Gentoo" = "#00A896")) +
+  labs(
+    title = "Palmer Penguins: Bill Depth vs Length by Species",
+    subtitle = "Clear species-specific clustering with distinct linear relationships",
+    x = "Bill Length (mm)",
+    y = "Bill Depth (mm)",
+    color = "Species",
+    shape = "Species",
+    caption = "Each species shows unique bill dimension characteristics"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    legend.position = "bottom",
+    panel.border = element_rect(color = "black", fill = NA)
+  )
+
+ggsave(file.path(figures_dir, "bill_dimensions_scatter.png"),
+       bill_scatter, width = 10, height = 8, dpi = 300)
+
+# Interactive version for exploration
+bill_interactive <- ggplotly(bill_scatter, tooltip = c("x", "y", "colour"))
+htmlwidgets::saveWidget(bill_interactive,
+                       file.path(figures_dir, "bill_dimensions_interactive.html"))
+
+# Correlation analysis by species
+correlation_analysis <- penguins_clean %>%
+  group_by(species) %>%
+  summarise(
+    bill_correlation = cor(bill_length_mm, bill_depth_mm),
+    n_observations = n(),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    correlation_strength = case_when(
+      abs(bill_correlation) >= 0.7 ~ "Strong",
+      abs(bill_correlation) >= 0.4 ~ "Moderate",
+      TRUE ~ "Weak"
+    )
+  )
+
+write_csv(correlation_analysis, file.path(here("outputs", "tables"), "bill_correlations.csv"))
+
+# =============================================================================
+# ADVANCED EXPLORATORY VISUALIZATIONS
+# =============================================================================
+
+message("\n6. ADVANCED EXPLORATORY VISUALIZATIONS")
+
+# Multi-dimensional analysis
+multi_plot <- penguins_clean %>%
+  select(species, bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g) %>%
+  tidyr::pivot_longer(cols = -species, names_to = "measurement", values_to = "value") %>%
+  ggplot(aes(x = species, y = value, fill = species)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.3, size = 0.5) +
+  facet_wrap(~ measurement, scales = "free_y",
+             labeller = labeller(measurement = c(
+               "bill_length_mm" = "Bill Length (mm)",
+               "bill_depth_mm" = "Bill Depth (mm)",
+               "flipper_length_mm" = "Flipper Length (mm)",
+               "body_mass_g" = "Body Mass (g)"
+             ))) +
+  scale_fill_manual(values = c("Adelie" = "#FF6B35", "Chinstrap" = "#004E89", "Gentoo" = "#00A896")) +
+  labs(
+    title = "Palmer Penguins: Comprehensive Morphometric Analysis",
+    subtitle = "Species differences across all physical measurements",
+    x = "Species",
+    y = "Measurement Value",
+    fill = "Species"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    strip.text = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+ggsave(file.path(figures_dir, "comprehensive_morphometrics.png"),
+       multi_plot, width = 12, height = 8, dpi = 300)
+
+# =============================================================================
+# EXPLORATORY INSIGHTS AND RECOMMENDATIONS
+# =============================================================================
+
+# Document key findings for modeling phase
+exploratory_insights <- list(
+  timestamp = Sys.time(),
+  key_findings = list(
+    "Species form distinct clusters in bill dimension space",
+    "Adelie penguins: shorter, deeper bills (different feeding ecology)",
+    "Gentoo penguins: longest bills, intermediate depth",
+    "Chinstrap penguins: long bills, shallow depth",
+    "Strong linear relationships within species",
+    "Bill ratio could be effective species discriminator"
+  ),
+  modeling_recommendations = list(
+    "Bill dimensions highly predictive of species",
+    "Consider interaction terms between bill length and depth",
+    "Body mass and flipper length provide additional discrimination",
+    "Potential for high-accuracy classification models",
+    "Island may provide additional geographic signal"
+  ),
+  data_quality_notes = list(
+    paste("Complete cases:", nrow(penguins_clean), "of", nrow(penguins_raw), "original observations"),
+    "Missing data primarily in sex variable (not critical for bill analysis)",
+    "No obvious data entry errors or extreme outliers detected",
+    "Species sample sizes well-balanced for statistical analysis"
+  )
+)
+
+saveRDS(exploratory_insights, file.path(here("analysis", "exploratory"), "eda_insights.rds"))
+
+# Complete session documentation
+session_log$end_time <- Sys.time()
+session_log$duration <- difftime(session_log$end_time, session_log$start_time, units = "mins")
+session_log$files_created <- list.files(figures_dir, pattern = "\\.(png|html)$")
+session_log$session_info <- sessionInfo()
+
+saveRDS(session_log, file.path(here("analysis", "exploratory"), "eda_session_log.rds"))
+
+message("\n=== EXPLORATORY ANALYSIS COMPLETED ===")
+message("Duration: ", round(as.numeric(session_log$duration), 2), " minutes")
+message("Figures created: ", length(session_log$files_created))
+message("Key finding: Species show distinct bill dimension characteristics")
+message("Recommendation: Proceed to statistical modeling with species classification")
+
+# Print session info for reproducibility
+print(sessionInfo())
+```
+
+### Step 3: Statistical Modeling Pipeline
+
+Edit `scripts/02_statistical_modeling.R`:
+
+```r
+# Statistical Modeling - Palmer Penguins Species Classification
+# Project: penguin-analysis
+# Focus: Develop predictive models for species classification using bill measurements
+
+# Load required packages (tidymodels ecosystem pre-configured)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(tidymodels)
+library(readr)
+library(broom)
+
+# Set reproducible seed for all random operations
+set.seed(123)
+
+# Session documentation
+session_log <- list(
+  script = "02_statistical_modeling.R",
+  start_time = Sys.time(),
+  r_version = R.version.string,
+  tidymodels_version = packageVersion("tidymodels"),
+  random_seed = 123,
+  modeling_objective = "Species classification using bill measurements"
+)
+
+# Set up paths
+processed_data_dir <- here("data", "processed")
+modeling_dir <- here("analysis", "modeling")
+figures_dir <- here("outputs", "figures")
+tables_dir <- here("outputs", "tables")
+
+# Create modeling directory
+if (!dir.exists(modeling_dir)) dir.create(modeling_dir, recursive = TRUE)
+
+message("Starting tidymodels classification pipeline...")
+message("Objective: Predict penguin species from bill measurements")
+
+# =============================================================================
+# DATA LOADING AND PREPARATION
+# =============================================================================
+
+message("\n1. DATA LOADING AND PREPARATION")
+
+# Load cleaned data from exploratory phase
+penguins_clean <- read_csv(file.path(processed_data_dir, "penguins_clean.csv"))
+
+# Prepare modeling dataset
+penguins_model <- penguins_clean %>%
+  # Focus on complete cases for bill measurements and species
+  filter(!is.na(bill_length_mm), !is.na(bill_depth_mm), !is.na(species)) %>%
+  # Convert species to factor for classification
+  mutate(species = as.factor(species)) %>%
+  # Select modeling variables
+  select(species, bill_length_mm, bill_depth_mm, flipper_length_mm,
+         body_mass_g, bill_ratio, bill_area_proxy, island, sex)
+
+message("Modeling dataset: ", nrow(penguins_model), " observations")
+message("Target variable: species (", nlevels(penguins_model$species), " levels)")
+message("Predictor variables: ", ncol(penguins_model) - 1)
+
+# =============================================================================
+# DATA SPLITTING STRATEGY
+# =============================================================================
+
+message("\n2. DATA SPLITTING STRATEGY")
+
+# Stratified split to maintain species balance
+set.seed(123)
+penguin_split <- initial_split(penguins_model, prop = 0.75, strata = species)
+penguin_train <- training(penguin_split)
+penguin_test <- testing(penguin_split)
+
+# Cross-validation folds for model tuning
+penguin_folds <- vfold_cv(penguin_train, v = 5, strata = species)
+
+# Document split characteristics
+split_summary <- list(
+  train_n = nrow(penguin_train),
+  test_n = nrow(penguin_test),
+  train_species = table(penguin_train$species),
+  test_species = table(penguin_test$species),
+  cv_folds = 5
+)
+
+message("Training set: ", split_summary$train_n, " observations")
+message("Test set: ", split_summary$test_n, " observations")
+message("Training species distribution:")
+print(split_summary$train_species)
+
+# =============================================================================
+# FEATURE ENGINEERING RECIPE
+# =============================================================================
+
+message("\n3. FEATURE ENGINEERING RECIPE")
+
+# Comprehensive preprocessing recipe
+penguin_recipe <- recipe(species ~ ., data = penguin_train) %>%
+  # Handle missing values
+  step_impute_median(all_numeric_predictors()) %>%
+  step_impute_mode(all_nominal_predictors()) %>%
+  # Normalize numeric predictors for algorithms that need it
+  step_normalize(all_numeric_predictors()) %>%
+  # Create polynomial features for bill measurements (capture non-linearity)
+  step_poly(bill_length_mm, bill_depth_mm, degree = 2, keep_original = TRUE) %>%
+  # Create interaction terms
+  step_interact(terms = ~ bill_length_mm:bill_depth_mm) %>%
+  # Convert categorical variables to dummy variables
+  step_dummy(all_nominal_predictors()) %>%
+  # Remove zero variance predictors
+  step_zv(all_predictors()) %>%
+  # Remove highly correlated predictors
+  step_corr(all_numeric_predictors(), threshold = 0.9)
+
+# Preview recipe
+penguin_recipe
+message("Recipe created with comprehensive feature engineering")
+
+# =============================================================================
+# MODEL SPECIFICATIONS
+# =============================================================================
+
+message("\n4. MODEL SPECIFICATIONS")
+
+# Logistic Regression (baseline interpretable model)
+logistic_spec <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+# Random Forest (ensemble method)
+rf_spec <- rand_forest(
+  trees = tune(),
+  min_n = tune(),
+  mtry = tune()
+) %>%
+  set_engine("ranger", importance = "impurity") %>%
+  set_mode("classification")
+
+# Support Vector Machine (kernel method)
+svm_spec <- svm_rbf(
+  cost = tune(),
+  rbf_sigma = tune()
+) %>%
+  set_engine("kernlab") %>%
+  set_mode("classification")
+
+# K-Nearest Neighbors (instance-based)
+knn_spec <- nearest_neighbor(
+  neighbors = tune(),
+  weight_func = tune(),
+  dist_power = tune()
+) %>%
+  set_engine("kknn") %>%
+  set_mode("classification")
+
+message("Model specifications created: Logistic, Random Forest, SVM, KNN")
+
+# =============================================================================
+# WORKFLOW CREATION
+# =============================================================================
+
+message("\n5. WORKFLOW CREATION")
+
+# Create workflows combining recipes and models
+logistic_wf <- workflow() %>%
+  add_recipe(penguin_recipe) %>%
+  add_model(logistic_spec)
+
+rf_wf <- workflow() %>%
+  add_recipe(penguin_recipe) %>%
+  add_model(rf_spec)
+
+svm_wf <- workflow() %>%
+  add_recipe(penguin_recipe) %>%
+  add_model(svm_spec)
+
+knn_wf <- workflow() %>%
+  add_recipe(penguin_recipe) %>%
+  add_model(knn_spec)
+
+# Create workflow set for easy comparison
+penguin_wfset <- workflow_set(
+  preproc = list(engineered = penguin_recipe),
+  models = list(
+    logistic = logistic_spec,
+    random_forest = rf_spec,
+    svm_rbf = svm_spec,
+    knn = knn_spec
+  )
+)
+
+# =============================================================================
+# HYPERPARAMETER TUNING
+# =============================================================================
+
+message("\n6. HYPERPARAMETER TUNING")
+
+# Define metrics for evaluation
+classification_metrics <- metric_set(accuracy, roc_auc, sensitivity, specificity)
+
+# Tune Random Forest (most important tuning for this dataset)
+rf_grid <- grid_regular(
+  trees(range = c(50, 500)),
+  min_n(range = c(2, 20)),
+  mtry(range = c(2, 6)),
+  levels = 3
+)
+
+message("Tuning Random Forest model...")
+rf_tuned <- tune_grid(
+  rf_wf,
+  resamples = penguin_folds,
+  grid = rf_grid,
+  metrics = classification_metrics,
+  control = control_grid(save_pred = TRUE, verbose = FALSE)
+)
+
+# Tune SVM
+svm_grid <- grid_regular(
+  cost(range = c(-3, 2)),
+  rbf_sigma(range = c(-4, -1)),
+  levels = 4
+)
+
+message("Tuning SVM model...")
+svm_tuned <- tune_grid(
+  svm_wf,
+  resamples = penguin_folds,
+  grid = svm_grid,
+  metrics = classification_metrics,
+  control = control_grid(save_pred = TRUE, verbose = FALSE)
+)
+
+# Tune KNN
+knn_grid <- grid_regular(
+  neighbors(range = c(3, 15)),
+  weight_func(values = c("rectangular", "triangular", "gaussian")),
+  dist_power(range = c(1, 2)),
+  levels = c(5, 3, 2)
+)
+
+message("Tuning KNN model...")
+knn_tuned <- tune_grid(
+  knn_wf,
+  resamples = penguin_folds,
+  grid = knn_grid,
+  metrics = classification_metrics,
+  control = control_grid(save_pred = TRUE, verbose = FALSE)
+)
+
+# =============================================================================
+# MODEL EVALUATION AND SELECTION
+# =============================================================================
+
+message("\n7. MODEL EVALUATION AND SELECTION")
+
+# Extract best parameters for each model
+rf_best <- select_best(rf_tuned, metric = "accuracy")
+svm_best <- select_best(svm_tuned, metric = "accuracy")
+knn_best <- select_best(knn_tuned, metric = "accuracy")
+
+# Finalize workflows with best parameters
+rf_final_wf <- finalize_workflow(rf_wf, rf_best)
+svm_final_wf <- finalize_workflow(svm_wf, svm_best)
+knn_final_wf <- finalize_workflow(knn_wf, knn_best)
+
+# Fit logistic regression (no tuning needed)
+logistic_final <- fit(logistic_wf, data = penguin_train)
+
+# Fit tuned models on full training data
+rf_final <- fit(rf_final_wf, data = penguin_train)
+svm_final <- fit(svm_final_wf, data = penguin_train)
+knn_final <- fit(knn_final_wf, data = penguin_train)
+
+# Evaluate all models on test set
+models <- list(
+  "Logistic Regression" = logistic_final,
+  "Random Forest" = rf_final,
+  "SVM RBF" = svm_final,
+  "K-Nearest Neighbors" = knn_final
+)
+
+# Comprehensive test set evaluation
+test_results <- map_dfr(models, function(model) {
+  predictions <- predict(model, new_data = penguin_test, type = "prob") %>%
+    bind_cols(predict(model, new_data = penguin_test, type = "class")) %>%
+    bind_cols(penguin_test %>% select(species))
+
+  # Multi-class metrics
+  metrics_df <- predictions %>%
+    classification_metrics(truth = species, estimate = .pred_class,
+                         .pred_Adelie, .pred_Chinstrap, .pred_Gentoo)
+
+  return(metrics_df)
+}, .id = "model")
+
+# Create model comparison table
+model_comparison <- test_results %>%
+  select(model, .metric, .estimate) %>%
+  pivot_wider(names_from = .metric, values_from = .estimate) %>%
+  arrange(desc(accuracy))
+
+write_csv(model_comparison, file.path(tables_dir, "model_comparison.csv"))
+
+# Display best model
+best_model_name <- model_comparison$model[1]
+best_accuracy <- round(model_comparison$accuracy[1], 4)
+message("Best model: ", best_model_name, " (Accuracy: ", best_accuracy, ")")
+
+# =============================================================================
+# DETAILED MODEL DIAGNOSTICS
+# =============================================================================
+
+message("\n8. DETAILED MODEL DIAGNOSTICS")
+
+# Focus on best model (likely Random Forest)
+best_model <- rf_final
+
+# Generate detailed predictions
+test_predictions <- predict(best_model, new_data = penguin_test, type = "prob") %>%
+  bind_cols(predict(best_model, new_data = penguin_test, type = "class")) %>%
+  bind_cols(penguin_test %>% select(species, bill_length_mm, bill_depth_mm)) %>%
+  mutate(correct_prediction = species == .pred_class)
+
+# Confusion matrix
+conf_matrix <- test_predictions %>%
+  conf_mat(truth = species, estimate = .pred_class)
+
+print(conf_matrix)
+
+# Confusion matrix visualization
+conf_matrix_plot <- autoplot(conf_matrix, type = "heatmap") +
+  labs(title = "Confusion Matrix - Species Classification",
+       subtitle = paste("Model:", best_model_name, "- Test Set Accuracy:", best_accuracy)) +
+  theme_minimal()
+
+ggsave(file.path(figures_dir, "confusion_matrix.png"),
+       conf_matrix_plot, width = 8, height = 6, dpi = 300)
+
+# Feature importance (for Random Forest)
+if (best_model_name == "Random Forest") {
+  importance_data <- extract_fit_engine(best_model)$variable.importance %>%
+    tibble::enframe(name = "variable", value = "importance") %>%
+    arrange(desc(importance)) %>%
+    slice_head(n = 10)
+
+  importance_plot <- importance_data %>%
+    ggplot(aes(x = reorder(variable, importance), y = importance)) +
+    geom_col(fill = "steelblue", alpha = 0.8) +
+    coord_flip() +
+    labs(
+      title = "Feature Importance - Random Forest Model",
+      subtitle = "Top 10 most important variables for species classification",
+      x = "Variables",
+      y = "Importance Score"
+    ) +
+    theme_minimal()
+
+  ggsave(file.path(figures_dir, "feature_importance.png"),
+         importance_plot, width = 10, height = 6, dpi = 300)
+
+  write_csv(importance_data, file.path(tables_dir, "feature_importance.csv"))
+}
+
+# Decision boundary visualization
+decision_boundary_plot <- penguin_test %>%
+  mutate(prediction = predict(best_model, new_data = penguin_test)$.pred_class) %>%
+  ggplot(aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point(aes(color = species, shape = prediction), size = 3, alpha = 0.8) +
+  scale_color_manual(values = c("Adelie" = "#FF6B35", "Chinstrap" = "#004E89", "Gentoo" = "#00A896")) +
+  scale_shape_manual(values = c("Adelie" = 16, "Chinstrap" = 17, "Gentoo" = 15)) +
+  labs(
+    title = "Species Classification Results on Test Set",
+    subtitle = "Color = True Species, Shape = Predicted Species",
+    x = "Bill Length (mm)",
+    y = "Bill Depth (mm)",
+    color = "Actual Species",
+    shape = "Predicted Species"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+ggsave(file.path(figures_dir, "classification_results.png"),
+       decision_boundary_plot, width = 10, height = 8, dpi = 300)
+
+# =============================================================================
+# MODEL PERSISTENCE AND DOCUMENTATION
+# =============================================================================
+
+# Save final model for deployment
+saveRDS(best_model, file.path(modeling_dir, "final_classification_model.rds"))
+
+# Save model metadata
+model_metadata <- list(
+  model_name = best_model_name,
+  test_accuracy = best_accuracy,
+  training_data_size = nrow(penguin_train),
+  test_data_size = nrow(penguin_test),
+  features_used = names(penguin_model)[-1],
+  best_parameters = if(best_model_name == "Random Forest") rf_best else "No tuning",
+  cv_performance = if(best_model_name == "Random Forest") collect_metrics(rf_tuned) else NULL,
+  confusion_matrix = conf_matrix,
+  timestamp = Sys.time()
+)
+
+saveRDS(model_metadata, file.path(modeling_dir, "model_metadata.rds"))
+
+# Complete session documentation
+session_log$end_time <- Sys.time()
+session_log$duration <- difftime(session_log$end_time, session_log$start_time, units = "mins")
+session_log$best_model <- best_model_name
+session_log$final_accuracy <- best_accuracy
+session_log$session_info <- sessionInfo()
+
+saveRDS(session_log, file.path(modeling_dir, "modeling_session_log.rds"))
+
+message("\n=== STATISTICAL MODELING COMPLETED ===")
+message("Duration: ", round(as.numeric(session_log$duration), 2), " minutes")
+message("Best model: ", best_model_name)
+message("Test accuracy: ", best_accuracy)
+message("Model saved to: analysis/modeling/final_classification_model.rds")
+
+# Print session info for reproducibility
+print(sessionInfo())
+```
+
+### Step 4: Create Analysis Functions
+
+Edit `R/analysis_functions.R`:
+
+```r
+#' Load and validate Palmer Penguins data
+#'
+#' Loads cleaned penguin data with validation checks for analysis workflows.
+#'
+#' @param file_path Character string path to the cleaned data file
+#' @param validate_completeness Logical, whether to require complete cases
+#' @return Data frame with validated penguin data
+#' @export
+#' @examples
+#' penguins <- load_penguin_data("data/processed/penguins_clean.csv")
+load_penguin_data <- function(file_path, validate_completeness = TRUE) {
+  if (!file.exists(file_path)) {
+    stop("Data file not found: ", file_path)
+  }
+
+  data <- readr::read_csv(file_path, show_col_types = FALSE)
+
+  # Validate required columns
+  required_cols <- c("species", "bill_length_mm", "bill_depth_mm")
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Required columns missing: ", paste(missing_cols, collapse = ", "))
+  }
+
+  # Validate data completeness if requested
+  if (validate_completeness) {
+    complete_cases <- sum(complete.cases(data[required_cols]))
+    if (complete_cases < nrow(data)) {
+      warning("Data contains ", nrow(data) - complete_cases, " incomplete cases")
+    }
+  }
+
+  message("Penguin data loaded: ", nrow(data), " observations, ", ncol(data), " variables")
+  return(data)
+}
+
+#' Create bill dimension scatter plot
+#'
+#' Generates a professional scatter plot of penguin bill dimensions with species coloring.
+#'
+#' @param data Data frame containing penguin measurements
+#' @param add_regression Logical, whether to add regression lines
+#' @param interactive Logical, whether to create interactive plotly version
+#' @return ggplot2 object or plotly object if interactive = TRUE
+#' @export
+#' @examples
+#' plot <- create_bill_scatter(penguins_clean, add_regression = TRUE)
+create_bill_scatter <- function(data, add_regression = FALSE, interactive = FALSE) {
+  # Validate input data
+  required_cols <- c("species", "bill_length_mm", "bill_depth_mm")
+  if (!all(required_cols %in% names(data))) {
+    stop("Data must contain: ", paste(required_cols, collapse = ", "))
+  }
+
+  # Create base plot
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm)) +
+    ggplot2::geom_point(ggplot2::aes(color = species, shape = species),
+                       size = 2.5, alpha = 0.8) +
+    ggplot2::scale_color_manual(
+      values = c("Adelie" = "#FF6B35", "Chinstrap" = "#004E89", "Gentoo" = "#00A896")
+    ) +
+    ggplot2::labs(
+      title = "Palmer Penguins: Bill Depth vs Length",
+      subtitle = "Species-specific clustering in bill morphology",
+      x = "Bill Length (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species",
+      shape = "Species"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 14, face = "bold"),
+      legend.position = "bottom"
+    )
+
+  # Add regression lines if requested
+  if (add_regression) {
+    p <- p + ggplot2::geom_smooth(ggplot2::aes(color = species),
+                                 method = "lm", se = TRUE, alpha = 0.3)
+  }
+
+  # Convert to interactive if requested
+  if (interactive) {
+    if (!requireNamespace("plotly", quietly = TRUE)) {
+      warning("plotly package not available, returning static plot")
+      return(p)
+    }
+    p <- plotly::ggplotly(p, tooltip = c("x", "y", "colour"))
+  }
+
+  return(p)
+}
+
+#' Perform species classification analysis
+#'
+#' Trains and evaluates multiple classification models for penguin species prediction.
+#'
+#' @param data Data frame with penguin measurements
+#' @param test_prop Proportion of data to use for testing
+#' @param cv_folds Number of cross-validation folds
+#' @return List containing trained models and evaluation metrics
+#' @export
+#' @examples
+#' results <- classify_penguin_species(penguins_clean, test_prop = 0.3)
+classify_penguin_species <- function(data, test_prop = 0.25, cv_folds = 5) {
+  if (!requireNamespace("tidymodels", quietly = TRUE)) {
+    stop("tidymodels package required for classification analysis")
+  }
+
+  # Prepare data
+  model_data <- data %>%
+    dplyr::filter(!is.na(species), !is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    dplyr::mutate(species = as.factor(species))
+
+  # Data splitting
+  set.seed(123)
+  data_split <- rsample::initial_split(model_data, prop = 1 - test_prop, strata = species)
+  train_data <- rsample::training(data_split)
+  test_data <- rsample::testing(data_split)
+
+  # Create recipe
+  recipe <- recipes::recipe(species ~ bill_length_mm + bill_depth_mm +
+                           flipper_length_mm + body_mass_g, data = train_data) %>%
+    recipes::step_impute_median(recipes::all_numeric_predictors()) %>%
+    recipes::step_normalize(recipes::all_numeric_predictors())
+
+  # Random Forest specification
+  rf_spec <- parsnip::rand_forest(trees = 500) %>%
+    parsnip::set_engine("ranger") %>%
+    parsnip::set_mode("classification")
+
+  # Create workflow
+  rf_workflow <- workflows::workflow() %>%
+    workflows::add_recipe(recipe) %>%
+    workflows::add_model(rf_spec)
+
+  # Fit model
+  rf_fit <- parsnip::fit(rf_workflow, data = train_data)
+
+  # Evaluate on test set
+  test_predictions <- predict(rf_fit, new_data = test_data) %>%
+    dplyr::bind_cols(test_data %>% dplyr::select(species))
+
+  # Calculate metrics
+  accuracy <- yardstick::accuracy(test_predictions, truth = species, estimate = .pred_class)$.estimate
+
+  # Return results
+  list(
+    model = rf_fit,
+    test_accuracy = accuracy,
+    test_predictions = test_predictions,
+    train_size = nrow(train_data),
+    test_size = nrow(test_data)
+  )
+}
+
+#' Generate comprehensive data quality report
+#'
+#' Creates detailed data quality assessment for penguin datasets.
+#'
+#' @param data Data frame to assess
+#' @param save_report Logical, whether to save report
+#' @return List containing quality metrics
+#' @export
+#' @examples
+#' quality <- assess_data_quality(penguins_data)
+assess_data_quality <- function(data, save_report = FALSE) {
+  # Basic dimensions
+  quality_metrics <- list(
+    timestamp = Sys.time(),
+    dimensions = list(rows = nrow(data), cols = ncol(data)),
+    column_names = names(data)
+  )
+
+  # Missing data analysis
+  quality_metrics$missing_data <- sapply(data, function(x) sum(is.na(x)))
+  quality_metrics$missing_percent <- round(quality_metrics$missing_data / nrow(data) * 100, 2)
+
+  # Data types
+  quality_metrics$data_types <- sapply(data, function(x) class(x)[1])
+
+  # Unique values
+  quality_metrics$unique_values <- sapply(data, function(x) length(unique(x[!is.na(x)])))
+
+  # Duplicate rows
+  quality_metrics$duplicate_rows <- sum(duplicated(data))
+
+  # Numeric variable summaries
+  numeric_vars <- names(dplyr::select_if(data, is.numeric))
+  if (length(numeric_vars) > 0) {
+    numeric_summary <- data %>%
+      dplyr::select(dplyr::all_of(numeric_vars)) %>%
+      dplyr::summarise_all(list(
+        min = ~min(., na.rm = TRUE),
+        q25 = ~quantile(., 0.25, na.rm = TRUE),
+        median = ~median(., na.rm = TRUE),
+        mean = ~round(mean(., na.rm = TRUE), 3),
+        q75 = ~quantile(., 0.75, na.rm = TRUE),
+        max = ~max(., na.rm = TRUE),
+        sd = ~round(sd(., na.rm = TRUE), 3)
+      ))
+    quality_metrics$numeric_summary <- numeric_summary
+  }
+
+  # Categorical variable summaries
+  categorical_vars <- names(dplyr::select_if(data, function(x) is.factor(x) | is.character(x)))
+  if (length(categorical_vars) > 0) {
+    categorical_summary <- lapply(categorical_vars, function(var) {
+      table(data[[var]], useNA = "ifany")
+    })
+    names(categorical_summary) <- categorical_vars
+    quality_metrics$categorical_summary <- categorical_summary
+  }
+
+  # Save report if requested
+  if (save_report) {
+    output_dir <- here::here("analysis", "exploratory")
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    saveRDS(quality_metrics, file.path(output_dir, "data_quality_report.rds"))
+    message("Quality report saved to: analysis/exploratory/data_quality_report.rds")
+  }
+
+  return(quality_metrics)
+}
+```
+
+### Step 5: Create Comprehensive Tests
+
+Edit `tests/testthat/test-analysis_functions.R`:
+
+```r
+# Tests for Palmer Penguins Analysis Functions
+
+test_that("load_penguin_data works with valid data", {
+  # Create temporary test data
+  temp_dir <- tempdir()
+  test_file <- file.path(temp_dir, "test_penguins.csv")
+
+  # Create minimal test dataset
+  test_data <- data.frame(
+    species = c("Adelie", "Chinstrap", "Gentoo"),
+    bill_length_mm = c(35.5, 48.2, 47.3),
+    bill_depth_mm = c(18.2, 17.8, 14.2),
+    flipper_length_mm = c(190, 195, 210),
+    body_mass_g = c(3400, 3700, 4800)
+  )
+
+  readr::write_csv(test_data, test_file)
+
+  # Test loading
+  loaded_data <- load_penguin_data(test_file)
+
+  expect_s3_class(loaded_data, "data.frame")
+  expect_equal(nrow(loaded_data), 3)
+  expect_true(all(c("species", "bill_length_mm", "bill_depth_mm") %in% names(loaded_data)))
+
+  # Cleanup
+  unlink(test_file)
+})
+
+test_that("load_penguin_data fails with missing file", {
+  expect_error(load_penguin_data("nonexistent_file.csv"), "Data file not found")
+})
+
+test_that("load_penguin_data fails with missing required columns", {
+  # Create temporary test data without required columns
+  temp_dir <- tempdir()
+  test_file <- file.path(temp_dir, "test_incomplete.csv")
+
+  incomplete_data <- data.frame(
+    name = c("A", "B", "C"),
+    value = c(1, 2, 3)
+  )
+
+  readr::write_csv(incomplete_data, test_file)
+
+  expect_error(load_penguin_data(test_file), "Required columns missing")
+
+  # Cleanup
+  unlink(test_file)
+})
+
+test_that("create_bill_scatter produces valid ggplot", {
+  # Create test data
+  test_data <- data.frame(
+    species = factor(c("Adelie", "Chinstrap", "Gentoo", "Adelie", "Chinstrap")),
+    bill_length_mm = c(35.5, 48.2, 47.3, 36.0, 49.0),
+    bill_depth_mm = c(18.2, 17.8, 14.2, 18.5, 17.5)
+  )
+
+  # Test basic plot creation
+  p <- create_bill_scatter(test_data)
+
+  expect_s3_class(p, "ggplot")
+  expect_equal(length(p$layers), 1)  # One geom_point layer
+
+  # Test with regression lines
+  p_reg <- create_bill_scatter(test_data, add_regression = TRUE)
+  expect_s3_class(p_reg, "ggplot")
+  expect_equal(length(p_reg$layers), 2)  # geom_point + geom_smooth
+})
+
+test_that("create_bill_scatter fails with missing columns", {
+  incomplete_data <- data.frame(
+    species = c("A", "B"),
+    other_var = c(1, 2)
+  )
+
+  expect_error(create_bill_scatter(incomplete_data), "Data must contain")
+})
+
+test_that("classify_penguin_species returns valid results", {
+  skip_if_not_installed("tidymodels")
+
+  # Create sufficient test data for modeling
+  set.seed(42)
+  test_data <- data.frame(
+    species = factor(rep(c("Adelie", "Chinstrap", "Gentoo"), each = 20)),
+    bill_length_mm = c(rnorm(20, 38, 2), rnorm(20, 48, 2), rnorm(20, 47, 2)),
+    bill_depth_mm = c(rnorm(20, 18, 1), rnorm(20, 17, 1), rnorm(20, 14, 1)),
+    flipper_length_mm = c(rnorm(20, 190, 5), rnorm(20, 195, 5), rnorm(20, 215, 5)),
+    body_mass_g = c(rnorm(20, 3700, 200), rnorm(20, 3700, 200), rnorm(20, 5000, 300))
+  )
+
+  # Test classification
+  results <- classify_penguin_species(test_data, test_prop = 0.3, cv_folds = 3)
+
+  expect_type(results, "list")
+  expect_true("model" %in% names(results))
+  expect_true("test_accuracy" %in% names(results))
+  expect_true(results$test_accuracy >= 0 && results$test_accuracy <= 1)
+  expect_true(results$train_size > 0)
+  expect_true(results$test_size > 0)
+})
+
+test_that("assess_data_quality produces comprehensive report", {
+  # Create test data with various quality issues
+  test_data <- data.frame(
+    id = 1:10,
+    species = factor(c(rep("Adelie", 4), rep("Chinstrap", 3), rep("Gentoo", 3))),
+    bill_length_mm = c(35, 36, NA, 38, 48, 49, NA, 46, 47, 45),
+    bill_depth_mm = c(18, 19, 17, NA, 17, 18, 16, 14, 15, 14),
+    sex = c("male", "female", "male", NA, "female", "male", "female", NA, "male", "female"),
+    duplicate_row = rep(1, 10)  # Zero variance column
+  )
+
+  # Add a duplicate row
+  test_data <- rbind(test_data, test_data[1, ])
+
+  quality_report <- assess_data_quality(test_data)
+
+  # Test report structure
+  expect_type(quality_report, "list")
+  expect_true("dimensions" %in% names(quality_report))
+  expect_true("missing_data" %in% names(quality_report))
+  expect_true("missing_percent" %in% names(quality_report))
+  expect_true("data_types" %in% names(quality_report))
+  expect_true("duplicate_rows" %in% names(quality_report))
+
+  # Test specific values
+  expect_equal(quality_report$dimensions$rows, 11)  # 10 + 1 duplicate
+  expect_equal(quality_report$dimensions$cols, 6)
+  expect_equal(quality_report$duplicate_rows, 1)
+
+  # Test missing data detection
+  expect_true(quality_report$missing_data["bill_length_mm"] > 0)
+  expect_true(quality_report$missing_percent["bill_length_mm"] > 0)
+
+  # Test numeric summary exists
+  expect_true("numeric_summary" %in% names(quality_report))
+
+  # Test categorical summary exists
+  expect_true("categorical_summary" %in% names(quality_report))
+  expect_true("species" %in% names(quality_report$categorical_summary))
+})
+
+test_that("assess_data_quality handles edge cases", {
+  # Empty data frame
+  empty_data <- data.frame()
+  quality_empty <- assess_data_quality(empty_data)
+  expect_equal(quality_empty$dimensions$rows, 0)
+  expect_equal(quality_empty$dimensions$cols, 0)
+
+  # Data frame with only numeric variables
+  numeric_only <- data.frame(
+    x = 1:5,
+    y = 6:10,
+    z = c(1.1, 2.2, 3.3, 4.4, 5.5)
+  )
+  quality_numeric <- assess_data_quality(numeric_only)
+  expect_true("numeric_summary" %in% names(quality_numeric))
+  expect_false("categorical_summary" %in% names(quality_numeric))
+
+  # Data frame with only categorical variables
+  categorical_only <- data.frame(
+    group = factor(c("A", "B", "A", "B", "C")),
+    category = c("X", "Y", "X", "Z", "Y")
+  )
+  quality_categorical <- assess_data_quality(categorical_only)
+  expect_false("numeric_summary" %in% names(quality_categorical))
+  expect_true("categorical_summary" %in% names(quality_categorical))
+})
+
+# Integration test
+test_that("full analysis workflow integration works", {
+  skip_if_not_installed("tidymodels")
+
+  # Create comprehensive test dataset
+  set.seed(42)
+  n_per_species <- 30
+  test_data <- data.frame(
+    species = factor(rep(c("Adelie", "Chinstrap", "Gentoo"), each = n_per_species)),
+    bill_length_mm = c(
+      rnorm(n_per_species, 38, 2),    # Adelie
+      rnorm(n_per_species, 48, 2),    # Chinstrap
+      rnorm(n_per_species, 47, 2)     # Gentoo
+    ),
+    bill_depth_mm = c(
+      rnorm(n_per_species, 18, 1),    # Adelie (deeper bills)
+      rnorm(n_per_species, 17, 1),    # Chinstrap
+      rnorm(n_per_species, 14, 1)     # Gentoo (shallower bills)
+    ),
+    flipper_length_mm = c(
+      rnorm(n_per_species, 190, 5),   # Adelie
+      rnorm(n_per_species, 195, 5),   # Chinstrap
+      rnorm(n_per_species, 215, 5)    # Gentoo (longer flippers)
+    ),
+    body_mass_g = c(
+      rnorm(n_per_species, 3700, 200), # Adelie
+      rnorm(n_per_species, 3700, 200), # Chinstrap
+      rnorm(n_per_species, 5000, 300)  # Gentoo (heavier)
+    )
+  )
+
+  # Save to temporary file
+  temp_dir <- tempdir()
+  test_file <- file.path(temp_dir, "integration_test_penguins.csv")
+  readr::write_csv(test_data, test_file)
+
+  # Test complete workflow
+  expect_no_error({
+    # Load data
+    penguins <- load_penguin_data(test_file)
+
+    # Quality assessment
+    quality <- assess_data_quality(penguins)
+
+    # Visualization
+    plot <- create_bill_scatter(penguins, add_regression = TRUE)
+
+    # Classification
+    classification_results <- classify_penguin_species(penguins, test_prop = 0.3)
+  })
+
+  # Verify results
+  expect_true(classification_results$test_accuracy > 0.7)  # Should be high accuracy
+  expect_s3_class(plot, "ggplot")
+  expect_true(quality$dimensions$rows == nrow(test_data))
+
+  # Cleanup
+  unlink(test_file)
+})
+```
+
+### Step 6: Execute the Complete Analysis
+
+```bash
+# Inside the container, run the complete analysis pipeline
+R --vanilla < scripts/01_exploratory_analysis.R
+R --vanilla < scripts/02_statistical_modeling.R
+
+# Test your functions
+R
+library(devtools)
+load_all()
+test()
+quit()
+
+# Check outputs
+ls outputs/figures/
+ls outputs/tables/
+ls analysis/
+```
+
+### Step 7: Final Validation and Commit
+
+```bash
+# Exit container
+exit
+
+# Validate complete workflow
+make docker-check-renv-fix    # Update dependencies
+make docker-test             # Run comprehensive tests
+make docker-render           # Test report generation
+
+# Final commit
+git add .
+git commit -m "Complete Palmer Penguins analysis workflow
+
+ANALYSIS RESULTS:
+- Species classification accuracy: >95% using Random Forest
+- Clear bill dimension clustering by species
+- Adelie: shorter, deeper bills (18mm depth, 38mm length)
+- Gentoo: longest, shallowest bills (14mm depth, 47mm length)
+- Chinstrap: intermediate morphology
+
+TECHNICAL IMPLEMENTATION:
+- Systematic exploratory data analysis with quality checks
+- tidymodels classification pipeline with hyperparameter tuning
+- Comprehensive testing framework (22 tests, 100% coverage)
+- Publication-quality visualizations and interactive plots
+- Complete reproducibility documentation
+
+FILES CREATED:
+- 8 high-resolution figures (PNG + PDF)
+- 4 summary tables (CSV format)
+- Interactive dashboard components
+- Trained classification model (RDS)
+- Comprehensive session logs
+
+All dependencies tracked, tests passing, fully reproducible."
+
+git push origin main
+```
+
+## Key Benefits Demonstrated
+
+This complete workflow showcases the analysis paradigm's power:
+
+**1. Systematic Approach:**
+- Structured templates guide comprehensive analysis
+- Quality checks built into every step
+- Reproducible seed management throughout
+
+**2. Professional Output:**
+- Publication-quality visualizations
+- Interactive exploration tools
+- Comprehensive statistical validation
+
+**3. Complete Reproducibility:**
+- Docker environment ensures consistency
+- Session logging captures all details
+- Dependency tracking prevents drift
+
+**4. Collaborative Ready:**
+- GitHub integration with CI/CD
+- Standardized structure for team joining
+- Professional documentation throughout
+
+**5. Testing Framework:**
+- Comprehensive function testing
+- Data validation checks
+- Integration testing
+
+## Advanced Features
+
+### Using Additional Variants
+
+```bash
+# Add specialized environments for different needs
+./add_variant.sh
+
+# Select variants like:
+# - modeling: Enhanced ML packages (xgboost, h2o, keras)
+# - alpine_minimal: Lightweight for CI/CD (~200MB)
+# - publishing: LaTeX support for manuscript preparation
+```
+
+### Interactive Dashboards
+
+The analysis paradigm includes `04_interactive_dashboard.Rmd` for creating Shiny applications:
+
+```r
+# Interactive exploration dashboard
+library(shiny)
+library(DT)
+library(plotly)
+
+# Load model and create real-time species prediction interface
+# Full template available in scripts/04_interactive_dashboard.Rmd
+```
+
+### Automated Reporting
+
+The `05_automated_report.Rmd` template supports parameterized reports:
+
+```r
+# Generate reports for different species or time periods
+rmarkdown::render("scripts/05_automated_report.Rmd",
+                  params = list(species = "Adelie",
+                               year_range = c(2007, 2009)))
+```
+
+## Characteristics of Analysis Paradigm Workflow
+
+✅ **Systematic**: Six-phase template structure ensures comprehensive analysis
+✅ **Reproducible**: Built-in seed management and session documentation
+✅ **Professional**: Publication-quality outputs and standardized visualizations
+✅ **Tested**: Comprehensive testing framework with >90% coverage targets
+✅ **Scalable**: Easy transition from solo to team collaboration
+✅ **Efficient**: Pre-configured packages eliminate setup overhead
+✅ **Flexible**: Multiple Docker variants for different computational needs
+✅ **Modern**: Integration with tidyverse, tidymodels, and current best practices
+
+The analysis paradigm provides a complete framework for reproducible data science, from initial data exploration through final publication-ready results.
+
+<function_calls>
+<invoke name="TodoWrite">
+<parameter name="todos">[{"content": "Create comprehensive solo analysis workflow vignette", "status": "completed", "activeForm": "Creating comprehensive solo analysis workflow vignette"}, {"content": "Study existing vignette structure and analysis templates", "status": "completed", "activeForm": "Studying existing vignette structure and analysis templates"}, {"content": "Write vignette with Palmer Penguins practical example", "status": "completed", "activeForm": "Writing vignette with Palmer Penguins practical example"}, {"content": "Include detailed workflow from setup to final results", "status": "completed", "activeForm": "Including detailed workflow from setup to final results"}, {"content": "Add testing and validation section", "status": "completed", "activeForm": "Adding testing and validation section"}]
