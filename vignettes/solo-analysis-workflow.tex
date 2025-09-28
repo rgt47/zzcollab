@@ -1,0 +1,1778 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Solo Analysis Workflow: Complete Reproducible Data Science with zzcollab},
+  pdfauthor={ZZCOLLAB Team},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Solo Analysis Workflow: Complete Reproducible Data Science with
+zzcollab}
+\author{ZZCOLLAB Team}
+\date{2025-09-28}
+
+\begin{document}
+\maketitle
+
+\section{Solo Analysis Workflow}\label{solo-analysis-workflow}
+
+This vignette demonstrates how to use the zzcollab framework's
+\textbf{analysis paradigm} to conduct reproducible data science research
+as a solo developer. The analysis paradigm is specifically designed for
+data analysis projects, providing specialized templates, packages, and
+workflows for systematic exploratory data analysis, statistical
+modeling, and reproducible reporting.
+
+\subsection{Analysis Paradigm
+Overview}\label{analysis-paradigm-overview}
+
+The \textbf{analysis paradigm} is one of zzcollab's three research
+paradigms, optimized for data science workflows:
+
+\textbf{Key Features:} - \textbf{Systematic Templates}: Six professional
+workflow templates (01-06) for complete analysis pipelines -
+\textbf{Specialized Packages}: Pre-configured with tidyverse,
+tidymodels, targets, plotly, DT, and analysis tools - \textbf{Structured
+Directories}: Organized for \texttt{data/}, \texttt{analysis/},
+\texttt{outputs/}, \texttt{scripts/}, and \texttt{reports/} -
+\textbf{Reproducible Framework}: Built-in seed management, session
+logging, and dependency tracking - \textbf{Publication Ready}:
+Professional visualizations and automated report generation
+
+\textbf{Template Structure:} - \texttt{01\_exploratory\_analysis.R} -
+Systematic EDA with quality assessment -
+\texttt{02\_statistical\_modeling.R} - Modeling pipeline with tidymodels
+- \texttt{03\_model\_validation.R} - Cross-validation and robustness
+testing - \texttt{04\_interactive\_dashboard.Rmd} - Shiny dashboard for
+exploration - \texttt{05\_automated\_report.Rmd} - Parameterized reports
+with multiple formats - \texttt{example\_analysis\_functions.R} -
+Reusable utility functions
+
+\subsection{Initial Setup (One-Time)}\label{initial-setup-one-time}
+
+\subsubsection{1. Install and Configure
+zzcollab}\label{install-and-configure-zzcollab}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Clone and install zzcollab framework}
+\FunctionTok{git}\NormalTok{ clone https://github.com/rgt47/zzcollab.git}
+\BuiltInTok{cd}\NormalTok{ zzcollab }\KeywordTok{\&\&} \ExtensionTok{./install.sh}
+
+\CommentTok{\# Initialize personal configuration}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ init}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set team{-}name }\StringTok{"myname"}        \CommentTok{\# Your Docker Hub account}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set paradigm }\StringTok{"analysis"}       \CommentTok{\# Default to analysis paradigm}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set build{-}mode }\StringTok{"standard"}     \CommentTok{\# Balanced package set}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ set dotfiles{-}dir }\StringTok{"\textasciitilde{}/dotfiles"} \CommentTok{\# Optional: your dotfiles}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{2. Verify Installation}\label{verify-installation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Verify zzcollab is properly installed}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}help}
+\FunctionTok{which}\NormalTok{ zzcollab}
+
+\CommentTok{\# Check configuration}
+\ExtensionTok{zzcollab} \AttributeTok{{-}{-}config}\NormalTok{ list}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Project Creation and
+Setup}\label{project-creation-and-setup}
+
+\subsubsection{Create Analysis Project}\label{create-analysis-project}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Method 1: Quick start with defaults (recommended)}
+\ExtensionTok{zzcollab} \AttributeTok{{-}i} \AttributeTok{{-}p}\NormalTok{ penguin{-}analysis }\AttributeTok{{-}{-}github}    \CommentTok{\# Uses analysis paradigm automatically}
+
+\CommentTok{\# Method 2: Explicit paradigm specification}
+\ExtensionTok{zzcollab} \AttributeTok{{-}i} \AttributeTok{{-}p}\NormalTok{ penguin{-}analysis }\AttributeTok{{-}P}\NormalTok{ analysis }\AttributeTok{{-}{-}github}
+
+\CommentTok{\# Method 3: Custom variant selection for specialized needs}
+\FunctionTok{mkdir}\NormalTok{ penguin{-}analysis }\KeywordTok{\&\&} \BuiltInTok{cd}\NormalTok{ penguin{-}analysis}
+\ExtensionTok{zzcollab} \AttributeTok{{-}i} \AttributeTok{{-}p}\NormalTok{ penguin{-}analysis }\AttributeTok{{-}P}\NormalTok{ analysis}
+\ExtensionTok{./add\_variant.sh}    \CommentTok{\# Select additional variants like modeling or alpine\_minimal}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{What this creates:} - Complete R package structure with
+analysis-optimized DESCRIPTION - Six professional analysis templates
+(01-06) - Docker environment with tidyverse, tidymodels, and analysis
+packages - GitHub repository with analysis-specific CI/CD workflows -
+Systematic directory structure for reproducible data science
+
+\subsubsection{Project Structure
+Created}\label{project-structure-created}
+
+\begin{verbatim}
+penguin-analysis/
+├── data/
+│   ├── raw/              # Original, untouched data
+│   ├── processed/        # Cleaned, analysis-ready data
+│   └── README.md         # Comprehensive data documentation
+├── analysis/
+│   ├── exploratory/      # EDA outputs and diagnostics
+│   ├── modeling/         # Model objects and validation
+│   └── validation/       # Cross-validation and robustness
+├── outputs/
+│   ├── figures/          # Publication-quality plots
+│   └── tables/           # Summary statistics and results
+├── reports/
+│   └── dashboard/        # Interactive reports and dashboards
+├── scripts/
+│   ├── 01_exploratory_analysis.R      # Systematic EDA template
+│   ├── 02_statistical_modeling.R      # tidymodels pipeline
+│   ├── 03_model_validation.R          # Validation framework
+│   ├── 04_interactive_dashboard.Rmd   # Shiny exploration
+│   ├── 05_automated_report.Rmd        # Parameterized reporting
+│   └── example_analysis_functions.R   # Utility functions
+├── R/                    # Package functions for analysis
+├── tests/testthat/       # Comprehensive testing framework
+└── DESCRIPTION           # Analysis-optimized package metadata
+\end{verbatim}
+
+\subsection{Daily Development
+Workflow}\label{daily-development-workflow}
+
+\subsubsection{1. Start Development
+Environment}\label{start-development-environment}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\BuiltInTok{cd}\NormalTok{ penguin{-}analysis}
+
+\CommentTok{\# Launch development environment (choose your interface)}
+\FunctionTok{make}\NormalTok{ docker{-}zsh         }\CommentTok{\# Command{-}line interface (most flexible)}
+\FunctionTok{make}\NormalTok{ docker{-}rstudio     }\CommentTok{\# RStudio Server at localhost:8787}
+\FunctionTok{make}\NormalTok{ docker{-}r           }\CommentTok{\# R console only}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{2. Development Cycle (Inside
+Container)}\label{development-cycle-inside-container}
+
+The analysis paradigm follows a systematic development pattern:
+
+\textbf{Phase 1: Data Import and Exploration}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Inside the Docker container with all packages pre{-}installed}
+\CommentTok{\# Work on exploratory data analysis}
+\ExtensionTok{vim}\NormalTok{ scripts/01\_exploratory\_analysis.R}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Phase 2: Statistical Modeling}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Develop modeling pipeline}
+\ExtensionTok{vim}\NormalTok{ scripts/02\_statistical\_modeling.R}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Phase 3: Validation and Testing}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Create analysis functions and tests}
+\ExtensionTok{vim}\NormalTok{ R/analysis\_functions.R}
+\ExtensionTok{vim}\NormalTok{ tests/testthat/test{-}analysis\_functions.R}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Phase 4: Execute Analysis}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Run the complete analysis pipeline}
+\ExtensionTok{R} \AttributeTok{{-}{-}vanilla} \OperatorTok{\textless{}}\NormalTok{ scripts/01\_exploratory\_analysis.R}
+\ExtensionTok{R} \AttributeTok{{-}{-}vanilla} \OperatorTok{\textless{}}\NormalTok{ scripts/02\_statistical\_modeling.R}
+
+\CommentTok{\# Test your functions}
+\ExtensionTok{R}
+\FunctionTok{devtools::load\_all()}
+\FunctionTok{devtools::test()}
+\FunctionTok{quit()}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{3. Validation and Commit}\label{validation-and-commit}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Exit development container}
+\BuiltInTok{exit}
+
+\CommentTok{\# Back on host system {-} validate everything works}
+\FunctionTok{make}\NormalTok{ docker{-}check{-}renv{-}fix    }\CommentTok{\# Update dependency tracking}
+\FunctionTok{make}\NormalTok{ docker{-}test             }\CommentTok{\# Run tests in clean environment}
+\FunctionTok{make}\NormalTok{ docker{-}render           }\CommentTok{\# Ensure reports render correctly}
+
+\CommentTok{\# Commit your progress}
+\FunctionTok{git}\NormalTok{ add .}
+\FunctionTok{git}\NormalTok{ commit }\AttributeTok{{-}m} \StringTok{"Add systematic penguin analysis}
+
+\StringTok{{-} Implement exploratory data analysis with quality checks}
+\StringTok{{-} Create tidymodels statistical modeling pipeline}
+\StringTok{{-} Add comprehensive function testing framework}
+\StringTok{{-} Generate publication{-}quality visualizations}
+\StringTok{{-} All dependencies tracked, tests passing"}
+
+\FunctionTok{git}\NormalTok{ push origin main}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Complete Practical Example: Palmer Penguins
+Analysis}\label{complete-practical-example-palmer-penguins-analysis}
+
+Let's walk through a comprehensive analysis using the Palmer penguins
+dataset to demonstrate the complete workflow.
+
+\subsubsection{Step 1: Project Setup and Data
+Import}\label{step-1-project-setup-and-data-import}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Create the project}
+\ExtensionTok{zzcollab} \AttributeTok{{-}i} \AttributeTok{{-}p}\NormalTok{ penguin{-}analysis }\AttributeTok{{-}P}\NormalTok{ analysis }\AttributeTok{{-}{-}github}
+\BuiltInTok{cd}\NormalTok{ penguin{-}analysis}
+
+\CommentTok{\# Start development environment}
+\FunctionTok{make}\NormalTok{ docker{-}zsh}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Inside container - Set up data:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Create data structure and import Palmer penguins}
+\FunctionTok{mkdir} \AttributeTok{{-}p}\NormalTok{ data/raw data/processed}
+
+\CommentTok{\# In R, download and save Palmer penguins data}
+\ExtensionTok{R}
+\ExtensionTok{library}\ErrorTok{(}\ExtensionTok{palmerpenguins}\KeywordTok{)}
+\ExtensionTok{library}\ErrorTok{(}\ExtensionTok{readr}\KeywordTok{)}
+\ExtensionTok{data}\ErrorTok{(}\ExtensionTok{penguins}\KeywordTok{)}
+\ExtensionTok{write\_csv}\ErrorTok{(}\ExtensionTok{penguins,} \StringTok{"data/raw/penguins.csv"}\KeywordTok{)}
+\FunctionTok{quit()}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Step 2: Systematic Exploratory Data
+Analysis}\label{step-2-systematic-exploratory-data-analysis}
+
+Edit \texttt{scripts/01\_exploratory\_analysis.R}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Exploratory Data Analysis {-} Palmer Penguins}
+\CommentTok{\# Project: penguin{-}analysis}
+\CommentTok{\# Focus: Systematic investigation of penguin bill relationships}
+
+\CommentTok{\# Load required packages (pre{-}installed in analysis paradigm)}
+\FunctionTok{library}\NormalTok{(here)}
+\FunctionTok{library}\NormalTok{(dplyr)}
+\FunctionTok{library}\NormalTok{(ggplot2)}
+\FunctionTok{library}\NormalTok{(skimr)}
+\FunctionTok{library}\NormalTok{(janitor)}
+\FunctionTok{library}\NormalTok{(readr)}
+\FunctionTok{library}\NormalTok{(plotly)}
+\FunctionTok{library}\NormalTok{(DT)}
+
+\CommentTok{\# Set reproducible seed}
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{42}\NormalTok{)}
+
+\CommentTok{\# Create session log for reproducibility}
+\NormalTok{session\_log }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \AttributeTok{script =} \StringTok{"01\_exploratory\_analysis.R"}\NormalTok{,}
+  \AttributeTok{start\_time =} \FunctionTok{Sys.time}\NormalTok{(),}
+  \AttributeTok{r\_version =}\NormalTok{ R.version.string,}
+  \AttributeTok{random\_seed =} \DecValTok{42}\NormalTok{,}
+  \AttributeTok{focus =} \StringTok{"Palmer penguins bill dimension relationships"}
+\NormalTok{)}
+
+\CommentTok{\# Set up paths}
+\NormalTok{raw\_data\_dir }\OtherTok{\textless{}{-}} \FunctionTok{here}\NormalTok{(}\StringTok{"data"}\NormalTok{, }\StringTok{"raw"}\NormalTok{)}
+\NormalTok{processed\_data\_dir }\OtherTok{\textless{}{-}} \FunctionTok{here}\NormalTok{(}\StringTok{"data"}\NormalTok{, }\StringTok{"processed"}\NormalTok{)}
+\NormalTok{figures\_dir }\OtherTok{\textless{}{-}} \FunctionTok{here}\NormalTok{(}\StringTok{"outputs"}\NormalTok{, }\StringTok{"figures"}\NormalTok{)}
+
+\CommentTok{\# Create output directories}
+\ControlFlowTok{for}\NormalTok{ (dir }\ControlFlowTok{in} \FunctionTok{c}\NormalTok{(processed\_data\_dir, figures\_dir)) \{}
+  \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{dir.exists}\NormalTok{(dir)) }\FunctionTok{dir.create}\NormalTok{(dir, }\AttributeTok{recursive =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{\}}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Starting Palmer Penguins exploratory analysis..."}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# DATA IMPORT AND INITIAL INSPECTION}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{1. DATA IMPORT AND INITIAL INSPECTION"}\NormalTok{)}
+
+\CommentTok{\# Load Palmer penguins data}
+\NormalTok{penguins\_raw }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(raw\_data\_dir, }\StringTok{"penguins.csv"}\NormalTok{))}
+
+\CommentTok{\# Basic data inspection}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Dataset dimensions: "}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(penguins\_raw), }\StringTok{" rows × "}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(penguins\_raw), }\StringTok{" columns"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Variables: "}\NormalTok{, }\FunctionTok{paste}\NormalTok{(}\FunctionTok{names}\NormalTok{(penguins\_raw), }\AttributeTok{collapse =} \StringTok{", "}\NormalTok{))}
+
+\CommentTok{\# Data structure overview}
+\FunctionTok{glimpse}\NormalTok{(penguins\_raw)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# DATA QUALITY ASSESSMENT}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{2. DATA QUALITY ASSESSMENT"}\NormalTok{)}
+
+\CommentTok{\# Comprehensive data summary}
+\NormalTok{skim\_summary }\OtherTok{\textless{}{-}} \FunctionTok{skim}\NormalTok{(penguins\_raw)}
+\FunctionTok{print}\NormalTok{(skim\_summary)}
+
+\CommentTok{\# Detailed quality assessment}
+\NormalTok{quality\_report }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \AttributeTok{total\_rows =} \FunctionTok{nrow}\NormalTok{(penguins\_raw),}
+  \AttributeTok{total\_cols =} \FunctionTok{ncol}\NormalTok{(penguins\_raw),}
+  \AttributeTok{missing\_data =} \FunctionTok{sapply}\NormalTok{(penguins\_raw, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(x))),}
+  \AttributeTok{missing\_percent =} \FunctionTok{round}\NormalTok{(}\FunctionTok{sapply}\NormalTok{(penguins\_raw, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(x))}\SpecialCharTok{/}\FunctionTok{length}\NormalTok{(x) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{), }\DecValTok{2}\NormalTok{),}
+  \AttributeTok{duplicate\_rows =} \FunctionTok{sum}\NormalTok{(}\FunctionTok{duplicated}\NormalTok{(penguins\_raw)),}
+  \AttributeTok{unique\_values =} \FunctionTok{sapply}\NormalTok{(penguins\_raw, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(x))),}
+  \AttributeTok{species\_counts =} \FunctionTok{table}\NormalTok{(penguins\_raw}\SpecialCharTok{$}\NormalTok{species),}
+  \AttributeTok{island\_counts =} \FunctionTok{table}\NormalTok{(penguins\_raw}\SpecialCharTok{$}\NormalTok{island),}
+  \AttributeTok{sex\_counts =} \FunctionTok{table}\NormalTok{(penguins\_raw}\SpecialCharTok{$}\NormalTok{sex, }\AttributeTok{useNA =} \StringTok{"ifany"}\NormalTok{)}
+\NormalTok{)}
+
+\CommentTok{\# Print quality summary}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Missing data summary:"}\NormalTok{)}
+\FunctionTok{print}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{missing\_data[quality\_report}\SpecialCharTok{$}\NormalTok{missing\_data }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{])}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Species distribution:"}\NormalTok{)}
+\FunctionTok{print}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{species\_counts)}
+
+\CommentTok{\# Save quality report}
+\FunctionTok{saveRDS}\NormalTok{(quality\_report, }\FunctionTok{file.path}\NormalTok{(}\FunctionTok{here}\NormalTok{(}\StringTok{"analysis"}\NormalTok{, }\StringTok{"exploratory"}\NormalTok{), }\StringTok{"quality\_report.rds"}\NormalTok{))}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# DATA CLEANING AND PREPARATION}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{3. DATA CLEANING AND PREPARATION"}\NormalTok{)}
+
+\CommentTok{\# Create analysis{-}ready dataset}
+\NormalTok{penguins\_clean }\OtherTok{\textless{}{-}}\NormalTok{ penguins\_raw }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Remove rows with missing bill measurements (our focus variables)}
+  \FunctionTok{filter}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(bill\_length\_mm), }\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(bill\_depth\_mm)) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Clean column names}
+  \FunctionTok{clean\_names}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Add derived variables for analysis}
+  \FunctionTok{mutate}\NormalTok{(}
+    \CommentTok{\# Bill ratio for shape analysis}
+    \AttributeTok{bill\_ratio =}\NormalTok{ bill\_length\_mm }\SpecialCharTok{/}\NormalTok{ bill\_depth\_mm,}
+    \CommentTok{\# Total bill size proxy}
+    \AttributeTok{bill\_area\_proxy =}\NormalTok{ bill\_length\_mm }\SpecialCharTok{*}\NormalTok{ bill\_depth\_mm,}
+    \CommentTok{\# Body condition index}
+    \AttributeTok{body\_condition =}\NormalTok{ body\_mass\_g }\SpecialCharTok{/}\NormalTok{ flipper\_length\_mm,}
+    \CommentTok{\# Year as factor for temporal analysis}
+    \AttributeTok{year =} \FunctionTok{as.factor}\NormalTok{(year),}
+    \CommentTok{\# Comprehensive ID for tracking}
+    \AttributeTok{penguin\_id =} \FunctionTok{paste}\NormalTok{(species, island, }\FunctionTok{row\_number}\NormalTok{(), }\AttributeTok{sep =} \StringTok{"\_"}\NormalTok{)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Arrange by species for systematic analysis}
+  \FunctionTok{arrange}\NormalTok{(species, island)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Clean dataset: "}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(penguins\_clean), }\StringTok{" complete observations"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Derived variables added: bill\_ratio, bill\_area\_proxy, body\_condition"}\NormalTok{)}
+
+\CommentTok{\# Save processed dataset}
+\FunctionTok{write\_csv}\NormalTok{(penguins\_clean, }\FunctionTok{file.path}\NormalTok{(processed\_data\_dir, }\StringTok{"penguins\_clean.csv"}\NormalTok{))}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# SYSTEMATIC UNIVARIATE ANALYSIS}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{4. SYSTEMATIC UNIVARIATE ANALYSIS"}\NormalTok{)}
+
+\CommentTok{\# Bill length distribution analysis}
+\NormalTok{bill\_length\_plot }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(penguins\_clean, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ bill\_length\_mm)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_histogram}\NormalTok{(}\AttributeTok{bins =} \DecValTok{25}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.7}\NormalTok{, }\AttributeTok{fill =} \StringTok{"steelblue"}\NormalTok{, }\AttributeTok{color =} \StringTok{"white"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_density}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{after\_stat}\NormalTok{(count)), }\AttributeTok{color =} \StringTok{"red"}\NormalTok{, }\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{facet\_wrap}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ species, }\AttributeTok{scales =} \StringTok{"free\_y"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Bill Length Distribution by Species"}\NormalTok{,}
+    \AttributeTok{subtitle =} \FunctionTok{paste}\NormalTok{(}\StringTok{"n ="}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(penguins\_clean), }\StringTok{"penguins with complete bill measurements"}\NormalTok{),}
+    \AttributeTok{x =} \StringTok{"Bill Length (mm)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Frequency"}\NormalTok{,}
+    \AttributeTok{caption =} \StringTok{"Source: Palmer Penguins dataset"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{plot.title =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{size =} \DecValTok{14}\NormalTok{, }\AttributeTok{face =} \StringTok{"bold"}\NormalTok{),}
+    \AttributeTok{strip.text =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{face =} \StringTok{"bold"}\NormalTok{)}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"bill\_length\_distribution.png"}\NormalTok{),}
+\NormalTok{       bill\_length\_plot, }\AttributeTok{width =} \DecValTok{12}\NormalTok{, }\AttributeTok{height =} \DecValTok{6}\NormalTok{, }\AttributeTok{dpi =} \DecValTok{300}\NormalTok{)}
+
+\CommentTok{\# Bill depth distribution analysis}
+\NormalTok{bill\_depth\_plot }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(penguins\_clean, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ bill\_depth\_mm)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_histogram}\NormalTok{(}\AttributeTok{bins =} \DecValTok{25}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.7}\NormalTok{, }\AttributeTok{fill =} \StringTok{"darkgreen"}\NormalTok{, }\AttributeTok{color =} \StringTok{"white"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_density}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{after\_stat}\NormalTok{(count)), }\AttributeTok{color =} \StringTok{"orange"}\NormalTok{, }\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{facet\_wrap}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ species, }\AttributeTok{scales =} \StringTok{"free\_y"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Bill Depth Distribution by Species"}\NormalTok{,}
+    \AttributeTok{subtitle =} \StringTok{"Different species show distinct bill depth characteristics"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Bill Depth (mm)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Frequency"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+
+\FunctionTok{ggsave}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"bill\_depth\_distribution.png"}\NormalTok{),}
+\NormalTok{       bill\_depth\_plot, }\AttributeTok{width =} \DecValTok{12}\NormalTok{, }\AttributeTok{height =} \DecValTok{6}\NormalTok{, }\AttributeTok{dpi =} \DecValTok{300}\NormalTok{)}
+
+\CommentTok{\# Summary statistics by species}
+\NormalTok{species\_summary }\OtherTok{\textless{}{-}}\NormalTok{ penguins\_clean }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(species) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}
+    \AttributeTok{n =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{bill\_length\_mean =} \FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(bill\_length\_mm), }\DecValTok{2}\NormalTok{),}
+    \AttributeTok{bill\_length\_sd =} \FunctionTok{round}\NormalTok{(}\FunctionTok{sd}\NormalTok{(bill\_length\_mm), }\DecValTok{2}\NormalTok{),}
+    \AttributeTok{bill\_depth\_mean =} \FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(bill\_depth\_mm), }\DecValTok{2}\NormalTok{),}
+    \AttributeTok{bill\_depth\_sd =} \FunctionTok{round}\NormalTok{(}\FunctionTok{sd}\NormalTok{(bill\_depth\_mm), }\DecValTok{2}\NormalTok{),}
+    \AttributeTok{bill\_ratio\_mean =} \FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(bill\_ratio), }\DecValTok{3}\NormalTok{),}
+    \AttributeTok{body\_mass\_mean =} \FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(body\_mass\_g, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{), }\DecValTok{0}\NormalTok{),}
+    \AttributeTok{.groups =} \StringTok{"drop"}
+\NormalTok{  )}
+
+\FunctionTok{write\_csv}\NormalTok{(species\_summary, }\FunctionTok{file.path}\NormalTok{(}\FunctionTok{here}\NormalTok{(}\StringTok{"outputs"}\NormalTok{, }\StringTok{"tables"}\NormalTok{), }\StringTok{"species\_summary.csv"}\NormalTok{))}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Species summary statistics saved"}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# BIVARIATE RELATIONSHIP ANALYSIS}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{5. BIVARIATE RELATIONSHIP ANALYSIS"}\NormalTok{)}
+
+\CommentTok{\# Primary analysis: Bill depth vs length by species}
+\NormalTok{bill\_scatter }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(penguins\_clean, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ bill\_length\_mm, }\AttributeTok{y =}\NormalTok{ bill\_depth\_mm)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ species, }\AttributeTok{shape =}\NormalTok{ species), }\AttributeTok{size =} \FloatTok{2.5}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.8}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_smooth}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ species), }\AttributeTok{method =} \StringTok{"lm"}\NormalTok{, }\AttributeTok{se =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.3}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"} \OtherTok{=} \StringTok{"\#FF6B35"}\NormalTok{, }\StringTok{"Chinstrap"} \OtherTok{=} \StringTok{"\#004E89"}\NormalTok{, }\StringTok{"Gentoo"} \OtherTok{=} \StringTok{"\#00A896"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Palmer Penguins: Bill Depth vs Length by Species"}\NormalTok{,}
+    \AttributeTok{subtitle =} \StringTok{"Clear species{-}specific clustering with distinct linear relationships"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Bill Length (mm)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Bill Depth (mm)"}\NormalTok{,}
+    \AttributeTok{color =} \StringTok{"Species"}\NormalTok{,}
+    \AttributeTok{shape =} \StringTok{"Species"}\NormalTok{,}
+    \AttributeTok{caption =} \StringTok{"Each species shows unique bill dimension characteristics"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{plot.title =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{size =} \DecValTok{14}\NormalTok{, }\AttributeTok{face =} \StringTok{"bold"}\NormalTok{),}
+    \AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{,}
+    \AttributeTok{panel.border =} \FunctionTok{element\_rect}\NormalTok{(}\AttributeTok{color =} \StringTok{"black"}\NormalTok{, }\AttributeTok{fill =} \ConstantTok{NA}\NormalTok{)}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"bill\_dimensions\_scatter.png"}\NormalTok{),}
+\NormalTok{       bill\_scatter, }\AttributeTok{width =} \DecValTok{10}\NormalTok{, }\AttributeTok{height =} \DecValTok{8}\NormalTok{, }\AttributeTok{dpi =} \DecValTok{300}\NormalTok{)}
+
+\CommentTok{\# Interactive version for exploration}
+\NormalTok{bill\_interactive }\OtherTok{\textless{}{-}} \FunctionTok{ggplotly}\NormalTok{(bill\_scatter, }\AttributeTok{tooltip =} \FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{, }\StringTok{"colour"}\NormalTok{))}
+\NormalTok{htmlwidgets}\SpecialCharTok{::}\FunctionTok{saveWidget}\NormalTok{(bill\_interactive,}
+                       \FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"bill\_dimensions\_interactive.html"}\NormalTok{))}
+
+\CommentTok{\# Correlation analysis by species}
+\NormalTok{correlation\_analysis }\OtherTok{\textless{}{-}}\NormalTok{ penguins\_clean }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(species) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}
+    \AttributeTok{bill\_correlation =} \FunctionTok{cor}\NormalTok{(bill\_length\_mm, bill\_depth\_mm),}
+    \AttributeTok{n\_observations =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{.groups =} \StringTok{"drop"}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{correlation\_strength =} \FunctionTok{case\_when}\NormalTok{(}
+      \FunctionTok{abs}\NormalTok{(bill\_correlation) }\SpecialCharTok{\textgreater{}=} \FloatTok{0.7} \SpecialCharTok{\textasciitilde{}} \StringTok{"Strong"}\NormalTok{,}
+      \FunctionTok{abs}\NormalTok{(bill\_correlation) }\SpecialCharTok{\textgreater{}=} \FloatTok{0.4} \SpecialCharTok{\textasciitilde{}} \StringTok{"Moderate"}\NormalTok{,}
+      \ConstantTok{TRUE} \SpecialCharTok{\textasciitilde{}} \StringTok{"Weak"}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\FunctionTok{write\_csv}\NormalTok{(correlation\_analysis, }\FunctionTok{file.path}\NormalTok{(}\FunctionTok{here}\NormalTok{(}\StringTok{"outputs"}\NormalTok{, }\StringTok{"tables"}\NormalTok{), }\StringTok{"bill\_correlations.csv"}\NormalTok{))}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# ADVANCED EXPLORATORY VISUALIZATIONS}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{6. ADVANCED EXPLORATORY VISUALIZATIONS"}\NormalTok{)}
+
+\CommentTok{\# Multi{-}dimensional analysis}
+\NormalTok{multi\_plot }\OtherTok{\textless{}{-}}\NormalTok{ penguins\_clean }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(species, bill\_length\_mm, bill\_depth\_mm, flipper\_length\_mm, body\_mass\_g) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  tidyr}\SpecialCharTok{::}\FunctionTok{pivot\_longer}\NormalTok{(}\AttributeTok{cols =} \SpecialCharTok{{-}}\NormalTok{species, }\AttributeTok{names\_to =} \StringTok{"measurement"}\NormalTok{, }\AttributeTok{values\_to =} \StringTok{"value"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ species, }\AttributeTok{y =}\NormalTok{ value, }\AttributeTok{fill =}\NormalTok{ species)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}\AttributeTok{alpha =} \FloatTok{0.7}\NormalTok{, }\AttributeTok{outlier.alpha =} \FloatTok{0.5}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.2}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.3}\NormalTok{, }\AttributeTok{size =} \FloatTok{0.5}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{facet\_wrap}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{ measurement, }\AttributeTok{scales =} \StringTok{"free\_y"}\NormalTok{,}
+             \AttributeTok{labeller =} \FunctionTok{labeller}\NormalTok{(}\AttributeTok{measurement =} \FunctionTok{c}\NormalTok{(}
+               \StringTok{"bill\_length\_mm"} \OtherTok{=} \StringTok{"Bill Length (mm)"}\NormalTok{,}
+               \StringTok{"bill\_depth\_mm"} \OtherTok{=} \StringTok{"Bill Depth (mm)"}\NormalTok{,}
+               \StringTok{"flipper\_length\_mm"} \OtherTok{=} \StringTok{"Flipper Length (mm)"}\NormalTok{,}
+               \StringTok{"body\_mass\_g"} \OtherTok{=} \StringTok{"Body Mass (g)"}
+\NormalTok{             ))) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"} \OtherTok{=} \StringTok{"\#FF6B35"}\NormalTok{, }\StringTok{"Chinstrap"} \OtherTok{=} \StringTok{"\#004E89"}\NormalTok{, }\StringTok{"Gentoo"} \OtherTok{=} \StringTok{"\#00A896"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Palmer Penguins: Comprehensive Morphometric Analysis"}\NormalTok{,}
+    \AttributeTok{subtitle =} \StringTok{"Species differences across all physical measurements"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Species"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Measurement Value"}\NormalTok{,}
+    \AttributeTok{fill =} \StringTok{"Species"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}
+    \AttributeTok{plot.title =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{size =} \DecValTok{14}\NormalTok{, }\AttributeTok{face =} \StringTok{"bold"}\NormalTok{),}
+    \AttributeTok{strip.text =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{face =} \StringTok{"bold"}\NormalTok{),}
+    \AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{angle =} \DecValTok{45}\NormalTok{, }\AttributeTok{hjust =} \DecValTok{1}\NormalTok{),}
+    \AttributeTok{legend.position =} \StringTok{"none"}
+\NormalTok{  )}
+
+\FunctionTok{ggsave}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"comprehensive\_morphometrics.png"}\NormalTok{),}
+\NormalTok{       multi\_plot, }\AttributeTok{width =} \DecValTok{12}\NormalTok{, }\AttributeTok{height =} \DecValTok{8}\NormalTok{, }\AttributeTok{dpi =} \DecValTok{300}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# EXPLORATORY INSIGHTS AND RECOMMENDATIONS}
+\CommentTok{\# =============================================================================}
+
+\CommentTok{\# Document key findings for modeling phase}
+\NormalTok{exploratory\_insights }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \AttributeTok{timestamp =} \FunctionTok{Sys.time}\NormalTok{(),}
+  \AttributeTok{key\_findings =} \FunctionTok{list}\NormalTok{(}
+    \StringTok{"Species form distinct clusters in bill dimension space"}\NormalTok{,}
+    \StringTok{"Adelie penguins: shorter, deeper bills (different feeding ecology)"}\NormalTok{,}
+    \StringTok{"Gentoo penguins: longest bills, intermediate depth"}\NormalTok{,}
+    \StringTok{"Chinstrap penguins: long bills, shallow depth"}\NormalTok{,}
+    \StringTok{"Strong linear relationships within species"}\NormalTok{,}
+    \StringTok{"Bill ratio could be effective species discriminator"}
+\NormalTok{  ),}
+  \AttributeTok{modeling\_recommendations =} \FunctionTok{list}\NormalTok{(}
+    \StringTok{"Bill dimensions highly predictive of species"}\NormalTok{,}
+    \StringTok{"Consider interaction terms between bill length and depth"}\NormalTok{,}
+    \StringTok{"Body mass and flipper length provide additional discrimination"}\NormalTok{,}
+    \StringTok{"Potential for high{-}accuracy classification models"}\NormalTok{,}
+    \StringTok{"Island may provide additional geographic signal"}
+\NormalTok{  ),}
+  \AttributeTok{data\_quality\_notes =} \FunctionTok{list}\NormalTok{(}
+    \FunctionTok{paste}\NormalTok{(}\StringTok{"Complete cases:"}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(penguins\_clean), }\StringTok{"of"}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(penguins\_raw), }\StringTok{"original observations"}\NormalTok{),}
+    \StringTok{"Missing data primarily in sex variable (not critical for bill analysis)"}\NormalTok{,}
+    \StringTok{"No obvious data entry errors or extreme outliers detected"}\NormalTok{,}
+    \StringTok{"Species sample sizes well{-}balanced for statistical analysis"}
+\NormalTok{  )}
+\NormalTok{)}
+
+\FunctionTok{saveRDS}\NormalTok{(exploratory\_insights, }\FunctionTok{file.path}\NormalTok{(}\FunctionTok{here}\NormalTok{(}\StringTok{"analysis"}\NormalTok{, }\StringTok{"exploratory"}\NormalTok{), }\StringTok{"eda\_insights.rds"}\NormalTok{))}
+
+\CommentTok{\# Complete session documentation}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{end\_time }\OtherTok{\textless{}{-}} \FunctionTok{Sys.time}\NormalTok{()}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{duration }\OtherTok{\textless{}{-}} \FunctionTok{difftime}\NormalTok{(session\_log}\SpecialCharTok{$}\NormalTok{end\_time, session\_log}\SpecialCharTok{$}\NormalTok{start\_time, }\AttributeTok{units =} \StringTok{"mins"}\NormalTok{)}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{files\_created }\OtherTok{\textless{}{-}} \FunctionTok{list.files}\NormalTok{(figures\_dir, }\AttributeTok{pattern =} \StringTok{"}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{.(png|html)$"}\NormalTok{)}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{session\_info }\OtherTok{\textless{}{-}} \FunctionTok{sessionInfo}\NormalTok{()}
+
+\FunctionTok{saveRDS}\NormalTok{(session\_log, }\FunctionTok{file.path}\NormalTok{(}\FunctionTok{here}\NormalTok{(}\StringTok{"analysis"}\NormalTok{, }\StringTok{"exploratory"}\NormalTok{), }\StringTok{"eda\_session\_log.rds"}\NormalTok{))}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{=== EXPLORATORY ANALYSIS COMPLETED ==="}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Duration: "}\NormalTok{, }\FunctionTok{round}\NormalTok{(}\FunctionTok{as.numeric}\NormalTok{(session\_log}\SpecialCharTok{$}\NormalTok{duration), }\DecValTok{2}\NormalTok{), }\StringTok{" minutes"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Figures created: "}\NormalTok{, }\FunctionTok{length}\NormalTok{(session\_log}\SpecialCharTok{$}\NormalTok{files\_created))}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Key finding: Species show distinct bill dimension characteristics"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Recommendation: Proceed to statistical modeling with species classification"}\NormalTok{)}
+
+\CommentTok{\# Print session info for reproducibility}
+\FunctionTok{print}\NormalTok{(}\FunctionTok{sessionInfo}\NormalTok{())}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Step 3: Statistical Modeling
+Pipeline}\label{step-3-statistical-modeling-pipeline}
+
+Edit \texttt{scripts/02\_statistical\_modeling.R}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Statistical Modeling {-} Palmer Penguins Species Classification}
+\CommentTok{\# Project: penguin{-}analysis}
+\CommentTok{\# Focus: Develop predictive models for species classification using bill measurements}
+
+\CommentTok{\# Load required packages (tidymodels ecosystem pre{-}configured)}
+\FunctionTok{library}\NormalTok{(here)}
+\FunctionTok{library}\NormalTok{(dplyr)}
+\FunctionTok{library}\NormalTok{(ggplot2)}
+\FunctionTok{library}\NormalTok{(tidymodels)}
+\FunctionTok{library}\NormalTok{(readr)}
+\FunctionTok{library}\NormalTok{(broom)}
+
+\CommentTok{\# Set reproducible seed for all random operations}
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{123}\NormalTok{)}
+
+\CommentTok{\# Session documentation}
+\NormalTok{session\_log }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \AttributeTok{script =} \StringTok{"02\_statistical\_modeling.R"}\NormalTok{,}
+  \AttributeTok{start\_time =} \FunctionTok{Sys.time}\NormalTok{(),}
+  \AttributeTok{r\_version =}\NormalTok{ R.version.string,}
+  \AttributeTok{tidymodels\_version =} \FunctionTok{packageVersion}\NormalTok{(}\StringTok{"tidymodels"}\NormalTok{),}
+  \AttributeTok{random\_seed =} \DecValTok{123}\NormalTok{,}
+  \AttributeTok{modeling\_objective =} \StringTok{"Species classification using bill measurements"}
+\NormalTok{)}
+
+\CommentTok{\# Set up paths}
+\NormalTok{processed\_data\_dir }\OtherTok{\textless{}{-}} \FunctionTok{here}\NormalTok{(}\StringTok{"data"}\NormalTok{, }\StringTok{"processed"}\NormalTok{)}
+\NormalTok{modeling\_dir }\OtherTok{\textless{}{-}} \FunctionTok{here}\NormalTok{(}\StringTok{"analysis"}\NormalTok{, }\StringTok{"modeling"}\NormalTok{)}
+\NormalTok{figures\_dir }\OtherTok{\textless{}{-}} \FunctionTok{here}\NormalTok{(}\StringTok{"outputs"}\NormalTok{, }\StringTok{"figures"}\NormalTok{)}
+\NormalTok{tables\_dir }\OtherTok{\textless{}{-}} \FunctionTok{here}\NormalTok{(}\StringTok{"outputs"}\NormalTok{, }\StringTok{"tables"}\NormalTok{)}
+
+\CommentTok{\# Create modeling directory}
+\ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{dir.exists}\NormalTok{(modeling\_dir)) }\FunctionTok{dir.create}\NormalTok{(modeling\_dir, }\AttributeTok{recursive =} \ConstantTok{TRUE}\NormalTok{)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Starting tidymodels classification pipeline..."}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Objective: Predict penguin species from bill measurements"}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# DATA LOADING AND PREPARATION}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{1. DATA LOADING AND PREPARATION"}\NormalTok{)}
+
+\CommentTok{\# Load cleaned data from exploratory phase}
+\NormalTok{penguins\_clean }\OtherTok{\textless{}{-}} \FunctionTok{read\_csv}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(processed\_data\_dir, }\StringTok{"penguins\_clean.csv"}\NormalTok{))}
+
+\CommentTok{\# Prepare modeling dataset}
+\NormalTok{penguins\_model }\OtherTok{\textless{}{-}}\NormalTok{ penguins\_clean }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Focus on complete cases for bill measurements and species}
+  \FunctionTok{filter}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(bill\_length\_mm), }\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(bill\_depth\_mm), }\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(species)) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Convert species to factor for classification}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{species =} \FunctionTok{as.factor}\NormalTok{(species)) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Select modeling variables}
+  \FunctionTok{select}\NormalTok{(species, bill\_length\_mm, bill\_depth\_mm, flipper\_length\_mm,}
+\NormalTok{         body\_mass\_g, bill\_ratio, bill\_area\_proxy, island, sex)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Modeling dataset: "}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(penguins\_model), }\StringTok{" observations"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Target variable: species ("}\NormalTok{, }\FunctionTok{nlevels}\NormalTok{(penguins\_model}\SpecialCharTok{$}\NormalTok{species), }\StringTok{" levels)"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Predictor variables: "}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(penguins\_model) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# DATA SPLITTING STRATEGY}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{2. DATA SPLITTING STRATEGY"}\NormalTok{)}
+
+\CommentTok{\# Stratified split to maintain species balance}
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{123}\NormalTok{)}
+\NormalTok{penguin\_split }\OtherTok{\textless{}{-}} \FunctionTok{initial\_split}\NormalTok{(penguins\_model, }\AttributeTok{prop =} \FloatTok{0.75}\NormalTok{, }\AttributeTok{strata =}\NormalTok{ species)}
+\NormalTok{penguin\_train }\OtherTok{\textless{}{-}} \FunctionTok{training}\NormalTok{(penguin\_split)}
+\NormalTok{penguin\_test }\OtherTok{\textless{}{-}} \FunctionTok{testing}\NormalTok{(penguin\_split)}
+
+\CommentTok{\# Cross{-}validation folds for model tuning}
+\NormalTok{penguin\_folds }\OtherTok{\textless{}{-}} \FunctionTok{vfold\_cv}\NormalTok{(penguin\_train, }\AttributeTok{v =} \DecValTok{5}\NormalTok{, }\AttributeTok{strata =}\NormalTok{ species)}
+
+\CommentTok{\# Document split characteristics}
+\NormalTok{split\_summary }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \AttributeTok{train\_n =} \FunctionTok{nrow}\NormalTok{(penguin\_train),}
+  \AttributeTok{test\_n =} \FunctionTok{nrow}\NormalTok{(penguin\_test),}
+  \AttributeTok{train\_species =} \FunctionTok{table}\NormalTok{(penguin\_train}\SpecialCharTok{$}\NormalTok{species),}
+  \AttributeTok{test\_species =} \FunctionTok{table}\NormalTok{(penguin\_test}\SpecialCharTok{$}\NormalTok{species),}
+  \AttributeTok{cv\_folds =} \DecValTok{5}
+\NormalTok{)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Training set: "}\NormalTok{, split\_summary}\SpecialCharTok{$}\NormalTok{train\_n, }\StringTok{" observations"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Test set: "}\NormalTok{, split\_summary}\SpecialCharTok{$}\NormalTok{test\_n, }\StringTok{" observations"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Training species distribution:"}\NormalTok{)}
+\FunctionTok{print}\NormalTok{(split\_summary}\SpecialCharTok{$}\NormalTok{train\_species)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# FEATURE ENGINEERING RECIPE}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{3. FEATURE ENGINEERING RECIPE"}\NormalTok{)}
+
+\CommentTok{\# Comprehensive preprocessing recipe}
+\NormalTok{penguin\_recipe }\OtherTok{\textless{}{-}} \FunctionTok{recipe}\NormalTok{(species }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ penguin\_train) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Handle missing values}
+  \FunctionTok{step\_impute\_median}\NormalTok{(}\FunctionTok{all\_numeric\_predictors}\NormalTok{()) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{step\_impute\_mode}\NormalTok{(}\FunctionTok{all\_nominal\_predictors}\NormalTok{()) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Normalize numeric predictors for algorithms that need it}
+  \FunctionTok{step\_normalize}\NormalTok{(}\FunctionTok{all\_numeric\_predictors}\NormalTok{()) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Create polynomial features for bill measurements (capture non{-}linearity)}
+  \FunctionTok{step\_poly}\NormalTok{(bill\_length\_mm, bill\_depth\_mm, }\AttributeTok{degree =} \DecValTok{2}\NormalTok{, }\AttributeTok{keep\_original =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Create interaction terms}
+  \FunctionTok{step\_interact}\NormalTok{(}\AttributeTok{terms =} \SpecialCharTok{\textasciitilde{}}\NormalTok{ bill\_length\_mm}\SpecialCharTok{:}\NormalTok{bill\_depth\_mm) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Convert categorical variables to dummy variables}
+  \FunctionTok{step\_dummy}\NormalTok{(}\FunctionTok{all\_nominal\_predictors}\NormalTok{()) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Remove zero variance predictors}
+  \FunctionTok{step\_zv}\NormalTok{(}\FunctionTok{all\_predictors}\NormalTok{()) }\SpecialCharTok{\%\textgreater{}\%}
+  \CommentTok{\# Remove highly correlated predictors}
+  \FunctionTok{step\_corr}\NormalTok{(}\FunctionTok{all\_numeric\_predictors}\NormalTok{(), }\AttributeTok{threshold =} \FloatTok{0.9}\NormalTok{)}
+
+\CommentTok{\# Preview recipe}
+\NormalTok{penguin\_recipe}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Recipe created with comprehensive feature engineering"}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# MODEL SPECIFICATIONS}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{4. MODEL SPECIFICATIONS"}\NormalTok{)}
+
+\CommentTok{\# Logistic Regression (baseline interpretable model)}
+\NormalTok{logistic\_spec }\OtherTok{\textless{}{-}} \FunctionTok{logistic\_reg}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{"glm"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_mode}\NormalTok{(}\StringTok{"classification"}\NormalTok{)}
+
+\CommentTok{\# Random Forest (ensemble method)}
+\NormalTok{rf\_spec }\OtherTok{\textless{}{-}} \FunctionTok{rand\_forest}\NormalTok{(}
+  \AttributeTok{trees =} \FunctionTok{tune}\NormalTok{(),}
+  \AttributeTok{min\_n =} \FunctionTok{tune}\NormalTok{(),}
+  \AttributeTok{mtry =} \FunctionTok{tune}\NormalTok{()}
+\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{"ranger"}\NormalTok{, }\AttributeTok{importance =} \StringTok{"impurity"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_mode}\NormalTok{(}\StringTok{"classification"}\NormalTok{)}
+
+\CommentTok{\# Support Vector Machine (kernel method)}
+\NormalTok{svm\_spec }\OtherTok{\textless{}{-}} \FunctionTok{svm\_rbf}\NormalTok{(}
+  \AttributeTok{cost =} \FunctionTok{tune}\NormalTok{(),}
+  \AttributeTok{rbf\_sigma =} \FunctionTok{tune}\NormalTok{()}
+\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{"kernlab"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_mode}\NormalTok{(}\StringTok{"classification"}\NormalTok{)}
+
+\CommentTok{\# K{-}Nearest Neighbors (instance{-}based)}
+\NormalTok{knn\_spec }\OtherTok{\textless{}{-}} \FunctionTok{nearest\_neighbor}\NormalTok{(}
+  \AttributeTok{neighbors =} \FunctionTok{tune}\NormalTok{(),}
+  \AttributeTok{weight\_func =} \FunctionTok{tune}\NormalTok{(),}
+  \AttributeTok{dist\_power =} \FunctionTok{tune}\NormalTok{()}
+\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_engine}\NormalTok{(}\StringTok{"kknn"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{set\_mode}\NormalTok{(}\StringTok{"classification"}\NormalTok{)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Model specifications created: Logistic, Random Forest, SVM, KNN"}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# WORKFLOW CREATION}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{5. WORKFLOW CREATION"}\NormalTok{)}
+
+\CommentTok{\# Create workflows combining recipes and models}
+\NormalTok{logistic\_wf }\OtherTok{\textless{}{-}} \FunctionTok{workflow}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_recipe}\NormalTok{(penguin\_recipe) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_model}\NormalTok{(logistic\_spec)}
+
+\NormalTok{rf\_wf }\OtherTok{\textless{}{-}} \FunctionTok{workflow}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_recipe}\NormalTok{(penguin\_recipe) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_model}\NormalTok{(rf\_spec)}
+
+\NormalTok{svm\_wf }\OtherTok{\textless{}{-}} \FunctionTok{workflow}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_recipe}\NormalTok{(penguin\_recipe) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_model}\NormalTok{(svm\_spec)}
+
+\NormalTok{knn\_wf }\OtherTok{\textless{}{-}} \FunctionTok{workflow}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_recipe}\NormalTok{(penguin\_recipe) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{add\_model}\NormalTok{(knn\_spec)}
+
+\CommentTok{\# Create workflow set for easy comparison}
+\NormalTok{penguin\_wfset }\OtherTok{\textless{}{-}} \FunctionTok{workflow\_set}\NormalTok{(}
+  \AttributeTok{preproc =} \FunctionTok{list}\NormalTok{(}\AttributeTok{engineered =}\NormalTok{ penguin\_recipe),}
+  \AttributeTok{models =} \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{logistic =}\NormalTok{ logistic\_spec,}
+    \AttributeTok{random\_forest =}\NormalTok{ rf\_spec,}
+    \AttributeTok{svm\_rbf =}\NormalTok{ svm\_spec,}
+    \AttributeTok{knn =}\NormalTok{ knn\_spec}
+\NormalTok{  )}
+\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# HYPERPARAMETER TUNING}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{6. HYPERPARAMETER TUNING"}\NormalTok{)}
+
+\CommentTok{\# Define metrics for evaluation}
+\NormalTok{classification\_metrics }\OtherTok{\textless{}{-}} \FunctionTok{metric\_set}\NormalTok{(accuracy, roc\_auc, sensitivity, specificity)}
+
+\CommentTok{\# Tune Random Forest (most important tuning for this dataset)}
+\NormalTok{rf\_grid }\OtherTok{\textless{}{-}} \FunctionTok{grid\_regular}\NormalTok{(}
+  \FunctionTok{trees}\NormalTok{(}\AttributeTok{range =} \FunctionTok{c}\NormalTok{(}\DecValTok{50}\NormalTok{, }\DecValTok{500}\NormalTok{)),}
+  \FunctionTok{min\_n}\NormalTok{(}\AttributeTok{range =} \FunctionTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{, }\DecValTok{20}\NormalTok{)),}
+  \FunctionTok{mtry}\NormalTok{(}\AttributeTok{range =} \FunctionTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{, }\DecValTok{6}\NormalTok{)),}
+  \AttributeTok{levels =} \DecValTok{3}
+\NormalTok{)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Tuning Random Forest model..."}\NormalTok{)}
+\NormalTok{rf\_tuned }\OtherTok{\textless{}{-}} \FunctionTok{tune\_grid}\NormalTok{(}
+\NormalTok{  rf\_wf,}
+  \AttributeTok{resamples =}\NormalTok{ penguin\_folds,}
+  \AttributeTok{grid =}\NormalTok{ rf\_grid,}
+  \AttributeTok{metrics =}\NormalTok{ classification\_metrics,}
+  \AttributeTok{control =} \FunctionTok{control\_grid}\NormalTok{(}\AttributeTok{save\_pred =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{verbose =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{)}
+
+\CommentTok{\# Tune SVM}
+\NormalTok{svm\_grid }\OtherTok{\textless{}{-}} \FunctionTok{grid\_regular}\NormalTok{(}
+  \FunctionTok{cost}\NormalTok{(}\AttributeTok{range =} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{3}\NormalTok{, }\DecValTok{2}\NormalTok{)),}
+  \FunctionTok{rbf\_sigma}\NormalTok{(}\AttributeTok{range =} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{4}\NormalTok{, }\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{)),}
+  \AttributeTok{levels =} \DecValTok{4}
+\NormalTok{)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Tuning SVM model..."}\NormalTok{)}
+\NormalTok{svm\_tuned }\OtherTok{\textless{}{-}} \FunctionTok{tune\_grid}\NormalTok{(}
+\NormalTok{  svm\_wf,}
+  \AttributeTok{resamples =}\NormalTok{ penguin\_folds,}
+  \AttributeTok{grid =}\NormalTok{ svm\_grid,}
+  \AttributeTok{metrics =}\NormalTok{ classification\_metrics,}
+  \AttributeTok{control =} \FunctionTok{control\_grid}\NormalTok{(}\AttributeTok{save\_pred =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{verbose =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{)}
+
+\CommentTok{\# Tune KNN}
+\NormalTok{knn\_grid }\OtherTok{\textless{}{-}} \FunctionTok{grid\_regular}\NormalTok{(}
+  \FunctionTok{neighbors}\NormalTok{(}\AttributeTok{range =} \FunctionTok{c}\NormalTok{(}\DecValTok{3}\NormalTok{, }\DecValTok{15}\NormalTok{)),}
+  \FunctionTok{weight\_func}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"rectangular"}\NormalTok{, }\StringTok{"triangular"}\NormalTok{, }\StringTok{"gaussian"}\NormalTok{)),}
+  \FunctionTok{dist\_power}\NormalTok{(}\AttributeTok{range =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{)),}
+  \AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}\DecValTok{5}\NormalTok{, }\DecValTok{3}\NormalTok{, }\DecValTok{2}\NormalTok{)}
+\NormalTok{)}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"Tuning KNN model..."}\NormalTok{)}
+\NormalTok{knn\_tuned }\OtherTok{\textless{}{-}} \FunctionTok{tune\_grid}\NormalTok{(}
+\NormalTok{  knn\_wf,}
+  \AttributeTok{resamples =}\NormalTok{ penguin\_folds,}
+  \AttributeTok{grid =}\NormalTok{ knn\_grid,}
+  \AttributeTok{metrics =}\NormalTok{ classification\_metrics,}
+  \AttributeTok{control =} \FunctionTok{control\_grid}\NormalTok{(}\AttributeTok{save\_pred =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{verbose =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# MODEL EVALUATION AND SELECTION}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{7. MODEL EVALUATION AND SELECTION"}\NormalTok{)}
+
+\CommentTok{\# Extract best parameters for each model}
+\NormalTok{rf\_best }\OtherTok{\textless{}{-}} \FunctionTok{select\_best}\NormalTok{(rf\_tuned, }\AttributeTok{metric =} \StringTok{"accuracy"}\NormalTok{)}
+\NormalTok{svm\_best }\OtherTok{\textless{}{-}} \FunctionTok{select\_best}\NormalTok{(svm\_tuned, }\AttributeTok{metric =} \StringTok{"accuracy"}\NormalTok{)}
+\NormalTok{knn\_best }\OtherTok{\textless{}{-}} \FunctionTok{select\_best}\NormalTok{(knn\_tuned, }\AttributeTok{metric =} \StringTok{"accuracy"}\NormalTok{)}
+
+\CommentTok{\# Finalize workflows with best parameters}
+\NormalTok{rf\_final\_wf }\OtherTok{\textless{}{-}} \FunctionTok{finalize\_workflow}\NormalTok{(rf\_wf, rf\_best)}
+\NormalTok{svm\_final\_wf }\OtherTok{\textless{}{-}} \FunctionTok{finalize\_workflow}\NormalTok{(svm\_wf, svm\_best)}
+\NormalTok{knn\_final\_wf }\OtherTok{\textless{}{-}} \FunctionTok{finalize\_workflow}\NormalTok{(knn\_wf, knn\_best)}
+
+\CommentTok{\# Fit logistic regression (no tuning needed)}
+\NormalTok{logistic\_final }\OtherTok{\textless{}{-}} \FunctionTok{fit}\NormalTok{(logistic\_wf, }\AttributeTok{data =}\NormalTok{ penguin\_train)}
+
+\CommentTok{\# Fit tuned models on full training data}
+\NormalTok{rf\_final }\OtherTok{\textless{}{-}} \FunctionTok{fit}\NormalTok{(rf\_final\_wf, }\AttributeTok{data =}\NormalTok{ penguin\_train)}
+\NormalTok{svm\_final }\OtherTok{\textless{}{-}} \FunctionTok{fit}\NormalTok{(svm\_final\_wf, }\AttributeTok{data =}\NormalTok{ penguin\_train)}
+\NormalTok{knn\_final }\OtherTok{\textless{}{-}} \FunctionTok{fit}\NormalTok{(knn\_final\_wf, }\AttributeTok{data =}\NormalTok{ penguin\_train)}
+
+\CommentTok{\# Evaluate all models on test set}
+\NormalTok{models }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \StringTok{"Logistic Regression"} \OtherTok{=}\NormalTok{ logistic\_final,}
+  \StringTok{"Random Forest"} \OtherTok{=}\NormalTok{ rf\_final,}
+  \StringTok{"SVM RBF"} \OtherTok{=}\NormalTok{ svm\_final,}
+  \StringTok{"K{-}Nearest Neighbors"} \OtherTok{=}\NormalTok{ knn\_final}
+\NormalTok{)}
+
+\CommentTok{\# Comprehensive test set evaluation}
+\NormalTok{test\_results }\OtherTok{\textless{}{-}} \FunctionTok{map\_dfr}\NormalTok{(models, }\ControlFlowTok{function}\NormalTok{(model) \{}
+\NormalTok{  predictions }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(model, }\AttributeTok{new\_data =}\NormalTok{ penguin\_test, }\AttributeTok{type =} \StringTok{"prob"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{bind\_cols}\NormalTok{(}\FunctionTok{predict}\NormalTok{(model, }\AttributeTok{new\_data =}\NormalTok{ penguin\_test, }\AttributeTok{type =} \StringTok{"class"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{bind\_cols}\NormalTok{(penguin\_test }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{select}\NormalTok{(species))}
+
+  \CommentTok{\# Multi{-}class metrics}
+\NormalTok{  metrics\_df }\OtherTok{\textless{}{-}}\NormalTok{ predictions }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{classification\_metrics}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ species, }\AttributeTok{estimate =}\NormalTok{ .pred\_class,}
+\NormalTok{                         .pred\_Adelie, .pred\_Chinstrap, .pred\_Gentoo)}
+
+  \FunctionTok{return}\NormalTok{(metrics\_df)}
+\NormalTok{\}, }\AttributeTok{.id =} \StringTok{"model"}\NormalTok{)}
+
+\CommentTok{\# Create model comparison table}
+\NormalTok{model\_comparison }\OtherTok{\textless{}{-}}\NormalTok{ test\_results }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(model, .metric, .estimate) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{pivot\_wider}\NormalTok{(}\AttributeTok{names\_from =}\NormalTok{ .metric, }\AttributeTok{values\_from =}\NormalTok{ .estimate) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}\FunctionTok{desc}\NormalTok{(accuracy))}
+
+\FunctionTok{write\_csv}\NormalTok{(model\_comparison, }\FunctionTok{file.path}\NormalTok{(tables\_dir, }\StringTok{"model\_comparison.csv"}\NormalTok{))}
+
+\CommentTok{\# Display best model}
+\NormalTok{best\_model\_name }\OtherTok{\textless{}{-}}\NormalTok{ model\_comparison}\SpecialCharTok{$}\NormalTok{model[}\DecValTok{1}\NormalTok{]}
+\NormalTok{best\_accuracy }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(model\_comparison}\SpecialCharTok{$}\NormalTok{accuracy[}\DecValTok{1}\NormalTok{], }\DecValTok{4}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Best model: "}\NormalTok{, best\_model\_name, }\StringTok{" (Accuracy: "}\NormalTok{, best\_accuracy, }\StringTok{")"}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# DETAILED MODEL DIAGNOSTICS}
+\CommentTok{\# =============================================================================}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{8. DETAILED MODEL DIAGNOSTICS"}\NormalTok{)}
+
+\CommentTok{\# Focus on best model (likely Random Forest)}
+\NormalTok{best\_model }\OtherTok{\textless{}{-}}\NormalTok{ rf\_final}
+
+\CommentTok{\# Generate detailed predictions}
+\NormalTok{test\_predictions }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(best\_model, }\AttributeTok{new\_data =}\NormalTok{ penguin\_test, }\AttributeTok{type =} \StringTok{"prob"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(}\FunctionTok{predict}\NormalTok{(best\_model, }\AttributeTok{new\_data =}\NormalTok{ penguin\_test, }\AttributeTok{type =} \StringTok{"class"}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{bind\_cols}\NormalTok{(penguin\_test }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{select}\NormalTok{(species, bill\_length\_mm, bill\_depth\_mm)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{correct\_prediction =}\NormalTok{ species }\SpecialCharTok{==}\NormalTok{ .pred\_class)}
+
+\CommentTok{\# Confusion matrix}
+\NormalTok{conf\_matrix }\OtherTok{\textless{}{-}}\NormalTok{ test\_predictions }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{conf\_mat}\NormalTok{(}\AttributeTok{truth =}\NormalTok{ species, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}
+
+\FunctionTok{print}\NormalTok{(conf\_matrix)}
+
+\CommentTok{\# Confusion matrix visualization}
+\NormalTok{conf\_matrix\_plot }\OtherTok{\textless{}{-}} \FunctionTok{autoplot}\NormalTok{(conf\_matrix, }\AttributeTok{type =} \StringTok{"heatmap"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Confusion Matrix {-} Species Classification"}\NormalTok{,}
+       \AttributeTok{subtitle =} \FunctionTok{paste}\NormalTok{(}\StringTok{"Model:"}\NormalTok{, best\_model\_name, }\StringTok{"{-} Test Set Accuracy:"}\NormalTok{, best\_accuracy)) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+
+\FunctionTok{ggsave}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"confusion\_matrix.png"}\NormalTok{),}
+\NormalTok{       conf\_matrix\_plot, }\AttributeTok{width =} \DecValTok{8}\NormalTok{, }\AttributeTok{height =} \DecValTok{6}\NormalTok{, }\AttributeTok{dpi =} \DecValTok{300}\NormalTok{)}
+
+\CommentTok{\# Feature importance (for Random Forest)}
+\ControlFlowTok{if}\NormalTok{ (best\_model\_name }\SpecialCharTok{==} \StringTok{"Random Forest"}\NormalTok{) \{}
+\NormalTok{  importance\_data }\OtherTok{\textless{}{-}} \FunctionTok{extract\_fit\_engine}\NormalTok{(best\_model)}\SpecialCharTok{$}\NormalTok{variable.importance }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    tibble}\SpecialCharTok{::}\FunctionTok{enframe}\NormalTok{(}\AttributeTok{name =} \StringTok{"variable"}\NormalTok{, }\AttributeTok{value =} \StringTok{"importance"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{arrange}\NormalTok{(}\FunctionTok{desc}\NormalTok{(importance)) }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{slice\_head}\NormalTok{(}\AttributeTok{n =} \DecValTok{10}\NormalTok{)}
+
+\NormalTok{  importance\_plot }\OtherTok{\textless{}{-}}\NormalTok{ importance\_data }\SpecialCharTok{\%\textgreater{}\%}
+    \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =} \FunctionTok{reorder}\NormalTok{(variable, importance), }\AttributeTok{y =}\NormalTok{ importance)) }\SpecialCharTok{+}
+    \FunctionTok{geom\_col}\NormalTok{(}\AttributeTok{fill =} \StringTok{"steelblue"}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.8}\NormalTok{) }\SpecialCharTok{+}
+    \FunctionTok{coord\_flip}\NormalTok{() }\SpecialCharTok{+}
+    \FunctionTok{labs}\NormalTok{(}
+      \AttributeTok{title =} \StringTok{"Feature Importance {-} Random Forest Model"}\NormalTok{,}
+      \AttributeTok{subtitle =} \StringTok{"Top 10 most important variables for species classification"}\NormalTok{,}
+      \AttributeTok{x =} \StringTok{"Variables"}\NormalTok{,}
+      \AttributeTok{y =} \StringTok{"Importance Score"}
+\NormalTok{    ) }\SpecialCharTok{+}
+    \FunctionTok{theme\_minimal}\NormalTok{()}
+
+  \FunctionTok{ggsave}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"feature\_importance.png"}\NormalTok{),}
+\NormalTok{         importance\_plot, }\AttributeTok{width =} \DecValTok{10}\NormalTok{, }\AttributeTok{height =} \DecValTok{6}\NormalTok{, }\AttributeTok{dpi =} \DecValTok{300}\NormalTok{)}
+
+  \FunctionTok{write\_csv}\NormalTok{(importance\_data, }\FunctionTok{file.path}\NormalTok{(tables\_dir, }\StringTok{"feature\_importance.csv"}\NormalTok{))}
+\NormalTok{\}}
+
+\CommentTok{\# Decision boundary visualization}
+\NormalTok{decision\_boundary\_plot }\OtherTok{\textless{}{-}}\NormalTok{ penguin\_test }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{prediction =} \FunctionTok{predict}\NormalTok{(best\_model, }\AttributeTok{new\_data =}\NormalTok{ penguin\_test)}\SpecialCharTok{$}\NormalTok{.pred\_class) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ bill\_length\_mm, }\AttributeTok{y =}\NormalTok{ bill\_depth\_mm)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ species, }\AttributeTok{shape =}\NormalTok{ prediction), }\AttributeTok{size =} \DecValTok{3}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.8}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"} \OtherTok{=} \StringTok{"\#FF6B35"}\NormalTok{, }\StringTok{"Chinstrap"} \OtherTok{=} \StringTok{"\#004E89"}\NormalTok{, }\StringTok{"Gentoo"} \OtherTok{=} \StringTok{"\#00A896"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{scale\_shape\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"} \OtherTok{=} \DecValTok{16}\NormalTok{, }\StringTok{"Chinstrap"} \OtherTok{=} \DecValTok{17}\NormalTok{, }\StringTok{"Gentoo"} \OtherTok{=} \DecValTok{15}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Species Classification Results on Test Set"}\NormalTok{,}
+    \AttributeTok{subtitle =} \StringTok{"Color = True Species, Shape = Predicted Species"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Bill Length (mm)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Bill Depth (mm)"}\NormalTok{,}
+    \AttributeTok{color =} \StringTok{"Actual Species"}\NormalTok{,}
+    \AttributeTok{shape =} \StringTok{"Predicted Species"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+
+\FunctionTok{ggsave}\NormalTok{(}\FunctionTok{file.path}\NormalTok{(figures\_dir, }\StringTok{"classification\_results.png"}\NormalTok{),}
+\NormalTok{       decision\_boundary\_plot, }\AttributeTok{width =} \DecValTok{10}\NormalTok{, }\AttributeTok{height =} \DecValTok{8}\NormalTok{, }\AttributeTok{dpi =} \DecValTok{300}\NormalTok{)}
+
+\CommentTok{\# =============================================================================}
+\CommentTok{\# MODEL PERSISTENCE AND DOCUMENTATION}
+\CommentTok{\# =============================================================================}
+
+\CommentTok{\# Save final model for deployment}
+\FunctionTok{saveRDS}\NormalTok{(best\_model, }\FunctionTok{file.path}\NormalTok{(modeling\_dir, }\StringTok{"final\_classification\_model.rds"}\NormalTok{))}
+
+\CommentTok{\# Save model metadata}
+\NormalTok{model\_metadata }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+  \AttributeTok{model\_name =}\NormalTok{ best\_model\_name,}
+  \AttributeTok{test\_accuracy =}\NormalTok{ best\_accuracy,}
+  \AttributeTok{training\_data\_size =} \FunctionTok{nrow}\NormalTok{(penguin\_train),}
+  \AttributeTok{test\_data\_size =} \FunctionTok{nrow}\NormalTok{(penguin\_test),}
+  \AttributeTok{features\_used =} \FunctionTok{names}\NormalTok{(penguin\_model)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{],}
+  \AttributeTok{best\_parameters =} \ControlFlowTok{if}\NormalTok{(best\_model\_name }\SpecialCharTok{==} \StringTok{"Random Forest"}\NormalTok{) rf\_best }\ControlFlowTok{else} \StringTok{"No tuning"}\NormalTok{,}
+  \AttributeTok{cv\_performance =} \ControlFlowTok{if}\NormalTok{(best\_model\_name }\SpecialCharTok{==} \StringTok{"Random Forest"}\NormalTok{) }\FunctionTok{collect\_metrics}\NormalTok{(rf\_tuned) }\ControlFlowTok{else} \ConstantTok{NULL}\NormalTok{,}
+  \AttributeTok{confusion\_matrix =}\NormalTok{ conf\_matrix,}
+  \AttributeTok{timestamp =} \FunctionTok{Sys.time}\NormalTok{()}
+\NormalTok{)}
+
+\FunctionTok{saveRDS}\NormalTok{(model\_metadata, }\FunctionTok{file.path}\NormalTok{(modeling\_dir, }\StringTok{"model\_metadata.rds"}\NormalTok{))}
+
+\CommentTok{\# Complete session documentation}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{end\_time }\OtherTok{\textless{}{-}} \FunctionTok{Sys.time}\NormalTok{()}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{duration }\OtherTok{\textless{}{-}} \FunctionTok{difftime}\NormalTok{(session\_log}\SpecialCharTok{$}\NormalTok{end\_time, session\_log}\SpecialCharTok{$}\NormalTok{start\_time, }\AttributeTok{units =} \StringTok{"mins"}\NormalTok{)}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{best\_model }\OtherTok{\textless{}{-}}\NormalTok{ best\_model\_name}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{final\_accuracy }\OtherTok{\textless{}{-}}\NormalTok{ best\_accuracy}
+\NormalTok{session\_log}\SpecialCharTok{$}\NormalTok{session\_info }\OtherTok{\textless{}{-}} \FunctionTok{sessionInfo}\NormalTok{()}
+
+\FunctionTok{saveRDS}\NormalTok{(session\_log, }\FunctionTok{file.path}\NormalTok{(modeling\_dir, }\StringTok{"modeling\_session\_log.rds"}\NormalTok{))}
+
+\FunctionTok{message}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{=== STATISTICAL MODELING COMPLETED ==="}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Duration: "}\NormalTok{, }\FunctionTok{round}\NormalTok{(}\FunctionTok{as.numeric}\NormalTok{(session\_log}\SpecialCharTok{$}\NormalTok{duration), }\DecValTok{2}\NormalTok{), }\StringTok{" minutes"}\NormalTok{)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Best model: "}\NormalTok{, best\_model\_name)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Test accuracy: "}\NormalTok{, best\_accuracy)}
+\FunctionTok{message}\NormalTok{(}\StringTok{"Model saved to: analysis/modeling/final\_classification\_model.rds"}\NormalTok{)}
+
+\CommentTok{\# Print session info for reproducibility}
+\FunctionTok{print}\NormalTok{(}\FunctionTok{sessionInfo}\NormalTok{())}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Step 4: Create Analysis
+Functions}\label{step-4-create-analysis-functions}
+
+Edit \texttt{R/analysis\_functions.R}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#\textquotesingle{} Load and validate Palmer Penguins data}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} Loads cleaned penguin data with validation checks for analysis workflows.}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} @param file\_path Character string path to the cleaned data file}
+\CommentTok{\#\textquotesingle{} @param validate\_completeness Logical, whether to require complete cases}
+\CommentTok{\#\textquotesingle{} @return Data frame with validated penguin data}
+\CommentTok{\#\textquotesingle{} @export}
+\CommentTok{\#\textquotesingle{} @examples}
+\CommentTok{\#\textquotesingle{} penguins \textless{}{-} load\_penguin\_data("data/processed/penguins\_clean.csv")}
+\NormalTok{load\_penguin\_data }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(file\_path, }\AttributeTok{validate\_completeness =} \ConstantTok{TRUE}\NormalTok{) \{}
+  \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{file.exists}\NormalTok{(file\_path)) \{}
+    \FunctionTok{stop}\NormalTok{(}\StringTok{"Data file not found: "}\NormalTok{, file\_path)}
+\NormalTok{  \}}
+
+\NormalTok{  data }\OtherTok{\textless{}{-}}\NormalTok{ readr}\SpecialCharTok{::}\FunctionTok{read\_csv}\NormalTok{(file\_path, }\AttributeTok{show\_col\_types =} \ConstantTok{FALSE}\NormalTok{)}
+
+  \CommentTok{\# Validate required columns}
+\NormalTok{  required\_cols }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"species"}\NormalTok{, }\StringTok{"bill\_length\_mm"}\NormalTok{, }\StringTok{"bill\_depth\_mm"}\NormalTok{)}
+\NormalTok{  missing\_cols }\OtherTok{\textless{}{-}} \FunctionTok{setdiff}\NormalTok{(required\_cols, }\FunctionTok{names}\NormalTok{(data))}
+  \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(missing\_cols) }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) \{}
+    \FunctionTok{stop}\NormalTok{(}\StringTok{"Required columns missing: "}\NormalTok{, }\FunctionTok{paste}\NormalTok{(missing\_cols, }\AttributeTok{collapse =} \StringTok{", "}\NormalTok{))}
+\NormalTok{  \}}
+
+  \CommentTok{\# Validate data completeness if requested}
+  \ControlFlowTok{if}\NormalTok{ (validate\_completeness) \{}
+\NormalTok{    complete\_cases }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(}\FunctionTok{complete.cases}\NormalTok{(data[required\_cols]))}
+    \ControlFlowTok{if}\NormalTok{ (complete\_cases }\SpecialCharTok{\textless{}} \FunctionTok{nrow}\NormalTok{(data)) \{}
+      \FunctionTok{warning}\NormalTok{(}\StringTok{"Data contains "}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(data) }\SpecialCharTok{{-}}\NormalTok{ complete\_cases, }\StringTok{" incomplete cases"}\NormalTok{)}
+\NormalTok{    \}}
+\NormalTok{  \}}
+
+  \FunctionTok{message}\NormalTok{(}\StringTok{"Penguin data loaded: "}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(data), }\StringTok{" observations, "}\NormalTok{, }\FunctionTok{ncol}\NormalTok{(data), }\StringTok{" variables"}\NormalTok{)}
+  \FunctionTok{return}\NormalTok{(data)}
+\NormalTok{\}}
+
+\CommentTok{\#\textquotesingle{} Create bill dimension scatter plot}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} Generates a professional scatter plot of penguin bill dimensions with species coloring.}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} @param data Data frame containing penguin measurements}
+\CommentTok{\#\textquotesingle{} @param add\_regression Logical, whether to add regression lines}
+\CommentTok{\#\textquotesingle{} @param interactive Logical, whether to create interactive plotly version}
+\CommentTok{\#\textquotesingle{} @return ggplot2 object or plotly object if interactive = TRUE}
+\CommentTok{\#\textquotesingle{} @export}
+\CommentTok{\#\textquotesingle{} @examples}
+\CommentTok{\#\textquotesingle{} plot \textless{}{-} create\_bill\_scatter(penguins\_clean, add\_regression = TRUE)}
+\NormalTok{create\_bill\_scatter }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(data, }\AttributeTok{add\_regression =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{interactive =} \ConstantTok{FALSE}\NormalTok{) \{}
+  \CommentTok{\# Validate input data}
+\NormalTok{  required\_cols }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"species"}\NormalTok{, }\StringTok{"bill\_length\_mm"}\NormalTok{, }\StringTok{"bill\_depth\_mm"}\NormalTok{)}
+  \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{all}\NormalTok{(required\_cols }\SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(data))) \{}
+    \FunctionTok{stop}\NormalTok{(}\StringTok{"Data must contain: "}\NormalTok{, }\FunctionTok{paste}\NormalTok{(required\_cols, }\AttributeTok{collapse =} \StringTok{", "}\NormalTok{))}
+\NormalTok{  \}}
+
+  \CommentTok{\# Create base plot}
+\NormalTok{  p }\OtherTok{\textless{}{-}}\NormalTok{ ggplot2}\SpecialCharTok{::}\FunctionTok{ggplot}\NormalTok{(data, ggplot2}\SpecialCharTok{::}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ bill\_length\_mm, }\AttributeTok{y =}\NormalTok{ bill\_depth\_mm)) }\SpecialCharTok{+}
+\NormalTok{    ggplot2}\SpecialCharTok{::}\FunctionTok{geom\_point}\NormalTok{(ggplot2}\SpecialCharTok{::}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ species, }\AttributeTok{shape =}\NormalTok{ species),}
+                       \AttributeTok{size =} \FloatTok{2.5}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.8}\NormalTok{) }\SpecialCharTok{+}
+\NormalTok{    ggplot2}\SpecialCharTok{::}\FunctionTok{scale\_color\_manual}\NormalTok{(}
+      \AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"} \OtherTok{=} \StringTok{"\#FF6B35"}\NormalTok{, }\StringTok{"Chinstrap"} \OtherTok{=} \StringTok{"\#004E89"}\NormalTok{, }\StringTok{"Gentoo"} \OtherTok{=} \StringTok{"\#00A896"}\NormalTok{)}
+\NormalTok{    ) }\SpecialCharTok{+}
+\NormalTok{    ggplot2}\SpecialCharTok{::}\FunctionTok{labs}\NormalTok{(}
+      \AttributeTok{title =} \StringTok{"Palmer Penguins: Bill Depth vs Length"}\NormalTok{,}
+      \AttributeTok{subtitle =} \StringTok{"Species{-}specific clustering in bill morphology"}\NormalTok{,}
+      \AttributeTok{x =} \StringTok{"Bill Length (mm)"}\NormalTok{,}
+      \AttributeTok{y =} \StringTok{"Bill Depth (mm)"}\NormalTok{,}
+      \AttributeTok{color =} \StringTok{"Species"}\NormalTok{,}
+      \AttributeTok{shape =} \StringTok{"Species"}
+\NormalTok{    ) }\SpecialCharTok{+}
+\NormalTok{    ggplot2}\SpecialCharTok{::}\FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+\NormalTok{    ggplot2}\SpecialCharTok{::}\FunctionTok{theme}\NormalTok{(}
+      \AttributeTok{plot.title =}\NormalTok{ ggplot2}\SpecialCharTok{::}\FunctionTok{element\_text}\NormalTok{(}\AttributeTok{size =} \DecValTok{14}\NormalTok{, }\AttributeTok{face =} \StringTok{"bold"}\NormalTok{),}
+      \AttributeTok{legend.position =} \StringTok{"bottom"}
+\NormalTok{    )}
+
+  \CommentTok{\# Add regression lines if requested}
+  \ControlFlowTok{if}\NormalTok{ (add\_regression) \{}
+\NormalTok{    p }\OtherTok{\textless{}{-}}\NormalTok{ p }\SpecialCharTok{+}\NormalTok{ ggplot2}\SpecialCharTok{::}\FunctionTok{geom\_smooth}\NormalTok{(ggplot2}\SpecialCharTok{::}\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ species),}
+                                 \AttributeTok{method =} \StringTok{"lm"}\NormalTok{, }\AttributeTok{se =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{alpha =} \FloatTok{0.3}\NormalTok{)}
+\NormalTok{  \}}
+
+  \CommentTok{\# Convert to interactive if requested}
+  \ControlFlowTok{if}\NormalTok{ (interactive) \{}
+    \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{requireNamespace}\NormalTok{(}\StringTok{"plotly"}\NormalTok{, }\AttributeTok{quietly =} \ConstantTok{TRUE}\NormalTok{)) \{}
+      \FunctionTok{warning}\NormalTok{(}\StringTok{"plotly package not available, returning static plot"}\NormalTok{)}
+      \FunctionTok{return}\NormalTok{(p)}
+\NormalTok{    \}}
+\NormalTok{    p }\OtherTok{\textless{}{-}}\NormalTok{ plotly}\SpecialCharTok{::}\FunctionTok{ggplotly}\NormalTok{(p, }\AttributeTok{tooltip =} \FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{, }\StringTok{"colour"}\NormalTok{))}
+\NormalTok{  \}}
+
+  \FunctionTok{return}\NormalTok{(p)}
+\NormalTok{\}}
+
+\CommentTok{\#\textquotesingle{} Perform species classification analysis}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} Trains and evaluates multiple classification models for penguin species prediction.}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} @param data Data frame with penguin measurements}
+\CommentTok{\#\textquotesingle{} @param test\_prop Proportion of data to use for testing}
+\CommentTok{\#\textquotesingle{} @param cv\_folds Number of cross{-}validation folds}
+\CommentTok{\#\textquotesingle{} @return List containing trained models and evaluation metrics}
+\CommentTok{\#\textquotesingle{} @export}
+\CommentTok{\#\textquotesingle{} @examples}
+\CommentTok{\#\textquotesingle{} results \textless{}{-} classify\_penguin\_species(penguins\_clean, test\_prop = 0.3)}
+\NormalTok{classify\_penguin\_species }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(data, }\AttributeTok{test\_prop =} \FloatTok{0.25}\NormalTok{, }\AttributeTok{cv\_folds =} \DecValTok{5}\NormalTok{) \{}
+  \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{requireNamespace}\NormalTok{(}\StringTok{"tidymodels"}\NormalTok{, }\AttributeTok{quietly =} \ConstantTok{TRUE}\NormalTok{)) \{}
+    \FunctionTok{stop}\NormalTok{(}\StringTok{"tidymodels package required for classification analysis"}\NormalTok{)}
+\NormalTok{  \}}
+
+  \CommentTok{\# Prepare data}
+\NormalTok{  model\_data }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    dplyr}\SpecialCharTok{::}\FunctionTok{filter}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(species), }\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(bill\_length\_mm), }\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(bill\_depth\_mm)) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    dplyr}\SpecialCharTok{::}\FunctionTok{mutate}\NormalTok{(}\AttributeTok{species =} \FunctionTok{as.factor}\NormalTok{(species))}
+
+  \CommentTok{\# Data splitting}
+  \FunctionTok{set.seed}\NormalTok{(}\DecValTok{123}\NormalTok{)}
+\NormalTok{  data\_split }\OtherTok{\textless{}{-}}\NormalTok{ rsample}\SpecialCharTok{::}\FunctionTok{initial\_split}\NormalTok{(model\_data, }\AttributeTok{prop =} \DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ test\_prop, }\AttributeTok{strata =}\NormalTok{ species)}
+\NormalTok{  train\_data }\OtherTok{\textless{}{-}}\NormalTok{ rsample}\SpecialCharTok{::}\FunctionTok{training}\NormalTok{(data\_split)}
+\NormalTok{  test\_data }\OtherTok{\textless{}{-}}\NormalTok{ rsample}\SpecialCharTok{::}\FunctionTok{testing}\NormalTok{(data\_split)}
+
+  \CommentTok{\# Create recipe}
+\NormalTok{  recipe }\OtherTok{\textless{}{-}}\NormalTok{ recipes}\SpecialCharTok{::}\FunctionTok{recipe}\NormalTok{(species }\SpecialCharTok{\textasciitilde{}}\NormalTok{ bill\_length\_mm }\SpecialCharTok{+}\NormalTok{ bill\_depth\_mm }\SpecialCharTok{+}
+\NormalTok{                           flipper\_length\_mm }\SpecialCharTok{+}\NormalTok{ body\_mass\_g, }\AttributeTok{data =}\NormalTok{ train\_data) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    recipes}\SpecialCharTok{::}\FunctionTok{step\_impute\_median}\NormalTok{(recipes}\SpecialCharTok{::}\FunctionTok{all\_numeric\_predictors}\NormalTok{()) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    recipes}\SpecialCharTok{::}\FunctionTok{step\_normalize}\NormalTok{(recipes}\SpecialCharTok{::}\FunctionTok{all\_numeric\_predictors}\NormalTok{())}
+
+  \CommentTok{\# Random Forest specification}
+\NormalTok{  rf\_spec }\OtherTok{\textless{}{-}}\NormalTok{ parsnip}\SpecialCharTok{::}\FunctionTok{rand\_forest}\NormalTok{(}\AttributeTok{trees =} \DecValTok{500}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    parsnip}\SpecialCharTok{::}\FunctionTok{set\_engine}\NormalTok{(}\StringTok{"ranger"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    parsnip}\SpecialCharTok{::}\FunctionTok{set\_mode}\NormalTok{(}\StringTok{"classification"}\NormalTok{)}
+
+  \CommentTok{\# Create workflow}
+\NormalTok{  rf\_workflow }\OtherTok{\textless{}{-}}\NormalTok{ workflows}\SpecialCharTok{::}\FunctionTok{workflow}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    workflows}\SpecialCharTok{::}\FunctionTok{add\_recipe}\NormalTok{(recipe) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    workflows}\SpecialCharTok{::}\FunctionTok{add\_model}\NormalTok{(rf\_spec)}
+
+  \CommentTok{\# Fit model}
+\NormalTok{  rf\_fit }\OtherTok{\textless{}{-}}\NormalTok{ parsnip}\SpecialCharTok{::}\FunctionTok{fit}\NormalTok{(rf\_workflow, }\AttributeTok{data =}\NormalTok{ train\_data)}
+
+  \CommentTok{\# Evaluate on test set}
+\NormalTok{  test\_predictions }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(rf\_fit, }\AttributeTok{new\_data =}\NormalTok{ test\_data) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{    dplyr}\SpecialCharTok{::}\FunctionTok{bind\_cols}\NormalTok{(test\_data }\SpecialCharTok{\%\textgreater{}\%}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(species))}
+
+  \CommentTok{\# Calculate metrics}
+\NormalTok{  accuracy }\OtherTok{\textless{}{-}}\NormalTok{ yardstick}\SpecialCharTok{::}\FunctionTok{accuracy}\NormalTok{(test\_predictions, }\AttributeTok{truth =}\NormalTok{ species, }\AttributeTok{estimate =}\NormalTok{ .pred\_class)}\SpecialCharTok{$}\NormalTok{.estimate}
+
+  \CommentTok{\# Return results}
+  \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{model =}\NormalTok{ rf\_fit,}
+    \AttributeTok{test\_accuracy =}\NormalTok{ accuracy,}
+    \AttributeTok{test\_predictions =}\NormalTok{ test\_predictions,}
+    \AttributeTok{train\_size =} \FunctionTok{nrow}\NormalTok{(train\_data),}
+    \AttributeTok{test\_size =} \FunctionTok{nrow}\NormalTok{(test\_data)}
+\NormalTok{  )}
+\NormalTok{\}}
+
+\CommentTok{\#\textquotesingle{} Generate comprehensive data quality report}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} Creates detailed data quality assessment for penguin datasets.}
+\CommentTok{\#\textquotesingle{}}
+\CommentTok{\#\textquotesingle{} @param data Data frame to assess}
+\CommentTok{\#\textquotesingle{} @param save\_report Logical, whether to save report}
+\CommentTok{\#\textquotesingle{} @return List containing quality metrics}
+\CommentTok{\#\textquotesingle{} @export}
+\CommentTok{\#\textquotesingle{} @examples}
+\CommentTok{\#\textquotesingle{} quality \textless{}{-} assess\_data\_quality(penguins\_data)}
+\NormalTok{assess\_data\_quality }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(data, }\AttributeTok{save\_report =} \ConstantTok{FALSE}\NormalTok{) \{}
+  \CommentTok{\# Basic dimensions}
+\NormalTok{  quality\_metrics }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{timestamp =} \FunctionTok{Sys.time}\NormalTok{(),}
+    \AttributeTok{dimensions =} \FunctionTok{list}\NormalTok{(}\AttributeTok{rows =} \FunctionTok{nrow}\NormalTok{(data), }\AttributeTok{cols =} \FunctionTok{ncol}\NormalTok{(data)),}
+    \AttributeTok{column\_names =} \FunctionTok{names}\NormalTok{(data)}
+\NormalTok{  )}
+
+  \CommentTok{\# Missing data analysis}
+\NormalTok{  quality\_metrics}\SpecialCharTok{$}\NormalTok{missing\_data }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(data, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(x)))}
+\NormalTok{  quality\_metrics}\SpecialCharTok{$}\NormalTok{missing\_percent }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(quality\_metrics}\SpecialCharTok{$}\NormalTok{missing\_data }\SpecialCharTok{/} \FunctionTok{nrow}\NormalTok{(data) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\DecValTok{2}\NormalTok{)}
+
+  \CommentTok{\# Data types}
+\NormalTok{  quality\_metrics}\SpecialCharTok{$}\NormalTok{data\_types }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(data, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{class}\NormalTok{(x)[}\DecValTok{1}\NormalTok{])}
+
+  \CommentTok{\# Unique values}
+\NormalTok{  quality\_metrics}\SpecialCharTok{$}\NormalTok{unique\_values }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(data, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(x[}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(x)])))}
+
+  \CommentTok{\# Duplicate rows}
+\NormalTok{  quality\_metrics}\SpecialCharTok{$}\NormalTok{duplicate\_rows }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(}\FunctionTok{duplicated}\NormalTok{(data))}
+
+  \CommentTok{\# Numeric variable summaries}
+\NormalTok{  numeric\_vars }\OtherTok{\textless{}{-}} \FunctionTok{names}\NormalTok{(dplyr}\SpecialCharTok{::}\FunctionTok{select\_if}\NormalTok{(data, is.numeric))}
+  \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(numeric\_vars) }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) \{}
+\NormalTok{    numeric\_summary }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{      dplyr}\SpecialCharTok{::}\FunctionTok{select}\NormalTok{(dplyr}\SpecialCharTok{::}\FunctionTok{all\_of}\NormalTok{(numeric\_vars)) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{      dplyr}\SpecialCharTok{::}\FunctionTok{summarise\_all}\NormalTok{(}\FunctionTok{list}\NormalTok{(}
+        \AttributeTok{min =} \SpecialCharTok{\textasciitilde{}}\FunctionTok{min}\NormalTok{(., }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+        \AttributeTok{q25 =} \SpecialCharTok{\textasciitilde{}}\FunctionTok{quantile}\NormalTok{(., }\FloatTok{0.25}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+        \AttributeTok{median =} \SpecialCharTok{\textasciitilde{}}\FunctionTok{median}\NormalTok{(., }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+        \AttributeTok{mean =} \SpecialCharTok{\textasciitilde{}}\FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(., }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{), }\DecValTok{3}\NormalTok{),}
+        \AttributeTok{q75 =} \SpecialCharTok{\textasciitilde{}}\FunctionTok{quantile}\NormalTok{(., }\FloatTok{0.75}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+        \AttributeTok{max =} \SpecialCharTok{\textasciitilde{}}\FunctionTok{max}\NormalTok{(., }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+        \AttributeTok{sd =} \SpecialCharTok{\textasciitilde{}}\FunctionTok{round}\NormalTok{(}\FunctionTok{sd}\NormalTok{(., }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{), }\DecValTok{3}\NormalTok{)}
+\NormalTok{      ))}
+\NormalTok{    quality\_metrics}\SpecialCharTok{$}\NormalTok{numeric\_summary }\OtherTok{\textless{}{-}}\NormalTok{ numeric\_summary}
+\NormalTok{  \}}
+
+  \CommentTok{\# Categorical variable summaries}
+\NormalTok{  categorical\_vars }\OtherTok{\textless{}{-}} \FunctionTok{names}\NormalTok{(dplyr}\SpecialCharTok{::}\FunctionTok{select\_if}\NormalTok{(data, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{is.factor}\NormalTok{(x) }\SpecialCharTok{|} \FunctionTok{is.character}\NormalTok{(x)))}
+  \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{length}\NormalTok{(categorical\_vars) }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) \{}
+\NormalTok{    categorical\_summary }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(categorical\_vars, }\ControlFlowTok{function}\NormalTok{(var) \{}
+      \FunctionTok{table}\NormalTok{(data[[var]], }\AttributeTok{useNA =} \StringTok{"ifany"}\NormalTok{)}
+\NormalTok{    \})}
+    \FunctionTok{names}\NormalTok{(categorical\_summary) }\OtherTok{\textless{}{-}}\NormalTok{ categorical\_vars}
+\NormalTok{    quality\_metrics}\SpecialCharTok{$}\NormalTok{categorical\_summary }\OtherTok{\textless{}{-}}\NormalTok{ categorical\_summary}
+\NormalTok{  \}}
+
+  \CommentTok{\# Save report if requested}
+  \ControlFlowTok{if}\NormalTok{ (save\_report) \{}
+\NormalTok{    output\_dir }\OtherTok{\textless{}{-}}\NormalTok{ here}\SpecialCharTok{::}\FunctionTok{here}\NormalTok{(}\StringTok{"analysis"}\NormalTok{, }\StringTok{"exploratory"}\NormalTok{)}
+    \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{dir.exists}\NormalTok{(output\_dir)) \{}
+      \FunctionTok{dir.create}\NormalTok{(output\_dir, }\AttributeTok{recursive =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{    \}}
+    \FunctionTok{saveRDS}\NormalTok{(quality\_metrics, }\FunctionTok{file.path}\NormalTok{(output\_dir, }\StringTok{"data\_quality\_report.rds"}\NormalTok{))}
+    \FunctionTok{message}\NormalTok{(}\StringTok{"Quality report saved to: analysis/exploratory/data\_quality\_report.rds"}\NormalTok{)}
+\NormalTok{  \}}
+
+  \FunctionTok{return}\NormalTok{(quality\_metrics)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Step 5: Create Comprehensive
+Tests}\label{step-5-create-comprehensive-tests}
+
+Edit \texttt{tests/testthat/test-analysis\_functions.R}:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Tests for Palmer Penguins Analysis Functions}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"load\_penguin\_data works with valid data"}\NormalTok{, \{}
+  \CommentTok{\# Create temporary test data}
+\NormalTok{  temp\_dir }\OtherTok{\textless{}{-}} \FunctionTok{tempdir}\NormalTok{()}
+\NormalTok{  test\_file }\OtherTok{\textless{}{-}} \FunctionTok{file.path}\NormalTok{(temp\_dir, }\StringTok{"test\_penguins.csv"}\NormalTok{)}
+
+  \CommentTok{\# Create minimal test dataset}
+\NormalTok{  test\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{species =} \FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"}\NormalTok{, }\StringTok{"Chinstrap"}\NormalTok{, }\StringTok{"Gentoo"}\NormalTok{),}
+    \AttributeTok{bill\_length\_mm =} \FunctionTok{c}\NormalTok{(}\FloatTok{35.5}\NormalTok{, }\FloatTok{48.2}\NormalTok{, }\FloatTok{47.3}\NormalTok{),}
+    \AttributeTok{bill\_depth\_mm =} \FunctionTok{c}\NormalTok{(}\FloatTok{18.2}\NormalTok{, }\FloatTok{17.8}\NormalTok{, }\FloatTok{14.2}\NormalTok{),}
+    \AttributeTok{flipper\_length\_mm =} \FunctionTok{c}\NormalTok{(}\DecValTok{190}\NormalTok{, }\DecValTok{195}\NormalTok{, }\DecValTok{210}\NormalTok{),}
+    \AttributeTok{body\_mass\_g =} \FunctionTok{c}\NormalTok{(}\DecValTok{3400}\NormalTok{, }\DecValTok{3700}\NormalTok{, }\DecValTok{4800}\NormalTok{)}
+\NormalTok{  )}
+
+\NormalTok{  readr}\SpecialCharTok{::}\FunctionTok{write\_csv}\NormalTok{(test\_data, test\_file)}
+
+  \CommentTok{\# Test loading}
+\NormalTok{  loaded\_data }\OtherTok{\textless{}{-}} \FunctionTok{load\_penguin\_data}\NormalTok{(test\_file)}
+
+  \FunctionTok{expect\_s3\_class}\NormalTok{(loaded\_data, }\StringTok{"data.frame"}\NormalTok{)}
+  \FunctionTok{expect\_equal}\NormalTok{(}\FunctionTok{nrow}\NormalTok{(loaded\_data), }\DecValTok{3}\NormalTok{)}
+  \FunctionTok{expect\_true}\NormalTok{(}\FunctionTok{all}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"species"}\NormalTok{, }\StringTok{"bill\_length\_mm"}\NormalTok{, }\StringTok{"bill\_depth\_mm"}\NormalTok{) }\SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(loaded\_data)))}
+
+  \CommentTok{\# Cleanup}
+  \FunctionTok{unlink}\NormalTok{(test\_file)}
+\NormalTok{\})}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"load\_penguin\_data fails with missing file"}\NormalTok{, \{}
+  \FunctionTok{expect\_error}\NormalTok{(}\FunctionTok{load\_penguin\_data}\NormalTok{(}\StringTok{"nonexistent\_file.csv"}\NormalTok{), }\StringTok{"Data file not found"}\NormalTok{)}
+\NormalTok{\})}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"load\_penguin\_data fails with missing required columns"}\NormalTok{, \{}
+  \CommentTok{\# Create temporary test data without required columns}
+\NormalTok{  temp\_dir }\OtherTok{\textless{}{-}} \FunctionTok{tempdir}\NormalTok{()}
+\NormalTok{  test\_file }\OtherTok{\textless{}{-}} \FunctionTok{file.path}\NormalTok{(temp\_dir, }\StringTok{"test\_incomplete.csv"}\NormalTok{)}
+
+\NormalTok{  incomplete\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{name =} \FunctionTok{c}\NormalTok{(}\StringTok{"A"}\NormalTok{, }\StringTok{"B"}\NormalTok{, }\StringTok{"C"}\NormalTok{),}
+    \AttributeTok{value =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{3}\NormalTok{)}
+\NormalTok{  )}
+
+\NormalTok{  readr}\SpecialCharTok{::}\FunctionTok{write\_csv}\NormalTok{(incomplete\_data, test\_file)}
+
+  \FunctionTok{expect\_error}\NormalTok{(}\FunctionTok{load\_penguin\_data}\NormalTok{(test\_file), }\StringTok{"Required columns missing"}\NormalTok{)}
+
+  \CommentTok{\# Cleanup}
+  \FunctionTok{unlink}\NormalTok{(test\_file)}
+\NormalTok{\})}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"create\_bill\_scatter produces valid ggplot"}\NormalTok{, \{}
+  \CommentTok{\# Create test data}
+\NormalTok{  test\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{species =} \FunctionTok{factor}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"}\NormalTok{, }\StringTok{"Chinstrap"}\NormalTok{, }\StringTok{"Gentoo"}\NormalTok{, }\StringTok{"Adelie"}\NormalTok{, }\StringTok{"Chinstrap"}\NormalTok{)),}
+    \AttributeTok{bill\_length\_mm =} \FunctionTok{c}\NormalTok{(}\FloatTok{35.5}\NormalTok{, }\FloatTok{48.2}\NormalTok{, }\FloatTok{47.3}\NormalTok{, }\FloatTok{36.0}\NormalTok{, }\FloatTok{49.0}\NormalTok{),}
+    \AttributeTok{bill\_depth\_mm =} \FunctionTok{c}\NormalTok{(}\FloatTok{18.2}\NormalTok{, }\FloatTok{17.8}\NormalTok{, }\FloatTok{14.2}\NormalTok{, }\FloatTok{18.5}\NormalTok{, }\FloatTok{17.5}\NormalTok{)}
+\NormalTok{  )}
+
+  \CommentTok{\# Test basic plot creation}
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{create\_bill\_scatter}\NormalTok{(test\_data)}
+
+  \FunctionTok{expect\_s3\_class}\NormalTok{(p, }\StringTok{"ggplot"}\NormalTok{)}
+  \FunctionTok{expect\_equal}\NormalTok{(}\FunctionTok{length}\NormalTok{(p}\SpecialCharTok{$}\NormalTok{layers), }\DecValTok{1}\NormalTok{)  }\CommentTok{\# One geom\_point layer}
+
+  \CommentTok{\# Test with regression lines}
+\NormalTok{  p\_reg }\OtherTok{\textless{}{-}} \FunctionTok{create\_bill\_scatter}\NormalTok{(test\_data, }\AttributeTok{add\_regression =} \ConstantTok{TRUE}\NormalTok{)}
+  \FunctionTok{expect\_s3\_class}\NormalTok{(p\_reg, }\StringTok{"ggplot"}\NormalTok{)}
+  \FunctionTok{expect\_equal}\NormalTok{(}\FunctionTok{length}\NormalTok{(p\_reg}\SpecialCharTok{$}\NormalTok{layers), }\DecValTok{2}\NormalTok{)  }\CommentTok{\# geom\_point + geom\_smooth}
+\NormalTok{\})}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"create\_bill\_scatter fails with missing columns"}\NormalTok{, \{}
+\NormalTok{  incomplete\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{species =} \FunctionTok{c}\NormalTok{(}\StringTok{"A"}\NormalTok{, }\StringTok{"B"}\NormalTok{),}
+    \AttributeTok{other\_var =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{)}
+\NormalTok{  )}
+
+  \FunctionTok{expect\_error}\NormalTok{(}\FunctionTok{create\_bill\_scatter}\NormalTok{(incomplete\_data), }\StringTok{"Data must contain"}\NormalTok{)}
+\NormalTok{\})}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"classify\_penguin\_species returns valid results"}\NormalTok{, \{}
+  \FunctionTok{skip\_if\_not\_installed}\NormalTok{(}\StringTok{"tidymodels"}\NormalTok{)}
+
+  \CommentTok{\# Create sufficient test data for modeling}
+  \FunctionTok{set.seed}\NormalTok{(}\DecValTok{42}\NormalTok{)}
+\NormalTok{  test\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{species =} \FunctionTok{factor}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"}\NormalTok{, }\StringTok{"Chinstrap"}\NormalTok{, }\StringTok{"Gentoo"}\NormalTok{), }\AttributeTok{each =} \DecValTok{20}\NormalTok{)),}
+    \AttributeTok{bill\_length\_mm =} \FunctionTok{c}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{38}\NormalTok{, }\DecValTok{2}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{48}\NormalTok{, }\DecValTok{2}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{47}\NormalTok{, }\DecValTok{2}\NormalTok{)),}
+    \AttributeTok{bill\_depth\_mm =} \FunctionTok{c}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{18}\NormalTok{, }\DecValTok{1}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{17}\NormalTok{, }\DecValTok{1}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{14}\NormalTok{, }\DecValTok{1}\NormalTok{)),}
+    \AttributeTok{flipper\_length\_mm =} \FunctionTok{c}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{190}\NormalTok{, }\DecValTok{5}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{195}\NormalTok{, }\DecValTok{5}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{215}\NormalTok{, }\DecValTok{5}\NormalTok{)),}
+    \AttributeTok{body\_mass\_g =} \FunctionTok{c}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{3700}\NormalTok{, }\DecValTok{200}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{3700}\NormalTok{, }\DecValTok{200}\NormalTok{), }\FunctionTok{rnorm}\NormalTok{(}\DecValTok{20}\NormalTok{, }\DecValTok{5000}\NormalTok{, }\DecValTok{300}\NormalTok{))}
+\NormalTok{  )}
+
+  \CommentTok{\# Test classification}
+\NormalTok{  results }\OtherTok{\textless{}{-}} \FunctionTok{classify\_penguin\_species}\NormalTok{(test\_data, }\AttributeTok{test\_prop =} \FloatTok{0.3}\NormalTok{, }\AttributeTok{cv\_folds =} \DecValTok{3}\NormalTok{)}
+
+  \FunctionTok{expect\_type}\NormalTok{(results, }\StringTok{"list"}\NormalTok{)}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"model"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(results))}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"test\_accuracy"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(results))}
+  \FunctionTok{expect\_true}\NormalTok{(results}\SpecialCharTok{$}\NormalTok{test\_accuracy }\SpecialCharTok{\textgreater{}=} \DecValTok{0} \SpecialCharTok{\&\&}\NormalTok{ results}\SpecialCharTok{$}\NormalTok{test\_accuracy }\SpecialCharTok{\textless{}=} \DecValTok{1}\NormalTok{)}
+  \FunctionTok{expect\_true}\NormalTok{(results}\SpecialCharTok{$}\NormalTok{train\_size }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{)}
+  \FunctionTok{expect\_true}\NormalTok{(results}\SpecialCharTok{$}\NormalTok{test\_size }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{)}
+\NormalTok{\})}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"assess\_data\_quality produces comprehensive report"}\NormalTok{, \{}
+  \CommentTok{\# Create test data with various quality issues}
+\NormalTok{  test\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{id =} \DecValTok{1}\SpecialCharTok{:}\DecValTok{10}\NormalTok{,}
+    \AttributeTok{species =} \FunctionTok{factor}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\StringTok{"Adelie"}\NormalTok{, }\DecValTok{4}\NormalTok{), }\FunctionTok{rep}\NormalTok{(}\StringTok{"Chinstrap"}\NormalTok{, }\DecValTok{3}\NormalTok{), }\FunctionTok{rep}\NormalTok{(}\StringTok{"Gentoo"}\NormalTok{, }\DecValTok{3}\NormalTok{))),}
+    \AttributeTok{bill\_length\_mm =} \FunctionTok{c}\NormalTok{(}\DecValTok{35}\NormalTok{, }\DecValTok{36}\NormalTok{, }\ConstantTok{NA}\NormalTok{, }\DecValTok{38}\NormalTok{, }\DecValTok{48}\NormalTok{, }\DecValTok{49}\NormalTok{, }\ConstantTok{NA}\NormalTok{, }\DecValTok{46}\NormalTok{, }\DecValTok{47}\NormalTok{, }\DecValTok{45}\NormalTok{),}
+    \AttributeTok{bill\_depth\_mm =} \FunctionTok{c}\NormalTok{(}\DecValTok{18}\NormalTok{, }\DecValTok{19}\NormalTok{, }\DecValTok{17}\NormalTok{, }\ConstantTok{NA}\NormalTok{, }\DecValTok{17}\NormalTok{, }\DecValTok{18}\NormalTok{, }\DecValTok{16}\NormalTok{, }\DecValTok{14}\NormalTok{, }\DecValTok{15}\NormalTok{, }\DecValTok{14}\NormalTok{),}
+    \AttributeTok{sex =} \FunctionTok{c}\NormalTok{(}\StringTok{"male"}\NormalTok{, }\StringTok{"female"}\NormalTok{, }\StringTok{"male"}\NormalTok{, }\ConstantTok{NA}\NormalTok{, }\StringTok{"female"}\NormalTok{, }\StringTok{"male"}\NormalTok{, }\StringTok{"female"}\NormalTok{, }\ConstantTok{NA}\NormalTok{, }\StringTok{"male"}\NormalTok{, }\StringTok{"female"}\NormalTok{),}
+    \AttributeTok{duplicate\_row =} \FunctionTok{rep}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{10}\NormalTok{)  }\CommentTok{\# Zero variance column}
+\NormalTok{  )}
+
+  \CommentTok{\# Add a duplicate row}
+\NormalTok{  test\_data }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(test\_data, test\_data[}\DecValTok{1}\NormalTok{, ])}
+
+\NormalTok{  quality\_report }\OtherTok{\textless{}{-}} \FunctionTok{assess\_data\_quality}\NormalTok{(test\_data)}
+
+  \CommentTok{\# Test report structure}
+  \FunctionTok{expect\_type}\NormalTok{(quality\_report, }\StringTok{"list"}\NormalTok{)}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"dimensions"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report))}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"missing\_data"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report))}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"missing\_percent"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report))}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"data\_types"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report))}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"duplicate\_rows"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report))}
+
+  \CommentTok{\# Test specific values}
+  \FunctionTok{expect\_equal}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{dimensions}\SpecialCharTok{$}\NormalTok{rows, }\DecValTok{11}\NormalTok{)  }\CommentTok{\# 10 + 1 duplicate}
+  \FunctionTok{expect\_equal}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{dimensions}\SpecialCharTok{$}\NormalTok{cols, }\DecValTok{6}\NormalTok{)}
+  \FunctionTok{expect\_equal}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{duplicate\_rows, }\DecValTok{1}\NormalTok{)}
+
+  \CommentTok{\# Test missing data detection}
+  \FunctionTok{expect\_true}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{missing\_data[}\StringTok{"bill\_length\_mm"}\NormalTok{] }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{)}
+  \FunctionTok{expect\_true}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{missing\_percent[}\StringTok{"bill\_length\_mm"}\NormalTok{] }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{)}
+
+  \CommentTok{\# Test numeric summary exists}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"numeric\_summary"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report))}
+
+  \CommentTok{\# Test categorical summary exists}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"categorical\_summary"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report))}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"species"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_report}\SpecialCharTok{$}\NormalTok{categorical\_summary))}
+\NormalTok{\})}
+
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"assess\_data\_quality handles edge cases"}\NormalTok{, \{}
+  \CommentTok{\# Empty data frame}
+\NormalTok{  empty\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{()}
+\NormalTok{  quality\_empty }\OtherTok{\textless{}{-}} \FunctionTok{assess\_data\_quality}\NormalTok{(empty\_data)}
+  \FunctionTok{expect\_equal}\NormalTok{(quality\_empty}\SpecialCharTok{$}\NormalTok{dimensions}\SpecialCharTok{$}\NormalTok{rows, }\DecValTok{0}\NormalTok{)}
+  \FunctionTok{expect\_equal}\NormalTok{(quality\_empty}\SpecialCharTok{$}\NormalTok{dimensions}\SpecialCharTok{$}\NormalTok{cols, }\DecValTok{0}\NormalTok{)}
+
+  \CommentTok{\# Data frame with only numeric variables}
+\NormalTok{  numeric\_only }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{x =} \DecValTok{1}\SpecialCharTok{:}\DecValTok{5}\NormalTok{,}
+    \AttributeTok{y =} \DecValTok{6}\SpecialCharTok{:}\DecValTok{10}\NormalTok{,}
+    \AttributeTok{z =} \FunctionTok{c}\NormalTok{(}\FloatTok{1.1}\NormalTok{, }\FloatTok{2.2}\NormalTok{, }\FloatTok{3.3}\NormalTok{, }\FloatTok{4.4}\NormalTok{, }\FloatTok{5.5}\NormalTok{)}
+\NormalTok{  )}
+\NormalTok{  quality\_numeric }\OtherTok{\textless{}{-}} \FunctionTok{assess\_data\_quality}\NormalTok{(numeric\_only)}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"numeric\_summary"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_numeric))}
+  \FunctionTok{expect\_false}\NormalTok{(}\StringTok{"categorical\_summary"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_numeric))}
+
+  \CommentTok{\# Data frame with only categorical variables}
+\NormalTok{  categorical\_only }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{group =} \FunctionTok{factor}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"A"}\NormalTok{, }\StringTok{"B"}\NormalTok{, }\StringTok{"A"}\NormalTok{, }\StringTok{"B"}\NormalTok{, }\StringTok{"C"}\NormalTok{)),}
+    \AttributeTok{category =} \FunctionTok{c}\NormalTok{(}\StringTok{"X"}\NormalTok{, }\StringTok{"Y"}\NormalTok{, }\StringTok{"X"}\NormalTok{, }\StringTok{"Z"}\NormalTok{, }\StringTok{"Y"}\NormalTok{)}
+\NormalTok{  )}
+\NormalTok{  quality\_categorical }\OtherTok{\textless{}{-}} \FunctionTok{assess\_data\_quality}\NormalTok{(categorical\_only)}
+  \FunctionTok{expect\_false}\NormalTok{(}\StringTok{"numeric\_summary"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_categorical))}
+  \FunctionTok{expect\_true}\NormalTok{(}\StringTok{"categorical\_summary"} \SpecialCharTok{\%in\%} \FunctionTok{names}\NormalTok{(quality\_categorical))}
+\NormalTok{\})}
+
+\CommentTok{\# Integration test}
+\FunctionTok{test\_that}\NormalTok{(}\StringTok{"full analysis workflow integration works"}\NormalTok{, \{}
+  \FunctionTok{skip\_if\_not\_installed}\NormalTok{(}\StringTok{"tidymodels"}\NormalTok{)}
+
+  \CommentTok{\# Create comprehensive test dataset}
+  \FunctionTok{set.seed}\NormalTok{(}\DecValTok{42}\NormalTok{)}
+\NormalTok{  n\_per\_species }\OtherTok{\textless{}{-}} \DecValTok{30}
+\NormalTok{  test\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{species =} \FunctionTok{factor}\NormalTok{(}\FunctionTok{rep}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"Adelie"}\NormalTok{, }\StringTok{"Chinstrap"}\NormalTok{, }\StringTok{"Gentoo"}\NormalTok{), }\AttributeTok{each =}\NormalTok{ n\_per\_species)),}
+    \AttributeTok{bill\_length\_mm =} \FunctionTok{c}\NormalTok{(}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{38}\NormalTok{, }\DecValTok{2}\NormalTok{),    }\CommentTok{\# Adelie}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{48}\NormalTok{, }\DecValTok{2}\NormalTok{),    }\CommentTok{\# Chinstrap}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{47}\NormalTok{, }\DecValTok{2}\NormalTok{)     }\CommentTok{\# Gentoo}
+\NormalTok{    ),}
+    \AttributeTok{bill\_depth\_mm =} \FunctionTok{c}\NormalTok{(}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{18}\NormalTok{, }\DecValTok{1}\NormalTok{),    }\CommentTok{\# Adelie (deeper bills)}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{17}\NormalTok{, }\DecValTok{1}\NormalTok{),    }\CommentTok{\# Chinstrap}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{14}\NormalTok{, }\DecValTok{1}\NormalTok{)     }\CommentTok{\# Gentoo (shallower bills)}
+\NormalTok{    ),}
+    \AttributeTok{flipper\_length\_mm =} \FunctionTok{c}\NormalTok{(}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{190}\NormalTok{, }\DecValTok{5}\NormalTok{),   }\CommentTok{\# Adelie}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{195}\NormalTok{, }\DecValTok{5}\NormalTok{),   }\CommentTok{\# Chinstrap}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{215}\NormalTok{, }\DecValTok{5}\NormalTok{)    }\CommentTok{\# Gentoo (longer flippers)}
+\NormalTok{    ),}
+    \AttributeTok{body\_mass\_g =} \FunctionTok{c}\NormalTok{(}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{3700}\NormalTok{, }\DecValTok{200}\NormalTok{), }\CommentTok{\# Adelie}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{3700}\NormalTok{, }\DecValTok{200}\NormalTok{), }\CommentTok{\# Chinstrap}
+      \FunctionTok{rnorm}\NormalTok{(n\_per\_species, }\DecValTok{5000}\NormalTok{, }\DecValTok{300}\NormalTok{)  }\CommentTok{\# Gentoo (heavier)}
+\NormalTok{    )}
+\NormalTok{  )}
+
+  \CommentTok{\# Save to temporary file}
+\NormalTok{  temp\_dir }\OtherTok{\textless{}{-}} \FunctionTok{tempdir}\NormalTok{()}
+\NormalTok{  test\_file }\OtherTok{\textless{}{-}} \FunctionTok{file.path}\NormalTok{(temp\_dir, }\StringTok{"integration\_test\_penguins.csv"}\NormalTok{)}
+\NormalTok{  readr}\SpecialCharTok{::}\FunctionTok{write\_csv}\NormalTok{(test\_data, test\_file)}
+
+  \CommentTok{\# Test complete workflow}
+  \FunctionTok{expect\_no\_error}\NormalTok{(\{}
+    \CommentTok{\# Load data}
+\NormalTok{    penguins }\OtherTok{\textless{}{-}} \FunctionTok{load\_penguin\_data}\NormalTok{(test\_file)}
+
+    \CommentTok{\# Quality assessment}
+\NormalTok{    quality }\OtherTok{\textless{}{-}} \FunctionTok{assess\_data\_quality}\NormalTok{(penguins)}
+
+    \CommentTok{\# Visualization}
+\NormalTok{    plot }\OtherTok{\textless{}{-}} \FunctionTok{create\_bill\_scatter}\NormalTok{(penguins, }\AttributeTok{add\_regression =} \ConstantTok{TRUE}\NormalTok{)}
+
+    \CommentTok{\# Classification}
+\NormalTok{    classification\_results }\OtherTok{\textless{}{-}} \FunctionTok{classify\_penguin\_species}\NormalTok{(penguins, }\AttributeTok{test\_prop =} \FloatTok{0.3}\NormalTok{)}
+\NormalTok{  \})}
+
+  \CommentTok{\# Verify results}
+  \FunctionTok{expect\_true}\NormalTok{(classification\_results}\SpecialCharTok{$}\NormalTok{test\_accuracy }\SpecialCharTok{\textgreater{}} \FloatTok{0.7}\NormalTok{)  }\CommentTok{\# Should be high accuracy}
+  \FunctionTok{expect\_s3\_class}\NormalTok{(plot, }\StringTok{"ggplot"}\NormalTok{)}
+  \FunctionTok{expect\_true}\NormalTok{(quality}\SpecialCharTok{$}\NormalTok{dimensions}\SpecialCharTok{$}\NormalTok{rows }\SpecialCharTok{==} \FunctionTok{nrow}\NormalTok{(test\_data))}
+
+  \CommentTok{\# Cleanup}
+  \FunctionTok{unlink}\NormalTok{(test\_file)}
+\NormalTok{\})}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Step 6: Execute the Complete
+Analysis}\label{step-6-execute-the-complete-analysis}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Inside the container, run the complete analysis pipeline}
+\ExtensionTok{R} \AttributeTok{{-}{-}vanilla} \OperatorTok{\textless{}}\NormalTok{ scripts/01\_exploratory\_analysis.R}
+\ExtensionTok{R} \AttributeTok{{-}{-}vanilla} \OperatorTok{\textless{}}\NormalTok{ scripts/02\_statistical\_modeling.R}
+
+\CommentTok{\# Test your functions}
+\ExtensionTok{R}
+\ExtensionTok{library}\ErrorTok{(}\ExtensionTok{devtools}\KeywordTok{)}
+\FunctionTok{load\_all()}
+\FunctionTok{test()}
+\FunctionTok{quit()}
+
+\CommentTok{\# Check outputs}
+\FunctionTok{ls}\NormalTok{ outputs/figures/}
+\FunctionTok{ls}\NormalTok{ outputs/tables/}
+\FunctionTok{ls}\NormalTok{ analysis/}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Step 7: Final Validation and
+Commit}\label{step-7-final-validation-and-commit}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Exit container}
+\BuiltInTok{exit}
+
+\CommentTok{\# Validate complete workflow}
+\FunctionTok{make}\NormalTok{ docker{-}check{-}renv{-}fix    }\CommentTok{\# Update dependencies}
+\FunctionTok{make}\NormalTok{ docker{-}test             }\CommentTok{\# Run comprehensive tests}
+\FunctionTok{make}\NormalTok{ docker{-}render           }\CommentTok{\# Test report generation}
+
+\CommentTok{\# Final commit}
+\FunctionTok{git}\NormalTok{ add .}
+\FunctionTok{git}\NormalTok{ commit }\AttributeTok{{-}m} \StringTok{"Complete Palmer Penguins analysis workflow}
+
+\StringTok{ANALYSIS RESULTS:}
+\StringTok{{-} Species classification accuracy: \textgreater{}95\% using Random Forest}
+\StringTok{{-} Clear bill dimension clustering by species}
+\StringTok{{-} Adelie: shorter, deeper bills (18mm depth, 38mm length)}
+\StringTok{{-} Gentoo: longest, shallowest bills (14mm depth, 47mm length)}
+\StringTok{{-} Chinstrap: intermediate morphology}
+
+\StringTok{TECHNICAL IMPLEMENTATION:}
+\StringTok{{-} Systematic exploratory data analysis with quality checks}
+\StringTok{{-} tidymodels classification pipeline with hyperparameter tuning}
+\StringTok{{-} Comprehensive testing framework (22 tests, 100\% coverage)}
+\StringTok{{-} Publication{-}quality visualizations and interactive plots}
+\StringTok{{-} Complete reproducibility documentation}
+
+\StringTok{FILES CREATED:}
+\StringTok{{-} 8 high{-}resolution figures (PNG + PDF)}
+\StringTok{{-} 4 summary tables (CSV format)}
+\StringTok{{-} Interactive dashboard components}
+\StringTok{{-} Trained classification model (RDS)}
+\StringTok{{-} Comprehensive session logs}
+
+\StringTok{All dependencies tracked, tests passing, fully reproducible."}
+
+\FunctionTok{git}\NormalTok{ push origin main}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Key Benefits Demonstrated}\label{key-benefits-demonstrated}
+
+This complete workflow showcases the analysis paradigm's power:
+
+\textbf{1. Systematic Approach:} - Structured templates guide
+comprehensive analysis - Quality checks built into every step -
+Reproducible seed management throughout
+
+\textbf{2. Professional Output:} - Publication-quality visualizations -
+Interactive exploration tools - Comprehensive statistical validation
+
+\textbf{3. Complete Reproducibility:} - Docker environment ensures
+consistency - Session logging captures all details - Dependency tracking
+prevents drift
+
+\textbf{4. Collaborative Ready:} - GitHub integration with CI/CD -
+Standardized structure for team joining - Professional documentation
+throughout
+
+\textbf{5. Testing Framework:} - Comprehensive function testing - Data
+validation checks - Integration testing
+
+\subsection{Advanced Features}\label{advanced-features}
+
+\subsubsection{Using Additional
+Variants}\label{using-additional-variants}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Add specialized environments for different needs}
+\ExtensionTok{./add\_variant.sh}
+
+\CommentTok{\# Select variants like:}
+\CommentTok{\# {-} modeling: Enhanced ML packages (xgboost, h2o, keras)}
+\CommentTok{\# {-} alpine\_minimal: Lightweight for CI/CD (\textasciitilde{}200MB)}
+\CommentTok{\# {-} publishing: LaTeX support for manuscript preparation}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Interactive Dashboards}\label{interactive-dashboards}
+
+The analysis paradigm includes \texttt{04\_interactive\_dashboard.Rmd}
+for creating Shiny applications:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Interactive exploration dashboard}
+\FunctionTok{library}\NormalTok{(shiny)}
+\FunctionTok{library}\NormalTok{(DT)}
+\FunctionTok{library}\NormalTok{(plotly)}
+
+\CommentTok{\# Load model and create real{-}time species prediction interface}
+\CommentTok{\# Full template available in scripts/04\_interactive\_dashboard.Rmd}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{Automated Reporting}\label{automated-reporting}
+
+The \texttt{05\_automated\_report.Rmd} template supports parameterized
+reports:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Generate reports for different species or time periods}
+\NormalTok{rmarkdown}\SpecialCharTok{::}\FunctionTok{render}\NormalTok{(}\StringTok{"scripts/05\_automated\_report.Rmd"}\NormalTok{,}
+                  \AttributeTok{params =} \FunctionTok{list}\NormalTok{(}\AttributeTok{species =} \StringTok{"Adelie"}\NormalTok{,}
+                               \AttributeTok{year\_range =} \FunctionTok{c}\NormalTok{(}\DecValTok{2007}\NormalTok{, }\DecValTok{2009}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Characteristics of Analysis Paradigm
+Workflow}\label{characteristics-of-analysis-paradigm-workflow}
+
+✅ \textbf{Systematic}: Six-phase template structure ensures
+comprehensive analysis ✅ \textbf{Reproducible}: Built-in seed
+management and session documentation ✅ \textbf{Professional}:
+Publication-quality outputs and standardized visualizations ✅
+\textbf{Tested}: Comprehensive testing framework with \textgreater90\%
+coverage targets ✅ \textbf{Scalable}: Easy transition from solo to team
+collaboration ✅ \textbf{Efficient}: Pre-configured packages eliminate
+setup overhead ✅ \textbf{Flexible}: Multiple Docker variants for
+different computational needs ✅ \textbf{Modern}: Integration with
+tidyverse, tidymodels, and current best practices
+
+The analysis paradigm provides a complete framework for reproducible
+data science, from initial data exploration through final
+publication-ready results.
+
+{[}\{``content'': ``Create comprehensive solo analysis workflow
+vignette'', ``status'': ``completed'', ``activeForm'': ``Creating
+comprehensive solo analysis workflow vignette''\}, \{``content'':
+``Study existing vignette structure and analysis templates'',
+``status'': ``completed'', ``activeForm'': ``Studying existing vignette
+structure and analysis templates''\}, \{``content'': ``Write vignette
+with Palmer Penguins practical example'', ``status'': ``completed'',
+``activeForm'': ``Writing vignette with Palmer Penguins practical
+example''\}, \{``content'': ``Include detailed workflow from setup to
+final results'', ``status'': ``completed'', ``activeForm'': ``Including
+detailed workflow from setup to final results''\}, \{``content'': ``Add
+testing and validation section'', ``status'': ``completed'',
+``activeForm'': ``Adding testing and validation section''\}{]}
+
+\end{document}
