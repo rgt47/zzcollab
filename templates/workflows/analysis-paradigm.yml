@@ -36,22 +36,40 @@ jobs:
       
       - name: Run exploratory analysis
         run: |
-          if [ -d "analysis/exploratory" ]; then
-            find analysis/exploratory -name "*.R" -exec Rscript {} \;
-            find analysis/exploratory -name "*.Rmd" -exec Rscript -e "rmarkdown::render('{}')" \;
+          if [ -f "scripts/01_exploratory_analysis.R" ]; then
+            Rscript scripts/01_exploratory_analysis.R
+          else
+            echo "No exploratory analysis script found"
           fi
       
       - name: Run statistical modeling
         run: |
-          if [ -d "analysis/modeling" ]; then
-            find analysis/modeling -name "*.R" -exec Rscript {} \;
-            find analysis/modeling -name "*.Rmd" -exec Rscript -e "rmarkdown::render('{}')" \;
+          if [ -f "scripts/02_statistical_modeling.R" ]; then
+            Rscript scripts/02_statistical_modeling.R
+          else
+            echo "No statistical modeling script found"
           fi
-      
+
+      - name: Run model validation
+        run: |
+          if [ -f "scripts/03_model_validation.R" ]; then
+            Rscript scripts/03_model_validation.R
+          else
+            echo "No model validation script found"
+          fi
+
       - name: Generate analysis reports
         run: |
+          # Render reports from reports/ directory
           if [ -d "reports" ]; then
             find reports -name "*.Rmd" -exec Rscript -e "rmarkdown::render('{}')" \;
+          fi
+          # Render dashboard and automated reports from scripts/
+          if [ -f "scripts/04_interactive_dashboard.Rmd" ]; then
+            Rscript -e "rmarkdown::render('scripts/04_interactive_dashboard.Rmd')"
+          fi
+          if [ -f "scripts/05_automated_report.Rmd" ]; then
+            Rscript -e "rmarkdown::render('scripts/05_automated_report.Rmd')"
           fi
       
       - name: Run targets pipeline (if present)
