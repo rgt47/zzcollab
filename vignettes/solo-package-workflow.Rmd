@@ -1,0 +1,1425 @@
+---
+title: "Solo Package Workflow: R Package Development with zzcollab"
+author: "ZZCOLLAB Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Solo Package Workflow: R Package Development with zzcollab}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Solo Package Workflow
+
+This vignette demonstrates the application of zzcollab's **package paradigm**
+for individual developers creating R packages. The package paradigm implements
+CRAN-ready package development standards with comprehensive testing, documentation,
+and validation frameworks.
+
+## Package Paradigm Overview
+
+The **package paradigm** represents one of zzcollab's three research paradigms,
+specifically designed for R package development workflows:
+
+**Key Components:**
+
+- **CRAN-Ready Structure**: Complete R package architecture conforming to
+  CRAN submission requirements
+- **Development Workflow**: Nine-template system covering development, testing,
+  documentation, and release procedures
+- **Professional Documentation**: Pre-configured with roxygen2, pkgdown, and
+  comprehensive vignette systems
+- **Quality Assurance**: Comprehensive testing framework with coverage targets
+  exceeding 95%
+- **Modern Development Tools**: Integration with devtools, usethis, testthat,
+  and contemporary R package development practices
+
+**Template Structure:**
+
+- `example_functions.R` - Functions with comprehensive roxygen2 documentation
+- `test-example-functions.R` - Comprehensive testthat suite with edge case coverage
+- `test-helpers.R` - Testing utilities and custom expectation functions
+- `dev_workflow.R` - Interactive development menu with automated tasks
+- `getting-started.Rmd` - Comprehensive package introduction vignette
+- `advanced-usage.Rmd` - Advanced functionality and use case documentation
+- `_pkgdown.yml` - Professional documentation website configuration
+- `sample_dataset.R` - Example datasets with comprehensive documentation
+
+## Build Mode Overview
+
+ZZCOLLAB provides three build modes optimized for R package development
+requirements and complexity levels:
+
+**Build Mode Options:**
+
+- **Fast Mode (-F)**: Essential packages for rapid package development
+  (9 packages, approximately 5-minute build time)
+  - Core components: renv, here, usethis, devtools, testthat, knitr,
+    rmarkdown, roxygen2
+  - Applications: Prototype development, CI/CD workflows, minimal package setup
+- **Standard Mode (-S)**: Balanced package selection for typical development
+  workflows (17 packages, approximately 8-minute build time, default)
+  - Includes Fast mode components plus development tools: pkgdown, covr,
+    lintr, styler, goodpractice, spelling
+  - Applications: Professional package development, recommended for individual
+    developers
+- **Comprehensive Mode (-C)**: Extended ecosystem for complex package
+  development (47+ packages, approximately 15-minute build time)
+  - Includes Standard mode components plus specialized tools: rhub, revdepcheck,
+    rcmdcheck, gitcreds, credentials, gh
+  - Applications: CRAN submission workflows, complex dependencies, automated
+    release management
+
+**Usage Examples:**
+```bash
+zzcollab -p my-package -P package -F    # Fast mode
+zzcollab -p my-package -P package -S    # Standard mode (default)
+zzcollab -p my-package -P package -C    # Comprehensive mode
+```
+
+*For detailed build mode documentation, see [Build Modes Guide](../docs/BUILD_MODES.md)*
+
+## Testing Framework Overview
+
+ZZCOLLAB implements a comprehensive testing framework specifically designed for
+R package development with CRAN-level quality standards:
+
+**Testing Components:**
+
+- **Unit Tests**: Individual function validation using testthat framework with
+  comprehensive coverage requirements
+- **Integration Tests**: End-to-end validation of package functionality across
+  multiple function interactions
+- **Documentation Tests**: Automated verification of roxygen2 documentation
+  consistency and example code execution
+- **CRAN Compliance Tests**: Validation against CRAN policy requirements and
+  submission standards
+
+**Package-Specific Testing Features:**
+
+- **Coverage Tracking**: Coverage targets exceeding 95% with automated reporting
+  and threshold enforcement
+- **Example Validation**: Automated testing of all roxygen2 examples with
+  execution verification
+- **Edge Case Testing**: Comprehensive validation of boundary conditions, error
+  handling, and input validation
+- **Cross-Platform Testing**: Validation across multiple R versions and
+  operating systems
+
+**Testing Workflow:**
+
+1. **Development Phase**: Function implementation with corresponding comprehensive
+   test development
+2. **Local Validation**: `make docker-test` executes complete package test suite
+3. **CRAN Checks**: `make docker-check` performs R CMD check validation
+4. **Continuous Integration**: Automated testing across multiple R versions
+   and platforms via GitHub Actions
+
+**Example Test Structure:**
+```r
+test_that("calculate_statistics handles various input types", {
+  # Test numeric input
+  result_numeric <- calculate_statistics(c(1, 2, 3, 4, 5))
+  expect_type(result_numeric, "list")
+  expect_named(result_numeric, c("mean", "median", "sd"))
+
+  # Test edge cases
+  expect_error(calculate_statistics(character(0)), "Input must be numeric")
+  expect_warning(calculate_statistics(c(1, NA, 3)), "Missing values detected")
+})
+```
+
+*For complete testing documentation, see [Testing Guide](../docs/TESTING_GUIDE.md)*
+
+## Configuration and Variant System Overview
+
+ZZCOLLAB implements a hierarchical configuration system optimized for R package
+development across diverse development environments and collaboration contexts:
+
+**Configuration Hierarchy** (priority order):
+
+1. **Project config** (`./zzcollab.yaml`) - Package-specific development settings
+2. **User config** (`~/.zzcollab/config.yaml`) - Individual developer defaults
+3. **System config** (`/etc/zzcollab/config.yaml`) - Institutional R development
+   standards
+4. **Built-in defaults** - Framework fallback values for CRAN compliance
+
+**Docker Variant System for Package Development:**
+
+- **Development-Focused Variants**: Specialized configurations including
+  complete R development toolchains, LaTeX for PDF documentation, and
+  system dependencies for package compilation
+- **CRAN Testing Environments**: Configurations matching CRAN testing
+  infrastructure for submission validation
+- **Cross-Platform Support**: Consistent package development across institutional
+  computing environments and operating systems
+- **Dependency Management**: Automated coordination with system-level
+  dependencies required for package compilation
+
+**Package Development Configuration Domains:**
+
+- **Development Environment**: R version selection, development tool configuration,
+  system dependency management
+- **Documentation Standards**: Roxygen2 configuration, pkgdown settings,
+  vignette rendering preferences
+- **Quality Assurance**: Testing thresholds, CRAN compliance validation,
+  code style enforcement
+- **Release Management**: CRAN submission automation, version control integration,
+  release documentation generation
+
+**Quick Configuration:**
+```bash
+zzcollab --config init                        # Initialize config file
+zzcollab --config set paradigm "package"     # Set package paradigm
+zzcollab --config set build-mode "standard"  # Set development build mode
+zzcollab --config list                       # View current settings
+```
+
+*For comprehensive configuration documentation, see [Configuration Guide](../docs/CONFIGURATION.md) and [Variant System Guide](../docs/VARIANTS.md)*
+
+## Initial Setup (One-Time)
+
+### 1. Install and Configure zzcollab
+
+```bash
+# Clone and install zzcollab framework
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh
+
+# Initialize personal configuration (local development only)
+zzcollab --config init
+zzcollab --config set paradigm "package"        # Default to package paradigm
+zzcollab --config set build-mode "standard"     # Balanced development tools
+zzcollab --config set dotfiles-dir "~/dotfiles" # Optional: your dotfiles
+
+# Optional: Docker Hub configuration (only needed for sharing images)
+# zzcollab --config set team-name "myname"      # Uncomment if sharing images
+```
+
+### 2. Verify Installation
+
+```bash
+# Verify zzcollab installation
+zzcollab --help
+which zzcollab
+
+# Check configuration
+zzcollab --config list
+```
+
+## Project Creation and Setup
+
+### Solo vs Collaborative Development
+
+**Solo Development (Recommended):**
+
+- Work entirely locally with containerized package development environment
+- No Docker Hub account or team configuration required
+- Complete reproducibility for individual package development
+- Compatible with future collaborative package development
+
+**Collaborative Development (Optional):**
+
+- Share Docker images and development environments via Docker Hub
+- Requires `team-name` configuration and `-i` flag for image creation
+- Enables multiple developers to use identical development environments
+
+### Create Package Project
+
+```bash
+# Method 1: Local development (recommended for solo packages)
+zzcollab -p my-analysis-package -P package --github  # Local project
+
+# Method 2: Explicit paradigm specification with build mode
+zzcollab -p my-analysis-package -P package -S --github
+
+# Method 3: Advanced - with collaborative configuration (for team packages)
+# zzcollab -i -p my-analysis-package -P package --github  # Creates shareable environments
+
+# Method 4: Custom variant selection for specialized requirements
+mkdir my-analysis-package && cd my-analysis-package
+zzcollab -p my-analysis-package -P package    # Local project setup
+./add_variant.sh    # Select additional variants like rhub or alpine_minimal
+```
+
+**Project Structure Created:**
+```
+my-analysis-package/
+├── R/                        # Package functions
+│   ├── example_functions.R   # Template functions with documentation
+│   └── sample_dataset.R      # Example dataset documentation
+├── tests/testthat/           # Comprehensive testing framework
+│   ├── test-example-functions.R  # Function tests with 95%+ coverage
+│   └── test-helpers.R        # Testing utilities
+├── man/                      # Generated documentation
+├── vignettes/                # Package vignettes
+│   ├── getting-started.Rmd   # Package introduction
+│   └── advanced-usage.Rmd    # Advanced functionality guide
+├── data/                     # Package datasets
+├── data-raw/                 # Raw data processing scripts
+├── inst/examples/            # Extended examples
+├── pkgdown/                  # Website configuration
+│   └── _pkgdown.yml          # Professional site settings
+├── scripts/
+│   └── dev_workflow.R        # Interactive development menu
+├── DESCRIPTION               # Package metadata (CRAN-ready)
+├── NAMESPACE                 # Function exports
+└── README.md                 # Package overview
+```
+
+## Daily Development Workflow
+
+### 1. Start Development Environment
+
+```bash
+cd my-analysis-package
+
+# Launch development environment (choose interface)
+make docker-zsh         # Command-line interface (recommended)
+make docker-rstudio     # RStudio Server at localhost:8787
+make docker-r           # R console only
+```
+
+### 2. Development Cycle (Inside Container)
+
+The package paradigm follows a systematic CRAN-compliant development pattern:
+
+**Phase 1: Function Development**
+
+```bash
+# Inside the Docker container with complete R development environment
+# Develop package functions with comprehensive documentation
+vim R/analysis_functions.R
+vim R/data_processing.R
+```
+
+**Phase 2: Documentation and Examples**
+
+```bash
+# Create comprehensive documentation with roxygen2
+vim R/analysis_functions.R  # Add roxygen2 documentation blocks
+```
+
+**Phase 3: Testing Implementation**
+
+```bash
+# Develop comprehensive tests for all functions
+vim tests/testthat/test-analysis_functions.R
+vim tests/testthat/test-data_processing.R
+```
+
+**Phase 4: Vignette Development**
+
+```bash
+# Create package vignettes and documentation website
+vim vignettes/getting-started.Rmd
+vim vignettes/advanced-usage.Rmd
+```
+
+**Execute Development Cycle:**
+
+```bash
+# Use interactive development workflow
+R
+source("scripts/dev_workflow.R")  # Launches development menu
+
+# Alternatively, use individual commands:
+devtools::load_all()              # Load package functions
+devtools::document()              # Generate documentation
+devtools::test()                  # Run test suite
+devtools::check()                 # R CMD check validation
+devtools::build_readme()          # Update README
+pkgdown::build_site()             # Generate documentation website
+quit()
+```
+
+### 3. Validation and Version Control
+
+```bash
+# Exit development container
+exit
+
+# Validate complete package
+make docker-check-renv-fix    # Update dependency management
+make docker-test             # Run comprehensive test suite
+make docker-check            # R CMD check validation
+
+# Generate documentation website
+make docker-pkgdown          # Build package website
+
+# Version control commitment
+git add .
+git commit -m "Implement core analysis functions
+
+PACKAGE DEVELOPMENT:
+- Complete function implementation with roxygen2 documentation
+- Comprehensive test suite with >95% coverage
+- Example datasets with proper documentation
+- Professional package website with pkgdown
+
+TECHNICAL IMPLEMENTATION:
+- CRAN-compliant package structure and metadata
+- Comprehensive testing framework with edge case coverage
+- Multi-format documentation (manual pages, vignettes, website)
+- Complete dependency management and namespace declarations
+
+FUNCTIONS IMPLEMENTED:
+- 6 documented analysis functions with parameter validation
+- 3 data processing utilities with comprehensive error handling
+- 2 visualization functions with customizable themes
+- Complete example dataset with metadata documentation
+
+All tests passing, documentation complete, CRAN compliance verified."
+
+git push origin main
+```
+
+## Complete Practical Example: Statistical Analysis Package
+
+### Step 1: Project Setup and Package Initialization
+
+```bash
+# Create the package development project
+zzcollab -p statanalysis -P package --github
+cd statanalysis
+
+# Start development environment
+make docker-zsh
+```
+
+**Inside container - Initialize package development:**
+
+```bash
+# Use interactive development workflow
+R
+source("scripts/dev_workflow.R")
+# Select option 1: "Initialize package development"
+quit()
+```
+
+### Step 2: Core Function Development
+
+Edit `R/analysis_functions.R`:
+
+```r
+#' Calculate Descriptive Statistics
+#'
+#' Computes comprehensive descriptive statistics for numeric vectors with
+#' robust handling of missing values and edge cases.
+#'
+#' @param x Numeric vector. The data for which to calculate statistics.
+#' @param na.rm Logical. Should missing values be removed? Default is TRUE.
+#' @param trim Numeric. Fraction of observations to be trimmed from each
+#'   end of x before calculating the mean. Default is 0.
+#' @param digits Integer. Number of decimal places for rounding results.
+#'   Default is 3.
+#'
+#' @return A named list containing:
+#'   \describe{
+#'     \item{n}{Sample size (after removing missing values if na.rm = TRUE)}
+#'     \item{mean}{Arithmetic mean (trimmed if trim > 0)}
+#'     \item{median}{Median value}
+#'     \item{sd}{Standard deviation}
+#'     \item{var}{Variance}
+#'     \item{min}{Minimum value}
+#'     \item{max}{Maximum value}
+#'     \item{q25}{First quartile}
+#'     \item{q75}{Third quartile}
+#'     \item{iqr}{Interquartile range}
+#'     \item{skewness}{Skewness coefficient}
+#'     \item{kurtosis}{Excess kurtosis coefficient}
+#'   }
+#'
+#' @details
+#' This function provides a comprehensive set of descriptive statistics
+#' commonly used in exploratory data analysis. The function handles:
+#' - Missing value treatment with flexible options
+#' - Robust statistics calculation with trimming options
+#' - Comprehensive distributional measures including skewness and kurtosis
+#' - Input validation with informative error messages
+#'
+#' Missing values are handled according to the na.rm parameter. When
+#' na.rm = FALSE and missing values are present, most statistics will
+#' return NA. When na.rm = TRUE, calculations proceed with available data.
+#'
+#' @examples
+#' # Basic usage with complete data
+#' data <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+#' stats <- calculate_descriptive_stats(data)
+#' print(stats)
+#'
+#' # Handling missing values
+#' data_na <- c(1, 2, NA, 4, 5, NA, 7, 8, 9, 10)
+#' stats_na <- calculate_descriptive_stats(data_na, na.rm = TRUE)
+#' print(stats_na)
+#'
+#' # Using trimmed mean for robust estimation
+#' data_outliers <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 100)
+#' stats_trim <- calculate_descriptive_stats(data_outliers, trim = 0.1)
+#' print(stats_trim)
+#'
+#' # Custom precision
+#' stats_precise <- calculate_descriptive_stats(data, digits = 5)
+#' print(stats_precise)
+#'
+#' @seealso \code{\link{summary}}, \code{\link{mean}}, \code{\link{sd}}
+#'
+#' @export
+calculate_descriptive_stats <- function(x, na.rm = TRUE, trim = 0, digits = 3) {
+  # Input validation
+  if (!is.numeric(x)) {
+    stop("Input 'x' must be numeric. Received: ", class(x)[1])
+  }
+
+  if (length(x) == 0) {
+    stop("Input 'x' cannot be empty")
+  }
+
+  if (!is.logical(na.rm) || length(na.rm) != 1) {
+    stop("Parameter 'na.rm' must be a single logical value")
+  }
+
+  if (!is.numeric(trim) || length(trim) != 1 || trim < 0 || trim >= 0.5) {
+    stop("Parameter 'trim' must be numeric between 0 and 0.5")
+  }
+
+  if (!is.numeric(digits) || length(digits) != 1 || digits < 0) {
+    stop("Parameter 'digits' must be a non-negative integer")
+  }
+
+  # Handle missing values
+  if (!na.rm && any(is.na(x))) {
+    warning("Missing values present and na.rm = FALSE. Results will contain NA.")
+  }
+
+  # Calculate statistics
+  n <- if (na.rm) sum(!is.na(x)) else length(x)
+
+  if (na.rm && n == 0) {
+    stop("No non-missing values available for calculation")
+  }
+
+  # Basic statistics
+  mean_val <- mean(x, na.rm = na.rm, trim = trim)
+  median_val <- median(x, na.rm = na.rm)
+  sd_val <- sd(x, na.rm = na.rm)
+  var_val <- var(x, na.rm = na.rm)
+  min_val <- min(x, na.rm = na.rm)
+  max_val <- max(x, na.rm = na.rm)
+
+  # Quantiles
+  q25 <- quantile(x, 0.25, na.rm = na.rm, names = FALSE)
+  q75 <- quantile(x, 0.75, na.rm = na.rm, names = FALSE)
+  iqr_val <- q75 - q25
+
+  # Higher order moments
+  if (na.rm) {
+    x_clean <- x[!is.na(x)]
+  } else {
+    x_clean <- x
+  }
+
+  # Skewness calculation
+  if (length(x_clean) >= 3 && !any(is.na(x_clean))) {
+    x_centered <- x_clean - mean(x_clean)
+    skewness_val <- mean(x_centered^3) / (mean(x_centered^2))^(3/2)
+    kurtosis_val <- mean(x_centered^4) / (mean(x_centered^2))^2 - 3
+  } else {
+    skewness_val <- NA
+    kurtosis_val <- NA
+  }
+
+  # Compile results
+  results <- list(
+    n = n,
+    mean = round(mean_val, digits),
+    median = round(median_val, digits),
+    sd = round(sd_val, digits),
+    var = round(var_val, digits),
+    min = round(min_val, digits),
+    max = round(max_val, digits),
+    q25 = round(q25, digits),
+    q75 = round(q75, digits),
+    iqr = round(iqr_val, digits),
+    skewness = round(skewness_val, digits),
+    kurtosis = round(kurtosis_val, digits)
+  )
+
+  # Add metadata
+  attr(results, "class") <- c("descriptive_stats", "list")
+  attr(results, "trim") <- trim
+  attr(results, "na.rm") <- na.rm
+  attr(results, "call") <- match.call()
+
+  return(results)
+}
+
+#' Print Method for Descriptive Statistics
+#'
+#' Print method for objects of class "descriptive_stats" created by
+#' calculate_descriptive_stats().
+#'
+#' @param x Object of class "descriptive_stats"
+#' @param ... Additional arguments passed to print methods
+#'
+#' @return Invisibly returns the input object
+#' @export
+#'
+#' @examples
+#' data <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+#' stats <- calculate_descriptive_stats(data)
+#' print(stats)
+print.descriptive_stats <- function(x, ...) {
+  cat("Descriptive Statistics\n")
+  cat("======================\n\n")
+
+  cat("Sample size:", x$n, "\n\n")
+
+  cat("Central Tendency:\n")
+  cat("  Mean:   ", x$mean, "\n")
+  cat("  Median: ", x$median, "\n\n")
+
+  cat("Variability:\n")
+  cat("  SD:     ", x$sd, "\n")
+  cat("  Var:    ", x$var, "\n")
+  cat("  IQR:    ", x$iqr, "\n\n")
+
+  cat("Range:\n")
+  cat("  Min:    ", x$min, "\n")
+  cat("  Q25:    ", x$q25, "\n")
+  cat("  Q75:    ", x$q75, "\n")
+  cat("  Max:    ", x$max, "\n\n")
+
+  cat("Distribution Shape:\n")
+  cat("  Skewness: ", x$skewness, "\n")
+  cat("  Kurtosis: ", x$kurtosis, "\n")
+
+  # Print method parameters
+  trim <- attr(x, "trim")
+  na.rm <- attr(x, "na.rm")
+  if (trim > 0) {
+    cat("\nNote: Trimmed mean used (trim =", trim, ")\n")
+  }
+  if (!na.rm) {
+    cat("\nNote: Missing values not removed\n")
+  }
+
+  invisible(x)
+}
+```
+
+### Step 3: Comprehensive Testing Implementation
+
+Edit `tests/testthat/test-analysis_functions.R`:
+
+```r
+# Comprehensive Tests for Statistical Analysis Functions
+
+# Test calculate_descriptive_stats function
+context("Descriptive Statistics Calculations")
+
+test_that("calculate_descriptive_stats handles basic numeric input", {
+  # Test with simple numeric vector
+  data <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+  result <- calculate_descriptive_stats(data)
+
+  # Check class and structure
+  expect_s3_class(result, "descriptive_stats")
+  expect_type(result, "list")
+
+  # Check required elements
+  expected_names <- c("n", "mean", "median", "sd", "var", "min", "max",
+                     "q25", "q75", "iqr", "skewness", "kurtosis")
+  expect_named(result, expected_names)
+
+  # Check specific calculations
+  expect_equal(result$n, 10)
+  expect_equal(result$mean, 5.5)
+  expect_equal(result$median, 5.5)
+  expect_equal(result$min, 1)
+  expect_equal(result$max, 10)
+})
+
+test_that("calculate_descriptive_stats handles missing values correctly", {
+  # Test with missing values
+  data_na <- c(1, 2, NA, 4, 5, NA, 7, 8, 9, 10)
+
+  # Test with na.rm = TRUE
+  result_rm <- calculate_descriptive_stats(data_na, na.rm = TRUE)
+  expect_equal(result_rm$n, 8)
+  expect_false(is.na(result_rm$mean))
+
+  # Test with na.rm = FALSE
+  expect_warning(result_keep <- calculate_descriptive_stats(data_na, na.rm = FALSE),
+                "Missing values present")
+  expect_equal(result_keep$n, 10)
+  expect_true(is.na(result_keep$mean))
+})
+
+test_that("calculate_descriptive_stats validates input parameters", {
+  # Test non-numeric input
+  expect_error(calculate_descriptive_stats(c("a", "b", "c")),
+               "Input 'x' must be numeric")
+
+  # Test empty input
+  expect_error(calculate_descriptive_stats(numeric(0)),
+               "Input 'x' cannot be empty")
+
+  # Test invalid na.rm parameter
+  expect_error(calculate_descriptive_stats(c(1, 2, 3), na.rm = "yes"),
+               "Parameter 'na.rm' must be a single logical value")
+
+  # Test invalid trim parameter
+  expect_error(calculate_descriptive_stats(c(1, 2, 3), trim = -0.1),
+               "Parameter 'trim' must be numeric between 0 and 0.5")
+
+  expect_error(calculate_descriptive_stats(c(1, 2, 3), trim = 0.6),
+               "Parameter 'trim' must be numeric between 0 and 0.5")
+
+  # Test invalid digits parameter
+  expect_error(calculate_descriptive_stats(c(1, 2, 3), digits = -1),
+               "Parameter 'digits' must be a non-negative integer")
+})
+
+test_that("calculate_descriptive_stats handles edge cases", {
+  # Test with single value
+  single_val <- c(5)
+  result_single <- calculate_descriptive_stats(single_val)
+  expect_equal(result_single$mean, 5)
+  expect_equal(result_single$sd, 0)
+  expect_true(is.na(result_single$skewness))  # Insufficient data
+
+  # Test with identical values
+  identical_vals <- rep(3, 10)
+  result_identical <- calculate_descriptive_stats(identical_vals)
+  expect_equal(result_identical$mean, 3)
+  expect_equal(result_identical$sd, 0)
+  expect_equal(result_identical$var, 0)
+
+  # Test with all missing values
+  all_na <- c(NA, NA, NA)
+  expect_error(calculate_descriptive_stats(all_na, na.rm = TRUE),
+               "No non-missing values available")
+})
+
+test_that("calculate_descriptive_stats trimming works correctly", {
+  # Test data with outliers
+  data_outliers <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 100)
+
+  # Without trimming
+  result_no_trim <- calculate_descriptive_stats(data_outliers, trim = 0)
+
+  # With trimming
+  result_trim <- calculate_descriptive_stats(data_outliers, trim = 0.1)
+
+  # Trimmed mean should be less affected by outlier
+  expect_lt(result_trim$mean, result_no_trim$mean)
+
+  # Check that trim attribute is preserved
+  expect_equal(attr(result_trim, "trim"), 0.1)
+})
+
+test_that("calculate_descriptive_stats digits parameter works", {
+  data <- c(1/3, 2/3, 1, 4/3, 5/3)
+
+  # Test different digit specifications
+  result_3 <- calculate_descriptive_stats(data, digits = 3)
+  result_1 <- calculate_descriptive_stats(data, digits = 1)
+
+  # Check that results are rounded appropriately
+  expect_equal(nchar(sub(".*\\.", "", as.character(result_3$mean))), 3)
+  expect_equal(nchar(sub(".*\\.", "", as.character(result_1$mean))), 1)
+})
+
+test_that("print.descriptive_stats produces readable output", {
+  data <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+  result <- calculate_descriptive_stats(data)
+
+  # Test that print method works without error
+  expect_output(print(result), "Descriptive Statistics")
+  expect_output(print(result), "Sample size")
+  expect_output(print(result), "Central Tendency")
+  expect_output(print(result), "Variability")
+
+  # Test that print returns object invisibly
+  expect_identical(print(result), result)
+})
+
+# Test statistical accuracy
+test_that("calculate_descriptive_stats produces statistically accurate results", {
+  # Use known data with calculated expected values
+  data <- c(2, 4, 4, 4, 5, 5, 7, 9)  # n=8
+  result <- calculate_descriptive_stats(data, digits = 4)
+
+  # Verify against hand-calculated values
+  expect_equal(result$mean, 5)      # (2+4+4+4+5+5+7+9)/8 = 40/8 = 5
+  expect_equal(result$median, 4.5)  # (4+5)/2 = 4.5
+  expect_equal(result$min, 2)
+  expect_equal(result$max, 9)
+
+  # Verify standard deviation calculation
+  # Expected SD: sqrt(sum((x - mean)^2) / (n-1))
+  expected_sd <- sqrt(sum((data - 5)^2) / 7)
+  expect_equal(result$sd, round(expected_sd, 4))
+})
+
+# Integration tests
+test_that("calculate_descriptive_stats integrates properly with R ecosystem", {
+  # Test with data.frame column
+  df <- data.frame(x = c(1, 2, 3, 4, 5), y = c(2, 4, 6, 8, 10))
+  result_df <- calculate_descriptive_stats(df$x)
+  expect_s3_class(result_df, "descriptive_stats")
+
+  # Test with matrix column
+  mat <- matrix(1:10, ncol = 2)
+  result_mat <- calculate_descriptive_stats(mat[, 1])
+  expect_s3_class(result_mat, "descriptive_stats")
+
+  # Test with factor (should fail)
+  factor_data <- factor(c("a", "b", "c"))
+  expect_error(calculate_descriptive_stats(factor_data),
+               "Input 'x' must be numeric")
+})
+```
+
+### Step 4: Package Documentation and Website
+
+Edit `vignettes/getting-started.Rmd`:
+
+```rmarkdown
+---
+title: "Getting Started with statanalysis"
+author: "Package Developer"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with statanalysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+# Introduction
+
+The `statanalysis` package provides comprehensive tools for statistical analysis
+with an emphasis on robust computation, thorough documentation, and user-friendly
+interfaces. This vignette demonstrates the core functionality and typical usage
+patterns.
+
+## Package Philosophy
+
+The package design follows several key principles:
+
+- **Comprehensive Output**: Statistical functions provide complete information
+  rather than minimal summaries
+- **Input Validation**: Extensive parameter checking with informative error messages
+- **Missing Value Handling**: Flexible approaches to missing data with clear documentation
+- **Reproducibility**: Consistent behavior across R versions and platforms
+
+## Installation
+
+Install the development version from GitHub:
+
+```{r installation, eval = FALSE}
+# Install from GitHub
+devtools::install_github("your-username/statanalysis")
+
+# Load the package
+library(statanalysis)
+```
+
+```{r load-package, message = FALSE}
+library(statanalysis)
+```
+
+# Core Functions
+
+## Descriptive Statistics
+
+The `calculate_descriptive_stats()` function provides comprehensive descriptive
+statistics for numeric data:
+
+```{r descriptive-basic}
+# Generate sample data
+set.seed(123)
+sample_data <- rnorm(100, mean = 50, sd = 10)
+
+# Calculate descriptive statistics
+stats <- calculate_descriptive_stats(sample_data)
+print(stats)
+```
+
+### Handling Missing Values
+
+The function provides flexible missing value handling:
+
+```{r descriptive-missing}
+# Data with missing values
+data_with_na <- c(sample_data[1:50], NA, NA, sample_data[51:97])
+
+# Remove missing values (default)
+stats_removed <- calculate_descriptive_stats(data_with_na, na.rm = TRUE)
+cat("Sample size with NA removal:", stats_removed$n, "\n")
+
+# Keep missing values (produces NA results)
+stats_kept <- calculate_descriptive_stats(data_with_na, na.rm = FALSE)
+cat("Mean with NA retention:", stats_kept$mean, "\n")
+```
+
+### Robust Estimation with Trimming
+
+For data with outliers, use trimmed statistics:
+
+```{r descriptive-trimming}
+# Add extreme outliers
+outlier_data <- c(sample_data, 200, -100)
+
+# Compare regular and trimmed means
+regular_stats <- calculate_descriptive_stats(outlier_data)
+trimmed_stats <- calculate_descriptive_stats(outlier_data, trim = 0.1)
+
+cat("Regular mean:  ", regular_stats$mean, "\n")
+cat("Trimmed mean:  ", trimmed_stats$mean, "\n")
+```
+
+### Custom Precision
+
+Control the precision of results:
+
+```{r descriptive-precision}
+# High precision results
+precise_stats <- calculate_descriptive_stats(sample_data, digits = 6)
+cat("High precision mean:", precise_stats$mean, "\n")
+
+# Low precision results
+rounded_stats <- calculate_descriptive_stats(sample_data, digits = 1)
+cat("Rounded mean:", rounded_stats$mean, "\n")
+```
+
+## Working with Different Data Types
+
+### Numeric Vectors
+
+```{r numeric-vectors}
+# Integer data
+integer_data <- 1:20
+int_stats <- calculate_descriptive_stats(integer_data)
+print(int_stats)
+
+# Continuous data
+continuous_data <- runif(50, min = 0, max = 100)
+cont_stats <- calculate_descriptive_stats(continuous_data)
+print(cont_stats)
+```
+
+### Data Frame Integration
+
+```{r dataframe-integration}
+# Create sample data frame
+df <- data.frame(
+  group = rep(c("A", "B", "C"), each = 20),
+  value1 = rnorm(60, mean = c(10, 20, 30), sd = 5),
+  value2 = rnorm(60, mean = c(50, 40, 60), sd = 8)
+)
+
+# Analyze columns
+value1_stats <- calculate_descriptive_stats(df$value1)
+value2_stats <- calculate_descriptive_stats(df$value2)
+
+# Compare means
+cat("Value1 mean:", value1_stats$mean, "\n")
+cat("Value2 mean:", value2_stats$mean, "\n")
+```
+
+# Advanced Usage
+
+## Error Handling and Input Validation
+
+The package provides comprehensive error checking:
+
+```{r error-handling, error = TRUE}
+# Non-numeric input
+try(calculate_descriptive_stats(c("a", "b", "c")))
+
+# Empty input
+try(calculate_descriptive_stats(numeric(0)))
+
+# Invalid parameters
+try(calculate_descriptive_stats(c(1, 2, 3), trim = -0.1))
+```
+
+## Interpreting Results
+
+### Distribution Shape Assessment
+
+```{r distribution-assessment}
+# Generate different distributions
+normal_data <- rnorm(1000, mean = 0, sd = 1)
+skewed_data <- rexp(1000, rate = 1)
+
+# Analyze shape characteristics
+normal_stats <- calculate_descriptive_stats(normal_data)
+skewed_stats <- calculate_descriptive_stats(skewed_data)
+
+cat("Normal distribution skewness:", normal_stats$skewness, "\n")
+cat("Exponential distribution skewness:", skewed_stats$skewness, "\n")
+
+cat("Normal distribution kurtosis:", normal_stats$kurtosis, "\n")
+cat("Exponential distribution kurtosis:", skewed_stats$kurtosis, "\n")
+```
+
+### Variability Assessment
+
+```{r variability-assessment}
+# Compare variability measures
+high_var <- rnorm(100, mean = 50, sd = 20)
+low_var <- rnorm(100, mean = 50, sd = 5)
+
+high_stats <- calculate_descriptive_stats(high_var)
+low_stats <- calculate_descriptive_stats(low_var)
+
+cat("High variability - SD:", high_stats$sd, ", IQR:", high_stats$iqr, "\n")
+cat("Low variability - SD:", low_stats$sd, ", IQR:", low_stats$iqr, "\n")
+```
+
+# Best Practices
+
+## Data Preprocessing
+
+Always examine your data before analysis:
+
+```{r data-preprocessing}
+# Examine data structure
+str(sample_data)
+summary(sample_data)
+
+# Check for missing values
+sum(is.na(sample_data))
+
+# Look for potential outliers
+boxplot(sample_data, main = "Data Distribution")
+```
+
+## Reproducible Analysis
+
+Set random seeds for reproducible results:
+
+```{r reproducibility}
+# Set seed for reproducible random data
+set.seed(42)
+analysis_data <- rnorm(50, mean = 100, sd = 15)
+
+# Analyze with consistent parameters
+reproducible_stats <- calculate_descriptive_stats(
+  analysis_data,
+  na.rm = TRUE,
+  trim = 0,
+  digits = 3
+)
+```
+
+## Documentation and Reporting
+
+Document your analysis parameters:
+
+```{r documentation}
+# Document analysis parameters
+analysis_params <- list(
+  data_source = "Simulated normal distribution",
+  sample_size = length(analysis_data),
+  missing_handling = "na.rm = TRUE",
+  trimming = "No trimming applied",
+  precision = "3 decimal places"
+)
+
+# Include in results
+results_with_metadata <- list(
+  statistics = reproducible_stats,
+  parameters = analysis_params,
+  timestamp = Sys.time()
+)
+
+str(results_with_metadata)
+```
+
+# Next Steps
+
+This introduction covers the basic functionality of the `statanalysis` package.
+For more advanced features and use cases, see:
+
+- `vignette("advanced-usage")` - Advanced statistical procedures
+- `help(package = "statanalysis")` - Complete function reference
+- Package website - Comprehensive documentation and examples
+
+## Getting Help
+
+- Use `?function_name` for individual function documentation
+- Report issues at: https://github.com/your-username/statanalysis/issues
+- View source code at: https://github.com/your-username/statanalysis
+```
+
+### Step 5: Interactive Development Workflow
+
+Edit `scripts/dev_workflow.R` to customize the development menu:
+
+```r
+# Interactive Development Workflow Menu for statanalysis Package
+# This script provides a convenient interface for common package development tasks
+
+# Load required packages for development
+library(devtools)
+library(usethis)
+library(pkgdown)
+library(testthat)
+
+# Display development menu
+show_dev_menu <- function() {
+  cat("\n=== STATANALYSIS PACKAGE DEVELOPMENT MENU ===\n")
+  cat("1.  Load and test package functions\n")
+  cat("2.  Generate documentation\n")
+  cat("3.  Run comprehensive test suite\n")
+  cat("4.  Check package (R CMD check)\n")
+  cat("5.  Build package website\n")
+  cat("6.  Update README.md\n")
+  cat("7.  Check test coverage\n")
+  cat("8.  Lint code style\n")
+  cat("9.  Spell check documentation\n")
+  cat("10. Install and restart\n")
+  cat("11. Build package tarball\n")
+  cat("12. Submit to CRAN (check first!)\n")
+  cat("0.  Exit\n")
+  cat("===============================================\n")
+
+  choice <- readline(prompt = "Select option (0-12): ")
+  return(choice)
+}
+
+# Execute selected option
+execute_choice <- function(choice) {
+  switch(choice,
+    "1" = {
+      cat("Loading package functions...\n")
+      devtools::load_all()
+      cat("Package loaded. Test your functions in the console.\n")
+    },
+    "2" = {
+      cat("Generating documentation...\n")
+      devtools::document()
+      cat("Documentation updated.\n")
+    },
+    "3" = {
+      cat("Running test suite...\n")
+      devtools::test()
+    },
+    "4" = {
+      cat("Running R CMD check...\n")
+      devtools::check()
+    },
+    "5" = {
+      cat("Building package website...\n")
+      pkgdown::build_site()
+      cat("Website built. View at docs/index.html\n")
+    },
+    "6" = {
+      cat("Updating README...\n")
+      devtools::build_readme()
+      cat("README updated.\n")
+    },
+    "7" = {
+      if (require("covr", quietly = TRUE)) {
+        cat("Checking test coverage...\n")
+        covr::package_coverage()
+      } else {
+        cat("Install 'covr' package for coverage analysis.\n")
+      }
+    },
+    "8" = {
+      if (require("lintr", quietly = TRUE)) {
+        cat("Checking code style...\n")
+        lintr::lint_package()
+      } else {
+        cat("Install 'lintr' package for code style checking.\n")
+      }
+    },
+    "9" = {
+      cat("Checking spelling...\n")
+      devtools::spell_check()
+    },
+    "10" = {
+      cat("Installing package...\n")
+      devtools::install()
+      cat("Package installed. Restart R session to use.\n")
+    },
+    "11" = {
+      cat("Building package tarball...\n")
+      devtools::build()
+      cat("Package tarball created.\n")
+    },
+    "12" = {
+      cat("CRAN submission preparation...\n")
+      cat("WARNING: Only submit to CRAN after thorough testing!\n")
+      devtools::release()
+    },
+    "0" = {
+      cat("Exiting development menu.\n")
+      return(FALSE)
+    },
+    {
+      cat("Invalid option. Please select 0-12.\n")
+    }
+  )
+  return(TRUE)
+}
+
+# Main development loop
+run_dev_workflow <- function() {
+  continue <- TRUE
+  while (continue) {
+    choice <- show_dev_menu()
+    continue <- execute_choice(choice)
+    if (continue && choice != "0") {
+      readline(prompt = "\nPress Enter to continue...")
+    }
+  }
+}
+
+# Auto-start if sourced interactively
+if (interactive()) {
+  run_dev_workflow()
+} else {
+  cat("Source this file interactively to start the development menu.\n")
+}
+```
+
+### Step 6: Package Website Configuration
+
+Edit `_pkgdown.yml`:
+
+```yaml
+url: https://your-username.github.io/statanalysis/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+
+navbar:
+  title: "statanalysis"
+  left:
+    - icon: fa-home fa-lg
+      href: index.html
+    - text: "Reference"
+      href: reference/index.html
+    - text: "Articles"
+      menu:
+        - text: "Getting Started"
+          href: articles/getting-started.html
+        - text: "Advanced Usage"
+          href: articles/advanced-usage.html
+    - text: "News"
+      href: news/index.html
+  right:
+    - icon: fa-github fa-lg
+      href: https://github.com/your-username/statanalysis/
+
+home:
+  title: "Statistical Analysis Tools for R"
+  description: >
+    Comprehensive statistical analysis functions with robust computation,
+    thorough input validation, and user-friendly interfaces.
+
+reference:
+  - title: "Core Functions"
+    desc: "Main statistical analysis functions"
+    contents:
+      - calculate_descriptive_stats
+      - print.descriptive_stats
+
+  - title: "Datasets"
+    desc: "Example datasets included with the package"
+    contents:
+      - has_concept("datasets")
+
+articles:
+  - title: "Getting Started"
+    navbar: "Getting Started"
+    contents:
+      - getting-started
+
+  - title: "Advanced Usage"
+    navbar: "Advanced Usage"
+    contents:
+      - advanced-usage
+
+authors:
+  Your Name:
+    href: "https://your-website.com"
+```
+
+### Step 7: Final Validation and CRAN Submission Preparation
+
+```bash
+# Exit container
+exit
+
+# Comprehensive package validation
+make docker-check-renv-fix    # Update dependency management
+make docker-test             # Run comprehensive test suite
+make docker-check            # Full R CMD check
+make docker-coverage         # Check test coverage
+
+# Generate package website
+make docker-pkgdown          # Build documentation website
+
+# CRAN submission preparation
+make docker-zsh
+R
+devtools::check_win_devel()   # Check on Windows development version
+devtools::check_mac_release() # Check on macOS release version
+devtools::release_checks()    # Comprehensive pre-submission checks
+quit()
+exit
+
+# Final commitment with CRAN-ready status
+git add .
+git commit -m "Complete CRAN-ready statistical analysis package
+
+PACKAGE COMPLETION:
+- Comprehensive statistical analysis functions with robust computation
+- Professional documentation with roxygen2 and comprehensive vignettes
+- Complete test coverage (>95%) with edge case validation
+- CRAN compliance verified across multiple platforms
+
+TECHNICAL IMPLEMENTATION:
+- Full R package structure with proper DESCRIPTION and NAMESPACE
+- Professional website with pkgdown and Bootstrap 5 styling
+- Interactive development workflow with comprehensive automation
+- Multi-platform compatibility and dependency management
+
+FUNCTIONS DELIVERED:
+- calculate_descriptive_stats(): Comprehensive descriptive statistics
+- print.descriptive_stats(): Professional output formatting
+- Complete input validation and error handling
+- Example datasets with comprehensive documentation
+
+QUALITY ASSURANCE:
+- 95%+ test coverage with comprehensive edge case testing
+- R CMD check passes on multiple platforms and R versions
+- Professional documentation website with comprehensive examples
+- CRAN submission preparation completed and verified
+
+Package ready for CRAN submission and professional deployment."
+
+git push origin main
+git tag v1.0.0-cran-ready
+git push origin v1.0.0-cran-ready
+```
+
+## Demonstrated Methodological Features
+
+This package workflow implementation demonstrates the paradigm's development capabilities:
+
+**1. CRAN-Compliant Architecture:**
+
+- Complete R package structure with proper metadata and namespace management
+- Professional documentation standards with roxygen2 and comprehensive examples
+- Quality assurance framework exceeding CRAN submission requirements
+
+**2. Professional Development Standards:**
+
+- Comprehensive testing framework with coverage exceeding 95%
+- Input validation with informative error handling and edge case coverage
+- Professional documentation website with Bootstrap styling and comprehensive navigation
+
+**3. Reproducible Development Environment:**
+
+- Containerized development environment with consistent toolchain
+- Interactive development workflow with comprehensive automation
+- Complete dependency management with renv integration
+
+**4. Collaborative Infrastructure:**
+
+- Version control integration with professional release management
+- Standardized development workflows for team collaboration
+- Professional package website with comprehensive documentation
+
+**5. Quality Assurance Framework:**
+
+- Multi-platform compatibility testing and validation
+- Comprehensive statistical accuracy verification
+- CRAN submission preparation with automated compliance checking
+
+## Transitioning from Solo to Collaborative Package Development
+
+Individual package projects maintain compatibility for collaborative development:
+
+### 1. Enable Collaborative Infrastructure
+```bash
+# Configure collaborative sharing (one-time setup)
+zzcollab --config set team-name "your-research-group"
+
+# Create shareable development environments
+cd your-package
+zzcollab -i -t your-team -p your-package -B rstudio
+```
+
+### 2. Team Developer Integration
+```bash
+# Team members access identical development environments
+git clone https://github.com/your-team/your-package.git
+cd your-package
+zzcollab -t your-team -p your-package -I rstudio
+
+# Equivalent development environment for collaborative programming
+make docker-rstudio
+```
+
+The zzcollab framework enables individual package development without collaborative infrastructure requirements while maintaining compatibility for multi-developer open source projects.
+
+## Characteristics of Package Paradigm Workflow
+
+The package paradigm demonstrates the following methodological characteristics:
+
+- **CRAN Compliance Standards**: Complete adherence to CRAN policies with
+  automated validation and multi-platform compatibility testing
+- **Professional Documentation**: Comprehensive roxygen2 documentation with
+  professional website generation and extensive example coverage
+- **Quality Assurance Excellence**: Testing framework with coverage exceeding
+  95% and comprehensive edge case validation
+- **Development Workflow Automation**: Interactive development environment with
+  comprehensive task automation and professional release management
+- **Collaborative Compatibility**: Standardized development environment enabling
+  transparent team collaboration and open source contribution
+- **Reproducible Development**: Containerized development environment with
+  complete dependency management and cross-platform consistency
+- **Professional Deployment**: Complete package website with professional
+  styling and comprehensive documentation navigation
+- **Long-term Maintenance**: Version control integration with professional
+  release management and comprehensive change documentation
+
+The package paradigm provides a comprehensive framework for professional R
+package development, integrating modern development practices, comprehensive
+quality assurance, and collaborative infrastructure within a unified development environment.
+
+<function_calls>
+<invoke name="TodoWrite">
+<parameter name="todos">[{"content": "Create solo developer manuscript paradigm vignette", "status": "completed", "activeForm": "Creating solo developer manuscript paradigm vignette"}, {"content": "Create solo developer package paradigm vignette", "status": "completed", "activeForm": "Creating solo developer package paradigm vignette"}]

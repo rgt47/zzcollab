@@ -94,20 +94,37 @@ make docker-zsh
 
 ## Step 1: Develop Analysis Functions
 
-Start by creating your analysis functions in the `R/` directory:
+The install program creates `R/analysis_functions.R` with template functions that you can customize for your research. Start by adapting these templates:
 
 ```r
-# R/data_processing.R
+# R/analysis_functions.R (created by zzcollab install)
+# The install program creates template functions that you can customize:
+
+#' Prepare data for analysis
+#' @param data Raw dataset
+#' @return Cleaned and processed data
 prepare_penguin_data <- function(data = palmerpenguins::penguins) {
+  # Customize the clean_raw_data() template function
   data %>%
     filter(!is.na(bill_length_mm), !is.na(body_mass_g)) %>%
     mutate(species = as.factor(species))
 }
 
+#' Analyze morphological patterns
+#' @param data Processed dataset
+#' @return Statistical model results
 analyze_morphology <- function(data) {
+  # Customize the fit_primary_model() template function
   model <- lm(bill_length_mm ~ species + body_mass_g, data = data)
   broom::tidy(model)
 }
+
+# Note: The install program also creates these template functions:
+# - check_analysis_currency() - Check if results are up to date
+# - clean_raw_data() - Generic data cleaning template
+# - validate_data_quality() - Data quality validation
+# - compute_descriptive_statistics() - Descriptive statistics
+# - fit_primary_model() - Generic statistical modeling template
 ```
 
 ## Step 2: Write Tests
@@ -115,7 +132,8 @@ analyze_morphology <- function(data) {
 Create comprehensive tests for your functions:
 
 ```r
-# tests/testthat/test-data-processing.R
+# tests/testthat/test-analysis-functions.R
+# The install program creates this test file structure
 test_that("prepare_penguin_data works correctly", {
   result <- prepare_penguin_data()
   expect_s3_class(result, "data.frame")
@@ -173,9 +191,12 @@ bibliography: references.bib
 
 ```r
 # Setup chunk loads your package functions
-library(penguinmorphology)
+library(penguinmorphology)  # Your project package name
 library(dplyr)
 library(ggplot2)
+
+# Load development version of your functions
+devtools::load_all()
 
 # Use your analysis functions
 data <- prepare_penguin_data()
@@ -205,20 +226,26 @@ The `analysis/reproduce/` directory contains numbered scripts that reproduce you
 
 ```r
 # analysis/reproduce/01_data_preparation.R
-source("R/data_processing.R")
+# This script is created by the install program
+library(here)
+devtools::load_all()  # Load your package functions
+
 data <- prepare_penguin_data()
-saveRDS(data, "data/processed_penguins.rds")
+saveRDS(data, here("data", "derived_data", "processed_penguins.rds"))
 
 # analysis/reproduce/02_statistical_analysis.R
-data <- readRDS("data/processed_penguins.rds")
+# This script is created by the install program
+data <- readRDS(here("data", "derived_data", "processed_penguins.rds"))
 results <- analyze_morphology(data)
-saveRDS(results, "results/morphology_analysis.rds")
+saveRDS(results, here("analysis", "results", "morphology_analysis.rds"))
 
-# analysis/reproduce/03_create_figures.R
-# Generate all manuscript figures
+# analysis/reproduce/03_figures_tables.R
+# This script is created by the install program
+# Generate all manuscript figures and tables
 
-# analysis/reproduce/04_create_tables.R
-# Generate all manuscript tables
+# analysis/reproduce/04_manuscript_render.R
+# This script is created by the install program
+# Render final manuscript files
 ```
 
 # Reproducibility in Practice: Docker + renv + Configuration
@@ -370,8 +397,10 @@ Rscript -e "rmarkdown::render('manuscript/paper.Rmd')"
 # Render supplementary materials
 Rscript -e "rmarkdown::render('manuscript/supplementary.Rmd')"
 
-# Render all manuscript files
-make manuscript
+# Render manuscript files using Docker
+make docker-zsh
+Rscript -e "rmarkdown::render('manuscript/paper.Rmd')"
+Rscript -e "rmarkdown::render('manuscript/supplementary.Rmd')"
 ```
 
 ## Reproducibility Validation
@@ -625,8 +654,10 @@ make manuscript
 # Run complete reproduction
 source("analysis/reproduce/run_all.R")
 
-# Prepare submission package
-make submission-package
+# Prepare submission files manually
+cp manuscript/paper.pdf submission/
+cp manuscript/supplementary.pdf submission/
+tar -czf submission/analysis_archive.tar.gz R/ tests/ analysis/ data/
 ```
 
 The manuscript paradigm provides a complete framework for scholarly writing that ensures reproducibility, facilitates collaboration, and meets journal requirements for computational research.
