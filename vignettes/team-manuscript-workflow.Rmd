@@ -12,6 +12,50 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+# Load required packages
+library(knitr)
+library(palmerpenguins)
+library(ggplot2)
+library(dplyr)
+
+# Set up data for demonstration
+morphology_data <- palmerpenguins::penguins %>%
+  filter(!is.na(bill_length_mm), !is.na(bill_depth_mm), !is.na(body_mass_g))
+
+# Define placeholder functions for demonstration
+fit_allometry_model <- function(data, response, predictor, method = "lm", ...) {
+  # Simplified allometry model for demonstration
+  formula_str <- paste(response, "~", predictor)
+  model <- lm(as.formula(formula_str), data = data)
+
+  list(
+    model = model,
+    formula = formula_str,
+    coefficients = coef(model),
+    r_squared = summary(model)$r.squared,
+    method = method
+  )
+}
+
+generate_allometry_plot <- function(model_result, data) {
+  # Simple scatter plot with regression line
+  ggplot(data, aes_string(x = names(model_result$coefficients)[2],
+                         y = names(model_result$coefficients)[1])) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    theme_minimal()
+}
+
+# Additional placeholder functions for manuscript
+compare_morphometric_models <- function(data, models) {
+  list(best_model = "model1", aic_comparison = data.frame(model = c("model1", "model2"), aic = c(100, 105)))
+}
+
+format_descriptive_stats <- function(data) {
+  data %>%
+    summarise(across(where(is.numeric), list(mean = mean, sd = sd, n = length), na.rm = TRUE))
+}
 ```
 
 # Overview
@@ -28,7 +72,8 @@ team-manuscript-project/
 ├── tests/testthat/             # Comprehensive function testing
 ├── man/                        # Auto-generated documentation
 ├── manuscript/                 # Collaborative writing space
-│   ├── main.Rmd               # Primary manuscript file
+│   ├── journal_templates/     # Journal-specific formatting
+│   ├── paper.Rmd              # Primary manuscript file
 │   ├── sections/              # Individual manuscript sections
 │   │   ├── introduction.Rmd   # Author assignments
 │   │   ├── methods.Rmd        # Methodology section
@@ -42,9 +87,13 @@ team-manuscript-project/
 │   ├── 03_figures_tables.R    # Publication-ready outputs
 │   └── 04_manuscript_render.R # Automated manuscript generation
 ├── submission/                # Journal submission coordination
-│   ├── journal_versions/      # Journal-specific formats
-│   └── review_responses/      # Peer review management
-├── data/processed/            # Team-validated datasets
+│   ├── figures/               # Final submission figures
+│   ├── tables/                # Final submission tables
+│   ├── supplementary/         # Supplementary materials
+│   └── manuscript_versions/   # Journal-specific formats
+├── data/
+│   ├── raw_data/              # Original, untouched datasets
+│   └── derived_data/          # Team-processed datasets
 ├── inst/examples/             # Reproducible examples
 ├── vignettes/                 # Extended methodology documentation
 ├── DESCRIPTION               # Package metadata with all authors
@@ -640,13 +689,18 @@ vim manuscript/sections/methods.Rmd
 
 ### Data Collection and Processing
 
-Morphometric data were obtained from the Palmer Archipelago penguin dataset [@Horst2020], consisting of measurements from adult penguins collected at three research stations (Biscoe, Dream, and Torgersen islands) during the 2007-2009 breeding seasons. The dataset includes bill length (mm), bill depth (mm), flipper length (mm), and body mass (g) measurements for *n* = `r nrow(morphology_data)` individuals across three congener species.
+Morphometric data were obtained from the Palmer Archipelago penguin dataset [@Horst2020], consisting of measurements from adult penguins collected at three research stations (Biscoe, Dream, and Torgersen islands) during the 2007-2009 breeding seasons. The dataset includes bill length (mm), bill depth (mm), flipper length (mm), and body mass (g) measurements for individuals across three congener species.
 
 Data processing followed standardized protocols to ensure reproducibility and analytical consistency:
 
-```{r data-processing, echo=TRUE, eval=TRUE}
-# Load team-standardized dataset
-morphology_data <- readRDS(here("data", "processed", "team_morphology_data.rds"))
+```{r data-processing, echo=TRUE, eval=FALSE}
+# Load team-standardized dataset (demo code - file may not exist)
+if (file.exists(here("data", "derived_data", "team_morphology_data.rds"))) {
+  morphology_data <- readRDS(here("data", "derived_data", "team_morphology_data.rds"))
+} else {
+  # Use Palmer penguins data for demonstration
+  morphology_data <- palmerpenguins::penguins
+}
 
 # Display data structure and summary statistics
 cat("Dataset dimensions:", dim(morphology_data), "\n")
@@ -666,18 +720,29 @@ $$y_{ijk} = \beta_0 + \beta_1 x_{ijk} + \beta_2 \text{sex}_{ijk} + \alpha_i + \g
 
 where $y_{ijk}$ represents the response variable (bill depth) for individual $k$ of species $i$ from island $j$, $x_{ijk}$ is the scaled predictor variable (bill length), $\alpha_i$ and $\gamma_j$ are random intercepts for species and island effects, and $\epsilon_{ijk}$ is the individual-level residual.
 
-```{r allometry-example, echo=TRUE, eval=TRUE}
-# Demonstrate team allometry modeling approach
+```{r allometry-example, echo=TRUE, eval=FALSE}
+# Demonstrate team allometry modeling approach (example code)
+# Note: This assumes morphology_data has been loaded in data-processing chunk
+
+# example_model <- fit_allometry_model(
+#   morphology_data,
+#   response = "bill_depth_mm",
+#   predictor = "bill_length_mm",
+#   include_species = TRUE
+# )
+
+# For demonstration, use Palmer penguins data
+example_data <- palmerpenguins::penguins %>% filter(!is.na(bill_depth_mm), !is.na(bill_length_mm))
+
 example_model <- fit_allometry_model(
-  morphology_data,
+  example_data,
   response = "bill_depth_mm",
-  predictor = "bill_length_mm",
-  include_species = TRUE
+  predictor = "bill_length_mm"
 )
 
-# Display model summary
-kable(format_morphometry_table(example_model),
-      caption = "Example allometric model results")
+# Display basic model summary
+cat("Model R-squared:", round(example_model$r_squared, 3), "\n")
+cat("Coefficients:", paste(round(example_model$coefficients, 3), collapse = ", "), "\n")
 ```
 
 #### Model Selection and Validation

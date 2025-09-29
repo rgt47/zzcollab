@@ -67,13 +67,13 @@ list_config()
 Think of build modes like choosing how many packages to pre-install:
 
 ```{r eval=FALSE}
-# Fast mode: ~15 essential packages (recommended for beginners)
+# Fast mode: 9 essential packages (recommended for beginners)
 set_config("build_mode", "fast")
 
-# Standard mode: ~25 packages including tidyverse (recommended for most users) 
+# Standard mode: 17 packages including tidyverse (recommended for most users)
 set_config("build_mode", "standard")
 
-# Comprehensive mode: 35+ packages for complex analyses
+# Comprehensive mode: 47 packages for complex analyses
 set_config("build_mode", "comprehensive")
 ```
 

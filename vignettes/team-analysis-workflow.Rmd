@@ -34,12 +34,17 @@ team-analysis-project/
 ├── R/                         # Shared analysis functions
 ├── tests/testthat/            # Quality assurance framework
 ├── data/
-│   ├── raw_data/             # Original datasets (read-only)
-│   └── derived_data/         # Processed data products
+│   ├── raw/                  # Original datasets (read-only)
+│   └── processed/            # Processed data products
+├── analysis/
+│   ├── exploratory/          # Exploratory data analysis
+│   ├── modeling/             # Statistical modeling work
+│   └── validation/           # Model validation and testing
 ├── outputs/
 │   ├── figures/              # Publication-quality visualizations
 │   └── tables/               # Summary statistics and results
 ├── reports/                   # Team reporting and communication
+│   └── dashboard/            # Interactive dashboards
 ├── renv.lock                  # Exact package versions for all team members
 └── zzcollab.yaml             # Team configuration and Docker variants
 ```
@@ -369,7 +374,7 @@ set.seed(42)
 
 # Load processed data from team data pipeline
 message("Loading processed customer data...")
-customer_data <- readRDS(here("data", "derived_data", "processed_customer_data.rds"))
+customer_data <- readRDS(here("data", "processed", "processed_customer_data.rds"))
 
 message("Dataset summary:")
 message("  Observations: ", nrow(customer_data))
@@ -520,7 +525,7 @@ theme_set(team_theme)
 message("Starting exploratory data analysis...")
 
 # Load raw data for exploration
-raw_data <- readRDS(here("data", "raw_data", "customer_data.rds"))
+raw_data <- readRDS(here("data", "raw", "customer_data.rds"))
 
 message("Dataset Overview:")
 message("  Customers: ", format(nrow(raw_data), big.mark = ","))
