@@ -832,4 +832,875 @@ print(stakeholder_summary)
 - **Testing Requirements**: Comprehensive test coverage ensures reliable analysis functions
 - **Reproducibility Validation**: Automated CI/CD validates that analysis reproduces correctly
 
-The team analysis paradigm provides a complete framework for collaborative data science that maintains individual productivity while ensuring team coordination and professional standards.
+## Comprehensive Data Testing Framework for Teams
+
+Team analysis projects require robust data testing frameworks that protect against data quality issues while enabling collaborative development. ZZCOLLAB provides systematic testing approaches designed for multi-developer teams.
+
+### Team Data Testing Strategy
+
+**Why Data Testing Matters for Teams:**
+- **Consistency**: Ensures all team members work with validated, reliable data
+- **Error Prevention**: Catches data quality issues before they propagate through team analysis
+- **Collaboration**: Shared testing standards create common understanding of data constraints
+- **Reproducibility**: Validates that data processing produces consistent results across team environments
+- **Quality Assurance**: Systematic testing prevents silent failures in collaborative workflows
+
+### Collaborative Testing Architecture
+
+```
+team-testing-framework/
+├── tests/
+│   ├── testthat/
+│   │   ├── test-data-raw.R           # Raw data validation (shared tests)
+│   │   ├── test-data-processed.R     # Processed data validation
+│   │   ├── test-modeling-functions.R # Team function testing
+│   │   ├── test-analysis-pipeline.R  # End-to-end workflow testing
+│   │   └── helpers-team-testing.R    # Team testing utilities
+│   └── data-validation/
+│       ├── raw_data_validation.R     # Automated raw data checks
+│       └── processed_data_validation.R # Processed data validation
+├── data/
+│   ├── raw/                          # Team's authoritative raw data
+│   ├── processed/                    # Team's processed data products
+│   └── validation/                   # Expected data samples for testing
+└── R/
+    ├── data_validation_functions.R   # Team data validation utilities
+    └── testing_utilities.R           # Shared testing helper functions
+```
+
+### Team Raw Data Testing Standards
+
+**Team testing approach for customer churn dataset:**
+
+```r
+# tests/testthat/test-data-raw.R
+# Team data validation standards for customer churn analysis
+
+library(testthat)
+library(dplyr)
+
+# Load team testing utilities
+source(here::here("tests", "testthat", "helpers-team-testing.R"))
+
+# Team testing data
+team_raw_data <- readRDS(here::here("data", "raw", "customer_data.rds"))
+
+test_that("Team raw data has expected structure and completeness", {
+  # Team-agreed data structure requirements
+  expect_equal(nrow(team_raw_data), 7043)  # Expected customer count
+  expect_equal(ncol(team_raw_data), 11)    # Expected variable count
+
+  # Team-critical variables must be present
+  team_required_cols <- c("churn", "tenure", "monthly_charges", "total_charges",
+                         "contract", "payment_method", "gender", "senior_citizen")
+  expect_true(all(team_required_cols %in% names(team_raw_data)))
+
+  # Team data types must be consistent
+  expect_type(team_raw_data$churn, "character")
+  expect_type(team_raw_data$tenure, "integer")
+  expect_type(team_raw_data$monthly_charges, "double")
+})
+
+test_that("Team churn outcome variable meets analysis requirements", {
+  # Team-agreed churn coding standards
+  churn_values <- unique(team_raw_data$churn)
+  expect_setequal(churn_values, c("Yes", "No"))
+
+  # Team churn distribution constraints (business knowledge)
+  churn_rate <- mean(team_raw_data$churn == "Yes", na.rm = TRUE)
+  expect_true(churn_rate >= 0.15 && churn_rate <= 0.35,
+              info = paste("Churn rate", round(churn_rate, 3), "outside expected range"))
+
+  # Team completeness standards for critical outcome
+  expect_equal(sum(is.na(team_raw_data$churn)), 0,
+               info = "Churn outcome must be complete for all customers")
+})
+
+test_that("Customer measurements meet team business rules", {
+  # Team-validated business constraints
+  valid_tenure <- team_raw_data$tenure[!is.na(team_raw_data$tenure)]
+  expect_true(all(valid_tenure >= 0 & valid_tenure <= 120),
+              info = "Tenure outside business-valid range (0-120 months)")
+
+  valid_charges <- team_raw_data$monthly_charges[!is.na(team_raw_data$monthly_charges)]
+  expect_true(all(valid_charges >= 0 & valid_charges <= 200),
+              info = "Monthly charges outside business-valid range ($0-$200)")
+
+  # Team data consistency rules
+  total_charges <- team_raw_data$total_charges[!is.na(team_raw_data$total_charges)]
+  expect_true(all(total_charges >= 0),
+              info = "Total charges must be non-negative")
+})
+
+test_that("Team data meets statistical analysis requirements", {
+  # Sufficient sample size for team statistical methods
+  min_sample_size <- 5000  # Team-agreed minimum for robust analysis
+  expect_true(nrow(team_raw_data) >= min_sample_size,
+              info = paste("Sample size", nrow(team_raw_data), "below team minimum"))
+
+  # Team feature completeness standards
+  key_features <- c("tenure", "monthly_charges", "total_charges")
+  for (feature in key_features) {
+    missing_pct <- sum(is.na(team_raw_data[[feature]])) / nrow(team_raw_data)
+    expect_true(missing_pct <= 0.05,  # Team threshold: max 5% missing
+                info = paste("Feature", feature, "exceeds team missing data threshold"))
+  }
+})
+
+test_that("Team data integrity and consistency checks", {
+  # Team-defined logical consistency rules
+  complete_cases <- team_raw_data %>%
+    filter(!is.na(tenure), !is.na(monthly_charges), !is.na(total_charges))
+
+  # Business rule: total charges should relate to tenure and monthly charges
+  # Allow for reasonable variation (promotions, changes in service)
+  expected_minimum <- complete_cases$tenure * complete_cases$monthly_charges * 0.5
+  actual_total <- complete_cases$total_charges
+
+  # Team tolerance for business rule violations
+  violation_rate <- mean(actual_total < expected_minimum, na.rm = TRUE)
+  expect_true(violation_rate <= 0.1,  # Team threshold: max 10% violations
+              info = paste("Business rule violations exceed team threshold:",
+                          round(violation_rate, 3)))
+})
+```
+
+### Team Processed Data Testing Standards
+
+```r
+# tests/testthat/test-data-processed.R
+# Team processed data validation for collaborative analysis
+
+test_that("Team processed data maintains required structure", {
+  processed_data <- readRDS(here::here("data", "processed", "processed_customer_data.rds"))
+
+  # Team-agreed processed data requirements
+  expect_s3_class(processed_data, "data.frame")
+  expect_true(nrow(processed_data) >= 5000)  # Team minimum after cleaning
+
+  # Team modeling variables must be present
+  team_model_vars <- c("churn", "tenure", "monthly_charges", "total_charges",
+                      "contract_encoded", "payment_method_encoded")
+  expect_true(all(team_model_vars %in% names(processed_data)))
+})
+
+test_that("Team feature engineering meets analysis standards", {
+  processed_data <- readRDS(here::here("data", "processed", "processed_customer_data.rds"))
+
+  # Team-standardized factor levels
+  expect_type(processed_data$churn, "integer")  # Should be numeric for modeling
+  churn_levels <- unique(processed_data$churn)
+  expect_setequal(churn_levels, c(0, 1))  # Team binary encoding standard
+
+  # Team feature scaling validation
+  if ("monthly_charges_scaled" %in% names(processed_data)) {
+    scaled_charges <- processed_data$monthly_charges_scaled
+    expect_true(abs(mean(scaled_charges, na.rm = TRUE)) < 0.1,
+                info = "Scaled features should be centered near zero")
+    expect_true(abs(sd(scaled_charges, na.rm = TRUE) - 1) < 0.1,
+                info = "Scaled features should have unit variance")
+  }
+})
+
+test_that("Team data processing maintains statistical properties", {
+  raw_data <- readRDS(here::here("data", "raw", "customer_data.rds"))
+  processed_data <- readRDS(here::here("data", "processed", "processed_customer_data.rds"))
+
+  # Team data loss tolerance
+  retention_rate <- nrow(processed_data) / nrow(raw_data)
+  expect_true(retention_rate >= 0.8,  # Team threshold: retain 80% of data
+              info = paste("Data retention rate", round(retention_rate, 3),
+                          "below team threshold"))
+
+  # Team churn rate stability check
+  raw_churn_rate <- mean(raw_data$churn == "Yes", na.rm = TRUE)
+  processed_churn_rate <- mean(processed_data$churn == 1, na.rm = TRUE)
+  churn_change <- abs(raw_churn_rate - processed_churn_rate)
+  expect_true(churn_change <= 0.02,  # Team threshold: max 2% change
+              info = "Processing significantly altered churn rate distribution")
+})
+```
+
+### Team Function Testing Framework
+
+```r
+# tests/testthat/test-modeling-functions.R
+# Team testing for collaborative modeling functions
+
+test_that("Team fit_churn_model() function meets collaboration standards", {
+  # Create team test dataset
+  team_test_data <- data.frame(
+    churn = factor(c("Yes", "No", "Yes", "No", "Yes", "Yes", "No", "No")),
+    tenure = c(12, 24, 6, 36, 18, 8, 30, 42),
+    monthly_charges = c(70, 80, 60, 90, 75, 65, 85, 95),
+    total_charges = c(840, 1920, 360, 3240, 1350, 520, 2550, 3990)
+  )
+
+  # Team function requirements
+  result <- fit_churn_model(team_test_data, method = "logistic", cv_folds = 3)
+
+  # Team return value standards
+  expect_type(result, "list")
+  team_required_elements <- c("model", "method", "cv_accuracy", "cv_kappa")
+  expect_true(all(team_required_elements %in% names(result)))
+
+  # Team performance standards
+  expect_true(result$cv_accuracy >= 0 && result$cv_accuracy <= 1)
+  expect_true(result$cv_kappa >= -1 && result$cv_kappa <= 1)
+  expect_equal(result$method, "logistic")
+})
+
+test_that("Team model comparison function produces standardized output", {
+  # Mock team model results
+  team_mock_results <- list(
+    logistic = list(method = "logistic", cv_accuracy = 0.75, cv_kappa = 0.4),
+    random_forest = list(method = "random_forest", cv_accuracy = 0.82, cv_kappa = 0.55),
+    xgboost = list(method = "xgboost", cv_accuracy = 0.79, cv_kappa = 0.51)
+  )
+
+  comparison <- compare_churn_models(team_mock_results)
+
+  # Team comparison output standards
+  expect_s3_class(comparison, "data.frame")
+  expect_equal(nrow(comparison), 3)
+  expect_true("accuracy_rank" %in% names(comparison))
+
+  # Team ranking verification
+  expect_equal(comparison$method[1], "random_forest")  # Best performing
+  expect_equal(comparison$accuracy_rank[1], 1)
+})
+
+test_that("Team functions handle edge cases appropriately", {
+  # Team error handling standards
+  incomplete_data <- data.frame(churn = c("Yes", "No"), tenure = c(12, 24))
+  expect_error(fit_churn_model(incomplete_data), "Missing required columns")
+
+  # Team empty data handling
+  empty_data <- data.frame(churn = character(0), tenure = numeric(0),
+                          monthly_charges = numeric(0), total_charges = numeric(0))
+  expect_error(fit_churn_model(empty_data), "insufficient data")
+})
+```
+
+### Team Testing Utilities and Helpers
+
+```r
+# tests/testthat/helpers-team-testing.R
+# Shared testing utilities for team collaboration
+
+#' Team data validation helper
+#' @param data Data frame to validate
+#' @param required_cols Character vector of required column names
+#' @param min_rows Minimum number of rows expected
+validate_team_data <- function(data, required_cols, min_rows = 1000) {
+  # Team data structure validation
+  expect_s3_class(data, "data.frame")
+  expect_true(nrow(data) >= min_rows)
+  expect_true(all(required_cols %in% names(data)))
+
+  # Team completeness standards
+  for (col in required_cols) {
+    missing_pct <- sum(is.na(data[[col]])) / nrow(data)
+    expect_true(missing_pct <= 0.1,  # Team threshold: max 10% missing
+                info = paste("Column", col, "exceeds team missing data threshold"))
+  }
+}
+
+#' Team model performance validation
+#' @param model_result Model result object from team functions
+#' @param min_accuracy Minimum accuracy threshold for team standards
+validate_team_model <- function(model_result, min_accuracy = 0.7) {
+  expect_type(model_result, "list")
+  expect_true("cv_accuracy" %in% names(model_result))
+  expect_true(model_result$cv_accuracy >= min_accuracy,
+              info = paste("Model accuracy", round(model_result$cv_accuracy, 3),
+                          "below team threshold"))
+}
+
+#' Team reproducibility verification
+#' @param func Function to test for reproducibility
+#' @param ... Arguments to pass to function
+verify_team_reproducibility <- function(func, ...) {
+  # Run function twice with same seed
+  set.seed(42)
+  result1 <- func(...)
+
+  set.seed(42)
+  result2 <- func(...)
+
+  # Team reproducibility standards
+  if (is.numeric(result1) && is.numeric(result2)) {
+    expect_equal(result1, result2, tolerance = 1e-10)
+  } else {
+    expect_identical(result1, result2)
+  }
+}
+```
+
+### Team Pipeline Testing Framework
+
+```r
+# tests/testthat/test-analysis-pipeline.R
+# End-to-end team analysis pipeline testing
+
+test_that("Team analysis pipeline runs successfully", {
+  # Test complete team workflow integration
+  skip_if_not(file.exists(here::here("data", "raw", "customer_data.rds")),
+              "Raw data not available for pipeline testing")
+
+  # Team pipeline components
+  expect_true(file.exists(here::here("scripts", "01_exploratory_analysis.R")))
+  expect_true(file.exists(here::here("scripts", "02_statistical_modeling.R")))
+  expect_true(file.exists(here::here("R", "modeling_functions.R")))
+
+  # Test that team scripts can be sourced without errors
+  expect_error(source(here::here("scripts", "01_exploratory_analysis.R")), NA)
+  expect_error(source(here::here("scripts", "02_statistical_modeling.R")), NA)
+})
+
+test_that("Team pipeline produces expected outputs", {
+  # Team deliverables validation
+  expected_outputs <- c(
+    "outputs/figures/churn_distribution.png",
+    "outputs/figures/model_comparison.png",
+    "outputs/models/best_churn_model.rds",
+    "outputs/reports/modeling_report.rds"
+  )
+
+  for (output in expected_outputs) {
+    expect_true(file.exists(here::here(output)),
+                info = paste("Team pipeline missing expected output:", output))
+  }
+})
+
+test_that("Team results meet quality standards", {
+  # Load team analysis results
+  if (file.exists(here::here("outputs", "reports", "modeling_report.rds"))) {
+    team_results <- readRDS(here::here("outputs", "reports", "modeling_report.rds"))
+
+    # Team performance standards
+    expect_true(team_results$best_model$cv_accuracy >= 0.75,
+                info = "Team model performance below acceptable threshold")
+
+    # Team reproducibility verification
+    expect_true("reproducibility" %in% names(team_results))
+    expect_equal(team_results$reproducibility$seed, 42)
+  }
+})
+```
+
+## Team CI/CD Workflow Construction
+
+Collaborative data science teams require robust CI/CD workflows that coordinate multiple developers while maintaining analysis quality and reproducibility. ZZCOLLAB provides GitHub Actions workflows specifically designed for team analysis projects.
+
+### Team CI/CD Architecture Overview
+
+**Multi-Developer Coordination:**
+```yaml
+# .github/workflows/team-analysis-ci.yml
+# Comprehensive CI/CD for collaborative data analysis teams
+
+name: Team Analysis CI/CD Pipeline
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday morning team validation
+
+env:
+  TEAM_NAME: datasci-lab
+  PROJECT_NAME: customer-churn-analysis
+  R_VERSION: '4.3.2'
+```
+
+### Team Environment Setup and Coordination
+
+```yaml
+jobs:
+  team-setup:
+    runs-on: ubuntu-latest
+    name: Team Environment Setup
+    outputs:
+      cache-key: ${{ steps.cache-setup.outputs.cache-key }}
+      team-config: ${{ steps.team-config.outputs.config }}
+
+    steps:
+    - name: Checkout team repository
+      uses: actions/checkout@v4
+
+    - name: Load team configuration
+      id: team-config
+      run: |
+        if [ -f "zzcollab.yaml" ]; then
+          echo "Team configuration found"
+          echo "config=true" >> $GITHUB_OUTPUT
+        else
+          echo "No team configuration - using defaults"
+          echo "config=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Setup R environment for team
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ env.R_VERSION }}
+        use-public-rspm: true
+
+    - name: Cache team R packages
+      id: cache-setup
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.local/share/renv
+          renv/library
+        key: team-renv-${{ runner.os }}-${{ hashFiles('renv.lock') }}
+        restore-keys: |
+          team-renv-${{ runner.os }}-
+
+    - name: Install team system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+        sudo apt-get install -y libgit2-dev libharfbuzz-dev libfribidi-dev
+
+    - name: Restore team R environment
+      shell: Rscript {0}
+      run: |
+        if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+        renv::restore()
+        cat("Team R environment restored successfully\n")
+```
+
+### Team Code Quality and Standards Validation
+
+```yaml
+  team-code-validation:
+    needs: team-setup
+    runs-on: ubuntu-latest
+    name: Team Code Quality Standards
+
+    steps:
+    - name: Checkout team repository
+      uses: actions/checkout@v4
+
+    - name: Setup R for team validation
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ env.R_VERSION }}
+
+    - name: Restore team environment
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.local/share/renv
+          renv/library
+        key: ${{ needs.team-setup.outputs.cache-key }}
+
+    - name: Install team validation packages
+      shell: Rscript {0}
+      run: |
+        renv::restore()
+        if (!requireNamespace("lintr", quietly = TRUE)) install.packages("lintr")
+        if (!requireNamespace("styler", quietly = TRUE)) install.packages("styler")
+
+    - name: Team code style validation
+      shell: Rscript {0}
+      run: |
+        cat("Validating team code style standards...\n")
+
+        # Team-agreed styling rules
+        team_lints <- lintr::lint_dir(
+          path = "R",
+          linters = lintr::linters_with_defaults(
+            line_length_linter = lintr::line_length_linter(100),  # Team standard
+            object_name_linter = lintr::object_name_linter("snake_case")  # Team style
+          )
+        )
+
+        if (length(team_lints) > 0) {
+          cat("Team code style issues found:\n")
+          print(team_lints)
+          quit(status = 1)
+        } else {
+          cat("Team code meets style standards ✓\n")
+        }
+
+    - name: Team documentation standards
+      shell: Rscript {0}
+      run: |
+        cat("Validating team documentation standards...\n")
+
+        # Check that all team functions have documentation
+        r_files <- list.files("R", pattern = "\\.R$", full.names = TRUE)
+
+        for (file in r_files) {
+          content <- readLines(file)
+
+          # Find function definitions
+          func_lines <- grep("^[a-zA-Z_][a-zA-Z0-9_.]* <- function", content)
+
+          for (func_line in func_lines) {
+            # Check for roxygen documentation above function
+            doc_start <- func_line - 1
+            while (doc_start > 0 && grepl("^#'", content[doc_start])) {
+              doc_start <- doc_start - 1
+            }
+
+            if (doc_start == func_line - 1) {
+              func_name <- sub(" <-.*", "", content[func_line])
+              cat("Warning: Function", func_name, "in", file, "lacks team documentation\n")
+            }
+          }
+        }
+
+        cat("Team documentation validation complete ✓\n")
+```
+
+### Team Testing and Model Validation
+
+```yaml
+  team-testing:
+    needs: team-setup
+    runs-on: ubuntu-latest
+    name: Team Analysis Testing
+    strategy:
+      matrix:
+        test-type: [unit-tests, integration-tests, model-validation]
+
+    steps:
+    - name: Checkout team repository
+      uses: actions/checkout@v4
+
+    - name: Setup R for team testing
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ env.R_VERSION }}
+
+    - name: Restore team environment
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.local/share/renv
+          renv/library
+        key: ${{ needs.team-setup.outputs.cache-key }}
+
+    - name: Install team testing dependencies
+      shell: Rscript {0}
+      run: |
+        renv::restore()
+        if (!requireNamespace("covr", quietly = TRUE)) install.packages("covr")
+
+    - name: Run team unit tests
+      if: matrix.test-type == 'unit-tests'
+      shell: Rscript {0}
+      run: |
+        cat("Running team unit tests...\n")
+        devtools::load_all()
+
+        # Team testing with coverage requirements
+        coverage <- covr::package_coverage()
+        coverage_pct <- covr::percent_coverage(coverage)
+
+        cat("Team test coverage:", round(coverage_pct, 1), "%\n")
+
+        # Team coverage standards
+        if (coverage_pct < 80) {
+          cat("Team coverage requirement not met (minimum 80%)\n")
+          quit(status = 1)
+        }
+
+        # Run tests with team standards
+        test_results <- devtools::test()
+        if (any(test_results$failed > 0)) {
+          cat("Team unit tests failed\n")
+          quit(status = 1)
+        }
+
+        cat("Team unit tests passed ✓\n")
+
+    - name: Run team integration tests
+      if: matrix.test-type == 'integration-tests'
+      shell: Rscript {0}
+      run: |
+        cat("Running team integration tests...\n")
+
+        # Test team analysis pipeline integration
+        if (file.exists("scripts/01_exploratory_analysis.R")) {
+          cat("Testing exploratory analysis script...\n")
+          tryCatch({
+            source("scripts/01_exploratory_analysis.R")
+            cat("Exploratory analysis script passed ✓\n")
+          }, error = function(e) {
+            cat("Exploratory analysis script failed:", e$message, "\n")
+            quit(status = 1)
+          })
+        }
+
+        if (file.exists("scripts/02_statistical_modeling.R")) {
+          cat("Testing statistical modeling script...\n")
+          tryCatch({
+            source("scripts/02_statistical_modeling.R")
+            cat("Statistical modeling script passed ✓\n")
+          }, error = function(e) {
+            cat("Statistical modeling script failed:", e$message, "\n")
+            quit(status = 1)
+          })
+        }
+
+    - name: Team model validation
+      if: matrix.test-type == 'model-validation'
+      shell: Rscript {0}
+      run: |
+        cat("Validating team model performance standards...\n")
+
+        # Load team model results if available
+        if (file.exists("outputs/reports/modeling_report.rds")) {
+          team_results <- readRDS("outputs/reports/modeling_report.rds")
+
+          # Team performance thresholds
+          min_accuracy <- 0.75  # Team minimum acceptable accuracy
+          min_kappa <- 0.4      # Team minimum acceptable kappa
+
+          best_model <- team_results$best_model
+
+          cat("Best model performance:\n")
+          cat("  Method:", best_model$method, "\n")
+          cat("  Accuracy:", round(best_model$cv_accuracy, 3), "\n")
+          cat("  Kappa:", round(best_model$cv_kappa, 3), "\n")
+
+          # Team validation checks
+          if (best_model$cv_accuracy < min_accuracy) {
+            cat("Team accuracy requirement not met (minimum", min_accuracy, ")\n")
+            quit(status = 1)
+          }
+
+          if (best_model$cv_kappa < min_kappa) {
+            cat("Team kappa requirement not met (minimum", min_kappa, ")\n")
+            quit(status = 1)
+          }
+
+          cat("Team model validation passed ✓\n")
+        } else {
+          cat("No model results found - skipping validation\n")
+        }
+```
+
+### Team Data Quality and Business Rule Validation
+
+```yaml
+  team-data-validation:
+    needs: team-setup
+    runs-on: ubuntu-latest
+    name: Team Data Quality Validation
+
+    steps:
+    - name: Checkout team repository
+      uses: actions/checkout@v4
+
+    - name: Setup R for team data validation
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ env.R_VERSION }}
+
+    - name: Restore team environment
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.local/share/renv
+          renv/library
+        key: ${{ needs.team-setup.outputs.cache-key }}
+
+    - name: Team raw data validation
+      shell: Rscript {0}
+      run: |
+        cat("Validating team raw data quality...\n")
+
+        if (file.exists("data/raw/customer_data.rds")) {
+          raw_data <- readRDS("data/raw/customer_data.rds")
+
+          # Team data quality standards
+          cat("Raw data dimensions:", nrow(raw_data), "x", ncol(raw_data), "\n")
+
+          # Team business rule validation
+          churn_rate <- mean(raw_data$churn == "Yes", na.rm = TRUE)
+          cat("Churn rate:", round(churn_rate * 100, 1), "%\n")
+
+          # Team acceptable churn rate range (business knowledge)
+          if (churn_rate < 0.15 || churn_rate > 0.35) {
+            cat("Churn rate outside team-expected range (15-35%)\n")
+            quit(status = 1)
+          }
+
+          # Team completeness standards
+          team_critical_vars <- c("churn", "tenure", "monthly_charges")
+          for (var in team_critical_vars) {
+            missing_pct <- sum(is.na(raw_data[[var]])) / nrow(raw_data)
+            cat("Missing data in", var, ":", round(missing_pct * 100, 1), "%\n")
+
+            if (missing_pct > 0.05) {  # Team threshold: max 5% missing
+              cat("Excessive missing data in critical variable:", var, "\n")
+              quit(status = 1)
+            }
+          }
+
+          cat("Team raw data validation passed ✓\n")
+        } else {
+          cat("Raw data not found - skipping validation\n")
+        }
+
+    - name: Team processed data validation
+      shell: Rscript {0}
+      run: |
+        cat("Validating team processed data...\n")
+
+        if (file.exists("data/processed/processed_customer_data.rds")) {
+          processed_data <- readRDS("data/processed/processed_customer_data.rds")
+
+          # Team processing standards
+          if (file.exists("data/raw/customer_data.rds")) {
+            raw_data <- readRDS("data/raw/customer_data.rds")
+            retention_rate <- nrow(processed_data) / nrow(raw_data)
+            cat("Data retention rate:", round(retention_rate * 100, 1), "%\n")
+
+            # Team data loss tolerance
+            if (retention_rate < 0.8) {  # Team minimum: retain 80%
+              cat("Excessive data loss during processing\n")
+              quit(status = 1)
+            }
+          }
+
+          # Team modeling variable requirements
+          team_model_vars <- c("churn", "tenure", "monthly_charges", "total_charges")
+          missing_vars <- setdiff(team_model_vars, names(processed_data))
+          if (length(missing_vars) > 0) {
+            cat("Missing required modeling variables:", paste(missing_vars, collapse = ", "), "\n")
+            quit(status = 1)
+          }
+
+          cat("Team processed data validation passed ✓\n")
+        } else {
+          cat("Processed data not found - skipping validation\n")
+        }
+```
+
+### Team Deployment and Notification
+
+```yaml
+  team-deployment:
+    needs: [team-code-validation, team-testing, team-data-validation]
+    runs-on: ubuntu-latest
+    name: Team Results Deployment
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout team repository
+      uses: actions/checkout@v4
+
+    - name: Setup R for team deployment
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ env.R_VERSION }}
+
+    - name: Generate team analysis report
+      shell: Rscript {0}
+      run: |
+        cat("Generating team analysis report...\n")
+
+        # Create comprehensive team report
+        if (file.exists("scripts/05_automated_report.Rmd")) {
+          rmarkdown::render(
+            "scripts/05_automated_report.Rmd",
+            params = list(
+              team_mode = TRUE,
+              include_ci_info = TRUE,
+              github_sha = "${{ github.sha }}",
+              github_run_id = "${{ github.run_id }}"
+            ),
+            output_file = "team_analysis_report.html"
+          )
+          cat("Team report generated ✓\n")
+        }
+
+    - name: Deploy team results
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
+        destination_dir: team-reports/${{ github.sha }}
+
+    - name: Team notification
+      if: always()
+      shell: Rscript {0}
+      run: |
+        # Generate team status summary
+        status <- "${{ job.status }}"
+        sha <- "${{ github.sha }}"
+        run_url <- "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+        cat("Team CI/CD Status:", status, "\n")
+        cat("Commit:", substr(sha, 1, 8), "\n")
+        cat("Run URL:", run_url, "\n")
+
+        # Save team status for potential Slack/email notification
+        team_status <- list(
+          status = status,
+          commit = substr(sha, 1, 8),
+          timestamp = Sys.time(),
+          run_url = run_url,
+          team = "${{ env.TEAM_NAME }}",
+          project = "${{ env.PROJECT_NAME }}"
+        )
+
+        saveRDS(team_status, "team_ci_status.rds")
+```
+
+### Team-Specific CI/CD Best Practices
+
+**1. Collaborative Branch Protection:**
+```yaml
+# Team repository settings (configure in GitHub)
+branch_protection:
+  main:
+    required_status_checks:
+      - team-code-validation
+      - team-testing (unit-tests)
+      - team-testing (integration-tests)
+      - team-testing (model-validation)
+      - team-data-validation
+    required_reviews: 2  # Team peer review requirement
+    dismiss_stale_reviews: true
+    require_code_owner_reviews: true
+```
+
+**2. Team Environment Management:**
+```yaml
+# Team environment variables (GitHub repository secrets)
+secrets:
+  TEAM_SLACK_WEBHOOK: ${{ secrets.TEAM_SLACK_WEBHOOK }}
+  TEAM_EMAIL_LIST: ${{ secrets.TEAM_EMAIL_LIST }}
+  TEAM_MODEL_REGISTRY_TOKEN: ${{ secrets.TEAM_MODEL_REGISTRY_TOKEN }}
+  TEAM_DATA_STORAGE_KEY: ${{ secrets.TEAM_DATA_STORAGE_KEY }}
+```
+
+**3. Team Performance Monitoring:**
+```yaml
+# Custom team metrics collection
+- name: Team performance metrics
+  shell: Rscript {0}
+  run: |
+    # Collect team collaboration metrics
+    team_metrics <- list(
+      ci_duration = Sys.time() - as.POSIXct("${{ github.event.head_commit.timestamp }}"),
+      test_coverage = if(exists("coverage_pct")) coverage_pct else NA,
+      model_accuracy = if(exists("best_model")) best_model$cv_accuracy else NA,
+      data_quality_score = if(exists("retention_rate")) retention_rate else NA,
+      team_size = length(unique(system("git log --format='%ae' | head -20", intern = TRUE))),
+      commit_frequency = length(system("git log --since='1 week ago' --oneline", intern = TRUE))
+    )
+
+    saveRDS(team_metrics, "team_ci_metrics.rds")
+    cat("Team metrics collected ✓\n")
+```
+
+The team analysis paradigm with comprehensive testing and CI/CD provides a complete framework for collaborative data science that maintains individual productivity while ensuring team coordination, data quality, and professional standards. This approach scales from small 2-person teams to large multi-disciplinary analysis groups while maintaining reproducibility and code quality standards.
