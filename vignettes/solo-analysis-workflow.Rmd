@@ -233,8 +233,7 @@ zzcollab -p penguin-analysis -P analysis    # Local project setup
 penguin-analysis/
 ├── data/
 │   ├── raw/              # Original, untouched data
-│   ├── processed/        # Cleaned, analysis-ready data
-│   └── README.md         # Comprehensive data documentation
+│   └── processed/        # Cleaned, analysis-ready data
 ├── analysis/
 │   ├── exploratory/      # EDA outputs and diagnostics
 │   ├── modeling/         # Model objects and validation
@@ -244,13 +243,13 @@ penguin-analysis/
 │   └── tables/           # Summary statistics and results
 ├── reports/
 │   └── dashboard/        # Interactive reports and dashboards
-├── scripts/
+├── scripts/              # Analysis workflow templates (created by install)
 │   ├── 01_exploratory_analysis.R      # Systematic EDA template
 │   ├── 02_statistical_modeling.R      # tidymodels pipeline
 │   ├── 03_model_validation.R          # Validation framework
 │   ├── 04_interactive_dashboard.Rmd   # Shiny exploration
 │   ├── 05_automated_report.Rmd        # Parameterized reporting
-│   └── example_analysis_functions.R   # Utility functions
+│   └── analysis_functions.R           # Utility functions
 ├── R/                    # Package functions for analysis
 ├── tests/testthat/       # Comprehensive testing framework
 └── DESCRIPTION           # Analysis-optimized package metadata

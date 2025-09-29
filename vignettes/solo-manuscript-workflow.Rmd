@@ -66,20 +66,31 @@ This creates a complete research compendium with:
 
 ```
 penguin-morphology/
-|-- R/                          # Analysis functions
-|-- tests/testthat/             # Function tests
-|-- man/                        # Documentation
-|-- manuscript/                 # Paper files
-|   |-- paper.Rmd
-|   |-- supplementary.Rmd
-|   `-- references.bib
-|-- analysis/reproduce/         # Reproduction scripts
-|-- submission/                 # Journal submission files
-|-- vignettes/                  # Extended documentation
-|-- inst/examples/              # Example analyses
-|-- data/                       # Data files
-|-- DESCRIPTION                 # Package metadata
-`-- NAMESPACE                   # Function exports
+├── R/                          # Analysis functions (package functions)
+├── tests/testthat/             # Function tests
+├── man/                        # Auto-generated documentation
+├── manuscript/                 # Paper files
+│   ├── journal_templates/      # Journal-specific formatting
+│   ├── paper.Rmd
+│   ├── supplementary.Rmd
+│   └── references.bib
+├── analysis/reproduce/         # Complete reproduction scripts
+│   ├── 01_data_preparation.R
+│   ├── 02_statistical_analysis.R
+│   ├── 03_figures_tables.R
+│   └── 04_manuscript_render.R
+├── data/
+│   ├── raw_data/               # Original, untouched data
+│   └── derived_data/           # Processed, analysis-ready data
+├── submission/                 # Journal submission files
+│   ├── figures/
+│   ├── tables/
+│   ├── supplementary/
+│   └── manuscript_versions/
+├── vignettes/                  # Extended documentation
+├── inst/examples/              # Example analyses and datasets
+├── DESCRIPTION                 # Package metadata with authors
+└── NAMESPACE                   # Function exports (auto-generated)
 ```
 
 ## 3. Enter the Development Environment
