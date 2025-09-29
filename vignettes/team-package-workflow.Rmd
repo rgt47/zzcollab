@@ -1,0 +1,1605 @@
+---
+title: "Team Package Development Workflow with ZZCOLLAB"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Team Package Development Workflow with ZZCOLLAB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Overview
+
+This vignette demonstrates collaborative R package development workflows using ZZCOLLAB's package paradigm for multi-developer teams. The package paradigm provides complete R package infrastructure that enables professional software development practices while maintaining reproducible environments across all team members.
+
+## Team Package Development Structure
+
+Collaborative package projects extend the standard R package structure with team coordination mechanisms:
+
+```
+team-package-project/
+├── R/                         # Team-developed package functions
+│   ├── core-functions.R       # Core functionality (lead developer)
+│   ├── utility-functions.R    # Helper functions (senior developers)
+│   ├── plotting-functions.R   # Visualization functions (specialists)
+│   ├── data-functions.R       # Data processing functions
+│   └── package-utils.R        # Package utilities and constants
+├── tests/testthat/            # Comprehensive testing framework
+│   ├── test-core-functions.R  # Core functionality tests
+│   ├── test-utility-functions.R  # Utility function tests
+│   ├── test-plotting-functions.R  # Visualization tests
+│   ├── test-data-functions.R   # Data processing tests
+│   ├── test-integration.R      # Integration testing
+│   └── helper-functions.R      # Testing helper functions
+├── man/                       # Auto-generated documentation
+├── vignettes/                 # Team-authored documentation
+│   ├── getting-started.Rmd    # User introduction
+│   ├── advanced-usage.Rmd     # Advanced functionality
+│   ├── developer-guide.Rmd    # Team development standards
+│   └── methodology.Rmd        # Statistical/methodological documentation
+├── inst/examples/             # Example datasets and scripts
+├── data/                      # Package datasets (.rda files)
+├── data-raw/                  # Scripts to create package data
+├── pkgdown/                   # Website configuration
+├── .github/workflows/         # Team CI/CD automation
+├── DESCRIPTION               # Package metadata with all contributors
+├── NAMESPACE                 # Function exports (auto-generated)
+├── NEWS.md                   # Development changelog
+└── zzcollab.yaml            # Team development configuration
+```
+
+## Team Roles and Responsibilities
+
+### Role 1: Package Lead (Technical Lead)
+**Responsibilities:**
+- Define package architecture and API design standards
+- Coordinate development timeline and feature roadmap
+- Manage CRAN submission process and version releases
+- Ensure code quality standards and review major contributions
+- Coordinate with external collaborators and package users
+
+**Skills Required:** Advanced R programming, software architecture, project management
+
+### Role 2: Core Developers (Senior Contributors)
+**Responsibilities:**
+- Implement major package functionality and core algorithms
+- Design and implement comprehensive testing frameworks
+- Write technical documentation and methodology vignettes
+- Review code contributions and ensure consistency with package standards
+- Mentor junior developers in best practices
+
+**Skills Required:** Expert R programming, software testing, technical writing
+
+### Role 3: Domain Specialists (Method Contributors)
+**Responsibilities:**
+- Implement specialized statistical methods and domain-specific functionality
+- Create visualization functions and user-facing tools
+- Write methodology documentation and academic references
+- Validate statistical correctness and methodological appropriateness
+- Coordinate with academic collaborators on method implementation
+
+**Skills Required:** Statistical expertise, domain knowledge, R programming
+
+### Role 4: Junior Developers (Contributing Developers)
+**Responsibilities:**
+- Implement utility functions and helper tools under supervision
+- Write comprehensive tests for assigned functions
+- Create examples and improve user documentation
+- Participate in code review process and learn development standards
+- Maintain package datasets and example scripts
+
+**Skills Required:** Intermediate R programming, willingness to learn collaborative development
+
+### Role 5: Documentation Specialists (User Experience)
+**Responsibilities:**
+- Write user-focused vignettes and tutorials
+- Create comprehensive examples and use case documentation
+- Manage pkgdown website and user communications
+- Coordinate user feedback and feature requests
+- Ensure accessibility and usability of package documentation
+
+**Skills Required:** Technical writing, user experience design, R programming
+
+## Collaborative Package Development Workflow
+
+### Phase 1: Package Lead Initialization
+
+The package lead establishes the development infrastructure:
+
+```bash
+# 1. Set up team package development environment
+zzcollab --config init
+zzcollab --config set team-name "statmethods-team"
+zzcollab --config set paradigm "package"
+zzcollab --config set build-mode "comprehensive"
+zzcollab --config set github-account "statmethods-team"
+
+# 2. Create team package project with professional infrastructure
+zzcollab -i -p morphometric-analysis -P package --github
+
+# This creates:
+# - Docker images: statmethods-team/morphometric-analysiscore-*:latest
+# - GitHub repository: https://github.com/statmethods-team/morphometric-analysis
+# - Complete R package structure with development templates
+# - CI/CD workflows for automated testing, checks, and documentation
+# - Professional development environment for team collaboration
+```
+
+### Phase 2: Team Developer Onboarding
+
+Each team member joins the package development project:
+
+```bash
+# 1. Clone the team package repository
+git clone https://github.com/statmethods-team/morphometric-analysis.git
+cd morphometric-analysis
+
+# 2. Install ZZCOLLAB development environment
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab && ./install.sh
+cd ../morphometric-analysis
+
+# 3. Join the package development environment
+zzcollab -t statmethods-team -p morphometric-analysis -I r-ver
+
+# This provides:
+# - Identical R development environment with all team packages
+# - Access to development tools (devtools, testthat, roxygen2, pkgdown)
+# - Shared development standards and testing frameworks
+# - Professional package development workflow integration
+```
+
+### Phase 3: Collaborative Development Phases
+
+#### Phase 3A: Architecture and Core Development
+
+**Package Lead: API Design and Architecture**
+
+```bash
+# Establish package architecture and development standards
+make docker-zsh
+
+# Create package structure and core API design
+vim R/core-functions.R
+```
+
+**Core package functions with team standards:**
+
+```r
+#' Morphometric Analysis Package - Core Functions
+#' Team: statmethods-team
+#' Package Lead: Dr. Sarah Chen
+#'
+#' This module implements the core functionality for morphometric analysis
+#' with comprehensive error handling and team development standards.
+
+#' Fit allometric scaling models for morphometric data
+#'
+#' This function implements allometric scaling analysis following established
+#' morphometric principles with comprehensive model validation and diagnostics.
+#'
+#' @param data Data frame containing morphometric measurements
+#' @param response Character string specifying response variable name
+#' @param predictor Character string specifying predictor variable name
+#' @param grouping Optional grouping variable for hierarchical analysis
+#' @param method Character string specifying fitting method ("lm", "lmer", "brms")
+#' @param log_transform Logical indicating whether to log-transform variables
+#' @param ... Additional arguments passed to modeling functions
+#'
+#' @return Object of class "morphometric_model" containing:
+#'   \describe{
+#'     \item{model}{Fitted model object}
+#'     \item{summary}{Model summary statistics}
+#'     \item{coefficients}{Estimated coefficients with confidence intervals}
+#'     \item{diagnostics}{Model diagnostic statistics and tests}
+#'     \item{data_info}{Information about input data and transformations}
+#'     \item{call}{Original function call}
+#'   }
+#'
+#' @details
+#' The function implements allometric scaling analysis using the general form:
+#' \deqn{y = ax^b}
+#' where y is the response variable, x is the predictor variable, a is the
+#' scaling constant, and b is the allometric exponent.
+#'
+#' When log_transform = TRUE, the model is fit as:
+#' \deqn{\log(y) = \log(a) + b \log(x)}
+#'
+#' Model validation includes assessment of:
+#' - Residual normality (Shapiro-Wilk test)
+#' - Heteroscedasticity (Breusch-Pagan test)
+#' - Influential observations (Cook's distance)
+#' - Model assumptions (various diagnostic plots)
+#'
+#' @examples
+#' \dontrun{
+#' # Basic allometric analysis
+#' data(penguins, package = "palmerpenguins")
+#' model1 <- fit_allometric_model(penguins, "bill_depth_mm", "bill_length_mm")
+#' print(model1)
+#' plot(model1)
+#'
+#' # Hierarchical analysis with grouping
+#' model2 <- fit_allometric_model(penguins, "bill_depth_mm", "bill_length_mm",
+#'                                grouping = "species", method = "lmer")
+#' summary(model2)
+#'
+#' # Bayesian analysis
+#' model3 <- fit_allometric_model(penguins, "bill_depth_mm", "bill_length_mm",
+#'                                method = "brms", log_transform = TRUE)
+#' }
+#'
+#' @references
+#' Packard, G. C. (2009). On the use of logarithmic transformations in
+#' allometric analyses. Journal of Theoretical Biology, 257(3), 515-518.
+#'
+#' Warton, D. I., et al. (2006). Bivariate line-fitting methods for allometry.
+#' Biological Reviews, 81(2), 259-291.
+#'
+#' @author Dr. Sarah Chen (\email{s.chen@@statmethods-team.org})
+#' @export
+fit_allometric_model <- function(data, response, predictor, grouping = NULL,
+                                method = c("lm", "lmer", "brms"),
+                                log_transform = FALSE, ...) {
+  # Input validation with comprehensive error handling
+  method <- match.arg(method)
+
+  if (!is.data.frame(data)) {
+    stop("'data' must be a data frame", call. = FALSE)
+  }
+
+  required_vars <- c(response, predictor)
+  if (!is.null(grouping)) required_vars <- c(required_vars, grouping)
+
+  missing_vars <- setdiff(required_vars, names(data))
+  if (length(missing_vars) > 0) {
+    stop("Missing variables in data: ", paste(missing_vars, collapse = ", "),
+         call. = FALSE)
+  }
+
+  # Data preparation with team standards
+  model_data <- data %>%
+    select(all_of(required_vars)) %>%
+    filter(complete.cases(.))
+
+  if (nrow(model_data) < 10) {
+    stop("Insufficient data: need at least 10 complete observations", call. = FALSE)
+  }
+
+  # Check for positive values if log transformation requested
+  if (log_transform) {
+    response_vals <- model_data[[response]]
+    predictor_vals <- model_data[[predictor]]
+
+    if (any(response_vals <= 0, na.rm = TRUE) || any(predictor_vals <= 0, na.rm = TRUE)) {
+      stop("Log transformation requires all values > 0", call. = FALSE)
+    }
+  }
+
+  # Apply transformations
+  if (log_transform) {
+    model_data[[paste0(response, "_log")]] <- log(model_data[[response]])
+    model_data[[paste0(predictor, "_log")]] <- log(model_data[[predictor]])
+    response_var <- paste0(response, "_log")
+    predictor_var <- paste0(predictor, "_log")
+  } else {
+    response_var <- response
+    predictor_var <- predictor
+  }
+
+  # Fit model based on method and grouping
+  if (method == "lm") {
+    if (is.null(grouping)) {
+      formula_str <- paste(response_var, "~", predictor_var)
+      model <- lm(as.formula(formula_str), data = model_data, ...)
+    } else {
+      formula_str <- paste(response_var, "~", predictor_var, "+", grouping)
+      model <- lm(as.formula(formula_str), data = model_data, ...)
+    }
+  } else if (method == "lmer") {
+    if (is.null(grouping)) {
+      stop("Grouping variable required for mixed-effects modeling", call. = FALSE)
+    }
+    library(lme4)
+    formula_str <- paste(response_var, "~", predictor_var, "+ (1|", grouping, ")")
+    model <- lmer(as.formula(formula_str), data = model_data, ...)
+  } else if (method == "brms") {
+    library(brms)
+    if (is.null(grouping)) {
+      formula_str <- paste(response_var, "~", predictor_var)
+      model <- brm(as.formula(formula_str), data = model_data, ...)
+    } else {
+      formula_str <- paste(response_var, "~", predictor_var, "+ (1|", grouping, ")")
+      model <- brm(as.formula(formula_str), data = model_data, ...)
+    }
+  }
+
+  # Extract model information
+  model_summary <- extract_model_summary(model, method)
+  coefficients <- extract_coefficients(model, method)
+  diagnostics <- compute_diagnostics(model, method)
+
+  # Create result object
+  result <- structure(
+    list(
+      model = model,
+      summary = model_summary,
+      coefficients = coefficients,
+      diagnostics = diagnostics,
+      data_info = list(
+        response = response,
+        predictor = predictor,
+        grouping = grouping,
+        method = method,
+        log_transform = log_transform,
+        n_obs = nrow(model_data),
+        formula = formula_str
+      ),
+      call = match.call()
+    ),
+    class = "morphometric_model"
+  )
+
+  return(result)
+}
+
+# Helper functions for model processing (internal functions)
+extract_model_summary <- function(model, method) {
+  # Implementation depends on model type
+  if (method == "lm") {
+    return(broom::glance(model))
+  } else if (method == "lmer") {
+    return(broom.mixed::glance(model))
+  } else if (method == "brms") {
+    return(summary(model))
+  }
+}
+
+extract_coefficients <- function(model, method) {
+  # Implementation depends on model type
+  if (method == "lm") {
+    return(broom::tidy(model, conf.int = TRUE))
+  } else if (method == "lmer") {
+    return(broom.mixed::tidy(model, conf.int = TRUE, effects = "fixed"))
+  } else if (method == "brms") {
+    return(broom::tidy(model))
+  }
+}
+
+compute_diagnostics <- function(model, method) {
+  # Comprehensive diagnostic testing
+  diagnostics <- list()
+
+  if (method %in% c("lm", "lmer")) {
+    # Standard diagnostics for frequentist models
+    residuals <- residuals(model)
+
+    diagnostics$normality_test <- shapiro.test(residuals)
+    diagnostics$heteroscedasticity_test <- car::ncvTest(model)
+    diagnostics$influence_stats <- car::influenceIndexPlot(model, plotit = FALSE)
+  } else if (method == "brms") {
+    # Bayesian diagnostics
+    diagnostics$rhats <- bayesplot::rhat(model)
+    diagnostics$ess_bulk <- bayesplot::neff_ratio(model)
+  }
+
+  return(diagnostics)
+}
+
+#' Print method for morphometric_model objects
+#' @param x Object of class "morphometric_model"
+#' @param ... Additional arguments (currently unused)
+#' @export
+print.morphometric_model <- function(x, ...) {
+  cat("Morphometric Allometry Model\n")
+  cat("============================\n\n")
+
+  cat("Call:\n")
+  print(x$call)
+  cat("\n")
+
+  cat("Model Type:", x$data_info$method, "\n")
+  cat("Sample Size:", x$data_info$n_obs, "\n")
+  cat("Response:", x$data_info$response, "\n")
+  cat("Predictor:", x$data_info$predictor, "\n")
+  if (!is.null(x$data_info$grouping)) {
+    cat("Grouping:", x$data_info$grouping, "\n")
+  }
+  cat("Log Transform:", x$data_info$log_transform, "\n\n")
+
+  cat("Coefficients:\n")
+  print(x$coefficients[, c("term", "estimate", "std.error", "p.value")])
+  cat("\n")
+
+  if (x$data_info$method == "lm") {
+    cat("R-squared:", sprintf("%.4f", x$summary$r.squared), "\n")
+    cat("Adj. R-squared:", sprintf("%.4f", x$summary$adj.r.squared), "\n")
+  }
+}
+
+#' Summary method for morphometric_model objects
+#' @param object Object of class "morphometric_model"
+#' @param ... Additional arguments (currently unused)
+#' @export
+summary.morphometric_model <- function(object, ...) {
+  cat("Morphometric Allometry Model Summary\n")
+  cat("===================================\n\n")
+
+  print.morphometric_model(object)
+
+  cat("\nModel Diagnostics:\n")
+  if ("normality_test" %in% names(object$diagnostics)) {
+    cat("Residual Normality (Shapiro-Wilk):", sprintf("W = %.4f, p = %.4f",
+        object$diagnostics$normality_test$statistic,
+        object$diagnostics$normality_test$p.value), "\n")
+  }
+
+  if ("heteroscedasticity_test" %in% names(object$diagnostics)) {
+    cat("Heteroscedasticity (ncvTest):", sprintf("Chi-sq = %.4f, p = %.4f",
+        object$diagnostics$heteroscedasticity_test$ChiSquare,
+        object$diagnostics$heteroscedasticity_test$p), "\n")
+  }
+
+  if ("rhats" %in% names(object$diagnostics)) {
+    max_rhat <- max(object$diagnostics$rhats, na.rm = TRUE)
+    cat("Max R-hat:", sprintf("%.4f", max_rhat), "\n")
+    cat("Effective Sample Size (bulk):", sprintf("%.0f", min(object$diagnostics$ess_bulk, na.rm = TRUE)), "\n")
+  }
+}
+```
+
+**Create comprehensive package tests:**
+
+```bash
+vim tests/testthat/test-core-functions.R
+```
+
+**Team testing framework:**
+
+```r
+# Comprehensive Testing Suite for Core Functions
+# Team: statmethods-team
+# Testing Standards: >95% coverage, edge cases, error handling
+
+library(testthat)
+library(palmerpenguins)
+
+# Setup test data following team standards
+setup_morphometric_data <- function() {
+  penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm), !is.na(species)) %>%
+    slice_head(n = 50)  # Smaller dataset for testing speed
+}
+
+test_that("fit_allometric_model basic functionality works", {
+  test_data <- setup_morphometric_data()
+
+  # Test basic linear model
+  result <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm")
+
+  # Test return structure
+  expect_s3_class(result, "morphometric_model")
+  expect_true("model" %in% names(result))
+  expect_true("summary" %in% names(result))
+  expect_true("coefficients" %in% names(result))
+  expect_true("diagnostics" %in% names(result))
+  expect_true("data_info" %in% names(result))
+  expect_true("call" %in% names(result))
+
+  # Test model object
+  expect_s3_class(result$model, "lm")
+  expect_equal(result$data_info$method, "lm")
+  expect_equal(result$data_info$response, "bill_depth_mm")
+  expect_equal(result$data_info$predictor, "bill_length_mm")
+})
+
+test_that("fit_allometric_model handles grouping variables", {
+  test_data <- setup_morphometric_data()
+
+  # Test mixed-effects model with grouping
+  skip_if_not_installed("lme4")
+
+  result <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm",
+                                grouping = "species", method = "lmer")
+
+  expect_s4_class(result$model, "lmerMod")
+  expect_equal(result$data_info$method, "lmer")
+  expect_equal(result$data_info$grouping, "species")
+})
+
+test_that("fit_allometric_model log transformation works", {
+  test_data <- setup_morphometric_data()
+
+  result <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm",
+                                log_transform = TRUE)
+
+  expect_true(result$data_info$log_transform)
+  expect_true(grepl("_log", result$data_info$formula))
+})
+
+test_that("fit_allometric_model input validation works", {
+  test_data <- setup_morphometric_data()
+
+  # Test invalid data types
+  expect_error(
+    fit_allometric_model("not_a_dataframe", "bill_depth_mm", "bill_length_mm"),
+    "must be a data frame"
+  )
+
+  # Test missing variables
+  expect_error(
+    fit_allometric_model(test_data, "missing_var", "bill_length_mm"),
+    "Missing variables in data"
+  )
+
+  # Test insufficient data
+  tiny_data <- test_data[1:5, ]
+  expect_error(
+    fit_allometric_model(tiny_data, "bill_depth_mm", "bill_length_mm"),
+    "Insufficient data"
+  )
+
+  # Test log transformation with negative values
+  test_data$negative_var <- -1
+  expect_error(
+    fit_allometric_model(test_data, "negative_var", "bill_length_mm",
+                        log_transform = TRUE),
+    "Log transformation requires all values > 0"
+  )
+})
+
+test_that("fit_allometric_model methods argument works", {
+  test_data <- setup_morphometric_data()
+
+  # Test method validation
+  expect_error(
+    fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm",
+                        method = "invalid_method"),
+    "should be one of"
+  )
+
+  # Test lmer requires grouping
+  expect_error(
+    fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm",
+                        method = "lmer"),
+    "Grouping variable required"
+  )
+})
+
+test_that("print.morphometric_model works correctly", {
+  test_data <- setup_morphometric_data()
+  result <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm")
+
+  # Test that print method doesn't throw errors
+  expect_output(print(result), "Morphometric Allometry Model")
+  expect_output(print(result), "Sample Size:")
+  expect_output(print(result), "Coefficients:")
+})
+
+test_that("summary.morphometric_model works correctly", {
+  test_data <- setup_morphometric_data()
+  result <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm")
+
+  # Test that summary method doesn't throw errors
+  expect_output(summary(result), "Model Summary")
+  expect_output(summary(result), "Model Diagnostics:")
+  expect_output(summary(result), "Shapiro-Wilk")
+})
+
+test_that("diagnostics are computed correctly", {
+  test_data <- setup_morphometric_data()
+  result <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm")
+
+  expect_true("diagnostics" %in% names(result))
+  expect_true("normality_test" %in% names(result$diagnostics))
+  expect_true("heteroscedasticity_test" %in% names(result$diagnostics))
+
+  # Test diagnostic values are reasonable
+  expect_true(result$diagnostics$normality_test$p.value >= 0 &&
+              result$diagnostics$normality_test$p.value <= 1)
+})
+
+# Integration tests
+test_that("complete workflow integration works", {
+  test_data <- setup_morphometric_data()
+
+  # Test complete analysis workflow
+  model1 <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm")
+  model2 <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm",
+                                log_transform = TRUE)
+
+  skip_if_not_installed("lme4")
+  model3 <- fit_allometric_model(test_data, "bill_depth_mm", "bill_length_mm",
+                                grouping = "species", method = "lmer")
+
+  # All models should be valid
+  expect_s3_class(model1, "morphometric_model")
+  expect_s3_class(model2, "morphometric_model")
+  expect_s3_class(model3, "morphometric_model")
+
+  # Models should have different structures
+  expect_s3_class(model1$model, "lm")
+  expect_s3_class(model2$model, "lm")
+  expect_s4_class(model3$model, "lmerMod")
+
+  # Print and summary should work for all
+  expect_output(print(model1))
+  expect_output(print(model2))
+  expect_output(print(model3))
+})
+```
+
+**Core Developer: Utility Functions and Infrastructure**
+
+```bash
+# Develop utility functions and package infrastructure
+make docker-zsh
+
+git pull origin main  # Get latest team changes
+
+vim R/utility-functions.R
+```
+
+**Team utility functions:**
+
+```r
+#' Morphometric Analysis Package - Utility Functions
+#' Team: statmethods-team
+#' Core Developer: Dr. Michael Torres
+#'
+#' This module provides utility functions and data processing tools
+#' for morphometric analysis with comprehensive validation.
+
+#' Calculate morphometric ratios with error handling
+#'
+#' @param data Data frame containing morphometric measurements
+#' @param numerator Character string specifying numerator variable
+#' @param denominator Character string specifying denominator variable
+#' @param ratio_name Optional name for the resulting ratio variable
+#' @param handle_zeros How to handle zero values ("error", "na", "small_constant")
+#' @param small_constant Value to add when handle_zeros = "small_constant"
+#' @return Data frame with added ratio variable
+#' @export
+#' @examples
+#' data(penguins, package = "palmerpenguins")
+#' penguins_with_ratio <- calculate_morphometric_ratio(
+#'   penguins, "bill_depth_mm", "bill_length_mm", "bill_ratio"
+#' )
+calculate_morphometric_ratio <- function(data, numerator, denominator,
+                                       ratio_name = NULL, handle_zeros = "error",
+                                       small_constant = 0.001) {
+  # Input validation
+  if (!is.data.frame(data)) {
+    stop("'data' must be a data frame", call. = FALSE)
+  }
+
+  missing_vars <- setdiff(c(numerator, denominator), names(data))
+  if (length(missing_vars) > 0) {
+    stop("Missing variables: ", paste(missing_vars, collapse = ", "), call. = FALSE)
+  }
+
+  # Generate ratio name if not provided
+  if (is.null(ratio_name)) {
+    ratio_name <- paste0(numerator, "_", denominator, "_ratio")
+  }
+
+  # Handle zero values in denominator
+  denom_values <- data[[denominator]]
+  zero_indices <- which(denom_values == 0 | is.na(denom_values))
+
+  if (length(zero_indices) > 0) {
+    if (handle_zeros == "error") {
+      stop("Zero or NA values found in denominator. Use handle_zeros = 'na' or 'small_constant'",
+           call. = FALSE)
+    } else if (handle_zeros == "na") {
+      # Will result in NA values in ratio
+    } else if (handle_zeros == "small_constant") {
+      data[[denominator]][zero_indices] <- small_constant
+    }
+  }
+
+  # Calculate ratio
+  data[[ratio_name]] <- data[[numerator]] / data[[denominator]]
+
+  return(data)
+}
+
+#' Standardize morphometric variables using z-scores
+#'
+#' @param data Data frame containing variables to standardize
+#' @param variables Character vector of variable names to standardize
+#' @param grouping Optional grouping variable for group-specific standardization
+#' @param suffix Suffix to add to standardized variable names
+#' @return Data frame with added standardized variables
+#' @export
+#' @examples
+#' data(penguins, package = "palmerpenguins")
+#' penguins_std <- standardize_morphometric_vars(
+#'   penguins, c("bill_length_mm", "bill_depth_mm"), "species"
+#' )
+standardize_morphometric_vars <- function(data, variables, grouping = NULL,
+                                        suffix = "_std") {
+  if (!is.data.frame(data)) {
+    stop("'data' must be a data frame", call. = FALSE)
+  }
+
+  missing_vars <- setdiff(variables, names(data))
+  if (length(missing_vars) > 0) {
+    stop("Missing variables: ", paste(missing_vars, collapse = ", "), call. = FALSE)
+  }
+
+  if (!is.null(grouping) && !grouping %in% names(data)) {
+    stop("Grouping variable '", grouping, "' not found in data", call. = FALSE)
+  }
+
+  # Standardization function
+  standardize_var <- function(x) {
+    (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
+  }
+
+  # Apply standardization
+  if (is.null(grouping)) {
+    # Global standardization
+    for (var in variables) {
+      new_var_name <- paste0(var, suffix)
+      data[[new_var_name]] <- standardize_var(data[[var]])
+    }
+  } else {
+    # Group-specific standardization
+    library(dplyr)
+    for (var in variables) {
+      new_var_name <- paste0(var, suffix)
+      data <- data %>%
+        group_by(!!sym(grouping)) %>%
+        mutate(!!new_var_name := standardize_var(!!sym(var))) %>%
+        ungroup()
+    }
+  }
+
+  return(data)
+}
+
+#' Detect morphometric outliers using multiple methods
+#'
+#' @param data Data frame containing morphometric measurements
+#' @param variables Character vector of variables to check for outliers
+#' @param methods Character vector of outlier detection methods
+#' @param grouping Optional grouping variable for group-specific detection
+#' @return List containing outlier information for each method
+#' @export
+detect_morphometric_outliers <- function(data, variables,
+                                       methods = c("iqr", "zscore", "mahalanobis"),
+                                       grouping = NULL) {
+  if (!is.data.frame(data)) {
+    stop("'data' must be a data frame", call. = FALSE)
+  }
+
+  missing_vars <- setdiff(variables, names(data))
+  if (length(missing_vars) > 0) {
+    stop("Missing variables: ", paste(missing_vars, collapse = ", "), call. = FALSE)
+  }
+
+  outlier_results <- list()
+
+  # IQR method
+  if ("iqr" %in% methods) {
+    outlier_results$iqr <- detect_iqr_outliers(data, variables, grouping)
+  }
+
+  # Z-score method
+  if ("zscore" %in% methods) {
+    outlier_results$zscore <- detect_zscore_outliers(data, variables, grouping)
+  }
+
+  # Mahalanobis distance method
+  if ("mahalanobis" %in% methods) {
+    outlier_results$mahalanobis <- detect_mahalanobis_outliers(data, variables, grouping)
+  }
+
+  return(outlier_results)
+}
+
+# Helper functions for outlier detection (internal)
+detect_iqr_outliers <- function(data, variables, grouping) {
+  # Implementation for IQR-based outlier detection
+  outliers <- list()
+  for (var in variables) {
+    values <- data[[var]][!is.na(data[[var]])]
+    q1 <- quantile(values, 0.25)
+    q3 <- quantile(values, 0.75)
+    iqr <- q3 - q1
+    lower_bound <- q1 - 1.5 * iqr
+    upper_bound <- q3 + 1.5 * iqr
+
+    outlier_indices <- which(data[[var]] < lower_bound | data[[var]] > upper_bound)
+    outliers[[var]] <- outlier_indices
+  }
+  return(outliers)
+}
+
+detect_zscore_outliers <- function(data, variables, grouping, threshold = 3) {
+  # Implementation for z-score based outlier detection
+  outliers <- list()
+  for (var in variables) {
+    values <- data[[var]]
+    z_scores <- abs((values - mean(values, na.rm = TRUE)) / sd(values, na.rm = TRUE))
+    outlier_indices <- which(z_scores > threshold)
+    outliers[[var]] <- outlier_indices
+  }
+  return(outliers)
+}
+
+detect_mahalanobis_outliers <- function(data, variables, grouping) {
+  # Implementation for Mahalanobis distance outlier detection
+  data_subset <- data[variables]
+  data_complete <- data_subset[complete.cases(data_subset), ]
+
+  if (nrow(data_complete) < length(variables) + 1) {
+    warning("Insufficient complete cases for Mahalanobis distance calculation")
+    return(list())
+  }
+
+  # Calculate Mahalanobis distances
+  center <- colMeans(data_complete)
+  cov_matrix <- cov(data_complete)
+
+  distances <- mahalanobis(data_complete, center, cov_matrix)
+  threshold <- qchisq(0.95, df = length(variables))
+
+  outlier_indices <- which(distances > threshold)
+  return(list(outlier_indices = outlier_indices, distances = distances))
+}
+
+#' Create morphometric summary statistics table
+#'
+#' @param data Data frame containing morphometric data
+#' @param variables Character vector of variables to summarize
+#' @param grouping Optional grouping variable
+#' @param statistics Character vector of statistics to compute
+#' @return Data frame with summary statistics
+#' @export
+create_morphometric_summary <- function(data, variables, grouping = NULL,
+                                      statistics = c("n", "mean", "sd", "min", "max")) {
+  if (!is.data.frame(data)) {
+    stop("'data' must be a data frame", call. = FALSE)
+  }
+
+  library(dplyr)
+
+  # Define summary functions
+  summary_funcs <- list(
+    n = function(x) sum(!is.na(x)),
+    mean = function(x) round(mean(x, na.rm = TRUE), 2),
+    sd = function(x) round(sd(x, na.rm = TRUE), 2),
+    min = function(x) round(min(x, na.rm = TRUE), 2),
+    max = function(x) round(max(x, na.rm = TRUE), 2),
+    median = function(x) round(median(x, na.rm = TRUE), 2),
+    q25 = function(x) round(quantile(x, 0.25, na.rm = TRUE), 2),
+    q75 = function(x) round(quantile(x, 0.75, na.rm = TRUE), 2)
+  )
+
+  # Select requested statistics
+  selected_funcs <- summary_funcs[statistics]
+
+  # Compute summary statistics
+  if (is.null(grouping)) {
+    # Global summary
+    summary_data <- data %>%
+      select(all_of(variables)) %>%
+      summarise(across(everything(), selected_funcs, .names = "{.col}_{.fn}"))
+  } else {
+    # Grouped summary
+    summary_data <- data %>%
+      group_by(!!sym(grouping)) %>%
+      select(all_of(c(grouping, variables))) %>%
+      summarise(across(-!!sym(grouping), selected_funcs, .names = "{.col}_{.fn}"),
+               .groups = "drop")
+  }
+
+  return(summary_data)
+}
+```
+
+#### Phase 3B: Specialized Function Development
+
+**Domain Specialist: Visualization Functions**
+
+```bash
+# Develop visualization functions for morphometric analysis
+make docker-zsh
+
+git pull origin main
+
+vim R/plotting-functions.R
+```
+
+**Team visualization functions:**
+
+```r
+#' Morphometric Analysis Package - Plotting Functions
+#' Team: statmethods-team
+#' Domain Specialist: Dr. Elena Rodriguez
+#'
+#' This module provides comprehensive visualization functions for
+#' morphometric analysis with professional publication-quality output.
+
+#' Create allometric scaling plot with model fit
+#'
+#' @param model Morphometric model object from fit_allometric_model()
+#' @param data Original data used for modeling (optional)
+#' @param log_axes Logical indicating whether to use log-transformed axes
+#' @param color_by Variable name for color grouping (optional)
+#' @param theme_style ggplot2 theme style ("minimal", "classic", "bw")
+#' @param point_size Size of data points
+#' @param line_size Size of fitted line
+#' @return ggplot2 object
+#' @export
+#' @examples
+#' \dontrun{
+#' data(penguins, package = "palmerpenguins")
+#' model <- fit_allometric_model(penguins, "bill_depth_mm", "bill_length_mm")
+#' plot <- plot_allometric_scaling(model, penguins, color_by = "species")
+#' print(plot)
+#' }
+plot_allometric_scaling <- function(model, data = NULL, log_axes = FALSE,
+                                   color_by = NULL, theme_style = "minimal",
+                                   point_size = 2, line_size = 1) {
+  if (!inherits(model, "morphometric_model")) {
+    stop("Model must be of class 'morphometric_model'", call. = FALSE)
+  }
+
+  library(ggplot2)
+  library(dplyr)
+
+  # Extract model information
+  response_var <- model$data_info$response
+  predictor_var <- model$data_info$predictor
+  log_transform <- model$data_info$log_transform
+
+  # Prepare data for plotting
+  if (is.null(data)) {
+    # Extract data from model if not provided
+    plot_data <- model$model$model
+    if (log_transform) {
+      # Convert back from log scale for original scale plotting
+      plot_data[[response_var]] <- exp(plot_data[[paste0(response_var, "_log")]])
+      plot_data[[predictor_var]] <- exp(plot_data[[paste0(predictor_var, "_log")]])
+    }
+  } else {
+    plot_data <- data %>%
+      filter(!is.na(!!sym(response_var)), !is.na(!!sym(predictor_var)))
+  }
+
+  # Create base plot
+  p <- ggplot(plot_data, aes(x = !!sym(predictor_var), y = !!sym(response_var)))
+
+  # Add color mapping if specified
+  if (!is.null(color_by) && color_by %in% names(plot_data)) {
+    p <- p + aes(color = !!sym(color_by))
+  }
+
+  # Add points
+  p <- p + geom_point(size = point_size, alpha = 0.7)
+
+  # Add model fit line
+  p <- p + geom_smooth(method = "lm", se = TRUE, size = line_size)
+
+  # Apply log transformation to axes if requested
+  if (log_axes || log_transform) {
+    p <- p + scale_x_log10() + scale_y_log10()
+  }
+
+  # Customize theme
+  theme_func <- switch(theme_style,
+    minimal = theme_minimal(),
+    classic = theme_classic(),
+    bw = theme_bw(),
+    theme_minimal()  # default
+  )
+
+  p <- p + theme_func +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      axis.title = element_text(size = 12),
+      legend.position = "bottom"
+    )
+
+  # Add labels
+  x_label <- if (log_axes || log_transform) {
+    paste("log(", response_var, ")")
+  } else {
+    response_var
+  }
+
+  y_label <- if (log_axes || log_transform) {
+    paste("log(", predictor_var, ")")
+  } else {
+    predictor_var
+  }
+
+  p <- p + labs(
+    title = "Allometric Scaling Relationship",
+    subtitle = paste("Model:", model$data_info$method),
+    x = x_label,
+    y = y_label,
+    caption = paste("n =", model$data_info$n_obs, "observations")
+  )
+
+  return(p)
+}
+
+#' Create model diagnostic plots
+#'
+#' @param model Morphometric model object
+#' @param which Character vector specifying which plots to create
+#' @return List of ggplot2 objects or single ggplot2 object
+#' @export
+plot_model_diagnostics <- function(model, which = c("residuals", "qq", "scale_location", "leverage")) {
+  if (!inherits(model, "morphometric_model")) {
+    stop("Model must be of class 'morphometric_model'", call. = FALSE)
+  }
+
+  library(ggplot2)
+  library(patchwork)
+
+  # Extract model and residuals
+  fitted_model <- model$model
+  residuals <- residuals(fitted_model)
+  fitted_values <- fitted(fitted_model)
+
+  plots <- list()
+
+  # Residuals vs Fitted
+  if ("residuals" %in% which) {
+    plots$residuals <- ggplot(data.frame(fitted = fitted_values, residuals = residuals),
+                             aes(x = fitted, y = residuals)) +
+      geom_point(alpha = 0.6) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+      geom_smooth(se = FALSE, method = "loess") +
+      labs(title = "Residuals vs Fitted",
+           x = "Fitted Values",
+           y = "Residuals") +
+      theme_minimal()
+  }
+
+  # Q-Q plot
+  if ("qq" %in% which) {
+    plots$qq <- ggplot(data.frame(residuals = residuals), aes(sample = residuals)) +
+      stat_qq() +
+      stat_qq_line() +
+      labs(title = "Normal Q-Q Plot",
+           x = "Theoretical Quantiles",
+           y = "Sample Quantiles") +
+      theme_minimal()
+  }
+
+  # Scale-Location plot
+  if ("scale_location" %in% which) {
+    sqrt_abs_residuals <- sqrt(abs(residuals))
+    plots$scale_location <- ggplot(data.frame(fitted = fitted_values,
+                                            sqrt_abs_res = sqrt_abs_residuals),
+                                  aes(x = fitted, y = sqrt_abs_res)) +
+      geom_point(alpha = 0.6) +
+      geom_smooth(se = FALSE, method = "loess") +
+      labs(title = "Scale-Location",
+           x = "Fitted Values",
+           y = expression(sqrt("|Residuals|"))) +
+      theme_minimal()
+  }
+
+  # Leverage plot (for linear models)
+  if ("leverage" %in% which && inherits(fitted_model, "lm")) {
+    leverage <- hatvalues(fitted_model)
+    plots$leverage <- ggplot(data.frame(leverage = leverage, residuals = residuals),
+                            aes(x = leverage, y = residuals)) +
+      geom_point(alpha = 0.6) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+      geom_smooth(se = FALSE, method = "loess") +
+      labs(title = "Residuals vs Leverage",
+           x = "Leverage",
+           y = "Residuals") +
+      theme_minimal()
+  }
+
+  # Return appropriate format
+  if (length(plots) == 1) {
+    return(plots[[1]])
+  } else {
+    return(plots)
+  }
+}
+
+#' Create morphometric comparison plots
+#'
+#' @param data Data frame containing morphometric measurements
+#' @param variables Character vector of variables to compare
+#' @param grouping Grouping variable for comparison
+#' @param plot_type Type of plot ("boxplot", "violin", "density")
+#' @return ggplot2 object
+#' @export
+plot_morphometric_comparison <- function(data, variables, grouping,
+                                       plot_type = "boxplot") {
+  library(ggplot2)
+  library(dplyr)
+  library(tidyr)
+
+  # Prepare data for plotting
+  plot_data <- data %>%
+    select(all_of(c(variables, grouping))) %>%
+    pivot_longer(cols = all_of(variables), names_to = "variable", values_to = "value") %>%
+    filter(!is.na(value))
+
+  # Create base plot
+  p <- ggplot(plot_data, aes(x = !!sym(grouping), y = value))
+
+  # Add appropriate geom based on plot type
+  if (plot_type == "boxplot") {
+    p <- p + geom_boxplot(aes(fill = !!sym(grouping)), alpha = 0.7) +
+      geom_jitter(width = 0.2, alpha = 0.3)
+  } else if (plot_type == "violin") {
+    p <- p + geom_violin(aes(fill = !!sym(grouping)), alpha = 0.7) +
+      geom_boxplot(width = 0.1, fill = "white", outlier.shape = NA)
+  } else if (plot_type == "density") {
+    p <- ggplot(plot_data, aes(x = value, fill = !!sym(grouping))) +
+      geom_density(alpha = 0.7) +
+      facet_wrap(~ variable, scales = "free")
+  }
+
+  # Customize appearance
+  p <- p +
+    facet_wrap(~ variable, scales = "free") +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      strip.text = element_text(face = "bold"),
+      legend.position = "bottom"
+    ) +
+    labs(
+      title = paste("Morphometric Comparison by", grouping),
+      x = grouping,
+      y = "Measurement Value",
+      fill = grouping
+    )
+
+  return(p)
+}
+```
+
+#### Phase 3C: Documentation and Integration
+
+**Documentation Specialist: Vignettes and User Guide**
+
+```bash
+# Create comprehensive package documentation
+make docker-zsh
+
+git pull origin main
+
+vim vignettes/getting-started.Rmd
+```
+
+**User-focused vignette:**
+
+```yaml
+---
+title: "Getting Started with Morphometric Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with Morphometric Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 5, dpi = 150
+)
+library(morphometricanalysis)
+library(palmerpenguins)
+library(ggplot2)
+library(dplyr)
+```
+
+# Introduction
+
+The `morphometricanalysis` package provides comprehensive tools for analyzing morphological scaling relationships in biological data. This vignette introduces the core functionality and demonstrates typical analysis workflows.
+
+## Installation
+
+```{r eval=FALSE}
+# Install from GitHub
+devtools::install_github("statmethods-team/morphometric-analysis")
+
+# Load package
+library(morphometricanalysis)
+```
+
+## Basic Allometric Analysis
+
+The core function of the package is `fit_allometric_model()`, which fits allometric scaling relationships between morphometric variables.
+
+### Simple Linear Analysis
+
+```{r basic-analysis}
+# Load example data
+data(penguins, package = "palmerpenguins")
+
+# Fit basic allometric model
+model <- fit_allometric_model(
+  data = penguins,
+  response = "bill_depth_mm",
+  predictor = "bill_length_mm"
+)
+
+# View results
+print(model)
+```
+
+### Model Summary and Diagnostics
+
+```{r model-summary}
+# Detailed model summary
+summary(model)
+
+# Create diagnostic plots
+diagnostic_plots <- plot_model_diagnostics(model)
+diagnostic_plots$residuals
+```
+
+### Visualization
+
+```{r visualization}
+# Create allometric scaling plot
+scaling_plot <- plot_allometric_scaling(
+  model = model,
+  data = penguins,
+  color_by = "species"
+)
+
+print(scaling_plot)
+```
+
+## Advanced Analysis
+
+### Hierarchical Modeling
+
+For data with grouping structure, use mixed-effects models:
+
+```{r hierarchical}
+# Fit hierarchical model accounting for species differences
+hierarchical_model <- fit_allometric_model(
+  data = penguins,
+  response = "bill_depth_mm",
+  predictor = "bill_length_mm",
+  grouping = "species",
+  method = "lmer"
+)
+
+summary(hierarchical_model)
+```
+
+### Log-Transformed Analysis
+
+For allometric relationships, log-transformation is often appropriate:
+
+```{r log-transform}
+# Fit model with log transformation
+log_model <- fit_allometric_model(
+  data = penguins,
+  response = "bill_depth_mm",
+  predictor = "bill_length_mm",
+  log_transform = TRUE
+)
+
+# Plot with log axes
+log_plot <- plot_allometric_scaling(
+  model = log_model,
+  data = penguins,
+  log_axes = TRUE,
+  color_by = "species"
+)
+
+print(log_plot)
+```
+
+## Data Preparation Utilities
+
+The package includes utilities for data preparation and quality assessment.
+
+### Calculate Morphometric Ratios
+
+```{r ratios}
+# Add bill ratio to dataset
+penguins_with_ratio <- calculate_morphometric_ratio(
+  penguins,
+  numerator = "bill_depth_mm",
+  denominator = "bill_length_mm",
+  ratio_name = "bill_ratio"
+)
+
+head(penguins_with_ratio[c("species", "bill_depth_mm", "bill_length_mm", "bill_ratio")])
+```
+
+### Standardize Variables
+
+```{r standardize}
+# Standardize variables by species
+penguins_std <- standardize_morphometric_vars(
+  penguins,
+  variables = c("bill_length_mm", "bill_depth_mm"),
+  grouping = "species"
+)
+
+# View standardized variables
+summary(penguins_std[c("bill_length_mm_std", "bill_depth_mm_std")])
+```
+
+### Outlier Detection
+
+```{r outliers}
+# Detect outliers using multiple methods
+outliers <- detect_morphometric_outliers(
+  penguins,
+  variables = c("bill_length_mm", "bill_depth_mm"),
+  methods = c("iqr", "zscore")
+)
+
+# View outlier summary
+lapply(outliers, function(x) lapply(x, length))
+```
+
+## Summary Statistics
+
+Create comprehensive summary statistics tables:
+
+```{r summary-stats}
+# Create summary by species and sex
+summary_table <- create_morphometric_summary(
+  penguins,
+  variables = c("bill_length_mm", "bill_depth_mm", "flipper_length_mm"),
+  grouping = "species"
+)
+
+knitr::kable(summary_table, digits = 2)
+```
+
+## Next Steps
+
+For more advanced usage, see:
+
+- `vignette("advanced-usage")` for complex modeling scenarios
+- `vignette("methodology")` for statistical background
+- `vignette("developer-guide")` for contributing to the package
+
+## References
+
+- Packard, G. C. (2009). On the use of logarithmic transformations in allometric analyses. *Journal of Theoretical Biology*, 257(3), 515-518.
+- Warton, D. I., Wright, I. J., Falster, D. S., & Westoby, M. (2006). Bivariate line-fitting methods for allometry. *Biological Reviews*, 81(2), 259-291.
+```
+
+### Phase 4: Team Integration and Release
+
+**Package Lead: CI/CD and Release Management**
+
+```bash
+# Set up comprehensive CI/CD pipeline for team package
+make docker-zsh
+
+# Create team release workflow
+vim .github/workflows/R-CMD-check.yml
+```
+
+**Team CI/CD configuration:**
+
+```yaml
+name: R-CMD-check
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [published]
+
+jobs:
+  R-CMD-check:
+    runs-on: ${{ matrix.config.os }}
+
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: ubuntu-latest, r: 'release'}
+          - {os: ubuntu-latest, r: 'devel'}
+          - {os: macOS-latest, r: 'release'}
+          - {os: windows-latest, r: 'release'}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+
+  coverage:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::covr
+          needs: coverage
+
+      - name: Test coverage
+        run: covr::codecov()
+        shell: Rscript {0}
+
+  pkgdown:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgdown, local::.
+          needs: website
+
+      - name: Deploy package website
+        run: |
+          git config --local user.name "$GITHUB_ACTOR"
+          git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          Rscript -e 'pkgdown::deploy_to_branch(new_process = FALSE)'
+```
+
+**Team coordination for CRAN submission:**
+
+```bash
+# Comprehensive package validation before CRAN submission
+make docker-test
+make docker-check
+make docker-render
+
+# Check package on multiple R versions and platforms
+R
+devtools::check_win_release()
+devtools::check_win_devel()
+devtools::check_rhub()
+quit()
+
+# Final team review and version update
+vim DESCRIPTION  # Update version to 1.0.0
+vim NEWS.md      # Document all changes
+
+# Create release candidate
+git add .
+git commit -m "Prepare v1.0.0 release candidate
+
+Team Contributors:
+- Dr. Sarah Chen (Package Lead): Core architecture and API design
+- Dr. Michael Torres (Core Developer): Utility functions and infrastructure
+- Dr. Elena Rodriguez (Domain Specialist): Visualization and plotting functions
+- Alex Kim (Junior Developer): Testing framework and examples
+- Maria Santos (Documentation Specialist): Vignettes and user documentation
+
+Package Features:
+- Comprehensive allometric scaling analysis with multiple methods
+- Hierarchical modeling support for grouped data
+- Professional visualization functions for publication-quality plots
+- Extensive utility functions for data preparation and quality assessment
+- Complete testing suite with >95% coverage
+- Professional documentation with methodology references
+
+Ready for CRAN submission pending final team review."
+
+git push origin main
+
+# Create release tag
+git tag -a v1.0.0 -m "Release version 1.0.0 - Initial CRAN submission"
+git push origin v1.0.0
+```
+
+**All Team Members: Final Integration Testing**
+
+```bash
+# Each team member validates complete package functionality
+make docker-zsh
+
+# Run complete test suite
+R
+devtools::load_all()
+devtools::test()
+devtools::check()
+
+# Test all vignettes render correctly
+devtools::build_vignettes()
+
+# Test example workflows
+example(fit_allometric_model)
+example(plot_allometric_scaling)
+
+# Validate documentation
+help(package = "morphometricanalysis")
+quit()
+
+# Final sign-off commits from each contributor
+git add .
+git commit -m "Team member validation complete - [Name]
+
+- All functions tested and working correctly
+- Documentation reviewed and approved
+- Examples and vignettes validated
+- Ready for CRAN submission
+
+Contributor role: [Role] - [Specific contributions]"
+
+git push origin main
+```
+
+## Benefits of Team Package Development Workflow
+
+### Collaborative Development Advantages
+
+- **Modular Development**: Team members work on different package components simultaneously without conflicts
+- **Professional Standards**: Comprehensive testing, documentation, and CI/CD ensure high-quality software
+- **Knowledge Sharing**: Code review process facilitates learning and maintains consistency across contributors
+- **Version Control Integration**: Complete development history with clear attribution and contribution tracking
+- **Scalable Architecture**: Framework supports package development from small utility packages to comprehensive analysis suites
+
+### Team Productivity Features
+
+- **Role-Based Assignments**: Clear responsibilities allow team members to focus on their expertise areas
+- **Automated Quality Assurance**: CI/CD pipeline ensures all contributions meet package standards before integration
+- **Comprehensive Documentation**: Multiple vignettes serve different user needs (beginners, advanced users, developers)
+- **Professional Release Management**: Standardized version control and CRAN submission process
+
+### Professional Package Standards
+
+- **CRAN Compliance**: All development follows CRAN policies and submission requirements
+- **Comprehensive Testing**: >95% test coverage with edge case handling and integration tests
+- **Academic Standards**: Methodology documentation with peer-reviewed references and statistical validation
+- **User Experience**: Professional documentation, examples, and error handling for end users
+- **Long-term Maintenance**: Sustainable development practices support ongoing package evolution
+
+The team package paradigm provides a complete framework for collaborative R package development that produces professional-quality software while maintaining individual contributor recognition and facilitating effective team coordination.
