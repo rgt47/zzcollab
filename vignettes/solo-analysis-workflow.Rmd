@@ -43,6 +43,120 @@ The **analysis paradigm** is one of zzcollab's three research paradigms, optimiz
 - `05_automated_report.Rmd` - Parameterized reports with multiple formats
 - `example_analysis_functions.R` - Reusable utility functions
 
+## Build Mode Overview
+
+ZZCOLLAB provides three build modes that control the scope of R packages installed in your Docker environment, allowing you to balance functionality with build speed and container size:
+
+**Build Mode Options:**
+
+- **Fast Mode (-F)**: Essential packages for rapid development
+  (9 packages, approximately 5-minute build time)
+  - Core components: renv, here, usethis, devtools, testthat, knitr,
+    rmarkdown, targets
+  - Applications: Rapid prototyping, CI/CD workflows, minimal configurations
+- **Standard Mode (-S)**: Balanced package selection for typical analytical
+  workflows (17 packages, approximately 8-minute build time, default)
+  - Includes Fast mode components plus tidyverse core: dplyr, ggplot2,
+    tidyr, palmerpenguins, broom, janitor, DT, conflicted
+  - Applications: Standard data analysis projects, recommended for individual
+    researchers
+- **Comprehensive Mode (-C)**: Extended ecosystem for complex analytical
+  environments (47+ packages, approximately 15-minute build time)
+  - Includes Standard mode components plus advanced tools: tidymodels,
+    shiny, plotly, quarto, flexdashboard, survival, lme4
+  - Applications: Complex multi-paradigm analyses, production environments
+
+**Usage Examples:**
+```bash
+zzcollab -p my-project -F    # Fast mode
+zzcollab -p my-project -S    # Standard mode (default)
+zzcollab -p my-project -C    # Comprehensive mode
+```
+
+*For detailed build mode documentation, see [Build Modes Guide](../docs/BUILD_MODES.md)*
+
+## Testing Framework Overview
+
+ZZCOLLAB includes a comprehensive testing framework that ensures reproducibility and code quality throughout the analysis lifecycle:
+
+**Testing Components:**
+
+- **Unit Tests**: Individual function validation using testthat framework
+- **Integration Tests**: End-to-end workflow validation from data input to
+  analytical results
+- **Dependency Validation**: Automated renv synchronization verification
+- **Reproducibility Tests**: Session consistency and seed management validation
+
+**Automated Testing Features:**
+
+- **Test Templates**: Pre-configured test suites for analytical functions
+- **Coverage Tracking**: Coverage targets exceeding 90% with automated reporting
+- **CI/CD Integration**: GitHub Actions workflows for continuous validation
+- **Quality Gates**: Automated verification prevents commits with test failures
+
+**Testing Workflow:**
+
+1. **Development Phase**: Function implementation with corresponding test
+   development
+2. **Local Validation**: `make docker-test` executes comprehensive test suite
+3. **Pre-commit Verification**: Dependency validation prior to repository
+   commits
+4. **Continuous Integration**: Automated testing across multiple R versions
+   upon repository updates
+
+**Example Test Structure:**
+```r
+test_that("load_penguin_data works correctly", {
+  penguins <- load_penguin_data("test_data.csv")
+  expect_s3_class(penguins, "data.frame")
+  expect_true(nrow(penguins) > 0)
+})
+```
+
+*For complete testing documentation, see [Testing Guide](../docs/TESTING_GUIDE.md)*
+
+## Configuration and Variant System Overview
+
+ZZCOLLAB implements a hierarchical configuration system that manages Docker environments, R packages, and development settings through multiple configuration layers:
+
+**Configuration Hierarchy** (priority order):
+
+1. **Project config** (`./zzcollab.yaml`) - Team-specific settings
+2. **User config** (`~/.zzcollab/config.yaml`) - Individual user defaults
+3. **System config** (`/etc/zzcollab/config.yaml`) - Organization-level defaults
+4. **Built-in defaults** - Framework fallback values
+
+**Docker Variant System:**
+
+- **Specialized Environments**: Fourteen distinct configurations ranging from
+  lightweight Alpine distributions (approximately 200MB) to comprehensive
+  environments (approximately 3.5GB)
+- **Domain-Specific Variants**: Specialized configurations for bioinformatics,
+  geospatial analysis, high-performance computing, and web applications
+- **Interactive Management**: `./add_variant.sh` utility provides guided
+  variant selection interface
+- **Centralized Definitions**: Single source configuration library eliminates
+  duplication across projects
+
+**Configuration Domains:**
+
+- **Build Settings**: Package selection modes, paradigm defaults, dotfiles
+  integration
+- **Docker Management**: Variant selection, platform compatibility, resource
+  constraints
+- **Collaboration Settings**: Team coordination protocols, version control
+  integration, resource sharing preferences
+
+**Quick Configuration:**
+```bash
+zzcollab --config init                    # Initialize config file
+zzcollab --config set paradigm "analysis" # Set default paradigm
+zzcollab --config set build-mode "standard" # Set default build mode
+zzcollab --config list                    # View current settings
+```
+
+*For comprehensive configuration documentation, see [Configuration Guide](../docs/CONFIGURATION.md) and [Variant System Guide](../docs/VARIANTS.md)*
+
 ## Initial Setup (One-Time)
 
 ### 1. Install and Configure zzcollab
@@ -52,12 +166,14 @@ The **analysis paradigm** is one of zzcollab's three research paradigms, optimiz
 git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab && ./install.sh
 
-# Initialize personal configuration
+# Initialize personal configuration (local development only)
 zzcollab --config init
-zzcollab --config set team-name "myname"        # Your Docker Hub account
 zzcollab --config set paradigm "analysis"       # Default to analysis paradigm
 zzcollab --config set build-mode "standard"     # Balanced package set
 zzcollab --config set dotfiles-dir "~/dotfiles" # Optional: your dotfiles
+
+# Optional: Docker Hub configuration (only needed for sharing images)
+# zzcollab --config set team-name "myname"      # Uncomment if you plan to share images
 ```
 
 ### 2. Verify Installation
@@ -73,18 +189,34 @@ zzcollab --config list
 
 ## Project Creation and Setup
 
+### Solo vs Team Development
+
+**Solo Development (Recommended):**
+- Work entirely locally with your own Docker containers
+- No Docker Hub account or team configuration needed
+- Perfect reproducibility for your individual work
+- Easy to upgrade to team collaboration later
+
+**Team Development (Optional):**
+- Share Docker images via Docker Hub for team collaboration
+- Requires `team-name` configuration and `-i` flag
+- Enables multiple developers to use identical environments
+
 ### Create Analysis Project
 
 ```bash
-# Method 1: Quick start with defaults (recommended)
-zzcollab -i -p penguin-analysis --github    # Uses analysis paradigm automatically
+# Method 1: Local development (recommended for solo work)
+zzcollab -p penguin-analysis --github       # Local project, no Docker Hub needed
 
 # Method 2: Explicit paradigm specification
-zzcollab -i -p penguin-analysis -P analysis --github
+zzcollab -p penguin-analysis -P analysis --github
 
-# Method 3: Custom variant selection for specialized needs
+# Method 3: Advanced - with custom team configuration (if sharing images later)
+# zzcollab -i -p penguin-analysis -P analysis --github  # Creates shareable team images
+
+# Method 4: Custom variant selection for specialized needs
 mkdir penguin-analysis && cd penguin-analysis
-zzcollab -i -p penguin-analysis -P analysis
+zzcollab -p penguin-analysis -P analysis    # Local project setup
 ./add_variant.sh    # Select additional variants like modeling or alpine_minimal
 ```
 
@@ -209,8 +341,8 @@ Let's walk through a comprehensive analysis using the Palmer penguins dataset to
 ### Step 1: Project Setup and Data Import
 
 ```bash
-# Create the project
-zzcollab -i -p penguin-analysis -P analysis --github
+# Create the project (local development)
+zzcollab -p penguin-analysis -P analysis --github
 cd penguin-analysis
 
 # Start development environment
@@ -1522,34 +1654,34 @@ All dependencies tracked, tests passing, fully reproducible."
 git push origin main
 ```
 
-## Key Benefits Demonstrated
+## Demonstrated Methodological Features
 
-This complete workflow showcases the analysis paradigm's power:
+This workflow implementation demonstrates the analysis paradigm's methodological capabilities:
 
 **1. Systematic Approach:**
 - Structured templates guide comprehensive analysis
 - Quality checks built into every step
 - Reproducible seed management throughout
 
-**2. Professional Output:**
-- Publication-quality visualizations
-- Interactive exploration tools
-- Comprehensive statistical validation
+**2. Research-Standard Output:**
+- Publication-grade visualizations
+- Interactive analytical tools
+- Comprehensive statistical validation procedures
 
-**3. Complete Reproducibility:**
-- Docker environment ensures consistency
-- Session logging captures all details
-- Dependency tracking prevents drift
+**3. Methodological Reproducibility:**
+- Containerized environment maintains computational consistency
+- Session logging provides comprehensive analytical documentation
+- Dependency management prevents version drift
 
-**4. Collaborative Ready:**
-- GitHub integration with CI/CD
-- Standardized structure for team joining
-- Professional documentation throughout
+**4. Collaborative Infrastructure:**
+- Version control integration with continuous integration workflows
+- Standardized project architecture facilitates collaboration
+- Comprehensive documentation standards
 
-**5. Testing Framework:**
-- Comprehensive function testing
-- Data validation checks
-- Integration testing
+**5. Quality Assurance Framework:**
+- Systematic function testing protocols
+- Data validation procedures
+- Integration testing across analytical workflows
 
 ## Advanced Features
 
@@ -1590,19 +1722,44 @@ rmarkdown::render("scripts/05_automated_report.Rmd",
                                year_range = c(2007, 2009)))
 ```
 
+## Transitioning from Solo to Team Development
+
+Your solo analysis project is automatically team-ready! When you're ready to collaborate:
+
+### 1. Add Docker Hub Configuration
+```bash
+# Configure team sharing (one-time setup)
+zzcollab --config set team-name "your-dockerhub-account"
+
+# Create shareable team images for existing project
+cd your-project
+zzcollab -i -t your-team -p your-project -B rstudio
+```
+
+### 2. Team Members Join
+```bash
+# Team members can immediately join your project
+git clone https://github.com/your-team/your-project.git
+cd your-project
+zzcollab -t your-team -p your-project -I rstudio
+
+# Equivalent development environment
+make docker-zsh
+```
+
+The zzcollab framework enables solo projects to operate without Docker Hub configuration while maintaining compatibility for team collaboration when required.
+
 ## Characteristics of Analysis Paradigm Workflow
 
-✅ **Systematic**: Six-phase template structure ensures comprehensive analysis
-✅ **Reproducible**: Built-in seed management and session documentation
-✅ **Professional**: Publication-quality outputs and standardized visualizations
-✅ **Tested**: Comprehensive testing framework with >90% coverage targets
-✅ **Scalable**: Easy transition from solo to team collaboration
-✅ **Efficient**: Pre-configured packages eliminate setup overhead
-✅ **Flexible**: Multiple Docker variants for different computational needs
-✅ **Modern**: Integration with tidyverse, tidymodels, and current best practices
+The analysis paradigm demonstrates the following methodological characteristics:
+
+- **Systematic Structure**: Six-phase template sequence provides comprehensive analytical coverage
+- **Reproducible Methods**: Integrated seed management and session documentation ensure replicability
+- **Research-Grade Output**: Publication-standard visualizations and standardized reporting formats
+- **Quality Assurance**: Comprehensive testing framework with coverage targets exceeding 90%
+- **Collaborative Scalability**: Architecture supports transition from individual to team-based development
+- **Resource Efficiency**: Pre-configured package environments reduce initialization overhead
+- **Technical Flexibility**: Multiple Docker variants accommodate diverse computational requirements
+- **Contemporary Standards**: Integration with current R ecosystem best practices (tidyverse, tidymodels)
 
 The analysis paradigm provides a complete framework for reproducible data science, from initial data exploration through final publication-ready results.
-
-<function_calls>
-<invoke name="TodoWrite">
-<parameter name="todos">[{"content": "Create comprehensive solo analysis workflow vignette", "status": "completed", "activeForm": "Creating comprehensive solo analysis workflow vignette"}, {"content": "Study existing vignette structure and analysis templates", "status": "completed", "activeForm": "Studying existing vignette structure and analysis templates"}, {"content": "Write vignette with Palmer Penguins practical example", "status": "completed", "activeForm": "Writing vignette with Palmer Penguins practical example"}, {"content": "Include detailed workflow from setup to final results", "status": "completed", "activeForm": "Including detailed workflow from setup to final results"}, {"content": "Add testing and validation section", "status": "completed", "activeForm": "Adding testing and validation section"}]
