@@ -1763,3 +1763,446 @@ The analysis paradigm demonstrates the following methodological characteristics:
 - **Contemporary Standards**: Integration with current R ecosystem best practices (tidyverse, tidymodels)
 
 The analysis paradigm provides a complete framework for reproducible data science, from initial data exploration through final publication-ready results.
+
+## Complete Practical Example: Iterative Penguin Bill Analysis
+
+This section demonstrates a complete iterative development workflow using the Palmer penguins dataset, showing how to build analysis incrementally with proper testing and documentation.
+
+### Step 1: Create Project and Initial Analysis
+
+```bash
+# Set up the project with analysis paradigm
+zzcollab -i -p penguin-analysis -P analysis --github
+
+# Start development environment
+cd penguin-analysis
+make docker-zsh
+```
+
+**Inside the container - Create initial analysis script:**
+
+```bash
+# Create the analysis script
+vim scripts/01_penguin_exploration.R
+```
+
+**Contents of `scripts/01_penguin_exploration.R`:**
+
+```r
+#' Penguin Bill Analysis
+#' Explore relationship between bill depth and log of bill length
+
+# Load required packages
+library(palmerpenguins)
+library(ggplot2)
+library(dplyr)
+
+#' Create scatter plot of bill depth vs log(bill length)
+#' @return ggplot object
+create_bill_plot <- function() {
+  penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    geom_point(aes(color = species), alpha = 0.7, size = 2) +
+    labs(
+      title = "Penguin Bill Depth vs Log(Bill Length)",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+# Create and display the plot
+bill_plot <- create_bill_plot()
+print(bill_plot)
+
+# Save the plot
+ggsave("figures/bill_analysis.png", bill_plot, width = 8, height = 6, dpi = 300)
+
+cat("Analysis complete! Plot saved to figures/bill_analysis.png\n")
+```
+
+**Create the function file:**
+
+```bash
+# Create R function file
+vim R/penguin_functions.R
+```
+
+**Contents of `R/penguin_functions.R`:**
+
+```r
+#' Create scatter plot of bill depth vs log(bill length)
+#'
+#' @param data Data frame containing penguin data (default: palmerpenguins::penguins)
+#' @return ggplot object
+#' @export
+#' @examples
+#' plot <- create_bill_plot()
+#' print(plot)
+create_bill_plot <- function(data = palmerpenguins::penguins) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("ggplot2 package is required")
+  }
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("dplyr package is required")
+  }
+
+  data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    ggplot2::geom_point(ggplot2::aes(color = species), alpha = 0.7, size = 2) +
+    ggplot2::labs(
+      title = "Penguin Bill Depth vs Log(Bill Length)",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "bottom")
+}
+```
+
+**Create comprehensive tests:**
+
+```bash
+# Create test file
+vim tests/testthat/test-penguin_functions.R
+```
+
+**Contents of `tests/testthat/test-penguin_functions.R`:**
+
+```r
+test_that("create_bill_plot works correctly", {
+  # Test with default data
+  plot <- create_bill_plot()
+
+  # Check that it returns a ggplot object
+  expect_s3_class(plot, "ggplot")
+
+  # Check plot components
+  expect_equal(plot$labels$title, "Penguin Bill Depth vs Log(Bill Length)")
+  expect_equal(plot$labels$x, "Log(Bill Length) (mm)")
+  expect_equal(plot$labels$y, "Bill Depth (mm)")
+  expect_equal(plot$labels$colour, "Species")
+})
+
+test_that("create_bill_plot handles custom data", {
+  # Create test data
+  test_data <- data.frame(
+    bill_length_mm = c(40, 45, 50),
+    bill_depth_mm = c(18, 20, 22),
+    species = c("A", "B", "C")
+  )
+
+  plot <- create_bill_plot(test_data)
+  expect_s3_class(plot, "ggplot")
+})
+
+test_that("create_bill_plot handles missing values", {
+  # Create test data with NA values
+  test_data <- data.frame(
+    bill_length_mm = c(40, NA, 50),
+    bill_depth_mm = c(18, 20, NA),
+    species = c("A", "B", "C")
+  )
+
+  plot <- create_bill_plot(test_data)
+  expect_s3_class(plot, "ggplot")
+
+  # Should have only 1 point after filtering NAs
+  expect_equal(nrow(plot$data), 1)
+})
+```
+
+**Test and run the initial analysis:**
+
+```bash
+# Install required packages (if not already installed)
+R
+install.packages(c("palmerpenguins", "ggplot2", "dplyr"))
+quit()
+
+# Test the function
+R
+devtools::load_all()
+devtools::test()
+quit()
+
+# Run the analysis script
+mkdir -p figures
+R --vanilla < scripts/01_penguin_exploration.R
+
+# Check the results
+git status
+git add .
+git diff --cached
+```
+
+### Step 2: Exit Container and First Commit
+
+```bash
+# Exit the development container
+exit
+
+# Validate dependencies and test in clean environment
+make docker-check-renv-fix    # Auto-add new packages to renv.lock
+make docker-test             # Run tests in clean environment
+
+# First commit and push
+git add .
+git commit -m "Add initial penguin bill analysis
+
+- Create scatter plot of bill depth vs log(bill length)
+- Add create_bill_plot() function with comprehensive tests
+- Generate publication-quality figure
+- All tests passing, dependencies tracked"
+
+git push origin main
+```
+
+### Step 3: Enhance Analysis - Add Regression Line
+
+After the first push, continue with enhanced analysis:
+
+```bash
+# Start development environment again
+make docker-zsh
+
+# Update the analysis script
+vim scripts/01_penguin_exploration.R
+```
+
+**Enhanced `scripts/01_penguin_exploration.R`:**
+
+```r
+#' Penguin Bill Analysis - Enhanced with Regression
+#' Explore relationship between bill depth and log of bill length
+
+# Load required packages
+library(palmerpenguins)
+library(ggplot2)
+library(dplyr)
+library(broom)
+
+#' Create enhanced scatter plot with regression line
+#' @return ggplot object
+create_enhanced_bill_plot <- function() {
+  penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    geom_point(aes(color = species), alpha = 0.7, size = 2) +
+    geom_smooth(method = "lm", se = TRUE, color = "black", linetype = "dashed") +
+    labs(
+      title = "Penguin Bill Depth vs Log(Bill Length) with Regression Line",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species",
+      caption = "Dashed line shows linear regression fit with 95% confidence interval"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+#' Fit linear model for bill depth vs log(bill length)
+#' @return list with model object and summary statistics
+fit_bill_model <- function() {
+  clean_data <- penguins %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    mutate(log_bill_length = log(bill_length_mm))
+
+  model <- lm(bill_depth_mm ~ log_bill_length, data = clean_data)
+
+  list(
+    model = model,
+    summary = summary(model),
+    r_squared = summary(model)$r.squared,
+    coefficients = tidy(model)
+  )
+}
+
+# Create enhanced plot
+enhanced_plot <- create_enhanced_bill_plot()
+print(enhanced_plot)
+
+# Fit regression model
+model_results <- fit_bill_model()
+cat("\nRegression Results:\n")
+cat("R-squared:", round(model_results$r_squared, 3), "\n")
+print(model_results$coefficients)
+
+# Save outputs
+ggsave("figures/bill_analysis_with_regression.png", enhanced_plot,
+       width = 8, height = 6, dpi = 300)
+
+# Save model results
+saveRDS(model_results, "results/bill_model.rds")
+
+cat("\nEnhanced analysis complete!\n")
+cat("Plot: figures/bill_analysis_with_regression.png\n")
+cat("Model: results/bill_model.rds\n")
+```
+
+**Update function file with enhanced functions:**
+
+```r
+# Add to R/penguin_functions.R
+
+#' Create enhanced scatter plot with regression line
+#'
+#' @param data Data frame containing penguin data (default: palmerpenguins::penguins)
+#' @return ggplot object
+#' @export
+create_enhanced_bill_plot <- function(data = palmerpenguins::penguins) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("ggplot2 package is required")
+  }
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("dplyr package is required")
+  }
+
+  data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = log(bill_length_mm), y = bill_depth_mm)) +
+    ggplot2::geom_point(ggplot2::aes(color = species), alpha = 0.7, size = 2) +
+    ggplot2::geom_smooth(method = "lm", se = TRUE, color = "black", linetype = "dashed") +
+    ggplot2::labs(
+      title = "Penguin Bill Depth vs Log(Bill Length) with Regression Line",
+      x = "Log(Bill Length) (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species",
+      caption = "Dashed line shows linear regression fit with 95% confidence interval"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+#' Fit linear model for bill depth vs log(bill length)
+#'
+#' @param data Data frame containing penguin data (default: palmerpenguins::penguins)
+#' @return list with model object and summary statistics
+#' @export
+fit_bill_model <- function(data = palmerpenguins::penguins) {
+  if (!requireNamespace("dplyr", quietly = TRUE)) {
+    stop("dplyr package is required")
+  }
+  if (!requireNamespace("broom", quietly = TRUE)) {
+    stop("broom package is required")
+  }
+
+  clean_data <- data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    dplyr::mutate(log_bill_length = log(bill_length_mm))
+
+  model <- lm(bill_depth_mm ~ log_bill_length, data = clean_data)
+
+  list(
+    model = model,
+    summary = summary(model),
+    r_squared = summary(model)$r.squared,
+    coefficients = broom::tidy(model)
+  )
+}
+```
+
+**Add comprehensive tests for enhanced functions:**
+
+```r
+# Add to tests/testthat/test-penguin_functions.R
+
+test_that("create_enhanced_bill_plot works correctly", {
+  plot <- create_enhanced_bill_plot()
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$title,
+               "Penguin Bill Depth vs Log(Bill Length) with Regression Line")
+  expect_true(grepl("regression", plot$labels$caption, ignore.case = TRUE))
+})
+
+test_that("fit_bill_model returns correct structure", {
+  model_results <- fit_bill_model()
+
+  expect_type(model_results, "list")
+  expect_true("model" %in% names(model_results))
+  expect_true("summary" %in% names(model_results))
+  expect_true("r_squared" %in% names(model_results))
+  expect_true("coefficients" %in% names(model_results))
+
+  expect_s3_class(model_results$model, "lm")
+  expect_type(model_results$r_squared, "double")
+  expect_s3_class(model_results$coefficients, "data.frame")
+})
+
+test_that("fit_bill_model handles custom data", {
+  test_data <- data.frame(
+    bill_length_mm = c(40, 45, 50, 55),
+    bill_depth_mm = c(18, 19, 20, 21),
+    species = c("A", "B", "C", "A")
+  )
+
+  model_results <- fit_bill_model(test_data)
+  expect_s3_class(model_results$model, "lm")
+  expect_true(model_results$r_squared >= 0 && model_results$r_squared <= 1)
+})
+```
+
+**Test and run the enhanced analysis:**
+
+```bash
+# Install new package
+R
+install.packages("broom")
+quit()
+
+# Test the new functions
+R
+devtools::load_all()
+devtools::test()
+quit()
+
+# Create results directory and run enhanced analysis
+mkdir -p results
+R --vanilla < scripts/01_penguin_exploration.R
+
+# Check what changed
+git status
+git diff
+```
+
+### Step 4: Second Commit with Enhancement
+
+```bash
+# Exit container
+exit
+
+# Validate enhanced analysis
+make docker-check-renv-fix    # Track new broom package
+make docker-test             # Ensure all tests pass
+
+# Commit the enhancement
+git add .
+git commit -m "Add regression analysis to penguin bill study
+
+- Add linear regression line to scatter plot
+- Implement fit_bill_model() function with model diagnostics
+- Include R-squared and coefficient estimates
+- Add comprehensive tests for regression functionality
+- Save model results for reproducibility
+- All tests passing, broom package added to dependencies"
+
+git push origin main
+```
+
+### What This Example Demonstrates
+
+1. **Complete Workflow**: From initial analysis to enhanced version with iterative development
+2. **Professional Practices**: Functions, tests, documentation following R package standards
+3. **Iterative Development**: Building on previous work incrementally with version control
+4. **Dependency Tracking**: Automatic renv.lock updates for package management
+5. **Reproducible Outputs**: Saved plots and model objects for reproducibility
+6. **Quality Assurance**: Comprehensive tests validate function behavior and prevent regressions
+7. **Version Control**: Clear commit messages documenting detailed changes and rationale
+
+This iterative workflow demonstrates systematic data science development using the zzcollab analysis paradigm framework.

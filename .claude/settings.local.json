@@ -10,7 +10,12 @@
       "Bash(source:*)",
       "Bash(echo:*)",
       "Bash(tp:*)",
-      "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/c283/**)"
+      "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/c283/**)",
+      "Bash(for file in workflow-solo.Rmd r-solo-workflow.Rmd workflow-comprehensive.Rmd r-team-workflow.Rmd workflow-team.Rmd workflow-solo-manuscript.Rmd)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(head:*)",
+      "Bash(done)",
+      "Bash(for:*)"
     ],
     "deny": []
   }
