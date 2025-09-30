@@ -17,6 +17,18 @@ reproducible research environments. The system consists of:
 - **Variant system**: Single source of truth with 14+ Docker variants
 - **Configuration system**: Centralized constants and user configuration management
 
+### Documentation Structure
+- **Root README.md**: Quick start and overview for framework users
+- **Root CLAUDE.md**: Developer/AI assistant context (this file)
+- **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user documentation (symlinked from templates/)
+- **docs/**: Technical documentation and definitive guides
+  - **BUILD_MODES.md**: Comprehensive build mode system documentation
+  - **TESTING_GUIDE.md**: Complete testing framework and best practices
+  - **CONFIGURATION.md**: Multi-layered configuration system guide
+  - **VARIANTS.md**: Docker variant system and customization
+  - **README.md**: Documentation directory index
+  - Additional technical documents (improvements, architecture, motivations)
+
 ### Key Architecture Patterns
 - **Modular design**: Shell scripts in `modules/` (core.sh, cli.sh, docker.sh, structure.sh, etc.)
 - **Docker inheritance**: Team base images → personal development images
@@ -142,6 +154,8 @@ init_project("new-package", paradigm = "package")
 
 **Common Research Lifecycle:** Many projects progress through paradigms: 📊 Analysis → 📄 Manuscript → 📦 Package
 
+*For comprehensive paradigm documentation, see [ZZCOLLAB User Guide](ZZCOLLAB_USER_GUIDE.md#research-paradigm-system)*
+
 ### Paradigm-Specific Features
 
 - **Custom CI/CD Workflows**: Each paradigm gets specialized GitHub Actions (analysis-paradigm.yml, manuscript-paradigm.yml, package-paradigm.yml)
@@ -152,6 +166,8 @@ init_project("new-package", paradigm = "package")
 ## Advanced Configuration System (Enhanced 2025)
 
 ZZCOLLAB features a powerful multi-layered configuration system that controls Docker images, R packages, build modes, and team settings. This system eliminates repetitive typing while providing extensive customization for teams and individuals.
+
+*For comprehensive configuration documentation, see [Configuration Guide](docs/CONFIGURATION.md)*
 
 ### Configuration Architecture Overview
 
@@ -194,6 +210,8 @@ zzcollab --config validate
 
 ZZCOLLAB's variant system provides 14+ specialized Docker environments with a single source of truth architecture:
 
+*For comprehensive variant documentation, see [Variant System Guide](docs/VARIANTS.md)*
+
 **Interactive Variant Management**:
 ```bash
 # Browse and add variants interactively
@@ -219,6 +237,8 @@ zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml
 - **No Duplication**: Teams reference variants by name, full definitions pulled automatically
 
 ### 📦 Package Management System
+
+*For comprehensive build mode documentation, see [Build Modes Guide](docs/BUILD_MODES.md)*
 
 **Build Mode Package Control**:
 - **Fast Mode (-F)**: Essential packages for quick development (9 packages)
@@ -818,6 +838,8 @@ make docker-zsh    # Same environment, instant collaboration
 ```
 
 ## Development Commands
+
+*For comprehensive testing documentation, see [Testing Guide](docs/TESTING_GUIDE.md)*
 
 ### R Package Development
 ```bash
@@ -1695,12 +1717,83 @@ The original issue was not about timing - conflict detection was running at the 
 
 This fix ensures reliable conflict detection that protects user data while enabling smooth zzcollab setup workflows.
 
+## Documentation Resources
+
+ZZCOLLAB provides comprehensive documentation at multiple levels:
+
+### User Documentation
+
+- **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user guide (v3.1) with all essential topics
+  - Architecture overview and core components
+  - Complete research paradigm system documentation
+  - Advanced configuration system with examples
+  - Docker variant system and customization
+  - Data documentation system and workflow
+  - Solo and team collaboration workflows
+  - Recent enhancements and platform-specific notes
+
+### Technical Guides (docs/)
+
+**Definitive System Guides**:
+
+- **BUILD_MODES.md** (22K): Complete build mode system documentation
+  - Three-tiered build mode architecture (Fast/Standard/Comprehensive)
+  - Package specifications and selection criteria
+  - Build mode decision framework
+  - Performance characteristics and optimization
+  - Custom build mode definition
+
+- **TESTING_GUIDE.md** (26K): Comprehensive testing framework
+  - Three-layer testing strategy (Unit/Integration/System)
+  - testthat patterns and best practices
+  - Paradigm-specific testing approaches
+  - Test coverage requirements (>90%)
+  - Continuous integration testing
+
+- **CONFIGURATION.md** (22K): Multi-layered configuration system
+  - Four-level precedence hierarchy
+  - Complete YAML configuration examples
+  - Configuration commands and R interface
+  - Environment variable documentation
+  - Advanced customization patterns
+
+- **VARIANTS.md** (20K): Docker variant system guide
+  - Single source of truth architecture
+  - Complete catalog of 14+ Docker variants
+  - Variant categories and specifications
+  - Custom variant definition
+  - Platform considerations (ARM64 compatibility)
+
+**Research Motivation Documents**:
+
+- **UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md** (39K): Scientific justification for testing in research
+- **CICD_MOTIVATION_DATA_ANALYSIS.md** (21K): Evidence-based CI/CD rationale
+- **RENV_MOTIVATION_DATA_ANALYSIS.md** (23K): Dependency management motivation
+- **DOCKER_MOTIVATION_DATA_ANALYSIS.md** (33K): Container-based research rationale
+
+**Architecture Documentation**:
+
+- **IMPROVEMENTS_SUMMARY.md** (8.2K): Code quality improvements and refactoring
+- **MODULE_DEPENDENCIES.md** (3K): Module dependency mapping
+- **R_PACKAGE_INTEGRATION_SUMMARY.md** (6.4K): R package integration details
+
+### Documentation Cross-References
+
+When working on zzcollab, refer users to:
+
+- Build mode questions → `docs/BUILD_MODES.md`
+- Testing implementation → `docs/TESTING_GUIDE.md`
+- Configuration setup → `docs/CONFIGURATION.md`
+- Variant customization → `docs/VARIANTS.md`
+- General usage → `ZZCOLLAB_USER_GUIDE.md`
+- Architecture details → `CLAUDE.md` (this file)
+
 ## Troubleshooting Memories
 
 ### renv Initialization Errors
 - **Memory**: Bootstrapping renv 1.1.4 showed installation issues
   - Download of renv was successful
-  - Package installation completed 
+  - Package installation completed
   - Encountered error with script configuration
   - Error message: `Error in if (script_config) { : the condition has length > 1`
   - Execution halted with exit code 1
@@ -1709,5 +1802,3 @@ This fix ensures reliable conflict detection that protects user data while enabl
   - Verify script configuration parameters
   - Use `renv::status()` to diagnose specific package installation issues
   - Potentially use `renv::restore()` to rebuild environment
-
-[... rest of the existing content remains unchanged ...]
