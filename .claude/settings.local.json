@@ -18,7 +18,8 @@
       "Bash(for:*)",
       "Bash(R:*)",
       "Bash(Rscript:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "WebSearch"
     ],
     "deny": []
   }
