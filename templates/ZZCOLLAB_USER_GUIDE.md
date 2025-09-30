@@ -1,23 +1,29 @@
-# ZZCOLLAB Framework User Guide v3.0
+# ZZCOLLAB Framework User Guide v3.1
 
 ## Table of Contents
 1. [What is ZZCOLLAB?](#what-is-zzcollab)
-2. [Research Paradigm System](#research-paradigm-system)
-3. [Configuration System](#configuration-system)
-4. [Getting Started](#getting-started)
-5. [Installation & Distribution](#installation--distribution)
-6. [Team Collaboration Setup](#team-collaboration-setup)
-7. [Directory Structure](#directory-structure)
-8. [Navigation Shortcuts](#navigation-shortcuts)
-9. [Development Environments](#development-environments)
-10. [Package Management with renv](#package-management-with-renv)
-11. [Docker Environment](#docker-environment)
-12. [Build System with Make](#build-system-with-make)
-13. [GitHub Actions CI/CD](#github-actions-cicd)
-14. [R Interface Functions](#r-interface-functions)
-15. [Team Collaboration Workflows](#team-collaboration-workflows)
-16. [Common Tasks](#common-tasks)
-17. [Troubleshooting](#troubleshooting)
+2. [Architecture Overview](#architecture-overview)
+3. [Research Paradigm System](#research-paradigm-system)
+4. [Configuration System](#configuration-system)
+5. [Docker Variant System](#docker-variant-system)
+6. [Data Documentation System](#data-documentation-system)
+7. [Getting Started](#getting-started)
+8. [Installation & Distribution](#installation--distribution)
+9. [Solo Developer Workflow](#solo-developer-workflow)
+10. [Team Collaboration Setup](#team-collaboration-setup)
+11. [Directory Structure](#directory-structure)
+12. [Navigation Shortcuts](#navigation-shortcuts)
+13. [Development Environments](#development-environments)
+14. [Package Management with renv](#package-management-with-renv)
+15. [Docker Environment](#docker-environment)
+16. [Build System with Make](#build-system-with-make)
+17. [GitHub Actions CI/CD](#github-actions-cicd)
+18. [R Interface Functions](#r-interface-functions)
+19. [Team Collaboration Workflows](#team-collaboration-workflows)
+20. [Common Tasks](#common-tasks)
+21. [Recent Enhancements](#recent-enhancements)
+22. [Troubleshooting](#troubleshooting)
+23. [Platform-Specific Notes](#platform-specific-notes)
 
 ## What is ZZCOLLAB?
 
@@ -35,7 +41,9 @@ research projects that combine:
 - **Integrated Git/GitHub workflows**
 
 ### Key Characteristics
-- **Research Paradigms**: Three specialized workflows (Analysis, Manuscript, Package)
+
+- **Research Paradigms**: Three specialized workflows (Analysis,
+  Manuscript, Package)
 - **Professional Templates**: 6-9 comprehensive templates per paradigm
 - **Team Collaboration**: Automated workflows for multiple researchers
 - **Reproducibility**: Systematic recreation of analytical procedures
@@ -44,6 +52,118 @@ research projects that combine:
 - **Portability**: Cross-platform compatibility
 - **Containerized**: Isolated computational environments
 - **Automated CI/CD**: Systematic development workflows
+
+## Architecture Overview
+
+ZZCOLLAB employs a modular architecture designed to provide
+research infrastructure that maintains accessibility for users
+with varying levels of technical expertise.
+
+### Core Components
+
+**Main Executable**: `zzcollab.sh`
+
+- Primary framework script (439 lines, representing a 64% reduction
+  from the original monolithic implementation)
+- Command-line interface for all major operations
+
+**Modular Shell System**: `modules/` directory
+
+- **constants.sh**: Centralized configuration and global variables
+- **cli.sh**: Command-line argument parsing
+- **core.sh**: Core utility functions
+- **docker.sh**: Docker image management
+- **structure.sh**: Project structure creation, including data templates
+- **team_init.sh**: Team collaboration setup
+- **help.sh**: Help system with pagination
+- Additional modules for git operations, validation, and logging
+
+**Docker-First Workflow**
+
+- Development occurs within containers to ensure reproducibility
+- Team base images inherit from specialized variants
+- Personal development images layer dotfiles on team images
+
+**Template System**: `templates/` directory
+
+- Project scaffolding for three research paradigms
+- Docker variant definitions (`variant_examples.yaml`)
+- Configuration templates (`config.yaml`)
+- Data documentation templates (created automatically)
+
+**Variant System**
+
+- Single source of truth: `variant_examples.yaml`
+- 14+ Docker variants ranging from lightweight Alpine (~200MB) to
+  full-featured environments (~3.5GB)
+- Team configuration selects which variants to enable
+
+**Configuration System**
+
+- Multi-level hierarchy: project > user > system > built-in defaults
+- Centralized constants reduce repetitive parameter specification
+- User and team customization without repository forking
+
+### Key Architecture Patterns
+
+**Modular Design**
+
+- Functions adhere to single responsibility principle (< 60 lines each)
+- Unified validation system employing single `require_module()`
+  function
+- Elimination of code duplication: 3,000+ lines of redundant code
+  removed
+
+**Docker Inheritance Chain**
+
+```
+rocker/r-ver (base image)
+  → Team core image (shared packages)
+    → Personal development image (+ dotfiles)
+```
+
+**Automated CI/CD**
+
+- GitHub Actions for R package validation
+- Automatic team image rebuilds upon dependency changes
+- Multi-platform builds supporting AMD64 and ARM64 architectures
+
+**Test-Driven Development**
+
+- Unit tests in `tests/testthat/`
+- Integration tests for analysis pipelines
+- Data validation framework with >90% coverage requirements
+
+**Single Source of Truth**
+
+- Variant definitions maintained in single file
+  (`variant_examples.yaml`)
+- Teams reference variants by name, eliminating duplication
+- Configuration inheritance: user → team → project
+
+### Code Quality Improvements (2024-2025)
+
+**Architecture Enhancements**
+
+- Expanded to 15 specialized modules from monolithic script
+- Function decomposition: refactored 7 oversized functions (963 lines
+  total) into 30 focused functions
+- Unified validation: replaced 17 duplicate validation patterns with
+  single system
+- Performance optimization through caching of expensive operations
+
+**Maintainability**
+
+- Eliminated 150+ lines of duplicate code
+- All functions conform to single responsibility principle
+- Complete dependency mapping and loading order documentation
+- Quality monitoring tools to prevent regression
+
+**Backward Compatibility**
+
+- Preservation of all existing functionality
+- No breaking changes to user interfaces
+- Enhanced performance through systematic optimization
 
 ## Research Paradigm System
 
