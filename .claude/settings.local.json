@@ -19,7 +19,8 @@
       "Bash(R:*)",
       "Bash(Rscript:*)",
       "Bash(awk:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.r-bloggers.com)"
     ],
     "deny": []
   }
