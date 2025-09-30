@@ -105,6 +105,7 @@ team-manuscript-project/
 
 ### Role 1: Principal Investigator (Project Lead)
 **Responsibilities:**
+
 - Create manuscript infrastructure and team coordination framework
 - Manage manuscript timeline, author assignments, and submission process
 - Coordinate with journal editors and handle peer review responses
@@ -114,6 +115,7 @@ team-manuscript-project/
 
 ### Role 2: Senior Authors (Content Leaders)
 **Responsibilities:**
+
 - Lead major manuscript sections (methods, results, discussion)
 - Develop analysis functions with comprehensive documentation and testing
 - Review and integrate contributions from junior authors

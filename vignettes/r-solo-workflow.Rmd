@@ -22,20 +22,26 @@ knitr::opts_chunk$set(
 
 # R Interface for Solo Development
 
-This vignette describes ZZCOLLAB's reproducible research capabilities for R developers using a functional interface that abstracts underlying containerization technologies.
+This vignette describes ZZCOLLAB's reproducible research capabilities for
+R developers using a functional interface that abstracts underlying
+containerization technologies.
 
 ## Framework Integration for R Users
 
 The framework provides functionality for R developers who require:
+
 - Installing and managing R packages
 - Working with R projects and `.Rproj` files
 - Using functions and their parameters
 - Loading libraries with `library()`
 
-ZZCOLLAB provides containerized reproducibility through a familiar R functional interface.
+ZZCOLLAB provides containerized reproducibility through a familiar R
+functional interface.
 
 **Key characteristics:**
-- **Isolated environments** - Project separation and dependency isolation
+
+- **Isolated environments** - Project separation and dependency
+  isolation
 - **Reproducible research** - Consistent computational environments
 - **Collaborative compatibility** - Shareable project configurations
 - **Abstracted implementation** - Container management through R functions

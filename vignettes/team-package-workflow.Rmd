@@ -16,11 +16,16 @@ knitr::opts_chunk$set(
 
 # Overview
 
-This vignette demonstrates collaborative R package development workflows using ZZCOLLAB's package paradigm for multi-developer teams. The package paradigm provides complete R package infrastructure that enables professional software development practices while maintaining reproducible environments across all team members.
+This vignette demonstrates collaborative R package development workflows
+using ZZCOLLAB's package paradigm for multi-developer teams. The package
+paradigm provides complete R package infrastructure that enables
+professional software development practices while maintaining reproducible
+environments across all team members.
 
 ## Team Package Development Structure
 
-Collaborative package projects extend the standard R package structure with team coordination mechanisms:
+Collaborative package projects extend the standard R package structure
+with team coordination mechanisms:
 
 ```
 team-package-project/
@@ -58,16 +63,19 @@ team-package-project/
 
 ### Role 1: Package Lead (Technical Lead)
 **Responsibilities:**
+
 - Define package architecture and API design standards
 - Coordinate development timeline and feature roadmap
 - Manage CRAN submission process and version releases
 - Ensure code quality standards and review major contributions
 - Coordinate with external collaborators and package users
 
-**Skills Required:** Advanced R programming, software architecture, project management
+**Skills Required:** Advanced R programming, software architecture,
+project management
 
 ### Role 2: Core Developers (Senior Contributors)
 **Responsibilities:**
+
 - Implement major package functionality and core algorithms
 - Design and implement comprehensive testing frameworks
 - Write technical documentation and methodology vignettes

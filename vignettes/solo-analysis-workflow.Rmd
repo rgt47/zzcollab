@@ -1,5 +1,5 @@
 ---
-title: "Solo Analysis Workflow: Complete Reproducible Data Science with zzcollab"
+title: "Solo Analysis Workflow: Complete Reproducible Data Science"
 author: "ZZCOLLAB Team"
 date: "`r Sys.Date()`"
 output:
@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{Solo Analysis Workflow: Complete Reproducible Data Science with zzcollab}
+  %\VignetteIndexEntry{Solo Analysis Workflow: Complete Reproducible Data Science}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -22,18 +22,30 @@ knitr::opts_chunk$set(
 
 # Solo Analysis Workflow
 
-This vignette demonstrates how to use the zzcollab framework's **analysis paradigm** to conduct reproducible data science research as a solo developer. The analysis paradigm is specifically designed for data analysis projects, providing specialized templates, packages, and workflows for systematic exploratory data analysis, statistical modeling, and reproducible reporting.
+This vignette demonstrates how to use the zzcollab framework's
+**analysis paradigm** to conduct reproducible data science research as a
+solo developer. The analysis paradigm is specifically designed for data
+analysis projects, providing specialized templates, packages, and
+workflows for systematic exploratory data analysis, statistical
+modeling, and reproducible reporting.
 
 ## Analysis Paradigm Overview
 
-The **analysis paradigm** is one of zzcollab's three research paradigms, optimized for data science workflows:
+The **analysis paradigm** is one of zzcollab's three research paradigms,
+optimized for data science workflows:
 
 **Key Features:**
-- **Systematic Templates**: Six professional workflow templates (01-06) for complete analysis pipelines
-- **Specialized Packages**: Pre-configured with tidyverse, tidymodels, targets, plotly, DT, and analysis tools
-- **Structured Directories**: Organized for `data/`, `analysis/`, `outputs/`, `scripts/`, and `reports/`
-- **Reproducible Framework**: Built-in seed management, session logging, and dependency tracking
-- **Publication Ready**: Professional visualizations and automated report generation
+
+- **Systematic Templates**: Six professional workflow templates (01-06)
+  for complete analysis pipelines
+- **Specialized Packages**: Pre-configured with tidyverse, tidymodels,
+  targets, plotly, DT, and analysis tools
+- **Structured Directories**: Organized for `data/`, `analysis/`,
+  `outputs/`, `scripts/`, and `reports/`
+- **Reproducible Framework**: Built-in seed management, session
+  logging, and dependency tracking
+- **Publication Ready**: Professional visualizations and automated
+  report generation
 
 **Template Structure:**
 - `01_exploratory_analysis.R` - Systematic EDA with quality assessment
@@ -45,7 +57,9 @@ The **analysis paradigm** is one of zzcollab's three research paradigms, optimiz
 
 ## Build Mode Overview
 
-ZZCOLLAB provides three build modes that control the scope of R packages installed in your Docker environment, allowing you to balance functionality with build speed and container size:
+ZZCOLLAB provides three build modes that control the scope of R packages
+installed in your Docker environment, allowing you to balance
+functionality with build speed and container size:
 
 **Build Mode Options:**
 

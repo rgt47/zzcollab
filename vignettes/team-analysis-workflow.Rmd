@@ -16,15 +16,20 @@ knitr::opts_chunk$set(
 
 # Overview
 
-This vignette demonstrates collaborative data analysis workflows using ZZCOLLAB's analysis paradigm for multi-developer teams. The analysis paradigm provides standardized data science environments that enable seamless collaboration across different computational setups while maintaining complete reproducibility.
+This vignette demonstrates collaborative data analysis workflows using
+ZZCOLLAB's analysis paradigm for multi-developer teams. The analysis
+paradigm provides standardized data science environments that enable
+seamless collaboration across different computational setups while
+maintaining complete reproducibility.
 
 ## Team Analysis Paradigm Structure
 
-Team analysis projects use the same systematic structure as solo projects but include additional coordination mechanisms:
+Team analysis projects use the same systematic structure as solo
+projects but include additional coordination mechanisms:
 
 ```
 team-analysis-project/
-├── scripts/                    # Analysis workflow (6 systematic templates)
+├── scripts/                    # Analysis workflow (6 templates)
 │   ├── 01_exploratory_analysis.R
 │   ├── 02_statistical_modeling.R
 │   ├── 03_model_validation.R
@@ -45,7 +50,7 @@ team-analysis-project/
 │   └── tables/               # Summary statistics and results
 ├── reports/                   # Team reporting and communication
 │   └── dashboard/            # Interactive dashboards
-├── renv.lock                  # Exact package versions for all team members
+├── renv.lock                  # Exact package versions for team
 └── zzcollab.yaml             # Team configuration and Docker variants
 ```
 
@@ -53,6 +58,7 @@ team-analysis-project/
 
 ### Role 1: Team Lead (Project Coordinator)
 **Responsibilities:**
+
 - Create shared Docker images and project infrastructure
 - Set team configuration and Docker variant selection
 - Coordinate analysis phases and deliverable timeline
@@ -62,30 +68,37 @@ team-analysis-project/
 
 ### Role 2: Senior Analysts (Analysis Contributors)
 **Responsibilities:**
-- Develop analysis functions in `R/` directory with comprehensive documentation
+
+- Develop analysis functions in `R/` directory with comprehensive
+  documentation
 - Create analysis scripts following team templates and standards
 - Review code contributions and ensure reproducibility standards
 - Coordinate on shared data processing and modeling approaches
 
-**Skills Required:** Advanced R programming, domain expertise, collaborative development
+**Skills Required:** Advanced R programming, domain expertise,
+collaborative development
 
 ### Role 3: Data Scientists (Method Developers)
 **Responsibilities:**
+
 - Implement statistical models and machine learning pipelines
 - Create validation frameworks and robustness testing procedures
 - Develop interactive dashboards and automated reporting systems
 - Ensure methodological rigor and appropriate statistical practices
 
-**Skills Required:** Statistical modeling, R programming, methodology validation
+**Skills Required:** Statistical modeling, R programming,
+methodology validation
 
 ### Role 4: Junior Analysts (Script Contributors)
 **Responsibilities:**
+
 - Execute analysis scripts and generate intermediate results
 - Create visualizations following team themes and standards
 - Document analysis procedures and maintain data quality checks
 - Learn collaborative development practices and reproducibility standards
 
-**Skills Required:** Basic R programming, willingness to learn collaborative practices
+**Skills Required:** Basic R programming, willingness to learn
+collaborative practices
 
 ## Team Collaboration Workflow
 
@@ -110,7 +123,8 @@ zzcollab -i -p customer-churn-analysis -P analysis --github
 
 # This creates:
 # - Docker images: datasci-lab/customer-churn-analysiscore-*:latest
-# - GitHub repository: https://github.com/datasci-lab/customer-churn-analysis
+# - GitHub repository:
+#   https://github.com/datasci-lab/customer-churn-analysis
 # - Complete R package structure with analysis paradigm templates
 # - CI/CD workflows for team coordination
 ```
@@ -313,7 +327,8 @@ test_that("compare_churn_models produces correct output structure", {
   expect_equal(nrow(comparison), 2)
   expect_true("method" %in% names(comparison))
   expect_true("accuracy_rank" %in% names(comparison))
-  expect_equal(comparison$method[1], "random_forest")  # Should be ranked first
+  # Should be ranked first
+  expect_equal(comparison$method[1], "random_forest")
 })
 ```
 
@@ -822,28 +837,43 @@ print(stakeholder_summary)
 
 - **Parallel Development**: Team members work on different analysis components simultaneously
 - **Skill Development**: Junior analysts learn from senior team members through code review
-- **Knowledge Sharing**: Shared functions and documentation create team knowledge repository
-- **Scalable Workflow**: Framework supports teams from 2-10+ analysts with consistent practices
+- **Knowledge Sharing**: Shared functions and documentation create team
+  knowledge repository
+- **Scalable Workflow**: Framework supports teams from 2-10+ analysts
+  with consistent practices
 
 ### Professional Standards
 
-- **Code Review Process**: All contributions reviewed before integration to maintain quality
-- **Documentation Standards**: All functions documented following team conventions
-- **Testing Requirements**: Comprehensive test coverage ensures reliable analysis functions
-- **Reproducibility Validation**: Automated CI/CD validates that analysis reproduces correctly
+- **Code Review Process**: All contributions reviewed before integration
+  to maintain quality
+- **Documentation Standards**: All functions documented following team
+  conventions
+- **Testing Requirements**: Comprehensive test coverage ensures reliable
+  analysis functions
+- **Reproducibility Validation**: Automated CI/CD validates that
+  analysis reproduces correctly
 
 ## Comprehensive Data Testing Framework for Teams
 
-Team analysis projects require robust data testing frameworks that protect against data quality issues while enabling collaborative development. ZZCOLLAB provides systematic testing approaches designed for multi-developer teams.
+Team analysis projects require robust data testing frameworks that
+protect against data quality issues while enabling collaborative
+development. ZZCOLLAB provides systematic testing approaches designed
+for multi-developer teams.
 
 ### Team Data Testing Strategy
 
 **Why Data Testing Matters for Teams:**
-- **Consistency**: Ensures all team members work with validated, reliable data
-- **Error Prevention**: Catches data quality issues before they propagate through team analysis
-- **Collaboration**: Shared testing standards create common understanding of data constraints
-- **Reproducibility**: Validates that data processing produces consistent results across team environments
-- **Quality Assurance**: Systematic testing prevents silent failures in collaborative workflows
+
+- **Consistency**: Ensures all team members work with validated,
+  reliable data
+- **Error Prevention**: Catches data quality issues before they
+  propagate through team analysis
+- **Collaboration**: Shared testing standards create common
+  understanding of data constraints
+- **Reproducibility**: Validates that data processing produces
+  consistent results across team environments
+- **Quality Assurance**: Systematic testing prevents silent failures
+  in collaborative workflows
 
 ### Collaborative Testing Architecture
 
@@ -891,8 +921,9 @@ test_that("Team raw data has expected structure and completeness", {
   expect_equal(ncol(team_raw_data), 11)    # Expected variable count
 
   # Team-critical variables must be present
-  team_required_cols <- c("churn", "tenure", "monthly_charges", "total_charges",
-                         "contract", "payment_method", "gender", "senior_citizen")
+  team_required_cols <- c("churn", "tenure", "monthly_charges",
+                         "total_charges", "contract", "payment_method",
+                         "gender", "senior_citizen")
   expect_true(all(team_required_cols %in% names(team_raw_data)))
 
   # Team data types must be consistent
