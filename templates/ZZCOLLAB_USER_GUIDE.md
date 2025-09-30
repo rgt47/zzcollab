@@ -2348,6 +2348,7 @@ my-analysis:
 ```
 
 #### Environment Variables for Team Setup
+
 ```bash
 # Set in shell or .env file:
 export DOCKERHUB_USERNAME="mylab"
@@ -2355,40 +2356,177 @@ export GITHUB_ACCOUNT="myuniversity"
 export DOTFILES_PATH="~/dotfiles"
 ```
 
+## Platform-Specific Notes
+
+### ARM64 Compatibility (Apple Silicon)
+
+ZZCOLLAB supports multi-platform Docker builds, but certain base
+images have architecture-specific limitations.
+
+**Architecture Support Matrix**:
+
+```
+ARM64 and AMD64 Compatible:
+- rocker/r-ver     (Both architectures supported)
+- rocker/rstudio   (Both architectures supported)
+
+AMD64 Only:
+- rocker/verse     (Publishing workflow with LaTeX)
+- rocker/tidyverse (AMD64 only)
+- rocker/geospatial (AMD64 only)
+- rocker/shiny     (AMD64 only)
+```
+
+**Solutions for ARM64 Users**:
+
+1. **Use compatible base images only**:
+
+```bash
+zzcollab -i -t TEAM -p PROJECT -B r-ver,rstudio -S
+```
+
+2. **Build custom ARM64 verse equivalent**:
+
+```dockerfile
+# Dockerfile.verse-arm64 - ARM64 compatible verse + shiny
+FROM rocker/tidyverse:latest
+
+# Install system dependencies (from official rocker
+# install_verse.sh)
+RUN apt-get update && apt-get install -y \
+    cmake \
+    default-jdk \
+    fonts-roboto \
+    ghostscript \
+    hugo \
+    less \
+    libglpk-dev \
+    libgmp3-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
+    libmagick++-dev \
+    qpdf \
+    texinfo \
+    vim \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install R packages (official verse packages)
+RUN install2.r --error --skipinstalled --ncpus -1 \
+    blogdown \
+    bookdown \
+    distill \
+    rticles \
+    rmdshower \
+    rJava \
+    xaringan \
+    redland \
+    tinytex \
+    && rm -rf /tmp/downloaded_packages
+
+# Add Shiny support (not in official verse)
+RUN install2.r --error --skipinstalled --ncpus -1 \
+    shiny \
+    shinydashboard \
+    DT \
+    && rm -rf /tmp/downloaded_packages
+
+# Install TinyTeX for LaTeX support
+RUN R -e "tinytex::install_tinytex()"
+```
+
+3. **Build and deploy custom image**:
+
+```bash
+# Build ARM64 compatible verse+shiny image
+docker build -f Dockerfile.verse-arm64 \
+  -t rgt47/verse-arm64:latest .
+
+# Test locally
+docker run --rm -p 8787:8787 rgt47/verse-arm64:latest
+
+# Push to Docker Hub (free for public images)
+docker login
+docker push rgt47/verse-arm64:latest
+```
+
+4. **Use in zzcollab workflows**:
+
+Modify team Dockerfile to use custom image for verse variant
+conditionally based on architecture.
+
+**Key Insights**:
+
+- Public Docker Hub storage is provided at no cost
+- rocker/verse combines rocker/tidyverse with publishing tools
+  (bookdown, blogdown, LaTeX)
+- rocker/rstudio does not include Shiny by default
+- Custom images can combine verse and shiny functionality for
+  complete publishing workflow
+
+### Configuration Validation and Troubleshooting
+
+**Common Configuration Issues**:
+
+- **Missing yq dependency**: Install with `brew install yq` (macOS)
+  or `snap install yq` (Ubuntu)
+- **Variant build failures**: Check Docker platform compatibility
+  (ARM64 vs AMD64)
+- **Package installation errors**: Verify custom package lists in
+  build_modes section
+- **Permission issues**: Ensure proper Docker daemon access and
+  directory permissions
+
+**Validation Commands**:
+
+```bash
+# Test variant definitions
+./add_variant.sh --validate
+
+# Verify Docker platform compatibility
+zzcollab --config get docker.platform
+```
+
 ---
 
 ## Summary
 
-ZZCOLLAB provides a **complete research collaboration platform** with:
+ZZCOLLAB provides a comprehensive research collaboration platform
+with the following capabilities:
 
-- **Systematic team collaboration** with automated workflows
-- **Docker-first development** (no local R required)
-- **Automatic dependency management** with renv and intelligent scanning
-- **Integrated collaboration tools** via Git/GitHub with CI/CD
-- **Publication-ready workflows** from analysis to manuscript
-- **Reproducible environments** across team members
-- **Automated package management** with systematic team image updates
-- **Comprehensive R interface** for R-centric workflows
-- **Professional testing infrastructure** with unit and integration tests
-- **Flexible initialization options** with minimal (8 packages) or full (27 packages) modes
+- Systematic team collaboration with automated workflows
+- Docker-first development eliminating local R installation
+  requirements
+- Automatic dependency management with renv and intelligent scanning
+- Integrated collaboration tools via Git/GitHub with CI/CD
+- Publication-ready workflows from analysis to manuscript
+- Reproducible environments across team members
+- Automated package management with systematic team image updates
+- Comprehensive R interface for R-centric workflows
+- Professional testing infrastructure with unit and integration tests
+- Flexible initialization options with minimal (9 packages),
+  standard (17 packages), or comprehensive (47+ packages) modes
 
 ### Automation Benefits
 
-| Traditional Workflow | Automated ZZCOLLAB Workflow |
-|----------------------|------------------------------|
-| Manual image rebuilds | ✅ **Automatic rebuilds on package changes** |
-| Inconsistent environments | ✅ **Guaranteed environment consistency** |
-| 30-60 min setup per developer | ✅ **3-5 min setup with pre-built images** |
-| Manual dependency management | ✅ **Automated dependency tracking** |
-| Docker expertise required | ✅ **Zero Docker knowledge needed** |
-| Build failures block development | ✅ **Centralized, tested builds** |
-| Slow initialization (5-10 min) | ✅ **Fast setup (2-3 min with --fast mode)** |
+| Traditional Workflow | ZZCOLLAB Workflow |
+|----------------------|-------------------|
+| Manual image rebuilds | Automatic rebuilds on package changes |
+| Inconsistent environments | Guaranteed environment consistency |
+| 30-60 min setup per developer | 3-5 min setup with pre-built images |
+| Manual dependency management | Automated dependency tracking |
+| Docker expertise required | Minimal Docker knowledge needed |
+| Build failures block development | Centralized, tested builds |
+| Slow initialization (5-10 min) | Fast setup (2-3 min with fast mode) |
 
 ### Developer Experience
-- **Researchers focus on research** - not DevOps
-- **Onboarding new team members** takes minutes, not hours
-- **Package management** happens transparently
-- **Environment drift** is impossible
-- **Collaboration friction** eliminated entirely
 
-The framework handles the technical complexity so you can **focus on your research** while maintaining **enterprise-grade collaboration standards** and **perfect reproducibility** across your entire research team.
+- Researchers can focus on research rather than DevOps operations
+- Onboarding new team members requires minutes rather than hours
+- Package management occurs transparently
+- Environment drift cannot occur
+- Collaboration friction is minimized
+
+The framework manages technical complexity, enabling researchers
+to focus on their work while maintaining rigorous collaboration
+standards and complete reproducibility across research teams.
