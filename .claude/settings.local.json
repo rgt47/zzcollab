@@ -21,7 +21,8 @@
       "Bash(awk:*)",
       "WebSearch",
       "WebFetch(domain:www.r-bloggers.com)",
-      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)"
+      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
+      "WebFetch(domain:arxiv.org)"
     ],
     "deny": []
   }
