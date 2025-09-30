@@ -48,6 +48,7 @@ optimized for data science workflows:
   report generation
 
 **Template Structure:**
+
 - `01_exploratory_analysis.R` - Systematic EDA with quality assessment
 - `02_statistical_modeling.R` - Modeling pipeline with tidymodels
 - `03_model_validation.R` - Cross-validation and robustness testing
