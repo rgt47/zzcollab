@@ -80,13 +80,13 @@ zzcollab -i -p study
 **Scenario 3: Complete Override Chain**
 
 ```bash
-# System config: paradigm: analysis
-# User config: paradigm: manuscript
-# Project config: paradigm: package
-# Command-line: --paradigm analysis
-# Result: analysis (command-line overrides all)
+# System config: build_mode: standard
+# User config: build_mode: fast
+# Project config: build_mode: comprehensive
+# Command-line: --fast
+# Result: fast (command-line overrides all)
 
-zzcollab -i -p research --paradigm analysis
+zzcollab -i -p research --fast
 ```
 
 ## Configuration Files
@@ -112,7 +112,6 @@ defaults:
 
   # Project defaults
   build_mode: "standard"        # fast, standard, comprehensive
-  paradigm: "analysis"          # analysis, manuscript, package
 
   # Development environment
   dotfiles_dir: "~/dotfiles"
@@ -324,9 +323,6 @@ collaboration:
 #=========================================================
 
 project:
-  # Research paradigm
-  paradigm: "analysis"
-
   # Package requirements (beyond build mode defaults)
   additional_packages:
     - survival
@@ -428,7 +424,6 @@ ZZCOLLAB_CONFIG_USER=~/custom/config.yaml zzcollab --config init
 zzcollab --config set team-name "mylab"
 zzcollab --config set github-account "myusername"
 zzcollab --config set build-mode "fast"
-zzcollab --config set paradigm "manuscript"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Set boolean values
@@ -442,7 +437,6 @@ zzcollab --config set skip-confirmation false
 # Get single values
 zzcollab --config get team-name
 zzcollab --config get build-mode
-zzcollab --config get paradigm
 
 # Get all configuration
 zzcollab --config list
@@ -505,13 +499,6 @@ zzcollab --config precedence
 - **Values**: `fast`, `standard`, `comprehensive`
 - **Default**: `standard`
 - **Description**: Package installation mode
-
-**paradigm**
-
-- **Type**: Enum
-- **Values**: `analysis`, `manuscript`, `package`
-- **Default**: `analysis`
-- **Description**: Research workflow type
 
 **dotfiles_dir**
 
@@ -649,12 +636,6 @@ variants:
 - **Values**: `fast`, `standard`, `comprehensive`
 - **Example**: `export ZZCOLLAB_BUILD_MODE=fast`
 
-**ZZCOLLAB_PARADIGM**
-
-- **Description**: Override research paradigm
-- **Values**: `analysis`, `manuscript`, `package`
-- **Example**: `export ZZCOLLAB_PARADIGM=manuscript`
-
 **ZZCOLLAB_TEAM_NAME**
 
 - **Description**: Override team name
@@ -698,7 +679,6 @@ zzcollab --config init
 # 2. Set personal defaults
 zzcollab --config set team-name "myteam"
 zzcollab --config set build-mode "standard"
-zzcollab --config set paradigm "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # 3. Verify configuration
@@ -709,10 +689,10 @@ zzcollab --config list
 
 ```bash
 # Configuration is automatically applied
-zzcollab -i -p penguin-analysis --github
+zzcollab -i -p research-project --github
 
-# Override specific settings
-zzcollab -i -p manuscript-project --paradigm manuscript --github
+# Override specific settings with build mode
+zzcollab -i -p comprehensive-project --comprehensive --github
 ```
 
 ### Team Leader Workflow
@@ -778,7 +758,6 @@ init_config()
 # Set configuration values
 set_config("team_name", "mylab")
 set_config("build_mode", "fast")
-set_config("paradigm", "manuscript")
 set_config("dotfiles_dir", "~/dotfiles")
 
 # Get configuration values
@@ -798,7 +777,7 @@ validate_config()
 ```r
 # Functions automatically use configuration defaults
 
-# Team initialization (uses config for team_name, build_mode, paradigm)
+# Team initialization (uses config for team_name, build_mode)
 init_project(project_name = "study")
 
 # Explicit parameter override
@@ -835,7 +814,7 @@ Configuration validation checks:
 
 1. **Required fields**: team_name, project_name present when needed
 2. **Value types**: Correct types for all parameters
-3. **Enum values**: build_mode, paradigm in allowed set
+3. **Enum values**: build_mode in allowed set (fast, standard, comprehensive)
 4. **File paths**: Dotfiles directories exist
 5. **Package names**: Valid R package identifiers
 6. **YAML structure**: Proper nesting and formatting

@@ -71,8 +71,8 @@ Control which specialized Docker environments your team uses:
 
 ### Package Management System
 Control what R packages are installed and when:
-- **Build mode control**: Fast (9 packages) vs Standard (17 packages) vs Comprehensive (47+ packages)
-- **Paradigm-specific packages**: Analysis, Manuscript, and Package development workflows
+- **Build mode control**: Fast (9 packages) vs Standard (17 packages) vs Comprehensive (51 packages)
+- **Unified package selection**: All research workflows supported (data analysis, manuscript writing, package development)
 - **Custom package lists**: Define your own combinations for specialized workflows
 - **Dependency management**: Docker packages vs renv packages with proper separation
 
@@ -318,51 +318,39 @@ packages <- c(
 
 **Use cases**:
 - Comprehensive research environments
-- Multi-paradigm projects (analysis + modeling + publishing)
+- Complete research lifecycle support (data → analysis → paper → package)
 - Teaching environments with diverse package needs
 - Production analysis environments
 
-## Paradigm-Specific Package Selection
+## Package Selection by Build Mode
 
-### Analysis Paradigm Packages
-Optimized for data exploration and statistical analysis:
+The unified paradigm uses build modes to control package selection, with comprehensive mode including all packages needed for data analysis, manuscript writing, and package development:
 
+**Fast Mode (9 packages)**:
 ```r
-analysis_packages <- c(
-  # Data manipulation and visualization
-  "tidyverse", "here", "janitor", "skimr", "naniar",
-  # Analysis and modeling
-  "broom", "infer", "moderndive",
-  # Reporting and communication
-  "targets", "rmarkdown", "flexdashboard", "DT", "plotly"
+fast_packages <- c(
+  "renv", "here", "usethis", "devtools",
+  "testthat", "knitr", "rmarkdown", "targets"
 )
 ```
 
-### Manuscript Paradigm Packages
-Focused on academic writing and reproducible research:
-
+**Standard Mode (17 packages)**:
 ```r
-manuscript_packages <- c(
-  # Core development and testing
-  "devtools", "testthat", "roxygen2",
-  # Academic writing tools
-  "rmarkdown", "bookdown", "papaja", "RefManageR",
-  # Analysis support
-  "here", "conflicted", "broom"
+standard_packages <- c(
+  # Fast packages plus:
+  "dplyr", "ggplot2", "tidyr", "palmerpenguins",
+  "broom", "janitor", "DT", "conflicted"
 )
 ```
 
-### Package Paradigm Packages
-Designed for R package development:
-
+**Comprehensive Mode (51 packages)**:
 ```r
-package_packages <- c(
-  # Package development core
-  "devtools", "usethis", "roxygen2", "testthat",
-  # Documentation and quality
-  "pkgdown", "covr", "lintr", "styler",
-  # Distribution and checking
-  "rcmdcheck", "rhub", "spelling"
+comprehensive_packages <- c(
+  # Standard packages plus:
+  # Analysis: tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4
+  # Manuscript: bookdown, papaja, RefManageR, citr
+  # Package: roxygen2, pkgdown, covr, lintr, goodpractice, spelling
+  # Plus: databases, parallel processing, visualization tools
 )
 ```
 
@@ -579,7 +567,6 @@ zzcollab --config init
 # 2. Set personal preferences
 zzcollab --config set team-name "myteam"
 zzcollab --config set github-account "myusername"
-zzcollab --config set paradigm "analysis"
 zzcollab --config set build-mode "standard"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
@@ -591,7 +578,6 @@ Edit `~/.zzcollab/config.yaml`:
 ```yaml
 defaults:
   team_name: "myteam"
-  paradigm: "analysis"
   build_mode: "my_custom"
 
 build_modes:
@@ -955,7 +941,7 @@ docker run hello-world
 
 **Issue**: Settings not taking effect as expected
 ```bash
-# User sets paradigm = "manuscript" but projects use "analysis"
+# User sets build_mode = "fast" but projects use "comprehensive"
 # Project config overriding user config unexpectedly
 ```
 
@@ -966,16 +952,16 @@ zzcollab --config list --verbose
 
 # Shows which file each setting comes from:
 # team_name: "myteam" (from ~/.zzcollab/config.yaml)
-# paradigm: "analysis" (from ./zzcollab.yaml) [OVERRIDING user config]
+# build_mode: "comprehensive" (from ./zzcollab.yaml) [OVERRIDING user config]
 ```
 
 Edit the appropriate configuration file:
 ```bash
 # To use user default, remove from project config
-vim ./zzcollab.yaml  # Remove paradigm setting
+vim ./zzcollab.yaml  # Remove build_mode setting
 
 # To set project-specific override, ensure it's intentional
-echo "# Project uses analysis paradigm instead of user default" >> ./zzcollab.yaml
+echo "# Project uses comprehensive mode instead of user default" >> ./zzcollab.yaml
 ```
 
 # R Interface Configuration Management
@@ -994,13 +980,12 @@ init_config()
 
 # Set configuration values
 set_config("team_name", "datasci-lab")
-set_config("paradigm", "analysis")
 set_config("build_mode", "standard")
 set_config("dotfiles_dir", "~/dotfiles")
 
 # Get configuration values
 team <- get_config("team_name")
-paradigm <- get_config("paradigm")
+mode <- get_config("build_mode")
 
 # List all configuration
 config_list <- list_config()
@@ -1031,7 +1016,6 @@ set_config("build_mode", "my_analysis")
 init_project(
   team_name = "datasci-lab",
   project_name = "customer-analysis",
-  paradigm = "analysis",
   build_mode = "my_analysis",
   variants = c("minimal", "analysis", "alpine_minimal")
 )
@@ -1041,21 +1025,20 @@ init_project(
 
 ```{r config-project, eval=FALSE}
 # Functions automatically use configuration defaults
-init_project("new-analysis")          # Uses configured team_name, paradigm, build_mode
+init_project("new-analysis")          # Uses configured team_name, build_mode
 join_project("existing-project")      # Uses configured team_name and preferences
 
 # Override specific settings while keeping others
 init_project(
   project_name = "special-analysis",
-  paradigm = "manuscript"             # Override default paradigm
-  # team_name, build_mode from config
+  build_mode = "comprehensive"        # Override default build mode
+  # team_name from config
 )
 
 # Explicit configuration for full control
 init_project(
   team_name = "special-team",
   project_name = "collaborative-analysis",
-  paradigm = "analysis",
   build_mode = "comprehensive",
   dotfiles_path = "~/special-dotfiles"
 )
@@ -1091,13 +1074,12 @@ current_config <- save_config_state()
 # Temporarily change configuration for specific project
 temp_config <- list(
   team_name = "temporary-team",
-  paradigm = "package",
   build_mode = "fast"
 )
 apply_temp_config(temp_config)
 
 # Do work with temporary configuration
-init_project("temp-package-project")
+init_project("temp-project")
 
 # Restore original configuration
 restore_config_state(current_config)
@@ -1120,7 +1102,6 @@ get_config("team_name")  # Should be back to original value
 # ~/.zzcollab/config.yaml for solo researcher
 defaults:
   team_name: "myresearch"
-  paradigm: "analysis"
   build_mode: "standard"
 
 # No custom build_modes - use built-in standard mode
@@ -1129,7 +1110,7 @@ defaults:
 ### Small Research Team (2-5 people)
 - **Project configs**: Share configuration via `./zzcollab.yaml` in repositories
 - **Focused variants**: 3-5 variants covering team's research domains
-- **Paradigm alignment**: Team agrees on primary paradigm (analysis/manuscript)
+- **Workflow alignment**: Team agrees on build mode and package needs
 - **Package coordination**: Custom build modes for shared analysis workflows
 
 ```yaml
@@ -1156,7 +1137,7 @@ build_modes:
 ### Large Research Organization (10+ people)
 - **System configs**: Organization defaults in `/etc/zzcollab/config.yaml`
 - **Extensive variants**: Full variant library available to teams
-- **Multiple paradigms**: Support analysis, manuscript, and package paradigms
+- **Complete research lifecycle**: All workflows supported (data analysis, manuscripts, packages)
 - **Custom variant library**: Organization-specific variants in custom libraries
 
 ```yaml
@@ -1302,7 +1283,7 @@ Key takeaways:
 1. **Start simple**: Use built-in build modes and standard variants for most projects
 2. **Customize gradually**: Add custom variants and packages as needs become clear
 3. **Coordinate with teams**: Use project configs to ensure team consistency
-4. **Optimize for workflow**: Choose variants and packages that match your research paradigm
+4. **Optimize for workflow**: Choose variants and packages that match your research needs
 5. **Validate regularly**: Use configuration validation to catch issues early
 
 The configuration system scales from solo researchers to large organizations, providing reproducible, customizable research environments that eliminate configuration drift and enable seamless collaboration.
@@ -1311,4 +1292,4 @@ For detailed technical documentation, see:
 - `zzcollab --help` for command-line options
 - `help(package = "zzcollab")` for R interface documentation
 - `templates/variant_examples.yaml` for available variants
-- `PARADIGM_GUIDE.md` for paradigm-specific guidance
+- `docs/UNIFIED_PARADIGM_GUIDE.md` for research compendium guidance
