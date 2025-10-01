@@ -147,32 +147,91 @@ remove_symlinks() {
             log_warning "Symlink not found or not a link: $link"
         fi
     done <<< "$symlinks"
-    
+
     log_success "Removed $count symbolic links"
+    return 0
 }
 
 remove_files() {
     log_info "Checking for files to remove..."
-    
+
     local files
     files=$(get_created_items "files")
-    
-    # Add standard zzcollab files that may not be in manifest
-    local standard_files="ZZCOLLAB_USER_GUIDE.md Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .Rprofile renv.lock Makefile .gitignore zzcollab.yaml config.yaml .Rbuildignore navigation_scripts.sh check_renv_for_commit.R .zshrc_docker dev.sh setup_renv.R LICENSE data/README.md"
-    if [[ -n "$files" ]]; then
-        files="$(echo -e "${files}\n${standard_files}")"
-    else
-        files="$standard_files"
+
+    # Comprehensive list of all zzcollab files that may not be in manifest
+    # Core project files
+    local standard_files="DESCRIPTION NAMESPACE LICENSE Makefile .gitignore .Rprofile .Rprofile_docker renv.lock setup_renv.R"
+
+    # Docker files
+    standard_files="$standard_files Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .zshrc_docker"
+
+    # Configuration and documentation
+    standard_files="$standard_files ZZCOLLAB_USER_GUIDE.md DATA_WORKFLOW_GUIDE.md zzcollab.yaml config.yaml .Rbuildignore"
+
+    # Validation and development scripts
+    standard_files="$standard_files check_renv_for_commit.R check_rprofile_options.R dev.sh navigation_scripts.sh dev_workflow.R"
+
+    # GitHub templates and workflows
+    standard_files="$standard_files .github/pull_request_template.md .github/ISSUE_TEMPLATE/bug_report.md .github/ISSUE_TEMPLATE/feature_request.md"
+    standard_files="$standard_files .github/workflows/analysis-workflow.yml .github/workflows/manuscript-workflow.yml .github/workflows/package-workflow.yml"
+    standard_files="$standard_files .github/workflows/r-package.yml .github/workflows/render-paper.yml .github/workflows/render-report.yml"
+
+    # R package files
+    standard_files="$standard_files tests/testthat.R _pkgdown.yml"
+
+    # Data documentation
+    standard_files="$standard_files data/README.md data/raw_data/README.md data/derived_data/README.md data/metadata/README.md data/validation/README.md data/correspondence/README.md"
+
+    # Analysis paradigm files
+    standard_files="$standard_files scripts/01_exploratory_analysis.R scripts/02_statistical_modeling.R scripts/03_model_validation.R"
+    standard_files="$standard_files scripts/04_interactive_dashboard.Rmd scripts/05_automated_report.Rmd scripts/analysis_functions.R scripts/README.md"
+    standard_files="$standard_files scripts/02_data_validation.R scripts/00_setup_parallel.R scripts/00_database_setup.R scripts/99_reproducibility_check.R scripts/00_testing_guide.R"
+    standard_files="$standard_files analysis/exploratory/README.md analysis/modeling/README.md analysis/validation/README.md"
+    standard_files="$standard_files outputs/figures/README.md outputs/tables/README.md reports/README.md"
+    standard_files="$standard_files analysis/templates/example_analysis.R analysis/templates/figure_template.R"
+
+    # Manuscript paradigm files
+    standard_files="$standard_files manuscript/paper.Rmd manuscript/supplementary.Rmd manuscript/references.bib"
+    standard_files="$standard_files analysis/reproduce/01_data_preparation.R analysis/reproduce/02_statistical_analysis.R"
+    standard_files="$standard_files analysis/reproduce/03_figures_tables.R analysis/reproduce/04_manuscript_render.R"
+    standard_files="$standard_files R/analysis_functions.R"
+    standard_files="$standard_files submission/figures/README.md submission/tables/README.md submission/supplementary/README.md submission/manuscript_versions/README.md"
+
+    # Package paradigm files
+    standard_files="$standard_files R/example_functions.R R/sample_dataset.R R/README.md"
+    standard_files="$standard_files tests/testthat/test-example-functions.R tests/testthat/helper-test-functions.R tests/testthat/test-utils.R tests/testthat/README.md"
+    standard_files="$standard_files vignettes/getting-started.Rmd vignettes/advanced-usage.Rmd vignettes/README.md"
+    standard_files="$standard_files inst/examples/README.md pkgdown/README.md data-raw/README.md man/README.md"
+
+    # NOTE: zzcollab-uninstall.sh is NOT in this list - it will be removed at the very end
+    # to allow the script to complete all operations first
+
+    # Add dynamically named .Rproj file if it exists
+    local rproj_file
+    rproj_file=$(find . -maxdepth 1 -name "*.Rproj" -type f 2>/dev/null | head -1)
+    if [[ -n "$rproj_file" ]]; then
+        rproj_file="${rproj_file#./}"  # Remove leading ./
+        standard_files="$standard_files $rproj_file"
     fi
-    
+
+    # Convert space-separated standard_files to newline-separated
+    local standard_files_newline
+    standard_files_newline=$(echo "$standard_files" | tr ' ' '\n')
+
+    if [[ -n "$files" ]]; then
+        files="$(printf "%s\n%s" "$files" "$standard_files_newline")"
+    else
+        files="$standard_files_newline"
+    fi
+
     if [[ -z "$files" ]]; then
         log_info "No files found in manifest"
         return 0
     fi
-    
+
     local count=0
     local skipped=0
-    
+
     while IFS= read -r file; do
         [[ -z "$file" ]] && continue
         
@@ -193,6 +252,7 @@ remove_files() {
     
     log_success "Removed $count files"
     [[ $skipped -gt 0 ]] && log_warning "Skipped $skipped modified files"
+    return 0
 }
 
 should_remove_file() {
@@ -253,6 +313,7 @@ remove_directories() {
     
     log_success "Removed $count directories"
     [[ $skipped -gt 0 ]] && log_warning "Skipped $skipped directories with content"
+    return 0
 }
 
 is_directory_empty() {
@@ -309,7 +370,8 @@ remove_docker_images() {
     fi
     
     local removed_count=0
-    for image in "${images_to_check[@]}"; do
+    # Use [@]:+ to safely handle empty arrays with set -u
+    for image in "${images_to_check[@]+"${images_to_check[@]}"}"; do
         [[ -z "$image" ]] && continue
         
         if docker image inspect "$image" >/dev/null 2>&1; then
@@ -331,6 +393,7 @@ remove_docker_images() {
     else
         log_info "No Docker images removed"
     fi
+    return 0
 }
 
 remove_manifest() {
@@ -359,6 +422,7 @@ remove_manifest() {
     else
         log_info "No manifest files found to remove"
     fi
+    return 0
 }
 
 #=============================================================================
@@ -386,22 +450,30 @@ EXAMPLES:
     $SCRIPT_NAME --keep-docker      # Keep Docker image
 
 DESCRIPTION:
-    This script removes files and directories created by zzcollab. It checks
-    both manifest files and common zzcollab-generated files.
-    
-    It will:
-    - Remove symbolic links first
-    - Remove zzcollab files (Dockerfile, docker-compose.yml, .Rprofile, renv.lock, etc.)
-    - Remove directories (empty ones first, then ask about non-empty)
-    - Remove renv directory and package cache
-    - Remove Docker images (project and team images)
-    - Remove the manifest file itself
-    
+    This script comprehensively removes ALL files and directories created by
+    zzcollab across all paradigms (analysis, manuscript, package). It checks
+    both manifest files and a comprehensive list of zzcollab-generated files.
+
+    It will remove:
+    - Symbolic links first
+    - All core project files (DESCRIPTION, NAMESPACE, LICENSE, Makefile, etc.)
+    - All Docker files (Dockerfile, docker-compose.yml, .Rprofile, etc.)
+    - All configuration files (zzcollab.yaml, config.yaml, .Rbuildignore, etc.)
+    - All paradigm-specific files (analysis scripts, manuscript templates, etc.)
+    - All GitHub workflows and templates (.github/workflows/*, .github/ISSUE_TEMPLATE/*)
+    - All directories (empty ones first, then asks about non-empty ones)
+    - renv directory and package cache
+    - Docker images (project and team images)
+    - Manifest files
+    - The uninstall script itself (last step)
+
     Safety features:
     - Confirms before removing non-empty directories
     - Confirms before removing potentially customized files
     - Detects and removes team Docker images automatically
+    - Handles dynamically named .Rproj files
     - Can run in dry-run mode to preview changes
+    - Removes uninstall script itself after completion
 
 EOF
 }
@@ -491,10 +563,123 @@ main() {
         get_created_items "symlinks" | sed 's/^/  /'
         
         echo "Files:"
-        (get_created_items "files"; echo -e "ZZCOLLAB_USER_GUIDE.md\nDockerfile\ndocker-compose.yml\nDockerfile.teamcore\nDockerfile.personal\n.Rprofile\nrenv.lock\nMakefile\n.gitignore\nzzcollab.yaml\nconfig.yaml\n.Rbuildignore\nnavigation_scripts.sh\ncheck_renv_for_commit.R\n.zshrc_docker\ndev.sh\nsetup_renv.R\nLICENSE\ndata/README.md") | sort -u | sed 's/^/  /'
+        (
+            get_created_items "files"
+            # Core project files
+            echo "DESCRIPTION"
+            echo "NAMESPACE"
+            echo "LICENSE"
+            echo "Makefile"
+            echo ".gitignore"
+            echo ".Rprofile"
+            echo ".Rprofile_docker"
+            echo "renv.lock"
+            echo "setup_renv.R"
+
+            # Docker files
+            echo "Dockerfile"
+            echo "docker-compose.yml"
+            echo "Dockerfile.teamcore"
+            echo "Dockerfile.personal"
+            echo ".zshrc_docker"
+
+            # Configuration and documentation
+            echo "ZZCOLLAB_USER_GUIDE.md"
+            echo "DATA_WORKFLOW_GUIDE.md"
+            echo "zzcollab.yaml"
+            echo "config.yaml"
+            echo ".Rbuildignore"
+
+            # Validation and development scripts
+            echo "check_renv_for_commit.R"
+            echo "check_rprofile_options.R"
+            echo "dev.sh"
+            echo "navigation_scripts.sh"
+            echo "dev_workflow.R"
+
+            # GitHub templates
+            echo ".github/pull_request_template.md"
+            echo ".github/ISSUE_TEMPLATE/bug_report.md"
+            echo ".github/ISSUE_TEMPLATE/feature_request.md"
+            echo ".github/workflows/analysis-workflow.yml"
+            echo ".github/workflows/manuscript-workflow.yml"
+            echo ".github/workflows/package-workflow.yml"
+            echo ".github/workflows/r-package.yml"
+            echo ".github/workflows/render-paper.yml"
+            echo ".github/workflows/render-report.yml"
+
+            # R package files
+            echo "tests/testthat.R"
+            echo "_pkgdown.yml"
+
+            # Dynamically named .Rproj file
+            find . -maxdepth 1 -name "*.Rproj" -type f 2>/dev/null | sed 's|^\./||'
+
+            # Note: zzcollab-uninstall.sh will be removed at the very end (not shown here)
+        ) | sort -u | sed 's/^/  /'
         
         echo "Directories:"
-        (get_created_items "directories"; [[ -d "renv" ]] && echo "renv"; [[ -d "analysis" ]] && echo "analysis"; [[ -d "tests" ]] && echo "tests"; [[ -d "scripts" ]] && echo "scripts"; [[ -d "R" ]] && echo "R"; [[ -d "data" ]] && echo "data"; [[ -d "figures" ]] && echo "figures"; [[ -d "output" ]] && echo "output"; [[ -d ".github" ]] && echo ".github"; [[ -d "inst" ]] && echo "inst"; [[ -d "man" ]] && echo "man"; [[ -d "vignettes" ]] && echo "vignettes") | sort -ru | sed 's/^/  /'
+        (
+            get_created_items "directories"
+            # Core directories
+            [[ -d "renv" ]] && echo "renv"
+            [[ -d "R" ]] && echo "R"
+            [[ -d "man" ]] && echo "man"
+            [[ -d "tests" ]] && echo "tests"
+            [[ -d "tests/testthat" ]] && echo "tests/testthat"
+            [[ -d "vignettes" ]] && echo "vignettes"
+            [[ -d "inst" ]] && echo "inst"
+            [[ -d "inst/examples" ]] && echo "inst/examples"
+            [[ -d "scripts" ]] && echo "scripts"
+            [[ -d "archive" ]] && echo "archive"
+            [[ -d "docs" ]] && echo "docs"
+
+            # Data directories (common across paradigms)
+            [[ -d "data" ]] && echo "data"
+            [[ -d "data/raw_data" ]] && echo "data/raw_data"
+            [[ -d "data/derived_data" ]] && echo "data/derived_data"
+            [[ -d "data/metadata" ]] && echo "data/metadata"
+            [[ -d "data/validation" ]] && echo "data/validation"
+            [[ -d "data/correspondence" ]] && echo "data/correspondence"
+            [[ -d "data/raw" ]] && echo "data/raw"
+            [[ -d "data/processed" ]] && echo "data/processed"
+            [[ -d "data-raw" ]] && echo "data-raw"
+
+            # Analysis directories (analysis paradigm)
+            [[ -d "analysis" ]] && echo "analysis"
+            [[ -d "analysis/exploratory" ]] && echo "analysis/exploratory"
+            [[ -d "analysis/modeling" ]] && echo "analysis/modeling"
+            [[ -d "analysis/validation" ]] && echo "analysis/validation"
+            [[ -d "analysis/report" ]] && echo "analysis/report"
+            [[ -d "analysis/figures" ]] && echo "analysis/figures"
+            [[ -d "analysis/tables" ]] && echo "analysis/tables"
+            [[ -d "analysis/templates" ]] && echo "analysis/templates"
+            [[ -d "analysis/reproduce" ]] && echo "analysis/reproduce"
+
+            # Output directories (analysis paradigm)
+            [[ -d "outputs" ]] && echo "outputs"
+            [[ -d "outputs/figures" ]] && echo "outputs/figures"
+            [[ -d "outputs/tables" ]] && echo "outputs/tables"
+            [[ -d "reports" ]] && echo "reports"
+            [[ -d "reports/dashboard" ]] && echo "reports/dashboard"
+
+            # Manuscript paradigm directories
+            [[ -d "manuscript" ]] && echo "manuscript"
+            [[ -d "manuscript/journal_templates" ]] && echo "manuscript/journal_templates"
+            [[ -d "submission" ]] && echo "submission"
+            [[ -d "submission/figures" ]] && echo "submission/figures"
+            [[ -d "submission/tables" ]] && echo "submission/tables"
+            [[ -d "submission/supplementary" ]] && echo "submission/supplementary"
+            [[ -d "submission/manuscript_versions" ]] && echo "submission/manuscript_versions"
+
+            # Package paradigm directories
+            [[ -d "pkgdown" ]] && echo "pkgdown"
+
+            # GitHub directories
+            [[ -d ".github" ]] && echo ".github"
+            [[ -d ".github/workflows" ]] && echo ".github/workflows"
+            [[ -d ".github/ISSUE_TEMPLATE" ]] && echo ".github/ISSUE_TEMPLATE"
+        ) | sort -ru | sed 's/^/  /'
         
         echo "Docker images:"
         local project_name team_name
@@ -541,7 +726,16 @@ main() {
     fi
     
     remove_manifest
-    
+
+    # Final step: Remove the uninstall script itself
+    local uninstall_script="zzcollab-uninstall.sh"
+    if [[ -f "$uninstall_script" ]]; then
+        log_info "Removing uninstall script: $uninstall_script"
+        # Use a subshell to delete the script after this function exits
+        (sleep 1; rm -f "$uninstall_script" 2>/dev/null) &
+        log_success "Uninstall script will be removed in background"
+    fi
+
     log_success "Uninstall completed!"
     log_info "Some files may have been preserved if they contained modifications"
 }

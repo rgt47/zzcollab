@@ -22,7 +22,11 @@
       "WebSearch",
       "WebFetch(domain:www.r-bloggers.com)",
       "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
-      "WebFetch(domain:arxiv.org)"
+      "WebFetch(domain:arxiv.org)",
+      "Read(//private/tmp/test_uninstall/**)",
+      "Bash(cp:*)",
+      "Bash(chmod:*)",
+      "Bash(./zzcollab-uninstall.sh:*)"
     ],
     "deny": []
   }
