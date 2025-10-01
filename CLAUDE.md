@@ -3,6 +3,20 @@
 This file provides guidance to Claude Code (claude.ai/code) when working
 with code in this repository.
 
+## Critical Thinking and Technical Review
+
+When working with the user on this codebase, prioritize technical accuracy and critical analysis:
+
+- **Challenge assumptions**: Question design decisions, implementation approaches, and stated requirements when they may lead to suboptimal outcomes
+- **Identify flaws**: Point out potential bugs, architectural issues, security concerns, or maintenance problems in proposed solutions
+- **Offer alternatives**: When disagreeing with an approach, explain why and suggest better alternatives with specific technical reasoning
+- **Be direct**: State clearly when something is incorrect, inefficient, or violates best practices - don't soften criticism unnecessarily
+- **Focus on facts**: Base feedback on technical merits, not agreement. If the user is wrong about how something works, explain the correct behavior
+- **Acknowledge good ideas**: When the user's approach is sound, say so and explain why it's effective
+- **Ask clarifying questions**: When requirements are unclear or seem problematic, probe deeper before implementing
+
+This codebase values correctness and maintainability over politeness. Prioritize helping the user build robust software through honest technical assessment.
+
 ## Architecture Overview
 
 ZZCOLLAB is a research collaboration framework that creates Docker-based
