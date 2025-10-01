@@ -62,26 +62,9 @@ create_github_workflows() {
     local workflow_description
     local output_filename
     
-    # Determine workflow description and output filename based on paradigm
-    # (PARADIGM is always set, defaults to "analysis")
-    case "$PARADIGM" in
-        analysis)
-            workflow_description="Data analysis workflow"
-            output_filename="analysis-workflow.yml"
-            ;;
-        manuscript)
-            workflow_description="Academic manuscript workflow"
-            output_filename="manuscript-workflow.yml"
-            ;;
-        package)
-            workflow_description="R package development workflow"
-            output_filename="package-workflow.yml"
-            ;;
-        *)
-            workflow_description="Data analysis workflow"  # fallback to default
-            output_filename="analysis-workflow.yml"
-            ;;
-    esac
+    # Unified paradigm uses single workflow template
+    workflow_description="Render research compendium paper"
+    output_filename="render-paper.yml"
     
     if install_template "$workflow_template" ".github/workflows/$output_filename" "Primary workflow" "Created $workflow_description"; then
         log_info "  - Triggers: push/PR to main branch"

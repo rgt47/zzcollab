@@ -273,11 +273,12 @@ For more specific help with team initialization, run: zzcollab --help-init
 For Docker variants configuration help, run: zzcollab --help-variants
 For development workflow guidance, run: zzcollab --next-steps
 
-📋 PARADIGM GUIDANCE:
-After project creation, see PARADIGM_GUIDE.md for detailed information about:
-- When to use each research paradigm (analysis, manuscript, package)
-- Project structure explanations and best practices
-- Workflow examples and decision guidelines
+📋 RESEARCH COMPENDIUM GUIDE:
+After project creation, see README.md for comprehensive information about:
+- Unified research compendium structure (based on Marwick et al. 2018)
+- Complete research lifecycle support (data → analysis → paper → package)
+- Tutorial examples: https://github.com/rgt47/zzcollab/tree/main/examples
+- Unified paradigm documentation: docs/UNIFIED_PARADIGM_GUIDE.md
 
 Project website: https://github.com/rgt47/zzcollab
 EOF

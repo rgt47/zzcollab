@@ -176,7 +176,7 @@ install_template() {
 }
 
 #=============================================================================
-# PARADIGM-SPECIFIC TEMPLATE FUNCTIONS
+# UNIFIED PARADIGM TEMPLATE FUNCTIONS
 #=============================================================================
 
 # Function: install_paradigm_template

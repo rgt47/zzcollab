@@ -37,7 +37,6 @@ readonly CONFIG_SYSTEM_FILE="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.yaml
 CONFIG_TEAM_NAME=""
 CONFIG_GITHUB_ACCOUNT=""
 CONFIG_BUILD_MODE="standard"
-CONFIG_PARADIGM=""  # New: research paradigm (analysis, manuscript, package)
 CONFIG_DOTFILES_DIR=""
 CONFIG_DOTFILES_NODOT="false"
 CONFIG_AUTO_GITHUB="false"
@@ -50,14 +49,6 @@ CONFIG_STANDARD_DOCKER_PACKAGES=""
 CONFIG_STANDARD_RENV_PACKAGES=""
 CONFIG_COMPREHENSIVE_DOCKER_PACKAGES=""
 CONFIG_COMPREHENSIVE_RENV_PACKAGES=""
-
-# Paradigm-specific package configurations
-CONFIG_ANALYSIS_DOCKER_PACKAGES=""
-CONFIG_ANALYSIS_RENV_PACKAGES=""
-CONFIG_MANUSCRIPT_DOCKER_PACKAGES=""
-CONFIG_MANUSCRIPT_RENV_PACKAGES=""
-CONFIG_PACKAGE_DOCKER_PACKAGES=""
-CONFIG_PACKAGE_RENV_PACKAGES=""
 
 #=============================================================================
 # YAML PARSING FUNCTIONS
@@ -398,17 +389,15 @@ load_config_file() {
     local team_name=$(yaml_get "$config_file" "defaults.team_name")
     local github_account=$(yaml_get "$config_file" "defaults.github_account")
     local build_mode=$(yaml_get "$config_file" "defaults.build_mode")
-    local paradigm=$(yaml_get "$config_file" "defaults.paradigm")
     local dotfiles_dir=$(yaml_get "$config_file" "defaults.dotfiles_dir")
     local dotfiles_nodot=$(yaml_get "$config_file" "defaults.dotfiles_nodot")
     local auto_github=$(yaml_get "$config_file" "defaults.auto_github")
     local skip_confirmation=$(yaml_get "$config_file" "defaults.skip_confirmation")
-    
+
     # Store in global config variables (only if not "null")
     [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_TEAM_NAME="$team_name"
     [[ "$github_account" != "null" && -n "$github_account" ]] && CONFIG_GITHUB_ACCOUNT="$github_account"
     [[ "$build_mode" != "null" && -n "$build_mode" ]] && CONFIG_BUILD_MODE="$build_mode"
-    [[ "$paradigm" != "null" && -n "$paradigm" ]] && CONFIG_PARADIGM="$paradigm"
     [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DOTFILES_DIR="$dotfiles_dir"
     [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DOTFILES_NODOT="$dotfiles_nodot"
     [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
@@ -451,7 +440,6 @@ apply_config_defaults() {
     [[ -z "$TEAM_NAME" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
     [[ -z "$GITHUB_ACCOUNT" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
     [[ "$BUILD_MODE" == "standard" && -n "$CONFIG_BUILD_MODE" ]] && BUILD_MODE="$CONFIG_BUILD_MODE"
-    [[ -z "$PARADIGM" && -n "$CONFIG_PARADIGM" ]] && PARADIGM="$CONFIG_PARADIGM"
     [[ -z "$DOTFILES_DIR" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
     
     # Handle boolean flags
@@ -775,8 +763,11 @@ get_docker_packages_for_mode() {
             if [[ -n "$CONFIG_COMPREHENSIVE_DOCKER_PACKAGES" ]]; then
                 echo "$CONFIG_COMPREHENSIVE_DOCKER_PACKAGES"
             else
-                # Return default comprehensive mode packages
-                echo "renv,remotes,tidyverse,targets,usethis,devtools,conflicted,ggthemes"
+                # Comprehensive: includes all packages from old paradigms (analysis + manuscript + package)
+                # Analysis: tidyverse, targets, plotly, DT, shiny
+                # Manuscript: rmarkdown, bookdown
+                # Package: devtools, usethis, roxygen2, testthat, pkgdown, covr
+                echo "renv,remotes,tidyverse,targets,usethis,devtools,plotly,DT,shiny,bookdown,roxygen2,testthat,pkgdown,covr"
             fi
             ;;
         *)
@@ -813,8 +804,14 @@ get_renv_packages_for_mode() {
             if [[ -n "$CONFIG_COMPREHENSIVE_RENV_PACKAGES" ]]; then
                 echo "$CONFIG_COMPREHENSIVE_RENV_PACKAGES"
             else
-                # Return default comprehensive mode packages (47 packages)
-                echo "renv,here,usethis,devtools,dplyr,ggplot2,tidyr,tidymodels,shiny,plotly,quarto,flexdashboard,survival,lme4,testthat,knitr,rmarkdown,targets,janitor,DT,conflicted,palmerpenguins,broom,kableExtra,bookdown,naniar,skimr,visdat,pkgdown,rcmdcheck,jsonlite,DBI,RSQLite,car,digest,doParallel,foreach,furrr,future,odbc,readr,RMySQL,RPostgres,sessioninfo,covr,ggthemes,datapasta"
+                # Comprehensive: ALL packages from old paradigms unified
+                # Core workflow: renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
+                # Analysis paradigm: tidyverse (dplyr, ggplot2, tidyr, readr), tidymodels, plotly, DT, flexdashboard, janitor, skimr, broom
+                # Manuscript paradigm: bookdown, papaja, RefManageR, citr
+                # Package paradigm: roxygen2, pkgdown, covr, lintr, goodpractice, spelling
+                # Additional utilities: palmerpenguins, conflicted, kableExtra, naniar, visdat
+                # Advanced: shiny, quarto, survival, lme4, DBI, RSQLite, doParallel, foreach, future
+                echo "renv,here,usethis,devtools,dplyr,ggplot2,tidyr,readr,tidymodels,shiny,plotly,quarto,flexdashboard,survival,lme4,testthat,knitr,rmarkdown,targets,janitor,DT,conflicted,palmerpenguins,broom,kableExtra,bookdown,papaja,RefManageR,citr,naniar,skimr,visdat,pkgdown,rcmdcheck,roxygen2,covr,lintr,goodpractice,spelling,jsonlite,DBI,RSQLite,car,digest,doParallel,foreach,furrr,future,sessioninfo,ggthemes,datapasta"
             fi
             ;;
         *)
@@ -824,85 +821,7 @@ get_renv_packages_for_mode() {
     esac
 }
 
-#=============================================================================
-# PARADIGM-SPECIFIC PACKAGE FUNCTIONS
-#=============================================================================
-
-# Function: get_docker_packages_for_paradigm
-# Purpose: Get Docker packages for a specific research paradigm
-# Arguments: $1 = paradigm (analysis, manuscript, package)
-get_docker_packages_for_paradigm() {
-    local paradigm="$1"
-    
-    case "$paradigm" in
-        analysis)
-            if [[ -n "$CONFIG_ANALYSIS_DOCKER_PACKAGES" ]]; then
-                echo "$CONFIG_ANALYSIS_DOCKER_PACKAGES"
-            else
-                # Data analysis packages
-                echo "renv,remotes,tidyverse,targets,plotly,DT"
-            fi
-            ;;
-        manuscript)
-            if [[ -n "$CONFIG_MANUSCRIPT_DOCKER_PACKAGES" ]]; then
-                echo "$CONFIG_MANUSCRIPT_DOCKER_PACKAGES"
-            else
-                # Manuscript writing and R development packages
-                echo "renv,remotes,rmarkdown,bookdown,here,usethis,devtools,testthat"
-            fi
-            ;;
-        package)
-            if [[ -n "$CONFIG_PACKAGE_DOCKER_PACKAGES" ]]; then
-                echo "$CONFIG_PACKAGE_DOCKER_PACKAGES"
-            else
-                # R package development packages
-                echo "renv,remotes,devtools,usethis,roxygen2,testthat,pkgdown,covr"
-            fi
-            ;;
-        *)
-            log_error "Unknown paradigm: $paradigm"
-            return 1
-            ;;
-    esac
-}
-
-# Function: get_renv_packages_for_paradigm
-# Purpose: Get renv packages for a specific research paradigm
-# Arguments: $1 = paradigm (analysis, manuscript, package)
-get_renv_packages_for_paradigm() {
-    local paradigm="$1"
-    
-    case "$paradigm" in
-        analysis)
-            if [[ -n "$CONFIG_ANALYSIS_RENV_PACKAGES" ]]; then
-                echo "$CONFIG_ANALYSIS_RENV_PACKAGES"
-            else
-                # Comprehensive data analysis packages
-                echo "renv,here,dplyr,ggplot2,tidyr,targets,plotly,DT,flexdashboard,janitor,skimr,tidymodels,broom"
-            fi
-            ;;
-        manuscript)
-            if [[ -n "$CONFIG_MANUSCRIPT_RENV_PACKAGES" ]]; then
-                echo "$CONFIG_MANUSCRIPT_RENV_PACKAGES"
-            else
-                # Academic manuscript packages with R development
-                echo "renv,here,rmarkdown,bookdown,papaja,knitr,usethis,devtools,testthat,targets,RefManageR,citr"
-            fi
-            ;;
-        package)
-            if [[ -n "$CONFIG_PACKAGE_RENV_PACKAGES" ]]; then
-                echo "$CONFIG_PACKAGE_RENV_PACKAGES"
-            else
-                # R package development ecosystem
-                echo "renv,devtools,usethis,roxygen2,testthat,pkgdown,covr,lintr,goodpractice,spelling,here,knitr,rmarkdown"
-            fi
-            ;;
-        *)
-            log_error "Unknown paradigm: $paradigm"
-            return 1
-            ;;
-    esac
-}
+# Paradigm-specific package functions removed - unified paradigm uses build modes only
 
 # Function: generate_description_content
 # Purpose: Generate DESCRIPTION file content with custom or default packages

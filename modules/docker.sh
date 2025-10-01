@@ -326,13 +326,6 @@ create_docker_files() {
         return 1
     fi
     
-    # Create paradigm guide
-    # Contains: paradigm descriptions, when to use each, project structures, examples
-    if ! install_template "PARADIGM_GUIDE.md" "PARADIGM_GUIDE.md" "paradigm selection guide" "Created paradigm selection guide"; then
-        log_error "Failed to create paradigm guide"
-        return 1
-    fi
-    
     log_success "Docker configuration files created successfully"
 }
 
@@ -406,18 +399,14 @@ build_docker_image() {
     # DOCKER_BUILDKIT=1: Enable BuildKit for faster builds and better caching
     # --build-arg R_VERSION: Pass R version to Dockerfile
     # --build-arg BASE_IMAGE: Pass base image to Dockerfile
-    # --build-arg PACKAGE_MODE: Pass package mode to unified Dockerfile
-    # --build-arg PARADIGM: Pass research paradigm for paradigm-specific packages
+    # --build-arg PACKAGE_MODE: Pass build mode to unified Dockerfile (fast/standard/comprehensive)
     # -t "$PKG_NAME": Tag image with package name for easy reference
     
-    # Determine package selection mode (paradigm takes precedence over build mode)
+    # Determine package selection mode based on build mode
     local package_mode="$BUILD_MODE"
-    if [[ -n "$PARADIGM" ]]; then
-        package_mode="paradigm:$PARADIGM"
-        log_info "Using paradigm-specific packages: $PARADIGM"
-    fi
-    
-    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" --build-arg PACKAGE_MODE=\"$package_mode\" --build-arg PARADIGM=\"${PARADIGM:-}\" -t \"$PKG_NAME\" ."
+    log_info "Using build mode: $BUILD_MODE"
+
+    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" --build-arg PACKAGE_MODE=\"$package_mode\" -t \"$PKG_NAME\" ."
     
     log_info "Running: $docker_cmd"
     
