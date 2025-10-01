@@ -54,128 +54,108 @@ reproducible research environments. The system consists of:
 - **Single source of truth**: Variant definitions in `variant_examples.yaml` eliminate duplication
 - **14+ Docker variants**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
 
-## Research Paradigm System
+## Unified Research Compendium Structure
 
-ZZCOLLAB provides three specialized research paradigms with standardized templates that support complete research workflows from initial analysis to publication or distribution:
+ZZCOLLAB follows the unified research compendium framework proposed by Marwick, Boettiger, and Mullen (2018), providing a single flexible structure that supports the entire research lifecycle from data collection through analysis, manuscript writing, and package publication:
 
-### Available Paradigms
+### Directory Structure
 
-**Analysis Paradigm** (Default)
-- **Applications**: Data science projects, research analytics, business intelligence, exploratory analysis
-- **Structure**: `data/raw/`, `data/processed/`, `analysis/exploratory/`, `analysis/modeling/`, `analysis/validation/`, `outputs/figures/`, `reports/dashboard/`, `scripts/`
-- **Tools**: tidyverse, tidymodels, targets, plotly, DT, flexdashboard, janitor, skimr
-- **Templates**: Six systematic workflow templates with reproducibility framework
-  - `01_exploratory_analysis.R` - Systematic EDA with automated quality assessment
-  - `02_statistical_modeling.R` - Modeling pipeline with tidymodels
-  - `03_model_validation.R` - Cross-validation, bootstrap CI, robustness testing
-  - `04_interactive_dashboard.Rmd` - Shiny dashboard for data exploration
-  - `05_automated_report.Rmd` - Parameterized reports with multiple output formats
-  - `analysis_functions.R` - Reusable utility functions with standardized themes
-- **Workflow**: Raw data → Systematic EDA → Statistical modeling → Validation → Interactive reporting
-- **Target Users**: PhD students analyzing data, data scientists building models, analysts creating reports
+The unified compendium uses a single flexible layout based on Marwick et al. (2018):
 
-**Manuscript Paradigm**
-- **Applications**: Academic papers, research reports, computational research, collaborative writing
-- **Structure**: `R/`, `tests/testthat/`, `man/`, `manuscript/`, `analysis/reproduce/`, `submission/`, `vignettes/`, `inst/examples/`
-- **Tools**: rmarkdown, bookdown, papaja, devtools, testthat, roxygen2, RefManageR
-- **Templates**: Eight research compendium templates for complete reproducibility
-  - `paper.Rmd` - Manuscript template with YAML frontmatter
-  - `supplementary.Rmd` - Supplementary materials structure
-  - `references.bib` - Academic bibliography with reproducibility citations
-  - `01-04_reproduction_scripts.R` - Complete analysis reproduction pipeline
-  - `analysis_functions.R` - R package functions with roxygen2 documentation
-  - `DESCRIPTION` & `NAMESPACE` - Full R package infrastructure for reproducibility
-- **Workflow**: Analysis functions → Testing → Documentation → Writing → Reproduction → Submission
-- **Target Users**: Academic researchers writing papers, graduate students writing thesis chapters
-
-**Package Paradigm**
-- **Applications**: R package development, research software, method implementation, internal tools
-- **Structure**: `R/`, `tests/testthat/`, `man/`, `vignettes/`, `inst/examples/`, `data/`, `data-raw/`, `pkgdown/`
-- **Tools**: devtools, roxygen2, testthat, pkgdown, usethis, covr, lintr
-- **Templates**: Nine R package development templates (CRAN-ready)
-  - `example_functions.R` - Functions with complete roxygen2 documentation
-  - `test-example-functions.R` - testthat suite with 95%+ coverage
-  - `test-helpers.R` - Testing utilities and custom expectations
-  - `dev_workflow.R` - Interactive development menu with automated tasks
-  - `getting-started.Rmd` & `advanced-usage.Rmd` - Complete vignette suite
-  - `_pkgdown.yml` - Documentation website configuration
-  - `sample_dataset.R` - Example datasets with documentation
-- **Workflow**: Code → Document → Test → Check → Build → Release → Website
-- **Target Users**: R developers creating packages, researchers packaging methods, teams building tools
-
-### Paradigm Usage Commands
-
-```bash
-# Specify paradigm during project creation
-zzcollab --paradigm analysis      # Default: data analysis projects
-zzcollab --paradigm manuscript    # Academic writing projects
-zzcollab --paradigm package       # R package development
-zzcollab -P manuscript            # Short form
-
-# Set default paradigm in configuration
-zzcollab config set paradigm manuscript
-
-# Team initialization with paradigm
-zzcollab -i -t mylab -p study --paradigm manuscript -B rstudio
+```
+project/
+├── analysis/
+│   ├── data/
+│   │   ├── raw_data/         # Original, unmodified data (read-only)
+│   │   └── derived_data/     # Processed, analysis-ready data
+│   ├── paper/
+│   │   ├── paper.Rmd         # Manuscript
+│   │   └── references.bib    # Bibliography
+│   ├── figures/              # Generated visualizations
+│   └── scripts/              # Analysis code (empty - user creates)
+├── R/                        # Reusable functions (add as needed)
+├── tests/                    # Unit tests (add as needed)
+├── .github/workflows/        # CI/CD automation
+├── DESCRIPTION               # Project metadata
+├── Dockerfile                # Computational environment
+└── renv.lock                 # Package versions
 ```
 
-### R Interface for Paradigms
+### Progressive Disclosure Philosophy
 
+**Start Simple, Add Complexity As Needed**:
+
+1. **Data Analysis** (Day 1):
+   - Place raw data in `analysis/data/raw_data/`
+   - Create analysis scripts in `analysis/scripts/`
+   - Generate figures in `analysis/figures/`
+
+2. **Manuscript Writing** (Week 2):
+   - Add `analysis/paper/paper.Rmd` for manuscript
+   - No restructuring required - manuscript references scripts and figures
+
+3. **Function Extraction** (Month 1):
+   - Move reusable code to `R/` directory
+   - Add documentation with roxygen2
+   - Create tests in `tests/testthat/`
+
+4. **Package Distribution** (Month 3):
+   - Add `man/` for documentation
+   - Add `vignettes/` for tutorials
+   - Ready for CRAN submission without migration
+
+**Key Principle**: Research evolves organically. No upfront paradigm choice. No migration friction.
+
+### Usage Examples
+
+**Command Line**:
+```bash
+# Create unified research compendium
+zzcollab -d ~/dotfiles
+
+# With team collaboration
+zzcollab -i -t mylab -p study -B rstudio -d ~/dotfiles
+
+# With build mode selection
+zzcollab --comprehensive -d ~/dotfiles  # 51 packages - complete toolkit
+zzcollab --standard -d ~/dotfiles       # 17 packages - balanced (default)
+zzcollab --fast -d ~/dotfiles           # 9 packages - minimal
+```
+
+**R Interface**:
 ```r
 library(zzcollab)
 
-# Set default paradigm
-set_config("paradigm", "manuscript")
+# Create unified research compendium
+init_project("my-research")
 
-# Create projects with specific paradigms
-init_project("data-analysis", paradigm = "analysis")
-init_project("research-paper", paradigm = "manuscript")
-init_project("new-package", paradigm = "package")
+# With team and build mode
+init_project(
+  team_name = "mylab",
+  project_name = "study",
+  build_mode = "standard"
+)
 ```
 
-### Paradigm Best Practices & Professional Features
+### Learning Resources
 
-**Analysis Paradigm (6 Professional Templates):**
-- **Systematic EDA**: Use `01_exploratory_analysis.R` for comprehensive data quality assessment
-- **Professional Modeling**: Leverage `02_statistical_modeling.R` with tidymodels for reproducible ML workflows
-- **Robust Validation**: Apply `03_model_validation.R` for cross-validation, bootstrap CI, sensitivity analysis
-- **Interactive Reporting**: Deploy `04_interactive_dashboard.Rmd` for real-time data exploration
-- **Automated Documentation**: Generate parameterized reports with `05_automated_report.Rmd`
-- **Reproducible Seeds**: All templates use fixed seeds (42, 123, 456) for deterministic results
+**Tutorial Examples** (in zzcollab repo, not installed):
+- 📚 **Step-by-step workflows**: EDA, modeling, validation, dashboards, reporting
+- 🔬 **Complete projects**: Full example research compendia
+- 🧩 **Code patterns**: Reusable patterns for common tasks
 
-**Manuscript Paradigm (8+ Research Compendium Templates):**
-- **Full R Package Structure**: Complete DESCRIPTION, NAMESPACE, roxygen2 documentation
-- **Integrated Workflows**: Functions in `R/`, comprehensive tests in `tests/testthat/`
-- **Academic Templates**: Professional `paper.Rmd` and `supplementary.Rmd` with proper citations
-- **Reproduction Pipeline**: Complete `01-04_reproduction_scripts.R` for full reproducibility
-- **Version Control Ready**: All templates designed for collaborative academic writing
-- **Publication Formats**: Multiple output formats (Word, PDF, HTML) with proper formatting
+**Location**: `https://github.com/rgt47/zzcollab/tree/main/examples`
 
-**Package Paradigm (9 CRAN-Ready Templates):**
-- **Professional Documentation**: Complete roxygen2 with @param, @return, @examples
-- **Comprehensive Testing**: 95%+ coverage with `test-example-functions.R` and custom helpers
-- **Interactive Development**: Use `dev_workflow.R` menu for automated package tasks
-- **Modern Vignettes**: Professional `getting-started.Rmd` and `advanced-usage.Rmd`
-- **Website Ready**: Professional pkgdown configuration with modern Bootstrap theme
-- **Example Datasets**: Realistic data with comprehensive documentation and missing value patterns
+**Philosophy**: Examples teach patterns. Projects start clean (empty `scripts/` directory). Users create their own workflow rather than modifying templates.
 
-### Paradigm Decision Framework
+### Unified Compendium Features
 
-**Quick Decision Tree:**
-1. **Primary goal?** → 📊 Analyze data / 📄 Write paper / 📦 Build software
-2. **Main output?** → 📊 Reports & insights / 📄 Published papers / 📦 R packages & tools
-3. **Target audience?** → 📊 Stakeholders / 📄 Academic community / 📦 Other developers
-
-**Common Research Lifecycle:** Many projects progress through paradigms: 📊 Analysis → 📄 Manuscript → 📦 Package
-
-*For comprehensive paradigm documentation, see [ZZCOLLAB User Guide](ZZCOLLAB_USER_GUIDE.md#research-paradigm-system)*
-
-### Paradigm-Specific Features
-
-- **Custom CI/CD Workflows**: Each paradigm gets specialized GitHub Actions (analysis-paradigm.yml, manuscript-paradigm.yml, package-paradigm.yml)
-- **Tailored Dependencies**: Paradigm-specific DESCRIPTION files with appropriate package dependencies
-- **Optimized Makefiles**: Build targets and validation specific to each workflow type
-- **Comprehensive Guide**: `PARADIGM_GUIDE.md` automatically included in every project
+- **Flexible Structure**: Supports data analysis, manuscript writing, and package development in one layout
+- **CI/CD Included**: Minimal `render-paper.yml` workflow with comprehensive documentation
+- **Marwick Compatible**: Follows rrtools conventions for research compendia
+- **Progressive Complexity**: Start simple, add directories as research evolves
+- **Docker Integration**: Reproducible computational environment included
+- **Comprehensive Guide**: `docs/UNIFIED_PARADIGM_GUIDE.md` with migration help
 
 ## Advanced Configuration System (Enhanced 2025)
 
@@ -193,7 +173,7 @@ ZZCOLLAB features a powerful multi-layered configuration system that controls Do
 
 **Three Configuration Domains**:
 - **🐳 Docker Variant Management** - 14+ specialized environments with custom base images and packages
-- **📦 Package Management** - Build modes (Fast/Standard/Comprehensive) with paradigm-specific packages
+- **📦 Package Management** - Build modes (Fast/Standard/Comprehensive) with flexible package selection
 - **⚙️ Development Settings** - Team collaboration, GitHub integration, and automation preferences
 
 ### Configuration Commands
@@ -205,13 +185,11 @@ zzcollab --config init
 zzcollab --config set team-name "myteam"
 zzcollab --config set github-account "myusername"
 zzcollab --config set build-mode "fast"
-zzcollab --config set paradigm "manuscript"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Get configuration values
 zzcollab --config get team-name
 zzcollab --config get build-mode
-zzcollab --config get paradigm
 
 # List all configuration
 zzcollab --config list
@@ -262,11 +240,6 @@ zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml
 - **Comprehensive Mode (-C)**: Full ecosystem for extensive environments (47+ packages)
   - Standard packages + advanced tools: tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases
 
-**Paradigm-Specific Packages**:
-- **Analysis Paradigm**: Data analysis tools (tidyverse, targets, plotly, DT, flexdashboard)
-- **Manuscript Paradigm**: Academic writing tools (rmarkdown, bookdown, papaja, RefManageR)
-- **Package Paradigm**: Development tools (devtools, roxygen2, testthat, pkgdown, covr, lintr)
-
 **Custom Package Lists** (in configuration files):
 ```yaml
 build_modes:
@@ -298,7 +271,6 @@ defaults:
   team_name: "myteam"                  # Default team for new projects
   github_account: "myusername"         # GitHub account name
   build_mode: "standard"               # Preferred build mode: fast, standard, comprehensive
-  paradigm: "analysis"                 # Default research paradigm: analysis, manuscript, package
   dotfiles_dir: "~/dotfiles"           # Path to dotfiles directory
   dotfiles_nodot: false                # Whether dotfiles need dots added
 
@@ -403,7 +375,6 @@ collaboration:
 # 1. Initialize personal configuration
 zzcollab --config init
 zzcollab --config set team-name "myteam"
-zzcollab --config set paradigm "analysis"
 zzcollab --config set build-mode "standard"
 
 # 2. Create projects using defaults
@@ -486,12 +457,10 @@ init_config()
 # Set configuration values
 set_config("team_name", "myteam")
 set_config("build_mode", "fast")
-set_config("paradigm", "manuscript")
 
 # Get configuration values
 get_config("team_name")
 get_config("build_mode")
-get_config("paradigm")
 
 # List all configuration
 list_config()
@@ -500,8 +469,8 @@ list_config()
 validate_config()
 
 # Use config-aware functions (parameters use config defaults)
-init_project(project_name = "my-analysis")   # Uses team_name, paradigm from config
-join_project(project_name = "my-analysis")   # Uses team_name, build_mode, paradigm from config
+init_project(project_name = "my-analysis")   # Uses team_name from config
+join_project(project_name = "my-analysis")   # Uses team_name, build_mode from config
 setup_project()                              # Uses all defaults from config
 ```
 
@@ -679,8 +648,7 @@ build:
 **Team Initialization**:
 ```bash
 # Quick start - creates optimal default variants
-zzcollab -i -p myproject --github              # Creates: minimal + analysis variants (analysis paradigm)
-zzcollab -i -p paper-project -P manuscript --github  # Manuscript paradigm with publishing tools
+zzcollab -i -p myproject --github              # Creates: minimal + analysis variants
 
 # Custom variants via config file
 zzcollab -i -p myproject             # Creates project + config.yaml
@@ -695,11 +663,10 @@ zzcollab -i -p myproject -B rstudio --github     # Traditional RStudio only
 ```bash
 # Configuration-based (recommended)
 zzcollab --config set team-name "myteam"
-zzcollab --config set paradigm "manuscript"
-zzcollab -i -p research-paper        # Uses config defaults (manuscript paradigm)
+zzcollab -i -p research-paper        # Uses config defaults
 
 # Traditional explicit
-zzcollab -i -t myteam -p analysis-project -P analysis -B rstudio -d ~/dotfiles
+zzcollab -i -t myteam -p analysis-project -B rstudio -d ~/dotfiles
 ```
 
 ### Benefits of New Variant System
@@ -729,19 +696,17 @@ cd zzcollab && ./install.sh
 zzcollab --config init
 zzcollab --config set team-name "myteam"
 zzcollab --config set build-mode "standard"
-zzcollab --config set paradigm "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 **2. Project Creation**:
 ```bash
 # Quick start - optimal variants automatically
-zzcollab -i -p penguin-analysis --github                    # Analysis paradigm (default)
-zzcollab -i -p research-paper -P manuscript --github        # Manuscript paradigm
+zzcollab -i -p penguin-analysis --github
 
 # Power users - browse 14+ variants interactively
 mkdir penguin-analysis && cd penguin-analysis
-zzcollab -i -p penguin-analysis -P analysis
+zzcollab -i -p penguin-analysis
 ./add_variant.sh    # Select from bioinformatics, geospatial, alpine, etc.
 ```
 
@@ -1242,12 +1207,12 @@ All documentation has been updated to reflect current system capabilities:
 ### R Package Integration (25 Functions)
 Complete R interface for CLI functionality with build mode support:
 ```r
-# Team Lead with build modes and paradigms
-init_project(team_name = "mylab", project_name = "study", build_mode = "fast", paradigm = "analysis")
-init_project(team_name = "mylab", project_name = "paper", build_mode = "standard", paradigm = "manuscript")
+# Team Lead with build modes
+init_project(team_name = "mylab", project_name = "study", build_mode = "fast")
+init_project(team_name = "mylab", project_name = "paper", build_mode = "standard")
 
-# Team Member with build modes and paradigms
-join_project(team_name = "mylab", project_name = "study", build_mode = "comprehensive", paradigm = "analysis")
+# Team Member with build modes
+join_project(team_name = "mylab", project_name = "study", build_mode = "comprehensive")
 
 # Full R workflow support
 add_package("tidyverse")
@@ -1264,35 +1229,31 @@ library(zzcollab)
 init_config()                                      # Initialize config file
 set_config("team_name", "TEAM")                    # Set team name
 set_config("build_mode", "standard")               # Set preferred mode
-set_config("paradigm", "analysis")                 # Set research paradigm
 set_config("dotfiles_dir", "~/dotfiles")           # Set dotfiles path
 
 # Developer 1 (Team Lead) - Simplified with config
-init_project(project_name = "PROJECT")             # Uses config defaults (team, mode, paradigm)
+init_project(project_name = "PROJECT")             # Uses config defaults (team, mode)
 
 # Developer 2+ (Team Members) - Simplified with config
 set_config("team_name", "TEAM")                    # Match team settings
-set_config("paradigm", "analysis")                 # Match team paradigm
 join_project(project_name = "PROJECT", interface = "shell")  # Uses config defaults
 
 # Method 2: Traditional Explicit Parameters
 library(zzcollab)
-# Developer 1 (Team Lead) - R Interface with build modes and paradigms
+# Developer 1 (Team Lead) - R Interface with build modes
 init_project(
   team_name = "TEAM",
   project_name = "PROJECT",
   build_mode = "standard",  # "fast", "standard", "comprehensive"
-  paradigm = "manuscript",  # "analysis", "manuscript", "package"
   dotfiles_path = "~/dotfiles"
 )
 
-# Developer 2+ (Team Members) - R Interface with build modes and paradigms
+# Developer 2+ (Team Members) - R Interface with build modes
 join_project(
   team_name = "TEAM",
   project_name = "PROJECT",
   interface = "shell",  # or "rstudio" or "verse"
   build_mode = "fast",  # matches team's preferred mode
-  paradigm = "manuscript",  # matches team's research paradigm
   dotfiles_path = "~/dotfiles"
 )
 ```
@@ -1739,7 +1700,7 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
 
 - **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user guide (v3.1) with all essential topics
   - Architecture overview and core components
-  - Complete research paradigm system documentation
+  - Unified research compendium documentation
   - Advanced configuration system with examples
   - Docker variant system and customization
   - Data documentation system and workflow
@@ -1760,7 +1721,6 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
 - **TESTING_GUIDE.md** (26K): Comprehensive testing framework
   - Three-layer testing strategy (Unit/Integration/System)
   - testthat patterns and best practices
-  - Paradigm-specific testing approaches
   - Test coverage requirements (>90%)
   - Continuous integration testing
 
