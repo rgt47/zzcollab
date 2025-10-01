@@ -1,0 +1,150 @@
+---
+title: "{{PROJECT_TITLE}}"
+author:
+  - {{AUTHOR_NAME}} {{AUTHOR_LAST}}:
+      correspondence: true
+      email: {{AUTHOR_EMAIL}}
+      orcid: {{AUTHOR_ORCID}}
+      institute:
+        - affil1
+institute:
+  - affil1: {{INSTITUTION}}
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  bookdown::pdf_document2:
+    keep_tex: false
+    toc: false
+    number_sections: true
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    number_sections: true
+  bookdown::word_document2:
+    toc: false
+    number_sections: true
+bibliography: references.bib
+csl: https://raw.githubusercontent.com/citation-style-language/styles/master/apa.csl
+abstract: |
+  Brief summary of research question, methods, and key findings.
+keywords: "reproducible research, data analysis, R"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.path = "../figures/",
+  fig.align = "center",
+  fig.retina = 2,
+  out.width = "100%"
+)
+
+# Load required packages
+library(here)
+library(knitr)
+library(dplyr)
+library(ggplot2)
+
+# Source custom functions
+source(here("R", "utils.R"))
+
+# Set seed for reproducibility
+set.seed(42)
+```
+
+# Introduction
+
+Describe the research question, background, and motivation.
+
+- What problem are you addressing?
+- Why is it important?
+- What gap in knowledge does this fill?
+
+Research compendia enable reproducible computational research by packaging
+data, code, and documentation together [@Marwick2018].
+
+# Methods
+
+## Data
+
+Describe your data sources, collection methods, and any preprocessing steps.
+
+```{r data-summary}
+# Example: Load and summarize data
+# data <- read.csv(here("analysis", "data", "derived_data", "cleaned_data.csv"))
+#
+# kable(
+#   head(data),
+#   caption = "Summary of dataset"
+# )
+```
+
+## Analysis
+
+Describe your analytical approach.
+
+```{r analysis}
+# Example analysis code
+# model <- lm(outcome ~ predictor, data = data)
+# summary(model)
+```
+
+# Results
+
+Present your findings with appropriate visualizations and tables.
+
+```{r figure-example, fig.cap="Example figure demonstrating results"}
+# Example plot
+# ggplot(data, aes(x = predictor, y = outcome)) +
+#   geom_point() +
+#   geom_smooth(method = "lm") +
+#   theme_minimal() +
+#   labs(
+#     x = "Predictor Variable",
+#     y = "Outcome Variable"
+#   )
+```
+
+## Key Findings
+
+Summarize the main results:
+
+1. First major finding
+2. Second major finding
+3. Third major finding
+
+# Discussion
+
+Interpret your results in the context of existing literature.
+
+- What do these findings mean?
+- How do they relate to previous work?
+- What are the limitations?
+- What are the implications?
+
+# Conclusion
+
+Summarize the key takeaways and suggest future directions.
+
+# Computational Environment
+
+This analysis was conducted in the following computational environment:
+
+```{r session-info}
+sessionInfo()
+```
+
+# Data and Code Availability
+
+All data, code, and materials necessary to reproduce these analyses are available
+at: https://github.com/{{GITHUB_USER}}/{{PROJECT_NAME}}
+
+# References
+
+::: {#refs}
+:::
+
+# Acknowledgments
+
+Acknowledge funding sources, collaborators, and contributors.
