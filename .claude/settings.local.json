@@ -27,7 +27,8 @@
       "Bash(cp:*)",
       "Bash(chmod:*)",
       "Bash(./zzcollab-uninstall.sh:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }
