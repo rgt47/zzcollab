@@ -1558,14 +1558,15 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 - Vignette chunks with `eval = FALSE` prevent inline R expressions from accessing defined variables
 - Unicode characters in R source code must use escape sequences for CRAN compliance
 
-### R-Only Workflow Vignettes for Non-Docker Users (August 2025)
-**Comprehensive R-native interface expansion** - making ZZCOLLAB accessible to R developers without Docker/bash knowledge:
+### Vignette System Documentation (October 2025)
+**Consolidated vignette structure** - three focused vignettes covering complete ZZCOLLAB functionality:
 
-**New Vignette Documentation System:**
-- **r-solo-workflow.Rmd**: Pure R interface for solo developers using only R functions (`init_project()`, `start_rstudio()`, `git_commit()`)
-- **r-team-workflow.Rmd**: Team collaboration workflow with role-based approach (team lead vs members) using R-only functions
-- **Complete workflow coverage**: From project setup to daily development to team coordination, all through familiar R interface
-- **Real-world examples**: Penguin analysis (solo) and customer churn analysis (3-person team collaboration)
+**Core Vignette Suite:**
+- **getting-started.Rmd**: Comprehensive tutorial for new users with step-by-step Palmer Penguins analysis
+- **configuration.Rmd**: Advanced configuration system including Docker variants and package management
+- **testing.Rmd**: Comprehensive guide to testing data analysis workflows in R
+- **Complete workflow coverage**: From initial setup through advanced configuration and testing practices
+- **Real-world examples**: Palmer Penguins analysis demonstrating reproducible research workflows
 
 **Target Audience Expansion:**
 - **R users familiar with RStudio/tidyverse** but unfamiliar with Docker/bash commands
@@ -1665,9 +1666,10 @@ zzcollab --help-variants      # Comprehensive Docker variants guide
 **Comprehensive cleanup completed** - repository now follows open source best practices for production-ready projects:
 
 **Documentation Structure Improvements:**
-- ✅ **Proper R package vignettes**: All workflow documentation moved to `vignettes/` following R package standards
-- ✅ **Complete vignette suite**: `workflow-solo.Rmd`, `workflow-team.Rmd`, `workflow-comprehensive.Rmd`, `data-analysis-testing.Rmd`
-- ✅ **Consolidated documentation**: Single source of truth for all user workflows and testing guidance
+- ✅ **Proper R package vignettes**: All workflow documentation in `vignettes/` following R package standards
+- ✅ **Three-vignette structure** (October 2025): `getting-started.Rmd`, `configuration.Rmd`, `testing.Rmd`
+- ✅ **Consolidated documentation**: Single source of truth for all user workflows, configuration, and testing guidance
+- ✅ **Deprecated vignettes**: Legacy paradigm-specific vignettes archived in `vignettes/deprecated/`
 
 **Development Artifacts Cleanup:**
 - ✅ **Safe removal using trash-put**: All development artifacts moved to trash (recoverable if needed)

@@ -1,26 +1,11 @@
 ---
 title: "ZZCOLLAB Configuration System"
-subtitle: "Docker and Package Management Framework"
-author: "ZZCOLLAB Team"
+author: "ZZCOLLAB Development Team"
 date: "`r Sys.Date()`"
 output:
-  # rmarkdown::html_vignette:
-  #   toc: true
-  #   toc_depth: 3
-  #   number_sections: true
-  pdf_document:
+  rmarkdown::html_vignette:
     toc: true
     toc_depth: 3
-    number_sections: true
-    latex_engine: xelatex
-    keep_tex: true
-header-includes:
-  - \usepackage{fontspec}
-  - \usepackage{xcolor}
-  - \setmainfont{Helvetica Neue}
-  - \setsansfont{Helvetica Neue}
-  # - \setmonofont{SF Mono}
-  - \usepackage{newunicodechar}
 vignette: >
   %\VignetteIndexEntry{ZZCOLLAB Configuration System}
   %\VignetteEngine{knitr::rmarkdown}

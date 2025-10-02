@@ -1,10 +1,13 @@
 ---
-title: "Comprehensive Guide to Testing Data Analysis Workflows in R"
-author: "ZZCOLLAB Framework"
+title: "Testing Data Analysis Workflows"
+author: "ZZCOLLAB Development Team"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{Comprehensive Guide to Testing Data Analysis Workflows in R}
+  %\VignetteIndexEntry{Testing Data Analysis Workflows}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

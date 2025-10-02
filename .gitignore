@@ -57,6 +57,14 @@ test.md
 *-mini.*
 dev-archive/
 
+# Vignette build artifacts
+vignettes/*.html
+vignettes/*.pdf
+vignettes/*.aux
+vignettes/*.log
+vignettes/*.tex
+vignettes/*.bak
+
 # Archives
 *.tar.gz
 *.zip

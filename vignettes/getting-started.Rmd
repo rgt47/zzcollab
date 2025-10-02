@@ -1,5 +1,5 @@
 ---
-title: "Reproducible Data Analysis with ZZCOLLAB: A Palmer Penguins Tutorial"
+title: "Getting Started with ZZCOLLAB"
 author: "ZZCOLLAB Development Team"
 date: "`r Sys.Date()`"
 output:
@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{Reproducible Data Analysis with ZZCOLLAB: A Palmer Penguins Tutorial}
+  %\VignetteIndexEntry{Getting Started with ZZCOLLAB}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -1152,7 +1152,59 @@ quit(save = "no")
 
 # Version Control Integration
 
-Commit the reproducible research workflow to version control:
+Before committing changes, validate that package dependencies are properly
+synchronized with the code.
+
+## Dependency Validation
+
+ZZCOLLAB provides automated dependency checking to ensure reproducibility:
+
+```bash
+# On HOST (after exiting container)
+# Validate dependencies are synchronized
+Rscript check_renv_for_commit.R --quiet --fail-on-issues
+```
+
+This script performs comprehensive validation:
+
+- Verifies all packages used in R/ code are declared in DESCRIPTION
+- Checks that renv.lock matches actual package usage
+- Validates CRAN availability of specified packages
+- Ensures no missing or undeclared dependencies
+
+**Common validation scenarios:**
+
+```bash
+# Standard validation (recommended before every commit)
+Rscript check_renv_for_commit.R --quiet --fail-on-issues
+
+# Auto-fix missing packages
+Rscript check_renv_for_commit.R --fix --fail-on-issues
+
+# Validate specific build mode
+Rscript check_renv_for_commit.R --build-mode standard --quiet
+
+# Use environment variable for build mode
+ZZCOLLAB_BUILD_MODE=standard Rscript check_renv_for_commit.R
+```
+
+**Interpreting validation results:**
+
+```
+# Success - ready to commit
+✓ All dependencies properly declared
+✓ renv.lock synchronized with code
+✓ No missing packages detected
+
+# Failure - requires attention
+✗ Missing packages in DESCRIPTION: tidymodels, broom
+✗ Package used but not in renv.lock: ggrepel
+→ Run with --fix flag to resolve automatically
+```
+
+## Commit Workflow
+
+After successful validation, commit changes to version control:
 
 ```bash
 # Check repository status
@@ -1171,11 +1223,24 @@ git commit -m "Implement Palmer Penguins bill dimension analysis
 - Document data provenance and transformations
 
 Tests: All 23 tests passing
-Coverage: Complete coverage of data preparation code"
+Coverage: Complete coverage of data preparation code
+Dependencies: Validated with check_renv_for_commit.R"
 
 # Push to remote repository (if configured)
 git push
 ```
+
+## Continuous Integration
+
+The dependency validation script integrates with GitHub Actions for automated
+checking on every commit. The workflow validates:
+
+- Package dependencies properly declared
+- renv.lock synchronized with code
+- All tests passing
+- R CMD check successful
+
+This ensures reproducibility is maintained throughout the project lifecycle.
 
 # Workflow Summary
 
