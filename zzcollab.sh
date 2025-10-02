@@ -683,17 +683,9 @@ validate_and_setup_environment() {
 execute_project_creation_workflow() {
     # Execute setup in same order as original zzcollab.sh
     log_info "📁 Creating project structure..."
-    if [[ -n "$PARADIGM" ]]; then
-        create_paradigm_directory_structure "$PARADIGM" || exit 1
-        # Also include GitHub workflows directory for all paradigms
-        mkdir -p ".github/workflows" && track_directory ".github/workflows"
-        # Install paradigm-specific templates
-        install_paradigm_template "$PARADIGM" || exit 1
-        copy_paradigm_structure "$PARADIGM" || exit 1
-    else
-        create_directory_structure || exit 1
-        create_data_templates || exit 1
-    fi
+    # Unified paradigm - single structure for all research workflows
+    create_directory_structure || exit 1
+    create_data_templates || exit 1
     
     log_info "📦 Creating R package files..."
     create_core_files || exit 1

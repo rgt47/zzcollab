@@ -580,8 +580,8 @@ get_template() {
 get_dockerfile_template() { get_template "Dockerfile"; }
 get_description_template() { get_template "DESCRIPTION"; }
 get_workflow_template() {
-    # Unified paradigm uses single workflow template
-    echo "workflows/render-paper.yml"
+    # Unified paradigm uses single workflow template from unified/ directory
+    echo "unified/.github/workflows/render-paper.yml"
 }
 
 #=============================================================================

@@ -53,20 +53,9 @@ create_github_workflows() {
         return 1
     fi
     
-    # Create R package check workflow
-    # Choose between full validation or minimal research-focused workflow
-    local workflow_template="workflows/r-package.yml"
-    # Choose workflow template based on build mode
-    workflow_template=$(get_workflow_template)
-    
-    local workflow_description
-    local output_filename
-    
-    # Unified paradigm uses single workflow template
-    workflow_description="Render research compendium paper"
-    output_filename="render-paper.yml"
-    
-    if install_template "$workflow_template" ".github/workflows/$output_filename" "Primary workflow" "Created $workflow_description"; then
+    # Create R package validation workflow
+    # Validates R package structure, runs tests, checks dependencies
+    if install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" "R package validation workflow" "Created R package validation workflow"; then
         log_info "  - Triggers: push/PR to main branch"
         case "$BUILD_MODE" in
             fast)
@@ -84,16 +73,17 @@ create_github_workflows() {
         log_error "Failed to create R package workflow"
         return 1
     fi
-    
+
     # Create paper rendering workflow
     # Automatically renders research paper when analysis files change
     # Uploads rendered PDFs as artifacts for easy access
-    if install_template "workflows/render-report.yml" ".github/workflows/render-report.yml" "Report rendering workflow" "Created automated report rendering workflow"; then
-        log_info "  - Triggers: changes to analysis/report/, R/ directories"
-        log_info "  - Actions: render report.Rmd to PDF, upload artifacts"
+    local paper_workflow_template=$(get_workflow_template)
+    if install_template "$paper_workflow_template" ".github/workflows/render-paper.yml" "Paper rendering workflow" "Created automated paper rendering workflow"; then
+        log_info "  - Triggers: changes to analysis/, R/ directories"
+        log_info "  - Actions: render analysis/paper/paper.Rmd to PDF, upload artifacts"
         log_info "  - Output: downloadable PDF from GitHub Actions tab"
     else
-        log_error "Failed to create report rendering workflow"
+        log_error "Failed to create paper rendering workflow"
         return 1
     fi
     

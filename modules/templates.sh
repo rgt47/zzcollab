@@ -70,8 +70,9 @@ copy_template_file() {
         log_error "Failed to substitute variables in: $dest"
         return 1
     fi
-    
-    log_info "Created $description from template"
+
+    # Success - no logging here, let calling function handle user messages
+    return 0
 }
 
 # Function: substitute_variables
