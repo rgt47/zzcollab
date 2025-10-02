@@ -447,34 +447,38 @@ The ZZCOLLAB framework provides sophisticated renv integration addressing common
 zzcollab -i -t myteam -p analysis-project
 
 # Creates project with:
-# - renv.lock with appropriate packages for paradigm
+# - renv.lock with packages based on build mode (fast/standard/comprehensive)
 # - .Rprofile configured for team collaboration
 # - Docker integration for cross-platform consistency
 # - CI/CD workflows with dependency validation
 ```
 
-#### Multi-Paradigm Package Sets
-ZZCOLLAB provides curated package sets for different research paradigms:
+#### Build Mode Package Sets
+ZZCOLLAB provides curated package sets for different build modes:
 
-**Analysis Paradigm**:
+**Fast Mode** (9 packages - essential workflow):
 ```r
 # Automatically includes in renv.lock:
-c("tidyverse", "targets", "plotly", "DT", "flexdashboard",
-  "janitor", "skimr", "broom", "here", "conflicted")
+c("renv", "here", "usethis", "devtools", "testthat",
+  "knitr", "rmarkdown", "targets")
 ```
 
-**Manuscript Paradigm**:
+**Standard Mode** (17 packages - balanced for most research):
 ```r
 # Automatically includes in renv.lock:
-c("rmarkdown", "bookdown", "papaja", "RefManageR",
-  "devtools", "testthat", "roxygen2", "here")
+c("renv", "here", "usethis", "devtools", "testthat",
+  "knitr", "rmarkdown", "targets", "dplyr", "ggplot2",
+  "tidyr", "palmerpenguins", "broom", "janitor", "DT", "conflicted")
 ```
 
-**Package Paradigm**:
+**Comprehensive Mode** (51 packages - complete research lifecycle):
 ```r
 # Automatically includes in renv.lock:
-c("devtools", "roxygen2", "testthat", "pkgdown", "usethis",
-  "covr", "lintr", "spelling", "here")
+# All standard packages plus:
+# - Data analysis: tidymodels, shiny, plotly, quarto, flexdashboard
+# - Manuscript: bookdown, papaja, RefManageR, citr
+# - Package dev: roxygen2, pkgdown, covr, lintr, goodpractice
+# - And more...
 ```
 
 #### Dependency Validation Integration
