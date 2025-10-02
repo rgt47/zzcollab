@@ -34,20 +34,24 @@ In 1999, British mother Sally Clark was convicted of murdering her two infant so
 The calculation incorrectly assumed independence between the two deaths, failing to account for genetic factors, environmental conditions, and family medical history that could increase the likelihood of natural sudden infant death syndrome (SIDS).
 
 **The Testing That Could Have Prevented It:**
-```python
-def test_independence_assumption():
-    """Test whether independence assumption holds for SIDS cases"""
-    # This test would have revealed the flawed assumption
-    assert not are_events_independent(sids_case_1, sids_case_2,
-                                    family_genetic_factors)
+```r
+# Test whether independence assumption holds for SIDS cases
+test_that("independence assumption is validated", {
+  # This test would have revealed the flawed assumption
+  expect_false(
+    are_events_independent(sids_case_1, sids_case_2, family_genetic_factors)
+  )
+})
 
-def test_probability_calculation():
-    """Test probability calculation with proper conditional dependencies"""
-    baseline_prob = 1/8500  # Actual SIDS rate
-    conditional_prob = calculate_conditional_probability(
-        baseline_prob, genetic_factors, environmental_factors)
-    # Should be much higher than the claimed 1 in 73 million
-    assert conditional_prob > 1e-7
+# Test probability calculation with proper conditional dependencies
+test_that("probability calculation accounts for dependencies", {
+  baseline_prob <- 1/8500  # Actual SIDS rate
+  conditional_prob <- calculate_conditional_probability(
+    baseline_prob, genetic_factors, environmental_factors
+  )
+  # Should be much higher than the claimed 1 in 73 million
+  expect_gt(conditional_prob, 1e-7)
+})
 ```
 
 **Outcome:** Sally Clark spent three years in prison before her conviction was overturned. She never recovered from the trauma and died in 2007.
@@ -67,35 +71,39 @@ Keith Baggerly and Kevin Coombes from MD Anderson Cancer Center spent years tryi
 - Results could not be reproduced even with the original data
 
 **The Testing That Could Have Prevented It:**
-```python
-def test_array_label_consistency():
-    """Verify array labels match experimental design"""
-    for sample_id in genomic_data:
-        expected_label = experimental_design[sample_id]['response']
-        actual_label = genomic_data[sample_id]['label']
-        assert expected_label == actual_label,
-               f"Label mismatch for {sample_id}"
+```r
+# Verify array labels match experimental design
+test_that("array labels are consistent with experimental design", {
+  for (sample_id in names(genomic_data)) {
+    expected_label <- experimental_design[[sample_id]]$response
+    actual_label <- genomic_data[[sample_id]]$label
+    expect_equal(actual_label, expected_label,
+                 info = paste("Label mismatch for", sample_id))
+  }
+})
 
-def test_data_preprocessing_reproducibility():
-    """Ensure preprocessing steps produce consistent results"""
-    raw_data = load_raw_genomic_data()
-    processed_v1 = preprocess_pipeline_v1(raw_data)
-    processed_v2 = preprocess_pipeline_v1(raw_data)  # Same function
-    assert np.allclose(processed_v1, processed_v2),
-           "Preprocessing is not deterministic"
+# Ensure preprocessing steps produce consistent results
+test_that("data preprocessing is reproducible", {
+  raw_data <- load_raw_genomic_data()
+  processed_v1 <- preprocess_pipeline_v1(raw_data)
+  processed_v2 <- preprocess_pipeline_v1(raw_data)  # Same function
+  expect_equal(processed_v1, processed_v2,
+               info = "Preprocessing is not deterministic")
+})
 
-def test_prediction_model_sanity():
-    """Basic sanity checks for prediction model"""
-    # Test with known control cases
-    sensitive_control = load_known_sensitive_samples()
-    resistant_control = load_known_resistant_samples()
+# Basic sanity checks for prediction model
+test_that("prediction model produces sensible results", {
+  # Test with known control cases
+  sensitive_control <- load_known_sensitive_samples()
+  resistant_control <- load_known_resistant_samples()
 
-    sensitive_predictions = model.predict(sensitive_control)
-    resistant_predictions = model.predict(resistant_control)
+  sensitive_predictions <- predict(model, sensitive_control)
+  resistant_predictions <- predict(model, resistant_control)
 
-    # Should classify known cases correctly
-    assert np.mean(sensitive_predictions) > 0.7
-    assert np.mean(resistant_predictions) < 0.3
+  # Should classify known cases correctly
+  expect_gt(mean(sensitive_predictions), 0.7)
+  expect_lt(mean(resistant_predictions), 0.3)
+})
 ```
 
 **Outcome:** The papers were retracted in 2011. Clinical trials based on the flawed algorithms were halted. Patient treatment decisions had been influenced by fundamentally broken analysis.
@@ -114,35 +122,42 @@ Complex financial instruments like mortgage-backed securities and collateralized
 - Model validation was insufficient, with "garbage in, garbage out" data quality issues
 
 **The Testing That Could Have Prevented It:**
-```python
-def test_distribution_assumptions():
-    """Test whether returns follow assumed distributions"""
-    historical_returns = load_housing_price_data()
+```r
+# Test whether returns follow assumed distributions
+test_that("distribution assumptions are validated", {
+  historical_returns <- load_housing_price_data()
 
-    # Test for normality assumption
-    statistic, p_value = scipy.stats.normaltest(historical_returns)
-    assert p_value > 0.05, "Returns do not follow normal distribution"
+  # Test for normality assumption
+  shapiro_test <- shapiro.test(historical_returns)
+  expect_gt(shapiro_test$p.value, 0.05,
+            info = "Returns do not follow normal distribution")
 
-    # Test for fat tails
-    kurtosis = scipy.stats.kurtosis(historical_returns)
-    assert kurtosis < 3, f"Excess kurtosis detected: {kurtosis}"
+  # Test for fat tails
+  library(moments)
+  kurt <- kurtosis(historical_returns)
+  expect_lt(kurt, 3,
+            info = paste("Excess kurtosis detected:", kurt))
+})
 
-def test_correlation_stability():
-    """Test correlation assumptions across time periods"""
-    correlations_2000_2005 = calculate_correlations(data_2000_2005)
-    correlations_1990_1995 = calculate_correlations(data_1990_1995)
+# Test correlation assumptions across time periods
+test_that("correlation structure is stable across time", {
+  correlations_2000_2005 <- calculate_correlations(data_2000_2005)
+  correlations_1990_1995 <- calculate_correlations(data_1990_1995)
 
-    # Correlations should be stable across periods
-    correlation_diff = abs(correlations_2000_2005 - correlations_1990_1995)
-    assert correlation_diff < 0.2, "Correlation structure is unstable"
+  # Correlations should be stable across periods
+  correlation_diff <- abs(correlations_2000_2005 - correlations_1990_1995)
+  expect_lt(correlation_diff, 0.2,
+            info = "Correlation structure is unstable")
+})
 
-def test_stress_scenarios():
-    """Test model performance under extreme scenarios"""
-    model_output = risk_model.calculate_risk(stress_test_scenarios)
+# Test model performance under extreme scenarios
+test_that("model passes stress tests", {
+  model_output <- risk_model$calculate_risk(stress_test_scenarios)
 
-    # Model should predict higher risk in stress scenarios
-    assert all(risk > baseline_risk * 2 for risk in model_output),
-           "Model fails stress tests"
+  # Model should predict higher risk in stress scenarios
+  expect_true(all(model_output > baseline_risk * 2),
+              info = "Model fails stress tests")
+})
 ```
 
 **Outcome:** Global financial losses exceeded $10 trillion. Millions lost homes and jobs. The crisis demonstrated the catastrophic consequences of deploying untested statistical models at scale.
@@ -158,46 +173,49 @@ Google Health developed an AI system to analyze retinal images for signs of diab
 The AI was trained exclusively on high-quality retinal scans but rejected many real-world images taken under suboptimal clinical conditions. The system had not been tested against the variability of real-world data collection environments.
 
 **The Testing That Could Have Prevented It:**
-```python
-def test_image_quality_robustness():
-    """Test model performance across different image qualities"""
-    high_quality_images = load_lab_quality_images()
-    clinic_quality_images = load_clinic_quality_images()
-    low_quality_images = load_mobile_clinic_images()
+```r
+# Test model performance across different image qualities
+test_that("model is robust across image quality levels", {
+  high_quality_images <- load_lab_quality_images()
+  clinic_quality_images <- load_clinic_quality_images()
+  low_quality_images <- load_mobile_clinic_images()
 
-    # Model should maintain reasonable performance across quality levels
-    lab_accuracy = model.evaluate(high_quality_images)
-    clinic_accuracy = model.evaluate(clinic_quality_images)
-    mobile_accuracy = model.evaluate(low_quality_images)
+  # Model should maintain reasonable performance across quality levels
+  lab_accuracy <- evaluate_model(model, high_quality_images)
+  clinic_accuracy <- evaluate_model(model, clinic_quality_images)
+  mobile_accuracy <- evaluate_model(model, low_quality_images)
 
-    assert clinic_accuracy > lab_accuracy * 0.8,
-           "Significant performance drop in clinic conditions"
-    assert mobile_accuracy > lab_accuracy * 0.6,
-           "Model fails under mobile clinic conditions"
+  expect_gt(clinic_accuracy, lab_accuracy * 0.8,
+            info = "Significant performance drop in clinic conditions")
+  expect_gt(mobile_accuracy, lab_accuracy * 0.6,
+            info = "Model fails under mobile clinic conditions")
+})
 
-def test_rejection_rate_limits():
-    """Test that rejection rates don't exceed practical thresholds"""
-    real_world_images = load_representative_clinical_sample()
-    predictions, rejections = model.predict_with_confidence(real_world_images)
+# Test that rejection rates don't exceed practical thresholds
+test_that("rejection rates are within practical limits", {
+  real_world_images <- load_representative_clinical_sample()
+  predictions_with_conf <- predict_with_confidence(model, real_world_images)
 
-    rejection_rate = len(rejections) / len(real_world_images)
-    assert rejection_rate < 0.1,
-           f"Rejection rate too high: {rejection_rate:.2%}"
+  rejection_rate <- sum(predictions_with_conf$rejected) / nrow(real_world_images)
+  expect_lt(rejection_rate, 0.1,
+            info = sprintf("Rejection rate too high: %.1f%%", rejection_rate * 100))
+})
 
-def test_geographic_bias():
-    """Test for bias across different populations and equipment"""
-    thai_images = load_thai_clinic_images()
-    us_images = load_us_clinic_images()
-    indian_images = load_indian_clinic_images()
+# Test for bias across different populations and equipment
+test_that("model performance is consistent across geographies", {
+  thai_images <- load_thai_clinic_images()
+  us_images <- load_us_clinic_images()
+  indian_images <- load_indian_clinic_images()
 
-    thai_performance = model.evaluate(thai_images)
-    us_performance = model.evaluate(us_images)
-    indian_performance = model.evaluate(indian_images)
+  thai_performance <- evaluate_model(model, thai_images)
+  us_performance <- evaluate_model(model, us_images)
+  indian_performance <- evaluate_model(model, indian_images)
 
-    # Performance should not vary dramatically by geography
-    performances = [thai_performance, us_performance, indian_performance]
-    assert max(performances) - min(performances) < 0.15,
-           "Significant geographic bias detected"
+  # Performance should not vary dramatically by geography
+  performances <- c(thai_performance, us_performance, indian_performance)
+  expect_lt(max(performances) - min(performances), 0.15,
+            info = "Significant geographic bias detected")
+})
 ```
 
 **Outcome:** The high rejection rate created unnecessary workload for clinics and demonstrated the gap between laboratory AI performance and real-world deployment effectiveness.
@@ -217,7 +235,7 @@ Princeton University researchers Sayash Kapoor and Arvind Narayanan conducted a 
 4. **Preprocessing Leakage:** Applying preprocessing to entire dataset before splitting
 
 **The Testing Solution:**
-```python
+```r
 def test_temporal_integrity():
     """Ensure no future information leaks into training"""
     train_max_date = train_data['date'].max()
@@ -271,7 +289,7 @@ def test_preprocessing_order():
 In February 2024, Air Canada was legally ordered to honor incorrect bereavement fare information provided by its virtual assistant, which told a customer he could apply for discounts after purchase when this wasn't company policy.
 
 **The Testing Gap:**
-```python
+```r
 def test_policy_consistency():
     """Ensure chatbot responses match official policies"""
     policy_database = load_official_policies()
@@ -304,7 +322,7 @@ def test_liability_statements():
 McDonald's ended its three-year AI drive-thru partnership with IBM after viral videos showed the AI adding 260 Chicken McNuggets to orders despite customer protests.
 
 **The Testing Gap:**
-```python
+```r
 def test_order_quantity_limits():
     """Test reasonable quantity limits on orders"""
     test_orders = [
@@ -345,7 +363,7 @@ The Reproducibility Project coordinated by psychologist Brian Nosek attempted to
 This crisis demonstrates that even peer-reviewed research with positive results often fails basic reproducibility tests. The implications for business and policy decisions based on such research are profound.
 
 **The Testing Philosophy:**
-```python
+```r
 def test_effect_size_stability():
     """Test whether effect sizes are stable across samples"""
     original_effect = calculate_effect_size(original_data)
@@ -385,7 +403,7 @@ Recent industry analysis reveals:
 
 ### Return on Investment for Testing
 
-```python
+```r
 # Example: Business impact calculation
 def calculate_testing_roi():
     """Calculate ROI of comprehensive testing practices"""
@@ -414,7 +432,7 @@ print(calculate_testing_roi())
 
 ### 1. Data Quality Testing
 
-```python
+```r
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -471,7 +489,7 @@ class DataQualityTests:
 
 ### 2. Model Performance Testing
 
-```python
+```r
 class ModelPerformanceTests:
     """Comprehensive model testing suite"""
 
@@ -530,7 +548,7 @@ class ModelPerformanceTests:
 
 ### 3. Pipeline Integration Testing
 
-```python
+```r
 class PipelineIntegrationTests:
     """End-to-end pipeline testing"""
 
@@ -577,7 +595,7 @@ class PipelineIntegrationTests:
 
 ### 1. Test-Driven Data Analysis (TDDA)
 
-```python
+```r
 # Example: Test-driven approach to exploratory data analysis
 def test_driven_eda():
     """Implement EDA with upfront testing requirements"""
@@ -607,7 +625,7 @@ def test_driven_eda():
 
 ### 2. Continuous Testing in Data Pipelines
 
-```python
+```r
 import airflow
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
@@ -667,7 +685,7 @@ def transform_and_test_data():
 
 ### 3. Statistical Testing Framework
 
-```python
+```r
 class StatisticalValidationTests:
     """Statistical validation and assumption testing"""
 
