@@ -26,7 +26,8 @@
       "Read(//private/tmp/test_uninstall/**)",
       "Bash(cp:*)",
       "Bash(chmod:*)",
-      "Bash(./zzcollab-uninstall.sh:*)"
+      "Bash(./zzcollab-uninstall.sh:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
