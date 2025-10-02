@@ -236,47 +236,52 @@ Princeton University researchers Sayash Kapoor and Arvind Narayanan conducted a 
 
 **The Testing Solution:**
 ```r
-def test_temporal_integrity():
-    """Ensure no future information leaks into training"""
-    train_max_date = train_data['date'].max()
-    test_min_date = test_data['date'].min()
+# Ensure no future information leaks into training
+test_that("temporal integrity is maintained", {
+  train_max_date <- max(train_data$date)
+  test_min_date <- min(test_data$date)
 
-    assert train_max_date < test_min_date,
-           "Training data contains future information"
+  expect_lt(train_max_date, test_min_date,
+            info = "Training data contains future information")
+})
 
-def test_sample_independence():
-    """Verify no sample overlap between train/test"""
-    train_ids = set(train_data['sample_id'])
-    test_ids = set(test_data['sample_id'])
+# Verify no sample overlap between train/test
+test_that("train and test samples are independent", {
+  train_ids <- unique(train_data$sample_id)
+  test_ids <- unique(test_data$sample_id)
 
-    overlap = train_ids.intersection(test_ids)
-    assert len(overlap) == 0, f"Sample overlap detected: {overlap}"
+  overlap <- intersect(train_ids, test_ids)
+  expect_equal(length(overlap), 0,
+               info = paste("Sample overlap detected:", paste(overlap, collapse = ", ")))
+})
 
-def test_feature_leakage():
-    """Check for features that perfectly predict target"""
-    for feature in features:
-        correlation = abs(np.corrcoef(X[feature], y)[0,1])
-        assert correlation < 0.95,
-               f"Potential target leakage in feature {feature}: {correlation}"
+# Check for features that perfectly predict target
+test_that("no feature leakage exists", {
+  for (feature in features) {
+    correlation <- abs(cor(X[[feature]], y))
+    expect_lt(correlation, 0.95,
+              info = sprintf("Potential target leakage in feature %s: %.3f",
+                           feature, correlation))
+  }
+})
 
-def test_preprocessing_order():
-    """Ensure preprocessing doesn't leak information"""
-    # Preprocessing should be fit only on training data
-    preprocessor = StandardScaler()
+# Ensure preprocessing doesn't leak information
+test_that("preprocessing order prevents information leakage", {
+  # Preprocessing should be fit only on training data
+  # This would be wrong - fitting on full dataset:
+  # preproc <- preProcess(full_dataset, method = "center")
 
-    # This would be wrong - fitting on full dataset
-    # preprocessor.fit(full_dataset)
+  # Correct approach - fit only on training data
+  preproc <- preProcess(X_train, method = c("center", "scale"))
+  X_train_scaled <- predict(preproc, X_train)
+  X_test_scaled <- predict(preproc, X_test)
 
-    # Correct approach - fit only on training data
-    preprocessor.fit(X_train)
-    X_train_scaled = preprocessor.transform(X_train)
-    X_test_scaled = preprocessor.transform(X_test)
-
-    # Test that test scaling uses only training statistics
-    train_mean = X_train.mean()
-    test_transform_mean = preprocessor.mean_
-    assert np.allclose(train_mean, test_transform_mean),
-           "Preprocessor fitted on test data"
+  # Test that test scaling uses only training statistics
+  train_mean <- colMeans(X_train)
+  test_transform_mean <- preproc$mean
+  expect_equal(train_mean, test_transform_mean,
+               info = "Preprocessor fitted on test data")
+})
 ```
 
 **Reference:** "Leakage and the reproducibility crisis in machine-learning-based science" (ScienceDirect, 2023)
@@ -290,30 +295,34 @@ In February 2024, Air Canada was legally ordered to honor incorrect bereavement 
 
 **The Testing Gap:**
 ```r
-def test_policy_consistency():
-    """Ensure chatbot responses match official policies"""
-    policy_database = load_official_policies()
+# Ensure chatbot responses match official policies
+test_that("chatbot responses are consistent with policies", {
+  policy_database <- load_official_policies()
 
-    test_queries = [
-        "Can I get bereavement discount after booking?",
-        "What are the refund rules for cancelled flights?",
-        "How do I change my ticket without fees?"
-    ]
+  test_queries <- c(
+    "Can I get bereavement discount after booking?",
+    "What are the refund rules for cancelled flights?",
+    "How do I change my ticket without fees?"
+  )
 
-    for query in test_queries:
-        chatbot_response = chatbot.respond(query)
-        official_policy = policy_database.get_policy(query)
+  for (query in test_queries) {
+    chatbot_response <- chatbot$respond(query)
+    official_policy <- policy_database$get_policy(query)
 
-        assert responses_are_consistent(chatbot_response, official_policy),
-               f"Policy inconsistency for query: {query}"
+    expect_true(responses_are_consistent(chatbot_response, official_policy),
+                info = paste("Policy inconsistency for query:", query))
+  }
+})
 
-def test_liability_statements():
-    """Ensure chatbot doesn't make unauthorized commitments"""
-    responses = chatbot.respond_to_batch(test_scenarios)
+# Ensure chatbot doesn't make unauthorized commitments
+test_that("chatbot avoids unauthorized commitments", {
+  responses <- chatbot$respond_to_batch(test_scenarios)
 
-    for response in responses:
-        assert not contains_unauthorized_commitment(response),
-               f"Unauthorized commitment detected: {response}"
+  for (response in responses) {
+    expect_false(contains_unauthorized_commitment(response),
+                 info = paste("Unauthorized commitment detected:", response))
+  }
+})
 ```
 
 ### McDonald's AI Drive-Thru Failure (2024)
@@ -323,32 +332,37 @@ McDonald's ended its three-year AI drive-thru partnership with IBM after viral v
 
 **The Testing Gap:**
 ```r
-def test_order_quantity_limits():
-    """Test reasonable quantity limits on orders"""
-    test_orders = [
-        "I want 300 chicken nuggets",
-        "Give me 50 Big Macs",
-        "I'll take 100 apple pies"
-    ]
+# Test reasonable quantity limits on orders
+test_that("order quantities are within reasonable limits", {
+  test_orders <- c(
+    "I want 300 chicken nuggets",
+    "Give me 50 Big Macs",
+    "I'll take 100 apple pies"
+  )
 
-    for order in test_orders:
-        processed_order = ai_system.process_order(order)
+  for (order in test_orders) {
+    processed_order <- ai_system$process_order(order)
 
-        for item, quantity in processed_order.items():
-            max_reasonable = get_reasonable_limit(item)
-            assert quantity <= max_reasonable,
-                   f"Unreasonable quantity for {item}: {quantity}"
+    for (item in names(processed_order)) {
+      quantity <- processed_order[[item]]
+      max_reasonable <- get_reasonable_limit(item)
+      expect_lte(quantity, max_reasonable,
+                 info = sprintf("Unreasonable quantity for %s: %d", item, quantity))
+    }
+  }
+})
 
-def test_customer_correction_handling():
-    """Test system response to customer corrections"""
-    initial_order = "I want chicken nuggets"
-    ai_response = ai_system.process_order(initial_order)
+# Test system response to customer corrections
+test_that("customer corrections are properly handled", {
+  initial_order <- "I want chicken nuggets"
+  ai_response <- ai_system$process_order(initial_order)
 
-    correction = "No, I said I DON'T want chicken nuggets"
-    corrected_order = ai_system.handle_correction(ai_response, correction)
+  correction <- "No, I said I DON'T want chicken nuggets"
+  corrected_order <- ai_system$handle_correction(ai_response, correction)
 
-    assert "chicken nuggets" not in corrected_order,
-           "Failed to process customer correction"
+  expect_false(grepl("chicken nuggets", corrected_order, ignore.case = TRUE),
+               info = "Failed to process customer correction")
+})
 ```
 
 **Reference:** Various news reports from 2024 covering these AI deployment failures
@@ -364,28 +378,35 @@ This crisis demonstrates that even peer-reviewed research with positive results 
 
 **The Testing Philosophy:**
 ```r
-def test_effect_size_stability():
-    """Test whether effect sizes are stable across samples"""
-    original_effect = calculate_effect_size(original_data)
-    replication_effect = calculate_effect_size(replication_data)
+# Test whether effect sizes are stable across samples
+test_that("effect sizes are stable across replications", {
+  original_effect <- calculate_effect_size(original_data)
+  replication_effect <- calculate_effect_size(replication_data)
 
-    # Effect sizes should be reasonably similar
-    effect_ratio = replication_effect / original_effect
-    assert 0.5 < effect_ratio < 2.0,
-           f"Effect size changed dramatically: {effect_ratio}"
+  # Effect sizes should be reasonably similar
+  effect_ratio <- replication_effect / original_effect
+  expect_true(effect_ratio > 0.5 && effect_ratio < 2.0,
+              info = sprintf("Effect size changed dramatically: %.2f", effect_ratio))
+})
 
-def test_statistical_power():
-    """Ensure studies have adequate power to detect effects"""
-    power = calculate_statistical_power(sample_size, effect_size, alpha=0.05)
-    assert power > 0.8, f"Insufficient statistical power: {power}"
+# Ensure studies have adequate power to detect effects
+test_that("statistical power is adequate", {
+  library(pwr)
+  power <- pwr.t.test(n = sample_size, d = effect_size,
+                      sig.level = 0.05, type = "two.sample")$power
+  expect_gt(power, 0.8,
+            info = sprintf("Insufficient statistical power: %.2f", power))
+})
 
-def test_multiple_comparisons():
-    """Check for multiple comparisons issues"""
-    num_tests = count_statistical_tests(analysis_code)
-    corrected_alpha = 0.05 / num_tests  # Bonferroni correction
+# Check for multiple comparisons issues
+test_that("multiple comparisons are properly corrected", {
+  num_tests <- count_statistical_tests(analysis_code)
+  corrected_alpha <- 0.05 / num_tests  # Bonferroni correction
 
-    significant_results = count_significant_results(results, corrected_alpha)
-    assert significant_results > 0, "No significant results after correction"
+  significant_results <- count_significant_results(results, corrected_alpha)
+  expect_gt(significant_results, 0,
+            info = "No significant results after correction")
+})
 ```
 
 **Reference:** Multiple sources on the replication crisis in psychology (2015-2023)
@@ -405,24 +426,26 @@ Recent industry analysis reveals:
 
 ```r
 # Example: Business impact calculation
-def calculate_testing_roi():
-    """Calculate ROI of comprehensive testing practices"""
+calculate_testing_roi <- function() {
+  # Costs
+  testing_development_time <- 40  # hours
+  developer_rate <- 150  # $/hour
+  testing_cost <- testing_development_time * developer_rate  # $6,000
 
-    # Costs
-    testing_development_time = 40  # hours
-    developer_rate = 150  # $/hour
-    testing_cost = testing_development_time * developer_rate  # $6,000
+  # Benefits (conservative estimates)
+  probability_of_major_bug <- 0.15  # 15% chance without tests
+  cost_of_production_bug <- 500000  # $500K average cost
+  expected_cost_without_tests <- probability_of_major_bug * cost_of_production_bug
 
-    # Benefits (conservative estimates)
-    probability_of_major_bug = 0.15  # 15% chance without tests
-    cost_of_production_bug = 500000  # $500K average cost
-    expected_cost_without_tests = probability_of_major_bug * cost_of_production_bug
+  # ROI calculation
+  expected_savings <- expected_cost_without_tests  # $75,000
+  roi <- (expected_savings - testing_cost) / testing_cost * 100
 
-    # ROI calculation
-    expected_savings = expected_cost_without_tests  # $75,000
-    roi = (expected_savings - testing_cost) / testing_cost * 100
-
-    return f"ROI: {roi:.0f}% (${expected_savings:,.0f} savings for ${testing_cost:,.0f} investment)"
+  sprintf("ROI: %.0f%% ($%s savings for $%s investment)",
+          roi,
+          format(expected_savings, big.mark = ",", scientific = FALSE),
+          format(testing_cost, big.mark = ",", scientific = FALSE))
+}
 
 print(calculate_testing_roi())
 # Output: "ROI: 1150% ($75,000 savings for $6,000 investment)"
@@ -433,162 +456,174 @@ print(calculate_testing_roi())
 ### 1. Data Quality Testing
 
 ```r
-import pandas as pd
-import numpy as np
-from scipy import stats
-import pytest
+library(testthat)
+library(dplyr)
 
-class DataQualityTests:
-    """Comprehensive data quality testing suite"""
+# Comprehensive data quality testing suite
 
-    def test_data_completeness(self, df):
-        """Test for acceptable missing data levels"""
-        missing_percentages = df.isnull().sum() / len(df)
-        critical_columns = ['id', 'target_variable', 'key_features']
+test_that("data completeness is within acceptable levels", {
+  missing_percentages <- colSums(is.na(df)) / nrow(df)
+  critical_columns <- c('id', 'target_variable', 'key_features')
 
-        for col in critical_columns:
-            if col in df.columns:
-                assert missing_percentages[col] < 0.05,
-                       f"Too much missing data in {col}: {missing_percentages[col]:.1%}"
+  for (col in critical_columns) {
+    if (col %in% names(df)) {
+      expect_lt(missing_percentages[col], 0.05,
+                info = sprintf("Too much missing data in %s: %.1f%%",
+                             col, missing_percentages[col] * 100))
+    }
+  }
+})
 
-    def test_data_ranges(self, df):
-        """Test that numeric data falls within expected ranges"""
-        numeric_columns = df.select_dtypes(include=[np.number]).columns
+test_that("numeric data falls within expected ranges", {
+  numeric_columns <- names(df)[sapply(df, is.numeric)]
 
-        for col in numeric_columns:
-            q1, q99 = df[col].quantile([0.01, 0.99])
-            outlier_rate = ((df[col] < q1) | (df[col] > q99)).mean()
+  for (col in numeric_columns) {
+    q1 <- quantile(df[[col]], 0.01, na.rm = TRUE)
+    q99 <- quantile(df[[col]], 0.99, na.rm = TRUE)
+    outlier_rate <- mean(df[[col]] < q1 | df[[col]] > q99, na.rm = TRUE)
 
-            assert outlier_rate < 0.1,
-                   f"High outlier rate in {col}: {outlier_rate:.1%}"
+    expect_lt(outlier_rate, 0.1,
+              info = sprintf("High outlier rate in %s: %.1f%%",
+                           col, outlier_rate * 100))
+  }
+})
 
-    def test_categorical_distributions(self, df):
-        """Test categorical variable distributions"""
-        categorical_columns = df.select_dtypes(include=['object']).columns
+test_that("categorical distributions are reasonable", {
+  categorical_columns <- names(df)[sapply(df, is.character) | sapply(df, is.factor)]
 
-        for col in categorical_columns:
-            value_counts = df[col].value_counts()
-            dominant_category_pct = value_counts.iloc[0] / len(df)
+  for (col in categorical_columns) {
+    value_counts <- table(df[[col]])
+    dominant_category_pct <- max(value_counts) / nrow(df)
 
-            assert dominant_category_pct < 0.95,
-                   f"Single category dominates {col}: {dominant_category_pct:.1%}"
+    expect_lt(dominant_category_pct, 0.95,
+              info = sprintf("Single category dominates %s: %.1f%%",
+                           col, dominant_category_pct * 100))
+  }
+})
 
-    def test_temporal_consistency(self, df):
-        """Test temporal data for consistency"""
-        if 'date' in df.columns:
-            dates = pd.to_datetime(df['date'])
+test_that("temporal data is consistent", {
+  if ('date' %in% names(df)) {
+    dates <- as.POSIXct(df$date)
 
-            # Check for future dates
-            assert dates.max() <= pd.Timestamp.now(),
-                   "Future dates detected in dataset"
+    # Check for future dates
+    expect_lte(max(dates, na.rm = TRUE), Sys.time(),
+               info = "Future dates detected in dataset")
 
-            # Check for reasonable date range
-            assert dates.min() > pd.Timestamp('1900-01-01'),
-                   "Unreasonably old dates detected"
+    # Check for reasonable date range
+    expect_gt(min(dates, na.rm = TRUE), as.POSIXct('1900-01-01'),
+              info = "Unreasonably old dates detected")
+  }
+})
 ```
 
 ### 2. Model Performance Testing
 
 ```r
-class ModelPerformanceTests:
-    """Comprehensive model testing suite"""
+# Comprehensive model testing suite
 
-    def test_prediction_range(self, model, X_test):
-        """Test that predictions are within reasonable ranges"""
-        predictions = model.predict(X_test)
+test_that("predictions are within reasonable ranges", {
+  predictions <- predict(model, X_test)
 
-        # For classification: probabilities should be [0,1]
-        if hasattr(model, 'predict_proba'):
-            probabilities = model.predict_proba(X_test)
-            assert np.all((probabilities >= 0) & (probabilities <= 1)),
-                   "Probabilities outside [0,1] range"
+  # For classification: probabilities should be [0,1]
+  if ("predict_proba" %in% names(model) || inherits(model, "classification")) {
+    probabilities <- predict(model, X_test, type = "prob")
+    expect_true(all(probabilities >= 0 & probabilities <= 1),
+                info = "Probabilities outside [0,1] range")
+  }
 
-        # For regression: check for reasonable ranges
-        else:
-            assert np.all(np.isfinite(predictions)),
-                   "Non-finite predictions detected"
+  # For regression: check for reasonable ranges
+  else {
+    expect_true(all(is.finite(predictions)),
+                info = "Non-finite predictions detected")
+  }
+})
 
-    def test_model_stability(self, model, X_test):
-        """Test model stability across multiple runs"""
-        pred1 = model.predict(X_test)
-        pred2 = model.predict(X_test)
+test_that("model predictions are deterministic", {
+  pred1 <- predict(model, X_test)
+  pred2 <- predict(model, X_test)
 
-        # Predictions should be identical for same input
-        np.testing.assert_array_equal(pred1, pred2,
-                                    "Model predictions are not deterministic")
+  # Predictions should be identical for same input
+  expect_equal(pred1, pred2,
+               info = "Model predictions are not deterministic")
+})
 
-    def test_invariance_properties(self, model, X_test):
-        """Test that model satisfies expected invariances"""
-        original_pred = model.predict(X_test)
+test_that("model satisfies expected invariances", {
+  original_pred <- predict(model, X_test)
 
-        # Example: scaling invariant features shouldn't change predictions
-        scaled_features = X_test.copy()
-        scaled_features['age'] *= 1.1  # 10% scale change
-        scaled_pred = model.predict(scaled_features)
+  # Example: scaling invariant features shouldn't change predictions
+  scaled_features <- X_test
+  scaled_features$age <- scaled_features$age * 1.1  # 10% scale change
+  scaled_pred <- predict(model, scaled_features)
 
-        correlation = np.corrcoef(original_pred, scaled_pred)[0,1]
-        assert correlation > 0.95,
-               f"Model not stable to feature scaling: {correlation}"
+  correlation <- cor(original_pred, scaled_pred)
+  expect_gt(correlation, 0.95,
+            info = sprintf("Model not stable to feature scaling: %.3f", correlation))
+})
 
-    def test_bias_detection(self, model, X_test, protected_attributes):
-        """Test for bias across protected groups"""
-        predictions = model.predict(X_test)
+test_that("no significant bias across protected groups", {
+  predictions <- predict(model, X_test)
+  protected_attributes <- c("race", "gender", "age_group")
 
-        for attr in protected_attributes:
-            if attr in X_test.columns:
-                groups = X_test[attr].unique()
-                group_predictions = [predictions[X_test[attr] == group].mean()
-                                   for group in groups]
+  for (attr in protected_attributes) {
+    if (attr %in% names(X_test)) {
+      groups <- unique(X_test[[attr]])
+      group_predictions <- sapply(groups, function(group) {
+        mean(predictions[X_test[[attr]] == group])
+      })
 
-                # Check for significant differences between groups
-                max_diff = max(group_predictions) - min(group_predictions)
-                assert max_diff < 0.1,
-                       f"Potential bias detected for {attr}: {max_diff}"
+      # Check for significant differences between groups
+      max_diff <- max(group_predictions) - min(group_predictions)
+      expect_lt(max_diff, 0.1,
+                info = sprintf("Potential bias detected for %s: %.3f", attr, max_diff))
+    }
+  }
+})
 ```
 
 ### 3. Pipeline Integration Testing
 
 ```r
-class PipelineIntegrationTests:
-    """End-to-end pipeline testing"""
+# End-to-end pipeline testing
 
-    def test_full_pipeline_execution(self, pipeline, sample_data):
-        """Test that complete pipeline executes without errors"""
-        try:
-            result = pipeline.fit_transform(sample_data)
-            assert result is not None, "Pipeline returned None"
-            assert len(result) > 0, "Pipeline returned empty result"
-        except Exception as e:
-            pytest.fail(f"Pipeline execution failed: {str(e)}")
+test_that("complete pipeline executes without errors", {
+  result <- tryCatch({
+    pipeline_fit_transform(pipeline, sample_data)
+  }, error = function(e) {
+    fail(sprintf("Pipeline execution failed: %s", e$message))
+  })
 
-    def test_pipeline_reproducibility(self, pipeline, sample_data):
-        """Test that pipeline produces consistent results"""
-        np.random.seed(42)
-        result1 = pipeline.fit_transform(sample_data.copy())
+  expect_false(is.null(result), info = "Pipeline returned NULL")
+  expect_gt(nrow(result), 0, info = "Pipeline returned empty result")
+})
 
-        np.random.seed(42)
-        result2 = pipeline.fit_transform(sample_data.copy())
+test_that("pipeline produces consistent results", {
+  set.seed(42)
+  result1 <- pipeline_fit_transform(pipeline, sample_data)
 
-        np.testing.assert_array_almost_equal(result1, result2,
-                                           err_msg="Pipeline not reproducible")
+  set.seed(42)
+  result2 <- pipeline_fit_transform(pipeline, sample_data)
 
-    def test_pipeline_memory_usage(self, pipeline, large_dataset):
-        """Test pipeline memory efficiency"""
-        import psutil
-        import os
+  expect_equal(result1, result2, tolerance = 1e-7,
+               info = "Pipeline not reproducible")
+})
 
-        process = psutil.Process(os.getpid())
-        memory_before = process.memory_info().rss / 1024 / 1024  # MB
+test_that("pipeline memory usage is efficient", {
+  # Get memory before
+  gc()  # Garbage collection
+  memory_before <- pryr::mem_used() / 1024^2  # MB
 
-        result = pipeline.transform(large_dataset)
+  result <- pipeline_transform(pipeline, large_dataset)
 
-        memory_after = process.memory_info().rss / 1024 / 1024  # MB
-        memory_increase = memory_after - memory_before
+  # Get memory after
+  gc()
+  memory_after <- pryr::mem_used() / 1024^2  # MB
+  memory_increase <- memory_after - memory_before
 
-        # Should not increase memory by more than 2x dataset size
-        dataset_size_mb = large_dataset.memory_usage(deep=True).sum() / 1024 / 1024
-        assert memory_increase < dataset_size_mb * 2,
-               f"Excessive memory usage: {memory_increase:.1f}MB increase"
+  # Should not increase memory by more than 2x dataset size
+  dataset_size_mb <- object.size(large_dataset) / 1024^2
+  expect_lt(memory_increase, dataset_size_mb * 2,
+            info = sprintf("Excessive memory usage: %.1fMB increase", memory_increase))
+})
 ```
 
 ## Best Practices: Implementing Comprehensive Testing
@@ -597,130 +632,146 @@ class PipelineIntegrationTests:
 
 ```r
 # Example: Test-driven approach to exploratory data analysis
-def test_driven_eda():
-    """Implement EDA with upfront testing requirements"""
+test_driven_eda <- function() {
+  # Define expectations BEFORE looking at data
+  expected_schema <- list(
+    customer_id = "integer",
+    age = "integer",
+    income = "numeric",
+    churn = "logical"
+  )
 
-    # Define expectations BEFORE looking at data
-    expected_schema = {
-        'customer_id': 'int64',
-        'age': 'int64',
-        'income': 'float64',
-        'churn': 'bool'
-    }
+  expected_ranges <- list(
+    age = c(18, 100),
+    income = c(0, 1000000),
+    churn = c(0, 1)
+  )
 
-    expected_ranges = {
-        'age': (18, 100),
-        'income': (0, 1000000),
-        'churn': (0, 1)
-    }
+  # Load and validate data
+  df <- load_customer_data()
+  validate_schema(df, expected_schema)
+  validate_ranges(df, expected_ranges)
 
-    # Load and validate data
-    df = load_customer_data()
-    validate_schema(df, expected_schema)
-    validate_ranges(df, expected_ranges)
-
-    # Only then proceed with analysis
-    return perform_eda(df)
+  # Only then proceed with analysis
+  perform_eda(df)
+}
 ```
 
 ### 2. Continuous Testing in Data Pipelines
 
 ```r
-import airflow
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+library(targets)
 
-def create_tested_pipeline():
-    """Create Airflow DAG with integrated testing"""
+# Create targets pipeline with integrated testing
+list(
+  # Extract data with immediate validation
+  tar_target(
+    raw_data,
+    {
+      data <- extract_customer_data()
+      # Immediate validation
+      run_data_quality_tests(data)
+      data
+    }
+  ),
 
-    dag = DAG(
-        'customer_analysis_pipeline',
-        schedule_interval='@daily',
-        default_args={'retries': 1}
-    )
+  # Transform data with transformation testing
+  tar_target(
+    transformed_data,
+    {
+      processed <- apply_transformations(raw_data)
+      # Test transformations
+      test_transformation_logic(raw_data, processed)
+      processed
+    }
+  ),
 
-    # Each step includes validation
-    data_extraction = PythonOperator(
-        task_id='extract_data',
-        python_callable=extract_and_validate_data,
-        dag=dag
-    )
+  # Train model with validation
+  tar_target(
+    trained_model,
+    {
+      model <- train_model(transformed_data)
+      # Validate model
+      validate_model_performance(model, transformed_data)
+      model
+    }
+  )
+)
 
-    data_transformation = PythonOperator(
-        task_id='transform_data',
-        python_callable=transform_and_test_data,
-        dag=dag
-    )
+# Extract data with immediate validation
+extract_and_validate_data <- function() {
+  data <- extract_customer_data()
 
-    model_training = PythonOperator(
-        task_id='train_model',
-        python_callable=train_and_validate_model,
-        dag=dag
-    )
+  # Immediate validation
+  run_data_quality_tests(data)
 
-    # Set dependencies
-    data_extraction >> data_transformation >> model_training
+  data
+}
 
-    return dag
+# Transform data with transformation testing
+transform_and_test_data <- function(raw_data) {
+  transformed_data <- apply_transformations(raw_data)
 
-def extract_and_validate_data():
-    """Extract data with immediate validation"""
-    data = extract_customer_data()
+  # Test transformations
+  test_transformation_logic(raw_data, transformed_data)
 
-    # Immediate validation
-    run_data_quality_tests(data)
-
-    return data
-
-def transform_and_test_data():
-    """Transform data with transformation testing"""
-    raw_data = load_raw_data()
-    transformed_data = apply_transformations(raw_data)
-
-    # Test transformations
-    test_transformation_logic(raw_data, transformed_data)
-
-    return transformed_data
+  transformed_data
+}
 ```
 
 ### 3. Statistical Testing Framework
 
 ```r
-class StatisticalValidationTests:
-    """Statistical validation and assumption testing"""
+# Statistical validation and assumption testing
 
-    def test_distribution_assumptions(self, data, assumed_distribution='normal'):
-        """Test whether data follows assumed distribution"""
-        if assumed_distribution == 'normal':
-            statistic, p_value = stats.normaltest(data)
-            assert p_value > 0.05,
-                   f"Data not normally distributed: p={p_value:.4f}"
+test_that("data follows assumed distribution", {
+  assumed_distribution <- "normal"  # or "uniform"
 
-        elif assumed_distribution == 'uniform':
-            statistic, p_value = stats.kstest(data, 'uniform')
-            assert p_value > 0.05,
-                   f"Data not uniformly distributed: p={p_value:.4f}"
+  if (assumed_distribution == "normal") {
+    shapiro_test <- shapiro.test(data)
+    expect_gt(shapiro_test$p.value, 0.05,
+              info = sprintf("Data not normally distributed: p=%.4f",
+                           shapiro_test$p.value))
+  } else if (assumed_distribution == "uniform") {
+    ks_test <- ks.test(data, "punif")
+    expect_gt(ks_test$p.value, 0.05,
+              info = sprintf("Data not uniformly distributed: p=%.4f",
+                           ks_test$p.value))
+  }
+})
 
-    def test_independence_assumption(self, x, y):
-        """Test independence assumption between variables"""
-        if len(np.unique(x)) < 10 and len(np.unique(y)) < 10:
-            # Categorical variables - use chi-square test
-            chi2, p_value, _, _ = stats.chi2_contingency(pd.crosstab(x, y))
-            assert p_value < 0.05,
-                   f"Variables are independent: p={p_value:.4f}"
-        else:
-            # Continuous variables - use correlation test
-            correlation, p_value = stats.pearsonr(x, y)
-            assert abs(correlation) > 0.1,
-                   f"Variables weakly correlated: r={correlation:.3f}"
+test_that("independence assumption is validated", {
+  if (length(unique(x)) < 10 && length(unique(y)) < 10) {
+    # Categorical variables - use chi-square test
+    contingency_table <- table(x, y)
+    chi2_test <- chisq.test(contingency_table)
+    expect_lt(chi2_test$p.value, 0.05,
+              info = sprintf("Variables are independent: p=%.4f",
+                           chi2_test$p.value))
+  } else {
+    # Continuous variables - use correlation test
+    cor_test <- cor.test(x, y)
+    correlation <- cor_test$estimate
+    expect_gt(abs(correlation), 0.1,
+              info = sprintf("Variables weakly correlated: r=%.3f",
+                           correlation))
+  }
+})
 
-    def test_sample_size_adequacy(self, data, effect_size=0.5, power=0.8):
-        """Test whether sample size is adequate for analysis"""
-        from statsmodels.stats.power import ttest_power
+test_that("sample size is adequate for analysis", {
+  library(pwr)
+  effect_size <- 0.5
+  desired_power <- 0.8
 
-        actual_power = ttest_power(effect_size, len(data), 0.05)
-        assert actual_power >= power,
-               f"Insufficient power: {actual_power:.2f} < {power}"
+  actual_power <- pwr.t.test(n = length(data),
+                             d = effect_size,
+                             sig.level = 0.05,
+                             type = "one.sample")$power
+
+  expect_gte(actual_power, desired_power,
+             info = sprintf("Insufficient power: %.2f < %.2f",
+                          actual_power, desired_power))
+})
 ```
 
 ## Implementation Roadmap: Making Testing Standard Practice
