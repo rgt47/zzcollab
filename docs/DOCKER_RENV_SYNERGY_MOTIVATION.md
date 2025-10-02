@@ -572,7 +572,7 @@ zzcollab -i -t myteam -p climate-analysis -P analysis -B rstudio -S
 
 # Automatically generates:
 # 1. Dockerfile with rocker/rstudio:4.3.1 base
-# 2. renv.lock with paradigm-appropriate packages
+# 2. renv.lock with packages based on build mode (fast/standard/comprehensive)
 # 3. Multi-stage build for development/production
 # 4. GitHub Actions for environment validation
 # 5. Makefile targets for container management
@@ -583,7 +583,7 @@ zzcollab -i -t myteam -p climate-analysis -P analysis -B rstudio -S
 # ZZCOLLAB auto-generated Dockerfile
 FROM rocker/rstudio:4.3.1
 
-# Install system dependencies for analysis paradigm
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libgdal-dev \
     libgeos-dev \

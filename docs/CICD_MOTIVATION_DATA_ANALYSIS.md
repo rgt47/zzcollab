@@ -235,7 +235,7 @@ The ZZCOLLAB framework addresses many common CI/CD challenges through integrated
 #### **Environment Reproducibility**
 - **Docker-based development** environments ensure consistency across team members
 - **Dependency tracking** with renv automatically captures package versions
-- **Multi-paradigm support** (analysis, manuscript, package) with appropriate CI/CD workflows for each
+- **Unified structure support** with flexible CI/CD workflows for entire research lifecycle
 
 #### **Automated Validation**
 - **Pre-commit hooks** validate dependencies and code quality
