@@ -829,3 +829,381 @@ EOF
 #=============================================================================
 # MODULE VALIDATION AND LOADING
 #=============================================================================
+
+#=============================================================================
+# CONFIGURATION SYSTEM GUIDE
+#=============================================================================
+
+# Function: show_config_help
+# Purpose: Configuration system comprehensive guide
+show_config_help() {
+    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
+        show_config_help_content
+    else
+        show_config_help_content | "${PAGER:-less}" -R
+    fi
+}
+
+show_config_help_content() {
+    cat << 'EOF'
+⚙️ CONFIGURATION SYSTEM GUIDE
+
+Stop typing the same flags repeatedly! Configure zzcollab once, use everywhere.
+
+═══════════════════════════════════════════════════════════════════════════
+WHY USE CONFIGURATION?
+═══════════════════════════════════════════════════════════════════════════
+
+WITHOUT CONFIG (repetitive):
+  zzcollab -t myname -p project1 -S -d ~/dotfiles
+  zzcollab -t myname -p project2 -S -d ~/dotfiles
+  zzcollab -t myname -p project3 -S -d ~/dotfiles
+  # Typing "myname" and "~/dotfiles" every time!
+
+WITH CONFIG (simple):
+  zzcollab --config set team-name "myname"
+  zzcollab --config set dotfiles-dir "~/dotfiles"
+  zzcollab --config set build-mode "standard"
+
+  # Then just:
+  zzcollab -p project1
+  zzcollab -p project2
+  zzcollab -p project3
+
+═══════════════════════════════════════════════════════════════════════════
+QUICK START: ESSENTIAL CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════
+
+One-time setup (3 commands):
+
+  zzcollab --config set team-name "yourname"
+  zzcollab --config set build-mode "standard"
+  zzcollab --config set dotfiles-dir "~/dotfiles"
+
+That's it! Now all future projects use these defaults.
+
+═══════════════════════════════════════════════════════════════════════════
+CONFIGURATION COMMANDS
+═══════════════════════════════════════════════════════════════════════════
+
+Initialize configuration file:
+  zzcollab --config init
+
+Set a value:
+  zzcollab --config set SETTING VALUE
+
+Get a value:
+  zzcollab --config get SETTING
+
+List all settings:
+  zzcollab --config list
+
+Reset to defaults:
+  zzcollab --config reset
+
+Validate configuration:
+  zzcollab --config validate
+
+═══════════════════════════════════════════════════════════════════════════
+ALL CONFIGURABLE SETTINGS
+═══════════════════════════════════════════════════════════════════════════
+
+Team/Project Settings:
+  team-name          Your namespace for Docker images
+  project-name       Default project name (rarely used)
+  github-account     GitHub username (defaults to team-name)
+
+Build Settings:
+  build-mode         minimal, fast, standard, comprehensive
+  
+Dotfiles Settings:
+  dotfiles-dir       Path to dotfiles directory (e.g., ~/dotfiles)
+  dotfiles-nodot     Use if files don't have leading dots
+
+Automation Settings:
+  auto-github        Automatically create GitHub repos (true/false)
+  skip-confirmation  Skip confirmation prompts (true/false)
+
+═══════════════════════════════════════════════════════════════════════════
+CONFIGURATION FILE LOCATIONS
+═══════════════════════════════════════════════════════════════════════════
+
+zzcollab uses a 4-level hierarchy (highest priority first):
+
+1. PROJECT CONFIG (highest priority)
+   Location: ./zzcollab.yaml (in project directory)
+   Purpose: Team-specific settings
+   Use for: Shared team configuration
+
+2. USER CONFIG
+   Location: ~/.zzcollab/config.yaml
+   Purpose: Personal defaults across all projects
+   Use for: Your name, dotfiles path, preferences
+
+3. SYSTEM CONFIG
+   Location: /etc/zzcollab/config.yaml  
+   Purpose: Organization-wide defaults
+   Use for: Lab/institution standards
+
+4. BUILT-IN DEFAULTS (lowest priority)
+   Location: Hardcoded in zzcollab
+   Purpose: Sensible fallbacks
+
+Example: If you set team-name in user config (~/.zzcollab/config.yaml),
+it applies to all projects UNLESS a project has its own zzcollab.yaml.
+
+═══════════════════════════════════════════════════════════════════════════
+COMPLETE CONFIGURATION EXAMPLES
+═══════════════════════════════════════════════════════════════════════════
+
+Example 1: Solo Researcher (Minimal Setup)
+──────────────────────────────────────────────────────────────────────────
+zzcollab --config set team-name "jsmith"
+zzcollab --config set build-mode "standard"
+
+# Optional but recommended:
+zzcollab --config set dotfiles-dir "~/dotfiles"
+
+Example 2: Solo Researcher (Complete Setup)
+──────────────────────────────────────────────────────────────────────────
+zzcollab --config set team-name "jsmith"
+zzcollab --config set github-account "jsmith"
+zzcollab --config set build-mode "fast"
+zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab --config set auto-github false
+
+Example 3: Team Member
+──────────────────────────────────────────────────────────────────────────
+zzcollab --config set team-name "labteam"
+zzcollab --config set github-account "jsmith"
+zzcollab --config set build-mode "standard"
+zzcollab --config set dotfiles-dir "~/dotfiles"
+
+# Now joining team projects is simple:
+zzcollab -t labteam -p study -I rstudio
+# Uses your dotfiles automatically!
+
+Example 4: Minimal Build for Speed
+──────────────────────────────────────────────────────────────────────────
+zzcollab --config set team-name "myname"
+zzcollab --config set build-mode "minimal"
+
+# Projects build in ~30 seconds
+# Install additional packages as needed
+
+═══════════════════════════════════════════════════════════════════════════
+CONFIGURATION FILE FORMAT (YAML)
+═══════════════════════════════════════════════════════════════════════════
+
+Location: ~/.zzcollab/config.yaml
+
+Example complete configuration:
+
+defaults:
+  team_name: "jsmith"
+  github_account: "jsmith"
+  build_mode: "standard"
+  dotfiles_dir: "~/dotfiles"
+  dotfiles_nodot: false
+  auto_github: false
+  skip_confirmation: false
+
+# You can edit this file directly or use zzcollab --config commands
+
+═══════════════════════════════════════════════════════════════════════════
+COMMON CONFIGURATION WORKFLOWS
+═══════════════════════════════════════════════════════════════════════════
+
+Workflow 1: First-Time Setup
+──────────────────────────────────────────────────────────────────────────
+# Initialize config file
+zzcollab --config init
+
+# Set your essentials
+zzcollab --config set team-name "yourname"
+zzcollab --config set build-mode "standard"
+
+# Verify
+zzcollab --config list
+
+# Create first project (uses config!)
+zzcollab -p myproject
+
+Workflow 2: Check Current Settings
+──────────────────────────────────────────────────────────────────────────
+# See all settings
+zzcollab --config list
+
+# Check specific setting
+zzcollab --config get team-name
+zzcollab --config get build-mode
+
+Workflow 3: Change Build Mode
+──────────────────────────────────────────────────────────────────────────
+# Switch from standard to fast
+zzcollab --config set build-mode "fast"
+
+# Applies to all NEW projects
+# Existing projects unaffected
+
+Workflow 4: Reset Everything
+──────────────────────────────────────────────────────────────────────────
+# Start over with defaults
+zzcollab --config reset
+
+# Reconfigure
+zzcollab --config set team-name "newname"
+
+═══════════════════════════════════════════════════════════════════════════
+COMMAND-LINE FLAGS VS CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════
+
+Command-line flags OVERRIDE configuration:
+
+Configuration says:
+  team-name: "jsmith"
+  build-mode: "standard"
+
+Command:
+  zzcollab -t different -p project -F
+
+Result:
+  Uses team="different" (flag overrides config)
+  Uses build mode="fast" (-F overrides config)
+  This project only! Config unchanged.
+
+═══════════════════════════════════════════════════════════════════════════
+CONFIGURATION BEST PRACTICES
+═══════════════════════════════════════════════════════════════════════════
+
+1. Set configuration ONCE at the beginning
+   zzcollab --config set team-name "yourname"
+
+2. Use consistent team-name across projects
+   Don't: Different names per project
+   Do: One name for all your projects
+
+3. Set dotfiles-dir if you have dotfiles
+   Saves typing -d ~/dotfiles every time
+
+4. Choose build-mode based on your needs:
+   • minimal - Ultra-fast, add packages later
+   • fast - Quick development (recommended for learning)
+   • standard - Most workflows (recommended for research)
+   • comprehensive - Everything included
+
+5. Don't set auto-github to true unless you want repos for EVERYTHING
+   Better: Use -G flag when you want GitHub repo
+
+6. Keep ~/.zzcollab/config.yaml backed up
+   Simple: Store in dotfiles repo
+
+═══════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════
+
+Issue: "Configuration not being used"
+──────────────────────────────────────────────────────────────────────────
+Check:
+  zzcollab --config list
+  # Shows what's actually set
+
+Verify file exists:
+  cat ~/.zzcollab/config.yaml
+
+Re-initialize if needed:
+  zzcollab --config init
+
+Issue: "Can't find config file"
+──────────────────────────────────────────────────────────────────────────
+Create it:
+  zzcollab --config init
+
+Check permissions:
+  ls -la ~/.zzcollab/
+  # Should be readable/writable by you
+
+Issue: "Configuration seems corrupted"
+──────────────────────────────────────────────────────────────────────────
+Validate syntax:
+  zzcollab --config validate
+
+Reset and start over:
+  zzcollab --config reset
+  zzcollab --config set team-name "yourname"
+
+Issue: "Settings not persisting"
+──────────────────────────────────────────────────────────────────────────
+Check file location:
+  echo ~/.zzcollab/config.yaml
+  # Should be in your home directory
+
+Ensure yq is installed:
+  which yq
+  # Required for config management
+
+Install if missing:
+  brew install yq  # macOS
+  snap install yq  # Linux
+
+═══════════════════════════════════════════════════════════════════════════
+ADVANCED: PROJECT-LEVEL CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════
+
+Create project-specific config (for teams):
+
+Location: myproject/zzcollab.yaml
+
+Example team configuration:
+
+team:
+  name: "labteam"
+  project: "study"
+  description: "Cancer genomics analysis"
+
+variants:
+  minimal:
+    enabled: true
+  analysis:
+    enabled: true
+  bioinformatics:
+    enabled: true
+
+build:
+  use_config_variants: true
+  docker:
+    platform: "auto"
+
+This overrides user config for THIS PROJECT ONLY.
+
+═══════════════════════════════════════════════════════════════════════════
+QUICK REFERENCE
+═══════════════════════════════════════════════════════════════════════════
+
+Essential commands:
+  zzcollab --config init                      # Create config file
+  zzcollab --config set team-name "name"      # Set your name
+  zzcollab --config set build-mode "standard" # Set build mode
+  zzcollab --config list                      # See all settings
+  zzcollab --config get team-name             # Get one setting
+
+Files:
+  ~/.zzcollab/config.yaml    # Your personal config
+  ./zzcollab.yaml            # Project-specific config
+
+Hierarchy (high to low priority):
+  1. Command-line flags
+  2. Project config (./zzcollab.yaml)
+  3. User config (~/.zzcollab/config.yaml)
+  4. System config (/etc/zzcollab/config.yaml)
+  5. Built-in defaults
+
+═══════════════════════════════════════════════════════════════════════════
+
+For more help:
+  zzcollab --help              # General help
+  zzcollab --help-quickstart   # Getting started
+  zzcollab --help-variants     # Docker variants config
+EOF
+}
+
