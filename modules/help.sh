@@ -669,6 +669,338 @@ EOF
 }
 
 #=============================================================================
+# QUICK START GUIDES
+#=============================================================================
+
+# Function: show_quickstart_help
+# Purpose: Quick start guide for individual researchers
+show_quickstart_help() {
+    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
+        show_quickstart_help_content
+    else
+        show_quickstart_help_content | "${PAGER:-less}" -R
+    fi
+}
+
+show_quickstart_help_content() {
+    cat << 'EOF'
+🚀 QUICK START GUIDE - INDIVIDUAL RESEARCHERS
+
+═══════════════════════════════════════════════════════════════════════════
+YOU'RE NOT ON A TEAM - SIMPLIFIED WORKFLOW
+═══════════════════════════════════════════════════════════════════════════
+
+This guide is for individual researchers who want to:
+• Work on personal research projects
+• Create reproducible analysis environments
+• Get started quickly without team collaboration setup
+
+Key Point: You don't need a "team" - just use your name as the team name!
+
+═══════════════════════════════════════════════════════════════════════════
+SIMPLEST POSSIBLE SETUP (5 MINUTES)
+═══════════════════════════════════════════════════════════════════════════
+
+Step 1: One-Time Configuration
+──────────────────────────────────────────────────────────────────────────
+Set your defaults so you never have to type them again:
+
+    zzcollab --config set team-name "yourname"
+    zzcollab --config set build-mode "standard"
+
+Replace "yourname" with your actual name or username (e.g., "jsmith")
+This becomes your Docker Hub namespace (like jsmith/project-rstudio:latest)
+
+Step 2: Create Your First Project
+──────────────────────────────────────────────────────────────────────────
+    cd ~/projects  # Or wherever you keep your work
+    mkdir homework1 && cd homework1
+    zzcollab -p homework1
+
+That's it! Your project is ready.
+
+Step 3: Start Working
+──────────────────────────────────────────────────────────────────────────
+    make docker-rstudio
+
+Opens RStudio at http://localhost:8787
+Login: analyst / analyst
+
+You're now working in a reproducible environment!
+
+═══════════════════════════════════════════════════════════════════════════
+COMPLETE FIRST PROJECT WALKTHROUGH
+═══════════════════════════════════════════════════════════════════════════
+
+Scenario: You need to complete a data analysis homework assignment
+
+1. Set up configuration (one time ever):
+   ──────────────────────────────────────────────────────────────────────
+   zzcollab --config set team-name "jsmith"
+   zzcollab --config set build-mode "standard"
+
+2. Create project directory:
+   ──────────────────────────────────────────────────────────────────────
+   mkdir ~/stat545-hw1 && cd ~/stat545-hw1
+
+3. Initialize zzcollab project:
+   ──────────────────────────────────────────────────────────────────────
+   zzcollab -p stat545-hw1
+
+   This takes 4-6 minutes (downloads R packages)
+   Grab coffee, this only happens once!
+
+4. Start RStudio:
+   ──────────────────────────────────────────────────────────────────────
+   make docker-rstudio
+
+   Opens at http://localhost:8787
+   Username: analyst
+   Password: analyst
+
+5. Do your homework:
+   ──────────────────────────────────────────────────────────────────────
+   In RStudio:
+   • Create new R Markdown: File → New → R Markdown
+   • Save as: analysis/scripts/homework1.Rmd
+   • Put data in: analysis/data/raw_data/
+   • Write your analysis
+   • Knit to HTML
+
+6. When finished:
+   ──────────────────────────────────────────────────────────────────────
+   Close browser tab (RStudio)
+   In terminal: Ctrl+C to stop container
+
+7. Next time:
+   ──────────────────────────────────────────────────────────────────────
+   cd ~/stat545-hw1
+   make docker-rstudio
+
+   Everything exactly as you left it!
+
+═══════════════════════════════════════════════════════════════════════════
+SOLO STUDENT FAQS
+═══════════════════════════════════════════════════════════════════════════
+
+Q: "Why does it ask for a team name if I'm working alone?"
+A: Think of it as YOUR namespace. Use your name. It keeps your Docker
+   images organized (like folders on your computer).
+
+Q: "Do I need to know Docker?"
+A: No! Just run 'make docker-rstudio' and use RStudio normally.
+   Docker runs in the background.
+
+Q: "Can I use my regular R instead?"
+A: Yes, but you lose reproducibility. The whole point is that your
+   analysis will work exactly the same way 3 years from now.
+
+Q: "What if I need to install a package?"
+A: In RStudio console:
+     install.packages("packagename")
+   Then update your project:
+     renv::snapshot()
+
+Q: "Where do I put my homework files?"
+A: Follow this structure:
+   • Data: analysis/data/raw_data/
+   • Scripts: analysis/scripts/
+   • Output: analysis/figures/
+
+Q: "Can I switch from solo to team later?"
+A: Yes! Your project structure is already team-ready. Just share the
+   GitHub repo and collaborators can join.
+
+Q: "Do I need a GitHub account?"
+A: Not required for solo work. But recommended for:
+   • Backing up your homework
+   • Showing work to professors
+   • Building your portfolio
+
+Q: "Which build mode should I choose?"
+A: Standard mode (default) - has tidyverse, ggplot2, dplyr
+   That's perfect for most coursework.
+
+Q: "My laptop is slow - can I use a faster mode?"
+A: Yes! Use Fast mode:
+     zzcollab --config set build-mode "fast"
+   Only 9 packages, builds in 2-3 minutes.
+
+Q: "I need packages not in Standard mode"
+A: Either:
+   1. Use Comprehensive mode (47 packages): --config set build-mode "comprehensive"
+   2. Just install them as you need them in RStudio
+
+═══════════════════════════════════════════════════════════════════════════
+SOLO STUDENT COMPLETE COMMAND REFERENCE
+═══════════════════════════════════════════════════════════════════════════
+
+One-Time Setup:
+──────────────────────────────────────────────────────────────────────────
+zzcollab --config set team-name "yourname"
+zzcollab --config set build-mode "standard"
+
+Per-Project (First Time):
+──────────────────────────────────────────────────────────────────────────
+mkdir projectname && cd projectname
+zzcollab -p projectname
+
+Daily Work:
+──────────────────────────────────────────────────────────────────────────
+cd projectname
+make docker-rstudio          # Start RStudio
+# Do your work in browser
+# Ctrl+C in terminal when done
+
+Common Tasks:
+──────────────────────────────────────────────────────────────────────────
+make docker-rstudio          # RStudio interface
+make docker-zsh              # Command-line interface
+make docker-test             # Run tests
+make help                    # See all available commands
+
+═══════════════════════════════════════════════════════════════════════════
+AVOIDING COMMON SOLO STUDENT MISTAKES
+═══════════════════════════════════════════════════════════════════════════
+
+❌ DON'T: Create projects in your home directory
+   cd ~ && zzcollab -p homework  # BAD!
+
+✅ DO: Create a projects folder
+   mkdir ~/projects && cd ~/projects
+   mkdir homework && cd homework
+   zzcollab -p homework
+
+❌ DON'T: Use different team names for each project
+   zzcollab -t proj1 -p analysis1
+   zzcollab -t proj2 -p analysis2  # Confusing!
+
+✅ DO: Use one team name (yours) for everything
+   zzcollab --config set team-name "yourname"
+   Then just: zzcollab -p analysis1, zzcollab -p analysis2
+
+❌ DON'T: Forget to save your work in the right place
+   Files outside /project won't persist!
+
+✅ DO: Always work in the mounted directory
+   RStudio starts in /home/analyst/project (correct location)
+
+❌ DON'T: Run zzcollab multiple times in same directory
+   mkdir proj && cd proj
+   zzcollab -p proj
+   zzcollab -p proj  # Don't do this again!
+
+✅ DO: Only run zzcollab once per project
+   It sets everything up the first time
+
+═══════════════════════════════════════════════════════════════════════════
+EXAMPLE: TYPICAL SEMESTER WORKFLOW
+═══════════════════════════════════════════════════════════════════════════
+
+Week 1: Setup
+──────────────────────────────────────────────────────────────────────────
+zzcollab --config set team-name "jsmith"
+zzcollab --config set build-mode "standard"
+
+Week 2-3: Homework 1
+──────────────────────────────────────────────────────────────────────────
+mkdir ~/stat545/hw1 && cd ~/stat545/hw1
+zzcollab -p hw1
+make docker-rstudio
+# Complete homework in RStudio
+# Close browser, Ctrl+C in terminal
+
+Week 4-5: Homework 2
+──────────────────────────────────────────────────────────────────────────
+mkdir ~/stat545/hw2 && cd ~/stat545/hw2
+zzcollab -p hw2  # Uses your saved config!
+make docker-rstudio
+# Complete homework
+
+Week 6-10: Final Project
+──────────────────────────────────────────────────────────────────────────
+mkdir ~/stat545/final-project && cd ~/stat545/final-project
+zzcollab -p final-project
+make docker-rstudio
+
+# Work on project multiple times:
+cd ~/stat545/final-project
+make docker-rstudio  # Day 1
+# Close when done
+
+cd ~/stat545/final-project
+make docker-rstudio  # Day 2
+# Close when done
+
+# All your work is saved between sessions!
+
+═══════════════════════════════════════════════════════════════════════════
+WHEN YOU'RE READY FOR MORE
+═══════════════════════════════════════════════════════════════════════════
+
+Once comfortable with basics, explore:
+
+Add version control:
+  zzcollab -p project -G    # Automatically creates GitHub repo
+
+Share with professor/TA:
+  1. Use -G flag to create GitHub repo
+  2. Share GitHub link
+  3. They can reproduce your exact environment!
+
+Try different interfaces:
+  make docker-zsh           # Command-line for advanced users
+  make docker-r             # Just R console
+
+Learn more about:
+  zzcollab --help-workflow        # Daily development patterns
+  zzcollab --help-renv            # Package management
+  zzcollab --help-troubleshooting # Fix common issues
+
+═══════════════════════════════════════════════════════════════════════════
+QUICK REFERENCE CARD (PRINT THIS!)
+═══════════════════════════════════════════════════════════════════════════
+
+ONE-TIME SETUP:
+  zzcollab --config set team-name "yourname"
+  zzcollab --config set build-mode "standard"
+
+NEW PROJECT:
+  mkdir ~/projects/projectname && cd ~/projects/projectname
+  zzcollab -p projectname
+  make docker-rstudio
+
+DAILY WORK:
+  cd ~/projects/projectname
+  make docker-rstudio
+  # Work in browser at localhost:8787
+  # Login: analyst / analyst
+  # When done: close browser, Ctrl+C in terminal
+
+FILE LOCATIONS:
+  Data:    analysis/data/raw_data/
+  Scripts: analysis/scripts/
+  Figures: analysis/figures/
+
+INSTALL PACKAGE:
+  In RStudio console:
+    install.packages("packagename")
+    renv::snapshot()
+
+HELP:
+  zzcollab --help-workflow
+  zzcollab --help-troubleshooting
+  zzcollab --help-renv
+
+═══════════════════════════════════════════════════════════════════════════
+
+For complete documentation: zzcollab --help
+For troubleshooting: zzcollab --help-troubleshooting
+For daily workflow: zzcollab --help-workflow
+EOF
+}
+
+#=============================================================================
 # MODULE VALIDATION AND LOADING
 #=============================================================================
 
