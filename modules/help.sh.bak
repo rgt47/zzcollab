@@ -714,8 +714,8 @@ This becomes your Docker Hub namespace (like jsmith/project-rstudio:latest)
 Step 2: Create Your First Project
 ──────────────────────────────────────────────────────────────────────────
     cd ~/projects  # Or wherever you keep your work
-    mkdir analysis1 && cd analysis1
-    zzcollab -p analysis1
+    mkdir homework1 && cd homework1
+    zzcollab -p homework1
 
 That's it! Your project is ready.
 
@@ -732,7 +732,7 @@ You're now working in a reproducible environment!
 COMPLETE FIRST PROJECT WALKTHROUGH
 ═══════════════════════════════════════════════════════════════════════════
 
-Scenario: You need to complete a data analysis analysis assignment
+Scenario: You need to complete a data analysis homework assignment
 
 1. Set up configuration (one time ever):
    ──────────────────────────────────────────────────────────────────────
@@ -758,11 +758,11 @@ Scenario: You need to complete a data analysis analysis assignment
    Username: analyst
    Password: analyst
 
-5. Do your analysis:
+5. Do your homework:
    ──────────────────────────────────────────────────────────────────────
    In RStudio:
    • Create new R Markdown: File → New → R Markdown
-   • Save as: analysis/scripts/analysis1.Rmd
+   • Save as: analysis/scripts/homework1.Rmd
    • Put data in: analysis/data/raw_data/
    • Write your analysis
    • Knit to HTML
@@ -780,7 +780,7 @@ Scenario: You need to complete a data analysis analysis assignment
    Everything exactly as you left it!
 
 ═══════════════════════════════════════════════════════════════════════════
-INDIVIDUAL RESEARCHER FAQS
+SOLO STUDENT FAQS
 ═══════════════════════════════════════════════════════════════════════════
 
 Q: "Why does it ask for a team name if I'm working alone?"
@@ -801,7 +801,7 @@ A: In RStudio console:
    Then update your project:
      renv::snapshot()
 
-Q: "Where do I put my analysis files?"
+Q: "Where do I put my homework files?"
 A: Follow this structure:
    • Data: analysis/data/raw_data/
    • Scripts: analysis/scripts/
@@ -813,7 +813,7 @@ A: Yes! Your project structure is already team-ready. Just share the
 
 Q: "Do I need a GitHub account?"
 A: Not required for solo work. But recommended for:
-   • Backing up your analysis
+   • Backing up your homework
    • Showing work to professors
    • Building your portfolio
 
@@ -832,7 +832,7 @@ A: Either:
    2. Just install them as you need them in RStudio
 
 ═══════════════════════════════════════════════════════════════════════════
-INDIVIDUAL RESEARCHER COMPLETE COMMAND REFERENCE
+SOLO STUDENT COMPLETE COMMAND REFERENCE
 ═══════════════════════════════════════════════════════════════════════════
 
 One-Time Setup:
@@ -860,16 +860,16 @@ make docker-test             # Run tests
 make help                    # See all available commands
 
 ═══════════════════════════════════════════════════════════════════════════
-AVOIDING COMMON INDIVIDUAL RESEARCHER MISTAKES
+AVOIDING COMMON SOLO STUDENT MISTAKES
 ═══════════════════════════════════════════════════════════════════════════
 
 ❌ DON'T: Create projects in your home directory
-   cd ~ && zzcollab -p analysis  # BAD!
+   cd ~ && zzcollab -p homework  # BAD!
 
 ✅ DO: Create a projects folder
    mkdir ~/projects && cd ~/projects
-   mkdir analysis && cd analysis
-   zzcollab -p analysis
+   mkdir homework && cd homework
+   zzcollab -p homework
 
 ❌ DON'T: Use different team names for each project
    zzcollab -t proj1 -p analysis1
@@ -902,20 +902,20 @@ Week 1: Setup
 zzcollab --config set team-name "jsmith"
 zzcollab --config set build-mode "standard"
 
-Week 2-3: Analysis 1
+Week 2-3: Homework 1
 ──────────────────────────────────────────────────────────────────────────
 mkdir ~/stat545/hw1 && cd ~/stat545/hw1
 zzcollab -p hw1
 make docker-rstudio
-# Complete analysis in RStudio
+# Complete homework in RStudio
 # Close browser, Ctrl+C in terminal
 
-Week 4-5: Analysis 2
+Week 4-5: Homework 2
 ──────────────────────────────────────────────────────────────────────────
 mkdir ~/stat545/hw2 && cd ~/stat545/hw2
 zzcollab -p hw2  # Uses your saved config!
 make docker-rstudio
-# Complete analysis
+# Complete homework
 
 Week 6-10: Final Project
 ──────────────────────────────────────────────────────────────────────────
