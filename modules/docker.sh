@@ -247,7 +247,7 @@ get_dockerfile_template() {
 #   - Dockerfile (main container definition)
 #   - docker-compose.yml (multi-service container orchestration)
 #   - .zshrc_docker (container shell configuration)
-#   - check_renv_for_commit.R (package validation script)
+#   - validate_package_environment.R (package validation script)
 #   - ZZCOLLAB_USER_GUIDE.md (comprehensive documentation)
 #
 # Process:
@@ -311,11 +311,11 @@ create_docker_files() {
         return 1
     fi
     
-    # Create renv validation script
+    # Create package environment validation script
     # Used by: CI/CD workflows, development workflow validation
-    # Purpose: Ensures package dependencies are properly synchronized
-    if ! install_template "check_renv_for_commit.R" "check_renv_for_commit.R" "renv validation script" "Created renv validation script"; then
-        log_error "Failed to create renv validation script"
+    # Purpose: Ensures package dependencies are properly synchronized across CRAN, Bioconductor, and GitHub
+    if ! install_template "validate_package_environment.R" "validate_package_environment.R" "package validation script" "Created package environment validation script"; then
+        log_error "Failed to create package environment validation script"
         return 1
     fi
     
@@ -540,11 +540,11 @@ show_docker_summary() {
     cat << 'EOF'
 🐳 DOCKER ENVIRONMENT CREATED:
 
-├── Dockerfile                    # Main container definition
-├── docker-compose.yml           # Multi-service orchestration
-├── .zshrc_docker                # Container shell configuration
-├── check_renv_for_commit.R      # Package validation script
-└── ZZCOLLAB_USER_GUIDE.md      # Comprehensive documentation
+├── Dockerfile                      # Main container definition
+├── docker-compose.yml              # Multi-service orchestration
+├── .zshrc_docker                   # Container shell configuration
+├── validate_package_environment.R  # Package validation script
+└── ZZCOLLAB_USER_GUIDE.md         # Comprehensive documentation
 
 🚀 CONTAINER SERVICES:
 - rstudio    → RStudio Server (http://localhost:8787)

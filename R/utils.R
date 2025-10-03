@@ -641,7 +641,7 @@ render_report <- function(report_path = NULL) {
 validate_repro <- function() {
   scripts_to_check <- c(
     "scripts/99_reproducibility_check.R",
-    "check_renv_for_commit.R",
+    "validate_package_environment.R",
     "check_rprofile_options.R"
   )
   
