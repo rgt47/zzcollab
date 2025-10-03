@@ -645,6 +645,51 @@ handle_special_modes() {
         exit 0
     fi
 
+    if [[ "${SHOW_HELP_QUICKSTART:-false}" == "true" ]]; then
+        show_quickstart_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_WORKFLOW:-false}" == "true" ]]; then
+        show_workflow_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_TROUBLESHOOTING:-false}" == "true" ]]; then
+        show_troubleshooting_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_CONFIG:-false}" == "true" ]]; then
+        show_config_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_DOTFILES:-false}" == "true" ]]; then
+        show_dotfiles_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_RENV:-false}" == "true" ]]; then
+        show_renv_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_BUILD_MODES:-false}" == "true" ]]; then
+        show_build_modes_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_DOCKER:-false}" == "true" ]]; then
+        show_docker_help
+        exit 0
+    fi
+
+    if [[ "${SHOW_HELP_CICD:-false}" == "true" ]]; then
+        show_cicd_help
+        exit 0
+    fi
+
     if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
         show_next_steps
         exit 0

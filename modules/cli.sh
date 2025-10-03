@@ -321,6 +321,51 @@ parse_cli_arguments() {
                 SHOW_HELP_GITHUB=true
                 shift
                 ;;
+            --help-quickstart)
+                # Will be processed after modules are loaded
+                SHOW_HELP_QUICKSTART=true
+                shift
+                ;;
+            --help-workflow)
+                # Will be processed after modules are loaded
+                SHOW_HELP_WORKFLOW=true
+                shift
+                ;;
+            --help-troubleshooting)
+                # Will be processed after modules are loaded
+                SHOW_HELP_TROUBLESHOOTING=true
+                shift
+                ;;
+            --help-config)
+                # Will be processed after modules are loaded
+                SHOW_HELP_CONFIG=true
+                shift
+                ;;
+            --help-dotfiles)
+                # Will be processed after modules are loaded
+                SHOW_HELP_DOTFILES=true
+                shift
+                ;;
+            --help-renv)
+                # Will be processed after modules are loaded
+                SHOW_HELP_RENV=true
+                shift
+                ;;
+            --help-build-modes)
+                # Will be processed after modules are loaded
+                SHOW_HELP_BUILD_MODES=true
+                shift
+                ;;
+            --help-docker)
+                # Will be processed after modules are loaded
+                SHOW_HELP_DOCKER=true
+                shift
+                ;;
+            --help-cicd)
+                # Will be processed after modules are loaded
+                SHOW_HELP_CICD=true
+                shift
+                ;;
             --yes|-y)
                 SKIP_CONFIRMATION=true
                 shift
