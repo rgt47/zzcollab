@@ -316,6 +316,11 @@ parse_cli_arguments() {
                 SHOW_HELP_VARIANTS=true
                 shift
                 ;;
+            --help-github)
+                # Will be processed after modules are loaded
+                SHOW_HELP_GITHUB=true
+                shift
+                ;;
             --yes|-y)
                 SKIP_CONFIRMATION=true
                 shift

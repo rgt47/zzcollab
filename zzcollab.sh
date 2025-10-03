@@ -634,12 +634,17 @@ handle_special_modes() {
         show_init_help
         exit 0
     fi
-    
+
     if [[ "${SHOW_HELP_VARIANTS:-false}" == "true" ]]; then
         show_variants_help
         exit 0
     fi
-    
+
+    if [[ "${SHOW_HELP_GITHUB:-false}" == "true" ]]; then
+        show_github_help
+        exit 0
+    fi
+
     if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
         show_next_steps
         exit 0
