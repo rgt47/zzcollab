@@ -519,15 +519,16 @@ extract_packages_from_text <- function(content) {
     for (example_block in examples_matches) {
       # Remove the @examples header line to get just the example code
       example_content <- sub("@examples[^\n]*\n?", "", example_block)
-      
+
       # Extract library calls from example code (same patterns as main code)
       # We use simple pattern matching here instead of recursion to avoid infinite loops
-      ex_lib_matches <- regmatches(example_content, gregexpr(REGEX_PATTERNS$library_calls, example_content, perl = TRUE))[[1]]
+      # FIX: Use library_simple instead of undefined library_calls
+      ex_lib_matches <- regmatches(example_content, gregexpr(REGEX_PATTERNS$library_simple, example_content, perl = TRUE))[[1]]
       if (length(ex_lib_matches) > 0L) {
-        ex_packages <- gsub(REGEX_PATTERNS$library_calls, "\\1", ex_lib_matches, perl = TRUE)
+        ex_packages <- gsub(REGEX_PATTERNS$library_simple, "\\1", ex_lib_matches, perl = TRUE)
         packages <- c(packages, ex_packages)
       }
-      
+
       # Extract namespace calls from example code
       ex_ns_matches <- regmatches(example_content, gregexpr(REGEX_PATTERNS$namespace_calls, example_content, perl = TRUE))[[1]]
       if (length(ex_ns_matches) > 0L) {
@@ -810,60 +811,156 @@ parse_renv_lock_file <- function() {
 # - We want to avoid duplicate network calls for performance
 #==============================================================================
 
-# Validate packages against CRAN (cached for session)
-# This function checks if packages actually exist on CRAN before we try to declare them
-# It's essential for catching typos and non-CRAN packages
-validate_against_cran <- function(packages, log_fn) {
+# Check if packages are from Bioconductor
+# Bioconductor packages are valid R packages but not on CRAN
+check_bioconductor_packages <- function(packages, log_fn) {
+  if (length(packages) == 0L) return(character(0))
+
+  tryCatch({
+    # Try to use BiocManager if available
+    if (requireNamespace("BiocManager", quietly = TRUE)) {
+      bioc_available <- BiocManager::available()
+      bioc_packages <- intersect(packages, bioc_available)
+      if (length(bioc_packages) > 0L) {
+        log_fn("Found Bioconductor packages: ",
+               paste(bioc_packages, collapse = ", "),
+               level = "info")
+      }
+      return(bioc_packages)
+    }
+  }, error = function(e) {
+    # BiocManager not available or check failed
+  })
+
+  # Fallback: check common Bioconductor package patterns
+  # Most Bioc packages start with capital letters or contain "Bio"
+  bioc_pattern_matches <- packages[grepl("^Bio|^limma|^edgeR|^DESeq", packages)]
+  if (length(bioc_pattern_matches) > 0L) {
+    log_fn("Possible Bioconductor packages (pattern-based): ",
+           paste(bioc_pattern_matches, collapse = ", "),
+           level = "info")
+  }
+
+  bioc_pattern_matches
+}
+
+# Check if packages are from GitHub
+# GitHub packages have remotes:: or similar references in code
+check_github_packages <- function(code_files, log_fn) {
+  github_packages <- character(0)
+
+  # Pattern for remotes::install_github("user/repo")
+  github_pattern <- 'remotes::install_github\\s*\\(\\s*["\']([^/]+)/([^"\'@]+)'
+
+  for (file in code_files) {
+    file_result <- read_file_safely(file)
+    if (file_result$success) {
+      matches <- regmatches(file_result$content,
+                           gregexpr(github_pattern, file_result$content,
+                                   perl = TRUE))[[1]]
+      if (length(matches) > 0L) {
+        # Extract package names (repo part after user/)
+        pkgs <- gsub(github_pattern, "\\2", matches, perl = TRUE)
+        github_packages <- c(github_packages, pkgs)
+      }
+    }
+  }
+
+  github_packages <- unique(github_packages)
+  if (length(github_packages) > 0L) {
+    log_fn("Found GitHub packages: ",
+           paste(github_packages, collapse = ", "),
+           level = "info")
+  }
+
+  github_packages
+}
+
+# Validate packages against CRAN, Bioconductor, and GitHub
+# This function checks if packages actually exist before we try to declare them
+# It's essential for catching typos and recognizing non-CRAN packages
+validate_against_repositories <- function(packages, code_files = character(0), log_fn) {
   # Input validation: ensure we have packages to validate
   if (!is.character(packages) || length(packages) == 0L) {
-    return(list(valid = character(0), invalid = character(0), error = FALSE))
+    return(list(valid = character(0), invalid = character(0),
+                bioconductor = character(0), github = character(0),
+                error = FALSE))
   }
-  
-  # Remove base packages from validation (they don't need to be checked against CRAN)
+
+  # Remove base packages from validation (they don't need to be checked)
   non_base_packages <- setdiff(packages, PKG_CONFIG$base_packages)
   base_packages_found <- intersect(packages, PKG_CONFIG$base_packages)
-  
+
   if (length(non_base_packages) == 0L) {
     # Only base packages, all valid
-    return(list(valid = base_packages_found, invalid = character(0), error = FALSE))
+    return(list(valid = base_packages_found, invalid = character(0),
+                bioconductor = character(0), github = character(0),
+                error = FALSE))
   }
-  
-  log_fn("Validating ", length(non_base_packages), " packages against CRAN...", level = "info")
-  
+
+  log_fn("Validating ", length(non_base_packages),
+         " packages against repositories...", level = "info")
+
   tryCatch({
     # Step 1: Set timeout and ensure it gets restored
-    # Network operations can hang indefinitely, so we set a reasonable timeout
     old_timeout <- getOption("timeout")
     on.exit(options(timeout = old_timeout), add = TRUE)
     options(timeout = PKG_CONFIG$cran_timeout_seconds)
-    
+
     # Step 2: Get list of available packages from CRAN
-    # available.packages() downloads the current CRAN package index
-    # This is a relatively expensive operation (several MB download)
-    available_pkgs <- available.packages(contriburl = contrib.url("https://cloud.r-project.org/"))
+    available_pkgs <- available.packages(
+      contriburl = contrib.url("https://cloud.r-project.org/")
+    )
     cran_packages <- rownames(available_pkgs)
-    
+
     # Step 3: Split non-base packages into valid (on CRAN) and invalid (not on CRAN)
-    # %in% operator efficiently checks membership in the CRAN package list
     valid_cran_packages <- non_base_packages[non_base_packages %in% cran_packages]
-    invalid_packages <- non_base_packages[!non_base_packages %in% cran_packages]
-    
-    # Combine base packages (always valid) with CRAN-validated packages
-    valid_packages <- c(base_packages_found, valid_cran_packages)
-    
-    # Step 4: Report invalid packages for user awareness
-    # Invalid packages might be typos, GitHub packages, or Bioconductor packages
-    if (length(invalid_packages) > 0L) {
-      log_fn("Invalid packages: ", paste(sort(invalid_packages), collapse = ", "), level = "warning")
+    not_on_cran <- non_base_packages[!non_base_packages %in% cran_packages]
+
+    # Step 4: Check if "invalid" packages are from Bioconductor
+    bioc_packages <- character(0)
+    if (length(not_on_cran) > 0L) {
+      bioc_packages <- check_bioconductor_packages(not_on_cran, log_fn)
     }
-    
-    list(valid = valid_packages, invalid = invalid_packages, error = FALSE)
-    
+
+    # Step 5: Check if "invalid" packages are from GitHub
+    github_packages <- character(0)
+    if (length(code_files) > 0L) {
+      github_packages <- check_github_packages(code_files, log_fn)
+    }
+
+    # Step 6: Determine truly invalid packages
+    valid_non_cran <- unique(c(bioc_packages, github_packages))
+    truly_invalid <- setdiff(not_on_cran, valid_non_cran)
+
+    # Combine all valid packages
+    valid_packages <- c(base_packages_found, valid_cran_packages, valid_non_cran)
+
+    # Step 7: Report results
+    if (length(truly_invalid) > 0L) {
+      log_fn("Truly invalid packages (not on CRAN/Bioconductor/GitHub): ",
+             paste(sort(truly_invalid), collapse = ", "),
+             level = "warning")
+    }
+
+    list(
+      valid = valid_packages,
+      invalid = truly_invalid,
+      bioconductor = bioc_packages,
+      github = github_packages,
+      error = FALSE
+    )
+
   }, error = function(e) {
-    # If CRAN validation fails (network issues, etc.), we continue with all packages
-    # This ensures the script doesn't break due to temporary network problems
-    log_fn("CRAN validation failed: ", e$message, level = "warning")
-    list(valid = packages, invalid = character(0), error = TRUE)
+    # If validation fails (network issues, etc.), continue with all packages
+    log_fn("Repository validation failed: ", e$message, level = "warning")
+    list(
+      valid = packages,
+      invalid = character(0),
+      bioconductor = character(0),
+      github = character(0),
+      error = TRUE
+    )
   })
 }
 
@@ -1019,7 +1116,7 @@ fix_description_file <- function(missing_packages, invalid_packages, log_fn) {
 # - We need to provide good feedback about what's happening
 #==============================================================================
 
-# Run renv snapshot with comprehensive error handling
+# Run renv snapshot with comprehensive error handling and rollback
 # This function updates the renv.lock file to match current package usage
 # It's critical for reproducibility but can fail in complex ways
 run_renv_snapshot <- function(force_clean, log_fn) {
@@ -1027,12 +1124,15 @@ run_renv_snapshot <- function(force_clean, log_fn) {
   if (!requireNamespace("renv", quietly = TRUE)) {
     return(list(success = FALSE, message = "renv package unavailable"))
   }
-  
+
+  # Track backup file for potential rollback
+  backup_name <- NULL
+
   tryCatch({
     if (force_clean) {
       # Force clean mode: regenerate lockfile from scratch
       log_fn("Regenerating lockfile...", level = "info")
-      
+
       # Step 1: Install any missing packages
       # This ensures all declared dependencies are actually installed
       install_result <- tryCatch({
@@ -1044,27 +1144,50 @@ run_renv_snapshot <- function(force_clean, log_fn) {
         log_fn("Package installation warning: ", e$message, level = "warning")
         FALSE
       })
-      
+
       # Step 2: Backup and remove existing lockfile
       # This forces renv to rebuild from scratch rather than incrementally update
       if (file.exists("renv.lock")) {
-        backup_name <- paste0("renv.lock.backup.", format(Sys.time(), PKG_CONFIG$backup_timestamp_format))
-        file.copy("renv.lock", backup_name)
+        backup_name <<- paste0("renv.lock.backup.", format(Sys.time(), PKG_CONFIG$backup_timestamp_format))
+        if (!file.copy("renv.lock", backup_name)) {
+          return(list(success = FALSE, message = "Failed to create renv.lock backup"))
+        }
         file.remove("renv.lock")
         log_fn("Removed old renv.lock (backup created)", level = "info")
       }
+    } else {
+      # Non-clean mode: still create backup for safety
+      if (file.exists("renv.lock")) {
+        backup_name <<- paste0("renv.lock.backup.", format(Sys.time(), PKG_CONFIG$backup_timestamp_format))
+        file.copy("renv.lock", backup_name)
+      }
     }
-    
+
     # Step 3: Create new snapshot
     # type = "explicit" means only include packages explicitly referenced in code
     # prompt = FALSE means don't ask for user confirmation (essential for automation)
     renv::snapshot(type = "explicit", prompt = FALSE)
     log_fn("Lockfile updated successfully", level = "success")
-    
+
+    # Step 4: Remove backup on success
+    if (!is.null(backup_name) && file.exists(backup_name)) {
+      file.remove(backup_name)
+    }
+
     list(success = TRUE, message = "Snapshot completed successfully")
-    
+
   }, error = function(e) {
-    # If snapshot fails, provide detailed error message for debugging
+    # Step 5: ROLLBACK - Restore from backup on failure
+    if (!is.null(backup_name) && file.exists(backup_name)) {
+      if (file.copy(backup_name, "renv.lock", overwrite = TRUE)) {
+        log_fn("Restored renv.lock from backup after failure", level = "warning")
+        file.remove(backup_name)
+      } else {
+        log_fn("CRITICAL: Failed to restore renv.lock backup!", level = "error", force = TRUE)
+      }
+    }
+
+    # Provide detailed error message for debugging
     list(success = FALSE, message = paste("Snapshot failed:", e$message))
   })
 }
@@ -1162,22 +1285,42 @@ main_analysis <- function(config, log_fn) {
   # PHASE 1: DATA COLLECTION
   # Extract packages from code files
   code_packages <- extract_code_packages(config, log_fn)
-  
+
   # Parse configuration files (DESCRIPTION and renv.lock)
   desc_result <- parse_description_file()
   renv_result <- parse_renv_lock_file()
-  
+
+  # Get all discovered files for GitHub package detection
+  target_dirs <- if (config$strict_imports) PKG_CONFIG$strict_dirs else PKG_CONFIG$standard_dirs
+  all_files <- discover_files(target_dirs, REGEX_PATTERNS$file_pattern)
+
   # PHASE 2: VALIDATION
-  # Validate all packages against CRAN in single call (performance optimization)
-  # We combine all packages to avoid duplicate CRAN API calls
+  # Validate all packages against CRAN, Bioconductor, and GitHub
+  # We combine all packages to avoid duplicate API calls
   all_packages_to_validate <- unique(c(code_packages, desc_result$packages))
-  cran_validation <- validate_against_cran(all_packages_to_validate, log_fn)
-  
+  repo_validation <- validate_against_repositories(
+    all_packages_to_validate,
+    code_files = all_files,
+    log_fn = log_fn
+  )
+
   # PHASE 3: ANALYSIS
   # Determine package status by cross-referencing different sources
-  validated_code_packages <- intersect(code_packages, cran_validation$valid)
-  validated_desc_packages <- intersect(desc_result$packages, cran_validation$valid)
-  invalid_desc_packages <- intersect(desc_result$packages, cran_validation$invalid)
+  validated_code_packages <- intersect(code_packages, repo_validation$valid)
+  validated_desc_packages <- intersect(desc_result$packages, repo_validation$valid)
+  invalid_desc_packages <- intersect(desc_result$packages, repo_validation$invalid)
+
+  # Report non-CRAN package sources if found
+  if (length(repo_validation$bioconductor) > 0L) {
+    log_fn("Bioconductor packages detected: ",
+           paste(sort(repo_validation$bioconductor), collapse = ", "),
+           level = "info")
+  }
+  if (length(repo_validation$github) > 0L) {
+    log_fn("GitHub packages detected: ",
+           paste(sort(repo_validation$github), collapse = ", "),
+           level = "info")
+  }
   
   # Apply build mode-aware filtering
   filtered_code_packages <- apply_build_mode_filter(validated_code_packages, config$build_mode, log_fn)
@@ -1324,16 +1467,8 @@ main <- function() {
   })
   
   # Clean exit with proper status code
+  # Note: quit() terminates R session immediately
   quit(status = exit_code)
-  
-  # EXIT PHASE
-  # Honor fail-on-issues flag for CI/CD integration
-  if (script_config$fail_on_issues && exit_code != 0L) {
-    quit(status = exit_code)
-  }
-  
-  # Return exit code for callers (invisible so it doesn't print in interactive mode)
-  invisible(exit_code)
 }
 
 #==============================================================================
