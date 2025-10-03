@@ -2,7 +2,7 @@
 
 ## Status: IN PROGRESS
 
-This document tracks improvements to the critical `validate_package_environment.R` script (formerly `check_renv_for_commit.R`) based on comprehensive code review.
+This document tracks improvements to the critical `validate_package_environment.R` script (formerly `validate_package_environment.R`) based on comprehensive code review.
 
 ---
 
@@ -434,7 +434,7 @@ if (length(repo_validation$github) > 0) {
    library(BiocManager)
    library(DESeq2)
 
-   # Run: Rscript check_renv_for_commit.R --quiet --fail-on-issues
+   # Run: Rscript validate_package_environment.R --quiet --fail-on-issues
    # Expected: Should recognize DESeq2 as Bioconductor, not error
    ```
 
@@ -443,7 +443,7 @@ if (length(repo_validation$github) > 0) {
    # Add to R/test.R:
    remotes::install_github("hadley/dplyr")
 
-   # Run: Rscript check_renv_for_commit.R --quiet --fail-on-issues
+   # Run: Rscript validate_package_environment.R --quiet --fail-on-issues
    # Expected: Should recognize dplyr as GitHub package
    ```
 
@@ -452,7 +452,7 @@ if (length(repo_validation$github) > 0) {
    # Corrupt renv.lock intentionally
    echo "invalid json" > renv.lock
 
-   # Run: Rscript check_renv_for_commit.R --fix --fail-on-issues
+   # Run: Rscript validate_package_environment.R --fix --fail-on-issues
    # Expected: Should restore from backup
    ```
 
@@ -461,7 +461,7 @@ if (length(repo_validation$github) > 0) {
    # Create 100MB R file
    writeLines(rep("library(dplyr)", 1e6), "large_file.R")
 
-   # Run: Rscript check_renv_for_commit.R --quiet
+   # Run: Rscript validate_package_environment.R --quiet
    # Expected: Should skip file with size warning
    ```
 
@@ -526,12 +526,12 @@ Add documentation for new features:
 
 ### Update CLAUDE.md
 
-Add section about enhanced check_renv_for_commit.R:
+Add section about enhanced validate_package_environment.R:
 
 ```markdown
 ### Enhanced Dependency Validation (October 2025)
 
-check_renv_for_commit.R has been significantly enhanced:
+validate_package_environment.R has been significantly enhanced:
 
 **Critical Bug Fixes**:
 - Fixed undefined pattern bug in @examples parsing
@@ -548,13 +548,13 @@ check_renv_for_commit.R has been significantly enhanced:
 **Usage Examples**:
 ```bash
 # Standard validation with all repositories
-Rscript check_renv_for_commit.R --quiet --fail-on-issues
+Rscript validate_package_environment.R --quiet --fail-on-issues
 
 # Fast validation (skip Bioconductor/GitHub checks)
-Rscript check_renv_for_commit.R --quiet --no-bioconductor --no-github
+Rscript validate_package_environment.R --quiet --no-bioconductor --no-github
 
 # Parallel processing for large projects
-Rscript check_renv_for_commit.R --parallel --fix --fail-on-issues
+Rscript validate_package_environment.R --parallel --fix --fail-on-issues
 ```
 ```
 

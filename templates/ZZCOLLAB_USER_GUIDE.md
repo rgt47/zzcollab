@@ -1335,13 +1335,13 @@ make check-renv
 make check-renv-fix
 
 # Silent check for CI/CD (with build mode awareness)
-Rscript check_renv_for_commit.R --fix --strict-imports --fail-on-issues
+Rscript validate_package_environment.R --fix --strict-imports --fail-on-issues
 
 # With explicit build mode override
-Rscript check_renv_for_commit.R --fix --build-mode fast --fail-on-issues
+Rscript validate_package_environment.R --fix --build-mode fast --fail-on-issues
 
 # Using environment variable for build mode detection
-ZZCOLLAB_BUILD_MODE=comprehensive Rscript check_renv_for_commit.R --fix --fail-on-issues
+ZZCOLLAB_BUILD_MODE=comprehensive Rscript validate_package_environment.R --fix --fail-on-issues
 ```
 
 **Enhanced validation features**:
@@ -1540,7 +1540,7 @@ DOCKERHUB_TOKEN: your-dockerhub-access-token  # Create at hub.docker.com/setting
   - Native R setup (fast execution)
   - renv synchronization validation with enhanced dependency scanning
   - Package checks across platforms
-  - Dependency validation with `check_renv_for_commit.R --strict-imports`
+  - Dependency validation with `validate_package_environment.R --strict-imports`
 
 #### Paper Rendering (`.github/workflows/render-report.yml`)
 - **Triggers**: Manual dispatch, changes to analysis files
@@ -2061,7 +2061,7 @@ documentation.
 
 ### Enhanced Dependency Validation (2025)
 
-**check_renv_for_commit.R Improvements**:
+**validate_package_environment.R Improvements**:
 
 - Build mode integration adapting validation rules
 - Enhanced package extraction handling wrapped calls, conditional

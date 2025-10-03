@@ -516,14 +516,14 @@ The system detects build mode through hierarchical precedence:
 
 ## Dependency Validation
 
-### check_renv_for_commit.R Integration
+### validate_package_environment.R Integration
 
 The dependency validation system adapts to build mode:
 
 **Fast Mode Validation**:
 
 ```bash
-Rscript check_renv_for_commit.R --build-mode fast \
+Rscript validate_package_environment.R --build-mode fast \
   --fail-on-issues
 ```
 
@@ -534,7 +534,7 @@ Rscript check_renv_for_commit.R --build-mode fast \
 **Standard Mode Validation**:
 
 ```bash
-Rscript check_renv_for_commit.R --build-mode standard \
+Rscript validate_package_environment.R --build-mode standard \
   --fail-on-issues
 ```
 
@@ -545,7 +545,7 @@ Rscript check_renv_for_commit.R --build-mode standard \
 **Comprehensive Mode Validation**:
 
 ```bash
-Rscript check_renv_for_commit.R --build-mode comprehensive \
+Rscript validate_package_environment.R --build-mode comprehensive \
   --fail-on-issues
 ```
 
@@ -557,7 +557,7 @@ Rscript check_renv_for_commit.R --build-mode comprehensive \
 **Environment Variable Detection**:
 
 ```bash
-ZZCOLLAB_BUILD_MODE=fast Rscript check_renv_for_commit.R \
+ZZCOLLAB_BUILD_MODE=fast Rscript validate_package_environment.R \
   --fail-on-issues
 ```
 
@@ -721,7 +721,7 @@ zzcollab -i -t lab -p mapping
 Custom build modes undergo the same validation as standard modes:
 
 ```bash
-Rscript check_renv_for_commit.R \
+Rscript validate_package_environment.R \
   --build-mode bioinformatics --fail-on-issues
 ```
 
@@ -848,7 +848,7 @@ To downgrade from Comprehensive to Standard or Fast:
 
 1. Audit package usage:
    ```bash
-   Rscript check_renv_for_commit.R --strict-imports
+   Rscript validate_package_environment.R --strict-imports
    ```
 
 2. Remove packages not in target mode:

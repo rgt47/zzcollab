@@ -630,7 +630,7 @@ jobs:
       - name: Build containers
         run: |
           docker build -t test-env .
-          docker run test-env Rscript check_renv_for_commit.R
+          docker run test-env Rscript validate_package_environment.R
           docker run test-env R CMD check .
           docker run test-env make test
 ```

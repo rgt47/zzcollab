@@ -636,7 +636,7 @@ jobs:
         
     - name: Validate environment
       run: |
-        Rscript check_renv_for_commit.R --quiet --fail-on-issues
+        Rscript validate_package_environment.R --quiet --fail-on-issues
 ```
 
 ### Quality Gates
