@@ -11,7 +11,7 @@
 ^\.dockerignore$
 ^\.env$
 ^\.gitignore$
-^check_renv_for_commit\.R$
+^validate_package_environment\.R$
 ^check_rprofile_options\.R$
 ^workflow\.md$
 ^ZZCOLLAB_USER_GUIDE\.md$

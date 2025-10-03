@@ -169,7 +169,7 @@ remove_files() {
     standard_files="$standard_files ZZCOLLAB_USER_GUIDE.md DATA_WORKFLOW_GUIDE.md zzcollab.yaml config.yaml .Rbuildignore"
 
     # Validation and development scripts
-    standard_files="$standard_files check_renv_for_commit.R check_rprofile_options.R dev.sh navigation_scripts.sh dev_workflow.R"
+    standard_files="$standard_files validate_package_environment.R check_rprofile_options.R dev.sh navigation_scripts.sh dev_workflow.R"
 
     # GitHub templates and workflows
     standard_files="$standard_files .github/pull_request_template.md .github/ISSUE_TEMPLATE/bug_report.md .github/ISSUE_TEMPLATE/feature_request.md"
@@ -591,7 +591,7 @@ main() {
             echo ".Rbuildignore"
 
             # Validation and development scripts
-            echo "check_renv_for_commit.R"
+            echo "validate_package_environment.R"
             echo "check_rprofile_options.R"
             echo "dev.sh"
             echo "navigation_scripts.sh"

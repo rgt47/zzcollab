@@ -1,1 +1,1 @@
-templates/check_renv_for_commit.R
+templates/validate_package_environment.R
