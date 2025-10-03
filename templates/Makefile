@@ -48,7 +48,7 @@ check-renv-fix:
 	R -e "renv::snapshot()"
 
 check-renv-ci:
-	Rscript check_renv_for_commit.R --quiet --fail-on-issues
+	Rscript validate_package_environment.R --quiet --fail-on-issues
 
 # Docker targets (work without local R)
 docker-build:

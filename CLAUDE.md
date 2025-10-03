@@ -835,13 +835,13 @@ make docker-document       # Generate docs
 make docker-render         # Render analysis reports
 
 # CI/CD validation (enhanced with build mode awareness)
-Rscript check_renv_for_commit.R --quiet --fail-on-issues  # Dependency validation
-Rscript check_renv_for_commit.R --build-mode fast --quiet --fail-on-issues  # Fast mode validation
-ZZCOLLAB_BUILD_MODE=comprehensive Rscript check_renv_for_commit.R --fix --fail-on-issues  # Environment variable
+Rscript validate_package_environment.R --quiet --fail-on-issues  # Dependency validation
+Rscript validate_package_environment.R --build-mode fast --quiet --fail-on-issues  # Fast mode validation
+ZZCOLLAB_BUILD_MODE=comprehensive Rscript validate_package_environment.R --fix --fail-on-issues  # Environment variable
 Rscript check_rprofile_options.R                          # R options monitoring
 
 # Container-based CI commands (used in GitHub Actions)
-docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript check_renv_for_commit.R --quiet --fail-on-issues
+docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript validate_package_environment.R --quiet --fail-on-issues
 docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'warning')"
 ```
 
@@ -876,9 +876,9 @@ zzcollab -i -p PROJECT     # Builds default variants (minimal + analysis)
 make check-renv            # Check renv status
 make check-renv-fix        # Update renv.lock
 make docker-check-renv     # Validate in container
-Rscript check_renv_for_commit.R --quiet --fail-on-issues  # CI validation
-Rscript check_renv_for_commit.R --fix --fail-on-issues    # Auto-fix missing packages
-Rscript check_renv_for_commit.R --build-mode fast --fix   # Build mode aware validation
+Rscript validate_package_environment.R --quiet --fail-on-issues  # CI validation
+Rscript validate_package_environment.R --fix --fail-on-issues    # Auto-fix missing packages
+Rscript validate_package_environment.R --build-mode fast --fix   # Build mode aware validation
 ```
 
 ### Installation and Setup
@@ -1209,13 +1209,15 @@ zzcollab -i -p png1 --variants-config config.yaml  # Explicit config usage
 
 **Key Innovation**: Teams can now create specialized environments (bioinformatics with Bioconductor, geospatial with sf/terra, HPC with parallel processing, CI/CD with Alpine Linux) instead of being limited to generic r-ver/rstudio/verse variants.
 
-### Enhanced check_renv_for_commit.R Script
-The dependency validation script has been significantly improved:
+### Enhanced validate_package_environment.R Script (formerly check_renv_for_commit.R)
+The dependency validation script has been significantly improved and renamed to better reflect its comprehensive functionality:
 
 **New Features:**
+- **Multi-repository validation**: CRAN, Bioconductor, and GitHub package detection
 - **Build mode integration**: Adapts validation rules based on zzcollab build modes
-- **Enhanced package extraction**: Handles wrapped calls, conditional loading, roxygen imports  
+- **Enhanced package extraction**: Handles wrapped calls, conditional loading, roxygen imports
 - **Robust error handling**: Structured exit codes (0=success, 1=critical issues, 2=config error)
+- **Backup/restore**: Automatic renv.lock rollback on snapshot failure
 - **zzcollab integration**: Uses zzcollab logging and respects system configuration
 - **Base package filtering**: Automatically excludes R base packages from CRAN validation
 - **Network resilience**: Graceful handling of CRAN API failures
@@ -1223,13 +1225,13 @@ The dependency validation script has been significantly improved:
 **Usage Examples:**
 ```bash
 # Build mode aware validation
-Rscript check_renv_for_commit.R --build-mode fast --fix --fail-on-issues
+Rscript validate_package_environment.R --build-mode fast --fix --fail-on-issues
 
 # Environment variable detection
-ZZCOLLAB_BUILD_MODE=comprehensive Rscript check_renv_for_commit.R --fix
+ZZCOLLAB_BUILD_MODE=comprehensive Rscript validate_package_environment.R --fix
 
 # Enhanced edge case handling for complex package patterns
-Rscript check_renv_for_commit.R --strict-imports --fix --fail-on-issues
+Rscript validate_package_environment.R --strict-imports --fix --fail-on-issues
 ```
 
 ### Documentation Synchronization
@@ -1530,7 +1532,7 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 - **Comprehensive inline comments**: Enhanced zzcollab.sh with detailed architecture overview and workflow explanations
 - **Roxygen2 standardization**: All R functions now have complete roxygen2 documentation with @param, @return, @details, @examples
 - **Module documentation**: Critical shell functions documented with architectural context and usage patterns
-- **Dependency validation**: Enhanced check_renv_for_commit.R with comprehensive architectural documentation
+- **Dependency validation**: Enhanced validate_package_environment.R with comprehensive architectural documentation
 
 **Quality Assurance Improvements:**
 - **GitHub workflows optimization**: Removed research-focused workflows inappropriate for framework source repo

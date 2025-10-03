@@ -1162,30 +1162,31 @@ ZZCOLLAB provides automated dependency checking to ensure reproducibility:
 ```bash
 # On HOST (after exiting container)
 # Validate dependencies are synchronized
-Rscript check_renv_for_commit.R --quiet --fail-on-issues
+Rscript validate_package_environment.R --quiet --fail-on-issues
 ```
 
 This script performs comprehensive validation:
 
 - Verifies all packages used in R/ code are declared in DESCRIPTION
 - Checks that renv.lock matches actual package usage
-- Validates CRAN availability of specified packages
+- Validates packages across CRAN, Bioconductor, and GitHub
 - Ensures no missing or undeclared dependencies
+- Automatically backs up and restores renv.lock on failure
 
 **Common validation scenarios:**
 
 ```bash
 # Standard validation (recommended before every commit)
-Rscript check_renv_for_commit.R --quiet --fail-on-issues
+Rscript validate_package_environment.R --quiet --fail-on-issues
 
 # Auto-fix missing packages
-Rscript check_renv_for_commit.R --fix --fail-on-issues
+Rscript validate_package_environment.R --fix --fail-on-issues
 
 # Validate specific build mode
-Rscript check_renv_for_commit.R --build-mode standard --quiet
+Rscript validate_package_environment.R --build-mode standard --quiet
 
 # Use environment variable for build mode
-ZZCOLLAB_BUILD_MODE=standard Rscript check_renv_for_commit.R
+ZZCOLLAB_BUILD_MODE=standard Rscript validate_package_environment.R
 ```
 
 **Interpreting validation results:**
@@ -1224,7 +1225,7 @@ git commit -m "Implement Palmer Penguins bill dimension analysis
 
 Tests: All 23 tests passing
 Coverage: Complete coverage of data preparation code
-Dependencies: Validated with check_renv_for_commit.R"
+Dependencies: Validated with validate_package_environment.R"
 
 # Push to remote repository (if configured)
 git push

@@ -16,7 +16,7 @@ jobs:
       
       - name: Check renv synchronization
         run: |
-          Rscript check_renv_for_commit.R --quiet --fail-on-issues
+          Rscript validate_package_environment.R --quiet --fail-on-issues
       
       - name: Run R CMD check
         run: |
