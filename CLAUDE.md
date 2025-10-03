@@ -233,11 +233,13 @@ zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml
 *For comprehensive build mode documentation, see [Build Modes Guide](docs/BUILD_MODES.md)*
 
 **Build Mode Package Control**:
-- **Fast Mode (-F)**: Essential packages for quick development (9 packages)
-  - Core: renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
-- **Standard Mode (-S)**: Balanced package set for most workflows (17 packages, default)
+- **Minimal Mode (-M)**: Ultra-fast bare essentials (3 packages, ~30 seconds)
+  - Core: renv, remotes, here
+- **Fast Mode (-F)**: Development essentials (9 packages, 2-3 minutes)
+  - Core: renv, remotes, here, usethis, devtools, testthat, knitr, rmarkdown, targets
+- **Standard Mode (-S)**: Balanced package set for most workflows (17 packages, 4-6 minutes, default)
   - Fast packages + tidyverse core: dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted
-- **Comprehensive Mode (-C)**: Full ecosystem for extensive environments (47+ packages)
+- **Comprehensive Mode (-C)**: Full ecosystem for extensive environments (47+ packages, 15-20 minutes)
   - Standard packages + advanced tools: tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases
 
 **Custom Package Lists** (in configuration files):
@@ -1002,11 +1004,13 @@ zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing work
 #    2. Ask team lead to build rstudio variant: zzcollab -V rstudio
 
 # Note: Build modes comparison:
-# Fast (-F): Minimal Docker + lightweight packages (fastest builds, 9 packages)
-#   → renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
-# Standard (-S): Balanced Docker + standard packages (recommended, 17 packages)
+# Minimal (-M): Ultra-fast bare essentials (~30 seconds, 3 packages)
+#   → renv, remotes, here
+# Fast (-F): Development essentials (2-3 minutes, 9 packages)
+#   → renv, remotes, here, usethis, devtools, testthat, knitr, rmarkdown, targets
+# Standard (-S): Balanced Docker + standard packages (4-6 minutes, 17 packages, default)
 #   → + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted
-# Comprehensive (-C): Extended Docker + full packages (kitchen sink, 47 packages)
+# Comprehensive (-C): Extended Docker + full packages (15-20 minutes, 47 packages)
 #   → + tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases
 ```
 
@@ -1015,13 +1019,15 @@ zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing work
 ZZCOLLAB now uses a simplified 3-mode system that replaces the previous complex flag combinations. This provides clear, intuitive choices for users:
 
 #### Build Modes:
-- **Fast (-F)**: Essential packages for quick development (9 packages)
-  - Core: renv, here, usethis, devtools
+- **Minimal (-M)**: Ultra-fast bare essentials (3 packages, ~30 seconds)
+  - Core: renv, remotes, here
+- **Fast (-F)**: Development essentials (9 packages, 2-3 minutes)
+  - Core: renv, remotes, here, usethis, devtools
   - Analysis: testthat, knitr, rmarkdown, targets
-- **Standard (-S)**: Balanced package set for most workflows (17 packages, default)
+- **Standard (-S)**: Balanced package set for most workflows (17 packages, 4-6 minutes, default)
   - Fast packages + tidyverse core: dplyr, ggplot2, tidyr
   - Research tools: palmerpenguins, broom, janitor, DT, conflicted
-- **Comprehensive (-C)**: Full ecosystem for extensive environments (47 packages)
+- **Comprehensive (-C)**: Full ecosystem for extensive environments (47 packages, 15-20 minutes)
   - Standard packages + advanced tools: tidymodels, shiny, plotly, quarto
   - Specialized: flexdashboard, survival, lme4, database connectors, parallel processing
 

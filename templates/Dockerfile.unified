@@ -71,15 +71,23 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME} || \
     echo "User ${USERNAME} already exists"
 
 # Install R packages based on PACKAGE_MODE
-# fast/minimal: Only essential packages (renv, remotes)
-# standard: Essential packages + common development tools
-# comprehensive: Full development stack with analysis packages
-RUN if [ "${PACKAGE_MODE}" = "fast" ] || \
-       [ "${PACKAGE_MODE}" = "minimal" ]; then \
-        # Fast mode: minimal packages only \
+# minimal: Ultra-fast (renv, remotes, here) - ~30 seconds
+# fast: Development essentials - 2-3 minutes
+# standard: Essential packages + common development tools - 4-6 minutes
+# comprehensive: Full development stack with analysis packages - 15-20 minutes
+RUN if [ "${PACKAGE_MODE}" = "minimal" ]; then \
+        # Minimal mode: bare essentials (renv, remotes, here) \
         if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" \
            >/dev/null; then \
-            R -e "install.packages(c('renv', 'remotes'), \
+            R -e "install.packages(c('renv', 'remotes', 'here'), \
+                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
+        fi; \
+    elif [ "${PACKAGE_MODE}" = "fast" ]; then \
+        # Fast mode: development essentials \
+        if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" \
+           >/dev/null; then \
+            R -e "install.packages(c('renv', 'remotes', 'here', 'usethis', \
+                 'devtools', 'testthat', 'knitr', 'rmarkdown', 'targets'), \
                  repos = c(CRAN = 'https://cloud.r-project.org'))"; \
         fi; \
     elif [ "${PACKAGE_MODE}" = "comprehensive" ] || \

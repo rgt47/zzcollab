@@ -188,9 +188,10 @@ OPTIONS:
         --next-steps             Show development workflow and next steps
     
     Simplified build modes:
-    -F, --fast                   Fast mode: minimal Docker (8 packages)
-    -S, --standard               Standard mode: balanced packages (15 packages) [default]
-    -C, --comprehensive          Comprehensive mode: full ecosystem (27+ packages)
+    -M, --minimal                Minimal mode: ultra-fast (3 packages: renv, remotes, here) ~30s
+    -F, --fast                   Fast mode: development essentials (9 packages) 2-3 min
+    -S, --standard               Standard mode: balanced packages (17 packages) 4-6 min [default]
+    -C, --comprehensive          Comprehensive mode: full ecosystem (47+ packages) 15-20 min
     
     Utilities:
     -h, --help                   Show this help message
@@ -230,9 +231,10 @@ EXAMPLES:
     zzcollab -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
     
     # NEW: Simplified build modes (recommended)
-    zzcollab -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: minimal Docker + lightweight packages
-    zzcollab -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (default)
-    zzcollab -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: extended Docker + full packages
+    zzcollab -i -t rgt47 -p study -M -d ~/dotfiles                      # Minimal mode: ultra-fast (~30s)
+    zzcollab -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: development essentials (2-3 min)
+    zzcollab -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (4-6 min, default)
+    zzcollab -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: full ecosystem (15-20 min)
     zzcollab -n                                                          # Setup without Docker build
     
     # Build additional team image variants after initialization

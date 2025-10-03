@@ -181,10 +181,11 @@ VARIANTS_CONFIG=""           # Path to variants config file
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="${ZZCOLLAB_DEFAULT_BUILD_MODE:-standard}"
-BUILD_MODE="$DEFAULT_BUILD_MODE"    # Options: fast, standard, comprehensive
-# fast        = minimal Docker + minimal packages (fastest builds)
-# standard    = standard Docker + standard packages (balanced)
-# comprehensive = extended Docker + full packages (kitchen sink)
+BUILD_MODE="$DEFAULT_BUILD_MODE"    # Options: minimal, fast, standard, comprehensive
+# minimal     = bare essentials (renv, remotes, here) - ~30 seconds
+# fast        = minimal Docker + minimal packages - 2-3 minutes
+# standard    = standard Docker + standard packages (balanced) - 4-6 minutes
+# comprehensive = extended Docker + full packages (kitchen sink) - 15-20 minutes
 
 
 # Show flags (processed after modules are loaded)
@@ -270,6 +271,10 @@ parse_cli_arguments() {
                 ;;
             --prepare-dockerfile|-P)
                 PREPARE_DOCKERFILE=true
+                shift
+                ;;
+            --minimal|-M)
+                BUILD_MODE="minimal"
                 shift
                 ;;
             --fast|-F)

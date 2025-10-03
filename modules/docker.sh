@@ -280,14 +280,17 @@ create_docker_files() {
     dockerfile_template=$(get_dockerfile_template)
     
     case "$BUILD_MODE" in
+        minimal)
+            log_info "Using minimal Dockerfile template for ultra-fast builds (~30 seconds)"
+            ;;
         fast)
-            log_info "Using minimal Dockerfile template for fastest builds"
+            log_info "Using fast Dockerfile template for rapid builds (2-3 minutes)"
             ;;
         comprehensive)
-            log_info "Using extended Dockerfile template with comprehensive packages"
+            log_info "Using extended Dockerfile template with comprehensive packages (15-20 minutes)"
             ;;
         *)
-            log_info "Using standard Dockerfile template"
+            log_info "Using standard Dockerfile template (4-6 minutes)"
             ;;
     esac
     

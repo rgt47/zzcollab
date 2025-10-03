@@ -2,7 +2,7 @@
 
 ## Overview
 
-ZZCOLLAB implements a three-tiered build mode system that balances
+ZZCOLLAB implements a four-tiered build mode system that balances
 installation speed, package availability, and development flexibility.
 This guide provides comprehensive documentation of build mode
 architecture, package selection criteria, and appropriate usage
@@ -13,12 +13,13 @@ scenarios.
 Build modes represent distinct optimization strategies for different
 research contexts:
 
-- **Fast Mode**: Optimized for rapid iteration and continuous
-  integration environments
+- **Minimal Mode**: Ultra-fast bare essentials for CI/CD and rapid
+  scaffolding (~30 seconds)
+- **Fast Mode**: Development essentials for rapid iteration (2-3 minutes)
 - **Standard Mode**: Balanced configuration suitable for most research
-  workflows
+  workflows (4-6 minutes, default)
 - **Comprehensive Mode**: Complete ecosystem for complex analytical
-  requirements
+  requirements (15-20 minutes)
 
 Each mode defines package sets at two installation layers:
 Docker image packages (base layer) and renv-managed packages
@@ -26,13 +27,59 @@ Docker image packages (base layer) and renv-managed packages
 
 ## Build Mode Specifications
 
+### Minimal Mode
+
+**Command Line Flags**: `-M`, `--minimal`
+
+**Design Rationale**: Ultra-fast bare essentials environment for
+CI/CD pipelines and rapid prototyping. Provides only core dependency
+management tools. Prioritizes maximum build speed (~30 seconds).
+
+**Docker Layer Packages (3 packages)**:
+
+```
+Core Infrastructure Only:
+- renv          # Dependency management
+- remotes       # Package installation from various sources
+- here          # Path management
+```
+
+**renv Layer Packages**: Same as Docker layer (3 packages)
+
+**Typical Build Time**: ~30 seconds
+
+**Use Cases**:
+
+- GitHub Actions CI/CD requiring minimal validation
+- Quick project scaffolding (add packages later via renv)
+- Container image validation and testing
+- Teaching: rapid classroom setup demonstrations
+- Projects with highly specialized package requirements
+
+**Workflow Pattern**:
+
+```r
+# Start minimal, add only what you need
+renv::install("tidyverse")  # On-demand installation
+renv::install("targets")    # Only if using pipelines
+```
+
+**Limitations**:
+
+- No development tools (no devtools, usethis)
+- No testing framework (no testthat)
+- No documentation tools (no knitr, rmarkdown)
+- Not suitable for immediate development work
+- Requires manual installation of all other packages
+
 ### Fast Mode
 
 **Command Line Flags**: `-F`, `--fast`
 
-**Design Rationale**: Minimal viable environment enabling rapid
-project initialization and testing. Prioritizes build speed over
-feature completeness.
+**Design Rationale**: Development essentials environment enabling rapid
+project development and testing. Includes core development tools but
+omits data analysis packages. Prioritizes build speed over feature
+completeness.
 
 **Docker Layer Packages (9 packages)**:
 
