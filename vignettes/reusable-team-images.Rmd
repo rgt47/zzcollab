@@ -1,0 +1,613 @@
+---
+title: "Reusable Team Images: Build Once, Use Everywhere"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reusable Team Images: Build Once, Use Everywhere}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+This vignette explains how to create **reusable team Docker images** that dramatically speed up project initialization. Rather than building a new Docker image from rocker base images for each project (15-20 minutes for comprehensive builds), you can:
+
+1. **Build once**: Create a comprehensive team image with all your preferred packages
+2. **Push to Docker Hub**: Store the image in a central repository
+3. **Reuse everywhere**: New projects use your team image as the base (~30 seconds setup)
+
+This approach is particularly valuable for:
+
+- **Research labs** with multiple ongoing projects
+- **Teams** requiring consistent package ecosystems
+- **Solo researchers** working across multiple analyses
+- **Organizations** with standardized R environments
+
+## The Time-Saving Advantage
+
+### Traditional Approach (Per-Project Builds)
+
+```bash
+# Project 1: Build from rocker/rstudio (15-20 minutes)
+zzcollab -i -t mylab -p study1 -C -d ~/dotfiles
+
+# Project 2: Build from rocker/rstudio again (15-20 minutes)
+zzcollab -i -t mylab -p study2 -C -d ~/dotfiles
+
+# Project 3: Build from rocker/rstudio again (15-20 minutes)
+zzcollab -i -t mylab -p study3 -C -d ~/dotfiles
+
+# Total time for 3 projects: 45-60 minutes
+```
+
+### Reusable Team Image Approach
+
+```bash
+# One-time: Build comprehensive team base image (15-20 minutes)
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+
+# Project 1: Use team image as base (~30 seconds)
+zzcollab -t mylab -p study1 -I rstudio -d ~/dotfiles
+
+# Project 2: Use team image as base (~30 seconds)
+zzcollab -t mylab -p study2 -I rstudio -d ~/dotfiles
+
+# Project 3: Use team image as base (~30 seconds)
+zzcollab -t mylab -p study3 -I rstudio -d ~/dotfiles
+
+# Total time for 3 projects: ~16 minutes (73% time savings)
+```
+
+## How Team Images Work
+
+### Traditional zzcollab Architecture
+
+```
+New Project → rocker/rstudio:latest → Install 47 packages → Team Image
+              (Docker Hub)              (15-20 minutes)      (mylab/study1core-rstudio:latest)
+```
+
+Each project rebuilds from rocker base images, reinstalling all packages.
+
+### Reusable Team Image Architecture
+
+```
+One-Time Setup:
+  rocker/rstudio:latest → Install 47 packages → Team Base Image
+  (Docker Hub)            (15-20 minutes)       (mylab/baseimageecore-rstudio:latest)
+                                                 ↓ (push to Docker Hub)
+
+Subsequent Projects:
+  mylab/baseimageecore-rstudio:latest → Project-Specific Setup → Project Image
+  (Docker Hub, pre-built)                (~30 seconds)            (mylab/study1core-rstudio:latest)
+```
+
+New projects use the pre-built team image as their base, avoiding package reinstallation.
+
+## Implementation Guide
+
+### Step 1: Create Comprehensive Team Base Image
+
+The team lead creates a one-time base image with all preferred packages.
+
+```bash
+# Create comprehensive team base image
+# This takes 15-20 minutes but only needs to be done once
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+```
+
+**What this does:**
+- Builds from `rocker/rstudio:latest`
+- Installs 47+ comprehensive packages (tidyverse, tidymodels, shiny, etc.)
+- Creates `mylab/baseimageecore-rstudio:latest`
+- Pushes to Docker Hub for team access
+
+**Build mode options:**
+```bash
+# Comprehensive mode (47+ packages, recommended for team bases)
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+
+# Standard mode (17 packages, balanced)
+zzcollab -i -t mylab -p baseimage -S -B rstudio -d ~/dotfiles
+
+# Fast mode (9 packages, minimal overhead)
+zzcollab -i -t mylab -p baseimage -F -B rstudio -d ~/dotfiles
+```
+
+**Multiple interface variants:**
+```bash
+# Shell + RStudio + Verse (publishing workflow)
+zzcollab -i -t mylab -p baseimage -C -B all -d ~/dotfiles
+
+# Just RStudio (most common)
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+
+# Shell only (command-line work)
+zzcollab -i -t mylab -p baseimage -C -B r-ver -d ~/dotfiles
+```
+
+### Step 2: Verify Image on Docker Hub
+
+After the build completes, verify the image is available:
+
+```bash
+# Check image exists locally
+docker images | grep mylab/baseimageecore
+
+# Verify on Docker Hub (requires login)
+docker manifest inspect mylab/baseimageecore-rstudio:latest
+
+# Or visit Docker Hub in browser
+# https://hub.docker.com/r/mylab/baseimageecore-rstudio
+```
+
+### Step 3: Use Team Base Image for New Projects
+
+Now any team member can create new projects instantly:
+
+```bash
+# Clone or create project directory
+mkdir study1 && cd study1
+
+# Initialize project using team base image
+zzcollab -t mylab -p study1 -I rstudio -d ~/dotfiles
+```
+
+**What this does:**
+- Pulls `mylab/baseimageecore-rstudio:latest` from Docker Hub (if not cached)
+- Creates project structure (DESCRIPTION, Makefile, renv, etc.)
+- Creates `mylab/study1core-rstudio:latest` based on team image
+- Takes ~30 seconds instead of 15-20 minutes
+
+**Important**: Notice we use `-I rstudio` (interface selection) instead of `-B rstudio` (base image building). The `-I` flag tells zzcollab to use an existing team image.
+
+## Practical Examples
+
+### Example 1: Solo Researcher with Multiple Projects
+
+Dr. Smith works on various analyses and wants consistent environments.
+
+```bash
+# One-time setup: Create personal base image (Sunday afternoon)
+zzcollab -i -t drsmith -p mybase -C -B rstudio -d ~/dotfiles
+# Takes 15-20 minutes, grab coffee
+
+# Monday: Start microbiome analysis
+mkdir microbiome-study && cd microbiome-study
+zzcollab -t drsmith -p microbiome-study -I rstudio -d ~/dotfiles
+# Ready in 30 seconds
+
+# Wednesday: Start climate modeling project
+mkdir climate-model && cd climate-model
+zzcollab -t drsmith -p climate-model -I rstudio -d ~/dotfiles
+# Ready in 30 seconds
+
+# Friday: Start survey analysis
+mkdir survey-analysis && cd survey-analysis
+zzcollab -t drsmith -p survey-analysis -I rstudio -d ~/dotfiles
+# Ready in 30 seconds
+
+# Total time: ~16 minutes vs 45-60 minutes (traditional approach)
+```
+
+### Example 2: Research Lab with Team Collaboration
+
+A genomics lab with 5 researchers and multiple ongoing studies.
+
+**Team Lead (one-time setup):**
+```bash
+# Create lab base image with comprehensive bioinformatics tools
+zzcollab -i -t genomicslab -p labbase -C -B rstudio -d ~/dotfiles
+
+# Optionally add specialized variant
+cd /path/to/zzcollab
+./add_variant.sh
+# Select: bioinformatics variant
+# Builds genomicslab/labbasecore-rstudio with Bioconductor packages
+```
+
+**Team Members (joining projects):**
+```bash
+# Researcher 1: Cancer genomics project
+git clone https://github.com/genomicslab/cancer-study.git
+cd cancer-study
+zzcollab -t genomicslab -p cancer-study -I rstudio -d ~/dotfiles
+make docker-rstudio  # Start RStudio at localhost:8787
+
+# Researcher 2: RNA-seq analysis
+git clone https://github.com/genomicslab/rnaseq-analysis.git
+cd rnaseq-analysis
+zzcollab -t genomicslab -p rnaseq-analysis -I rstudio -d ~/dotfiles
+make docker-rstudio
+
+# Researcher 3: New variant calling project
+mkdir variant-calling && cd variant-calling
+zzcollab -t genomicslab -p variant-calling -I rstudio -d ~/dotfiles
+make docker-rstudio
+
+# All 3 researchers ready in ~90 seconds total
+# Traditional approach: 45-60 minutes total
+```
+
+### Example 3: Organization with Standardized Environment
+
+A data science consulting firm requires consistent package versions across all client projects.
+
+**DevOps Team (quarterly base image updates):**
+```bash
+# Q1 2025: Create standardized base image
+zzcollab -i -t datasci-firm -p q1-2025-base -C -B rstudio -d ~/dotfiles
+
+# Push to private Docker registry (optional)
+docker tag datasci-firm/q1-2025-basecore-rstudio:latest \
+  registry.company.com/datasci-firm/q1-2025-basecore-rstudio:latest
+docker push registry.company.com/datasci-firm/q1-2025-basecore-rstudio:latest
+```
+
+**Data Scientists (creating client projects):**
+```bash
+# Client A: Retail analytics
+mkdir client-a-retail && cd client-a-retail
+zzcollab -t datasci-firm -p client-a-retail -I rstudio -d ~/dotfiles
+
+# Client B: Financial modeling
+mkdir client-b-finance && cd client-b-finance
+zzcollab -t datasci-firm -p client-b-finance -I rstudio -d ~/dotfiles
+
+# Client C: Healthcare dashboards
+mkdir client-c-health && cd client-c-health
+zzcollab -t datasci-firm -p client-c-health -I rstudio -d ~/dotfiles
+
+# All projects use identical Q1 2025 package versions
+# No "works on my machine" issues
+```
+
+## Advanced Patterns
+
+### Pattern 1: Multiple Team Base Images
+
+Create different base images for different research domains:
+
+```bash
+# Bioinformatics base (Bioconductor packages)
+zzcollab -i -t mylab -p bio-base -C -B rstudio -d ~/dotfiles
+# Use for: genomics, transcriptomics, proteomics projects
+
+# Geospatial base (sf, terra, leaflet)
+zzcollab -i -t mylab -p geo-base -C -B rstudio -d ~/dotfiles
+# Use for: climate modeling, ecology, urban planning projects
+
+# Machine learning base (tidymodels, xgboost)
+zzcollab -i -t mylab -p ml-base -C -B rstudio -d ~/dotfiles
+# Use for: predictive modeling, classification, regression projects
+
+# Web apps base (shiny, plotly, flexdashboard)
+zzcollab -i -t mylab -p shiny-base -C -B rstudio -d ~/dotfiles
+# Use for: interactive dashboards, web applications
+```
+
+### Pattern 2: Versioned Base Images
+
+Maintain version history for reproducibility:
+
+```bash
+# Create dated base image
+zzcollab -i -t mylab -p base-2025-01 -C -B rstudio -d ~/dotfiles
+
+# Tag with semantic version
+docker tag mylab/base-2025-01core-rstudio:latest \
+  mylab/base-2025-01core-rstudio:v1.0.0
+docker push mylab/base-2025-01core-rstudio:v1.0.0
+
+# Projects can reference specific versions
+# Modify project Dockerfile to use:
+# FROM mylab/base-2025-01core-rstudio:v1.0.0
+```
+
+### Pattern 3: Incremental Updates to Base Images
+
+Update base images without rebuilding from scratch:
+
+```bash
+# Add new package to existing base image
+docker run --rm -it mylab/baseimageecore-rstudio:latest R
+
+# Inside container:
+install.packages("newpackage")
+quit()
+
+# Commit changes to new version
+docker commit <container-id> mylab/baseimageecore-rstudio:v1.1.0
+docker push mylab/baseimageecore-rstudio:v1.1.0
+
+# Or rebuild base image with updated packages
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+# Leverages Docker layer caching for faster rebuilds
+```
+
+## Docker Hub Storage Considerations
+
+### Free Tier Limits (Docker Hub)
+
+- **Public repositories**: Unlimited, free forever
+- **Private repositories**: 1 private repo on free tier
+- **Image pulls**: Rate limits apply (200 pulls per 6 hours for free tier)
+
+### Storage Strategies
+
+**For public research (recommended):**
+```bash
+# Use public repositories (no cost)
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+# Pushes to public mylab/baseimageecore-rstudio:latest
+# No storage costs, unlimited team access
+```
+
+**For private/proprietary work:**
+```bash
+# Option 1: Docker Hub paid tier ($7/month for unlimited private repos)
+# Option 2: Self-hosted registry (GitLab, Harbor, etc.)
+# Option 3: Cloud provider registries (AWS ECR, Google GCR, Azure ACR)
+```
+
+### Image Size Optimization
+
+Comprehensive builds create large images (~2-4 GB). Optimize storage:
+
+```bash
+# Check image sizes
+docker images | grep mylab/baseimageecore
+
+# Remove old versions periodically
+docker rmi mylab/baseimageecore-rstudio:v1.0.0
+
+# Use .dockerignore to exclude unnecessary files
+echo "*.Rcheck" >> .dockerignore
+echo "temp_*" >> .dockerignore
+```
+
+## Updating Team Base Images
+
+### When to Update Base Images
+
+- **Quarterly**: Recommended for most teams (balances stability vs currency)
+- **Monthly**: For teams requiring latest package versions
+- **After major releases**: When critical packages update (e.g., tidyverse 2.0)
+- **When adding new team members**: If new domain expertise requires new packages
+
+### Update Process
+
+```bash
+# Rebuild base image with latest packages
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+
+# Tag as new version
+docker tag mylab/baseimageecore-rstudio:latest \
+  mylab/baseimageecore-rstudio:2025-04
+docker push mylab/baseimageecore-rstudio:2025-04
+
+# Notify team to pull updated image
+docker pull mylab/baseimageecore-rstudio:latest
+
+# Existing projects continue using old versions (reproducible)
+# New projects use updated image
+```
+
+## Troubleshooting
+
+### Issue: "Image not found on Docker Hub"
+
+```bash
+# Check image name matches exactly
+docker images | grep mylab/baseimageecore
+
+# Verify push succeeded
+docker manifest inspect mylab/baseimageecore-rstudio:latest
+
+# Re-push if needed
+docker push mylab/baseimageecore-rstudio:latest
+```
+
+### Issue: "Authentication required"
+
+```bash
+# Login to Docker Hub
+docker login
+# Enter username and password
+
+# For private registries
+docker login registry.company.com
+```
+
+### Issue: "Image pull rate limit exceeded"
+
+Docker Hub free tier limits pulls to 200 per 6 hours.
+
+**Solutions:**
+```bash
+# Option 1: Login to Docker Hub (increases limit to 200 per 6 hours per user)
+docker login
+
+# Option 2: Use cached images (don't pull if local copy exists)
+docker images | grep mylab/baseimageecore
+# If exists locally, zzcollab uses cached version
+
+# Option 3: Upgrade to Docker Hub paid tier (unlimited pulls)
+```
+
+### Issue: "Build takes longer than expected"
+
+```bash
+# Check Docker layer caching
+docker build --no-cache -f Dockerfile.teamcore -t test-image .
+# Compare with cached build:
+docker build -f Dockerfile.teamcore -t test-image .
+
+# Optimize Dockerfile layer order
+# Put frequently changing commands last
+# Put stable dependencies first (leverages caching)
+```
+
+## Best Practices
+
+### 1. Name Base Images Descriptively
+
+```bash
+# Good: Indicates purpose and currency
+mylab/bioinformatics-base-2025
+mylab/datascience-comprehensive
+mylab/shiny-apps-standard
+
+# Avoid: Generic names
+mylab/base
+mylab/image1
+mylab/test
+```
+
+### 2. Document Base Image Contents
+
+Create `BASE_IMAGE_README.md` in base image project:
+
+```markdown
+# Lab Base Image: mylab/baseimageecore-rstudio
+
+## Purpose
+Comprehensive data science environment for lab projects.
+
+## Build Mode
+Comprehensive (-C): 47+ packages
+
+## Key Packages
+- tidyverse (2.0.0): Data manipulation
+- tidymodels (1.2.0): Machine learning
+- shiny (1.8.0): Web applications
+- targets (1.7.0): Pipeline management
+
+## Last Updated
+2025-01-15
+
+## Rebuild Command
+zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+```
+
+### 3. Use Semantic Versioning for Critical Bases
+
+```bash
+# Major version: Breaking changes (R version upgrade, package removals)
+mylab/baseimageecore-rstudio:v2.0.0
+
+# Minor version: New packages added
+mylab/baseimageecore-rstudio:v1.1.0
+
+# Patch version: Package version updates only
+mylab/baseimageecore-rstudio:v1.0.1
+```
+
+### 4. Test Base Images Before Team Deployment
+
+```bash
+# Build test base image
+zzcollab -i -t mylab -p baseimage-test -C -B rstudio -d ~/dotfiles
+
+# Test with sample project
+mkdir test-project && cd test-project
+zzcollab -t mylab -p test-project -I rstudio -d ~/dotfiles
+make docker-rstudio
+
+# Verify all key packages load
+# In RStudio:
+library(tidyverse)
+library(tidymodels)
+library(shiny)
+# etc.
+
+# If tests pass, promote to production
+docker tag mylab/baseimage-testcore-rstudio:latest \
+  mylab/baseimageecore-rstudio:latest
+docker push mylab/baseimageecore-rstudio:latest
+```
+
+### 5. Maintain Team Base Image Registry
+
+Keep a centralized list of available base images:
+
+```bash
+# team-base-images.md
+# Lab Base Images
+
+| Name | Build Mode | Purpose | Last Updated |
+|------|------------|---------|--------------|
+| mylab/bio-base | Comprehensive | Bioconductor genomics | 2025-01-15 |
+| mylab/geo-base | Comprehensive | Geospatial analysis | 2025-01-10 |
+| mylab/ml-base | Standard | Machine learning | 2025-01-05 |
+| mylab/shiny-base | Standard | Web dashboards | 2024-12-20 |
+
+## Usage
+# For bioinformatics projects:
+zzcollab -t mylab -p <project-name> -I rstudio -d ~/dotfiles
+# (Uses mylab/bio-base automatically)
+```
+
+## Decision Framework
+
+### Should You Create a Reusable Team Base Image?
+
+**Strong Yes if:**
+- You work on 3+ projects with similar package requirements
+- You have a team with consistent development environment needs
+- You frequently start new projects (monthly or more)
+- Build time is a bottleneck in your workflow
+- You need reproducible environments across projects
+
+**Maybe if:**
+- You have 1-2 ongoing projects only
+- Package requirements vary widely between projects
+- You rarely start new projects (quarterly or less)
+- You're experimenting with different package ecosystems
+
+**Probably No if:**
+- Single project, infrequent updates
+- Extremely specialized package requirements per project
+- Storage constraints (Docker Hub free tier, limited disk space)
+- Team members have different R version requirements
+
+### Build Mode Selection for Base Images
+
+| Use Case | Recommended Mode | Rationale |
+|----------|------------------|-----------|
+| General purpose team base | Comprehensive (-C) | 47+ packages covers most needs |
+| Specialized domain (bio/geo) | Comprehensive (-C) | Domain packages + general tools |
+| Lightweight CI/CD base | Fast (-F) | 9 packages, quick builds |
+| Teaching/workshops | Standard (-S) | 17 packages, balanced |
+| Minimal custom base | Minimal (-M) | 3 packages, add via renv |
+
+## Summary
+
+Reusable team base images provide substantial time savings for teams and solo researchers working across multiple projects:
+
+**Key Benefits:**
+- **73% time savings**: ~30 seconds vs 15-20 minutes per project
+- **Consistency**: Identical package versions across all projects
+- **Collaboration**: Team members share exact environments
+- **Cost-effective**: Free on Docker Hub for public repositories
+
+**Recommended Workflow:**
+1. Create comprehensive team base image (one-time, 15-20 minutes)
+2. Push to Docker Hub for team access
+3. Use base image for all new projects (~30 seconds each)
+4. Update base image quarterly or as needed
+
+**Best For:**
+- Research labs with multiple ongoing projects
+- Solo researchers with diverse analyses
+- Organizations requiring standardized environments
+- Teams needing reproducible collaboration tools
+
+This approach transforms zzcollab from a per-project build system into a reusable infrastructure platform, dramatically improving developer productivity while maintaining full reproducibility guarantees.
