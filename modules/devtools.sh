@@ -418,11 +418,26 @@ show_getting_started_guide() {
     cat << 'EOF'
 
 🚀 GETTING STARTED:
-1. Run 'make help' to see all available commands
-2. Use 'make docker-build' to create development environment
-3. Start coding with 'make docker-rstudio' or 'make docker-r'
-4. Develop packages with 'make check' and 'make test'
-5. Render papers with 'make docker-render'
+
+IMPORTANT: You must create a zzcollab PROJECT first (not use this source repo).
+
+1. Navigate to your projects directory:
+   cd ~/projects   # Or wherever you keep your work
+
+2. Create a new zzcollab project:
+   zzcollab -i -t TEAMNAME -p PROJECTNAME -B rstudio -S -d ~/dotfiles
+
+3. Set up project structure:
+   mkdir PROJECTNAME && cd PROJECTNAME
+   zzcollab -t TEAMNAME -p PROJECTNAME -I rstudio -d ~/dotfiles
+
+4. Start development in your PROJECT directory:
+   make docker-rstudio    # RStudio at localhost:8787
+   make docker-zsh        # Command-line environment
+   make help              # See all available commands
+
+Note: Make targets (docker-rstudio, docker-zsh, etc.) only work in zzcollab
+      project directories, NOT in the zzcollab source repository.
 EOF
 }
 
