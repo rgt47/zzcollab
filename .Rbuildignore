@@ -34,3 +34,6 @@
 ^temp$
 ^workflow\.pdf$
 ^DATA_ANALYSIS_TESTING_GUIDE\.pdf$
+^CLAUDE\.md$
+^Dockerfile\.verse-multiarch$
+^examples$

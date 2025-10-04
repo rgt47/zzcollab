@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(//Users/zenn/Dropbox/prj/d07/zzcollab/**)"
-    ],
-    "deny": [],
-    "ask": []
-  }
-}
