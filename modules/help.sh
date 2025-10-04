@@ -272,10 +272,30 @@ EOF
 show_help_footer() {
     cat << EOF
 
-For more specific help with team initialization, run: zzcollab --help-init
-For Docker variants configuration help, run: zzcollab --help-variants
-For GitHub integration help, run: zzcollab --help-github
-For development workflow guidance, run: zzcollab --next-steps
+SPECIALIZED HELP PAGES:
+
+Getting Started:
+  zzcollab --help-quickstart      Individual researcher quick start guide
+  zzcollab --help-workflow        Daily development workflow
+
+Configuration:
+  zzcollab --help-config          Configuration system guide
+  zzcollab --help-dotfiles        Dotfiles setup and management
+  zzcollab --help-build-modes     Build mode selection guide
+
+Technical Details:
+  zzcollab --help-init            Team initialization process
+  zzcollab --help-variants        Docker variants configuration
+  zzcollab --help-docker          Docker essentials for researchers
+  zzcollab --help-renv            Package management with renv
+  zzcollab --help-cicd            CI/CD and GitHub Actions
+
+Integration:
+  zzcollab --help-github          GitHub integration and automation
+  zzcollab --help-troubleshooting Common issues and solutions
+
+Development:
+  zzcollab --next-steps           Development workflow guidance
 
 📋 RESEARCH COMPENDIUM GUIDE:
 After project creation, see README.md for comprehensive information about:
