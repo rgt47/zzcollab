@@ -1136,16 +1136,18 @@ join_project(
 ### Configuration Options
 
 #### Build Modes
-zzcollab supports three build modes optimized for different use cases:
+zzcollab supports four build modes optimized for different use cases:
 
 | Mode | Flag | Packages | Build Time | Use Case |
 |------|------|----------|------------|----------|
-| **Fast** | `-F` | ~8 packages | Fast | Quick development, CI/CD |
-| **Standard** | `-S` (default) | ~15 packages | Medium | Balanced workflows |
-| **Comprehensive** | `-C` | ~27 packages | Slow | Full feature environments |
+| **Minimal** | `-M` | 3 packages | Ultra-fast (~30s) | Learning, bare essentials |
+| **Fast** | `-F` | ~9 packages | Fast (2-3 min) | Quick development, CI/CD |
+| **Standard** | `-S` (default) | ~17 packages | Medium (4-6 min) | Balanced workflows |
+| **Comprehensive** | `-C` | ~47 packages | Slow (15-20 min) | Full feature environments |
 
 ```bash
 # Build mode examples
+zzcollab -i -t mylab -p study2024 -M -d ~/dotfiles    # Minimal mode (ultra-fast)
 zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles    # Fast mode
 zzcollab -i -t mylab -p study2024 -S -d ~/dotfiles    # Standard mode (default)
 zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles    # Comprehensive mode

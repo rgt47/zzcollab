@@ -49,7 +49,7 @@ reproducible research environments. The system consists of:
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **Simplified CLI**: 3 clear build modes with shortcuts (-F, -S, -C) and selective base image building (-B, -V, -I)
+- **Simplified CLI**: 4 clear build modes with shortcuts (-M, -F, -S, -C) and selective base image building (-B, -V, -I)
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
 - **Single source of truth**: Variant definitions in `variant_examples.yaml` eliminate duplication
 - **14+ Docker variants**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
@@ -1016,7 +1016,7 @@ zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing work
 
 ### Simplified Build Modes (NEW)
 
-ZZCOLLAB now uses a simplified 3-mode system that replaces the previous complex flag combinations. This provides clear, intuitive choices for users:
+ZZCOLLAB now uses a simplified 4-mode system that replaces the previous complex flag combinations. This provides clear, intuitive choices for users:
 
 #### Build Modes:
 - **Minimal (-M)**: Ultra-fast bare essentials (3 packages, ~30 seconds)
@@ -1043,7 +1043,7 @@ ZZCOLLAB has undergone comprehensive refactoring to improve maintainability and 
 - **Total cleanup**: Removed 3,000+ lines of duplicate/dead code
 
 ### User Experience Enhancements:
-- **Simplified CLI**: 3 clear build modes (-F, -S, -C) replace 8+ complex flags
+- **Simplified CLI**: 4 clear build modes (-M, -F, -S, -C) replace 8+ complex flags
 - **Comprehensive shortcuts**: All major flags now have single-letter shortcuts
 - **Better error messages**: Clear, actionable error messages with helpful guidance
 - **Backward compatibility**: Legacy flags still work with deprecation warnings
@@ -1071,7 +1071,7 @@ ZZCOLLAB has undergone comprehensive refactoring to improve maintainability and 
 - ✅ **No upfront decisions** - start simple, add complexity as research evolves
 - ✅ **Progressive disclosure** - research evolves organically without migration
 - ✅ **Marwick/rrtools compatible** - follows research compendium best practices
-- ✅ **Simplified package selection** - 3 build modes instead of 3 paradigms × 3 modes
+- ✅ **Simplified package selection** - 4 build modes instead of 3 paradigms × 3 modes
 
 **Unified Directory Structure**:
 ```
