@@ -545,16 +545,17 @@ join_project <- function(team_name = NULL, project_name = NULL, interface = "she
 #' @param packages Character vector of package names
 #' @param update_snapshot Logical, update renv.lock after installation
 #' @return Logical indicating success
+#' @importFrom utils install.packages
 #' @export
 add_package <- function(packages, update_snapshot = TRUE) {
   if (!requireNamespace("renv", quietly = TRUE)) {
     stop("renv package is required for this function")
   }
-  
+
   # Install packages
   for (pkg in packages) {
     message("Installing package: ", pkg)
-    install.packages(pkg)
+    utils::install.packages(pkg)
   }
   
   # Update snapshot if requested
