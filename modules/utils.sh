@@ -55,65 +55,24 @@ safe_copy() {
     fi
 }
 
-# Function: safe_symlink
-# Purpose: Create symbolic link with error handling and logging
-# Arguments: $1 - target, $2 - link name, $3 - description (optional)
-safe_symlink() {
-    local target="$1"
-    local link="$2"
-    local description="${3:-symlink}"
-    
-    if ln -sf "$target" "$link" 2>/dev/null; then
-        log_info "Created $description: $link → $target"
-        track_symlink "$link" "$target"
-        return 0
-    else
-        log_error "Failed to create $description: $link → $target"
-        return 1
-    fi
-}
+# Function: safe_symlink - REMOVED (unused)
+# All symlink operations use direct ln -sf commands
+# Removed to eliminate dead code (0 calls found)
 
 #=============================================================================
-# ESSENTIAL VALIDATION FUNCTIONS
+# ESSENTIAL VALIDATION FUNCTIONS - REMOVED (unused)
 #=============================================================================
-
-# Function: file_exists_and_readable
-# Purpose: Check if file exists and is readable
-# Arguments: $1 - file path
-file_exists_and_readable() {
-    [[ -f "$1" && -r "$1" ]]
-}
-
-# Function: dir_exists_and_writable
-# Purpose: Check if directory exists and is writable
-# Arguments: $1 - directory path
-dir_exists_and_writable() {
-    [[ -d "$1" && -w "$1" ]]
-}
-
-# Function: is_valid_identifier
-# Purpose: Check if string is a valid identifier (package name, variable name, etc.)
-# Arguments: $1 - string to validate
-is_valid_identifier() {
-    local identifier="$1"
-    [[ "$identifier" =~ ^[a-zA-Z][a-zA-Z0-9._]*$ ]]
-}
+# The following functions were removed as they had 0 calls:
+# - file_exists_and_readable() - Direct [[ -f && -r ]] tests used instead
+# - dir_exists_and_writable() - Direct [[ -d && -w ]] tests used instead
+# - is_valid_identifier() - Validation done inline where needed
 
 #=============================================================================
-# ESSENTIAL SYSTEM UTILITIES
+# ESSENTIAL SYSTEM UTILITIES - REMOVED (unused)
 #=============================================================================
-
-# Function: is_docker_available
-# Purpose: Check if Docker is available and running
-is_docker_available() {
-    command_exists docker && docker info >/dev/null 2>&1
-}
-
-# Function: is_git_repo
-# Purpose: Check if current directory is a git repository
-is_git_repo() {
-    git rev-parse --git-dir >/dev/null 2>&1
-}
+# The following functions were removed as they had 0 calls:
+# - is_docker_available() - Direct docker checks used instead
+# - is_git_repo() - Direct git rev-parse checks used instead
 
 #=============================================================================
 # MODULE VALIDATION

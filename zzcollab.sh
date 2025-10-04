@@ -149,8 +149,10 @@ fi
 # MODULE LOADING SYSTEM
 #=============================================================================
 
-# Basic logging before modules are loaded
-# Note: Use printf directly until core.sh is loaded to avoid function conflicts
+# Temporary bootstrap logging functions (BEFORE core.sh loads)
+# These will be REDEFINED by core.sh with full functionality after it loads
+# This allows logging during the module loading phase before core.sh is available
+# Note: This is intentional duplication - not a bug
 log_info() { printf "ℹ️  %s\n" "$*" >&2; }
 log_error() { printf "❌ %s\n" "$*" >&2; }
 

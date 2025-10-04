@@ -632,7 +632,7 @@ get_template() {
 }
 
 # Legacy wrapper functions for backward compatibility
-get_dockerfile_template() { get_template "Dockerfile"; }
+# Note: get_dockerfile_template() removed - use docker.sh version instead
 get_description_template() { get_template "DESCRIPTION"; }
 get_workflow_template() {
     # Unified paradigm uses single workflow template from unified/ directory
