@@ -1,0 +1,453 @@
+---
+title: "Quick Start: 5-Minute Reproducible Analysis"
+author: "ZZCOLLAB Development Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Quick Start: 5-Minute Reproducible Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+This quick start guide demonstrates how to create a fully reproducible analysis
+with all 5 levels of reproducibility in under 10 minutes. You will create a
+scatter plot analysis of Palmer Penguins bill measurements and push it to
+GitHub as a private repository.
+
+**What you will build:**
+- Scatter plot: bill length vs bill depth
+- Complete reproducibility: renv + Docker + Unit Testing + CI/CD
+- Private GitHub repository with automated validation
+
+**Prerequisites:**
+- Docker installed and running
+- GitHub account (example: rgt47)
+- Personal access token for GitHub (with repo permissions)
+- zzcollab installed (`./install.sh`)
+
+# Step-by-Step Instructions
+
+## Step 1: Configure ZZCOLLAB (30 seconds)
+
+Set your defaults once to eliminate repetitive typing:
+
+```bash
+# Initialize configuration
+zzcollab --config init
+
+# Set your GitHub account
+zzcollab --config set github-account "rgt47"
+
+# Set default build mode
+zzcollab --config set build-mode "fast"
+```
+
+## Step 2: Create Project with All 5 Levels (2 minutes)
+
+Create a fully reproducible project with one command:
+
+```bash
+# Creates project with:
+# - Level 2: renv (dependency tracking)
+# - Level 3: Docker (environment isolation)
+# - Level 5: CI/CD (GitHub Actions workflows)
+zzcollab -i -t rgt47 -p penguin-bills -F -G
+
+# Flags explained:
+# -i: Initialize team Docker images
+# -t: Team name (your GitHub username)
+# -p: Project name
+# -F: Fast build mode (9 packages, ~2-3 min)
+# -G: Create GitHub repository automatically
+```
+
+**What this does:**
+1. Creates Docker team images with R + essential packages
+2. Pushes images to Docker Hub
+3. Creates GitHub repository (public by default)
+4. Sets up CI/CD workflows for automated testing
+
+## Step 3: Set Repository to Private (30 seconds)
+
+```bash
+# Navigate to project
+cd penguin-bills
+
+# Make repository private using GitHub CLI
+gh repo edit --visibility private
+```
+
+## Step 4: Create Analysis Script (1 minute)
+
+Start the Docker development environment:
+
+```bash
+# Enter Docker container
+make docker-zsh
+```
+
+Inside the container, create your analysis:
+
+```r
+# Start R
+R
+
+# Create analysis script
+cat("
+library(palmerpenguins)
+library(ggplot2)
+
+# Create scatter plot
+create_bill_plot <- function(data = penguins) {
+  data %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+    geom_point(size = 3, alpha = 0.7) +
+    labs(
+      title = 'Palmer Penguins: Bill Dimensions',
+      x = 'Bill Length (mm)',
+      y = 'Bill Depth (mm)',
+      color = 'Species'
+    ) +
+    theme_minimal()
+}
+
+# Generate and save plot
+plot <- create_bill_plot()
+ggsave('figures/bill_scatter.png', plot, width = 8, height = 6)
+", file = "scripts/01_bill_analysis.R")
+
+# Install required packages
+renv::install("palmerpenguins")
+renv::install("ggplot2")
+
+# Run analysis
+source("scripts/01_bill_analysis.R")
+
+# Save dependencies
+renv::snapshot()
+
+# Exit R
+quit(save = "no")
+```
+
+## Step 5: Add Unit Tests - Level 4 (2 minutes)
+
+Still inside the Docker container, add tests for computational correctness:
+
+```r
+# Start R
+R
+
+# Initialize testing infrastructure
+usethis::use_testthat()
+
+# Create function file
+usethis::use_r("bill_analysis")
+
+# Write function (copy from script)
+cat("#' Create scatter plot of bill dimensions
+#'
+#' @param data Palmer penguins data
+#' @return ggplot object
+#' @export
+create_bill_plot <- function(data = palmerpenguins::penguins) {
+  data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
+                                  color = species)) +
+    ggplot2::geom_point(size = 3, alpha = 0.7) +
+    ggplot2::labs(
+      title = 'Palmer Penguins: Bill Dimensions',
+      x = 'Bill Length (mm)',
+      y = 'Bill Depth (mm)',
+      color = 'Species'
+    ) +
+    ggplot2::theme_minimal()
+}
+", file = "R/bill_analysis.R")
+
+# Create test file
+cat("test_that('create_bill_plot produces valid ggplot', {
+  plot <- create_bill_plot()
+
+  # Valid ggplot object
+  expect_s3_class(plot, 'ggplot')
+
+  # Correct title
+  expect_equal(plot$labels$title, 'Palmer Penguins: Bill Dimensions')
+})
+
+test_that('create_bill_plot handles missing data', {
+  # Data with missing values
+  test_data <- palmerpenguins::penguins
+  test_data$bill_length_mm[1:5] <- NA
+
+  plot <- create_bill_plot(test_data)
+
+  # Should still produce plot
+  expect_s3_class(plot, 'ggplot')
+})
+
+test_that('create_bill_plot includes all species', {
+  plot <- create_bill_plot()
+
+  # Should have species in color aesthetic
+  expect_true('species' %in% names(plot$labels))
+})
+", file = "tests/testthat/test-bill_analysis.R")
+
+# Run tests
+devtools::test()
+
+# Exit R
+quit(save = "no")
+```
+
+## Step 6: Validate and Commit (1 minute)
+
+Still in container, validate everything works:
+
+```bash
+# Run tests in clean environment
+exit  # Exit container first
+make docker-test
+
+# Validate dependencies
+Rscript validate_package_environment.R --quiet --fail-on-issues
+```
+
+Commit your work:
+
+```bash
+git add .
+git commit -m "$(cat <<'EOF'
+Add bill dimensions scatter plot analysis
+
+Analysis:
+- Scatter plot of bill length vs bill depth by species
+- Palmer Penguins dataset
+- Function-based implementation with unit tests
+
+Reproducibility:
+- Level 2: renv dependency tracking
+- Level 3: Docker environment isolation
+- Level 4: Unit tests for computational correctness
+- Level 5: CI/CD automated validation
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+
+git push
+```
+
+## Step 7: Verify CI/CD (30 seconds)
+
+Check that automated validation runs:
+
+```bash
+# View CI/CD status
+gh run list --limit 3
+
+# Or view in browser
+gh repo view --web
+```
+
+GitHub Actions will automatically:
+1. Build Docker container from scratch
+2. Validate package dependencies
+3. Run unit tests
+4. Report results
+
+# What You Built
+
+## All 5 Reproducibility Levels
+
+**Level 1**: Basic R Project ✗ (skipped for reproducibility)
+
+**Level 2**: renv ✓
+- `renv.lock` records exact package versions
+- `renv::snapshot()` captured dependencies
+
+**Level 3**: Docker ✓
+- Dockerfile specifies complete environment
+- Anyone can reproduce with `make docker-zsh`
+
+**Level 4**: Unit Testing ✓
+- Tests validate plot creation
+- Tests verify missing data handling
+- Tests confirm species included
+
+**Level 5**: CI/CD ✓
+- GitHub Actions runs on every push
+- Automated test suite execution
+- Dependency validation
+
+## Project Structure
+
+```
+penguin-bills/
+├── .github/
+│   └── workflows/
+│       └── r-package.yml        # Automated validation
+├── R/
+│   └── bill_analysis.R          # Tested function
+├── scripts/
+│   └── 01_bill_analysis.R       # Analysis script
+├── tests/
+│   └── testthat/
+│       └── test-bill_analysis.R # Unit tests
+├── figures/
+│   └── bill_scatter.png         # Output plot
+├── renv.lock                    # Exact dependencies
+├── Dockerfile                   # Environment spec
+└── DESCRIPTION                  # Project metadata
+```
+
+## Verification Checklist
+
+- ✓ Docker images built and pushed
+- ✓ GitHub repository created (private)
+- ✓ Analysis produces scatter plot
+- ✓ Unit tests pass locally
+- ✓ Dependencies captured in renv.lock
+- ✓ CI/CD validates on every push
+- ✓ Complete reproducibility achieved
+
+# Next Steps
+
+## Extend Your Analysis
+
+```r
+# Add more plots
+create_flipper_plot <- function(data = penguins) {
+  # Flipper length vs body mass
+}
+
+# Add statistical analysis
+fit_bill_model <- function(data) {
+  lm(bill_depth_mm ~ bill_length_mm * species, data = data)
+}
+
+# Write more tests
+test_that("model includes species interaction", {
+  model <- fit_bill_model(penguins)
+  expect_true("bill_length_mm:species" %in% names(coef(model)))
+})
+```
+
+## Collaborate
+
+Share your private repository:
+
+```bash
+# Add collaborator
+gh repo edit --add-collaborator username
+
+# Team member joins
+git clone https://github.com/rgt47/penguin-bills.git
+cd penguin-bills
+zzcollab -t rgt47 -p penguin-bills -I shell
+make docker-zsh  # Identical environment
+```
+
+## Publish Results
+
+```bash
+# Create manuscript
+mkdir -p analysis/paper
+# Add paper.Rmd with analysis
+
+# Render paper automatically via CI/CD
+# (already configured in .github/workflows/render-paper.yml)
+```
+
+# Troubleshooting
+
+## GitHub Repository Creation Fails
+
+```bash
+# Manual repository creation
+gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
+
+# Or without -G flag and create manually
+zzcollab -i -t rgt47 -p penguin-bills -F
+# Then: gh repo create ...
+```
+
+## Docker Build Errors
+
+```bash
+# Check Docker daemon running
+docker info
+
+# Clean rebuild
+docker system prune
+zzcollab -i -t rgt47 -p penguin-bills -F
+```
+
+## Test Failures
+
+```bash
+# Run tests with verbose output
+make docker-zsh
+R
+devtools::test()  # See detailed failure messages
+
+# Check test coverage
+covr::package_coverage()
+```
+
+## CI/CD Failures
+
+```bash
+# View workflow logs
+gh run view --log
+
+# Validate locally first
+Rscript validate_package_environment.R --quiet --fail-on-issues
+make docker-test
+```
+
+# Time Breakdown
+
+- **Step 1** (Configuration): 30 seconds
+- **Step 2** (Project creation): 2 minutes
+- **Step 3** (Make private): 30 seconds
+- **Step 4** (Analysis script): 1 minute
+- **Step 5** (Unit tests): 2 minutes
+- **Step 6** (Validate & commit): 1 minute
+- **Step 7** (Verify CI/CD): 30 seconds
+
+**Total**: ~8 minutes for complete 5-level reproducible analysis
+
+# Summary
+
+You created a fully reproducible analysis with:
+
+- **Environment consistency**: Docker ensures identical R, packages, system libraries
+- **Computational correctness**: Unit tests validate analytical logic
+- **Automated verification**: CI/CD catches errors on every commit
+- **Private collaboration**: GitHub private repo ready for team members
+- **Professional workflow**: Industry-standard practices for research software
+
+This is the gold standard for reproducible computational research. All 5 levels
+working together ensure your analysis is not only reproducible, but also
+correct and maintainable.
+
+For more details on each level, see `vignette("reproducibility-layers")`.
