@@ -168,13 +168,13 @@ rocker/r-ver (base image)
 
 ZZCOLLAB follows the **unified research compendium framework** proposed by Marwick, Boettiger, and Mullen (2018). This single flexible structure supports your entire research lifecycle from initial data exploration to package distribution—**without requiring upfront decisions or structural migrations**.
 
-### 🎯 **Core Philosophy: Progressive Disclosure**
+### **Core Philosophy: Progressive Disclosure**
 
 **Key Principle**: Research evolves organically. No upfront choice. No migration friction.
 
 Start with data analysis, naturally progress to manuscript writing, and ultimately create distributable packages—all within the same structure.
 
-### 📁 **Unified Directory Structure**
+### **Unified Directory Structure**
 
 ```
 your-research-project/
@@ -197,7 +197,7 @@ your-research-project/
 
 **Compatible with**: benmarwick/rrtools, Marwick et al. (2018) research compendium standards
 
-### 🚀 **Four-Stage Research Evolution**
+### **Four-Stage Research Evolution**
 
 **Stage 1: Data Analysis** (Day 1)
 ```r
@@ -230,7 +230,7 @@ vignettes/getting-started.Rmd
 
 **No migration required** - research evolves organically within the unified structure.
 
-### 🛠️ **Quick Start**
+### **Quick Start**
 
 **Command Line:**
 ```bash
@@ -252,7 +252,7 @@ init_project("my-research")
 init_project(team_name = "myteam", project_name = "research-project")
 ```
 
-### 📚 **Learning Resources**
+### **Learning Resources**
 
 For detailed information about the unified paradigm approach:
 - `docs/UNIFIED_PARADIGM_GUIDE.md` - Complete guide
@@ -1017,10 +1017,10 @@ zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Creates co
 ./add_variant.sh                                                    # Interactive variant browser
 
 # Variant categories available:
-# 📦 Standard: minimal, analysis, modeling, publishing (~800MB-3GB)
-# 🔬 Specialized: bioinformatics (Bioconductor), geospatial (sf/terra) (~2-2.5GB)
-# 🏔️ Alpine: ultra-lightweight for CI/CD (~200-600MB vs ~1GB rocker)
-# 🧪 R-hub: CRAN-compatible testing (Ubuntu, Fedora, Windows environments)
+# Standard: minimal, analysis, modeling, publishing (~800MB-3GB)
+# Specialized: bioinformatics (Bioconductor), geospatial (sf/terra) (~2-2.5GB)
+# Alpine: ultra-lightweight for CI/CD (~200-600MB vs ~1GB rocker)
+# R-hub: CRAN-compatible testing (Ubuntu, Fedora, Windows environments)
 
 # Manual variant configuration (edit config.yaml):
 # Set enabled: true for variants you want built
@@ -1832,7 +1832,7 @@ zzcollab_help("next-steps")
 ### Benefits of R Interface
 
 - **Native R workflow**: No need to switch between R and terminal
-- **RStudio integration**: Works seamlessly in RStudio environment
+- **RStudio integration**: Works effectively in RStudio environment
 - **Error handling**: R-style error messages and debugging
 - **Return values**: Functions return logical values for programmatic use
 - **Documentation**: Full R help system with `?status`
@@ -1956,11 +1956,11 @@ create_pr(
 ### Collaboration Features
 
 #### Automated Quality Assurance on Every Push
-- ✅ **R Package Validation**: R CMD check with dependency validation
-- ✅ **Comprehensive Testing Suite**: Unit tests, integration tests, and data validation
-- ✅ **Paper Rendering**: Automated PDF generation and artifact upload
-- ✅ **Multi-platform Testing**: Ensures compatibility across environments
-- ✅ **Dependency Sync**: renv validation and DESCRIPTION file updates
+- **R Package Validation**: R CMD check with dependency validation
+- **Comprehensive Testing Suite**: Unit tests, integration tests, and data validation
+- **Paper Rendering**: Automated PDF generation and artifact upload
+- **Multi-platform Testing**: Ensures compatibility across environments
+- **Dependency Sync**: renv validation and DESCRIPTION file updates
 
 #### Test-Driven Development Workflow
 - **Unit Tests**: Every R function has corresponding tests in `tests/testthat/`
