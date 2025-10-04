@@ -144,7 +144,7 @@ variants:
     # Full definition automatically pulled from variant_examples.yaml
 
   modeling:
-    enabled: false   # Disable this variant (won't be built)
+    enabled: false   # Disable this variant (will not be built)
 
   custom_ml:
     enabled: true
@@ -833,7 +833,7 @@ zzcollab --variants-config config.yaml --build-only minimal
 
 **Issue**: `yq` command not found
 ```bash
-# Error: YAML configuration requires yq but it's not installed
+# Error: YAML configuration requires yq but it is not installed
 Error: Configuration validation failed - yq command not found
 ```
 
@@ -945,7 +945,7 @@ Edit the appropriate configuration file:
 # To use user default, remove from project config
 vim ./zzcollab.yaml  # Remove build_mode setting
 
-# To set project-specific override, ensure it's intentional
+# To set project-specific override, ensure it is intentional
 echo "# Project uses comprehensive mode instead of user default" >> ./zzcollab.yaml
 ```
 
@@ -1261,7 +1261,7 @@ This separation ensures that sensitive organization settings cannot be overridde
 
 # Conclusion
 
-ZZCOLLAB's configuration system provides powerful, flexible control over research environments while maintaining simplicity for common use cases. The multi-layered hierarchy allows individual preferences, team coordination, and organizational policies to coexist seamlessly.
+ZZCOLLAB's configuration system provides powerful, flexible control over research environments while maintaining simplicity for common use cases. The multi-layered hierarchy allows individual preferences, team coordination, and organizational policies to coexist effectively.
 
 Key takeaways:
 
@@ -1271,7 +1271,7 @@ Key takeaways:
 4. **Optimize for workflow**: Choose variants and packages that match your research needs
 5. **Validate regularly**: Use configuration validation to catch issues early
 
-The configuration system scales from solo researchers to large organizations, providing reproducible, customizable research environments that eliminate configuration drift and enable seamless collaboration.
+The configuration system scales from solo researchers to large organizations, providing reproducible, customizable research environments that eliminate configuration drift and enable effective collaboration.
 
 For detailed technical documentation, see:
 - `zzcollab --help` for command-line options

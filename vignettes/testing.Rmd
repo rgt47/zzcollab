@@ -688,7 +688,7 @@ test_that("analysis environment is reproducible", {
 3. **Ignoring Random Elements**: Always set seeds when testing functions 
    with randomness
 4. **Insufficient Data Validation**: Test data assumptions explicitly
-5. **Skipping Integration Tests**: Unit tests alone don't catch pipeline 
+5. **Skipping Integration Tests**: Unit tests alone do not catch pipeline 
    failures
 
 ### Performance Considerations

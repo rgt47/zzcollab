@@ -435,7 +435,7 @@ Docker Hub free tier limits pulls to 200 per 6 hours.
 # Option 1: Login to Docker Hub (increases limit to 200 per 6 hours per user)
 docker login
 
-# Option 2: Use cached images (don't pull if local copy exists)
+# Option 2: Use cached images (do not pull if local copy exists)
 docker images | grep mylab/baseimageecore
 # If exists locally, zzcollab uses cached version
 

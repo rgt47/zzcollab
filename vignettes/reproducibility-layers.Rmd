@@ -111,7 +111,7 @@ Appropriate for:
 - Short-lived projects (< 1 week)
 - Learning R and packages
 - Quick prototypes not intended for sharing
-- Analysis you won't revisit
+- Analysis you will not revisit
 
 Not appropriate for:
 
@@ -186,7 +186,7 @@ renv::restore()   # Installs from renv.lock
 ## Pros
 
 - **Version locking**: Exact package versions recorded in renv.lock
-- **Project isolation**: Projects don't interfere with each other
+- **Project isolation**: Projects do not interfere with each other
 - **Collaboration support**: Team members get identical package versions
 - **Explicit dependencies**: renv.lock documents all required packages
 - **Time resilience**: Project works months/years later with same packages
@@ -457,11 +457,11 @@ git push
 - **Automated validation**: Every commit tested automatically
 - **Clean environment testing**: Catches "works on my machine" problems
 - **Team notification**: Everyone notified when code breaks
-- **Prevents regressions**: Tests ensure new code doesn't break old code
+- **Prevents regressions**: Tests ensure new code does not break old code
 - **Documentation validation**: Ensures examples in documentation work
 - **Deployment automation**: Can auto-deploy working versions
 - **Confidence in main branch**: Main branch always in working state
-- **Newcomer safety**: Contributors can't accidentally break the project
+- **Newcomer safety**: Contributors cannot accidentally break the project
 
 ## Cons
 
