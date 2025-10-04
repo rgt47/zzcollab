@@ -10,9 +10,9 @@ When working with the user on this codebase, prioritize technical accuracy and c
 - **Challenge assumptions**: Question design decisions, implementation approaches, and stated requirements when they may lead to suboptimal outcomes
 - **Identify flaws**: Point out potential bugs, architectural issues, security concerns, or maintenance problems in proposed solutions
 - **Offer alternatives**: When disagreeing with an approach, explain why and suggest better alternatives with specific technical reasoning
-- **Be direct**: State clearly when something is incorrect, inefficient, or violates best practices - don't soften criticism unnecessarily
+- **Be direct**: State clearly when something is incorrect, inefficient, or violates best practices - do not soften criticism unnecessarily
 - **Focus on facts**: Base feedback on technical merits, not agreement. If the user is wrong about how something works, explain the correct behavior
-- **Acknowledge good ideas**: When the user's approach is sound, say so and explain why it's effective
+- **Acknowledge good ideas**: When the user's approach is sound, say so and explain why it is effective
 - **Ask clarifying questions**: When requirements are unclear or seem problematic, probe deeper before implementing
 
 This codebase values correctness and maintainability over politeness. Prioritize helping the user build robust software through honest technical assessment.
@@ -140,9 +140,9 @@ init_project(
 ### Learning Resources
 
 **Tutorial Examples** (in zzcollab repo, not installed):
-- 📚 **Step-by-step workflows**: EDA, modeling, validation, dashboards, reporting
-- 🔬 **Complete projects**: Full example research compendia
-- 🧩 **Code patterns**: Reusable patterns for common tasks
+- **Step-by-step workflows**: EDA, modeling, validation, dashboards, reporting
+- **Complete projects**: Full example research compendia
+- **Code patterns**: Reusable patterns for common tasks
 
 **Location**: `https://github.com/rgt47/zzcollab/tree/main/examples`
 
@@ -172,9 +172,9 @@ ZZCOLLAB features a powerful multi-layered configuration system that controls Do
 4. **Built-in defaults** - Fallback values ensuring system functionality
 
 **Three Configuration Domains**:
-- **🐳 Docker Variant Management** - 14+ specialized environments with custom base images and packages
-- **📦 Package Management** - Build modes (Fast/Standard/Comprehensive) with flexible package selection
-- **⚙️ Development Settings** - Team collaboration, GitHub integration, and automation preferences
+- **Docker Variant Management** - 14+ specialized environments with custom base images and packages
+- **Package Management** - Build modes (Fast/Standard/Comprehensive) with flexible package selection
+- **Development Settings** - Team collaboration, GitHub integration, and automation preferences
 
 ### Configuration Commands
 ```bash
@@ -198,7 +198,7 @@ zzcollab --config list
 zzcollab --config validate
 ```
 
-### 🐳 Docker Variant Configuration System
+### Docker Variant Configuration System
 
 ZZCOLLAB's variant system provides 14+ specialized Docker environments with a single source of truth architecture:
 
@@ -218,17 +218,17 @@ zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml
 ```
 
 **Variant Categories Available**:
-- **📦 Standard Research** (6 variants): minimal (~800MB), analysis (~1.2GB), modeling (~1.5GB), publishing (~3GB), shiny (~1.8GB), shiny_verse (~3.5GB)
-- **🔬 Specialized Domains** (2 variants): bioinformatics (~2GB), geospatial (~2.5GB)
-- **🏔️ Lightweight Alpine** (3 variants): alpine_minimal (~200MB), alpine_analysis (~400MB), hpc_alpine (~600MB)
-- **🧪 R-Hub Testing** (3 variants): rhub_ubuntu (~1GB), rhub_fedora (~1.2GB), rhub_windows (~1.5GB)
+- **Standard Research** (6 variants): minimal (~800MB), analysis (~1.2GB), modeling (~1.5GB), publishing (~3GB), shiny (~1.8GB), shiny_verse (~3.5GB)
+- **Specialized Domains** (2 variants): bioinformatics (~2GB), geospatial (~2.5GB)
+- **Lightweight Alpine** (3 variants): alpine_minimal (~200MB), alpine_analysis (~400MB), hpc_alpine (~600MB)
+- **R-Hub Testing** (3 variants): rhub_ubuntu (~1GB), rhub_fedora (~1.2GB), rhub_windows (~1.5GB)
 
 **Single Source of Truth**:
 - **Master Library**: `templates/variant_examples.yaml` contains all variant definitions
 - **Team Configuration**: `templates/config.yaml` selects which variants to enable
 - **No Duplication**: Teams reference variants by name, full definitions pulled automatically
 
-### 📦 Package Management System
+### Package Management System
 
 *For comprehensive build mode documentation, see [Build Modes Guide](docs/BUILD_MODES.md)*
 
@@ -513,7 +513,7 @@ ZZCOLLAB includes a detailed **`DATA_WORKFLOW_GUIDE.md`** that provides step-by-
 
 **Enhanced Key Features**:
 - **Scientific rationale**: Comprehensive explanation of why data testing prevents research integrity issues
-- **HOST vs CONTAINER operations**: Clear visual separation with 💻 and 🐳 indicators for environment context
+- **HOST vs CONTAINER operations**: Clear visual separation with and indicators for environment context
 - **Documentation structure**: Complete guidance on structured data documentation with 13 specific sections
 - **Palmer Penguins examples**: Working code examples throughout all 6 phases
 - **Template integration**: Automatically installed via `create_data_templates()` in `modules/structure.sh`
@@ -565,7 +565,7 @@ ZZCOLLAB now supports **14+ specialized Docker variants** with a single source o
 
 ### Variant Library Overview
 
-**📦 Standard Research Environments (6 variants)**
+**Standard Research Environments (6 variants)**
 - **minimal** (~800MB) - Essential R packages only  
 - **analysis** (~1.2GB) - Tidyverse + data analysis tools
 - **modeling** (~1.5GB) - Machine learning with tidymodels
@@ -573,16 +573,16 @@ ZZCOLLAB now supports **14+ specialized Docker variants** with a single source o
 - **shiny** (~1.8GB) - Interactive web applications
 - **shiny_verse** (~3.5GB) - Shiny with tidyverse + publishing
 
-**🔬 Specialized Domains (2 variants)**
+**Specialized Domains (2 variants)**
 - **bioinformatics** (~2GB) - Bioconductor genomics packages
 - **geospatial** (~2.5GB) - sf, terra, leaflet mapping tools
 
-**🏔️ Lightweight Alpine Variants (3 variants)**  
+**Lightweight Alpine Variants (3 variants)**  
 - **alpine_minimal** (~200MB) - Ultra-lightweight for CI/CD
 - **alpine_analysis** (~400MB) - Essential analysis in tiny container
 - **hpc_alpine** (~600MB) - High-performance parallel processing
 
-**🧪 R-Hub Testing Environments (3 variants)**
+**R-Hub Testing Environments (3 variants)**
 - **rhub_ubuntu** (~1GB) - CRAN-compatible package testing
 - **rhub_fedora** (~1.2GB) - Test against R-devel
 - **rhub_windows** (~1.5GB) - Windows compatibility testing
@@ -634,7 +634,7 @@ build:
 ./add_variant.sh
 
 # Displays categorized menu:
-# 📦 STANDARD RESEARCH ENVIRONMENTS
+# STANDARD RESEARCH ENVIRONMENTS
 #  1) minimal          ~800MB  - Essential R packages
 #  2) analysis         ~1.2GB  - Tidyverse + data analysis  
 #  3) modeling         ~1.5GB  - Machine learning with tidymodels
@@ -642,7 +642,7 @@ build:
 #  5) shiny            ~1.8GB  - Interactive web applications
 #  6) shiny_verse      ~3.5GB  - Shiny with tidyverse + publishing
 
-# Select variants and they're automatically added to config.yaml
+# Select variants and they are automatically added to config.yaml
 ```
 
 ### Modern Workflow Commands
@@ -996,10 +996,10 @@ zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles           # RStudio Server 
 zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing workflow (if variant available)
 
 # Error handling: If team image variant not available, you'll get helpful guidance:
-# ❌ Error: Team image 'TEAM/PROJECTcore-rstudio:latest' not found
-# ✅ Available variants for this project:
+# Error: Team image 'TEAM/PROJECTcore-rstudio:latest' not found
+# Available variants for this project:
 #     - TEAM/PROJECTcore-shell:latest
-# 💡 Solutions:
+# Solutions:
 #    1. Use available variant: zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles
 #    2. Ask team lead to build rstudio variant: zzcollab -V rstudio
 
@@ -1067,11 +1067,11 @@ ZZCOLLAB has undergone comprehensive refactoring to improve maintainability and 
 - **Testing**: 0 breaking changes, 34/34 R package tests passing
 
 **Key Benefits**:
-- ✅ **One structure** for entire research lifecycle (data → analysis → paper → package)
-- ✅ **No upfront decisions** - start simple, add complexity as research evolves
-- ✅ **Progressive disclosure** - research evolves organically without migration
-- ✅ **Marwick/rrtools compatible** - follows research compendium best practices
-- ✅ **Simplified package selection** - 4 build modes instead of 3 paradigms × 3 modes
+- **One structure** for entire research lifecycle (data → analysis → paper → package)
+- **No upfront decisions** - start simple, add complexity as research evolves
+- **Progressive disclosure** - research evolves organically without migration
+- **Marwick/rrtools compatible** - follows research compendium best practices
+- **Simplified package selection** - 4 build modes instead of 3 paradigms × 3 modes
 
 **Unified Directory Structure**:
 ```
@@ -1190,10 +1190,10 @@ variants:
 ./add_variant.sh
 
 # Menu shows categorized variants with size estimates:
-# 🏔️ LIGHTWEIGHT ALPINE VARIANTS
+# LIGHTWEIGHT ALPINE VARIANTS
 #  7) alpine_minimal       ~200MB  - Ultra-lightweight CI/CD
 #  8) alpine_analysis      ~400MB  - Lightweight data analysis
-# 🧪 R-HUB TESTING ENVIRONMENTS  
+# R-HUB TESTING ENVIRONMENTS  
 # 10) rhub_ubuntu          ~1GB    - CRAN-compatible testing
 
 # Automatically copies YAML to config.yaml with enabled: true
@@ -1331,7 +1331,7 @@ join_project(
 
 **Rationale**: 
 - **Faster builds**: r-ver (shell-only) builds significantly faster than all variants
-- **Resource efficiency**: Teams often don't need all 3 variants (shell, rstudio, verse)
+- **Resource efficiency**: Teams often do not need all 3 variants (shell, rstudio, verse)
 - **Selective approach**: Users can explicitly request additional variants when needed
 - **Backward compatibility**: `-B all` still available for teams that want all variants
 
@@ -1390,11 +1390,11 @@ zzcollab -t mylab -p study -I rstudio -S       # Step 2b: Full project setup
 
 **Architecture Support Matrix**:
 ```
-✅ ARM64 Compatible:
+ARM64 Compatible:
 - rocker/r-ver     (Both AMD64 and ARM64)
 - rocker/rstudio   (Both AMD64 and ARM64)
 
-❌ AMD64 Only:
+AMD64 Only:
 - rocker/verse     (Publishing workflow with LaTeX)
 - rocker/tidyverse (AMD64 only)
 - rocker/geospatial (AMD64 only)
@@ -1564,11 +1564,11 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 - **Workflow validation**: Both ShellCheck and R package workflows now pass successfully
 
 **Production Readiness Achievements:**
-- **✅ All CI workflows passing**: Both R package validation and ShellCheck analysis execute successfully
-- **✅ No critical warnings**: Eliminated all blocking warnings in package documentation and code analysis
-- **✅ Professional documentation**: Complete roxygen2 documentation with proper LaTeX formatting
-- **✅ Clean dependency management**: All imports properly declared and functional
-- **✅ Robust vignette system**: All workflow documentation renders correctly with executable examples
+- **All CI workflows passing**: Both R package validation and ShellCheck analysis execute successfully
+- **No critical warnings**: Eliminated all blocking warnings in package documentation and code analysis
+- **Professional documentation**: Complete roxygen2 documentation with proper LaTeX formatting
+- **Clean dependency management**: All imports properly declared and functional
+- **Robust vignette system**: All workflow documentation renders correctly with executable examples
 
 **Key Technical Insights:**
 - `.Rbuildignore` patterns can accidentally exclude critical directories - use specific patterns
@@ -1592,7 +1592,7 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 - **R users familiar with RStudio/tidyverse** but unfamiliar with Docker/bash commands
 - **Research teams** wanting reproducibility without DevOps complexity
 - **Data scientists** focused on analysis rather than infrastructure management
-- **Academic labs** needing seamless collaboration across different skill levels
+- **Academic labs** needing effective collaboration across different skill levels
 
 **R-Native Interface Design:**
 - **Zero Docker exposure**: Users never see Docker commands or concepts, all handled transparently
@@ -1610,7 +1610,7 @@ start_rstudio()                    # Opens RStudio at localhost:8787
 git_commit("Add analysis")         # Version control through R
 git_push()                         # Sharing through R
 
-# Team workflow - seamless collaboration
+# Team workflow - effective collaboration
 init_project("team-project", team_name = "lab")  # Team lead setup
 join_project("lab", "team-project")              # Team members join
 start_rstudio()                                   # Identical environments
@@ -1668,46 +1668,46 @@ zzcollab --help-variants      # Comprehensive Docker variants guide
 ```
 
 **Benefits:**
-- ✅ **Professional CLI behavior**: Matches industry standard tools
-- ✅ **Long content accessible**: 97+ lines properly paginated
-- ✅ **Script compatible**: Works in both interactive and automated contexts
-- ✅ **Comprehensive coverage**: Specialized help for complex features
-- ✅ **User control**: Customizable via environment variables
+- **Professional CLI behavior**: Matches industry standard tools
+- **Long content accessible**: 97+ lines properly paginated
+- **Script compatible**: Works in both interactive and automated contexts
+- **Comprehensive coverage**: Specialized help for complex features
+- **User control**: Customizable via environment variables
 
 ### Security Assessment Results
 **Comprehensive security audit completed** - zzcollab codebase demonstrates excellent security practices:
-- ✅ **No unsafe cd commands** - All use proper error handling (`|| exit 1`)
-- ✅ **No unquoted rm operations** - All file operations properly quote variables
-- ✅ **No unquoted test conditions** - Variables in conditionals safely handled
-- ✅ **No word splitting vulnerabilities** - Defensive programming throughout
-- ✅ **Production-ready security posture** - No HIGH RISK vulnerabilities found
+- **No unsafe cd commands** - All use proper error handling (`|| exit 1`)
+- **No unquoted rm operations** - All file operations properly quote variables
+- **No unquoted test conditions** - Variables in conditionals safely handled
+- **No word splitting vulnerabilities** - Defensive programming throughout
+- **Production-ready security posture** - No HIGH RISK vulnerabilities found
 
 ### Repository Cleanup and Production Readiness (August 2025)
 **Comprehensive cleanup completed** - repository now follows open source best practices for production-ready projects:
 
 **Documentation Structure Improvements:**
-- ✅ **Proper R package vignettes**: All workflow documentation in `vignettes/` following R package standards
-- ✅ **Three-vignette structure** (October 2025): `getting-started.Rmd`, `configuration.Rmd`, `testing.Rmd`
-- ✅ **Consolidated documentation**: Single source of truth for all user workflows, configuration, and testing guidance
-- ✅ **Deprecated vignettes**: Legacy paradigm-specific vignettes archived in `vignettes/deprecated/`
+- **Proper R package vignettes**: All workflow documentation in `vignettes/` following R package standards
+- **Three-vignette structure** (October 2025): `getting-started.Rmd`, `configuration.Rmd`, `testing.Rmd`
+- **Consolidated documentation**: Single source of truth for all user workflows, configuration, and testing guidance
+- **Deprecated vignettes**: Legacy paradigm-specific vignettes archived in `vignettes/deprecated/`
 
 **Development Artifacts Cleanup:**
-- ✅ **Safe removal using trash-put**: All development artifacts moved to trash (recoverable if needed)
-- ✅ **Legacy documentation removed**: Duplicate workflow.md, DATA_ANALYSIS_TESTING_GUIDE.md files
-- ✅ **Build artifacts cleaned**: zzcollab.Rcheck/, temp_check/, *.tar.gz packages removed
-- ✅ **Development scripts archived**: md2pdf.sh, minimal_test.sh, navigation_scripts.sh eliminated
-- ✅ **Generated files cleanup**: All PDF outputs, text files, workflow mini files removed
+- **Safe removal using trash-put**: All development artifacts moved to trash (recoverable if needed)
+- **Legacy documentation removed**: Duplicate workflow.md, DATA_ANALYSIS_TESTING_GUIDE.md files
+- **Build artifacts cleaned**: zzcollab.Rcheck/, temp_check/, *.tar.gz packages removed
+- **Development scripts archived**: md2pdf.sh, minimal_test.sh, navigation_scripts.sh eliminated
+- **Generated files cleanup**: All PDF outputs, text files, workflow mini files removed
 
 **Enhanced Git Management:**
-- ✅ **Improved .gitignore**: Added patterns for development artifacts (*.pdf, *test/, temp_*, *_check/)
-- ✅ **Future clutter prevention**: Patterns prevent generated files from being committed
-- ✅ **Professional repository structure**: Clean, focused codebase for contributors
+- **Improved .gitignore**: Added patterns for development artifacts (*.pdf, *test/, temp_*, *_check/)
+- **Future clutter prevention**: Patterns prevent generated files from being committed
+- **Professional repository structure**: Clean, focused codebase for contributors
 
 **Production-Ready Benefits:**
-- ✅ **Faster repository clones**: Reduced size improves developer experience
-- ✅ **Clear project structure**: Contributors see only production-relevant code
-- ✅ **Professional appearance**: Mature, well-maintained open source project
-- ✅ **Maintainable codebase**: Documentation and code properly organized following industry standards
+- **Faster repository clones**: Reduced size improves developer experience
+- **Clear project structure**: Contributors see only production-relevant code
+- **Professional appearance**: Mature, well-maintained open source project
+- **Maintainable codebase**: Documentation and code properly organized following industry standards
 
 **Key Technical Insights:**
 - Used `tp` (trash-put) for safe file deletion with recovery option
@@ -1742,12 +1742,12 @@ zzcollab --help-variants      # Comprehensive Docker variants guide
 
 **Verification Results:**
 Comprehensive testing confirmed the fix works correctly across all scenarios:
-- ✅ **Clean directory**: No false conflict warnings, `.github` created properly
-- ✅ **Pre-existing `.github`**: Intelligent detection preserves existing files while adding zzcollab workflows
-- ✅ **File conflicts**: Properly detects and handles actual file conflicts (DESCRIPTION, Makefile, etc.)
-- ✅ **Directory coexistence**: Recognizes that `.github/workflows` can contain multiple workflow files
-- ✅ **No errors**: Eliminated "unbound variable" bash errors
-- ✅ **Test suite**: All 34 R package tests pass, dependency validation successful
+- **Clean directory**: No false conflict warnings, `.github` created properly
+- **Pre-existing `.github`**: Intelligent detection preserves existing files while adding zzcollab workflows
+- **File conflicts**: Properly detects and handles actual file conflicts (DESCRIPTION, Makefile, etc.)
+- **Directory coexistence**: Recognizes that `.github/workflows` can contain multiple workflow files
+- **No errors**: Eliminated "unbound variable" bash errors
+- **Test suite**: All 34 R package tests pass, dependency validation successful
 
 **Key Technical Insight:**
 The original issue was not about timing - conflict detection was running at the correct time. The problem was:
