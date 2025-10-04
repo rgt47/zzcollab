@@ -1659,11 +1659,7 @@ EOF
 # renv Help
 # Purpose: Package management guide
 show_renv_help() {
-    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
-        show_renv_help_content
-    else
-        show_renv_help_content | "${PAGER:-less}" -R
-    fi
+    show_renv_help_content | smart_pager
 }
 
 show_renv_help_content() {
@@ -2125,11 +2121,7 @@ EOF
 # Build Modes Help  
 # Purpose: Build mode selection guide
 show_build_modes_help() {
-    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
-        show_build_modes_help_content
-    else
-        show_build_modes_help_content | "${PAGER:-less}" -R
-    fi
+    show_build_modes_help_content | smart_pager
 }
 
 show_build_modes_help_content() {
@@ -2593,11 +2585,7 @@ EOF
 # Docker Help
 # Purpose: Docker essentials for non-technical users
 show_docker_help() {
-    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
-        show_docker_help_content
-    else
-        show_docker_help_content | "${PAGER:-less}" -R
-    fi
+    show_docker_help_content | smart_pager  
 }
 
 show_docker_help_content() {
@@ -3090,11 +3078,7 @@ EOF
 # CI/CD Help
 # Purpose: Continuous integration and GitHub Actions guide  
 show_cicd_help() {
-    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
-        show_cicd_help_content
-    else
-        show_cicd_help_content | "${PAGER:-less}" -R
-    fi
+    show_cicd_help_content | smart_pager
 }
 
 show_cicd_help_content() {
@@ -3584,8 +3568,10 @@ EOF
 #=============================================================================
 
 # Validate this module loaded correctly
-if ! declare -f log_debug >/dev/null 2>&1; then
-    echo "Warning: help_guides.sh: log_debug function not available" >&2
-else
-    log_debug "help_guides.sh: Module loaded successfully"
+if ! command -v smart_pager &>/dev/null && ! declare -f smart_pager >/dev/null 2>&1; then
+    log_error "help_guides.sh: smart_pager function not available"
+    log_error "help_guides.sh: Required module not loaded properly"
+    return 1
 fi
+
+log_debug "help_guides.sh: Module loaded successfully"
