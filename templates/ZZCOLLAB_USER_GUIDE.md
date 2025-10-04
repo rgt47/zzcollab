@@ -1763,6 +1763,70 @@ create_pr(
 )
 ```
 
+### Help System Functions
+
+#### `zzcollab_help(topic = NULL)`
+Access zzcollab's comprehensive help system directly from R. Displays specialized help pages covering configuration, workflows, Docker, and more.
+
+```r
+# Display main help
+zzcollab_help()
+
+# Get quick start guide for individual researchers
+zzcollab_help("quickstart")
+
+# Learn about daily development workflow
+zzcollab_help("workflow")
+
+# Troubleshooting common issues
+zzcollab_help("troubleshooting")
+
+# Configuration system guide
+zzcollab_help("config")
+
+# Dotfiles setup and management
+zzcollab_help("dotfiles")
+
+# Package management with renv
+zzcollab_help("renv")
+
+# Build mode selection guide
+zzcollab_help("build-modes")
+
+# Docker essentials for researchers
+zzcollab_help("docker")
+
+# CI/CD and GitHub Actions
+zzcollab_help("cicd")
+
+# Docker variants configuration
+zzcollab_help("variants")
+
+# GitHub integration
+zzcollab_help("github")
+
+# Team initialization help
+zzcollab_help("init")
+
+# Development workflow guidance
+zzcollab_help("next-steps")
+```
+
+**Available Topics:**
+- `"quickstart"` - Individual researcher quick start guide
+- `"workflow"` - Daily development workflow
+- `"troubleshooting"` - Top 10 common issues and solutions
+- `"config"` - Configuration system guide
+- `"dotfiles"` - Dotfiles setup and management
+- `"renv"` - Package management with renv
+- `"build-modes"` - Build mode selection guide
+- `"docker"` - Docker essentials for researchers
+- `"cicd"` - CI/CD and GitHub Actions
+- `"variants"` - Docker variants configuration
+- `"github"` - GitHub integration and automation
+- `"init"` - Team initialization process
+- `"next-steps"` - Development workflow guidance
+
 ### Benefits of R Interface
 
 - **Native R workflow**: No need to switch between R and terminal

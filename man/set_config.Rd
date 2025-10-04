@@ -11,7 +11,7 @@ set_config(key, value)
 Recommended keys include:
 \itemize{
 \item "team_name": Your Docker Hub team/organization name
-\item "build_mode": Preferred package mode ("fast", "standard", "comprehensive")
+\item "build_mode": Preferred package mode ("minimal", "fast", "standard", "comprehensive")
 \item "dotfiles_dir": Path to your personal dotfiles directory
 \item "github_account": Your GitHub account for repository creation
 \item "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")

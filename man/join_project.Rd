@@ -41,7 +41,8 @@ If NULL, uses config default.}
 
 \item{build_mode}{Character string specifying package installation mode:
 \itemize{
-\item "fast": Minimal packages for quick setup
+\item "minimal": Bare essentials (renv, remotes, here) - fastest
+\item "fast": Essential packages for quick setup
 \item "standard": Balanced package set (default)
 \item "comprehensive": Full ecosystem for complex analyses
 If NULL, uses config default or "standard".

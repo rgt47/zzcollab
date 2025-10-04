@@ -4,14 +4,67 @@
 \alias{zzcollab_help}
 \title{Get zzcollab help}
 \usage{
-zzcollab_help(init_help = FALSE)
+zzcollab_help(topic = NULL)
 }
 \arguments{
-\item{init_help}{Logical, show initialization help instead of general help}
+\item{topic}{Character string specifying which help page to display.
+Options include:
+\itemize{
+\item NULL or "general": Main help with all command-line options (default)
+\item "init": Team initialization help
+\item "quickstart": Individual researcher quick start guide
+\item "workflow": Daily development workflow
+\item "troubleshooting": Top 10 common issues and solutions
+\item "config": Configuration system guide
+\item "dotfiles": Dotfiles setup and management
+\item "renv": Package management with renv
+\item "build-modes": Build mode selection guide
+\item "docker": Docker essentials for researchers
+\item "cicd": CI/CD and GitHub Actions
+\item "variants": Docker variants configuration
+\item "github": GitHub integration and automation
+\item "next-steps": Development workflow guidance
+}}
 }
 \value{
-Character vector with help text
+Character vector with help text, or invisible NULL if displayed via pager.
+The help text is formatted with ANSI colors for terminal display.
 }
 \description{
-Get zzcollab help
+Displays help documentation for zzcollab. Can show general help or specialized
+help pages covering specific topics like configuration, workflows, Docker, and more.
+}
+\details{
+This function provides access to zzcollab's comprehensive help system directly
+from R. Each help page is designed to be accessible to researchers without
+extensive DevOps knowledge, focusing on practical workflows and examples.
+
+The help pages are displayed using your system's pager (usually 'less') when
+running interactively, allowing easy navigation of longer help content.
+}
+\examples{
+\dontrun{
+# Display main help
+zzcollab_help()
+
+# Get quick start guide for individual researchers
+zzcollab_help("quickstart")
+
+# Learn about configuration system
+zzcollab_help("config")
+
+# Understanding build modes
+zzcollab_help("build-modes")
+
+# Troubleshooting common issues
+zzcollab_help("troubleshooting")
+
+# Docker basics for researchers
+zzcollab_help("docker")
+}
+
+}
+\seealso{
+\code{\link{zzcollab_next_steps}} for development workflow guidance
+\code{\link{list_config}} for viewing current configuration
 }

@@ -11,7 +11,7 @@ get_config(key)
 Common keys include:
 \itemize{
 \item "team_name": Docker Hub team/organization name
-\item "build_mode": Package installation mode ("fast", "standard", "comprehensive")
+\item "build_mode": Package installation mode ("minimal", "fast", "standard", "comprehensive")
 \item "dotfiles_dir": Path to personal dotfiles directory
 \item "github_account": GitHub account for repository creation
 \item "dotfiles_nodot": Whether dotfiles need leading dots added ("true"/"false")

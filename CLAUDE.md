@@ -1274,6 +1274,18 @@ join_project(team_name = "mylab", project_name = "study", build_mode = "comprehe
 add_package("tidyverse")
 git_commit("Add analysis")
 create_pr("New feature")
+
+# Comprehensive help system from R
+zzcollab_help()                    # Main help
+zzcollab_help("quickstart")        # Quick start guide
+zzcollab_help("workflow")          # Daily workflow
+zzcollab_help("troubleshooting")   # Common issues
+zzcollab_help("config")            # Configuration guide
+zzcollab_help("dotfiles")          # Dotfiles setup
+zzcollab_help("renv")              # Package management
+zzcollab_help("build-modes")       # Build mode selection
+zzcollab_help("docker")            # Docker essentials
+zzcollab_help("cicd")              # CI/CD and GitHub Actions
 ```
 
 ### R-Centric Workflow (Enhanced with Configuration)

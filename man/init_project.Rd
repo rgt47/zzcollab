@@ -36,9 +36,10 @@ instead of ".vimrc"). If NULL, uses config default.}
 
 \item{build_mode}{Character string specifying package installation mode:
 \itemize{
-\item "fast": Minimal packages (~8) for quick setup and CI/CD
-\item "standard": Balanced package set (~15) for typical research workflows
-\item "comprehensive": Full ecosystem (~27+) for complex analyses
+\item "minimal": Bare essentials (renv, remotes, here) - fastest, ~30 seconds
+\item "fast": Essential packages (~9) for quick setup and CI/CD
+\item "standard": Balanced package set (~17) for typical research workflows (default)
+\item "comprehensive": Full ecosystem (~47+) for complex analyses
 If NULL, uses config default or "standard".
 }}
 }

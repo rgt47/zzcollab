@@ -268,9 +268,10 @@ team_images <- function() {
 #'   instead of ".vimrc"). If NULL, uses config default.
 #'   
 #' @param build_mode Character string specifying package installation mode:
-#'   - "fast": Minimal packages (~8) for quick setup and CI/CD
-#'   - "standard": Balanced package set (~15) for typical research workflows
-#'   - "comprehensive": Full ecosystem (~27+) for complex analyses
+#'   - "minimal": Bare essentials (renv, remotes, here) - fastest, ~30 seconds
+#'   - "fast": Essential packages (~9) for quick setup and CI/CD
+#'   - "standard": Balanced package set (~17) for typical research workflows (default)
+#'   - "comprehensive": Full ecosystem (~47+) for complex analyses
 #'   If NULL, uses config default or "standard".
 #'
 #' @return Logical value indicating success (TRUE) or failure (FALSE) of the
@@ -373,7 +374,9 @@ init_project <- function(team_name = NULL, project_name = NULL,
   }
   
   # Add build mode flag
-  if (build_mode == "fast") {
+  if (build_mode == "minimal") {
+    cmd <- paste(cmd, "-M")
+  } else if (build_mode == "fast") {
     cmd <- paste(cmd, "-F")
   } else if (build_mode == "comprehensive") {
     cmd <- paste(cmd, "-C")
@@ -417,7 +420,8 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #'   If NULL, uses config default.
 #'   
 #' @param build_mode Character string specifying package installation mode:
-#'   - "fast": Minimal packages for quick setup
+#'   - "minimal": Bare essentials (renv, remotes, here) - fastest
+#'   - "fast": Essential packages for quick setup
 #'   - "standard": Balanced package set (default)
 #'   - "comprehensive": Full ecosystem for complex analyses
 #'   If NULL, uses config default or "standard".
@@ -521,7 +525,9 @@ join_project <- function(team_name = NULL, project_name = NULL, interface = "she
   }
   
   # Add build mode flag
-  if (build_mode == "fast") {
+  if (build_mode == "minimal") {
+    cmd <- paste(cmd, "-M")
+  } else if (build_mode == "fast") {
     cmd <- paste(cmd, "-F")
   } else if (build_mode == "comprehensive") {
     cmd <- paste(cmd, "-C")
@@ -802,7 +808,7 @@ create_branch <- function(branch_name) {
 #'
 #' @param dotfiles_path Path to dotfiles directory (uses config default if NULL)
 #' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added (uses config default)
-#' @param build_mode Build mode: "fast", "standard", or "comprehensive" (uses config default)
+#' @param build_mode Build mode: "minimal", "fast", "standard", or "comprehensive" (uses config default)
 #' @param base_image Base Docker image to use (optional)
 #' @return Logical indicating success
 #' @export
@@ -833,7 +839,9 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
   }
   
   # Add build mode flag
-  if (build_mode == "fast") {
+  if (build_mode == "minimal") {
+    cmd <- paste(cmd, "-M")
+  } else if (build_mode == "fast") {
     cmd <- paste(cmd, "-F")
   } else if (build_mode == "comprehensive") {
     cmd <- paste(cmd, "-C")
@@ -848,19 +856,102 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
 
 #' Get zzcollab help
 #'
-#' @param init_help Logical, show initialization help instead of general help
-#' @return Character vector with help text
+#' Displays help documentation for zzcollab. Can show general help or specialized
+#' help pages covering specific topics like configuration, workflows, Docker, and more.
+#'
+#' @param topic Character string specifying which help page to display.
+#'   Options include:
+#'   - NULL or "general": Main help with all command-line options (default)
+#'   - "init": Team initialization help
+#'   - "quickstart": Individual researcher quick start guide
+#'   - "workflow": Daily development workflow
+#'   - "troubleshooting": Top 10 common issues and solutions
+#'   - "config": Configuration system guide
+#'   - "dotfiles": Dotfiles setup and management
+#'   - "renv": Package management with renv
+#'   - "build-modes": Build mode selection guide
+#'   - "docker": Docker essentials for researchers
+#'   - "cicd": CI/CD and GitHub Actions
+#'   - "variants": Docker variants configuration
+#'   - "github": GitHub integration and automation
+#'   - "next-steps": Development workflow guidance
+#'
+#' @return Character vector with help text, or invisible NULL if displayed via pager.
+#'   The help text is formatted with ANSI colors for terminal display.
+#'
+#' @details
+#' This function provides access to zzcollab's comprehensive help system directly
+#' from R. Each help page is designed to be accessible to researchers without
+#' extensive DevOps knowledge, focusing on practical workflows and examples.
+#'
+#' The help pages are displayed using your system's pager (usually 'less') when
+#' running interactively, allowing easy navigation of longer help content.
+#'
+#' @examples
+#' \dontrun{
+#' # Display main help
+#' zzcollab_help()
+#'
+#' # Get quick start guide for individual researchers
+#' zzcollab_help("quickstart")
+#'
+#' # Learn about configuration system
+#' zzcollab_help("config")
+#'
+#' # Understanding build modes
+#' zzcollab_help("build-modes")
+#'
+#' # Troubleshooting common issues
+#' zzcollab_help("troubleshooting")
+#'
+#' # Docker basics for researchers
+#' zzcollab_help("docker")
+#' }
+#'
+#' @seealso
+#' \code{\link{zzcollab_next_steps}} for development workflow guidance
+#' \code{\link{list_config}} for viewing current configuration
+#'
 #' @export
-zzcollab_help <- function(init_help = FALSE) {
+zzcollab_help <- function(topic = NULL) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  if (init_help) {
-    cmd <- paste(zzcollab_path, "--init --help")
+
+  # Map topic to command-line flag
+  cmd <- if (is.null(topic) || topic == "general") {
+    paste(zzcollab_path, "--help")
+  } else if (topic == "init") {
+    paste(zzcollab_path, "--help-init")
+  } else if (topic == "quickstart") {
+    paste(zzcollab_path, "--help-quickstart")
+  } else if (topic == "workflow") {
+    paste(zzcollab_path, "--help-workflow")
+  } else if (topic == "troubleshooting") {
+    paste(zzcollab_path, "--help-troubleshooting")
+  } else if (topic == "config") {
+    paste(zzcollab_path, "--help-config")
+  } else if (topic == "dotfiles") {
+    paste(zzcollab_path, "--help-dotfiles")
+  } else if (topic == "renv") {
+    paste(zzcollab_path, "--help-renv")
+  } else if (topic == "build-modes") {
+    paste(zzcollab_path, "--help-build-modes")
+  } else if (topic == "docker") {
+    paste(zzcollab_path, "--help-docker")
+  } else if (topic == "cicd") {
+    paste(zzcollab_path, "--help-cicd")
+  } else if (topic == "variants") {
+    paste(zzcollab_path, "--help-variants")
+  } else if (topic == "github") {
+    paste(zzcollab_path, "--help-github")
+  } else if (topic == "next-steps") {
+    paste(zzcollab_path, "--next-steps")
   } else {
-    cmd <- paste(zzcollab_path, "--help")
+    stop("Unknown help topic: ", topic, "\n",
+         "Valid topics: general, init, quickstart, workflow, troubleshooting, ",
+         "config, dotfiles, renv, build-modes, docker, cicd, variants, github, next-steps")
   }
-  
+
   result <- system(cmd, intern = TRUE)
   return(result)
 }
@@ -891,7 +982,7 @@ zzcollab_next_steps <- function() {
 #' @param key Character string specifying the configuration key to retrieve.
 #'   Common keys include:
 #'   - "team_name": Docker Hub team/organization name
-#'   - "build_mode": Package installation mode ("fast", "standard", "comprehensive")
+#'   - "build_mode": Package installation mode ("minimal", "fast", "standard", "comprehensive")
 #'   - "dotfiles_dir": Path to personal dotfiles directory
 #'   - "github_account": GitHub account for repository creation
 #'   - "dotfiles_nodot": Whether dotfiles need leading dots added ("true"/"false")
@@ -958,7 +1049,7 @@ get_config <- function(key) {
 #' @param key Character string specifying the configuration key to set.
 #'   Recommended keys include:
 #'   - "team_name": Your Docker Hub team/organization name
-#'   - "build_mode": Preferred package mode ("fast", "standard", "comprehensive")
+#'   - "build_mode": Preferred package mode ("minimal", "fast", "standard", "comprehensive")
 #'   - "dotfiles_dir": Path to your personal dotfiles directory
 #'   - "github_account": Your GitHub account for repository creation
 #'   - "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")
@@ -1102,7 +1193,7 @@ list_config <- function() {
 #' - No duplicate keys or invalid characters
 #' 
 #' **Value Validation:**
-#' - Build mode values are one of: "fast", "standard", "comprehensive"
+#' - Build mode values are one of: "minimal", "fast", "standard", "comprehensive"
 #' - Boolean values are properly formatted as "true" or "false"
 #' - Path values are syntactically valid (though may not exist)
 #' 

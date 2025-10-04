@@ -30,7 +30,7 @@ The validation process checks multiple aspects of configuration files:
 
 \strong{Value Validation:}
 \itemize{
-\item Build mode values are one of: "fast", "standard", "comprehensive"
+\item Build mode values are one of: "minimal", "fast", "standard", "comprehensive"
 \item Boolean values are properly formatted as "true" or "false"
 \item Path values are syntactically valid (though may not exist)
 }

@@ -16,7 +16,7 @@ setup_project(
 
 \item{dotfiles_nodots}{Logical, if TRUE dotfiles need dots added (uses config default)}
 
-\item{build_mode}{Build mode: "fast", "standard", or "comprehensive" (uses config default)}
+\item{build_mode}{Build mode: "minimal", "fast", "standard", or "comprehensive" (uses config default)}
 
 \item{base_image}{Base Docker image to use (optional)}
 }
