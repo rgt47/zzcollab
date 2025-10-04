@@ -30,7 +30,8 @@
       "Bash(git commit:*)",
       "Bash(mv:*)",
       "Bash(tree:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
