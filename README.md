@@ -12,16 +12,21 @@ environments, automated CI/CD workflows, and team collaboration tools.
 
 ## Features
 
-- **Unified Research Paradigm** based on Marwick et al. (2018) research compendium framework
-  - Single structure supporting entire research lifecycle (data → analysis → paper → package)
+- **Unified Research Paradigm** based on Marwick et al. (2018) research
+  compendium framework
+  - Single structure supporting entire research lifecycle (data to analysis
+    to paper to package)
   - Marwick/rrtools compatible directory layout
-  - Comprehensive tutorial library (in framework repo, not installed with projects)
+  - Comprehensive tutorial library (in framework repository, not installed
+    with projects)
 - **Docker-based environments** for reproducible research
 - **Team collaboration** with shared base images
 - **R package interface** for integration with R workflows
 - **Advanced configuration system** with user/project-level settings
-- **14+ specialized Docker variants** (from 200MB Alpine to 3.5GB full-featured)
-- **Three build modes** (fast, standard, comprehensive) for different use cases
+- **14+ specialized Docker variants** (from 200MB Alpine to 3.5GB
+  full-featured)
+- **Four build modes** (minimal, fast, standard, comprehensive) for
+  different use cases
 - **Automated CI/CD** workflows
 - **Analysis and reporting** tools
 - **Git integration** for version control
@@ -51,7 +56,9 @@ library(zzcollab)
 
 ## Research Compendium Structure
 
-zzcollab follows the research compendium framework proposed by Marwick, Boettiger, and Mullen (2018), providing a standardized structure for reproducible research projects.
+zzcollab follows the research compendium framework proposed by Marwick,
+Boettiger, and Mullen (2018), providing a standardized structure for
+reproducible research projects.
 
 ### Directory Structure
 
@@ -75,21 +82,24 @@ project/
 ### Use Cases
 
 **All research workflows supported**:
+
 - **Data Analysis**: Use `analysis/scripts/` and `figures/`
 - **Manuscript Writing**: Use `analysis/paper/paper.Rmd`
 - **Package Development**: Use `R/`, `man/`, `tests/`
 - **Complete Compendium**: Use all directories for full reproducibility
 
-**Progressive disclosure**: Start with data analysis, add manuscript when writing, extract functions to R/ when reusing code. No migration required as research evolves.
+**Progressive disclosure**: Start with data analysis, add manuscript when
+writing, extract functions to R/ when reusing code. No migration required
+as research evolves.
 
 ### Learning Resources
 
 Tutorial examples and complete projects available at:
 https://github.com/rgt47/zzcollab/tree/main/examples
 
-- 📚 Step-by-step tutorials for EDA, modeling, validation
-- 🔬 Complete example research compendia
-- 🧩 Reusable code patterns
+- Step-by-step tutorials for EDA, modeling, validation
+- Complete example research compendia
+- Reusable code patterns
 
 ## R Interface Implementation
 
@@ -139,41 +149,48 @@ join_project(
 
 ## Build Modes
 
-zzcollab supports three build modes to optimize for different use cases:
+zzcollab supports four build modes to optimize for different use cases:
 
 | Mode | Description | Docker Size | Package Count | Key Packages | Build Time |
 |------|-------------|-------------|---------------|--------------|------------|
-| **Fast** (`-F`) | Minimal setup | Small | 9 packages | renv, here, devtools, testthat, knitr, rmarkdown, targets | Fast |
+| **Minimal** (`-M`) | Bare essentials | Minimal | 3 packages | renv, remotes, here | Ultra-fast |
+| **Fast** (`-F`) | Essential setup | Small | 9 packages | + devtools, testthat, knitr, rmarkdown, targets | Fast |
 | **Standard** (`-S`) | Balanced (default) | Medium | 17 packages | + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT | Medium |
-| **Comprehensive** (`-C`) | Full-featured | Large | 51 packages | + tidymodels, shiny, plotly, quarto, bookdown, papaja, pkgdown | Slow |
+| **Comprehensive** (`-C`) | Full-featured | Large | 47 packages | + tidymodels, shiny, plotly, quarto, bookdown, papaja, pkgdown | Slow |
 
-All packages work seamlessly whether you're doing data analysis, writing manuscripts, or developing packages.
+All packages are compatible with data analysis, manuscript writing, and
+package development workflows.
 
 ## Configuration System
 
-zzcollab includes a hierarchical configuration system to establish project defaults and reduce parameter specification.
+zzcollab includes a hierarchical configuration system to establish project
+defaults and reduce parameter specification.
 
 ### Configuration Files
-- **User config**: `~/.zzcollab/config.yaml` (your personal defaults)
+
+- **User config**: `~/.zzcollab/config.yaml` (personal defaults)
 - **Project config**: `./zzcollab.yaml` (project-specific overrides)
 - **Priority**: project > user > built-in defaults
 
 ### Configuration Commands
+
 ```bash
 zzcollab --config init                    # Create default config file
-zzcollab --config set team-name "myteam"  # Set a configuration value
-zzcollab --config get team-name           # Get a configuration value
+zzcollab --config set team-name "myteam"  # Set configuration value
+zzcollab --config get team-name           # Get configuration value
 zzcollab --config list                    # List all configuration
 zzcollab --config validate               # Validate YAML syntax
 ```
 
 ### Customizable Settings
+
 - **Team settings**: `team_name`, `github_account`
 - **Build settings**: `build_mode`, `dotfiles_dir`, `dotfiles_nodot`
 - **Automation**: `auto_github`, `skip_confirmation`
 - **Custom package lists**: Override default packages for each build mode
 
 ### Custom Package Lists
+
 Edit your config file to customize packages for different build modes:
 
 ```yaml
@@ -182,16 +199,19 @@ build_modes:
     description: "Quick development setup"
     docker_packages: [renv, remotes, here, usethis]
     renv_packages: [renv, here, usethis, devtools, testthat]
-  
+
   standard:
-    description: "Balanced research workflow"  
-    docker_packages: [renv, remotes, tidyverse, here, usethis, devtools]
-    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, testthat, palmerpenguins]
+    description: "Balanced research workflow"
+    docker_packages: [renv, remotes, tidyverse, here, usethis,
+                      devtools]
+    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2,
+                    tidyr, testthat, palmerpenguins]
 ```
 
 ## Core R Functions
 
 ### Configuration Management
+
 - `get_config()` - Get configuration values
 - `set_config()` - Set configuration values
 - `list_config()` - List all configuration
@@ -199,25 +219,30 @@ build_modes:
 - `init_config()` - Initialize default config
 
 ### Project Management
+
 - `init_project()` - Initialize team project (config-aware)
 - `join_project()` - Join existing project (config-aware)
 - `setup_project()` - Setup individual project (config-aware)
 
 ### Docker Management
+
 - `status()` - Check container status
 - `rebuild()` - Rebuild Docker images
 - `team_images()` - List team images
 
 ### Package Management
+
 - `add_package()` - Add R packages
 - `sync_env()` - Sync environment with renv
 
-### Analysis & Reporting
+### Analysis and Reporting
+
 - `run_script()` - Execute R scripts in container
 - `render_report()` - Render analysis reports
 - `validate_repro()` - Check reproducibility
 
 ### Git Integration
+
 - `git_status()` - Check git status
 - `git_commit()` - Create commits
 - `git_push()` - Push to GitHub
@@ -260,7 +285,8 @@ git_push()
 ### Method 1: Automatic Installation
 
 ```bash
-git clone https://github.com/yourusername/zzcollab.git && cd zzcollab && ./install.sh
+git clone https://github.com/yourusername/zzcollab.git && \
+  cd zzcollab && ./install.sh
 ```
 
 ### Method 2: Manual Installation
@@ -282,7 +308,8 @@ cd my-analysis
 zzcollab --dotfiles ~/dotfiles
 
 # Start development environment
-make docker-rstudio  # → http://localhost:8787 (user: analyst, pass: analyst)
+# Access at http://localhost:8787 (user: analyst, pass: analyst)
+make docker-rstudio
 ```
 
 ## Development Workflow
@@ -290,8 +317,8 @@ make docker-rstudio  # → http://localhost:8787 (user: analyst, pass: analyst)
 ```bash
 # Available development environments
 make docker-rstudio    # RStudio Server GUI
-make docker-r          # R console  
-make docker-zsh        # Zsh shell with your dotfiles
+make docker-r          # R console
+make docker-zsh        # Zsh shell with dotfiles
 make docker-bash       # Bash shell
 
 # Common tasks
@@ -330,12 +357,17 @@ zzcollab [OPTIONS]
 zzcollab config [SUBCOMMAND]
 
 OPTIONS:
-  --dotfiles DIR, -d   Copy dotfiles from directory (files with leading dots)
-  --dotfiles-nodot DIR Copy dotfiles from directory (files without leading dots) 
-  --base-image NAME    Use custom Docker base image (default: rocker/r-ver)
+  --dotfiles DIR, -d   Copy dotfiles from directory (with leading
+                       dots)
+  --dotfiles-nodot DIR Copy dotfiles from directory (without
+                       leading dots)
+  --base-image NAME    Use custom Docker base image
+                       (default: rocker/r-ver)
   --no-docker, -n      Skip Docker image build during setup
-  --fast, -F           Fast build mode (minimal packages)
-  --standard, -S       Standard build mode (balanced packages, default)
+  --minimal, -M        Minimal build mode (bare essentials)
+  --fast, -F           Fast build mode (essential packages)
+  --standard, -S       Standard build mode (balanced packages,
+                       default)
   --comprehensive, -C  Comprehensive build mode (full packages)
   --team NAME, -t      Team name for collaboration
   --project NAME, -p   Project name
@@ -345,9 +377,9 @@ OPTIONS:
   --help, -h           Show help message
 
 CONFIG COMMANDS:
-  zzcollab config init                    # Create default config file
+  zzcollab config init                    # Create default config
   zzcollab config set KEY VALUE           # Set configuration value
-  zzcollab config get KEY                 # Get configuration value  
+  zzcollab config get KEY                 # Get configuration value
   zzcollab config list                    # List all configuration
   zzcollab config validate               # Validate YAML syntax
 
@@ -355,19 +387,19 @@ EXAMPLES:
   # Configuration setup
   zzcollab config init                        # One-time setup
   zzcollab config set team_name "myteam"      # Set team default
-  zzcollab config set build_mode "fast"       # Set build mode default
+  zzcollab config set build_mode "fast"       # Set build mode
 
   # Basic usage (uses config defaults)
   zzcollab --fast                             # Fast mode setup
-  zzcollab --dotfiles ~/dotfiles              # Include personal dotfiles
+  zzcollab --dotfiles ~/dotfiles              # Include dotfiles
 
   # Team collaboration
-  zzcollab -i -t myteam -p study -B rstudio   # Team lead: create images
-  zzcollab -t myteam -p study -I rstudio      # Team member: join project
+  zzcollab -i -t myteam -p study -B rstudio   # Team lead
+  zzcollab -t myteam -p study -I rstudio      # Team member
 
   # Traditional usage
-  zzcollab --base-image rgt47/r-pluspackages  # Use custom base image
-  zzcollab --no-docker                        # Setup without Docker build
+  zzcollab --base-image rgt47/r-pluspackages  # Custom base
+  zzcollab --no-docker                        # Setup without build
 ```
 
 ## Docker Integration
@@ -378,16 +410,17 @@ EXAMPLES:
 # Use base image with common R packages pre-installed
 zzcollab --base-image rgt47/r-pluspackages
 
-# Packages included: tidyverse, DT, conflicted, ggthemes, datapasta, 
-# janitor, kableExtra, tidytuesdayR, and more
+# Packages included: tidyverse, DT, conflicted, ggthemes,
+# datapasta, janitor, kableExtra, tidytuesdayR, and more
 ```
 
 ### Custom Base Images
 
 ```bash
-# Build custom base image with your organization's packages
+# Build custom base image with organization packages
 cd zzcollab
-docker build -f templates/Dockerfile.pluspackages -t myorg/r-base:latest .
+docker build -f templates/Dockerfile.pluspackages \
+  -t myorg/r-base:latest .
 docker push myorg/r-base:latest
 
 # Use in projects
@@ -397,18 +430,21 @@ zzcollab --base-image myorg/r-base
 ## Use Cases
 
 ### Academic Research
+
 - Manuscript preparation with automated figure/table generation
 - Reproducible analysis with renv dependency management
 - Collaboration with standardized project structure
 - Publication with GitHub Actions workflows
 
 ### Data Science Projects
+
 - Exploratory data analysis with organized script structure
 - Model development with testing and validation
 - Reporting with R Markdown integration
 - Deployment with containerized environments
 
 ### Team Collaboration
+
 - Standardized structure across team projects
 - Consistent environments with Docker
 - Version control integration with Git/GitHub
@@ -417,8 +453,10 @@ zzcollab --base-image myorg/r-base
 
 ## Documentation
 
-- [Unified Paradigm Guide](docs/UNIFIED_PARADIGM_GUIDE.md) - Complete framework documentation
-- [Marwick Comparison](docs/MARWICK_COMPARISON_ANALYSIS.md) - Research compendium alignment
+- [Unified Paradigm Guide](docs/UNIFIED_PARADIGM_GUIDE.md) - Complete
+  framework documentation
+- [Marwick Comparison](docs/MARWICK_COMPARISON_ANALYSIS.md) - Research
+  compendium alignment
 - [Tutorial Examples](examples/) - Step-by-step learning resources
 - [Command Reference](#command-line-options) - All available options
 - [Docker Guide](#docker-integration) - Container workflows
@@ -430,13 +468,19 @@ Comprehensive tutorial examples and code patterns available at:
 https://github.com/rgt47/zzcollab/tree/main/examples
 
 **Available Resources**:
-- 📚 **Tutorials**: Step-by-step workflows for EDA, modeling, validation, dashboards, reporting
-- 🔬 **Complete Projects**: Full example research compendia demonstrating end-to-end workflows
-- 🧩 **Code Patterns**: Reusable patterns for data validation, model evaluation, reproducible plots
 
-These examples live in the zzcollab repository (not installed with projects) as learning resources you can reference when needed.
+- **Tutorials**: Step-by-step workflows for EDA, modeling, validation,
+  dashboards, reporting
+- **Complete Projects**: Full example research compendia demonstrating
+  end-to-end workflows
+- **Code Patterns**: Reusable patterns for data validation, model
+  evaluation, reproducible plots
+
+These examples are located in the zzcollab repository (not installed with
+projects) as learning resources available for reference.
 
 ### Getting Help
+
 ```bash
 zzcollab --help          # Command line help
 zzcollab --next-steps     # Show workflow guidance
@@ -446,15 +490,18 @@ make help                 # Show all make targets
 ## Requirements
 
 ### Required
+
 - **Docker** - For containerized development environments
 - **Git** - For version control (recommended)
 
 ### Optional
-- **R & RStudio** - For native development (can work entirely in Docker)
+
+- **R and RStudio** - For native development (can work entirely in Docker)
 - **GitHub CLI** (`gh`) - For automated repository creation
 - **Make** - Usually pre-installed on Unix systems
 
 ### System Support
+
 - macOS (Intel and Apple Silicon)
 - Linux (Ubuntu, CentOS, etc.)
 - Windows (with WSL2 recommended)
@@ -464,6 +511,7 @@ make help                 # Show all make targets
 ### Common Issues
 
 **Docker build fails:**
+
 ```bash
 # Try disabling BuildKit
 export DOCKER_BUILDKIT=0
@@ -471,6 +519,7 @@ zzcollab
 ```
 
 **Platform warnings on ARM64 (Apple Silicon):**
+
 ```bash
 # Already handled automatically with --platform linux/amd64
 # Or set environment variable:
@@ -478,6 +527,7 @@ export DOCKER_DEFAULT_PLATFORM=linux/amd64
 ```
 
 **Missing dotfiles in container:**
+
 ```bash
 # Make sure to specify dotfiles directory
 zzcollab --dotfiles ~/dotfiles
@@ -486,6 +536,7 @@ zzcollab --dotfiles-nodot ~/dotfiles
 ```
 
 **Package name errors:**
+
 ```bash
 # Ensure directory name contains only letters, numbers, and periods
 # Avoid underscores and special characters
@@ -493,6 +544,7 @@ zzcollab --dotfiles-nodot ~/dotfiles
 ```
 
 **Permission errors:**
+
 ```bash
 # Check directory permissions
 ls -la
@@ -502,7 +554,8 @@ docker info
 
 ### Getting Help
 
-1. Check the [User Guide](templates/ZZCOLLAB_USER_GUIDE.md) for detailed workflows
+1. Check the [User Guide](templates/ZZCOLLAB_USER_GUIDE.md) for detailed
+   workflows
 2. Use built-in help: `zzcollab --help`
 3. Validate your environment: `make docker-check-renv`
 4. Clean and rebuild: `make docker-clean && make docker-build`
@@ -511,17 +564,19 @@ docker info
 ## Contributing
 
 ### Reporting Issues
+
 - Bug reports with system info and reproduction steps
 - Feature requests with use case descriptions
 - Documentation improvements and clarifications
 
 ### Development Setup
+
 ```bash
 # Fork and clone the repository
 git clone https://github.com/yourusername/zzcollab.git
 cd zzcollab
 
-# Make your changes to zzcollab.sh or templates/
+# Make changes to zzcollab.sh or templates/
 # Test with a sample project
 mkdir test-project && cd test-project
 ../zzcollab.sh
@@ -530,6 +585,7 @@ mkdir test-project && cd test-project
 ```
 
 ### Guidelines
+
 - Test thoroughly with different project types
 - Update documentation for any new features
 - Follow shell scripting best practices
@@ -537,7 +593,8 @@ mkdir test-project && cd test-project
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 - see
+the [LICENSE](LICENSE) file for details.
 
 - Free to use for any purpose
 - Modify and distribute with same license
@@ -547,9 +604,10 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Acknowledgments
 
-- [Ben Marwick et al.](https://doi.org/10.1080/00031305.2017.1375986) - Research compendium framework
-- [rrtools](https://github.com/benmarwick/rrtools) - Original research compendium implementation
+- [Ben Marwick et al.](https://doi.org/10.1080/00031305.2017.1375986) -
+  Research compendium framework
+- [rrtools](https://github.com/benmarwick/rrtools) - Original research
+  compendium implementation
 - [Rocker Project](https://rocker-project.org/) - Docker images for R
 - [renv](https://rstudio.github.io/renv/) - R dependency management
 - R Community
-
