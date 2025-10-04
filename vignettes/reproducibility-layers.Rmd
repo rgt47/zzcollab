@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 # Introduction
 
 Reproducibility in computational research exists on a spectrum. This guide
-presents a progressive, four-level approach to reproducibility using ZZCOLLAB,
+presents a progressive, five-level approach to reproducibility using ZZCOLLAB,
 allowing researchers to adopt tools incrementally based on project needs and
 collaboration requirements.
 
@@ -30,12 +30,13 @@ Each level adds specific guarantees about reproducibility while introducing
 additional complexity. Understanding the tradeoffs enables informed decisions
 about appropriate reproducibility investments for different research contexts.
 
-## The Four Levels
+## The Five Levels
 
 1. **Level 1: Basic R Project** - Manual package management
 2. **Level 2: renv** - Automated dependency tracking
 3. **Level 3: renv + Docker** - Complete environment isolation
-4. **Level 4: renv + Docker + CI/CD** - Automated validation
+4. **Level 4: renv + Docker + Unit Testing** - Computational correctness
+5. **Level 5: renv + Docker + Unit Testing + CI/CD** - Automated validation
 
 # Level 1: Basic R Project
 
@@ -344,7 +345,26 @@ Overkill for:
 
 **Guaranteed**: Same R version, same packages, same system libraries, same OS
 
-**Not guaranteed**: Automated validation of correctness
+**Not guaranteed**: Code correctness, analytical validity, absence of bugs
+
+## The Critical Gap: Environment vs Correctness
+
+Docker ensures everyone runs code in an **identical environment**, but does not
+ensure the **code produces correct results**. This is the reproducibility
+paradox:
+
+```r
+# Everyone gets the same WRONG answer in Docker
+calculate_mean <- function(x) {
+  sum(x)  # BUG: forgot to divide by length
+}
+
+# Reproducible? Yes - same environment, same (wrong) result
+# Correct? No - analytical error
+```
+
+Level 3 guarantees **consistency** but not **correctness**. Level 4 addresses
+this gap.
 
 ## Example Workflow
 
@@ -385,7 +405,527 @@ zzcollab -S -D ~/dotfiles
 zzcollab -C -D ~/dotfiles
 ```
 
-# Level 4: renv + Docker + CI/CD (Automated Validation)
+# Level 4: renv + Docker + Unit Testing (Computational Correctness)
+
+## What This Adds
+
+Unit testing validates that your code produces **correct results**, not just
+**consistent results**. While Docker ensures the same environment, tests ensure
+the analysis is analytically sound, free from logical errors, and robust to
+edge cases.
+
+## The Reproducibility Crisis Connection
+
+Research demonstrates that 50-89% of published studies fail replication
+attempts, often due to **computational errors that testing would catch**:
+
+- Off-by-one errors in data indexing
+- Incorrect statistical calculations
+- Silent data quality issues (missing values, outliers)
+- Function side effects and state dependencies
+- Edge cases not handled in data processing
+
+Unit testing transforms implicit assumptions into **explicit, validated
+specifications**.
+
+## Additional Structure
+
+```
+my-project/
+├── .Rproj
+├── renv/
+├── renv.lock
+├── Dockerfile
+├── docker-compose.yml
+├── tests/                          # Test suite (NEW)
+│   └── testthat/
+│       ├── test-data-preparation.R # Data processing tests
+│       ├── test-analysis.R         # Statistical tests
+│       └── test-visualization.R    # Plot validation tests
+├── Makefile
+├── R/
+│   └── data_functions.R           # Tested functions
+├── data/
+├── scripts/
+│   └── 01_analysis.R              # Uses tested functions
+└── README.md
+```
+
+## Setup
+
+```bash
+# Create project with Docker environment
+zzcollab -S -D ~/dotfiles
+
+# Add testthat infrastructure
+make docker-zsh
+R
+> usethis::use_testthat()
+> quit()
+exit
+```
+
+## Typical Workflow
+
+```bash
+# Start development environment
+make docker-zsh
+
+# Inside container: Test-Driven Development cycle
+R
+> # 1. Write test first (documents expected behavior)
+> usethis::use_test("data-preparation")
+
+# tests/testthat/test-data-preparation.R
+> # Write failing test
+> test_that("prepare_data removes rows with missing body_mass_g", {
+>   library(palmerpenguins)
+>   result <- prepare_data(penguins)
+>   expect_false(anyNA(result$body_mass_g))
+> })
+
+> # 2. Run test (fails - function doesn't exist yet)
+> devtools::test()
+
+> # 3. Implement function to make test pass
+> usethis::use_r("data_functions")
+
+# R/data_functions.R
+> prepare_data <- function(data) {
+>   data %>%
+>     filter(!is.na(body_mass_g))
+> }
+
+> # 4. Run test again (passes)
+> devtools::test()
+
+> # 5. Refactor with confidence
+> quit()
+exit
+
+# Validate in clean environment
+make docker-test
+```
+
+## Pros
+
+- **Validates correctness**: Ensures code produces analytically sound results
+- **Catches regressions**: New changes do not break existing functionality
+- **Documents behavior**: Tests serve as executable specifications
+- **Enables refactoring**: Change implementation with confidence
+- **Finds edge cases**: Forces consideration of boundary conditions
+- **Improves design**: Testable code tends to be better structured
+- **Team confidence**: Collaborators trust tested code
+- **Research integrity**: Prevents computational errors from reaching publication
+
+## Cons
+
+- **Time investment**: Writing tests takes 20-40% additional development time
+- **Learning curve**: testthat syntax and testing patterns
+- **Maintenance burden**: Tests must be updated when requirements change
+- **False security**: Tests only validate what you test
+- **Incomplete coverage**: Difficult to test some statistical properties
+- **Over-testing risk**: Testing trivial code wastes time
+
+## When to Use Level 4
+
+Appropriate for:
+
+- Research intended for publication
+- Complex data processing pipelines
+- Statistical analysis with non-trivial calculations
+- Reusable analytical functions
+- Projects with multiple data sources
+- Analysis that will be extended or modified
+- Collaboration where trust in correctness is critical
+
+Not appropriate for:
+
+- Quick exploratory analysis
+- One-time data visualizations
+- Simple descriptive statistics
+- Code you will never revisit
+
+## Reproducibility Guarantee
+
+**Guaranteed**: Code correctness validated through executable specifications
+
+**Validated**: Data processing logic, statistical calculations, edge case
+handling
+
+**Not guaranteed**: Tests run automatically on every change (requires Level 5)
+
+## Test-Driven Data Analysis Workflow
+
+### Example: Palmer Penguins Analysis
+
+**Scenario**: Analyze relationship between bill length and body mass with
+log transformation.
+
+#### Step 1: Write Tests for Data Preparation
+
+```r
+# tests/testthat/test-data-preparation.R
+library(testthat)
+library(palmerpenguins)
+
+test_that("prepare_penguin_data removes missing values", {
+  result <- prepare_penguin_data(penguins)
+
+  # No missing values in analysis variables
+  expect_false(anyNA(result$body_mass_g))
+  expect_false(anyNA(result$bill_length_mm))
+})
+
+test_that("prepare_penguin_data creates log transformation", {
+  result <- prepare_penguin_data(penguins)
+
+  # Log transformation exists
+  expect_true("log_body_mass_g" %in% names(result))
+
+  # Log transformation is correct
+  expect_equal(
+    result$log_body_mass_g,
+    log(result$body_mass_g)
+  )
+})
+
+test_that("prepare_penguin_data handles edge cases", {
+  # Empty data
+  empty_data <- penguins[0, ]
+  result <- prepare_penguin_data(empty_data)
+  expect_equal(nrow(result), 0)
+
+  # All missing data
+  all_na <- penguins
+  all_na$body_mass_g <- NA
+  result <- prepare_penguin_data(all_na)
+  expect_equal(nrow(result), 0)
+})
+```
+
+#### Step 2: Implement Function to Pass Tests
+
+```r
+# R/data_functions.R
+
+#' Prepare penguin data for analysis
+#'
+#' Removes missing values and creates log-transformed body mass variable.
+#'
+#' @param data Data frame with penguin measurements
+#' @return Data frame with complete cases and log_body_mass_g variable
+#' @export
+prepare_penguin_data <- function(data) {
+  data %>%
+    filter(!is.na(body_mass_g), !is.na(bill_length_mm)) %>%
+    mutate(log_body_mass_g = log(body_mass_g))
+}
+```
+
+#### Step 3: Write Tests for Statistical Analysis
+
+```r
+# tests/testthat/test-analysis.R
+test_that("fit_penguin_model returns valid lm object", {
+  test_data <- prepare_penguin_data(penguins)
+  model <- fit_penguin_model(test_data)
+
+  # Valid lm object
+  expect_s3_class(model, "lm")
+
+  # Correct variables in model
+  expect_true("bill_length_mm" %in% names(coef(model)))
+
+  # Model has reasonable fit (R-squared > 0)
+  expect_gt(summary(model)$r.squared, 0)
+})
+
+test_that("fit_penguin_model coefficients are sensible", {
+  test_data <- prepare_penguin_data(penguins)
+  model <- fit_penguin_model(test_data)
+
+  # Positive relationship expected (larger bills -> larger penguins)
+  expect_gt(coef(model)["bill_length_mm"], 0)
+})
+```
+
+#### Step 4: Implement Analysis Function
+
+```r
+# R/analysis_functions.R
+
+#' Fit linear model of log body mass vs bill length
+#'
+#' @param data Prepared penguin data
+#' @return Linear model object
+#' @export
+fit_penguin_model <- function(data) {
+  lm(log_body_mass_g ~ bill_length_mm, data = data)
+}
+```
+
+#### Step 5: Write Tests for Data Quality
+
+```r
+# tests/testthat/test-data-quality.R
+test_that("penguin data has expected structure", {
+  # Required columns exist
+  required_cols <- c("species", "island", "bill_length_mm",
+                     "bill_depth_mm", "body_mass_g")
+  expect_true(all(required_cols %in% names(penguins)))
+
+  # Reasonable sample size
+  expect_gt(nrow(penguins), 300)
+
+  # Species are valid
+  expect_true(all(penguins$species %in%
+                    c("Adelie", "Chinstrap", "Gentoo")))
+})
+
+test_that("body mass measurements are plausible", {
+  valid_data <- penguins %>% filter(!is.na(body_mass_g))
+
+  # Body mass in plausible range (2500g to 6500g)
+  expect_true(all(valid_data$body_mass_g >= 2500))
+  expect_true(all(valid_data$body_mass_g <= 6500))
+
+  # No negative values
+  expect_true(all(valid_data$body_mass_g > 0))
+})
+```
+
+## Test Coverage Requirements
+
+Professional research code should achieve **>90% test coverage** for analytical
+functions:
+
+```r
+# Check test coverage
+library(covr)
+coverage <- package_coverage()
+percent_coverage(coverage)
+# [1] 94.2%
+
+# Generate coverage report
+report(coverage)
+```
+
+**Coverage Guidelines**:
+
+- **100% coverage**: Core statistical calculations, data transformations
+- **>90% coverage**: Data preparation functions, analysis pipelines
+- **>75% coverage**: Visualization functions, reporting code
+- **Not required**: Interactive exploration scripts, one-off analyses
+
+## Testing Best Practices for Research
+
+### Test Data Transformations
+
+```r
+test_that("outlier removal preserves data integrity", {
+  test_data <- data.frame(x = c(1, 2, 100, 3, 4))  # 100 is outlier
+
+  result <- remove_outliers(test_data, "x", threshold = 3)
+
+  # Outlier removed
+  expect_equal(nrow(result), 4)
+
+  # Non-outliers preserved
+  expect_true(all(c(1, 2, 3, 4) %in% result$x))
+})
+```
+
+### Test Statistical Calculations
+
+```r
+test_that("standard error calculation is correct", {
+  x <- c(1, 2, 3, 4, 5)
+
+  result <- calculate_se(x)
+
+  # Known correct value
+  expected <- sd(x) / sqrt(length(x))
+  expect_equal(result, expected)
+})
+```
+
+### Test Edge Cases
+
+```r
+test_that("analysis handles edge cases gracefully", {
+  # Single observation
+  single_obs <- data.frame(x = 1, y = 2)
+  expect_error(fit_model(single_obs), "Insufficient data")
+
+  # No variance
+  no_variance <- data.frame(x = c(1, 1, 1), y = c(2, 3, 4))
+  expect_warning(fit_model(no_variance), "No variance in predictor")
+
+  # Perfect correlation
+  perfect_cor <- data.frame(x = 1:10, y = 1:10)
+  result <- fit_model(perfect_cor)
+  expect_equal(summary(result)$r.squared, 1.0)
+})
+```
+
+## Scientific Motivation for Testing
+
+### The Cost of Computational Errors
+
+Research by Stodden et al. (2018) found:
+
+- **70% of researchers** have tried and failed to reproduce another scientist's
+  experiments
+- **50% have failed** to reproduce their own experiments
+- **Computational errors** are a leading cause of replication failures
+
+### Real-World Testing Impact
+
+A study of GitHub projects (Mockus, 2010) demonstrated:
+
+- Projects with **>80% test coverage** had **40% fewer defects**
+- Test-driven development reduced debugging time by **16%**
+- Tested code had **24% higher change success rate**
+
+### Testing Prevents Silent Failures
+
+```r
+# Without tests: Silent error propagates
+analyze_data <- function(data) {
+  # BUG: Uses sd() instead of var() for variance
+  variance <- sd(data$x)  # WRONG
+
+  # Analysis appears to work but results are incorrect
+  result <- mean(data$x) / variance
+  return(result)
+}
+
+# With tests: Error caught immediately
+test_that("variance calculation is correct", {
+  test_data <- data.frame(x = c(1, 2, 3, 4, 5))
+
+  # This test fails, exposing the bug
+  result <- calculate_variance(test_data$x)
+  expect_equal(result, var(test_data$x))  # FAILS
+})
+```
+
+## Common Testing Mistakes
+
+### Testing Too Little
+
+```r
+# Insufficient test
+test_that("function works", {
+  result <- my_function(data)
+  expect_true(is.data.frame(result))  # Only tests type, not correctness
+})
+
+# Better test
+test_that("function produces correct transformations", {
+  test_data <- data.frame(x = c(1, 2, 3), y = c(4, 5, 6))
+  result <- my_function(test_data)
+
+  # Test specific expected behavior
+  expect_equal(result$x_squared, c(1, 4, 9))
+  expect_equal(result$y_doubled, c(8, 10, 12))
+  expect_equal(nrow(result), 3)
+})
+```
+
+### Testing Implementation Instead of Behavior
+
+```r
+# Wrong: Tests implementation details
+test_that("function uses dplyr::filter", {
+  # Breaks if you refactor to base R
+  expect_true(exists("filter", envir = environment(my_function)))
+})
+
+# Right: Tests behavior
+test_that("function removes missing values", {
+  # Passes regardless of implementation
+  test_data <- data.frame(x = c(1, NA, 3))
+  result <- my_function(test_data)
+  expect_false(anyNA(result))
+})
+```
+
+### Not Testing Edge Cases
+
+```r
+# Incomplete testing
+test_that("mean calculation works", {
+  expect_equal(calculate_mean(c(1, 2, 3)), 2)
+})
+
+# Complete testing includes edge cases
+test_that("mean calculation handles edge cases", {
+  # Normal case
+  expect_equal(calculate_mean(c(1, 2, 3)), 2)
+
+  # Single value
+  expect_equal(calculate_mean(5), 5)
+
+  # Empty vector
+  expect_true(is.nan(calculate_mean(numeric(0))))
+
+  # Missing values
+  expect_equal(calculate_mean(c(1, NA, 3), na.rm = TRUE), 2)
+})
+```
+
+## Migration from Level 3
+
+Adding tests to existing Docker project:
+
+```bash
+# Start development container
+make docker-zsh
+
+# Inside container
+R
+> # Initialize testing infrastructure
+> usethis::use_testthat()
+
+> # Create test file for existing function
+> usethis::use_test("my_function")
+
+> # Write tests for critical functions
+> # Focus on data preparation and statistical calculations
+
+> # Run tests
+> devtools::test()
+
+> # Check coverage
+> covr::package_coverage()
+
+> quit()
+exit
+
+# Commit test infrastructure
+git add tests/ DESCRIPTION
+git commit -m "Add unit testing infrastructure"
+```
+
+## When Testing Is Not Worth It
+
+Testing has costs. Skip testing for:
+
+- **One-time exploratory scripts** that will not be reused
+- **Simple visualizations** with no calculations
+- **Wrapper functions** that only call other tested functions
+- **Interactive analysis** you will not share
+
+Focus testing effort on:
+
+- **Data processing pipelines** with complex logic
+- **Statistical calculations** beyond simple base R functions
+- **Functions used across multiple analyses**
+- **Code that will be shared or published**
+
+# Level 5: renv + Docker + Unit Testing + CI/CD (Automated Validation)
 
 ## What This Adds
 
@@ -492,9 +1032,13 @@ Overkill for:
 
 ## Reproducibility Guarantee
 
-**Guaranteed**: Code works in clean environment on every commit
+**Guaranteed**: Automated validation runs on every commit
 
-**Validated**: Package dependencies, test suite, documentation examples
+**Validated**: Package dependencies, test suite, documentation examples, clean
+environment builds
+
+**Complete Stack**: Environment consistency (Docker) + computational correctness
+(tests) + automated verification (CI/CD)
 
 ## GitHub Actions Workflows
 
@@ -610,32 +1154,35 @@ git commit -m "Update code"
 - Docker overhead not justified for same-platform teams
 
 ### Small Team (2-4 people), Mixed Platforms
-**Recommendation**: Level 3
+**Recommendation**: Level 3 or Level 4
 
-- Docker eliminates Windows/Mac/Linux differences
-- System dependencies handled automatically
+- Level 3 if analysis is straightforward with few calculations
+- Level 4 if complex data processing or statistical methods
 
 ### Large Team (5+ people)
-**Recommendation**: Level 4
+**Recommendation**: Level 5
 
 - Automated testing prevents integration problems
 - CI/CD essential for coordinating multiple contributors
+- Unit tests document expected behavior for new contributors
 
 ### Package Development for CRAN
-**Recommendation**: Level 4
+**Recommendation**: Level 5
 
 - R CMD check must pass on multiple platforms
 - Automated testing required for maintenance
+- CI/CD validates every contribution before merge
 
 ## Cost-Benefit by Project Duration
 
-| Project Duration | Level 1 | Level 2 | Level 3 | Level 4 |
-|------------------|---------|---------|---------|---------|
-| < 1 week         | ✓       | ~       | ✗       | ✗       |
-| 1 week - 1 month | ~       | ✓       | ~       | ✗       |
-| 1-6 months       | ✗       | ✓       | ✓       | ~       |
-| 6+ months        | ✗       | ~       | ✓       | ✓       |
-| Multi-year       | ✗       | ✗       | ✓       | ✓       |
+| Project Duration | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
+|------------------|---------|---------|---------|---------|---------|
+| < 1 week         | ✓       | ~       | ✗       | ✗       | ✗       |
+| 1 week - 1 month | ~       | ✓       | ~       | ✗       | ✗       |
+| 1-6 months       | ✗       | ✓       | ✓       | ~       | ✗       |
+| 6+ months        | ✗       | ~       | ✓       | ✓       | ~       |
+| Multi-year       | ✗       | ✗       | ✓       | ✓       | ✓       |
+| Team (5+ people) | ✗       | ✗       | ~       | ✓       | ✓       |
 
 ✓ = Recommended, ~ = Consider, ✗ = Not recommended
 
@@ -651,11 +1198,18 @@ Level 2 → Level 3:
   zzcollab -M   # 30 seconds (minimal) or 4-6 minutes (standard)
 
 Level 3 → Level 4:
+  # Inside Docker container
+  usethis::use_testthat()  # Initialize testing
+  # Write tests for critical functions
+  # 1-2 days for comprehensive test suite
+
+Level 4 → Level 5:
   zzcollab -G   # Adds GitHub workflows (already done if using zzcollab)
 ```
 
-No need to commit to Level 4 immediately - start at Level 2, add Docker when
-needed for cross-platform work, add CI/CD when team grows.
+No need to commit to Level 5 immediately - start at Level 2, add Docker when
+needed for cross-platform work, add tests when analysis complexity grows, add
+CI/CD when team grows.
 
 # Practical Examples
 
@@ -708,18 +1262,29 @@ renv::restore()  # Gets exact package versions
 ## Example 3: Multi-Site Climate Study
 
 **Scenario**: Three universities collaborating on climate analysis. Different
-platforms (Windows, Mac, Linux). Complex geospatial dependencies.
+platforms (Windows, Mac, Linux). Complex geospatial dependencies. Custom spatial
+interpolation algorithms.
 
 **Duration**: 2 years
 
-**Recommended Level**: Level 3
+**Recommended Level**: Level 4
 
-**Rationale**: Cross-platform team requires Docker. Geospatial packages
-(sf, terra) have complex system dependencies.
+**Rationale**: Cross-platform team requires Docker. Complex custom algorithms
+require unit tests to ensure correctness. Geospatial packages (sf, terra) have
+complex system dependencies.
 
 ```bash
 # Team lead setup
 zzcollab -i -t climate-team -p precipitation -S -D ~/dotfiles
+
+# Add testing infrastructure
+make docker-zsh
+R
+> usethis::use_testthat()
+> # Write tests for spatial interpolation algorithms
+> # Write tests for data quality validation
+> quit()
+exit
 
 # Team members (any platform)
 git clone https://github.com/climate-team/precipitation
@@ -727,6 +1292,7 @@ cd precipitation
 make docker-zsh  # Identical environment on all platforms
 
 # Inside container - everyone has same GDAL, GEOS versions
+# Tests validate spatial algorithms work correctly
 ```
 
 ## Example 4: Open Source R Package
@@ -736,18 +1302,20 @@ around world. Must pass R CMD check on Windows/Mac/Linux.
 
 **Duration**: Ongoing
 
-**Recommended Level**: Level 4
+**Recommended Level**: Level 5
 
 **Rationale**: Multiple contributors require automated testing. CRAN submission
-requires validation on multiple platforms.
+requires validation on multiple platforms. CI/CD ensures every contribution
+passes checks before merge.
 
 ```bash
 # Package maintainer setup
 zzcollab -i -t myname -p mypackage -S -D ~/dotfiles -G
 
+# Testing and CI/CD included automatically
 # Every contributor push triggers:
 # - R CMD check on Ubuntu
-# - Test suite execution
+# - Test suite execution (unit tests)
 # - Documentation validation
 # - Dependency checking
 
@@ -758,24 +1326,37 @@ zzcollab -i -t myname -p mypackage -S -D ~/dotfiles -G
 ## Example 5: Weekly Reporting Pipeline
 
 **Scenario**: Automated weekly report generation from database. Runs on server.
-Code rarely changes but must always work.
+Code rarely changes but must always work. Report includes statistical summaries
+and data quality checks.
 
 **Duration**: Ongoing
 
-**Recommended Level**: Level 3 (optionally Level 4)
+**Recommended Level**: Level 4
 
-**Rationale**: Production deployment requires Docker. CI/CD useful if code
-changes frequently, but may be overkill for stable pipeline.
+**Rationale**: Production deployment requires Docker. Statistical calculations
+and data quality checks should be tested to prevent silent errors in automated
+reports. CI/CD (Level 5) optional if code changes infrequently.
 
 ```bash
 # Setup with Docker for production
 zzcollab -F -D ~/dotfiles  # Fast mode sufficient
 
+# Add tests for report calculations
+make docker-zsh
+R
+> usethis::use_testthat()
+> # Write tests for:
+> # - Statistical summaries (means, medians, etc.)
+> # - Data quality checks (missing data, outliers)
+> # - Report formatting functions
+> quit()
+exit
+
 # Deploy to server
 docker build -t weekly-report .
 docker run -v /data:/data weekly-report Rscript generate_report.R
 
-# Add CI/CD later if code complexity grows
+# Optional: Add CI/CD (Level 5) if code complexity grows or team expands
 ```
 
 # Technical Details
@@ -906,7 +1487,63 @@ Files edited on host (Mac/Windows) are visible in container, but some editors
 create temp files that can cause issues. Best practice: edit on host, run in
 container.
 
-## Level 4 Pitfalls (CI/CD)
+## Level 4 Pitfalls (Unit Testing)
+
+**Not testing edge cases**:
+
+```r
+# Inadequate test
+test_that("data preparation works", {
+  result <- prepare_data(penguins)
+  expect_true(is.data.frame(result))
+})
+
+# Better test includes edge cases
+test_that("data preparation handles edge cases", {
+  # Normal case
+  result <- prepare_data(penguins)
+  expect_equal(nrow(result), 333)
+
+  # Empty data
+  expect_equal(nrow(prepare_data(penguins[0, ])), 0)
+
+  # All missing values
+  all_na <- penguins
+  all_na$body_mass_g <- NA
+  expect_equal(nrow(prepare_data(all_na)), 0)
+})
+```
+
+**Testing implementation details instead of behavior**:
+
+```r
+# Wrong: Tests how function is implemented
+test_that("uses dplyr for filtering", {
+  # Breaks if you switch to base R
+  expect_match(deparse(body(prepare_data)), "filter")
+})
+
+# Right: Tests what function does
+test_that("removes rows with missing body mass", {
+  # Works regardless of implementation
+  result <- prepare_data(penguins)
+  expect_false(anyNA(result$body_mass_g))
+})
+```
+
+**Forgetting to run tests before committing**:
+
+```bash
+# Wrong workflow
+git commit -m "Update analysis"
+make docker-test  # Fails - should have tested first
+
+# Right workflow
+make docker-test  # Test first
+git commit -m "Update analysis"
+```
+
+## Level 5 Pitfalls (CI/CD)
 
 **Not testing locally before pushing**:
 
@@ -932,21 +1569,43 @@ CI failures must be fixed immediately. Ignoring them leads to:
 # Summary
 
 Reproducibility is not binary - it exists on a spectrum. ZZCOLLAB provides
-four levels of increasing reproducibility guarantees:
+five levels of increasing reproducibility guarantees:
 
 1. **Level 1** (Manual): Quick start, no guarantees
 2. **Level 2** (renv): Package version guarantees
 3. **Level 3** (renv + Docker): Complete environment guarantees
-4. **Level 4** (renv + Docker + CI/CD): Automated validation guarantees
+4. **Level 4** (renv + Docker + Unit Testing): Computational correctness guarantees
+5. **Level 5** (renv + Docker + Unit Testing + CI/CD): Automated validation guarantees
+
+## The Three Dimensions of Reproducibility
+
+Each level addresses a different dimension:
+
+- **Environment Reproducibility** (Levels 2-3): Same packages, same R version, same system libraries
+- **Computational Correctness** (Level 4): Code produces analytically sound results
+- **Automated Verification** (Level 5): Continuous validation that everything still works
+
+## Choosing Your Level
 
 Choose the level appropriate for your project's:
-- Duration
-- Team size
-- Platform diversity
-- Publication requirements
-- Maintenance needs
 
-Start simple and migrate incrementally as needs evolve. You can always add
-renv later, add Docker when needed, add CI/CD when the team grows.
+- **Duration**: Longer projects need more reproducibility
+- **Team size**: Larger teams need more validation
+- **Platform diversity**: Mixed platforms require Docker
+- **Analytical complexity**: Complex calculations require tests
+- **Publication requirements**: Published research needs high reproducibility
+- **Maintenance needs**: Long-term projects need automated checks
 
-The goal is reproducibility without unnecessary complexity.
+## Progressive Adoption
+
+Start simple and migrate incrementally as needs evolve:
+
+- **Week 1**: Level 1 for exploration
+- **Month 1**: Add Level 2 (renv) when committing to project
+- **Month 2**: Add Level 3 (Docker) when collaborating cross-platform
+- **Month 3**: Add Level 4 (Testing) when analysis complexity grows
+- **Month 6**: Add Level 5 (CI/CD) when team expands
+
+The goal is reproducibility without unnecessary complexity. Each level adds
+value, but also adds overhead. Match the reproducibility investment to the
+project requirements.
