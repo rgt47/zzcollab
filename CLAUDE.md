@@ -1579,12 +1579,13 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 - Unicode characters in R source code must use escape sequences for CRAN compliance
 
 ### Vignette System Documentation (October 2025)
-**Consolidated vignette structure** - three focused vignettes covering complete ZZCOLLAB functionality:
+**Consolidated vignette structure** - four focused vignettes covering complete ZZCOLLAB functionality:
 
 **Core Vignette Suite:**
 - **getting-started.Rmd**: Comprehensive tutorial for new users with step-by-step Palmer Penguins analysis
 - **configuration.Rmd**: Advanced configuration system including Docker variants and package management
 - **testing.Rmd**: Comprehensive guide to testing data analysis workflows in R
+- **reproducibility-layers.Rmd**: Five-level progressive reproducibility framework (NEW - October 2025)
 - **Complete workflow coverage**: From initial setup through advanced configuration and testing practices
 - **Real-world examples**: Palmer Penguins analysis demonstrating reproducible research workflows
 
@@ -1615,6 +1616,61 @@ init_project("team-project", team_name = "lab")  # Team lead setup
 join_project("lab", "team-project")              # Team members join
 start_rstudio()                                   # Identical environments
 ```
+
+### Five-Level Reproducibility Framework (October 2025)
+**Enhanced reproducibility-layers.Rmd vignette** - transformed from 4-level to comprehensive 5-level progressive framework addressing all dimensions of computational reproducibility:
+
+**New Level 4: Unit Testing for Computational Correctness (500+ lines added):**
+- **Critical gap addressed**: Environment consistency (Docker) does not guarantee computational correctness
+- **Reproducibility crisis motivation**: 50-89% replication failure rate, often due to computational errors
+- **Complete test-driven workflow**: Palmer Penguins analysis with data preparation, statistical analysis, and data quality tests
+- **Testing best practices**: >90% coverage requirements, edge case handling, common testing mistakes
+- **Scientific evidence**: 40% fewer defects with >80% test coverage, 16% reduction in debugging time
+
+**Three Dimensions of Reproducibility Framework:**
+- **Environment Reproducibility** (Levels 2-3): Same packages, R version, system libraries
+- **Computational Correctness** (Level 4): Code produces analytically sound results ← NEW
+- **Automated Verification** (Level 5): Continuous validation that everything works
+
+**Enhanced Decision Framework:**
+- **Analytical complexity dimension**: Complex calculations require tests (Level 4)
+- **Progressive adoption timeline**: Week 1 → Month 6 migration path
+- **Updated cost-benefit analysis**: 5-level decision table by project duration and team size
+- **5 practical examples**: All updated with appropriate level recommendations
+
+**Comprehensive Testing Coverage Examples:**
+```r
+# Data preparation tests (missing values, transformations, edge cases)
+test_that("prepare_penguin_data removes missing values", {
+  result <- prepare_penguin_data(penguins)
+  expect_false(anyNA(result$body_mass_g))
+  expect_false(anyNA(result$bill_length_mm))
+})
+
+# Statistical analysis tests (model validity, coefficient checks)
+test_that("fit_penguin_model coefficients are sensible", {
+  model <- fit_penguin_model(test_data)
+  expect_gt(coef(model)["bill_length_mm"], 0)  # Positive relationship
+})
+
+# Data quality tests (structure validation, plausible ranges)
+test_that("body mass measurements are plausible", {
+  valid_data <- penguins %>% filter(!is.na(body_mass_g))
+  expect_true(all(valid_data$body_mass_g >= 2500))
+  expect_true(all(valid_data$body_mass_g <= 6500))
+})
+```
+
+**Updated Structure:**
+- **Level 1**: Basic R Project (manual package management)
+- **Level 2**: renv (dependency tracking)
+- **Level 3**: renv + Docker (environment isolation)
+- **Level 4**: renv + Docker + Unit Testing (computational correctness) ← NEW
+- **Level 5**: renv + Docker + Unit Testing + CI/CD (automated validation)
+
+**Key Innovation**: Unit testing is now properly positioned as a reproducibility strategy that validates computational correctness, not just environment consistency. The vignette demonstrates that reproducible environments (Docker) can consistently produce WRONG results if the code has bugs - testing prevents this.
+
+**Total changes**: +703 lines, -44 lines (747 net addition)
 
 ### Documentation Tone Standardization (October 2025)
 **Comprehensive academic tone conversion** - systematic transformation of all documentation to scholarly standards:
