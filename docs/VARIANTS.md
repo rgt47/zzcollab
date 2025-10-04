@@ -235,7 +235,7 @@ CRAN-compatible testing environments for package validation.
 ZZCOLLAB DOCKER VARIANT LIBRARY
 =======================================================
 
-📦 STANDARD RESEARCH ENVIRONMENTS
+STANDARD RESEARCH ENVIRONMENTS
   1) minimal          ~800MB  - Essential R packages
   2) analysis         ~1.2GB  - Tidyverse + data analysis
   3) modeling         ~1.5GB  - Machine learning
@@ -243,16 +243,16 @@ ZZCOLLAB DOCKER VARIANT LIBRARY
   5) shiny            ~1.8GB  - Interactive web apps
   6) shiny_verse      ~3.5GB  - Shiny + tidyverse
 
-🔬 SPECIALIZED DOMAINS
+SPECIALIZED DOMAINS
   7) bioinformatics   ~2GB    - Bioconductor genomics
   8) geospatial       ~2.5GB  - sf, terra, mapping
 
-🏔️ LIGHTWEIGHT ALPINE VARIANTS
+LIGHTWEIGHT ALPINE VARIANTS
   9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
  10) alpine_analysis  ~400MB  - Lightweight analysis
  11) hpc_alpine       ~600MB  - Parallel processing
 
-🧪 R-HUB TESTING ENVIRONMENTS
+R-HUB TESTING ENVIRONMENTS
  12) rhub_ubuntu      ~1GB    - CRAN Ubuntu testing
  13) rhub_fedora      ~1.2GB  - R-devel testing
  14) rhub_windows     ~1.5GB  - Windows compatibility

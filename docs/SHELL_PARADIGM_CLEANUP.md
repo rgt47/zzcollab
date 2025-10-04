@@ -92,7 +92,7 @@ Also search for any paradigm-specific template functions in this file and consol
 
 ## Summary of Changes
 
-1. ✅ **cicd.sh**: Fixed workflow template selection (completed)
+1. **cicd.sh**: Fixed workflow template selection (completed)
 2. ⏳ **cli.sh**: Remove PARADIGM from exports and debug
 3. ⏳ **config.sh**: Remove PARADIGM fallback
 4. ⏳ **docker.sh**: Remove PARADIGM_GUIDE and paradigm build args

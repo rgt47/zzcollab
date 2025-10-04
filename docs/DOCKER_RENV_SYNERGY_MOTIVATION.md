@@ -30,11 +30,11 @@ While Docker and renv are each powerful tools for addressing different aspects o
 renv excels at R package management but has **fundamental limitations** in system-level reproducibility:
 
 #### 1. System Dependencies Ignored
-**The Core Problem**: "renv doesn't solve the whole problem, because system dependencies and even the R version itself can change" (Elio Camporeale, 2021).
+**The Core Problem**: "renv does not solve the whole problem, because system dependencies and even the R version itself can change" (Elio Camporeale, 2021).
 
 **Real-World Example**:
 ```r
-# renv.lock captures R packages perfectly:
+# renv.lock captures R packages suitablely:
 {
   "sf": {
     "Package": "sf",
@@ -184,7 +184,7 @@ RUN R -e "install.packages(c('ANTsR', 'fslr', 'neurobase'))"
 # Primary analysis center (USA):
 renv::init()
 renv::install(c("ncdf4", "raster", "sp", "rgdal"))
-# Works perfectly on CentOS 7 with NetCDF 4.6
+# Works suitablely on CentOS 7 with NetCDF 4.6
 
 # European partner (Month 3):
 renv::restore()
@@ -401,7 +401,7 @@ COPY . .
 **Benefits**:
 - System dependencies cached indefinitely
 - Package installation cached until renv.lock changes
-- Code changes don't trigger full rebuild
+- Code changes do not trigger full rebuild
 - Build time reduced from 45 minutes to 3 minutes
 
 ### Pattern 3: Cross-Platform Consistency
@@ -891,7 +891,7 @@ The Docker+renv combination represents a **fundamental upgrade** from ad-hoc env
 
 **The question is not whether to integrate Docker and renv, but how quickly organizations can implement this essential technology combination before facing accumulating reproducibility failures and competitive disadvantage.**
 
-The synergy between Docker and renv creates computational infrastructure that meets the highest standards of scientific reproducibility while enabling practical, scalable development workflows. In an era where reproducibility drives research credibility and competitive advantage, the integrated approach is not optional—it's the foundation upon which reliable computational science depends.
+The synergy between Docker and renv creates computational infrastructure that meets the highest standards of scientific reproducibility while enabling practical, scalable development workflows. In an era where reproducibility drives research credibility and competitive advantage, the integrated approach is not optional—it is the foundation upon which reliable computational science depends.
 
 ---
 

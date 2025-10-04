@@ -191,7 +191,7 @@ test_that("model is robust across image quality levels", {
             info = "Model fails under mobile clinic conditions")
 })
 
-# Test that rejection rates don't exceed practical thresholds
+# Test that rejection rates do not exceed practical thresholds
 test_that("rejection rates are within practical limits", {
   real_world_images <- load_representative_clinical_sample()
   predictions_with_conf <- predict_with_confidence(model, real_world_images)
@@ -255,7 +255,7 @@ test_that("train and test samples are independent", {
                info = paste("Sample overlap detected:", paste(overlap, collapse = ", ")))
 })
 
-# Check for features that perfectly predict target
+# Check for features that suitablely predict target
 test_that("no feature leakage exists", {
   for (feature in features) {
     correlation <- abs(cor(X[[feature]], y))
@@ -265,7 +265,7 @@ test_that("no feature leakage exists", {
   }
 })
 
-# Ensure preprocessing doesn't leak information
+# Ensure preprocessing does not leak information
 test_that("preprocessing order prevents information leakage", {
   # Preprocessing should be fit only on training data
   # This would be wrong - fitting on full dataset:
@@ -314,7 +314,7 @@ test_that("chatbot responses are consistent with policies", {
   }
 })
 
-# Ensure chatbot doesn't make unauthorized commitments
+# Ensure chatbot does not make unauthorized commitments
 test_that("chatbot avoids unauthorized commitments", {
   responses <- chatbot$respond_to_batch(test_scenarios)
 
@@ -823,7 +823,7 @@ The R community has long recognized the importance of unit testing, particularly
 
 ### The testthat Philosophy
 
-As Hadley Wickham, creator of testthat, observed: **"It's not that we don't test our code, it's that we don't store our tests so they can be re-run automatically."** This insight captures a fundamental issue in data analysis—we often test our code informally but fail to preserve those tests for future use.
+As Hadley Wickham, creator of testthat, observed: **"It's not that we do not test our code, it is that we do not store our tests so they can be re-run automatically."** This insight captures a fundamental issue in data analysis—we often test our code informally but fail to preserve those tests for future use.
 
 ### Quantified Benefits from the R Community
 

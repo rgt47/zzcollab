@@ -63,9 +63,9 @@ project/
 Tutorial examples and complete projects available at:
 https://github.com/rgt47/zzcollab/tree/main/examples
 
-- 📚 Step-by-step tutorials for EDA, modeling, validation
-- 🔬 Complete example research compendia
-- 🧩 Reusable code patterns
+- Step-by-step tutorials for EDA, modeling, validation
+- Complete example research compendia
+- Reusable code patterns
 ```
 
 ### 3. Paradigm Selection Section (Lines 77-87)
@@ -136,7 +136,7 @@ zzcollab supports three build modes to optimize for different use cases:
 | **Standard** (`-S`) | Balanced (default) | Medium | 17 packages | + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor | Medium |
 | **Comprehensive** (`-C`) | Full-featured | Large | 47 packages | + tidymodels, shiny, plotly, quarto, flexdashboard | Slow |
 
-All packages work seamlessly whether you're doing data analysis, writing manuscripts, or developing packages.
+All packages work effectively whether you are doing data analysis, writing manuscripts, or developing packages.
 ```
 
 ### 6. Configuration System (Lines 167-207)
@@ -271,9 +271,9 @@ Comprehensive tutorial examples and code patterns available at:
 https://github.com/rgt47/zzcollab/tree/main/examples
 
 **Available Resources**:
-- 📚 **Tutorials**: Step-by-step workflows for EDA, modeling, validation, dashboards, reporting
-- 🔬 **Complete Projects**: Full example research compendia demonstrating end-to-end workflows
-- 🧩 **Code Patterns**: Reusable patterns for data validation, model evaluation, reproducible plots
+- **Tutorials**: Step-by-step workflows for EDA, modeling, validation, dashboards, reporting
+- **Complete Projects**: Full example research compendia demonstrating end-to-end workflows
+- **Code Patterns**: Reusable patterns for data validation, model evaluation, reproducible plots
 
 These examples live in the zzcollab repository (not installed with projects) as learning resources you can reference when needed.
 ```
@@ -296,17 +296,17 @@ These examples live in the zzcollab repository (not installed with projects) as 
 ## Summary of Changes
 
 **Major removals**:
-- ❌ Three-paradigm system description
-- ❌ Paradigm selection examples
-- ❌ Paradigm-specific package lists
-- ❌ --paradigm command-line flag
+- Three-paradigm system description
+- Paradigm selection examples
+- Paradigm-specific package lists
+- --paradigm command-line flag
 
 **Major additions**:
-- ✅ Unified research compendium structure
-- ✅ Marwick et al. (2018) attribution
-- ✅ Link to examples/ directory
-- ✅ Progressive disclosure philosophy
-- ✅ Research lifecycle support explanation
+- Unified research compendium structure
+- Marwick et al. (2018) attribution
+- Link to examples/ directory
+- Progressive disclosure philosophy
+- Research lifecycle support explanation
 
 **Philosophy shift**:
 - **Old**: "Choose your paradigm upfront"

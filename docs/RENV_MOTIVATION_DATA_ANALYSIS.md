@@ -69,7 +69,7 @@ Consider the `plotly` package dependencies:
 # Including: htmltools, htmlwidgets, jsonlite, magrittr, plotly,
 #           rlang, scales, viridis, digest, base64enc, fastmap,
 #           glue, lifecycle, vctrs, yaml, crosstalk, lazyeval,
-#           data.table, jquerylib, bslib, sass, fontawesome,
+#           data.table, jquerylib, bslib, sass, fontcapable,
 #           cachem, memoise, mime, rappdirs, R6, ellipsis,
 #           farver, labeling, munsell, RColorBrewer, gridExtra,
 #           gtable, isoband, mgcv, MASS, lattice, nlme, Matrix
@@ -307,7 +307,7 @@ renv::restore()
 
 ### Integration with Docker and CI/CD
 
-renv integrates seamlessly with containerization:
+renv integrates effectively with containerization:
 
 ```dockerfile
 # Dockerfile leveraging renv for reproducibility

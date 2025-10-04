@@ -39,14 +39,14 @@ The zzcollab **unified paradigm** consolidates the previous three-paradigm syste
 1. **Workflow fragmentation**: Forced users to choose paradigm upfront
 2. **Migration pain**: Moving from analysis → manuscript → package required restructuring
 3. **rrtools incompatibility**: Directory structures deviated from Marwick's conventions
-4. **Premature optimization**: Research doesn't follow linear paths
+4. **Premature optimization**: Research does not follow linear paths
 
 **Benefits of unified paradigm**:
-1. **✅ Marwick compatibility**: Matches rrtools structure exactly
-2. **✅ Research lifecycle support**: One structure handles data analysis, writing, and packaging
-3. **✅ No migration needed**: Project evolves organically as research progresses
-4. **✅ Clean separation**: Examples/tutorials in zzcollab repo, not every project
-5. **✅ Progressive disclosure**: Start minimal, add what you need
+1. **Marwick compatibility**: Matches rrtools structure exactly
+2. **Research lifecycle support**: One structure handles data analysis, writing, and packaging
+3. **No migration needed**: Project evolves organically as research progresses
+4. **Clean separation**: Examples/tutorials in zzcollab repo, not every project
+5. **Progressive disclosure**: Start minimal, add what you need
 
 ### Philosophical Alignment
 
@@ -188,7 +188,7 @@ tests/              # Testing (if needed)
 ### Configuration Files
 
 #### `DESCRIPTION`
-R package metadata - even if you're not making a package, this provides:
+R package metadata - even if you are not making a package, this provides:
 - Project title and description
 - Author information
 - Dependencies
@@ -389,19 +389,19 @@ git push origin analysis/model-validation
 
 **All instructional materials live in the zzcollab repository**:
 
-📚 **Tutorials**: https://github.com/rgt47/zzcollab/tree/main/examples/tutorials
+**Tutorials**: https://github.com/rgt47/zzcollab/tree/main/examples/tutorials
 - `01_eda_tutorial.R` - Comprehensive EDA workflow (252 lines)
 - `02_modeling_tutorial.R` - tidymodels patterns
 - `03_validation_tutorial.R` - Cross-validation examples
 - `04_dashboard_tutorial.Rmd` - Interactive dashboards
 - `05_reporting_tutorial.Rmd` - Parameterized reports
 
-🔬 **Complete Projects**: https://github.com/rgt47/zzcollab/tree/main/examples/complete_projects
+**Complete Projects**: https://github.com/rgt47/zzcollab/tree/main/examples/complete_projects
 - Full example research compendia
 - End-to-end workflows
 - Real analysis patterns
 
-🧩 **Code Patterns**: https://github.com/rgt47/zzcollab/tree/main/examples/patterns
+**Code Patterns**: https://github.com/rgt47/zzcollab/tree/main/examples/patterns
 - Data validation
 - Model evaluation
 - Reproducible plots
@@ -482,7 +482,7 @@ mkdir -p analysis/paper analysis/data analysis/figures
 mv manuscript/* analysis/paper/
 mv analysis/reproduce/* analysis/scripts/ 2>/dev/null || true
 
-# R/ and tests/ don't need to move
+# R/ and tests/ do not need to move
 ```
 
 ### For Existing Package Paradigm Projects
@@ -497,27 +497,27 @@ Optional: Add `analysis/` for manuscript if writing paper about the package.
 
 ### Similarities (Marwick Compatible)
 
-✅ Same directory structure:
+Same directory structure:
 - `analysis/data/raw_data/` and `derived_data/`
 - `analysis/paper/`
 - `analysis/figures/`
 - R package foundation (DESCRIPTION, R/, tests/)
 
-✅ Same principles:
+Same principles:
 - Computational environment specification (Dockerfile)
 - Package version management (renv)
 - Read-only / human-generated / project-generated file classification
 
-✅ Same workflow:
+Same workflow:
 - Write analysis → Render paper → Test reproducibility
 
 ### Enhancements (zzcollab Additions)
 
-🚀 **Docker-first**: Mandatory containerization (rrtools: optional)
-🚀 **CI/CD by default**: GitHub Actions included (rrtools: user adds)
-🚀 **Comprehensive documentation**: Detailed README files at every level
-🚀 **Tutorial library**: Rich examples repository (rrtools: minimal)
-🚀 **Team collaboration**: Multi-user workflows and base images
+**Docker-first**: Mandatory containerization (rrtools: optional)
+**CI/CD by default**: GitHub Actions included (rrtools: user adds)
+**Comprehensive documentation**: Detailed README files at every level
+**Tutorial library**: Rich examples repository (rrtools: minimal)
+**Team collaboration**: Multi-user workflows and base images
 
 ### Key Difference: Examples
 
@@ -556,9 +556,9 @@ Optional: Add `analysis/` for manuscript if writing paper about the package.
 
 ### Q: Do I have to use CI/CD?
 
-**A**: No. Delete `.github/` if you don't want automated checks. But it's highly recommended for reproducibility validation.
+**A**: No. Delete `.github/` if you do not want automated checks. But it is highly recommended for reproducibility validation.
 
-### Q: What if my research doesn't fit this structure?
+### Q: What if my research does not fit this structure?
 
 **A**: Adapt! The structure is a starting point. Add directories as needed, just document deviations in your README.
 

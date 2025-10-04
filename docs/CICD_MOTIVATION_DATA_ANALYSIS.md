@@ -29,7 +29,7 @@ The scope of this crisis is staggering:
 
 ### The Data Leakage Epidemic
 
-Data leakage—where information from the future or target variable inadvertently enters the training process—has become a pervasive cause of reproducibility failures. Research analyzing papers claiming superior performance of complex ML models over logistic regression found that **all such papers fail to reproduce due to data leakage**, and when properly implemented, complex ML models don't perform substantively better than decades-old logistic regression.
+Data leakage—where information from the future or target variable inadvertently enters the training process—has become a pervasive cause of reproducibility failures. Research analyzing papers claiming superior performance of complex ML models over logistic regression found that **all such papers fail to reproduce due to data leakage**, and when properly implemented, complex ML models do not perform substantively better than decades-old logistic regression.
 
 This finding undermines years of research and millions in development investment, highlighting how fundamental methodological errors can persist through peer review and publication when proper CI/CD validation is absent.
 
@@ -62,7 +62,7 @@ The financial impact of these failures is substantial:
 
 ### The Fundamental Differences from Software CI/CD
 
-Data science CI/CD faces unique challenges that traditional software engineering approaches don't fully address:
+Data science CI/CD faces unique challenges that traditional software engineering approaches do not fully address:
 
 #### 1. **Data-Code Dual Dependency**
 Unlike traditional software based solely on code, **machine learning models depend on both code and data**. Data scientists spend approximately **80% of their time** preparing and cleaning data, yet most CI/CD systems focus primarily on code validation. This creates a fundamental gap where data quality issues can bypass validation processes.

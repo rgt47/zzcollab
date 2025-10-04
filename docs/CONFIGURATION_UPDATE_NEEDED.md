@@ -166,10 +166,10 @@ Add after "Build Mode Configuration" section:
 The zzcollab unified paradigm consolidates the previous three-paradigm system (analysis, manuscript, package) into a single flexible structure based on Marwick et al. (2018).
 
 **Key Changes from Previous Versions**:
-- ❌ No more `paradigm` configuration key
-- ✅ One structure supports entire research lifecycle
-- ✅ Build modes control package selection (fast/standard/comprehensive)
-- ✅ Comprehensive mode includes ALL packages (analysis + manuscript + package)
+- No more `paradigm` configuration key
+- One structure supports entire research lifecycle
+- Build modes control package selection (fast/standard/comprehensive)
+- Comprehensive mode includes ALL packages (analysis + manuscript + package)
 
 **Migration from Previous Versions**:
 If your config files contain `paradigm:` keys, they will be ignored. Remove them manually:
@@ -213,17 +213,17 @@ Update all references to package counts:
 ## Section Removals Summary
 
 Complete sections to remove:
-1. ✅ "Override default packages for research paradigms" (lines ~193-250)
-2. ✅ "Paradigm-specific package configurations" example (lines ~588-620)
-3. ✅ All paradigm command-line examples throughout
-4. ✅ `paradigm` from Available Configuration Keys list
+1. "Override default packages for research paradigms" (lines ~193-250)
+2. "Paradigm-specific package configurations" example (lines ~588-620)
+3. All paradigm command-line examples throughout
+4. `paradigm` from Available Configuration Keys list
 
 ## Section Additions Summary
 
 New sections to add:
-1. ✅ "Unified Paradigm System" - Explain consolidation
-2. ✅ "Migration from Previous Versions" - Help users update configs
-3. ✅ Link to UNIFIED_PARADIGM_GUIDE.md
+1. "Unified Paradigm System" - Explain consolidation
+2. "Migration from Previous Versions" - Help users update configs
+3. Link to UNIFIED_PARADIGM_GUIDE.md
 
 ## Testing Changes
 

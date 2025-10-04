@@ -70,7 +70,7 @@ Each variation point multiplies compatibility complexity, creating **millions of
 **Scenario**: Data science team with mixed Windows/macOS/Linux environments
 **Failure Pattern**:
 ```python
-# Works perfectly on macOS developer machine:
+# Works suitablely on macOS developer machine:
 import tensorflow as tf
 model = tf.keras.models.load_model('sentiment_model.h5')
 
@@ -108,7 +108,7 @@ RuntimeError: CUDA version mismatch: compiled with 11.2, runtime 11.0
 ```python
 # Development (RTX 4090 + CUDA 11.8):
 torch.cuda.is_available()  # True
-model.cuda()  # Works perfectly
+model.cuda()  # Works suitablely
 
 # Production (Tesla V100 + CUDA 11.0):
 torch.cuda.is_available()  # False
@@ -171,7 +171,7 @@ sudo apt-get install gdal-bin python3-gdal
 # Month 12: Complete environment collapse
 # - Multiple version conflicts
 # - Broken system Python installation
-# - Notebooks won't start
+# - Notebooks will not start
 # - Team productivity near zero
 ```
 
@@ -852,7 +852,7 @@ Docker represents a **fundamental infrastructure upgrade** from ad-hoc environme
 
 **The choice is not whether to containerize data science workflows, but whether to adopt this essential technology proactively or be forced into it by accumulated infrastructure failures and competitive pressure.**
 
-Early adopters of Docker containerization establish sustainable technical advantages while late adopters face exponentially increasing costs of technical debt, deployment failures, and lost productivity. In an era where data science drives business strategy and scientific discovery, reliable computational infrastructure is not optional—it's the foundation upon which all analytical work depends.
+Early adopters of Docker containerization establish sustainable technical advantages while late adopters face exponentially increasing costs of technical debt, deployment failures, and lost productivity. In an era where data science drives business strategy and scientific discovery, reliable computational infrastructure is not optional—it is the foundation upon which all analytical work depends.
 
 ---
 

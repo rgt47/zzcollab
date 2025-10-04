@@ -73,7 +73,7 @@ compendium/
 - Then needs to write paper (manuscript paradigm)
 - Then extract methods as package (package paradigm)
 
-**Marwick's model**: Handles this seamlessly in one compendium
+**Marwick's model**: Handles this effectively in one compendium
 **zzcollab's model**: Requires migration between paradigms
 
 ---
@@ -121,7 +121,7 @@ submission/
 
 #### 3. Data Handling Philosophy
 
-**Marwick**: Data lives in `analysis/data/` subdirectories within the compendium - everything is nested under `analysis/` to emphasize it's all part of the analytical workflow
+**Marwick**: Data lives in `analysis/data/` subdirectories within the compendium - everything is nested under `analysis/` to emphasize it is all part of the analytical workflow
 
 **zzcollab**: Top-level `data/` directory, separate from `analysis/`
 
@@ -138,7 +138,7 @@ Marwick emphasizes distinguishing:
 - **Human-generated**: Code, documentation
 - **Project-generated**: Processed data, figures, outputs
 
-**zzcollab Status**: Documentation doesn't explicitly enforce this distinction, though the data workflow guide touches on it implicitly.
+**zzcollab Status**: Documentation does not explicitly enforce this distinction, though the data workflow guide touches on it implicitly.
 
 **Recommendation**: Make this distinction explicit in all paradigms.
 
@@ -215,7 +215,7 @@ vignettes/
 ## What Marwick Would Criticize About zzcollab
 
 ### 1. Paradigm Separation is Premature Optimization
-Research doesn't follow linear paths. Data analysis → paper → package is an idealized flow. Real research is messy, iterative, and exploratory. Forcing upfront paradigm choice contradicts this reality.
+Research does not follow linear paths. Data analysis → paper → package is an idealized flow. Real research is messy, iterative, and exploratory. Forcing upfront paradigm choice contradicts this reality.
 
 ### 2. Directory Structure Deviates Without Justification
 Why not follow rrtools conventions exactly if claiming compatibility? The deviations (top-level `data/`, separate `analysis/` and `manuscript/` directories) aren't explained or justified against Marwick's recommendations.
@@ -223,7 +223,7 @@ Why not follow rrtools conventions exactly if claiming compatibility? The deviat
 ### 3. Docker Adds Complexity Where Simplicity Works
 Marwick mentions Docker as **optional**. For many research contexts (pure R analysis without system dependencies), renv alone provides sufficient reproducibility. Mandatory Docker adds complexity and platform dependencies (requires Docker Desktop, ARM64 compatibility issues, etc.).
 
-**Counter-argument**: For team collaboration and true environment reproducibility, Docker provides stronger guarantees. But Marwick's framework doesn't require it.
+**Counter-argument**: For team collaboration and true environment reproducibility, Docker provides stronger guarantees. But Marwick's framework does not require it.
 
 ### 4. Template Abundance Suggests Framework Dictating Workflow
 23+ templates across paradigms suggests the framework is imposing workflow structure rather than supporting researcher-driven organization. Marwick's approach is more minimalist and flexible.
@@ -252,7 +252,7 @@ Marwick's entire thesis is that one structure handles the full research lifecycl
 
 **If you have good reasons** (and there might be valid ones - e.g., different user populations, different deployment targets), **document them explicitly** as intentional departures from Marwick's recommendations.
 
-**If you don't have strong reasons**, consider consolidating.
+**If you do not have strong reasons**, consider consolidating.
 
 ---
 
@@ -310,8 +310,8 @@ If you believe three paradigms are superior to Marwick's unified model, document
 
 Document:
 1. **Why** you chose three paradigms instead of one
-2. **What problems** this solves that Marwick's model doesn't
-3. **Trade-offs** you're making (flexibility vs. structure)
+2. **What problems** this solves that Marwick's model does not
+3. **Trade-offs** you are making (flexibility vs. structure)
 4. **Migration paths** between paradigms when research evolves
 5. **User guidance** on paradigm selection
 
