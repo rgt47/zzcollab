@@ -141,15 +141,18 @@ set_init_parameter_defaults() {
 # Purpose: Validate dotfiles directory and set up configuration
 validate_dotfiles_configuration() {
     if [[ -n "$DOTFILES_DIR" ]]; then
-        if [[ ! -d "$DOTFILES_DIR" ]]; then
-            print_error "Dotfiles directory not found: $DOTFILES_DIR"
+        # Expand tilde in DOTFILES_DIR for validation
+        local expanded_dotfiles="${DOTFILES_DIR/#\~/$HOME}"
+
+        if [[ ! -d "$expanded_dotfiles" ]]; then
+            print_error "Dotfiles directory not found: $DOTFILES_DIR (expanded: $expanded_dotfiles)"
             exit 1
         fi
         USE_DOTFILES=true
         if [[ "$DOTFILES_NODOT" == "true" ]]; then
-            log_info "Using dotfiles from: $DOTFILES_DIR (files need dots added)"
+            log_info "Using dotfiles from: $expanded_dotfiles (files need dots added)"
         else
-            log_info "Using dotfiles from: $DOTFILES_DIR (files already have dots)"
+            log_info "Using dotfiles from: $expanded_dotfiles (files already have dots)"
         fi
     else
         log_info "No dotfiles specified, proceeding without dotfiles integration"
