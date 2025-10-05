@@ -109,12 +109,18 @@ zzcollab -i -t rgt47 -p penguin-bills -F -D ~/dotfiles
 cd penguin-bills
 
 # Complete full project setup with GitHub integration
-zzcollab -t rgt47 -p penguin-bills -I shell -F -G -D ~/dotfiles
+# Note: Most parameters inferred from Step 2a files (DESCRIPTION, config.yaml)
+zzcollab -I shell -G
 
-# Additional flags:
+# Minimal flags needed:
 # -I shell: Use shell interface (or rstudio for RStudio Server)
 # -G: Create GitHub repository automatically
-# -D ~/dotfiles: Include dotfiles (files WITHOUT leading dots)
+#
+# These are automatically detected from Step 2a:
+# - Team name: from DESCRIPTION or config.yaml
+# - Project name: from directory name or DESCRIPTION
+# - Build mode: from config.yaml
+# - Dotfiles: from .zshrc_docker presence
 ```
 
 **What this does:**
@@ -431,7 +437,7 @@ cd penguin-bills
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 
 # Or skip -G flag in Step 2b and create later
-zzcollab -t rgt47 -p penguin-bills -I shell -F -D ~/dotfiles
+zzcollab -I shell  # Complete setup without GitHub
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 ```
 
@@ -446,7 +452,7 @@ docker system prune
 rm -rf penguin-bills  # Remove failed directory
 zzcollab -i -t rgt47 -p penguin-bills -F -D ~/dotfiles
 cd penguin-bills
-zzcollab -t rgt47 -p penguin-bills -I shell -F -G -D ~/dotfiles
+zzcollab -I shell -G  # Parameters inferred from Step 2a files
 ```
 
 ## Test Failures
