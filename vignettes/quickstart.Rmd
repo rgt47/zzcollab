@@ -58,7 +58,7 @@ hidden file issues.
 When you use the `-D ~/dotfiles` flag, ZZCOLLAB automatically:
 1. Copies files from `~/dotfiles/` to the project
 2. Adds the leading dot when copying to Docker container
-3. Result: `~/dotfiles/vimrc` becomes `/home/rstudio/.vimrc` in container
+3. Result: `~/dotfiles/vimrc` becomes `~/.vimrc` in container
 
 # Step-by-Step Instructions
 
@@ -128,7 +128,7 @@ cd penguin-bills
 zzcollab -I shell
 
 # Only flag needed:
-# -I shell: Use shell interface (or rstudio for RStudio Server)
+# -I shell: Use shell/R console interface
 #
 # These come from config (set in Step 1):
 # -G: from auto-github config (true)
@@ -163,19 +163,14 @@ Start the Docker development environment:
 make docker-zsh
 ```
 
-Inside the container, create your analysis as an Rmd file:
+Inside the container, create your analysis as an Rmd file using your preferred text editor:
 
-```{r eval=FALSE}
-# Start R
-R
-
-# Install required packages first
-renv::install("palmerpenguins")
-renv::install("ggplot2")
-renv::install("dplyr")
+```bash
+# Create the report file (use vim, nano, or your preferred editor)
+vim analysis/report/report.Rmd
 ```
 
-Create `analysis/report/report.Rmd` with this content:
+Add this content to `analysis/report/report.Rmd`:
 
 ````
 ---
