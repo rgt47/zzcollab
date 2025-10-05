@@ -236,34 +236,28 @@ ggsave("analysis/figures/bill_scatter.png", plot, width = 8, height = 6)
 The analysis reveals distinct bill dimension patterns across penguin species.
 ````
 
-Then render the report:
+Then install packages and render the report:
 
-```{r eval=FALSE}
+```bash
+# Install required packages
+Rscript -e 'renv::install("palmerpenguins")'
+Rscript -e 'renv::install("ggplot2")'
+Rscript -e 'renv::install("dplyr")'
+
 # Render the report
-rmarkdown::render("analysis/report/report.Rmd")
+Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 
 # Save dependencies
-renv::snapshot()
-
-# Exit R
-quit(save = "no")
+Rscript -e 'renv::snapshot()'
 ```
 
 ## Step 5: Add Unit Tests - Level 4 (2 minutes)
 
-Still inside the Docker container, add tests for computational correctness:
+Still inside the Docker container (from `make docker-zsh`), add tests for computational correctness:
 
-```{r eval=FALSE}
-# Start R
-R
-
+```{r eval=TRUE}
 # Initialize testing infrastructure
 usethis::use_testthat()
-
-# Create function file
-usethis::use_r("bill_analysis")
-
-# Write function (copy from script)
 cat("#' Create scatter plot of bill dimensions
 #'
 #' @param data Palmer penguins data
