@@ -1515,9 +1515,38 @@ For detailed information about the improvements, see:
 - **docs/MODULE_DEPENDENCIES.md**: Module dependency mapping and loading order
 - **scripts/check-function-sizes.sh**: Quality assurance tool for function size monitoring
 
-## Recent Work Completed (August 2025)
+## Recent Work Completed (October 2025)
 
-### Automated Data Documentation System and Safety Enhancements
+### Minimal Build Mode Fix (October 2025)
+**Complete restoration of -M flag functionality** - fixed validation and package definition issues:
+
+**Issues Resolved:**
+1. **CLI Validation Error**: `-M` flag was documented but failed validation with "Unknown option '-M'" error
+   - Root cause: `modules/cli.sh:556` excluded "minimal" from valid build modes
+   - Fix: Added "minimal" to validation condition and error message
+
+2. **Package Definition Error**: After validation fix, got "Unknown build mode: minimal" from config.sh
+   - Root cause: Two functions missing minimal case:
+     - `get_docker_packages_for_mode()` (modules/config.sh:746)
+     - `get_renv_packages_for_mode()` (modules/config.sh:795)
+   - Fix: Added minimal cases returning "renv,remotes,here" (3 packages)
+
+3. **Variant Library Missing**: Config-based variants failed with "Variant library not found: variant_examples.yaml"
+   - Root cause: `variant_examples.yaml` not copied to project directory during team initialization
+   - Fix: Copy variant library from templates after creating config.yaml (modules/team_init.sh:232-237)
+
+**Complete Build Mode System (4 modes):**
+- **Minimal (-M)**: 3 packages (renv, remotes, here) ~30 seconds
+- **Fast (-F)**: 9 packages (development essentials) 2-3 minutes
+- **Standard (-S)**: 17 packages (balanced) 4-6 minutes [default]
+- **Comprehensive (-C)**: 47+ packages (full ecosystem) 15-20 minutes
+
+**Verification:**
+- Reinstalled zzcollab with all fixes
+- Test suite: PASS 34, FAIL 0, WARN 1, SKIP 1
+- All 4 build modes now fully functional
+
+### Automated Data Documentation System and Safety Enhancements (August 2025)
 
 **Data Documentation Templates (NEW)**:
 - **Automated README creation**: Every new zzcollab project includes comprehensive `data/README.md` with Palmer Penguins example
