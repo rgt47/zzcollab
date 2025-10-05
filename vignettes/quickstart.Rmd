@@ -98,22 +98,22 @@ Create a fully reproducible project in two steps:
 
 ```bash
 # Create and push Docker team images
-zzcollab -i -t rgt47 -p penguin-bills -F -D ~/dotfiles
+# All parameters come from Step 1 config (team-name, build-mode, dotfiles-dir)
+zzcollab -i -p penguin-bills
 
-# Flags explained:
+# Only flag needed:
 # -i: Initialize team Docker images
-# -t: Team name (your GitHub username)
-# -p: Project name
-# -F: Fast build mode (9 packages, ~2-3 min)
-# -D ~/dotfiles: Include dotfiles from ~/dotfiles directory
-#    Note: Files should be named WITHOUT leading dots
-#    (vimrc, tmux.conf, gitconfig, zshrc)
-#    ZZCOLLAB adds the dots automatically when copying to container
+# -p: Project name (only thing that changes per project)
+#
+# These come from config (set in Step 1):
+# -t rgt47: from team-name config
+# -F: from build-mode config (fast)
+# -D ~/dotfiles: from dotfiles-dir config
 ```
 
 **What this does:**
 1. Creates project directory `penguin-bills/`
-2. Builds Docker team images with R + essential packages
+2. Builds Docker team images with R + essential packages (9 packages, fast mode)
 3. Pushes images to Docker Hub for team sharing
 
 ### Step 2b: Complete Project Setup with GitHub (1 minute)
@@ -123,14 +123,16 @@ zzcollab -i -t rgt47 -p penguin-bills -F -D ~/dotfiles
 cd penguin-bills
 
 # Complete full project setup with GitHub integration
-# Note: Most parameters inferred from Step 2a files (DESCRIPTION, config.yaml)
-zzcollab -I shell -G
+# Almost everything comes from config or Step 2a files
+zzcollab -I shell
 
-# Minimal flags needed:
+# Only flag needed:
 # -I shell: Use shell interface (or rstudio for RStudio Server)
-# -G: Create GitHub repository automatically
 #
-# These are automatically detected from Step 2a:
+# These come from config (set in Step 1):
+# -G: from auto-github config (true)
+#
+# These are inferred from Step 2a files:
 # - Team name: from DESCRIPTION or config.yaml
 # - Project name: from directory name or DESCRIPTION
 # - Build mode: from config.yaml
@@ -139,7 +141,7 @@ zzcollab -I shell -G
 
 **What this does:**
 1. Creates complete project structure (R/, analysis/, tests/, etc.)
-2. Creates GitHub repository (public by default)
+2. Creates GitHub repository automatically (public by default)
 3. Sets up CI/CD workflows for automated testing
 4. Initializes renv for dependency tracking
 
@@ -446,11 +448,12 @@ mkdir -p analysis/paper
 ## GitHub Repository Creation Fails
 
 ```bash
-# If -G flag fails, create repository manually
+# If auto-github fails, create repository manually
 cd penguin-bills
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 
-# Or skip -G flag in Step 2b and create later
+# Or disable auto-github in config and create later
+zzcollab --config set auto-github "false"
 zzcollab -I shell  # Complete setup without GitHub
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 ```
@@ -461,12 +464,12 @@ gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 # Check Docker daemon running
 docker info
 
-# Clean rebuild (two-step process)
+# Clean rebuild (two-step process using config defaults)
 docker system prune
 rm -rf penguin-bills  # Remove failed directory
-zzcollab -i -t rgt47 -p penguin-bills -F -D ~/dotfiles
+zzcollab -i -p penguin-bills  # Uses config: team-name, build-mode, dotfiles-dir
 cd penguin-bills
-zzcollab -I shell -G  # Parameters inferred from Step 2a files
+zzcollab -I shell  # Uses config: auto-github; infers: team, project, build-mode
 ```
 
 ## Test Failures
