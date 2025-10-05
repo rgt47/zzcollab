@@ -173,9 +173,12 @@ R
 renv::install("palmerpenguins")
 renv::install("ggplot2")
 renv::install("dplyr")
+```
 
-# Create analysis report as Rmarkdown
-cat('---
+Create `analysis/report/report.Rmd` with this content:
+
+```markdown
+---
 title: "Palmer Penguins Bill Dimensions Analysis"
 author: "Reproducible Research Team"
 date: "`r Sys.Date()`"
@@ -236,9 +239,11 @@ ggsave("analysis/figures/bill_scatter.png", plot, width = 8, height = 6)
 ## Summary
 
 The analysis reveals distinct bill dimension patterns across penguin species.
+```
 
-', file = "analysis/report/report.Rmd")
+Then render the report:
 
+```{r eval=FALSE}
 # Render the report
 rmarkdown::render("analysis/report/report.Rmd")
 
