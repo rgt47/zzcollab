@@ -741,8 +741,16 @@ init_config_system() {
 # Arguments: $1 = build mode (fast, standard, comprehensive)
 get_docker_packages_for_mode() {
     local mode="$1"
-    
+
     case "$mode" in
+        minimal)
+            if [[ -n "$CONFIG_MINIMAL_DOCKER_PACKAGES" ]]; then
+                echo "$CONFIG_MINIMAL_DOCKER_PACKAGES"
+            else
+                # Return default minimal mode packages (3 packages)
+                echo "renv,remotes,here"
+            fi
+            ;;
         fast)
             if [[ -n "$CONFIG_FAST_DOCKER_PACKAGES" ]]; then
                 echo "$CONFIG_FAST_DOCKER_PACKAGES"
@@ -782,8 +790,16 @@ get_docker_packages_for_mode() {
 # Arguments: $1 = build mode (fast, standard, comprehensive)
 get_renv_packages_for_mode() {
     local mode="$1"
-    
+
     case "$mode" in
+        minimal)
+            if [[ -n "$CONFIG_MINIMAL_RENV_PACKAGES" ]]; then
+                echo "$CONFIG_MINIMAL_RENV_PACKAGES"
+            else
+                # Return default minimal mode packages (3 packages)
+                echo "renv,remotes,here"
+            fi
+            ;;
         fast)
             if [[ -n "$CONFIG_FAST_RENV_PACKAGES" ]]; then
                 echo "$CONFIG_FAST_RENV_PACKAGES"
