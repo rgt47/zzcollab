@@ -15,7 +15,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
@@ -173,70 +174,70 @@ renv::install("palmerpenguins")
 renv::install("ggplot2")
 renv::install("dplyr")
 
-# Create analysis report as Rmarkdown using writeLines
-writeLines(c(
-  "---",
-  "title: \"Palmer Penguins Bill Dimensions Analysis\"",
-  "author: \"Reproducible Research Team\"",
-  "date: \"`r Sys.Date()`\"",
-  "output:",
-  "  html_document:",
-  "    toc: true",
-  "    code_folding: show",
-  "---",
-  "",
-  "```{r setup, include=FALSE}",
-  "knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)",
-  "```",
-  "",
-  "## Introduction",
-  "",
-  "Analysis of bill length and bill depth measurements across three penguin species",
-  "from the Palmer Station Antarctica LTER.",
-  "",
-  "## Data Loading",
-  "",
-  "```{r load-data}",
-  "library(palmerpenguins)",
-  "library(ggplot2)",
-  "library(dplyr)",
-  "",
-  "# Preview data",
-  "head(penguins)",
-  "```",
-  "",
-  "## Analysis",
-  "",
-  "### Bill Dimensions by Species",
-  "",
-  "```{r bill-plot, fig.width=8, fig.height=6}",
-  "# Create scatter plot",
-  "create_bill_plot <- function(data = penguins) {",
-  "  data %>%",
-  "    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%",
-  "    ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +",
-  "    geom_point(size = 3, alpha = 0.7) +",
-  "    labs(",
-  "      title = \"Palmer Penguins: Bill Dimensions\",",
-  "      x = \"Bill Length (mm)\",",
-  "      y = \"Bill Depth (mm)\",",
-  "      color = \"Species\"",
-  "    ) +",
-  "    theme_minimal()",
-  "}",
-  "",
-  "# Generate plot",
-  "plot <- create_bill_plot()",
-  "print(plot)",
-  "",
-  "# Save plot",
-  "ggsave(\"analysis/figures/bill_scatter.png\", plot, width = 8, height = 6)",
-  "```",
-  "",
-  "## Summary",
-  "",
-  "The analysis reveals distinct bill dimension patterns across penguin species."
-), con = "analysis/report/report.Rmd")
+# Create analysis report as Rmarkdown
+cat('---
+title: "Palmer Penguins Bill Dimensions Analysis"
+author: "Reproducible Research Team"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Introduction
+
+Analysis of bill length and bill depth measurements across three penguin species
+from the Palmer Station Antarctica LTER.
+
+## Data Loading
+
+```{r load-data}
+library(palmerpenguins)
+library(ggplot2)
+library(dplyr)
+
+# Preview data
+head(penguins)
+```
+
+## Analysis
+
+### Bill Dimensions by Species
+
+```{r bill-plot, fig.width=8, fig.height=6}
+# Create scatter plot
+create_bill_plot <- function(data = penguins) {
+  data %>%
+    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+    geom_point(size = 3, alpha = 0.7) +
+    labs(
+      title = "Palmer Penguins: Bill Dimensions",
+      x = "Bill Length (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species"
+    ) +
+    theme_minimal()
+}
+
+# Generate plot
+plot <- create_bill_plot()
+print(plot)
+
+# Save plot
+ggsave("analysis/figures/bill_scatter.png", plot, width = 8, height = 6)
+```
+
+## Summary
+
+The analysis reveals distinct bill dimension patterns across penguin species.
+
+', file = "analysis/report/report.Rmd")
 
 # Render the report
 rmarkdown::render("analysis/report/report.Rmd")
