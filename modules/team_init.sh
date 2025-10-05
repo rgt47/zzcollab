@@ -741,12 +741,11 @@ EOF
     fi
 
     cat >> "$dockerfile" << EOF
-# Copy any dotfiles that were provided
-COPY .vimrc* .tmux.conf* .gitconfig* .bashrc* .zshrc* /home/\$USER/ 2>/dev/null || true
-COPY .zshrc_docker /home/\$USER/.zshrc 2>/dev/null || true
+# Set default user (will be overridden in personal Dockerfile)
+ENV USER=rstudio
 
 # Set working directory
-WORKDIR /home/\$USER/project
+WORKDIR /home/rstudio
 
 # Default command
 CMD ["/bin/bash"]
