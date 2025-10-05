@@ -63,18 +63,32 @@ When you use the `-D ~/dotfiles` flag, ZZCOLLAB automatically:
 
 ## Step 1: Configure ZZCOLLAB (30 seconds)
 
-Set your defaults once to eliminate repetitive typing:
+Set your defaults once to eliminate repetitive typing for ALL future projects:
 
 ```bash
 # Initialize configuration
 zzcollab --config init
 
-# Set your GitHub account
+# Set team name (typically your GitHub username for solo projects)
+zzcollab --config set team-name "rgt47"
+
+# Set GitHub account
 zzcollab --config set github-account "rgt47"
 
-# Set default build mode
+# Set default build mode (fast = 9 packages, ~2-3 min)
 zzcollab --config set build-mode "fast"
+
+# Set dotfiles directory
+zzcollab --config set dotfiles-dir "~/dotfiles"
+
+# Enable automatic GitHub repository creation
+zzcollab --config set auto-github "true"
 ```
+
+**What this accomplishes:**
+- All future `zzcollab` commands use these defaults
+- No need to specify `-t`, `-F`, `-D`, or `-G` flags repeatedly
+- Change defaults anytime with `zzcollab --config set`
 
 ## Step 2: Create Project with All 5 Levels (3-4 minutes)
 
