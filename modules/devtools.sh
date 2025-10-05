@@ -116,9 +116,9 @@ copy_dotfiles() {
         )
         
         for dotfile in "${dotfiles_nodot[@]}"; do
-            local source_file="$DOTFILES_DIR/$dotfile"
+            local source_file="$expanded_dotfiles_dir/$dotfile"
             local dest_file=".$dotfile"
-            
+
             if [[ -f "$source_file" ]]; then
                 if cp "$source_file" "$dest_file"; then
                     track_dotfile "$dest_file"
@@ -132,17 +132,17 @@ copy_dotfiles() {
     else
         # Mode 2: Files with leading dots (e.g., .vimrc -> .vimrc)
         log_info "Copying dotfiles with leading dots (preserving names)"
-        
+
         local dotfiles_withdot=(
-            ".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc" 
-            ".profile" ".aliases" ".functions" ".exports" ".editorconfig" 
+            ".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc"
+            ".profile" ".aliases" ".functions" ".exports" ".editorconfig"
             ".ctags" ".ackrc" ".ripgreprc"
         )
-        
+
         for dotfile in "${dotfiles_withdot[@]}"; do
-            local source_file="$DOTFILES_DIR/$dotfile"
+            local source_file="$expanded_dotfiles_dir/$dotfile"
             local dest_file="$dotfile"
-            
+
             if [[ -f "$source_file" ]]; then
                 if cp "$source_file" "$dest_file"; then
                     track_dotfile "$dest_file"
@@ -159,12 +159,12 @@ copy_dotfiles() {
     local zshrc_source=""
     if [[ "${DOTFILES_NODOT:-false}" = "true" ]]; then
         # Look for zshrc without dot
-        [[ -f "$DOTFILES_DIR/zshrc" ]] && zshrc_source="$DOTFILES_DIR/zshrc"
+        [[ -f "$expanded_dotfiles_dir/zshrc" ]] && zshrc_source="$expanded_dotfiles_dir/zshrc"
     else
         # Look for .zshrc with dot
-        [[ -f "$DOTFILES_DIR/.zshrc" ]] && zshrc_source="$DOTFILES_DIR/.zshrc"
+        [[ -f "$expanded_dotfiles_dir/.zshrc" ]] && zshrc_source="$expanded_dotfiles_dir/.zshrc"
     fi
-    
+
     if [[ -n "$zshrc_source" ]]; then
         log_info "Found .zshrc - creating Docker-compatible version with automatic macOS filtering"
         if create_docker_compatible_zshrc "$zshrc_source" "./.zshrc_docker"; then
@@ -173,13 +173,13 @@ copy_dotfiles() {
             log_warn "Failed to create Docker-compatible .zshrc"
         fi
     fi
-    
+
     if [[ $copied_count -gt 0 ]]; then
         log_success "Copied $copied_count dotfiles successfully"
         log_info "Dotfiles will be available in Docker containers"
         [[ -f "./.zshrc_docker" ]] && log_info "✨ .zshrc automatically filtered for Docker compatibility"
     else
-        log_warn "No dotfiles found in $DOTFILES_DIR"
+        log_warn "No dotfiles found in $expanded_dotfiles_dir"
     fi
 }
 
