@@ -228,7 +228,14 @@ setup_team_dockerfile() {
                 -e "s/\${CREATION_DATE}/$(date -u +%Y-%m-%dT%H:%M:%SZ)/g" \
                 "$config_template" > ./config.yaml
             print_success "Created config.yaml with predefined variants"
-            
+
+            # Copy variant_examples.yaml library if it exists
+            local variant_library="${TEMPLATES_DIR}/variant_examples.yaml"
+            if [[ -f "$variant_library" ]] && [[ ! -f "./variant_examples.yaml" ]]; then
+                cp "$variant_library" ./variant_examples.yaml
+                print_success "Copied variant library: variant_examples.yaml"
+            fi
+
             # Check if config.yaml has use_config_variants enabled
             if command -v yq >/dev/null 2>&1; then
                 local use_config_variants
