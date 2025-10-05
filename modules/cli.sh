@@ -553,9 +553,9 @@ export_cli_variables() {
 # Purpose: Validate CLI argument combinations and required values
 validate_cli_arguments() {
     # Validate BUILD_MODE is valid
-    if [[ "$BUILD_MODE" != "fast" && "$BUILD_MODE" != "standard" && "$BUILD_MODE" != "comprehensive" ]]; then
+    if [[ "$BUILD_MODE" != "minimal" && "$BUILD_MODE" != "fast" && "$BUILD_MODE" != "standard" && "$BUILD_MODE" != "comprehensive" ]]; then
         echo "❌ Error: Invalid build mode '$BUILD_MODE'" >&2
-        echo "   Valid modes: fast, standard, comprehensive" >&2
+        echo "   Valid modes: minimal, fast, standard, comprehensive" >&2
         exit 1
     fi
     
