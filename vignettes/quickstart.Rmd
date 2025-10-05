@@ -153,7 +153,7 @@ zzcollab -I shell
 gh repo edit --visibility private
 ```
 
-## Step 4: Create Analysis Script (1 minute)
+## Step 4: Create Analysis Report (2 minutes)
 
 Start the Docker development environment:
 
@@ -162,17 +162,53 @@ Start the Docker development environment:
 make docker-zsh
 ```
 
-Inside the container, create your analysis:
+Inside the container, create your analysis as an Rmd file:
 
 ```r
 # Start R
 R
 
-# Create analysis script
-cat("
+# Install required packages first
+renv::install("palmerpenguins")
+renv::install("ggplot2")
+renv::install("dplyr")
+
+# Create analysis report as Rmarkdown
+cat('---
+title: "Palmer Penguins Bill Dimensions Analysis"
+author: "Reproducible Research Team"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Introduction
+
+Analysis of bill length and bill depth measurements across three penguin species
+from the Palmer Station Antarctica LTER.
+
+## Data Loading
+
+```{r load-data}
 library(palmerpenguins)
 library(ggplot2)
+library(dplyr)
 
+# Preview data
+head(penguins)
+```
+
+## Analysis
+
+### Bill Dimensions by Species
+
+```{r bill-plot, fig.width=8, fig.height=6}
 # Create scatter plot
 create_bill_plot <- function(data = penguins) {
   data %>%
@@ -180,25 +216,30 @@ create_bill_plot <- function(data = penguins) {
     ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
     geom_point(size = 3, alpha = 0.7) +
     labs(
-      title = 'Palmer Penguins: Bill Dimensions',
-      x = 'Bill Length (mm)',
-      y = 'Bill Depth (mm)',
-      color = 'Species'
+      title = "Palmer Penguins: Bill Dimensions",
+      x = "Bill Length (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species"
     ) +
     theme_minimal()
 }
 
-# Generate and save plot
+# Generate plot
 plot <- create_bill_plot()
-ggsave('figures/bill_scatter.png', plot, width = 8, height = 6)
-", file = "scripts/01_bill_analysis.R")
+print(plot)
 
-# Install required packages
-renv::install("palmerpenguins")
-renv::install("ggplot2")
+# Save plot
+ggsave("analysis/figures/bill_scatter.png", plot, width = 8, height = 6)
+```
 
-# Run analysis
-source("scripts/01_bill_analysis.R")
+## Summary
+
+The analysis reveals distinct bill dimension patterns across penguin species.
+
+', file = "analysis/report/report.Rmd")
+
+# Render the report
+rmarkdown::render("analysis/report/report.Rmd")
 
 # Save dependencies
 renv::snapshot()
@@ -340,6 +381,39 @@ GitHub Actions will automatically:
 3. Run unit tests
 4. Report results
 
+## Step 8: Configure Report Rendering CI/CD (Optional, 2 minutes)
+
+If you want GitHub Actions to automatically render your report on every push,
+update the workflow to point to your report file:
+
+```bash
+# Edit the render-paper workflow
+vim .github/workflows/render-paper.yml
+```
+
+Change line 46 from:
+```yaml
+compendium-env Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
+```
+
+To:
+```yaml
+compendium-env Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
+```
+
+Then commit and push:
+```bash
+git add .github/workflows/render-paper.yml
+git commit -m "Update CI/CD to render analysis/report/report.Rmd"
+git push
+```
+
+**What this enables:**
+- Automatic report rendering on every push to main
+- Fresh computational environment for each render
+- Downloadable PDF/HTML artifacts
+- Verification that analysis is fully reproducible
+
 # What You Built
 
 ## All 5 Reproducibility Levels
@@ -370,19 +444,38 @@ GitHub Actions will automatically:
 penguin-bills/
 ├── .github/
 │   └── workflows/
-│       └── r-package.yml        # Automated validation
+│       └── r-package.yml        # Automated CI/CD validation
 ├── R/
 │   └── bill_analysis.R          # Tested function
-├── scripts/
-│   └── 01_bill_analysis.R       # Analysis script
+├── analysis/
+│   ├── report/
+│   │   ├── report.Rmd           # Analysis report (reproducible)
+│   │   └── report.html          # Rendered output
+│   ├── figures/
+│   │   └── bill_scatter.png     # Generated plot
+│   └── tables/                  # Generated tables
+├── data/
+│   ├── raw_data/                # Original, unmodified data
+│   ├── derived_data/            # Processed analysis-ready data
+│   ├── metadata/                # Data documentation
+│   └── README.md                # Data dictionary and documentation
+├── scripts/                     # Working scripts and exploration
 ├── tests/
 │   └── testthat/
 │       └── test-bill_analysis.R # Unit tests
-├── figures/
-│   └── bill_scatter.png         # Output plot
-├── renv.lock                    # Exact dependencies
-├── Dockerfile                   # Environment spec
-└── DESCRIPTION                  # Project metadata
+├── man/                         # Generated function documentation
+├── vignettes/                   # Package tutorials
+├── docs/                        # Project documentation
+├── renv/                        # renv package cache
+├── .Rbuildignore                # Files excluded from package build
+├── .gitignore                   # Git exclusions
+├── DESCRIPTION                  # Project metadata and dependencies
+├── NAMESPACE                    # Function exports (managed by roxygen2)
+├── LICENSE                      # GPL-3 license
+├── Makefile                     # Development workflow automation
+├── Dockerfile                   # Environment specification
+├── renv.lock                    # Exact package versions
+└── penguin-bills.Rproj          # RStudio project file
 ```
 
 ## Verification Checklist
@@ -501,12 +594,14 @@ make docker-test
 - **Step 2a** (Team images): 2-3 minutes
 - **Step 2b** (Full setup + GitHub): 1 minute
 - **Step 3** (Make private): 30 seconds
-- **Step 4** (Analysis script): 1 minute
+- **Step 4** (Analysis Rmd report): 2 minutes
 - **Step 5** (Unit tests): 2 minutes
 - **Step 6** (Validate & commit): 1 minute
 - **Step 7** (Verify CI/CD): 30 seconds
+- **Step 8** (Configure report rendering): 2 minutes (optional)
 
-**Total**: ~9-10 minutes for complete 5-level reproducible analysis
+**Total**: ~10-11 minutes for complete 5-level reproducible analysis
+(~13 minutes with optional Step 8)
 
 # Summary
 
