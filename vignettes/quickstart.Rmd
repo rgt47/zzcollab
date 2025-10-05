@@ -36,6 +36,28 @@ GitHub as a private repository.
 - GitHub account (example: rgt47)
 - Personal access token for GitHub (with repo permissions)
 - zzcollab installed (`./install.sh`)
+- Dotfiles directory at `~/dotfiles` with files named without leading dots
+  (e.g., `vimrc`, `tmux.conf`, `gitconfig`, `zshrc` not `.vimrc`, `.tmux.conf`, etc.)
+
+**Important Note About Dotfiles:**
+
+ZZCOLLAB expects dotfiles to be stored WITHOUT leading dots in your dotfiles
+directory. This makes them easier to manage in version control and avoids
+hidden file issues.
+
+```bash
+# Correct dotfiles structure
+~/dotfiles/
+  vimrc          # NOT .vimrc
+  tmux.conf      # NOT .tmux.conf
+  gitconfig      # NOT .gitconfig
+  zshrc          # NOT .zshrc
+```
+
+When you use the `-D ~/dotfiles` flag, ZZCOLLAB automatically:
+1. Copies files from `~/dotfiles/` to the project
+2. Adds the leading dot when copying to Docker container
+3. Result: `~/dotfiles/vimrc` becomes `/home/rstudio/.vimrc` in container
 
 # Step-by-Step Instructions
 
@@ -54,38 +76,58 @@ zzcollab --config set github-account "rgt47"
 zzcollab --config set build-mode "fast"
 ```
 
-## Step 2: Create Project with All 5 Levels (2 minutes)
+## Step 2: Create Project with All 5 Levels (3-4 minutes)
 
-Create a fully reproducible project with one command:
+Create a fully reproducible project in two steps:
+
+### Step 2a: Create Team Docker Images (2-3 minutes)
 
 ```bash
-# Creates project with:
-# - Level 2: renv (dependency tracking)
-# - Level 3: Docker (environment isolation)
-# - Level 5: CI/CD (GitHub Actions workflows)
-zzcollab -i -t rgt47 -p penguin-bills -F -G
+# Create and push Docker team images
+zzcollab -i -t rgt47 -p penguin-bills -F -D ~/dotfiles
 
 # Flags explained:
 # -i: Initialize team Docker images
 # -t: Team name (your GitHub username)
 # -p: Project name
 # -F: Fast build mode (9 packages, ~2-3 min)
-# -G: Create GitHub repository automatically
+# -D ~/dotfiles: Include dotfiles from ~/dotfiles directory
+#    Note: Files should be named WITHOUT leading dots
+#    (vimrc, tmux.conf, gitconfig, zshrc)
+#    ZZCOLLAB adds the dots automatically when copying to container
 ```
 
 **What this does:**
-1. Creates Docker team images with R + essential packages
-2. Pushes images to Docker Hub
-3. Creates GitHub repository (public by default)
-4. Sets up CI/CD workflows for automated testing
+1. Creates project directory `penguin-bills/`
+2. Builds Docker team images with R + essential packages
+3. Pushes images to Docker Hub for team sharing
+
+### Step 2b: Complete Project Setup with GitHub (1 minute)
+
+```bash
+# Navigate to project directory
+cd penguin-bills
+
+# Complete full project setup with GitHub integration
+zzcollab -t rgt47 -p penguin-bills -I shell -F -G -D ~/dotfiles
+
+# Additional flags:
+# -I shell: Use shell interface (or rstudio for RStudio Server)
+# -G: Create GitHub repository automatically
+# -D ~/dotfiles: Include dotfiles (files WITHOUT leading dots)
+```
+
+**What this does:**
+1. Creates complete project structure (R/, analysis/, tests/, etc.)
+2. Creates GitHub repository (public by default)
+3. Sets up CI/CD workflows for automated testing
+4. Initializes renv for dependency tracking
 
 ## Step 3: Set Repository to Private (30 seconds)
 
 ```bash
-# Navigate to project
-cd penguin-bills
-
 # Make repository private using GitHub CLI
+# (Already in penguin-bills/ directory from Step 2b)
 gh repo edit --visibility private
 ```
 
@@ -218,18 +260,20 @@ quit(save = "no")
 
 ## Step 6: Validate and Commit (1 minute)
 
-Still in container, validate everything works:
+Exit the container and validate everything works in a clean environment:
 
 ```bash
+# Exit the Docker container (if still inside from Step 5)
+exit
+
 # Run tests in clean environment
-exit  # Exit container first
 make docker-test
 
 # Validate dependencies
 Rscript validate_package_environment.R --quiet --fail-on-issues
 ```
 
-Commit your work:
+Now commit your work:
 
 ```bash
 git add .
@@ -382,12 +426,13 @@ mkdir -p analysis/paper
 ## GitHub Repository Creation Fails
 
 ```bash
-# Manual repository creation
+# If -G flag fails, create repository manually
+cd penguin-bills
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 
-# Or without -G flag and create manually
-zzcollab -i -t rgt47 -p penguin-bills -F
-# Then: gh repo create ...
+# Or skip -G flag in Step 2b and create later
+zzcollab -t rgt47 -p penguin-bills -I shell -F -D ~/dotfiles
+gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 ```
 
 ## Docker Build Errors
@@ -396,9 +441,12 @@ zzcollab -i -t rgt47 -p penguin-bills -F
 # Check Docker daemon running
 docker info
 
-# Clean rebuild
+# Clean rebuild (two-step process)
 docker system prune
-zzcollab -i -t rgt47 -p penguin-bills -F
+rm -rf penguin-bills  # Remove failed directory
+zzcollab -i -t rgt47 -p penguin-bills -F -D ~/dotfiles
+cd penguin-bills
+zzcollab -t rgt47 -p penguin-bills -I shell -F -G -D ~/dotfiles
 ```
 
 ## Test Failures
@@ -427,14 +475,15 @@ make docker-test
 # Time Breakdown
 
 - **Step 1** (Configuration): 30 seconds
-- **Step 2** (Project creation): 2 minutes
+- **Step 2a** (Team images): 2-3 minutes
+- **Step 2b** (Full setup + GitHub): 1 minute
 - **Step 3** (Make private): 30 seconds
 - **Step 4** (Analysis script): 1 minute
 - **Step 5** (Unit tests): 2 minutes
 - **Step 6** (Validate & commit): 1 minute
 - **Step 7** (Verify CI/CD): 30 seconds
 
-**Total**: ~8 minutes for complete 5-level reproducible analysis
+**Total**: ~9-10 minutes for complete 5-level reproducible analysis
 
 # Summary
 
