@@ -90,12 +90,15 @@ copy_dotfiles() {
         log_info "No dotfiles directory specified - skipping dotfiles copy"
         return 0
     fi
-    
-    log_info "Copying dotfiles from $DOTFILES_DIR..."
-    
+
+    # Expand tilde in DOTFILES_DIR
+    local expanded_dotfiles_dir="${DOTFILES_DIR/#\~/$HOME}"
+
+    log_info "Copying dotfiles from $expanded_dotfiles_dir..."
+
     # Validate dotfiles directory exists
-    if [[ ! -d "$DOTFILES_DIR" ]]; then
-        log_error "Dotfiles directory not found: $DOTFILES_DIR"
+    if [[ ! -d "$expanded_dotfiles_dir" ]]; then
+        log_error "Dotfiles directory not found: $DOTFILES_DIR (expanded: $expanded_dotfiles_dir)"
         return 1
     fi
     
