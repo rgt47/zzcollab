@@ -1,19 +1,16 @@
 # ZZCOLLAB Team Configuration
-# This file defines Docker profiles and team settings for your zzcollab project.
+# This file defines Docker environments and team settings for your zzcollab project.
 # Edit this file to customize your team's development environment.
 #
-# PROFILE SYSTEM (NEW - Single Source of Truth):
+# PROFILE SYSTEM (Single Source of Truth):
 # - All profile definitions are stored in profiles.yaml
-# - This config file only specifies which variants to enable
-# - Use ./add_profile.sh to browse and add variants interactively
+# - This config file only specifies which profiles to enable
+# - Use ./add_profile.sh to browse and add environments interactively
 #
 # USAGE:
-# 1. Set `enabled: true` for variants you want to build
-# 2. Profile definitions are automatically pulled from profiles.yaml
-# 3. Choose your approach:
-#    a) Set `use_config_profiles: true` below - uses this file automatically
-#    b) Use flag: zzcollab -i -t myteam -p myproject --variants-config config.yaml
-#    c) Legacy: zzcollab -i -t myteam -p myproject -B r-ver,rstudio
+# 1. Set `enabled: true` for profiles you want to build
+# 2. Environment definitions are automatically pulled from profiles.yaml
+# 3. Run: zzcollab -i -p myproject (builds enabled profiles automatically)
 
 #=============================================================================
 # TEAM METADATA
@@ -27,52 +24,48 @@ team:
   created: "${CREATION_DATE}"
 
 #=============================================================================
-# DOCKER VARIANTS CONFIGURATION
+# DOCKER PROFILES CONFIGURATION
 #=============================================================================
-# Define which variants your team needs from the profile library.
+# Define which profiles your team needs from the profile library.
 # Full definitions are automatically pulled from profiles.yaml
 
 profiles:
-  
+
   #---------------------------------------------------------------------------
-  # DEFAULT VARIANTS (Enabled by default for new teams)
+  # DEFAULT PROFILE (Enabled by default for new teams)
   #---------------------------------------------------------------------------
-  
+
   minimal:
     enabled: true    # Essential development environment (~800MB)
     # Full definition in profiles.yaml
-  
-  analysis:
-    enabled: true    # Tidyverse analysis environment (~1.2GB)
-    # Full definition in profiles.yaml
-    
+
   #---------------------------------------------------------------------------
-  # ADDITIONAL VARIANTS (Set enabled: true to activate)
+  # ADDITIONAL PROFILES (Set enabled: true to activate)
   #---------------------------------------------------------------------------
   # Use ./add_profile.sh to browse all available options interactively
   
-  # Standard research environments
+  # Standard research profiles
   modeling:
     enabled: false   # Machine learning with tidymodels (~1.5GB)
   
   publishing:
     enabled: false   # LaTeX, Quarto, bookdown publishing (~3GB)
   
-  # Specialized domains  
+  # Specialized domain profiles  
   bioinformatics:
     enabled: false   # Bioconductor genomics packages (~2GB)
     
   geospatial:
     enabled: false   # sf, terra, leaflet mapping (~2.5GB)
   
-  # Lightweight Alpine variants
+  # Lightweight Alpine profiles
   alpine_minimal:
     enabled: false   # Ultra-lightweight CI/CD (~200MB)
     
   alpine_analysis:
     enabled: false   # Essential analysis in tiny container (~400MB)
     
-  # R-hub testing environments
+  # R-hub testing profiles
   rhub_ubuntu:
     enabled: false   # CRAN-compatible testing (~1GB)
     
@@ -87,9 +80,9 @@ profiles:
     enabled: false   # Parallel processing optimized (~600MB)
   
   #---------------------------------------------------------------------------
-  # CUSTOM VARIANTS (Add your own)
+  # CUSTOM PROFILES (Add your own)
   #---------------------------------------------------------------------------
-  # Copy variants from ./add_profile.sh or define manually
+  # Copy profiles from ./add_profile.sh or define manually
   # Format: profile_name: { enabled: true/false }
   # Full definitions pulled from profiles.yaml
 
@@ -98,11 +91,11 @@ profiles:
 #=============================================================================
 
 build:
-  # Use variants defined in this config file by default
-  use_config_profiles: true   # If true, uses variants from this file instead of -B flag
-  
-  # Variant source file (single source of truth)
-  variant_library: "profiles.yaml"
+  # Use profiles defined in this config file by default
+  use_config_profiles: true   # If true, uses profiles from this file instead of -B flag
+
+  # Profile source file (single source of truth)
+  profile_library: "profiles.yaml"
   
   # Docker build options
   docker:
@@ -150,5 +143,5 @@ collaboration:
   # Documentation
   documentation:
     auto_generate_readme: true
-    include_variant_docs: true
+    include_profile_docs: true
     update_user_guide: true
