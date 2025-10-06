@@ -5,7 +5,7 @@
 2. [Architecture Overview](#architecture-overview)
 3. [Unified Research Compendium](#unified-research-compendium)
 4. [Configuration System](#configuration-system)
-5. [Docker Environment System](#docker-variant-system)
+5. [Docker Variant System](#docker-variant-system)
 6. [Data Documentation System](#data-documentation-system)
 7. [Getting Started](#getting-started)
 8. [Installation & Distribution](#installation--distribution)
@@ -86,16 +86,16 @@ with varying levels of technical expertise.
 **Template System**: `templates/` directory
 
 - Project scaffolding for three research paradigms
-- Docker environment definitions (`environments.yaml`)
+- Docker variant definitions (`variant_examples.yaml`)
 - Configuration templates (`config.yaml`)
 - Data documentation templates (created automatically)
 
-**Environment System**
+**Variant System**
 
-- Single source of truth: `environments.yaml`
-- 14+ Docker environments ranging from lightweight Alpine (~200MB) to
+- Single source of truth: `variant_examples.yaml`
+- 14+ Docker variants ranging from lightweight Alpine (~200MB) to
   full-featured environments (~3.5GB)
-- Team configuration selects which environments to enable
+- Team configuration selects which variants to enable
 
 **Configuration System**
 
@@ -136,8 +136,8 @@ rocker/r-ver (base image)
 **Single Source of Truth**
 
 - Variant definitions maintained in single file
-  (`environments.yaml`)
-- Teams reference environments by name, eliminating duplication
+  (`variant_examples.yaml`)
+- Teams reference variants by name, eliminating duplication
 - Configuration inheritance: user → team → project
 
 ### Code Quality Improvements (2024-2025)
@@ -390,8 +390,8 @@ team:
 # BUILD CONFIGURATION
 #=========================================================
 build:
-  use_config_environments: true
-  environment_library: "environments.yaml"
+  use_config_variants: true
+  variant_library: "variant_examples.yaml"
 
   docker:
     platform: "auto"              # auto, linux/amd64, linux/arm64
@@ -440,7 +440,7 @@ zzcollab -i -p data-analysis    # Uses config defaults automatically
 mkdir team-project && cd team-project
 zzcollab -i -p team-project    # Creates base config.yaml
 
-# Customize team environments and settings
+# Customize team variants and settings
 vim config.yaml
 
 # Build and share team images
@@ -490,7 +490,7 @@ join_project(project_name = "my-analysis")   # Uses config defaults
 setup_project()                              # Uses all defaults
 ```
 
-## Docker Environment System
+## Docker Variant System
 
 ZZCOLLAB supports 14+ specialized Docker environments through a
 single source of truth architecture that eliminates duplication
@@ -512,7 +512,7 @@ and provides extensive customization options.
 - **bioinformatics** (~2GB) - Bioconductor genomics packages
 - **geospatial** (~2.5GB) - sf, terra, leaflet mapping tools
 
-**Lightweight Alpine Environments (3 variants)**
+**Lightweight Alpine Variants (3 variants)**
 
 - **alpine_minimal** (~200MB) - Ultra-lightweight for CI/CD
 - **alpine_analysis** (~400MB) - Essential analysis in minimal
@@ -527,10 +527,10 @@ and provides extensive customization options.
 
 ### Single Source of Truth Architecture
 
-All environment definitions are centralized in `environments.yaml`
+All variant definitions are centralized in `variant_examples.yaml`
 with team configurations referencing them by name:
 
-**Master Library**: `templates/environments.yaml`
+**Master Library**: `templates/variant_examples.yaml`
 
 ```yaml
 minimal:
@@ -557,31 +557,31 @@ modeling:
 **Team Configuration**: `templates/config.yaml`
 
 ```yaml
-environments:
+variants:
   minimal:
     enabled: true    # Essential development (~800MB)
-    # Full definition in environments.yaml
+    # Full definition in variant_examples.yaml
 
   modeling:
     enabled: false   # Machine learning environment (~1.5GB)
-    # Full definition in environments.yaml
+    # Full definition in variant_examples.yaml
 
 build:
-  use_config_environments: true
-  environment_library: "environments.yaml"
+  use_config_variants: true
+  variant_library: "variant_examples.yaml"
 ```
 
 ### Interactive Variant Management
 
 ```bash
-# Interactive environment browser with 14 options
-./add_environment.sh
+# Interactive variant browser with 14 options
+./add_variant.sh
 
-# Displays categorized menu showing all available environments
+# Displays categorized menu showing all available variants
 # organized by: Standard Research, Specialized Domains,
 # Lightweight Alpine, R-Hub Testing
 
-# Select environments and they are automatically added to config.yaml
+# Select variants and they are automatically added to config.yaml
 ```
 
 ### Variant Usage Commands
@@ -592,9 +592,9 @@ build:
 # Quick start - creates optimal default variants
 zzcollab -i -p myproject --github
 
-# Custom environments via config file
+# Custom variants via config file
 zzcollab -i -p myproject
-./add_environment.sh
+./add_variant.sh
 zzcollab --variants-config config.yaml --github
 
 # Legacy approach (limited to 3 variants)
@@ -613,17 +613,17 @@ zzcollab -i -t myteam -p analysis-project \
   -B rstudio -d ~/dotfiles
 ```
 
-### Benefits of Environment System
+### Benefits of Variant System
 
 - Eliminates duplication through single source of truth
 - Provides 14+ specialized environments from 200MB to 3.5GB
-- Offers domain-specific environments for bioinformatics, geospatial,
+- Offers domain-specific variants for bioinformatics, geospatial,
   HPC, web applications
 - Includes professional testing environments matching CRAN
   infrastructure
-- Supports lightweight Alpine environments (5x smaller than standard
+- Supports lightweight Alpine variants (5x smaller than standard
   images)
-- Enables interactive discovery through environment browser
+- Enables interactive discovery through variant browser
 - Maintains backward compatibility with legacy full definitions
 - Simplifies maintenance through centralized updates
 
@@ -770,7 +770,7 @@ zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode
 zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive:
                                                                       # full packages
 zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio
-                                                                      # environment only
+                                                                      # variant only
 
 # Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
@@ -874,13 +874,13 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 **Project Creation**:
 
 ```bash
-# Quick start with optimal environments automatically selected
+# Quick start with optimal variants automatically selected
 zzcollab -i -p penguin-analysis --github
 
-# Advanced users can browse 14+ environments interactively
+# Advanced users can browse 14+ variants interactively
 mkdir penguin-analysis && cd penguin-analysis
 zzcollab -i -p penguin-analysis
-./add_environment.sh
+./add_variant.sh
 ```
 
 **Daily Development Cycle**:
@@ -979,8 +979,8 @@ fit_bill_model <- function() {
 
 - **Reproducible**: Identical environment for every development session
 - **Professional**: Automated testing, validation, and CI/CD
-- **Flexible**: 14+ environments for different research domains
-- **Lightweight**: Alpine environments at approximately 200MB versus
+- **Flexible**: 14+ variants for different research domains
+- **Lightweight**: Alpine variants at approximately 200MB versus
   standard 1GB+
 - **Team-ready**: Facilitates transition to collaboration
 - **Container-based**: Eliminates conflicts with host system R
@@ -1003,18 +1003,18 @@ make docker-zsh
 ### Developer 1 (Team Lead): Complete Project Initialization
 
 #### Automated Approach (Three Options)
-**Choose between modern environment system, legacy approach, or R interface:**
+**Choose between modern variant system, legacy approach, or R interface:**
 
-**Option A: Modern Environment System (NEW - Recommended)**
+**Option A: Modern Variant System (NEW - Recommended)**
 ```bash
 # Advanced Variant Management: Create Custom Docker Environments
-# Default: Creates minimal + analysis environments automatically
+# Default: Creates minimal + analysis variants automatically
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Modern approach
 
-# Interactive environment discovery and management:
+# Interactive variant discovery and management:
 mkdir study2024 && cd study2024
 zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Creates config.yaml
-./add_environment.sh                                                    # Interactive environment browser
+./add_variant.sh                                                    # Interactive variant browser
 
 # Variant categories available:
 # Standard: minimal, analysis, modeling, publishing (~800MB-3GB)
@@ -1022,8 +1022,8 @@ zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Creates co
 # Alpine: ultra-lightweight for CI/CD (~200-600MB vs ~1GB rocker)
 # R-hub: CRAN-compatible testing (Ubuntu, Fedora, Windows environments)
 
-# Manual environment configuration (edit config.yaml):
-# Set enabled: true for environments you want built
+# Manual variant configuration (edit config.yaml):
+# Set enabled: true for variants you want built
 # Customize packages and system dependencies as needed
 ```
 
@@ -1095,18 +1095,18 @@ cd study2024
 
 # 2. Join project with automated environment setup using existing team images
 zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles             # Shell interface
-zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles           # RStudio interface (if team built this environment)
+zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles           # RStudio interface (if team built this variant)
 zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles             # Publishing interface (if available)
 # Note: --project-name can be omitted if current directory name matches project
 
-# If team image environment not available, you'll get helpful guidance:
+# If team image variant not available, you'll get helpful guidance:
 # Error: Team image 'mylab/study2024core-rstudio:latest' not found
-# Available environments: mylab/study2024core-shell:latest
-# Solutions: Use available environment or ask team lead to build missing variant
+# Available variants: mylab/study2024core-shell:latest
+# Solutions: Use available variant or ask team lead to build missing variant
 
 # 3. Start development immediately
 make docker-zsh                # Shell interface with vim/tmux
-# OR (if RStudio environment was built by team)
+# OR (if RStudio variant was built by team)
 make docker-rstudio            # RStudio Server at localhost:8787
 ```
 
@@ -1801,7 +1801,7 @@ zzcollab_help("docker")
 # CI/CD and GitHub Actions
 zzcollab_help("cicd")
 
-# Docker environments configuration
+# Docker variants configuration
 zzcollab_help("variants")
 
 # GitHub integration
@@ -1824,7 +1824,7 @@ zzcollab_help("next-steps")
 - `"build-modes"` - Build mode selection guide
 - `"docker"` - Docker essentials for researchers
 - `"cicd"` - CI/CD and GitHub Actions
-- `"variants"` - Docker environments configuration
+- `"variants"` - Docker variants configuration
 - `"github"` - GitHub integration and automation
 - `"init"` - Team initialization process
 - `"next-steps"` - Development workflow guidance
@@ -2085,15 +2085,15 @@ documentation.
   conflicts
 - Enhanced uninstall system with complete cleanup
 
-### Docker Environment System Refactoring (2025)
+### Docker Variant System Refactoring (2025)
 
 **Single Source of Truth Architecture**:
 
-- Variant definitions centralized in `environments.yaml`
+- Variant definitions centralized in `variant_examples.yaml`
 - Eliminated duplication: team configs reference central library
-- Added 14+ environments including shiny, shiny_verse, specialized
+- Added 14+ variants including shiny, shiny_verse, specialized
   domains
-- Interactive environment browser via `./add_environment.sh`
+- Interactive variant browser via `./add_variant.sh`
 - Backward compatibility maintained for legacy definitions
 - Verified system libraries across all variants
 
@@ -2101,16 +2101,16 @@ documentation.
 
 - Simplified config.yaml: reduced from 455 to 154 lines (66%
   reduction)
-- Enhanced add_environment.sh generating lightweight YAML entries
-- Updated team_init.sh with dynamic environment loading
+- Enhanced add_variant.sh generating lightweight YAML entries
+- Updated team_init.sh with dynamic variant loading
 - Comprehensive testing validating new format and integration
 
 ### Selective Base Image Building System (2024)
 
 **Incremental Workflow**:
 
-- Teams can build only required environments (r-ver, rstudio, verse)
-- Start with one environment, add others later with `-V` flag
+- Teams can build only required variants (r-ver, rstudio, verse)
+- Start with one variant, add others later with `-V` flag
 - Enhanced error handling with helpful guidance
 - Short flags for all major options (-i, -t, -p, -I, -B, -V)
 - Verse support for publishing workflow with LaTeX via rocker/verse
@@ -2190,7 +2190,7 @@ documentation.
 ```bash
 zzcollab -h                    # Main help
 zzcollab --help-init          # Team initialization
-zzcollab --help-variants      # Docker environments system
+zzcollab --help-variants      # Docker variants system
 zzcollab --next-steps         # Development workflow
 ```
 
@@ -2484,8 +2484,8 @@ conditionally based on architecture.
 **Validation Commands**:
 
 ```bash
-# Test environment definitions
-./add_environment.sh --validate
+# Test variant definitions
+./add_variant.sh --validate
 
 # Verify Docker platform compatibility
 zzcollab --config get docker.platform

@@ -31,7 +31,7 @@ require_module "core" "templates"
 ##############################################################################
 # FUNCTION: get_multiarch_base_image
 # PURPOSE:  Select appropriate Docker base image based on architecture and requirements
-# USAGE:    get_multiarch_base_image "environment_name"
+# USAGE:    get_multiarch_base_image "variant_name"
 # ARGS:     
 #   $1 - requested_variant: Docker image variant (r-ver, rstudio, verse, tidyverse)
 # RETURNS:  

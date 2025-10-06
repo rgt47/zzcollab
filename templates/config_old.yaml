@@ -1,5 +1,5 @@
 # ZZCOLLAB Team Configuration
-# This file defines Docker environments and team settings for your zzcollab project.
+# This file defines Docker variants and team settings for your zzcollab project.
 # Edit this file to customize your team's development environment.
 #
 # VARIANT CATEGORIES:
@@ -9,10 +9,10 @@
 # - Specialized: Domain-specific environments (bioinformatics, geospatial, etc.)
 #
 # USAGE:
-# 1. Set `enabled: true` for environments you want to build
+# 1. Set `enabled: true` for variants you want to build
 # 2. Customize packages and system_deps as needed
 # 3. Choose your approach:
-#    a) Set `use_config_environments: true` below - uses this file automatically
+#    a) Set `use_config_variants: true` below - uses this file automatically
 #    b) Use flag: zzcollab -i -t myteam -p myproject --variants-config config.yaml
 #    c) Legacy: zzcollab -i -t myteam -p myproject -B r-ver,rstudio
 
@@ -28,20 +28,20 @@ team:
   created: "${CREATION_DATE}"
 
 #=============================================================================
-# DOCKER ENVIRONMENTS CONFIGURATION
+# DOCKER VARIANTS CONFIGURATION
 #=============================================================================
 # Define unlimited custom Docker environments for your team.
-# Each environment creates a Docker image: ${TEAM_NAME}/${PROJECT_NAME}core-{environment_name}:latest
+# Each variant creates a Docker image: ${TEAM_NAME}/${PROJECT_NAME}core-{variant_name}:latest
 
-environments:
+variants:
   
   #---------------------------------------------------------------------------
-  # TEAM VARIANTS (Reference environments.yaml for full definitions)
+  # TEAM VARIANTS (Reference variant_examples.yaml for full definitions)
   #---------------------------------------------------------------------------
   
-  # Default environments enabled for new teams
-  # Definitions are automatically pulled from environments.yaml
-  # Use ./add_environment.sh to browse and add more environments interactively
+  # Default variants enabled for new teams
+  # Definitions are automatically pulled from variant_examples.yaml
+  # Use ./add_variant.sh to browse and add more variants interactively
   
   minimal:
     enabled: true    # Essential development environment (~800MB)
@@ -288,7 +288,7 @@ environments:
       - "zlib1g-dev"    # Compression library
       - "libbz2-dev"    # Compression library
       - "liblzma-dev"   # LZMA compression
-    enabled: false       # Set to true to build this environment
+    enabled: false       # Set to true to build this variant
     notes: "Migrated from ~/.zzcollab/config.yaml custom_modes"
   
   # Migrated from user config: Geospatial analysis workflow
@@ -315,10 +315,10 @@ environments:
       - "libudunits2-dev" # Units library
       - "netcdf-bin"    # NetCDF tools
       - "libxml2-dev"   # Required for XML parsing
-    enabled: false       # Set to true to build this environment
+    enabled: false       # Set to true to build this variant
     notes: "Migrated from ~/.zzcollab/config.yaml custom_modes"
 
-  # Copy personal environments here and set enabled: true to build them
+  # Copy personal variants here and set enabled: true to build them
   # Example: Copy from ~/.zzcollab/config.yaml personal variants
   
   # personal_bioinformatics_team:
@@ -361,7 +361,7 @@ environments:
   #     - "libxml2-dev"
   #   enabled: true    # SET TO TRUE TO BUILD THIS TEAM IMAGE
   
-  # Example custom environment - uncomment and modify as needed
+  # Example custom variant - uncomment and modify as needed
   # custom_example:
   #   base_image: "rocker/r-ver:latest"  # REQUIRED: Docker base image
   #   description: "Custom environment for specific project needs"
@@ -375,7 +375,7 @@ environments:
   #     - "your_system_dependency_here"  # Add specific system libraries
   #   enabled: false
   #
-  # IMPORTANT NOTES FOR CUSTOM ENVIRONMENTS:
+  # IMPORTANT NOTES FOR CUSTOM VARIANTS:
   # - base_image: Choose appropriate Docker base (rocker/r-ver, rocker/tidyverse, etc.)
   # - packages: Always include "renv" for reproducibility
   # - system_deps: Critical for R packages with compiled code or system dependencies
@@ -393,11 +393,11 @@ environments:
 #=============================================================================
 
 build:
-  # Use environments defined in this config file by default
-  use_config_environments: true   # If true, uses environments from this file instead of -B flag
+  # Use variants defined in this config file by default
+  use_config_variants: true   # If true, uses variants from this file instead of -B flag
   
-  # Default environments to build (only enabled environments with these names)
-  default_environments:
+  # Default variants to build (only enabled variants with these names)
+  default_variants:
     - "minimal"      # Standard rocker-based minimal environment
     - "analysis"     # Standard rocker-based analysis environment
     # Uncomment below for specialized environments:
@@ -423,7 +423,7 @@ build:
 
 development:
   # Default interface for team members
-  default_interface: "minimal"  # Which environment to use by default
+  default_interface: "minimal"  # Which variant to use by default
   
   # Shared development settings
   dotfiles:

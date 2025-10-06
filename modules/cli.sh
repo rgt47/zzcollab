@@ -92,9 +92,9 @@ parse_base_image_list() {
 }
 
 ##############################################################################
-# FUNCTION: parse_environment_list
+# FUNCTION: parse_variant_list
 # PURPOSE:  Parse comma-separated variant list for -V flag
-# USAGE:    parse_environment_list "minimal,rstudio,analysis"
+# USAGE:    parse_variant_list "minimal,rstudio,analysis"
 # ARGS:
 #   $1 - input: Comma-separated list of variant names
 # RETURNS:
@@ -103,9 +103,9 @@ parse_base_image_list() {
 #   Splits comma-separated variants and trims whitespace.
 #   Does not validate variant names (allows any variant from library).
 # EXAMPLE:
-#   parse_environment_list "minimal, rstudio, analysis"
+#   parse_variant_list "minimal, rstudio, analysis"
 ##############################################################################
-parse_environment_list() {
+parse_variant_list() {
     local input="$1"
 
     # Split by comma and clean each variant name
@@ -196,13 +196,13 @@ INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, 
 INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
-BUILD_ENVIRONMENT_MODE=false
-BUILD_ENVIRONMENT=""
+BUILD_VARIANT_MODE=false
+BUILD_VARIANT=""
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
-USE_CONFIG_ENVIRONMENTS=false    # Use config.yaml for variant definitions
-ENVIRONMENTS_CONFIG=""           # Path to variants config file
+USE_CONFIG_VARIANTS=false    # Use config.yaml for variant definitions
+VARIANTS_CONFIG=""           # Path to variants config file
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="${ZZCOLLAB_DEFAULT_BUILD_MODE:-standard}"
@@ -344,11 +344,11 @@ parse_cli_arguments() {
                 SHOW_NEXT_STEPS=true
                 shift
                 ;;
-            --build-environment|-V)
+            --build-variant|-V)
                 require_arg "$1" "$2"
                 # Accept comma-separated variant names (any variant from library)
-                BUILD_ENVIRONMENT_MODE=true
-                BUILD_ENVIRONMENT="$2"
+                BUILD_VARIANT_MODE=true
+                BUILD_VARIANT="$2"
                 shift 2
                 ;;
             --help|-h)
@@ -430,8 +430,8 @@ parse_cli_arguments() {
                 ;;
             --variants-config)
                 require_arg "$1" "$2"
-                ENVIRONMENTS_CONFIG="$2"
-                USE_CONFIG_ENVIRONMENTS=true
+                VARIANTS_CONFIG="$2"
+                USE_CONFIG_VARIANTS=true
                 shift 2
                 ;;
             --config|-c|config)
@@ -467,26 +467,26 @@ process_user_friendly_interface() {
     if [[ "$INIT_MODE" != "true" ]]; then
         if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
             # Map legacy interface names to variant names for backward compatibility
-            local environment_name="$INTERFACE"
+            local variant_name="$INTERFACE"
             case "$INTERFACE" in
                 shell)
-                    environment_name="minimal"
+                    variant_name="minimal"
                     ;;
                 verse)
-                    environment_name="publishing"
+                    variant_name="publishing"
                     ;;
                 # All other names (rstudio, analysis, minimal, etc.) stay as-is
             esac
 
             # Use config-based variant naming: {team}/{project}_core-{variant}
-            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}_core-${environment_name}"
+            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}"
 
             # Check if team image exists before proceeding
-            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$environment_name"
+            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$variant_name"
             echo "ℹ️  Using team image: $BASE_IMAGE"
         elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
             # If some team flags are provided but not all, show error (only for non-init, non-build-variant mode)
-            if [[ "$BUILD_ENVIRONMENT_MODE" != "true" ]]; then
+            if [[ "$BUILD_VARIANT_MODE" != "true" ]]; then
                 echo "❌ Error: When using team interface, all flags are required:" >&2
                 echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
                 echo "  Common variants: minimal, rstudio, analysis, publishing, modeling" >&2
@@ -539,9 +539,9 @@ check_team_image_availability() {
         if [[ ${#available_images[@]} -gt 0 ]]; then
             echo "✅ Available variants for this project:"
             for variant in "${available_images[@]}"; do
-                local environment_name="${variant% (legacy)}"
+                local variant_name="${variant% (legacy)}"
                 if [[ "$variant" == *"(legacy)"* ]]; then
-                    echo "    - ${team_name}/${project_name}core-${environment_name}:latest (legacy)"
+                    echo "    - ${team_name}/${project_name}core-${variant_name}:latest (legacy)"
                 else
                     echo "    - ${team_name}/${project_name}_core-${variant}:latest"
                 fi
@@ -550,8 +550,8 @@ check_team_image_availability() {
             echo "💡 Solutions:"
             echo "   1. Use available variant:"
             for variant in "${available_images[@]}"; do
-                local environment_name="${variant% (legacy)}"
-                echo "      zzcollab -t $team_name -p $project_name -I $environment_name"
+                local variant_name="${variant% (legacy)}"
+                echo "      zzcollab -t $team_name -p $project_name -I $variant_name"
             done
             echo "   2. Ask team lead to build $requested_variant variant:"
             echo "      cd $project_name && zzcollab -V $requested_variant"
@@ -570,10 +570,10 @@ check_team_image_availability() {
     fi
 }
 
-# Function: interface_to_environment
-# Purpose: Convert interface name to build environment name
+# Function: interface_to_variant
+# Purpose: Convert interface name to build variant name
 # Arguments: $1 = interface (shell, rstudio, verse)
-interface_to_environment() {
+interface_to_variant() {
     case "$1" in
         shell) echo "r-ver" ;;
         rstudio) echo "rstudio" ;;

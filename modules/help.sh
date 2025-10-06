@@ -183,7 +183,7 @@ OPTIONS:
     Advanced options:
     -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
     -n, --no-docker              Skip Docker image build during setup
-    -V, --build-environment TYPE     Build additional team image variant: r-ver, rstudio, verse
+    -V, --build-variant TYPE     Build additional team image variant: r-ver, rstudio, verse
     -G, --github                 Automatically create private GitHub repository and push
         --next-steps             Show development workflow and next steps
     

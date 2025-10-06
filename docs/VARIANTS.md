@@ -1,32 +1,32 @@
-# Docker Environment System Guide
+# Docker Variant System Guide
 
 ## Overview
 
-ZZCOLLAB provides 14+ specialized Docker environments through a single
+ZZCOLLAB provides 14+ specialized Docker variants through a single
 source of truth architecture that eliminates configuration
 duplication while enabling unlimited customization. This guide
-documents the environment system design, available environments, and
+documents the variant system design, available variants, and
 implementation patterns for research computing environments.
 
-## Environment System Architecture
+## Variant System Architecture
 
 ### Single Source of Truth Design
 
-The environment system implements a library-reference pattern:
+The variant system implements a library-reference pattern:
 
-**Master Library** (`templates/environments.yaml`):
+**Master Library** (`templates/variant_examples.yaml`):
 
-- Contains complete definitions for all available environments
+- Contains complete definitions for all available variants
 - Maintained as single authoritative source
 - Updated independently from team configurations
 - Provides 14+ pre-configured environments
 
 **Team Configuration** (`config.yaml`):
 
-- References environments by name from library
-- Enables/disables specific environments for project
+- References variants by name from library
+- Enables/disables specific variants for project
 - Optionally overrides specific parameters
-- Eliminates duplicate environment definitions
+- Eliminates duplicate variant definitions
 
 ### Benefits
 
@@ -34,14 +34,14 @@ The environment system implements a library-reference pattern:
    in one location
 2. **Simplified Maintenance**: Updates propagate to all projects
    automatically
-3. **Easy Discovery**: Interactive environment browser
-   (`add_environment.sh`)
+3. **Easy Discovery**: Interactive variant browser
+   (`add_variant.sh`)
 4. **Backward Compatibility**: Legacy full definitions still
    supported
 5. **Unlimited Customization**: Teams can define completely custom
    variants
 
-## Environment Categories
+## Variant Categories
 
 ### Standard Research Environments (6 Variants)
 
@@ -143,7 +143,7 @@ Domain-specific environments for specialized research fields.
   libxml2-dev
 - **Documentation**: https://r-spatial.org/
 
-### Lightweight Alpine Environments (3 Variants)
+### Lightweight Alpine Variants (3 Variants)
 
 Ultra-lightweight environments for resource-constrained scenarios.
 
@@ -224,15 +224,15 @@ CRAN-compatible testing environments for package validation.
 
 ### Interactive Variant Selection
 
-**add_environment.sh Script**:
+**add_variant.sh Script**:
 
 ```bash
-# Launch interactive environment browser
-./add_environment.sh
+# Launch interactive variant browser
+./add_variant.sh
 
 # Displays categorized menu:
 =======================================================
-ZZCOLLAB DOCKER ENVIRONMENT LIBRARY
+ZZCOLLAB DOCKER VARIANT LIBRARY
 =======================================================
 
 STANDARD RESEARCH ENVIRONMENTS
@@ -257,7 +257,7 @@ R-HUB TESTING ENVIRONMENTS
  13) rhub_fedora      ~1.2GB  - R-devel testing
  14) rhub_windows     ~1.5GB  - Windows compatibility
 
-Enter environment numbers (space-separated): 1 2 9
+Enter variant numbers (space-separated): 1 2 9
 ```
 
 ### Manual Configuration
@@ -266,10 +266,10 @@ Enter environment numbers (space-separated): 1 2 9
 
 ```yaml
 #=========================================================
-# DOCKER ENVIRONMENTS
+# DOCKER VARIANTS
 #=========================================================
 
-environments:
+variants:
   # Essential development
   minimal:
     enabled: true             # ~800MB
@@ -282,7 +282,7 @@ environments:
   alpine_minimal:
     enabled: true             # ~200MB
 
-  # Disabled environments (available but not built)
+  # Disabled variants (available but not built)
   modeling:
     enabled: false            # ~1.5GB
 
@@ -300,11 +300,11 @@ environments:
 #=========================================================
 
 build:
-  # Use environments defined in this config
-  use_config_environments: true
+  # Use variants defined in this config
+  use_config_variants: true
 
-  # Reference the environment library
-  environment_library: "environments.yaml"
+  # Reference the variant library
+  variant_library: "variant_examples.yaml"
 
   # Docker build settings
   docker:
@@ -331,14 +331,14 @@ zzcollab -i -t lab -p study -B rstudio --github
 **Variant Addition**:
 
 ```bash
-# Add environment to existing project
+# Add variant to existing project
 cd study
-./add_environment.sh
+./add_variant.sh
 
-# Build specific environment
+# Build specific variant
 zzcollab -V modeling
 
-# Build all enabled environments
+# Build all enabled variants
 zzcollab --variants-config config.yaml
 ```
 
@@ -346,10 +346,10 @@ zzcollab --variants-config config.yaml
 
 ### Complete Custom Variant
 
-Define entirely new environments in config.yaml:
+Define entirely new variants in config.yaml:
 
 ```yaml
-environments:
+variants:
   custom_gpu:
     base_image: "nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04"
     description: "GPU-accelerated machine learning"
@@ -395,10 +395,10 @@ environments:
 
 ### Extending Existing Variants
 
-Override specific parameters from library environments:
+Override specific parameters from library variants:
 
 ```yaml
-environments:
+variants:
   analysis:
     enabled: true
     # Add additional packages to analysis variant
@@ -420,7 +420,7 @@ environments:
 
 ### Docker Image Layers
 
-Environments follow a layered architecture:
+Variants follow a layered architecture:
 
 ```
 Layer 1: Base Image (rocker/r-ver, etc.)
@@ -438,17 +438,17 @@ Layer 5: User Configuration (dotfiles)
 
 Variant building follows this sequence:
 
-1. **Configuration Loading**: Read environment definition from library
+1. **Configuration Loading**: Read variant definition from library
 2. **Base Image Pull**: Download specified base image
 3. **System Dependencies**: Install apt/apk packages
 4. **R Package Installation**: Install specified R packages
 5. **Layer Caching**: Cache each layer for faster rebuilds
-6. **Image Tagging**: Tag with version and environment name
+6. **Image Tagging**: Tag with version and variant name
 7. **Registry Push**: Push to Docker Hub (optional)
 
 ### Package Installation Methods
 
-Environments support multiple R package installation methods:
+Variants support multiple R package installation methods:
 
 **install2.r** (preferred):
 
@@ -510,7 +510,7 @@ RUN R -e "remotes::install_github('owner/repo')"
 
 3. Use platform-specific configuration:
    ```yaml
-   environments:
+   variants:
      publishing:
        enabled: true
        base_image: "rocker/verse:latest"
@@ -559,14 +559,14 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 **Question 2: What are the resource constraints?**
 
 - Unlimited resources → Standard variants
-- Limited disk space → Alpine environments
+- Limited disk space → Alpine variants
 - CI/CD environment → alpine_minimal
 
 **Question 3: What is the team structure?**
 
-- Solo developer → 1-2 environments (minimal + analysis)
-- Small team (2-5) → 2-3 environments (minimal + analysis + specialty)
-- Large team (5+) → 3+ environments (full spectrum)
+- Solo developer → 1-2 variants (minimal + analysis)
+- Small team (2-5) → 2-3 variants (minimal + analysis + specialty)
+- Large team (5+) → 3+ variants (full spectrum)
 
 ### Paradigm-Specific Recommendations
 
@@ -596,14 +596,14 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ```bash
 # Edit master library
-vim templates/environments.yaml
+vim templates/variant_examples.yaml
 
 # Validate changes
-./add_environment.sh --validate
+./add_variant.sh --validate
 
 # Commit to repository
-git add templates/environments.yaml
-git commit -m "Update environment definitions"
+git add templates/variant_examples.yaml
+git commit -m "Update variant definitions"
 ```
 
 **Team Configuration Updates**:
@@ -618,11 +618,11 @@ zzcollab --variants-config config.yaml
 
 ### Version Control
 
-Track environment configuration changes:
+Track variant configuration changes:
 
 ```bash
 # Version tag for major changes
-git tag -an environments-v2.0 -m "Add GPU and spatial variants"
+git tag -a variants-v2.0 -m "Add GPU and spatial variants"
 
 # Reference specific version
 git checkout variants-v2.0
@@ -631,10 +631,10 @@ zzcollab --variants-config config.yaml
 
 ### Deprecation
 
-When environments become obsolete:
+When variants become obsolete:
 
 ```yaml
-environments:
+variants:
   old_variant:
     enabled: false
     deprecated: true
@@ -691,8 +691,8 @@ COPY --from=builder /usr/local/lib/R/site-library \
 Error: Variant 'modelng' not found in library
 ```
 
-**Solution**: Check spelling, use `./add_environment.sh` to browse
-available environments
+**Solution**: Check spelling, use `./add_variant.sh` to browse
+available variants
 
 **Issue**: Base image pull fails
 
@@ -724,16 +724,16 @@ version
 ### Diagnostic Commands
 
 ```bash
-# List available environments
-./add_environment.sh --list
+# List available variants
+./add_variant.sh --list
 
-# Validate environment configuration
-./add_environment.sh --validate
+# Validate variant configuration
+./add_variant.sh --validate
 
 # Check base image availability
 docker pull rocker/r-ver:latest
 
-# Test environment build
+# Test variant build
 docker build -f Dockerfile.variant -t test:latest .
 
 # Inspect image layers
@@ -744,24 +744,24 @@ docker history lab/study-analysis:latest
 
 ### Variant Selection
 
-1. Start minimal, add environments as needed
+1. Start minimal, add variants as needed
 2. Use Alpine for CI/CD pipelines
-3. Enable only environments team actively uses
-4. Document environment choices in configuration
+3. Enable only variants team actively uses
+4. Document variant choices in configuration
 
 ### Custom Variants
 
-1. Extend existing environments rather than creating from scratch
+1. Extend existing variants rather than creating from scratch
 2. Document package selections and rationale
-3. Test environments thoroughly before team deployment
-4. Version control custom environment definitions
+3. Test variants thoroughly before team deployment
+4. Version control custom variant definitions
 
 ### Team Collaboration
 
-1. Establish environment conventions early
-2. Document which environment for which tasks
-3. Coordinate environment additions through team lead
-4. Regular environment cleanup and maintenance
+1. Establish variant conventions early
+2. Document which variant for which tasks
+3. Coordinate variant additions through team lead
+4. Regular variant cleanup and maintenance
 
 ## References
 

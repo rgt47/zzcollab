@@ -1,6 +1,6 @@
 # ZZCOLLAB VARIANT LIBRARY
-# This file contains all available Docker environment definitions.
-# Use the add_environment.sh script to easily add any of these to your team's config.yaml
+# This file contains all available Docker variant definitions.
+# Use the add_variant.sh script to easily add any of these to your team's config.yaml
 
 #=============================================================================
 # STANDARD RESEARCH ENVIRONMENTS

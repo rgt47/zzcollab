@@ -1,17 +1,17 @@
 # ZZCOLLAB Team Configuration
-# This file defines Docker environments and team settings for your zzcollab project.
+# This file defines Docker variants and team settings for your zzcollab project.
 # Edit this file to customize your team's development environment.
 #
-# ENVIRONMENT SYSTEM (NEW - Single Source of Truth):
-# - All environment definitions are stored in environments.yaml
-# - This config file only specifies which environments to enable
-# - Use ./add_environment.sh to browse and add environments interactively
+# VARIANT SYSTEM (NEW - Single Source of Truth):
+# - All variant definitions are stored in variant_examples.yaml
+# - This config file only specifies which variants to enable
+# - Use ./add_variant.sh to browse and add variants interactively
 #
 # USAGE:
-# 1. Set `enabled: true` for environments you want to build
-# 2. Variant definitions are automatically pulled from environments.yaml
+# 1. Set `enabled: true` for variants you want to build
+# 2. Variant definitions are automatically pulled from variant_examples.yaml
 # 3. Choose your approach:
-#    a) Set `use_config_environments: true` below - uses this file automatically
+#    a) Set `use_config_variants: true` below - uses this file automatically
 #    b) Use flag: zzcollab -i -t myteam -p myproject --variants-config config.yaml
 #    c) Legacy: zzcollab -i -t myteam -p myproject -B r-ver,rstudio
 
@@ -27,12 +27,12 @@ team:
   created: "${CREATION_DATE}"
 
 #=============================================================================
-# DOCKER ENVIRONMENTS CONFIGURATION
+# DOCKER VARIANTS CONFIGURATION
 #=============================================================================
-# Define which environments your team needs from the environment library.
-# Full definitions are automatically pulled from environments.yaml
+# Define which variants your team needs from the variant library.
+# Full definitions are automatically pulled from variant_examples.yaml
 
-environments:
+variants:
   
   #---------------------------------------------------------------------------
   # DEFAULT VARIANTS (Enabled by default for new teams)
@@ -40,16 +40,16 @@ environments:
   
   minimal:
     enabled: true    # Essential development environment (~800MB)
-    # Full definition in environments.yaml
+    # Full definition in variant_examples.yaml
   
   analysis:
     enabled: true    # Tidyverse analysis environment (~1.2GB)
-    # Full definition in environments.yaml
+    # Full definition in variant_examples.yaml
     
   #---------------------------------------------------------------------------
   # ADDITIONAL VARIANTS (Set enabled: true to activate)
   #---------------------------------------------------------------------------
-  # Use ./add_environment.sh to browse all available options interactively
+  # Use ./add_variant.sh to browse all available options interactively
   
   # Standard research environments
   modeling:
@@ -65,7 +65,7 @@ environments:
   geospatial:
     enabled: false   # sf, terra, leaflet mapping (~2.5GB)
   
-  # Lightweight Alpine environments
+  # Lightweight Alpine variants
   alpine_minimal:
     enabled: false   # Ultra-lightweight CI/CD (~200MB)
     
@@ -89,20 +89,20 @@ environments:
   #---------------------------------------------------------------------------
   # CUSTOM VARIANTS (Add your own)
   #---------------------------------------------------------------------------
-  # Copy environments from ./add_environment.sh or define manually
-  # Format: environment_name: { enabled: true/false }
-  # Full definitions pulled from environments.yaml
+  # Copy variants from ./add_variant.sh or define manually
+  # Format: variant_name: { enabled: true/false }
+  # Full definitions pulled from variant_examples.yaml
 
 #=============================================================================
 # BUILD CONFIGURATION
 #=============================================================================
 
 build:
-  # Use environments defined in this config file by default
-  use_config_environments: true   # If true, uses environments from this file instead of -B flag
+  # Use variants defined in this config file by default
+  use_config_variants: true   # If true, uses variants from this file instead of -B flag
   
   # Variant source file (single source of truth)
-  environment_library: "environments.yaml"
+  variant_library: "variant_examples.yaml"
   
   # Docker build options
   docker:
@@ -122,7 +122,7 @@ build:
 
 development:
   # Default interface for team members
-  default_interface: "minimal"  # Which environment to use by default
+  default_interface: "minimal"  # Which variant to use by default
   
   # Shared development settings
   dotfiles:

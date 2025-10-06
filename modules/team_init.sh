@@ -233,22 +233,22 @@ setup_team_dockerfile() {
             print_success "Created config.yaml with predefined variants"
 
             # Copy variant_examples.yaml library if it exists
-            local environment_library="${TEMPLATES_DIR}/variant_examples.yaml"
-            if [[ -f "$environment_library" ]] && [[ ! -f "./variant_examples.yaml" ]]; then
-                cp "$environment_library" ./variant_examples.yaml
+            local variant_library="${TEMPLATES_DIR}/variant_examples.yaml"
+            if [[ -f "$variant_library" ]] && [[ ! -f "./variant_examples.yaml" ]]; then
+                cp "$variant_library" ./variant_examples.yaml
                 print_success "Copied variant library: variant_examples.yaml"
             fi
 
-            # Check if config.yaml has use_config_environments enabled
+            # Check if config.yaml has use_config_variants enabled
             if command -v yq >/dev/null 2>&1; then
-                local use_config_environments
-                use_config_environments=$(yq eval '.build.use_config_environments // false' ./config.yaml 2>/dev/null)
-                if [[ "$use_config_environments" == "true" ]]; then
+                local use_config_variants
+                use_config_variants=$(yq eval '.build.use_config_variants // false' ./config.yaml 2>/dev/null)
+                if [[ "$use_config_variants" == "true" ]]; then
                     print_status "🎯 Config variants enabled by default - will use config.yaml for building"
-                    USE_CONFIG_ENVIRONMENTS=true
-                    ENVIRONMENTS_CONFIG="./config.yaml"
+                    USE_CONFIG_VARIANTS=true
+                    VARIANTS_CONFIG="./config.yaml"
                 else
-                    print_status "💡 Edit config.yaml to customize variants (set use_config_environments: true to enable)"
+                    print_status "💡 Edit config.yaml to customize variants (set use_config_variants: true to enable)"
                 fi
             else
                 print_status "💡 Edit config.yaml to customize variants or install yq for automatic detection"
@@ -257,14 +257,14 @@ setup_team_dockerfile() {
             print_error "Config template not found: $config_template"
             return 1
         fi
-    elif [[ "${USE_CONFIG_ENVIRONMENTS:-false}" != "true" ]] && command -v yq >/dev/null 2>&1; then
-        # Check existing config.yaml for use_config_environments setting
-        local use_config_environments
-        use_config_environments=$(yq eval '.build.use_config_environments // false' ./config.yaml 2>/dev/null)
-        if [[ "$use_config_environments" == "true" ]]; then
-            print_status "🎯 Detected config.yaml with use_config_environments: true - enabling config-based variants"
-            USE_CONFIG_ENVIRONMENTS=true
-            ENVIRONMENTS_CONFIG="./config.yaml"
+    elif [[ "${USE_CONFIG_VARIANTS:-false}" != "true" ]] && command -v yq >/dev/null 2>&1; then
+        # Check existing config.yaml for use_config_variants setting
+        local use_config_variants
+        use_config_variants=$(yq eval '.build.use_config_variants // false' ./config.yaml 2>/dev/null)
+        if [[ "$use_config_variants" == "true" ]]; then
+            print_status "🎯 Detected config.yaml with use_config_variants: true - enabling config-based variants"
+            USE_CONFIG_VARIANTS=true
+            VARIANTS_CONFIG="./config.yaml"
         fi
     fi
 
@@ -338,13 +338,13 @@ build_team_images() {
     local step_counter=4
     
     # Check if using config-based variants
-    if [[ "${USE_CONFIG_ENVIRONMENTS:-false}" == "true" ]]; then
+    if [[ "${USE_CONFIG_VARIANTS:-false}" == "true" ]]; then
         print_status "Step $step_counter: Building variants from configuration..."
         
         # Default to config.yaml if no specific file provided
-        local config_file="${ENVIRONMENTS_CONFIG:-config.yaml}"
+        local config_file="${VARIANTS_CONFIG:-config.yaml}"
         
-        if parse_config_environments "$config_file"; then
+        if parse_config_variants "$config_file"; then
             print_success "✅ All configured variants built successfully"
         else
             print_error "❌ Failed to build some configured variants"
@@ -429,7 +429,7 @@ push_team_images() {
     print_status "Step $step_counter: Pushing images to Docker Hub..."
 
     # Check if we're using config-based variants
-    if [[ -f "./config.yaml" ]] && grep -q "use_config_environments: true" ./config.yaml 2>/dev/null; then
+    if [[ -f "./config.yaml" ]] && grep -q "use_config_variants: true" ./config.yaml 2>/dev/null; then
         log_info "Pushing variant images from config.yaml..."
 
         # Get enabled variants from config.yaml
@@ -603,9 +603,9 @@ create_github_repository() {
 # YAML CONFIGURATION FUNCTIONS
 #=============================================================================
 
-# Function: parse_config_environments
+# Function: parse_config_variants
 # Purpose: Parse variants from config.yaml and build enabled ones
-parse_config_environments() {
+parse_config_variants() {
     local config_file="${1:-config.yaml}"
     
     if [[ ! -f "$config_file" ]]; then
@@ -637,52 +637,52 @@ parse_config_environments() {
     print_status "Found enabled variants: $(echo "$enabled_variants" | tr '\n' ' ')"
     
     # Build each enabled variant
-    echo "$enabled_variants" | while read -r environment_name; do
-        [[ -n "$environment_name" ]] || continue
-        build_config_environment "$config_file" "$environment_name"
+    echo "$enabled_variants" | while read -r variant_name; do
+        [[ -n "$variant_name" ]] || continue
+        build_config_variant "$config_file" "$variant_name"
     done
 }
 
-# Function: build_config_environment  
+# Function: build_config_variant  
 # Purpose: Build a single variant, merging from variant_examples.yaml if needed
-build_config_environment() {
+build_config_variant() {
     local config_file="$1"
-    local environment_name="$2"
+    local variant_name="$2"
     
-    print_status "🐳 Building variant: $environment_name"
+    print_status "🐳 Building variant: $variant_name"
     
     # NEW: Check if variant has full definition or just enabled flag
     local has_full_definition
-    has_full_definition=$(yq eval ".variants.${environment_name}.base_image" "$config_file")
+    has_full_definition=$(yq eval ".variants.${variant_name}.base_image" "$config_file")
     
-    local base_image description packages system_deps environment_library
+    local base_image description packages system_deps variant_library
     
     if [[ "$has_full_definition" == "null" || -z "$has_full_definition" ]]; then
         # Variant only has enabled flag - get definition from variant_examples.yaml
-        environment_library=$(yq eval ".build.environment_library // \"variant_examples.yaml\"" "$config_file")
+        variant_library=$(yq eval ".build.variant_library // \"variant_examples.yaml\"" "$config_file")
         
-        if [[ ! -f "$environment_library" ]]; then
-            print_error "❌ Variant library not found: $environment_library"
+        if [[ ! -f "$variant_library" ]]; then
+            print_error "❌ Variant library not found: $variant_library"
             return 1
         fi
         
-        print_status "  🔗 Loading definition from $environment_library"
-        base_image=$(yq eval ".${environment_name}.base_image" "$environment_library")
-        description=$(yq eval ".${environment_name}.description" "$environment_library")
-        packages=$(yq eval ".${environment_name}.packages[]" "$environment_library" | tr '\n' ' ')
-        system_deps=$(yq eval ".${environment_name}.system_deps[]?" "$environment_library" | tr '\n' ' ')
+        print_status "  🔗 Loading definition from $variant_library"
+        base_image=$(yq eval ".${variant_name}.base_image" "$variant_library")
+        description=$(yq eval ".${variant_name}.description" "$variant_library")
+        packages=$(yq eval ".${variant_name}.packages[]" "$variant_library" | tr '\n' ' ')
+        system_deps=$(yq eval ".${variant_name}.system_deps[]?" "$variant_library" | tr '\n' ' ')
         
         if [[ "$base_image" == "null" || -z "$base_image" ]]; then
-            print_error "❌ Variant '$environment_name' not found in $environment_library"
+            print_error "❌ Variant '$variant_name' not found in $variant_library"
             return 1
         fi
     else
         # Variant has full definition in config.yaml (legacy support)
         print_status "  📝 Using full definition from config.yaml"
-        base_image=$(yq eval ".variants.${environment_name}.base_image" "$config_file")
-        description=$(yq eval ".variants.${environment_name}.description" "$config_file")
-        packages=$(yq eval ".variants.${environment_name}.packages[]" "$config_file" | tr '\n' ' ')
-        system_deps=$(yq eval ".variants.${environment_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
+        base_image=$(yq eval ".variants.${variant_name}.base_image" "$config_file")
+        description=$(yq eval ".variants.${variant_name}.description" "$config_file")
+        packages=$(yq eval ".variants.${variant_name}.packages[]" "$config_file" | tr '\n' ' ')
+        system_deps=$(yq eval ".variants.${variant_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
     fi
     
     print_status "  Base image: $base_image"
@@ -691,41 +691,41 @@ build_config_environment() {
     [[ -n "$system_deps" ]] && print_status "  System deps: $system_deps"
     
     # Create temporary Dockerfile for this variant
-    create_environment_dockerfile "$environment_name" "$base_image" "$packages" "$system_deps"
+    create_variant_dockerfile "$variant_name" "$base_image" "$packages" "$system_deps"
     
     # Build the Docker image
-    local image_name="${TEAM_NAME}/${PROJECT_NAME}_core-${environment_name}"
+    local image_name="${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}"
     print_status "  Building: $image_name:latest"
     
-    if docker build -f "Dockerfile.variant.${environment_name}" \
+    if docker build -f "Dockerfile.variant.${variant_name}" \
         --build-arg TEAM_NAME="$TEAM_NAME" \
         --build-arg PROJECT_NAME="$PROJECT_NAME" \
-        --build-arg ENVIRONMENT_NAME="$environment_name" \
+        --build-arg VARIANT_NAME="$variant_name" \
         --build-arg VARIANT_DESCRIPTION="$description" \
         -t "${image_name}:latest" \
         -t "${image_name}:v1.0.0" .; then
         
-        print_success "✅ Built $environment_name variant: ${image_name}:latest"
+        print_success "✅ Built $variant_name variant: ${image_name}:latest"
         
         # Clean up temporary Dockerfile
-        rm -f "Dockerfile.variant.${environment_name}"
+        rm -f "Dockerfile.variant.${variant_name}"
     else
-        print_error "❌ Failed to build $environment_name variant"
+        print_error "❌ Failed to build $variant_name variant"
         return 1
     fi
 }
 
-# Function: create_environment_dockerfile
+# Function: create_variant_dockerfile
 # Purpose: Generate Dockerfile for a specific variant
-create_environment_dockerfile() {
-    local environment_name="$1"
+create_variant_dockerfile() {
+    local variant_name="$1"
     local base_image="$2" 
     local packages="$3"
     local system_deps="$4"
-    local dockerfile="Dockerfile.variant.${environment_name}"
+    local dockerfile="Dockerfile.variant.${variant_name}"
     
     cat > "$dockerfile" << EOF
-# Generated Dockerfile for variant: $environment_name
+# Generated Dockerfile for variant: $variant_name
 # Base: $base_image
 # Created: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -734,13 +734,13 @@ FROM $base_image
 # Build arguments
 ARG TEAM_NAME
 ARG PROJECT_NAME
-ARG ENVIRONMENT_NAME
+ARG VARIANT_NAME
 ARG VARIANT_DESCRIPTION
 
 # Labels for identification
 LABEL org.zzcollab.team="\$TEAM_NAME"
 LABEL org.zzcollab.project="\$PROJECT_NAME"
-LABEL org.zzcollab.variant="\$ENVIRONMENT_NAME"
+LABEL org.zzcollab.variant="\$VARIANT_NAME"
 LABEL org.zzcollab.description="\$VARIANT_DESCRIPTION"
 LABEL org.zzcollab.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -784,17 +784,17 @@ EOF
 # BUILD VARIANT FUNCTIONS (Legacy for -V flag)
 #=============================================================================
 
-# Function: build_additional_environment
+# Function: build_additional_variant
 # Purpose: Build additional team image variants after initial setup using config system
 # Arguments: $1 = comma-separated variant names (e.g., "rstudio,analysis,publishing")
-build_additional_environment() {
-    local environment_input="$1"
+build_additional_variant() {
+    local variant_input="$1"
 
     # Parse comma-separated variants
     local variants=()
     while IFS= read -r variant; do
         variants+=("$variant")
-    done < <(parse_environment_list "$environment_input" 2>/dev/null || echo "$environment_input")
+    done < <(parse_variant_list "$variant_input" 2>/dev/null || echo "$variant_input")
 
     if [[ ${#variants[@]} -eq 0 ]]; then
         print_error "No variants specified"
@@ -857,35 +857,35 @@ build_additional_environment() {
     echo ""
 
     # Enable and build each variant
-    for environment_name in "${variants[@]}"; do
-        print_status "Processing variant: $environment_name"
+    for variant_name in "${variants[@]}"; do
+        print_status "Processing variant: $variant_name"
 
         # Enable variant in config.yaml if not already enabled
-        local is_enabled=$(yq eval ".variants.${environment_name}.enabled // false" "$config_file")
+        local is_enabled=$(yq eval ".variants.${variant_name}.enabled // false" "$config_file")
         if [[ "$is_enabled" != "true" ]]; then
-            print_status "  Enabling $environment_name in config.yaml..."
-            yq eval ".variants.${environment_name}.enabled = true" -i "$config_file"
+            print_status "  Enabling $variant_name in config.yaml..."
+            yq eval ".variants.${variant_name}.enabled = true" -i "$config_file"
         else
-            print_status "  $environment_name already enabled in config.yaml"
+            print_status "  $variant_name already enabled in config.yaml"
         fi
 
         # Build the variant using config system
-        if build_config_environment "$config_file" "$environment_name"; then
-            print_success "✅ Built $environment_name variant"
+        if build_config_variant "$config_file" "$variant_name"; then
+            print_success "✅ Built $variant_name variant"
 
             # Push to Docker Hub
             echo ""
-            if confirm "Push $environment_name image to Docker Hub?"; then
-                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${environment_name}:v1.0.0"
-                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${environment_name}:latest"
-                print_success "✅ Pushed $environment_name to Docker Hub"
+            if confirm "Push $variant_name image to Docker Hub?"; then
+                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
+                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:latest"
+                print_success "✅ Pushed $variant_name to Docker Hub"
             else
                 print_status "Image built locally only. To push later, run:"
-                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${environment_name}:v1.0.0"
-                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${environment_name}:latest"
+                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
+                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:latest"
             fi
         else
-            print_error "❌ Failed to build $environment_name variant"
+            print_error "❌ Failed to build $variant_name variant"
         fi
         echo ""
     done
@@ -970,7 +970,7 @@ EOF
     create_basic_files
 
     # Interactive variant selection if using config-based variants
-    if [[ "${USE_CONFIG_ENVIRONMENTS:-false}" == "true" ]]; then
+    if [[ "${USE_CONFIG_VARIANTS:-false}" == "true" ]]; then
         print_status ""
         print_status "📝 Configuration file created: config.yaml"
         print_status ""

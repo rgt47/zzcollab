@@ -28,9 +28,9 @@ ZZCOLLAB features a sophisticated multi-layered configuration system that contro
 
 - **✓ Eliminate repetitive typing**: Set defaults once, use across all projects
 - **✓ Team standardization**: Shared configurations ensure identical environments
-- **✓ Flexible customization**: 14+ Docker environments, custom package lists, build modes
+- **✓ Flexible customization**: 14+ Docker variants, custom package lists, build modes
 - **✓ Hierarchical control**: User, project, and system-level configurations
-- **✓ Single source of truth**: Centralized environment definitions prevent duplication
+- **✓ Single source of truth**: Centralized variant definitions prevent duplication
 
 # Configuration Architecture
 
@@ -52,7 +52,7 @@ Control which specialized Docker environments your team uses:
 - **14+ predefined variants** from minimal (~200MB Alpine) to comprehensive (~3.5GB full-featured)
 - **Domain-specific environments** for bioinformatics, geospatial analysis, machine learning
 - **Single source of truth** architecture eliminates duplication
-- **Interactive environment browser** for easy discovery and selection
+- **Interactive variant browser** for easy discovery and selection
 
 ### Package Management System
 Control what R packages are installed and when:
@@ -67,13 +67,13 @@ Control team workflows and automation:
 - **Container defaults**: User accounts, working directories, shared volumes
 - **Development preferences**: Default interfaces, dotfiles handling, confirmation prompts
 
-# Docker Environment System
+# Docker Variant System
 
 ## Understanding Variants
 
-Docker environments are pre-configured environments with specific base images, R packages, and system dependencies. Each environment is optimized for particular research workflows.
+Docker variants are pre-configured environments with specific base images, R packages, and system dependencies. Each variant is optimized for particular research workflows.
 
-### Environment Categories
+### Variant Categories
 
 **Standard Research Environments (6 variants)**
 ```yaml
@@ -91,7 +91,7 @@ bioinformatics:   # ~2GB    - Bioconductor genomics packages
 geospatial:       # ~2.5GB  - sf, terra, leaflet mapping tools
 ```
 
-**🏔 Lightweight Alpine Environments (3 variants)**
+**🏔 Lightweight Alpine Variants (3 variants)**
 ```yaml
 alpine_minimal:   # ~200MB  - Ultra-lightweight for CI/CD
 alpine_analysis:  # ~400MB  - Essential analysis in tiny container
@@ -109,10 +109,10 @@ rhub_windows:     # ~1.5GB  - Windows compatibility testing
 
 ### Master Variant Library
 
-All environment definitions are stored in `templates/environments.yaml`:
+All variant definitions are stored in `templates/variant_examples.yaml`:
 
 ```yaml
-# Example environment definition
+# Example variant definition
 analysis:
   base_image: "rocker/tidyverse:latest"
   description: "Data analysis environment with tidyverse and common packages"
@@ -135,16 +135,16 @@ analysis:
 
 ### Team Configuration Selection
 
-Teams select which environments to enable in their `config.yaml`:
+Teams select which variants to enable in their `config.yaml`:
 
 ```yaml
-environments:
+variants:
   analysis:
-    enabled: true    # Enable this environment for the team
-    # Full definition automatically pulled from environments.yaml
+    enabled: true    # Enable this variant for the team
+    # Full definition automatically pulled from variant_examples.yaml
 
   modeling:
-    enabled: false   # Disable this environment (will not be built)
+    enabled: false   # Disable this variant (will not be built)
 
   custom_ml:
     enabled: true
@@ -156,11 +156,11 @@ environments:
 
 ### Using the Variant Browser
 
-The `./add_environment.sh` script provides an interactive interface for environment selection:
+The `./add_variant.sh` script provides an interactive interface for variant selection:
 
 ```bash
 cd your-project
-./add_environment.sh
+./add_variant.sh
 ```
 
 This displays a categorized menu:
@@ -179,17 +179,17 @@ LIGHTWEIGHT ALPINE VARIANTS
  9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
 10) alpine_analysis  ~400MB  - Essential analysis in tiny container
 
-Select environments to add (e.g., 1,3,9):
+Select variants to add (e.g., 1,3,9):
 ```
 
-Selected environments are automatically added to your `config.yaml` with `enabled: true`.
+Selected variants are automatically added to your `config.yaml` with `enabled: true`.
 
 ### Manual Variant Management
 
-You can also edit environments directly in `config.yaml`:
+You can also edit variants directly in `config.yaml`:
 
 ```yaml
-environments:
+variants:
   # Standard environments
   minimal:
     enabled: true     # Essential development
@@ -209,10 +209,10 @@ environments:
 
 ### Extending Existing Variants
 
-Add packages to existing environments:
+Add packages to existing variants:
 
 ```yaml
-environments:
+variants:
   analysis:
     enabled: true
     # Extend the base analysis variant
@@ -224,10 +224,10 @@ environments:
 
 ### Creating New Variants
 
-Define completely custom environments:
+Define completely custom variants:
 
 ```yaml
-environments:
+variants:
   custom_forecast:
     enabled: true
     base_image: "rocker/r-ver:latest"
@@ -485,7 +485,7 @@ collaboration:
 
 ```yaml
 development:
-  # Default environment for team members joining
+  # Default variant for team members joining
   default_interface: "analysis"
 
   # Container user and environment settings
@@ -511,7 +511,7 @@ build:
   docker:
     platform: "auto"            # auto, linux/amd64, linux/arm64
     no_cache: false             # Enable Docker build caching
-    parallel_builds: true       # Build environments in parallel
+    parallel_builds: true       # Build variants in parallel
     memory_limit: "4g"          # Memory limit for builds
 
   # Package installation settings
@@ -530,7 +530,7 @@ build:
 collaboration:
   documentation:
     auto_generate_readme: true       # Generate project README
-    include_variant_docs: true       # Document available environments
+    include_variant_docs: true       # Document available variants
     update_user_guide: true          # Include ZZCOLLAB_USER_GUIDE.md
 
     # Documentation templates
@@ -578,9 +578,9 @@ build_modes:
 # Create project using personal defaults
 zzcollab -i -p my-analysis
 
-# Customize environments for this specific project
+# Customize variants for this specific project
 cd my-analysis
-./add_environment.sh    # Add alpine_minimal for CI/CD testing
+./add_variant.sh    # Add alpine_minimal for CI/CD testing
 ```
 
 ## Team Leader Workflow
@@ -606,7 +606,7 @@ team:
   project: "customer-churn-analysis"
   description: "ML analysis of customer retention patterns"
 
-environments:
+variants:
   # Core development environment
   minimal:
     enabled: true    # For quick testing and CI/CD
@@ -669,7 +669,7 @@ make docker-zsh
 ### Understanding Team Configuration
 
 ```bash
-# View team's available environments
+# View team's available variants
 zzcollab --config list
 
 # See which Docker images are available
@@ -702,14 +702,14 @@ make docker-test
 ### Creating Organization-Specific Variants
 
 ```bash
-# 1. Copy and customize environment library
-cp templates/environments.yaml custom_variants.yaml
+# 1. Copy and customize variant library
+cp templates/variant_examples.yaml custom_variants.yaml
 ```
 
-Edit `custom_variants.yaml` to add organization environments:
+Edit `custom_variants.yaml` to add organization variants:
 
 ```yaml
-# Add to existing environments
+# Add to existing variants
 org_finance:
   base_image: "rocker/r-ver:latest"
   description: "Financial analysis environment with specialized packages"
@@ -754,10 +754,10 @@ Edit team `config.yaml`:
 
 ```yaml
 build:
-  use_config_environments: true
-  environment_library: "custom_variants.yaml"  # Use custom library
+  use_config_variants: true
+  variant_library: "custom_variants.yaml"  # Use custom library
 
-environments:
+variants:
   minimal:
     enabled: true
   org_finance:
@@ -769,16 +769,16 @@ environments:
 ### Building and Sharing Custom Variants
 
 ```bash
-# Build with custom environment library
+# Build with custom variant library
 zzcollab --variants-config config.yaml
 
 # Verify custom images were created
 docker images | grep finance
 docker images | grep research
 
-# Share custom environment library with organization
+# Share custom variant library with organization
 git add custom_variants.yaml config.yaml
-git commit -m "Add organization-specific environments"
+git commit -m "Add organization-specific variants"
 git push origin main
 ```
 
@@ -804,14 +804,14 @@ zzcollab --config get build.docker.platform
 ### Variant Definition Validation
 
 ```bash
-# Validate environments.yaml syntax
-./add_environment.sh --validate
+# Validate variant_examples.yaml syntax
+./add_variant.sh --validate
 
-# Check for missing or invalid environment references
+# Check for missing or invalid variant references
 zzcollab --variants-config config.yaml --dry-run
 
-# Test environment definitions without building
-./add_environment.sh --test-definitions
+# Test variant definitions without building
+./add_variant.sh --test-definitions
 ```
 
 ### Docker and Build Validation
@@ -823,7 +823,7 @@ docker info
 # Verify platform compatibility
 docker buildx ls
 
-# Test Docker build with specific environment
+# Test Docker build with specific variant
 zzcollab --variants-config config.yaml --build-only minimal
 ```
 
@@ -856,7 +856,7 @@ yq --version
 
 **Issue**: ARM64/AMD64 compatibility problems
 ```bash
-# Error building environment 'geospatial': platform not supported
+# Error building variant 'geospatial': platform not supported
 Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8
 ```
 
@@ -868,9 +868,9 @@ build:
     platform: "linux/amd64"  # Force AMD64 for compatibility
 ```
 
-Or use ARM64-compatible environments:
+Or use ARM64-compatible variants:
 ```yaml
-environments:
+variants:
   analysis:
     enabled: true     # ARM64 compatible
   geospatial:
@@ -1002,7 +1002,7 @@ init_project(
   team_name = "datasci-lab",
   project_name = "customer-analysis",
   build_mode = "my_analysis",
-  environments = c("minimal", "analysis", "alpine_minimal")
+  variants = c("minimal", "analysis", "alpine_minimal")
 )
 ```
 
@@ -1079,7 +1079,7 @@ get_config("team_name")  # Should be back to original value
 
 ### Solo Researcher
 - **User config only**: Set personal defaults in `~/.zzcollab/config.yaml`
-- **Minimal variants**: Use 2-3 environments (minimal, analysis, alpine_minimal)
+- **Minimal variants**: Use 2-3 variants (minimal, analysis, alpine_minimal)
 - **Standard build mode**: Balance between functionality and build time
 - **Simple package lists**: Stick to well-established packages
 
@@ -1094,7 +1094,7 @@ defaults:
 
 ### Small Research Team (2-5 people)
 - **Project configs**: Share configuration via `./zzcollab.yaml` in repositories
-- **Focused variants**: 3-5 environments covering team's research domains
+- **Focused variants**: 3-5 variants covering team's research domains
 - **Workflow alignment**: Team agrees on build mode and package needs
 - **Package coordination**: Custom build modes for shared analysis workflows
 
@@ -1104,7 +1104,7 @@ team:
   name: "psychlab"
   project: "attention-study"
 
-environments:
+variants:
   minimal:
     enabled: true    # Quick testing
   analysis:
@@ -1121,9 +1121,9 @@ build_modes:
 
 ### Large Research Organization (10+ people)
 - **System configs**: Organization defaults in `/etc/zzcollab/config.yaml`
-- **Extensive variants**: Full environment library available to teams
+- **Extensive variants**: Full variant library available to teams
 - **Complete research lifecycle**: All workflows supported (data analysis, manuscripts, packages)
-- **Custom environment library**: Organization-specific environments in custom libraries
+- **Custom variant library**: Organization-specific variants in custom libraries
 
 ```yaml
 # /etc/zzcollab/config.yaml for organization
@@ -1132,7 +1132,7 @@ defaults:
 
 # Custom organization variants
 build:
-  environment_library: "/etc/zzcollab/org_variants.yaml"
+  variant_library: "/etc/zzcollab/org_variants.yaml"
 
 collaboration:
   github:
@@ -1197,7 +1197,7 @@ build_modes:
 1. **Use appropriate build modes**: Fast mode for CI/CD, Comprehensive for production
 2. **Minimize Docker packages**: Only install widely-used packages in Docker
 3. **Layer caching**: Order packages by stability (stable packages first)
-4. **Parallel builds**: Enable parallel environment building in configuration
+4. **Parallel builds**: Enable parallel variant building in configuration
 
 ```yaml
 # Optimized for build performance
@@ -1213,17 +1213,17 @@ build:
 ### Container Size Optimization
 
 1. **Choose appropriate base images**: Use minimal bases when possible
-2. **Use Alpine environments**: For CI/CD and testing workflows
-3. **Separate concerns**: Use different environments for different purposes
+2. **Use Alpine variants**: For CI/CD and testing workflows
+3. **Separate concerns**: Use different variants for different purposes
 
 ```yaml
-# Size-optimized environment strategy
-environments:
+# Size-optimized variant strategy
+variants:
   alpine_minimal:
     enabled: true     # ~200MB for CI/CD
   analysis:
     enabled: true     # ~1.2GB for development
-  # Don't enable comprehensive environments unless needed
+  # Don't enable comprehensive variants unless needed
 ```
 
 ## Security and Access Management
@@ -1254,7 +1254,7 @@ development:
 ### Access Control
 
 - **User configs**: Personal settings only (team names, preferences)
-- **Project configs**: Team settings (environments, collaboration rules)
+- **Project configs**: Team settings (variants, collaboration rules)
 - **System configs**: Organization policies (security, defaults)
 
 This separation ensures that sensitive organization settings cannot be overridden by individual users or projects.
@@ -1265,10 +1265,10 @@ ZZCOLLAB's configuration system provides powerful, flexible control over researc
 
 Key takeaways:
 
-1. **Start simple**: Use built-in build modes and standard environments for most projects
-2. **Customize gradually**: Add custom environments and packages as needs become clear
+1. **Start simple**: Use built-in build modes and standard variants for most projects
+2. **Customize gradually**: Add custom variants and packages as needs become clear
 3. **Coordinate with teams**: Use project configs to ensure team consistency
-4. **Optimize for workflow**: Choose environments and packages that match your research needs
+4. **Optimize for workflow**: Choose variants and packages that match your research needs
 5. **Validate regularly**: Use configuration validation to catch issues early
 
 The configuration system scales from solo researchers to large organizations, providing reproducible, customizable research environments that eliminate configuration drift and enable effective collaboration.
@@ -1276,5 +1276,5 @@ The configuration system scales from solo researchers to large organizations, pr
 For detailed technical documentation, see:
 - `zzcollab --help` for command-line options
 - `help(package = "zzcollab")` for R interface documentation
-- `templates/environments.yaml` for available environments
+- `templates/variant_examples.yaml` for available variants
 - `docs/UNIFIED_PARADIGM_GUIDE.md` for research compendium guidance
