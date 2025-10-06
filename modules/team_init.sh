@@ -232,11 +232,11 @@ setup_team_dockerfile() {
                 "$config_template" > ./config.yaml
             print_success "Created config.yaml with predefined variants"
 
-            # Copy variant_examples.yaml library if it exists
-            local profile_library="${TEMPLATES_DIR}/variant_examples.yaml"
-            if [[ -f "$profile_library" ]] && [[ ! -f "./variant_examples.yaml" ]]; then
-                cp "$profile_library" ./variant_examples.yaml
-                print_success "Copied variant library: variant_examples.yaml"
+            # Copy profiles.yaml library if it exists
+            local profile_library="${TEMPLATES_DIR}/profiles.yaml"
+            if [[ -f "$profile_library" ]] && [[ ! -f "./profiles.yaml" ]]; then
+                cp "$profile_library" ./profiles.yaml
+                print_success "Copied profile library: profiles.yaml"
             fi
 
             # Check if config.yaml has use_config_profiles enabled
@@ -643,8 +643,8 @@ parse_config_profiles() {
     done
 }
 
-# Function: build_config_profile  
-# Purpose: Build a single variant, merging from variant_examples.yaml if needed
+# Function: build_config_profile
+# Purpose: Build a single profile, merging from profiles.yaml if needed
 build_config_profile() {
     local config_file="$1"
     local profile_name="$2"
@@ -658,11 +658,11 @@ build_config_profile() {
     local base_image description packages system_deps profile_library
     
     if [[ "$has_full_definition" == "null" || -z "$has_full_definition" ]]; then
-        # Variant only has enabled flag - get definition from variant_examples.yaml
-        profile_library=$(yq eval ".build.profile_library // \"variant_examples.yaml\"" "$config_file")
+        # Profile only has enabled flag - get definition from profiles.yaml
+        profile_library=$(yq eval ".build.profile_library // \"profiles.yaml\"" "$config_file")
         
         if [[ ! -f "$profile_library" ]]; then
-            print_error "❌ Variant library not found: $profile_library"
+            print_error "❌ Profile library not found: $profile_library"
             return 1
         fi
         
@@ -673,7 +673,7 @@ build_config_profile() {
         system_deps=$(yq eval ".${profile_name}.system_deps[]?" "$profile_library" | tr '\n' ' ')
         
         if [[ "$base_image" == "null" || -z "$base_image" ]]; then
-            print_error "❌ Variant '$profile_name' not found in $profile_library"
+            print_error "❌ Profile '$profile_name' not found in $profile_library"
             return 1
         fi
     else
