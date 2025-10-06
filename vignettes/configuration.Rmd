@@ -28,9 +28,9 @@ ZZCOLLAB features a sophisticated multi-layered configuration system that contro
 
 - **✓ Eliminate repetitive typing**: Set defaults once, use across all projects
 - **✓ Team standardization**: Shared configurations ensure identical environments
-- **✓ Flexible customization**: 14+ Docker variants, custom package lists, build modes
+- **✓ Flexible customization**: 14+ Docker profiles, custom package lists, build modes
 - **✓ Hierarchical control**: User, project, and system-level configurations
-- **✓ Single source of truth**: Centralized variant definitions prevent duplication
+- **✓ Single source of truth**: Centralized profile definitions prevent duplication
 
 # Configuration Architecture
 
@@ -52,7 +52,7 @@ Control which specialized Docker environments your team uses:
 - **14+ predefined variants** from minimal (~200MB Alpine) to comprehensive (~3.5GB full-featured)
 - **Domain-specific environments** for bioinformatics, geospatial analysis, machine learning
 - **Single source of truth** architecture eliminates duplication
-- **Interactive variant browser** for easy discovery and selection
+- **Interactive profile browser** for easy discovery and selection
 
 ### Package Management System
 Control what R packages are installed and when:
@@ -67,11 +67,11 @@ Control team workflows and automation:
 - **Container defaults**: User accounts, working directories, shared volumes
 - **Development preferences**: Default interfaces, dotfiles handling, confirmation prompts
 
-# Docker Variant System
+# Docker Profile System
 
 ## Understanding Variants
 
-Docker variants are pre-configured environments with specific base images, R packages, and system dependencies. Each variant is optimized for particular research workflows.
+Docker profiles are pre-configured environments with specific base images, R packages, and system dependencies. Each profile is optimized for particular research workflows.
 
 ### Variant Categories
 
@@ -91,14 +91,14 @@ bioinformatics:   # ~2GB    - Bioconductor genomics packages
 geospatial:       # ~2.5GB  - sf, terra, leaflet mapping tools
 ```
 
-**🏔 Lightweight Alpine Variants (3 variants)**
+**🏔 Lightweight Alpine Variants (3 profiles)**
 ```yaml
 alpine_minimal:   # ~200MB  - Ultra-lightweight for CI/CD
 alpine_analysis:  # ~400MB  - Essential analysis in tiny container
 hpc_alpine:       # ~600MB  - High-performance parallel processing
 ```
 
-**R-Hub Testing Environments (3 variants)**
+**R-Hub Testing Environments (3 profiles)**
 ```yaml
 rhub_ubuntu:      # ~1GB    - CRAN-compatible package testing
 rhub_fedora:      # ~1.2GB  - Test against R-devel
@@ -109,10 +109,10 @@ rhub_windows:     # ~1.5GB  - Windows compatibility testing
 
 ### Master Variant Library
 
-All variant definitions are stored in `templates/variant_examples.yaml`:
+All profile definitions are stored in `templates/profiles.yaml`:
 
 ```yaml
-# Example variant definition
+# Example profile definition
 analysis:
   base_image: "rocker/tidyverse:latest"
   description: "Data analysis environment with tidyverse and common packages"
@@ -138,13 +138,13 @@ analysis:
 Teams select which variants to enable in their `config.yaml`:
 
 ```yaml
-variants:
+profiles:
   analysis:
-    enabled: true    # Enable this variant for the team
-    # Full definition automatically pulled from variant_examples.yaml
+    enabled: true    # Enable this profile for the team
+    # Full definition automatically pulled from profiles.yaml
 
   modeling:
-    enabled: false   # Disable this variant (will not be built)
+    enabled: false   # Disable this profile (will not be built)
 
   custom_ml:
     enabled: true
@@ -156,11 +156,11 @@ variants:
 
 ### Using the Variant Browser
 
-The `./add_variant.sh` script provides an interactive interface for variant selection:
+The `./add_profile.sh` script provides an interactive interface for profile selection:
 
 ```bash
 cd your-project
-./add_variant.sh
+./add_profile.sh
 ```
 
 This displays a categorized menu:
@@ -189,7 +189,7 @@ Selected variants are automatically added to your `config.yaml` with `enabled: t
 You can also edit variants directly in `config.yaml`:
 
 ```yaml
-variants:
+profiles:
   # Standard environments
   minimal:
     enabled: true     # Essential development
@@ -209,10 +209,10 @@ variants:
 
 ### Extending Existing Variants
 
-Add packages to existing variants:
+Add packages to existing profiles:
 
 ```yaml
-variants:
+profiles:
   analysis:
     enabled: true
     # Extend the base analysis variant
@@ -224,10 +224,10 @@ variants:
 
 ### Creating New Variants
 
-Define completely custom variants:
+Define completely custom profiles:
 
 ```yaml
-variants:
+profiles:
   custom_forecast:
     enabled: true
     base_image: "rocker/r-ver:latest"
@@ -485,7 +485,7 @@ collaboration:
 
 ```yaml
 development:
-  # Default variant for team members joining
+  # Default profile for team members joining
   default_interface: "analysis"
 
   # Container user and environment settings
@@ -511,7 +511,7 @@ build:
   docker:
     platform: "auto"            # auto, linux/amd64, linux/arm64
     no_cache: false             # Enable Docker build caching
-    parallel_builds: true       # Build variants in parallel
+    parallel_builds: true       # Build profiles in parallel
     memory_limit: "4g"          # Memory limit for builds
 
   # Package installation settings
@@ -530,7 +530,7 @@ build:
 collaboration:
   documentation:
     auto_generate_readme: true       # Generate project README
-    include_variant_docs: true       # Document available variants
+    include_variant_docs: true       # Document available profiles
     update_user_guide: true          # Include ZZCOLLAB_USER_GUIDE.md
 
     # Documentation templates
@@ -580,7 +580,7 @@ zzcollab -i -p my-analysis
 
 # Customize variants for this specific project
 cd my-analysis
-./add_variant.sh    # Add alpine_minimal for CI/CD testing
+./add_profile.sh    # Add alpine_minimal for CI/CD testing
 ```
 
 ## Team Leader Workflow
@@ -606,7 +606,7 @@ team:
   project: "customer-churn-analysis"
   description: "ML analysis of customer retention patterns"
 
-variants:
+profiles:
   # Core development environment
   minimal:
     enabled: true    # For quick testing and CI/CD
@@ -669,7 +669,7 @@ make docker-zsh
 ### Understanding Team Configuration
 
 ```bash
-# View team's available variants
+# View team's available profiles
 zzcollab --config list
 
 # See which Docker images are available
@@ -702,11 +702,11 @@ make docker-test
 ### Creating Organization-Specific Variants
 
 ```bash
-# 1. Copy and customize variant library
-cp templates/variant_examples.yaml custom_variants.yaml
+# 1. Copy and customize profile library
+cp templates/profiles.yaml custom_variants.yaml
 ```
 
-Edit `custom_variants.yaml` to add organization variants:
+Edit `custom_variants.yaml` to add organization profiles:
 
 ```yaml
 # Add to existing variants
@@ -754,10 +754,10 @@ Edit team `config.yaml`:
 
 ```yaml
 build:
-  use_config_variants: true
+  use_config_profiles: true
   variant_library: "custom_variants.yaml"  # Use custom library
 
-variants:
+profiles:
   minimal:
     enabled: true
   org_finance:
@@ -769,14 +769,14 @@ variants:
 ### Building and Sharing Custom Variants
 
 ```bash
-# Build with custom variant library
+# Build with custom profile library
 zzcollab --variants-config config.yaml
 
 # Verify custom images were created
 docker images | grep finance
 docker images | grep research
 
-# Share custom variant library with organization
+# Share custom profile library with organization
 git add custom_variants.yaml config.yaml
 git commit -m "Add organization-specific variants"
 git push origin main
@@ -804,14 +804,14 @@ zzcollab --config get build.docker.platform
 ### Variant Definition Validation
 
 ```bash
-# Validate variant_examples.yaml syntax
-./add_variant.sh --validate
+# Validate profiles.yaml syntax
+./add_profile.sh --validate
 
-# Check for missing or invalid variant references
+# Check for missing or invalid profile references
 zzcollab --variants-config config.yaml --dry-run
 
-# Test variant definitions without building
-./add_variant.sh --test-definitions
+# Test profile definitions without building
+./add_profile.sh --test-definitions
 ```
 
 ### Docker and Build Validation
@@ -856,7 +856,7 @@ yq --version
 
 **Issue**: ARM64/AMD64 compatibility problems
 ```bash
-# Error building variant 'geospatial': platform not supported
+# Error building profile 'geospatial': platform not supported
 Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8
 ```
 
@@ -868,9 +868,9 @@ build:
     platform: "linux/amd64"  # Force AMD64 for compatibility
 ```
 
-Or use ARM64-compatible variants:
+Or use ARM64-compatible profiles:
 ```yaml
-variants:
+profiles:
   analysis:
     enabled: true     # ARM64 compatible
   geospatial:
@@ -1079,7 +1079,7 @@ get_config("team_name")  # Should be back to original value
 
 ### Solo Researcher
 - **User config only**: Set personal defaults in `~/.zzcollab/config.yaml`
-- **Minimal variants**: Use 2-3 variants (minimal, analysis, alpine_minimal)
+- **Minimal variants**: Use 2-3 profiles (minimal, analysis, alpine_minimal)
 - **Standard build mode**: Balance between functionality and build time
 - **Simple package lists**: Stick to well-established packages
 
@@ -1104,7 +1104,7 @@ team:
   name: "psychlab"
   project: "attention-study"
 
-variants:
+profiles:
   minimal:
     enabled: true    # Quick testing
   analysis:
@@ -1121,9 +1121,9 @@ build_modes:
 
 ### Large Research Organization (10+ people)
 - **System configs**: Organization defaults in `/etc/zzcollab/config.yaml`
-- **Extensive variants**: Full variant library available to teams
+- **Extensive variants**: Full profile library available to teams
 - **Complete research lifecycle**: All workflows supported (data analysis, manuscripts, packages)
-- **Custom variant library**: Organization-specific variants in custom libraries
+- **Custom profile library**: Organization-specific variants in custom libraries
 
 ```yaml
 # /etc/zzcollab/config.yaml for organization
@@ -1197,7 +1197,7 @@ build_modes:
 1. **Use appropriate build modes**: Fast mode for CI/CD, Comprehensive for production
 2. **Minimize Docker packages**: Only install widely-used packages in Docker
 3. **Layer caching**: Order packages by stability (stable packages first)
-4. **Parallel builds**: Enable parallel variant building in configuration
+4. **Parallel builds**: Enable parallel profile building in configuration
 
 ```yaml
 # Optimized for build performance
@@ -1217,8 +1217,8 @@ build:
 3. **Separate concerns**: Use different variants for different purposes
 
 ```yaml
-# Size-optimized variant strategy
-variants:
+# Size-optimized profile strategy
+profiles:
   alpine_minimal:
     enabled: true     # ~200MB for CI/CD
   analysis:
@@ -1266,7 +1266,7 @@ ZZCOLLAB's configuration system provides powerful, flexible control over researc
 Key takeaways:
 
 1. **Start simple**: Use built-in build modes and standard variants for most projects
-2. **Customize gradually**: Add custom variants and packages as needs become clear
+2. **Customize gradually**: Add custom profiles and packages as needs become clear
 3. **Coordinate with teams**: Use project configs to ensure team consistency
 4. **Optimize for workflow**: Choose variants and packages that match your research needs
 5. **Validate regularly**: Use configuration validation to catch issues early
@@ -1276,5 +1276,5 @@ The configuration system scales from solo researchers to large organizations, pr
 For detailed technical documentation, see:
 - `zzcollab --help` for command-line options
 - `help(package = "zzcollab")` for R interface documentation
-- `templates/variant_examples.yaml` for available variants
+- `templates/profiles.yaml` for available profiles
 - `docs/UNIFIED_PARADIGM_GUIDE.md` for research compendium guidance

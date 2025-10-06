@@ -1,17 +1,17 @@
 # ZZCOLLAB Team Configuration
-# This file defines Docker variants and team settings for your zzcollab project.
+# This file defines Docker profiles and team settings for your zzcollab project.
 # Edit this file to customize your team's development environment.
 #
-# VARIANT SYSTEM (NEW - Single Source of Truth):
-# - All variant definitions are stored in variant_examples.yaml
+# PROFILE SYSTEM (NEW - Single Source of Truth):
+# - All profile definitions are stored in profiles.yaml
 # - This config file only specifies which variants to enable
-# - Use ./add_variant.sh to browse and add variants interactively
+# - Use ./add_profile.sh to browse and add variants interactively
 #
 # USAGE:
 # 1. Set `enabled: true` for variants you want to build
-# 2. Variant definitions are automatically pulled from variant_examples.yaml
+# 2. Profile definitions are automatically pulled from profiles.yaml
 # 3. Choose your approach:
-#    a) Set `use_config_variants: true` below - uses this file automatically
+#    a) Set `use_config_profiles: true` below - uses this file automatically
 #    b) Use flag: zzcollab -i -t myteam -p myproject --variants-config config.yaml
 #    c) Legacy: zzcollab -i -t myteam -p myproject -B r-ver,rstudio
 
@@ -29,10 +29,10 @@ team:
 #=============================================================================
 # DOCKER VARIANTS CONFIGURATION
 #=============================================================================
-# Define which variants your team needs from the variant library.
-# Full definitions are automatically pulled from variant_examples.yaml
+# Define which variants your team needs from the profile library.
+# Full definitions are automatically pulled from profiles.yaml
 
-variants:
+profiles:
   
   #---------------------------------------------------------------------------
   # DEFAULT VARIANTS (Enabled by default for new teams)
@@ -40,16 +40,16 @@ variants:
   
   minimal:
     enabled: true    # Essential development environment (~800MB)
-    # Full definition in variant_examples.yaml
+    # Full definition in profiles.yaml
   
   analysis:
     enabled: true    # Tidyverse analysis environment (~1.2GB)
-    # Full definition in variant_examples.yaml
+    # Full definition in profiles.yaml
     
   #---------------------------------------------------------------------------
   # ADDITIONAL VARIANTS (Set enabled: true to activate)
   #---------------------------------------------------------------------------
-  # Use ./add_variant.sh to browse all available options interactively
+  # Use ./add_profile.sh to browse all available options interactively
   
   # Standard research environments
   modeling:
@@ -89,9 +89,9 @@ variants:
   #---------------------------------------------------------------------------
   # CUSTOM VARIANTS (Add your own)
   #---------------------------------------------------------------------------
-  # Copy variants from ./add_variant.sh or define manually
-  # Format: variant_name: { enabled: true/false }
-  # Full definitions pulled from variant_examples.yaml
+  # Copy variants from ./add_profile.sh or define manually
+  # Format: profile_name: { enabled: true/false }
+  # Full definitions pulled from profiles.yaml
 
 #=============================================================================
 # BUILD CONFIGURATION
@@ -99,10 +99,10 @@ variants:
 
 build:
   # Use variants defined in this config file by default
-  use_config_variants: true   # If true, uses variants from this file instead of -B flag
+  use_config_profiles: true   # If true, uses variants from this file instead of -B flag
   
   # Variant source file (single source of truth)
-  variant_library: "variant_examples.yaml"
+  variant_library: "profiles.yaml"
   
   # Docker build options
   docker:
@@ -122,7 +122,7 @@ build:
 
 development:
   # Default interface for team members
-  default_interface: "minimal"  # Which variant to use by default
+  default_interface: "minimal"  # Which profile to use by default
   
   # Shared development settings
   dotfiles:

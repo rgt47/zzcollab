@@ -1,22 +1,22 @@
-# Docker Variant System Guide
+# Docker Profile System Guide
 
 ## Overview
 
-ZZCOLLAB provides 14+ specialized Docker variants through a single
+ZZCOLLAB provides 14+ specialized Docker profiles through a single
 source of truth architecture that eliminates configuration
 duplication while enabling unlimited customization. This guide
-documents the variant system design, available variants, and
+documents the profile system design, available profiles, and
 implementation patterns for research computing environments.
 
-## Variant System Architecture
+## Profile System Architecture
 
 ### Single Source of Truth Design
 
-The variant system implements a library-reference pattern:
+The profile system implements a library-reference pattern:
 
-**Master Library** (`templates/variant_examples.yaml`):
+**Master Library** (`templates/profiles.yaml`):
 
-- Contains complete definitions for all available variants
+- Contains complete definitions for all available profiles
 - Maintained as single authoritative source
 - Updated independently from team configurations
 - Provides 14+ pre-configured environments
@@ -26,16 +26,16 @@ The variant system implements a library-reference pattern:
 - References variants by name from library
 - Enables/disables specific variants for project
 - Optionally overrides specific parameters
-- Eliminates duplicate variant definitions
+- Eliminates duplicate profile definitions
 
 ### Benefits
 
-1. **Elimination of Duplication**: Variant definitions maintained
+1. **Elimination of Duplication**: Profile definitions maintained
    in one location
 2. **Simplified Maintenance**: Updates propagate to all projects
    automatically
-3. **Easy Discovery**: Interactive variant browser
-   (`add_variant.sh`)
+3. **Easy Discovery**: Interactive profile browser
+   (`add_profile.sh`)
 4. **Backward Compatibility**: Legacy full definitions still
    supported
 5. **Unlimited Customization**: Teams can define completely custom
@@ -224,11 +224,11 @@ CRAN-compatible testing environments for package validation.
 
 ### Interactive Variant Selection
 
-**add_variant.sh Script**:
+**add_profile.sh Script**:
 
 ```bash
-# Launch interactive variant browser
-./add_variant.sh
+# Launch interactive profile browser
+./add_profile.sh
 
 # Displays categorized menu:
 =======================================================
@@ -257,7 +257,7 @@ R-HUB TESTING ENVIRONMENTS
  13) rhub_fedora      ~1.2GB  - R-devel testing
  14) rhub_windows     ~1.5GB  - Windows compatibility
 
-Enter variant numbers (space-separated): 1 2 9
+Enter profile numbers (space-separated): 1 2 9
 ```
 
 ### Manual Configuration
@@ -269,7 +269,7 @@ Enter variant numbers (space-separated): 1 2 9
 # DOCKER VARIANTS
 #=========================================================
 
-variants:
+profiles:
   # Essential development
   minimal:
     enabled: true             # ~800MB
@@ -301,10 +301,10 @@ variants:
 
 build:
   # Use variants defined in this config
-  use_config_variants: true
+  use_config_profiles: true
 
-  # Reference the variant library
-  variant_library: "variant_examples.yaml"
+  # Reference the profile library
+  variant_library: "profiles.yaml"
 
   # Docker build settings
   docker:
@@ -324,16 +324,16 @@ zzcollab -i -t lab -p study --github
 # Create project with config-defined variants
 zzcollab -i -t lab -p study --variants-config config.yaml
 
-# Legacy approach (limited to 3 variants)
+# Legacy approach (limited to 3 profiles)
 zzcollab -i -t lab -p study -B rstudio --github
 ```
 
 **Variant Addition**:
 
 ```bash
-# Add variant to existing project
+# Add profile to existing project
 cd study
-./add_variant.sh
+./add_profile.sh
 
 # Build specific variant
 zzcollab -V modeling
@@ -349,7 +349,7 @@ zzcollab --variants-config config.yaml
 Define entirely new variants in config.yaml:
 
 ```yaml
-variants:
+profiles:
   custom_gpu:
     base_image: "nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04"
     description: "GPU-accelerated machine learning"
@@ -395,10 +395,10 @@ variants:
 
 ### Extending Existing Variants
 
-Override specific parameters from library variants:
+Override specific parameters from library profiles:
 
 ```yaml
-variants:
+profiles:
   analysis:
     enabled: true
     # Add additional packages to analysis variant
@@ -436,14 +436,14 @@ Layer 5: User Configuration (dotfiles)
 
 ### Build Process
 
-Variant building follows this sequence:
+Profile building follows this sequence:
 
-1. **Configuration Loading**: Read variant definition from library
+1. **Configuration Loading**: Read profile definition from library
 2. **Base Image Pull**: Download specified base image
 3. **System Dependencies**: Install apt/apk packages
 4. **R Package Installation**: Install specified R packages
 5. **Layer Caching**: Cache each layer for faster rebuilds
-6. **Image Tagging**: Tag with version and variant name
+6. **Image Tagging**: Tag with version and profile name
 7. **Registry Push**: Push to Docker Hub (optional)
 
 ### Package Installation Methods
@@ -510,7 +510,7 @@ RUN R -e "remotes::install_github('owner/repo')"
 
 3. Use platform-specific configuration:
    ```yaml
-   variants:
+   profiles:
      publishing:
        enabled: true
        base_image: "rocker/verse:latest"
@@ -565,7 +565,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 **Question 3: What is the team structure?**
 
 - Solo developer → 1-2 variants (minimal + analysis)
-- Small team (2-5) → 2-3 variants (minimal + analysis + specialty)
+- Small team (2-5) → 2-3 profiles (minimal + analysis + specialty)
 - Large team (5+) → 3+ variants (full spectrum)
 
 ### Paradigm-Specific Recommendations
@@ -596,14 +596,14 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ```bash
 # Edit master library
-vim templates/variant_examples.yaml
+vim templates/profiles.yaml
 
 # Validate changes
-./add_variant.sh --validate
+./add_profile.sh --validate
 
 # Commit to repository
-git add templates/variant_examples.yaml
-git commit -m "Update variant definitions"
+git add templates/profiles.yaml
+git commit -m "Update profile definitions"
 ```
 
 **Team Configuration Updates**:
@@ -618,11 +618,11 @@ zzcollab --variants-config config.yaml
 
 ### Version Control
 
-Track variant configuration changes:
+Track profile configuration changes:
 
 ```bash
 # Version tag for major changes
-git tag -a variants-v2.0 -m "Add GPU and spatial variants"
+git tag -a profiles-v2.0 -m "Add GPU and spatial variants"
 
 # Reference specific version
 git checkout variants-v2.0
@@ -634,7 +634,7 @@ zzcollab --variants-config config.yaml
 When variants become obsolete:
 
 ```yaml
-variants:
+profiles:
   old_variant:
     enabled: false
     deprecated: true
@@ -691,8 +691,8 @@ COPY --from=builder /usr/local/lib/R/site-library \
 Error: Variant 'modelng' not found in library
 ```
 
-**Solution**: Check spelling, use `./add_variant.sh` to browse
-available variants
+**Solution**: Check spelling, use `./add_profile.sh` to browse
+available profiles
 
 **Issue**: Base image pull fails
 
@@ -724,16 +724,16 @@ version
 ### Diagnostic Commands
 
 ```bash
-# List available variants
-./add_variant.sh --list
+# List available profiles
+./add_profile.sh --list
 
-# Validate variant configuration
-./add_variant.sh --validate
+# Validate profile configuration
+./add_profile.sh --validate
 
 # Check base image availability
 docker pull rocker/r-ver:latest
 
-# Test variant build
+# Test profile build
 docker build -f Dockerfile.variant -t test:latest .
 
 # Inspect image layers
@@ -747,21 +747,21 @@ docker history lab/study-analysis:latest
 1. Start minimal, add variants as needed
 2. Use Alpine for CI/CD pipelines
 3. Enable only variants team actively uses
-4. Document variant choices in configuration
+4. Document profile choices in configuration
 
 ### Custom Variants
 
 1. Extend existing variants rather than creating from scratch
 2. Document package selections and rationale
 3. Test variants thoroughly before team deployment
-4. Version control custom variant definitions
+4. Version control custom profile definitions
 
 ### Team Collaboration
 
-1. Establish variant conventions early
-2. Document which variant for which tasks
-3. Coordinate variant additions through team lead
-4. Regular variant cleanup and maintenance
+1. Establish profile conventions early
+2. Document which profile for which tasks
+3. Coordinate profile additions through team lead
+4. Regular profile cleanup and maintenance
 
 ## References
 

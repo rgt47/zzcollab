@@ -51,7 +51,7 @@ team-analysis-project/
 ├── reports/                   # Team reporting and communication
 │   └── dashboard/            # Interactive dashboards
 ├── renv.lock                  # Exact package versions for team
-└── zzcollab.yaml             # Team configuration and Docker variants
+└── zzcollab.yaml             # Team configuration and Docker profiles
 ```
 
 ## Team Roles and Responsibilities
@@ -60,7 +60,7 @@ team-analysis-project/
 **Responsibilities:**
 
 - Create shared Docker images and project infrastructure
-- Set team configuration and Docker variant selection
+- Set team configuration and Docker profile selection
 - Coordinate analysis phases and deliverable timeline
 - Manage repository permissions and CI/CD workflows
 

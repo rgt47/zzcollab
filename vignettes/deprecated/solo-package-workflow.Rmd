@@ -142,7 +142,7 @@ test_that("calculate_statistics handles various input types", {
 
 *For complete testing documentation, see [Testing Guide](../docs/TESTING_GUIDE.md)*
 
-## Configuration and Variant System Overview
+## Configuration and Profile System Overview
 
 ZZCOLLAB implements a hierarchical configuration system optimized for R package
 development across diverse development environments and collaboration contexts:
@@ -155,7 +155,7 @@ development across diverse development environments and collaboration contexts:
    standards
 4. **Built-in defaults** - Framework fallback values for CRAN compliance
 
-**Docker Variant System for Package Development:**
+**Docker Profile System for Package Development:**
 
 - **Development-Focused Variants**: Specialized configurations including
   complete R development toolchains, LaTeX for PDF documentation, and
@@ -186,7 +186,7 @@ zzcollab --config set build-mode "standard"  # Set development build mode
 zzcollab --config list                       # View current settings
 ```
 
-*For comprehensive configuration documentation, see [Configuration Guide](../docs/CONFIGURATION.md) and [Variant System Guide](../docs/VARIANTS.md)*
+*For comprehensive configuration documentation, see [Configuration Guide](../docs/CONFIGURATION.md) and [Profile System Guide](../docs/VARIANTS.md)*
 
 ## Initial Setup (One-Time)
 
@@ -247,10 +247,10 @@ zzcollab -p my-analysis-package -P package -S --github
 # Method 3: Advanced - with collaborative configuration (for team packages)
 # zzcollab -i -p my-analysis-package -P package --github  # Creates shareable environments
 
-# Method 4: Custom variant selection for specialized requirements
+# Method 4: Custom profile selection for specialized requirements
 mkdir my-analysis-package && cd my-analysis-package
 zzcollab -p my-analysis-package -P package    # Local project setup
-./add_variant.sh    # Select additional variants like rhub or alpine_minimal
+./add_profile.sh    # Select additional variants like rhub or alpine_minimal
 ```
 
 **Project Structure Created:**

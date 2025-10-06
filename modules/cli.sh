@@ -92,9 +92,9 @@ parse_base_image_list() {
 }
 
 ##############################################################################
-# FUNCTION: parse_variant_list
+# FUNCTION: parse_profile_list
 # PURPOSE:  Parse comma-separated variant list for -V flag
-# USAGE:    parse_variant_list "minimal,rstudio,analysis"
+# USAGE:    parse_profile_list "minimal,rstudio,analysis"
 # ARGS:
 #   $1 - input: Comma-separated list of variant names
 # RETURNS:
@@ -103,9 +103,9 @@ parse_base_image_list() {
 #   Splits comma-separated variants and trims whitespace.
 #   Does not validate variant names (allows any variant from library).
 # EXAMPLE:
-#   parse_variant_list "minimal, rstudio, analysis"
+#   parse_profile_list "minimal, rstudio, analysis"
 ##############################################################################
-parse_variant_list() {
+parse_profile_list() {
     local input="$1"
 
     # Split by comma and clean each variant name
@@ -196,13 +196,13 @@ INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, 
 INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
-BUILD_VARIANT_MODE=false
-BUILD_VARIANT=""
+BUILD_PROFILE_MODE=false
+BUILD_PROFILE=""
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
-USE_CONFIG_VARIANTS=false    # Use config.yaml for variant definitions
-VARIANTS_CONFIG=""           # Path to variants config file
+USE_CONFIG_PROFILES=false    # Use config.yaml for variant definitions
+PROFILES_CONFIG=""           # Path to variants config file
 
 # Simplified build mode system (replaces complex flag system)
 readonly DEFAULT_BUILD_MODE="${ZZCOLLAB_DEFAULT_BUILD_MODE:-standard}"
@@ -344,11 +344,11 @@ parse_cli_arguments() {
                 SHOW_NEXT_STEPS=true
                 shift
                 ;;
-            --build-variant|-V)
+            --build-profile|-V)
                 require_arg "$1" "$2"
                 # Accept comma-separated variant names (any variant from library)
-                BUILD_VARIANT_MODE=true
-                BUILD_VARIANT="$2"
+                BUILD_PROFILE_MODE=true
+                BUILD_PROFILE="$2"
                 shift 2
                 ;;
             --help|-h)
@@ -430,8 +430,8 @@ parse_cli_arguments() {
                 ;;
             --variants-config)
                 require_arg "$1" "$2"
-                VARIANTS_CONFIG="$2"
-                USE_CONFIG_VARIANTS=true
+                PROFILES_CONFIG="$2"
+                USE_CONFIG_PROFILES=true
                 shift 2
                 ;;
             --config|-c|config)
@@ -467,26 +467,26 @@ process_user_friendly_interface() {
     if [[ "$INIT_MODE" != "true" ]]; then
         if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
             # Map legacy interface names to variant names for backward compatibility
-            local variant_name="$INTERFACE"
+            local profile_name="$INTERFACE"
             case "$INTERFACE" in
                 shell)
-                    variant_name="minimal"
+                    profile_name="minimal"
                     ;;
                 verse)
-                    variant_name="publishing"
+                    profile_name="publishing"
                     ;;
                 # All other names (rstudio, analysis, minimal, etc.) stay as-is
             esac
 
             # Use config-based variant naming: {team}/{project}_core-{variant}
-            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}"
+            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}_core-${profile_name}"
 
             # Check if team image exists before proceeding
-            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$variant_name"
+            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$profile_name"
             echo "ℹ️  Using team image: $BASE_IMAGE"
         elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
             # If some team flags are provided but not all, show error (only for non-init, non-build-variant mode)
-            if [[ "$BUILD_VARIANT_MODE" != "true" ]]; then
+            if [[ "$BUILD_PROFILE_MODE" != "true" ]]; then
                 echo "❌ Error: When using team interface, all flags are required:" >&2
                 echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
                 echo "  Common variants: minimal, rstudio, analysis, publishing, modeling" >&2
@@ -539,9 +539,9 @@ check_team_image_availability() {
         if [[ ${#available_images[@]} -gt 0 ]]; then
             echo "✅ Available variants for this project:"
             for variant in "${available_images[@]}"; do
-                local variant_name="${variant% (legacy)}"
+                local profile_name="${variant% (legacy)}"
                 if [[ "$variant" == *"(legacy)"* ]]; then
-                    echo "    - ${team_name}/${project_name}core-${variant_name}:latest (legacy)"
+                    echo "    - ${team_name}/${project_name}core-${profile_name}:latest (legacy)"
                 else
                     echo "    - ${team_name}/${project_name}_core-${variant}:latest"
                 fi
@@ -550,8 +550,8 @@ check_team_image_availability() {
             echo "💡 Solutions:"
             echo "   1. Use available variant:"
             for variant in "${available_images[@]}"; do
-                local variant_name="${variant% (legacy)}"
-                echo "      zzcollab -t $team_name -p $project_name -I $variant_name"
+                local profile_name="${variant% (legacy)}"
+                echo "      zzcollab -t $team_name -p $project_name -I $profile_name"
             done
             echo "   2. Ask team lead to build $requested_variant variant:"
             echo "      cd $project_name && zzcollab -V $requested_variant"
@@ -570,10 +570,10 @@ check_team_image_availability() {
     fi
 }
 
-# Function: interface_to_variant
-# Purpose: Convert interface name to build variant name
+# Function: interface_to_profile
+# Purpose: Convert interface name to build profile name
 # Arguments: $1 = interface (shell, rstudio, verse)
-interface_to_variant() {
+interface_to_profile() {
     case "$1" in
         shell) echo "r-ver" ;;
         rstudio) echo "rstudio" ;;

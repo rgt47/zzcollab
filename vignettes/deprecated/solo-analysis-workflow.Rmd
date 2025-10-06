@@ -130,7 +130,7 @@ test_that("load_penguin_data works correctly", {
 
 *For complete testing documentation, see [Testing Guide](../docs/TESTING_GUIDE.md)*
 
-## Configuration and Variant System Overview
+## Configuration and Profile System Overview
 
 ZZCOLLAB implements a hierarchical configuration system that manages Docker environments, R packages, and development settings through multiple configuration layers:
 
@@ -141,15 +141,15 @@ ZZCOLLAB implements a hierarchical configuration system that manages Docker envi
 3. **System config** (`/etc/zzcollab/config.yaml`) - Organization-level defaults
 4. **Built-in defaults** - Framework fallback values
 
-**Docker Variant System:**
+**Docker Profile System:**
 
 - **Specialized Environments**: Fourteen distinct configurations ranging from
   lightweight Alpine distributions (approximately 200MB) to comprehensive
   environments (approximately 3.5GB)
 - **Domain-Specific Variants**: Specialized configurations for bioinformatics,
   geospatial analysis, high-performance computing, and web applications
-- **Interactive Management**: `./add_variant.sh` utility provides guided
-  variant selection interface
+- **Interactive Management**: `./add_profile.sh` utility provides guided
+  profile selection interface
 - **Centralized Definitions**: Single source configuration library eliminates
   duplication across projects
 
@@ -157,7 +157,7 @@ ZZCOLLAB implements a hierarchical configuration system that manages Docker envi
 
 - **Build Settings**: Package selection modes, paradigm defaults, dotfiles
   integration
-- **Docker Management**: Variant selection, platform compatibility, resource
+- **Docker Management**: Profile selection, platform compatibility, resource
   constraints
 - **Collaboration Settings**: Team coordination protocols, version control
   integration, resource sharing preferences
@@ -170,7 +170,7 @@ zzcollab --config set build-mode "standard" # Set default build mode
 zzcollab --config list                    # View current settings
 ```
 
-*For comprehensive configuration documentation, see [Configuration Guide](../docs/CONFIGURATION.md) and [Variant System Guide](../docs/VARIANTS.md)*
+*For comprehensive configuration documentation, see [Configuration Guide](../docs/CONFIGURATION.md) and [Profile System Guide](../docs/VARIANTS.md)*
 
 ## Initial Setup (One-Time)
 
@@ -229,10 +229,10 @@ zzcollab -p penguin-analysis -P analysis --github
 # Method 3: Advanced - with custom team configuration (if sharing images later)
 # zzcollab -i -p penguin-analysis -P analysis --github  # Creates shareable team images
 
-# Method 4: Custom variant selection for specialized needs
+# Method 4: Custom profile selection for specialized needs
 mkdir penguin-analysis && cd penguin-analysis
 zzcollab -p penguin-analysis -P analysis    # Local project setup
-./add_variant.sh    # Select additional variants like modeling or alpine_minimal
+./add_profile.sh    # Select additional variants like modeling or alpine_minimal
 ```
 
 **What this creates:**
@@ -1984,7 +1984,7 @@ This workflow implementation demonstrates the analysis paradigm's methodological
 
 ```bash
 # Add specialized environments for different needs
-./add_variant.sh
+./add_profile.sh
 
 # Select variants like:
 # - modeling: Enhanced ML packages (xgboost, h2o, keras)
@@ -2054,7 +2054,7 @@ The analysis paradigm demonstrates the following methodological characteristics:
 - **Quality Assurance**: Comprehensive testing framework with coverage targets exceeding 90%
 - **Collaborative Scalability**: Architecture supports transition from individual to team-based development
 - **Resource Efficiency**: Pre-configured package environments reduce initialization overhead
-- **Technical Flexibility**: Multiple Docker variants accommodate diverse computational requirements
+- **Technical Flexibility**: Multiple Docker profiles accommodate diverse computational requirements
 - **Contemporary Standards**: Integration with current R ecosystem best practices (tidyverse, tidymodels)
 
 The analysis paradigm provides a complete framework for reproducible data science, from initial data exploration through final publication-ready results.

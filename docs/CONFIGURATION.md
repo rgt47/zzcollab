@@ -246,9 +246,9 @@ team:
 #=========================================================
 # DOCKER VARIANTS
 #=========================================================
-# Specify which Docker variants to build
+# Specify which Docker profiles to build
 
-variants:
+profiles:
   minimal:
     enabled: true             # Essential development (~800MB)
 
@@ -275,9 +275,9 @@ variants:
 #=========================================================
 
 build:
-  # Variant management
-  use_config_variants: true
-  variant_library: "variant_examples.yaml"
+  # Profile management
+  use_config_profiles: true
+  variant_library: "profiles.yaml"
 
   # Docker build settings
   docker:
@@ -308,7 +308,7 @@ collaboration:
 
   # Development environment
   development:
-    default_interface: "analysis"    # Which variant for new members
+    default_interface: "analysis"    # Which profile for new members
     default_build_mode: "standard"
 
   # Container settings
@@ -607,10 +607,10 @@ paradigms:
 
 ### Docker Variant Customization
 
-Define completely custom Docker variants:
+Define completely custom Docker profiles:
 
 ```yaml
-variants:
+profiles:
   custom_ml:
     base_image: "nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04"
     description: "GPU-accelerated machine learning"
@@ -940,7 +940,7 @@ sudo zzcollab --config set-system parameter value
 **Include in Git**:
 
 - `zzcollab.yaml` (project configuration)
-- `variant_examples.yaml` (if customized)
+- `profiles.yaml` (if customized)
 
 **Exclude from Git**:
 
@@ -971,8 +971,8 @@ build:
   docker:
     platform: "linux/amd64"  # Required for rocker/verse compatibility
 
-# RATIONALE: Enabling modeling variant for machine learning workflows
-variants:
+# RATIONALE: Enabling modeling profile for machine learning workflows
+profiles:
   modeling:
     enabled: true           # Team requires tidymodels and xgboost
 ```
@@ -1010,7 +1010,7 @@ zzcollab --config import < config-export.yaml
 
 - ZZCOLLAB User Guide: Comprehensive usage documentation
 - Build Modes Guide: Detailed build mode specifications
-- Variant System Guide: Docker variant customization
+- Profile System Guide: Docker profile customization
 
 ### Technical Specifications
 

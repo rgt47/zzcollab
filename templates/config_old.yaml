@@ -1,5 +1,5 @@
 # ZZCOLLAB Team Configuration
-# This file defines Docker variants and team settings for your zzcollab project.
+# This file defines Docker profiles and team settings for your zzcollab project.
 # Edit this file to customize your team's development environment.
 #
 # VARIANT CATEGORIES:
@@ -12,7 +12,7 @@
 # 1. Set `enabled: true` for variants you want to build
 # 2. Customize packages and system_deps as needed
 # 3. Choose your approach:
-#    a) Set `use_config_variants: true` below - uses this file automatically
+#    a) Set `use_config_profiles: true` below - uses this file automatically
 #    b) Use flag: zzcollab -i -t myteam -p myproject --variants-config config.yaml
 #    c) Legacy: zzcollab -i -t myteam -p myproject -B r-ver,rstudio
 
@@ -31,17 +31,17 @@ team:
 # DOCKER VARIANTS CONFIGURATION
 #=============================================================================
 # Define unlimited custom Docker environments for your team.
-# Each variant creates a Docker image: ${TEAM_NAME}/${PROJECT_NAME}core-{variant_name}:latest
+# Each profile creates a Docker image: ${TEAM_NAME}/${PROJECT_NAME}core-{profile_name}:latest
 
-variants:
+profiles:
   
   #---------------------------------------------------------------------------
-  # TEAM VARIANTS (Reference variant_examples.yaml for full definitions)
+  # TEAM VARIANTS (Reference profiles.yaml for full definitions)
   #---------------------------------------------------------------------------
   
   # Default variants enabled for new teams
-  # Definitions are automatically pulled from variant_examples.yaml
-  # Use ./add_variant.sh to browse and add more variants interactively
+  # Definitions are automatically pulled from profiles.yaml
+  # Use ./add_profile.sh to browse and add more variants interactively
   
   minimal:
     enabled: true    # Essential development environment (~800MB)
@@ -288,7 +288,7 @@ variants:
       - "zlib1g-dev"    # Compression library
       - "libbz2-dev"    # Compression library
       - "liblzma-dev"   # LZMA compression
-    enabled: false       # Set to true to build this variant
+    enabled: false       # Set to true to build this profile
     notes: "Migrated from ~/.zzcollab/config.yaml custom_modes"
   
   # Migrated from user config: Geospatial analysis workflow
@@ -315,7 +315,7 @@ variants:
       - "libudunits2-dev" # Units library
       - "netcdf-bin"    # NetCDF tools
       - "libxml2-dev"   # Required for XML parsing
-    enabled: false       # Set to true to build this variant
+    enabled: false       # Set to true to build this profile
     notes: "Migrated from ~/.zzcollab/config.yaml custom_modes"
 
   # Copy personal variants here and set enabled: true to build them
@@ -361,7 +361,7 @@ variants:
   #     - "libxml2-dev"
   #   enabled: true    # SET TO TRUE TO BUILD THIS TEAM IMAGE
   
-  # Example custom variant - uncomment and modify as needed
+  # Example custom profile - uncomment and modify as needed
   # custom_example:
   #   base_image: "rocker/r-ver:latest"  # REQUIRED: Docker base image
   #   description: "Custom environment for specific project needs"
@@ -375,7 +375,7 @@ variants:
   #     - "your_system_dependency_here"  # Add specific system libraries
   #   enabled: false
   #
-  # IMPORTANT NOTES FOR CUSTOM VARIANTS:
+  # IMPORTANT NOTES FOR CUSTOM PROFILES:
   # - base_image: Choose appropriate Docker base (rocker/r-ver, rocker/tidyverse, etc.)
   # - packages: Always include "renv" for reproducibility
   # - system_deps: Critical for R packages with compiled code or system dependencies
@@ -394,10 +394,10 @@ variants:
 
 build:
   # Use variants defined in this config file by default
-  use_config_variants: true   # If true, uses variants from this file instead of -B flag
+  use_config_profiles: true   # If true, uses variants from this file instead of -B flag
   
   # Default variants to build (only enabled variants with these names)
-  default_variants:
+  default_profiles:
     - "minimal"      # Standard rocker-based minimal environment
     - "analysis"     # Standard rocker-based analysis environment
     # Uncomment below for specialized environments:
@@ -423,7 +423,7 @@ build:
 
 development:
   # Default interface for team members
-  default_interface: "minimal"  # Which variant to use by default
+  default_interface: "minimal"  # Which profile to use by default
   
   # Shared development settings
   dotfiles:

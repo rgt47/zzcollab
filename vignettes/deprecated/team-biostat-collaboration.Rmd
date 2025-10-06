@@ -704,7 +704,7 @@ team:
   description: "Clinical trial biostatistics collaboration"
 
 # Biostatistics-optimized variants
-variants:
+profiles:
   biostatistics:
     enabled: true
     base_image: "rocker/verse:latest"
@@ -719,7 +719,7 @@ variants:
     description: "Clinical report generation environment"
 
 build:
-  use_config_variants: true
+  use_config_profiles: true
   parallel_builds: true
 
 collaboration:

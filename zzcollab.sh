@@ -600,7 +600,7 @@ validate_directory_for_setup_no_conflicts() {
 #=============================================================================
 
 # Function: handle_special_modes
-# Purpose: Handle init, build variant, help modes that exit early
+# Purpose: Handle init, build profile, help modes that exit early
 handle_special_modes() {
     # Handle initialization mode first
     if [[ "$INIT_MODE" == "true" ]]; then
@@ -619,11 +619,11 @@ handle_special_modes() {
         exit 0
     fi
     
-    # Handle build variant mode
-    if [[ "${BUILD_VARIANT_MODE:-false}" == "true" ]]; then
+    # Handle build profile mode
+    if [[ "${BUILD_PROFILE_MODE:-false}" == "true" ]]; then
         # Note: All modules including team_init are loaded in the main loading section below
-        # We just need to call the build variant function after modules are loaded
-        BUILD_VARIANT_DEFERRED=true
+        # We just need to call the build profile function after modules are loaded
+        BUILD_PROFILE_DEFERRED=true
     fi
     
     # Handle help and next-steps options for normal mode
@@ -697,10 +697,10 @@ handle_special_modes() {
         exit 0
     fi
     
-    # Handle deferred build variant execution (after all modules loaded)
-    if [[ "${BUILD_VARIANT_DEFERRED:-false}" == "true" ]]; then
-        # All modules are now loaded, call build variant function
-        build_additional_variant "$BUILD_VARIANT"
+    # Handle deferred build profile execution (after all modules loaded)
+    if [[ "${BUILD_PROFILE_DEFERRED:-false}" == "true" ]]; then
+        # All modules are now loaded, call build profile function
+        build_additional_profile "$BUILD_PROFILE"
         exit 0
     fi
 }
