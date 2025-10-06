@@ -359,37 +359,37 @@ build_team_images() {
         "r-ver")
             print_status "Step $step_counter: Building shell core image..."
             build_single_team_image "rocker/r-ver" "shell"
-            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}_core-shell:v1.0.0"
             ;;
         "rstudio")
             print_status "Step $step_counter: Building RStudio core image..."
             build_single_team_image "rocker/rstudio" "rstudio"
-            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:v1.0.0"
             ;;
         "verse")
             print_status "Step $step_counter: Building verse core image..."
             local verse_image
             verse_image=$(get_multiarch_base_image "verse")
             build_single_team_image "$verse_image" "verse"
-            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0"
+            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}_core-verse:v1.0.0"
             ;;
         "all")
             # Build all three variants (r-ver, rstudio, verse)
             print_status "Step $step_counter: Building shell core image..."
             build_single_team_image "rocker/r-ver" "shell"
-            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}core-shell:v1.0.0"
+            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}_core-shell:v1.0.0"
             
             ((step_counter++))
             print_status "Step $step_counter: Building RStudio core image..."
             build_single_team_image "rocker/rstudio" "rstudio"
-            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:v1.0.0"
+            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:v1.0.0"
             
             ((step_counter++))
             print_status "Step $step_counter: Building verse core image..."
             local verse_image
             verse_image=$(get_multiarch_base_image "verse")
             build_single_team_image "$verse_image" "verse"
-            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}core-verse:v1.0.0"
+            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}_core-verse:v1.0.0"
             ;;
         *)
             print_error "Invalid INIT_BASE_IMAGE: $INIT_BASE_IMAGE"
@@ -412,10 +412,10 @@ build_single_team_image() {
         --build-arg TEAM_NAME="$TEAM_NAME" \
         --build-arg PROJECT_NAME="$PROJECT_NAME" \
         --build-arg PACKAGE_MODE="$BUILD_MODE" \
-        -t "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" "$context"
+        -t "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" "$context"
 
-    docker tag "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" \
-        "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest"
+    docker tag "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" \
+        "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:latest"
 }
 
 # Function: push_team_images
@@ -444,8 +444,8 @@ push_team_images() {
         while IFS= read -r variant; do
             [[ -z "$variant" ]] && continue
             log_info "Pushing variant: $variant"
-            docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" || log_warn "Failed to push ${variant}:v1.0.0"
-            docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest" || log_warn "Failed to push ${variant}:latest"
+            docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" || log_warn "Failed to push ${variant}:v1.0.0"
+            docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:latest" || log_warn "Failed to push ${variant}:latest"
         done <<< "$enabled_variants"
     else
         # Legacy base image push
@@ -475,8 +475,8 @@ push_team_images() {
 # Arguments: $1 = variant name (e.g. shell, rstudio, verse)
 push_single_team_image() {
     local variant="$1"
-    docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0"
-    docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0"
+    docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:latest"
 }
 
 #=============================================================================
@@ -504,7 +504,7 @@ initialize_full_project() {
             base_variant="shell"  # Default to shell for personal development
             ;;
     esac
-    local ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}core-${base_variant}"
+    local ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}_core-${base_variant}"
     if [[ "$USE_DOTFILES" == true ]]; then
         if [[ "$DOTFILES_NODOT" == "true" ]]; then
             ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --dotfiles-nodot $DOTFILES_DIR"
@@ -544,7 +544,7 @@ setup_git_repository() {
     git commit -m "🎉 Initial research project setup
 
 - Complete zzcollab research compendium  
-- Team core images published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}core:v1.0.0
+- Team core images published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}_core:v1.0.0
 - Private repository protects unpublished research
 - CI/CD configured for automatic team image updates
 
@@ -595,8 +595,8 @@ create_github_repository() {
     echo "  zzcollab -t ${TEAM_NAME} -p ${PROJECT_NAME} -I shell"
     echo ""
     print_status "Team images available:"
-    echo "  ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
-    echo "  ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+    echo "  ${TEAM_NAME}/${PROJECT_NAME}_core-shell:latest"
+    echo "  ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:latest"
 }
 
 #=============================================================================
@@ -694,7 +694,7 @@ build_config_variant() {
     create_variant_dockerfile "$variant_name" "$base_image" "$packages" "$system_deps"
     
     # Build the Docker image
-    local image_name="${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}"
+    local image_name="${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}"
     print_status "  Building: $image_name:latest"
     
     if docker build -f "Dockerfile.variant.${variant_name}" \
@@ -868,7 +868,7 @@ build_additional_variant() {
     
     # Build the image using the detected dockerfile and build context
     build_single_team_image "$base_image" "$variant_name" "$dockerfile_path" "$build_context"
-    print_success "Built ${variant_name} core image: ${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}:v1.0.0"
+    print_success "Built ${variant_name} core image: ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
     
     # Ask if user wants to push to Docker Hub
     echo ""
@@ -877,8 +877,8 @@ build_additional_variant() {
         print_success "Pushed ${variant_name} image to Docker Hub"
     else
         print_status "Image built locally only. To push later, run:"
-        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}:v1.0.0"
-        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}core-${variant_name}:latest"
+        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
+        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:latest"
     fi
     
     print_success "Additional variant '${variant_name}' ready for use!"
@@ -988,13 +988,13 @@ EOF
     
     # List the created images
     if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"r-ver"* ]]; then
-        log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-shell:latest"
+        log_info "  ${TEAM_NAME}/${PROJECT_NAME}_core-shell:latest"
     fi
     if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"rstudio"* ]]; then
-        log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-rstudio:latest"
+        log_info "  ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:latest"
     fi
     if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"verse"* ]]; then
-        log_info "  ${TEAM_NAME}/${PROJECT_NAME}core-verse:latest"
+        log_info "  ${TEAM_NAME}/${PROJECT_NAME}_core-verse:latest"
     fi
     
     log_info ""
