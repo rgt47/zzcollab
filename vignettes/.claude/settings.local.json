@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit -m \"$(cat <<''EOF''\nFix -M (minimal) build mode validation\n\nAdded \"minimal\" to the build mode validation check in validate_cli_arguments().\nThe -M/--minimal flag was defined and documented but failed validation,\ncausing \"Unknown option\" errors.\n\nChanges:\n- modules/cli.sh:556: Added \"minimal\" to validation condition\n- modules/cli.sh:558: Updated error message to include \"minimal\" in valid modes\n- modules/config.sh:746-752: Added minimal case to get_docker_packages_for_mode()\n- modules/config.sh:795-801: Added minimal case to get_renv_packages_for_mode()\n\nBuild Modes (complete):\n- Minimal (-M): 3 packages (renv, remotes, here) ~30s\n- Fast (-F): 9 packages (development essentials) 2-3 min  \n- Standard (-S): 17 packages (balanced) 4-6 min [default]\n- Comprehensive (-C): 47+ packages (full ecosystem) 15-20 min\n\nFixed Issue:\n  Before: zzcollab -i -t rgt47 -p study -M  # Error: Unknown option ''-M''\n  After:  zzcollab -i -t rgt47 -p study -M  # Works correctly\n\nVerification:\n- Reinstalled zzcollab with ./install.sh\n- Tested: zzcollab -M --help (displays minimal mode correctly)\n- All 4 build modes now functional: -M, -F, -S, -C\n- Test suite: PASS 34, FAIL 0, WARN 1, SKIP 1\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Read(//Users/zenn/bin/zzcollab-support/templates/**)"
     ],
     "deny": [],
     "ask": []

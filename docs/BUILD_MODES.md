@@ -868,7 +868,7 @@ To downgrade from Comprehensive to Standard or Fast:
 
 - ZZCOLLAB User Guide: Comprehensive usage documentation
 - Configuration Guide: Advanced configuration options
-- Variant System Guide: Docker variant customization
+- Environment System Guide: Docker environment customization
 
 ### Technical Specifications
 

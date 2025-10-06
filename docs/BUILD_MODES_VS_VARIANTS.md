@@ -1,10 +1,10 @@
-# Build Modes vs Variants: Understanding the Two-Layer System
+# Build Modes vs Environments: Understanding the Two-Layer System
 
 ## The Key Distinction
 
-Build modes and variants serve different purposes in the zzcollab workflow. Understanding when and how each is used is essential for efficient development.
+Build modes and environments serve different purposes in the zzcollab workflow. Understanding when and how each is used is essential for efficient development.
 
-## Build Modes vs Variants - Different Purposes
+## Build Modes vs Environments - Different Purposes
 
 ### Build Modes (-M, -F, -S, -C)
 **Purpose**: Control which R packages get installed **during project development**
@@ -18,7 +18,7 @@ These affect the **project-specific packages** installed via `renv`:
 
 **When used**: During full project setup (NOT during `-i` team initialization)
 
-### Variants (minimal, analysis, modeling, etc.)
+### Environments (minimal, analysis, modeling, etc.)
 **Purpose**: Control which **base Docker image** and **pre-installed packages** the team uses
 
 These affect the **Docker image** that gets built and pushed to Docker Hub:
@@ -48,7 +48,7 @@ zzcollab -i -p my-project -M
 
 # What actually happens:
 # 1. Build mode "minimal" is saved to config
-# 2. Variants from config.yaml are built (minimal + analysis)
+# 2. Environments from config.yaml are built (minimal + analysis)
 # 3. Docker images pushed to Docker Hub
 # 4. Build mode (-M) is NOT applied yet
 ```
@@ -58,43 +58,43 @@ zzcollab -i -p my-project -M
 cd my-project
 
 # Now build mode DOES matter
-zzcollab -I analysis -M  # Use analysis variant + minimal build mode
+zzcollab -I analysis -M  # Use analysis environment + minimal build mode
 
 # What happens:
-# 1. Pulls rgt47/my-project_core-analysis (variant with tidyverse)
+# 1. Pulls rgt47/my-project_core-analysis (environment with tidyverse)
 # 2. Runs renv::install() with MINIMAL packages (3 packages)
-# 3. Final environment = tidyverse (from variant) + 3 packages (from build mode)
+# 3. Final environment = tidyverse (from environment) + 3 packages (from build mode)
 ```
 
 ## Why This Two-Layer Design?
 
 **Efficiency**:
-- Variants are **shared** across team (built once, used by everyone)
+- Environments are **shared** across team (built once, used by everyone)
 - Build modes are **per-developer** (each developer picks their package set)
 
 **Flexibility**:
-- Team provides base environments (variants)
+- Team provides base environments (environments)
 - Developers customize for their work (build modes)
 
 ## Practical Scenarios
 
 ### Scenario 1: Data Scientist
 ```bash
-# Use analysis variant (has tidyverse) + comprehensive mode (get all tools)
+# Use analysis environment (has tidyverse) + comprehensive mode (get all tools)
 zzcollab -t team -p project -I analysis -C
 
 # Final environment:
-# - From variant: tidyverse, ggplot2, dplyr (already in Docker)
+# - From environment: tidyverse, ggplot2, dplyr (already in Docker)
 # - From build mode: tidymodels, shiny, databases (installed via renv)
 ```
 
 ### Scenario 2: Package Developer
 ```bash
-# Use minimal variant (lightweight) + minimal mode (bare essentials)
+# Use minimal environment (lightweight) + minimal mode (bare essentials)
 zzcollab -t team -p project -I minimal -M
 
 # Final environment:
-# - From variant: devtools, testthat (already in Docker)
+# - From environment: devtools, testthat (already in Docker)
 # - From build mode: renv, remotes, here (installed via renv)
 # - Ultra-lightweight, fast
 ```
@@ -102,12 +102,12 @@ zzcollab -t team -p project -I minimal -M
 ### Scenario 3: Mixed Team
 ```bash
 # Team lead builds both variants
-zzcollab -i -p project -M  # Variants: minimal + analysis
+zzcollab -i -p project -M  # Environments: minimal + analysis
 
-# Developer 1 (package dev): minimal variant + minimal mode
+# Developer 1 (package dev): minimal environment + minimal mode
 zzcollab -t team -p project -I minimal -M
 
-# Developer 2 (data analysis): analysis variant + standard mode
+# Developer 2 (data analysis): analysis environment + standard mode
 zzcollab -t team -p project -I analysis -S
 
 # Same codebase, different environments!
@@ -118,17 +118,17 @@ zzcollab -t team -p project -I analysis -S
 **Variants** = What the **team** provides (Docker images on Docker Hub)
 **Build Modes** = What **you** add to your local environment (renv packages)
 
-The variant gives you a starting point, the build mode customizes from there.
+The environment gives you a starting point, the build mode customizes from there.
 
-## Docker Variants Explained
+## Docker Environments Explained
 
-Docker variants in zzcollab are **different pre-configured Docker environments** for different types of research work. Each variant has:
+Docker environments in zzcollab are **different pre-configured Docker environments** for different types of research work. Each environment has:
 - Different base Docker image
 - Different set of R packages pre-installed
 - Different system libraries
 - Different size/build time tradeoffs
 
-Think of variants as "flavors" of your research environment, optimized for different tasks.
+Think of environments as "flavors" of your research environment, optimized for different tasks.
 
 ### The Two Default Variants
 
@@ -156,7 +156,7 @@ docker run rgt47/penguins-bills_core-minimal
 docker run rgt47/penguins-bills_core-analysis
 ```
 
-### All Available Variants (14+)
+### All Available Environments (14+)
 
 **Standard Research** (6 variants):
 - `minimal` - Essential R packages only
@@ -180,11 +180,11 @@ docker run rgt47/penguins-bills_core-analysis
 - `rhub_fedora` - R-devel testing
 - `rhub_windows` - Windows compatibility
 
-### How Variants Work
+### How Environments Work
 
-1. **Template defines variants**: `variant_examples.yaml` has full specifications
+1. **Template defines variants**: `environments.yaml` has full specifications
 2. **Project config enables variants**: `config.yaml` sets which ones to build
-3. **Team initialization builds enabled variants**: `zzcollab -i` builds all enabled
+3. **Team initialization builds enabled environments**: `zzcollab -i` builds all enabled
 4. **Team members choose variant**: `zzcollab -I analysis` uses analysis variant
 
 ### Practical Example
@@ -221,7 +221,7 @@ When you run `renv::install()` with build mode packages:
 
 ### Example: Analysis Variant + Standard Build Mode
 
-**Analysis variant has:**
+**Analysis environment has:**
 - tidyverse (includes dplyr, ggplot2, tidyr, etc.)
 - janitor, scales, patchwork, gt, DT
 
@@ -232,11 +232,11 @@ When you run `renv::install()` with build mode packages:
 **What actually gets installed:**
 ```r
 # renv sees these are already available from Docker:
-# - dplyr ✓ (from tidyverse in variant)
-# - ggplot2 ✓ (from tidyverse in variant)
-# - tidyr ✓ (from tidyverse in variant)
-# - janitor ✓ (from variant)
-# - DT ✓ (from variant)
+# - dplyr ✓ (from tidyverse in environment)
+# - ggplot2 ✓ (from tidyverse in environment)
+# - tidyr ✓ (from tidyverse in environment)
+# - janitor ✓ (from environment)
+# - DT ✓ (from environment)
 
 # renv only installs:
 # - palmerpenguins (NEW)
@@ -256,24 +256,24 @@ The system lists packages to install, but renv itself is smart about checking wh
 
 **Good news**: renv's `install()` is smart enough to skip already-installed packages, so there's no **duplicate installation**.
 
-**Room for improvement**: The package lists could be **pre-filtered** to explicitly exclude variant packages, making the process faster and cleaner.
+**Room for improvement**: The package lists could be **pre-filtered** to explicitly exclude environment packages, making the process faster and cleaner.
 
 **In practice**: The overlap doesn't cause major issues because:
 - renv checks before installing (fast)
 - System libraries are reused (no duplication)
 - Only truly missing packages get installed
 
-So the system is smart enough to avoid reinstallation, though not yet optimized to avoid even checking for packages that are guaranteed to be in the variant.
+So the system is smart enough to avoid reinstallation, though not yet optimized to avoid even checking for packages that are guaranteed to be in the environment.
 
 ## Why Two Images Built by Default?
 
 When you run `zzcollab -i -p penguins-bills`, the system looks at the project's `config.yaml` (NOT your user config at `~/.zzcollab/config.yaml`).
 
-The project-level `config.yaml` is automatically created during team initialization and has two variants enabled by default:
+The project-level `config.yaml` is automatically created during team initialization and has two environments enabled by default:
 
 ```yaml
 # Created by zzcollab team initialization
-variants:
+environments:
   minimal:
     enabled: true    # Essential development environment (~800MB)
 
@@ -284,7 +284,7 @@ variants:
 This is why two images were built. The template for this file is in `templates/config.yaml` and includes:
 
 ```yaml
-variants:
+environments:
 
   #---------------------------------------------------------------------------
   # DEFAULT VARIANTS (Enabled by default for new teams)
@@ -292,11 +292,11 @@ variants:
 
   minimal:
     enabled: true    # Essential development environment (~800MB)
-    # Full definition in variant_examples.yaml
+    # Full definition in environments.yaml
 
   analysis:
     enabled: true    # Tidyverse analysis environment (~1.2GB)
-    # Full definition in variant_examples.yaml
+    # Full definition in environments.yaml
 ```
 
 ### Why These Defaults?
@@ -307,7 +307,7 @@ Having both `minimal` and `analysis` enabled gives teams flexibility:
 
 ### How to Change Defaults
 
-If you only want one variant, you have two options:
+If you only want one environment, you have two options:
 
 **Option 1: Edit project config.yaml before building**
 ```bash
@@ -315,7 +315,7 @@ zzcollab -i -p my-project  # Creates project directory with config.yaml
 cd my-project
 vim config.yaml  # Set analysis enabled: false
 cd ..
-# Then re-run initialization (or manually build variants)
+# Then re-run initialization (or manually build environments)
 ```
 
 **Option 2: Use legacy -B flag (bypasses config.yaml)**
@@ -327,7 +327,7 @@ zzcollab -i -p my-project -B r-ver  # Builds only shell variant
 
 1. `zzcollab -i -p penguins-bills` creates a `penguins-bills/config.yaml`
 2. That config has `minimal: enabled: true` and `analysis: enabled: true` by default
-3. Both variants get built and pushed to Docker Hub
-4. Team members can choose which variant to use: `zzcollab -I minimal` or `zzcollab -I analysis`
+3. Both environments get built and pushed to Docker Hub
+4. Team members can choose which environment to use: `zzcollab -I minimal` or `zzcollab -I analysis`
 
 This design allows teams to provide multiple environment options without requiring each team member to build their own Docker images.

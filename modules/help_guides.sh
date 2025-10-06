@@ -1170,7 +1170,7 @@ variants:
     enabled: true
 
 build:
-  use_config_variants: true
+  use_config_environments: true
   docker:
     platform: "auto"
 

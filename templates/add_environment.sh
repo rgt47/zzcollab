@@ -3,11 +3,11 @@
 # ZZCOLLAB VARIANT MANAGER
 ##############################################################################
 # 
-# PURPOSE: Interactive script to add variants to team config.yaml
-# USAGE:   ./add_variant.sh
+# PURPOSE: Interactive script to add environments to team config.yaml
+# USAGE:   ./add_environment.sh
 # 
-# This script helps teams easily discover and add Docker variants from the
-# variant library to their project's config.yaml file.
+# This script helps teams easily discover and add Docker environments from the
+# environment library to their project's config.yaml file.
 # Version: 1.0.0
 ##############################################################################
 
@@ -23,7 +23,7 @@ readonly CYAN='\033[0;36m'
 readonly NC='\033[0m' # No Color
 
 # Files
-readonly VARIANT_EXAMPLES="variant_examples.yaml"
+readonly VARIANT_EXAMPLES="environments.yaml"
 readonly CONFIG_FILE="config.yaml"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -66,13 +66,13 @@ check_files() {
 }
 
 # Function: get_variant_list
-# Purpose: Extract variant names and descriptions from variant_examples.yaml
+# Purpose: Extract environment names and descriptions from environments.yaml
 get_variant_list() {
     yq eval 'keys' "$VARIANT_EXAMPLES" | grep -v "^-" | sort
 }
 
 # Function: show_variant_menu
-# Purpose: Display interactive menu of available variants
+# Purpose: Display interactive menu of available environments
 show_variant_menu() {
     echo ""
     log_info "🐳 ZZCOLLAB VARIANT LIBRARY"
@@ -83,7 +83,7 @@ show_variant_menu() {
     local descriptions=()
     local sizes=()
     
-    # Read variant information
+    # Read environment information
     while IFS= read -r variant; do
         if [[ -n "$variant" ]]; then
             variants+=("$variant")
@@ -130,57 +130,57 @@ show_variant_menu() {
 }
 
 # Function: get_variant_yaml
-# Purpose: Generate simplified YAML for config.yaml (references variant_examples.yaml)
+# Purpose: Generate simplified YAML for config.yaml (references environments.yaml)
 get_variant_yaml() {
-    local variant_name="$1"
+    local environment_name="$1"
     
-    # NEW APPROACH: Just enable the variant, definition comes from variant_examples.yaml
-    local description=$(yq eval ".${variant_name}.description" "$VARIANT_EXAMPLES")
-    local size=$(yq eval ".${variant_name}.size // \"~1GB\"" "$VARIANT_EXAMPLES")
+    # NEW APPROACH: Just enable the environment, definition comes from environments.yaml
+    local description=$(yq eval ".${environment_name}.description" "$VARIANT_EXAMPLES")
+    local size=$(yq eval ".${environment_name}.size // \"~1GB\"" "$VARIANT_EXAMPLES")
     
     cat << EOF
-${variant_name}:
+${environment_name}:
     enabled: true    # ${description} (${size})
-    # Full definition in variant_examples.yaml
+    # Full definition in environments.yaml
 EOF
 }
 
 # Function: add_variant_to_config
-# Purpose: Add selected variant to config.yaml
+# Purpose: Add selected environment to config.yaml
 add_variant_to_config() {
-    local variant_name="$1"
+    local environment_name="$1"
     
-    log_info "Adding variant '$variant_name' to $CONFIG_FILE..."
+    log_info "Adding environment '$environment_name' to $CONFIG_FILE..."
     
-    # Check if variant already exists
-    if yq eval ".variants.${variant_name}" "$CONFIG_FILE" >/dev/null 2>&1; then
-        log_warning "Variant '$variant_name' already exists in $CONFIG_FILE"
-        read -p "Overwrite existing variant? [y/N] " -n 1 -r
+    # Check if environment already exists
+    if yq eval ".variants.${environment_name}" "$CONFIG_FILE" >/dev/null 2>&1; then
+        log_warning "Variant '$environment_name' already exists in $CONFIG_FILE"
+        read -p "Overwrite existing environment? [y/N] " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_info "Skipping variant addition"
+            log_info "Skipping environment addition"
             return 0
         fi
     fi
     
-    # Get the variant YAML
+    # Get the environment YAML
     local variant_yaml
-    variant_yaml=$(get_variant_yaml "$variant_name")
+    variant_yaml=$(get_variant_yaml "$environment_name")
     
     # Create a temporary file with the new variant
     local temp_file=$(mktemp)
     {
         echo ""
-        echo "  # Added by add_variant.sh - $(date)"
+        echo "  # Added by add_environment.sh - $(date)"
         echo "  $variant_yaml" | sed 's/^/  /'
     } > "$temp_file"
     
-    # Add to config.yaml in the variants section
-    if grep -q "^variants:" "$CONFIG_FILE"; then
+    # Add to config.yaml in the environments section
+    if grep -q "^environments:" "$CONFIG_FILE"; then
         # Insert after the last variant
         local last_variant_line=$(grep -n "^  [a-zA-Z].*:" "$CONFIG_FILE" | tail -1 | cut -d: -f1)
         if [[ -n "$last_variant_line" ]]; then
-            # Find the end of the last variant (next section or end of file)
+            # Find the end of the last environment (next section or end of file)
             local insert_line=$last_variant_line
             while [[ $insert_line -lt $(wc -l < "$CONFIG_FILE") ]]; do
                 ((insert_line++))
@@ -193,7 +193,7 @@ add_variant_to_config() {
                 fi
             done
             
-            # Insert the variant
+            # Insert the environment
             {
                 head -n "$insert_line" "$CONFIG_FILE"
                 cat "$temp_file"
@@ -201,22 +201,22 @@ add_variant_to_config() {
             } > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
         fi
     else
-        log_error "No 'variants:' section found in $CONFIG_FILE"
+        log_error "No 'environments:' section found in $CONFIG_FILE"
         rm "$temp_file"
         return 1
     fi
     
     rm "$temp_file"
-    log_success "Added variant '$variant_name' to $CONFIG_FILE"
+    log_success "Added environment '$environment_name' to $CONFIG_FILE"
     
     # Show next steps
     echo ""
     log_info "🚀 NEXT STEPS:"
-    log_info "1. Review the variant configuration in $CONFIG_FILE"
+    log_info "1. Review the environment configuration in $CONFIG_FILE"
     log_info "2. Customize packages or system dependencies if needed"
     log_info "3. Build the team images:"
     log_info "   zzcollab --variants-config $CONFIG_FILE"
-    log_info "4. Or if use_config_variants: true is set:"
+    log_info "4. Or if use_config_environments: true is set:"
     log_info "   zzcollab -i -t TEAM -p PROJECT"
 }
 
@@ -240,7 +240,7 @@ main() {
     while true; do
         show_variant_menu
         
-        read -p "Enter variant number (1-$((${#variants[@]} + 1))): " choice
+        read -p "Enter environment number (1-$((${#variants[@]} + 1))): " choice
         
         # Validate input
         if ! [[ "$choice" =~ ^[0-9]+$ ]] || [[ "$choice" -lt 1 ]] || [[ "$choice" -gt $((${#variants[@]} + 1)) ]]; then
@@ -250,16 +250,16 @@ main() {
         
         # Handle exit
         if [[ "$choice" -eq $((${#variants[@]} + 1)) ]]; then
-            log_info "Exiting variant manager"
+            log_info "Exiting environment manager"
             break
         fi
         
         # Get selected variant
         local selected_variant="${variants[$((choice - 1))]}"
         
-        # Show variant details
+        # Show environment details
         echo ""
-        log_info "Selected variant: $selected_variant"
+        log_info "Selected environment: $selected_variant"
         local description=$(yq eval ".${selected_variant}.description" "$VARIANT_EXAMPLES")
         local category=$(yq eval ".${selected_variant}.category // \"unknown\"" "$VARIANT_EXAMPLES")
         local size=$(yq eval ".${selected_variant}.size // \"~1GB\"" "$VARIANT_EXAMPLES")
@@ -274,11 +274,11 @@ main() {
         fi
         
         echo ""
-        read -p "Add this variant to your team config? [Y/n] " -n 1 -r
+        read -p "Add this environment to your team config? [Y/n] " -n 1 -r
         echo
         
         if [[ $REPLY =~ ^[Nn]$ ]]; then
-            log_info "Skipping variant addition"
+            log_info "Skipping environment addition"
             continue
         fi
         

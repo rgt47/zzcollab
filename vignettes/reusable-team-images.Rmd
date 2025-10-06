@@ -121,7 +121,7 @@ zzcollab -i -t mylab -p baseimage -S -B rstudio -d ~/dotfiles
 zzcollab -i -t mylab -p baseimage -F -B rstudio -d ~/dotfiles
 ```
 
-**Multiple interface variants:**
+**Multiple interface environments:**
 ```bash
 # Shell + RStudio + Verse (publishing workflow)
 zzcollab -i -t mylab -p baseimage -C -B all -d ~/dotfiles
@@ -208,7 +208,7 @@ zzcollab -i -t genomicslab -p labbase -C -B rstudio -d ~/dotfiles
 
 # Optionally add specialized variant
 cd /path/to/zzcollab
-./add_variant.sh
+./add_environment.sh
 # Select: bioinformatics variant
 # Builds genomicslab/labbasecore-rstudio with Bioconductor packages
 ```
@@ -227,7 +227,7 @@ cd rnaseq-analysis
 zzcollab -t genomicslab -p rnaseq-analysis -I rstudio -d ~/dotfiles
 make docker-rstudio
 
-# Researcher 3: New variant calling project
+# Researcher 3: New environment calling project
 mkdir variant-calling && cd variant-calling
 zzcollab -t genomicslab -p variant-calling -I rstudio -d ~/dotfiles
 make docker-rstudio

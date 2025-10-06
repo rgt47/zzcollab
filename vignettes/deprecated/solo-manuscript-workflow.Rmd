@@ -371,9 +371,9 @@ collaboration:
     default_visibility: "private"
 
 build:
-  use_config_variants: true
+  use_config_environments: true
 
-variants:
+environments:
   manuscript:
     enabled: true
     base_image: "rocker/verse:latest"

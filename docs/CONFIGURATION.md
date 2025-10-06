@@ -244,11 +244,11 @@ team:
   created: "2024-01-15"
 
 #=========================================================
-# DOCKER VARIANTS
+# DOCKER ENVIRONMENTS
 #=========================================================
-# Specify which Docker variants to build
+# Specify which Docker environments to build
 
-variants:
+environments:
   minimal:
     enabled: true             # Essential development (~800MB)
 
@@ -276,8 +276,8 @@ variants:
 
 build:
   # Variant management
-  use_config_variants: true
-  variant_library: "variant_examples.yaml"
+  use_config_environments: true
+  environment_library: "environments.yaml"
 
   # Docker build settings
   docker:
@@ -308,7 +308,7 @@ collaboration:
 
   # Development environment
   development:
-    default_interface: "analysis"    # Which variant for new members
+    default_interface: "analysis"    # Which environment for new members
     default_build_mode: "standard"
 
   # Container settings
@@ -607,10 +607,10 @@ paradigms:
 
 ### Docker Variant Customization
 
-Define completely custom Docker variants:
+Define completely custom Docker environments:
 
 ```yaml
-variants:
+environments:
   custom_ml:
     base_image: "nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04"
     description: "GPU-accelerated machine learning"
@@ -940,7 +940,7 @@ sudo zzcollab --config set-system parameter value
 **Include in Git**:
 
 - `zzcollab.yaml` (project configuration)
-- `variant_examples.yaml` (if customized)
+- `environments.yaml` (if customized)
 
 **Exclude from Git**:
 
@@ -971,8 +971,8 @@ build:
   docker:
     platform: "linux/amd64"  # Required for rocker/verse compatibility
 
-# RATIONALE: Enabling modeling variant for machine learning workflows
-variants:
+# RATIONALE: Enabling modeling environment for machine learning workflows
+environments:
   modeling:
     enabled: true           # Team requires tidymodels and xgboost
 ```
@@ -1010,7 +1010,7 @@ zzcollab --config import < config-export.yaml
 
 - ZZCOLLAB User Guide: Comprehensive usage documentation
 - Build Modes Guide: Detailed build mode specifications
-- Variant System Guide: Docker variant customization
+- Environment System Guide: Docker environment customization
 
 ### Technical Specifications
 
