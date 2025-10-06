@@ -230,7 +230,7 @@ setup_team_dockerfile() {
                 -e "s/\${AUTHOR_EMAIL}/${AUTHOR_EMAIL:-team@example.com}/g" \
                 -e "s/\${CREATION_DATE}/$(date -u +%Y-%m-%dT%H:%M:%SZ)/g" \
                 "$config_template" > ./config.yaml
-            print_success "Created config.yaml with predefined variants"
+            print_success "Created config.yaml with predefined profiles"
 
             # Copy profiles.yaml library if it exists
             local profile_library="${TEMPLATES_DIR}/profiles.yaml"
@@ -244,14 +244,14 @@ setup_team_dockerfile() {
                 local use_config_profiles
                 use_config_profiles=$(yq eval '.build.use_config_profiles // false' ./config.yaml 2>/dev/null)
                 if [[ "$use_config_profiles" == "true" ]]; then
-                    print_status "🎯 Config variants enabled by default - will use config.yaml for building"
+                    print_status "🎯 Config profiles enabled by default - will use config.yaml for building"
                     USE_CONFIG_PROFILES=true
                     PROFILES_CONFIG="./config.yaml"
                 else
-                    print_status "💡 Edit config.yaml to customize variants (set use_config_profiles: true to enable)"
+                    print_status "💡 Edit config.yaml to customize profiles (set use_config_profiles: true to enable)"
                 fi
             else
-                print_status "💡 Edit config.yaml to customize variants or install yq for automatic detection"
+                print_status "💡 Edit config.yaml to customize profiles or install yq for automatic detection"
             fi
         else
             print_error "Config template not found: $config_template"
@@ -262,7 +262,7 @@ setup_team_dockerfile() {
         local use_config_profiles
         use_config_profiles=$(yq eval '.build.use_config_profiles // false' ./config.yaml 2>/dev/null)
         if [[ "$use_config_profiles" == "true" ]]; then
-            print_status "🎯 Detected config.yaml with use_config_profiles: true - enabling config-based variants"
+            print_status "🎯 Detected config.yaml with use_config_profiles: true - enabling config-based profiles"
             USE_CONFIG_PROFILES=true
             PROFILES_CONFIG="./config.yaml"
         fi
@@ -337,17 +337,17 @@ EOF
 build_team_images() {
     local step_counter=4
     
-    # Check if using config-based variants
+    # Check if using config-based profiles
     if [[ "${USE_CONFIG_PROFILES:-false}" == "true" ]]; then
-        print_status "Step $step_counter: Building variants from configuration..."
+        print_status "Step $step_counter: Building profiles from configuration..."
         
         # Default to config.yaml if no specific file provided
         local config_file="${PROFILES_CONFIG:-config.yaml}"
         
         if parse_config_profiles "$config_file"; then
-            print_success "✅ All configured variants built successfully"
+            print_success "✅ All configured profiles built successfully"
         else
-            print_error "❌ Failed to build some configured variants"
+            print_error "❌ Failed to build some configured profiles"
             return 1
         fi
         return 0
@@ -428,22 +428,22 @@ push_team_images() {
 
     print_status "Step $step_counter: Pushing images to Docker Hub..."
 
-    # Check if we're using config-based variants
+    # Check if we're using config-based profiles
     if [[ -f "./config.yaml" ]] && grep -q "use_config_profiles: true" ./config.yaml 2>/dev/null; then
-        log_info "Pushing variant images from config.yaml..."
+        log_info "Pushing profile images from config.yaml..."
 
-        # Get enabled variants from config.yaml
+        # Get enabled profiles from config.yaml
         local enabled_variants=$(yq eval '.profiles | to_entries | .[] | select(.value.enabled == true) | .key' ./config.yaml 2>/dev/null)
 
         if [[ -z "$enabled_variants" ]]; then
-            log_warn "No enabled variants found in config.yaml"
+            log_warn "No enabled profiles found in config.yaml"
             return 0
         fi
 
         # Push each enabled variant
         while IFS= read -r variant; do
             [[ -z "$variant" ]] && continue
-            log_info "Pushing variant: $variant"
+            log_info "Pushing profile: $variant"
             docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" || log_warn "Failed to push ${variant}:v1.0.0"
             docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:latest" || log_warn "Failed to push ${variant}:latest"
         done <<< "$enabled_variants"
@@ -622,19 +622,19 @@ parse_config_profiles() {
         return 1
     fi
     
-    print_status "📋 Parsing variants from $config_file..."
+    print_status "📋 Parsing profiles from $config_file..."
     
-    # Get list of enabled variants
+    # Get list of enabled profiles
     local enabled_variants
     enabled_variants=$(yq eval '.profiles | to_entries | map(select(.value.enabled == true)) | .[].key' "$config_file")
     
     if [[ -z "$enabled_variants" ]]; then
-        print_warning "No enabled variants found in $config_file"
-        print_status "💡 Set 'enabled: true' for variants you want to build"
+        print_warning "No enabled profiles found in $config_file"
+        print_status "💡 Set 'enabled: true' for profiles you want to build"
         return 1
     fi
     
-    print_status "Found enabled variants: $(echo "$enabled_variants" | tr '\n' ' ')"
+    print_status "Found enabled profiles: $(echo "$enabled_variants" | tr '\n' ' ')"
     
     # Build each enabled variant
     echo "$enabled_variants" | while read -r profile_name; do
@@ -649,7 +649,7 @@ build_config_profile() {
     local config_file="$1"
     local profile_name="$2"
     
-    print_status "🐳 Building variant: $profile_name"
+    print_status "🐳 Building profile: $profile_name"
     
     # NEW: Check if variant has full definition or just enabled flag
     local has_full_definition
@@ -797,7 +797,7 @@ build_additional_profile() {
     done < <(parse_profile_list "$profile_input" 2>/dev/null || echo "$profile_input")
 
     if [[ ${#variants[@]} -eq 0 ]]; then
-        print_error "No variants specified"
+        print_error "No profiles specified"
         exit 1
     fi
 
@@ -815,7 +815,7 @@ build_additional_profile() {
                 working_dir=".."
             else
                 print_error "❌ config.yaml not found in parent directory!"
-                print_error "The -V flag requires config.yaml for variant definitions."
+                print_error "The -V flag requires config.yaml for profile definitions."
                 exit 1
             fi
         else
@@ -852,8 +852,8 @@ build_additional_profile() {
         fi
     fi
 
-    print_status "Building additional variants for: $TEAM_NAME/$PROJECT_NAME"
-    print_status "Variants: ${variants[*]}"
+    print_status "Building additional profiles for: $TEAM_NAME/$PROJECT_NAME"
+    print_status "Profiles: ${variants[*]}"
     echo ""
 
     # Enable and build each variant
@@ -890,7 +890,7 @@ build_additional_profile() {
         echo ""
     done
 
-    print_success "✅ All variants processed successfully!"
+    print_success "✅ All profiles processed successfully!"
 }
 
 #=============================================================================
@@ -908,7 +908,7 @@ run_team_initialization() {
         
         # Check if user is trying to add variants (common mistake)
         if [[ -n "${INIT_BASE_IMAGE:-}" ]] && [[ "${INIT_BASE_IMAGE}" != "r-ver" ]]; then
-            log_error "🔍 To add additional Docker variants (${INIT_BASE_IMAGE}), use:"
+            log_error "🔍 To add additional Docker profiles (${INIT_BASE_IMAGE}), use:"
             log_error "   cd .. && zzcollab -V ${INIT_BASE_IMAGE}    # Add variant from parent directory"
             log_error ""
         fi
@@ -919,7 +919,7 @@ run_team_initialization() {
         log_error "   zzcollab -I rstudio   # With RStudio interface"
         log_error ""
         log_error "💡 The -i flag is only for initial team setup, not project completion."
-        log_error "💡 Use -V flag to add Docker variants after initial setup."
+        log_error "💡 Use -V flag to add Docker profiles after initial setup."
         exit 1
     fi
     
@@ -969,12 +969,12 @@ EOF
     setup_team_dockerfile
     create_basic_files
 
-    # Interactive variant selection if using config-based variants
+    # Interactive variant selection if using config-based profiles
     if [[ "${USE_CONFIG_PROFILES:-false}" == "true" ]]; then
         print_status ""
         print_status "📝 Configuration file created: config.yaml"
         print_status ""
-        print_status "Current enabled variants (set to build Docker images):"
+        print_status "Current enabled profiles (set to build Docker images):"
         if command -v yq >/dev/null 2>&1; then
             yq eval '.profiles | to_entries | map(select(.value.enabled == true)) | .[] | "  - " + .key' config.yaml 2>/dev/null || echo "  - Unable to parse variants"
         else
@@ -982,8 +982,8 @@ EOF
             echo "  - analysis (default)"
         fi
         print_status ""
-        print_status "💡 You can edit config.yaml now to enable/disable variants before building."
-        print_status "💡 To add variants interactively, run: ./add_variant.sh"
+        print_status "💡 You can edit config.yaml now to enable/disable profiles before building."
+        print_status "💡 To add profiles interactively, run: ./add_profile.sh"
         print_status ""
 
         if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
@@ -992,7 +992,7 @@ EOF
 
             if [[ "$response" =~ ^[Yy] ]]; then
                 print_status "Please edit config.yaml and press Enter when ready to continue..."
-                print_status "(Set 'enabled: true' for variants you want to build)"
+                print_status "(Set 'enabled: true' for profiles you want to build)"
 
                 # Open editor if available
                 if [[ -n "${EDITOR:-}" ]]; then
