@@ -959,6 +959,49 @@ EOF
     create_project_structure
     setup_team_dockerfile
     create_basic_files
+
+    # Interactive variant selection if using config-based variants
+    if [[ "${USE_CONFIG_VARIANTS:-false}" == "true" ]]; then
+        print_status ""
+        print_status "📝 Configuration file created: config.yaml"
+        print_status ""
+        print_status "Current enabled variants (set to build Docker images):"
+        if command -v yq >/dev/null 2>&1; then
+            yq eval '.variants | to_entries | map(select(.value.enabled == true)) | .[] | "  - " + .key' config.yaml 2>/dev/null || echo "  - Unable to parse variants"
+        else
+            echo "  - minimal (default)"
+            echo "  - analysis (default)"
+        fi
+        print_status ""
+        print_status "💡 You can edit config.yaml now to enable/disable variants before building."
+        print_status "💡 To add variants interactively, run: ./add_variant.sh"
+        print_status ""
+
+        if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
+            echo -n "Do you want to edit config.yaml before building? (y/n): "
+            read -r response
+
+            if [[ "$response" =~ ^[Yy] ]]; then
+                print_status "Please edit config.yaml and press Enter when ready to continue..."
+                print_status "(Set 'enabled: true' for variants you want to build)"
+
+                # Open editor if available
+                if [[ -n "${EDITOR:-}" ]]; then
+                    $EDITOR config.yaml
+                elif command -v vim >/dev/null 2>&1; then
+                    vim config.yaml
+                elif command -v nano >/dev/null 2>&1; then
+                    nano config.yaml
+                else
+                    print_status "No editor found. Edit config.yaml manually and press Enter..."
+                fi
+
+                echo -n "Press Enter to continue with building..."
+                read -r
+            fi
+        fi
+    fi
+
     build_team_images
     push_team_images
     
