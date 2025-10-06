@@ -418,32 +418,55 @@ build_single_team_image() {
         "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest"
 }
 
-# Function: push_team_images  
+# Function: push_team_images
 # Purpose: Push team images to Docker Hub based on what was built
 push_team_images() {
     local step_counter=5
     if [[ "$INIT_BASE_IMAGE" == "all" ]]; then
         step_counter=7  # Adjust for three builds
     fi
-    
+
     print_status "Step $step_counter: Pushing images to Docker Hub..."
-    
-    case "$INIT_BASE_IMAGE" in
-        "r-ver")
-            push_single_team_image "shell"
-            ;;
-        "rstudio")
-            push_single_team_image "rstudio"
-            ;;
-        "verse")
-            push_single_team_image "verse"
-            ;;
-        "all")
-            push_single_team_image "shell"
-            push_single_team_image "rstudio"
-            push_single_team_image "verse"
-            ;;
-    esac
+
+    # Check if we're using config-based variants
+    if [[ -f "./config.yaml" ]] && grep -q "use_config_variants: true" ./config.yaml 2>/dev/null; then
+        log_info "Pushing variant images from config.yaml..."
+
+        # Get enabled variants from config.yaml
+        local enabled_variants=$(yq eval '.variants | to_entries | .[] | select(.value.enabled == true) | .key' ./config.yaml 2>/dev/null)
+
+        if [[ -z "$enabled_variants" ]]; then
+            log_warn "No enabled variants found in config.yaml"
+            return 0
+        fi
+
+        # Push each enabled variant
+        while IFS= read -r variant; do
+            [[ -z "$variant" ]] && continue
+            log_info "Pushing variant: $variant"
+            docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:v1.0.0" || log_warn "Failed to push ${variant}:v1.0.0"
+            docker push "${TEAM_NAME}/${PROJECT_NAME}core-${variant}:latest" || log_warn "Failed to push ${variant}:latest"
+        done <<< "$enabled_variants"
+    else
+        # Legacy base image push
+        case "$INIT_BASE_IMAGE" in
+            "r-ver")
+                push_single_team_image "shell"
+                ;;
+            "rstudio")
+                push_single_team_image "rstudio"
+                ;;
+            "verse")
+                push_single_team_image "verse"
+                ;;
+            "all")
+                push_single_team_image "shell"
+                push_single_team_image "rstudio"
+                push_single_team_image "verse"
+                ;;
+        esac
+    fi
+
     print_success "Pushed all images to Docker Hub"
 }
 
