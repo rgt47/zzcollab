@@ -4,7 +4,8 @@
       "Read(//Users/zenn/bin/zzcollab-support/templates/**)",
       "Bash(git revert:*)",
       "Bash(git stash:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/penguin-bills/**)"
     ],
     "deny": [],
     "ask": []
