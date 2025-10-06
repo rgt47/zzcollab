@@ -255,7 +255,7 @@ Rscript -e 'renv::snapshot()'
 
 Still inside the Docker container (from `make docker-zsh`), add tests for computational correctness:
 
-```{r eval=TRUE}
+```{r eval=FALSE}
 # Initialize testing infrastructure
 usethis::use_testthat()
 cat("#' Create scatter plot of bill dimensions
