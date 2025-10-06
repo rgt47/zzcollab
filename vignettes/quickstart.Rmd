@@ -91,66 +91,65 @@ zzcollab --config set auto-github "true"
 - No need to specify `-t`, `-F`, `-D`, or `-G` flags repeatedly
 - Change defaults anytime with `zzcollab --config set`
 
-## Step 2: Create Project with All 5 Levels (3-4 minutes)
+## Step 2: Create Complete Project (3-4 minutes)
 
-Create a fully reproducible project in two steps:
-
-### Step 2a: Create Team Docker Images (2-3 minutes)
+Create a fully reproducible project in one command:
 
 ```bash
-# Create and push Docker team images
-# All parameters come from Step 1 config (team-name, build-mode, dotfiles-dir)
+# Create complete project with Docker images, GitHub repo, and full structure
+# All parameters come from Step 1 config (team-name, build-mode, dotfiles-dir, auto-github)
 zzcollab -i -p penguin-bills
 
 # Only flag needed:
-# -i: Initialize team Docker images
+# -i: Initialize complete project (team images + project structure + GitHub)
 # -p: Project name (only thing that changes per project)
 #
 # These come from config (set in Step 1):
 # -t rgt47: from team-name config
 # -F: from build-mode config (fast)
 # -D ~/dotfiles: from dotfiles-dir config
+# -G: from auto-github config (true)
 ```
 
 **What this does:**
 1. Creates project directory `penguin-bills/`
 2. Builds Docker team images with R + essential packages (9 packages, fast mode)
 3. Pushes images to Docker Hub for team sharing
+4. Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
+5. Creates GitHub repository automatically (public by default)
+6. Sets up CI/CD workflows for automated testing
+7. Initializes renv for dependency tracking
 
-### Step 2b: Complete Project Setup with GitHub (1 minute)
+**Default Docker Profiles Created:**
+- `minimal` profile: Essential development packages (~800MB)
+- `analysis` profile: Tidyverse + data analysis tools (~1.2GB)
+
+**Alternative: Interactive Profile Selection**
+
+If you want to customize which Docker profiles to build (bioinformatics,
+geospatial, Alpine, etc.), use the interactive approach:
 
 ```bash
-# Navigate to project directory
-cd penguin-bills
+# Create project directory first
+mkdir penguin-bills && cd penguin-bills
 
-# Complete full project setup with GitHub integration
-# Almost everything comes from config or Step 2a files
-zzcollab -I shell
+# Initialize with interactive profile selection
+zzcollab -i -p penguin-bills
 
-# Only flag needed:
-# -I shell: Use shell/R console interface
-#
-# These come from config (set in Step 1):
-# -G: from auto-github config (true)
-#
-# These are inferred from Step 2a files:
-# - Team name: from DESCRIPTION or config.yaml
-# - Project name: from directory name or DESCRIPTION
-# - Build mode: from config.yaml
-# - Dotfiles: from .zshrc_docker presence
+# Browse and select from 14+ specialized profiles
+./add_profile.sh
+
+# Then complete setup
+zzcollab -p penguin-bills
 ```
-
-**What this does:**
-1. Creates complete project structure (R/, analysis/, tests/, etc.)
-2. Creates GitHub repository automatically (public by default)
-3. Sets up CI/CD workflows for automated testing
-4. Initializes renv for dependency tracking
 
 ## Step 3: Set Repository to Private (30 seconds)
 
 ```bash
+# Navigate to project directory (if not already there)
+cd penguin-bills
+
 # Make repository private using GitHub CLI
-# (Already in penguin-bills/ directory from Step 2b)
 gh repo edit --visibility private
 ```
 
@@ -527,11 +526,15 @@ Share your private repository:
 # Add collaborator
 gh repo edit --add-collaborator username
 
-# Team member joins
+# Team member joins (uses same team images from Docker Hub)
 git clone https://github.com/rgt47/penguin-bills.git
 cd penguin-bills
+
+# Team member pulls your Docker images and sets up project
 zzcollab -t rgt47 -p penguin-bills -I shell
-make docker-zsh  # Identical environment
+
+# Enter identical development environment
+make docker-zsh
 ```
 
 ## Publish Results
@@ -556,7 +559,7 @@ gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 
 # Or disable auto-github in config and create later
 zzcollab --config set auto-github "false"
-zzcollab -I shell  # Complete setup without GitHub
+zzcollab -i -p penguin-bills  # Complete setup without GitHub
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 ```
 
@@ -566,12 +569,10 @@ gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 # Check Docker daemon running
 docker info
 
-# Clean rebuild (two-step process using config defaults)
+# Clean rebuild (uses config defaults)
 docker system prune
 rm -rf penguin-bills  # Remove failed directory
-zzcollab -i -p penguin-bills  # Uses config: team-name, build-mode, dotfiles-dir
-cd penguin-bills
-zzcollab -I shell  # Uses config: auto-github; infers: team, project, build-mode
+zzcollab -i -p penguin-bills  # Uses config: team-name, build-mode, dotfiles-dir, auto-github
 ```
 
 ## Test Failures
@@ -597,20 +598,62 @@ Rscript validate_package_environment.R --quiet --fail-on-issues
 make docker-test
 ```
 
+# Customizing Docker Profiles
+
+## View Available Profiles
+
+```bash
+# Browse 14+ specialized profiles interactively
+cd penguin-bills
+./add_profile.sh
+
+# Available categories:
+# - Standard Research: minimal, analysis, modeling, publishing
+# - Specialized Domains: bioinformatics, geospatial
+# - Lightweight Alpine: alpine_minimal, alpine_analysis, hpc_alpine
+# - R-Hub Testing: rhub_ubuntu, rhub_fedora, rhub_windows
+```
+
+## Add Specialized Profile
+
+```bash
+# Example: Add bioinformatics profile for genomics work
+./add_profile.sh
+# Select "bioinformatics" from menu
+
+# Edit config.yaml to enable it
+vim config.yaml
+# Set enabled: true for bioinformatics profile
+
+# Rebuild team images with new profile
+zzcollab --profiles-config config.yaml
+```
+
+## Profile vs Build Mode
+
+**Docker Profiles** (minimal, analysis, modeling, etc.):
+- Control which **Docker base image** and **pre-installed packages** the team uses
+- Shared by entire team via Docker Hub
+- Examples: bioinformatics (Bioconductor), geospatial (sf/terra), alpine_minimal (CI/CD)
+
+**Build Modes** (fast, standard, comprehensive):
+- Control which **packages** are installed in your local renv
+- Personal choice per developer
+- Examples: fast (9 packages), standard (17 packages), comprehensive (47 packages)
+
 # Time Breakdown
 
 - **Step 1** (Configuration): 30 seconds
-- **Step 2a** (Team images): 2-3 minutes
-- **Step 2b** (Full setup + GitHub): 1 minute
+- **Step 2** (Complete project creation): 3-4 minutes
 - **Step 3** (Make private): 30 seconds
-- **Step 4** (Analysis Rmd report): 2 minutes
+- **Step 4** (Analysis Rmd report): 3 minutes
 - **Step 5** (Unit tests): 2 minutes
 - **Step 6** (Validate & commit): 1 minute
 - **Step 7** (Verify CI/CD): 30 seconds
 - **Step 8** (Configure report rendering): 2 minutes (optional)
 
-**Total**: ~10-11 minutes for complete 5-level reproducible analysis
-(~13 minutes with optional Step 8)
+**Total**: ~10-12 minutes for complete 5-level reproducible analysis
+(~14 minutes with optional Step 8)
 
 # Summary
 
