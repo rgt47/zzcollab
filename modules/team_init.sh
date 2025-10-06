@@ -433,7 +433,7 @@ push_team_images() {
         log_info "Pushing variant images from config.yaml..."
 
         # Get enabled variants from config.yaml
-        local enabled_variants=$(yq eval '.variants | to_entries | .[] | select(.value.enabled == true) | .key' ./config.yaml 2>/dev/null)
+        local enabled_variants=$(yq eval '.profiles | to_entries | .[] | select(.value.enabled == true) | .key' ./config.yaml 2>/dev/null)
 
         if [[ -z "$enabled_variants" ]]; then
             log_warn "No enabled variants found in config.yaml"
@@ -626,7 +626,7 @@ parse_config_profiles() {
     
     # Get list of enabled variants
     local enabled_variants
-    enabled_variants=$(yq eval '.variants | to_entries | map(select(.value.enabled == true)) | .[].key' "$config_file")
+    enabled_variants=$(yq eval '.profiles | to_entries | map(select(.value.enabled == true)) | .[].key' "$config_file")
     
     if [[ -z "$enabled_variants" ]]; then
         print_warning "No enabled variants found in $config_file"
@@ -653,7 +653,7 @@ build_config_profile() {
     
     # NEW: Check if variant has full definition or just enabled flag
     local has_full_definition
-    has_full_definition=$(yq eval ".variants.${profile_name}.base_image" "$config_file")
+    has_full_definition=$(yq eval ".profiles.${profile_name}.base_image" "$config_file")
     
     local base_image description packages system_deps profile_library
     
@@ -679,10 +679,10 @@ build_config_profile() {
     else
         # Variant has full definition in config.yaml (legacy support)
         print_status "  📝 Using full definition from config.yaml"
-        base_image=$(yq eval ".variants.${profile_name}.base_image" "$config_file")
-        description=$(yq eval ".variants.${profile_name}.description" "$config_file")
-        packages=$(yq eval ".variants.${profile_name}.packages[]" "$config_file" | tr '\n' ' ')
-        system_deps=$(yq eval ".variants.${profile_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
+        base_image=$(yq eval ".profiles.${profile_name}.base_image" "$config_file")
+        description=$(yq eval ".profiles.${profile_name}.description" "$config_file")
+        packages=$(yq eval ".profiles.${profile_name}.packages[]" "$config_file" | tr '\n' ' ')
+        system_deps=$(yq eval ".profiles.${profile_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
     fi
     
     print_status "  Base image: $base_image"
@@ -861,10 +861,10 @@ build_additional_profile() {
         print_status "Processing variant: $profile_name"
 
         # Enable variant in config.yaml if not already enabled
-        local is_enabled=$(yq eval ".variants.${profile_name}.enabled // false" "$config_file")
+        local is_enabled=$(yq eval ".profiles.${profile_name}.enabled // false" "$config_file")
         if [[ "$is_enabled" != "true" ]]; then
             print_status "  Enabling $profile_name in config.yaml..."
-            yq eval ".variants.${profile_name}.enabled = true" -i "$config_file"
+            yq eval ".profiles.${profile_name}.enabled = true" -i "$config_file"
         else
             print_status "  $profile_name already enabled in config.yaml"
         fi
@@ -976,7 +976,7 @@ EOF
         print_status ""
         print_status "Current enabled variants (set to build Docker images):"
         if command -v yq >/dev/null 2>&1; then
-            yq eval '.variants | to_entries | map(select(.value.enabled == true)) | .[] | "  - " + .key' config.yaml 2>/dev/null || echo "  - Unable to parse variants"
+            yq eval '.profiles | to_entries | map(select(.value.enabled == true)) | .[] | "  - " + .key' config.yaml 2>/dev/null || echo "  - Unable to parse variants"
         else
             echo "  - minimal (default)"
             echo "  - analysis (default)"

@@ -153,7 +153,7 @@ add_variant_to_config() {
     log_info "Adding profile '$profile_name' to $CONFIG_FILE..."
     
     # Check if profile already exists
-    if yq eval ".variants.${profile_name}" "$CONFIG_FILE" >/dev/null 2>&1; then
+    if yq eval ".profiles.${profile_name}" "$CONFIG_FILE" >/dev/null 2>&1; then
         log_warning "Variant '$profile_name' already exists in $CONFIG_FILE"
         read -p "Overwrite existing variant? [y/N] " -n 1 -r
         echo
