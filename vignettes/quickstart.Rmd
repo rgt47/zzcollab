@@ -154,7 +154,7 @@ zzcollab -I shell
 gh repo edit --visibility private
 ```
 
-## Step 4: Create Analysis Report (2 minutes)
+## Step 4: Create Analysis Functions and Report (3 minutes)
 
 Start the Docker development environment:
 
@@ -163,10 +163,45 @@ Start the Docker development environment:
 make docker-zsh
 ```
 
-Inside the container, create your analysis as an Rmd file using your preferred text editor:
+### Create Reusable Function (rrtools approach)
+
+Following rrtools philosophy, create reusable functions in R/ directory first:
 
 ```bash
-# Create the report file (use vim, nano, or your preferred editor)
+# Create function file
+vim R/bill_analysis.R
+```
+
+Add this content to `R/bill_analysis.R`:
+
+```r
+#' Create scatter plot of bill dimensions
+#'
+#' @param data Palmer penguins data
+#' @return ggplot object
+#' @export
+create_bill_plot <- function(data = palmerpenguins::penguins) {
+  data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
+                                  color = species)) +
+    ggplot2::geom_point(size = 3, alpha = 0.7) +
+    ggplot2::labs(
+      title = 'Palmer Penguins: Bill Dimensions',
+      x = 'Bill Length (mm)',
+      y = 'Bill Depth (mm)',
+      color = 'Species'
+    ) +
+    ggplot2::theme_minimal()
+}
+```
+
+### Create Analysis Report
+
+Now create the report that sources the function:
+
+```bash
+# Create the report file
 vim analysis/report/report.Rmd
 ```
 
@@ -199,6 +234,9 @@ library(palmerpenguins)
 library(ggplot2)
 library(dplyr)
 
+# Source analysis functions from R/
+source("../../R/bill_analysis.R")
+
 # Preview data
 head(penguins)
 ```
@@ -208,33 +246,20 @@ head(penguins)
 ### Bill Dimensions by Species
 
 ```{r bill-plot, fig.width=8, fig.height=6}
-# Create scatter plot
-create_bill_plot <- function(data = penguins) {
-  data %>%
-    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
-    ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
-    geom_point(size = 3, alpha = 0.7) +
-    labs(
-      title = "Palmer Penguins: Bill Dimensions",
-      x = "Bill Length (mm)",
-      y = "Bill Depth (mm)",
-      color = "Species"
-    ) +
-    theme_minimal()
-}
-
-# Generate plot
+# Generate plot using function from R/
 plot <- create_bill_plot()
 print(plot)
 
 # Save plot
-ggsave("analysis/figures/bill_scatter.png", plot, width = 8, height = 6)
+ggsave("../figures/bill_scatter.png", plot, width = 8, height = 6)
 ```
 
 ## Summary
 
 The analysis reveals distinct bill dimension patterns across penguin species.
 ````
+
+### Install Packages and Render
 
 Then install packages and render the report:
 
@@ -253,34 +278,23 @@ Rscript -e 'renv::snapshot()'
 
 ## Step 5: Add Unit Tests - Level 4 (2 minutes)
 
-Still inside the Docker container (from `make docker-zsh`), add tests for computational correctness:
+Still inside the Docker container (from `make docker-zsh`), add tests for the function in R/:
 
-```{r eval=FALSE}
+```bash
 # Initialize testing infrastructure
-usethis::use_testthat()
-cat("#' Create scatter plot of bill dimensions
-#'
-#' @param data Palmer penguins data
-#' @return ggplot object
-#' @export
-create_bill_plot <- function(data = palmerpenguins::penguins) {
-  data %>%
-    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
-    ggplot2::ggplot(ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
-                                  color = species)) +
-    ggplot2::geom_point(size = 3, alpha = 0.7) +
-    ggplot2::labs(
-      title = 'Palmer Penguins: Bill Dimensions',
-      x = 'Bill Length (mm)',
-      y = 'Bill Depth (mm)',
-      color = 'Species'
-    ) +
-    ggplot2::theme_minimal()
-}
-", file = "R/bill_analysis.R")
+Rscript -e 'usethis::use_testthat()'
 
 # Create test file
-cat("test_that('create_bill_plot produces valid ggplot', {
+vim tests/testthat/test-bill_analysis.R
+```
+
+Add this content to `tests/testthat/test-bill_analysis.R`:
+
+```r
+# Source function from R/
+source('../../R/bill_analysis.R')
+
+test_that('create_bill_plot produces valid ggplot', {
   plot <- create_bill_plot()
 
   # Valid ggplot object
@@ -307,13 +321,13 @@ test_that('create_bill_plot includes all species', {
   # Should have species in color aesthetic
   expect_true('species' %in% names(plot$labels))
 })
-", file = "tests/testthat/test-bill_analysis.R")
+```
 
+Then run the tests:
+
+```bash
 # Run tests
-devtools::test()
-
-# Exit R
-quit(save = "no")
+Rscript -e 'devtools::test()'
 ```
 
 ## Step 6: Validate and Commit (1 minute)
