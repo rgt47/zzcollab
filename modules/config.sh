@@ -793,7 +793,7 @@ get_renv_packages_for_mode() {
 
     case "$mode" in
         minimal)
-            if [[ -n "$CONFIG_MINIMAL_RENV_PACKAGES" ]]; then
+            if [[ -n "${CONFIG_MINIMAL_RENV_PACKAGES:-}" ]]; then
                 echo "$CONFIG_MINIMAL_RENV_PACKAGES"
             else
                 # Return default minimal mode packages (3 packages)
@@ -801,7 +801,7 @@ get_renv_packages_for_mode() {
             fi
             ;;
         fast)
-            if [[ -n "$CONFIG_FAST_RENV_PACKAGES" ]]; then
+            if [[ -n "${CONFIG_FAST_RENV_PACKAGES:-}" ]]; then
                 echo "$CONFIG_FAST_RENV_PACKAGES"
             else
                 # Return default fast mode packages (9 packages)
@@ -809,7 +809,7 @@ get_renv_packages_for_mode() {
             fi
             ;;
         standard)
-            if [[ -n "$CONFIG_STANDARD_RENV_PACKAGES" ]]; then
+            if [[ -n "${CONFIG_STANDARD_RENV_PACKAGES:-}" ]]; then
                 echo "$CONFIG_STANDARD_RENV_PACKAGES"
             else
                 # Return default standard mode packages (17 packages)
@@ -817,7 +817,7 @@ get_renv_packages_for_mode() {
             fi
             ;;
         comprehensive)
-            if [[ -n "$CONFIG_COMPREHENSIVE_RENV_PACKAGES" ]]; then
+            if [[ -n "${CONFIG_COMPREHENSIVE_RENV_PACKAGES:-}" ]]; then
                 echo "$CONFIG_COMPREHENSIVE_RENV_PACKAGES"
             else
                 # Comprehensive: ALL packages from old paradigms unified

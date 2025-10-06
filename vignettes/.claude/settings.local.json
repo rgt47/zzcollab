@@ -7,7 +7,8 @@
       "Bash(git mv:*)",
       "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/penguin-bills/**)",
       "Bash(modules/team_init.sh)",
-      "Bash(add_profile.sh)"
+      "Bash(add_profile.sh)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
