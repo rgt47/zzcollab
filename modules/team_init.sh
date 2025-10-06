@@ -785,103 +785,112 @@ EOF
 #=============================================================================
 
 # Function: build_additional_variant
-# Purpose: Build additional team image variants after initial setup
-# Arguments: $1 = variant (r-ver, rstudio, verse)
+# Purpose: Build additional team image variants after initial setup using config system
+# Arguments: $1 = comma-separated variant names (e.g., "rstudio,analysis,publishing")
 build_additional_variant() {
-    local variant="$1"
-    
-    # Validate variant
-    case "$variant" in
-        r-ver|rstudio|verse)
-            ;;
-        *)
-            print_error "Invalid variant '$variant'. Valid options: r-ver, rstudio, verse"
-            exit 1
-            ;;
-    esac
-    
-    # Check if we're in a zzcollab project directory, and handle both parent and project directory cases
-    local dockerfile_path="Dockerfile.teamcore"
-    local build_context="."
-    
-    if [[ ! -f "Dockerfile.teamcore" ]]; then
-        # Check if we're inside a project directory and can find Dockerfile.teamcore in parent
+    local variant_input="$1"
+
+    # Parse comma-separated variants
+    local variants=()
+    while IFS= read -r variant; do
+        variants+=("$variant")
+    done < <(parse_variant_list "$variant_input" 2>/dev/null || echo "$variant_input")
+
+    if [[ ${#variants[@]} -eq 0 ]]; then
+        print_error "No variants specified"
+        exit 1
+    fi
+
+
+    # Check if we're in a zzcollab project directory with config.yaml
+    local config_file="config.yaml"
+    local working_dir="."
+
+    if [[ ! -f "$config_file" ]]; then
+        # Check if we're inside a project directory and can find config.yaml in parent
         if [[ -f ".zzcollab_team_setup" ]] || [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]]; then
-            if [[ -f "../Dockerfile.teamcore" ]]; then
-                print_status "📁 Running from project directory - using parent directory's Dockerfile.teamcore"
-                dockerfile_path="../Dockerfile.teamcore"
-                build_context=".."
+            if [[ -f "../config.yaml" ]]; then
+                print_status "📁 Running from project directory - using parent directory's config.yaml"
+                config_file="../config.yaml"
+                working_dir=".."
             else
-                print_error "❌ Dockerfile.teamcore not found in parent directory!"
-                print_error "The team initialization files may have been moved or deleted."
-                print_error ""
-                print_error "🔍 Expected to find: ../Dockerfile.teamcore"
-                print_error "💡 Ensure the parent directory contains the team initialization files."
+                print_error "❌ config.yaml not found in parent directory!"
+                print_error "The -V flag requires config.yaml for variant definitions."
                 exit 1
             fi
         else
-            print_error "❌ Dockerfile.teamcore not found."
+            print_error "❌ config.yaml not found."
             print_error "The -V flag must be run from either:"
-            print_error "   1. The directory where 'zzcollab -i' was executed (contains Dockerfile.teamcore)"
-            print_error "   2. Inside a zzcollab project directory (looks for ../Dockerfile.teamcore)"
-            print_error ""
-            print_error "🔍 Make sure you're in a directory that contains or is within a zzcollab setup."
+            print_error "   1. The directory where 'zzcollab -i' was executed (contains config.yaml)"
+            print_error "   2. Inside a zzcollab project directory (looks for ../config.yaml)"
             exit 1
         fi
     fi
-    
-    # Detect team and project names from existing images or directory
+
+    # Change to working directory for builds
+    cd "$working_dir" || exit 1
+
+    # Detect team and project names from config.yaml or directory
     if [[ -z "$TEAM_NAME" ]]; then
-        # Simplified Docker detection to avoid hanging
-        if docker images --format "{{.Repository}}" | grep -q "core-"; then
-            TEAM_NAME=$(docker images --format "{{.Repository}}" | grep "core-" | head -1 | cut -d'/' -f1)
+        TEAM_NAME=$(yq eval '.team.name' "$config_file" 2>/dev/null)
+        if [[ -z "$TEAM_NAME" || "$TEAM_NAME" == "null" ]]; then
+            # Try to detect from Docker images
+            if docker images --format "{{.Repository}}" | grep -q "_core-"; then
+                TEAM_NAME=$(docker images --format "{{.Repository}}" | grep "_core-" | head -1 | cut -d'/' -f1)
+            fi
         fi
         if [[ -z "$TEAM_NAME" ]]; then
             print_error "Could not detect team name. Use --team flag."
             exit 1
         fi
     fi
-    
+
     if [[ -z "$PROJECT_NAME" ]]; then
-        PROJECT_NAME=$(basename "$(pwd)")
+        PROJECT_NAME=$(yq eval '.team.project' "$config_file" 2>/dev/null)
+        if [[ -z "$PROJECT_NAME" || "$PROJECT_NAME" == "null" ]]; then
+            PROJECT_NAME=$(basename "$(pwd)")
+        fi
     fi
-    
-    # Set up base image and variant name mappings
-    local base_image variant_name
-    case "$variant" in
-        r-ver)
-            base_image="rocker/r-ver"
-            variant_name="shell"
-            ;;
-        rstudio)
-            base_image="rocker/rstudio"
-            variant_name="rstudio"
-            ;;
-        verse)
-            base_image=$(get_multiarch_base_image "verse")
-            variant_name="verse"
-            ;;
-    esac
-    
-    print_status "Building additional team image variant: $variant_name"
-    print_status "Team: $TEAM_NAME, Project: $PROJECT_NAME"
-    
-    # Build the image using the detected dockerfile and build context
-    build_single_team_image "$base_image" "$variant_name" "$dockerfile_path" "$build_context"
-    print_success "Built ${variant_name} core image: ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
-    
-    # Ask if user wants to push to Docker Hub
+
+    print_status "Building additional variants for: $TEAM_NAME/$PROJECT_NAME"
+    print_status "Variants: ${variants[*]}"
     echo ""
-    if confirm "Push ${variant_name} image to Docker Hub?"; then
-        push_single_team_image "$variant_name"
-        print_success "Pushed ${variant_name} image to Docker Hub"
-    else
-        print_status "Image built locally only. To push later, run:"
-        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
-        print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:latest"
-    fi
-    
-    print_success "Additional variant '${variant_name}' ready for use!"
+
+    # Enable and build each variant
+    for variant_name in "${variants[@]}"; do
+        print_status "Processing variant: $variant_name"
+
+        # Enable variant in config.yaml if not already enabled
+        local is_enabled=$(yq eval ".variants.${variant_name}.enabled // false" "$config_file")
+        if [[ "$is_enabled" != "true" ]]; then
+            print_status "  Enabling $variant_name in config.yaml..."
+            yq eval ".variants.${variant_name}.enabled = true" -i "$config_file"
+        else
+            print_status "  $variant_name already enabled in config.yaml"
+        fi
+
+        # Build the variant using config system
+        if build_config_variant "$config_file" "$variant_name"; then
+            print_success "✅ Built $variant_name variant"
+
+            # Push to Docker Hub
+            echo ""
+            if confirm "Push $variant_name image to Docker Hub?"; then
+                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
+                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:latest"
+                print_success "✅ Pushed $variant_name to Docker Hub"
+            else
+                print_status "Image built locally only. To push later, run:"
+                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:v1.0.0"
+                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}:latest"
+            fi
+        else
+            print_error "❌ Failed to build $variant_name variant"
+        fi
+        echo ""
+    done
+
+    print_success "✅ All variants processed successfully!"
 }
 
 #=============================================================================

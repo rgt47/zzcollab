@@ -92,6 +92,31 @@ parse_base_image_list() {
 }
 
 ##############################################################################
+# FUNCTION: parse_variant_list
+# PURPOSE:  Parse comma-separated variant list for -V flag
+# USAGE:    parse_variant_list "minimal,rstudio,analysis"
+# ARGS:
+#   $1 - input: Comma-separated list of variant names
+# RETURNS:
+#   Outputs cleaned variant names, one per line
+# DESCRIPTION:
+#   Splits comma-separated variants and trims whitespace.
+#   Does not validate variant names (allows any variant from library).
+# EXAMPLE:
+#   parse_variant_list "minimal, rstudio, analysis"
+##############################################################################
+parse_variant_list() {
+    local input="$1"
+
+    # Split by comma and clean each variant name
+    IFS=',' read -ra variants <<< "$input"
+    for variant in "${variants[@]}"; do
+        variant=$(echo "$variant" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')  # Trim whitespace
+        [[ -n "$variant" ]] && echo "$variant"
+    done
+}
+
+##############################################################################
 # FUNCTION: validate_enum
 # PURPOSE:  Validate that a command line argument value is from allowed set
 # USAGE:    validate_enum "--flag" "value" "description" "option1" "option2" ...
@@ -229,11 +254,36 @@ parse_cli_arguments() {
                 shift 2
                 ;;
             --init-base-image|-B)
-                require_arg "$1" "$2"
-                # Parse comma-separated values or validate single values
-                parse_base_image_list "$2"
-                INIT_BASE_IMAGE="$2"
-                shift 2
+                # DEPRECATED: Show migration guidance
+                echo ""
+                echo "⚠️  Warning: -B/--init-base-image flag is deprecated"
+                echo ""
+                echo "The legacy base image system has been replaced with config-based variants."
+                echo ""
+                echo "📋 Migration Guide:"
+                echo ""
+                echo "  Old command (deprecated):"
+                echo "    zzcollab -i -t TEAM -p PROJECT -B r-ver"
+                echo ""
+                echo "  New approach:"
+                echo "    zzcollab -i -p PROJECT"
+                echo "    # Then edit config.yaml or use ./add_variant.sh"
+                echo ""
+                echo "🔄 Variant Mapping:"
+                echo "    -B r-ver     → Enable 'minimal' variant in config.yaml"
+                echo "    -B rstudio   → Enable 'rstudio' variant in config.yaml"
+                echo "    -B verse     → Enable 'publishing' variant in config.yaml"
+                echo "    -B all       → Enable minimal, rstudio, publishing variants"
+                echo ""
+                echo "💡 Benefits of new system:"
+                echo "    • 14+ specialized variants (bioinformatics, geospatial, Alpine, etc.)"
+                echo "    • Interactive variant selection with ./add_variant.sh"
+                echo "    • Single source of truth in variant_examples.yaml"
+                echo "    • Consistent package management across variants"
+                echo ""
+                echo "📖 For details, see: zzcollab --help-variants"
+                echo ""
+                exit 1
                 ;;
             --team|-t)
                 require_arg "$1" "$2"
@@ -296,7 +346,7 @@ parse_cli_arguments() {
                 ;;
             --build-variant|-V)
                 require_arg "$1" "$2"
-                validate_enum "$1" "$2" "build variant" "r-ver" "rstudio" "verse"
+                # Accept comma-separated variant names (any variant from library)
                 BUILD_VARIANT_MODE=true
                 BUILD_VARIANT="$2"
                 shift 2
@@ -416,32 +466,31 @@ process_user_friendly_interface() {
     # Convert user-friendly flags to BASE_IMAGE if provided (only for non-init mode)
     if [[ "$INIT_MODE" != "true" ]]; then
         if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
+            # Map legacy interface names to variant names for backward compatibility
+            local variant_name="$INTERFACE"
             case "$INTERFACE" in
                 shell)
-                    BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-shell"
-                    ;;
-                rstudio)
-                    BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-rstudio"
+                    variant_name="minimal"
                     ;;
                 verse)
-                    BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}core-verse"
+                    variant_name="publishing"
                     ;;
-                *)
-                    echo "❌ Error: Unknown interface '$INTERFACE'" >&2
-                    echo "Valid interfaces: shell, rstudio, verse" >&2
-                    exit 1
-                    ;;
+                # All other names (rstudio, analysis, minimal, etc.) stay as-is
             esac
-            
+
+            # Use config-based variant naming: {team}/{project}_core-{variant}
+            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}_core-${variant_name}"
+
             # Check if team image exists before proceeding
-            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$INTERFACE"
+            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$variant_name"
             echo "ℹ️  Using team image: $BASE_IMAGE"
         elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
             # If some team flags are provided but not all, show error (only for non-init, non-build-variant mode)
             if [[ "$BUILD_VARIANT_MODE" != "true" ]]; then
                 echo "❌ Error: When using team interface, all flags are required:" >&2
                 echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
-                echo "  Valid interfaces: shell, rstudio, verse" >&2
+                echo "  Common variants: minimal, rstudio, analysis, publishing, modeling" >&2
+                echo "  Legacy names: shell (→minimal), verse (→publishing)" >&2
                 exit 1
             fi
         fi
@@ -459,50 +508,62 @@ check_team_image_availability() {
     local base_image="$1"
     local team_name="$2"
     local project_name="$3"
-    local interface="$4"
-    
+    local requested_variant="$4"
+
     # Try to check if image exists on Docker Hub
     if ! docker manifest inspect "$base_image:latest" >/dev/null 2>&1; then
         echo ""
         echo "❌ Error: Team image '$base_image:latest' not found"
         echo ""
-        
+
         # Check what team images are available
         echo "ℹ️  Checking available variants for this project..."
         local available_images=()
-        
-        # Check common variants
-        for variant in shell rstudio verse; do
-            local image_name="${team_name}/${project_name}core-${variant}:latest"
+
+        # Check config-based variants (new naming)
+        for variant in minimal rstudio analysis publishing modeling bioinformatics geospatial alpine_minimal; do
+            local image_name="${team_name}/${project_name}_core-${variant}:latest"
             if docker manifest inspect "$image_name" >/dev/null 2>&1; then
                 available_images+=("$variant")
             fi
         done
-        
+
+        # Also check legacy naming for backward compatibility
+        for variant in shell rstudio verse; do
+            local image_name="${team_name}/${project_name}core-${variant}:latest"
+            if docker manifest inspect "$image_name" >/dev/null 2>&1; then
+                available_images+=("$variant (legacy)")
+            fi
+        done
+
         if [[ ${#available_images[@]} -gt 0 ]]; then
             echo "✅ Available variants for this project:"
             for variant in "${available_images[@]}"; do
-                echo "    - ${team_name}/${project_name}core-${variant}:latest"
+                local variant_name="${variant% (legacy)}"
+                if [[ "$variant" == *"(legacy)"* ]]; then
+                    echo "    - ${team_name}/${project_name}core-${variant_name}:latest (legacy)"
+                else
+                    echo "    - ${team_name}/${project_name}_core-${variant}:latest"
+                fi
             done
             echo ""
             echo "💡 Solutions:"
             echo "   1. Use available variant:"
             for variant in "${available_images[@]}"; do
-                echo "      zzcollab -t $team_name -p $project_name -I $variant -d ~/dotfiles"
+                local variant_name="${variant% (legacy)}"
+                echo "      zzcollab -t $team_name -p $project_name -I $variant_name"
             done
-            echo "   2. Ask team lead to build $interface variant:"
-            echo "      zzcollab -V $(interface_to_variant "$interface")"
-            echo "   3. List all available images:"
-            echo "      docker images | grep ${team_name}/${project_name}core"
+            echo "   2. Ask team lead to build $requested_variant variant:"
+            echo "      cd $project_name && zzcollab -V $requested_variant"
         else
             echo "⚠️  No team images found for $team_name/$project_name"
             echo ""
             echo "💡 Solutions:"
             echo "   1. Check if team lead has run initial setup:"
-            echo "      zzcollab -i -t $team_name -p $project_name -B all"
+            echo "      zzcollab -i -p $project_name"
             echo "   2. Verify team and project names are correct"
             echo "   3. Check Docker Hub for available images:"
-            echo "      https://hub.docker.com/r/$team_name/$project_name"
+            echo "      docker search ${team_name}/${project_name}"
         fi
         echo ""
         exit 1
