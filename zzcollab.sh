@@ -344,6 +344,14 @@ detect_file_conflicts() {
     local conflicts=()
     local zzcollab_files
 
+    # Check if this is a team setup directory awaiting full project setup
+    local is_team_setup_dir=false
+    if [[ -f ".zzcollab_team_setup" ]]; then
+        if grep -q "full_project_setup_needed=true" .zzcollab_team_setup 2>/dev/null; then
+            is_team_setup_dir=true
+        fi
+    fi
+
     # Get list of files that zzcollab would create
     # Using while read loop for broader shell compatibility instead of mapfile
     local file
@@ -351,10 +359,19 @@ detect_file_conflicts() {
     while IFS= read -r file; do
         zzcollab_files+=("$file")
     done < <(get_zzcollab_files)
-    
+
     # Check for existing files that would conflict
     for item in "${zzcollab_files[@]}"; do
         if [[ -f "$item" ]]; then
+            # Skip expected files from team setup (-i flag)
+            if [[ "$is_team_setup_dir" == "true" ]]; then
+                case "$item" in
+                    DESCRIPTION|Dockerfile.teamcore|.zshrc_docker|config.yaml|profiles.yaml)
+                        # These are expected from 'zzcollab -i' - not conflicts
+                        continue
+                        ;;
+                esac
+            fi
             # Files are always conflicts (zzcollab would skip them)
             conflicts+=("$item")
         elif [[ -d "$item" ]]; then
