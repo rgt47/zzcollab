@@ -767,6 +767,10 @@ EOF
     fi
 
     cat >> "$dockerfile" << EOF
+# Create analyst user for zzcollab personal Dockerfiles
+# This ensures personal Dockerfiles can use analyst user regardless of base image
+RUN useradd --create-home --shell /bin/bash analyst || true
+
 # Set default user (will be overridden in personal Dockerfile)
 ENV USER=rstudio
 
