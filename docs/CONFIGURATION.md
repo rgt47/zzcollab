@@ -277,7 +277,7 @@ profiles:
 build:
   # Profile management
   use_config_profiles: true
-  variant_library: "profiles.yaml"
+  profile_library: "profiles.yaml"
 
   # Docker build settings
   docker:
@@ -707,7 +707,7 @@ zzcollab -i -t lab -p study --github
 cd study
 vim zzcollab.yaml
 
-# 3. Edit variants, collaboration settings, build options
+# 3. Edit profiles, collaboration settings, build options
 
 # 4. Commit configuration to repository
 git add zzcollab.yaml

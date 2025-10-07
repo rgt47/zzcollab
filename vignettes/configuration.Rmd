@@ -1265,10 +1265,10 @@ ZZCOLLAB's configuration system provides powerful, flexible control over researc
 
 Key takeaways:
 
-1. **Start simple**: Use built-in build modes and standard variants for most projects
+1. **Start simple**: Use built-in build modes and standard profiles for most projects
 2. **Customize gradually**: Add custom profiles and packages as needs become clear
 3. **Coordinate with teams**: Use project configs to ensure team consistency
-4. **Optimize for workflow**: Choose variants and packages that match your research needs
+4. **Optimize for workflow**: Choose profiles and packages that match your research needs
 5. **Validate regularly**: Use configuration validation to catch issues early
 
 The configuration system scales from solo researchers to large organizations, providing reproducible, customizable research environments that eliminate configuration drift and enable effective collaboration.

@@ -23,8 +23,8 @@ The profile system implements a library-reference pattern:
 
 **Team Configuration** (`config.yaml`):
 
-- References variants by name from library
-- Enables/disables specific variants for project
+- References profiles by name from library
+- Enables/disables specific profiles for project
 - Optionally overrides specific parameters
 - Eliminates duplicate profile definitions
 
@@ -39,11 +39,11 @@ The profile system implements a library-reference pattern:
 4. **Backward Compatibility**: Legacy full definitions still
    supported
 5. **Unlimited Customization**: Teams can define completely custom
-   variants
+   profiles
 
-## Variant Categories
+## Profile Categories
 
-### Standard Research Environments (6 Variants)
+### Standard Research Environments (6 Profiles)
 
 Production-ready environments for general research computing.
 
@@ -114,7 +114,7 @@ Production-ready environments for general research computing.
 - **System Dependencies**: Complete tidyverse and shiny
   dependencies
 
-### Specialized Domains (2 Variants)
+### Specialized Domains (2 Profiles)
 
 Domain-specific environments for specialized research fields.
 
@@ -143,7 +143,7 @@ Domain-specific environments for specialized research fields.
   libxml2-dev
 - **Documentation**: https://r-spatial.org/
 
-### Lightweight Alpine Variants (3 Variants)
+### Lightweight Alpine Profiles (3 Profiles)
 
 Ultra-lightweight environments for resource-constrained scenarios.
 
@@ -185,7 +185,7 @@ Ultra-lightweight environments for resource-constrained scenarios.
 - **Features**: MPI support, parallel backends, cluster
   integration
 
-### R-Hub Testing Environments (3 Variants)
+### R-Hub Testing Environments (3 Profiles)
 
 CRAN-compatible testing environments for package validation.
 
@@ -220,9 +220,9 @@ CRAN-compatible testing environments for package validation.
 - **R Version**: R-release for Windows
 - **Note**: Requires Docker Windows containers support
 
-## Variant Usage
+## Profile Usage
 
-### Interactive Variant Selection
+### Interactive Profile Selection
 
 **add_profile.sh Script**:
 
@@ -232,7 +232,7 @@ CRAN-compatible testing environments for package validation.
 
 # Displays categorized menu:
 =======================================================
-ZZCOLLAB DOCKER VARIANT LIBRARY
+ZZCOLLAB DOCKER PROFILE LIBRARY
 =======================================================
 
 STANDARD RESEARCH ENVIRONMENTS
@@ -247,7 +247,7 @@ SPECIALIZED DOMAINS
   7) bioinformatics   ~2GB    - Bioconductor genomics
   8) geospatial       ~2.5GB  - sf, terra, mapping
 
-LIGHTWEIGHT ALPINE VARIANTS
+LIGHTWEIGHT ALPINE PROFILES
   9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
  10) alpine_analysis  ~400MB  - Lightweight analysis
  11) hpc_alpine       ~600MB  - Parallel processing
@@ -266,7 +266,7 @@ Enter profile numbers (space-separated): 1 2 9
 
 ```yaml
 #=========================================================
-# DOCKER VARIANTS
+# DOCKER PROFILES
 #=========================================================
 
 profiles:
@@ -282,7 +282,7 @@ profiles:
   alpine_minimal:
     enabled: true             # ~200MB
 
-  # Disabled variants (available but not built)
+  # Disabled profiles (available but not built)
   modeling:
     enabled: false            # ~1.5GB
 
@@ -300,11 +300,11 @@ profiles:
 #=========================================================
 
 build:
-  # Use variants defined in this config
+  # Use profiles defined in this config
   use_config_profiles: true
 
   # Reference the profile library
-  variant_library: "profiles.yaml"
+  profile_library: "profiles.yaml"
 
   # Docker build settings
   docker:
@@ -318,35 +318,35 @@ build:
 **Team Initialization**:
 
 ```bash
-# Create project with default variants
+# Create project with default profiles
 zzcollab -i -t lab -p study --github
 
-# Create project with config-defined variants
-zzcollab -i -t lab -p study --variants-config config.yaml
+# Create project with config-defined profiles
+zzcollab -i -t lab -p study --profiles-config config.yaml
 
 # Legacy approach (limited to 3 profiles)
 zzcollab -i -t lab -p study -B rstudio --github
 ```
 
-**Variant Addition**:
+**Profile Addition**:
 
 ```bash
 # Add profile to existing project
 cd study
 ./add_profile.sh
 
-# Build specific variant
+# Build specific profile
 zzcollab -V modeling
 
-# Build all enabled variants
-zzcollab --variants-config config.yaml
+# Build all enabled profiles
+zzcollab --profiles-config config.yaml
 ```
 
-## Custom Variant Definition
+## Custom Profile Definition
 
-### Complete Custom Variant
+### Complete Custom Profile
 
-Define entirely new variants in config.yaml:
+Define entirely new profiles in config.yaml:
 
 ```yaml
 profiles:
@@ -393,7 +393,7 @@ profiles:
     size: "~2.8GB"
 ```
 
-### Extending Existing Variants
+### Extending Existing Profiles
 
 Override specific parameters from library profiles:
 
@@ -401,7 +401,7 @@ Override specific parameters from library profiles:
 profiles:
   analysis:
     enabled: true
-    # Add additional packages to analysis variant
+    # Add additional packages to analysis profile
     additional_packages:
       - arrow
       - pins
@@ -416,11 +416,11 @@ profiles:
       - nvidia-cuda-toolkit
 ```
 
-## Variant Architecture
+## Profile Architecture
 
 ### Docker Image Layers
 
-Variants follow a layered architecture:
+Profiles follow a layered architecture:
 
 ```
 Layer 1: Base Image (rocker/r-ver, etc.)
@@ -448,7 +448,7 @@ Profile building follows this sequence:
 
 ### Package Installation Methods
 
-Variants support multiple R package installation methods:
+Profiles support multiple R package installation methods:
 
 **install2.r** (preferred):
 
@@ -543,7 +543,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   -t lab/study:latest .
 ```
 
-## Variant Selection Guide
+## Profile Selection Guide
 
 ### Decision Framework
 
@@ -558,15 +558,15 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 **Question 2: What are the resource constraints?**
 
-- Unlimited resources → Standard variants
-- Limited disk space → Alpine variants
+- Unlimited resources → Standard profiles
+- Limited disk space → Alpine profiles
 - CI/CD environment → alpine_minimal
 
 **Question 3: What is the team structure?**
 
-- Solo developer → 1-2 variants (minimal + analysis)
+- Solo developer → 1-2 profiles (minimal + analysis)
 - Small team (2-5) → 2-3 profiles (minimal + analysis + specialty)
-- Large team (5+) → 3+ variants (full spectrum)
+- Large team (5+) → 3+ profiles (full spectrum)
 
 ### Paradigm-Specific Recommendations
 
@@ -588,9 +588,9 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 - Optional: analysis (if vignettes use data analysis)
 - Testing: alpine_minimal, rhub_ubuntu
 
-## Variant Maintenance
+## Profile Maintenance
 
-### Updating Variant Definitions
+### Updating Profile Definitions
 
 **Library Updates** (maintainer only):
 
@@ -613,7 +613,7 @@ git commit -m "Update profile definitions"
 git pull
 
 # Rebuild with updated definitions
-zzcollab --variants-config config.yaml
+zzcollab --profiles-config config.yaml
 ```
 
 ### Version Control
@@ -622,23 +622,23 @@ Track profile configuration changes:
 
 ```bash
 # Version tag for major changes
-git tag -a profiles-v2.0 -m "Add GPU and spatial variants"
+git tag -a profiles-v2.0 -m "Add GPU and spatial profiles"
 
 # Reference specific version
-git checkout variants-v2.0
-zzcollab --variants-config config.yaml
+git checkout profiles-v2.0
+zzcollab --profiles-config config.yaml
 ```
 
 ### Deprecation
 
-When variants become obsolete:
+When profiles become obsolete:
 
 ```yaml
 profiles:
-  old_variant:
+  old_profile:
     enabled: false
     deprecated: true
-    deprecation_message: "Use 'new_variant' instead"
+    deprecation_message: "Use 'new_profile' instead"
     removal_date: "2025-06-01"
 ```
 
@@ -649,7 +649,7 @@ profiles:
 1. **Layer Caching**: Structure Dockerfile for optimal caching
 2. **Parallel Builds**: Enable parallel package installation
 3. **Pre-built Images**: Use team base images
-4. **Selective Variants**: Only build required variants
+4. **Selective Profiles**: Only build required profiles
 
 **Example**:
 
@@ -666,7 +666,7 @@ build:
 
 1. **Multi-stage Builds**: Reduce final image size
 2. **Layer Cleanup**: Remove temporary files
-3. **Alpine Variants**: Use for space-constrained scenarios
+3. **Alpine Profiles**: Use for space-constrained scenarios
 
 **Example**:
 
@@ -685,10 +685,10 @@ COPY --from=builder /usr/local/lib/R/site-library \
 
 ### Common Issues
 
-**Issue**: Variant not found
+**Issue**: Profile not found
 
 ```
-Error: Variant 'modelng' not found in library
+Error: Profile 'modelng' not found in library
 ```
 
 **Solution**: Check spelling, use `./add_profile.sh` to browse
@@ -734,7 +734,7 @@ version
 docker pull rocker/r-ver:latest
 
 # Test profile build
-docker build -f Dockerfile.variant -t test:latest .
+docker build -f Dockerfile.profile -t test:latest .
 
 # Inspect image layers
 docker history lab/study-analysis:latest
@@ -742,18 +742,18 @@ docker history lab/study-analysis:latest
 
 ## Best Practices
 
-### Variant Selection
+### Profile Selection
 
-1. Start minimal, add variants as needed
+1. Start minimal, add profiles as needed
 2. Use Alpine for CI/CD pipelines
-3. Enable only variants team actively uses
+3. Enable only profiles team actively uses
 4. Document profile choices in configuration
 
-### Custom Variants
+### Custom Profiles
 
-1. Extend existing variants rather than creating from scratch
+1. Extend existing profiles rather than creating from scratch
 2. Document package selections and rationale
-3. Test variants thoroughly before team deployment
+3. Test profiles thoroughly before team deployment
 4. Version control custom profile definitions
 
 ### Team Collaboration
