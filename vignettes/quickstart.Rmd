@@ -91,71 +91,103 @@ zzcollab --config set auto-github "true"
 - No need to specify `-t`, `-F`, `-D`, or `-G` flags repeatedly
 - Change defaults anytime with `zzcollab --config set`
 
-## Step 2: Create Complete Project (3-4 minutes)
+## Step 2: Create Team Images and Project (4-5 minutes)
 
-Create a fully reproducible project in one command:
+ZZCOLLAB uses a **two-step workflow** for team projects:
+
+**Step 2a: Create Team Docker Images (2-3 minutes)**
+
+First, create and push team Docker images to Docker Hub:
 
 ```bash
-# Create complete project with Docker images, GitHub repo, and full structure
-# All parameters come from Step 1 config (team-name, build-mode, dotfiles-dir, auto-github)
-zzcollab -i -p penguin-bills
+# Create team Docker images (builds and pushes to Docker Hub)
+# All parameters come from Step 1 config (team-name, build-mode, dotfiles-dir)
+zzcollab -i -p penguin-bills -y
 
-# Only flag needed:
-# -i: Initialize complete project (team images + project structure + GitHub)
-# -p: Project name (only thing that changes per project)
+# Flags explained:
+# -i: Initialize team setup (creates Docker images only)
+# -p: Project name
+# -y: Skip confirmation prompt
 #
 # These come from config (set in Step 1):
 # -t rgt47: from team-name config
 # -F: from build-mode config (fast)
-# -D ~/dotfiles: from dotfiles-dir config
-# -G: from auto-github config (true)
 ```
 
-**What this does:**
+**What Step 2a does:**
 1. Creates project directory `penguin-bills/`
-2. Builds Docker team images with R + essential packages (9 packages, fast mode)
-3. Pushes images to Docker Hub for team sharing
-4. Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
-5. Creates GitHub repository automatically (public by default)
-6. Sets up CI/CD workflows for automated testing
-7. Initializes renv for dependency tracking
+2. Builds Docker team images with R + essential packages
+3. Pushes images to Docker Hub (e.g., `rgt47/penguin-bills_core-minimal:latest`)
+4. Creates marker file `.zzcollab_team_setup` with team information
+5. Creates basic configuration files (`config.yaml`, `profiles.yaml`)
 
-**Default Docker Profiles Created:**
-- `minimal` profile: Essential development packages (~800MB)
-- `analysis` profile: Tidyverse + data analysis tools (~1.2GB)
+**Step 2b: Complete Project Setup (1-2 minutes)**
+
+After team images are created, complete the full project structure:
+
+```bash
+# Navigate to project directory
+cd penguin-bills
+
+# Complete full project setup (uses team images as base)
+zzcollab -y
+
+# Add -G flag if auto-github is not enabled in config:
+# zzcollab -y -G   # Creates GitHub repository automatically
+```
+
+**What Step 2b does:**
+1. Detects `.zzcollab_team_setup` marker (knows team images exist)
+2. Creates personal Dockerfile using team image as base (`FROM rgt47/penguin-bills_core-minimal:latest`)
+3. Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
+4. Creates GitHub repository (if -G flag or auto-github config enabled)
+5. Sets up CI/CD workflows for automated testing
+6. Initializes renv for dependency tracking
+
+**Why Two Steps?**
+
+This separation allows:
+- **Team leads** to create and share team images once
+- **Team members** to join later using those images (skip Step 2a)
+- **Faster setup** for team members (no Docker image building)
+- **Consistency** across entire team (everyone uses same base image)
+
+**Default Docker Profiles Created (Step 2a):**
+- `minimal` profile: Essential development packages (~800MB, 3 packages)
 
 **Alternative: Interactive Profile Selection**
 
 If you want to customize which Docker profiles to build (bioinformatics,
-geospatial, Alpine, etc.), use the interactive approach:
+geospatial, Alpine, etc.), run the interactive profile manager after Step 2a:
 
 ```bash
-# Create project directory first
-mkdir penguin-bills && cd penguin-bills
-
-# Initialize with interactive profile selection
-zzcollab -i -p penguin-bills
+# After Step 2a (team images created)
+cd penguin-bills
 
 # Browse and select from 14+ specialized profiles
 ./add_profile.sh
 
-# Then complete setup
-zzcollab -p penguin-bills
+# Edit config.yaml to enable selected profiles
+vim config.yaml
+
+# Rebuild team images with selected profiles
+zzcollab --profiles-config config.yaml
+
+# Then complete Step 2b
+zzcollab -y -G
 ```
 
 ## Step 3: Set Repository to Private (30 seconds)
 
 ```bash
-# Navigate to project directory (if not already there)
-cd penguin-bills
-
+# Already in penguin-bills/ directory from Step 2b
 # Make repository private using GitHub CLI
 gh repo edit --visibility private
 ```
 
 ## Step 4: Create Analysis Functions and Report (3 minutes)
 
-Start the Docker development environment:
+Start the Docker development environment (builds personal image from team image):
 
 ```bash
 # Enter Docker container
@@ -520,22 +552,36 @@ test_that("model includes species interaction", {
 
 ## Collaborate
 
-Share your private repository:
+Share your private repository with team members:
 
 ```bash
-# Add collaborator
+# Team Lead: Add collaborator
 gh repo edit --add-collaborator username
+```
 
-# Team member joins (uses same team images from Docker Hub)
+**Team Member Joining Workflow:**
+
+Team members clone the repository and use the existing team images:
+
+```bash
+# Clone the repository
 git clone https://github.com/rgt47/penguin-bills.git
 cd penguin-bills
 
-# Team member pulls your Docker images and sets up project
-zzcollab -t rgt47 -p penguin-bills -I shell
+# Complete personal setup (skips Step 2a - uses existing team images)
+# The .zzcollab_team_setup marker tells zzcollab to use team images
+zzcollab -y
 
 # Enter identical development environment
 make docker-zsh
 ```
+
+**What happens for team members:**
+1. Detects `.zzcollab_team_setup` marker in repository
+2. Pulls team image `rgt47/penguin-bills_core-minimal:latest` from Docker Hub
+3. Creates personal Dockerfile using team image as base
+4. Builds personal development image (fast - layers on top of team image)
+5. Identical environment to team lead and all other team members
 
 ## Publish Results
 
@@ -572,7 +618,11 @@ docker info
 # Clean rebuild (uses config defaults)
 docker system prune
 rm -rf penguin-bills  # Remove failed directory
-zzcollab -i -p penguin-bills  # Uses config: team-name, build-mode, dotfiles-dir, auto-github
+
+# Retry two-step workflow
+zzcollab -i -p penguin-bills -y  # Step 2a: Create team images
+cd penguin-bills
+zzcollab -y -G                    # Step 2b: Complete project setup
 ```
 
 ## Test Failures
@@ -644,7 +694,8 @@ zzcollab --profiles-config config.yaml
 # Time Breakdown
 
 - **Step 1** (Configuration): 30 seconds
-- **Step 2** (Complete project creation): 3-4 minutes
+- **Step 2a** (Create team images): 2-3 minutes
+- **Step 2b** (Complete project setup): 1-2 minutes
 - **Step 3** (Make private): 30 seconds
 - **Step 4** (Analysis Rmd report): 3 minutes
 - **Step 5** (Unit tests): 2 minutes
@@ -652,8 +703,12 @@ zzcollab --profiles-config config.yaml
 - **Step 7** (Verify CI/CD): 30 seconds
 - **Step 8** (Configure report rendering): 2 minutes (optional)
 
-**Total**: ~10-12 minutes for complete 5-level reproducible analysis
-(~14 minutes with optional Step 8)
+**Total**: ~11-13 minutes for complete 5-level reproducible analysis
+(~15 minutes with optional Step 8)
+
+**Team Member Time** (joining existing project): ~7-9 minutes
+- Skips Step 1 (uses team config) and Step 2a (uses existing team images)
+- Only needs Steps 2b-8
 
 # Summary
 

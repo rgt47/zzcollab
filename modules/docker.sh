@@ -259,7 +259,26 @@ get_dockerfile_template() {
 # Variables: R_VERSION, PKG_NAME, BASE_IMAGE are substituted in templates
 create_docker_files() {
     log_info "Creating Docker configuration files..."
-    
+
+    # Check if this is completing a team setup (second step after 'zzcollab -i')
+    local use_team_image=false
+    local team_base_image=""
+
+    if [[ -f ".zzcollab_team_setup" ]]; then
+        # Read team setup information
+        local team_name project_name profile_name
+        team_name=$(grep "^team_name=" ".zzcollab_team_setup" | cut -d= -f2)
+        project_name=$(grep "^project_name=" ".zzcollab_team_setup" | cut -d= -f2)
+        profile_name=$(grep "^build_mode=" ".zzcollab_team_setup" | cut -d= -f2)
+
+        if [[ -n "$team_name" ]] && [[ -n "$project_name" ]] && [[ -n "$profile_name" ]]; then
+            # Construct team image name (without :latest tag, will be added by Dockerfile.personal template)
+            team_base_image="${team_name}/${project_name}_core-${profile_name}"
+            use_team_image=true
+            log_info "Detected team setup - using team image as base: ${team_base_image}:latest"
+        fi
+    fi
+
     # Determine R version for Docker build
     # This ensures the container uses the same R version as the project
     local r_version="latest"
@@ -269,15 +288,31 @@ create_docker_files() {
     else
         log_info "No renv.lock found, using R version: $r_version"
     fi
-    
+
     # Export R_VERSION for template substitution
     # This variable is used in Dockerfile template
     export R_VERSION="$r_version"
-    
+
+    # Set BASE_IMAGE for template substitution
+    if [[ "$use_team_image" == "true" ]]; then
+        export BASE_IMAGE="$team_base_image"
+        log_info "Personal Dockerfile will use team image: $BASE_IMAGE"
+    else
+        export BASE_IMAGE="rocker/r-ver"
+        log_info "Personal Dockerfile will use default rocker image: $BASE_IMAGE"
+    fi
+
     # Create Dockerfile from template
-    # Choose template based on build mode (with legacy compatibility)
+    # Choose template based on whether using team image or not
     local dockerfile_template
-    dockerfile_template=$(get_dockerfile_template)
+    if [[ "$use_team_image" == "true" ]]; then
+        # Use Dockerfile.personal which supports team images
+        dockerfile_template="Dockerfile.personal"
+        log_info "Using Dockerfile.personal template (supports team images)"
+    else
+        # Use unified template for solo developers
+        dockerfile_template=$(get_dockerfile_template)
+    fi
     
     case "$BUILD_MODE" in
         minimal)
