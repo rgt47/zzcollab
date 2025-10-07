@@ -47,9 +47,9 @@ Higher priority configurations override lower priority ones, allowing for precis
 
 ## Three Configuration Domains
 
-### Docker Variant Management
+### Docker Profile Management
 Control which specialized Docker environments your team uses:
-- **14+ predefined variants** from minimal (~200MB Alpine) to comprehensive (~3.5GB full-featured)
+- **14+ predefined profiles** from minimal (~200MB Alpine) to comprehensive (~3.5GB full-featured)
 - **Domain-specific environments** for bioinformatics, geospatial analysis, machine learning
 - **Single source of truth** architecture eliminates duplication
 - **Interactive profile browser** for easy discovery and selection
@@ -69,13 +69,13 @@ Control team workflows and automation:
 
 # Docker Profile System
 
-## Understanding Variants
+## Understanding Profiles
 
 Docker profiles are pre-configured environments with specific base images, R packages, and system dependencies. Each profile is optimized for particular research workflows.
 
-### Variant Categories
+### Profile Categories
 
-**Standard Research Environments (6 variants)**
+**Standard Research Environments (6 profiles)**
 ```yaml
 minimal:          # ~800MB  - Essential R packages only
 analysis:         # ~1.2GB  - Tidyverse + data analysis tools
@@ -85,13 +85,13 @@ shiny:            # ~1.8GB  - Interactive web applications
 shiny_verse:      # ~3.5GB  - Shiny with tidyverse + publishing
 ```
 
-**Specialized Domains (2 variants)**
+**Specialized Domains (2 profiles)**
 ```yaml
 bioinformatics:   # ~2GB    - Bioconductor genomics packages
 geospatial:       # ~2.5GB  - sf, terra, leaflet mapping tools
 ```
 
-**🏔 Lightweight Alpine Variants (3 profiles)**
+**🏔 Lightweight Alpine Profiles (3 profiles)**
 ```yaml
 alpine_minimal:   # ~200MB  - Ultra-lightweight for CI/CD
 alpine_analysis:  # ~400MB  - Essential analysis in tiny container
@@ -107,7 +107,7 @@ rhub_windows:     # ~1.5GB  - Windows compatibility testing
 
 ## Single Source of Truth Architecture
 
-### Master Variant Library
+### Master Profile Library
 
 All profile definitions are stored in `templates/profiles.yaml`:
 
@@ -135,7 +135,7 @@ analysis:
 
 ### Team Configuration Selection
 
-Teams select which variants to enable in their `config.yaml`:
+Teams select which profiles to enable in their `config.yaml`:
 
 ```yaml
 profiles:
@@ -152,9 +152,9 @@ profiles:
     packages: ["additional_package"]
 ```
 
-## Interactive Variant Management
+## Interactive Profile Management
 
-### Using the Variant Browser
+### Using the Profile Browser
 
 The `./add_profile.sh` script provides an interactive interface for profile selection:
 
@@ -175,18 +175,18 @@ SPECIALIZED DOMAINS
  7) bioinformatics   ~2GB    - Bioconductor genomics packages
  8) geospatial       ~2.5GB  - sf, terra, leaflet mapping
 
-LIGHTWEIGHT ALPINE VARIANTS
+LIGHTWEIGHT ALPINE PROFILES
  9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
 10) alpine_analysis  ~400MB  - Essential analysis in tiny container
 
-Select variants to add (e.g., 1,3,9):
+Select profiles to add (e.g., 1,3,9):
 ```
 
-Selected variants are automatically added to your `config.yaml` with `enabled: true`.
+Selected profiles are automatically added to your `config.yaml` with `enabled: true`.
 
-### Manual Variant Management
+### Manual Profile Management
 
-You can also edit variants directly in `config.yaml`:
+You can also edit profiles directly in `config.yaml`:
 
 ```yaml
 profiles:
@@ -205,9 +205,9 @@ profiles:
     enabled: true     # Lightweight CI/CD
 ```
 
-## Custom Variant Creation
+## Custom Profile Creation
 
-### Extending Existing Variants
+### Extending Existing Profiles
 
 Add packages to existing profiles:
 
@@ -215,14 +215,14 @@ Add packages to existing profiles:
 profiles:
   analysis:
     enabled: true
-    # Extend the base analysis variant
+    # Extend the base analysis profile
     additional_packages:
       - "pins"
       - "vetiver"
       - "plumber"
 ```
 
-### Creating New Variants
+### Creating New Profiles
 
 Define completely custom profiles:
 
@@ -596,7 +596,7 @@ cd customer-churn-analysis
 zzcollab -i -p customer-churn-analysis
 ```
 
-### Customize Team Variants
+### Customize Team Profiles
 
 Edit the generated `config.yaml`:
 
@@ -675,7 +675,7 @@ zzcollab --config list
 # See which Docker images are available
 docker images | grep datasci-lab
 
-# Check team's package configuration
+# Check team's profile configuration
 cat config.yaml | grep -A 20 "build:"
 ```
 
@@ -697,19 +697,19 @@ zzcollab -t datasci-lab -p customer-churn-analysis -I minimal
 make docker-test
 ```
 
-## Advanced Custom Variant Workflow
+## Advanced Custom Profile Workflow
 
-### Creating Organization-Specific Variants
+### Creating Organization-Specific Profiles
 
 ```bash
 # 1. Copy and customize profile library
-cp templates/profiles.yaml custom_variants.yaml
+cp templates/profiles.yaml custom_profiles.yaml
 ```
 
-Edit `custom_variants.yaml` to add organization profiles:
+Edit `custom_profiles.yaml` to add organization profiles:
 
 ```yaml
-# Add to existing variants
+# Add to existing profiles
 org_finance:
   base_image: "rocker/r-ver:latest"
   description: "Financial analysis environment with specialized packages"
@@ -748,37 +748,37 @@ org_research:
   size: "~4GB"
 ```
 
-### Using Custom Variant Library
+### Using Custom Profile Library
 
 Edit team `config.yaml`:
 
 ```yaml
 build:
   use_config_profiles: true
-  variant_library: "custom_variants.yaml"  # Use custom library
+  profile_library: "custom_profiles.yaml"  # Use custom library
 
 profiles:
   minimal:
     enabled: true
   org_finance:
-    enabled: true    # Use custom finance variant
+    enabled: true    # Use custom finance profile
   org_research:
-    enabled: true    # Use custom research variant
+    enabled: true    # Use custom research profile
 ```
 
-### Building and Sharing Custom Variants
+### Building and Sharing Custom Profiles
 
 ```bash
 # Build with custom profile library
-zzcollab --variants-config config.yaml
+zzcollab --profiles-config config.yaml
 
 # Verify custom images were created
 docker images | grep finance
 docker images | grep research
 
 # Share custom profile library with organization
-git add custom_variants.yaml config.yaml
-git commit -m "Add organization-specific variants"
+git add custom_profiles.yaml config.yaml
+git commit -m "Add organization-specific profiles"
 git push origin main
 ```
 
@@ -801,14 +801,14 @@ zzcollab --config get variants.analysis.enabled
 zzcollab --config get build.docker.platform
 ```
 
-### Variant Definition Validation
+### Profile Definition Validation
 
 ```bash
 # Validate profiles.yaml syntax
 ./add_profile.sh --validate
 
 # Check for missing or invalid profile references
-zzcollab --variants-config config.yaml --dry-run
+zzcollab --profiles-config config.yaml --dry-run
 
 # Test profile definitions without building
 ./add_profile.sh --test-definitions
@@ -823,8 +823,8 @@ docker info
 # Verify platform compatibility
 docker buildx ls
 
-# Test Docker build with specific variant
-zzcollab --variants-config config.yaml --build-only minimal
+# Test Docker build with specific profile
+zzcollab --profiles-config config.yaml --build-only minimal
 ```
 
 ## Common Configuration Issues
@@ -984,7 +984,7 @@ if (!validation_result$valid) {
 }
 ```
 
-### Advanced Configuration with Custom Variants
+### Advanced Configuration with Custom Profiles
 
 ```{r config-advanced, eval=FALSE}
 # Set custom build mode with specific packages
@@ -1002,7 +1002,7 @@ init_project(
   team_name = "datasci-lab",
   project_name = "customer-analysis",
   build_mode = "my_analysis",
-  variants = c("minimal", "analysis", "alpine_minimal")
+  profiles = c("minimal", "analysis", "alpine_minimal")
 )
 ```
 
@@ -1094,7 +1094,7 @@ defaults:
 
 ### Small Research Team (2-5 people)
 - **Project configs**: Share configuration via `./zzcollab.yaml` in repositories
-- **Focused variants**: 3-5 variants covering team's research domains
+- **Focused profiles**: 3-5 profiles covering team's research domains
 - **Workflow alignment**: Team agrees on build mode and package needs
 - **Package coordination**: Custom build modes for shared analysis workflows
 
@@ -1121,18 +1121,18 @@ build_modes:
 
 ### Large Research Organization (10+ people)
 - **System configs**: Organization defaults in `/etc/zzcollab/config.yaml`
-- **Extensive variants**: Full profile library available to teams
+- **Extensive profiles**: Full profile library available to teams
 - **Complete research lifecycle**: All workflows supported (data analysis, manuscripts, packages)
-- **Custom profile library**: Organization-specific variants in custom libraries
+- **Custom profile library**: Organization-specific profiles in custom libraries
 
 ```yaml
 # /etc/zzcollab/config.yaml for organization
 defaults:
   github_account: "university-research"
 
-# Custom organization variants
+# Custom organization profiles
 build:
-  variant_library: "/etc/zzcollab/org_variants.yaml"
+  profile_library: "/etc/zzcollab/org_profiles.yaml"
 
 collaboration:
   github:
@@ -1213,8 +1213,8 @@ build:
 ### Container Size Optimization
 
 1. **Choose appropriate base images**: Use minimal bases when possible
-2. **Use Alpine variants**: For CI/CD and testing workflows
-3. **Separate concerns**: Use different variants for different purposes
+2. **Use Alpine profiles**: For CI/CD and testing workflows
+3. **Separate concerns**: Use different profiles for different purposes
 
 ```yaml
 # Size-optimized profile strategy
@@ -1223,7 +1223,7 @@ profiles:
     enabled: true     # ~200MB for CI/CD
   analysis:
     enabled: true     # ~1.2GB for development
-  # Don't enable comprehensive variants unless needed
+  # Don't enable comprehensive profiles unless needed
 ```
 
 ## Security and Access Management

@@ -352,11 +352,11 @@ Rscript -e 'devtools::test()'
 docker build -t my-project-env .
 
 # Render paper in container (matches CI)
-docker run --rm -v $(pwd):/project -w /project \
+docker run --rm -v $(pwd):/home/analyst/project -w /home/analyst/project \
   my-project-env Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 
 # Run tests in container
-docker run --rm -v $(pwd):/project -w /project \
+docker run --rm -v $(pwd):/home/analyst/project -w /home/analyst/project \
   my-project-env Rscript -e 'devtools::test()'
 ```
 

@@ -2346,7 +2346,7 @@ gh run list --workflow=update-team-image.yml
 ```bash
 # Add to Makefile:
 my-analysis:
-	docker run --rm -v $(PWD):/project $(TEAM_NAME)/$(PROJECT_NAME):latest Rscript scripts/my_analysis.R
+	docker run --rm -v $(PWD):/home/analyst/project $(TEAM_NAME)/$(PROJECT_NAME):latest Rscript scripts/my_analysis.R
 
 .PHONY: my-analysis
 ```
