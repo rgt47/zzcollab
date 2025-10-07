@@ -172,7 +172,7 @@ ZZCOLLAB features a powerful multi-layered configuration system that controls Do
 4. **Built-in defaults** - Fallback values ensuring system functionality
 
 **Three Configuration Domains**:
-- **Docker Variant Management** - 14+ specialized environments with custom base images and packages
+- **Docker Profile Management** - 14+ specialized environments with custom base images and packages
 - **Package Management** - Build modes (Fast/Standard/Comprehensive) with flexible package selection
 - **Development Settings** - Team collaboration, GitHub integration, and automation preferences
 
@@ -225,7 +225,7 @@ zzcollab -i -t TEAM -p PROJECT --profiles-config config.yaml
 
 **Single Source of Truth**:
 - **Master Library**: `templates/profiles.yaml` contains all profile definitions
-- **Team Configuration**: `templates/config.yaml` selects which profiles to enable
+- **Team Configuration**: `templates/config.yaml`
 - **No Duplication**: Teams reference profiles by name, full definitions pulled automatically
 
 ### Package Management System
@@ -408,21 +408,21 @@ git clone https://github.com/team/team-project.git
 cd team-project
 
 # 2. Join with appropriate interface
-zzcollab -t team -p team-project -I analysis    # Uses team's analysis variant
+zzcollab -t team -p team-project -I analysis    # Uses team's analysis profile
 make docker-zsh                                 # Start development environment
 ```
 
 **Advanced Custom Variants**:
 ```bash
-# 1. Copy and modify existing variant
-cp templates/variant_examples.yaml custom_variants.yaml
-vim custom_variants.yaml       # Add custom variants with specific packages
+# 1. Copy and modify existing profile
+cp templates/profiles.yaml custom_profiles.yaml
+vim custom_profiles.yaml       # Add profiles with specific packages
 
 # 2. Reference custom library
-vim config.yaml                # Set variant_library: "custom_variants.yaml"
+vim config.yaml                # Set profile_library: "custom_profiles.yaml"
 
 # 3. Build custom environments
-zzcollab --variants-config config.yaml
+zzcollab --profiles-config config.yaml
 ```
 
 ### Configuration Validation and Troubleshooting
@@ -435,8 +435,8 @@ zzcollab --config validate
 # Debug configuration loading
 zzcollab --config list         # Shows effective configuration values
 
-# Test variant definitions
-./add_variant.sh --validate    # Check variant_examples.yaml syntax
+# Test profile definitions
+./add_profile.sh --validate    # Check profiles.yaml syntax
 
 # Verify Docker platform compatibility
 zzcollab --config get docker.platform
@@ -444,7 +444,7 @@ zzcollab --config get docker.platform
 
 **Common Configuration Issues**:
 - **Missing yq dependency**: Install with `brew install yq` (macOS) or `snap install yq` (Ubuntu)
-- **Variant build failures**: Check Docker platform compatibility (ARM64 vs AMD64)
+- **Profile build failures**: Check Docker platform compatibility (ARM64 vs AMD64)
 - **Package installation errors**: Verify custom package lists in build_modes section
 - **Permission issues**: Ensure proper Docker daemon access and directory permissions
 
@@ -559,13 +559,13 @@ prepare_penguin_data <- function(data, n_records = 50) {
 
 The enhanced data workflow system provides a complete framework for scientific data processing from receipt to deployment. Both templates are automatically created during project initialization and integrated into the uninstall process for complete lifecycle management. The comprehensive workflow guide ensures systematic, tested data processing that meets scientific reproducibility standards with professional-grade testing and documentation practices.
 
-## Docker Variant System (Enhanced 2025)
+## Docker Profile System (Enhanced 2025)
 
-ZZCOLLAB now supports **14+ specialized Docker variants** with a single source of truth architecture that eliminates duplication and provides unlimited customization options.
+ZZCOLLAB now supports **14+ specialized Docker profiles** with a single source of truth architecture that eliminates duplication and provides unlimited customization options.
 
-### Variant Library Overview
+### Profile Library Overview
 
-**Standard Research Environments (6 variants)**
+**Standard Research Environments (6 profiles)**
 - **minimal** (~800MB) - Essential R packages only  
 - **analysis** (~1.2GB) - Tidyverse + data analysis tools
 - **modeling** (~1.5GB) - Machine learning with tidymodels
@@ -573,25 +573,25 @@ ZZCOLLAB now supports **14+ specialized Docker variants** with a single source o
 - **shiny** (~1.8GB) - Interactive web applications
 - **shiny_verse** (~3.5GB) - Shiny with tidyverse + publishing
 
-**Specialized Domains (2 variants)**
+**Specialized Domains (2 profiles)**
 - **bioinformatics** (~2GB) - Bioconductor genomics packages
 - **geospatial** (~2.5GB) - sf, terra, leaflet mapping tools
 
-**Lightweight Alpine Variants (3 variants)**  
+**Lightweight Alpine Variants (3 profiles)**  
 - **alpine_minimal** (~200MB) - Ultra-lightweight for CI/CD
 - **alpine_analysis** (~400MB) - Essential analysis in tiny container
 - **hpc_alpine** (~600MB) - High-performance parallel processing
 
-**R-Hub Testing Environments (3 variants)**
+**R-Hub Testing Environments (3 profiles)**
 - **rhub_ubuntu** (~1GB) - CRAN-compatible package testing
 - **rhub_fedora** (~1.2GB) - Test against R-devel
 - **rhub_windows** (~1.5GB) - Windows compatibility testing
 
 ### Single Source of Truth Architecture
 
-All variant definitions are centralized in `variant_examples.yaml` with team configurations referencing them:
+All profile definitions are centralized in `profiles.yaml` with team configurations referencing them:
 
-**Master Library**: `templates/variant_examples.yaml`
+**Master Library**: `templates/profiles.yaml`
 ```yaml
 minimal:
   base_image: "rocker/r-ver:latest"
@@ -612,26 +612,26 @@ modeling:
 
 **Team Configuration**: `templates/config.yaml`
 ```yaml
-variants:
+profiles:
   minimal:
     enabled: true    # Essential development environment (~800MB)
-    # Full definition in variant_examples.yaml
+    # Full definition in profiles.yaml
   
   modeling:
     enabled: false   # Machine learning environment (~1.5GB)  
-    # Full definition in variant_examples.yaml
+    # Full definition in profiles.yaml
 
 build:
-  use_config_variants: true
-  variant_library: "variant_examples.yaml"
+  use_config_profiles: true
+  profile_library: "profiles.yaml"
 ```
 
-### Interactive Variant Management
+### Interactive Profile Management
 
 **Browse and Add Variants**:
 ```bash
-# Interactive variant browser with 14 options
-./add_variant.sh
+# Interactive profile browser with 14 options
+./add_profile.sh
 
 # Displays categorized menu:
 # STANDARD RESEARCH ENVIRONMENTS
@@ -642,22 +642,22 @@ build:
 #  5) shiny            ~1.8GB  - Interactive web applications
 #  6) shiny_verse      ~3.5GB  - Shiny with tidyverse + publishing
 
-# Select variants and they are automatically added to config.yaml
+# Select profiles and they are automatically added to config.yaml
 ```
 
 ### Modern Workflow Commands
 
 **Team Initialization**:
 ```bash
-# Quick start - creates optimal default variants
-zzcollab -i -p myproject --github              # Creates: minimal + analysis variants
+# Quick start - creates optimal default profiles
+zzcollab -i -p myproject --github              # Creates: minimal + analysis profiles
 
-# Custom variants via config file
+# Custom profiles via config file
 zzcollab -i -p myproject             # Creates project + config.yaml
-./add_variant.sh                     # Browse and select variants
-zzcollab --variants-config config.yaml --github  # Build selected variants
+./add_profile.sh                     # Browse and select profiles
+zzcollab --profiles-config config.yaml --github  # Build selected profiles
 
-# Legacy approach (limited to 3 variants)
+# Legacy approach (limited to 3 profiles)
 zzcollab -i -p myproject -B rstudio --github     # Traditional RStudio only
 ```
 
@@ -671,16 +671,16 @@ zzcollab -i -p research-paper        # Uses config defaults
 zzcollab -i -t myteam -p analysis-project -B rstudio -d ~/dotfiles
 ```
 
-### Benefits of New Variant System
+### Benefits of New Profile System
 
-- **Eliminates duplication** - Single source of truth in `variant_examples.yaml`
+- **Eliminates duplication** - Single source of truth in `profiles.yaml`
 - **14+ specialized environments** - From 200MB Alpine to 3.5GB full-featured
-- **Domain-specific variants** - Bioinformatics, geospatial, HPC, web apps
+- **Domain-specific profiles** - Bioinformatics, geospatial, HPC, web apps
 - **Professional testing** - R-hub environments match CRAN infrastructure
-- **Lightweight options** - Alpine variants 5x smaller than standard images
-- **Interactive discovery** - Browse variants with `./add_variant.sh`
+- **Lightweight options** - Alpine profiles 5x smaller than standard images
+- **Interactive discovery** - Browse profiles with `./add_profile.sh`
 - **Backward compatibility** - Legacy full definitions still supported
-- **Easy maintenance** - Update variant in one place, propagates everywhere
+- **Easy maintenance** - Update profile in one place, propagates everywhere
 
 ## Solo Developer Workflow (Enhanced 2025)
 
@@ -703,13 +703,13 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 
 **2. Project Creation**:
 ```bash
-# Quick start - optimal variants automatically
+# Quick start - optimal profiles automatically
 zzcollab -i -p penguin-analysis --github
 
-# Power users - browse 14+ variants interactively
+# Power users - browse 14+ profiles interactively
 mkdir penguin-analysis && cd penguin-analysis
 zzcollab -i -p penguin-analysis
-./add_variant.sh    # Select from bioinformatics, geospatial, alpine, etc.
+./add_profile.sh    # Select from bioinformatics, geospatial, alpine, etc.
 ```
 
 **3. Daily Development Cycle**:
@@ -802,8 +802,8 @@ fit_bill_model <- function() {
 
 - **Reproducible**: Identical environment every development session
 - **Professional**: Automated testing, validation, CI/CD
-- **Flexible**: 14+ variants for different research domains
-- **Lightweight**: Alpine variants ~200MB vs standard ~1GB+
+- **Flexible**: 14+ profiles for different research domains
+- **Lightweight**: Alpine profiles ~200MB vs standard ~1GB+
 - **Team-ready**: Easy transition to collaboration later
 - **Container-based**: No conflicts with host system R
 
@@ -856,21 +856,21 @@ make docker-r              # R console only
 make docker-bash           # Bash shell
 ```
 
-### Variant Management (New)
+### Profile Management (New)
 ```bash
-# Interactive variant discovery and addition
-./add_variant.sh           # Browse and add variants from comprehensive library
+# Interactive profile discovery and addition
+./add_profile.sh           # Browse and add profiles from comprehensive library
 
-# Manual variant management
-./variant_examples.yaml    # View all available variant definitions
-vim config.yaml            # Edit team variants (set enabled: true to build)
+# Manual profile management
+./profiles.yaml    # View all available profile definitions
+vim config.yaml            # Edit team profiles (set enabled: true to build)
 
-# Build custom variants
-zzcollab --variants-config config.yaml              # Build enabled variants
-zzcollab -i -t TEAM -p PROJECT --variants-config config.yaml  # Team init with custom variants
+# Build custom profiles
+zzcollab --profiles-config config.yaml              # Build enabled profiles
+zzcollab -i -t TEAM -p PROJECT --profiles-config config.yaml  # Team init with custom profiles
 
-# Default behavior (uses config.yaml automatically if use_config_variants: true)
-zzcollab -i -p PROJECT     # Builds default variants (minimal + analysis)
+# Default behavior (uses config.yaml automatically if use_config_profiles: true)
+zzcollab -i -p PROJECT     # Builds default profiles (minimal + analysis)
 ```
 
 ### Dependency Management
@@ -897,20 +897,20 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 zzcollab -i -t TEAM -p PROJECT -B r-ver -S -d ~/dotfiles      # Shell only (fastest)
 zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # RStudio only
 zzcollab -i -t TEAM -p PROJECT -B verse -S -d ~/dotfiles      # Verse only (publishing)
-zzcollab -i -t TEAM -p PROJECT -B all -S -d ~/dotfiles        # All 3 variants (traditional)
+zzcollab -i -t TEAM -p PROJECT -B all -S -d ~/dotfiles        # All 3 profiles (traditional)
 
 # Skip confirmation prompt for automation/CI:
 zzcollab -i -t TEAM -p PROJECT -B rstudio -S -y -d ~/dotfiles # No confirmation prompt
 
 # Combine selective building with build modes:
 zzcollab -i -t TEAM -p PROJECT -B rstudio -F -d ~/dotfiles    # RStudio with minimal packages (8)
-zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # All variants with full packages (27+)
+zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # All profiles with full packages (27+)
 
-# Incremental approach - start small, add variants later:
+# Incremental approach - start small, add profiles later:
 zzcollab -i -t TEAM -p PROJECT -B r-ver -S -d ~/dotfiles      # Start with shell only
-# Later, add more variants as needed:
-zzcollab -V rstudio                                            # Add RStudio variant
-zzcollab -V verse                                              # Add verse variant for publishing
+# Later, add more profiles as needed:
+zzcollab -V rstudio                                            # Add profile
+zzcollab -V verse                                              # Add profile for publishing
 
 # Environment variable support for build mode detection
 ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t TEAM -p PROJECT -B r-ver -d ~/dotfiles
@@ -919,16 +919,16 @@ ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t TEAM -p PROJECT -B r-ver -d ~/dotfiles
 zzcollab -d ~/dotfiles -G                                     # Basic setup with automatic GitHub repo creation
 zzcollab -i -t TEAM -p PROJECT -B rstudio -S -G -d ~/dotfiles # Team setup with automatic GitHub repo
 
-# Legacy: Traditional approach (builds all variants)
-# zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles              # Fast mode, all variants
-# zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles              # Comprehensive mode, all variants
+# Legacy: Traditional approach (builds all profiles)
+# zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles              # Fast mode, all profiles
+# zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles              # Comprehensive mode, all profiles
 
 
 # Manual core image building (if needed)
 cd /path/to/zzcollab
 cp templates/Dockerfile.unified ./Dockerfile.teamcore
 
-# Build shell variant
+# Build shell profile
 docker build -f Dockerfile.teamcore \
     --build-arg BASE_IMAGE=rocker/r-ver \
     --build-arg TEAM_NAME="TEAM" \
@@ -936,7 +936,7 @@ docker build -f Dockerfile.teamcore \
     --build-arg PACKAGE_MODE="standard" \
     -t "TEAM/PROJECTcore-shell:v1.0.0" .
 
-# Build RStudio variant
+# Build RStudio profile
 docker build -f Dockerfile.teamcore \
     --build-arg BASE_IMAGE=rocker/rstudio \
     --build-arg TEAM_NAME="TEAM" \
@@ -944,7 +944,7 @@ docker build -f Dockerfile.teamcore \
     --build-arg PACKAGE_MODE="standard" \
     -t "TEAM/PROJECTcore-rstudio:v1.0.0" .
 
-# Build verse variant (publishing workflow)
+# Build verse profile (publishing workflow)
 docker build -f Dockerfile.teamcore \
     --build-arg BASE_IMAGE=rocker/verse \
     --build-arg TEAM_NAME="TEAM" \
@@ -977,31 +977,31 @@ docker push "TEAM/PROJECTcore-verse:v1.0.0"
 # Step 1: Create and push team Docker images (this is all -i does now)
 zzcollab -i -t TEAM -p PROJECT -B r-ver -F -d ~/dotfiles      # Creates TEAM/PROJECTcore-shell:latest only
 zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # Creates TEAM/PROJECTcore-rstudio:latest only  
-zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # Creates all variants (shell, rstudio, verse)
+zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # Creates all profiles (shell, rstudio, verse)
 
 # Step 2: Create full project structure (run separately)
 mkdir PROJECT && cd PROJECT  # or git clone if repo exists
 zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles            # Full project setup with shell interface
 
-# Add more image variants later (incremental workflow)
-zzcollab -V rstudio                                            # Add RStudio variant
-zzcollab -V verse                                              # Add verse variant
+# Add profiles later (incremental workflow)
+zzcollab -V rstudio                                            # Add profile
+zzcollab -V verse                                              # Add profile
 
 # Developer 2+ (Team Members) - Join Existing Project
 git clone https://github.com/TEAM/PROJECT.git                 # Clone existing project
 cd PROJECT
 # Choose available interface:
 zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles             # Command-line development
-zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles           # RStudio Server (if variant available)
-zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing workflow (if variant available)
+zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles           # RStudio Server (if profile available)
+zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing workflow (if profile available)
 
-# Error handling: If team image variant not available, you'll get helpful guidance:
+# Error handling: If team image profile not available, you'll get helpful guidance:
 # Error: Team image 'TEAM/PROJECTcore-rstudio:latest' not found
-# Available variants for this project:
+# Available profiles for this project:
 #     - TEAM/PROJECTcore-shell:latest
 # Solutions:
-#    1. Use available variant: zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles
-#    2. Ask team lead to build rstudio variant: zzcollab -V rstudio
+#    1. Use available profile: zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles
+#    2. Ask team lead to build rstudio profile: zzcollab -V rstudio
 
 # Note: Build modes comparison:
 # Minimal (-M): Ultra-fast bare essentials (~30 seconds, 3 packages)
@@ -1104,30 +1104,30 @@ project/
 
 **System Version**: zzcollab 2.0 (unified paradigm)
 
-### Docker Variant System Refactoring (September 2025)
-Major architectural improvement implementing single source of truth for variant management:
+### Docker Profile System Refactoring (September 2025)
+Major architectural improvement implementing single source of truth for profile management:
 
 **Key Changes:**
-- **Eliminated duplication**: Variant definitions centralized in `variant_examples.yaml`
-- **14+ variants available**: Added shiny, shiny_verse, and comprehensive specialized options
-- **Interactive variant browser**: `./add_variant.sh` with categorized 14-option menu
+- **Eliminated duplication**: Profile definitions centralized in `profiles.yaml`
+- **14+ profiles available**: Added shiny, shiny_verse, and comprehensive specialized options
+- **Interactive profile browser**: `./add_profile.sh` with categorized 14-option menu
 - **Single source of truth**: Team configs reference central library instead of duplicating
-- **Backward compatibility**: Legacy full variant definitions still supported
-- **Verified system libraries**: Fixed missing dependencies across all variants
+- **Backward compatibility**: Legacy full profile definitions still supported
+- **Verified system libraries**: Fixed missing dependencies across all profiles
 
 **Technical Implementation:**
 - **Simplified config.yaml**: Reduced from 455 to 154 lines (66% reduction) 
-- **Enhanced add_variant.sh**: Generates lightweight YAML entries with library references
-- **Updated team_init.sh**: Dynamic variant loading during build process
+- **Enhanced add_profile.sh**: Generates lightweight YAML entries with library references
+- **Updated team_init.sh**: Dynamic profile loading during build process
 - **Comprehensive testing**: Validated new format, legacy compatibility, and integration
 
 ### Selective Base Image Building System
 Major improvement to team initialization workflow with selective base image building:
 
 **New Features:**
-- **Selective building**: Teams can build only needed variants (r-ver, rstudio, verse) instead of all
-- **Incremental workflow**: Start with one variant, add others later with `-V` flag  
-- **Enhanced error handling**: Helpful guidance when team members request unavailable variants
+- **Selective building**: Teams can build only needed profiles (r-ver, rstudio, verse) instead of all
+- **Incremental workflow**: Start with one profile, add others later with `-V` flag  
+- **Enhanced error handling**: Helpful guidance when team members request unavailable profiles
 - **Short flags**: All major options now have one-letter shortcuts (-i, -t, -p, -I, -B, -V)
 - **Verse support**: Publishing workflow with LaTeX support via rocker/verse
 - **Team communication**: Clear coordination between team leads and members about available tooling
@@ -1136,34 +1136,34 @@ Major improvement to team initialization workflow with selective base image buil
 ```bash
 # New selective base image flags
 -B, --init-base-image TYPE   # r-ver, rstudio, verse, all (for team initialization)
--V, --build-variant TYPE     # r-ver, rstudio, verse (for adding variants later)
+-V, -V TYPE     # r-ver, rstudio, verse (for adding profiles later)
 -I, --interface TYPE         # shell, rstudio, verse (for team members joining)
 
 # Examples
 zzcollab -i -t mylab -p study -B rstudio -S -d ~/dotfiles    # RStudio only
-zzcollab -V verse                                             # Add verse variant later
+zzcollab -V verse                                             # Add profile later
 zzcollab -t mylab -p study -I shell -d ~/dotfiles           # Join with shell interface
 ```
 
 **Error Handling Enhancements:**
 - **Image availability checking**: Validates team images exist before proceeding
-- **Helpful error messages**: Shows available variants and provides solutions
-- **Team coordination**: Guides team members on how to request missing variants
+- **Helpful error messages**: Shows available profiles and provides solutions
+- **Team coordination**: Guides team members on how to request missing profiles
 - **Docker Hub integration**: Checks image availability via `docker manifest inspect`
 
-### Revolutionary Docker Variant Management System
-Complete transformation from fixed 3-variant system to unlimited custom environments:
+### Revolutionary Docker Profile Management System
+Complete transformation from fixed 3-profile system to unlimited custom environments:
 
 **Unlimited Custom Variants:**
-- **YAML-based configuration**: Define any number of Docker variants with custom base images and R packages
-- **Comprehensive variant library**: 12+ predefined variants (standard, Alpine, R-hub, specialized domains)
-- **Interactive variant manager**: `add_variant.sh` script for easy discovery and addition of variants
-- **Variant examples library**: `variant_examples.yaml` with complete definitions organized by category
+- **YAML-based configuration**: Define any number of Docker profiles with custom base images and R packages
+- **Comprehensive profile library**: 12+ predefined profiles (standard, Alpine, R-hub, specialized domains)
+- **Interactive profile manager**: `add_profile.sh` script for easy discovery and addition of profiles
+- **Profile examples library**: `profiles.yaml` with complete definitions organized by category
 
 **New Configuration Architecture:**
 ```yaml
-# Team-level config.yaml supports unlimited variants
-variants:
+# Team-level config.yaml supports unlimited profiles
+profiles:
   bioinformatics:
     base_image: "bioconductor/bioconductor_docker:latest"
     packages: ["renv", "BiocManager", "DESeq2", "edgeR", "limma"]
@@ -1178,18 +1178,18 @@ variants:
     size: "~200MB"  # vs ~1GB for rocker images
 ```
 
-**Variant Categories Available:**
+**Profile Categories Available:**
 - **Standard**: minimal, analysis, modeling, publishing (rocker-based, ~800MB-3GB)
 - **Specialized**: bioinformatics, geospatial (domain-specific, ~2-2.5GB)
-- **Alpine**: ultra-lightweight variants for CI/CD (~200-600MB)
+- **Alpine**: ultra-lightweight profiles for CI/CD (~200-600MB)
 - **R-hub**: CRAN-compatible testing environments (Ubuntu, Fedora, Windows)
 
-**Interactive Variant Management:**
+**Interactive Profile Management:**
 ```bash
-# Discover and add variants interactively
-./add_variant.sh
+# Discover and add profiles interactively
+./add_profile.sh
 
-# Menu shows categorized variants with size estimates:
+# Menu shows categorized profiles with size estimates:
 # LIGHTWEIGHT ALPINE VARIANTS
 #  7) alpine_minimal       ~200MB  - Ultra-lightweight CI/CD
 #  8) alpine_analysis      ~400MB  - Lightweight data analysis
@@ -1200,8 +1200,8 @@ variants:
 ```
 
 **Two-Level Configuration System:**
-- **User config** (`~/.zzcollab/config.yaml`): Personal preferences and variant library
-- **Team config** (project's `config.yaml`): Which variants actually get built as Docker images
+- **User config** (`~/.zzcollab/config.yaml`): Personal preferences and profile library
+- **Team config** (project's `config.yaml`): Which profiles actually get built as Docker images
 
 **Legacy vs Modern System:**
 ```bash
@@ -1209,11 +1209,11 @@ variants:
 zzcollab -i -p png1 -B r-ver        # Creates: png1core-shell:latest only
 
 # Modern approach (uses config.yaml)  
-zzcollab -i -p png1                  # Creates: minimal + analysis variants (default)
-zzcollab -i -p png1 --variants-config config.yaml  # Explicit config usage
+zzcollab -i -p png1                  # Creates: minimal + analysis profiles (default)
+zzcollab -i -p png1 --profiles-config config.yaml  # Explicit config usage
 ```
 
-**Key Innovation**: Teams can now create specialized environments (bioinformatics with Bioconductor, geospatial with sf/terra, HPC with parallel processing, CI/CD with Alpine Linux) instead of being limited to generic r-ver/rstudio/verse variants.
+**Key Innovation**: Teams can now create specialized environments (bioinformatics with Bioconductor, geospatial with sf/terra, HPC with parallel processing, CI/CD with Alpine Linux) instead of being limited to generic r-ver/rstudio/verse profiles.
 
 ### Enhanced validate_package_environment.R Script (formerly check_renv_for_commit.R)
 The dependency validation script has been significantly improved and renamed to better reflect its comprehensive functionality:
@@ -1256,7 +1256,7 @@ All documentation has been updated to reflect current system capabilities:
 - **Practical examples**: Complete penguin bill analysis with bill_depth vs log(bill_length) 
 - **Two-iteration demo**: Initial scatter plot → enhanced with regression analysis (solo vs team approaches)
 - **Professional practices**: Function development, comprehensive testing, reproducible outputs
-- **14+ variant showcase**: Interactive variant selection with use case recommendations
+- **14+ profile showcase**: Interactive profile selection with use case recommendations
 - **Container-based development**: Clear enter-container → work → exit-container → commit patterns
 - **R package integration**: Proper vignette structure with executable code examples
 
@@ -1330,10 +1330,10 @@ join_project(
 **Change**: Modified default base image from "all" to "r-ver" for faster, more efficient builds.
 
 **Rationale**: 
-- **Faster builds**: r-ver (shell-only) builds significantly faster than all variants
-- **Resource efficiency**: Teams often do not need all 3 variants (shell, rstudio, verse)
-- **Selective approach**: Users can explicitly request additional variants when needed
-- **Backward compatibility**: `-B all` still available for teams that want all variants
+- **Faster builds**: r-ver (shell-only) builds significantly faster than all profiles
+- **Resource efficiency**: Teams often do not need all 3 profiles (shell, rstudio, verse)
+- **Selective approach**: Users can explicitly request additional profiles when needed
+- **Backward compatibility**: `-B all` still available for teams that want all profiles
 
 **Implementation**:
 - `modules/constants.sh:64`: `ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE="r-ver"`
@@ -1342,12 +1342,12 @@ join_project(
 
 **Impact**:
 ```bash
-# Old behavior (built all 3 variants by default):
+# Old behavior (built all 3 profiles by default):
 zzcollab -i -t mylab -p study    # Built shell + rstudio + verse
 
 # New behavior (builds shell-only by default):
 zzcollab -i -t mylab -p study    # Builds shell only (faster)
-zzcollab -i -t mylab -p study -B all  # Explicit flag for all variants
+zzcollab -i -t mylab -p study -B all  # Explicit flag for all profiles
 ```
 
 ### Critical Bug Fix: -i Flag Behavior (July 2025)
@@ -1471,7 +1471,7 @@ AMD64 Only:
 
 4. **Use in zzcollab workflows**:
    ```bash
-   # Modify team Dockerfile to use custom image for verse variant
+   # Modify team Dockerfile to use custom image for verse profile
    # In Dockerfile.teamcore, conditionally use rgt47/verse-arm64 instead of rocker/verse
    ```
 
@@ -1531,9 +1531,9 @@ For detailed information about the improvements, see:
      - `get_renv_packages_for_mode()` (modules/config.sh:795)
    - Fix: Added minimal cases returning "renv,remotes,here" (3 packages)
 
-3. **Variant Library Missing**: Config-based variants failed with "Variant library not found: variant_examples.yaml"
-   - Root cause: `variant_examples.yaml` not copied to project directory during team initialization
-   - Fix: Copy variant library from templates after creating config.yaml (modules/team_init.sh:232-237)
+3. **Profile Library Missing**: Config-based profiles failed with "Profile library not found: profiles.yaml"
+   - Root cause: `profiles.yaml` not copied to project directory during team initialization
+   - Fix: Copy profile library from templates after creating config.yaml (modules/team_init.sh:232-237)
 
 **Complete Build Mode System (4 modes):**
 - **Minimal (-M)**: 3 packages (renv, remotes, here) ~30 seconds
@@ -1572,7 +1572,7 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 - **Operator documentation**: Added proper `@name` and `@rdname` tags for `%||%` operator to resolve illegal character warnings
 
 **ShellCheck Analysis Pipeline:**
-- **Variable reference fix**: Corrected undefined `team_variant_name` variable to `variant_name` in `templates/add_variant.sh`
+- **Variable reference fix**: Corrected undefined `team_variant_name` variable to `variant_name` in `templates/add_profile.sh`
 - **Workflow optimization**: Enhanced ShellCheck configuration to focus on functional issues while maintaining code quality
 
 **Documentation Expansion and Quality Improvements:**
@@ -1613,7 +1613,7 @@ Comprehensive resolution of all GitHub Actions workflow failures, bringing the r
 **Core Vignette Suite:**
 - **quickstart.Rmd**: 5-minute fully reproducible analysis with all 5 levels (NEW - October 2025)
 - **getting-started.Rmd**: Comprehensive tutorial for new users with step-by-step Palmer Penguins analysis
-- **configuration.Rmd**: Advanced configuration system including Docker variants and package management
+- **configuration.Rmd**: Advanced configuration system including Docker profiles and package management
 - **testing.Rmd**: Comprehensive guide to testing data analysis workflows in R
 - **reproducibility-layers.Rmd**: Five-level progressive reproducibility framework
 - **Complete workflow coverage**: From quick start through advanced configuration and testing practices
@@ -1843,16 +1843,16 @@ This expansion makes ZZCOLLAB accessible to the broader R community by eliminati
 ```bash
 zzcollab -h                    # Main help with all options and examples
 zzcollab --help-init          # Team initialization specific guidance
-zzcollab --help-variants      # Docker variants configuration system (NEW)
+zzcollab --help-profiles      # Docker profiles configuration system (NEW)
 zzcollab --next-steps         # Development workflow guidance
 ```
 
 **Comprehensive Variants Documentation (NEW):**
-- **Complete variant catalog**: All 14+ variants with size estimates and descriptions
+- **Complete profile catalog**: All 14+ profiles with size estimates and descriptions
 - **Domain-specific examples**: Bioinformatics, geospatial, Alpine, R-hub testing workflows
 - **Configuration structure**: YAML syntax and hierarchy explanation
-- **Troubleshooting Q&A**: Common variant configuration issues and solutions
-- **Legacy vs modern approaches**: Clear comparison between `-B` flags and `--variants-config`
+- **Troubleshooting Q&A**: Common profile configuration issues and solutions
+- **Legacy vs modern approaches**: Clear comparison between `-B` flags and `--profiles-config`
 
 **Technical Implementation:**
 - **Smart terminal detection**: `[[ ! -t 1 ]]` detects redirected output
@@ -1870,7 +1870,7 @@ PAGER=cat zzcollab -h         # No paging for scripted usage
 zzcollab -h > documentation.txt  # Works correctly for documentation
 
 # Specialized help available
-zzcollab --help-variants      # Comprehensive Docker variants guide
+zzcollab --help-profiles      # Comprehensive Docker profiles guide
 ```
 
 **Benefits:**
@@ -1978,7 +1978,7 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
   - Architecture overview and core components
   - Unified research compendium documentation
   - Advanced configuration system with examples
-  - Docker variant system and customization
+  - Docker profile system and customization
   - Data documentation system and workflow
   - Solo and team collaboration workflows
   - Recent enhancements and platform-specific notes
@@ -2007,11 +2007,11 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
   - Environment variable documentation
   - Advanced customization patterns
 
-- **VARIANTS.md** (20K): Docker variant system guide
+- **VARIANTS.md** (20K): Docker profile system guide
   - Single source of truth architecture
-  - Complete catalog of 14+ Docker variants
-  - Variant categories and specifications
-  - Custom variant definition
+  - Complete catalog of 14+ Docker profiles
+  - Profile categories and specifications
+  - Custom profile definition
   - Platform considerations (ARM64 compatibility)
 
 **Research Motivation Documents**:
@@ -2034,7 +2034,7 @@ When working on zzcollab, refer users to:
 - Build mode questions → `docs/BUILD_MODES.md`
 - Testing implementation → `docs/TESTING_GUIDE.md`
 - Configuration setup → `docs/CONFIGURATION.md`
-- Variant customization → `docs/VARIANTS.md`
+- Profile customization → `docs/VARIANTS.md`
 - General usage → `ZZCOLLAB_USER_GUIDE.md`
 - Architecture details → `CLAUDE.md` (this file)
 
