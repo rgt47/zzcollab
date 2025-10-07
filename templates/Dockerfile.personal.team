@@ -1,0 +1,40 @@
+FROM ${BASE_IMAGE}:latest
+
+# Build arguments
+ARG TEAM_NAME=team
+ARG PROJECT_NAME=project
+ARG USERNAME=analyst
+
+# Add metadata labels
+LABEL maintainer="${TEAM_NAME}"
+LABEL project="${PROJECT_NAME}"
+LABEL org.opencontainers.image.title="ZZCOLLAB Personal Development Image"
+LABEL org.opencontainers.image.description="Personal development environment for ${PROJECT_NAME}"
+LABEL org.opencontainers.image.vendor="ZZCOLLAB"
+
+# Switch to analyst user (already created in base image)
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}/project
+
+# Copy dotfiles to analyst home directory
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
+COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
+
+# Install vim plugins (vim-plug already installed in base image)
+RUN vim +PlugInstall +qall || true
+
+# Copy project files
+COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
+COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
+COPY --chown=${USERNAME}:${USERNAME} .Rprofile* ./
+COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
+
+# Copy rest of project
+COPY --chown=${USERNAME}:${USERNAME} . .
+
+# Install the research compendium as an R package
+RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
+
+# Set working directory and default command
+WORKDIR /home/${USERNAME}/project
+CMD ["/bin/zsh"]

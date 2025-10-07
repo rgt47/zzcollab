@@ -306,9 +306,9 @@ create_docker_files() {
     # Choose template based on whether using team image or not
     local dockerfile_template
     if [[ "$use_team_image" == "true" ]]; then
-        # Use Dockerfile.personal which supports team images
-        dockerfile_template="Dockerfile.personal"
-        log_info "Using Dockerfile.personal template (supports team images)"
+        # Use simplified team-specific template
+        dockerfile_template="Dockerfile.personal.team"
+        log_info "Using Dockerfile.personal.team template (simplified for team images)"
     else
         # Use unified template for solo developers
         dockerfile_template=$(get_dockerfile_template)
