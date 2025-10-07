@@ -8,7 +8,8 @@
       "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/penguin-bills/**)",
       "Bash(modules/team_init.sh)",
       "Bash(add_profile.sh)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(docker run:*)"
     ],
     "deny": [],
     "ask": []

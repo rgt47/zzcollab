@@ -747,14 +747,27 @@ LABEL org.zzcollab.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # Install system dependencies if specified
 EOF
 
+    # Always install essential shell tools for zzcollab workflows
+    cat >> "$dockerfile" << 'DEPS_EOF'
+# Install essential shell tools for zzcollab development environments
+RUN apt-get update && apt-get install -y \
+    zsh \
+    vim \
+    git \
+    curl \
+    wget \
+DEPS_EOF
+
     if [[ -n "$system_deps" ]]; then
-        cat >> "$dockerfile" << EOF
-RUN apt-get update && apt-get install -y \\
-$(echo "$system_deps" | sed 's/ / \\\n    /g') \\
+        # Add system deps with proper continuation
+        echo "$system_deps" | sed 's/ / \\\n    /g' | sed 's/^/    /' >> "$dockerfile"
+        echo " \\" >> "$dockerfile"
+    fi
+
+    cat >> "$dockerfile" << 'DEPS_EOF'
     && rm -rf /var/lib/apt/lists/*
 
-EOF
-    fi
+DEPS_EOF
 
     if [[ -n "$packages" ]]; then
         cat >> "$dockerfile" << EOF
