@@ -530,7 +530,7 @@ build:
 collaboration:
   documentation:
     auto_generate_readme: true       # Generate project README
-    include_variant_docs: true       # Document available profiles
+    include_profile_docs: true       # Document available profiles
     update_user_guide: true          # Include ZZCOLLAB_USER_GUIDE.md
 
     # Documentation templates
@@ -578,7 +578,7 @@ build_modes:
 # Create project using personal defaults
 zzcollab -i -p my-analysis
 
-# Customize variants for this specific project
+# Customize profiles for this specific project
 cd my-analysis
 ./add_profile.sh    # Add alpine_minimal for CI/CD testing
 ```
@@ -643,7 +643,7 @@ collaboration:
 
 ```bash
 # Build team images with custom configuration
-zzcollab --variants-config config.yaml --github
+zzcollab --profiles-config config.yaml --github
 
 # Push to GitHub and Docker Hub
 git add . && git commit -m "Initial team configuration"
@@ -797,7 +797,7 @@ zzcollab --config list
 
 # Check specific configuration values
 zzcollab --config get team-name
-zzcollab --config get variants.analysis.enabled
+zzcollab --config get profiles.analysis.enabled
 zzcollab --config get build.docker.platform
 ```
 
@@ -1079,7 +1079,7 @@ get_config("team_name")  # Should be back to original value
 
 ### Solo Researcher
 - **User config only**: Set personal defaults in `~/.zzcollab/config.yaml`
-- **Minimal variants**: Use 2-3 profiles (minimal, analysis, alpine_minimal)
+- **Minimal profiles**: Use 2-3 profiles (minimal, analysis, alpine_minimal)
 - **Standard build mode**: Balance between functionality and build time
 - **Simple package lists**: Stick to well-established packages
 
@@ -1254,7 +1254,7 @@ development:
 ### Access Control
 
 - **User configs**: Personal settings only (team names, preferences)
-- **Project configs**: Team settings (variants, collaboration rules)
+- **Project configs**: Team settings (profiles, collaboration rules)
 - **System configs**: Organization policies (security, defaults)
 
 This separation ensures that sensitive organization settings cannot be overridden by individual users or projects.

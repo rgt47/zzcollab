@@ -2,7 +2,7 @@
 
 ## The Key Distinction
 
-Build modes and profiles serve different purposes in the zzcollab workflow. Understanding when and how each is used is essential for efficient development.
+Build modes and variants serve different purposes in the zzcollab workflow. Understanding when and how each is used is essential for efficient development.
 
 ## Build Modes vs Variants - Different Purposes
 
@@ -61,7 +61,7 @@ cd my-project
 zzcollab -I analysis -M  # Use analysis profile + minimal build mode
 
 # What happens:
-# 1. Pulls rgt47/my-project_core-analysis (profile with tidyverse)
+# 1. Pulls rgt47/my-project_core-analysis (variant with tidyverse)
 # 2. Runs renv::install() with MINIMAL packages (3 packages)
 # 3. Final environment = tidyverse (from profile) + 3 packages (from build mode)
 ```
@@ -73,7 +73,7 @@ zzcollab -I analysis -M  # Use analysis profile + minimal build mode
 - Build modes are **per-developer** (each developer picks their package set)
 
 **Flexibility**:
-- Team provides base environments (profiles)
+- Team provides base environments (variants)
 - Developers customize for their work (build modes)
 
 ## Practical Scenarios
@@ -101,7 +101,7 @@ zzcollab -t team -p project -I minimal -M
 
 ### Scenario 3: Mixed Team
 ```bash
-# Team lead builds both profiles
+# Team lead builds both variants
 zzcollab -i -p project -M  # Profiles: minimal + analysis
 
 # Developer 1 (package dev): minimal profile + minimal mode
@@ -128,7 +128,7 @@ Docker profiles in zzcollab are **different pre-configured Docker environments**
 - Different system libraries
 - Different size/build time tradeoffs
 
-Think of profiles as "flavors" of your research environment, optimized for different tasks.
+Think of variants as "flavors" of your research environment, optimized for different tasks.
 
 ### The Two Default Variants
 
@@ -182,15 +182,15 @@ docker run rgt47/penguins-bills_core-analysis
 
 ### How Variants Work
 
-1. **Template defines profiles**: `profiles.yaml` has full specifications
-2. **Project config enables profiles**: `config.yaml` sets which ones to build
-3. **Team initialization builds enabled profiles**: `zzcollab -i` builds all enabled
-4. **Team members choose profile**: `zzcollab -I analysis` uses analysis variant
+1. **Template defines variants**: `profiles.yaml` has full specifications
+2. **Project config enables variants**: `config.yaml` sets which ones to build
+3. **Team initialization builds enabled variants**: `zzcollab -i` builds all enabled
+4. **Team members choose variant**: `zzcollab -I analysis` uses analysis variant
 
 ### Practical Example
 
 ```bash
-# Team lead builds two profiles
+# Team lead builds two variants
 zzcollab -i -p my-project  # Builds minimal + analysis (defaults)
 
 # Developer 1: package development
@@ -269,7 +269,7 @@ So the system is smart enough to avoid reinstallation, though not yet optimized 
 
 When you run `zzcollab -i -p penguins-bills`, the system looks at the project's `config.yaml` (NOT your user config at `~/.zzcollab/config.yaml`).
 
-The project-level `config.yaml` is automatically created during team initialization and has two profiles enabled by default:
+The project-level `config.yaml` is automatically created during team initialization and has two variants enabled by default:
 
 ```yaml
 # Created by zzcollab team initialization
@@ -307,7 +307,7 @@ Having both `minimal` and `analysis` enabled gives teams flexibility:
 
 ### How to Change Defaults
 
-If you only want one profile, you have two options:
+If you only want one variant, you have two options:
 
 **Option 1: Edit project config.yaml before building**
 ```bash
@@ -320,14 +320,14 @@ cd ..
 
 **Option 2: Use legacy -B flag (bypasses config.yaml)**
 ```bash
-zzcollab -i -p my-project -B r-ver  # Builds only shell profile
+zzcollab -i -p my-project -B r-ver  # Builds only shell variant
 ```
 
 ### The Workflow
 
 1. `zzcollab -i -p penguins-bills` creates a `penguins-bills/config.yaml`
 2. That config has `minimal: enabled: true` and `analysis: enabled: true` by default
-3. Both profiles get built and pushed to Docker Hub
+3. Both variants get built and pushed to Docker Hub
 4. Team members can choose which profile to use: `zzcollab -I minimal` or `zzcollab -I analysis`
 
 This design allows teams to provide multiple environment options without requiring each team member to build their own Docker images.
