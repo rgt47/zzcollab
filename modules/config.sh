@@ -43,6 +43,8 @@ CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
 
 # Package list cache (loaded from config files)
+CONFIG_MINIMAL_DOCKER_PACKAGES=""
+CONFIG_MINIMAL_RENV_PACKAGES=""
 CONFIG_FAST_DOCKER_PACKAGES=""
 CONFIG_FAST_RENV_PACKAGES=""
 CONFIG_STANDARD_DOCKER_PACKAGES=""
@@ -744,7 +746,7 @@ get_docker_packages_for_mode() {
 
     case "$mode" in
         minimal)
-            if [[ -n "$CONFIG_MINIMAL_DOCKER_PACKAGES" ]]; then
+            if [[ -n "${CONFIG_MINIMAL_DOCKER_PACKAGES:-}" ]]; then
                 echo "$CONFIG_MINIMAL_DOCKER_PACKAGES"
             else
                 # Return default minimal mode packages (3 packages)
