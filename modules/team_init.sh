@@ -788,6 +788,23 @@ RUN useradd --create-home --shell /bin/bash analyst || true
 # This allows personal Dockerfiles to install packages as analyst user
 RUN chown -R analyst:analyst /usr/local/lib/R/site-library
 
+# Install vim-plug for analyst user
+RUN curl -fLo /home/analyst/.vim/autoload/plug.vim --create-dirs \\
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+# Install vim plugins (suppress interactive mode)
+RUN vim +PlugInstall +qall || true
+
+# Install zsh plugins for analyst user
+RUN mkdir -p /home/analyst/.zsh && \\
+    git clone https://github.com/zsh-users/zsh-autosuggestions \\
+     /home/analyst/.zsh/zsh-autosuggestions && \\
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting \\
+     /home/analyst/.zsh/zsh-syntax-highlighting
+
+# Ensure analyst owns their home directory
+RUN chown -R analyst:analyst /home/analyst
+
 # Set default user (will be overridden in personal Dockerfile)
 ENV USER=rstudio
 
