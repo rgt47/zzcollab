@@ -787,9 +787,9 @@ EOF
     fi
 
     cat >> "$dockerfile" << EOF
-# Create analyst user for zzcollab personal Dockerfiles
+# Create analyst user for zzcollab personal Dockerfiles with zsh as default shell
 # This ensures personal Dockerfiles can use analyst user regardless of base image
-RUN useradd --create-home --shell /bin/bash analyst || true
+RUN useradd --create-home --shell /bin/zsh analyst || true
 
 # Give analyst user write permission to R library directory
 # This allows personal Dockerfiles to install packages as analyst user
