@@ -809,14 +809,12 @@ RUN mkdir -p /home/analyst/.zsh && \\
 # Ensure analyst owns their home directory
 RUN chown -R analyst:analyst /home/analyst
 
-# Set default user (will be overridden in personal Dockerfile)
-ENV USER=rstudio
-
-# Set working directory
-WORKDIR /home/rstudio
+# Set default user and working directory
+USER analyst
+WORKDIR /home/analyst
 
 # Default command
-CMD ["/bin/bash"]
+CMD ["/bin/zsh"]
 EOF
 
     print_status "  Generated: $dockerfile"
