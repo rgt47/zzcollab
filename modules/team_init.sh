@@ -756,6 +756,8 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
+    ca-certificates \
+    gnupg \
 DEPS_EOF
 
     if [[ -n "$system_deps" ]]; then
@@ -766,6 +768,11 @@ DEPS_EOF
 
     cat >> "$dockerfile" << 'DEPS_EOF'
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (required for coc.nvim and other vim plugins)
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 DEPS_EOF
 
@@ -788,12 +795,9 @@ RUN useradd --create-home --shell /bin/bash analyst || true
 # This allows personal Dockerfiles to install packages as analyst user
 RUN chown -R analyst:analyst /usr/local/lib/R/site-library
 
-# Install vim-plug for analyst user
+# Install vim-plug for analyst user (plugins will be installed when .vimrc is copied)
 RUN curl -fLo /home/analyst/.vim/autoload/plug.vim --create-dirs \\
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-
-# Install vim plugins (suppress interactive mode)
-RUN vim +PlugInstall +qall || true
 
 # Install zsh plugins for analyst user
 RUN mkdir -p /home/analyst/.zsh && \\

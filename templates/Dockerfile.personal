@@ -151,6 +151,13 @@ RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
         vim +PlugInstall +qall || true; \
     fi
 
+# Install vim plugins for team images (vim-plug already installed in team image)
+RUN if [ "${BASE_IMAGE}" != "rocker/r-ver" ] && \
+       [ "${BASE_IMAGE}" != "rocker/rstudio" ] && \
+       [ "${BASE_IMAGE}" != "rocker/verse" ]; then \
+        vim +PlugInstall +qall || true; \
+    fi
+
 # Copy rest of project
 COPY --chown=${USERNAME}:${USERNAME} . .
 
