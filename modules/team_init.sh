@@ -771,6 +771,10 @@ EOF
 # This ensures personal Dockerfiles can use analyst user regardless of base image
 RUN useradd --create-home --shell /bin/bash analyst || true
 
+# Give analyst user write permission to R library directory
+# This allows personal Dockerfiles to install packages as analyst user
+RUN chown -R analyst:analyst /usr/local/lib/R/site-library
+
 # Set default user (will be overridden in personal Dockerfile)
 ENV USER=rstudio
 
