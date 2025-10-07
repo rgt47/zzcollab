@@ -55,42 +55,42 @@ docker-build:
 	DOCKER_BUILDKIT=1 docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 docker-document:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::document()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::document()"
 
 docker-build-pkg:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD build .
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
 
 docker-check: docker-document
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::test()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::test()"
 
 docker-vignettes: docker-document
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/report/report.Rmd')"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/report/report.Rmd')"
 
 docker-check-renv:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::status()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::status()"
 
 docker-check-renv-fix:
-	docker run --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::snapshot()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::snapshot()"
 
 docker-r:
-	docker run --rm -it -v $$(pwd):/project $(PACKAGE_NAME) R
+	docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R
 
 docker-bash:
-	docker run --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/bash
+	docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/bash
 
 docker-zsh:
-	docker run --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/zsh
+	docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: analyst, Password: analyst"
-	docker run --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
+	docker run --rm -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
 
 # Cleanup
 clean:

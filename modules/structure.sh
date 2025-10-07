@@ -499,24 +499,13 @@ setup_docker_dotfiles() {
         return 1
     fi
     
-    log_info "Setting up Docker-compatible dotfiles from $dotfiles_dir"
-    
-    # Handle .zshrc specially with automatic filtering
-    if [[ -f "$dotfiles_dir/.zshrc" ]]; then
-        create_docker_compatible_zshrc "$dotfiles_dir/.zshrc" "./.zshrc_docker"
-    elif [[ -f "$dotfiles_dir/zshrc" ]]; then
-        # Handle dotfiles without leading dots
-        create_docker_compatible_zshrc "$dotfiles_dir/zshrc" "./.zshrc_docker"
-    fi
-    
-    # Copy other dotfiles directly (they're assumed to be cross-platform compatible)
+    log_info "Setting up dotfiles from $dotfiles_dir"
+
+    # Copy all dotfiles directly (assumed to have proper OS conditionals)
     for dotfile in "$dotfiles_dir"/{.*,*}; do
         if [[ -f "$dotfile" ]]; then
             local filename=$(basename "$dotfile")
-            
-            # Skip .zshrc (already handled above)
-            [[ "$filename" =~ ^\.?zshrc$ ]] && continue
-            
+
             # Skip hidden system files
             [[ "$filename" =~ ^\.(DS_Store|Trash|Spotlight-V100)$ ]] && continue
             

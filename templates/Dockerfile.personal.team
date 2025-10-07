@@ -17,8 +17,7 @@ USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
 # Copy dotfiles to analyst home directory
-COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
-COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* .editorconfig* .ctags* .ackrc* .ripgreprc* .zshrc* /home/${USERNAME}/
 
 # Install vim plugins (vim-plug already installed in base image)
 RUN vim +PlugInstall +qall || true

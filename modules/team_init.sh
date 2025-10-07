@@ -317,15 +317,7 @@ EOF
         print_success "Created basic DESCRIPTION file"
     fi
     
-    # Create minimal .zshrc_docker file
-    if [[ ! -f ".zshrc_docker" ]]; then
-        cat > .zshrc_docker << 'EOF'
-# Basic zsh configuration for Docker container
-# This is a minimal version for team image building
-export PS1="%F{blue}%n@%m%f:%F{green}%~%f$ "
-EOF
-        print_success "Created basic .zshrc_docker file"
-    fi
+    # Note: .zshrc will be copied from user's dotfiles during full project setup
 }
 
 #=============================================================================

@@ -342,13 +342,8 @@ create_docker_files() {
         return 1
     fi
     
-    # Create .zshrc_docker for container shell configuration
-    # Provides: custom prompt, aliases, development tools setup in container
-    if ! install_template ".zshrc_docker" ".zshrc_docker" "zsh configuration for Docker container" "Created container shell configuration"; then
-        log_error "Failed to create .zshrc_docker"
-        return 1
-    fi
-    
+    # Note: .zshrc is copied directly from user's dotfiles (assumed to have OS conditionals)
+
     # Create package environment validation script
     # Used by: CI/CD workflows, development workflow validation
     # Purpose: Ensures package dependencies are properly synchronized across CRAN, Bioconductor, and GitHub

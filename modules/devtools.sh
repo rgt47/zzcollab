@@ -220,7 +220,7 @@ cleanup_dotfiles_from_workdir() {
     local dotfiles_to_cleanup=(
         ".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc"
         ".profile" ".aliases" ".functions" ".exports" ".editorconfig"
-        ".ctags" ".ackrc" ".ripgreprc" ".zshrc_docker"
+        ".ctags" ".ackrc" ".ripgreprc" ".zshrc"
     )
     
     for dotfile in "${dotfiles_to_cleanup[@]}"; do
