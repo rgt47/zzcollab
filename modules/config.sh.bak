@@ -109,7 +109,7 @@ check_yq_dependency() {
 # USAGE:    yaml_get "config.yaml" "defaults.team_name"
 # ARGS:     
 #   $1 - file: Path to YAML configuration file
-#   $2 - path: YAML path specification (e.g., "defaults.team_name", "renv_modes.fast.packages")
+#   $2 - path: YAML path specification (e.g., "defaults.team_name", "build_modes.fast.packages")
 # RETURNS:  
 #   0 - Always succeeds, outputs extracted value or "null"
 # GLOBALS:  
@@ -152,10 +152,10 @@ yaml_get() {
 ##############################################################################
 # FUNCTION: yaml_get_array
 # PURPOSE:  Extract array values from YAML configuration file
-# USAGE:    yaml_get_array "config.yaml" "renv_modes.fast.packages"
+# USAGE:    yaml_get_array "config.yaml" "build_modes.fast.packages"
 # ARGS:     
 #   $1 - file: Path to YAML configuration file
-#   $2 - path: YAML path to array (e.g., "renv_modes.fast.packages")
+#   $2 - path: YAML path to array (e.g., "build_modes.fast.packages")
 # RETURNS:  
 #   0 - Always succeeds, outputs comma-separated array values or empty string
 # GLOBALS:  
@@ -173,7 +173,7 @@ yaml_get() {
 #   - Fallback parsing does not support arrays (returns empty string)
 #   - Requires yq for full functionality
 # EXAMPLE:
-#   packages=$(yaml_get_array "config.yaml" "renv_modes.fast.docker_packages")
+#   packages=$(yaml_get_array "config.yaml" "build_modes.fast.docker_packages")
 #   IFS=',' read -ra PACKAGE_ARRAY <<< "$packages"
 #   for pkg in "${PACKAGE_ARRAY[@]}"; do
 #       echo "Package: $pkg"
@@ -223,7 +223,7 @@ yaml_get_array() {
 #   - Creates backup files during modification to prevent corruption
 # EXAMPLE:
 #   yaml_set "zzcollab.yaml" "defaults.team_name" "rgt47"
-#   yaml_set "config.yaml" "defaults.renv_mode" "fast"
+#   yaml_set "config.yaml" "defaults.build_mode" "fast"
 ##############################################################################
 yaml_set() {
     local file="$1"
@@ -278,7 +278,7 @@ yaml_set() {
 
 ##############################################################################
 # FUNCTION: load_custom_package_lists
-# PURPOSE:  Load custom package lists from configuration file renv_modes section
+# PURPOSE:  Load custom package lists from configuration file build_modes section
 # USAGE:    load_custom_package_lists "zzcollab.yaml"
 # ARGS:     
 #   $1 - config_file: Path to YAML configuration file
@@ -294,7 +294,7 @@ yaml_set() {
 #   Docker and R package management systems to install appropriate packages
 #   for each build mode.
 # CONFIGURATION STRUCTURE:
-#   renv_modes:
+#   build_modes:
 #     fast:
 #       docker_packages: ["package1", "package2"]
 #       renv_packages: ["pkg1", "pkg2"]
@@ -326,8 +326,8 @@ load_custom_package_lists() {
     for mode in fast standard comprehensive; do
         if check_yq_dependency; then
             # Try to get docker and renv packages for this mode
-            local docker_packages=$(yaml_get_array "$config_file" "renv_modes.$mode.docker_packages")
-            local renv_packages=$(yaml_get_array "$config_file" "renv_modes.$mode.renv_packages")
+            local docker_packages=$(yaml_get_array "$config_file" "build_modes.$mode.docker_packages")
+            local renv_packages=$(yaml_get_array "$config_file" "build_modes.$mode.renv_packages")
             
             # Store in global variables if found
             if [[ -n "$docker_packages" && "$docker_packages" != "null" ]]; then
@@ -360,7 +360,7 @@ load_custom_package_lists() {
 #   1 - Configuration file not found or not readable
 # GLOBALS:  
 #   READ:  None
-#   WRITE: CONFIG_* variables (team_name, github_account, renv_mode, etc.)
+#   WRITE: CONFIG_* variables (team_name, github_account, build_mode, etc.)
 # DESCRIPTION:
 #   This function loads configuration values from a single YAML file and
 #   populates the global CONFIG_* variables. It processes the 'defaults'
@@ -368,7 +368,7 @@ load_custom_package_lists() {
 # CONFIGURATION SECTIONS PROCESSED:
 #   - defaults.team_name: Docker Hub team/organization name
 #   - defaults.github_account: GitHub account for repository creation
-#   - defaults.renv_mode: Default build mode (fast/standard/comprehensive)
+#   - defaults.build_mode: Default build mode (fast/standard/comprehensive)
 #   - defaults.dotfiles_dir: Path to personal dotfiles directory
 #   - defaults.dotfiles_nodot: Whether dotfiles need leading dots added
 #   - defaults.auto_github: Automatically create GitHub repositories
@@ -379,7 +379,7 @@ load_custom_package_lists() {
 #   - Gracefully handles missing files without error
 # EXAMPLE:
 #   load_config_file "./zzcollab.yaml"
-#   echo "Team: $CONFIG_TEAM_NAME, Mode: $CONFIG_RENV_MODE"
+#   echo "Team: $CONFIG_TEAM_NAME, Mode: $CONFIG_BUILD_MODE"
 ##############################################################################
 load_config_file() {
     local config_file="$1"
@@ -393,10 +393,7 @@ load_config_file() {
     # Load defaults section
     local team_name=$(yaml_get "$config_file" "defaults.team_name")
     local github_account=$(yaml_get "$config_file" "defaults.github_account")
-    local renv_mode=$(yaml_get "$config_file" "defaults.renv_mode")
-    local profile_name=$(yaml_get "$config_file" "defaults.profile_name")
-    local libs_bundle=$(yaml_get "$config_file" "defaults.libs_bundle")
-    local pkgs_bundle=$(yaml_get "$config_file" "defaults.pkgs_bundle")
+    local build_mode=$(yaml_get "$config_file" "defaults.build_mode")
     local dotfiles_dir=$(yaml_get "$config_file" "defaults.dotfiles_dir")
     local dotfiles_nodot=$(yaml_get "$config_file" "defaults.dotfiles_nodot")
     local auto_github=$(yaml_get "$config_file" "defaults.auto_github")
@@ -405,16 +402,13 @@ load_config_file() {
     # Store in global config variables (only if not "null")
     [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_TEAM_NAME="$team_name"
     [[ "$github_account" != "null" && -n "$github_account" ]] && CONFIG_GITHUB_ACCOUNT="$github_account"
-    [[ "$renv_mode" != "null" && -n "$renv_mode" ]] && CONFIG_RENV_MODE="$renv_mode"
-    [[ "$profile_name" != "null" && -n "$profile_name" ]] && CONFIG_PROFILE_NAME="$profile_name"
-    [[ "$libs_bundle" != "null" && -n "$libs_bundle" ]] && CONFIG_LIBS_BUNDLE="$libs_bundle"
-    [[ "$pkgs_bundle" != "null" && -n "$pkgs_bundle" ]] && CONFIG_PKGS_BUNDLE="$pkgs_bundle"
+    [[ "$build_mode" != "null" && -n "$build_mode" ]] && CONFIG_BUILD_MODE="$build_mode"
     [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DOTFILES_DIR="$dotfiles_dir"
     [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DOTFILES_NODOT="$dotfiles_nodot"
     [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
     [[ "$skip_confirmation" != "null" && -n "$skip_confirmation" ]] && CONFIG_SKIP_CONFIRMATION="$skip_confirmation"
     
-    # Load custom package lists from renv_modes section
+    # Load custom package lists from build_modes section
     load_custom_package_lists "$config_file"
     
     return 0
@@ -426,10 +420,7 @@ load_all_configs() {
     # Start with hard-coded defaults (already set in variable declarations)
     CONFIG_TEAM_NAME=""
     CONFIG_GITHUB_ACCOUNT=""
-    CONFIG_RENV_MODE="standard"
-    CONFIG_PROFILE_NAME=""
-    CONFIG_LIBS_BUNDLE=""
-    CONFIG_PKGS_BUNDLE=""
+    CONFIG_BUILD_MODE="standard"
     CONFIG_DOTFILES_DIR=""
     CONFIG_DOTFILES_NODOT="false"
     CONFIG_AUTO_GITHUB="false"
@@ -453,12 +444,9 @@ apply_config_defaults() {
     # Only set values if they haven't been set by CLI arguments
     [[ -z "$TEAM_NAME" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
     [[ -z "$GITHUB_ACCOUNT" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
-    [[ "$BUILD_MODE" == "standard" && -n "$CONFIG_RENV_MODE" ]] && BUILD_MODE="$CONFIG_RENV_MODE"
-    [[ -z "$PROFILE_NAME" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
-    [[ -z "$LIBS_BUNDLE" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
-    [[ -z "$PKGS_BUNDLE" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
+    [[ "$BUILD_MODE" == "standard" && -n "$CONFIG_BUILD_MODE" ]] && BUILD_MODE="$CONFIG_BUILD_MODE"
     [[ -z "$DOTFILES_DIR" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
-
+    
     # Handle boolean flags
     if [[ "$CONFIG_DOTFILES_NODOT" == "true" ]]; then
         DOTFILES_NODOT=true
@@ -469,7 +457,7 @@ apply_config_defaults() {
     if [[ "$CONFIG_SKIP_CONFIRMATION" == "true" ]]; then
         SKIP_CONFIRMATION=true
     fi
-
+    
     log_info "Applied configuration defaults to CLI variables"
 }
 
@@ -481,15 +469,12 @@ get_config_value() {
     case "$key" in
         team_name) echo "$CONFIG_TEAM_NAME" ;;
         github_account) echo "$CONFIG_GITHUB_ACCOUNT" ;;
-        renv_mode) echo "$CONFIG_RENV_MODE" ;;
-        profile_name) echo "$CONFIG_PROFILE_NAME" ;;
-        libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
-        pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
+        build_mode) echo "$CONFIG_BUILD_MODE" ;;
         dotfiles_dir) echo "$CONFIG_DOTFILES_DIR" ;;
         dotfiles_nodot) echo "$CONFIG_DOTFILES_NODOT" ;;
         auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
         skip_confirmation) echo "$CONFIG_SKIP_CONFIRMATION" ;;
-        init_base_image)
+        init_base_image) 
             # Try to get from constants module, fallback to hard-coded default
             if [[ -n "${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-}" ]]; then
                 echo "$ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE"
@@ -528,18 +513,12 @@ defaults:
   # Team and GitHub settings
   team_name: ""                    # Docker Hub team/organization name
   github_account: ""               # GitHub account (defaults to team_name if empty)
-
-  # Build and environment settings
-  renv_mode: "standard"           # Default renv mode: minimal, fast, standard, comprehensive
-
-  # Docker profile settings
-  profile_name: ""                 # Default Docker profile (minimal, rstudio, analysis, etc.)
-  libs_bundle: ""                  # Default system libraries bundle
-  pkgs_bundle: ""                  # Default R packages bundle
-
+  
+  # Build and environment settings  
+  build_mode: "standard"           # Default build mode: fast, standard, comprehensive
   dotfiles_dir: ""                 # Path to dotfiles directory (e.g., "~/dotfiles")
   dotfiles_nodot: false            # Whether dotfiles need dots added
-
+  
   # Automation settings
   auto_github: false               # Automatically create GitHub repository
   skip_confirmation: false         # Skip confirmation prompts
@@ -547,7 +526,7 @@ defaults:
 # Custom package lists for build modes (optional)
 # Uncomment and customize to override default package sets
 #
-# renv_modes:
+# build_modes:
 #   fast:
 #     description: "Quick development setup"
 #     docker_packages: [renv, remotes, here, usethis, devtools]
@@ -602,10 +581,7 @@ config_set() {
     case "$key" in
         team-name|team_name) yaml_key="team_name" ;;
         github-account|github_account) yaml_key="github_account" ;;
-        renv-mode|renv_mode) yaml_key="renv_mode" ;;
-        profile-name|profile_name) yaml_key="profile_name" ;;
-        libs-bundle|libs_bundle) yaml_key="libs_bundle" ;;
-        pkgs-bundle|pkgs_bundle) yaml_key="pkgs_bundle" ;;
+        build-mode|build_mode) yaml_key="build_mode" ;;
         dotfiles-dir|dotfiles_dir) yaml_key="dotfiles_dir" ;;
         dotfiles-nodot|dotfiles_nodot) yaml_key="dotfiles_nodot" ;;
         auto-github|auto_github) yaml_key="auto_github" ;;
@@ -654,10 +630,7 @@ config_list() {
     echo "Defaults:"
     echo "  team_name: $(get_config_value team_name)"
     echo "  github_account: $(get_config_value github_account)"
-    echo "  renv_mode: $(get_config_value renv_mode)"
-    echo "  profile_name: $(get_config_value profile_name)"
-    echo "  libs_bundle: $(get_config_value libs_bundle)"
-    echo "  pkgs_bundle: $(get_config_value pkgs_bundle)"
+    echo "  build_mode: $(get_config_value build_mode)"
     echo "  init_base_image: $(get_config_value init_base_image) (system default)"
     echo "  dotfiles_dir: $(get_config_value dotfiles_dir)"
     echo "  dotfiles_nodot: $(get_config_value dotfiles_nodot)"

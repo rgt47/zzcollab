@@ -71,17 +71,29 @@ All essential components of the profile system have been implemented and integra
 - **Dockerfile integration**: Bundle-based installation for both system deps and R packages
 - **Help documentation**: Updated examples and flag descriptions
 
-## Optional Future Enhancements 🚧
+## Recent Enhancements ✅
 
-### 1. Configuration System Integration
-Add profile-related defaults to user config:
+### 1. Configuration System Integration (Completed)
+Added profile-related defaults to user config system:
 ```yaml
 defaults:
-  profile_name: ""          # Default profile to use
-  libs_bundle: "minimal"    # Default library bundle
-  pkgs_bundle: "essential"  # Default package bundle
-  image_tag: "latest"       # Default image tag
+  # Renv package management (personal choice)
+  renv_mode: "standard"     # minimal, fast, standard, comprehensive
+
+  # Docker profile settings (team/shared)
+  profile_name: ""          # Default Docker profile (minimal, rstudio, analysis, etc.)
+  libs_bundle: ""           # Default system libraries bundle
+  pkgs_bundle: ""           # Default R packages bundle
 ```
+
+**Key Changes**:
+- ✅ Renamed `build_mode` → `renv_mode` to eliminate confusion with Docker profiles
+- ✅ Added `profile_name`, `libs_bundle`, `pkgs_bundle` to config system
+- ✅ Updated all modules: `config.sh`, `cli.sh`, `help.sh`
+- ✅ Updated all vignettes: `quickstart.Rmd`, `reusable-team-images.Rmd`
+- ✅ Config commands support new fields: `zzcollab --config set renv-mode fast`
+
+## Optional Future Enhancements 🚧
 
 ### 2. Personal Dockerfile Generation
 For team members adding packages, could generate personal Dockerfiles:
@@ -97,7 +109,7 @@ RUN if [ "${PKGS_BUNDLE}" = "modeling" ]; then \
 COPY dotfiles/ /home/analyst/
 ```
 
-### 3. --help-profiles Section
+### 2. --help-profiles Section
 Could add a dedicated help section explaining the profile system in detail.
 
 ## Usage Examples

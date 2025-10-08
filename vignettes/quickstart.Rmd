@@ -77,7 +77,7 @@ zzcollab --config set team-name "rgt47"
 zzcollab --config set github-account "rgt47"
 
 # Set default build mode (fast = 9 packages, ~2-3 min)
-zzcollab --config set build-mode "fast"
+zzcollab --config set renv-mode "fast"
 
 # Set dotfiles directory
 zzcollab --config set dotfiles-dir "~/dotfiles"
@@ -101,7 +101,7 @@ mkdir penguin-bills && cd penguin-bills && zzcollab
 
 # Flags come from config (set in Step 1):
 # -t rgt47: from team-name config
-# -F: from build-mode config (fast)
+# -F: from renv-mode config (fast)
 # -D ~/dotfiles: from dotfiles-dir config
 # -G: from auto-github config (true)
 ```
