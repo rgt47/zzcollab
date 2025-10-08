@@ -158,7 +158,7 @@ docker run rgt47/penguins-bills_core-analysis
 
 ### All Available Variants (14+)
 
-**Standard Research** (6 variants):
+**Standard Research** (6 profiles):
 - `minimal` - Essential R packages only
 - `analysis` - Tidyverse + data tools (DEFAULT, enabled)
 - `modeling` - Machine learning (tidymodels, xgboost)
@@ -166,7 +166,7 @@ docker run rgt47/penguins-bills_core-analysis
 - `shiny` - Interactive web apps
 - `shiny_verse` - Shiny + tidyverse + publishing
 
-**Specialized Domains** (2 variants):
+**Specialized Domains** (2 profiles):
 - `bioinformatics` - Bioconductor genomics packages
 - `geospatial` - sf, terra, leaflet mapping
 
@@ -185,7 +185,7 @@ docker run rgt47/penguins-bills_core-analysis
 1. **Template defines profiles**: `profiles.yaml` has full specifications
 2. **Project config enables profiles**: `config.yaml` sets which ones to build
 3. **Team initialization builds enabled profiles**: `zzcollab -i` builds all enabled
-4. **Team members choose profile**: `zzcollab -I analysis` uses analysis variant
+4. **Team members choose profile**: `zzcollab -I analysis` uses analysis profile
 
 ### Practical Example
 

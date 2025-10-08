@@ -23,7 +23,7 @@ environments, automated CI/CD workflows, and team collaboration tools.
 - **Team collaboration** with shared base images
 - **R package interface** for integration with R workflows
 - **Advanced configuration system** with user/project-level settings
-- **14+ specialized Docker variants** (from 200MB Alpine to 3.5GB
+- **14+ specialized Docker profiles** (from 200MB Alpine to 3.5GB
   full-featured)
 - **Four build modes** (minimal, fast, standard, comprehensive) for
   different use cases

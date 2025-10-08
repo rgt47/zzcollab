@@ -206,10 +206,10 @@ A genomics lab with 5 researchers and multiple ongoing studies.
 # Create lab base image with comprehensive bioinformatics tools
 zzcollab -i -t genomicslab -p labbase -C -B rstudio -d ~/dotfiles
 
-# Optionally add specialized variant
+# Optionally add specialized profile
 cd /path/to/zzcollab
 ./add_profile.sh
-# Select: bioinformatics variant
+# Select: bioinformatics profile
 # Builds genomicslab/labbasecore-rstudio with Bioconductor packages
 ```
 
