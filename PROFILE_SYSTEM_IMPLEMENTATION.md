@@ -11,9 +11,10 @@
 - ✅ `--list-libs` - List library bundles
 - ✅ `--list-pkgs` - List package bundles
 
-### 2. Deprecation Warnings
-- ✅ `-I, --interface` → Deprecated (use `--tag`)
-- ✅ `-B, --init-base-image` → Deprecated (use `--profile-name` or composition)
+### 2. Removed Flags
+- ✅ Removed `-I, --interface` (replaced by `--tag`)
+- ✅ Removed `-B, --init-base-image` (replaced by `--profile-name` or composition)
+- ✅ Removed `-V, --build-profile` (use `-i` with `--tag` for multiple profiles)
 
 ### 3. Bundle Definitions
 - ✅ Created `templates/bundles.yaml` with:
@@ -33,109 +34,47 @@
 ### 5. Dockerfile Updates
 - ✅ Added `ARG LIBS_BUNDLE=minimal`
 - ✅ Added `ARG PKGS_BUNDLE=""`
+- ✅ Added bundle-specific system dependency installation (lines 43-76)
+- ✅ Added bundle-based R package installation (lines 110-142)
 
-## Remaining Work 🚧
+### 6. Team Initialization Updates
+- ✅ Updated `modules/team_init.sh` to pass `LIBS_BUNDLE` and `PKGS_BUNDLE` to docker build
+- ✅ Added bundle arguments to `build_single_team_image()` function
 
-### 1. Dockerfile Bundle Installation Logic
-Need to add conditional installation based on bundles:
+### 7. Main Workflow Integration
+- ✅ Loaded `profile_validation.sh` module in main zzcollab.sh
+- ✅ Added profile expansion in `validate_and_setup_environment()`
+- ✅ Added smart defaults application
+- ✅ Added profile combination validation
+- ✅ Added team member flag validation
 
-```dockerfile
-# Install system dependencies based on LIBS_BUNDLE
-RUN if [ "${LIBS_BUNDLE}" = "minimal" ]; then \
-        apt-get update && apt-get install -y \
-            git curl wget libxml2-dev libcurl4-openssl-dev libssl-dev; \
-    elif [ "${LIBS_BUNDLE}" = "geospatial" ]; then \
-        apt-get update && apt-get install -y \
-            gdal-bin proj-bin libgeos-dev libproj-dev libgdal-dev; \
-    # ... etc for all bundles
-    fi
+### 8. Discovery Commands Implementation
+- ✅ Implemented `--list-profiles` output with yq
+- ✅ Implemented `--list-libs` output with yq
+- ✅ Implemented `--list-pkgs` output with yq
+- ✅ Added early exit handlers in `handle_special_modes()`
 
-# Install R packages based on PKGS_BUNDLE (or fallback to PACKAGE_MODE)
-RUN BUNDLE="${PKGS_BUNDLE:-$PACKAGE_MODE}" && \
-    if [ "$BUNDLE" = "essential" ]; then \
-        Rscript -e "install.packages(c('renv', 'devtools', 'usethis'))"; \
-    elif [ "$BUNDLE" = "bioinfo" ]; then \
-        Rscript -e "install.packages('BiocManager')" && \
-        Rscript -e "BiocManager::install(c('DESeq2', 'edgeR'))"; \
-    # ... etc for all bundles
-    fi
-```
+### 9. Help Documentation Updates
+- ✅ Updated `modules/help.sh` OPTIONS section with new profile flags
+- ✅ Updated EXAMPLES section with profile system workflows
+- ✅ Added deprecation notices for old flags
+- ✅ Added team member restriction examples
 
-### 2. Team Initialization Updates
-In `modules/team_init.sh`, need to:
+## Core Implementation Complete ✅
 
-```bash
-# In build_single_team_image():
-docker build -f "$dockerfile" \
-    --build-arg BASE_IMAGE="$base_image" \
-    --build-arg LIBS_BUNDLE="${LIBS_BUNDLE:-minimal}" \
-    --build-arg PKGS_BUNDLE="${PKGS_BUNDLE:-}" \
-    --build-arg PACKAGE_MODE="$BUILD_MODE" \
-    -t "${TEAM_NAME}/${PROJECT_NAME}_core:${IMAGE_TAG:-latest}" \
-    "$context"
-```
+All essential components of the profile system have been implemented and integrated:
 
-### 3. Discovery Commands Implementation
-Need to add in main `zzcollab.sh`:
+- **4-flag compositional system**: `--profile-name`, `-b`, `--libs`, `--pkgs`
+- **Complete validation**: Compatibility checking with helpful error messages
+- **Team member restrictions**: Proper blocking of invalid flags
+- **Discovery commands**: `--list-profiles`, `--list-libs`, `--list-pkgs`
+- **Dockerfile integration**: Bundle-based installation for both system deps and R packages
+- **Help documentation**: Updated examples and flag descriptions
 
-```bash
-if [[ "$LIST_PROFILES" == "true" ]]; then
-    echo "Available Profiles:"
-    yq eval '.profiles | to_entries | .[] | "  " + .key + " - " + .value.description' \
-        "$TEMPLATES_DIR/bundles.yaml"
-    exit 0
-fi
+## Optional Future Enhancements 🚧
 
-if [[ "$LIST_LIBS" == "true" ]]; then
-    echo "Available Library Bundles:"
-    yq eval '.library_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
-        "$TEMPLATES_DIR/bundles.yaml"
-    exit 0
-fi
-
-if [[ "$LIST_PKGS" == "true" ]]; then
-    echo "Available Package Bundles:"
-    yq eval '.package_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
-        "$TEMPLATES_DIR/bundles.yaml"
-    exit 0
-fi
-```
-
-### 4. Main Workflow Integration
-In main `zzcollab.sh`, after CLI parsing:
-
-```bash
-# Load profile validation module
-source "${MODULES_DIR}/profile_validation.sh"
-
-# Expand profile if specified
-if [[ -n "$PROFILE_NAME" ]]; then
-    expand_profile_name "$PROFILE_NAME"
-fi
-
-# Apply smart defaults if needed
-if [[ -n "$BASE_IMAGE" ]]; then
-    apply_smart_defaults "$BASE_IMAGE"
-fi
-
-# Validate combination
-validate_profile_combination "$BASE_IMAGE" "$LIBS_BUNDLE" "$PKGS_BUNDLE"
-
-# Validate team member restrictions
-if [[ -n "$TEAM_NAME" ]] && [[ "$INIT_MODE" != "true" ]]; then
-    validate_team_member_flags "true"
-fi
-```
-
-### 5. Help Documentation Updates
-Need to update `modules/help.sh`:
-- Add `--profile-name`, `--libs`, `--pkgs`, `--tag` to main help
-- Update examples to show new flags
-- Add `--help-profiles` section explaining profile system
-- Document discovery commands (`--list-*`)
-
-### 6. Configuration System Integration
-Add to config.yaml defaults:
+### 1. Configuration System Integration
+Add profile-related defaults to user config:
 ```yaml
 defaults:
   profile_name: ""          # Default profile to use
@@ -144,8 +83,8 @@ defaults:
   image_tag: "latest"       # Default image tag
 ```
 
-### 7. Personal Dockerfile Generation
-For team members adding packages, generate:
+### 2. Personal Dockerfile Generation
+For team members adding packages, could generate personal Dockerfiles:
 ```dockerfile
 FROM ${TEAM_NAME}/${PROJECT_NAME}_core:${IMAGE_TAG}
 
@@ -158,7 +97,10 @@ RUN if [ "${PKGS_BUNDLE}" = "modeling" ]; then \
 COPY dotfiles/ /home/analyst/
 ```
 
-## Usage Examples (When Complete)
+### 3. --help-profiles Section
+Could add a dedicated help section explaining the profile system in detail.
+
+## Usage Examples
 
 ### Solo Developer
 ```bash
@@ -210,22 +152,24 @@ zzcollab -t genomicslab -p study --pkgs modeling
 
 ## Files Modified
 
-1. ✅ `modules/cli.sh` - Added flags, deprecated old ones
-2. ✅ `templates/bundles.yaml` - Created bundle definitions
-3. ✅ `modules/profile_validation.sh` - Created validation module
-4. 🚧 `templates/Dockerfile.unified` - Partial (added ARGs, need installation logic)
-5. ⏳ `modules/team_init.sh` - Need to add bundle support to build
-6. ⏳ `zzcollab.sh` - Need to integrate validation and discovery
-7. ⏳ `modules/help.sh` - Need to update documentation
-8. ⏳ `modules/config.sh` - Need to add config defaults
+1. ✅ `modules/cli.sh` - Added flags (--profile-name, --libs, --pkgs, --tag, --list-*), removed old flags (-I, -B, -V)
+2. ✅ `templates/bundles.yaml` - Created complete bundle definitions (NEW FILE)
+3. ✅ `modules/profile_validation.sh` - Created validation module with 5 functions (NEW FILE)
+4. ✅ `templates/Dockerfile.unified` - Added ARGs and complete bundle installation logic (lines 6-8, 43-76, 110-142)
+5. ✅ `modules/team_init.sh` - Added bundle args to `build_single_team_image()` (lines 407-408)
+6. ✅ `zzcollab.sh` - Integrated validation, smart defaults, discovery commands (lines 226, 622-669, 733-752)
+7. ✅ `modules/help.sh` - Updated OPTIONS and EXAMPLES sections with profile system (lines 164-254)
+8. ⏳ `modules/config.sh` - Optional: Could add profile-related config defaults
 
-## Next Steps
+## Summary
 
-Priority order:
-1. Complete Dockerfile.unified bundle installation logic
-2. Update team_init.sh to pass bundle args
-3. Integrate validation in main zzcollab.sh
-4. Add discovery commands
-5. Update help documentation
-6. Add config system integration
-7. Test all workflows
+The profile system implementation is **COMPLETE** and ready for testing. All core functionality has been implemented:
+
+- **Solo developers** can use `--profile-name` shortcuts or compose custom profiles with `-b`, `--libs`, `--pkgs`
+- **Team leads** can initialize teams with specific profiles
+- **Team members** can add packages with `--pkgs` (properly blocked from changing base/libs)
+- **Discovery commands** allow browsing available profiles, libraries, and packages
+- **Validation** prevents incompatible combinations with helpful error messages
+- **Documentation** updated with comprehensive examples and migration guidance
+
+The system implements a clean, compositional 4-flag profile system (--profile-name, -b, --libs, --pkgs) that works consistently across all user types, replacing the previous interface-based approach with a more flexible bundle-based architecture.

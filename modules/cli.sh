@@ -253,38 +253,6 @@ parse_cli_arguments() {
                 BASE_IMAGE="$2"
                 shift 2
                 ;;
-            --init-base-image|-B)
-                # DEPRECATED: Show migration guidance
-                echo ""
-                echo "⚠️  Warning: -B/--init-base-image flag is deprecated"
-                echo ""
-                echo "The legacy base image system has been replaced with config-based variants."
-                echo ""
-                echo "📋 Migration Guide:"
-                echo ""
-                echo "  Old command (deprecated):"
-                echo "    zzcollab -i -t TEAM -p PROJECT -B r-ver"
-                echo ""
-                echo "  New approach:"
-                echo "    zzcollab -i -p PROJECT"
-                echo "    # Then edit config.yaml or use ./add_variant.sh"
-                echo ""
-                echo "🔄 Variant Mapping:"
-                echo "    -B r-ver     → Enable 'minimal' variant in config.yaml"
-                echo "    -B rstudio   → Enable 'rstudio' variant in config.yaml"
-                echo "    -B verse     → Enable 'publishing' variant in config.yaml"
-                echo "    -B all       → Enable minimal, rstudio, publishing variants"
-                echo ""
-                echo "💡 Benefits of new system:"
-                echo "    • 14+ specialized variants (bioinformatics, geospatial, Alpine, etc.)"
-                echo "    • Interactive variant selection with ./add_variant.sh"
-                echo "    • Single source of truth in variant_examples.yaml"
-                echo "    • Consistent package management across variants"
-                echo ""
-                echo "📖 For details, see: zzcollab --help-variants"
-                echo ""
-                exit 1
-                ;;
             --team|-t)
                 require_arg "$1" "$2"
                 TEAM_NAME="$2"
@@ -294,28 +262,6 @@ parse_cli_arguments() {
                 require_arg "$1" "$2"
                 PROJECT_NAME="$2"
                 shift 2
-                ;;
-            --interface|-I)
-                # DEPRECATED: Show migration guidance
-                echo ""
-                echo "⚠️  Warning: -I/--interface flag is deprecated"
-                echo ""
-                echo "The interface flag has been replaced with the tag system."
-                echo ""
-                echo "📋 Migration Guide:"
-                echo ""
-                echo "  Old command (deprecated):"
-                echo "    zzcollab -t TEAM -p PROJECT -I rstudio"
-                echo ""
-                echo "  New approach:"
-                echo "    zzcollab -t TEAM -p PROJECT --tag rstudio"
-                echo ""
-                echo "💡 Benefits:"
-                echo "    • Consistent with Docker image:tag convention"
-                echo "    • Works with profile system"
-                echo "    • More flexible variant selection"
-                echo ""
-                exit 1
                 ;;
             --init|-i)
                 INIT_MODE=true
@@ -360,13 +306,6 @@ parse_cli_arguments() {
                 # Will be processed after modules are loaded
                 SHOW_NEXT_STEPS=true
                 shift
-                ;;
-            --build-profile|-V)
-                require_arg "$1" "$2"
-                # Accept comma-separated variant names (any variant from library)
-                BUILD_PROFILE_MODE=true
-                BUILD_PROFILE="$2"
-                shift 2
                 ;;
             --help|-h)
                 # Will be processed after modules are loaded

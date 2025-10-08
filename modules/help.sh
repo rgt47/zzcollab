@@ -167,23 +167,23 @@ OPTIONS:
     -t, --team-name NAME         Team name (Docker Hub organization) [required with --init]
     -p, --project-name NAME      Project name [required with --init]
     -g, --github-account NAME    GitHub account (default: same as team-name)
-    -B, --init-base-image TYPE   Base image for team setup: r-ver, rstudio, verse, all (default: r-ver - shell only)
-        --variants-config FILE   Use config.yaml for unlimited custom variants (supersedes -B)
-    
-    Team collaboration (Developer 2+ - Team Members):
-    -t, --team NAME              Team name (Docker Hub organization)
-    -p, --project-name NAME      Project name  
-    -I, --interface TYPE         Interface type: shell, rstudio, verse
-    
+
+    Profile system:
+    --profile-name NAME          Use predefined profile (bioinformatics, geospatial, alpine_minimal, etc.)
+    --libs BUNDLE                System dependency bundle (minimal, geospatial, bioinfo, modeling, publishing, alpine)
+    --pkgs BUNDLE                R package bundle (essential, tidyverse, modeling, bioinfo, geospatial, publishing, shiny)
+    --tag TAG                    Docker image tag for selecting team image variants
+    --list-profiles              List all available predefined profiles
+    --list-libs                  List all available library bundles
+    --list-pkgs                  List all available package bundles
+
     Common options:
-    --paradigm TYPE, -P TYPE     Research paradigm: analysis, manuscript, package (default: analysis)
     -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
     -D, --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
-    
+
     Advanced options:
-    -b, --base-image NAME        Use custom Docker base image (default: rocker/r-ver)
+    -b, --base-image NAME        Use custom Docker base image (for composition with --libs and --pkgs)
     -n, --no-docker              Skip Docker image build during setup
-    -V, --build-profile TYPE     Build additional team image variant: r-ver, rstudio, verse
     -G, --github                 Automatically create private GitHub repository and push
         --next-steps             Show development workflow and next steps
     
@@ -208,39 +208,44 @@ show_help_examples() {
     cat << EOF
     
 EXAMPLES:
-    Team Lead - Create new team project (runs once per team):
-    zzcollab -i -t rgt47 -p research-study -d ~/dotfiles         # Team init with all 3 image variants
-    # Alternative: Create directory first, then run in it (project name auto-detected)
-    mkdir png1 && cd png1 && zzcollab -i -t rgt47 -d ~/dotfiles
-    
-    # NEW: Initialize with specific base image only
-    zzcollab -i -t rgt47 -p study -B r-ver -d ~/dotfiles                         # Build only shell variant
-    zzcollab -i -t rgt47 -p study -B rstudio -d ~/dotfiles                       # Build only RStudio variant  
-    zzcollab -i -t rgt47 -p study -B verse -d ~/dotfiles                         # Build only verse variant
-    
-    # Team Members - Join existing project (Developer 2+)
-    zzcollab -t rgt47 -p research-study -I shell -d ~/dotfiles
-    zzcollab --team mylab --project-name study2024 --interface rstudio --dotfiles ~/dotfiles
-    zzcollab -t rgt47 -p research-study -I verse -d ~/dotfiles                   # Use verse for publishing
-    
-    # Advanced usage with custom base images
-    zzcollab -b rocker/tidyverse -d ~/dotfiles
-    zzcollab --base-image myteam/mycustomimage --dotfiles-nodot ~/dotfiles
-    
-    # Basic setup for standalone projects
-    zzcollab -d ~/dotfiles                                # Basic setup with dotfiles
-    zzcollab -d ~/dotfiles -G                             # Setup with automatic GitHub repository creation
-    
-    # NEW: Simplified build modes (recommended)
-    zzcollab -i -t rgt47 -p study -M -d ~/dotfiles                      # Minimal mode: ultra-fast (~30s)
-    zzcollab -i -t rgt47 -p study -F -d ~/dotfiles                      # Fast mode: development essentials (2-3 min)
-    zzcollab -i -t rgt47 -p study -S -d ~/dotfiles                      # Standard mode: balanced setup (4-6 min, default)
-    zzcollab -i -t rgt47 -p study -C -d ~/dotfiles                      # Comprehensive mode: full ecosystem (15-20 min)
-    zzcollab -n                                                          # Setup without Docker build
-    
-    # Build additional team image variants after initialization
-    zzcollab -V rstudio                                                 # Build RStudio variant after r-ver-only init
-    zzcollab -V verse                                                   # Build verse variant
+    Solo Developer - Using Profiles:
+    zzcollab --profile-name bioinformatics -G                   # Bioconductor + bioinfo packages
+    zzcollab --profile-name geospatial                          # GDAL/PROJ + sf/terra packages
+    zzcollab --profile-name alpine_minimal                      # Ultra-lightweight (~200MB)
+    zzcollab --list-profiles                                    # See all available profiles
+
+    Solo Developer - Custom Composition:
+    zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial    # Custom geospatial setup
+    zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo   # Custom bioinfo
+    zzcollab --list-libs                                            # See all library bundles
+    zzcollab --list-pkgs                                            # See all package bundles
+
+    Team Lead - Initialize with Profile:
+    zzcollab -i -t rgt47 -p study --profile-name bioinformatics -G  # Team image with bioinfo profile
+    zzcollab -i -t genomicslab -p analysis --profile-name geospatial -G  # Geospatial team setup
+
+    Team Lead - Custom Composition:
+    zzcollab -i -t rgt47 -p study -b rocker/r-ver --libs modeling --pkgs modeling -G
+
+    Team Lead - Multiple Profiles (variants):
+    zzcollab -i -t rgt47 -p study --profile-name bioinformatics --tag primary -G  # Primary profile
+    zzcollab -i -t rgt47 -p study --profile-name alpine_minimal --tag ci        # CI/CD profile
+
+    Team Members - Join and Add Packages:
+    zzcollab -t rgt47 -p study                              # Use default team image
+    zzcollab -t rgt47 -p study --tag primary                # Use specific team variant
+    zzcollab -t rgt47 -p study --pkgs modeling              # Add modeling packages to personal layer
+
+    Team Members CANNOT Use:
+    zzcollab -t rgt47 -p study -b OTHER_BASE                # ERROR: Cannot change base image
+    zzcollab -t rgt47 -p study --libs geospatial            # ERROR: Cannot add system libraries
+    zzcollab -t rgt47 -p study --profile-name geospatial    # ERROR: Cannot use profiles (sets base+libs)
+
+    Simplified Build Modes:
+    zzcollab --profile-name bioinformatics -M               # Minimal mode: ultra-fast (~30s)
+    zzcollab --profile-name geospatial -F                   # Fast mode: essentials (2-3 min)
+    zzcollab --profile-name modeling -S                     # Standard mode: balanced (4-6 min, default)
+    zzcollab --profile-name publishing -C                   # Comprehensive mode: full (15-20 min)
 EOF
 }
 

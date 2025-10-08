@@ -223,7 +223,7 @@ export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL 
 log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
-modules_to_load=("utils" "rpackage" "docker" "analysis" "cicd" "devtools" "team_init" "help" "help_guides" "github")
+modules_to_load=("utils" "rpackage" "docker" "analysis" "cicd" "devtools" "team_init" "help" "help_guides" "github" "profile_validation")
 
 for module in "${modules_to_load[@]}"; do
     load_module "$module" "true"
@@ -619,6 +619,55 @@ validate_directory_for_setup_no_conflicts() {
 # Function: handle_special_modes
 # Purpose: Handle init, build profile, help modes that exit early
 handle_special_modes() {
+    # Handle discovery commands (--list-*)
+    if [[ "${LIST_PROFILES:-false}" == "true" ]]; then
+        if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
+            log_error "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml"
+            exit 1
+        fi
+
+        echo "Available Profiles:"
+        echo ""
+        yq eval '.profiles | to_entries | .[] | "  " + .key + " - " + .value.description + " (" + .value.size + ")"' \
+            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
+        echo ""
+        echo "Usage: zzcollab --profile-name PROFILE"
+        echo "Example: zzcollab --profile-name bioinformatics"
+        exit 0
+    fi
+
+    if [[ "${LIST_LIBS:-false}" == "true" ]]; then
+        if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
+            log_error "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml"
+            exit 1
+        fi
+
+        echo "Available Library Bundles:"
+        echo ""
+        yq eval '.library_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
+            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
+        echo ""
+        echo "Usage: zzcollab --libs BUNDLE"
+        echo "Example: zzcollab -b rocker/r-ver --libs geospatial"
+        exit 0
+    fi
+
+    if [[ "${LIST_PKGS:-false}" == "true" ]]; then
+        if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
+            log_error "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml"
+            exit 1
+        fi
+
+        echo "Available Package Bundles:"
+        echo ""
+        yq eval '.package_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
+            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
+        echo ""
+        echo "Usage: zzcollab --pkgs BUNDLE"
+        echo "Example: zzcollab -t TEAM -p PROJECT --pkgs modeling"
+        exit 0
+    fi
+
     # Handle initialization mode first
     if [[ "$INIT_MODE" == "true" ]]; then
         # Handle help for init mode
@@ -626,16 +675,16 @@ handle_special_modes() {
             show_init_help
             exit 0
         fi
-        
+
         # Validate init parameters and prerequisites
         validate_init_parameters
         validate_init_prerequisites
-        
+
         # Run team initialization
         run_team_initialization
         exit 0
     fi
-    
+
     # Handle build profile mode
     if [[ "${BUILD_PROFILE_MODE:-false}" == "true" ]]; then
         # Note: All modules including team_init are loaded in the main loading section below
@@ -729,6 +778,27 @@ validate_and_setup_environment() {
     log_info "📦 Package name: '$PKG_NAME'"
     log_info "🔧 All modules loaded successfully"
     echo ""
+
+    # Profile system validation (new)
+    # Expand profile if --profile-name was specified
+    if [[ -n "${PROFILE_NAME:-}" ]]; then
+        expand_profile_name "$PROFILE_NAME"
+    fi
+
+    # Apply smart defaults based on base image if needed
+    if [[ -n "${BASE_IMAGE:-}" ]]; then
+        apply_smart_defaults "$BASE_IMAGE"
+    fi
+
+    # Validate profile combination compatibility
+    if [[ -n "${BASE_IMAGE:-}" ]] || [[ -n "${LIBS_BUNDLE:-}" ]] || [[ -n "${PKGS_BUNDLE:-}" ]]; then
+        validate_profile_combination "${BASE_IMAGE:-}" "${LIBS_BUNDLE:-}" "${PKGS_BUNDLE:-}" || exit 1
+    fi
+
+    # Validate team member restrictions
+    if [[ -n "${TEAM_NAME:-}" ]] && [[ "${INIT_MODE:-false}" != "true" ]]; then
+        validate_team_member_flags "true"
+    fi
 
     # Validate templates directory
     if [[ ! -d "$TEMPLATES_DIR" ]]; then

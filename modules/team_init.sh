@@ -398,12 +398,14 @@ build_single_team_image() {
     local variant="$2"
     local dockerfile="${3:-Dockerfile.teamcore}"
     local context="${4:-.}"
-    
+
     docker build -f "$dockerfile" \
         --build-arg BASE_IMAGE="$base_image" \
         --build-arg TEAM_NAME="$TEAM_NAME" \
         --build-arg PROJECT_NAME="$PROJECT_NAME" \
         --build-arg PACKAGE_MODE="$BUILD_MODE" \
+        --build-arg LIBS_BUNDLE="${LIBS_BUNDLE:-minimal}" \
+        --build-arg PKGS_BUNDLE="${PKGS_BUNDLE:-}" \
         -t "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" "$context"
 
     docker tag "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" \
