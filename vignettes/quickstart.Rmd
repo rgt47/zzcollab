@@ -91,90 +91,53 @@ zzcollab --config set auto-github "true"
 - No need to specify `-t`, `-F`, `-D`, or `-G` flags repeatedly
 - Change defaults anytime with `zzcollab --config set`
 
-## Step 2: Create Team Images and Project (4-5 minutes)
+## Step 2: Create Project (3-4 minutes)
 
-ZZCOLLAB uses a **two-step workflow** for team projects:
-
-**Step 2a: Create Team Docker Images (2-3 minutes)**
-
-First, create and push team Docker images to Docker Hub:
+Create your reproducible analysis project with a single command:
 
 ```bash
-# Create team Docker images (builds and pushes to Docker Hub)
-# All parameters come from Step 1 config (team-name, build-mode, dotfiles-dir)
-zzcollab -i -p penguin-bills -y
+# Create project (all parameters from Step 1 config)
+mkdir penguin-bills && cd penguin-bills && zzcollab
 
-# Flags explained:
-# -i: Initialize team setup (creates Docker images only)
-# -p: Project name
-# -y: Skip confirmation prompt
-#
-# These come from config (set in Step 1):
+# Flags come from config (set in Step 1):
 # -t rgt47: from team-name config
 # -F: from build-mode config (fast)
+# -D ~/dotfiles: from dotfiles-dir config
+# -G: from auto-github config (true)
 ```
 
-**What Step 2a does:**
-1. Creates project directory `penguin-bills/`
-2. Builds Docker team images with R + essential packages
-3. Pushes images to Docker Hub (e.g., `rgt47/penguin-bills_core-minimal:latest`)
-4. Creates marker file `.zzcollab_team_setup` with team information
-5. Creates basic configuration files (`config.yaml`, `profiles.yaml`)
+**What this does:**
+1. Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
+2. Builds Docker image with R + essential packages
+3. Creates GitHub repository automatically (if auto-github enabled)
+4. Sets up CI/CD workflows for automated testing
+5. Initializes renv for dependency tracking
 
-**Step 2b: Complete Project Setup (1-2 minutes)**
+**Solo Developer Simplification:**
 
-After team images are created, complete the full project structure:
+Since you are working solo (not initializing a team), zzcollab creates a
+streamlined development environment optimized for individual work.
 
-```bash
-# Navigate to project directory
-cd penguin-bills
+**Using Different Profiles:**
 
-# Complete full project setup (uses team images as base)
-zzcollab -y
-
-# Add -G flag if auto-github is not enabled in config:
-# zzcollab -y -G   # Creates GitHub repository automatically
-```
-
-**What Step 2b does:**
-1. Detects `.zzcollab_team_setup` marker (knows team images exist)
-2. Creates personal Dockerfile using team image as base (`FROM rgt47/penguin-bills_core-minimal:latest`)
-3. Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
-4. Creates GitHub repository (if -G flag or auto-github config enabled)
-5. Sets up CI/CD workflows for automated testing
-6. Initializes renv for dependency tracking
-
-**Why Two Steps?**
-
-This separation allows:
-- **Team leads** to create and share team images once
-- **Team members** to join later using those images (skip Step 2a)
-- **Faster setup** for team members (no Docker image building)
-- **Consistency** across entire team (everyone uses same base image)
-
-**Default Docker Profiles Created (Step 2a):**
-- `minimal` profile: Essential development packages (~800MB, 3 packages)
-
-**Alternative: Interactive Profile Selection**
-
-If you want to customize which Docker profiles to build (bioinformatics,
-geospatial, Alpine, etc.), run the interactive profile manager after Step 2a:
+If you want a specialized environment (bioinformatics, geospatial, etc.),
+use the `--profile-name` flag:
 
 ```bash
-# After Step 2a (team images created)
-cd penguin-bills
+# Bioinformatics environment with Bioconductor
+mkdir genomics-study && cd genomics-study
+zzcollab --profile-name bioinformatics
 
-# Browse and select from 14+ specialized profiles
-./add_profile.sh
+# Geospatial analysis with GDAL/PROJ/sf
+mkdir spatial-analysis && cd spatial-analysis
+zzcollab --profile-name geospatial
 
-# Edit config.yaml to enable selected profiles
-vim config.yaml
+# Ultra-lightweight Alpine for CI/CD
+mkdir alpine-project && cd alpine-project
+zzcollab --profile-name alpine_minimal
 
-# Rebuild team images with selected profiles
-zzcollab --profiles-config config.yaml
-
-# Then complete Step 2b
-zzcollab -y -G
+# Browse all available profiles
+zzcollab --list-profiles
 ```
 
 ## Step 3: Set Repository to Private (30 seconds)
@@ -552,36 +515,66 @@ test_that("model includes species interaction", {
 
 ## Collaborate
 
-Share your private repository with team members:
+### Team Lead Workflow
+
+Initialize a team project with the `-i` flag:
 
 ```bash
-# Team Lead: Add collaborator
+# Create team project with specific profile
+mkdir team-genomics && cd team-genomics
+zzcollab -i -t genomicslab -p study --profile-name bioinformatics
+
+# Or use custom composition
+zzcollab -i -t genomicslab -p study -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
+
+# Share with collaborators
 gh repo edit --add-collaborator username
 ```
 
-**Team Member Joining Workflow:**
+**What `-i` does for teams:**
+1. Builds team Docker images and pushes to Docker Hub
+2. Creates complete project structure
+3. Team members can join using those shared images
 
-Team members clone the repository and use the existing team images:
+### Team Member Workflow
+
+Clone and join the team project:
 
 ```bash
 # Clone the repository
-git clone https://github.com/rgt47/penguin-bills.git
-cd penguin-bills
+git clone https://github.com/genomicslab/study.git
+cd study
 
-# Complete personal setup (skips Step 2a - uses existing team images)
-# The .zzcollab_team_setup marker tells zzcollab to use team images
-zzcollab -y
+# Join team (uses existing team images from Docker Hub)
+zzcollab -t genomicslab -p study
 
 # Enter identical development environment
 make docker-zsh
 ```
 
 **What happens for team members:**
-1. Detects `.zzcollab_team_setup` marker in repository
-2. Pulls team image `rgt47/penguin-bills_core-minimal:latest` from Docker Hub
-3. Creates personal Dockerfile using team image as base
-4. Builds personal development image (fast - layers on top of team image)
-5. Identical environment to team lead and all other team members
+1. Pulls team image `genomicslab/study_core:latest` from Docker Hub
+2. Creates personal Dockerfile using team image as base
+3. Builds personal development image (fast - layers on top of team image)
+4. Identical environment to team lead and all other team members
+
+### Adding Packages to Team Environment
+
+Team members can add additional R packages to their personal layer:
+
+```bash
+# Add modeling packages on top of team image
+zzcollab -t genomicslab -p study --pkgs modeling
+
+# This installs modeling packages in your personal Docker layer
+# Team image remains unchanged
+```
+
+**Team member restrictions:**
+- ✗ Cannot change base image (use `-b`)
+- ✗ Cannot add system libraries (use `--libs`)
+- ✓ Can add R packages (use `--pkgs`)
+- ✓ Can select different team variants (use `--tag`)
 
 ## Publish Results
 
@@ -648,54 +641,71 @@ Rscript validate_package_environment.R --quiet --fail-on-issues
 make docker-test
 ```
 
-# Customizing Docker Profiles
+# Customizing Profiles
 
 ## View Available Profiles
 
 ```bash
-# Browse 14+ specialized profiles interactively
-cd penguin-bills
-./add_profile.sh
+# List all predefined profiles
+zzcollab --list-profiles
 
-# Available categories:
-# - Standard Research: minimal, analysis, modeling, publishing
-# - Specialized Domains: bioinformatics, geospatial
-# - Lightweight Alpine: alpine_minimal, alpine_analysis, hpc_alpine
-# - R-Hub Testing: rhub_ubuntu, rhub_fedora, rhub_windows
+# List available library bundles (system dependencies)
+zzcollab --list-libs
+
+# List available package bundles (R packages)
+zzcollab --list-pkgs
 ```
 
-## Add Specialized Profile
+**Available Profiles:**
+- **minimal** - Essential development packages (~800MB)
+- **rstudio** - RStudio Server environment (~1GB)
+- **analysis** - Data analysis with tidyverse (~1.2GB)
+- **modeling** - Machine learning environment (~1.5GB)
+- **bioinformatics** - Bioconductor genomics (~2GB)
+- **geospatial** - GDAL/PROJ mapping tools (~2.5GB)
+- **publishing** - LaTeX/Quarto publishing (~3GB)
+- **alpine_minimal** - Ultra-lightweight (~200MB)
+- **alpine_analysis** - Lightweight tidyverse (~400MB)
+
+## Using Profiles
 
 ```bash
-# Example: Add bioinformatics profile for genomics work
-./add_profile.sh
-# Select "bioinformatics" from menu
+# Use predefined profile
+zzcollab --profile-name bioinformatics
 
-# Edit config.yaml to enable it
-vim config.yaml
-# Set enabled: true for bioinformatics profile
+# Or compose custom profile
+zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
 
-# Rebuild team images with new profile
-zzcollab --profiles-config config.yaml
+# Or mix and match
+zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs modeling
 ```
 
-## Profile vs Build Mode
+## Profile System Components
 
-**Docker Profiles** (minimal, analysis, modeling, etc.):
-- Control which **Docker base image** and **pre-installed packages** the team uses
-- Shared by entire team via Docker Hub
-- Examples: bioinformatics (Bioconductor), geospatial (sf/terra), alpine_minimal (CI/CD)
+**Profiles** (`--profile-name`):
+- Predefined shortcuts combining base image + libraries + packages
+- Examples: `bioinformatics`, `geospatial`, `alpine_minimal`
+- Quick setup for common workflows
 
-**Build Modes** (fast, standard, comprehensive):
-- Control which **packages** are installed in your local renv
-- Personal choice per developer
+**Library Bundles** (`--libs`):
+- System dependencies installed via apt-get/apk
+- Examples: `minimal`, `geospatial`, `bioinfo`, `modeling`, `publishing`, `alpine`
+- Required for R packages that need system libraries
+
+**Package Bundles** (`--pkgs`):
+- R packages installed via install.packages()
+- Examples: `essential`, `tidyverse`, `modeling`, `bioinfo`, `geospatial`, `publishing`, `shiny`
+- Sets of R packages for specific workflows
+
+**Build Modes** (`-M`, `-F`, `-S`, `-C`):
+- Control which packages are installed in renv (personal choice)
 - Examples: fast (9 packages), standard (17 packages), comprehensive (47 packages)
+- Independent of profile system
 
 # Time Breakdown
 
 - **Step 1** (Configuration): 30 seconds
-- **Step 2a** (Create team images): 2-3 minutes
-- **Step 2b** (Complete project setup): 1-2 minutes
+- **Step 2** (Create project): 3-4 minutes
 - **Step 3** (Make private): 30 seconds
 - **Step 4** (Analysis Rmd report): 3 minutes
 - **Step 5** (Unit tests): 2 minutes
@@ -703,12 +713,13 @@ zzcollab --profiles-config config.yaml
 - **Step 7** (Verify CI/CD): 30 seconds
 - **Step 8** (Configure report rendering): 2 minutes (optional)
 
-**Total**: ~11-13 minutes for complete 5-level reproducible analysis
-(~15 minutes with optional Step 8)
+**Total**: ~10-12 minutes for complete 5-level reproducible analysis
+(~14 minutes with optional Step 8)
 
-**Team Member Time** (joining existing project): ~7-9 minutes
-- Skips Step 1 (uses team config) and Step 2a (uses existing team images)
-- Only needs Steps 2b-8
+**Team Member Time** (joining existing project): ~6-8 minutes
+- Skips Step 1 (uses team config)
+- Pulls pre-built team images (faster than building from scratch)
+- Only needs Steps 2-8
 
 # Summary
 
