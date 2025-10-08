@@ -51,16 +51,16 @@ zzcollab -i -t mylab -p study3 -C -d ~/dotfiles
 
 ```bash
 # One-time: Build comprehensive team base image (15-20 minutes)
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 
 # Project 1: Use team image as base (~30 seconds)
-zzcollab -t mylab -p study1 -I rstudio -d ~/dotfiles
+zzcollab -t mylab -p study1  -d ~/dotfiles
 
 # Project 2: Use team image as base (~30 seconds)
-zzcollab -t mylab -p study2 -I rstudio -d ~/dotfiles
+zzcollab -t mylab -p study2  -d ~/dotfiles
 
 # Project 3: Use team image as base (~30 seconds)
-zzcollab -t mylab -p study3 -I rstudio -d ~/dotfiles
+zzcollab -t mylab -p study3  -d ~/dotfiles
 
 # Total time for 3 projects: ~16 minutes (73% time savings)
 ```
@@ -100,7 +100,7 @@ The team lead creates a one-time base image with all preferred packages.
 ```bash
 # Create comprehensive team base image
 # This takes 15-20 minutes but only needs to be done once
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 ```
 
 **What this does:**
@@ -112,25 +112,25 @@ zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
 **Build mode options:**
 ```bash
 # Comprehensive mode (47+ packages, recommended for team bases)
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 
 # Standard mode (17 packages, balanced)
-zzcollab -i -t mylab -p baseimage -S -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -S --profile-name rstudio -d ~/dotfiles
 
 # Fast mode (9 packages, minimal overhead)
-zzcollab -i -t mylab -p baseimage -F -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -F --profile-name rstudio -d ~/dotfiles
 ```
 
 **Multiple interface profiles:**
 ```bash
 # Shell + RStudio + Verse (publishing workflow)
-zzcollab -i -t mylab -p baseimage -C -B all -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C -d ~/dotfiles
 
 # Just RStudio (most common)
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 
 # Shell only (command-line work)
-zzcollab -i -t mylab -p baseimage -C -B r-ver -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name minimal -d ~/dotfiles
 ```
 
 ### Step 2: Verify Image on Docker Hub
@@ -157,7 +157,7 @@ Now any team member can create new projects instantly:
 mkdir study1 && cd study1
 
 # Initialize project using team base image
-zzcollab -t mylab -p study1 -I rstudio -d ~/dotfiles
+zzcollab -t mylab -p study1  -d ~/dotfiles
 ```
 
 **What this does:**
@@ -166,7 +166,7 @@ zzcollab -t mylab -p study1 -I rstudio -d ~/dotfiles
 - Creates `mylab/study1core-rstudio:latest` based on team image
 - Takes ~30 seconds instead of 15-20 minutes
 
-**Important**: Notice we use `-I rstudio` (interface selection) instead of `-B rstudio` (base image building). The `-I` flag tells zzcollab to use an existing team image.
+**Important**: When you specify `-t` and `-p` without `-i`, zzcollab automatically detects and uses the existing team image as the base. This is much faster than building from scratch.
 
 ## Practical Examples
 
@@ -176,22 +176,22 @@ Dr. Smith works on various analyses and wants consistent environments.
 
 ```bash
 # One-time setup: Create personal base image (Sunday afternoon)
-zzcollab -i -t drsmith -p mybase -C -B rstudio -d ~/dotfiles
+zzcollab -i -t drsmith -p mybase -C --profile-name rstudio -d ~/dotfiles
 # Takes 15-20 minutes, grab coffee
 
 # Monday: Start microbiome analysis
 mkdir microbiome-study && cd microbiome-study
-zzcollab -t drsmith -p microbiome-study -I rstudio -d ~/dotfiles
+zzcollab -t drsmith -p microbiome-study  -d ~/dotfiles
 # Ready in 30 seconds
 
 # Wednesday: Start climate modeling project
 mkdir climate-model && cd climate-model
-zzcollab -t drsmith -p climate-model -I rstudio -d ~/dotfiles
+zzcollab -t drsmith -p climate-model  -d ~/dotfiles
 # Ready in 30 seconds
 
 # Friday: Start survey analysis
 mkdir survey-analysis && cd survey-analysis
-zzcollab -t drsmith -p survey-analysis -I rstudio -d ~/dotfiles
+zzcollab -t drsmith -p survey-analysis  -d ~/dotfiles
 # Ready in 30 seconds
 
 # Total time: ~16 minutes vs 45-60 minutes (traditional approach)
@@ -204,7 +204,7 @@ A genomics lab with 5 researchers and multiple ongoing studies.
 **Team Lead (one-time setup):**
 ```bash
 # Create lab base image with comprehensive bioinformatics tools
-zzcollab -i -t genomicslab -p labbase -C -B rstudio -d ~/dotfiles
+zzcollab -i -t genomicslab -p labbase -C --profile-name rstudio -d ~/dotfiles
 
 # Optionally add specialized profile
 cd /path/to/zzcollab
@@ -218,18 +218,18 @@ cd /path/to/zzcollab
 # Researcher 1: Cancer genomics project
 git clone https://github.com/genomicslab/cancer-study.git
 cd cancer-study
-zzcollab -t genomicslab -p cancer-study -I rstudio -d ~/dotfiles
+zzcollab -t genomicslab -p cancer-study  -d ~/dotfiles
 make docker-rstudio  # Start RStudio at localhost:8787
 
 # Researcher 2: RNA-seq analysis
 git clone https://github.com/genomicslab/rnaseq-analysis.git
 cd rnaseq-analysis
-zzcollab -t genomicslab -p rnaseq-analysis -I rstudio -d ~/dotfiles
+zzcollab -t genomicslab -p rnaseq-analysis  -d ~/dotfiles
 make docker-rstudio
 
 # Researcher 3: New profile calling project
 mkdir variant-calling && cd variant-calling
-zzcollab -t genomicslab -p variant-calling -I rstudio -d ~/dotfiles
+zzcollab -t genomicslab -p variant-calling  -d ~/dotfiles
 make docker-rstudio
 
 # All 3 researchers ready in ~90 seconds total
@@ -243,7 +243,7 @@ A data science consulting firm requires consistent package versions across all c
 **DevOps Team (quarterly base image updates):**
 ```bash
 # Q1 2025: Create standardized base image
-zzcollab -i -t datasci-firm -p q1-2025-base -C -B rstudio -d ~/dotfiles
+zzcollab -i -t datasci-firm -p q1-2025-base -C --profile-name rstudio -d ~/dotfiles
 
 # Push to private Docker registry (optional)
 docker tag datasci-firm/q1-2025-basecore-rstudio:latest \
@@ -255,15 +255,15 @@ docker push registry.company.com/datasci-firm/q1-2025-basecore-rstudio:latest
 ```bash
 # Client A: Retail analytics
 mkdir client-a-retail && cd client-a-retail
-zzcollab -t datasci-firm -p client-a-retail -I rstudio -d ~/dotfiles
+zzcollab -t datasci-firm -p client-a-retail  -d ~/dotfiles
 
 # Client B: Financial modeling
 mkdir client-b-finance && cd client-b-finance
-zzcollab -t datasci-firm -p client-b-finance -I rstudio -d ~/dotfiles
+zzcollab -t datasci-firm -p client-b-finance  -d ~/dotfiles
 
 # Client C: Healthcare dashboards
 mkdir client-c-health && cd client-c-health
-zzcollab -t datasci-firm -p client-c-health -I rstudio -d ~/dotfiles
+zzcollab -t datasci-firm -p client-c-health  -d ~/dotfiles
 
 # All projects use identical Q1 2025 package versions
 # No "works on my machine" issues
@@ -277,19 +277,19 @@ Create different base images for different research domains:
 
 ```bash
 # Bioinformatics base (Bioconductor packages)
-zzcollab -i -t mylab -p bio-base -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p bio-base -C --profile-name rstudio -d ~/dotfiles
 # Use for: genomics, transcriptomics, proteomics projects
 
 # Geospatial base (sf, terra, leaflet)
-zzcollab -i -t mylab -p geo-base -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p geo-base -C --profile-name rstudio -d ~/dotfiles
 # Use for: climate modeling, ecology, urban planning projects
 
 # Machine learning base (tidymodels, xgboost)
-zzcollab -i -t mylab -p ml-base -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p ml-base -C --profile-name rstudio -d ~/dotfiles
 # Use for: predictive modeling, classification, regression projects
 
 # Web apps base (shiny, plotly, flexdashboard)
-zzcollab -i -t mylab -p shiny-base -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p shiny-base -C --profile-name rstudio -d ~/dotfiles
 # Use for: interactive dashboards, web applications
 ```
 
@@ -299,7 +299,7 @@ Maintain version history for reproducibility:
 
 ```bash
 # Create dated base image
-zzcollab -i -t mylab -p base-2025-01 -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p base-2025-01 -C --profile-name rstudio -d ~/dotfiles
 
 # Tag with semantic version
 docker tag mylab/base-2025-01core-rstudio:latest \
@@ -328,7 +328,7 @@ docker commit <container-id> mylab/baseimageecore-rstudio:v1.1.0
 docker push mylab/baseimageecore-rstudio:v1.1.0
 
 # Or rebuild base image with updated packages
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 # Leverages Docker layer caching for faster rebuilds
 ```
 
@@ -345,7 +345,7 @@ zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
 **For public research (recommended):**
 ```bash
 # Use public repositories (no cost)
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 # Pushes to public mylab/baseimageecore-rstudio:latest
 # No storage costs, unlimited team access
 ```
@@ -386,7 +386,7 @@ echo "temp_*" >> .dockerignore
 
 ```bash
 # Rebuild base image with latest packages
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 
 # Tag as new version
 docker tag mylab/baseimageecore-rstudio:latest \
@@ -494,7 +494,7 @@ Comprehensive (-C): 47+ packages
 2025-01-15
 
 ## Rebuild Command
-zzcollab -i -t mylab -p baseimage -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 ```
 
 ### 3. Use Semantic Versioning for Critical Bases
@@ -514,11 +514,11 @@ mylab/baseimageecore-rstudio:v1.0.1
 
 ```bash
 # Build test base image
-zzcollab -i -t mylab -p baseimage-test -C -B rstudio -d ~/dotfiles
+zzcollab -i -t mylab -p baseimage-test -C --profile-name rstudio -d ~/dotfiles
 
 # Test with sample project
 mkdir test-project && cd test-project
-zzcollab -t mylab -p test-project -I rstudio -d ~/dotfiles
+zzcollab -t mylab -p test-project  -d ~/dotfiles
 make docker-rstudio
 
 # Verify all key packages load
@@ -551,7 +551,7 @@ Keep a centralized list of available base images:
 
 ## Usage
 # For bioinformatics projects:
-zzcollab -t mylab -p <project-name> -I rstudio -d ~/dotfiles
+zzcollab -t mylab -p <project-name>  -d ~/dotfiles
 # (Uses mylab/bio-base automatically)
 ```
 
