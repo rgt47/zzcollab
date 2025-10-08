@@ -4,6 +4,8 @@ FROM ${BASE_IMAGE}:${R_VERSION}
 
 # Build arguments for package selection
 ARG PACKAGE_MODE=standard
+ARG LIBS_BUNDLE=minimal
+ARG PKGS_BUNDLE=""
 ARG TEAM_NAME=rgt47
 ARG PROJECT_NAME=r-project
 ARG ADDITIONAL_PACKAGES=""

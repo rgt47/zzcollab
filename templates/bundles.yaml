@@ -1,0 +1,286 @@
+# ZZCOLLAB Profile Bundles
+# Defines reusable bundles for system libraries and R packages
+# Used by --libs and --pkgs flags
+
+#=============================================================================
+# SYSTEM LIBRARY BUNDLES (--libs)
+#=============================================================================
+# These are sets of system dependencies installed via apt-get or apk
+
+library_bundles:
+  none:
+    description: "No additional system libraries"
+    deps: []
+    package_manager: "apt-get"
+    compatible_bases: ["rocker/r-ver"]
+    warning: "Most R packages will fail without system dependencies"
+
+  minimal:
+    description: "Essential development libraries"
+    deps:
+      - git
+      - curl
+      - wget
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+    package_manager: "apt-get"
+    compatible_bases: ["rocker/*", "bioconductor/*"]
+
+  geospatial:
+    description: "Geospatial analysis libraries (GDAL, PROJ, GEOS)"
+    deps:
+      - gdal-bin
+      - proj-bin
+      - libgeos-dev
+      - libproj-dev
+      - libgdal-dev
+      - libudunits2-dev
+      - netcdf-bin
+      - libxml2-dev
+    package_manager: "apt-get"
+    compatible_bases: ["rocker/geospatial", "rocker/r-ver", "rocker/rstudio"]
+    required_for_pkgs: ["geospatial"]
+
+  bioinfo:
+    description: "Bioinformatics libraries for genomics packages"
+    deps:
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - zlib1g-dev
+      - libbz2-dev
+      - liblzma-dev
+    package_manager: "apt-get"
+    compatible_bases: ["bioconductor/*", "rocker/*"]
+    required_for_pkgs: ["bioinfo"]
+
+  modeling:
+    description: "Statistical modeling and ML libraries"
+    deps:
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - libgsl-dev
+      - libblas-dev
+      - liblapack-dev
+      - build-essential
+      - gfortran
+    package_manager: "apt-get"
+    compatible_bases: ["rocker/*"]
+
+  publishing:
+    description: "Publishing and LaTeX libraries"
+    deps:
+      - pandoc
+      - texlive-full
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - libv8-dev
+    package_manager: "apt-get"
+    compatible_bases: ["rocker/verse", "rocker/*"]
+
+  alpine:
+    description: "Alpine Linux libraries (apk package manager)"
+    deps:
+      - git
+      - make
+      - gcc
+      - "g++"
+      - musl-dev
+      - linux-headers
+      - curl-dev
+      - openssl-dev
+      - libxml2-dev
+    package_manager: "apk"
+    compatible_bases: ["velaco/alpine-r"]
+    incompatible_bases: ["rocker/*", "bioconductor/*"]
+
+#=============================================================================
+# R PACKAGE BUNDLES (--pkgs)
+#=============================================================================
+# These are sets of R packages installed via install.packages() or BiocManager
+
+package_bundles:
+  essential:
+    description: "Minimal essential packages for development"
+    packages:
+      - renv
+      - devtools
+      - usethis
+      - testthat
+      - roxygen2
+    requires_libs: ["minimal", "alpine"]
+
+  tidyverse:
+    description: "Tidyverse ecosystem for data analysis"
+    packages:
+      - renv
+      - devtools
+      - tidyverse
+      - here
+      - janitor
+      - scales
+      - patchwork
+    requires_libs: ["minimal", "alpine"]
+
+  modeling:
+    description: "Machine learning and statistical modeling"
+    packages:
+      - renv
+      - devtools
+      - tidyverse
+      - tidymodels
+      - xgboost
+      - randomForest
+      - glmnet
+      - caret
+    requires_libs: ["minimal", "modeling"]
+
+  bioinfo:
+    description: "Bioinformatics and genomics packages"
+    packages:
+      - renv
+      - devtools
+      - BiocManager
+      - DESeq2
+      - edgeR
+      - limma
+      - GenomicRanges
+      - Biostrings
+    requires_libs: ["bioinfo"]
+    bioconductor: true
+
+  geospatial:
+    description: "Geospatial analysis and mapping"
+    packages:
+      - renv
+      - devtools
+      - sf
+      - terra
+      - leaflet
+      - mapview
+      - tmap
+    requires_libs: ["geospatial"]
+
+  publishing:
+    description: "Document publishing and visualization"
+    packages:
+      - renv
+      - devtools
+      - quarto
+      - bookdown
+      - blogdown
+      - distill
+      - flexdashboard
+      - DT
+    requires_libs: ["minimal", "publishing"]
+
+  shiny:
+    description: "Shiny web applications"
+    packages:
+      - renv
+      - devtools
+      - shiny
+      - shinydashboard
+      - shinyWidgets
+      - DT
+      - plotly
+      - bslib
+    requires_libs: ["minimal"]
+
+#=============================================================================
+# COMPLETE PROFILES (--profile-name)
+#=============================================================================
+# Predefined combinations of base-image + libs + pkgs
+
+profiles:
+  minimal:
+    description: "Minimal development environment"
+    base_image: "rocker/r-ver:latest"
+    libs: minimal
+    pkgs: essential
+    size: "~800MB"
+
+  rstudio:
+    description: "RStudio Server development environment"
+    base_image: "rocker/rstudio:latest"
+    libs: minimal
+    pkgs: essential
+    size: "~1GB"
+
+  analysis:
+    description: "Data analysis with tidyverse"
+    base_image: "rocker/tidyverse:latest"
+    libs: minimal
+    pkgs: tidyverse
+    size: "~1.2GB"
+
+  modeling:
+    description: "Machine learning environment"
+    base_image: "rocker/r-ver:latest"
+    libs: modeling
+    pkgs: modeling
+    size: "~1.5GB"
+
+  bioinformatics:
+    description: "Bioinformatics with Bioconductor"
+    base_image: "bioconductor/bioconductor_docker:latest"
+    libs: bioinfo
+    pkgs: bioinfo
+    size: "~2GB"
+
+  geospatial:
+    description: "Geospatial analysis environment"
+    base_image: "rocker/geospatial:latest"
+    libs: geospatial
+    pkgs: geospatial
+    size: "~2.5GB"
+
+  publishing:
+    description: "Document publishing with LaTeX"
+    base_image: "rocker/verse:latest"
+    libs: publishing
+    pkgs: publishing
+    size: "~3GB"
+
+  alpine_minimal:
+    description: "Ultra-lightweight Alpine Linux"
+    base_image: "velaco/alpine-r:latest"
+    libs: alpine
+    pkgs: essential
+    size: "~200MB"
+
+  alpine_analysis:
+    description: "Lightweight data analysis"
+    base_image: "velaco/alpine-r:latest"
+    libs: alpine
+    pkgs: tidyverse
+    size: "~400MB"
+
+#=============================================================================
+# COMPATIBILITY RULES
+#=============================================================================
+# Used for validation
+
+compatibility_rules:
+  alpine_requires_alpine_libs:
+    condition: "base_image contains 'alpine'"
+    requires_libs: ["alpine"]
+    error: "Alpine base images require --libs alpine (different package manager)"
+
+  bioconductor_requires_bioinfo_libs:
+    condition: "base_image contains 'bioconductor'"
+    requires_libs: ["bioinfo"]
+    error: "Bioconductor images require --libs bioinfo (specific dependencies)"
+
+  geospatial_pkgs_require_libs:
+    condition: "pkgs == 'geospatial'"
+    requires_libs: ["geospatial"]
+    error: "Geospatial packages require --libs geospatial (GDAL/PROJ libraries)"
+
+  bioinfo_pkgs_require_libs:
+    condition: "pkgs == 'bioinfo'"
+    requires_libs: ["bioinfo"]
+    error: "Bioinformatics packages require --libs bioinfo (genomics dependencies)"

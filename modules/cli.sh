@@ -296,9 +296,26 @@ parse_cli_arguments() {
                 shift 2
                 ;;
             --interface|-I)
-                require_arg "$1" "$2"
-                INTERFACE="$2"
-                shift 2
+                # DEPRECATED: Show migration guidance
+                echo ""
+                echo "⚠️  Warning: -I/--interface flag is deprecated"
+                echo ""
+                echo "The interface flag has been replaced with the tag system."
+                echo ""
+                echo "📋 Migration Guide:"
+                echo ""
+                echo "  Old command (deprecated):"
+                echo "    zzcollab -t TEAM -p PROJECT -I rstudio"
+                echo ""
+                echo "  New approach:"
+                echo "    zzcollab -t TEAM -p PROJECT --tag rstudio"
+                echo ""
+                echo "💡 Benefits:"
+                echo "    • Consistent with Docker image:tag convention"
+                echo "    • Works with profile system"
+                echo "    • More flexible variant selection"
+                echo ""
+                exit 1
                 ;;
             --init|-i)
                 INIT_MODE=true
@@ -364,6 +381,38 @@ parse_cli_arguments() {
             --help-variants)
                 # Will be processed after modules are loaded
                 SHOW_HELP_VARIANTS=true
+                shift
+                ;;
+            --profile-name)
+                require_arg "$1" "$2"
+                PROFILE_NAME="$2"
+                shift 2
+                ;;
+            --libs)
+                require_arg "$1" "$2"
+                LIBS_BUNDLE="$2"
+                shift 2
+                ;;
+            --pkgs)
+                require_arg "$1" "$2"
+                PKGS_BUNDLE="$2"
+                shift 2
+                ;;
+            --tag)
+                require_arg "$1" "$2"
+                IMAGE_TAG="$2"
+                shift 2
+                ;;
+            --list-profiles)
+                LIST_PROFILES=true
+                shift
+                ;;
+            --list-libs)
+                LIST_LIBS=true
+                shift
+                ;;
+            --list-pkgs)
+                LIST_PKGS=true
                 shift
                 ;;
             --help-github)
