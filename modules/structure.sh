@@ -24,66 +24,8 @@ require_module "core"
 # Tracking functions are now provided by core.sh
 
 #=============================================================================
-# DIRECTORY STRUCTURE CREATION (extracted from lines 386-416)
+# DIRECTORY STRUCTURE CREATION
 #=============================================================================
-
-# Function: create_paradigm_directory_structure
-# Purpose: Creates paradigm-specific directory structure
-# Arguments: $1 = paradigm (analysis, manuscript, package)
-create_paradigm_directory_structure() {
-    local paradigm="$1"
-    
-    log_info "Creating ${paradigm} paradigm directory structure..."
-    
-    case "$paradigm" in
-        analysis)
-            local -r dirs=(
-                "data/raw" "data/processed" 
-                "analysis/exploratory" "analysis/modeling" "analysis/validation"
-                "reports" "reports/dashboard"
-                "outputs/figures" "outputs/tables"
-                "scripts"
-            )
-            ;;
-        manuscript)
-            local -r dirs=(
-                "R" "tests/testthat" "man"
-                "manuscript" "manuscript/journal_templates"
-                "analysis/reproduce"
-                "data/raw_data" "data/derived_data"
-                "submission/figures" "submission/tables" "submission/supplementary" "submission/manuscript_versions"
-                "vignettes"
-                "inst/examples"
-            )
-            ;;
-        package)
-            local -r dirs=(
-                "R" "tests/testthat" "man" "vignettes"
-                "inst/examples" "data" "data-raw"
-                "pkgdown"
-            )
-            ;;
-        *)
-            log_error "Unknown paradigm: $paradigm"
-            return 1
-            ;;
-    esac
-    
-    # Create paradigm-specific directories
-    for dir in "${dirs[@]}"; do
-        if mkdir -p "$dir"; then
-            track_directory "$dir"
-            log_info "Created directory: $dir"
-        else
-            log_error "Failed to create directory: $dir"
-            return 1
-        fi
-    done
-    
-    # Capitalize first letter for broader shell compatibility
-    local paradigm_cap="$(echo "${paradigm:0:1}" | tr '[:lower:]' '[:upper:]')${paradigm:1}"
-    log_success "$paradigm_cap paradigm structure created (${#dirs[@]} directories)"
-}
 
 # Function: create_directory_structure
 # Purpose: Creates the complete directory structure for the R research compendium
