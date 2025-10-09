@@ -119,6 +119,47 @@ fi
 # EARLY EXIT FOR HELP AND NEXT STEPS (before loading heavy modules)
 #=============================================================================
 
+# Handle discovery commands (--list-*) early to avoid loading all modules
+if [[ "${LIST_PROFILES:-false}" == "true" ]] || [[ "${LIST_LIBS:-false}" == "true" ]] || [[ "${LIST_PKGS:-false}" == "true" ]]; then
+    if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
+        echo "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml" >&2
+        exit 1
+    fi
+
+    if [[ "${LIST_PROFILES:-false}" == "true" ]]; then
+        echo "Available Profiles:"
+        echo ""
+        yq eval '.profiles | to_entries | .[] | "  " + .key + " - " + .value.description + " (" + .value.size + ")"' \
+            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
+        echo ""
+        echo "Usage: zzcollab --profile-name PROFILE"
+        echo "Example: zzcollab --profile-name bioinformatics"
+        exit 0
+    fi
+
+    if [[ "${LIST_LIBS:-false}" == "true" ]]; then
+        echo "Available Library Bundles:"
+        echo ""
+        yq eval '.library_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
+            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
+        echo ""
+        echo "Usage: zzcollab --libs BUNDLE"
+        echo "Example: zzcollab -b rocker/r-ver --libs geospatial"
+        exit 0
+    fi
+
+    if [[ "${LIST_PKGS:-false}" == "true" ]]; then
+        echo "Available Package Bundles:"
+        echo ""
+        yq eval '.package_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
+            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
+        echo ""
+        echo "Usage: zzcollab --pkgs BUNDLE"
+        echo "Example: zzcollab -b rocker/r-ver --pkgs modeling"
+        exit 0
+    fi
+fi
+
 # For init mode help, we need team_init and help modules loaded
 # For regular help and next-steps, we can show immediately
 if [[ "$INIT_MODE" != "true" ]]; then
@@ -127,16 +168,16 @@ if [[ "$INIT_MODE" != "true" ]]; then
         if [[ -f "$MODULES_DIR/core.sh" ]]; then
             source "$MODULES_DIR/core.sh" >/dev/null 2>&1
         fi
-        
+
         # Load help module
         if [[ -f "$MODULES_DIR/help.sh" ]]; then
             source "$MODULES_DIR/help.sh" >/dev/null 2>&1
-            
+
             if [[ "${SHOW_HELP:-false}" == "true" ]]; then
                 show_help
                 exit 0
             fi
-            
+
             if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
                 show_next_steps
                 exit 0

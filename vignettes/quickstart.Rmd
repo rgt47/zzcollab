@@ -151,7 +151,7 @@ mkdir custom-project && cd custom-project
 zzcollab -b rocker/r-ver --libs geospatial --pkgs modeling
 
 # Browse all available profiles
-zzcollab --list-profiles
+zzcollab --list-profiles  # All predefined Docker profiles
 zzcollab --list-libs      # System library bundles
 zzcollab --list-pkgs      # R package bundles
 ```
