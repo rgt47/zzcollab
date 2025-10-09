@@ -855,4 +855,41 @@ zzcollab -t genomicslab -p study -C
 - Each has different renv.lock packages (Layer 2)
 - Both can collaborate seamlessly
 
+### What Happens to Final renv.lock?
+
+**Important**: When multiple team members work together, the final `renv.lock` file contains packages from ALL contributors:
+
+```bash
+# Alice adds modeling packages
+renv::install("tidymodels")
+renv::snapshot()
+git add renv.lock && git commit -m "Add modeling"
+
+# Bob adds geospatial packages
+git pull  # Gets Alice's changes
+renv::install("sf")
+renv::snapshot()  # renv.lock now has tidymodels + sf
+git add renv.lock && git commit -m "Add geospatial"
+
+# Final renv.lock contains BOTH Alice's and Bob's packages
+```
+
+**For reproducibility, renv.lock is the source of truth, NOT the Docker image.**
+
+When someone reproduces the analysis:
+```bash
+# Pulls repository with complete renv.lock
+git clone https://github.com/genomicslab/study.git
+cd study
+
+# Uses team Docker image (has base bioinformatics packages)
+zzcollab -t genomicslab -p study
+make docker-zsh
+
+# Restores ALL packages from renv.lock (Alice's + Bob's)
+renv::restore()  # Installs tidymodels + sf + all other packages
+```
+
+**Key Insight**: The Docker image provides the foundation (system dependencies, R version, base packages for performance), but `renv.lock` ensures complete reproducibility by specifying exact versions of ALL packages needed for the analysis.
+
 For more details on each level, see `vignette("reproducibility-layers")`.
