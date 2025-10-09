@@ -3,6 +3,16 @@
 
 FROM rocker/verse:4.4.0
 
+# Set environment variables for reproducibility
+# Locale settings affect sorting, number formatting, and string operations
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+# Timezone for consistent date/time operations
+ENV TZ=UTC
+# Single-threaded operations for reproducible parallel processing
+# (Adjust OMP_NUM_THREADS if intentionally using parallelization)
+ENV OMP_NUM_THREADS=1
+
 # Set working directory
 WORKDIR /project
 

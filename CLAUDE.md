@@ -49,10 +49,47 @@ reproducible research environments. The system consists of:
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **Simplified CLI**: 4 clear build modes with shortcuts (-M, -F, -S, -C) and selective base image building (-B, -V, -I)
+- **Simplified CLI**: 4 clear renv modes with shortcuts (-M, -F, -S, -C)
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
-- **Single source of truth**: Profile definitions in `profiles.yaml` eliminate duplication
+- **Single source of truth**: Profile definitions in `bundles.yaml` eliminate duplication
 - **14+ Docker profiles**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
+- **Two-layer package management**: Docker profiles (shared/team) + renv modes (personal/independent)
+
+### Four Pillars of Reproducibility
+
+ZZCOLLAB ensures complete reproducibility through four version-controlled components:
+
+1. **Dockerfile** - Computational environment foundation
+   - R version (e.g., 4.4.0)
+   - System dependencies (GDAL, PROJ, libcurl, etc.)
+   - Base image specification (rocker/verse, bioconductor, etc.)
+   - Environment variables (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+
+2. **renv.lock** - Exact R package versions (source of truth)
+   - Every package with exact version
+   - Complete dependency tree
+   - CRAN/Bioconductor/GitHub sources
+   - Contains packages from ALL team members
+
+3. **.Rprofile** - R session configuration (version controlled)
+   - Critical R options (`stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`)
+   - Automatically monitored with `check_rprofile_options.R`
+   - Copied into Docker image to ensure consistent R session settings
+   - Changes tracked in CI/CD to prevent unintended behavior modifications
+
+4. **Source Code** - Computational logic
+   - Analysis scripts (`analysis/scripts/`)
+   - Reusable functions (`R/`)
+   - Reports (`analysis/paper/`)
+   - Tests (`tests/testthat/`)
+   - Explicit random seeds (`set.seed()`) for stochastic analyses
+
+**Additional Reproducibility Elements**:
+- **Data**: Raw data, derived data, and data acquisition/processing scripts
+- **Environment variables**: Locale settings (sorting, number formatting), timezone, parallelization controls
+- **Documentation**: Data dictionary (`data/README.md`), analysis workflow documentation
+
+**Key Design Principle**: Docker images provide foundation and performance (pre-installed base packages), but `renv.lock` is the source of truth for R package reproducibility. `.Rprofile` ensures consistent R session behavior across environments. Anyone can reproduce analysis from ANY compatible Docker base by running `renv::restore()` with the committed `renv.lock` file.
 
 ## Unified Research Compendium Structure
 

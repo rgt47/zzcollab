@@ -469,6 +469,133 @@ git push
 - Automated test suite execution
 - Dependency validation
 
+## The Four Pillars of Reproducibility
+
+Your analysis is now fully reproducible thanks to four essential components:
+
+### 1. Dockerfile - Computational Environment
+- **R version**: Specifies exact R version (4.4.0)
+- **System dependencies**: All system libraries (libcurl, libssl, etc.)
+- **Base image**: Foundation for consistent environment
+- **Environment variables**: Locale and system settings
+
+```dockerfile
+FROM rocker/verse:4.4.0
+
+# Set locale for reproducible sorting/formatting
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+RUN apt-get update && apt-get install -y libcurl4-openssl-dev
+```
+
+### 2. renv.lock - Exact Package Versions
+- **Every R package**: Exact version for all packages used
+- **Complete dependency tree**: All package dependencies
+- **Source repositories**: CRAN, Bioconductor, GitHub
+
+```json
+{
+  "tidyverse": {
+    "Version": "2.0.0",
+    "Repository": "CRAN"
+  }
+}
+```
+
+### 3. .Rprofile - R Session Configuration
+- **Critical R options**: Version controlled and copied into Docker
+- **Monitored settings**: `stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`
+- **Automatic checking**: `check_rprofile_options.R` alerts on changes
+
+```r
+# .Rprofile (version controlled)
+options(
+  stringsAsFactors = FALSE,
+  digits = 7,
+  OutDec = "."
+)
+
+# Activate renv for package management
+source("renv/activate.R")
+```
+
+**Important**: ZZCOLLAB monitors critical `.Rprofile` options that affect analysis behavior. The `check_rprofile_options.R` script runs in CI/CD to catch changes that could alter results.
+
+### 4. Analysis Source Code - Computational Logic
+- **Analysis scripts**: `analysis/scripts/01_analysis.R`
+- **Reusable functions**: `R/bill_analysis.R`
+- **Reports**: `analysis/report/report.Rmd`
+- **Tests**: `tests/testthat/test-bill_analysis.R`
+- **Random seeds**: Set explicitly in code for stochastic analyses
+
+```r
+# Example: Set seed for reproducible random processes
+set.seed(42)
+model <- randomForest(species ~ ., data = penguins)
+```
+
+### Additional Elements for Complete Reproducibility
+
+**Data** (when not from packages):
+- **Raw data**: `analysis/data/raw_data/` (version controlled or documented acquisition)
+- **Derived data**: `analysis/data/derived_data/` (with processing scripts)
+- **Data documentation**: `data/README.md` (data dictionary, sources, processing steps)
+
+**Environment Variables** (set in Dockerfile):
+- **Locale settings**: `LANG`, `LC_ALL` (affect sorting, number formatting)
+- **Parallelization**: `OMP_NUM_THREADS` (for reproducible parallel processing)
+- **Timezone**: `TZ` (for date/time operations)
+
+```dockerfile
+# Reproducible environment variables
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV TZ=UTC
+ENV OMP_NUM_THREADS=1
+```
+
+### How They Work Together:
+
+```bash
+# Someone reproduces your analysis 5 years from now:
+git clone https://github.com/rgt47/penguin-bills.git
+cd penguin-bills
+
+# 1. Dockerfile builds environment (R version + system deps)
+docker build -t penguin-env .
+docker run -it -v $(pwd):/project penguin-env
+
+# 2. renv.lock installs exact package versions
+renv::restore()
+
+# 3. Source code runs the analysis
+source("analysis/scripts/01_analysis.R")
+rmarkdown::render("analysis/report/report.Rmd")
+
+# Result: Identical output to your original analysis
+```
+
+**Key Insight**:
+- **Dockerfile** = Environment foundation (R version, system libraries, locale)
+- **renv.lock** = Exact packages (source of truth for R dependencies)
+- **.Rprofile** = R session settings (critical options that affect behavior)
+- **Source Code** = Analytical logic (what actually runs, including random seeds)
+
+All four are version controlled in Git, ensuring anyone can reproduce your exact computational environment and results.
+
+### Reproducibility Checklist
+
+When preparing analysis for publication or sharing:
+
+- ✅ **Dockerfile specifies**: R version, system dependencies, environment variables
+- ✅ **renv.lock committed**: Contains all packages from all contributors
+- ✅ **.Rprofile version controlled**: Critical options documented
+- ✅ **Random seeds explicit**: All stochastic operations use `set.seed()`
+- ✅ **Environment variables set**: Locale (LANG, LC_ALL), timezone (TZ), parallelization
+- ✅ **Data documented**: Raw data sources, processing scripts, data dictionary
+- ✅ **CI/CD validates**: `check_rprofile_options.R` runs automatically
+
 ## Project Structure
 
 ```
