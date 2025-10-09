@@ -76,8 +76,11 @@ zzcollab --config set team-name "rgt47"
 # Set GitHub account
 zzcollab --config set github-account "rgt47"
 
-# Set default build mode (fast = 9 packages, ~2-3 min)
+# Set default renv mode (fast = 9 packages, ~2-3 min)
 zzcollab --config set renv-mode "fast"
+
+# Set default Docker profile (optional - leave empty for standard)
+zzcollab --config set profile-name ""
 
 # Set dotfiles directory
 zzcollab --config set dotfiles-dir "~/dotfiles"
@@ -90,6 +93,17 @@ zzcollab --config set auto-github "true"
 - All future `zzcollab` commands use these defaults
 - No need to specify `-t`, `-F`, `-D`, or `-G` flags repeatedly
 - Change defaults anytime with `zzcollab --config set`
+
+**Configuration Options Explained:**
+
+- **renv-mode**: Controls R packages in renv.lock (personal choice)
+  - Options: minimal, fast, standard, comprehensive
+  - Independent of Docker environment
+
+- **profile-name**: Controls Docker environment (team/shared)
+  - Options: minimal, rstudio, analysis, bioinformatics, geospatial, etc.
+  - Leave empty for standard rocker/r-ver base
+  - Can also set libs-bundle and pkgs-bundle for custom composition
 
 ## Step 2: Create Project (3-4 minutes)
 
@@ -118,27 +132,41 @@ mkdir penguin-bills && cd penguin-bills && zzcollab
 Since you are working solo (not initializing a team), zzcollab creates a
 streamlined development environment optimized for individual work.
 
-**Using Different Profiles:**
+**Using Different Docker Profiles:**
 
-If you want a specialized environment (bioinformatics, geospatial, etc.),
-use the `--profile-name` flag:
+If you want a specialized Docker environment (bioinformatics, geospatial, etc.),
+use the `--profile-name` flag or set it in config:
 
 ```bash
-# Bioinformatics environment with Bioconductor
-mkdir genomics-study && cd genomics-study
-zzcollab --profile-name bioinformatics
+# Option 1: Set profile in config (applies to all future projects)
+zzcollab --config set profile-name "bioinformatics"
+mkdir genomics-study && cd genomics-study && zzcollab
 
-# Geospatial analysis with GDAL/PROJ/sf
+# Option 2: Use flag for one-time profile selection
 mkdir spatial-analysis && cd spatial-analysis
 zzcollab --profile-name geospatial
 
-# Ultra-lightweight Alpine for CI/CD
-mkdir alpine-project && cd alpine-project
-zzcollab --profile-name alpine_minimal
+# Option 3: Custom composition with bundles
+mkdir custom-project && cd custom-project
+zzcollab -b rocker/r-ver --libs geospatial --pkgs modeling
 
 # Browse all available profiles
 zzcollab --list-profiles
+zzcollab --list-libs      # System library bundles
+zzcollab --list-pkgs      # R package bundles
 ```
+
+**Profile vs Renv Mode:**
+
+- **Docker Profile** (`--profile-name`): Changes the base Docker image and pre-installed packages
+  - Shared across team members
+  - Examples: bioinformatics, geospatial, alpine_minimal
+  - Set once in config or specify per project
+
+- **Renv Mode** (`-M/-F/-S/-C`): Controls packages installed in renv.lock
+  - Personal choice, independent of Docker
+  - Examples: minimal (3 packages), fast (9 packages), standard (17 packages)
+  - Can use fast renv mode with bioinformatics Docker profile
 
 ## Step 3: Set Repository to Private (30 seconds)
 
@@ -520,11 +548,20 @@ test_that("model includes species interaction", {
 Initialize a team project with the `-i` flag:
 
 ```bash
-# Create team project with specific profile
-mkdir team-genomics && cd team-genomics
-zzcollab -i -t genomicslab -p study --profile-name bioinformatics
+# Option 1: Set team config once
+zzcollab --config set team-name "genomicslab"
+zzcollab --config set profile-name "bioinformatics"
+zzcollab --config set renv-mode "fast"
 
-# Or use custom composition
+# Create team project using config
+mkdir study && cd study
+zzcollab -i -p study
+
+# Option 2: Use explicit flags
+mkdir team-genomics && cd team-genomics
+zzcollab -i -t genomicslab -p study --profile-name bioinformatics -F
+
+# Option 3: Custom composition
 zzcollab -i -t genomicslab -p study -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
 
 # Share with collaborators
@@ -532,9 +569,14 @@ gh repo edit --add-collaborator username
 ```
 
 **What `-i` does for teams:**
-1. Builds team Docker images and pushes to Docker Hub
+1. Builds team Docker image with chosen profile and pushes to Docker Hub
 2. Creates complete project structure
-3. Team members can join using those shared images
+3. Team members can join using the shared team image
+
+**Profile Selection for Teams:**
+- Team lead chooses Docker profile (bioinformatics, geospatial, etc.)
+- All team members get identical Docker environment
+- Team members can choose their own renv mode (minimal, fast, standard, comprehensive)
 
 ### Team Member Workflow
 
@@ -545,8 +587,12 @@ Clone and join the team project:
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Join team (uses existing team images from Docker Hub)
+# Join team (uses existing team image from Docker Hub)
 zzcollab -t genomicslab -p study
+
+# Or choose your own renv mode
+zzcollab -t genomicslab -p study -M  # Minimal renv (3 packages)
+zzcollab -t genomicslab -p study -F  # Fast renv (9 packages)
 
 # Enter identical development environment
 make docker-zsh
@@ -554,13 +600,18 @@ make docker-zsh
 
 **What happens for team members:**
 1. Pulls team image `genomicslab/study_core:latest` from Docker Hub
-2. Creates personal Dockerfile using team image as base
-3. Builds personal development image (fast - layers on top of team image)
-4. Identical environment to team lead and all other team members
+2. Team image has the Docker profile chosen by team lead (e.g., bioinformatics)
+3. Creates personal Dockerfile using team image as base
+4. Builds personal development image (fast - layers on top of team image)
+5. Initializes renv with mode you chose (minimal, fast, standard, or comprehensive)
+
+**Environment Consistency:**
+- **Docker environment**: Identical for all team members (from team image)
+- **Renv packages**: Personal choice (each member can use different mode)
 
 ### Adding Packages to Team Environment
 
-Team members can add additional R packages to their personal layer:
+Team members can add additional R packages to their personal Docker layer:
 
 ```bash
 # Add modeling packages on top of team image
@@ -571,10 +622,12 @@ zzcollab -t genomicslab -p study --pkgs modeling
 ```
 
 **Team member restrictions:**
+- ✗ Cannot change Docker profile (use `--profile-name`)
 - ✗ Cannot change base image (use `-b`)
 - ✗ Cannot add system libraries (use `--libs`)
-- ✓ Can add R packages (use `--pkgs`)
-- ✓ Can select different team variants (use `--tag`)
+- ✓ Can add R packages to Docker (use `--pkgs`)
+- ✓ Can choose renv mode independently (use `-M/-F/-S/-C`)
+- ✓ Can add packages to renv.lock (use `renv::install()` in container)
 
 ## Publish Results
 
@@ -670,37 +723,65 @@ zzcollab --list-pkgs
 ## Using Profiles
 
 ```bash
-# Use predefined profile
-zzcollab --profile-name bioinformatics
+# Method 1: Set in config (recommended for consistent work)
+zzcollab --config set profile-name "bioinformatics"
+mkdir my-project && cd my-project && zzcollab  # Uses bioinformatics profile
 
-# Or compose custom profile
+# Method 2: Use flag for one-time selection
+zzcollab --profile-name geospatial
+
+# Method 3: Compose custom profile with bundles
 zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
 
-# Or mix and match
+# Method 4: Mix and match components
 zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs modeling
 ```
 
 ## Profile System Components
 
+The profile system has two independent layers:
+
+### Docker Environment Layer (Team/Shared)
+
 **Profiles** (`--profile-name`):
-- Predefined shortcuts combining base image + libraries + packages
+- Complete Docker environment shortcuts
+- Combines base image + system libraries + R packages
 - Examples: `bioinformatics`, `geospatial`, `alpine_minimal`
-- Quick setup for common workflows
+- Shared across all team members
+- Set via: `zzcollab --config set profile-name bioinformatics`
 
 **Library Bundles** (`--libs`):
-- System dependencies installed via apt-get/apk
+- System dependencies (apt-get/apk packages)
 - Examples: `minimal`, `geospatial`, `bioinfo`, `modeling`, `publishing`, `alpine`
-- Required for R packages that need system libraries
+- Required for R packages needing system libraries (GDAL, PROJ, etc.)
+- Set via: `zzcollab --config set libs-bundle geospatial`
 
 **Package Bundles** (`--pkgs`):
-- R packages installed via install.packages()
+- Pre-installed R packages in Docker image
 - Examples: `essential`, `tidyverse`, `modeling`, `bioinfo`, `geospatial`, `publishing`, `shiny`
-- Sets of R packages for specific workflows
+- Baked into Docker image for fast container startup
+- Set via: `zzcollab --config set pkgs-bundle modeling`
 
-**Build Modes** (`-M`, `-F`, `-S`, `-C`):
-- Control which packages are installed in renv (personal choice)
-- Examples: fast (9 packages), standard (17 packages), comprehensive (47 packages)
-- Independent of profile system
+### Renv Package Layer (Personal)
+
+**Renv Modes** (`-M`, `-F`, `-S`, `-C`):
+- Controls packages in renv.lock file (not in Docker)
+- Minimal (3 packages), fast (9 packages), standard (17 packages), comprehensive (47 packages)
+- **Independent of Docker profile** - personal choice
+- Set via: `zzcollab --config set renv-mode fast`
+
+**Example Combining Both Layers:**
+```bash
+# Docker profile: bioinformatics (Bioconductor base + genomics packages)
+# Renv mode: fast (only 9 essential packages in renv.lock)
+zzcollab --config set profile-name "bioinformatics"
+zzcollab --config set renv-mode "fast"
+mkdir genomics-analysis && cd genomics-analysis && zzcollab
+```
+
+This gives you:
+- Bioconductor Docker environment with genomics tools (shared with team)
+- Fast renv setup with minimal packages (your personal preference)
 
 # Time Breakdown
 
@@ -734,5 +815,44 @@ You created a fully reproducible analysis with:
 This is the gold standard for reproducible computational research. All 5 levels
 working together ensure your analysis is not only reproducible, but also
 correct and maintainable.
+
+## Understanding the Two-Layer Architecture
+
+ZZCOLLAB uses a two-layer package management system for maximum flexibility:
+
+### Layer 1: Docker Environment (Team/Shared)
+- **Controlled by**: `--profile-name`, `-b`, `--libs`, `--pkgs`
+- **Purpose**: Pre-installed packages in Docker image
+- **Shared**: All team members get identical Docker environment
+- **Examples**: Bioinformatics profile, geospatial libraries, tidyverse packages
+- **When to use**: For packages everyone on team needs
+
+### Layer 2: Renv Packages (Personal)
+- **Controlled by**: `-M/-F/-S/-C` flags or `renv::install()` in container
+- **Purpose**: Personal package preferences in renv.lock
+- **Personal**: Each team member chooses independently
+- **Examples**: Minimal (3), fast (9), standard (17), comprehensive (47) packages
+- **When to use**: For your personal development preference
+
+### Practical Example
+
+Team lead sets up bioinformatics environment:
+```bash
+zzcollab -i -t genomicslab -p study --profile-name bioinformatics
+```
+
+Team members join with personal renv choices:
+```bash
+# Alice uses minimal renv (fast startup)
+zzcollab -t genomicslab -p study -M
+
+# Bob uses comprehensive renv (all packages)
+zzcollab -t genomicslab -p study -C
+```
+
+**Result**:
+- Both get identical Bioconductor Docker environment (Layer 1)
+- Each has different renv.lock packages (Layer 2)
+- Both can collaborate seamlessly
 
 For more details on each level, see `vignette("reproducibility-layers")`.

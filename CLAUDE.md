@@ -1517,6 +1517,58 @@ For detailed information about the improvements, see:
 
 ## Recent Work Completed (October 2025)
 
+### Profile System Configuration Enhancement (October 2025)
+**Renamed build-mode to renv-mode and added Docker profile configuration** - eliminated terminology confusion:
+
+**Issue Identified:**
+- Users confused "build-mode" (renv package management) with Docker profiles (Docker environment)
+- Configuration system lacked support for Docker profile defaults
+
+**Changes Implemented:**
+1. **Renamed build-mode → renv-mode** throughout entire codebase:
+   - `modules/config.sh`: All variable names, function names, YAML keys
+   - `modules/cli.sh`: Variable names, comments, validation messages
+   - `modules/help.sh`: All references in documentation
+   - `vignettes/*.Rmd`: All usage examples
+
+2. **Added Docker profile configuration variables**:
+   ```yaml
+   defaults:
+     renv_mode: "standard"     # Renv package management (personal)
+     profile_name: ""          # Docker profile (team/shared)
+     libs_bundle: ""           # System library bundle
+     pkgs_bundle: ""           # R package bundle
+   ```
+
+3. **Updated configuration system functions**:
+   - `load_config_file()`: Loads profile_name, libs_bundle, pkgs_bundle
+   - `apply_config_defaults()`: Applies profile defaults to CLI variables
+   - `get_config_value()`: Returns profile configuration values
+   - `config_set()`: Supports setting profile_name, libs-bundle, pkgs-bundle
+   - `config_list()`: Displays all profile configuration values
+
+4. **Updated default config template**:
+   - Added profile settings section with clear comments
+   - Separated renv (personal) from Docker profile (team/shared)
+
+**Key Distinction:**
+- **renv-mode**: Controls R packages in renv.lock (personal choice, independent)
+- **profile-name**: Controls Docker base image and pre-installed packages (team/shared)
+
+**Files Modified:**
+- `modules/config.sh`: Complete renv-mode rename + profile config variables
+- `modules/cli.sh`: RENV_MODE variable names and validation
+- `modules/help.sh`: Documentation updates
+- `vignettes/quickstart.Rmd`: Usage examples and config section
+- `vignettes/reusable-team-images.Rmd`: All command examples
+- `PROFILE_SYSTEM_IMPLEMENTATION.md`: Configuration status update
+
+**User Benefits:**
+- Clear terminology eliminates confusion between renv and Docker
+- Config system supports full profile customization
+- Solo developers can set Docker profile defaults
+- Team members can configure preferred profile variants
+
 ### Minimal Build Mode Fix (October 2025)
 **Complete restoration of -M flag functionality** - fixed validation and package definition issues:
 
