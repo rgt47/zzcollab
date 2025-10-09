@@ -451,13 +451,13 @@ load_all_configs() {
 # Purpose: Apply configuration defaults to CLI variables if they're not already set
 apply_config_defaults() {
     # Only set values if they haven't been set by CLI arguments
-    [[ -z "$TEAM_NAME" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
-    [[ -z "$GITHUB_ACCOUNT" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
-    [[ "$BUILD_MODE" == "standard" && -n "$CONFIG_RENV_MODE" ]] && BUILD_MODE="$CONFIG_RENV_MODE"
-    [[ -z "$PROFILE_NAME" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
-    [[ -z "$LIBS_BUNDLE" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
-    [[ -z "$PKGS_BUNDLE" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
-    [[ -z "$DOTFILES_DIR" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
+    [[ -z "${TEAM_NAME:-}" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
+    [[ -z "${GITHUB_ACCOUNT:-}" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
+    [[ "${BUILD_MODE:-standard}" == "standard" && -n "$CONFIG_RENV_MODE" ]] && BUILD_MODE="$CONFIG_RENV_MODE"
+    [[ -z "${PROFILE_NAME:-}" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
+    [[ -z "${LIBS_BUNDLE:-}" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
+    [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
+    [[ -z "${DOTFILES_DIR:-}" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
 
     # Handle boolean flags
     if [[ "$CONFIG_DOTFILES_NODOT" == "true" ]]; then
