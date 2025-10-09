@@ -455,6 +455,49 @@ docker build -f Dockerfile.teamcore -t test-image .
 # Put stable dependencies first (leverages caching)
 ```
 
+## Reproducibility Considerations
+
+### Environment Variables in Team Base Images
+
+All zzcollab-generated Docker images automatically include reproducibility-critical
+environment variables. When creating reusable team base images, verify these
+are present:
+
+```dockerfile
+# Reproducibility-critical environment variables (automatically included)
+ENV LANG=en_US.UTF-8        # Standardize locale
+ENV LC_ALL=en_US.UTF-8      # Override all locale categories
+ENV TZ=UTC                  # Eliminate daylight saving complications
+ENV OMP_NUM_THREADS=1       # Deterministic single-threaded execution
+```
+
+**Why This Matters for Team Images**:
+
+When a team uses a shared base image, all team members inherit the same
+environment variable settings. This ensures:
+
+- **Consistent string sorting** across all analyses
+- **Identical date-time calculations** regardless of team member location
+- **Reproducible parallel processing** behavior
+- **No locale-dependent result differences**
+
+**Verification**:
+
+```bash
+# Check environment variables in team base image
+docker run --rm mylab/baseimageecore-rstudio:latest env | grep -E "LANG|TZ|OMP"
+
+# Expected output:
+# LANG=en_US.UTF-8
+# LC_ALL=en_US.UTF-8
+# TZ=UTC
+# OMP_NUM_THREADS=1
+```
+
+If you manually modify team base image Dockerfiles, ensure these variables
+remain set. Removing them can cause silent reproducibility failures across
+the team.
+
 ## Best Practices
 
 ### 1. Name Base Images Descriptively

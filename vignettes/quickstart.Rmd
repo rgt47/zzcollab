@@ -469,9 +469,9 @@ git push
 - Automated test suite execution
 - Dependency validation
 
-## The Four Pillars of Reproducibility
+## The Five Pillars of Reproducibility
 
-Your analysis is now fully reproducible thanks to four essential components:
+Your analysis is now fully reproducible thanks to five essential components that represent the necessary and sufficient elements for complete reproducibility:
 
 ### 1. Dockerfile - Computational Environment
 - **R version**: Specifies exact R version (4.4.0)
@@ -535,25 +535,52 @@ set.seed(42)
 model <- randomForest(species ~ ., data = penguins)
 ```
 
-### Additional Elements for Complete Reproducibility
+### 5. Research Data - Empirical Foundation
+- **Raw data**: `analysis/data/raw_data/` (original, unmodified files)
+- **Derived data**: `analysis/data/derived_data/` (processed, analysis-ready)
+- **Data documentation**: `data/README.md` (data dictionary, provenance, processing lineage)
+- **Quality assurance**: Validation checks, known issues, outlier documentation
 
-**Data** (when not from packages):
-- **Raw data**: `analysis/data/raw_data/` (version controlled or documented acquisition)
-- **Derived data**: `analysis/data/derived_data/` (with processing scripts)
-- **Data documentation**: `data/README.md` (data dictionary, sources, processing steps)
+```
+analysis/data/
+├── raw_data/
+│   ├── penguins_raw.csv      # Original data (read-only)
+│   └── README.md             # Data provenance and collection methods
+└── derived_data/
+    ├── penguins_clean.csv    # Processed data
+    └── README.md             # Processing steps and transformations
+```
 
-**Environment Variables** (set in Dockerfile):
-- **Locale settings**: `LANG`, `LC_ALL` (affect sorting, number formatting)
-- **Parallelization**: `OMP_NUM_THREADS` (for reproducible parallel processing)
-- **Timezone**: `TZ` (for date/time operations)
+**Critical insight**: Without the original research data, perfect computational reproducibility is meaningless. The analysis code operates on data, and that data must be preserved, documented, and version-controlled alongside the computational environment.
+
+### Why Environment Variables Matter
+
+Environment variables affect computational results silently and are critical for reproducibility:
+
+**Locale settings** (`LANG`, `LC_ALL`):
+- Control string sorting order (e.g., "Åland" sorts differently in US vs Swedish locales)
+- Affect number parsing (comma vs period as decimal separator)
+- Impact factor level ordering in statistical models
+
+**Timezone** (`TZ`):
+- Affects date-time arithmetic and aggregation
+- Eliminates daylight saving time complications
+- Ensures consistent temporal analyses across team members
+
+**Parallel processing** (`OMP_NUM_THREADS`):
+- Controls thread count for deterministic computation
+- Single-threaded (`=1`) ensures reproducible results
+- Multi-threaded can produce different results each run due to floating-point order
 
 ```dockerfile
-# Reproducible environment variables
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
-ENV TZ=UTC
-ENV OMP_NUM_THREADS=1
+# Environment variables set in Dockerfile
+ENV LANG=en_US.UTF-8        # Standardize locale
+ENV LC_ALL=en_US.UTF-8      # Override all locale categories
+ENV TZ=UTC                  # No daylight saving time
+ENV OMP_NUM_THREADS=1       # Deterministic single-threaded execution
 ```
+
+**Real-world impact**: Two researchers running identical code in different locales or timezones can produce different results without explicit environment variable specification.
 
 ### How They Work Together:
 
@@ -577,24 +604,46 @@ rmarkdown::render("analysis/report/report.Rmd")
 ```
 
 **Key Insight**:
-- **Dockerfile** = Environment foundation (R version, system libraries, locale)
+- **Dockerfile** = Environment foundation (R version, system libraries, environment variables)
 - **renv.lock** = Exact packages (source of truth for R dependencies)
 - **.Rprofile** = R session settings (critical options that affect behavior)
 - **Source Code** = Analytical logic (what actually runs, including random seeds)
+- **Research Data** = Empirical observations (what analyses operate on)
 
-All four are version controlled in Git, ensuring anyone can reproduce your exact computational environment and results.
+All five pillars are version controlled in Git, representing the necessary and sufficient components for complete reproducibility. Without any one pillar, independent reproduction of the analysis becomes impossible.
 
 ### Reproducibility Checklist
 
-When preparing analysis for publication or sharing:
+When preparing analysis for publication or sharing, verify all five pillars.
 
-- ✅ **Dockerfile specifies**: R version, system dependencies, environment variables
-- ✅ **renv.lock committed**: Contains all packages from all contributors
-- ✅ **.Rprofile version controlled**: Critical options documented
-- ✅ **Random seeds explicit**: All stochastic operations use `set.seed()`
-- ✅ **Environment variables set**: Locale (LANG, LC_ALL), timezone (TZ), parallelization
-- ✅ **Data documented**: Raw data sources, processing scripts, data dictionary
-- ✅ **CI/CD validates**: `check_rprofile_options.R` runs automatically
+For comprehensive best practices, troubleshooting, and team collaboration
+patterns, see **docs/REPRODUCIBILITY_BEST_PRACTICES.md**.
+
+**Pillar 1 - Dockerfile**:
+- ✅ R version explicitly specified
+- ✅ System dependencies documented
+- ✅ Environment variables set (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+
+**Pillar 2 - renv.lock**:
+- ✅ All packages from all contributors included
+- ✅ Exact versions with repository sources
+- ✅ Committed to version control
+
+**Pillar 3 - .Rprofile**:
+- ✅ Critical options version controlled
+- ✅ Monitored by check_rprofile_options.R in CI/CD
+- ✅ Copied into Docker container
+
+**Pillar 4 - Source Code**:
+- ✅ Random seeds explicit for all stochastic operations
+- ✅ Analysis scripts, functions, tests all committed
+- ✅ Clear computational workflow documented
+
+**Pillar 5 - Research Data**:
+- ✅ Raw data preserved (read-only, original files)
+- ✅ Data documentation complete (data dictionary, provenance)
+- ✅ Processing scripts link raw to derived data
+- ✅ Data quality notes documented
 
 ## Project Structure
 

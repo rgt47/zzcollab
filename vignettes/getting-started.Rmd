@@ -115,6 +115,59 @@ The initialization procedure performs the following operations:
 5. Generates data documentation templates
 6. Creates GitHub Actions workflow definitions
 7. Copies dotfiles to container environment (if specified)
+8. Sets reproducibility-critical environment variables in Dockerfile
+
+## Reproducibility-Critical Environment Variables
+
+ZZCOLLAB automatically configures environment variables in the Dockerfile that
+are essential for computational reproducibility. These variables prevent silent
+differences in results across team members working in different locales or
+timezones.
+
+### Environment Variables Set
+
+```dockerfile
+# Locale settings - standardize text processing
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# Timezone - eliminate daylight saving complications
+ENV TZ=UTC
+
+# Parallel processing - ensure deterministic execution
+ENV OMP_NUM_THREADS=1
+```
+
+### Why These Matter
+
+**Locale Settings (LANG, LC_ALL)**:
+
+- **String sorting**: "Åland" sorts differently in US vs Swedish locales
+- **Number parsing**: European format "3,14159" becomes NA in US locale
+- **Factor ordering**: Affects reference categories in statistical models
+
+Without explicit locale settings, two researchers running identical code on
+different systems can produce different statistical results.
+
+**Timezone (TZ)**:
+
+- **Date arithmetic**: Daylight saving time causes missing/duplicate timestamps
+- **Time aggregation**: Different timezones produce different daily summaries
+- **Temporal analyses**: Ensures consistent time-based calculations
+
+**Parallel Processing (OMP_NUM_THREADS)**:
+
+- **Deterministic execution**: Single-threaded execution (=1) ensures identical
+  results
+- **Floating-point order**: Multi-threaded summation can vary due to operation
+  order
+- **Random number generation**: Prevents race conditions in stochastic analyses
+
+### Verification
+
+These environment variables are automatically verified in continuous
+integration. The Dockerfile template includes these settings by default,
+requiring no user action.
 
 ## Dotfiles Integration
 
@@ -188,6 +241,11 @@ ls -lh data/raw_data/
 ```
 
 ## Data Provenance Documentation
+
+**Critical for Reproducibility**: Data documentation is as essential as code
+documentation. Without comprehensive data provenance and metadata, even
+perfect computational reproducibility cannot enable independent verification
+of research findings.
 
 Complete documentation of data sources enables verification and citation:
 
@@ -1291,25 +1349,135 @@ git push
 | data/metadata/     | Documentation files       | Permitted    |
 | data/validation/   | Quality reports           | Permitted    |
 
+# Reproducibility Verification Checklist
+
+Before sharing your analysis or submitting for publication, verify that all
+five pillars of reproducibility are in place:
+
+## Pillar 1: Computational Environment (Dockerfile)
+
+- ✅ R version explicitly specified in Dockerfile
+- ✅ System dependencies documented (libcurl, libssl, domain-specific libraries)
+- ✅ Environment variables set (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+- ✅ Base image documented (rocker/verse, bioconductor, etc.)
+
+**Verification**:
+```bash
+grep "FROM rocker" Dockerfile
+grep "ENV LANG" Dockerfile
+```
+
+## Pillar 2: Package Dependencies (renv.lock)
+
+- ✅ All R packages committed to version control
+- ✅ Exact versions with repository sources specified
+- ✅ Packages from all contributors included (for team projects)
+- ✅ renv.lock synchronized with code
+
+**Verification**:
+```bash
+Rscript validate_package_environment.R --quiet --fail-on-issues
+git status renv.lock  # Should show "nothing to commit"
+```
+
+## Pillar 3: R Session Configuration (.Rprofile)
+
+- ✅ Critical R options version controlled
+- ✅ Monitored by check_rprofile_options.R in CI/CD
+- ✅ Copied into Docker container
+- ✅ No undocumented option changes
+
+**Verification**:
+```bash
+git ls-files | grep .Rprofile
+Rscript check_rprofile_options.R
+```
+
+## Pillar 4: Computational Logic (Source Code)
+
+- ✅ Analysis scripts committed (analysis/scripts/)
+- ✅ Reusable functions documented (R/)
+- ✅ Comprehensive tests written (tests/testthat/)
+- ✅ Random seeds explicit for stochastic analyses
+
+**Verification**:
+```r
+devtools::test()           # All tests should pass
+devtools::check()          # R CMD check should succeed
+```
+
+## Pillar 5: Research Data
+
+- ✅ Raw data preserved in data/raw_data/ (read-only, original files)
+- ✅ Data provenance documented (source, collection dates, DOI/citation)
+- ✅ Data dictionary complete (variables, types, units, missing codes)
+- ✅ Processing scripts link raw to derived data
+- ✅ Data quality notes documented (validation, known issues)
+
+**Verification**:
+```bash
+ls -lh data/raw_data/        # Raw data files present
+cat data/README.md           # Documentation complete
+devtools::test()             # Data validation tests pass
+```
+
+## Continuous Integration
+
+- ✅ GitHub Actions workflow configured (.github/workflows/)
+- ✅ Automated tests run on every commit
+- ✅ Dependency validation integrated
+- ✅ R CMD check passes in clean environment
+
+**Verification**:
+```bash
+# Check CI status
+git push
+# Visit GitHub Actions tab - all checks should pass
+```
+
+## Collaboration Ready
+
+- ✅ Repository cloneable by colleagues
+- ✅ README.md provides clear setup instructions
+- ✅ Docker image builds successfully
+- ✅ Analysis reproduces identical results
+
+**Verification**:
+```bash
+# Colleague workflow simulation
+git clone <repository-url> test-clone
+cd test-clone
+make docker-zsh
+# Inside container:
+Rscript scripts/01_penguin_bill_analysis.R
+# Should produce identical results
+```
+
 # Conclusion
 
 This tutorial has demonstrated a systematic approach to reproducible research
-using the ZZCOLLAB framework. Key components include:
+using the ZZCOLLAB framework. The five pillars of reproducibility ensure that
+analyses are independently verifiable:
 
-- Containerized computational environment with explicit dependency management
-- Separation of immutable raw data from derived analytical datasets
-- Comprehensive validation testing for data integrity
-- Documented data transformation workflows
-- Version control integration for research provenance
+1. **Computational Environment** - Dockerfile with environment variables
+2. **Package Dependencies** - renv.lock with exact versions
+3. **R Session Configuration** - .Rprofile with monitored options
+4. **Computational Logic** - Version-controlled code with explicit random seeds
+5. **Research Data** - Documented data with provenance and quality assurance
+
+All five pillars are necessary and sufficient for complete reproducibility.
+The checklist above ensures no critical component is omitted.
 
 ## Additional Resources
 
 For advanced topics, consult the following documentation:
 
-- data/DATA_WORKFLOW_GUIDE.md: Advanced data processing workflows
-- vignettes/data-analysis-testing.Rmd: Comprehensive testing guide
-- ZZCOLLAB_USER_GUIDE.md: Team collaboration workflows
-- .github/workflows/: Continuous integration configuration
+- **docs/REPRODUCIBILITY_BEST_PRACTICES.md**: Practical reproducibility guidance and troubleshooting
+- **docs/COLLABORATIVE_REPRODUCIBILITY.md**: Comprehensive five-pillar reproducibility model
+- **data/DATA_WORKFLOW_GUIDE.md**: Advanced data processing workflows
+- **docs/TESTING_GUIDE.md**: Comprehensive testing guide
+- **ZZCOLLAB_USER_GUIDE.md**: Team collaboration workflows
+- **.github/workflows/**: Continuous integration configuration
 
 ## Collaborative Workflow
 

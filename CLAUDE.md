@@ -55,21 +55,25 @@ reproducible research environments. The system consists of:
 - **14+ Docker profiles**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
 - **Two-layer package management**: Docker profiles (shared/team) + renv modes (personal/independent)
 
-### Four Pillars of Reproducibility
+### Five Pillars of Reproducibility
 
-ZZCOLLAB ensures complete reproducibility through four version-controlled components:
+ZZCOLLAB ensures complete reproducibility through five version-controlled components that represent the necessary and sufficient elements for independent reproduction:
 
 1. **Dockerfile** - Computational environment foundation
    - R version (e.g., 4.4.0)
    - System dependencies (GDAL, PROJ, libcurl, etc.)
    - Base image specification (rocker/verse, bioconductor, etc.)
-   - Environment variables (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+   - **Environment variables** (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+     - Locale settings affect string sorting, number formatting, factor ordering
+     - Timezone eliminates daylight saving complications
+     - Thread control ensures deterministic parallel execution
+     - Silent effects require explicit specification
 
 2. **renv.lock** - Exact R package versions (source of truth)
    - Every package with exact version
    - Complete dependency tree
    - CRAN/Bioconductor/GitHub sources
-   - Contains packages from ALL team members
+   - Contains packages from ALL team members (union model)
 
 3. **.Rprofile** - R session configuration (version controlled)
    - Critical R options (`stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`)
@@ -84,12 +88,24 @@ ZZCOLLAB ensures complete reproducibility through four version-controlled compon
    - Tests (`tests/testthat/`)
    - Explicit random seeds (`set.seed()`) for stochastic analyses
 
-**Additional Reproducibility Elements**:
-- **Data**: Raw data, derived data, and data acquisition/processing scripts
-- **Environment variables**: Locale settings (sorting, number formatting), timezone, parallelization controls
-- **Documentation**: Data dictionary (`data/README.md`), analysis workflow documentation
+5. **Research Data** - Empirical foundation
+   - Raw data (`analysis/data/raw_data/`) - original, unmodified, read-only
+   - Derived data (`analysis/data/derived_data/`) - processed, analysis-ready
+   - Data documentation (`data/README.md`) - data dictionary, provenance, processing lineage
+   - Quality assurance - validation checks, known issues, outlier documentation
 
-**Key Design Principle**: Docker images provide foundation and performance (pre-installed base packages), but `renv.lock` is the source of truth for R package reproducibility. `.Rprofile` ensures consistent R session behavior across environments. Anyone can reproduce analysis from ANY compatible Docker base by running `renv::restore()` with the committed `renv.lock` file.
+**Necessity and Sufficiency**: All five pillars are required for complete reproducibility:
+- **Dockerfile** alone is insufficient (which packages? which code? which data?)
+- **renv.lock** alone is insufficient (which R version? which data? which analysis?)
+- **Source code** alone is insufficient (which packages? which environment? which data?)
+- **Data** alone is insufficient (which processing? which environment? which packages?)
+- **.Rprofile** alone is insufficient (provides session config but no analysis)
+
+Only the complete set enables independent reproduction. Given these five components, any researcher can execute identical analyses and produce identical results.
+
+**Key Design Principle**: Docker images provide foundation and performance (pre-installed base packages), but `renv.lock` is the source of truth for R package reproducibility. `.Rprofile` ensures consistent R session behavior. Environment variables prevent silent locale/timezone differences. Data provides the empirical observations. Anyone can reproduce analysis from ANY compatible Docker base by running `renv::restore()` with the committed `renv.lock` file.
+
+**For comprehensive reproducibility documentation**, see `docs/COLLABORATIVE_REPRODUCIBILITY.md` which provides detailed explanation of the five-pillar model, environment variable impacts, union-based dependency management, and validation mechanisms.
 
 ## Unified Research Compendium Structure
 
