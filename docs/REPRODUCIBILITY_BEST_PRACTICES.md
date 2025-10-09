@@ -191,37 +191,75 @@ sum(rnorm(1e6))
 Team members add packages independently. Final renv.lock contains union of
 all packages.
 
-```r
+```bash
 # Alice adds geospatial packages
+make docker-zsh
+# Inside container:
 renv::install("sf")
 renv::snapshot()
+
+# CRITICAL: Validate before committing
+Rscript validate_package_environment.R --fix --fail-on-issues
+devtools::test()
+exit
+
+git add renv.lock DESCRIPTION
+git commit -m "Add geospatial packages"
 git push
 
 # Bob adds machine learning packages
 git pull  # Gets Alice's changes
+make docker-zsh
+# Inside container:
 renv::install("tidymodels")
 renv::snapshot()  # renv.lock now has sf + tidymodels
+
+# CRITICAL: Validate before committing
+Rscript validate_package_environment.R --fix --fail-on-issues
+devtools::test()
+exit
+
+git add renv.lock DESCRIPTION
+git commit -m "Add ML packages"
 git push
 ```
 
-**Key principle**: renv::snapshot() scans ALL code files, generating union of
-dependencies.
+**Key principles**:
+- renv::snapshot() scans ALL code files, generating union of dependencies
+- validate_package_environment.R MUST run before every commit
+- Tests MUST pass before committing package changes
 
 ### Pattern 2: Pre-commit Validation
 
-All team members run validation before committing:
+**This is non-negotiable.** All team members MUST run validation before every
+commit that changes renv.lock or code dependencies.
 
 ```bash
-# Validate dependencies
+# Inside container (after making code/package changes):
+
+# 1. VALIDATE dependencies
 Rscript validate_package_environment.R --fix --fail-on-issues
 
-# Run tests
-Rscript -e "devtools::test()"
+# 2. RUN tests
+devtools::test()
 
-# Commit only if validation passes
-git add .
+# 3. EXIT container
+exit
+
+# 4. COMMIT only if validation passed and tests passed
+git add renv.lock DESCRIPTION <other-files>
 git commit -m "Add analysis"
+git push
 ```
+
+**Why this matters**: validate_package_environment.R prevents:
+- Code using packages not in renv.lock
+- Packages in renv.lock not in DESCRIPTION
+- Invalid package sources
+- Missing dependencies
+
+**CI/CD will reject** commits that fail validation, but catching it locally
+saves time and prevents broken builds.
 
 ### Pattern 3: Continuous Integration Safety Net
 

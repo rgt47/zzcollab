@@ -412,14 +412,23 @@ zzcollab -i -t genomicslab -p study --profile-name minimal
 # Alice (geospatial analysis)
 renv::install(c("sf", "terra", "leaflet"))
 renv::snapshot()
+# VALIDATE before committing
+Rscript validate_package_environment.R --fix --fail-on-issues
+devtools::test()  # Ensure nothing broke
 
 # Bob (machine learning)
 renv::install(c("tidymodels", "xgboost", "ranger"))
 renv::snapshot()
+# VALIDATE before committing
+Rscript validate_package_environment.R --fix --fail-on-issues
+devtools::test()
 
 # Carol (visualization)
 renv::install(c("patchwork", "gganimate", "plotly"))
 renv::snapshot()
+# VALIDATE before committing
+Rscript validate_package_environment.R --fix --fail-on-issues
+devtools::test()
 ```
 
 **Result**: The final `renv.lock` contains packages from Alice + Bob + Carol (~30 packages), while the Docker image still contains only the minimal profile (~3 packages). Any team member can reproduce any analysis by running `renv::restore()`, which installs the additional packages specified in `renv.lock`.
@@ -474,7 +483,13 @@ git checkout -b alice-spatial-analysis
 renv::install("sf")                    # Add spatial packages
 source("scripts/spatial_analysis.R")   # Develop analysis
 renv::snapshot()                       # Update renv.lock (now contains sf)
-git add renv.lock scripts/spatial_analysis.R
+
+# VALIDATE before committing
+Rscript validate_package_environment.R --fix --fail-on-issues
+devtools::test()                       # Ensure tests pass
+exit                                   # Exit container
+
+git add renv.lock scripts/spatial_analysis.R DESCRIPTION
 git commit -m "Add spatial analysis"
 git push origin alice-spatial-analysis
 
@@ -482,10 +497,19 @@ git push origin alice-spatial-analysis
 git checkout main
 git pull                                # Get latest (does NOT include Alice's changes yet)
 git checkout -b bob-ml-pipeline
+make docker-zsh                        # Enter container
+
+# Inside container:
 renv::install("tidymodels")            # Add ML packages
 source("scripts/ml_pipeline.R")         # Develop pipeline
 renv::snapshot()                       # Update renv.lock (now contains tidymodels)
-git add renv.lock scripts/ml_pipeline.R
+
+# VALIDATE before committing
+Rscript validate_package_environment.R --fix --fail-on-issues
+devtools::test()                       # Ensure tests pass
+exit                                   # Exit container
+
+git add renv.lock scripts/ml_pipeline.R DESCRIPTION
 git commit -m "Add ML pipeline"
 git push origin bob-ml-pipeline
 
