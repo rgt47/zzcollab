@@ -107,29 +107,33 @@ zzcollab --config set auto-github "true"
 
 ## Step 2: Create Project (3-4 minutes)
 
-Create your reproducible analysis project with a single command:
+Create your reproducible analysis project:
 
 ```bash
-# Create project (all parameters from Step 1 config)
-mkdir penguin-bills && cd penguin-bills && zzcollab
+# Create project directory and initialize
+mkdir penguin-bills && cd penguin-bills
+zzcollab
 
 # Flags come from config (set in Step 1):
 # -t rgt47: from team-name config
 # -F: from renv-mode config (fast)
 # -D ~/dotfiles: from dotfiles-dir config
-# -G: from auto-github config (true)
+# --github: from auto-github config (true)
+
+# Build Docker image (required step)
+make docker-build
 ```
 
 **What this does:**
-1. Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
-2. Builds Docker image with R + essential packages
-3. Creates GitHub repository automatically (if auto-github enabled)
-4. Sets up CI/CD workflows for automated testing
-5. Initializes renv for dependency tracking
+1. `zzcollab`: Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
+2. `zzcollab`: Creates GitHub repository automatically (if auto-github enabled)
+3. `zzcollab`: Sets up CI/CD workflows for automated testing
+4. `zzcollab`: Initializes renv for dependency tracking
+5. `make docker-build`: Builds Docker image with R + essential packages
 
 **Solo Developer Simplification:**
 
-Since you are working solo (not initializing a team), zzcollab creates a
+Since you are working solo (not creating a team image), zzcollab creates a
 streamlined development environment optimized for individual work.
 
 **Using Different Docker Profiles:**
