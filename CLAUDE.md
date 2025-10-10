@@ -471,6 +471,11 @@ vim bundles.yaml               # Adjust R package selection if needed
 # 3. Build and share team images
 make docker-build              # Build team Docker image
 make docker-push-team          # Push to Docker Hub for team
+
+# 4. Commit and push project structure
+git add .
+git commit -m "Initial project setup"
+git push -u origin main
 ```
 
 **Team Member Joining**:
@@ -730,6 +735,11 @@ vim Dockerfile                       # Modify base image, packages, system depen
 # 3. Build and push team image
 make docker-build                    # Build myteam/myprojectcore:latest
 make docker-push-team                # Push to Docker Hub
+
+# 4. Commit and push project structure
+git add .
+git commit -m "Initial team project setup"
+git push -u origin main
 ```
 
 **Team Member Workflow**:
@@ -901,6 +911,9 @@ Solo projects are automatically team-ready:
 zzcollab -t yourname -p penguin-analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Convert to team collaboration"
+git push -u origin main
 
 # 2. Others can join immediately
 git clone https://github.com/yourname/penguin-analysis.git
