@@ -117,15 +117,15 @@ done
 if [[ -e "$INSTALL_DIR/zzcollab" ]]; then
     log_error "Installation target already exists: $INSTALL_DIR/zzcollab"
     log_error "Please remove it first or choose a different installation directory:"
-    log_error "  rm -rf $INSTALL_DIR/zzcollab"
+    log_error "  tp $INSTALL_DIR/zzcollab"
     log_error "  # OR"
     log_error "  $0 --prefix /different/path"
     exit 1
 fi
 
 if [[ -d "$ZZCOLLAB_SUPPORT_DIR" ]]; then
-    log_info "Removing existing zzcollab support directory..."
-    rm -rf "$ZZCOLLAB_SUPPORT_DIR"
+    log_info "Removing existing zzcollab support directory using tp (trash-put)..."
+    tp "$ZZCOLLAB_SUPPORT_DIR"
 fi
 
 # Create support directory

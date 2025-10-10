@@ -32,7 +32,8 @@
       "Bash(tree:*)",
       "Bash(cat:*)",
       "Bash(git add:*)",
-      "Read(//Users/zenn/Dropbox/bin/**)"
+      "Read(//Users/zenn/Dropbox/bin/**)",
+      "Bash(./install.sh)"
     ],
     "deny": []
   }

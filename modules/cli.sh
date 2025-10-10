@@ -212,6 +212,9 @@ RENV_MODE="$DEFAULT_RENV_MODE"    # Options: minimal, fast, standard, comprehens
 # standard    = standard Docker + standard packages (balanced) - 4-6 minutes
 # comprehensive = extended Docker + full packages (kitchen sink) - 15-20 minutes
 
+# Profile bundle variables (system libraries and R packages)
+LIBS_BUNDLE=""    # System library bundle (e.g., alpine, bioinfo, geospatial)
+PKGS_BUNDLE=""    # R package bundle (e.g., tidyverse, shiny, modeling)
 
 # Show flags (processed after modules are loaded)
 SHOW_HELP=false
