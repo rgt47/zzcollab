@@ -7,6 +7,7 @@ BUNDLES_FILE="${TEMPLATES_DIR}/bundles.yaml"
 
 # Function: expand_profile_name
 # Purpose: Expand --profile-name into base-image, libs, and pkgs
+# Note: Respects --pkgs override if USER_PROVIDED_PKGS is true
 expand_profile_name() {
     local profile_name="$1"
 
@@ -42,15 +43,30 @@ expand_profile_name() {
         exit 1
     fi
 
-    # Set global variables
+    # Save user-provided PKGS_BUNDLE if it was explicitly set
+    local user_pkgs=""
+    if [[ "${USER_PROVIDED_PKGS:-false}" == "true" ]]; then
+        user_pkgs="$PKGS_BUNDLE"
+    fi
+
+    # Set global variables from profile
     BASE_IMAGE="$base_image"
     LIBS_BUNDLE="$libs_bundle"
     PKGS_BUNDLE="$pkgs_bundle"
 
-    log_info "📋 Expanded profile '${profile_name}':"
-    log_info "   Base image: $base_image"
-    log_info "   Libraries:  $libs_bundle"
-    log_info "   Packages:   $pkgs_bundle"
+    # Override PKGS_BUNDLE if user explicitly provided it
+    if [[ -n "$user_pkgs" ]]; then
+        PKGS_BUNDLE="$user_pkgs"
+        log_info "📋 Expanded profile '${profile_name}' with package override:"
+        log_info "   Base image: $base_image"
+        log_info "   Libraries:  $libs_bundle"
+        log_info "   Packages:   $user_pkgs (OVERRIDE from --pkgs)"
+    else
+        log_info "📋 Expanded profile '${profile_name}':"
+        log_info "   Base image: $base_image"
+        log_info "   Libraries:  $libs_bundle"
+        log_info "   Packages:   $pkgs_bundle"
+    fi
 }
 
 # Function: validate_profile_combination

@@ -822,8 +822,13 @@ validate_and_setup_environment() {
 
     # Profile system validation (new)
     # Expand profile if --profile-name was specified
+    # OR use default profile (minimal) if only --pkgs was provided
     if [[ -n "${PROFILE_NAME:-}" ]]; then
         expand_profile_name "$PROFILE_NAME"
+    elif [[ "${USER_PROVIDED_PKGS:-false}" == "true" ]]; then
+        # Scenario 3: --pkgs without --profile-name → use default profile (minimal)
+        log_info "Using default profile 'minimal' with custom packages"
+        expand_profile_name "minimal"
     fi
 
     # Apply smart defaults based on base image if needed
