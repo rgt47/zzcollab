@@ -1986,16 +1986,48 @@ vim scripts/01_data_exploration.R
 
 # 3. Install needed packages
 R
-install.packages(c("tidyverse", "ggplot2"))
+renv::install(c("tidyverse", "ggplot2"))  # Or install.packages()
 renv::snapshot()
 quit()
 
 # 4. Write your analysis...
 
-# 5. Exit container and validate
+# 5. Exit container and validate dependencies
 exit
-make docker-check-renv-fix
+make check-renv-ci
+
+# 6. If validation passes, commit
+git add renv.lock scripts/01_data_exploration.R
+git commit -m "Add data exploration analysis"
+git push
 ```
+
+### Validating Package Dependencies
+
+**Before committing renv.lock changes:**
+
+```bash
+# Quick validation (recommended before every commit)
+make check-renv-ci
+```
+
+**What it checks:**
+- Packages used in code are declared in DESCRIPTION
+- DESCRIPTION imports exist in renv.lock
+- No missing dependencies
+- Valid package sources (CRAN/Bioconductor/GitHub)
+
+**Auto-fix mode (if validation finds issues):**
+
+```bash
+# Automatically update DESCRIPTION and renv.lock
+Rscript validate_package_environment.R --fix --fail-on-issues
+```
+
+**Integration:**
+- Runs automatically in GitHub Actions on every push
+- Local validation provides fast feedback (prevents CI failures)
+- Optional but highly recommended for team workflows
 
 ### Rendering Your Paper
 ```bash
@@ -2037,24 +2069,56 @@ devtools::test()
 quit()
 ```
 
-### Team Package Management
+### Team Package Management (Recommended Workflow)
+
+**Complete workflow with validation:**
+
 ```bash
-# Add packages (any team member)
+# Step 1: Add packages inside container
 make docker-zsh
+
+# Inside container:
 R
-install.packages("new_package")
-renv::snapshot()
+renv::install("tidyverse")      # Or install.packages("tidyverse")
+renv::install("tidymodels")
+renv::snapshot()                # Updates renv.lock
 quit()
 
-# Validate and commit
-make docker-check-renv-fix
-git add .
-git commit -m "Add new_package for advanced modeling"
+# Step 2: Exit container
+exit
+
+# Step 3: Validate dependencies (RECOMMENDED before commit)
+make check-renv-ci
+
+# If validation passes:
+# Step 4: Commit and push
+git add renv.lock
+git commit -m "Add tidyverse and tidymodels for analysis"
 git push
 
+# Step 5: GitHub Actions automatically validates and rebuilds image
 # Other team members sync automatically:
-# GitHub Actions rebuilds image → team gets notification → docker pull gets updates
+# - GitHub Actions rebuilds image with new packages
+# - Team gets notification via commit comment
+# - `docker pull` gets updates
 ```
+
+**What `make check-renv-ci` validates:**
+
+- All packages used in code are declared in DESCRIPTION
+- All DESCRIPTION imports are in renv.lock
+- No missing dependencies that would break CI/CD
+- Package sources are valid (CRAN/Bioconductor/GitHub)
+
+**Why validate before committing:**
+
+- Catches issues locally (fast feedback)
+- Prevents CI failures (saves team time)
+- Ensures renv.lock is always valid
+- Documents what packages are actually used
+
+**Note:** GitHub Actions runs the same validation automatically, so this
+step is optional but highly recommended for faster iteration.
 
 ## Recent Enhancements
 

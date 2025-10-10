@@ -168,10 +168,15 @@ OPTIONS:
     -p, --project-name NAME      Project name [required with --init]
     -g, --github-account NAME    GitHub account (default: same as team-name)
 
-    Profile system:
-    --profile-name NAME          Use predefined profile (bioinformatics, geospatial, alpine_minimal, etc.)
-    --libs BUNDLE                System dependency bundle (minimal, geospatial, bioinfo, modeling, publishing, alpine)
-    --pkgs BUNDLE                R package bundle (essential, tidyverse, modeling, bioinfo, geospatial, publishing, shiny)
+    Profile system (three usage patterns):
+    --profile-name NAME          Use complete predefined profile (base-image + libs + pkgs)
+                                 Examples: bioinformatics, geospatial, alpine_minimal
+    --pkgs BUNDLE                Override package selection (can combine with --profile-name)
+                                 If used alone, applies minimal profile as base
+                                 Bundles: essential, tidyverse, modeling, bioinfo, geospatial, publishing, shiny
+    --libs BUNDLE                System dependency bundle (for custom composition with -b)
+                                 Bundles: minimal, geospatial, bioinfo, modeling, publishing, alpine
+    -b, --base-image NAME        Custom Docker base image (for manual composition)
     --tag TAG                    Docker image tag for selecting team image variants
     --list-profiles              List all available predefined profiles
     --list-libs                  List all available library bundles
@@ -208,17 +213,29 @@ show_help_examples() {
     cat << EOF
     
 EXAMPLES:
-    Solo Developer - Using Profiles:
-    zzcollab --profile-name bioinformatics -G                   # Bioconductor + bioinfo packages
-    zzcollab --profile-name geospatial                          # GDAL/PROJ + sf/terra packages
-    zzcollab --profile-name alpine_minimal                      # Ultra-lightweight (~200MB)
-    zzcollab --list-profiles                                    # See all available profiles
+    Solo Developer - Three Profile Usage Patterns:
 
-    Solo Developer - Custom Composition:
-    zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial    # Custom geospatial setup
-    zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo   # Custom bioinfo
-    zzcollab --list-libs                                            # See all library bundles
-    zzcollab --list-pkgs                                            # See all package bundles
+    Pattern 1: Complete Profile (no overrides)
+    zzcollab --profile-name bioinformatics -G   # Uses: bioconductor base + bioinfo libs + bioinfo pkgs
+    zzcollab --profile-name geospatial          # Uses: rocker/r-ver + geospatial libs + geospatial pkgs
+    zzcollab --profile-name alpine_minimal      # Uses: alpine-r + alpine libs + essential pkgs
+
+    Pattern 2: Profile with Package Override
+    zzcollab --profile-name bioinformatics --pkgs essential   # Uses: bioconductor base + bioinfo libs + essential pkgs (OVERRIDE)
+    zzcollab --profile-name geospatial --pkgs tidyverse       # Uses: rocker/r-ver + geospatial libs + tidyverse pkgs (OVERRIDE)
+
+    Pattern 3: Package-Only (uses minimal profile as base)
+    zzcollab --pkgs modeling                    # Uses: rocker/r-ver + minimal libs + modeling pkgs
+    zzcollab --pkgs tidyverse                   # Uses: rocker/r-ver + minimal libs + tidyverse pkgs
+
+    Discovery Commands:
+    zzcollab --list-profiles                    # See all available profiles with descriptions
+    zzcollab --list-libs                        # See all library bundles
+    zzcollab --list-pkgs                        # See all package bundles
+
+    Solo Developer - Manual Composition (advanced):
+    zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial    # Full manual control
+    zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
 
     Team Lead - Initialize with Profile:
     zzcollab -i -t rgt47 -p study --profile-name bioinformatics -G  # Team image with bioinfo profile

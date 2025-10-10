@@ -47,6 +47,9 @@ check-renv:
 check-renv-fix:
 	R -e "renv::snapshot()"
 
+# Validate package dependencies before committing (RECOMMENDED)
+# Checks that all packages used in code are in DESCRIPTION and renv.lock
+# Run this before `git commit` to catch issues locally (prevents CI failures)
 check-renv-ci:
 	Rscript validate_package_environment.R --quiet --fail-on-issues
 

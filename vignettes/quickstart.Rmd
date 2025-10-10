@@ -1037,16 +1037,25 @@ zzcollab -t genomicslab -p study -C
 
 ```bash
 # Alice adds modeling packages
+make docker-zsh
+
+# Inside container:
 renv::install("tidymodels")
 renv::snapshot()
+quit()
 
-# VALIDATE before committing
-Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()  # Ensure nothing broke
+# Exit container
 exit
 
+# STEP 1: Validate dependencies (RECOMMENDED - prevents CI failures)
+make check-renv-ci
+
+# STEP 2: Run tests to ensure nothing broke
+make docker-test
+
+# STEP 3: Commit if validation passed
 git add renv.lock DESCRIPTION
-git commit -m "Add modeling packages"
+git commit -m "Add tidymodels for modeling workflow"
 git push
 
 # Bob adds geospatial packages
@@ -1056,14 +1065,20 @@ make docker-zsh
 # Inside container:
 renv::install("sf")
 renv::snapshot()  # renv.lock now has tidymodels + sf
+quit()
 
-# VALIDATE before committing
-Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()
+# Exit container
 exit
 
+# STEP 1: Validate dependencies (catch issues before CI runs)
+make check-renv-ci
+
+# STEP 2: Test functionality
+make docker-test
+
+# STEP 3: Commit
 git add renv.lock DESCRIPTION
-git commit -m "Add geospatial packages"
+git commit -m "Add sf for geospatial analysis"
 git push
 
 # Final renv.lock contains BOTH Alice's and Bob's packages
