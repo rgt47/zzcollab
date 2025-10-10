@@ -251,7 +251,7 @@ validate_team_member_flags() {
     fi
 
     # Team members cannot change base image
-    if [[ -n "$BASE_IMAGE" ]]; then
+    if [[ "${USER_PROVIDED_BASE_IMAGE:-false}" == "true" ]]; then
         log_error "❌ Error: Team members cannot use -b/--base-image flag"
         log_error ""
         log_error "   The team image IS your base:"
@@ -262,7 +262,7 @@ validate_team_member_flags() {
     fi
 
     # Team members cannot change system libraries
-    if [[ -n "$LIBS_BUNDLE" ]]; then
+    if [[ "${USER_PROVIDED_LIBS:-false}" == "true" ]]; then
         log_error "❌ Error: Team members cannot use --libs flag"
         log_error ""
         log_error "   System libraries are in the team image (immutable)."
@@ -273,7 +273,7 @@ validate_team_member_flags() {
     fi
 
     # Team members cannot use profile shortcuts
-    if [[ -n "$PROFILE_NAME" ]]; then
+    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]]; then
         log_error "❌ Error: Team members cannot use --profile-name flag"
         log_error ""
         log_error "   Profiles set base-image and libs (not allowed for members)."

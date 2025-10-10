@@ -216,6 +216,12 @@ RENV_MODE="$DEFAULT_RENV_MODE"    # Options: minimal, fast, standard, comprehens
 LIBS_BUNDLE=""    # System library bundle (e.g., alpine, bioinfo, geospatial)
 PKGS_BUNDLE=""    # R package bundle (e.g., tidyverse, shiny, modeling)
 
+# Track whether user explicitly provided these flags (for team member validation)
+USER_PROVIDED_BASE_IMAGE=false
+USER_PROVIDED_LIBS=false
+USER_PROVIDED_PKGS=false
+USER_PROVIDED_PROFILE=false
+
 # Show flags (processed after modules are loaded)
 SHOW_HELP=false
 SHOW_NEXT_STEPS=false
@@ -254,6 +260,7 @@ parse_cli_arguments() {
             --base-image|-b)
                 require_arg "$1" "$2"
                 BASE_IMAGE="$2"
+                USER_PROVIDED_BASE_IMAGE=true
                 shift 2
                 ;;
             --team|-t)
@@ -328,16 +335,19 @@ parse_cli_arguments() {
             --profile-name)
                 require_arg "$1" "$2"
                 PROFILE_NAME="$2"
+                USER_PROVIDED_PROFILE=true
                 shift 2
                 ;;
             --libs)
                 require_arg "$1" "$2"
                 LIBS_BUNDLE="$2"
+                USER_PROVIDED_LIBS=true
                 shift 2
                 ;;
             --pkgs)
                 require_arg "$1" "$2"
                 PKGS_BUNDLE="$2"
+                USER_PROVIDED_PKGS=true
                 shift 2
                 ;;
             --tag)
