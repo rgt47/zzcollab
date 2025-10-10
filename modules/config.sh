@@ -360,15 +360,18 @@ load_custom_package_lists() {
 #   1 - Configuration file not found or not readable
 # GLOBALS:  
 #   READ:  None
-#   WRITE: CONFIG_* variables (team_name, github_account, renv_mode, etc.)
+#   WRITE: CONFIG_* variables (team_name, github_account, dockerhub_account, etc.)
 # DESCRIPTION:
 #   This function loads configuration values from a single YAML file and
 #   populates the global CONFIG_* variables. It processes the 'defaults'
-#   section of the configuration file and handles custom package lists.
+#   section of the configuration file.
 # CONFIGURATION SECTIONS PROCESSED:
 #   - defaults.team_name: Docker Hub team/organization name
 #   - defaults.github_account: GitHub account for repository creation
-#   - defaults.renv_mode: Default build mode (fast/standard/comprehensive)
+#   - defaults.dockerhub_account: Docker Hub account (defaults to team_name if empty)
+#   - defaults.profile_name: Default Docker profile
+#   - defaults.libs_bundle: Default system libraries bundle
+#   - defaults.pkgs_bundle: Default R packages bundle
 #   - defaults.dotfiles_dir: Path to personal dotfiles directory
 #   - defaults.dotfiles_nodot: Whether dotfiles need leading dots added
 #   - defaults.auto_github: Automatically create GitHub repositories
@@ -393,7 +396,7 @@ load_config_file() {
     # Load defaults section
     local team_name=$(yaml_get "$config_file" "defaults.team_name")
     local github_account=$(yaml_get "$config_file" "defaults.github_account")
-    local renv_mode=$(yaml_get "$config_file" "defaults.renv_mode")
+    local dockerhub_account=$(yaml_get "$config_file" "defaults.dockerhub_account")
     local profile_name=$(yaml_get "$config_file" "defaults.profile_name")
     local libs_bundle=$(yaml_get "$config_file" "defaults.libs_bundle")
     local pkgs_bundle=$(yaml_get "$config_file" "defaults.pkgs_bundle")
@@ -405,7 +408,7 @@ load_config_file() {
     # Store in global config variables (only if not "null")
     [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_TEAM_NAME="$team_name"
     [[ "$github_account" != "null" && -n "$github_account" ]] && CONFIG_GITHUB_ACCOUNT="$github_account"
-    [[ "$renv_mode" != "null" && -n "$renv_mode" ]] && CONFIG_RENV_MODE="$renv_mode"
+    [[ "$dockerhub_account" != "null" && -n "$dockerhub_account" ]] && CONFIG_DOCKERHUB_ACCOUNT="$dockerhub_account"
     [[ "$profile_name" != "null" && -n "$profile_name" ]] && CONFIG_PROFILE_NAME="$profile_name"
     [[ "$libs_bundle" != "null" && -n "$libs_bundle" ]] && CONFIG_LIBS_BUNDLE="$libs_bundle"
     [[ "$pkgs_bundle" != "null" && -n "$pkgs_bundle" ]] && CONFIG_PKGS_BUNDLE="$pkgs_bundle"
@@ -413,9 +416,6 @@ load_config_file() {
     [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DOTFILES_NODOT="$dotfiles_nodot"
     [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
     [[ "$skip_confirmation" != "null" && -n "$skip_confirmation" ]] && CONFIG_SKIP_CONFIRMATION="$skip_confirmation"
-    
-    # Load custom package lists from renv_modes section
-    load_custom_package_lists "$config_file"
     
     return 0
 }
@@ -528,9 +528,7 @@ defaults:
   # Team and GitHub settings
   team_name: ""                    # Docker Hub team/organization name
   github_account: ""               # GitHub account (defaults to team_name if empty)
-
-  # Build and environment settings
-  renv_mode: "standard"           # Default renv mode: minimal, fast, standard, comprehensive
+  dockerhub_account: ""            # Docker Hub account (defaults to team_name if empty)
 
   # Docker profile settings
   profile_name: ""                 # Default Docker profile (minimal, rstudio, analysis, etc.)
@@ -544,38 +542,14 @@ defaults:
   auto_github: false               # Automatically create GitHub repository
   skip_confirmation: false         # Skip confirmation prompts
 
-# Custom package lists for build modes (optional)
-# Uncomment and customize to override default package sets
-#
-# renv_modes:
-#   fast:
-#     description: "Quick development setup"
-#     docker_packages: [renv, remotes, here, usethis, devtools]
-#     renv_packages: [renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets]
-#   
-#   standard:
-#     description: "Balanced research workflow"
-#     docker_packages: [renv, remotes, tidyverse, here, usethis, devtools]
-#     renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, testthat, palmerpenguins, broom, janitor, DT, conflicted]
-#   
-#   comprehensive:
-#     description: "Full research ecosystem"
-#     docker_packages: [renv, remotes, tidyverse, targets, usethis, devtools, conflicted, ggthemes]
-#     renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, testthat, knitr, rmarkdown, targets, janitor, DT, conflicted, palmerpenguins, broom, kableExtra, bookdown, naniar, skimr, visdat, pkgdown, rcmdcheck, jsonlite, DBI, RSQLite, car, digest, doParallel, foreach, furrr, future, odbc, readr, RMySQL, RPostgres, sessioninfo, covr]
-
-# Custom build modes (optional)
-# Add your own build modes with custom package sets
-#
-# custom_modes:
-#   bioinformatics:
-#     description: "Bioinformatics research workflow"
-#     docker_packages: [renv, remotes, tidyverse, bioconductor]
-#     renv_packages: [Biostrings, GenomicRanges, DESeq2, edgeR, limma]
-#   
-#   geospatial:
-#     description: "Geospatial analysis workflow"  
-#     docker_packages: [renv, remotes, tidyverse, sf, terra]
-#     renv_packages: [sf, terra, raster, leaflet, tmap, mapview]
+# Package Management
+# Packages are added dynamically as needed using renv::install() inside containers
+# Docker profiles (profile_name) control the base Docker environment and pre-installed packages
+# Example workflow:
+#   make docker-zsh
+#   renv::install("tidyverse")
+#   renv::snapshot()
+#   exit
 EOF
 
     log_success "Created default configuration file: $CONFIG_USER_FILE"
