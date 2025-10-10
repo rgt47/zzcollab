@@ -240,6 +240,9 @@ zzcollab -t myteam -p my-research -d ~/dotfiles
 # Build and share team image
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial team project setup"
+git push -u origin main
 ```
 
 **R Interface:**
@@ -434,6 +437,9 @@ zzcollab --config set build-mode "standard"
 zzcollab -t myteam -p data-analysis -d ~/dotfiles    # Uses config defaults
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial project setup"
+git push -u origin main
 ```
 
 **Team Leader Setup**:
@@ -449,6 +455,9 @@ vim Dockerfile
 # Build and share team images
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial team configuration"
+git push -u origin main
 ```
 
 **Team Member Joining**:
@@ -597,6 +606,9 @@ build:
 zzcollab -t myteam -p myproject -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial project setup with default profiles"
+git push -u origin main
 
 # Custom profiles via config file
 mkdir myproject && cd myproject
@@ -605,6 +617,9 @@ zzcollab -t myteam -p myproject -d ~/dotfiles
 vim Dockerfile  # Customize as needed
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial project setup with custom profiles"
+git push -u origin main
 ```
 
 **Solo Developer Workflow**:

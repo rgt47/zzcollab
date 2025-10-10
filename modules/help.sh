@@ -242,11 +242,17 @@ EXAMPLES:
     zzcollab -t rgt47 -p study --profile-name bioinformatics -G
     make docker-build                           # Build team Docker image
     make docker-push-team                       # Push to Docker Hub (rgt47/study:latest)
+    git add .
+    git commit -m "Initial team project setup"
+    git push -u origin main
 
     Team Lead - Custom Composition:
     zzcollab -t rgt47 -p study -b rocker/r-ver --libs modeling --pkgs modeling
     make docker-build
     make docker-push-team
+    git add .
+    git commit -m "Initial team setup with custom composition"
+    git push -u origin main
 
     Team Members - Join Existing Project:
     git clone https://github.com/rgt47/study.git && cd study
@@ -431,6 +437,9 @@ Example 1: Same name for Docker Hub and GitHub (simplest)
 zzcollab -t myname -p study --profile-name modeling -G -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial project setup"
+git push -u origin main
 
 Creates:
   Docker:  myname/study:latest
@@ -442,6 +451,9 @@ Example 2: Different Docker Hub and GitHub accounts
 zzcollab -t labteam -g johndoe -p analysis --profile-name modeling -G -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial team analysis setup"
+git push -u origin main
 
 Creates:
   Docker:  labteam/analysis:latest (team Docker images)
@@ -452,6 +464,9 @@ Example 3: Personal Docker Hub, Organization GitHub
 zzcollab -t myname -g mycompany -p project --profile-name modeling -G -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial organization project setup"
+git push -u origin main
 
 Creates:
   Docker:  myname/project:latest (personal Docker Hub)
@@ -654,6 +669,9 @@ Team lead - Step 1: Create foundation and GitHub repo
 Team lead - Step 2: Build and push team image
     make docker-build                       # Build labteam/study:latest
     make docker-push-team                   # Push to Docker Hub
+    git add .
+    git commit -m "Initial team project setup"
+    git push -u origin main
 
     Creates:
     • Docker: labteam/study:latest (pushed to Docker Hub)
@@ -686,6 +704,9 @@ Contribute to organization but maintain personal Docker images:
 zzcollab -t myname -g myorg -p project --profile-name modeling -G -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Initial organization project setup"
+git push -u origin main
 
 Creates:
 • Docker: myname/project:latest (your Docker Hub)

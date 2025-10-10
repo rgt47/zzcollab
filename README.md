@@ -396,6 +396,9 @@ EXAMPLES:
   zzcollab -t myteam -p study --profile-name modeling  # Create foundation
   make docker-build                           # Build team image
   make docker-push-team                       # Push to Docker Hub
+  git add .
+  git commit -m "Initial team project setup"
+  git push -u origin main
 
   # Team collaboration - Member
   git clone https://github.com/myteam/study.git && cd study
