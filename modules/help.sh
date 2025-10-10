@@ -162,11 +162,12 @@ USAGE:
     zzcollab [OPTIONS]
 
 OPTIONS:
-    Team initialization (Developer 1 - Team Lead):
-    -i, --init                   Initialize new team project with Docker images and GitHub repo
-    -t, --team-name NAME         Team name (Docker Hub organization) [required with --init]
-    -p, --project-name NAME      Project name [required with --init]
+    Team and project setup:
+    -t, --team-name NAME         Team name (Docker Hub namespace for images)
+    -p, --project-name NAME      Project name (directory and package name)
     -g, --github-account NAME    GitHub account (default: same as team-name)
+    --use-team-image             Pull and use existing team Docker image from Docker Hub
+                                 (for team members joining existing projects)
 
     Profile system (three usage patterns):
     --profile-name NAME          Use complete predefined profile (base-image + libs + pkgs)
