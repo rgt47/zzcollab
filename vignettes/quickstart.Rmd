@@ -76,26 +76,23 @@ zzcollab --config set team-name "rgt47"
 # Set GitHub account
 zzcollab --config set github-account "rgt47"
 
-# Set default Docker profile (optional - leave empty for standard)
+# Set default Docker profile (optional - leave empty for minimal)
 zzcollab --config set profile-name ""
 
 # Set dotfiles directory
 zzcollab --config set dotfiles-dir "~/dotfiles"
-
-# Enable automatic GitHub repository creation
-zzcollab --config set auto-github "true"
 ```
 
 **What this accomplishes:**
 - All future `zzcollab` commands use these defaults
-- No need to specify `-t`, `-D`, or `--github` flags repeatedly
+- No need to specify `-t` or `-D` flags repeatedly
 - Change defaults anytime with `zzcollab --config set`
 
 **Configuration Options Explained:**
 
 - **profile-name**: Controls Docker environment (team/shared)
   - Options: minimal, rstudio, analysis, bioinformatics, geospatial, etc.
-  - Leave empty for standard rocker/r-ver base
+  - Leave empty for minimal profile (default)
   - Can also set libs-bundle and pkgs-bundle for custom composition
 
 **Note on Package Management:**
@@ -115,7 +112,6 @@ zzcollab
 # Flags come from config (set in Step 1):
 # -t rgt47: from team-name config
 # -D ~/dotfiles: from dotfiles-dir config
-# --github: from auto-github config (true)
 
 # Build Docker image (required step)
 make docker-build
@@ -123,10 +119,9 @@ make docker-build
 
 **What this does:**
 1. `zzcollab`: Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
-2. `zzcollab`: Creates GitHub repository automatically (if auto-github enabled)
-3. `zzcollab`: Sets up CI/CD workflows for automated testing
-4. `zzcollab`: Initializes renv for dependency tracking
-5. `make docker-build`: Builds Docker image with R + essential packages
+2. `zzcollab`: Sets up CI/CD workflows for automated testing
+3. `zzcollab`: Initializes renv for dependency tracking
+4. `make docker-build`: Builds Docker image with R + essential packages
 
 **Solo Developer Simplification:**
 
@@ -176,7 +171,7 @@ zzcollab --list-pkgs      # R package bundles
 ## Step 3: Set Repository to Private (30 seconds)
 
 ```bash
-# Already in penguin-bills/ directory from Step 2b
+# Already in penguin-bills/ directory from Step 2
 # Make repository private using GitHub CLI
 gh repo edit --visibility private
 ```
@@ -657,17 +652,17 @@ penguin-bills/
 ├── R/
 │   └── bill_analysis.R          # Tested function
 ├── analysis/
+│   ├── data/
+│   │   ├── raw_data/            # Original, unmodified data
+│   │   ├── derived_data/        # Processed analysis-ready data
+│   │   └── README.md            # Data dictionary and documentation
 │   ├── paper/
 │   │   ├── paper.Rmd            # Analysis report (reproducible)
 │   │   └── paper.html           # Rendered output
 │   ├── figures/
 │   │   └── bill_scatter.png     # Generated plot
 │   └── tables/                  # Generated tables
-├── data/
-│   ├── raw_data/                # Original, unmodified data
-│   ├── derived_data/            # Processed analysis-ready data
-│   ├── metadata/                # Data documentation
-│   └── README.md                # Data dictionary and documentation
+├── data/                        # R package data (optional, for package distribution)
 ├── scripts/                     # Working scripts and exploration
 ├── tests/
 │   └── testthat/
@@ -689,7 +684,7 @@ penguin-bills/
 
 ## Verification Checklist
 
-- ✓ Docker images built and pushed
+- ✓ Docker image built locally
 - ✓ GitHub repository created (private)
 - ✓ Analysis produces scatter plot
 - ✓ Unit tests pass locally
@@ -838,14 +833,8 @@ mkdir -p analysis/paper
 ## GitHub Repository Creation Fails
 
 ```bash
-# If auto-github fails, create repository manually
+# Create repository manually if needed
 cd penguin-bills
-gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
-
-# Or disable auto-github in config and create later
-zzcollab --config set auto-github "false"
-mkdir penguin-bills && cd penguin-bills
-zzcollab  # Complete setup without GitHub
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 ```
 
@@ -924,14 +913,17 @@ zzcollab  # Uses bioinformatics profile
 make docker-build
 
 # Method 2: Use flag for one-time selection
+mkdir spatial-analysis && cd spatial-analysis
 zzcollab --profile-name geospatial
 make docker-build
 
 # Method 3: Compose custom profile with bundles
+mkdir custom-project && cd custom-project
 zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
 make docker-build
 
 # Method 4: Mix and match components
+mkdir bioinfo-project && cd bioinfo-project
 zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs modeling
 make docker-build
 ```
