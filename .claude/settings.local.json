@@ -33,7 +33,9 @@
       "Bash(cat:*)",
       "Bash(git add:*)",
       "Read(//Users/zenn/Dropbox/bin/**)",
-      "Bash(./install.sh)"
+      "Bash(./install.sh)",
+      "Read(//Users/zenn/Library/CloudStorage/Dropbox/bin/zzcollab-support/modules/**)",
+      "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/m03/**)"
     ],
     "deny": []
   }
