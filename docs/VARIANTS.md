@@ -319,13 +319,19 @@ build:
 
 ```bash
 # Create project with default profiles
-zzcollab -i -t lab -p study --github
+mkdir study && cd study
+zzcollab -t lab -p study
+make docker-build
+make docker-push-team
 
 # Create project with config-defined profiles
-zzcollab -i -t lab -p study --profiles-config config.yaml
+mkdir study && cd study
+zzcollab -t lab -p study --profiles-config config.yaml
+make docker-build
+make docker-push-team
 
-# Legacy approach (limited to 3 profiles)
-zzcollab -i -t lab -p study -B rstudio --github
+# Note: Use --profiles-config to build multiple specialized environments
+# For team collaboration, push team image to Docker Hub
 ```
 
 **Profile Addition**:
@@ -496,7 +502,12 @@ RUN R -e "remotes::install_github('owner/repo')"
 
 1. Use compatible base images:
    ```bash
-   zzcollab -i -t lab -p study -B r-ver,rstudio
+   mkdir study && cd study
+   zzcollab -t lab -p study
+   # Customize config.yaml to enable only ARM64-compatible profiles
+   # (minimal, analysis, modeling - exclude verse, geospatial)
+   make docker-build
+   make docker-push-team
    ```
 
 2. Build custom ARM64 images:

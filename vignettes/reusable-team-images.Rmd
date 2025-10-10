@@ -252,32 +252,38 @@ A genomics lab with 5 researchers and multiple ongoing studies.
 **Team Lead (one-time setup):**
 ```bash
 # Create lab base image with comprehensive bioinformatics tools
-zzcollab -i -t genomicslab -p labbase -C --profile-name rstudio -d ~/dotfiles
+mkdir labbase && cd labbase
+zzcollab -t genomicslab -p labbase -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 
 # Optionally add specialized profile
+cd labbase
 cd /path/to/zzcollab
 ./add_profile.sh
 # Select: bioinformatics profile
-# Builds genomicslab/labbasecore-rstudio with Bioconductor packages
+# Builds genomicslab/labbase:latest with Bioconductor packages
 ```
 
-**Team Members (joining projects):**
+**Team Members (joining existing projects):**
 ```bash
-# Researcher 1: Cancer genomics project
+# Researcher 1: Join existing cancer genomics project
 git clone https://github.com/genomicslab/cancer-study.git
 cd cancer-study
-zzcollab -t genomicslab -p cancer-study  -d ~/dotfiles
+zzcollab --use-team-image
 make docker-rstudio  # Start RStudio at localhost:8787
 
-# Researcher 2: RNA-seq analysis
+# Researcher 2: Join existing RNA-seq analysis
 git clone https://github.com/genomicslab/rnaseq-analysis.git
 cd rnaseq-analysis
-zzcollab -t genomicslab -p rnaseq-analysis  -d ~/dotfiles
+zzcollab --use-team-image
 make docker-rstudio
 
-# Researcher 3: New profile calling project
+# Researcher 3: Create new variant calling project
 mkdir variant-calling && cd variant-calling
 zzcollab -t genomicslab -p variant-calling  -d ~/dotfiles
+# Uses genomicslab/labbase:latest as base automatically
 make docker-rstudio
 
 # All 3 researchers ready in ~90 seconds total
@@ -291,12 +297,16 @@ A data science consulting firm requires consistent package versions across all c
 **DevOps Team (quarterly base image updates):**
 ```bash
 # Q1 2025: Create standardized base image
-zzcollab -i -t datasci-firm -p q1-2025-base -C --profile-name rstudio -d ~/dotfiles
+mkdir q1-2025-base && cd q1-2025-base
+zzcollab -t datasci-firm -p q1-2025-base -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 
 # Push to private Docker registry (optional)
-docker tag datasci-firm/q1-2025-basecore-rstudio:latest \
-  registry.company.com/datasci-firm/q1-2025-basecore-rstudio:latest
-docker push registry.company.com/datasci-firm/q1-2025-basecore-rstudio:latest
+docker tag datasci-firm/q1-2025-base:latest \
+  registry.company.com/datasci-firm/q1-2025-base:latest
+docker push registry.company.com/datasci-firm/q1-2025-base:latest
 ```
 
 **Data Scientists (creating client projects):**
@@ -304,14 +314,17 @@ docker push registry.company.com/datasci-firm/q1-2025-basecore-rstudio:latest
 # Client A: Retail analytics
 mkdir client-a-retail && cd client-a-retail
 zzcollab -t datasci-firm -p client-a-retail  -d ~/dotfiles
+# Uses datasci-firm/q1-2025-base:latest as base automatically
 
 # Client B: Financial modeling
 mkdir client-b-finance && cd client-b-finance
 zzcollab -t datasci-firm -p client-b-finance  -d ~/dotfiles
+# Uses datasci-firm/q1-2025-base:latest as base automatically
 
 # Client C: Healthcare dashboards
 mkdir client-c-health && cd client-c-health
 zzcollab -t datasci-firm -p client-c-health  -d ~/dotfiles
+# Uses datasci-firm/q1-2025-base:latest as base automatically
 
 # All projects use identical Q1 2025 package versions
 # No "works on my machine" issues
@@ -325,19 +338,35 @@ Create different base images for different research domains:
 
 ```bash
 # Bioinformatics base (Bioconductor packages)
-zzcollab -i -t mylab -p bio-base -C --profile-name rstudio -d ~/dotfiles
+mkdir bio-base && cd bio-base
+zzcollab -t mylab -p bio-base -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 # Use for: genomics, transcriptomics, proteomics projects
 
 # Geospatial base (sf, terra, leaflet)
-zzcollab -i -t mylab -p geo-base -C --profile-name rstudio -d ~/dotfiles
+mkdir geo-base && cd geo-base
+zzcollab -t mylab -p geo-base -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 # Use for: climate modeling, ecology, urban planning projects
 
 # Machine learning base (tidymodels, xgboost)
-zzcollab -i -t mylab -p ml-base -C --profile-name rstudio -d ~/dotfiles
+mkdir ml-base && cd ml-base
+zzcollab -t mylab -p ml-base -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 # Use for: predictive modeling, classification, regression projects
 
 # Web apps base (shiny, plotly, flexdashboard)
-zzcollab -i -t mylab -p shiny-base -C --profile-name rstudio -d ~/dotfiles
+mkdir shiny-base && cd shiny-base
+zzcollab -t mylab -p shiny-base -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 # Use for: interactive dashboards, web applications
 ```
 
@@ -347,16 +376,20 @@ Maintain version history for reproducibility:
 
 ```bash
 # Create dated base image
-zzcollab -i -t mylab -p base-2025-01 -C --profile-name rstudio -d ~/dotfiles
+mkdir base-2025-01 && cd base-2025-01
+zzcollab -t mylab -p base-2025-01 -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 
 # Tag with semantic version
-docker tag mylab/base-2025-01core-rstudio:latest \
-  mylab/base-2025-01core-rstudio:v1.0.0
-docker push mylab/base-2025-01core-rstudio:v1.0.0
+docker tag mylab/base-2025-01:latest \
+  mylab/base-2025-01:v1.0.0
+docker push mylab/base-2025-01:v1.0.0
 
 # Projects can reference specific versions
 # Modify project Dockerfile to use:
-# FROM mylab/base-2025-01core-rstudio:v1.0.0
+# FROM mylab/base-2025-01:v1.0.0
 ```
 
 ### Pattern 3: Incremental Updates to Base Images
@@ -365,18 +398,20 @@ Update base images without rebuilding from scratch:
 
 ```bash
 # Add new package to existing base image
-docker run --rm -it mylab/baseimageecore-rstudio:latest R
+docker run --rm -it mylab/baseimage:latest R
 
 # Inside container:
 install.packages("newpackage")
 quit()
 
 # Commit changes to new version
-docker commit <container-id> mylab/baseimageecore-rstudio:v1.1.0
-docker push mylab/baseimageecore-rstudio:v1.1.0
+docker commit <container-id> mylab/baseimage:v1.1.0
+docker push mylab/baseimage:v1.1.0
 
 # Or rebuild base image with updated packages
-zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+cd baseimage
+make docker-build
+make docker-push-team
 # Leverages Docker layer caching for faster rebuilds
 ```
 
@@ -393,8 +428,11 @@ zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 **For public research (recommended):**
 ```bash
 # Use public repositories (no cost)
-zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
-# Pushes to public mylab/baseimageecore-rstudio:latest
+mkdir baseimage && cd baseimage
+zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+# Pushes to public mylab/baseimage:latest
 # No storage costs, unlimited team access
 ```
 
@@ -411,10 +449,10 @@ Comprehensive builds create large images (~2-4 GB). Optimize storage:
 
 ```bash
 # Check image sizes
-docker images | grep mylab/baseimageecore
+docker images | grep mylab/baseimage
 
 # Remove old versions periodically
-docker rmi mylab/baseimageecore-rstudio:v1.0.0
+docker rmi mylab/baseimage:v1.0.0
 
 # Use .dockerignore to exclude unnecessary files
 echo "*.Rcheck" >> .dockerignore
@@ -434,15 +472,17 @@ echo "temp_*" >> .dockerignore
 
 ```bash
 # Rebuild base image with latest packages
-zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+cd baseimage
+make docker-build
+make docker-push-team
 
 # Tag as new version
-docker tag mylab/baseimageecore-rstudio:latest \
-  mylab/baseimageecore-rstudio:2025-04
-docker push mylab/baseimageecore-rstudio:2025-04
+docker tag mylab/baseimage:latest \
+  mylab/baseimage:2025-04
+docker push mylab/baseimage:2025-04
 
 # Notify team to pull updated image
-docker pull mylab/baseimageecore-rstudio:latest
+docker pull mylab/baseimage:latest
 
 # Existing projects continue using old versions (reproducible)
 # New projects use updated image
@@ -454,13 +494,14 @@ docker pull mylab/baseimageecore-rstudio:latest
 
 ```bash
 # Check image name matches exactly
-docker images | grep mylab/baseimageecore
+docker images | grep mylab/baseimage
 
 # Verify push succeeded
-docker manifest inspect mylab/baseimageecore-rstudio:latest
+docker manifest inspect mylab/baseimage:latest
 
 # Re-push if needed
-docker push mylab/baseimageecore-rstudio:latest
+cd baseimage
+make docker-push-team
 ```
 
 ### Issue: "Authentication required"
@@ -484,7 +525,7 @@ Docker Hub free tier limits pulls to 200 per 6 hours.
 docker login
 
 # Option 2: Use cached images (do not pull if local copy exists)
-docker images | grep mylab/baseimageecore
+docker images | grep mylab/baseimage
 # If exists locally, zzcollab uses cached version
 
 # Option 3: Upgrade to Docker Hub paid tier (unlimited pulls)
@@ -533,7 +574,7 @@ environment variable settings. This ensures:
 
 ```bash
 # Check environment variables in team base image
-docker run --rm mylab/baseimageecore-rstudio:latest env | grep -E "LANG|TZ|OMP"
+docker run --rm mylab/baseimage:latest env | grep -E "LANG|TZ|OMP"
 
 # Expected output:
 # LANG=en_US.UTF-8
@@ -567,7 +608,7 @@ mylab/test
 Create `BASE_IMAGE_README.md` in base image project:
 
 ```markdown
-# Lab Base Image: mylab/baseimageecore-rstudio
+# Lab Base Image: mylab/baseimage
 
 ## Purpose
 Comprehensive data science environment for lab projects.
@@ -585,27 +626,33 @@ Comprehensive (-C): 47+ packages
 2025-01-15
 
 ## Rebuild Command
-zzcollab -i -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+cd baseimage
+make docker-build
+make docker-push-team
 ```
 
 ### 3. Use Semantic Versioning for Critical Bases
 
 ```bash
 # Major version: Breaking changes (R version upgrade, package removals)
-mylab/baseimageecore-rstudio:v2.0.0
+mylab/baseimage:v2.0.0
 
 # Minor version: New packages added
-mylab/baseimageecore-rstudio:v1.1.0
+mylab/baseimage:v1.1.0
 
 # Patch version: Package version updates only
-mylab/baseimageecore-rstudio:v1.0.1
+mylab/baseimage:v1.0.1
 ```
 
 ### 4. Test Base Images Before Team Deployment
 
 ```bash
 # Build test base image
-zzcollab -i -t mylab -p baseimage-test -C --profile-name rstudio -d ~/dotfiles
+mkdir baseimage-test && cd baseimage-test
+zzcollab -t mylab -p baseimage-test -C --profile-name rstudio -d ~/dotfiles
+make docker-build
+make docker-push-team
+cd ..
 
 # Test with sample project
 mkdir test-project && cd test-project
@@ -620,9 +667,9 @@ library(shiny)
 # etc.
 
 # If tests pass, promote to production
-docker tag mylab/baseimage-testcore-rstudio:latest \
-  mylab/baseimageecore-rstudio:latest
-docker push mylab/baseimageecore-rstudio:latest
+docker tag mylab/baseimage-test:latest \
+  mylab/baseimage:latest
+docker push mylab/baseimage:latest
 ```
 
 ### 5. Maintain Team Base Image Registry

@@ -347,32 +347,40 @@ Question 3: What is the computational environment?
 
 ### Command Line Interface
 
-**Team Initialization**:
+**Team Lead - Project Creation**:
 
 ```bash
 # Fast mode
-zzcollab -i -t mylab -p study -F -d ~/dotfiles
+mkdir study && cd study
+zzcollab -t mylab -p study -F -d ~/dotfiles
+make docker-build
+make docker-push-team
 
 # Standard mode (default)
-zzcollab -i -t mylab -p study -S -d ~/dotfiles
-zzcollab -i -t mylab -p study -d ~/dotfiles
+mkdir study && cd study
+zzcollab -t mylab -p study -S -d ~/dotfiles
+make docker-build
+make docker-push-team
 
 # Comprehensive mode
-zzcollab -i -t mylab -p study -C -d ~/dotfiles
+mkdir study && cd study
+zzcollab -t mylab -p study -C -d ~/dotfiles
+make docker-build
+make docker-push-team
 ```
 
-**Team Member Joining**:
+**Team Member - Joining Existing Project**:
 
 ```bash
-# Fast mode
-zzcollab -t mylab -p study -I shell -F -d ~/dotfiles
+# Clone project repository
+git clone https://github.com/mylab/study.git
+cd study
 
-# Standard mode (default)
-zzcollab -t mylab -p study -I shell -S -d ~/dotfiles
-zzcollab -t mylab -p study -I shell -d ~/dotfiles
+# Pull and use team Docker image
+zzcollab --use-team-image
 
-# Comprehensive mode
-zzcollab -t mylab -p study -I shell -C -d ~/dotfiles
+# Start development environment
+make docker-zsh
 ```
 
 **Environment Variable Detection**:
@@ -380,10 +388,14 @@ zzcollab -t mylab -p study -I shell -C -d ~/dotfiles
 ```bash
 # Set build mode via environment variable
 export ZZCOLLAB_BUILD_MODE=fast
-zzcollab -i -t mylab -p study -d ~/dotfiles
+mkdir study && cd study
+zzcollab -t mylab -p study -d ~/dotfiles
+make docker-build
 
 export ZZCOLLAB_BUILD_MODE=comprehensive
-zzcollab -t mylab -p study -I shell -d ~/dotfiles
+mkdir study && cd study
+zzcollab -t mylab -p study -d ~/dotfiles
+make docker-build
 ```
 
 ### R Interface
@@ -593,14 +605,22 @@ code.
 
 ```bash
 # Team Lead: Comprehensive mode for advanced analysis
-zzcollab -i -t lab -p analysis -C
+mkdir analysis && cd analysis
+zzcollab -t lab -p analysis -C
+make docker-build
+make docker-push-team
 
-# Team Member 1: Comprehensive mode (recommended)
-zzcollab -t lab -p analysis -I shell -C
+# Team Member 1: Join project (uses comprehensive team image)
+git clone https://github.com/lab/analysis.git
+cd analysis
+zzcollab --use-team-image
+# Gets full comprehensive environment from team image
 
-# Team Member 2: Standard mode (possible but risky)
-zzcollab -t lab -p analysis -I shell -S
-# Risk: May lack packages if analysis uses tidymodels
+# Team Member 2: Join project (uses same team image)
+git clone https://github.com/lab/analysis.git
+cd analysis
+zzcollab --use-team-image
+# Gets identical comprehensive environment
 ```
 
 ### Package Addition Workflow
@@ -709,11 +729,17 @@ build_modes:
 
 ```bash
 # Specify custom build mode
-zzcollab -i -t lab -p genomics --build-mode bioinformatics
+mkdir genomics && cd genomics
+zzcollab -t lab -p genomics --build-mode bioinformatics
+make docker-build
+make docker-push-team
 
 # Or via environment variable
 export ZZCOLLAB_BUILD_MODE=geospatial
-zzcollab -i -t lab -p mapping
+mkdir mapping && cd mapping
+zzcollab -t lab -p mapping
+make docker-build
+make docker-push-team
 ```
 
 ### Custom Mode Validation
@@ -736,7 +762,10 @@ environment variables and configuration files.
 
 ```bash
 # Explicitly specify build mode
-zzcollab -i -t lab -p study -S -d ~/dotfiles
+mkdir study && cd study
+zzcollab -t lab -p study -S -d ~/dotfiles
+make docker-build
+make docker-push-team
 ```
 
 **Issue**: Package missing despite correct build mode
@@ -810,9 +839,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup environment
+      - name: Pull team image
         run: |
-          zzcollab -t lab -p study -I shell -F
+          zzcollab --use-team-image
       - name: Run tests
         run: make docker-test
 ```
@@ -833,9 +862,13 @@ To upgrade from Fast to Standard or Comprehensive:
 
 ```bash
 # Rebuild Docker image with new mode
-zzcollab -t lab -p study -I shell -S
-docker-compose down
-docker-compose up --build
+cd study
+zzcollab -t lab -p study -S
+make docker-build
+make docker-push-team
+
+# Team members pull updated image
+zzcollab --use-team-image
 
 # Synchronize renv
 make docker-zsh
@@ -859,7 +892,10 @@ To downgrade from Comprehensive to Standard or Fast:
 
 3. Rebuild with target mode:
    ```bash
-   zzcollab -t lab -p study -I shell -F
+   cd study
+   zzcollab -t lab -p study -F
+   make docker-build
+   make docker-push-team
    ```
 
 ## References

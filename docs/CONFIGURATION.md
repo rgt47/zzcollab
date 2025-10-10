@@ -64,7 +64,10 @@ Priority 6: Built-in defaults (hardcoded fallbacks)
 # Command-line: -F (fast)
 # Result: Fast mode (command-line overrides config)
 
-zzcollab -i -t lab -p study -F
+mkdir study && cd study
+zzcollab -t lab -p study -F
+make docker-build
+make docker-push-team
 ```
 
 **Scenario 2: Team Name Resolution**
@@ -74,7 +77,9 @@ zzcollab -i -t lab -p study -F
 # User config: team_name: "mylab"
 # Result: "mylab" (from user config)
 
-zzcollab -i -p study
+mkdir study && cd study
+zzcollab -p study
+make docker-build
 ```
 
 **Scenario 3: Complete Override Chain**
@@ -86,7 +91,9 @@ zzcollab -i -p study
 # Command-line: --fast
 # Result: fast (command-line overrides all)
 
-zzcollab -i -p research --fast
+mkdir research && cd research
+zzcollab -p research --fast
+make docker-build
 ```
 
 ## Configuration Files
@@ -689,10 +696,15 @@ zzcollab --config list
 
 ```bash
 # Configuration is automatically applied
-zzcollab -i -p research-project --github
+mkdir research-project && cd research-project
+zzcollab -p research-project
+make docker-build
+# Optional: make docker-push-team if sharing with others
 
 # Override specific settings with build mode
-zzcollab -i -p comprehensive-project --comprehensive --github
+mkdir comprehensive-project && cd comprehensive-project
+zzcollab -p comprehensive-project --comprehensive
+make docker-build
 ```
 
 ### Team Leader Workflow
@@ -701,10 +713,12 @@ zzcollab -i -p comprehensive-project --comprehensive --github
 
 ```bash
 # 1. Create project with initial config
-zzcollab -i -t lab -p study --github
+mkdir study && cd study
+zzcollab -t lab -p study
+make docker-build
+make docker-push-team
 
 # 2. Customize team configuration
-cd study
 vim zzcollab.yaml
 
 # 3. Edit profiles, collaboration settings, build options
@@ -723,9 +737,11 @@ git clone https://github.com/lab/study.git
 cd study
 
 # 2. Join with team configuration
-zzcollab -t lab -p study -I analysis
+zzcollab --use-team-image
 
 # Team configuration automatically applied
+# Start development environment
+make docker-zsh
 ```
 
 ### Organization Administrator Workflow

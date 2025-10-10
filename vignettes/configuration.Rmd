@@ -576,10 +576,14 @@ build_modes:
 
 ```bash
 # Create project using personal defaults
-zzcollab -i -p my-analysis
+mkdir my-analysis && cd my-analysis
+zzcollab -p my-analysis
+
+# Build and push team image (if sharing with others)
+make docker-build
+make docker-push-team
 
 # Customize profiles for this specific project
-cd my-analysis
 ./add_profile.sh    # Add alpine_minimal for CI/CD testing
 ```
 
@@ -593,7 +597,7 @@ mkdir customer-churn-analysis
 cd customer-churn-analysis
 
 # 2. Initialize with base configuration
-zzcollab -i -p customer-churn-analysis
+zzcollab -t datasci-lab -p customer-churn-analysis
 ```
 
 ### Customize Team Profiles
@@ -643,9 +647,12 @@ collaboration:
 
 ```bash
 # Build team images with custom configuration
-zzcollab --profiles-config config.yaml --github
+make docker-build
 
-# Push to GitHub and Docker Hub
+# Push team image to Docker Hub
+make docker-push-team
+
+# Push project to GitHub
 git add . && git commit -m "Initial team configuration"
 git push origin main
 ```
@@ -659,8 +666,8 @@ git push origin main
 git clone https://github.com/datasci-lab/customer-churn-analysis.git
 cd customer-churn-analysis
 
-# 2. Join using team's preferred interface
-zzcollab -t datasci-lab -p customer-churn-analysis -I analysis
+# 2. Pull and use team Docker image
+zzcollab --use-team-image
 
 # 3. Start development environment
 make docker-zsh
@@ -679,23 +686,25 @@ docker images | grep datasci-lab
 cat config.yaml | grep -A 20 "build:"
 ```
 
-### Working with Multiple Interfaces
+### Working with Different Docker Profiles
+
+The team's configuration file (`config.yaml`) determines which Docker profiles are available. If multiple profiles are enabled, team members can work with the single team image which includes the configured environment.
 
 ```bash
-# Use analysis environment for daily work
-zzcollab -t datasci-lab -p customer-churn-analysis -I analysis
+# Pull and use team Docker image
+zzcollab --use-team-image
+
+# Start development environment
 make docker-zsh
 
-# Switch to modeling environment for ML work
-exit  # Exit current container
-zzcollab -t datasci-lab -p customer-churn-analysis -I modeling
-make docker-zsh
-
-# Use minimal environment for testing
-exit
-zzcollab -t datasci-lab -p customer-churn-analysis -I minimal
+# For testing in a clean environment
 make docker-test
+
+# For rendering reports
+make docker-render
 ```
+
+**Note**: The new architecture uses a single team image per project. If your team needs multiple specialized environments (e.g., analysis, modeling, publishing), consider creating separate projects or using the Docker profile system to customize the single team image.
 
 ## Advanced Custom Profile Workflow
 
