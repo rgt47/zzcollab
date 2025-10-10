@@ -3,6 +3,8 @@
 
 PACKAGE_NAME = ${PKG_NAME}
 R_VERSION = latest
+TEAM_NAME = ${TEAM_NAME}
+PROJECT_NAME = ${PROJECT_NAME}
 
 # Help target (default)
 help:
@@ -12,7 +14,7 @@ help:
 	@echo "    check-renv, check-renv-fix, check-renv-ci"
 	@echo ""
 	@echo "  Docker - works without local R:"
-	@echo "    docker-build, docker-document, docker-build-pkg, docker-check"
+	@echo "    docker-build, docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
 	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo ""
@@ -56,6 +58,13 @@ check-renv-ci:
 # Docker targets (work without local R)
 docker-build:
 	DOCKER_BUILDKIT=1 docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
+
+docker-push-team:
+	@echo "Tagging image as $(TEAM_NAME)/$(PROJECT_NAME):latest"
+	docker tag $(PACKAGE_NAME) $(TEAM_NAME)/$(PROJECT_NAME):latest
+	@echo "Pushing to Docker Hub..."
+	docker push $(TEAM_NAME)/$(PROJECT_NAME):latest
+	@echo "✅ Team image pushed successfully"
 
 docker-document:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::document()"
@@ -111,4 +120,4 @@ docker-clean:
 docker-build-clean: docker-build clean-dotfiles
 	docker system prune -f
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean help

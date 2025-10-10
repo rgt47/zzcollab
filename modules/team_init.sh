@@ -1045,9 +1045,15 @@ EOF
         fi
     fi
 
-    build_team_images
-    push_team_images
-    
+    # Team foundation created - manual build and push required
+    log_info "✅ Team foundation Dockerfile created successfully"
+    echo ""
+    log_info "📝 Next steps for team lead:"
+    log_info "   1. Build the Docker image:    make docker-build"
+    log_info "   2. Push to Docker Hub:        make docker-push-team"
+    log_info "   3. Team members can then pull and use the image with --use-team-image"
+    echo ""
+
     # Create marker file to identify this as a partial zzcollab setup
     # This allows the next zzcollab run (without -i) to be recognized as safe
     # ONLY if run in the same directory where -i was executed

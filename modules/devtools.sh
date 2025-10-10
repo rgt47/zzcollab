@@ -51,10 +51,35 @@ require_module "core" "templates"
 # Tracking: Makefile is tracked in manifest for uninstall
 create_makefile() {
     log_info "Creating Makefile for development workflow automation..."
-    
+
     # Copy comprehensive Makefile from template
     # Template includes: Docker targets, R package targets, help system, platform detection
     if install_template "Makefile" "Makefile" "Makefile for Docker workflow" "Created Makefile with development automation"; then
+        # Modify Makefile for team member workflow if --use-team-image was specified
+        if [[ "${USE_TEAM_IMAGE:-false}" == "true" ]]; then
+            log_info "Modifying Makefile for team image workflow..."
+
+            # Replace local image references with team image in docker-* targets
+            # Add auto-pull with update detection before each docker run
+            sed -i.bak '
+                /^docker-zsh:$/,/^$/ {
+                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                }
+                /^docker-rstudio:$/,/^$/ {
+                    s|docker run --rm -p 8787:8787 -v \$\$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -p 8787:8787 -v \$\$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                }
+                /^docker-r:$/,/^$/ {
+                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                }
+                /^docker-bash:$/,/^$/ {
+                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                }
+            ' Makefile
+            rm -f Makefile.bak
+
+            log_info "Makefile configured for team image: \$(TEAM_NAME)/\$(PROJECT_NAME):latest"
+        fi
+
         log_info "Available targets:"
         log_info "  - Docker: make docker-build, make docker-rstudio, make docker-r"
         log_info "  - Package: make check, make test, make document"

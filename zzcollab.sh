@@ -820,6 +820,47 @@ validate_and_setup_environment() {
     log_info "🔧 All modules loaded successfully"
     echo ""
 
+    # Foundation detection: Dockerfile presence determines mode
+    # If Dockerfile exists → Team member mode (or lead working on analysis)
+    # If Dockerfile absent → Team lead mode (creating foundation)
+    if [[ -f "Dockerfile" ]]; then
+        # Team member mode (or lead working on analysis)
+        log_info "✅ Detected existing Dockerfile - using existing foundation"
+
+        # Block foundation-changing flags (foundation is locked)
+        if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]]; then
+            log_error "❌ Cannot use --profile-name: Dockerfile already defines foundation"
+            log_error "   To change foundation: rm Dockerfile && zzcollab --profile-name NEW_PROFILE"
+            exit 1
+        fi
+
+        if [[ "${USER_PROVIDED_BASE_IMAGE:-false}" == "true" ]]; then
+            log_error "❌ Cannot use -b/--base-image: Dockerfile already defines foundation"
+            log_error "   To change foundation: rm Dockerfile && zzcollab -b NEW_IMAGE"
+            exit 1
+        fi
+
+        if [[ "${USER_PROVIDED_LIBS:-false}" == "true" ]]; then
+            log_error "❌ Cannot use --libs: Dockerfile already defines foundation"
+            log_error "   To change foundation: rm Dockerfile && zzcollab --libs NEW_BUNDLE"
+            exit 1
+        fi
+
+        if [[ "${USER_PROVIDED_PKGS:-false}" == "true" ]]; then
+            log_error "❌ Cannot use --pkgs: Dockerfile already defines foundation"
+            log_error "   To change foundation: rm Dockerfile && zzcollab --pkgs NEW_BUNDLE"
+            exit 1
+        fi
+
+        # If --use-team-image, we'll configure Makefile for team image pulling
+        if [[ "${USE_TEAM_IMAGE:-false}" == "true" ]]; then
+            log_info "🐳 Will configure Makefile to pull and use team image from Docker Hub"
+        fi
+    else
+        # Team lead mode (creating foundation)
+        log_info "📝 No Dockerfile found - will create new foundation"
+    fi
+
     # Profile system validation (new)
     # Expand profile if --profile-name was specified
     # OR use default profile (minimal) if only --pkgs was provided

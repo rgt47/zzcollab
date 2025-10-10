@@ -221,6 +221,7 @@ USER_PROVIDED_BASE_IMAGE=false
 USER_PROVIDED_LIBS=false
 USER_PROVIDED_PKGS=false
 USER_PROVIDED_PROFILE=false
+USE_TEAM_IMAGE=false    # Team member flag to pull and use team image
 
 # Show flags (processed after modules are loaded)
 SHOW_HELP=false
@@ -272,10 +273,6 @@ parse_cli_arguments() {
                 require_arg "$1" "$2"
                 PROJECT_NAME="$2"
                 shift 2
-                ;;
-            --init|-i)
-                INIT_MODE=true
-                shift
                 ;;
             --team-name)
                 require_arg "$1" "$2"
@@ -419,6 +416,10 @@ parse_cli_arguments() {
                 ;;
             --yes|-y)
                 SKIP_CONFIRMATION=true
+                shift
+                ;;
+            --use-team-image)
+                USE_TEAM_IMAGE=true
                 shift
                 ;;
             --github|-G)
@@ -592,17 +593,17 @@ interface_to_profile() {
 export_cli_variables() {
     # Core build options
     export BUILD_DOCKER DOTFILES_DIR DOTFILES_NODOT BASE_IMAGE
-    
+
     # Team interface variables
     export TEAM_NAME PROJECT_NAME INTERFACE GITHUB_ACCOUNT DOCKERFILE_PATH
-    
+
     # Mode and behavior flags
-    export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE RENV_MODE
-    
+    export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE RENV_MODE USE_TEAM_IMAGE
+
     # GitHub integration flags
     export CREATE_GITHUB_REPO SKIP_CONFIRMATION
-    
-    
+
+
     # Show/display flags
     export SHOW_HELP SHOW_NEXT_STEPS
 }
