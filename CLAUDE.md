@@ -282,8 +282,7 @@ ZZCOLLAB's profile system provides 14+ specialized Docker environments with a si
 vim config.yaml     # Edit team profiles (set enabled: true to build)
 
 # Build with custom profiles
-zzcollab --profiles-config config.yaml
-zzcollab -i -t TEAM -p PROJECT --profiles-config config.yaml
+zzcollab -t TEAM -p PROJECT --profiles-config config.yaml
 ```
 
 **Profile Categories Available**:

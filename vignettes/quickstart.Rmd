@@ -721,7 +721,7 @@ test_that("model includes species interaction", {
 
 ### Team Lead Workflow
 
-Initialize a team project with the `-i` flag:
+Create a team project and share the Docker image:
 
 ```bash
 # Option 1: Set team config once
@@ -729,29 +729,42 @@ zzcollab --config set team-name "genomicslab"
 zzcollab --config set profile-name "bioinformatics"
 zzcollab --config set renv-mode "fast"
 
-# Create team project using config
+# Create team project structure
 mkdir study && cd study
-zzcollab -i -p study
+zzcollab -t genomicslab -p study --profile-name bioinformatics
 
-# Option 2: Use explicit flags
-mkdir team-genomics && cd team-genomics
-zzcollab -i -t genomicslab -p study --profile-name bioinformatics -F
+# Customize Dockerfile if needed (optional)
+vim Dockerfile
 
-# Option 3: Custom composition
-zzcollab -i -t genomicslab -p study -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
+# Build team Docker image
+make docker-build
+
+# Push team image to Docker Hub
+make docker-push-team
 
 # Share with collaborators
 gh repo edit --add-collaborator username
 ```
 
-**What `-i` does for teams:**
-1. Builds team Docker image with chosen profile and pushes to Docker Hub
-2. Creates complete project structure
-3. Team members can join using the shared team image
+**Alternative workflows:**
+
+```bash
+# Option 2: Custom composition with bundles
+mkdir study && cd study
+zzcollab -t genomicslab -p study -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
+make docker-build
+make docker-push-team
+```
+
+**Team Lead Responsibilities:**
+1. Creates complete project structure with chosen Docker profile
+2. Builds team Docker image with all necessary dependencies
+3. Pushes team image to Docker Hub for team members to access
+4. Adds collaborators to GitHub repository
 
 **Profile Selection for Teams:**
 - Team lead chooses Docker profile (bioinformatics, geospatial, etc.)
-- All team members get identical Docker environment
+- All team members get identical Docker environment via team image
 - Team members can choose their own renv mode (minimal, fast, standard, comprehensive)
 
 ### Team Member Workflow
@@ -763,26 +776,33 @@ Clone and join the team project:
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Join team (uses existing team image from Docker Hub)
-zzcollab -t genomicslab -p study
-
-# Or choose your own renv mode
-zzcollab -t genomicslab -p study -M  # Minimal renv (3 packages)
-zzcollab -t genomicslab -p study -F  # Fast renv (9 packages)
+# Pull and use team Docker image
+zzcollab --use-team-image
 
 # Enter identical development environment
 make docker-zsh
 ```
 
+**Optional: Choose your own renv mode:**
+
+```bash
+# Team members can optionally specify their preferred renv mode
+# The team Docker image (bioinformatics) is pulled automatically
+
+zzcollab --use-team-image -M  # Minimal renv (3 packages)
+zzcollab --use-team-image -F  # Fast renv (9 packages)
+zzcollab --use-team-image -S  # Standard renv (17 packages, default)
+zzcollab --use-team-image -C  # Comprehensive renv (47 packages)
+```
+
 **What happens for team members:**
-1. Pulls team image `genomicslab/study_core:latest` from Docker Hub
+1. `--use-team-image` flag pulls team image from Docker Hub (e.g., `genomicslab/study:latest`)
 2. Team image has the Docker profile chosen by team lead (e.g., bioinformatics)
-3. Creates personal Dockerfile using team image as base
-4. Builds personal development image (fast - layers on top of team image)
-5. Initializes renv with mode you chose (minimal, fast, standard, or comprehensive)
+3. Uses the exact same Docker environment as team lead
+4. Initializes renv with mode you chose (minimal, fast, standard, or comprehensive)
 
 **Environment Consistency:**
-- **Docker environment**: Identical for all team members (from team image)
+- **Docker environment**: Identical for all team members (from team image via `--use-team-image`)
 - **Renv packages**: Personal choice (each member can use different mode)
 
 ### Adding Packages to Team Environment
@@ -827,7 +847,8 @@ gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 
 # Or disable auto-github in config and create later
 zzcollab --config set auto-github "false"
-zzcollab -i -p penguin-bills  # Complete setup without GitHub
+mkdir penguin-bills && cd penguin-bills
+zzcollab  # Complete setup without GitHub
 gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
 ```
 
@@ -841,10 +862,10 @@ docker info
 docker system prune
 rm -rf penguin-bills  # Remove failed directory
 
-# Retry two-step workflow
-zzcollab -i -p penguin-bills -y  # Step 2a: Create team images
-cd penguin-bills
-zzcollab -y -G                    # Step 2b: Complete project setup
+# Retry project creation
+mkdir penguin-bills && cd penguin-bills
+zzcollab  # Uses config defaults
+make docker-build
 ```
 
 ## Test Failures
@@ -1014,20 +1035,27 @@ ZZCOLLAB uses a two-layer package management system for maximum flexibility:
 
 Team lead sets up bioinformatics environment:
 ```bash
-zzcollab -i -t genomicslab -p study --profile-name bioinformatics
+mkdir study && cd study
+zzcollab -t genomicslab -p study --profile-name bioinformatics
+make docker-build
+make docker-push-team
 ```
 
 Team members join with personal renv choices:
 ```bash
+# Clone repository
+git clone https://github.com/genomicslab/study.git
+cd study
+
 # Alice uses minimal renv (fast startup)
-zzcollab -t genomicslab -p study -M
+zzcollab --use-team-image -M
 
 # Bob uses comprehensive renv (all packages)
-zzcollab -t genomicslab -p study -C
+zzcollab --use-team-image -C
 ```
 
 **Result**:
-- Both get identical Bioconductor Docker environment (Layer 1)
+- Both get identical Bioconductor Docker environment (Layer 1) via `--use-team-image`
 - Each has different renv.lock packages (Layer 2)
 - Both can collaborate seamlessly
 

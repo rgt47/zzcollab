@@ -235,10 +235,11 @@ vignettes/getting-started.Rmd
 **Command Line:**
 ```bash
 # Create unified research project
-zzcollab -i -p my-research
+zzcollab -t myteam -p my-research -d ~/dotfiles
 
-# Or specify team
-zzcollab -i -t myteam -p research-project
+# Build and share team image
+make docker-build
+make docker-push-team
 ```
 
 **R Interface:**
@@ -430,7 +431,9 @@ zzcollab --config set team-name "myteam"
 zzcollab --config set build-mode "standard"
 
 # Create projects using defaults
-zzcollab -i -p data-analysis    # Uses config defaults automatically
+zzcollab -t myteam -p data-analysis -d ~/dotfiles    # Uses config defaults
+make docker-build
+make docker-push-team
 ```
 
 **Team Leader Setup**:
@@ -438,13 +441,14 @@ zzcollab -i -p data-analysis    # Uses config defaults automatically
 ```bash
 # Create team configuration
 mkdir team-project && cd team-project
-zzcollab -i -p team-project    # Creates base config.yaml
+zzcollab -t myteam -p team-project -d ~/dotfiles
 
-# Customize team profiles and settings
-vim config.yaml
+# Customize Dockerfile if needed
+vim Dockerfile
 
 # Build and share team images
-zzcollab --profiles-config config.yaml --github
+make docker-build
+make docker-push-team
 ```
 
 **Team Member Joining**:
@@ -454,8 +458,8 @@ zzcollab --profiles-config config.yaml --github
 git clone https://github.com/team/team-project.git
 cd team-project
 
-# Join with appropriate interface
-zzcollab -t team -p team-project -I analysis
+# Pull and use team image
+zzcollab --use-team-image -d ~/dotfiles
 make docker-zsh
 ```
 
@@ -590,15 +594,17 @@ build:
 
 ```bash
 # Quick start - creates optimal default profiles
-zzcollab -i -p myproject --github
+zzcollab -t myteam -p myproject -d ~/dotfiles
+make docker-build
+make docker-push-team
 
 # Custom profiles via config file
-zzcollab -i -p myproject
+mkdir myproject && cd myproject
+zzcollab -t myteam -p myproject -d ~/dotfiles
 ./add_profile.sh
-zzcollab --profiles-config config.yaml --github
-
-# Legacy approach (limited to 3 profiles)
-zzcollab -i -p myproject -B rstudio --github
+vim Dockerfile  # Customize as needed
+make docker-build
+make docker-push-team
 ```
 
 **Solo Developer Workflow**:
@@ -606,11 +612,14 @@ zzcollab -i -p myproject -B rstudio --github
 ```bash
 # Configuration-based (recommended)
 zzcollab --config set team-name "myteam"
-zzcollab -i -p research-paper
+zzcollab -t myteam -p research-paper -d ~/dotfiles
+make docker-build
 
-# Traditional explicit
-zzcollab -i -t myteam -p analysis-project \
-  -B rstudio -d ~/dotfiles
+# With custom profile selection
+mkdir research-paper && cd research-paper
+zzcollab -t myteam -p research-paper -d ~/dotfiles
+./add_profile.sh
+make docker-build
 ```
 
 ### Benefits of Profile System
@@ -758,40 +767,26 @@ git clone https://github.com/your-org/zzcollab.git
 cd zzcollab
 ./install.sh                    # Installs to ~/bin
 
-# 2a. Create team Docker images only (two-step process)
+# 2. Create project structure and team foundation
 cd ~/projects                   # Your preferred projects directory
-# NEW: -i flag now ONLY creates and pushes team Docker images, then stops
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles                      # Creates
-                                                                      # team images,
-                                                                      # stops
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                   # Fast mode:
-                                                                      # minimal
-                                                                      # packages
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                   # Comprehensive:
-                                                                      # full packages
-zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio
-                                                                      # profile only
-
-# Alternative: Auto-detect project name from directory
 mkdir study2024 && cd study2024
-zzcollab -i -t mylab -B all -d ~/dotfiles                           # All profiles
-                                                                     # (shell, rstudio,
-                                                                     # verse)
 
-# 2b. Create full project structure separately
-mkdir study2024 && cd study2024  # or git clone if repo exists
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full
-                                                                       # project
-                                                                       # setup
+# Create project with team configuration
+zzcollab -t mylab -p study2024 -d ~/dotfiles
 
+# Customize Dockerfile if needed (optional)
+vim Dockerfile
 
-# For teams needing custom packages - two-step process:
-# zzcollab -i -t mylab -p study2024 -P
-# Edit study2024/Dockerfile.teamcore to add packages, then:
-# zzcollab -i -t mylab -p study2024 -d ~/dotfiles
+# 3. Build and share team Docker image
+make docker-build              # Build team image (mylab/study2024:latest)
+make docker-push-team          # Push to Docker Hub for team access
 
-# 3. Start developing immediately
-cd study2024
+# 4. Create GitHub repository (optional)
+gh repo create mylab/study2024 --private
+git remote add origin https://github.com/mylab/study2024.git
+git push -u origin main
+
+# 5. Start developing immediately
 make docker-zsh                # → Enhanced development environment
 ```
 
@@ -801,14 +796,8 @@ make docker-zsh                # → Enhanced development environment
 git clone https://github.com/mylab/study2024.git
 cd study2024
 
-# 2. Join project with one command
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles
-# Note: -p can be omitted if current directory name matches project
-
-# Alternative build modes for team members:
-# zzcollab -t mylab -p study2024 -I shell -F -d ~/dotfiles  # Fast mode
-# zzcollab -t mylab -p study2024 -I shell -C -d ~/dotfiles  # Comprehensive
-                                                              # mode
+# 2. Pull and use team image (Dockerfile already exists)
+zzcollab --use-team-image -d ~/dotfiles
 
 # 3. Start developing immediately
 make docker-zsh                # → Same environment as team lead
@@ -844,10 +833,12 @@ ZZCOLLAB implements automated team distribution:
 git clone https://github.com/mylab/study2024.git
 cd study2024
 
-# Choose available interface:
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles
-zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles
-zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles
+# Pull and use team image (Dockerfile exists, auto-detects role)
+zzcollab --use-team-image -d ~/dotfiles
+
+# Start development with available environments
+make docker-zsh          # Enhanced shell
+make docker-rstudio      # RStudio Server (if configured)
 ```
 
 ## Solo Developer Workflow
@@ -874,13 +865,17 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 **Project Creation**:
 
 ```bash
-# Quick start with optimal profiles automatically selected
-zzcollab -i -p penguin-analysis --github
+# Quick start - create project and build image
+mkdir penguin-analysis && cd penguin-analysis
+zzcollab -t myteam -p penguin-analysis -d ~/dotfiles
+make docker-build
 
 # Advanced users can browse 14+ profiles interactively
 mkdir penguin-analysis && cd penguin-analysis
-zzcollab -i -p penguin-analysis
+zzcollab -t myteam -p penguin-analysis -d ~/dotfiles
 ./add_profile.sh
+vim Dockerfile  # Customize as needed
+make docker-build
 ```
 
 **Daily Development Cycle**:
@@ -994,7 +989,9 @@ Solo projects are inherently team-ready:
 # Others can join your project immediately
 git clone https://github.com/yourname/penguin-analysis.git
 cd penguin-analysis
-zzcollab -t yourname -p penguin-analysis -I analysis
+
+# Pull team image (Dockerfile exists, role auto-detected)
+zzcollab --use-team-image -d ~/dotfiles
 make docker-zsh
 ```
 

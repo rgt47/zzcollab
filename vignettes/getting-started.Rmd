@@ -1447,6 +1447,11 @@ git push
 # Colleague workflow simulation
 git clone <repository-url> test-clone
 cd test-clone
+
+# Pull team Docker image
+zzcollab --use-team-image
+
+# Enter container and run analysis
 make docker-zsh
 # Inside container:
 Rscript scripts/01_penguin_bill_analysis.R
@@ -1481,6 +1486,34 @@ For advanced topics, consult the following documentation:
 
 ## Collaborative Workflow
 
+### Team Lead Setup
+
+The team lead creates the project and shares the team image:
+
+```bash
+# Create project structure
+cd ~/projects
+mkdir penguin-analysis && cd penguin-analysis
+
+# Initialize project with team namespace
+zzcollab -S -t myname -p penguin-analysis -d ~/dotfiles
+
+# Customize Dockerfile if needed (optional)
+vim Dockerfile
+
+# Build team Docker image
+make docker-build
+
+# Push team image to Docker Hub
+make docker-push-team
+
+# Create GitHub repository (if not already done)
+git remote add origin https://github.com/yourname/penguin-analysis.git
+git push -u origin main
+```
+
+### Team Members Joining
+
 Colleagues can reproduce this analysis using the following procedure:
 
 ```bash
@@ -1488,12 +1521,19 @@ Colleagues can reproduce this analysis using the following procedure:
 git clone https://github.com/yourname/penguin-analysis.git
 cd penguin-analysis
 
+# Pull and use team Docker image
+zzcollab --use-team-image
+
 # Enter container environment
 make docker-zsh
 
 # Execute analysis
 Rscript scripts/01_penguin_bill_analysis.R
 ```
+
+The `--use-team-image` flag automatically pulls the team's Docker image from
+Docker Hub, ensuring all team members work in identical computational
+environments.
 
 # References
 
