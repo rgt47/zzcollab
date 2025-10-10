@@ -786,13 +786,13 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 
 **2. Project Creation**:
 ```bash
-# Quick start - optimal profiles automatically
-zzcollab -i -p penguin-analysis --github
+# Quick start - optimal setup automatically
+zzcollab -p penguin-analysis -d ~/dotfiles --github
 
-# Power users - browse 14+ profiles interactively
+# Power users - customize Docker environment
 mkdir penguin-analysis && cd penguin-analysis
-zzcollab -i -p penguin-analysis
-./add_profile.sh    # Select from bioinformatics, geospatial, alpine, etc.
+zzcollab -p penguin-analysis -d ~/dotfiles
+vim Dockerfile      # Customize base image, packages, system dependencies
 ```
 
 **3. Daily Development Cycle**:
@@ -894,10 +894,16 @@ fit_bill_model <- function() {
 
 Solo projects are automatically team-ready:
 ```bash
-# Others can join your project immediately
+# Convert solo project to team collaboration:
+# 1. Set team name and build team image
+zzcollab -t yourname -p penguin-analysis -d ~/dotfiles
+make docker-build
+make docker-push-team
+
+# 2. Others can join immediately
 git clone https://github.com/yourname/penguin-analysis.git
 cd penguin-analysis
-zzcollab -t yourname -p penguin-analysis -I analysis
+zzcollab --use-team-image -d ~/dotfiles
 make docker-zsh    # Same environment, instant collaboration
 ```
 
@@ -939,21 +945,20 @@ make docker-r              # R console only
 make docker-bash           # Bash shell
 ```
 
-### Profile Management (New)
+### Docker Environment Management
 ```bash
-# Interactive profile discovery and addition
-./add_profile.sh           # Browse and add profiles from comprehensive library
+# View available base images and package bundles
+cat bundles.yaml           # View all available profiles and packages
 
-# Manual profile management
-./profiles.yaml    # View all available profile definitions
-vim config.yaml            # Edit team profiles (set enabled: true to build)
+# Customize Docker environment
+vim Dockerfile             # Edit base image, R packages, system dependencies
 
-# Build custom profiles
-zzcollab --profiles-config config.yaml              # Build enabled profiles
-zzcollab -i -t TEAM -p PROJECT --profiles-config config.yaml  # Team init with custom profiles
+# Build custom Docker image
+make docker-build          # Build team/project-specific image
+make docker-push-team      # Share with team (for team lead)
 
-# Default behavior (uses config.yaml automatically if use_config_profiles: true)
-zzcollab -i -p PROJECT     # Builds default profiles (minimal + analysis)
+# Team members use pre-built image
+zzcollab --use-team-image  # Download and use team's Docker image
 ```
 
 ### Dependency Management
@@ -1209,99 +1214,109 @@ Major architectural improvement implementing single source of truth for profile 
 - **Updated team_init.sh**: Dynamic profile loading during build process
 - **Comprehensive testing**: Validated new format, legacy compatibility, and integration
 
-### Selective Base Image Building System
-Major improvement to team initialization workflow with selective base image building:
+### Docker Image Customization System
+Complete Dockerfile-based customization for team and solo projects:
 
-**New Features:**
-- **Selective building**: Teams can build only needed profiles (r-ver, rstudio, verse) instead of all
-- **Incremental workflow**: Start with one profile, add others later with `-V` flag  
-- **Enhanced error handling**: Helpful guidance when team members request unavailable profiles
-- **Short flags**: All major options now have one-letter shortcuts (-i, -t, -p, -I, -B, -V)
-- **Verse support**: Publishing workflow with LaTeX support via rocker/verse
-- **Team communication**: Clear coordination between team leads and members about available tooling
+**Key Features:**
+- **Dockerfile-based**: Full control over base image, packages, and system dependencies
+- **Bundle system**: Pre-defined package collections in bundles.yaml
+- **Multi-stage builds**: Efficient layer caching for faster rebuilds
+- **Team image sharing**: Simple push/pull workflow via Docker Hub
+- **Build mode support**: Fast (9 packages), Standard (17 packages), Comprehensive (47+ packages)
 
-**CLI Improvements:**
+**Dockerfile Customization:**
 ```bash
-# New selective base image flags
--B, --init-base-image TYPE   # r-ver, rstudio, verse, all (for team initialization)
--V, -V TYPE     # r-ver, rstudio, verse (for adding profiles later)
--I, --interface TYPE         # shell, rstudio, verse (for team members joining)
+# Team leads customize Dockerfile directly:
+vim Dockerfile
 
-# Examples
-zzcollab -i -t mylab -p study -B rstudio -S -d ~/dotfiles    # RStudio only
-zzcollab -V verse                                             # Add profile later
-zzcollab -t mylab -p study -I shell -d ~/dotfiles           # Join with shell interface
+# Change base image (line ~10):
+FROM rocker/r-ver:latest       # Shell-only, lightweight
+FROM rocker/rstudio:latest     # RStudio Server included
+FROM rocker/verse:latest       # Publishing workflow with LaTeX
+
+# Change package bundle (line ~50):
+COPY --from=bundles fast-bundle /       # 9 packages (2-3 min)
+COPY --from=bundles standard-bundle /   # 17 packages (4-6 min)
+COPY --from=bundles comprehensive-bundle /  # 47+ packages (15-20 min)
+
+# Add system dependencies (line ~30):
+RUN apt-get update && apt-get install -y \
+    libgdal-dev \      # Geospatial packages
+    libproj-dev \
+    libgeos-dev
+
+# Build and share:
+make docker-build
+make docker-push-team
 ```
 
-**Error Handling Enhancements:**
-- **Image availability checking**: Validates team images exist before proceeding
-- **Helpful error messages**: Shows available profiles and provides solutions
-- **Team coordination**: Guides team members on how to request missing profiles
-- **Docker Hub integration**: Checks image availability via `docker manifest inspect`
-
-### Revolutionary Docker Profile Management System
-Complete transformation from fixed 3-profile system to unlimited custom environments:
-
-**Unlimited Custom Variants:**
-- **YAML-based configuration**: Define any number of Docker profiles with custom base images and R packages
-- **Comprehensive profile library**: 12+ predefined profiles (standard, Alpine, R-hub, specialized domains)
-- **Interactive profile manager**: `add_profile.sh` script for easy discovery and addition of profiles
-- **Profile examples library**: `profiles.yaml` with complete definitions organized by category
-
-**New Configuration Architecture:**
-```yaml
-# Team-level config.yaml supports unlimited profiles
-profiles:
-  bioinformatics:
-    base_image: "bioconductor/bioconductor_docker:latest"
-    packages: ["renv", "BiocManager", "DESeq2", "edgeR", "limma"]
-    system_deps: ["libxml2-dev", "zlib1g-dev", "libbz2-dev"]
-    enabled: true
-    
-  alpine_minimal:
-    base_image: "velaco/alpine-r:latest"  
-    packages: ["renv", "devtools", "testthat"]
-    system_deps: ["git", "make", "curl-dev"]
-    enabled: true
-    size: "~200MB"  # vs ~1GB for rocker images
-```
-
-**Profile Categories Available:**
-- **Standard**: minimal, analysis, modeling, publishing (rocker-based, ~800MB-3GB)
-- **Specialized**: bioinformatics, geospatial (domain-specific, ~2-2.5GB)
-- **Alpine**: ultra-lightweight profiles for CI/CD (~200-600MB)
-- **R-hub**: CRAN-compatible testing environments (Ubuntu, Fedora, Windows)
-
-**Interactive Profile Management:**
+**Team Workflow:**
 ```bash
-# Discover and add profiles interactively
-./add_profile.sh
+# Team Lead:
+zzcollab -t mylab -p study -d ~/dotfiles
+vim Dockerfile             # Customize as needed
+make docker-build
+make docker-push-team
 
-# Menu shows categorized profiles with size estimates:
-# LIGHTWEIGHT ALPINE VARIANTS
-#  7) alpine_minimal       ~200MB  - Ultra-lightweight CI/CD
-#  8) alpine_analysis      ~400MB  - Lightweight data analysis
-# R-HUB TESTING ENVIRONMENTS  
-# 10) rhub_ubuntu          ~1GB    - CRAN-compatible testing
-
-# Automatically copies YAML to config.yaml with enabled: true
+# Team Members:
+git clone https://github.com/mylab/study.git
+cd study
+zzcollab --use-team-image -d ~/dotfiles
+make docker-zsh
 ```
 
-**Two-Level Configuration System:**
-- **User config** (`~/.zzcollab/config.yaml`): Personal preferences and profile library
-- **Team config** (project's `config.yaml`): Which profiles actually get built as Docker images
+### Simplified Docker Environment System
+ZZCOLLAB uses Dockerfile-based customization with pre-defined package bundles:
 
-**Legacy vs Modern System:**
+**Bundle System** (bundles.yaml):
+- **fast-bundle**: 9 essential packages (2-3 minutes)
+- **standard-bundle**: 17 balanced packages (4-6 minutes, default)
+- **comprehensive-bundle**: 47+ full ecosystem (15-20 minutes)
+
+**Dockerfile Customization**:
+```dockerfile
+# Team leads modify Dockerfile to select bundle and base image:
+
+# 1. Choose base image (line ~10):
+FROM rocker/rstudio:latest    # RStudio Server
+# FROM rocker/r-ver:latest    # Shell-only
+# FROM rocker/verse:latest    # Publishing with LaTeX
+
+# 2. Choose package bundle (line ~50):
+COPY --from=bundles standard-bundle /   # Default
+# COPY --from=bundles fast-bundle /      # Minimal
+# COPY --from=bundles comprehensive-bundle /  # Full
+
+# 3. Add custom packages (optional, line ~60):
+RUN Rscript -e "install.packages(c('sf', 'terra', 'leaflet'))"
+
+# 4. Add system dependencies (optional, line ~30):
+RUN apt-get update && apt-get install -y \
+    libgdal-dev \
+    libproj-dev
+```
+
+**Workflow**:
 ```bash
-# Legacy approach (overrides config.yaml)
-zzcollab -i -p png1 -B r-ver        # Creates: png1core-shell:latest only
+# Team Lead:
+zzcollab -t team -p project -d ~/dotfiles
+vim Dockerfile             # Select bundle, base image, add custom packages
+make docker-build
+make docker-push-team
 
-# Modern approach (uses config.yaml)  
-zzcollab -i -p png1                  # Creates: minimal + analysis profiles (default)
-zzcollab -i -p png1 --profiles-config config.yaml  # Explicit config usage
+# Team Members:
+git clone https://github.com/team/project.git
+cd project
+zzcollab --use-team-image -d ~/dotfiles
+make docker-zsh
 ```
 
-**Key Innovation**: Teams can now create specialized environments (bioinformatics with Bioconductor, geospatial with sf/terra, HPC with parallel processing, CI/CD with Alpine Linux) instead of being limited to generic r-ver/rstudio/verse profiles.
+**Key Benefits**:
+- **Single source of truth**: Dockerfile defines entire environment
+- **Full Docker control**: Use any base image, add any package
+- **Efficient caching**: Multi-stage builds for fast rebuilds
+- **Easy sharing**: One command to push, one flag to use team image
+- **Transparent**: Team sees exact Dockerfile configuration
 
 ### Enhanced validate_package_environment.R Script (formerly check_renv_for_commit.R)
 The dependency validation script has been significantly improved and renamed to better reflect its comprehensive functionality:
@@ -1414,61 +1429,42 @@ join_project(
 )
 ```
 
-### Default Base Image Change (August 2025)
-**Change**: Modified default base image from "all" to "r-ver" for faster, more efficient builds.
+### Architecture Simplification: Removed -i and -I Flags (October 2025)
+**Change**: Removed `-i` (team initialization) and `-I` (interface selection) flags in favor of Dockerfile-based architecture.
 
-**Rationale**: 
-- **Faster builds**: r-ver (shell-only) builds significantly faster than all profiles
-- **Resource efficiency**: Teams often do not need all 3 profiles (shell, rstudio, verse)
-- **Selective approach**: Users can explicitly request additional profiles when needed
-- **Backward compatibility**: `-B all` still available for teams that want all profiles
+**Rationale**:
+- **Complexity reduction**: Flag-based profile selection was confusing
+- **Docker best practices**: Dockerfile as single source of truth
+- **Simpler team workflow**: Build image → push → pull pattern is standard Docker
+- **Better transparency**: Team members see exact Dockerfile configuration
 
-**Implementation**:
-- `modules/constants.sh:64`: `ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE="r-ver"`
-- `modules/help.sh`: Updated help text to reflect new default
-- Documentation updated with clarifying comments for examples without explicit `-B`
-
-**Impact**:
+**Migration**:
 ```bash
-# Old behavior (built all 3 profiles by default):
-zzcollab -i -t mylab -p study    # Built shell + rstudio + verse
+# OLD (deprecated):
+zzcollab -i -t mylab -p study -B rstudio -S
+mkdir study && cd study
+zzcollab -t mylab -p study -I rstudio -S
 
-# New behavior (builds shell-only by default):
-zzcollab -i -t mylab -p study    # Builds shell only (faster)
-zzcollab -i -t mylab -p study -B all  # Explicit flag for all profiles
+# NEW (current):
+zzcollab -t mylab -p study -d ~/dotfiles
+vim Dockerfile              # Customize if needed
+make docker-build
+make docker-push-team
 ```
 
-### Critical Bug Fix: -i Flag Behavior (July 2025)
-**Issue**: The `-i` (team initialization) flag was incorrectly continuing with full project setup instead of stopping after team image creation.
-
-**Root Cause**: In `modules/team_init.sh`, the `run_team_initialization` function was calling:
-- `initialize_full_project` (line 618)
-- `setup_git_repository` 
-- `create_github_repository`
-
-This caused `-i` to create team images AND run full project setup, defeating the purpose of separating team image creation from project setup.
-
-**Fix Applied**: 
-- **Modified**: `modules/team_init.sh:612-644`
-- **Removed**: Calls to `initialize_full_project`, `setup_git_repository`, `create_github_repository`
-- **Added**: Clear completion message with next steps guidance
-- **Result**: `-i` now stops after `push_team_images` as intended
-
-**New Correct Behavior**:
+**Team Member Migration**:
 ```bash
-# Team Lead (Dev 1) - Two-Step Process
-zzcollab -i -t mylab -p study -B rstudio -S    # Step 1: Creates & pushes team images, then stops
-mkdir study && cd study                         # Step 2a: Create project directory  
-zzcollab -t mylab -p study -I rstudio -S       # Step 2b: Full project setup
+# OLD (deprecated):
+git clone https://github.com/mylab/study.git
+cd study
+zzcollab -t mylab -p study -I rstudio -d ~/dotfiles
+
+# NEW (current):
+git clone https://github.com/mylab/study.git
+cd study
+zzcollab --use-team-image -d ~/dotfiles
+make docker-zsh    # or make docker-rstudio
 ```
-
-**Documentation Updated**:
-- `vignettes/workflow-comprehensive.Rmd`: Updated team collaboration workflows
-- `ZZCOLLAB_USER_GUIDE.md`: Clarified two-step process for team leads
-- `templates/ZZCOLLAB_USER_GUIDE.md`: Updated template examples
-- `CLAUDE.md`: Updated team collaboration examples
-
-**Testing**: Verified that `-i` flag now stops after team image creation with helpful guidance messages.
 
 ## Docker Image Architecture and Custom Images
 
@@ -1491,9 +1487,13 @@ AMD64 Only:
 
 **Solutions for ARM64 Users**:
 
-1. **Use compatible base images only**:
+1. **Use compatible base images**:
    ```bash
-   zzcollab -i -t TEAM -p PROJECT -B r-ver,rstudio -S    # Skip verse
+   # Edit Dockerfile and change base image:
+   FROM rocker/rstudio:latest    # ARM64 compatible
+   # Avoid: FROM rocker/verse:latest (AMD64 only)
+
+   make docker-build
    ```
 
 2. **Build custom ARM64 verse equivalent**:
