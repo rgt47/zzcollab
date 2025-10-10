@@ -160,28 +160,25 @@ if [[ "${LIST_PROFILES:-false}" == "true" ]] || [[ "${LIST_LIBS:-false}" == "tru
     fi
 fi
 
-# For init mode help, we need team_init and help modules loaded
 # For regular help and next-steps, we can show immediately
-if [[ "$INIT_MODE" != "true" ]]; then
-    if [[ "${SHOW_HELP:-false}" == "true" ]] || [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
-        # Load core module first (required by help module)
-        if [[ -f "$MODULES_DIR/core.sh" ]]; then
-            source "$MODULES_DIR/core.sh" >/dev/null 2>&1
+if [[ "${SHOW_HELP:-false}" == "true" ]] || [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
+    # Load core module first (required by help module)
+    if [[ -f "$MODULES_DIR/core.sh" ]]; then
+        source "$MODULES_DIR/core.sh" >/dev/null 2>&1
+    fi
+
+    # Load help module
+    if [[ -f "$MODULES_DIR/help.sh" ]]; then
+        source "$MODULES_DIR/help.sh" >/dev/null 2>&1
+
+        if [[ "${SHOW_HELP:-false}" == "true" ]]; then
+            show_help
+            exit 0
         fi
 
-        # Load help module
-        if [[ -f "$MODULES_DIR/help.sh" ]]; then
-            source "$MODULES_DIR/help.sh" >/dev/null 2>&1
-
-            if [[ "${SHOW_HELP:-false}" == "true" ]]; then
-                show_help
-                exit 0
-            fi
-
-            if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
-                show_next_steps
-                exit 0
-            fi
+        if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
+            show_next_steps
+            exit 0
         fi
     fi
 fi
@@ -709,30 +706,6 @@ handle_special_modes() {
         exit 0
     fi
 
-    # Handle initialization mode first
-    if [[ "$INIT_MODE" == "true" ]]; then
-        # Handle help for init mode
-        if [[ "${SHOW_HELP:-false}" == "true" ]]; then
-            show_init_help
-            exit 0
-        fi
-
-        # Validate init parameters and prerequisites
-        validate_init_parameters
-        validate_init_prerequisites
-
-        # Run team initialization
-        run_team_initialization
-        exit 0
-    fi
-
-    # Handle build profile mode
-    if [[ "${BUILD_PROFILE_MODE:-false}" == "true" ]]; then
-        # Note: All modules including team_init are loaded in the main loading section below
-        # We just need to call the build profile function after modules are loaded
-        BUILD_PROFILE_DEFERRED=true
-    fi
-    
     # Handle help and next-steps options for normal mode
     if [[ "${SHOW_HELP:-false}" == "true" ]]; then
         show_help
@@ -801,13 +774,6 @@ handle_special_modes() {
 
     if [[ "${SHOW_NEXT_STEPS:-false}" == "true" ]]; then
         show_next_steps
-        exit 0
-    fi
-    
-    # Handle deferred build profile execution (after all modules loaded)
-    if [[ "${BUILD_PROFILE_DEFERRED:-false}" == "true" ]]; then
-        # All modules are now loaded, call build profile function
-        build_additional_profile "$BUILD_PROFILE"
         exit 0
     fi
 }
@@ -883,7 +849,7 @@ validate_and_setup_environment() {
     fi
 
     # Validate team member restrictions
-    if [[ -n "${TEAM_NAME:-}" ]] && [[ "${INIT_MODE:-false}" != "true" ]]; then
+    if [[ -n "${TEAM_NAME:-}" ]]; then
         validate_team_member_flags "true"
     fi
 

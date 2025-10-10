@@ -1507,8 +1507,9 @@ make docker-build
 # Push team image to Docker Hub
 make docker-push-team
 
-# Create GitHub repository (if not already done)
-git remote add origin https://github.com/yourname/penguin-analysis.git
+# Commit and push project structure to GitHub
+git add .
+git commit -m "Initial project setup with Palmer Penguins analysis"
 git push -u origin main
 ```
 

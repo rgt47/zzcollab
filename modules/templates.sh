@@ -177,47 +177,6 @@ install_template() {
 }
 
 #=============================================================================
-# UNIFIED PARADIGM TEMPLATE FUNCTIONS
-#=============================================================================
-
-# Function: install_paradigm_template
-# Purpose: Install paradigm-specific template files (Makefile, DESCRIPTION)
-# Arguments: $1 = paradigm (analysis, manuscript, package)
-install_paradigm_template() {
-    local paradigm="$1"
-    
-    [[ -n "$paradigm" ]] || { log_error "install_paradigm_template: paradigm required"; return 1; }
-    
-    log_info "Installing paradigm-specific templates: $paradigm"
-    
-    # Define paradigm template mappings
-    local makefile_template="paradigms/${paradigm}/Makefile.${paradigm}"
-    local description_template="paradigms/${paradigm}/DESCRIPTION.${paradigm}"
-    
-    # Install Makefile template if it exists
-    if [[ -f "$TEMPLATES_DIR/$makefile_template" ]]; then
-        if install_template "$makefile_template" "Makefile.${paradigm}" "Paradigm-specific Makefile" "Created ${paradigm} Makefile"; then
-            log_info "Created paradigm Makefile: Makefile.${paradigm}"
-        else
-            log_error "Failed to create paradigm Makefile"
-            return 1
-        fi
-    fi
-    
-    # Install DESCRIPTION template if it exists  
-    if [[ -f "$TEMPLATES_DIR/$description_template" ]]; then
-        if install_template "$description_template" "DESCRIPTION.${paradigm}" "Paradigm-specific DESCRIPTION" "Created ${paradigm} DESCRIPTION"; then
-            log_info "Created paradigm DESCRIPTION: DESCRIPTION.${paradigm}"
-        else
-            log_error "Failed to create paradigm DESCRIPTION"
-            return 1
-        fi
-    fi
-    
-    log_success "Paradigm templates installed: $paradigm"
-}
-
-#=============================================================================
 # TEMPLATES MODULE VALIDATION
 #=============================================================================
 

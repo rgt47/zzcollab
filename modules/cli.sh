@@ -184,7 +184,6 @@ export MULTIARCH_VERSE_IMAGE FORCE_PLATFORM
 # New user-friendly interface variables
 TEAM_NAME=""
 PROJECT_NAME=""
-INTERFACE=""
 GITHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
 
@@ -193,11 +192,8 @@ readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
 INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, all
 
 # Initialization mode variables
-INIT_MODE=false
 USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
-BUILD_PROFILE_MODE=false
-BUILD_PROFILE=""
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
@@ -463,40 +459,11 @@ parse_cli_arguments() {
 #=============================================================================
 
 # Function: process_user_friendly_interface
-# Purpose: Convert user-friendly team flags to base image names
+# Purpose: Placeholder for future team interface processing
+# Note: Deprecated -I flag logic removed. Team images now handled via config system.
 process_user_friendly_interface() {
-    # Convert user-friendly flags to BASE_IMAGE if provided (only for non-init mode)
-    if [[ "$INIT_MODE" != "true" ]]; then
-        if [[ -n "$TEAM_NAME" && -n "$PROJECT_NAME" && -n "$INTERFACE" ]]; then
-            # Map legacy interface names to variant names for backward compatibility
-            local profile_name="$INTERFACE"
-            case "$INTERFACE" in
-                shell)
-                    profile_name="minimal"
-                    ;;
-                verse)
-                    profile_name="publishing"
-                    ;;
-                # All other names (rstudio, analysis, minimal, etc.) stay as-is
-            esac
-
-            # Use config-based variant naming: {team}/{project}_core-{variant}
-            BASE_IMAGE="${TEAM_NAME}/${PROJECT_NAME}_core-${profile_name}"
-
-            # Check if team image exists before proceeding
-            check_team_image_availability "$BASE_IMAGE" "$TEAM_NAME" "$PROJECT_NAME" "$profile_name"
-            echo "ℹ️  Using team image: $BASE_IMAGE"
-        elif [[ -n "$TEAM_NAME" || -n "$PROJECT_NAME" || -n "$INTERFACE" ]]; then
-            # If some team flags are provided but not all, show error (only for non-init, non-build-variant mode)
-            if [[ "$BUILD_PROFILE_MODE" != "true" ]]; then
-                echo "❌ Error: When using team interface, all flags are required:" >&2
-                echo "  --team TEAM_NAME --project-name PROJECT_NAME --interface INTERFACE" >&2
-                echo "  Common variants: minimal, rstudio, analysis, publishing, modeling" >&2
-                echo "  Legacy names: shell (→minimal), verse (→publishing)" >&2
-                exit 1
-            fi
-        fi
-    fi
+    # No-op: Legacy interface flag (-I) removed in favor of Dockerfile-based approach
+    :
 }
 
 #=============================================================================
@@ -572,18 +539,6 @@ check_team_image_availability() {
     fi
 }
 
-# Function: interface_to_profile
-# Purpose: Convert interface name to build profile name
-# Arguments: $1 = interface (shell, rstudio, verse)
-interface_to_profile() {
-    case "$1" in
-        shell) echo "r-ver" ;;
-        rstudio) echo "rstudio" ;;
-        verse) echo "verse" ;;
-        *) echo "$1" ;;
-    esac
-}
-
 #=============================================================================
 # CLI VARIABLE EXPORT FUNCTION
 #=============================================================================
@@ -595,14 +550,13 @@ export_cli_variables() {
     export BUILD_DOCKER DOTFILES_DIR DOTFILES_NODOT BASE_IMAGE
 
     # Team interface variables
-    export TEAM_NAME PROJECT_NAME INTERFACE GITHUB_ACCOUNT DOCKERFILE_PATH
+    export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERFILE_PATH
 
     # Mode and behavior flags
-    export INIT_MODE USE_DOTFILES PREPARE_DOCKERFILE RENV_MODE USE_TEAM_IMAGE
+    export USE_DOTFILES PREPARE_DOCKERFILE RENV_MODE USE_TEAM_IMAGE
 
     # GitHub integration flags
     export CREATE_GITHUB_REPO SKIP_CONFIRMATION
-
 
     # Show/display flags
     export SHOW_HELP SHOW_NEXT_STEPS
@@ -660,9 +614,7 @@ show_cli_debug() {
     echo "  BASE_IMAGE: $BASE_IMAGE"
     echo "  TEAM_NAME: $TEAM_NAME"
     echo "  PROJECT_NAME: $PROJECT_NAME"
-    echo "  INTERFACE: $INTERFACE"
     echo "  GITHUB_ACCOUNT: $GITHUB_ACCOUNT"
-    echo "  INIT_MODE: $INIT_MODE"
     echo "  SHOW_HELP: $SHOW_HELP"
     echo "  SHOW_NEXT_STEPS: $SHOW_NEXT_STEPS"
 }

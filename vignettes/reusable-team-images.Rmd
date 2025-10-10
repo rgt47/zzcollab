@@ -66,6 +66,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create team base image with comprehensive packages"
+git push -u origin main
 cd ..
 
 # Project 1: Use team image as base (~30 seconds)
@@ -119,6 +122,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create comprehensive team base image"
+git push -u origin main
 cd ..
 ```
 
@@ -136,6 +142,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create comprehensive team base image"
+git push -u origin main
 cd ..
 
 # Standard mode (17 packages, balanced)
@@ -143,6 +152,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -S --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create standard team base image"
+git push -u origin main
 cd ..
 
 # Fast mode (9 packages, minimal overhead)
@@ -150,6 +162,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -F --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create fast team base image"
+git push -u origin main
 cd ..
 ```
 
@@ -160,6 +175,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create RStudio team base image"
+git push -u origin main
 cd ..
 
 # Shell only (command-line work)
@@ -167,6 +185,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -C --profile-name minimal -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create shell-only team base image"
+git push -u origin main
 cd ..
 ```
 
@@ -224,6 +245,9 @@ mkdir mybase && cd mybase
 zzcollab -t drsmith -p mybase -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create personal base image with comprehensive packages"
+git push -u origin main
 cd ..
 # Takes 15-20 minutes, grab coffee
 
@@ -256,6 +280,9 @@ mkdir labbase && cd labbase
 zzcollab -t genomicslab -p labbase -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create lab base image with bioinformatics tools"
+git push -u origin main
 cd ..
 
 # Optionally add specialized profile
@@ -301,6 +328,9 @@ mkdir q1-2025-base && cd q1-2025-base
 zzcollab -t datasci-firm -p q1-2025-base -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create Q1 2025 standardized base image"
+git push -u origin main
 cd ..
 
 # Push to private Docker registry (optional)
@@ -342,6 +372,9 @@ mkdir bio-base && cd bio-base
 zzcollab -t mylab -p bio-base -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create bioinformatics base image"
+git push -u origin main
 cd ..
 # Use for: genomics, transcriptomics, proteomics projects
 
@@ -350,6 +383,9 @@ mkdir geo-base && cd geo-base
 zzcollab -t mylab -p geo-base -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create geospatial base image"
+git push -u origin main
 cd ..
 # Use for: climate modeling, ecology, urban planning projects
 
@@ -358,6 +394,9 @@ mkdir ml-base && cd ml-base
 zzcollab -t mylab -p ml-base -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create machine learning base image"
+git push -u origin main
 cd ..
 # Use for: predictive modeling, classification, regression projects
 
@@ -366,6 +405,9 @@ mkdir shiny-base && cd shiny-base
 zzcollab -t mylab -p shiny-base -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create web apps base image"
+git push -u origin main
 cd ..
 # Use for: interactive dashboards, web applications
 ```
@@ -380,6 +422,9 @@ mkdir base-2025-01 && cd base-2025-01
 zzcollab -t mylab -p base-2025-01 -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create January 2025 versioned base image"
+git push -u origin main
 cd ..
 
 # Tag with semantic version
@@ -432,6 +477,9 @@ mkdir baseimage && cd baseimage
 zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create public team base image"
+git push -u origin main
 # Pushes to public mylab/baseimage:latest
 # No storage costs, unlimited team access
 ```
@@ -652,6 +700,9 @@ mkdir baseimage-test && cd baseimage-test
 zzcollab -t mylab -p baseimage-test -C --profile-name rstudio -d ~/dotfiles
 make docker-build
 make docker-push-team
+git add .
+git commit -m "Create test base image for validation"
+git push -u origin main
 cd ..
 
 # Test with sample project

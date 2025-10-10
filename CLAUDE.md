@@ -170,6 +170,9 @@ zzcollab -d ~/dotfiles
 zzcollab -t mylab -p study -d ~/dotfiles
 make docker-build        # Build team images
 make docker-push-team    # Push to Docker Hub
+git add .
+git commit -m "Initial project setup"
+git push -u origin main
 
 # Team Member - Join existing project
 git clone https://github.com/mylab/study.git
@@ -196,7 +199,7 @@ init_project(
   project_name = "study",
   build_mode = "standard"
 )
-# Then: make docker-build && make docker-push-team
+# Then: make docker-build && make docker-push-team && git add . && git commit -m "Initial project setup" && git push -u origin main
 
 # Team Member - R Interface
 join_project(
