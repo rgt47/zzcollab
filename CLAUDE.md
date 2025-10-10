@@ -34,7 +34,6 @@ ZZCOLLAB is a research collaboration framework that creates Docker-based reprodu
 - **Root CLAUDE.md**: Developer/AI assistant context (this file)
 - **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user documentation (symlinked from templates/)
 - **docs/**: Technical documentation and definitive guides
-  - **BUILD_MODES.md**: Comprehensive build mode system documentation
   - **TESTING_GUIDE.md**: Complete testing framework and best practices
   - **CONFIGURATION.md**: Multi-layered configuration system guide
   - **VARIANTS.md**: Docker profile system and customization
@@ -49,11 +48,11 @@ ZZCOLLAB is a research collaboration framework that creates Docker-based reprodu
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **Simplified CLI**: 4 clear renv modes with shortcuts (-M, -F, -S, -C)
+- **Dynamic package management**: Packages added via `renv::install()` as needed, no pre-configured modes
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
 - **Single source of truth**: Profile definitions in `bundles.yaml` eliminate duplication
 - **14+ Docker profiles**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
-- **Two-layer package management**: Docker profiles (shared/team) + renv modes (personal/independent)
+- **Two-layer architecture**: Docker profiles (shared/team) + dynamic renv packages (personal/independent)
 
 ### Five Pillars of Reproducibility
 
@@ -167,7 +166,7 @@ library(zzcollab)
 init_project("my-research")
 
 # Team Lead
-init_project(team_name = "mylab", project_name = "study", build_mode = "standard")
+init_project(team_name = "mylab", project_name = "study")
 
 # Team Member
 join_project(team_name = "mylab", project_name = "study")
@@ -195,8 +194,8 @@ zzcollab --config list                      # List all configuration
 
 **Key Configuration Domains**:
 - **Docker Profile Management**: 14+ specialized environments (*see [Variants Guide](docs/VARIANTS.md)*)
-- **Package Management**: Build modes (Fast/Standard/Comprehensive) (*see [Build Modes Guide](docs/BUILD_MODES.md)*)
-- **Development Settings**: Team collaboration, GitHub integration
+- **Package Management**: Dynamic via `renv::install()`, no pre-configured modes
+- **Development Settings**: Team collaboration, dotfiles integration
 
 ## Docker Profile System
 
@@ -215,15 +214,24 @@ vim config.yaml           # Edit team profiles
 zzcollab -t TEAM -p PROJECT --profiles-config config.yaml
 ```
 
-## Build Modes
+## Package Management
 
-ZZCOLLAB uses a simplified 4-mode system. *For comprehensive details, see [Build Modes Guide](docs/BUILD_MODES.md)*
+ZZCOLLAB uses dynamic package management for maximum flexibility.
 
-**Four Build Modes**:
-- **Minimal (-M)**: 3 packages, ~30 seconds (renv, remotes, here)
-- **Fast (-F)**: 9 packages, 2-3 minutes (development essentials)
-- **Standard (-S)**: 17 packages, 4-6 minutes (balanced, default)
-- **Comprehensive (-C)**: 47+ packages, 15-20 minutes (full ecosystem)
+**How It Works**:
+- **No pre-configured modes**: Packages are added as needed via `renv::install()`
+- **Docker profiles**: Control base Docker environment and pre-installed packages (team/shared)
+- **Dynamic addition**: Team members add packages independently inside containers
+- **Collaborative renv.lock**: Accumulates packages from all contributors
+
+**Example Workflow**:
+```bash
+make docker-zsh              # Enter container
+renv::install("tidyverse")   # Add packages as needed
+renv::snapshot()             # Save to renv.lock
+exit                         # Exit container
+git add renv.lock && git commit -m "Add tidyverse" && git push
+```
 
 ## Data Documentation System
 
@@ -299,10 +307,11 @@ ZZCOLLAB provides streamlined workflow for solo developers with professional-gra
 git clone https://github.com/rgt47/zzcollab.git && cd zzcollab && ./install.sh
 zzcollab --config init
 zzcollab --config set team-name "myteam"
-zzcollab --config set build-mode "standard"
+zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # 2. Create project
-zzcollab -p penguin-analysis -d ~/dotfiles --github
+mkdir penguin-analysis && cd penguin-analysis
+zzcollab
 
 # 3. Daily development
 make docker-zsh     # Enter container
@@ -335,7 +344,7 @@ Complete R interface with 25 functions:
 zzcollab_help()                    # Main help
 zzcollab_help("quickstart")        # Quick start
 zzcollab_help("workflow")          # Daily workflow
-zzcollab_help("build-modes")       # Build mode selection
+zzcollab_help("config")            # Configuration guide
 ```
 
 ## Version History
@@ -345,6 +354,7 @@ zzcollab_help("build-modes")       # Build mode selection
 **Current Version**: 2.0 (Unified Paradigm Release, 2025)
 
 **Recent Major Changes**:
+- Dynamic package management (October 2025) - packages added via `renv::install()`, no pre-configured modes
 - Unified paradigm consolidation (October 2025)
 - Docker profile system refactoring (September 2025)
 - Five-level reproducibility framework (October 2025)
@@ -368,7 +378,6 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
 ### Technical Guides (docs/)
 
 **Definitive System Guides**:
-- **BUILD_MODES.md** (22K): Build mode system documentation
 - **TESTING_GUIDE.md** (26K): Testing framework and best practices
 - **CONFIGURATION.md** (22K): Multi-layered configuration system
 - **VARIANTS.md** (20K): Docker profile system guide
@@ -392,7 +401,7 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
 ### Documentation Cross-References
 
 When working on zzcollab, refer users to:
-- Build mode questions → `docs/BUILD_MODES.md`
+- Package management → Dynamic via `renv::install()`, see Package Management section above
 - Testing implementation → `docs/TESTING_GUIDE.md`
 - Configuration setup → `docs/CONFIGURATION.md`
 - Profile customization → `docs/VARIANTS.md`
