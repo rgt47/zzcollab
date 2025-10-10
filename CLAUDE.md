@@ -163,13 +163,21 @@ project/
 
 **Command Line**:
 ```bash
-# Create unified research compendium
+# Solo Developer - Create unified research compendium
 zzcollab -d ~/dotfiles
 
-# With team collaboration
-zzcollab -i -t mylab -p study -B rstudio -d ~/dotfiles
+# Team Lead - Create project structure and team images
+zzcollab -t mylab -p study -d ~/dotfiles
+make docker-build        # Build team images
+make docker-push-team    # Push to Docker Hub
 
-# With build mode selection
+# Team Member - Join existing project
+git clone https://github.com/mylab/study.git
+cd study
+zzcollab --use-team-image -d ~/dotfiles
+make docker-zsh         # Start development environment
+
+# Solo Developer - With build mode selection
 zzcollab --comprehensive -d ~/dotfiles  # 51 packages - complete toolkit
 zzcollab --standard -d ~/dotfiles       # 17 packages - balanced (default)
 zzcollab --fast -d ~/dotfiles           # 9 packages - minimal
@@ -179,15 +187,23 @@ zzcollab --fast -d ~/dotfiles           # 9 packages - minimal
 ```r
 library(zzcollab)
 
-# Create unified research compendium
+# Solo Developer - Create unified research compendium
 init_project("my-research")
 
-# With team and build mode
+# Team Lead - R Interface
 init_project(
   team_name = "mylab",
   project_name = "study",
   build_mode = "standard"
 )
+# Then: make docker-build && make docker-push-team
+
+# Team Member - R Interface
+join_project(
+  team_name = "mylab",
+  project_name = "study"
+)
+# Automatically uses team image if available
 ```
 
 ### Learning Resources
@@ -433,25 +449,26 @@ zzcollab --config set team-name "myteam"
 zzcollab --config set build-mode "standard"
 
 # 2. Create projects using defaults
-zzcollab -i -p data-analysis    # Uses config defaults automatically
+zzcollab -p data-analysis -d ~/dotfiles    # Uses config defaults automatically
 
-# 3. Customize profiles for specific projects
+# 3. Customize Docker environment for specific projects
 cd data-analysis
-./add_profile.sh               # Browse and add specialized environments
+vim Dockerfile                 # Customize base image, packages, system dependencies
 ```
 
 **Team Leader Setup**:
 ```bash
-# 1. Create team configuration
+# 1. Create team project structure
 mkdir team-project && cd team-project
-zzcollab -i -p team-project    # Creates base config.yaml
+zzcollab -t team -p team-project -d ~/dotfiles    # Creates project + Dockerfile
 
-# 2. Customize team profiles
-./add_profile.sh               # Add modeling, alpine_minimal for CI/CD
-vim config.yaml                # Adjust collaboration settings
+# 2. Customize Docker environment
+vim Dockerfile                 # Modify base image (r-ver, rstudio, verse)
+vim bundles.yaml               # Adjust R package selection if needed
 
 # 3. Build and share team images
-zzcollab --profiles-config config.yaml --github
+make docker-build              # Build team Docker image
+make docker-push-team          # Push to Docker Hub for team
 ```
 
 **Team Member Joining**:
@@ -460,8 +477,8 @@ zzcollab --profiles-config config.yaml --github
 git clone https://github.com/team/team-project.git
 cd team-project
 
-# 2. Join with appropriate interface
-zzcollab -t team -p team-project -I analysis    # Uses team's analysis profile
+# 2. Use team's pre-built Docker image
+zzcollab --use-team-image -d ~/dotfiles         # Uses pre-built team image
 make docker-zsh                                 # Start development environment
 ```
 
@@ -700,28 +717,41 @@ build:
 
 ### Modern Workflow Commands
 
-**Team Initialization**:
+**Team Lead Workflow**:
 ```bash
-# Quick start - creates optimal default profiles
-zzcollab -i -p myproject --github              # Creates: minimal + analysis profiles
+# 1. Create project structure
+zzcollab -t myteam -p myproject -d ~/dotfiles --github
 
-# Custom profiles via config file
-zzcollab -i -p myproject             # Creates project + config.yaml
-./add_profile.sh                     # Browse and select profiles
-zzcollab --profiles-config config.yaml --github  # Build selected profiles
+# 2. Customize Docker image (optional)
+vim Dockerfile                       # Modify base image, packages, system dependencies
 
-# Legacy approach (limited to 3 profiles)
-zzcollab -i -p myproject -B rstudio --github     # Traditional RStudio only
+# 3. Build and push team image
+make docker-build                    # Build myteam/myprojectcore:latest
+make docker-push-team                # Push to Docker Hub
+```
+
+**Team Member Workflow**:
+```bash
+# 1. Clone project repository
+git clone https://github.com/myteam/myproject.git
+cd myproject
+
+# 2. Use pre-built team image
+zzcollab --use-team-image -d ~/dotfiles
+
+# 3. Start development
+make docker-zsh                      # Enter container with team environment
 ```
 
 **Solo Developer Workflow**:
 ```bash
 # Configuration-based (recommended)
 zzcollab --config set team-name "myteam"
-zzcollab -i -p research-paper        # Uses config defaults
+zzcollab --config set build-mode "standard"
+zzcollab -p research-paper -d ~/dotfiles        # Uses config defaults
 
-# Traditional explicit
-zzcollab -i -t myteam -p analysis-project -B rstudio -d ~/dotfiles
+# Traditional explicit (no team collaboration)
+zzcollab -p analysis-project -d ~/dotfiles      # Creates solo project
 ```
 
 ### Benefits of New Profile System
@@ -943,118 +973,123 @@ Rscript validate_package_environment.R --build-mode fast --fix   # Build mode aw
 export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 ```
 
-### Core Image Building Workflow
+### Docker Image Building Workflow
+
+**Team Lead - Build and Share Team Image**:
 ```bash
-# NEW: Selective Base Image Building (recommended) - faster, more efficient
-# Build only what your team needs:
-zzcollab -i -t TEAM -p PROJECT -B r-ver -S -d ~/dotfiles      # Shell only (fastest)
-zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # RStudio only
-zzcollab -i -t TEAM -p PROJECT -B verse -S -d ~/dotfiles      # Verse only (publishing)
-zzcollab -i -t TEAM -p PROJECT -B all -S -d ~/dotfiles        # All 3 profiles (traditional)
+# 1. Create project with team settings
+zzcollab -t TEAM -p PROJECT -d ~/dotfiles
 
-# Skip confirmation prompt for automation/CI:
-zzcollab -i -t TEAM -p PROJECT -B rstudio -S -y -d ~/dotfiles # No confirmation prompt
+# 2. Customize Docker environment (optional)
+vim Dockerfile              # Modify base image (r-ver, rstudio, verse)
+                           # Adjust R packages in bundles.yaml reference
+                           # Add system dependencies
 
-# Combine selective building with build modes:
-zzcollab -i -t TEAM -p PROJECT -B rstudio -F -d ~/dotfiles    # RStudio with minimal packages (8)
-zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # All profiles with full packages (27+)
+# 3. Build team Docker image
+make docker-build          # Builds TEAM/PROJECTcore:latest
 
-# Incremental approach - start small, add profiles later:
-zzcollab -i -t TEAM -p PROJECT -B r-ver -S -d ~/dotfiles      # Start with shell only
-# Later, add more profiles as needed:
-zzcollab -V rstudio                                            # Add profile
-zzcollab -V verse                                              # Add profile for publishing
+# 4. Share with team
+make docker-push-team      # Push to Docker Hub
 
-# Environment variable support for build mode detection
-ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t TEAM -p PROJECT -B r-ver -d ~/dotfiles
+# Combine with build modes for different package sets:
+# Edit Dockerfile to reference different bundle:
+# - fast-bundle (9 packages, 2-3 minutes)
+# - standard-bundle (17 packages, 4-6 minutes) [default]
+# - comprehensive-bundle (47+ packages, 15-20 minutes)
+```
 
-# GitHub repository creation shortcuts
-zzcollab -d ~/dotfiles -G                                     # Basic setup with automatic GitHub repo creation
-zzcollab -i -t TEAM -p PROJECT -B rstudio -S -G -d ~/dotfiles # Team setup with automatic GitHub repo
+**Team Member - Use Pre-Built Team Image**:
+```bash
+# 1. Clone team project
+git clone https://github.com/TEAM/PROJECT.git
+cd PROJECT
 
-# Legacy: Traditional approach (builds all profiles)
-# zzcollab -i -t TEAM -p PROJECT -F -d ~/dotfiles              # Fast mode, all profiles
-# zzcollab -i -t TEAM -p PROJECT -C -d ~/dotfiles              # Comprehensive mode, all profiles
+# 2. Use team's Docker image
+zzcollab --use-team-image -d ~/dotfiles
 
+# 3. Start development
+make docker-zsh            # Enter container with team environment
+```
 
-# Manual core image building (if needed)
-cd /path/to/zzcollab
-cp templates/Dockerfile.unified ./Dockerfile.teamcore
+**Solo Developer - Build Personal Image**:
+```bash
+# 1. Create project (no team)
+zzcollab -p PROJECT -d ~/dotfiles
 
-# Build shell profile
-docker build -f Dockerfile.teamcore \
-    --build-arg BASE_IMAGE=rocker/r-ver \
-    --build-arg TEAM_NAME="TEAM" \
-    --build-arg PROJECT_NAME="PROJECT" \
-    --build-arg PACKAGE_MODE="standard" \
-    -t "TEAM/PROJECTcore-shell:v1.0.0" .
+# 2. Customize if needed
+vim Dockerfile             # Adjust packages, base image
 
-# Build RStudio profile
-docker build -f Dockerfile.teamcore \
-    --build-arg BASE_IMAGE=rocker/rstudio \
-    --build-arg TEAM_NAME="TEAM" \
-    --build-arg PROJECT_NAME="PROJECT" \
-    --build-arg PACKAGE_MODE="standard" \
-    -t "TEAM/PROJECTcore-rstudio:v1.0.0" .
-
-# Build verse profile (publishing workflow)
-docker build -f Dockerfile.teamcore \
-    --build-arg BASE_IMAGE=rocker/verse \
-    --build-arg TEAM_NAME="TEAM" \
-    --build-arg PROJECT_NAME="PROJECT" \
-    --build-arg PACKAGE_MODE="standard" \
-    -t "TEAM/PROJECTcore-verse:v1.0.0" .
-
-# Build with different package modes
-# Fast mode (minimal packages)
-docker build -f Dockerfile.teamcore \
-    --build-arg BASE_IMAGE=rocker/r-ver \
-    --build-arg PACKAGE_MODE="fast" \
-    -t "TEAM/PROJECTcore-shell:fast" .
-
-# Comprehensive mode (full packages)
-docker build -f Dockerfile.teamcore \
-    --build-arg BASE_IMAGE=rocker/r-ver \
-    --build-arg PACKAGE_MODE="comprehensive" \
-    -t "TEAM/PROJECTcore-shell:comprehensive" .
-
-# Push to Docker Hub
-docker push "TEAM/PROJECTcore-shell:v1.0.0"
-docker push "TEAM/PROJECTcore-rstudio:v1.0.0"
-docker push "TEAM/PROJECTcore-verse:v1.0.0"
+# 3. Build image
+make docker-build          # Builds personal Docker image
 ```
 
 ### Team Collaboration Setup
+
+**Developer 1 (Team Lead) - Complete Workflow**:
 ```bash
-# Developer 1 (Team Lead) - Team Image Creation Only
-# Step 1: Create and push team Docker images (this is all -i does now)
-zzcollab -i -t TEAM -p PROJECT -B r-ver -F -d ~/dotfiles      # Creates TEAM/PROJECTcore-shell:latest only
-zzcollab -i -t TEAM -p PROJECT -B rstudio -S -d ~/dotfiles    # Creates TEAM/PROJECTcore-rstudio:latest only  
-zzcollab -i -t TEAM -p PROJECT -B all -C -d ~/dotfiles        # Creates all profiles (shell, rstudio, verse)
+# Step 1: Create project structure with team settings
+zzcollab -t TEAM -p PROJECT -d ~/dotfiles
 
-# Step 2: Create full project structure (run separately)
-mkdir PROJECT && cd PROJECT  # or git clone if repo exists
-zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles            # Full project setup with shell interface
-
-# Add profiles later (incremental workflow)
-zzcollab -V rstudio                                            # Add profile
-zzcollab -V verse                                              # Add profile
-
-# Developer 2+ (Team Members) - Join Existing Project
-git clone https://github.com/TEAM/PROJECT.git                 # Clone existing project
+# Step 2: Customize Docker environment (optional)
 cd PROJECT
-# Choose available interface:
-zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles             # Command-line development
-zzcollab -t TEAM -p PROJECT -I rstudio -d ~/dotfiles           # RStudio Server (if profile available)
-zzcollab -t TEAM -p PROJECT -I verse -d ~/dotfiles             # Publishing workflow (if profile available)
+vim Dockerfile              # Modify base image: rocker/r-ver, rocker/rstudio, rocker/verse
+vim bundles.yaml            # Adjust R package selection if needed
 
-# Error handling: If team image profile not available, you'll get helpful guidance:
-# Error: Team image 'TEAM/PROJECTcore-rstudio:latest' not found
-# Available profiles for this project:
-#     - TEAM/PROJECTcore-shell:latest
+# Step 3: Build team Docker image
+make docker-build          # Builds TEAM/PROJECTcore:latest
+
+# Step 4: Share with team
+make docker-push-team      # Push to Docker Hub
+
+# Step 5: Commit and push project
+git add .
+git commit -m "Initial project setup"
+git push
+```
+
+**Developer 2+ (Team Members) - Join Existing Project**:
+```bash
+# Step 1: Clone team project
+git clone https://github.com/TEAM/PROJECT.git
+cd PROJECT
+
+# Step 2: Use team's pre-built Docker image
+zzcollab --use-team-image -d ~/dotfiles
+
+# Step 3: Start development environment
+make docker-zsh            # Enter container (command-line)
+# OR
+make docker-rstudio        # Start RStudio Server at localhost:8787
+
+# That's it! You are using the exact same environment as the team lead.
+```
+
+**Environment Customization (Team Lead)**:
+```bash
+# If team needs different packages or base images:
+vim Dockerfile             # Change FROM rocker/rstudio to rocker/verse for LaTeX
+                          # Modify COPY --from lines to reference different bundles
+                          # Add system dependencies with apt-get
+
+# Rebuild and share
+make docker-build
+make docker-push-team
+
+# Team members update their images:
+docker pull TEAM/PROJECTcore:latest
+make docker-zsh            # Automatically uses updated image
+```
+
+**Error Handling**:
+```bash
+# If team member cannot pull team image:
+# Error: Unable to pull TEAM/PROJECTcore:latest from Docker Hub
+
 # Solutions:
-#    1. Use available profile: zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles
-#    2. Ask team lead to build rstudio profile: zzcollab -V rstudio
+#    1. Ask team lead to verify image was pushed: make docker-push-team
+#    2. Check Docker Hub permissions (image must be public or you need access)
+#    3. Build image locally if needed: make docker-build
+```
 
 # Note: Build modes comparison:
 # Minimal (-M): Ultra-fast bare essentials (~30 seconds, 3 packages)

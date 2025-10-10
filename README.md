@@ -369,10 +369,9 @@ OPTIONS:
   --standard, -S       Standard build mode (balanced packages,
                        default)
   --comprehensive, -C  Comprehensive build mode (full packages)
-  --team NAME, -t      Team name for collaboration
+  --team NAME, -t      Team name for Docker Hub namespace
   --project NAME, -p   Project name
-  --interface TYPE, -I Interface type (shell, rstudio, verse)
-  --init, -i           Initialize team base images
+  --use-team-image     Pull and use existing team Docker image
   --next-steps         Show development workflow and next steps
   --help, -h           Show help message
 
@@ -393,9 +392,15 @@ EXAMPLES:
   zzcollab --fast                             # Fast mode setup
   zzcollab --dotfiles ~/dotfiles              # Include dotfiles
 
-  # Team collaboration
-  zzcollab -i -t myteam -p study -B rstudio   # Team lead
-  zzcollab -t myteam -p study -I rstudio      # Team member
+  # Team collaboration - Lead
+  zzcollab -t myteam -p study --profile-name modeling  # Create foundation
+  make docker-build                           # Build team image
+  make docker-push-team                       # Push to Docker Hub
+
+  # Team collaboration - Member
+  git clone https://github.com/myteam/study.git && cd study
+  zzcollab --use-team-image                   # Pull and use team image
+  make docker-zsh                             # Start development
 
   # Traditional usage
   zzcollab --base-image rgt47/r-pluspackages  # Custom base

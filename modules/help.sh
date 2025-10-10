@@ -238,26 +238,23 @@ EXAMPLES:
     zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial    # Full manual control
     zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
 
-    Team Lead - Initialize with Profile:
-    zzcollab -i -t rgt47 -p study --profile-name bioinformatics -G  # Team image with bioinfo profile
-    zzcollab -i -t genomicslab -p analysis --profile-name geospatial -G  # Geospatial team setup
+    Team Lead - Create Foundation and Push:
+    zzcollab -t rgt47 -p study --profile-name bioinformatics -G
+    make docker-build                           # Build team Docker image
+    make docker-push-team                       # Push to Docker Hub (rgt47/study:latest)
 
     Team Lead - Custom Composition:
-    zzcollab -i -t rgt47 -p study -b rocker/r-ver --libs modeling --pkgs modeling -G
+    zzcollab -t rgt47 -p study -b rocker/r-ver --libs modeling --pkgs modeling
+    make docker-build
+    make docker-push-team
 
-    Team Lead - Multiple Profiles (variants):
-    zzcollab -i -t rgt47 -p study --profile-name bioinformatics --tag primary -G  # Primary profile
-    zzcollab -i -t rgt47 -p study --profile-name alpine_minimal --tag ci        # CI/CD profile
+    Team Members - Join Existing Project:
+    git clone https://github.com/rgt47/study.git && cd study
+    zzcollab --use-team-image                   # Pull and use team image (rgt47/study:latest)
+    make docker-zsh                             # Start development (auto-pulls latest image)
 
-    Team Members - Join and Add Packages:
-    zzcollab -t rgt47 -p study                              # Use default team image
-    zzcollab -t rgt47 -p study --tag primary                # Use specific team variant
-    zzcollab -t rgt47 -p study --pkgs modeling              # Add modeling packages to personal layer
-
-    Team Members CANNOT Use:
-    zzcollab -t rgt47 -p study -b OTHER_BASE                # ERROR: Cannot change base image
-    zzcollab -t rgt47 -p study --libs geospatial            # ERROR: Cannot add system libraries
-    zzcollab -t rgt47 -p study --profile-name geospatial    # ERROR: Cannot use profiles (sets base+libs)
+    Note: Foundation flags (--profile-name, -b, --libs, --pkgs) are automatically
+          blocked when Dockerfile exists. To change foundation: rm Dockerfile first.
 
     Simplified Build Modes:
     zzcollab --profile-name bioinformatics -M               # Minimal mode: ultra-fast (~30s)
@@ -431,27 +428,33 @@ USAGE EXAMPLES
 
 Example 1: Same name for Docker Hub and GitHub (simplest)
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t myname -p study -B rstudio -S -G -d ~/dotfiles
+zzcollab -t myname -p study --profile-name modeling -G -d ~/dotfiles
+make docker-build
+make docker-push-team
 
 Creates:
-  Docker:  myname/studycore-rstudio:latest
+  Docker:  myname/study:latest
   GitHub:  https://github.com/myname/study
   (both use "myname")
 
 Example 2: Different Docker Hub and GitHub accounts
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t labteam -g johndoe -p analysis -B rstudio -S -G -d ~/dotfiles
+zzcollab -t labteam -g johndoe -p analysis --profile-name modeling -G -d ~/dotfiles
+make docker-build
+make docker-push-team
 
 Creates:
-  Docker:  labteam/analysiscore-rstudio:latest (team Docker images)
+  Docker:  labteam/analysis:latest (team Docker images)
   GitHub:  https://github.com/johndoe/analysis (personal GitHub)
 
 Example 3: Personal Docker Hub, Organization GitHub
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t myname -g mycompany -p project -B rstudio -S -G -d ~/dotfiles
+zzcollab -t myname -g mycompany -p project --profile-name modeling -G -d ~/dotfiles
+make docker-build
+make docker-push-team
 
 Creates:
-  Docker:  myname/projectcore-rstudio:latest (personal Docker Hub)
+  Docker:  myname/project:latest (personal Docker Hub)
   GitHub:  https://github.com/mycompany/project (company GitHub)
 
 Example 4: Using configuration (recommended for solo developers)
@@ -645,18 +648,23 @@ TEAM COLLABORATION WORKFLOWS
 
 Scenario 1: Team Lead Creates Shared Project
 ──────────────────────────────────────────────────────────────────────────
-Team lead:
-    zzcollab -i -t labteam -p study -B rstudio -S -G -d ~/dotfiles
+Team lead - Step 1: Create foundation and GitHub repo
+    zzcollab -t labteam -p study --profile-name modeling -G -d ~/dotfiles
+
+Team lead - Step 2: Build and push team image
+    make docker-build                       # Build labteam/study:latest
+    make docker-push-team                   # Push to Docker Hub
 
     Creates:
-    • Docker: labteam/studycore-rstudio:latest (pushed to Docker Hub)
+    • Docker: labteam/study:latest (pushed to Docker Hub)
     • GitHub: https://github.com/labteam/study (private repo)
+    • Dockerfile: Locked foundation (team members cannot change)
 
-Team members:
+Team members - Join existing project:
     git clone https://github.com/labteam/study.git
     cd study
-    zzcollab -t labteam -p study -I rstudio -d ~/dotfiles
-    make docker-rstudio
+    zzcollab --use-team-image               # Pull team image from Docker Hub
+    make docker-zsh                         # Start development
 
 Scenario 2: Solo Researcher, Personal Accounts
 ──────────────────────────────────────────────────────────────────────────
@@ -675,10 +683,12 @@ Scenario 3: Personal Docker, Organization GitHub
 ──────────────────────────────────────────────────────────────────────────
 Contribute to organization but maintain personal Docker images:
 
-zzcollab -t myname -g myorg -p project -B rstudio -S -G -d ~/dotfiles
+zzcollab -t myname -g myorg -p project --profile-name modeling -G -d ~/dotfiles
+make docker-build
+make docker-push-team
 
 Creates:
-• Docker: myname/projectcore-rstudio:latest (your Docker Hub)
+• Docker: myname/project:latest (your Docker Hub)
 • GitHub: https://github.com/myorg/project (org GitHub)
 
 ═══════════════════════════════════════════════════════════════════════════
