@@ -9,7 +9,8 @@
       "Bash(modules/team_init.sh)",
       "Bash(add_profile.sh)",
       "Bash(cat:*)",
-      "Bash(docker run:*)"
+      "Bash(docker run:*)",
+      "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/d07/zzcollab/**)"
     ],
     "deny": [],
     "ask": []

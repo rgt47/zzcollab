@@ -63,21 +63,21 @@ create_makefile() {
             # Add auto-pull with update detection before each docker run
             sed -i.bak '
                 /^docker-zsh:$/,/^$/ {
-                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest|
                 }
                 /^docker-rstudio:$/,/^$/ {
-                    s|docker run --rm -p 8787:8787 -v \$\$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -p 8787:8787 -v \$\$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                    s|docker run --rm -p 8787:8787 -v \$\$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst \$(PACKAGE_NAME)|@docker pull \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -p 8787:8787 -v \$\$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest|
                 }
                 /^docker-r:$/,/^$/ {
-                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest|
                 }
                 /^docker-bash:$/,/^$/ {
-                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(TEAM_NAME)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(TEAM_NAME)/\$(PROJECT_NAME):latest|
+                    s|docker run --rm -it -v \$\$(pwd):/home/analyst/project \$(PACKAGE_NAME)|@docker pull \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest \| grep -q "Downloaded" \&\& echo "✓ Updated team image" \|\| true\n\tdocker run --rm -it -v \$\$(pwd):/home/analyst/project \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest|
                 }
             ' Makefile
             rm -f Makefile.bak
 
-            log_info "Makefile configured for team image: \$(TEAM_NAME)/\$(PROJECT_NAME):latest"
+            log_info "Makefile configured for team image: \$(DOCKERHUB_ACCOUNT)/\$(PROJECT_NAME):latest"
         fi
 
         log_info "Available targets:"

@@ -66,12 +66,12 @@ validate_init_prerequisites() {
         return 1
     fi
     
-    log_info "Verifying Docker Hub account: $TEAM_NAME"
-    if ! docker search "$TEAM_NAME" >/dev/null 2>&1; then
-        print_warning "Could not verify Docker Hub account '$TEAM_NAME'"
+    log_info "Verifying Docker Hub account: $DOCKERHUB_ACCOUNT"
+    if ! docker search "$DOCKERHUB_ACCOUNT" >/dev/null 2>&1; then
+        print_warning "Could not verify Docker Hub account '$DOCKERHUB_ACCOUNT'"
         print_warning "Make sure the account exists and you have push access"
     else
-        print_success "Docker Hub account '$TEAM_NAME' verified"
+        print_success "Docker Hub account '$DOCKERHUB_ACCOUNT' verified"
     fi
     
     log_info "Verifying GitHub account: $GITHUB_ACCOUNT"
@@ -357,37 +357,37 @@ build_team_images() {
         "r-ver")
             print_status "Step $step_counter: Building shell core image..."
             build_single_team_image "rocker/r-ver" "shell"
-            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}_core-shell:v1.0.0"
+            print_success "Built shell core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:v1.0.0"
             ;;
         "rstudio")
             print_status "Step $step_counter: Building RStudio core image..."
             build_single_team_image "rocker/rstudio" "rstudio"
-            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:v1.0.0"
+            print_success "Built RStudio core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:v1.0.0"
             ;;
         "verse")
             print_status "Step $step_counter: Building verse core image..."
             local verse_image
             verse_image=$(get_multiarch_base_image "verse")
             build_single_team_image "$verse_image" "verse"
-            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}_core-verse:v1.0.0"
+            print_success "Built verse core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-verse:v1.0.0"
             ;;
         "all")
             # Build all three variants (r-ver, rstudio, verse)
             print_status "Step $step_counter: Building shell core image..."
             build_single_team_image "rocker/r-ver" "shell"
-            print_success "Built shell core image: ${TEAM_NAME}/${PROJECT_NAME}_core-shell:v1.0.0"
-            
+            print_success "Built shell core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:v1.0.0"
+
             ((step_counter++))
             print_status "Step $step_counter: Building RStudio core image..."
             build_single_team_image "rocker/rstudio" "rstudio"
-            print_success "Built RStudio core image: ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:v1.0.0"
-            
+            print_success "Built RStudio core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:v1.0.0"
+
             ((step_counter++))
             print_status "Step $step_counter: Building verse core image..."
             local verse_image
             verse_image=$(get_multiarch_base_image "verse")
             build_single_team_image "$verse_image" "verse"
-            print_success "Built verse core image: ${TEAM_NAME}/${PROJECT_NAME}_core-verse:v1.0.0"
+            print_success "Built verse core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-verse:v1.0.0"
             ;;
         *)
             print_error "Invalid INIT_BASE_IMAGE: $INIT_BASE_IMAGE"
@@ -504,7 +504,7 @@ initialize_full_project() {
             base_variant="shell"  # Default to shell for personal development
             ;;
     esac
-    local ZZCOLLAB_ARGS="--base-image ${TEAM_NAME}/${PROJECT_NAME}_core-${base_variant}"
+    local ZZCOLLAB_ARGS="--base-image ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${base_variant}"
     if [[ "$USE_DOTFILES" == true ]]; then
         if [[ "$DOTFILES_NODOT" == "true" ]]; then
             ZZCOLLAB_ARGS="$ZZCOLLAB_ARGS --dotfiles-nodot $DOTFILES_DIR"
@@ -543,8 +543,8 @@ setup_git_repository() {
     git add .
     git commit -m "🎉 Initial research project setup
 
-- Complete zzcollab research compendium  
-- Team core images published to Docker Hub: ${TEAM_NAME}/${PROJECT_NAME}_core:v1.0.0
+- Complete zzcollab research compendium
+- Team core images published to Docker Hub: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core:v1.0.0
 - Private repository protects unpublished research
 - CI/CD configured for automatic team image updates
 
@@ -595,8 +595,8 @@ create_github_repository() {
     echo "  zzcollab -t ${TEAM_NAME} -p ${PROJECT_NAME} -I shell"
     echo ""
     print_status "Team images available:"
-    echo "  ${TEAM_NAME}/${PROJECT_NAME}_core-shell:latest"
-    echo "  ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:latest"
+    echo "  ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:latest"
+    echo "  ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:latest"
 }
 
 #=============================================================================
@@ -694,7 +694,7 @@ build_config_profile() {
     create_profile_dockerfile "$profile_name" "$base_image" "$packages" "$system_deps"
     
     # Build the Docker image
-    local image_name="${TEAM_NAME}/${PROJECT_NAME}_core-${profile_name}"
+    local image_name="${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}"
     print_status "  Building: $image_name:latest"
     
     if docker build -f "Dockerfile.variant.${profile_name}" \
@@ -1083,16 +1083,16 @@ EOF
     log_info "✅ 🎉 Team initialization complete!"
     log_info ""
     log_info "ℹ️  Team images created and pushed to Docker Hub:"
-    
+
     # List the created images
     if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"r-ver"* ]]; then
-        log_info "  ${TEAM_NAME}/${PROJECT_NAME}_core-shell:latest"
+        log_info "  ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:latest"
     fi
     if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"rstudio"* ]]; then
-        log_info "  ${TEAM_NAME}/${PROJECT_NAME}_core-rstudio:latest"
+        log_info "  ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:latest"
     fi
     if [[ "$INIT_BASE_IMAGE" == "all" ]] || [[ "$INIT_BASE_IMAGE" == *"verse"* ]]; then
-        log_info "  ${TEAM_NAME}/${PROJECT_NAME}_core-verse:latest"
+        log_info "  ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-verse:latest"
     fi
     
     log_info ""
