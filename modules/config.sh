@@ -559,20 +559,21 @@ create_default_config() {
 # Values here will be used as defaults unless overridden by CLI flags
 
 defaults:
-  # Team and GitHub settings
-  team_name: ""                    # Docker Hub team/organization name
-  github_account: ""               # GitHub account (defaults to team_name if empty)
-  dockerhub_account: ""            # Docker Hub account (defaults to team_name if empty)
+  # Team and GitHub settings (user-specific, set these for your projects)
+  team_name: ""                    # Your Docker Hub team/organization name
+  github_account: ""               # Your GitHub account (defaults to team_name if empty)
+  dockerhub_account: ""            # Your Docker Hub account (defaults to team_name if empty)
 
-  # Docker profile settings
-  profile_name: ""                 # Default Docker profile (minimal, rstudio, analysis, etc.)
-  libs_bundle: ""                  # Default system libraries bundle
-  pkgs_bundle: ""                  # Default R packages bundle
+  # Docker profile settings (system defaults shown)
+  profile_name: "minimal"          # Docker profile (minimal, rstudio, analysis, bioinformatics, geospatial, etc.)
+  libs_bundle: "minimal"           # System libraries bundle
+  pkgs_bundle: "minimal"           # R packages bundle (pre-installed in Docker)
 
-  dotfiles_dir: ""                 # Path to dotfiles directory (e.g., "~/dotfiles")
-  dotfiles_nodot: false            # Whether dotfiles need dots added
+  # Dotfiles integration (common defaults shown)
+  dotfiles_dir: "~/dotfiles"       # Path to your dotfiles directory
+  dotfiles_nodot: true             # Files stored without leading dots (vimrc not .vimrc)
 
-  # Automation settings
+  # Automation settings (system defaults shown)
   auto_github: false               # Automatically create GitHub repository
   skip_confirmation: false         # Skip confirmation prompts
 

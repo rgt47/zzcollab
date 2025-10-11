@@ -104,7 +104,7 @@ substitute_variables() {
     export R_PACKAGES_INSTALL_CMD="${R_PACKAGES_INSTALL_CMD:-# No R packages specified}"
     export SYSTEM_DEPS_INSTALL_CMD="${SYSTEM_DEPS_INSTALL_CMD:-# No system dependencies specified}"
     export LIBS_BUNDLE="${LIBS_BUNDLE:-minimal}"
-    export PKGS_BUNDLE="${PKGS_BUNDLE:-essential}"
+    export PKGS_BUNDLE="${PKGS_BUNDLE:-minimal}"
     
     # Process the file: read it, substitute variables, write to temp file, then replace original
     # envsubst with explicit variable list - only substitutes specified template variables

@@ -5,7 +5,7 @@ FROM ${BASE_IMAGE}:${R_VERSION}
 # Build arguments for package selection
 # Profile system: LIBS_BUNDLE and PKGS_BUNDLE are set by --profile-name
 ARG LIBS_BUNDLE=minimal
-ARG PKGS_BUNDLE=essential
+ARG PKGS_BUNDLE=minimal
 ARG TEAM_NAME=rgt47
 ARG PROJECT_NAME=r-project
 ARG ADDITIONAL_PACKAGES=""

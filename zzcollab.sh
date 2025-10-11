@@ -138,9 +138,10 @@ if [[ "${LIST_PROFILES:-false}" == "true" ]] || [[ "${LIST_LIBS:-false}" == "tru
     fi
 
     if [[ "${LIST_LIBS:-false}" == "true" ]]; then
-        echo "Available Library Bundles:"
+        echo "Available Library Bundles (System Dependencies):"
         echo ""
-        yq eval '.library_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
+        yq eval '.library_bundles | to_entries | .[] |
+            "  " + .key + " - " + .value.description + "\n    Packages: " + (.value.deps | join(", "))' \
             "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
         echo ""
         echo "Usage: zzcollab --libs BUNDLE"
@@ -149,9 +150,10 @@ if [[ "${LIST_PROFILES:-false}" == "true" ]] || [[ "${LIST_LIBS:-false}" == "tru
     fi
 
     if [[ "${LIST_PKGS:-false}" == "true" ]]; then
-        echo "Available Package Bundles:"
+        echo "Available Package Bundles (R Packages):"
         echo ""
-        yq eval '.package_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
+        yq eval '.package_bundles | to_entries | .[] |
+            "  " + .key + " - " + .value.description + "\n    Packages: " + (.value.packages | join(", "))' \
             "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
         echo ""
         echo "Usage: zzcollab --pkgs BUNDLE"

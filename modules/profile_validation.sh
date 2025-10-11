@@ -194,7 +194,7 @@ suggest_compatible_combination() {
     local pkgs_bundle="$3"
 
     if [[ "$base_image" == *"alpine"* ]]; then
-        echo "   zzcollab -b ${base_image} --libs alpine --pkgs essential"
+        echo "   zzcollab -b ${base_image} --libs alpine --pkgs minimal"
         echo "   or"
         echo "   zzcollab --profile-name alpine_minimal"
     elif [[ "$base_image" == *"bioconductor"* ]]; then
@@ -210,7 +210,7 @@ suggest_compatible_combination() {
         echo "   or"
         echo "   zzcollab --profile-name publishing"
     else
-        echo "   zzcollab -b rocker/r-ver --libs minimal --pkgs essential"
+        echo "   zzcollab -b rocker/r-ver --libs minimal --pkgs minimal"
         echo "   or"
         echo "   zzcollab --profile-name minimal"
     fi
@@ -254,8 +254,8 @@ apply_smart_defaults() {
     if [[ -z "$PKGS_BUNDLE" ]]; then
         case "$base_image" in
             *alpine*)
-                PKGS_BUNDLE="essential"
-                log_info "ℹ️  Auto-detected: --pkgs essential (for Alpine)"
+                PKGS_BUNDLE="minimal"
+                log_info "ℹ️  Auto-detected: --pkgs minimal (for Alpine)"
                 ;;
             *bioconductor*)
                 PKGS_BUNDLE="bioinfo"
@@ -274,7 +274,7 @@ apply_smart_defaults() {
                 log_info "ℹ️  Auto-detected: --pkgs tidyverse (from base image)"
                 ;;
             *)
-                PKGS_BUNDLE="essential"
+                PKGS_BUNDLE="minimal"
                 ;;
         esac
     fi
@@ -301,8 +301,8 @@ generate_r_package_install_commands() {
     packages=$(yq eval ".package_bundles.${pkgs_bundle}.packages | join(\", \")" "$BUNDLES_FILE" 2>/dev/null)
 
     if [[ "$packages" == "null" ]] || [[ -z "$packages" ]]; then
-        log_warning "⚠️  Unknown package bundle: ${pkgs_bundle}, using essential"
-        packages=$(yq eval ".package_bundles.essential.packages | join(\", \")" "$BUNDLES_FILE" 2>/dev/null)
+        log_warning "⚠️  Unknown package bundle: ${pkgs_bundle}, using minimal"
+        packages=$(yq eval ".package_bundles.minimal.packages | join(\", \")" "$BUNDLES_FILE" 2>/dev/null)
     fi
 
     # Check if this is a bioconductor bundle

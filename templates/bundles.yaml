@@ -103,7 +103,7 @@ library_bundles:
 # These are sets of R packages installed via install.packages() or BiocManager
 
 package_bundles:
-  essential:
+  minimal:
     description: "Minimal essential packages for development"
     packages:
       - renv
@@ -200,14 +200,14 @@ profiles:
     description: "Minimal development environment"
     base_image: "rocker/r-ver:latest"
     libs: minimal
-    pkgs: essential
+    pkgs: minimal
     size: "~800MB"
 
   rstudio:
     description: "RStudio Server development environment"
     base_image: "rocker/rstudio:latest"
     libs: minimal
-    pkgs: essential
+    pkgs: minimal
     size: "~1GB"
 
   analysis:
@@ -249,7 +249,7 @@ profiles:
     description: "Ultra-lightweight Alpine Linux"
     base_image: "velaco/alpine-r:latest"
     libs: alpine
-    pkgs: essential
+    pkgs: minimal
     size: "~200MB"
 
   alpine_analysis:

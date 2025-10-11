@@ -174,7 +174,7 @@ OPTIONS:
                                  Examples: bioinformatics, geospatial, alpine_minimal
     --pkgs BUNDLE                Override package selection (can combine with --profile-name)
                                  If used alone, applies minimal profile as base
-                                 Bundles: essential, tidyverse, modeling, bioinfo, geospatial, publishing, shiny
+                                 Bundles: minimal, tidyverse, modeling, bioinfo, geospatial, publishing, shiny
     --libs BUNDLE                System dependency bundle (for custom composition with -b)
                                  Bundles: minimal, geospatial, bioinfo, modeling, publishing, alpine
     -b, --base-image NAME        Custom Docker base image (for manual composition)
@@ -219,10 +219,10 @@ EXAMPLES:
     Pattern 1: Complete Profile (no overrides)
     zzcollab --profile-name bioinformatics -G   # Uses: bioconductor base + bioinfo libs + bioinfo pkgs
     zzcollab --profile-name geospatial          # Uses: rocker/r-ver + geospatial libs + geospatial pkgs
-    zzcollab --profile-name alpine_minimal      # Uses: alpine-r + alpine libs + essential pkgs
+    zzcollab --profile-name alpine_minimal      # Uses: alpine-r + alpine libs + minimal pkgs
 
     Pattern 2: Profile with Package Override
-    zzcollab --profile-name bioinformatics --pkgs essential   # Uses: bioconductor base + bioinfo libs + essential pkgs (OVERRIDE)
+    zzcollab --profile-name bioinformatics --pkgs minimal   # Uses: bioconductor base + bioinfo libs + minimal pkgs (OVERRIDE)
     zzcollab --profile-name geospatial --pkgs tidyverse       # Uses: rocker/r-ver + geospatial libs + tidyverse pkgs (OVERRIDE)
 
     Pattern 3: Package-Only (uses minimal profile as base)
