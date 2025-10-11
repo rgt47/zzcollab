@@ -168,8 +168,9 @@ validate_enum() {
 # CLI VARIABLE INITIALIZATION
 #=============================================================================
 
-# Initialize variables for command line options with same defaults as original
-BUILD_DOCKER=true
+# Initialize variables for command line options
+# Note: BUILD_DOCKER=false by default - users run 'make docker-build' manually
+BUILD_DOCKER=false
 DOTFILES_DIR=""
 DOTFILES_NODOT=false
 # Use centralized constants if available
@@ -240,6 +241,10 @@ parse_cli_arguments() {
     # Process all command line arguments (identical to original zzcollab.sh)
     while [[ $# -gt 0 ]]; do
         case $1 in
+            --build-docker)
+                BUILD_DOCKER=true
+                shift
+                ;;
             --no-docker|-n)
                 BUILD_DOCKER=false
                 shift

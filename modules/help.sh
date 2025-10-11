@@ -189,7 +189,8 @@ OPTIONS:
 
     Advanced options:
     -b, --base-image NAME        Use custom Docker base image (for composition with --libs and --pkgs)
-    -n, --no-docker              Skip Docker image build during setup
+        --build-docker           Build Docker image automatically during setup
+    -n, --no-docker              Skip Docker image build (default; build manually with 'make docker-build')
     -G, --github                 Automatically create private GitHub repository and push
         --next-steps             Show development workflow and next steps
     

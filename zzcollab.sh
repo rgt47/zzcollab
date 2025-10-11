@@ -945,8 +945,8 @@ finalize_and_report_results() {
             log_info "💡 Dotfiles kept in working directory for manual Docker build"
         fi
     else
-        log_info "⏭️ Skipping Docker image build (--no-docker specified)"
-        log_info "💡 Dotfiles kept in working directory for manual Docker build"
+        log_info "⏭️ Skipping Docker image build (use 'make docker-build' to build)"
+        log_info "💡 Run 'make docker-build' after initialization completes"
     fi
     
     # Initialize renv with snapshot of current environment
