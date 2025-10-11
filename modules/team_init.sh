@@ -412,10 +412,10 @@ build_single_team_image() {
         --build-arg PACKAGE_MODE="$BUILD_MODE" \
         --build-arg LIBS_BUNDLE="${LIBS_BUNDLE:-minimal}" \
         --build-arg PKGS_BUNDLE="${PKGS_BUNDLE:-}" \
-        -t "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" "$context"
+        -t "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${variant}:v1.0.0" "$context"
 
-    docker tag "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" \
-        "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:latest"
+    docker tag "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${variant}:v1.0.0" \
+        "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${variant}:latest"
 }
 
 # Function: push_team_images
@@ -916,13 +916,13 @@ build_additional_profile() {
             # Push to Docker Hub
             echo ""
             if confirm "Push $profile_name image to Docker Hub?"; then
-                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${profile_name}:v1.0.0"
-                docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${profile_name}:latest"
+                docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:v1.0.0"
+                docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:latest"
                 print_success "✅ Pushed $profile_name to Docker Hub"
             else
                 print_status "Image built locally only. To push later, run:"
-                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${profile_name}:v1.0.0"
-                print_status "  docker push ${TEAM_NAME}/${PROJECT_NAME}_core-${profile_name}:latest"
+                print_status "  docker push ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:v1.0.0"
+                print_status "  docker push ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:latest"
             fi
         else
             print_error "❌ Failed to build $profile_name variant"
