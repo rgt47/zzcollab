@@ -46,9 +46,13 @@ require_module "core" "templates"
 create_core_files() {
     local pkg_name="$PKG_NAME"
     local year=$(date +%Y)
-    
+
+    # Initialize BUILD_MODE with default if not set (legacy compatibility)
+    # Note: BUILD_MODE is deprecated - framework now uses dynamic package management
+    BUILD_MODE="${BUILD_MODE:-${ZZCOLLAB_DEFAULT_BUILD_MODE:-standard}}"
+
     log_info "Creating core R package files..."
-    
+
     # DESCRIPTION file - R package metadata and dependencies
     # Generate dynamic content based on build mode and config
     case "$BUILD_MODE" in
