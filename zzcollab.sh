@@ -41,8 +41,13 @@ set -euo pipefail
 # ${BASH_SOURCE[0]} = full path to this script file
 # dirname = extract directory path only
 # cd + pwd = resolve to absolute path (handles symlinks)
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly MODULES_DIR="$SCRIPT_DIR/modules"
+# NOTE: These may be pre-set by wrapper script for installed version
+if [[ -z "${SCRIPT_DIR:-}" ]]; then
+    readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+if [[ -z "${MODULES_DIR:-}" ]]; then
+    readonly MODULES_DIR="$SCRIPT_DIR/modules"
+fi
 
 # Load centralized constants module first (provides global configuration)
 # This module contains all color codes, paths, defaults, and system constants
@@ -862,7 +867,9 @@ validate_and_setup_environment() {
     generate_system_deps_install_commands "${LIBS_BUNDLE}"
 
     # Validate team member restrictions
-    if [[ -n "${TEAM_NAME:-}" ]]; then
+    # Team member = has TEAM_NAME AND Dockerfile already exists
+    # Team lead = has TEAM_NAME but NO Dockerfile (initializing)
+    if [[ -n "${TEAM_NAME:-}" ]] && [[ -f "Dockerfile" ]]; then
         validate_team_member_flags "true"
     fi
 
