@@ -73,8 +73,7 @@ USER ${USERNAME}
 # Copy dotfiles (consolidated with wildcards)
 COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* \
      .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
-     .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
-COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
+     .editorconfig* .ctags* .ackrc* .ripgreprc* .zshrc* /home/${USERNAME}/
 
 # Install zsh plugins
 RUN mkdir -p /home/${USERNAME}/.zsh && \
