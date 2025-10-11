@@ -23,8 +23,8 @@ RUN apt-get update && apt-get install -y \
     libtiff5-dev \
     libjpeg-dev \
     man-db \
-    pandoc \
     && rm -rf /var/lib/apt/lists/*
+# Note: pandoc removed (install manually if needed for PDF output)
 
 # Install Node.js (required for coc.nvim and other vim plugins)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \

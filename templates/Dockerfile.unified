@@ -11,20 +11,30 @@ ARG PROJECT_NAME=r-project
 ARG ADDITIONAL_PACKAGES=""
 ARG USERNAME=analyst
 
-# Install system dependencies (common to all modes)
+# Install system dependencies (common to all profiles)
+#
+# NOTE: rocker/r-ver base image already includes:
+#   - Runtime libraries: libcurl4, zlib1g, libblas, liblapack
+#   - Build tools: g++, gfortran, make
+#   - But REMOVES development headers after building R
+#
+# This layer adds:
+#   - Development headers (removed by rocker after R build)
+#   - ZZCOLLAB framework tools (vim, tmux, zsh, etc.)
+#   - Graphics libraries for R plotting
+#
+# Profile-specific deps (git, curl, wget, pandoc, etc.) are handled
+# by bundle-specific installation from bundles.yaml below.
+#
 RUN apt-get update && \
     apt-get install -y \
-    git \
-    ssh \
-    curl \
-    wget \
-    vim \
-    tmux \
-    zsh \
+    # Build tools (gcc, libc6-dev not in rocker)
     build-essential \
+    # Development headers (removed by rocker after R build)
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
+    # Graphics libraries for R plotting (ggplot2, base graphics)
     libfontconfig1-dev \
     libharfbuzz-dev \
     libfribidi-dev \
@@ -32,12 +42,17 @@ RUN apt-get update && \
     libpng-dev \
     libtiff5-dev \
     libjpeg-dev \
+    # Git integration for R packages
     libgit2-dev \
-    man-db \
-    pandoc \
+    # ZZCOLLAB framework tools
+    vim \
+    tmux \
+    zsh \
+    ssh \
     tree \
     ripgrep \
     eza \
+    man-db \
     && rm -rf /var/lib/apt/lists/*
 
 # Install bundle-specific system dependencies

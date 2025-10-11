@@ -44,12 +44,12 @@ RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
         libjpeg-dev \
         libgit2-dev \
         man-db \
-        pandoc \
         tree \
         ripgrep \
         eza \
         && rm -rf /var/lib/apt/lists/*; \
     fi
+# Note: pandoc removed from default installation (add via profile if needed)
 
 # Install Node.js (only if using standard rocker images)
 RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \

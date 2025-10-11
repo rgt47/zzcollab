@@ -201,42 +201,42 @@ profiles:
     base_image: "rocker/r-ver:latest"
     libs: minimal
     pkgs: minimal
-    size: "~800MB"
+    size: "~780MB"
 
   rstudio:
     description: "RStudio Server development environment"
     base_image: "rocker/rstudio:latest"
     libs: minimal
     pkgs: minimal
-    size: "~1GB"
+    size: "~980MB"
 
   analysis:
     description: "Data analysis with tidyverse"
     base_image: "rocker/tidyverse:latest"
     libs: minimal
     pkgs: tidyverse
-    size: "~1.2GB"
+    size: "~1.18GB"
 
   modeling:
     description: "Machine learning environment"
     base_image: "rocker/r-ver:latest"
     libs: modeling
     pkgs: modeling
-    size: "~1.5GB"
+    size: "~1.48GB"
 
   bioinformatics:
     description: "Bioinformatics with Bioconductor"
     base_image: "bioconductor/bioconductor_docker:latest"
     libs: bioinfo
     pkgs: bioinfo
-    size: "~2GB"
+    size: "~1.98GB"
 
   geospatial:
     description: "Geospatial analysis environment"
     base_image: "rocker/geospatial:latest"
     libs: geospatial
     pkgs: geospatial
-    size: "~2.5GB"
+    size: "~2.48GB"
 
   publishing:
     description: "Document publishing with LaTeX"

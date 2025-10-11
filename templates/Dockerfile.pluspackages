@@ -25,11 +25,11 @@ RUN apt-get update && \
     libjpeg-dev \
     libgit2-dev \
     man-db \
-    pandoc \
     tree \
     ripgrep \
     eza \
     && rm -rf /var/lib/apt/lists/*
+# Note: pandoc removed (rmarkdown/bookdown work fine for HTML output)
 
 # Install Node.js (required for coc.nvim and other vim plugins)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
