@@ -892,7 +892,7 @@ build_additional_profile() {
         fi
     fi
 
-    print_status "Building additional profiles for: $TEAM_NAME/$PROJECT_NAME"
+    print_status "Building additional profiles for: $DOCKERHUB_ACCOUNT/$PROJECT_NAME"
     print_status "Profiles: ${variants[*]}"
     echo ""
 
@@ -1107,7 +1107,7 @@ EOF
     log_info "❌ Wrong workflow: zzcollab -i -p png1 && zzcollab  # Forgets to cd!"
     log_info ""
     log_info "ℹ️  Team members can now join with:"
-    log_info "  git clone https://github.com/${TEAM_NAME}/${PROJECT_NAME}.git"
+    log_info "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
     log_info "  cd ${PROJECT_NAME}"
     log_info "  zzcollab -t ${TEAM_NAME} -p ${PROJECT_NAME} -I shell"
 }

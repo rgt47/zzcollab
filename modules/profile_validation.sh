@@ -374,7 +374,7 @@ validate_team_member_flags() {
         log_error "❌ Error: Team members cannot use -b/--base-image flag"
         log_error ""
         log_error "   The team image IS your base:"
-        log_error "   FROM ${TEAM_NAME}/${PROJECT_NAME}_core:${IMAGE_TAG:-latest}"
+        log_error "   FROM ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core:${IMAGE_TAG:-latest}"
         log_error ""
         log_error "   To use a different base, ask team lead to create a new profile."
         exit 1

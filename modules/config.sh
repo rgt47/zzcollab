@@ -518,7 +518,41 @@ create_user_config_dir() {
 # Purpose: Create a default configuration file
 create_default_config() {
     create_user_config_dir
-    
+
+    # Check if config file already exists
+    if [[ -f "$CONFIG_USER_FILE" ]]; then
+        log_warning "Configuration file already exists: $CONFIG_USER_FILE"
+        echo ""
+        echo "Options:"
+        echo "  1. Keep existing config (recommended)"
+        echo "  2. Create backup and overwrite"
+        echo "  3. Overwrite without backup (dangerous!)"
+        echo ""
+        read -p "Choose option [1/2/3]: " choice
+
+        case "$choice" in
+            1)
+                log_info "Keeping existing configuration file"
+                log_info "Use 'zzcollab config list' to view current settings"
+                log_info "Use 'zzcollab config set KEY VALUE' to modify settings"
+                return 0
+                ;;
+            2)
+                local backup_file="${CONFIG_USER_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+                cp "$CONFIG_USER_FILE" "$backup_file"
+                log_success "Created backup: $backup_file"
+                log_info "Creating new configuration file..."
+                ;;
+            3)
+                log_warning "Overwriting configuration without backup..."
+                ;;
+            *)
+                log_error "Invalid choice. Keeping existing configuration."
+                return 1
+                ;;
+        esac
+    fi
+
     cat > "$CONFIG_USER_FILE" << 'EOF'
 # ZZCOLLAB Configuration File
 # This file contains default settings for zzcollab projects
