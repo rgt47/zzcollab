@@ -257,6 +257,86 @@ apply_smart_defaults() {
     fi
 }
 
+# Function: generate_r_package_install_commands
+# Purpose: Read bundles.yaml and generate R package installation commands
+# Sets: R_PACKAGES_INSTALL_CMD (the actual R install command)
+generate_r_package_install_commands() {
+    local pkgs_bundle="${1:-$PKGS_BUNDLE}"
+
+    if [[ -z "$pkgs_bundle" ]]; then
+        R_PACKAGES_INSTALL_CMD="# No package bundle specified"
+        return 0
+    fi
+
+    if [[ ! -f "$BUNDLES_FILE" ]]; then
+        log_error "❌ Bundles file not found: $BUNDLES_FILE"
+        return 1
+    fi
+
+    # Extract package list from bundles.yaml
+    local packages
+    packages=$(yq eval ".package_bundles.${pkgs_bundle}.packages | join(\", \")" "$BUNDLES_FILE" 2>/dev/null)
+
+    if [[ "$packages" == "null" ]] || [[ -z "$packages" ]]; then
+        log_warning "⚠️  Unknown package bundle: ${pkgs_bundle}, using essential"
+        packages=$(yq eval ".package_bundles.essential.packages | join(\", \")" "$BUNDLES_FILE" 2>/dev/null)
+    fi
+
+    # Check if this is a bioconductor bundle
+    local is_bioc
+    is_bioc=$(yq eval ".package_bundles.${pkgs_bundle}.bioconductor // false" "$BUNDLES_FILE" 2>/dev/null)
+
+    if [[ "$is_bioc" == "true" ]]; then
+        # Bioconductor packages: install BiocManager first, then use it
+        # Extract BiocManager and regular packages
+        local bioc_packages
+        bioc_packages=$(echo "$packages" | sed 's/BiocManager, //')
+        R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('renv', 'devtools', 'BiocManager'), repos = c(CRAN = 'https://cloud.r-project.org'))\" && \\\\\n    R -e \"BiocManager::install(c('${bioc_packages}'))\""
+    else
+        # Regular CRAN packages
+        R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('${packages}'), repos = c(CRAN = 'https://cloud.r-project.org'))\""
+    fi
+
+    export R_PACKAGES_INSTALL_CMD
+}
+
+# Function: generate_system_deps_install_commands
+# Purpose: Read bundles.yaml and generate system dependency installation commands
+# Sets: SYSTEM_DEPS_INSTALL_CMD (the actual apt-get/apk install command)
+generate_system_deps_install_commands() {
+    local libs_bundle="${1:-$LIBS_BUNDLE}"
+
+    if [[ -z "$libs_bundle" ]]; then
+        SYSTEM_DEPS_INSTALL_CMD="# No library bundle specified"
+        return 0
+    fi
+
+    if [[ ! -f "$BUNDLES_FILE" ]]; then
+        log_error "❌ Bundles file not found: $BUNDLES_FILE"
+        return 1
+    fi
+
+    # Extract system dependency list from bundles.yaml
+    local deps package_manager
+    deps=$(yq eval ".library_bundles.${libs_bundle}.deps[]" "$BUNDLES_FILE" 2>/dev/null | tr '\n' ' ')
+    package_manager=$(yq eval ".library_bundles.${libs_bundle}.package_manager" "$BUNDLES_FILE" 2>/dev/null)
+
+    if [[ "$deps" == "null" ]] || [[ -z "$deps" ]]; then
+        SYSTEM_DEPS_INSTALL_CMD="# No additional system dependencies for bundle: ${libs_bundle}"
+        return 0
+    fi
+
+    # Generate appropriate install command based on package manager
+    if [[ "$package_manager" == "apk" ]]; then
+        SYSTEM_DEPS_INSTALL_CMD="apk add --no-cache ${deps}"
+    else
+        # Default to apt-get
+        SYSTEM_DEPS_INSTALL_CMD="apt-get update && apt-get install -y ${deps} && rm -rf /var/lib/apt/lists/*"
+    fi
+
+    export SYSTEM_DEPS_INSTALL_CMD
+}
+
 # Function: validate_team_member_flags
 # Purpose: Block flags that team members cannot use
 validate_team_member_flags() {

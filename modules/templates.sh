@@ -99,12 +99,20 @@ substitute_variables() {
     export MANUSCRIPT_TITLE="${MANUSCRIPT_TITLE:-Research Compendium Analysis}"  # Default manuscript title
     export DATE="$(date +%Y-%m-%d)"  # Current date
     export GITHUB_ACCOUNT="${GITHUB_ACCOUNT:-}"  # GitHub account name
+
+    # Profile system variables - generated from bundles.yaml
+    export R_PACKAGES_INSTALL_CMD="${R_PACKAGES_INSTALL_CMD:-# No R packages specified}"
+    export SYSTEM_DEPS_INSTALL_CMD="${SYSTEM_DEPS_INSTALL_CMD:-# No system dependencies specified}"
+    export LIBS_BUNDLE="${LIBS_BUNDLE:-minimal}"
+    export PKGS_BUNDLE="${PKGS_BUNDLE:-essential}"
     
     # Process the file: read it, substitute variables, write to temp file, then replace original
-    # envsubst < "$file" - reads file and substitutes ${VAR} with environment variable values
+    # envsubst with explicit variable list - only substitutes specified template variables
+    # This preserves Docker build arguments (LIBS_BUNDLE, PKGS_BUNDLE, PACKAGE_MODE, etc.)
+    # which need to remain as ${VAR} for Docker to substitute at build time
     # > "$file.tmp" - writes output to temporary file
     # && mv "$file.tmp" "$file" - if substitution succeeds, replace original with processed version
-    if ! (envsubst < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $BASE_IMAGE $R_VERSION $USERNAME $PACKAGE_NAME $AUTHOR_LAST $AUTHOR_ORCID $MANUSCRIPT_TITLE $DATE $GITHUB_ACCOUNT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"  # Clean up temporary file on failure
         return 1

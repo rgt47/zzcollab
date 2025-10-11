@@ -830,16 +830,22 @@ validate_and_setup_environment() {
     # Profile system validation (new)
     # Expand profile if --profile-name was specified
     # OR use default profile (minimal) if only --pkgs was provided
+    # OR use default profile (minimal) if no arguments provided
     if [[ -n "${PROFILE_NAME:-}" ]]; then
         expand_profile_name "$PROFILE_NAME"
     elif [[ "${USER_PROVIDED_PKGS:-false}" == "true" ]]; then
         # Scenario 3: --pkgs without --profile-name → use default profile (minimal)
         log_info "Using default profile 'minimal' with custom packages"
         expand_profile_name "minimal"
+    else
+        # Scenario 4: No profile specified → use default minimal profile
+        # This ensures LIBS_BUNDLE and PKGS_BUNDLE are always set
+        log_info "Using default profile 'minimal'"
+        expand_profile_name "minimal"
     fi
 
-    # Apply smart defaults based on base image if needed
-    if [[ -n "${BASE_IMAGE:-}" ]]; then
+    # Apply smart defaults based on base image if needed (may override profile defaults)
+    if [[ -n "${BASE_IMAGE:-}" ]] && [[ "${USER_PROVIDED_BASE_IMAGE:-false}" == "true" ]]; then
         apply_smart_defaults "$BASE_IMAGE"
     fi
 
@@ -847,6 +853,11 @@ validate_and_setup_environment() {
     if [[ -n "${BASE_IMAGE:-}" ]] || [[ -n "${LIBS_BUNDLE:-}" ]] || [[ -n "${PKGS_BUNDLE:-}" ]]; then
         validate_profile_combination "${BASE_IMAGE:-}" "${LIBS_BUNDLE:-}" "${PKGS_BUNDLE:-}" || exit 1
     fi
+
+    # Generate actual install commands from bundles.yaml (single source of truth)
+    # These will be injected into the Dockerfile template
+    generate_r_package_install_commands "${PKGS_BUNDLE}"
+    generate_system_deps_install_commands "${LIBS_BUNDLE}"
 
     # Validate team member restrictions
     if [[ -n "${TEAM_NAME:-}" ]]; then
