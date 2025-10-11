@@ -40,40 +40,10 @@ RUN apt-get update && \
     eza \
     && rm -rf /var/lib/apt/lists/*
 
-# Install bundle-specific system dependencies based on LIBS_BUNDLE
-RUN if [ "${LIBS_BUNDLE}" = "geospatial" ]; then \
-        apt-get update && apt-get install -y \
-            gdal-bin \
-            proj-bin \
-            libgeos-dev \
-            libproj-dev \
-            libgdal-dev \
-            libudunits2-dev \
-            netcdf-bin \
-            && rm -rf /var/lib/apt/lists/*; \
-    elif [ "${LIBS_BUNDLE}" = "bioinfo" ]; then \
-        apt-get update && apt-get install -y \
-            zlib1g-dev \
-            libbz2-dev \
-            liblzma-dev \
-            && rm -rf /var/lib/apt/lists/*; \
-    elif [ "${LIBS_BUNDLE}" = "modeling" ]; then \
-        apt-get update && apt-get install -y \
-            libgsl-dev \
-            libblas-dev \
-            liblapack-dev \
-            gfortran \
-            && rm -rf /var/lib/apt/lists/*; \
-    elif [ "${LIBS_BUNDLE}" = "publishing" ]; then \
-        apt-get update && apt-get install -y \
-            texlive-full \
-            libv8-dev \
-            && rm -rf /var/lib/apt/lists/*; \
-    elif [ "${LIBS_BUNDLE}" = "alpine" ]; then \
-        # Alpine uses apk instead of apt-get \
-        apk add --no-cache \
-            gcc g++ musl-dev linux-headers curl-dev; \
-    fi
+# Install bundle-specific system dependencies
+# Command generated from bundles.yaml (single source of truth)
+# Bundle: ${LIBS_BUNDLE}
+RUN ${SYSTEM_DEPS_INSTALL_CMD}
 
 # Install Node.js (required for coc.nvim and other vim plugins)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
@@ -108,80 +78,10 @@ LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 RUN useradd --create-home --shell /bin/zsh ${USERNAME} || \
     echo "User ${USERNAME} already exists"
 
-# Install R packages based on PKGS_BUNDLE (new profile system) or fallback to PACKAGE_MODE
-# PKGS_BUNDLE takes precedence - allows profile-based package selection
-# Bundles: essential, tidyverse, modeling, bioinfo, geospatial, publishing, shiny
-RUN if [ -n "${PKGS_BUNDLE}" ]; then \
-        # Profile system: install packages based on bundle \
-        if [ "${PKGS_BUNDLE}" = "essential" ]; then \
-            R -e "install.packages(c('renv', 'devtools', 'usethis', 'testthat', 'roxygen2'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        elif [ "${PKGS_BUNDLE}" = "tidyverse" ]; then \
-            R -e "install.packages(c('renv', 'devtools', 'tidyverse', 'here', 'janitor', \
-                 'scales', 'patchwork'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        elif [ "${PKGS_BUNDLE}" = "modeling" ]; then \
-            R -e "install.packages(c('renv', 'devtools', 'tidyverse', 'tidymodels', \
-                 'xgboost', 'randomForest', 'glmnet', 'caret'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        elif [ "${PKGS_BUNDLE}" = "bioinfo" ]; then \
-            R -e "install.packages(c('renv', 'devtools', 'BiocManager'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))" && \
-            R -e "BiocManager::install(c('DESeq2', 'edgeR', 'limma', 'GenomicRanges', 'Biostrings'))"; \
-        elif [ "${PKGS_BUNDLE}" = "geospatial" ]; then \
-            R -e "install.packages(c('renv', 'devtools', 'sf', 'terra', 'leaflet', \
-                 'mapview', 'tmap'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        elif [ "${PKGS_BUNDLE}" = "publishing" ]; then \
-            R -e "install.packages(c('renv', 'devtools', 'quarto', 'bookdown', 'blogdown', \
-                 'distill', 'flexdashboard', 'DT'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        elif [ "${PKGS_BUNDLE}" = "shiny" ]; then \
-            R -e "install.packages(c('renv', 'devtools', 'shiny', 'shinydashboard', \
-                 'shinyWidgets', 'DT', 'plotly', 'bslib'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        fi; \
-    elif [ "${PACKAGE_MODE}" = "minimal" ]; then \
-        # Minimal mode: bare essentials (renv, remotes, here) \
-        if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" \
-           >/dev/null; then \
-            R -e "install.packages(c('renv', 'remotes', 'here'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        fi; \
-    elif [ "${PACKAGE_MODE}" = "fast" ]; then \
-        # Fast mode: development essentials \
-        if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" \
-           >/dev/null; then \
-            R -e "install.packages(c('renv', 'remotes', 'here', 'usethis', \
-                 'devtools', 'testthat', 'knitr', 'rmarkdown', 'targets'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        fi; \
-    elif [ "${PACKAGE_MODE}" = "comprehensive" ] || \
-         [ "${PACKAGE_MODE}" = "pluspackages" ]; then \
-        # Comprehensive mode: full package suite \
-        R -e "base_packages <- c( \
-            'renv', 'remotes', 'devtools', 'testthat', 'usethis', \
-            'pkgdown', 'rcmdcheck', 'tidyverse', 'here', 'conflicted', \
-            'broom', 'lme4', 'survival', 'car', 'janitor', 'naniar', \
-            'skimr', 'visdat', 'ggthemes', 'kableExtra', 'DT', \
-            'rmarkdown', 'bookdown', 'knitr', 'jsonlite', 'targets', \
-            'datapasta' \
-        ); \
-        additional_packages <- if(nzchar('${ADDITIONAL_PACKAGES}')) \
-            strsplit('${ADDITIONAL_PACKAGES}', ' ')[[1]] else \
-            character(0); \
-        all_packages <- c(base_packages, additional_packages); \
-        install.packages(all_packages, \
-            repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-    else \
-        # Standard mode: essential development packages \
-        if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" \
-           >/dev/null; then \
-            R -e "install.packages(c('renv', 'remotes', 'devtools', \
-                 'usethis', 'here', 'conflicted', 'rmarkdown', 'knitr'), \
-                 repos = c(CRAN = 'https://cloud.r-project.org'))"; \
-        fi; \
-    fi
+# Install R packages based on selected profile
+# Command generated from bundles.yaml (single source of truth)
+# Bundle: ${PKGS_BUNDLE}
+RUN ${R_PACKAGES_INSTALL_CMD}
 
 # Give user write permission to R library directory
 RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library

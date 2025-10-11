@@ -43,8 +43,14 @@ expand_profile_name() {
         exit 1
     fi
 
-    # Save user-provided PKGS_BUNDLE if it was explicitly set
-    local user_pkgs=""
+    # Save user-provided values if explicitly set via command-line flags
+    local user_base_image="" user_libs="" user_pkgs=""
+    if [[ "${USER_PROVIDED_BASE_IMAGE:-false}" == "true" ]]; then
+        user_base_image="$BASE_IMAGE"
+    fi
+    if [[ "${USER_PROVIDED_LIBS:-false}" == "true" ]]; then
+        user_libs="$LIBS_BUNDLE"
+    fi
     if [[ "${USER_PROVIDED_PKGS:-false}" == "true" ]]; then
         user_pkgs="$PKGS_BUNDLE"
     fi
@@ -54,13 +60,30 @@ expand_profile_name() {
     LIBS_BUNDLE="$libs_bundle"
     PKGS_BUNDLE="$pkgs_bundle"
 
-    # Override PKGS_BUNDLE if user explicitly provided it
+    # Override with user-provided values (command-line flags take precedence)
+    local overrides=()
+    if [[ -n "$user_base_image" ]]; then
+        BASE_IMAGE="$user_base_image"
+        overrides+=("Base image: $user_base_image (OVERRIDE)")
+    fi
+    if [[ -n "$user_libs" ]]; then
+        LIBS_BUNDLE="$user_libs"
+        overrides+=("Libraries: $user_libs (OVERRIDE)")
+    fi
     if [[ -n "$user_pkgs" ]]; then
         PKGS_BUNDLE="$user_pkgs"
-        log_info "📋 Expanded profile '${profile_name}' with package override:"
-        log_info "   Base image: $base_image"
-        log_info "   Libraries:  $libs_bundle"
-        log_info "   Packages:   $user_pkgs (OVERRIDE from --pkgs)"
+        overrides+=("Packages: $user_pkgs (OVERRIDE)")
+    fi
+
+    # Log expanded profile with overrides
+    if [[ ${#overrides[@]} -gt 0 ]]; then
+        log_info "📋 Expanded profile '${profile_name}' with overrides:"
+        log_info "   Base image: ${BASE_IMAGE}"
+        log_info "   Libraries:  ${LIBS_BUNDLE}"
+        log_info "   Packages:   ${PKGS_BUNDLE}"
+        for override in "${overrides[@]}"; do
+            log_info "   ⚠️  $override"
+        done
     else
         log_info "📋 Expanded profile '${profile_name}':"
         log_info "   Base image: $base_image"
