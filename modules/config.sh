@@ -36,7 +36,7 @@ readonly CONFIG_SYSTEM_FILE="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.yaml
 # Using simple variables instead of associative arrays for compatibility
 CONFIG_TEAM_NAME=""
 CONFIG_GITHUB_ACCOUNT=""
-CONFIG_RENV_MODE="standard"
+CONFIG_DOCKERHUB_ACCOUNT=""
 CONFIG_PROFILE_NAME=""
 CONFIG_LIBS_BUNDLE=""
 CONFIG_PKGS_BUNDLE=""
@@ -382,7 +382,7 @@ load_custom_package_lists() {
 #   - Gracefully handles missing files without error
 # EXAMPLE:
 #   load_config_file "./zzcollab.yaml"
-#   echo "Team: $CONFIG_TEAM_NAME, Mode: $CONFIG_RENV_MODE"
+#   echo "Team: $CONFIG_TEAM_NAME, DockerHub: $CONFIG_DOCKERHUB_ACCOUNT"
 ##############################################################################
 load_config_file() {
     local config_file="$1"
@@ -426,7 +426,7 @@ load_all_configs() {
     # Start with hard-coded defaults (already set in variable declarations)
     CONFIG_TEAM_NAME=""
     CONFIG_GITHUB_ACCOUNT=""
-    CONFIG_RENV_MODE="standard"
+    CONFIG_DOCKERHUB_ACCOUNT=""
     CONFIG_PROFILE_NAME=""
     CONFIG_LIBS_BUNDLE=""
     CONFIG_PKGS_BUNDLE=""
@@ -453,7 +453,7 @@ apply_config_defaults() {
     # Only set values if they haven't been set by CLI arguments
     [[ -z "${TEAM_NAME:-}" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
     [[ -z "${GITHUB_ACCOUNT:-}" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
-    [[ "${BUILD_MODE:-standard}" == "standard" && -n "$CONFIG_RENV_MODE" ]] && BUILD_MODE="$CONFIG_RENV_MODE"
+    [[ -z "${DOCKERHUB_ACCOUNT:-}" && -n "$CONFIG_DOCKERHUB_ACCOUNT" ]] && DOCKERHUB_ACCOUNT="$CONFIG_DOCKERHUB_ACCOUNT"
     [[ -z "${PROFILE_NAME:-}" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
     [[ -z "${LIBS_BUNDLE:-}" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
     [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
@@ -481,7 +481,7 @@ get_config_value() {
     case "$key" in
         team_name) echo "$CONFIG_TEAM_NAME" ;;
         github_account) echo "$CONFIG_GITHUB_ACCOUNT" ;;
-        renv_mode) echo "$CONFIG_RENV_MODE" ;;
+        dockerhub_account) echo "$CONFIG_DOCKERHUB_ACCOUNT" ;;
         profile_name) echo "$CONFIG_PROFILE_NAME" ;;
         libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
         pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
@@ -576,7 +576,7 @@ config_set() {
     case "$key" in
         team-name|team_name) yaml_key="team_name" ;;
         github-account|github_account) yaml_key="github_account" ;;
-        renv-mode|renv_mode) yaml_key="renv_mode" ;;
+        dockerhub-account|dockerhub_account) yaml_key="dockerhub_account" ;;
         profile-name|profile_name) yaml_key="profile_name" ;;
         libs-bundle|libs_bundle) yaml_key="libs_bundle" ;;
         pkgs-bundle|pkgs_bundle) yaml_key="pkgs_bundle" ;;
@@ -628,7 +628,7 @@ config_list() {
     echo "Defaults:"
     echo "  team_name: $(get_config_value team_name)"
     echo "  github_account: $(get_config_value github_account)"
-    echo "  renv_mode: $(get_config_value renv_mode)"
+    echo "  dockerhub_account: $(get_config_value dockerhub_account)"
     echo "  profile_name: $(get_config_value profile_name)"
     echo "  libs_bundle: $(get_config_value libs_bundle)"
     echo "  pkgs_bundle: $(get_config_value pkgs_bundle)"

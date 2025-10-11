@@ -76,6 +76,9 @@ zzcollab --config set team-name "rgt47"
 # Set GitHub account
 zzcollab --config set github-account "rgt47"
 
+# Set Docker Hub account (defaults to team-name if not set)
+zzcollab --config set dockerhub-account "rgt47"
+
 # Set default Docker profile (optional - leave empty for minimal)
 zzcollab --config set profile-name ""
 
