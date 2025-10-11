@@ -129,7 +129,13 @@ set_init_parameter_defaults() {
         GITHUB_ACCOUNT="$TEAM_NAME"
         log_info "Using default GitHub account: $GITHUB_ACCOUNT"
     fi
-    
+
+    # Set default Docker Hub account to team name
+    if [[ -z "$DOCKERHUB_ACCOUNT" ]]; then
+        DOCKERHUB_ACCOUNT="$TEAM_NAME"
+        log_info "Using default Docker Hub account: $DOCKERHUB_ACCOUNT"
+    fi
+
     # Set default Dockerfile path to unified template
     if [[ -z "$DOCKERFILE_PATH" ]]; then
         DOCKERFILE_PATH="$SCRIPT_DIR/templates/Dockerfile.unified"
@@ -438,8 +444,8 @@ push_team_images() {
         while IFS= read -r variant; do
             [[ -z "$variant" ]] && continue
             log_info "Pushing profile: $variant"
-            docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0" || log_warn "Failed to push ${variant}:v1.0.0"
-            docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:latest" || log_warn "Failed to push ${variant}:latest"
+            docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${variant}:v1.0.0" || log_warn "Failed to push ${variant}:v1.0.0"
+            docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${variant}:latest" || log_warn "Failed to push ${variant}:latest"
         done <<< "$enabled_variants"
     else
         # Legacy base image push
@@ -469,8 +475,8 @@ push_team_images() {
 # Arguments: $1 = variant name (e.g. shell, rstudio, verse)
 push_single_team_image() {
     local variant="$1"
-    docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:v1.0.0"
-    docker push "${TEAM_NAME}/${PROJECT_NAME}_core-${variant}:latest"
+    docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${variant}:v1.0.0"
+    docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${variant}:latest"
 }
 
 #=============================================================================

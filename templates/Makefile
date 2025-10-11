@@ -61,10 +61,10 @@ docker-build:
 	DOCKER_BUILDKIT=1 docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 docker-push-team:
-	@echo "Tagging image as $(TEAM_NAME)/$(PROJECT_NAME):latest"
-	docker tag $(PACKAGE_NAME) $(TEAM_NAME)/$(PROJECT_NAME):latest
+	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):latest"
+	docker tag $(PACKAGE_NAME) $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):latest
 	@echo "Pushing to Docker Hub..."
-	docker push $(TEAM_NAME)/$(PROJECT_NAME):latest
+	docker push $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):latest
 	@echo "✅ Team image pushed successfully"
 
 docker-document:
