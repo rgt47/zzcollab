@@ -180,29 +180,33 @@ copy_dotfiles() {
         done
     fi
     
-    # Special handling for .zshrc with automatic macOS filtering
+    # Special handling for .zshrc - copy directly (no filtering)
     local zshrc_source=""
+    local zshrc_dest=""
     if [[ "${DOTFILES_NODOT:-false}" = "true" ]]; then
         # Look for zshrc without dot
-        [[ -f "$expanded_dotfiles_dir/zshrc" ]] && zshrc_source="$expanded_dotfiles_dir/zshrc"
+        zshrc_source="$expanded_dotfiles_dir/zshrc"
+        zshrc_dest=".zshrc"
     else
         # Look for .zshrc with dot
-        [[ -f "$expanded_dotfiles_dir/.zshrc" ]] && zshrc_source="$expanded_dotfiles_dir/.zshrc"
+        zshrc_source="$expanded_dotfiles_dir/.zshrc"
+        zshrc_dest=".zshrc"
     fi
 
-    if [[ -n "$zshrc_source" ]]; then
-        log_info "Found .zshrc - creating Docker-compatible version with automatic macOS filtering"
-        if create_docker_compatible_zshrc "$zshrc_source" "./.zshrc_docker"; then
+    if [[ -f "$zshrc_source" ]]; then
+        log_info "Copying .zshrc directly (no filtering)"
+        if cp "$zshrc_source" "$zshrc_dest"; then
+            track_dotfile "$zshrc_dest"
+            log_info "Copied .zshrc"
             ((copied_count++))
         else
-            log_warn "Failed to create Docker-compatible .zshrc"
+            log_warn "Failed to copy .zshrc"
         fi
     fi
 
     if [[ $copied_count -gt 0 ]]; then
         log_success "Copied $copied_count dotfiles successfully"
         log_info "Dotfiles will be available in Docker containers"
-        [[ -f "./.zshrc_docker" ]] && log_info "✨ .zshrc automatically filtered for Docker compatibility"
     else
         log_warn "No dotfiles found in $expanded_dotfiles_dir"
     fi
