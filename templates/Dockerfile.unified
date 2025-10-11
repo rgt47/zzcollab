@@ -49,18 +49,16 @@ RUN ${SYSTEM_DEPS_INSTALL_CMD}
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install TinyTeX (skip if using base images that already have LaTeX
-# support)
-RUN if echo "${BASE_IMAGE}" | grep -E "^rocker/(r-ver|rstudio)" \
-     >/dev/null; then \
-        R -e "install.packages('tinytex')" && \
-        R -e "tinytex::install_tinytex()" && \
-        /root/.TinyTeX/bin/*/tlmgr path add; \
-    elif echo "${BASE_IMAGE}" | grep -v -E "(verse|tidyverse)" \
-         >/dev/null; then \
-        R -e "install.packages('tinytex')" && \
-        R -e "tinytex::install_tinytex()" && \
-        /root/.TinyTeX/bin/*/tlmgr path add; \
+# Install TinyTeX only for publishing profiles
+# - Minimal, analysis, modeling profiles: NO (users can add manually)
+# - Publishing profile: YES (requires PDF output)
+# - Base images with LaTeX (verse, tidyverse): SKIP (already included)
+RUN if [ "${PKGS_BUNDLE}" = "publishing" ] || [ "${LIBS_BUNDLE}" = "publishing" ]; then \
+        if ! echo "${BASE_IMAGE}" | grep -E "(verse|tidyverse)" >/dev/null; then \
+            R -e "install.packages('tinytex')" && \
+            R -e "tinytex::install_tinytex()" && \
+            /root/.TinyTeX/bin/*/tlmgr path add; \
+        fi; \
     fi
 
 # Add metadata labels

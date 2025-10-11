@@ -35,10 +35,10 @@ RUN apt-get update && \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install TinyTeX
-RUN R -e "install.packages('tinytex')" && \
-    R -e "tinytex::install_tinytex()" && \
-    /root/.TinyTeX/bin/*/tlmgr path add
+# Note: TinyTeX not installed in minimal profile
+# For PDF output, use the 'publishing' profile or install manually:
+#   renv::install("tinytex")
+#   tinytex::install_tinytex()
 
 # Build arguments for team customization
 ARG TEAM_NAME=rgt47

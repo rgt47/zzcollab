@@ -30,12 +30,10 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install TinyTeX (skip if using custom base image that already has it)
-RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
-        R -e "install.packages('tinytex')" && \
-        R -e "tinytex::install_tinytex()" && \
-        /root/.TinyTeX/bin/*/tlmgr path add; \
-    fi
+# Note: TinyTeX not installed by default
+# For PDF output, install manually or use publishing profile:
+#   renv::install("tinytex")
+#   tinytex::install_tinytex()
 
 # Create non-root user with zsh as default shell (skip if using custom
 # base image)

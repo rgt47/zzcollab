@@ -35,10 +35,10 @@ RUN apt-get update && \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install TinyTeX
-RUN R -e "install.packages('tinytex')" && \
-    R -e "tinytex::install_tinytex()" && \
-    /root/.TinyTeX/bin/*/tlmgr path add
+# Note: TinyTeX not installed by default (includes rmarkdown/bookdown for HTML output)
+# For PDF output, install manually after container starts:
+#   renv::install("tinytex")
+#   tinytex::install_tinytex()
 
 # Build arguments for team customization
 ARG TEAM_NAME=rgt47
