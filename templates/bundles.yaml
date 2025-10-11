@@ -21,11 +21,9 @@ library_bundles:
       - git
       - curl
       - wget
-      - libxml2-dev
-      - libcurl4-openssl-dev
-      - libssl-dev
     package_manager: "apt-get"
     compatible_bases: ["rocker/*", "bioconductor/*"]
+    note: "Dev headers (libcurl4-openssl-dev, libssl-dev, libxml2-dev) in common section"
 
   geospatial:
     description: "Geospatial analysis libraries (GDAL, PROJ, GEOS)"
@@ -37,49 +35,39 @@ library_bundles:
       - libgdal-dev
       - libudunits2-dev
       - netcdf-bin
-      - libxml2-dev
     package_manager: "apt-get"
     compatible_bases: ["rocker/geospatial", "rocker/r-ver", "rocker/rstudio"]
     required_for_pkgs: ["geospatial"]
+    note: "libxml2-dev in common section"
 
   bioinfo:
     description: "Bioinformatics libraries for genomics packages"
     deps:
-      - libxml2-dev
-      - libcurl4-openssl-dev
-      - libssl-dev
       - zlib1g-dev
       - libbz2-dev
       - liblzma-dev
     package_manager: "apt-get"
     compatible_bases: ["bioconductor/*", "rocker/*"]
     required_for_pkgs: ["bioinfo"]
+    note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev in common section"
 
   modeling:
     description: "Statistical modeling and ML libraries"
     deps:
-      - libxml2-dev
-      - libcurl4-openssl-dev
-      - libssl-dev
       - libgsl-dev
-      - libblas-dev
-      - liblapack-dev
-      - build-essential
-      - gfortran
     package_manager: "apt-get"
     compatible_bases: ["rocker/*"]
+    note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev, build-essential in common; libblas-dev, liblapack-dev, gfortran in rocker/r-ver"
 
   publishing:
     description: "Publishing and LaTeX libraries"
     deps:
       - pandoc
       - texlive-full
-      - libxml2-dev
-      - libcurl4-openssl-dev
-      - libssl-dev
       - libv8-dev
     package_manager: "apt-get"
     compatible_bases: ["rocker/verse", "rocker/*"]
+    note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev in common section"
 
   alpine:
     description: "Alpine Linux libraries (apk package manager)"
