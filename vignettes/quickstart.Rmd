@@ -66,30 +66,37 @@ When you use the `-D ~/dotfiles` flag, ZZCOLLAB automatically:
 
 Set your defaults once to eliminate repetitive typing for ALL future projects:
 
-```bash
-# Initialize configuration
-zzcollab --config init
+```r
+# Load the zzcollab package
+library(zzcollab)
+
+# Initialize configuration (creates ~/.zzcollab/config.yaml)
+init_config()
 
 # Set team name (typically your GitHub username for solo projects)
-zzcollab --config set team-name "rgt47"
+set_config("team-name", "rgt47")
 
 # Set GitHub account
-zzcollab --config set github-account "rgt47"
+set_config("github-account", "rgt47")
 
 # Set Docker Hub account (defaults to team-name if not set)
-zzcollab --config set dockerhub-account "rgt47"
+set_config("dockerhub-account", "rgt47")
 
 # Set default Docker profile (optional - leave empty for minimal)
-zzcollab --config set profile-name ""
+set_config("profile-name", "")
 
 # Set dotfiles directory
-zzcollab --config set dotfiles-dir "~/dotfiles"
+set_config("dotfiles-dir", "~/dotfiles")
+
+# Verify configuration
+list_config()
 ```
 
 **What this accomplishes:**
 - All future `zzcollab` commands use these defaults
 - No need to specify `-t` or `-D` flags repeatedly
-- Change defaults anytime with `zzcollab --config set`
+- Change defaults anytime with `set_config()`
+- Configuration stored in `~/.zzcollab/config.yaml`
 
 **Configuration Options Explained:**
 
@@ -138,9 +145,10 @@ use the `--profile-name` flag or set it in config:
 
 ```bash
 # Option 1: Set profile in config (applies to all future projects)
-zzcollab --config set profile-name "bioinformatics"
+# In R:
+# set_config("profile-name", "bioinformatics")
 mkdir genomics-study && cd genomics-study
-zzcollab
+zzcollab  # Uses bioinformatics profile from config
 make docker-build
 
 # Option 2: Use flag for one-time profile selection
@@ -723,11 +731,14 @@ test_that("model includes species interaction", {
 
 Create a team project and share the Docker image:
 
-```bash
-# Option 1: Set team config once
-zzcollab --config set team-name "genomicslab"
-zzcollab --config set profile-name "bioinformatics"
+```r
+# Option 1: Set team config once (in R)
+library(zzcollab)
+set_config("team-name", "genomicslab")
+set_config("profile-name", "bioinformatics")
+```
 
+```bash
 # Create team project structure
 mkdir study && cd study
 zzcollab -t genomicslab -p study --profile-name bioinformatics
@@ -908,9 +919,13 @@ zzcollab --list-pkgs
 
 ## Using Profiles
 
-```bash
+```r
 # Method 1: Set in config (recommended for consistent work)
-zzcollab --config set profile-name "bioinformatics"
+library(zzcollab)
+set_config("profile-name", "bioinformatics")
+```
+
+```bash
 mkdir my-project && cd my-project
 zzcollab  # Uses bioinformatics profile
 make docker-build

@@ -217,6 +217,11 @@ SHOW_HELP=false
 SHOW_HELP_TOPIC=""
 SHOW_NEXT_STEPS=false
 
+# Config command flags
+CONFIG_COMMAND=false
+CONFIG_SUBCOMMAND=""
+CONFIG_ARGS=()
+
 #=============================================================================
 # CLI ARGUMENT PARSING FUNCTION
 #=============================================================================
@@ -276,6 +281,22 @@ parse_cli_arguments() {
             --prepare-dockerfile|-P)
                 PREPARE_DOCKERFILE=true
                 shift
+                ;;
+            --config|-c)
+                # Config command with subcommand
+                # Will be processed after modules are loaded
+                CONFIG_COMMAND=true
+                if [[ -n "${2:-}" ]] && [[ ! "$2" =~ ^- ]]; then
+                    CONFIG_SUBCOMMAND="$2"
+                    shift 2
+                    # Collect remaining args for config command
+                    CONFIG_ARGS=("$@")
+                    # Break out of argument parsing loop
+                    break
+                else
+                    echo "❌ Error: --config requires a subcommand (init, set, get, list, validate)" >&2
+                    exit 1
+                fi
                 ;;
             --next-steps)
                 # Will be processed after modules are loaded

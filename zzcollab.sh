@@ -160,6 +160,30 @@ if [[ "${SHOW_HELP:-false}" == "true" ]] || [[ "${SHOW_NEXT_STEPS:-false}" == "t
     fi
 fi
 
+# Handle config commands
+if [[ "${CONFIG_COMMAND:-false}" == "true" ]]; then
+    # Load core module first
+    if [[ -f "$MODULES_DIR/core.sh" ]]; then
+        source "$MODULES_DIR/core.sh" >/dev/null 2>&1
+    fi
+
+    # Load config module
+    if [[ -f "$MODULES_DIR/config.sh" ]]; then
+        source "$MODULES_DIR/config.sh" >/dev/null 2>&1
+
+        # Call handle_config_command with subcommand and args
+        if [[ ${#CONFIG_ARGS[@]} -gt 0 ]]; then
+            handle_config_command "${CONFIG_SUBCOMMAND}" "${CONFIG_ARGS[@]}"
+        else
+            handle_config_command "${CONFIG_SUBCOMMAND}"
+        fi
+        exit $?
+    else
+        echo "❌ Error: Config module not found" >&2
+        exit 1
+    fi
+fi
+
 #=============================================================================
 # MODULE LOADING SYSTEM
 #=============================================================================

@@ -37,7 +37,8 @@
       "Read(//Users/zenn/Library/CloudStorage/Dropbox/bin/zzcollab-support/modules/**)",
       "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/m03/**)",
       "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/png1/**)",
-      "Bash(~/Library/CloudStorage/Dropbox/prj/d07/zzcollab/zzcollab.sh:*)"
+      "Bash(~/Library/CloudStorage/Dropbox/prj/d07/zzcollab/zzcollab.sh:*)",
+      "Bash(./zzcollab.sh:*)"
     ],
     "deny": []
   }
