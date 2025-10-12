@@ -91,36 +91,6 @@ fi
 process_cli "$@"
 
 #=============================================================================
-# EARLY CONFIG COMMAND HANDLING (before loading heavy modules)
-#=============================================================================
-
-# Handle configuration commands early to avoid loading unnecessary modules
-# Config commands like "zzcollab config list" should run quickly
-# CONFIG_COMMAND is set by process_cli() if user ran something like "zzcollab config get team-name"
-if [[ "${CONFIG_COMMAND:-false}" == "true" ]]; then
-    # Load minimal modules needed for config operations
-    
-    # Load core module for logging functions (log_info, log_error, etc.)
-    if [[ -f "$MODULES_DIR/core.sh" ]]; then
-        source "$MODULES_DIR/core.sh"
-    fi
-    
-    # Load config module for configuration file management
-    if [[ -f "$MODULES_DIR/config.sh" ]]; then
-        source "$MODULES_DIR/config.sh"
-        if [[ ${#CONFIG_ARGS[@]} -gt 0 ]]; then
-            handle_config_command "$CONFIG_SUBCOMMAND" "${CONFIG_ARGS[@]}"
-        else
-            handle_config_command "$CONFIG_SUBCOMMAND"
-        fi
-        exit 0
-    else
-        echo "❌ Error: Config module not found: $MODULES_DIR/config.sh"
-        exit 1
-    fi
-fi
-
-#=============================================================================
 # EARLY EXIT FOR HELP AND NEXT STEPS (before loading heavy modules)
 #=============================================================================
 
@@ -715,62 +685,49 @@ handle_special_modes() {
 
     # Handle help and next-steps options for normal mode
     if [[ "${SHOW_HELP:-false}" == "true" ]]; then
-        show_help
-        exit 0
-    fi
-    
-    if [[ "${SHOW_HELP_INIT:-false}" == "true" ]]; then
-        show_init_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_VARIANTS:-false}" == "true" ]]; then
-        show_variants_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_GITHUB:-false}" == "true" ]]; then
-        show_github_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_QUICKSTART:-false}" == "true" ]]; then
-        show_quickstart_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_WORKFLOW:-false}" == "true" ]]; then
-        show_workflow_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_TROUBLESHOOTING:-false}" == "true" ]]; then
-        show_troubleshooting_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_CONFIG:-false}" == "true" ]]; then
-        show_config_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_DOTFILES:-false}" == "true" ]]; then
-        show_dotfiles_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_RENV:-false}" == "true" ]]; then
-        show_renv_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_DOCKER:-false}" == "true" ]]; then
-        show_docker_help
-        exit 0
-    fi
-
-    if [[ "${SHOW_HELP_CICD:-false}" == "true" ]]; then
-        show_cicd_help
+        # Check if a specific topic was requested
+        case "${SHOW_HELP_TOPIC}" in
+            init)
+                show_init_help
+                ;;
+            github)
+                show_github_help
+                ;;
+            quickstart)
+                show_quickstart_help
+                ;;
+            workflow)
+                show_workflow_help
+                ;;
+            troubleshooting)
+                show_troubleshooting_help
+                ;;
+            config)
+                show_config_help
+                ;;
+            dotfiles)
+                show_dotfiles_help
+                ;;
+            renv)
+                show_renv_help
+                ;;
+            docker)
+                show_docker_help
+                ;;
+            cicd)
+                show_cicd_help
+                ;;
+            "")
+                # No topic specified, show general help
+                show_help
+                ;;
+            *)
+                echo "❌ Error: Unknown help topic '$SHOW_HELP_TOPIC'" >&2
+                echo "Valid topics: init, github, quickstart, workflow, troubleshooting," >&2
+                echo "              config, dotfiles, renv, docker, cicd" >&2
+                exit 1
+                ;;
+        esac
         exit 0
     fi
 

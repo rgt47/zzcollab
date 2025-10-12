@@ -244,33 +244,9 @@ setup_team_dockerfile() {
                 cp "$profile_library" ./profiles.yaml
                 print_success "Copied profile library: profiles.yaml"
             fi
-
-            # Check if config.yaml has use_config_profiles enabled
-            if command -v yq >/dev/null 2>&1; then
-                local use_config_profiles
-                use_config_profiles=$(yq eval '.build.use_config_profiles // false' ./config.yaml 2>/dev/null)
-                if [[ "$use_config_profiles" == "true" ]]; then
-                    print_status "🎯 Config profiles enabled by default - will use config.yaml for building"
-                    USE_CONFIG_PROFILES=true
-                    PROFILES_CONFIG="./config.yaml"
-                else
-                    print_status "💡 Edit config.yaml to customize profiles (set use_config_profiles: true to enable)"
-                fi
-            else
-                print_status "💡 Edit config.yaml to customize profiles or install yq for automatic detection"
-            fi
         else
             print_error "Config template not found: $config_template"
             return 1
-        fi
-    elif [[ "${USE_CONFIG_PROFILES:-false}" != "true" ]] && command -v yq >/dev/null 2>&1; then
-        # Check existing config.yaml for use_config_profiles setting
-        local use_config_profiles
-        use_config_profiles=$(yq eval '.build.use_config_profiles // false' ./config.yaml 2>/dev/null)
-        if [[ "$use_config_profiles" == "true" ]]; then
-            print_status "🎯 Detected config.yaml with use_config_profiles: true - enabling config-based profiles"
-            USE_CONFIG_PROFILES=true
-            PROFILES_CONFIG="./config.yaml"
         fi
     fi
 
@@ -334,25 +310,9 @@ EOF
 # Purpose: Build core images for the team based on INIT_BASE_IMAGE selection or config.yaml
 build_team_images() {
     local step_counter=4
-    
-    # Check if using config-based profiles
-    if [[ "${USE_CONFIG_PROFILES:-false}" == "true" ]]; then
-        print_status "Step $step_counter: Building profiles from configuration..."
-        
-        # Default to config.yaml if no specific file provided
-        local config_file="${PROFILES_CONFIG:-config.yaml}"
-        
-        if parse_config_profiles "$config_file"; then
-            print_success "✅ All configured profiles built successfully"
-        else
-            print_error "❌ Failed to build some configured profiles"
-            return 1
-        fi
-        return 0
-    fi
-    
-    # Legacy mode: build based on INIT_BASE_IMAGE flag
-    print_status "Step $step_counter: Building images using legacy mode..."
+
+    # Build images based on INIT_BASE_IMAGE flag
+    print_status "Step $step_counter: Building images..."
     case "$INIT_BASE_IMAGE" in
         "r-ver")
             print_status "Step $step_counter: Building shell core image..."
@@ -1011,48 +971,6 @@ EOF
     create_project_structure
     setup_team_dockerfile
     create_basic_files
-
-    # Interactive variant selection if using config-based profiles
-    if [[ "${USE_CONFIG_PROFILES:-false}" == "true" ]]; then
-        print_status ""
-        print_status "📝 Configuration file created: config.yaml"
-        print_status ""
-        print_status "Current enabled profiles (set to build Docker images):"
-        if command -v yq >/dev/null 2>&1; then
-            yq eval '.profiles | to_entries | map(select(.value.enabled == true)) | .[] | "  - " + .key' config.yaml 2>/dev/null || echo "  - Unable to parse variants"
-        else
-            echo "  - minimal (default)"
-            echo "  - analysis (default)"
-        fi
-        print_status ""
-        print_status "💡 You can edit config.yaml now to enable/disable profiles before building."
-        print_status "💡 To add profiles interactively, run: ./add_profile.sh"
-        print_status ""
-
-        if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
-            echo -n "Do you want to edit config.yaml before building? (y/n): "
-            read -r response
-
-            if [[ "$response" =~ ^[Yy] ]]; then
-                print_status "Please edit config.yaml and press Enter when ready to continue..."
-                print_status "(Set 'enabled: true' for profiles you want to build)"
-
-                # Open editor if available
-                if [[ -n "${EDITOR:-}" ]]; then
-                    $EDITOR config.yaml
-                elif command -v vim >/dev/null 2>&1; then
-                    vim config.yaml
-                elif command -v nano >/dev/null 2>&1; then
-                    nano config.yaml
-                else
-                    print_status "No editor found. Edit config.yaml manually and press Enter..."
-                fi
-
-                echo -n "Press Enter to continue with building..."
-                read -r
-            fi
-        fi
-    fi
 
     # Team foundation created - manual build and push required
     log_info "✅ Team foundation Dockerfile created successfully"

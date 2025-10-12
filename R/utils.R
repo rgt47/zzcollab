@@ -381,13 +381,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' @param project_name Character string specifying the project name.
 #'   Must match the project name used during initialization.
 #'   Used to identify the correct team Docker images and repository.
-#'   
-#' @param interface Character string specifying the development interface:
-#'   - "shell": Command-line development with enhanced shell (zsh/bash)
-#'   - "rstudio": RStudio Server GUI at http://localhost:8787
-#'   - "verse": Publishing workflow with LaTeX support
-#'   Default is "shell" for broad compatibility.
-#'   
+#'
 #' @param dotfiles_path Character string specifying path to personal dotfiles.
 #'   These configuration files (.vimrc, .zshrc, etc.) personalize your
 #'   development environment within the team's standardized setup.
@@ -408,51 +402,49 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' **Setup Process:**
 #' 1. **Validation**: Checks that team Docker images exist and are accessible
 #' 2. **Project Setup**: Creates local project structure and configuration
-#' 3. **Environment**: Sets up development environment with chosen interface
+#' 3. **Environment**: Configures to use team's Docker image via --use-team-image
 #' 4. **Integration**: Configures local tools and personal dotfiles
-#' 
+#'
 #' **Prerequisites:**
 #' - Team lead has run \code{init_project()} and shared repository access
 #' - Docker installed and running locally
 #' - Access to team's Docker images (usually public on Docker Hub)
 #' - Git repository cloned locally (typically done before calling this function)
-#' 
-#' **Error Handling:**
-#' The function provides helpful error messages when team images are not
-#' available, including suggestions for resolution and alternative interfaces.
+#'
+#' **Development Workflow:**
+#' After joining, start development with \code{make docker-zsh} (shell) or
+#' \code{make docker-rstudio} (RStudio Server at http://localhost:8787).
 #'
 #' @examples
 #' \dontrun{
 #' # Basic team project joining
 #' success <- join_project(
 #'   team_name = "mylab",
-#'   project_name = "covid-study",
-#'   interface = "shell"
+#'   project_name = "covid-study"
 #' )
-#' 
-#' # Join with RStudio interface
+#'
+#' # Join with personal dotfiles
 #' join_project(
 #'   team_name = "datascience",
 #'   project_name = "market-analysis",
-#'   interface = "rstudio",
 #'   dotfiles_path = "~/dotfiles"
 #' )
-#' 
+#'
 #' # Using configuration defaults (recommended)
 #' set_config("team_name", "mylab")
 #' set_config("dotfiles_dir", "~/dotfiles")
-#' 
+#'
 #' # Then join projects easily
-#' join_project(project_name = "new-study", interface = "shell")
-#' 
+#' join_project(project_name = "new-study")
+#'
 #' # Complete workflow for team member
 #' # 1. Clone repository (outside R)
 #' # system("git clone https://github.com/mylab/study.git")
 #' # setwd("study")
-#' 
+#'
 #' # 2. Join project
 #' join_project(team_name = "mylab", project_name = "study")
-#' 
+#'
 #' # 3. Start development (outside R)
 #' # system("make docker-zsh")  # or make docker-rstudio
 #' }
@@ -463,14 +455,14 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' \code{\link{team_images}} for checking available team images
 #'
 #' @export
-join_project <- function(team_name = NULL, project_name = NULL, interface = "shell",
+join_project <- function(team_name = NULL, project_name = NULL,
                          dotfiles_path = NULL, dotfiles_nodots = NULL) {
 
   # Apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
   dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
   dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
-  
+
   # Validate required parameters
   if (is.null(team_name)) {
     stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')")
@@ -478,12 +470,12 @@ join_project <- function(team_name = NULL, project_name = NULL, interface = "she
   if (is.null(project_name)) {
     stop("project_name is required")
   }
-  
+
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  # Build command with new user-friendly interface
-  cmd <- paste(zzcollab_path, "--team", team_name, "--project-name", project_name, "--interface", interface)
+
+  # Build command using --use-team-image flag
+  cmd <- paste(zzcollab_path, "-t", team_name, "-p", project_name, "--use-team-image")
   
   if (!is.null(dotfiles_path)) {
     if (dotfiles_nodots) {
@@ -817,7 +809,6 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
 #'   - "renv": Package management with renv
 #'   - "docker": Docker essentials for researchers
 #'   - "cicd": CI/CD and GitHub Actions
-#'   - "variants": Docker variants configuration
 #'   - "github": GitHub integration and automation
 #'   - "next-steps": Development workflow guidance
 #'
@@ -859,37 +850,20 @@ zzcollab_help <- function(topic = NULL) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  # Map topic to command-line flag
-  cmd <- if (is.null(topic) || topic == "general") {
-    paste(zzcollab_path, "--help")
-  } else if (topic == "init") {
-    paste(zzcollab_path, "--help-init")
-  } else if (topic == "quickstart") {
-    paste(zzcollab_path, "--help-quickstart")
-  } else if (topic == "workflow") {
-    paste(zzcollab_path, "--help-workflow")
-  } else if (topic == "troubleshooting") {
-    paste(zzcollab_path, "--help-troubleshooting")
-  } else if (topic == "config") {
-    paste(zzcollab_path, "--help-config")
-  } else if (topic == "dotfiles") {
-    paste(zzcollab_path, "--help-dotfiles")
-  } else if (topic == "renv") {
-    paste(zzcollab_path, "--help-renv")
-  } else if (topic == "docker") {
-    paste(zzcollab_path, "--help-docker")
-  } else if (topic == "cicd") {
-    paste(zzcollab_path, "--help-cicd")
-  } else if (topic == "variants") {
-    paste(zzcollab_path, "--help-variants")
-  } else if (topic == "github") {
-    paste(zzcollab_path, "--help-github")
+  # Valid help topics
+  valid_topics <- c("general", "init", "quickstart", "workflow", "troubleshooting",
+                    "config", "dotfiles", "renv", "docker", "cicd", "github", "next-steps")
+
+  # Build command with topic argument
+  if (is.null(topic) || topic == "general") {
+    cmd <- paste(zzcollab_path, "--help")
   } else if (topic == "next-steps") {
-    paste(zzcollab_path, "--next-steps")
+    cmd <- paste(zzcollab_path, "--next-steps")
+  } else if (topic %in% valid_topics) {
+    cmd <- paste(zzcollab_path, "--help", topic)
   } else {
     stop("Unknown help topic: ", topic, "\n",
-         "Valid topics: general, init, quickstart, workflow, troubleshooting, ",
-         "config, dotfiles, renv, docker, cicd, variants, github, next-steps")
+         "Valid topics: ", paste(valid_topics, collapse = ", "))
   }
 
   result <- system(cmd, intern = TRUE)

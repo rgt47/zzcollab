@@ -214,10 +214,8 @@ add_variant_to_config() {
     log_info "🚀 NEXT STEPS:"
     log_info "1. Review the profile configuration in $CONFIG_FILE"
     log_info "2. Customize packages or system dependencies if needed"
-    log_info "3. Build the team images:"
-    log_info "   zzcollab --variants-config $CONFIG_FILE"
-    log_info "4. Or if use_config_profiles: true is set:"
-    log_info "   zzcollab -i -t TEAM -p PROJECT"
+    log_info "3. Initialize team project with:"
+    log_info "   zzcollab -t TEAM -p PROJECT"
 }
 
 # Function: main

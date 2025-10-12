@@ -193,19 +193,11 @@ OPTIONS:
     -n, --no-docker              Skip Docker image build (default; build manually with 'make docker-build')
     -G, --github                 Automatically create private GitHub repository and push
         --next-steps             Show development workflow and next steps
-    
-    Simplified build modes:
-    -M, --minimal                Minimal mode: ultra-fast (3 packages: renv, remotes, here) ~30s
-    -F, --fast                   Fast mode: development essentials (9 packages) 2-3 min
-    -S, --standard               Standard mode: balanced packages (17 packages) 4-6 min [default]
-    -C, --comprehensive          Comprehensive mode: full ecosystem (47+ packages) 15-20 min
-    
+
     Utilities:
-    -h, --help                   Show this help message
-        --help-init              Show team initialization help specifically
-        --help-variants          Show Docker variants configuration help with examples
-        --help-github            Show GitHub integration help with examples
-    -c, --config CMD             Configuration management (get, set, list, reset)
+    -h, --help [TOPIC]           Show help (general or specific topic)
+                                 Topics: init, github, quickstart, workflow, troubleshooting,
+                                         config, dotfiles, renv, docker, cicd
 EOF
 }
 
@@ -302,24 +294,22 @@ show_help_footer() {
 SPECIALIZED HELP PAGES:
 
 Getting Started:
-  zzcollab --help-quickstart      Individual researcher quick start guide
-  zzcollab --help-workflow        Daily development workflow
+  zzcollab --help quickstart      Individual researcher quick start guide
+  zzcollab --help workflow        Daily development workflow
 
 Configuration:
-  zzcollab --help-config          Configuration system guide
-  zzcollab --help-dotfiles        Dotfiles setup and management
-  zzcollab --help-renv-modes     Build mode selection guide
+  zzcollab --help config          Configuration system guide
+  zzcollab --help dotfiles        Dotfiles setup and management
+  zzcollab --help renv            Package management with renv
 
 Technical Details:
-  zzcollab --help-init            Team initialization process
-  zzcollab --help-variants        Docker variants configuration
-  zzcollab --help-docker          Docker essentials for researchers
-  zzcollab --help-renv            Package management with renv
-  zzcollab --help-cicd            CI/CD and GitHub Actions
+  zzcollab --help init            Team initialization process
+  zzcollab --help docker          Docker essentials for researchers
+  zzcollab --help cicd            CI/CD and GitHub Actions
 
 Integration:
-  zzcollab --help-github          GitHub integration and automation
-  zzcollab --help-troubleshooting Common issues and solutions
+  zzcollab --help github          GitHub integration and automation
+  zzcollab --help troubleshooting Common issues and solutions
 
 Development:
   zzcollab --next-steps           Development workflow guidance
@@ -719,8 +709,8 @@ ADDITIONAL RESOURCES
 
 zzcollab Documentation:
     zzcollab --help              # Main help
-    zzcollab --help-init         # Team initialization help
-    zzcollab --help-variants     # Docker variants help
+    zzcollab --help init         # Team initialization help
+    zzcollab --help docker       # Docker help
     zzcollab --next-steps        # Development workflow guidance
 
 GitHub CLI Documentation:

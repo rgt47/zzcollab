@@ -200,8 +200,6 @@ PREPARE_DOCKERFILE=false
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
-USE_CONFIG_PROFILES=false    # Use config.yaml for variant definitions
-PROFILES_CONFIG=""           # Path to variants config file
 
 # Profile bundle variables (system libraries and R packages)
 LIBS_BUNDLE=""    # System library bundle (e.g., alpine, bioinfo, geospatial)
@@ -216,12 +214,8 @@ USE_TEAM_IMAGE=false    # Team member flag to pull and use team image
 
 # Show flags (processed after modules are loaded)
 SHOW_HELP=false
+SHOW_HELP_TOPIC=""
 SHOW_NEXT_STEPS=false
-
-# Config command variables
-CONFIG_COMMAND=false
-CONFIG_SUBCOMMAND=""
-CONFIG_ARGS=()
 
 #=============================================================================
 # CLI ARGUMENT PARSING FUNCTION
@@ -291,17 +285,13 @@ parse_cli_arguments() {
             --help|-h)
                 # Will be processed after modules are loaded
                 SHOW_HELP=true
-                shift
-                ;;
-            --help-init)
-                # Will be processed after modules are loaded
-                SHOW_HELP_INIT=true
-                shift
-                ;;
-            --help-variants)
-                # Will be processed after modules are loaded
-                SHOW_HELP_VARIANTS=true
-                shift
+                # Check for optional topic argument
+                if [[ -n "${2:-}" ]] && [[ ! "$2" =~ ^- ]]; then
+                    SHOW_HELP_TOPIC="$2"
+                    shift 2
+                else
+                    shift
+                fi
                 ;;
             --profile-name)
                 require_arg "$1" "$2"
@@ -338,51 +328,6 @@ parse_cli_arguments() {
                 LIST_PKGS=true
                 shift
                 ;;
-            --help-github)
-                # Will be processed after modules are loaded
-                SHOW_HELP_GITHUB=true
-                shift
-                ;;
-            --help-quickstart)
-                # Will be processed after modules are loaded
-                SHOW_HELP_QUICKSTART=true
-                shift
-                ;;
-            --help-workflow)
-                # Will be processed after modules are loaded
-                SHOW_HELP_WORKFLOW=true
-                shift
-                ;;
-            --help-troubleshooting)
-                # Will be processed after modules are loaded
-                SHOW_HELP_TROUBLESHOOTING=true
-                shift
-                ;;
-            --help-config)
-                # Will be processed after modules are loaded
-                SHOW_HELP_CONFIG=true
-                shift
-                ;;
-            --help-dotfiles)
-                # Will be processed after modules are loaded
-                SHOW_HELP_DOTFILES=true
-                shift
-                ;;
-            --help-renv)
-                # Will be processed after modules are loaded
-                SHOW_HELP_RENV=true
-                shift
-                ;;
-            --help-docker)
-                # Will be processed after modules are loaded
-                SHOW_HELP_DOCKER=true
-                shift
-                ;;
-            --help-cicd)
-                # Will be processed after modules are loaded
-                SHOW_HELP_CICD=true
-                shift
-                ;;
             --yes|-y)
                 SKIP_CONFIRMATION=true
                 shift
@@ -398,25 +343,6 @@ parse_cli_arguments() {
             --force)
                 FORCE_DIRECTORY=true
                 shift
-                ;;
-            --variants-config)
-                require_arg "$1" "$2"
-                PROFILES_CONFIG="$2"
-                USE_CONFIG_PROFILES=true
-                shift 2
-                ;;
-            --config|-c|config)
-                # Handle config subcommands
-                CONFIG_COMMAND=true
-                shift
-                if [[ $# -gt 0 ]]; then
-                    CONFIG_SUBCOMMAND="$1"
-                    shift
-                    CONFIG_ARGS=("$@")
-                else
-                    CONFIG_SUBCOMMAND=""
-                fi
-                break  # Stop processing other arguments
                 ;;
             *)
                 echo "❌ Error: Unknown option '$1'" >&2
