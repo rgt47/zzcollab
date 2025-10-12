@@ -33,25 +33,7 @@ test_that("helper functions exist", {
   expect_true(exists("zzcollab_next_steps"))
 })
 
-test_that("build_mode parameter validation", {
-  # Test that functions accept valid build modes
-  valid_modes <- c("fast", "standard", "comprehensive")
-  
-  # These tests will check parameter validation without actually running the commands
-  # We'll use mock functions or parameter validation
-  
-  for (mode in valid_modes) {
-    expect_no_error({
-      # Test parameter acceptance (these won't actually run due to missing zzcollab)
-      tryCatch({
-        init_project("test_team", "test_project", build_mode = mode)
-      }, error = function(e) {
-        # Expected error when zzcollab script not found
-        expect_match(e$message, "zzcollab script.*not found")
-      })
-    })
-  }
-})
+# Build mode tests removed - feature eliminated in favor of dynamic package management
 
 test_that("function parameters are properly validated", {
   # Test that functions fail appropriately when zzcollab script not available
