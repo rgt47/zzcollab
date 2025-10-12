@@ -56,7 +56,8 @@ RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ] || \
        [ "${BASE_IMAGE}" = "rocker/rstudio" ] || \
        [ "${BASE_IMAGE}" = "rocker/verse" ]; then \
         curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
-        apt-get install -y nodejs; \
+        apt-get install -y nodejs && \
+        npm install -g @anthropic-ai/claude; \
     fi
 
 # Note: TinyTeX not installed by default in personal images

@@ -30,6 +30,9 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
+# Install Claude CLI (Anthropic's AI assistant)
+RUN npm install -g @anthropic-ai/claude
+
 # Note: TinyTeX not installed by default
 # For PDF output, install manually or use publishing profile:
 #   renv::install("tinytex")

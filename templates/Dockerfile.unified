@@ -64,6 +64,9 @@ RUN ${SYSTEM_DEPS_INSTALL_CMD}
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
+# Install Claude CLI (Anthropic's AI assistant)
+RUN npm install -g @anthropic-ai/claude
+
 # Install TinyTeX only for publishing profiles
 # - Minimal, analysis, modeling profiles: NO (users can add manually)
 # - Publishing profile: YES (requires PDF output)

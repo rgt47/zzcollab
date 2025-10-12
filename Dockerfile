@@ -32,6 +32,9 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
+# Install Claude CLI (Anthropic's AI assistant)
+RUN npm install -g @anthropic-ai/claude
+
 # Install TinyTeX
 RUN R -e "install.packages('tinytex')" && \
     R -e "tinytex::install_tinytex()" && \
