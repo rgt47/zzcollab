@@ -296,13 +296,13 @@ cat("Use create_example_figure() and save_figure() in your analysis\\n")'
 }
 
 # Function: create_scripts_directory
-# Purpose: Create essential research scripts in the scripts/ directory (coordinating function)
+# Purpose: Create essential research scripts in the analysis/scripts/ directory (coordinating function)
 # Creates data validation, parallel computing, database setup, and reproducibility scripts
 create_scripts_directory() {
     log_info "Creating essential research scripts..."
-    
+
     # Ensure scripts directory exists
-    safe_mkdir "scripts" "research scripts directory"
+    safe_mkdir "analysis/scripts" "research scripts directory"
     
     # Create all research scripts
     create_data_validation_script
@@ -311,7 +311,7 @@ create_scripts_directory() {
     create_reproducibility_check_script
     create_testing_guide_script
     
-    log_success "Essential research scripts created in scripts/ directory"
+    log_success "Essential research scripts created in analysis/scripts/ directory"
 }
 
 # Function: create_data_validation_script
@@ -404,8 +404,8 @@ if ("species" %in% names(raw_data)) {
 cat("\\n=== DATA VALIDATION COMPLETE ===\\n")
 cat("Review the output above for any data quality issues\\n")'
     
-    if create_file_if_missing "scripts/02_data_validation.R" "$data_validation_script" "data validation script"; then
-        track_file "scripts/02_data_validation.R"
+    if create_file_if_missing "analysis/scripts/02_data_validation.R" "$data_validation_script" "data validation script"; then
+        track_file "analysis/scripts/02_data_validation.R"
         log_info "Created data validation script"
     else
         log_warn "Failed to create data validation script"
@@ -497,8 +497,8 @@ on.exit(cleanup_parallel(), add = TRUE)
 
 cat("Parallel computing setup complete\\n")'
     
-    if create_file_if_missing "scripts/00_setup_parallel.R" "$parallel_setup_script" "parallel computing setup script"; then
-        track_file "scripts/00_setup_parallel.R"
+    if create_file_if_missing "analysis/scripts/00_setup_parallel.R" "$parallel_setup_script" "parallel computing setup script"; then
+        track_file "analysis/scripts/00_setup_parallel.R"
         log_info "Created parallel computing setup script"
     else
         log_warn "Failed to create parallel computing setup script"
@@ -571,8 +571,8 @@ cat("Database connection functions loaded\\n")
 cat("Set environment variables for database credentials\\n")
 cat("Use setup_sqlite(), setup_postgresql(), setup_mysql(), or setup_odbc()\\n")'
     
-    if create_file_if_missing "scripts/00_database_setup.R" "$database_setup_script" "database setup script"; then
-        track_file "scripts/00_database_setup.R"
+    if create_file_if_missing "analysis/scripts/00_database_setup.R" "$database_setup_script" "database setup script"; then
+        track_file "analysis/scripts/00_database_setup.R"
         log_info "Created database setup script"
     else
         log_warn "Failed to create database setup script"
@@ -688,8 +688,8 @@ session_info()
 
 cat("\\n=== REPRODUCIBILITY CHECK COMPLETE ===\\n")'
     
-    if create_file_if_missing "scripts/99_reproducibility_check.R" "$reproducibility_script" "reproducibility check script"; then
-        track_file "scripts/99_reproducibility_check.R"
+    if create_file_if_missing "analysis/scripts/99_reproducibility_check.R" "$reproducibility_script" "reproducibility check script"; then
+        track_file "analysis/scripts/99_reproducibility_check.R"
         log_info "Created reproducibility check script"
     else
         log_warn "Failed to create reproducibility check script"
@@ -897,7 +897,7 @@ cat("4. USEFUL TESTING COMMANDS:\\n")
 cat("   devtools::test()                    # Run all package tests\\n")
 cat("   devtools::check()                   # Full package check\\n")
 cat("   testthat::test_dir(\\"tests/data\\")    # Run data tests\\n")
-cat("   source(\\"scripts/99_reproducibility_check.R\\")  # Check reproducibility\\n")
+cat("   source(\\"analysis/scripts/99_reproducibility_check.R\\")  # Check reproducibility\\n")
 cat("   make test                          # Run via Makefile\\n\\n")
 
 cat("5. TEST COVERAGE:\\n")
@@ -914,8 +914,8 @@ cat("3. Set up data validation tests for your datasets\\n")
 cat("4. Run tests regularly during development\\n")
 cat("5. Check test coverage with covr package\\n")'
 
-    if create_file_if_missing "scripts/00_testing_guide.R" "$testing_guide_script" "testing guide script"; then
-        track_file "scripts/00_testing_guide.R"
+    if create_file_if_missing "analysis/scripts/00_testing_guide.R" "$testing_guide_script" "testing guide script"; then
+        track_file "analysis/scripts/00_testing_guide.R"
         log_info "Created comprehensive testing guide script"
     else
         log_warn "Failed to create testing guide script"

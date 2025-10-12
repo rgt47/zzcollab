@@ -5,9 +5,9 @@ library(testthat)
 library(here)
 
 test_that("Database setup script runs successfully", {
-  script_path <- here("scripts", "00_database_setup.R")
+  script_path <- here("analysis", "scripts", "00_database_setup.R")
   expect_true(file.exists(script_path))
-  
+
   # Test script execution
   expect_no_error({
     source(script_path, local = new.env())
@@ -15,9 +15,9 @@ test_that("Database setup script runs successfully", {
 })
 
 test_that("Data validation script works", {
-  script_path <- here("scripts", "02_data_validation.R")
+  script_path <- here("analysis", "scripts", "02_data_validation.R")
   expect_true(file.exists(script_path))
-  
+
   # Test script execution
   expect_no_error({
     source(script_path, local = new.env())
@@ -25,7 +25,7 @@ test_that("Data validation script works", {
 })
 
 test_that("Reproducibility check script functions", {
-  script_path <- here("scripts", "99_reproducibility_check.R")
+  script_path <- here("analysis", "scripts", "99_reproducibility_check.R")
   expect_true(file.exists(script_path))
   
   # Test script execution

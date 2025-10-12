@@ -3344,10 +3344,10 @@ jobs:
           renv::restore()
       
       - name: Run data validation
-        run: Rscript scripts/validate_data.R
-      
+        run: Rscript analysis/scripts/validate_data.R
+
       - name: Run analysis
-        run: Rscript scripts/run_analysis.R
+        run: Rscript analysis/scripts/run_analysis.R
       
       - name: Check outputs
         run: |

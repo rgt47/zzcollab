@@ -43,9 +43,9 @@ if [[ -d "./analysis/tables" ]]; then
     echo "Created: t → ./analysis/tables"
 fi
 
-if [[ -d "./scripts" ]]; then
-    ln -sf "./scripts" s
-    echo "Created: s → ./scripts"
+if [[ -d "./analysis/scripts" ]]; then
+    ln -sf "./analysis/scripts" s
+    echo "Created: s → ./analysis/scripts"
 fi
 
 if [[ -d "./man" ]]; then

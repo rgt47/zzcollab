@@ -183,9 +183,9 @@ remove_files() {
     standard_files="$standard_files data/README.md data/raw_data/README.md data/derived_data/README.md data/metadata/README.md data/validation/README.md data/correspondence/README.md"
 
     # Analysis paradigm files
-    standard_files="$standard_files scripts/01_exploratory_analysis.R scripts/02_statistical_modeling.R scripts/03_model_validation.R"
-    standard_files="$standard_files scripts/04_interactive_dashboard.Rmd scripts/05_automated_report.Rmd scripts/analysis_functions.R scripts/README.md"
-    standard_files="$standard_files scripts/02_data_validation.R scripts/00_setup_parallel.R scripts/00_database_setup.R scripts/99_reproducibility_check.R scripts/00_testing_guide.R"
+    standard_files="$standard_files analysis/scripts/01_exploratory_analysis.R analysis/scripts/02_statistical_modeling.R analysis/scripts/03_model_validation.R"
+    standard_files="$standard_files analysis/scripts/04_interactive_dashboard.Rmd analysis/scripts/05_automated_report.Rmd analysis/scripts/analysis_functions.R analysis/scripts/README.md"
+    standard_files="$standard_files analysis/scripts/02_data_validation.R analysis/scripts/00_setup_parallel.R analysis/scripts/00_database_setup.R analysis/scripts/99_reproducibility_check.R analysis/scripts/00_testing_guide.R"
     standard_files="$standard_files analysis/exploratory/README.md analysis/modeling/README.md analysis/validation/README.md"
     standard_files="$standard_files outputs/figures/README.md outputs/tables/README.md reports/README.md"
     standard_files="$standard_files analysis/templates/example_analysis.R analysis/templates/figure_template.R"
@@ -630,7 +630,6 @@ main() {
             [[ -d "vignettes" ]] && echo "vignettes"
             [[ -d "inst" ]] && echo "inst"
             [[ -d "inst/examples" ]] && echo "inst/examples"
-            [[ -d "scripts" ]] && echo "scripts"
             [[ -d "archive" ]] && echo "archive"
             [[ -d "docs" ]] && echo "docs"
 
@@ -647,6 +646,7 @@ main() {
 
             # Analysis directories (analysis paradigm)
             [[ -d "analysis" ]] && echo "analysis"
+            [[ -d "analysis/scripts" ]] && echo "analysis/scripts"
             [[ -d "analysis/exploratory" ]] && echo "analysis/exploratory"
             [[ -d "analysis/modeling" ]] && echo "analysis/modeling"
             [[ -d "analysis/validation" ]] && echo "analysis/validation"

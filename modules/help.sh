@@ -79,7 +79,7 @@ show_development_workflows() {
    
 📝 ANALYSIS WORKFLOW:
    1. Place raw data in data/raw_data/
-   2. Develop analysis scripts in scripts/
+   2. Develop analysis scripts in analysis/scripts/
    3. Write your report in analysis/report/report.Rmd
    4. Use 'make docker-render' to generate PDF
 

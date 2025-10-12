@@ -45,8 +45,8 @@ require_module "core"
 #   ├── report/              - Research paper (Rmd → PDF)
 #   ├── figures/            - Generated plots and visualizations
 #   ├── tables/             - Generated statistical tables
-#   └── templates/          - Analysis templates and snippets
-#   scripts/                - Working R scripts and exploratory analysis
+#   ├── templates/          - Analysis templates and snippets
+#   └── scripts/            - Working R scripts and exploratory analysis
 #   archive/                - Archived files and old versions
 #   docs/                   - Project documentation
 #   .github/workflows/      - GitHub Actions CI/CD pipelines
@@ -198,9 +198,9 @@ if [[ -d "./analysis/tables" ]]; then
     echo "Created: t → ./analysis/tables"
 fi
 
-if [[ -d "./scripts" ]]; then
-    ln -sf "./scripts" s
-    echo "Created: s → ./scripts"
+if [[ -d "./analysis/scripts" ]]; then
+    ln -sf "./analysis/scripts" s
+    echo "Created: s → ./analysis/scripts"
 fi
 
 if [[ -d "./man" ]]; then
@@ -277,8 +277,8 @@ show_structure_summary() {
 │   ├── report/             # Research paper (Rmd → PDF)
 │   ├── figures/           # Generated plots and visualizations
 │   ├── tables/            # Generated statistical tables
-│   └── templates/         # Analysis templates
-├── scripts/               # Working R scripts and exploration
+│   ├── templates/         # Analysis templates
+│   └── scripts/           # Working R scripts and exploration
 ├── archive/               # Archived files and old versions
 ├── docs/                  # Project documentation
 ├── .github/workflows/     # GitHub Actions CI/CD pipelines
@@ -287,7 +287,7 @@ show_structure_summary() {
 🔗 QUICK NAVIGATION:
    cd a  →  data/           cd n  →  analysis/
    cd f  →  figures/        cd t  →  tables/
-   cd s  →  scripts/        cd p  →  report/
+   cd s  →  analysis/scripts/   cd p  →  analysis/report/
    cd m  →  man/            cd e  →  tests/
    cd o  →  docs/           cd c  →  archive/
 EOF
