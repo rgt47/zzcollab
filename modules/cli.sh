@@ -188,6 +188,7 @@ PROJECT_NAME=""
 GITHUB_ACCOUNT=""
 DOCKERHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
+IMAGE_TAG=""
 
 # Base image selection for team initialization
 readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
@@ -271,14 +272,9 @@ parse_cli_arguments() {
                 TEAM_NAME="$2"
                 shift 2
                 ;;
-            --project-name|--project|-p)
+            --project-name|-p)
                 require_arg "$1" "$2"
                 PROJECT_NAME="$2"
-                shift 2
-                ;;
-            --team-name)
-                require_arg "$1" "$2"
-                TEAM_NAME="$2"
                 shift 2
                 ;;
             --github-account|-g)
@@ -556,7 +552,7 @@ export_cli_variables() {
     export BUILD_DOCKER DOTFILES_DIR DOTFILES_NODOT BASE_IMAGE
 
     # Team interface variables
-    export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERHUB_ACCOUNT DOCKERFILE_PATH
+    export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERHUB_ACCOUNT DOCKERFILE_PATH IMAGE_TAG
 
     # Mode and behavior flags
     export USE_DOTFILES PREPARE_DOCKERFILE RENV_MODE USE_TEAM_IMAGE
@@ -621,6 +617,7 @@ show_cli_debug() {
     echo "  TEAM_NAME: $TEAM_NAME"
     echo "  PROJECT_NAME: $PROJECT_NAME"
     echo "  GITHUB_ACCOUNT: $GITHUB_ACCOUNT"
+    echo "  USE_TEAM_IMAGE: $USE_TEAM_IMAGE"
     echo "  SHOW_HELP: $SHOW_HELP"
     echo "  SHOW_NEXT_STEPS: $SHOW_NEXT_STEPS"
 }

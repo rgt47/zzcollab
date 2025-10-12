@@ -91,7 +91,7 @@ validate_init_prerequisites() {
 validate_required_team_parameters() {
     # Check required team name
     if [[ -z "$TEAM_NAME" ]]; then
-        print_error "Required parameter --team-name is missing"
+        print_error "Required parameter -t/--team is missing"
         show_init_help
         exit 1
     fi

@@ -357,9 +357,9 @@ init_project <- function(team_name = NULL, project_name = NULL,
   
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  # Build command with --init flag
-  cmd <- paste(zzcollab_path, "--init --team-name", team_name, "--project-name", project_name)
+
+  # Build command with team and project flags
+  cmd <- paste(zzcollab_path, "-t", team_name, "-p", project_name)
   
   if (!is.null(github_account)) {
     cmd <- paste(cmd, "--github-account", github_account)

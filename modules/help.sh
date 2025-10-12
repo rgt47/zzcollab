@@ -163,9 +163,9 @@ USAGE:
 
 OPTIONS:
     Team and project setup:
-    -t, --team-name NAME         Team name (Docker Hub namespace for images)
+    -t, --team NAME              Team name (Docker Hub namespace for images)
     -p, --project-name NAME      Project name (directory and package name)
-    -g, --github-account NAME    GitHub account (default: same as team-name)
+    -g, --github-account NAME    GitHub account (default: same as team)
     --use-team-image             Pull and use existing team Docker image from Docker Hub
                                  (for team members joining existing projects)
 
