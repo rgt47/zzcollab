@@ -715,6 +715,169 @@ config_validate() {
 }
 
 #=============================================================================
+# PROJECT-LEVEL CONFIG FUNCTIONS
+#=============================================================================
+
+##############################################################################
+# FUNCTION: config_set_local
+# PURPOSE:  Set a configuration value in project-level config (./zzcollab.yaml)
+# USAGE:    config_set_local "team-name" "temp"
+# ARGS:
+#   $1 - key: Configuration key (use dash-separated format like "team-name")
+#   $2 - value: Value to set
+# RETURNS:
+#   0 - Successfully set configuration value
+#   1 - Error (invalid key, write permission issues, etc.)
+# BEHAVIOR:
+#   - If ./zzcollab.yaml doesn't exist, copies ~/.zzcollab/config.yaml as template
+#   - Then updates the specific key in ./zzcollab.yaml
+#   - Preserves all other settings from user config
+# EXAMPLE:
+#   config_set_local "team-name" "myteam"
+#   config_set_local "profile-name" "analysis"
+##############################################################################
+config_set_local() {
+    local key="$1"
+    local value="$2"
+
+    # Convert dash-separated key to underscore (team-name → team_name)
+    local yaml_key="${key//-/_}"
+
+    # Check if project config exists
+    if [[ ! -f "$CONFIG_PROJECT_FILE" ]]; then
+        log_info "Creating project-level config from user template..."
+
+        # Check if user config exists
+        if [[ ! -f "$CONFIG_USER_FILE" ]]; then
+            log_error "❌ User config not found: $CONFIG_USER_FILE"
+            log_info "💡 Run 'zzcollab --config init' first to create user config"
+            return 1
+        fi
+
+        # Copy user config as template
+        if cp "$CONFIG_USER_FILE" "$CONFIG_PROJECT_FILE"; then
+            log_success "✅ Created $CONFIG_PROJECT_FILE from user config template"
+            log_info "💡 This file will override your user defaults for this project"
+        else
+            log_error "❌ Failed to create $CONFIG_PROJECT_FILE"
+            return 1
+        fi
+    fi
+
+    # Now update the specific key
+    if yaml_set "$CONFIG_PROJECT_FILE" "defaults.$yaml_key" "$value"; then
+        log_success "✅ Project config updated: $yaml_key = \"$value\""
+        log_info "📍 Location: $CONFIG_PROJECT_FILE"
+
+        # Reload configuration to update global variables
+        load_config_file "$CONFIG_PROJECT_FILE"
+
+        return 0
+    else
+        log_error "❌ Failed to update project configuration"
+        log_info "💡 Manual fallback:"
+        log_info "   Edit $CONFIG_PROJECT_FILE"
+        log_info "   Update: defaults.$yaml_key: \"$value\""
+        return 1
+    fi
+}
+
+##############################################################################
+# FUNCTION: config_get_local
+# PURPOSE:  Get a configuration value from project-level config only
+# USAGE:    config_get_local "team-name"
+# ARGS:
+#   $1 - key: Configuration key (dash-separated format)
+# RETURNS:
+#   0 - Successfully retrieved value
+#   1 - Key not found or file doesn't exist
+# OUTPUTS:
+#   Prints the value to stdout
+# EXAMPLE:
+#   team=$(config_get_local "team-name")
+##############################################################################
+config_get_local() {
+    local key="$1"
+
+    # Convert dash-separated key to underscore
+    local yaml_key="${key//-/_}"
+
+    if [[ ! -f "$CONFIG_PROJECT_FILE" ]]; then
+        log_error "❌ Project config not found: $CONFIG_PROJECT_FILE"
+        log_info "💡 Use 'zzcollab --config set-local KEY VALUE' to create it"
+        return 1
+    fi
+
+    local value
+    value=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.$yaml_key")
+
+    if [[ "$value" == "null" || -z "$value" ]]; then
+        log_error "❌ Key '$key' not found in project config"
+        return 1
+    fi
+
+    echo "$value"
+    return 0
+}
+
+##############################################################################
+# FUNCTION: config_list_local
+# PURPOSE:  List all configuration values from project-level config
+# USAGE:    config_list_local
+# OUTPUTS:
+#   Formatted list of all project-level configuration settings
+# EXAMPLE:
+#   config_list_local
+##############################################################################
+config_list_local() {
+    if [[ ! -f "$CONFIG_PROJECT_FILE" ]]; then
+        log_info "ℹ️  No project-level config found"
+        log_info "📍 Location would be: $CONFIG_PROJECT_FILE"
+        log_info "💡 Use 'zzcollab --config set-local KEY VALUE' to create one"
+        echo ""
+        log_info "Project-level config allows you to override user defaults"
+        log_info "for this specific project. For example:"
+        echo ""
+        echo "  zzcollab --config set-local team-name myteam"
+        echo "  zzcollab --config set-local profile-name analysis"
+        return 0
+    fi
+
+    echo "Project-level configuration ($CONFIG_PROJECT_FILE):"
+    echo ""
+
+    # Load values from project config only
+    local temp_team temp_github temp_dockerhub temp_profile temp_libs temp_pkgs
+    local temp_dotfiles temp_nodot temp_auto_github temp_skip_confirm
+
+    temp_team=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.team_name")
+    temp_github=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.github_account")
+    temp_dockerhub=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.dockerhub_account")
+    temp_profile=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.profile_name")
+    temp_libs=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.libs_bundle")
+    temp_pkgs=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.pkgs_bundle")
+    temp_dotfiles=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.dotfiles_dir")
+    temp_nodot=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.dotfiles_nodot")
+    temp_auto_github=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.auto_github")
+    temp_skip_confirm=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.skip_confirmation")
+
+    echo "Settings (overriding user defaults):"
+    echo "  team_name: ${temp_team}"
+    echo "  github_account: ${temp_github}"
+    echo "  dockerhub_account: ${temp_dockerhub}"
+    echo "  profile_name: ${temp_profile}"
+    echo "  libs_bundle: ${temp_libs}"
+    echo "  pkgs_bundle: ${temp_pkgs}"
+    echo "  dotfiles_dir: ${temp_dotfiles}"
+    echo "  dotfiles_nodot: ${temp_nodot}"
+    echo "  auto_github: ${temp_auto_github}"
+    echo "  skip_confirmation: ${temp_skip_confirm}"
+    echo ""
+    echo "💡 To modify: zzcollab --config set-local KEY VALUE"
+    echo "💡 To see merged config (user + project): zzcollab --config list"
+}
+
+#=============================================================================
 # CONFIG COMMAND DISPATCHER
 #=============================================================================
 
@@ -724,7 +887,7 @@ config_validate() {
 handle_config_command() {
     local subcommand="$1"
     shift
-    
+
     case "$subcommand" in
         set)
             if [[ $# -ne 2 ]]; then
@@ -743,6 +906,32 @@ handle_config_command() {
         list)
             config_list
             ;;
+        set-local)
+            if [[ $# -ne 2 ]]; then
+                echo "Usage: zzcollab config set-local KEY VALUE"
+                echo ""
+                echo "Sets a project-level configuration value in ./zzcollab.yaml"
+                echo "If ./zzcollab.yaml doesn't exist, it will be created from your user config."
+                echo ""
+                echo "Examples:"
+                echo "  zzcollab config set-local team-name myteam"
+                echo "  zzcollab config set-local profile-name analysis"
+                exit 1
+            fi
+            config_set_local "$1" "$2"
+            ;;
+        get-local)
+            if [[ $# -ne 1 ]]; then
+                echo "Usage: zzcollab config get-local KEY"
+                echo ""
+                echo "Gets a value from project-level config (./zzcollab.yaml) only"
+                exit 1
+            fi
+            config_get_local "$1"
+            ;;
+        list-local)
+            config_list_local
+            ;;
         validate)
             config_validate
             ;;
@@ -751,7 +940,21 @@ handle_config_command() {
             ;;
         *)
             echo "❌ Error: Unknown config subcommand '$subcommand'"
-            echo "Valid subcommands: set, get, list, validate, init"
+            echo ""
+            echo "Valid subcommands:"
+            echo "  User-level config (affects all projects):"
+            echo "    init           - Create user config file"
+            echo "    set KEY VALUE  - Set user-level config value"
+            echo "    get KEY        - Get merged config value (user + project)"
+            echo "    list           - List merged configuration"
+            echo ""
+            echo "  Project-level config (affects current project only):"
+            echo "    set-local KEY VALUE  - Set project-level override"
+            echo "    get-local KEY        - Get project-level value only"
+            echo "    list-local           - List project-level overrides"
+            echo ""
+            echo "  Validation:"
+            echo "    validate       - Validate config file syntax"
             exit 1
             ;;
     esac
