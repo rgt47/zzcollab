@@ -764,11 +764,6 @@ handle_special_modes() {
         exit 0
     fi
 
-    if [[ "${SHOW_HELP_BUILD_MODES:-false}" == "true" ]]; then
-        show_build_modes_help
-        exit 0
-    fi
-
     if [[ "${SHOW_HELP_DOCKER:-false}" == "true" ]]; then
         show_docker_help
         exit 0

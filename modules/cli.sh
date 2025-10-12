@@ -203,14 +203,6 @@ FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
 USE_CONFIG_PROFILES=false    # Use config.yaml for variant definitions
 PROFILES_CONFIG=""           # Path to variants config file
 
-# Simplified build mode system (replaces complex flag system)
-readonly DEFAULT_RENV_MODE="${ZZCOLLAB_DEFAULT_RENV_MODE:-standard}"
-RENV_MODE="$DEFAULT_RENV_MODE"    # Options: minimal, fast, standard, comprehensive
-# minimal     = bare essentials (renv, remotes, here) - ~30 seconds
-# fast        = minimal Docker + minimal packages - 2-3 minutes
-# standard    = standard Docker + standard packages (balanced) - 4-6 minutes
-# comprehensive = extended Docker + full packages (kitchen sink) - 15-20 minutes
-
 # Profile bundle variables (system libraries and R packages)
 LIBS_BUNDLE=""    # System library bundle (e.g., alpine, bioinfo, geospatial)
 PKGS_BUNDLE=""    # R package bundle (e.g., tidyverse, shiny, modeling)
@@ -289,22 +281,6 @@ parse_cli_arguments() {
                 ;;
             --prepare-dockerfile|-P)
                 PREPARE_DOCKERFILE=true
-                shift
-                ;;
-            --minimal|-M)
-                RENV_MODE="minimal"
-                shift
-                ;;
-            --fast|-F)
-                RENV_MODE="fast"
-                shift
-                ;;
-            --standard|-S)
-                RENV_MODE="standard"
-                shift
-                ;;
-            --comprehensive|-C)
-                RENV_MODE="comprehensive"
                 shift
                 ;;
             --next-steps)
@@ -395,11 +371,6 @@ parse_cli_arguments() {
             --help-renv)
                 # Will be processed after modules are loaded
                 SHOW_HELP_RENV=true
-                shift
-                ;;
-            --help-renv-modes)
-                # Will be processed after modules are loaded
-                SHOW_HELP_RENV_MODES=true
                 shift
                 ;;
             --help-docker)
@@ -555,7 +526,7 @@ export_cli_variables() {
     export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERHUB_ACCOUNT DOCKERFILE_PATH IMAGE_TAG
 
     # Mode and behavior flags
-    export USE_DOTFILES PREPARE_DOCKERFILE RENV_MODE USE_TEAM_IMAGE
+    export USE_DOTFILES PREPARE_DOCKERFILE USE_TEAM_IMAGE
 
     # GitHub integration flags
     export CREATE_GITHUB_REPO SKIP_CONFIRMATION
@@ -571,13 +542,8 @@ export_cli_variables() {
 # Function: validate_cli_arguments
 # Purpose: Validate CLI argument combinations and required values
 validate_cli_arguments() {
-    # Validate RENV_MODE is valid
-    if [[ "$RENV_MODE" != "minimal" && "$RENV_MODE" != "fast" && "$RENV_MODE" != "standard" && "$RENV_MODE" != "comprehensive" ]]; then
-        echo "❌ Error: Invalid build mode '$RENV_MODE'" >&2
-        echo "   Valid modes: minimal, fast, standard, comprehensive" >&2
-        exit 1
-    fi
-    
+    # No validation needed currently
+    :
 }
 
 #=============================================================================
@@ -610,7 +576,6 @@ process_cli() {
 show_cli_debug() {
     echo "🔧 CLI Debug Information:"
     echo "  BUILD_DOCKER: $BUILD_DOCKER"
-    echo "  RENV_MODE: $RENV_MODE"
     echo "  DOTFILES_DIR: $DOTFILES_DIR"
     echo "  DOTFILES_NODOT: $DOTFILES_NODOT"
     echo "  BASE_IMAGE: $BASE_IMAGE"
@@ -621,9 +586,6 @@ show_cli_debug() {
     echo "  SHOW_HELP: $SHOW_HELP"
     echo "  SHOW_NEXT_STEPS: $SHOW_NEXT_STEPS"
 }
-
-# Helper functions for modules to use simplified build modes
-# Note: Modules can directly check $RENV_MODE instead of using helper functions
 
 # Helper functions for template selection
 get_template() {
@@ -639,12 +601,8 @@ get_template() {
             fi
             ;;
         *)
-            # For other templates, use original logic
-            case "$RENV_MODE" in
-                fast) echo "${template_type}.minimal" ;;
-                comprehensive) echo "${template_type}.pluspackages" ;;
-                *) echo "$template_type" ;;
-            esac
+            # Always use base template (dynamic package management)
+            echo "$template_type"
             ;;
     esac
 }

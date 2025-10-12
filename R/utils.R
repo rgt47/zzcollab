@@ -266,13 +266,6 @@ team_images <- function() {
 #' @param dotfiles_nodots Logical indicating whether dotfiles need leading dots added.
 #'   Set to TRUE if your dotfiles are named without leading dots (e.g., "vimrc"
 #'   instead of ".vimrc"). If NULL, uses config default.
-#'   
-#' @param build_mode Character string specifying package installation mode:
-#'   - "minimal": Bare essentials (renv, remotes, here) - fastest, ~30 seconds
-#'   - "fast": Essential packages (~9) for quick setup and CI/CD
-#'   - "standard": Balanced package set (~17) for typical research workflows (default)
-#'   - "comprehensive": Full ecosystem (~47+) for complex analyses
-#'   If NULL, uses config default or "standard".
 #'
 #' @return Logical value indicating success (TRUE) or failure (FALSE) of the
 #'   initialization process. The function creates multiple components, so
@@ -311,17 +304,15 @@ team_images <- function() {
 #' # Full specification with all parameters
 #' success <- init_project(
 #'   team_name = "datascience",
-#'   project_name = "market-analysis", 
+#'   project_name = "market-analysis",
 #'   github_account = "myuniversity",
 #'   dotfiles_path = "~/dotfiles",
-#'   dotfiles_nodots = FALSE,
-#'   build_mode = "comprehensive"
+#'   dotfiles_nodots = FALSE
 #' )
-#' 
+#'
 #' # Using configuration defaults (recommended workflow)
 #' # First, set up your defaults
 #' set_config("team_name", "mylab")
-#' set_config("build_mode", "standard")
 #' set_config("dotfiles_dir", "~/dotfiles")
 #' 
 #' # Then initialize projects easily
@@ -334,17 +325,15 @@ team_images <- function() {
 #' \code{\link{team_images}} for listing created team images
 #'
 #' @export
-init_project <- function(team_name = NULL, project_name = NULL, 
-                         github_account = NULL, 
+init_project <- function(team_name = NULL, project_name = NULL,
+                         github_account = NULL,
                          dotfiles_path = NULL,
-                         dotfiles_nodots = NULL,
-                         build_mode = NULL) {
-  
+                         dotfiles_nodots = NULL) {
+
   # Apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
   github_account <- github_account %||% get_config_default("github_account") %||% team_name
   dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
-  build_mode <- build_mode %||% get_config_default("build_mode", "standard")
   dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
   
   # Validate required parameters
@@ -372,18 +361,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
       cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
     }
   }
-  
-  # Add build mode flag
-  if (build_mode == "minimal") {
-    cmd <- paste(cmd, "-M")
-  } else if (build_mode == "fast") {
-    cmd <- paste(cmd, "-F")
-  } else if (build_mode == "comprehensive") {
-    cmd <- paste(cmd, "-C")
-  } else {
-    cmd <- paste(cmd, "-S")
-  }
-  
+
   message("Running: ", cmd)
   result <- system(cmd)
   return(result == 0)
@@ -418,13 +396,6 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' @param dotfiles_nodots Logical indicating whether dotfiles need leading dots added.
 #'   Set to TRUE if your dotfiles are stored without leading dots.
 #'   If NULL, uses config default.
-#'   
-#' @param build_mode Character string specifying package installation mode:
-#'   - "minimal": Bare essentials (renv, remotes, here) - fastest
-#'   - "fast": Essential packages for quick setup
-#'   - "standard": Balanced package set (default)
-#'   - "comprehensive": Full ecosystem for complex analyses
-#'   If NULL, uses config default or "standard".
 #'
 #' @return Logical value indicating success (TRUE) or failure (FALSE).
 #'   The function validates team images exist before proceeding with setup.
@@ -493,13 +464,11 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #'
 #' @export
 join_project <- function(team_name = NULL, project_name = NULL, interface = "shell",
-                         dotfiles_path = NULL, dotfiles_nodots = NULL,
-                         build_mode = NULL) {
-  
+                         dotfiles_path = NULL, dotfiles_nodots = NULL) {
+
   # Apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
   dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
-  build_mode <- build_mode %||% get_config_default("build_mode", "standard")
   dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
   
   # Validate required parameters
@@ -523,18 +492,7 @@ join_project <- function(team_name = NULL, project_name = NULL, interface = "she
       cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
     }
   }
-  
-  # Add build mode flag
-  if (build_mode == "minimal") {
-    cmd <- paste(cmd, "-M")
-  } else if (build_mode == "fast") {
-    cmd <- paste(cmd, "-F")
-  } else if (build_mode == "comprehensive") {
-    cmd <- paste(cmd, "-C")
-  } else {
-    cmd <- paste(cmd, "-S")
-  }
-  
+
   message("Running: ", cmd)
   result <- system(cmd)
   return(result == 0)
@@ -809,16 +767,14 @@ create_branch <- function(branch_name) {
 #'
 #' @param dotfiles_path Path to dotfiles directory (uses config default if NULL)
 #' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added (uses config default)
-#' @param build_mode Build mode: "minimal", "fast", "standard", or "comprehensive" (uses config default)
 #' @param base_image Base Docker image to use (optional)
 #' @return Logical indicating success
 #' @export
 setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
-                         build_mode = NULL, base_image = NULL) {
-  
+                         base_image = NULL) {
+
   # Apply config defaults for missing parameters
   dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
-  build_mode <- build_mode %||% get_config_default("build_mode", "standard")
   dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
   
   # Find zzcollab script
@@ -838,18 +794,7 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
   if (!is.null(base_image)) {
     cmd <- paste(cmd, "--base-image", base_image)
   }
-  
-  # Add build mode flag
-  if (build_mode == "minimal") {
-    cmd <- paste(cmd, "-M")
-  } else if (build_mode == "fast") {
-    cmd <- paste(cmd, "-F")
-  } else if (build_mode == "comprehensive") {
-    cmd <- paste(cmd, "-C")
-  } else {
-    cmd <- paste(cmd, "-S")
-  }
-  
+
   message("Running: ", cmd)
   result <- system(cmd)
   return(result == 0)
@@ -870,7 +815,6 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
 #'   - "config": Configuration system guide
 #'   - "dotfiles": Dotfiles setup and management
 #'   - "renv": Package management with renv
-#'   - "build-modes": Build mode selection guide
 #'   - "docker": Docker essentials for researchers
 #'   - "cicd": CI/CD and GitHub Actions
 #'   - "variants": Docker variants configuration
@@ -898,9 +842,6 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
 #'
 #' # Learn about configuration system
 #' zzcollab_help("config")
-#'
-#' # Understanding build modes
-#' zzcollab_help("build-modes")
 #'
 #' # Troubleshooting common issues
 #' zzcollab_help("troubleshooting")
@@ -935,8 +876,6 @@ zzcollab_help <- function(topic = NULL) {
     paste(zzcollab_path, "--help-dotfiles")
   } else if (topic == "renv") {
     paste(zzcollab_path, "--help-renv")
-  } else if (topic == "build-modes") {
-    paste(zzcollab_path, "--help-build-modes")
   } else if (topic == "docker") {
     paste(zzcollab_path, "--help-docker")
   } else if (topic == "cicd") {
@@ -950,7 +889,7 @@ zzcollab_help <- function(topic = NULL) {
   } else {
     stop("Unknown help topic: ", topic, "\n",
          "Valid topics: general, init, quickstart, workflow, troubleshooting, ",
-         "config, dotfiles, renv, build-modes, docker, cicd, variants, github, next-steps")
+         "config, dotfiles, renv, docker, cicd, variants, github, next-steps")
   }
 
   result <- system(cmd, intern = TRUE)
