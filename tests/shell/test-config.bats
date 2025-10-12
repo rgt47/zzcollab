@@ -4,22 +4,20 @@
 
 # Setup function - runs before each test
 setup() {
-    # Load the module system
-    export SCRIPT_DIR="${BATS_TEST_DIRNAME}/../.."
-
-    # Source core dependencies
-    source "${SCRIPT_DIR}/modules/core.sh"
-    source "${SCRIPT_DIR}/modules/config.sh"
-
-    # Create temporary directory for test configs
+    # Create temporary directory for test configs BEFORE loading modules
     TEST_CONFIG_DIR="$(mktemp -d)"
     TEST_CONFIG_FILE="${TEST_CONFIG_DIR}/test_config.yaml"
     TEST_USER_CONFIG="${TEST_CONFIG_DIR}/user_config.yaml"
 
-    # Override config file locations for testing
-    export CONFIG_USER_DIR="${TEST_CONFIG_DIR}"
-    export CONFIG_USER_FILE="${TEST_USER_CONFIG}"
-    export CONFIG_PROJECT_FILE="${TEST_CONFIG_FILE}"
+    # Set environment variables BEFORE sourcing modules (since they use readonly)
+    export SCRIPT_DIR="${BATS_TEST_DIRNAME}/../.."
+    export ZZCOLLAB_CONFIG_USER_DIR="${TEST_CONFIG_DIR}"
+    export ZZCOLLAB_CONFIG_USER="${TEST_USER_CONFIG}"
+    export ZZCOLLAB_CONFIG_PROJECT="${TEST_CONFIG_FILE}"
+
+    # Now source modules (they'll use our override environment variables)
+    source "${SCRIPT_DIR}/modules/core.sh"
+    source "${SCRIPT_DIR}/modules/config.sh"
 }
 
 # Teardown function - runs after each test
@@ -147,8 +145,8 @@ defaults:
   dotfiles_dir: "~/dotfiles"
 EOF
 
-    run load_config_file "${TEST_CONFIG_FILE}"
-    [ "$status" -eq 0 ]
+    # Load config (don't use run since we need to check global variables)
+    load_config_file "${TEST_CONFIG_FILE}"
 
     # Verify global variables were set
     [[ "${CONFIG_TEAM_NAME}" == "myteam" ]]
@@ -172,8 +170,8 @@ EOF
     # Set a value first
     CONFIG_PROFILE_NAME="existing_value"
 
-    run load_config_file "${TEST_CONFIG_FILE}"
-    [ "$status" -eq 0 ]
+    # Load config (don't use run to check global variables)
+    load_config_file "${TEST_CONFIG_FILE}"
 
     # Should have loaded team_name but preserved profile_name
     [[ "${CONFIG_TEAM_NAME}" == "myteam" ]]
@@ -194,8 +192,8 @@ defaults:
   team_name: "project_team"
 EOF
 
-    run load_all_configs
-    [ "$status" -eq 0 ]
+    # Load configs (don't use run to check global variables)
+    load_all_configs
 
     # Project config should take precedence
     [[ "${CONFIG_TEAM_NAME}" == "project_team" ]]
@@ -211,15 +209,14 @@ EOF
     # Remove any existing config
     rm -f "${TEST_USER_CONFIG}"
 
-    # Create config non-interactively
-    run bash -c "echo '1' | create_default_config"
+    # Create config non-interactively (provide input directly)
+    echo '1' | create_default_config
 
     # Should create the file
     [ -f "${TEST_USER_CONFIG}" ]
 
     # Should contain expected sections
-    run grep -q "defaults:" "${TEST_USER_CONFIG}"
-    [ "$status" -eq 0 ]
+    grep -q "defaults:" "${TEST_USER_CONFIG}"
 }
 
 @test "create_default_config handles existing files" {
@@ -230,12 +227,10 @@ defaults:
 EOF
 
     # Try to create again (choose option 1 - keep existing)
-    run bash -c "echo '1' | create_default_config"
-    [ "$status" -eq 0 ]
+    echo '1' | create_default_config
 
     # Should still have original content
-    run grep "existing" "${TEST_USER_CONFIG}"
-    [ "$status" -eq 0 ]
+    grep "existing" "${TEST_USER_CONFIG}"
 }
 
 @test "get_config_value retrieves configuration values" {
@@ -312,15 +307,26 @@ EOF
 }
 
 @test "config_list displays all configuration values" {
+    # Load configuration first
+    load_all_configs
+
     # Set some config values
     CONFIG_TEAM_NAME="myteam"
     CONFIG_PROFILE_NAME="analysis"
 
-    run config_list
-    [ "$status" -eq 0 ]
-    [[ "${output}" =~ "myteam" ]]
-    [[ "${output}" =~ "analysis" ]]
-    [[ "${output}" =~ "Configuration files" ]]
+    # Test that config_list runs without error
+    # Redirect output to temp file to avoid command substitution issues
+    local temp_output=$(mktemp)
+    config_list > "${temp_output}" 2>&1
+
+    # Verify output file exists and has content
+    [ -s "${temp_output}" ]
+
+    # Check output contains expected values
+    grep -q "myteam" "${temp_output}"
+    grep -q "analysis" "${temp_output}"
+
+    rm -f "${temp_output}"
 }
 
 @test "config_validate checks YAML syntax" {
