@@ -186,63 +186,63 @@ package_bundles:
 profiles:
   minimal:
     description: "Minimal development environment"
-    base_image: "rocker/r-ver:latest"
+    base_image: "rocker/r-ver"
     libs: minimal
     pkgs: minimal
     size: "~780MB"
 
   rstudio:
     description: "RStudio Server development environment"
-    base_image: "rocker/rstudio:latest"
+    base_image: "rocker/rstudio"
     libs: minimal
     pkgs: minimal
     size: "~980MB"
 
   analysis:
     description: "Data analysis with tidyverse"
-    base_image: "rocker/tidyverse:latest"
+    base_image: "rocker/tidyverse"
     libs: minimal
     pkgs: tidyverse
     size: "~1.18GB"
 
   modeling:
     description: "Machine learning environment"
-    base_image: "rocker/r-ver:latest"
+    base_image: "rocker/r-ver"
     libs: modeling
     pkgs: modeling
     size: "~1.48GB"
 
   bioinformatics:
     description: "Bioinformatics with Bioconductor"
-    base_image: "bioconductor/bioconductor_docker:latest"
+    base_image: "bioconductor/bioconductor_docker"
     libs: bioinfo
     pkgs: bioinfo
     size: "~1.98GB"
 
   geospatial:
     description: "Geospatial analysis environment"
-    base_image: "rocker/geospatial:latest"
+    base_image: "rocker/geospatial"
     libs: geospatial
     pkgs: geospatial
     size: "~2.48GB"
 
   publishing:
     description: "Document publishing with LaTeX"
-    base_image: "rocker/verse:latest"
+    base_image: "rocker/verse"
     libs: publishing
     pkgs: publishing
     size: "~3GB"
 
   alpine_minimal:
     description: "Ultra-lightweight Alpine Linux"
-    base_image: "velaco/alpine-r:latest"
+    base_image: "velaco/alpine-r"
     libs: alpine
     pkgs: minimal
     size: "~200MB"
 
   alpine_analysis:
     description: "Lightweight data analysis"
-    base_image: "velaco/alpine-r:latest"
+    base_image: "velaco/alpine-r"
     libs: alpine
     pkgs: tidyverse
     size: "~400MB"
