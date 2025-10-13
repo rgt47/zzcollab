@@ -45,6 +45,10 @@ RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
         useradd --create-home --shell /bin/zsh ${USERNAME}; \
     fi
 
+# Set password for analyst user (required for RStudio Server authentication)
+# Note: rocker/rstudio already has analyst user, just needs password set
+RUN echo "${USERNAME}:${USERNAME}" | chpasswd
+
 # Install essential R packages (skip if using custom base image that
 # already has them)
 RUN if [ "${BASE_IMAGE}" = "rocker/r-ver" ]; then \
