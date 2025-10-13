@@ -188,6 +188,50 @@ Start the Docker development environment:
 make docker-zsh
 ```
 
+### Optional: GUI Support for Interactive Graphics
+
+If you want to view R plots interactively (instead of saving to PNG files), you can use X11 forwarding with the `docker-zsh-gui` target. This enables GUI applications like R graphics windows and terminal emulators.
+
+**One-time XQuartz setup** (macOS only):
+
+```bash
+# Install XQuartz (if not already installed)
+brew install --cask xquartz
+
+# Launch XQuartz and configure
+open -a XQuartz
+# In XQuartz: Preferences > Security > Enable "Allow connections from network clients"
+# Restart XQuartz after enabling this setting
+
+# Allow localhost connections (run this each time you restart your Mac)
+export DISPLAY=:0
+/opt/X11/bin/xhost +localhost
+```
+
+**Launch container with GUI support:**
+
+```bash
+# Instead of make docker-zsh, use:
+make docker-zsh-gui
+```
+
+**Test interactive graphics:**
+
+```r
+# Inside the container
+R
+plot(1:10, 1:10)  # Graphics window should appear on your Mac
+```
+
+**When to use GUI support:**
+- ✓ Interactive plot exploration and refinement
+- ✓ Using GUI terminal emulators (kitty)
+- ✓ Quick visualization during analysis development
+- ✗ Not needed for production scripts that save plots to files
+- ✗ Not available in CI/CD environments (use file output there)
+
+For the rest of this tutorial, we'll use `make docker-zsh` (non-GUI) and save plots to files, which works in all environments including CI/CD.
+
 ### Create Reusable Function (rrtools approach)
 
 Following rrtools philosophy, create reusable functions in R/ directory first:
