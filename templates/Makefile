@@ -19,6 +19,9 @@ help:
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
 	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo ""
+	@echo "  Docker GUI (requires XQuartz):"
+	@echo "    docker-zsh-gui           - Launch zsh with X11 forwarding (kitty, GUI apps)"
+	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, clean-dotfiles, docker-clean, docker-build-clean"
 	@echo "    docker-prune-cache       - Remove Docker build cache"
@@ -103,6 +106,17 @@ docker-bash:
 docker-zsh:
 	docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
 
+docker-zsh-gui:
+	@echo "Launching zsh with X11 forwarding enabled"
+	@echo "GUI apps available: kitty, firefox, etc."
+	@echo ""
+	@echo "Prerequisites:"
+	@echo "  1. XQuartz installed: brew install --cask xquartz"
+	@echo "  2. XQuartz running with 'Allow connections from network clients' enabled"
+	@echo "  3. Run: xhost +localhost"
+	@echo ""
+	docker run --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
+
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: analyst, Password: analyst"
@@ -144,4 +158,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help

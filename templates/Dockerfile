@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     vim \
-    tmux \
     zsh \
+    kitty \
     build-essential \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -29,9 +29,6 @@ RUN apt-get update && apt-get install -y \
 # Install Node.js (required for coc.nvim and other vim plugins)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
-
-# Install Claude CLI (Anthropic's AI assistant)
-RUN npm install -g @anthropic-ai/claude
 
 # Note: TinyTeX not installed by default
 # For PDF output, install manually or use publishing profile:
@@ -76,9 +73,10 @@ COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
 USER ${USERNAME}
 
 # Copy dotfiles (consolidated with wildcards)
-COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* \
-     .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
-     .editorconfig* .ctags* .ackrc* .ripgreprc* .zshrc* /home/${USERNAME}/
+# Note: .zshrc copied directly from dotfiles directory (no filtering)
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .gitconfig* \
+     .zshrc* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
+     .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
 
 # Install zsh plugins
 RUN mkdir -p /home/${USERNAME}/.zsh && \
