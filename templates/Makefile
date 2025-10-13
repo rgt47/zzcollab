@@ -106,7 +106,7 @@ docker-zsh:
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: analyst, Password: analyst"
-	docker run --rm -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
+	docker run --rm --user root -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
 
 # Cleanup
 clean:
