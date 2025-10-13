@@ -46,13 +46,14 @@ RUN apt-get update && \
     libgit2-dev \
     # ZZCOLLAB framework tools
     vim \
-    tmux \
     zsh \
     ssh \
     tree \
     ripgrep \
     eza \
     man-db \
+    kitty \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
 # Install bundle-specific system dependencies
@@ -63,9 +64,6 @@ RUN ${SYSTEM_DEPS_INSTALL_CMD}
 # Install Node.js (required for coc.nvim and other vim plugins)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
-
-# Install Claude CLI (Anthropic's AI assistant)
-RUN npm install -g @anthropic-ai/claude
 
 # Install TinyTeX only for publishing profiles
 # - Minimal, analysis, modeling profiles: NO (users can add manually)
@@ -94,6 +92,12 @@ LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 RUN useradd --create-home --shell /bin/zsh ${USERNAME} || \
     echo "User ${USERNAME} already exists"
 
+# Set password for analyst user (required for RStudio Server authentication and sudo)
+RUN echo "${USERNAME}:${USERNAME}" | chpasswd
+
+# Add analyst to sudo group for administrative tasks
+RUN usermod -aG sudo ${USERNAME}
+
 # Install R packages based on selected profile
 # Command generated from bundles.yaml (single source of truth)
 # Bundle: ${PKGS_BUNDLE}
@@ -117,7 +121,7 @@ USER ${USERNAME}
 
 # Copy dotfiles (consolidated with wildcards)
 # Note: .zshrc copied directly from dotfiles directory (no filtering)
-COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* \
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .gitconfig* \
      .zshrc* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
      .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
 
