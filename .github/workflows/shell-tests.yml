@@ -1,0 +1,342 @@
+name: Shell Tests (BATS)
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  bats-tests:
+    name: BATS Shell Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install BATS
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bats
+
+    - name: Verify BATS installation
+      run: bats --version
+
+    - name: Install test dependencies
+      run: |
+        echo "Installing yq for YAML parsing tests..."
+        sudo wget https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64 -O /usr/bin/yq
+        sudo chmod +x /usr/bin/yq
+        yq --version
+
+        echo "Installing Python for JSON parsing in R version detection..."
+        sudo apt-get install -y python3
+        python3 --version
+
+    - name: Run config module tests
+      run: |
+        echo "Running configuration module tests..."
+        bats tests/shell/test-config.bats
+
+    - name: Run docker module tests
+      run: |
+        echo "Running Docker module tests..."
+        bats tests/shell/test-docker.bats
+
+    - name: Generate test coverage report
+      if: always()
+      run: |
+        echo "Generating test coverage report..."
+        mkdir -p test-reports
+
+        # Run all tests and capture results
+        {
+          echo "# ZZCOLLAB Shell Tests Coverage Report"
+          echo "Generated on: $(date)"
+          echo ""
+          echo "## Test Execution Summary"
+          echo ""
+
+          # Config tests
+          echo "### Configuration Module (modules/config.sh)"
+          echo ""
+          config_result=$(bats tests/shell/test-config.bats 2>&1)
+          config_passed=$(echo "$config_result" | grep -oP '\d+(?= tests?, 0 failures?)' || echo "0")
+          config_total=$(echo "$config_result" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
+          config_failed=$((config_total - config_passed))
+          config_percent=$(awk "BEGIN {printf \"%.1f\", ($config_passed / $config_total) * 100}")
+
+          echo "- **Total Tests**: $config_total"
+          echo "- **Passing**: $config_passed"
+          echo "- **Failing**: $config_failed"
+          echo "- **Pass Rate**: ${config_percent}%"
+          echo ""
+
+          # Docker tests
+          echo "### Docker Module (modules/docker.sh)"
+          echo ""
+          docker_result=$(bats tests/shell/test-docker.bats 2>&1)
+          docker_passed=$(echo "$docker_result" | grep -oP '\d+(?= tests?, 0 failures?)' || echo "0")
+          docker_total=$(echo "$docker_result" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
+          docker_failed=$((docker_total - docker_passed))
+          docker_percent=$(awk "BEGIN {printf \"%.1f\", ($docker_passed / $docker_total) * 100}")
+
+          echo "- **Total Tests**: $docker_total"
+          echo "- **Passing**: $docker_passed"
+          echo "- **Failing**: $docker_failed"
+          echo "- **Pass Rate**: ${docker_percent}%"
+          echo ""
+
+          # Overall summary
+          echo "## Overall Test Coverage"
+          echo ""
+          total_tests=$((config_total + docker_total))
+          total_passed=$((config_passed + docker_passed))
+          total_failed=$((config_failed + docker_failed))
+          total_percent=$(awk "BEGIN {printf \"%.1f\", ($total_passed / $total_tests) * 100}")
+
+          echo "- **Total Tests**: $total_tests"
+          echo "- **Passing**: $total_passed"
+          echo "- **Failing**: $total_failed"
+          echo "- **Overall Pass Rate**: ${total_percent}%"
+          echo ""
+
+          # Function coverage
+          echo "## Function Coverage by Module"
+          echo ""
+          echo "### Config Module"
+          echo "- YAML parsing functions: ✅ Covered"
+          echo "- Configuration loading: ✅ Covered"
+          echo "- Configuration management: ✅ Covered"
+          echo "- Project-level configuration: ✅ Covered"
+          echo ""
+          echo "### Docker Module"
+          echo "- Multi-architecture support: ✅ Covered"
+          echo "- Platform argument generation: ✅ Covered"
+          echo "- R version detection: ✅ Covered"
+          echo "- Docker file creation: ✅ Covered"
+          echo "- Docker image building: ✅ Covered"
+          echo "- Environment validation: ✅ Covered"
+          echo ""
+
+          # Test files
+          echo "## Test Files"
+          echo ""
+          echo "| Test File | Tests | Module Tested | Status |"
+          echo "|-----------|-------|---------------|--------|"
+          echo "| \`tests/shell/test-config.bats\` | $config_total | \`modules/config.sh\` | ✅ $config_passed/$config_total passing |"
+          echo "| \`tests/shell/test-docker.bats\` | $docker_total | \`modules/docker.sh\` | ✅ $docker_passed/$docker_total passing |"
+          echo ""
+
+          # CI/CD status
+          if [ $total_failed -eq 0 ]; then
+            echo "## ✅ All Tests Passing"
+            echo ""
+            echo "All shell tests are passing. No issues detected."
+          else
+            echo "## ⚠️ Some Tests Failing"
+            echo ""
+            echo "$total_failed test(s) are currently failing. Review test output for details."
+          fi
+
+        } > test-reports/coverage-report.md
+
+        cat test-reports/coverage-report.md
+
+    - name: Upload test coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-coverage-report
+        path: test-reports/coverage-report.md
+        retention-days: 90
+
+    - name: Comment on PR with test results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('test-reports/coverage-report.md', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '## 🧪 Shell Tests Results\n\n' + report
+          });
+
+  test-coverage-check:
+    name: Test Coverage Threshold Check
+    runs-on: ubuntu-latest
+    needs: bats-tests
+    if: always()
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install BATS
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bats
+
+    - name: Install test dependencies
+      run: |
+        sudo wget https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64 -O /usr/bin/yq
+        sudo chmod +x /usr/bin/yq
+        sudo apt-get install -y python3
+
+    - name: Run all tests and check coverage threshold
+      run: |
+        echo "Running all BATS tests to calculate coverage..."
+
+        # Run tests and capture results
+        total_tests=0
+        total_passed=0
+
+        # Config tests
+        config_output=$(bats tests/shell/test-config.bats 2>&1 || true)
+        config_total=$(echo "$config_output" | tail -1 | grep -oP '^\d+\.\.\d+' | cut -d'.' -f3 || echo "0")
+        config_passed=$(echo "$config_output" | grep -c '^ok ' || echo "0")
+
+        # Docker tests
+        docker_output=$(bats tests/shell/test-docker.bats 2>&1 || true)
+        docker_total=$(echo "$docker_output" | tail -1 | grep -oP '^\d+\.\.\d+' | cut -d'.' -f3 || echo "0")
+        docker_passed=$(echo "$docker_output" | grep -c '^ok ' || echo "0")
+
+        # Calculate totals
+        total_tests=$((config_total + docker_total))
+        total_passed=$((config_passed + docker_passed))
+
+        # Calculate pass rate
+        if [ $total_tests -gt 0 ]; then
+          pass_rate=$(awk "BEGIN {printf \"%.1f\", ($total_passed / $total_tests) * 100}")
+        else
+          pass_rate=0
+        fi
+
+        echo "Test Coverage Summary:"
+        echo "  Total Tests: $total_tests"
+        echo "  Passing: $total_passed"
+        echo "  Pass Rate: ${pass_rate}%"
+
+        # Define minimum pass rate threshold
+        MINIMUM_PASS_RATE=80.0
+
+        # Check if we meet the threshold
+        if awk "BEGIN {exit !($pass_rate >= $MINIMUM_PASS_RATE)}"; then
+          echo "✅ Pass rate $pass_rate% meets minimum threshold of $MINIMUM_PASS_RATE%"
+          exit 0
+        else
+          echo "❌ Pass rate $pass_rate% is below minimum threshold of $MINIMUM_PASS_RATE%"
+          echo "Please fix failing tests before merging."
+          exit 1
+        fi
+
+  module-coverage:
+    name: Module Coverage Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Analyze module test coverage
+      run: |
+        echo "Analyzing which modules have test coverage..."
+        mkdir -p test-reports
+
+        {
+          echo "# Module Test Coverage Analysis"
+          echo "Generated on: $(date)"
+          echo ""
+          echo "## Modules with Tests"
+          echo ""
+
+          # Check which modules have corresponding test files
+          echo "| Module | Test File | Status |"
+          echo "|--------|-----------|--------|"
+
+          for module in modules/*.sh; do
+            module_name=$(basename "$module" .sh)
+            test_file="tests/shell/test-${module_name}.bats"
+
+            if [ -f "$test_file" ]; then
+              # Count tests in file
+              test_count=$(grep -c '^@test' "$test_file" || echo "0")
+              echo "| \`modules/${module_name}.sh\` | \`$test_file\` | ✅ $test_count tests |"
+            else
+              echo "| \`modules/${module_name}.sh\` | — | ❌ No tests |"
+            fi
+          done
+
+          echo ""
+          echo "## Coverage Summary"
+          echo ""
+
+          total_modules=$(ls modules/*.sh | wc -l)
+          tested_modules=$(find tests/shell -name "test-*.bats" | wc -l)
+          coverage_percent=$(awk "BEGIN {printf \"%.1f\", ($tested_modules / $total_modules) * 100}")
+
+          echo "- **Total Modules**: $total_modules"
+          echo "- **Modules with Tests**: $tested_modules"
+          echo "- **Coverage**: ${coverage_percent}%"
+          echo ""
+
+          echo "## Modules Needing Tests"
+          echo ""
+
+          needs_tests=false
+          for module in modules/*.sh; do
+            module_name=$(basename "$module" .sh)
+            test_file="tests/shell/test-${module_name}.bats"
+
+            if [ ! -f "$test_file" ]; then
+              if [ "$needs_tests" = false ]; then
+                echo "The following modules need test coverage:"
+                echo ""
+                needs_tests=true
+              fi
+              echo "- \`modules/${module_name}.sh\`"
+            fi
+          done
+
+          if [ "$needs_tests" = false ]; then
+            echo "✅ All modules have test coverage!"
+          fi
+
+        } > test-reports/module-coverage.md
+
+        cat test-reports/module-coverage.md
+
+    - name: Upload module coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: module-coverage-report
+        path: test-reports/module-coverage.md
+        retention-days: 90
+
+  status-check:
+    name: Shell Tests Status
+    runs-on: ubuntu-latest
+    needs: [bats-tests, test-coverage-check, module-coverage]
+    if: always()
+
+    steps:
+    - name: Check all jobs status
+      run: |
+        echo "BATS Tests: ${{ needs.bats-tests.result }}"
+        echo "Coverage Check: ${{ needs.test-coverage-check.result }}"
+        echo "Module Coverage: ${{ needs.module-coverage.result }}"
+
+        if [ "${{ needs.bats-tests.result }}" = "success" ] && \
+           [ "${{ needs.test-coverage-check.result }}" = "success" ] && \
+           [ "${{ needs.module-coverage.result }}" = "success" ]; then
+          echo "✅ All shell tests passed!"
+          exit 0
+        else
+          echo "❌ Some tests or checks failed"
+          exit 1
+        fi

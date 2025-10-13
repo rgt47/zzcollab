@@ -298,8 +298,13 @@ create_docker_files() {
         export BASE_IMAGE="$team_base_image"
         log_info "Personal Dockerfile will use team image: $BASE_IMAGE"
     else
-        export BASE_IMAGE="rocker/r-ver"
-        log_info "Personal Dockerfile will use default rocker image: $BASE_IMAGE"
+        # Only set default if BASE_IMAGE not already set by profile expansion
+        if [[ -z "${BASE_IMAGE:-}" ]]; then
+            export BASE_IMAGE="rocker/r-ver"
+            log_info "No profile specified, using default rocker image: $BASE_IMAGE"
+        else
+            log_info "Using base image from profile: $BASE_IMAGE"
+        fi
     fi
 
     # Create Dockerfile from template
