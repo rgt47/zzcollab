@@ -270,18 +270,18 @@ show_help_config() {
     
 CONFIGURATION SYSTEM:
     zzcollab supports configuration files for common settings.
-    
+
     zzcollab -c get team-name                            # Get current team name
     zzcollab -c set team-name mylab                      # Set default team name
-    zzcollab -c set renv-mode fast                      # Set default build mode
+    zzcollab -c set profile-name analysis                # Set default Docker profile
     zzcollab -c list                                     # Show all current settings
     zzcollab -c reset                                    # Reset to defaults
-    
+
     Configuration files:
     - User-level: ~/.config/zzcollab/config.yaml
     - Team-level: .zzcollab/config.yaml (if present)
-    
-    Settings: team-name, github-account, renv-mode, dotfiles-dir, 
+
+    Settings: team-name, github-account, profile-name, dotfiles-dir,
               dotfiles-nodot, auto-github, skip-confirmation
 EOF
 }
@@ -500,7 +500,7 @@ Example workflow with configuration:
     zzcollab --config set team-name "rgt47"
     zzcollab --config set github-account "rgt47"
     zzcollab --config set auto-github true
-    zzcollab --config set renv-mode "standard"
+    zzcollab --config set profile-name "analysis"
     zzcollab --config set dotfiles-dir "~/dotfiles"
 
     # Then all new projects are simple:
@@ -771,7 +771,7 @@ Step 1: One-Time Configuration
 Set your defaults so you never have to type them again:
 
     zzcollab --config set team-name "yourname"
-    zzcollab --config set renv-mode "standard"
+    zzcollab --config set profile-name "analysis"
 
 Replace "yourname" with your actual name or username (e.g., "jsmith")
 This becomes your Docker Hub namespace (like jsmith/project-rstudio:latest)
@@ -802,7 +802,7 @@ Scenario: You need to complete a data analysis analysis assignment
 1. Set up configuration (one time ever):
    ──────────────────────────────────────────────────────────────────────
    zzcollab --config set team-name "jsmith"
-   zzcollab --config set renv-mode "standard"
+   zzcollab --config set profile-name "analysis"
 
 2. Create project directory:
    ──────────────────────────────────────────────────────────────────────
@@ -882,19 +882,21 @@ A: Not required for solo work. But recommended for:
    • Showing work to professors
    • Building your portfolio
 
-Q: "Which build mode should I choose?"
-A: Standard mode (default) - has tidyverse, ggplot2, dplyr
+Q: "Which Docker profile should I choose?"
+A: Use 'analysis' profile - has tidyverse, ggplot2, dplyr in Docker image.
+   Packages are added dynamically as needed with renv::install().
    That's perfect for most coursework.
 
-Q: "My laptop is slow - can I use a faster mode?"
-A: Yes! Use Fast mode:
-     zzcollab --config set renv-mode "fast"
-   Only 9 packages, builds in 2-3 minutes.
+Q: "My laptop is slow - can I use a lighter profile?"
+A: Yes! Use minimal profile:
+     zzcollab --config set profile-name "minimal"
+   Lightweight base, add packages as you need them.
 
-Q: "I need packages not in Standard mode"
-A: Either:
-   1. Use Comprehensive mode (47 packages): --config set renv-mode "comprehensive"
-   2. Just install them as you need them in RStudio
+Q: "How do I add packages I need?"
+A: Inside RStudio/container:
+     renv::install("package_name")
+     renv::snapshot()
+   Packages are tracked in renv.lock and shared with team.
 
 ═══════════════════════════════════════════════════════════════════════════
 INDIVIDUAL RESEARCHER COMPLETE COMMAND REFERENCE
@@ -903,7 +905,7 @@ INDIVIDUAL RESEARCHER COMPLETE COMMAND REFERENCE
 One-Time Setup:
 ──────────────────────────────────────────────────────────────────────────
 zzcollab --config set team-name "yourname"
-zzcollab --config set renv-mode "standard"
+zzcollab --config set profile-name "analysis"
 
 Per-Project (First Time):
 ──────────────────────────────────────────────────────────────────────────
@@ -965,7 +967,7 @@ EXAMPLE: TYPICAL SEMESTER WORKFLOW
 Week 1: Setup
 ──────────────────────────────────────────────────────────────────────────
 zzcollab --config set team-name "jsmith"
-zzcollab --config set renv-mode "standard"
+zzcollab --config set profile-name "analysis"
 
 Week 2-3: Analysis 1
 ──────────────────────────────────────────────────────────────────────────
@@ -1028,7 +1030,7 @@ QUICK REFERENCE CARD (PRINT THIS!)
 
 ONE-TIME SETUP:
   zzcollab --config set team-name "yourname"
-  zzcollab --config set renv-mode "standard"
+  zzcollab --config set profile-name "analysis"
 
 NEW PROJECT:
   mkdir ~/projects/projectname && cd ~/projects/projectname

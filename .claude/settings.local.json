@@ -43,7 +43,8 @@
       "Bash(git log:*)",
       "Bash(make test:*)",
       "Bash(./tests/run-all-tests.sh:*)",
-      "Bash(do bash -n \"$file\")"
+      "Bash(do bash -n \"$file\")",
+      "Bash(git reset:*)"
     ],
     "deny": []
   }

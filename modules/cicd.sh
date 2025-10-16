@@ -57,17 +57,7 @@ create_github_workflows() {
     # Validates R package structure, runs tests, checks dependencies
     if install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" "R package validation workflow" "Created R package validation workflow"; then
         log_info "  - Triggers: push/PR to main branch"
-        case "$BUILD_MODE" in
-            fast)
-                log_info "  - Actions: renv sync, structure validation (minimal/fast)"
-                ;;
-            comprehensive)
-                log_info "  - Actions: Full R CMD check, extensive testing, coverage analysis"
-                ;;
-            *)
-                log_info "  - Actions: R CMD check, dependency validation, test execution"
-                ;;
-        esac
+        log_info "  - Actions: R CMD check, dependency validation, test execution"
         log_info "  - Platforms: Ubuntu (primary), with optional multi-platform"
     else
         log_error "Failed to create R package workflow"

@@ -45,15 +45,7 @@ CONFIG_DOTFILES_NODOT="false"
 CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
 
-# Package list cache (loaded from config files)
-CONFIG_MINIMAL_DOCKER_PACKAGES=""
-CONFIG_MINIMAL_RENV_PACKAGES=""
-CONFIG_FAST_DOCKER_PACKAGES=""
-CONFIG_FAST_RENV_PACKAGES=""
-CONFIG_STANDARD_DOCKER_PACKAGES=""
-CONFIG_STANDARD_RENV_PACKAGES=""
-CONFIG_COMPREHENSIVE_DOCKER_PACKAGES=""
-CONFIG_COMPREHENSIVE_RENV_PACKAGES=""
+# Package management: Dynamic via renv::install() (no pre-configured modes)
 
 #=============================================================================
 # YAML PARSING FUNCTIONS
@@ -276,78 +268,7 @@ yaml_set() {
 # CONFIGURATION LOADING FUNCTIONS
 #=============================================================================
 
-##############################################################################
-# FUNCTION: load_custom_package_lists
-# PURPOSE:  Load custom package lists from configuration file renv_modes section
-# USAGE:    load_custom_package_lists "zzcollab.yaml"
-# ARGS:     
-#   $1 - config_file: Path to YAML configuration file
-# RETURNS:  
-#   0 - Successfully processed configuration file
-#   1 - Configuration file not found or not readable
-# GLOBALS:  
-#   READ:  None
-#   WRITE: CONFIG_*_DOCKER_PACKAGES, CONFIG_*_RENV_PACKAGES variables
-# DESCRIPTION:
-#   This function loads custom package lists for different build modes from
-#   configuration files. It populates global variables that are used by the
-#   Docker and R package management systems to install appropriate packages
-#   for each build mode.
-# CONFIGURATION STRUCTURE:
-#   renv_modes:
-#     fast:
-#       docker_packages: ["package1", "package2"]
-#       renv_packages: ["pkg1", "pkg2"]
-#     standard:
-#       docker_packages: [...]
-#       renv_packages: [...]
-#     comprehensive:
-#       docker_packages: [...]
-#       renv_packages: [...]
-# GLOBAL VARIABLES SET:
-#   - CONFIG_FAST_DOCKER_PACKAGES
-#   - CONFIG_FAST_RENV_PACKAGES
-#   - CONFIG_STANDARD_DOCKER_PACKAGES
-#   - CONFIG_STANDARD_RENV_PACKAGES
-#   - CONFIG_COMPREHENSIVE_DOCKER_PACKAGES
-#   - CONFIG_COMPREHENSIVE_RENV_PACKAGES
-# EXAMPLE:
-#   load_custom_package_lists "./zzcollab.yaml"
-#   echo "Fast mode Docker packages: $CONFIG_FAST_DOCKER_PACKAGES"
-##############################################################################
-load_custom_package_lists() {
-    local config_file="$1"
-    
-    if [[ ! -f "$config_file" ]]; then
-        return 1
-    fi
-    
-    # Load build mode package lists if they exist
-    for mode in fast standard comprehensive; do
-        if check_yq_dependency; then
-            # Try to get docker and renv packages for this mode
-            local docker_packages=$(yaml_get_array "$config_file" "renv_modes.$mode.docker_packages")
-            local renv_packages=$(yaml_get_array "$config_file" "renv_modes.$mode.renv_packages")
-            
-            # Store in global variables if found
-            if [[ -n "$docker_packages" && "$docker_packages" != "null" ]]; then
-                case "$mode" in
-                    fast) CONFIG_FAST_DOCKER_PACKAGES="$docker_packages" ;;
-                    standard) CONFIG_STANDARD_DOCKER_PACKAGES="$docker_packages" ;;
-                    comprehensive) CONFIG_COMPREHENSIVE_DOCKER_PACKAGES="$docker_packages" ;;
-                esac
-            fi
-            
-            if [[ -n "$renv_packages" && "$renv_packages" != "null" ]]; then
-                case "$mode" in
-                    fast) CONFIG_FAST_RENV_PACKAGES="$renv_packages" ;;
-                    standard) CONFIG_STANDARD_RENV_PACKAGES="$renv_packages" ;;
-                    comprehensive) CONFIG_COMPREHENSIVE_RENV_PACKAGES="$renv_packages" ;;
-                esac
-            fi
-        fi
-    done
-}
+# Function: load_custom_package_lists - REMOVED (deprecated with BUILD_MODE system)
 
 ##############################################################################
 # FUNCTION: load_config_file
@@ -977,183 +898,12 @@ init_config_system() {
 }
 
 #=============================================================================
-# PACKAGE LIST FUNCTIONS
+# PACKAGE LIST FUNCTIONS - REMOVED (deprecated with BUILD_MODE system)
 #=============================================================================
 
-# Function: get_docker_packages_for_mode
-# Purpose: Get Docker packages for a specific build mode (custom or default)
-# Arguments: $1 = build mode (fast, standard, comprehensive)
-get_docker_packages_for_mode() {
-    local mode="$1"
-
-    case "$mode" in
-        minimal)
-            if [[ -n "${CONFIG_MINIMAL_DOCKER_PACKAGES:-}" ]]; then
-                echo "$CONFIG_MINIMAL_DOCKER_PACKAGES"
-            else
-                # Return default minimal mode packages (3 packages)
-                echo "renv,remotes,here"
-            fi
-            ;;
-        fast)
-            if [[ -n "$CONFIG_FAST_DOCKER_PACKAGES" ]]; then
-                echo "$CONFIG_FAST_DOCKER_PACKAGES"
-            else
-                # Return default fast mode packages
-                echo "renv,remotes,here,usethis,devtools"
-            fi
-            ;;
-        standard)
-            if [[ -n "$CONFIG_STANDARD_DOCKER_PACKAGES" ]]; then
-                echo "$CONFIG_STANDARD_DOCKER_PACKAGES"
-            else
-                # Return default standard mode packages
-                echo "renv,remotes,tidyverse,here,usethis,devtools"
-            fi
-            ;;
-        comprehensive)
-            if [[ -n "$CONFIG_COMPREHENSIVE_DOCKER_PACKAGES" ]]; then
-                echo "$CONFIG_COMPREHENSIVE_DOCKER_PACKAGES"
-            else
-                # Comprehensive: includes all packages from old paradigms (analysis + manuscript + package)
-                # Analysis: tidyverse, targets, plotly, DT, shiny
-                # Manuscript: rmarkdown, bookdown
-                # Package: devtools, usethis, roxygen2, testthat, pkgdown, covr
-                echo "renv,remotes,tidyverse,targets,usethis,devtools,plotly,DT,shiny,bookdown,roxygen2,testthat,pkgdown,covr"
-            fi
-            ;;
-        *)
-            log_error "Unknown build mode: $mode"
-            return 1
-            ;;
-    esac
-}
-
-# Function: get_renv_packages_for_mode
-# Purpose: Get renv packages for a specific build mode (custom or default)
-# Arguments: $1 = build mode (fast, standard, comprehensive)
-get_renv_packages_for_mode() {
-    local mode="$1"
-
-    case "$mode" in
-        minimal)
-            if [[ -n "${CONFIG_MINIMAL_RENV_PACKAGES:-}" ]]; then
-                echo "$CONFIG_MINIMAL_RENV_PACKAGES"
-            else
-                # Return default minimal mode packages (3 packages)
-                echo "renv,remotes,here"
-            fi
-            ;;
-        fast)
-            if [[ -n "${CONFIG_FAST_RENV_PACKAGES:-}" ]]; then
-                echo "$CONFIG_FAST_RENV_PACKAGES"
-            else
-                # Return default fast mode packages (9 packages)
-                echo "renv,here,usethis,devtools,testthat,knitr,rmarkdown,targets,palmerpenguins"
-            fi
-            ;;
-        standard)
-            if [[ -n "${CONFIG_STANDARD_RENV_PACKAGES:-}" ]]; then
-                echo "$CONFIG_STANDARD_RENV_PACKAGES"
-            else
-                # Return default standard mode packages (17 packages)
-                echo "renv,here,usethis,devtools,dplyr,ggplot2,tidyr,testthat,palmerpenguins,broom,janitor,DT,conflicted,knitr,rmarkdown,targets,pkgdown"
-            fi
-            ;;
-        comprehensive)
-            if [[ -n "${CONFIG_COMPREHENSIVE_RENV_PACKAGES:-}" ]]; then
-                echo "$CONFIG_COMPREHENSIVE_RENV_PACKAGES"
-            else
-                # Comprehensive: ALL packages from old paradigms unified
-                # Core workflow: renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
-                # Analysis paradigm: tidyverse (dplyr, ggplot2, tidyr, readr), tidymodels, plotly, DT, flexdashboard, janitor, skimr, broom
-                # Manuscript paradigm: bookdown, papaja, RefManageR, citr
-                # Package paradigm: roxygen2, pkgdown, covr, lintr, goodpractice, spelling
-                # Additional utilities: palmerpenguins, conflicted, kableExtra, naniar, visdat
-                # Advanced: shiny, quarto, survival, lme4, DBI, RSQLite, doParallel, foreach, future
-                echo "renv,here,usethis,devtools,dplyr,ggplot2,tidyr,readr,tidymodels,shiny,plotly,quarto,flexdashboard,survival,lme4,testthat,knitr,rmarkdown,targets,janitor,DT,conflicted,palmerpenguins,broom,kableExtra,bookdown,papaja,RefManageR,citr,naniar,skimr,visdat,pkgdown,rcmdcheck,roxygen2,covr,lintr,goodpractice,spelling,jsonlite,DBI,RSQLite,car,digest,doParallel,foreach,furrr,future,sessioninfo,ggthemes,datapasta"
-            fi
-            ;;
-        *)
-            log_error "Unknown build mode: $mode"
-            return 1
-            ;;
-    esac
-}
-
-# Paradigm-specific package functions removed - unified paradigm uses build modes only
-
-# Function: generate_description_content
-# Purpose: Generate DESCRIPTION file content with custom or default packages
-# Arguments: $1 = build mode, $2 = package name, $3 = author name, $4 = author email
-generate_description_content() {
-    local mode="$1"
-    local pkg_name="$2"
-    local author_name="$3"
-    local author_email="$4"
-    
-    # Get package lists for the mode
-    local renv_packages=$(get_renv_packages_for_mode "$mode")
-    
-    # Convert comma-separated list to arrays for processing
-    IFS=',' read -ra packages <<< "$renv_packages"
-    
-    # Separate into Imports and Suggests
-    # Core packages go to Imports, others to Suggests
-    local imports=()
-    local suggests=()
-    
-    for pkg in "${packages[@]}"; do
-        case "$pkg" in
-            renv|here|usethis|devtools|dplyr|ggplot2|tidyr)
-                imports+=("$pkg")
-                ;;
-            *)
-                suggests+=("$pkg")
-                ;;
-        esac
-    done
-    
-    # Generate DESCRIPTION content
-    cat << EOF
-Package: ${pkg_name}
-Title: Research Compendium for ${pkg_name}
-Version: 0.0.0.9000
-Authors@R: 
-    person("${author_name}", email = "${author_email}", role = c("aut", "cre"))
-Description: This is a research compendium for the ${pkg_name} project.
-License: GPL-3
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
-EOF
-
-    # Add Imports section if we have imports
-    if [[ ${#imports[@]} -gt 0 ]]; then
-        echo "Imports:"
-        for pkg in "${imports[@]}"; do
-            echo "    ${pkg},"
-        done | sed '$ s/,$//'  # Remove comma from last item
-    fi
-    
-    # Add Suggests section if we have suggests
-    if [[ ${#suggests[@]} -gt 0 ]]; then
-        echo "Suggests:"
-        for pkg in "${suggests[@]}"; do
-            if [[ "$pkg" == "testthat" ]]; then
-                echo "    testthat (>= 3.0.0),"
-            else
-                echo "    ${pkg},"
-            fi
-        done | sed '$ s/,$//'  # Remove comma from last item
-    fi
-    
-    # Add standard footer
-    cat << EOF
-Config/testthat/edition: 3
-VignetteBuilder: knitr
-EOF
-}
+# Function: get_docker_packages_for_mode - REMOVED (deprecated with BUILD_MODE system)
+# Function: get_renv_packages_for_mode - REMOVED (deprecated with BUILD_MODE system)
+# Function: generate_description_content - REMOVED (deprecated with BUILD_MODE system)
 
 #=============================================================================
 # MODULE VALIDATION AND LOADING
