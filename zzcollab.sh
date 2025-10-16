@@ -240,6 +240,7 @@ load_module "config" "false" "init_config_system"
 
 # Load essential modules (depends on core)
 load_module "templates" "true"
+load_module "utils" "true"
 load_module "structure" "true"
 
 #=============================================================================
@@ -262,7 +263,7 @@ export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL 
 log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
-modules_to_load=("utils" "rpackage" "docker" "analysis" "cicd" "devtools" "help" "help_guides" "github" "profile_validation")
+modules_to_load=("rpackage" "docker" "analysis" "cicd" "devtools" "help" "help_guides" "github" "profile_validation")
 
 for module in "${modules_to_load[@]}"; do
     load_module "$module" "true"

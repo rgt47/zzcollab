@@ -78,3 +78,11 @@ safe_copy() {
 # MODULE VALIDATION
 #=============================================================================
 
+# Validate that this module is being sourced correctly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    echo "❌ Error: utils.sh should be sourced, not executed directly" >&2
+    exit 1
+fi
+
+# Set utils module loaded flag
+readonly ZZCOLLAB_UTILS_LOADED=true
