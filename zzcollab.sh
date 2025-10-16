@@ -74,7 +74,7 @@ fi
 
 # Load CLI module first (handles all command-line argument parsing)
 # The CLI module must be loaded before other modules because it sets global variables
-# that other modules depend on (like TEAM_NAME, PROJECT_NAME, BUILD_MODE, etc.)
+# that other modules depend on (like TEAM_NAME, PROJECT_NAME, PROFILE_NAME, etc.)
 if [[ -f "$MODULES_DIR/cli.sh" ]]; then
     # shellcheck source=modules/cli.sh
     source "$MODULES_DIR/cli.sh"

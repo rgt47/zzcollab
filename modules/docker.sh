@@ -214,11 +214,11 @@ except:
 # PURPOSE:  Select appropriate Dockerfile template based on build mode
 # USAGE:    get_dockerfile_template
 # ARGS:     
-#   None (uses global BUILD_MODE variable)
+#   None (uses global PROFILE_NAME variable)
 # RETURNS:  
 #   0 - Always succeeds, outputs template filename
 # GLOBALS:  
-#   READ:  BUILD_MODE (fast|standard|comprehensive)
+#   READ:  PROFILE_NAME (minimal|analysis|publishing|etc.)
 #   WRITE: None (outputs to stdout)
 # DESCRIPTION:
 #   This function maps build modes to their corresponding Dockerfile templates.
@@ -319,14 +319,14 @@ create_docker_files() {
         dockerfile_template=$(get_dockerfile_template)
     fi
     
-    case "$BUILD_MODE" in
+    case "$PROFILE_NAME" in
         minimal)
             log_info "Using minimal Dockerfile template for ultra-fast builds (~30 seconds)"
             ;;
-        fast)
-            log_info "Using fast Dockerfile template for rapid builds (2-3 minutes)"
+        analysis)
+            log_info "Using analysis Dockerfile template for rapid builds (2-3 minutes)"
             ;;
-        comprehensive)
+        publishing)
             log_info "Using extended Dockerfile template with comprehensive packages (15-20 minutes)"
             ;;
         *)
@@ -440,9 +440,9 @@ build_docker_image() {
     # --build-arg PACKAGE_MODE: Pass build mode to unified Dockerfile (fast/standard/comprehensive)
     # -t "$PKG_NAME": Tag image with package name for easy reference
     
-    # Determine package selection mode based on build mode
-    local package_mode="$BUILD_MODE"
-    log_info "Using build mode: $BUILD_MODE"
+    # Determine package selection mode based on profile
+    local package_mode="${PROFILE_NAME:-minimal}"
+    log_info "Using Docker profile: $package_mode"
 
     local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" --build-arg PACKAGE_MODE=\"$package_mode\" -t \"$PKG_NAME\" ."
     

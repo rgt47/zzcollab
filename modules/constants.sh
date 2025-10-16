@@ -62,7 +62,7 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="/etc/zzcollab/config.yaml"         # System-wid
 # Docker and build defaults
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE="r-ver"
-readonly ZZCOLLAB_DEFAULT_BUILD_MODE="standard"
+readonly ZZCOLLAB_DEFAULT_PROFILE_NAME="minimal"
 
 # Author information (can be overridden via environment variables)
 readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Ronald G. Thomas}"
