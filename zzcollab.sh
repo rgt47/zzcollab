@@ -20,7 +20,7 @@
 # USAGE:   ./zzcollab.sh [OPTIONS]
 #          Examples:
 #          ./zzcollab.sh -t myteam -p study -d ~/dotfiles       # Team lead setup
-#          ./zzcollab.sh -t myteam -p study                     # Team member join
+#          ./zzcollab.sh -t myteam -p study --use-team-image    # Team member join (pulls from Docker Hub)
 #          ./zzcollab.sh --help                                 # Show all options
 #          ./zzcollab.sh --config list                          # Configuration management
 #
