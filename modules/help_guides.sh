@@ -703,14 +703,15 @@ ISSUE 10: Build Takes Too Long
 PROBLEM: Docker build taking 15-20 minutes
 
 SOLUTIONS:
-  Use faster build mode:
-    zzcollab --config set build-mode "fast"
-    # 9 packages, ~3 minutes
+  Use lighter Docker profile:
+    zzcollab --config set profile-name "minimal"
+    # Minimal pre-installed packages
+    # Add more packages dynamically with renv::install()
 
-  Or: Minimal mode:
-    zzcollab --config set build-mode "minimal"
-    # 3 packages, ~30 seconds
-    # Install additional packages as needed
+  Or: Analysis profile (recommended):
+    zzcollab --config set profile-name "analysis"
+    # Includes tidyverse and common analysis packages
+    # Install additional packages as needed with renv::install()
 
   Reuse team base image:
     # See: zzcollab --help-quickstart
@@ -863,7 +864,7 @@ WITHOUT CONFIG (repetitive):
 WITH CONFIG (simple):
   zzcollab --config set team-name "myname"
   zzcollab --config set dotfiles-dir "~/dotfiles"
-  zzcollab --config set build-mode "standard"
+  zzcollab --config set profile-name "analysis"
 
   # Then just:
   zzcollab -p project1
@@ -877,7 +878,7 @@ QUICK START: ESSENTIAL CONFIGURATION
 One-time setup (3 commands):
 
   zzcollab --config set team-name "yourname"
-  zzcollab --config set build-mode "standard"
+  zzcollab --config set profile-name "analysis"
   zzcollab --config set dotfiles-dir "~/dotfiles"
 
 That's it! Now all future projects use these defaults.
@@ -913,9 +914,9 @@ Team/Project Settings:
   project-name       Default project name (rarely used)
   github-account     GitHub username (defaults to team-name)
 
-Build Settings:
-  build-mode         minimal, fast, standard, comprehensive
-  
+Docker Profile Settings:
+  profile-name       minimal, analysis, modeling, bioinformatics, geospatial, publishing
+
 Dotfiles Settings:
   dotfiles-dir       Path to dotfiles directory (e.g., ~/dotfiles)
   dotfiles-nodot     Use if files don't have leading dots
@@ -959,7 +960,7 @@ COMPLETE CONFIGURATION EXAMPLES
 Example 1: Solo Researcher (Minimal Setup)
 ──────────────────────────────────────────────────────────────────────────
 zzcollab --config set team-name "jsmith"
-zzcollab --config set build-mode "standard"
+zzcollab --config set profile-name "analysis"
 
 # Optional but recommended:
 zzcollab --config set dotfiles-dir "~/dotfiles"
@@ -968,7 +969,7 @@ Example 2: Solo Researcher (Complete Setup)
 ──────────────────────────────────────────────────────────────────────────
 zzcollab --config set team-name "jsmith"
 zzcollab --config set github-account "jsmith"
-zzcollab --config set build-mode "fast"
+zzcollab --config set profile-name "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 zzcollab --config set auto-github false
 
@@ -976,7 +977,7 @@ Example 3: Team Member
 ──────────────────────────────────────────────────────────────────────────
 zzcollab --config set team-name "labteam"
 zzcollab --config set github-account "jsmith"
-zzcollab --config set build-mode "standard"
+zzcollab --config set profile-name "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Now joining team projects is simple:
@@ -986,7 +987,7 @@ zzcollab -t labteam -p study -I rstudio
 Example 4: Minimal Build for Speed
 ──────────────────────────────────────────────────────────────────────────
 zzcollab --config set team-name "myname"
-zzcollab --config set build-mode "minimal"
+zzcollab --config set profile-name "minimal"
 
 # Projects build in ~30 seconds
 # Install additional packages as needed
@@ -1002,7 +1003,7 @@ Example complete configuration:
 defaults:
   team_name: "jsmith"
   github_account: "jsmith"
-  build_mode: "standard"
+  profile_name: "analysis"
   dotfiles_dir: "~/dotfiles"
   dotfiles_nodot: false
   auto_github: false
@@ -1021,7 +1022,7 @@ zzcollab --config init
 
 # Set your essentials
 zzcollab --config set team-name "yourname"
-zzcollab --config set build-mode "standard"
+zzcollab --config set profile-name "analysis"
 
 # Verify
 zzcollab --config list
@@ -1036,12 +1037,12 @@ zzcollab --config list
 
 # Check specific setting
 zzcollab --config get team-name
-zzcollab --config get build-mode
+zzcollab --config get profile-name
 
 Workflow 3: Change Build Mode
 ──────────────────────────────────────────────────────────────────────────
 # Switch from standard to fast
-zzcollab --config set build-mode "fast"
+zzcollab --config set profile-name "analysis"
 
 # Applies to all NEW projects
 # Existing projects unaffected
@@ -1062,13 +1063,13 @@ Command-line flags OVERRIDE configuration:
 
 Configuration says:
   team-name: "jsmith"
-  build-mode: "standard"
+  profile-name: "analysis"
 
 Command:
-  zzcollab -t different -p project -F
+  zzcollab -t different -p project --profile-name bioinformatics
 
 Result:
-  Uses team="different" (flag overrides config)
+  Uses team="different" and profile="bioinformatics" (flags override config)
   Uses build mode="fast" (-F overrides config)
   This project only! Config unchanged.
 
@@ -1086,11 +1087,13 @@ CONFIGURATION BEST PRACTICES
 3. Set dotfiles-dir if you have dotfiles
    Saves typing -d ~/dotfiles every time
 
-4. Choose build-mode based on your needs:
-   • minimal - Ultra-fast, add packages later
-   • fast - Quick development (recommended for learning)
-   • standard - Most workflows (recommended for research)
-   • comprehensive - Everything included
+4. Choose profile-name based on your needs:
+   • minimal - Lightweight base, add packages with renv::install()
+   • analysis - Includes tidyverse (recommended for most research)
+   • modeling - Statistical modeling packages
+   • bioinformatics - Bioconductor and bioinfo tools
+   • geospatial - Spatial data analysis packages
+   • publishing - Full publishing suite with LaTeX
 
 5. Don't set auto-github to true unless you want repos for EVERYTHING
    Better: Use -G flag when you want GitHub repo
@@ -1183,7 +1186,7 @@ QUICK REFERENCE
 Essential commands:
   zzcollab --config init                      # Create config file
   zzcollab --config set team-name "name"      # Set your name
-  zzcollab --config set build-mode "standard" # Set build mode
+  zzcollab --config set profile-name "analysis" # Set build mode
   zzcollab --config list                      # See all settings
   zzcollab --config get team-name             # Get one setting
 
@@ -2176,7 +2179,7 @@ Best for:
 Usage:
   zzcollab -p myproject --minimal
   # Or set as default:
-  zzcollab --config set build-mode "minimal"
+  zzcollab --config set profile-name "minimal"
 
 2. FAST MODE (--fast or -F)
 ──────────────────────────────────────────────────────────────────────────
@@ -2202,7 +2205,7 @@ Best for:
 Usage:
   zzcollab -p myproject -F
   # Or set as default:
-  zzcollab --config set build-mode "fast"
+  zzcollab --config set profile-name "analysis"
 
 3. STANDARD MODE (--standard or -S) [DEFAULT]
 ──────────────────────────────────────────────────────────────────────────
@@ -2262,7 +2265,7 @@ Best for:
 Usage:
   zzcollab -p myproject -C
   # Or set as default:
-  zzcollab --config set build-mode "comprehensive"
+  zzcollab --config set profile-name "publishing"
 
 ═══════════════════════════════════════════════════════════════════════════
 BUILD MODE COMPARISON TABLE
@@ -2355,7 +2358,7 @@ USAGE EXAMPLES
 Set Default Build Mode (recommended):
 ──────────────────────────────────────────────────────────────────────────
 # Set once, applies to all future projects
-zzcollab --config set build-mode "standard"
+zzcollab --config set profile-name "analysis"
 
 # Now all projects use standard mode automatically:
 zzcollab -p project1  # Uses standard
@@ -2370,7 +2373,7 @@ Solo Researcher Quick Start:
 ──────────────────────────────────────────────────────────────────────────
 # Recommended setup for individual researchers:
 zzcollab --config set team-name "myname"
-zzcollab --config set build-mode "standard"
+zzcollab --config set profile-name "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Create project (uses config defaults):
@@ -2392,7 +2395,7 @@ CHANGING BUILD MODES
 Changing Default for Future Projects:
 ──────────────────────────────────────────────────────────────────────────
 # Currently using fast, want standard for new projects:
-zzcollab --config set build-mode "standard"
+zzcollab --config set profile-name "analysis"
 
 # All NEW projects will use standard
 # Existing projects unchanged
@@ -2453,7 +2456,7 @@ Time saved: 73%!
 Strategy 3: Use Configuration
 ──────────────────────────────────────────────────────────────────────────
 # Set preferred mode once:
-zzcollab --config set build-mode "fast"
+zzcollab --config set profile-name "analysis"
 
 # No need to remember flag for each project:
 zzcollab -p project1  # Uses fast automatically
@@ -2500,7 +2503,7 @@ TROUBLESHOOTING
 Issue: "Build is too slow"
 ──────────────────────────────────────────────────────────────────────────
 Solution: Use faster mode or reusable base image strategy
-  zzcollab --config set build-mode "minimal"
+  zzcollab --config set profile-name "minimal"
   # Or see: zzcollab --help-quickstart (reusable image section)
 
 Issue: "Missing packages I need"
@@ -2513,7 +2516,7 @@ Solution: Install them individually (faster than rebuilding):
 Issue: "Not sure which mode I'm using"
 ──────────────────────────────────────────────────────────────────────────
 Check configuration:
-  zzcollab --config get build-mode
+  zzcollab --config get profile-name
 
 Check project DESCRIPTION file:
   grep "BuildMode" DESCRIPTION
@@ -2534,21 +2537,26 @@ Coordinate on build mode:
 ADVANCED: CUSTOM BUILD MODES
 ═══════════════════════════════════════════════════════════════════════════
 
-Create custom package sets in config.yaml:
+Use predefined Docker profiles for specific domains:
 
-build_modes:
-  bioinformatics:
-    description: "Custom bioinformatics workflow"
-    docker_packages: [renv, BiocManager, devtools]
-    renv_packages: [renv, BiocManager, DESeq2, edgeR, limma]
-  
-  geospatial:
-    description: "Custom GIS workflow"
-    docker_packages: [renv, sf, terra, leaflet]
-    renv_packages: [renv, sf, terra, leaflet, tmap, rgdal]
+Available Profiles:
+  minimal          - Lightweight base, add packages as needed
+  analysis         - Tidyverse and common analysis packages (recommended)
+  modeling         - Statistical modeling packages
+  bioinformatics   - Bioconductor and bioinfo tools
+  geospatial       - Spatial data analysis packages
+  publishing       - Full publishing suite with LaTeX
+  shiny            - Shiny app development environment
 
 Usage:
-  zzcollab -p geo-analysis --build-mode geospatial
+  zzcollab --profile-name bioinformatics
+  zzcollab --profile-name geospatial
+
+Discovery:
+  zzcollab --list-profiles  # See all available profiles
+
+Note: Packages are added dynamically as needed using renv::install()
+      inside Docker containers. No need to pre-configure packages.
 
 See: zzcollab --help-config for complete customization guide
 
@@ -2556,18 +2564,16 @@ See: zzcollab --help-config for complete customization guide
 QUICK REFERENCE
 ═══════════════════════════════════════════════════════════════════════════
 
-Flags:
-  -M, --minimal         3 packages, ~30 sec
-  -F, --fast            9 packages, 2-3 min
-  -S, --standard       17 packages, 4-6 min (DEFAULT)
-  -C, --comprehensive  47+ packages, 15-20 min
+Profile Selection:
+  --profile-name NAME      Use predefined profile
+  --list-profiles          List all available profiles
 
 Configuration:
-  zzcollab --config set build-mode "MODE"
-  zzcollab --config get build-mode
+  zzcollab --config set profile-name "analysis"
+  zzcollab --config get profile-name
 
 Override default:
-  zzcollab -p project -F  # Use fast this time only
+  zzcollab -p project --profile-name bioinformatics  # Use bioinformatics this time only
 
 Check current mode:
   grep "BuildMode" DESCRIPTION

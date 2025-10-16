@@ -262,7 +262,7 @@ export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL 
 log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
-modules_to_load=("utils" "rpackage" "docker" "analysis" "cicd" "devtools" "team_init" "help" "help_guides" "github" "profile_validation")
+modules_to_load=("utils" "rpackage" "docker" "analysis" "cicd" "devtools" "help" "help_guides" "github" "profile_validation")
 
 for module in "${modules_to_load[@]}"; do
     load_module "$module" "true"
@@ -290,7 +290,7 @@ init_manifest() {
   "version": "1.0",
   "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "package_name": "$PKG_NAME",
-  "modules_loaded": ["core", "templates", "structure", "rpackage", "docker", "analysis", "cicd", "devtools", "team_init"],
+  "modules_loaded": ["core", "templates", "structure", "rpackage", "docker", "analysis", "cicd", "devtools"],
   "command_line_options": {
     "build_docker": $BUILD_DOCKER,
     "dotfiles_dir": "${DOTFILES_DIR}",
