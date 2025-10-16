@@ -40,7 +40,10 @@
       "Bash(~/Library/CloudStorage/Dropbox/prj/d07/zzcollab/zzcollab.sh:*)",
       "Bash(./zzcollab.sh:*)",
       "Bash(sort:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(make test:*)",
+      "Bash(./tests/run-all-tests.sh:*)",
+      "Bash(do bash -n \"$file\")"
     ],
     "deny": []
   }

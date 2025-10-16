@@ -30,13 +30,13 @@ validate_init_prerequisites() {
     
     # Check Docker
     if ! command_exists docker; then
-        print_error "Docker is not installed. Please install Docker Desktop."
-        print_error "Download from: https://www.docker.com/products/docker-desktop"
+        log_error "Docker is not installed. Please install Docker Desktop."
+        log_error "Download from: https://www.docker.com/products/docker-desktop"
         return 1
     fi
     
     if ! docker info >/dev/null 2>&1; then
-        print_error "Docker daemon is not running. Please start Docker Desktop."
+        log_error "Docker daemon is not running. Please start Docker Desktop."
         return 1
     fi
     
@@ -44,45 +44,45 @@ validate_init_prerequisites() {
     if docker info 2>/dev/null | grep -q "seccomp.*default"; then
         : # Profile is default, all good
     else
-        print_warning "daemon is not using the default seccomp profile"
+        log_warn "daemon is not using the default seccomp profile"
     fi
     
     # Check Docker Hub login
     if docker info 2>/dev/null | grep -q "Username:"; then
         log_success "Docker Hub: logged in"
     else
-        print_warning "Docker Hub login status unclear. You may need to run: docker login"
+        log_warn "Docker Hub login status unclear. You may need to run: docker login"
     fi
     
     # Check GitHub CLI
     if ! command_exists gh; then
-        print_error "GitHub CLI (gh) is not installed. Please install it."
-        print_error "Install: brew install gh  (macOS) or see https://cli.github.com/"
+        log_error "GitHub CLI (gh) is not installed. Please install it."
+        log_error "Install: brew install gh  (macOS) or see https://cli.github.com/"
         return 1
     fi
     
     if ! gh auth status >/dev/null 2>&1; then
-        print_error "GitHub CLI is not authenticated. Please run: gh auth login"
+        log_error "GitHub CLI is not authenticated. Please run: gh auth login"
         return 1
     fi
     
     log_info "Verifying Docker Hub account: $DOCKERHUB_ACCOUNT"
     if ! docker search "$DOCKERHUB_ACCOUNT" >/dev/null 2>&1; then
-        print_warning "Could not verify Docker Hub account '$DOCKERHUB_ACCOUNT'"
-        print_warning "Make sure the account exists and you have push access"
+        log_warn "Could not verify Docker Hub account '$DOCKERHUB_ACCOUNT'"
+        log_warn "Make sure the account exists and you have push access"
     else
-        print_success "Docker Hub account '$DOCKERHUB_ACCOUNT' verified"
+        log_success "Docker Hub account '$DOCKERHUB_ACCOUNT' verified"
     fi
     
     log_info "Verifying GitHub account: $GITHUB_ACCOUNT"
     if ! gh api "users/$GITHUB_ACCOUNT" >/dev/null 2>&1; then
-        print_error "GitHub account '$GITHUB_ACCOUNT' not found or not accessible"
+        log_error "GitHub account '$GITHUB_ACCOUNT' not found or not accessible"
         return 1
     else
-        print_success "GitHub account '$GITHUB_ACCOUNT' verified"
+        log_success "GitHub account '$GITHUB_ACCOUNT' verified"
     fi
     
-    print_success "All prerequisites validated"
+    log_success "All prerequisites validated"
     return 0
 }
 
@@ -91,7 +91,7 @@ validate_init_prerequisites() {
 validate_required_team_parameters() {
     # Check required team name
     if [[ -z "$TEAM_NAME" ]]; then
-        print_error "Required parameter -t/--team is missing"
+        log_error "Required parameter -t/--team is missing"
         show_init_help
         exit 1
     fi
@@ -108,12 +108,12 @@ validate_required_team_parameters() {
             log_info "Inferred project name from current directory: $PROJECT_NAME"
         else
             if [[ "$current_dir" == "zzcollab" ]]; then
-                print_error "Cannot infer project name from zzcollab source directory"
-                print_error "Please specify --project-name or run from a different directory"
+                log_error "Cannot infer project name from zzcollab source directory"
+                log_error "Please specify --project-name or run from a different directory"
                 show_init_help
                 exit 1
             else
-                print_error "Required parameter --project-name is missing"
+                log_error "Required parameter --project-name is missing"
                 show_init_help
                 exit 1
             fi
@@ -151,7 +151,7 @@ validate_dotfiles_configuration() {
         local expanded_dotfiles="${DOTFILES_DIR/#\~/$HOME}"
 
         if [[ ! -d "$expanded_dotfiles" ]]; then
-            print_error "Dotfiles directory not found: $DOTFILES_DIR (expanded: $expanded_dotfiles)"
+            log_error "Dotfiles directory not found: $DOTFILES_DIR (expanded: $expanded_dotfiles)"
             exit 1
         fi
         USE_DOTFILES=true
@@ -182,46 +182,46 @@ validate_init_parameters() {
 # Function: create_project_structure
 # Purpose: Create and set up the project directory structure
 create_project_structure() {
-    print_status "Step 1: Setting up project directory..."
+    log_info "Step 1: Setting up project directory..."
     local current_dir
     current_dir=$(basename "$PWD")
     
     if [[ "$current_dir" == "$PROJECT_NAME" ]]; then
         # Already in the target directory
-        print_status "Using current directory: $PROJECT_NAME"
+        log_info "Using current directory: $PROJECT_NAME"
     elif [[ -d "$PROJECT_NAME" ]]; then
         if [[ "$PREPARE_DOCKERFILE" == true ]]; then
-            print_error "Directory $PROJECT_NAME already exists"
-            print_error "Remove it first or run without --prepare-dockerfile to continue with existing project"
+            log_error "Directory $PROJECT_NAME already exists"
+            log_error "Remove it first or run without --prepare-dockerfile to continue with existing project"
             exit 1
         else
             cd "$PROJECT_NAME" || exit 1
-            print_status "Using existing directory: $PROJECT_NAME"
+            log_info "Using existing directory: $PROJECT_NAME"
         fi
     else
         mkdir -p "$PROJECT_NAME"
         cd "$PROJECT_NAME" || exit 1
-        print_success "Created project directory: $PROJECT_NAME"
+        log_success "Created project directory: $PROJECT_NAME"
     fi
 }
 
 # Function: setup_team_dockerfile
 # Purpose: Copy and prepare Dockerfile template for team image building
 setup_team_dockerfile() {
-    print_status "Step 2: Setting up team Dockerfile..."
+    log_info "Step 2: Setting up team Dockerfile..."
     if [[ ! -f "$DOCKERFILE_PATH" ]]; then
-        print_error "Dockerfile template not found: $DOCKERFILE_PATH"
+        log_error "Dockerfile template not found: $DOCKERFILE_PATH"
         exit 1
     fi
 
     if [[ ! -f "./Dockerfile.teamcore" ]]; then
         cp "$DOCKERFILE_PATH" ./Dockerfile.teamcore
-        print_success "Copied Dockerfile template to Dockerfile.teamcore"
+        log_success "Copied Dockerfile template to Dockerfile.teamcore"
     else
         if [[ "$PREPARE_DOCKERFILE" == true ]]; then
-            print_status "Dockerfile.teamcore already exists - you can edit it directly"
+            log_info "Dockerfile.teamcore already exists - you can edit it directly"
         else
-            print_status "Using existing Dockerfile.teamcore"
+            log_info "Using existing Dockerfile.teamcore"
         fi
     fi
     
@@ -236,30 +236,30 @@ setup_team_dockerfile() {
                 -e "s/\${AUTHOR_EMAIL}/${AUTHOR_EMAIL:-team@example.com}/g" \
                 -e "s/\${CREATION_DATE}/$(date -u +%Y-%m-%dT%H:%M:%SZ)/g" \
                 "$config_template" > ./config.yaml
-            print_success "Created config.yaml with predefined profiles"
+            log_success "Created config.yaml with predefined profiles"
 
             # Copy profiles.yaml library if it exists
             local profile_library="${TEMPLATES_DIR}/profiles.yaml"
             if [[ -f "$profile_library" ]] && [[ ! -f "./profiles.yaml" ]]; then
                 cp "$profile_library" ./profiles.yaml
-                print_success "Copied profile library: profiles.yaml"
+                log_success "Copied profile library: profiles.yaml"
             fi
         else
-            print_error "Config template not found: $config_template"
+            log_error "Config template not found: $config_template"
             return 1
         fi
     fi
 
     # If --prepare-dockerfile, exit here for manual editing
     if [[ "$PREPARE_DOCKERFILE" == true ]]; then
-        print_success "Project prepared for Dockerfile editing"
+        log_success "Project prepared for Dockerfile editing"
         echo ""
-        print_status "Next steps:"
+        log_info "Next steps:"
         echo "  1. Edit $(pwd)/Dockerfile.teamcore as needed"
         echo "  2. Test build: docker build -f Dockerfile.teamcore -t test-image ."
         echo "  3. Re-run setup: $0 -i -t $TEAM_NAME -p $PROJECT_NAME"
         echo ""
-        print_status "Example build command for testing:"
+        log_info "Example build command for testing:"
         echo "     docker build -f Dockerfile.teamcore -t test-image ."
         exit 0
     fi
@@ -268,7 +268,7 @@ setup_team_dockerfile() {
 # Function: create_basic_files
 # Purpose: Create minimal project files needed for Docker build
 create_basic_files() {
-    print_status "Step 3: Creating basic project structure..."
+    log_info "Step 3: Creating basic project structure..."
     
     # Create basic files needed for Docker build
     # We need to create minimal versions of files that the Dockerfile expects
@@ -296,7 +296,7 @@ Suggests:
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 EOF
-        print_success "Created basic DESCRIPTION file"
+        log_success "Created basic DESCRIPTION file"
     fi
     
     # Note: .zshrc will be copied from user's dotfiles during full project setup
@@ -312,45 +312,45 @@ build_team_images() {
     local step_counter=4
 
     # Build images based on INIT_BASE_IMAGE flag
-    print_status "Step $step_counter: Building images..."
+    log_info "Step $step_counter: Building images..."
     case "$INIT_BASE_IMAGE" in
         "r-ver")
-            print_status "Step $step_counter: Building shell core image..."
+            log_info "Step $step_counter: Building shell core image..."
             build_single_team_image "rocker/r-ver" "shell"
-            print_success "Built shell core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:v1.0.0"
+            log_success "Built shell core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:v1.0.0"
             ;;
         "rstudio")
-            print_status "Step $step_counter: Building RStudio core image..."
+            log_info "Step $step_counter: Building RStudio core image..."
             build_single_team_image "rocker/rstudio" "rstudio"
-            print_success "Built RStudio core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:v1.0.0"
+            log_success "Built RStudio core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:v1.0.0"
             ;;
         "verse")
-            print_status "Step $step_counter: Building verse core image..."
+            log_info "Step $step_counter: Building verse core image..."
             local verse_image
             verse_image=$(get_multiarch_base_image "verse")
             build_single_team_image "$verse_image" "verse"
-            print_success "Built verse core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-verse:v1.0.0"
+            log_success "Built verse core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-verse:v1.0.0"
             ;;
         "all")
             # Build all three variants (r-ver, rstudio, verse)
-            print_status "Step $step_counter: Building shell core image..."
+            log_info "Step $step_counter: Building shell core image..."
             build_single_team_image "rocker/r-ver" "shell"
-            print_success "Built shell core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:v1.0.0"
+            log_success "Built shell core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:v1.0.0"
 
             ((step_counter++))
-            print_status "Step $step_counter: Building RStudio core image..."
+            log_info "Step $step_counter: Building RStudio core image..."
             build_single_team_image "rocker/rstudio" "rstudio"
-            print_success "Built RStudio core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:v1.0.0"
+            log_success "Built RStudio core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:v1.0.0"
 
             ((step_counter++))
-            print_status "Step $step_counter: Building verse core image..."
+            log_info "Step $step_counter: Building verse core image..."
             local verse_image
             verse_image=$(get_multiarch_base_image "verse")
             build_single_team_image "$verse_image" "verse"
-            print_success "Built verse core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-verse:v1.0.0"
+            log_success "Built verse core image: ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-verse:v1.0.0"
             ;;
         *)
-            print_error "Invalid INIT_BASE_IMAGE: $INIT_BASE_IMAGE"
+            log_error "Invalid INIT_BASE_IMAGE: $INIT_BASE_IMAGE"
             exit 1
             ;;
     esac
@@ -386,7 +386,7 @@ push_team_images() {
         step_counter=7  # Adjust for three builds
     fi
 
-    print_status "Step $step_counter: Pushing images to Docker Hub..."
+    log_info "Step $step_counter: Pushing images to Docker Hub..."
 
     # Check if we're using config-based profiles
     if [[ -f "./config.yaml" ]] && grep -q "use_config_profiles: true" ./config.yaml 2>/dev/null; then
@@ -427,7 +427,7 @@ push_team_images() {
         esac
     fi
 
-    print_success "Pushed all images to Docker Hub"
+    log_success "Pushed all images to Docker Hub"
 }
 
 # Function: push_single_team_image
@@ -446,7 +446,7 @@ push_single_team_image() {
 # Function: initialize_full_project
 # Purpose: Run full zzcollab setup with team base image
 initialize_full_project() {
-    print_status "Step 7: Initializing full zzcollab project..."
+    log_info "Step 7: Initializing full zzcollab project..."
     
     # Prepare zzcollab arguments - select appropriate base image
     local base_variant
@@ -488,7 +488,7 @@ initialize_full_project() {
     
     # Run zzcollab setup (calling main script recursively but without --init)
     eval "$0 $ZZCOLLAB_ARGS"
-    print_success "Initialized zzcollab project with custom base image"
+    log_success "Initialized zzcollab project with custom base image"
 }
 
 #=============================================================================
@@ -498,7 +498,7 @@ initialize_full_project() {
 # Function: setup_git_repository
 # Purpose: Initialize git repository and create initial commit
 setup_git_repository() {
-    print_status "Step 8: Initializing git repository..."
+    log_info "Step 8: Initializing git repository..."
     git init
     git add .
     git commit -m "🎉 Initial research project setup
@@ -511,24 +511,24 @@ setup_git_repository() {
 🐳 Generated with zzcollab --init
 
 Co-Authored-By: zzcollab <noreply@zzcollab.dev>"
-    print_success "Initialized git repository with initial commit"
+    log_success "Initialized git repository with initial commit"
 }
 
 # Function: create_github_repository
 # Purpose: Create private GitHub repository and push code
 create_github_repository() {
-    print_status "Step 9: Creating private GitHub repository..."
+    log_info "Step 9: Creating private GitHub repository..."
 
     # Check if repository already exists
     if gh repo view "${GITHUB_ACCOUNT}/${PROJECT_NAME}" >/dev/null 2>&1; then
-        print_error "❌ Repository ${GITHUB_ACCOUNT}/${PROJECT_NAME} already exists on GitHub!"
+        log_error "❌ Repository ${GITHUB_ACCOUNT}/${PROJECT_NAME} already exists on GitHub!"
         echo ""
-        print_status "Options to resolve this:"
+        log_info "Options to resolve this:"
         echo "  1. Delete existing repository: gh repo delete ${GITHUB_ACCOUNT}/${PROJECT_NAME} --confirm"
         echo "  2. Use a different project name: --project-name PROJECT_NAME_V2"
         echo "  3. Manual setup: Skip automatic creation and push manually"
         echo ""
-        print_status "If you want to push to existing repository:"
+        log_info "If you want to push to existing repository:"
         echo "  git remote add origin https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
         echo "  git push origin main --force  # WARNING: This will overwrite existing content"
         echo ""
@@ -546,15 +546,15 @@ create_github_repository() {
     git branch -M main
     git push -u origin main
 
-    print_success "Created private repository: https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}"
-    print_success "🎉 Team setup complete!"
+    log_success "Created private repository: https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}"
+    log_success "🎉 Team setup complete!"
     echo ""
-    print_status "Next steps for team members:"
+    log_info "Next steps for team members:"
     echo "  git clone https://github.com/${GITHUB_ACCOUNT}/${PROJECT_NAME}.git"
     echo "  cd ${PROJECT_NAME}"
     echo "  zzcollab -t ${TEAM_NAME} -p ${PROJECT_NAME} -I shell"
     echo ""
-    print_status "Team images available:"
+    log_info "Team images available:"
     echo "  ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-shell:latest"
     echo "  ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-rstudio:latest"
 }
@@ -569,32 +569,32 @@ parse_config_profiles() {
     local config_file="${1:-config.yaml}"
     
     if [[ ! -f "$config_file" ]]; then
-        print_error "Configuration file not found: $config_file"
-        print_error "Run with traditional flags or create config.yaml first."
+        log_error "Configuration file not found: $config_file"
+        log_error "Run with traditional flags or create config.yaml first."
         return 1
     fi
     
     # Check if yq is available for YAML parsing
     if ! command -v yq >/dev/null 2>&1; then
-        print_error "yq is required for YAML configuration parsing"
-        print_error "Install with: brew install yq (macOS) or apt install yq (Ubuntu)"
-        print_error "Alternatively, use traditional command-line flags."
+        log_error "yq is required for YAML configuration parsing"
+        log_error "Install with: brew install yq (macOS) or apt install yq (Ubuntu)"
+        log_error "Alternatively, use traditional command-line flags."
         return 1
     fi
     
-    print_status "📋 Parsing profiles from $config_file..."
+    log_info "📋 Parsing profiles from $config_file..."
     
     # Get list of enabled profiles
     local enabled_variants
     enabled_variants=$(yq eval '.profiles | to_entries | map(select(.value.enabled == true)) | .[].key' "$config_file")
     
     if [[ -z "$enabled_variants" ]]; then
-        print_warning "No enabled profiles found in $config_file"
-        print_status "💡 Set 'enabled: true' for profiles you want to build"
+        log_warn "No enabled profiles found in $config_file"
+        log_info "💡 Set 'enabled: true' for profiles you want to build"
         return 1
     fi
     
-    print_status "Found enabled profiles: $(echo "$enabled_variants" | tr '\n' ' ')"
+    log_info "Found enabled profiles: $(echo "$enabled_variants" | tr '\n' ' ')"
     
     # Build each enabled variant
     echo "$enabled_variants" | while read -r profile_name; do
@@ -609,7 +609,7 @@ build_config_profile() {
     local config_file="$1"
     local profile_name="$2"
     
-    print_status "🐳 Building profile: $profile_name"
+    log_info "🐳 Building profile: $profile_name"
     
     # NEW: Check if variant has full definition or just enabled flag
     local has_full_definition
@@ -622,40 +622,40 @@ build_config_profile() {
         profile_library=$(yq eval ".build.profile_library // \"profiles.yaml\"" "$config_file")
         
         if [[ ! -f "$profile_library" ]]; then
-            print_error "❌ Profile library not found: $profile_library"
+            log_error "❌ Profile library not found: $profile_library"
             return 1
         fi
         
-        print_status "  🔗 Loading definition from $profile_library"
+        log_info "  🔗 Loading definition from $profile_library"
         base_image=$(yq eval ".${profile_name}.base_image" "$profile_library")
         description=$(yq eval ".${profile_name}.description" "$profile_library")
         packages=$(yq eval ".${profile_name}.packages[]" "$profile_library" | tr '\n' ' ')
         system_deps=$(yq eval ".${profile_name}.system_deps[]?" "$profile_library" | tr '\n' ' ')
         
         if [[ "$base_image" == "null" || -z "$base_image" ]]; then
-            print_error "❌ Profile '$profile_name' not found in $profile_library"
+            log_error "❌ Profile '$profile_name' not found in $profile_library"
             return 1
         fi
     else
         # Variant has full definition in config.yaml (legacy support)
-        print_status "  📝 Using full definition from config.yaml"
+        log_info "  📝 Using full definition from config.yaml"
         base_image=$(yq eval ".profiles.${profile_name}.base_image" "$config_file")
         description=$(yq eval ".profiles.${profile_name}.description" "$config_file")
         packages=$(yq eval ".profiles.${profile_name}.packages[]" "$config_file" | tr '\n' ' ')
         system_deps=$(yq eval ".profiles.${profile_name}.system_deps[]?" "$config_file" | tr '\n' ' ')
     fi
     
-    print_status "  Base image: $base_image"
-    print_status "  Description: $description"
-    print_status "  Packages: $packages"
-    [[ -n "$system_deps" ]] && print_status "  System deps: $system_deps"
+    log_info "  Base image: $base_image"
+    log_info "  Description: $description"
+    log_info "  Packages: $packages"
+    [[ -n "$system_deps" ]] && log_info "  System deps: $system_deps"
     
     # Create temporary Dockerfile for this variant
     create_profile_dockerfile "$profile_name" "$base_image" "$packages" "$system_deps"
     
     # Build the Docker image
     local image_name="${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}"
-    print_status "  Building: $image_name:latest"
+    log_info "  Building: $image_name:latest"
     
     if docker build -f "Dockerfile.variant.${profile_name}" \
         --build-arg TEAM_NAME="$TEAM_NAME" \
@@ -665,12 +665,12 @@ build_config_profile() {
         -t "${image_name}:latest" \
         -t "${image_name}:v1.0.0" .; then
         
-        print_success "✅ Built $profile_name variant: ${image_name}:latest"
+        log_success "✅ Built $profile_name variant: ${image_name}:latest"
         
         # Clean up temporary Dockerfile
         rm -f "Dockerfile.variant.${profile_name}"
     else
-        print_error "❌ Failed to build $profile_name variant"
+        log_error "❌ Failed to build $profile_name variant"
         return 1
     fi
 }
@@ -780,7 +780,7 @@ WORKDIR /home/analyst
 CMD ["/bin/zsh"]
 EOF
 
-    print_status "  Generated: $dockerfile"
+    log_info "  Generated: $dockerfile"
 }
 
 #=============================================================================
@@ -800,7 +800,7 @@ build_additional_profile() {
     done < <(parse_profile_list "$profile_input" 2>/dev/null || echo "$profile_input")
 
     if [[ ${#variants[@]} -eq 0 ]]; then
-        print_error "No profiles specified"
+        log_error "No profiles specified"
         exit 1
     fi
 
@@ -813,19 +813,19 @@ build_additional_profile() {
         # Check if we're inside a project directory and can find config.yaml in parent
         if [[ -f ".zzcollab_team_setup" ]] || [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]]; then
             if [[ -f "../config.yaml" ]]; then
-                print_status "📁 Running from project directory - using parent directory's config.yaml"
+                log_info "📁 Running from project directory - using parent directory's config.yaml"
                 config_file="../config.yaml"
                 working_dir=".."
             else
-                print_error "❌ config.yaml not found in parent directory!"
-                print_error "The -V flag requires config.yaml for profile definitions."
+                log_error "❌ config.yaml not found in parent directory!"
+                log_error "The -V flag requires config.yaml for profile definitions."
                 exit 1
             fi
         else
-            print_error "❌ config.yaml not found."
-            print_error "The -V flag must be run from either:"
-            print_error "   1. The directory where 'zzcollab -i' was executed (contains config.yaml)"
-            print_error "   2. Inside a zzcollab project directory (looks for ../config.yaml)"
+            log_error "❌ config.yaml not found."
+            log_error "The -V flag must be run from either:"
+            log_error "   1. The directory where 'zzcollab -i' was executed (contains config.yaml)"
+            log_error "   2. Inside a zzcollab project directory (looks for ../config.yaml)"
             exit 1
         fi
     fi
@@ -843,7 +843,7 @@ build_additional_profile() {
             fi
         fi
         if [[ -z "$TEAM_NAME" ]]; then
-            print_error "Could not detect team name. Use --team flag."
+            log_error "Could not detect team name. Use --team flag."
             exit 1
         fi
     fi
@@ -855,45 +855,45 @@ build_additional_profile() {
         fi
     fi
 
-    print_status "Building additional profiles for: $DOCKERHUB_ACCOUNT/$PROJECT_NAME"
-    print_status "Profiles: ${variants[*]}"
+    log_info "Building additional profiles for: $DOCKERHUB_ACCOUNT/$PROJECT_NAME"
+    log_info "Profiles: ${variants[*]}"
     echo ""
 
     # Enable and build each variant
     for profile_name in "${variants[@]}"; do
-        print_status "Processing variant: $profile_name"
+        log_info "Processing variant: $profile_name"
 
         # Enable variant in config.yaml if not already enabled
         local is_enabled=$(yq eval ".profiles.${profile_name}.enabled // false" "$config_file")
         if [[ "$is_enabled" != "true" ]]; then
-            print_status "  Enabling $profile_name in config.yaml..."
+            log_info "  Enabling $profile_name in config.yaml..."
             yq eval ".profiles.${profile_name}.enabled = true" -i "$config_file"
         else
-            print_status "  $profile_name already enabled in config.yaml"
+            log_info "  $profile_name already enabled in config.yaml"
         fi
 
         # Build the variant using config system
         if build_config_profile "$config_file" "$profile_name"; then
-            print_success "✅ Built $profile_name variant"
+            log_success "✅ Built $profile_name variant"
 
             # Push to Docker Hub
             echo ""
             if confirm "Push $profile_name image to Docker Hub?"; then
                 docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:v1.0.0"
                 docker push "${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:latest"
-                print_success "✅ Pushed $profile_name to Docker Hub"
+                log_success "✅ Pushed $profile_name to Docker Hub"
             else
-                print_status "Image built locally only. To push later, run:"
-                print_status "  docker push ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:v1.0.0"
-                print_status "  docker push ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:latest"
+                log_info "Image built locally only. To push later, run:"
+                log_info "  docker push ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:v1.0.0"
+                log_info "  docker push ${DOCKERHUB_ACCOUNT}/${PROJECT_NAME}_core-${profile_name}:latest"
             fi
         else
-            print_error "❌ Failed to build $profile_name variant"
+            log_error "❌ Failed to build $profile_name variant"
         fi
         echo ""
     done
 
-    print_success "✅ All profiles processed successfully!"
+    log_success "✅ All profiles processed successfully!"
 }
 
 #=============================================================================
@@ -956,7 +956,7 @@ EOF
     echo ""
     if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
         if ! confirm "Proceed with team setup?"; then
-            print_status "Team setup cancelled by user"
+            log_info "Team setup cancelled by user"
             exit 0
         fi
     else
@@ -964,7 +964,7 @@ EOF
     fi
 
     if [[ "$PREPARE_DOCKERFILE" != true ]]; then
-        print_status "Starting automated team setup..."
+        log_info "Starting automated team setup..."
     fi
 
     # Execute all steps in sequence

@@ -438,29 +438,8 @@ require_module() {
     done
 }
 
-# Function: print_error
-# Purpose: Legacy alias for log_error (used by team_init.sh)
-print_error() {
-    log_error "$@"
-}
-
-# Function: print_warning
-# Purpose: Legacy alias for log_warn (used by team_init.sh)
-print_warning() {
-    log_warn "$@"
-}
-
-# Function: print_success
-# Purpose: Legacy alias for log_success (used by team_init.sh)
-print_success() {
-    log_success "$@"
-}
-
-# Function: print_status
-# Purpose: Legacy alias for log_info (used by team_init.sh)
-print_status() {
-    log_info "$@"
-}
+# Legacy print_* wrapper functions REMOVED (Phase 2 cleanup)
+# All calls in team_init.sh updated to use log_* functions directly
 
 # Function: confirm
 # Purpose: Interactive confirmation prompt

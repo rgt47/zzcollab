@@ -378,13 +378,8 @@ parse_cli_arguments() {
 # USER-FRIENDLY INTERFACE PROCESSING
 #=============================================================================
 
-# Function: process_user_friendly_interface
-# Purpose: Placeholder for future team interface processing
-# Note: Deprecated -I flag logic removed. Team images now handled via config system.
-process_user_friendly_interface() {
-    # No-op: Legacy interface flag (-I) removed in favor of Dockerfile-based approach
-    :
-}
+# Note: Legacy -I flag removed. Team images now handled via Dockerfile-based approach.
+# Function: process_user_friendly_interface - REMOVED (was no-op)
 
 #=============================================================================
 # TEAM IMAGE AVAILABILITY CHECKING
@@ -503,13 +498,10 @@ validate_cli_arguments() {
 process_cli() {
     # Parse command line arguments
     parse_cli_arguments "$@"
-    
-    # Process user-friendly interface options
-    process_user_friendly_interface
-    
+
     # Validate argument combinations
     validate_cli_arguments
-    
+
     # Export variables for other modules
     export_cli_variables
 }
