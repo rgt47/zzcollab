@@ -19,7 +19,7 @@ Modules must be loaded in dependency order to ensure all required functions are 
 10. analysis.sh    (depends on core.sh, templates.sh, utils.sh)
 11. cicd.sh        (depends on core.sh, templates.sh)
 12. devtools.sh    (depends on core.sh, templates.sh)
-13. team_init.sh   (depends on core.sh, templates.sh, docker.sh)
+13. team_init.sh   (REMOVED - was dead code, never called)
 14. help.sh        (depends on core.sh)
 15. github.sh      (depends on core.sh)
 ```
@@ -33,7 +33,7 @@ constants.sh (foundation)
 │   │   ├── structure.sh
 │   │   ├── rpackage.sh
 │   │   ├── docker.sh
-│   │   │   └── team_init.sh
+│   │   │   └── (team_init.sh REMOVED)
 │   │   ├── analysis.sh (also depends on utils.sh)
 │   │   ├── cicd.sh
 │   │   └── devtools.sh
@@ -62,7 +62,7 @@ constants.sh (foundation)
 - **analysis.sh**: Research analysis framework
 - **cicd.sh**: GitHub Actions workflows
 - **devtools.sh**: Development tools and configs
-- **team_init.sh**: Team collaboration setup
+- **team_init.sh**: (REMOVED - was dead code)
 - **help.sh**: Help system and documentation
 - **github.sh**: GitHub repository management
 - **utils.sh**: Utility functions

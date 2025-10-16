@@ -369,7 +369,7 @@ validate_with_callback() {
 }
 
 #=============================================================================
-# LEGACY COMPATIBILITY FUNCTIONS (for team_init.sh)
+# MODULE DEPENDENCY VALIDATION
 #=============================================================================
 
 # Function: require_module
@@ -437,9 +437,6 @@ require_module() {
         fi
     done
 }
-
-# Legacy print_* wrapper functions REMOVED (Phase 2 cleanup)
-# All calls in team_init.sh updated to use log_* functions directly
 
 # Function: confirm
 # Purpose: Interactive confirmation prompt

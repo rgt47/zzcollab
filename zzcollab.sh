@@ -310,7 +310,7 @@ EOF
         {
             echo "# ZZCOLLAB MANIFEST - Created $(date)"
             echo "# Package: $PKG_NAME"
-            echo "# Modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools, team_init"
+            echo "# Modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools"
             echo "# Build Docker: $BUILD_DOCKER"
             echo "# Dotfiles: $DOTFILES_DIR"
             echo "# Base Image: $BASE_IMAGE"
