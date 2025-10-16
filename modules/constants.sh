@@ -100,7 +100,7 @@ readonly ZZCOLLAB_TODAY="$(date '+%B %d, %Y')"
 
 # Validate that this module is being sourced correctly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    echo "❌ constants.sh should be sourced, not executed directly" >&2
+    echo "❌ Error: constants.sh should be sourced, not executed directly" >&2
     exit 1
 fi
 

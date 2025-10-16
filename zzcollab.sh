@@ -97,7 +97,7 @@ process_cli "$@"
 # Handle discovery commands (--list-*) early to avoid loading all modules
 if [[ "${LIST_PROFILES:-false}" == "true" ]] || [[ "${LIST_LIBS:-false}" == "true" ]] || [[ "${LIST_PKGS:-false}" == "true" ]]; then
     if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
-        echo "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml" >&2
+        echo "❌ Error: Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml" >&2
         exit 1
     fi
 

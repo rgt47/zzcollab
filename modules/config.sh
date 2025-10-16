@@ -630,7 +630,7 @@ config_validate() {
         return 0
     else
         echo ""
-        echo "❌ Configuration validation failed ($errors errors)"
+        echo "❌ Error: Configuration validation failed ($errors errors)"
         return 1
     fi
 }
