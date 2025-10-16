@@ -19,10 +19,10 @@
 #
 # USAGE:   ./zzcollab.sh [OPTIONS]
 #          Examples:
-#          ./zzcollab.sh -i -t myteam -p study -d ~/dotfiles    # Team lead setup
-#          ./zzcollab.sh -t myteam -p study -I shell            # Team member join
+#          ./zzcollab.sh -t myteam -p study -d ~/dotfiles       # Team lead setup
+#          ./zzcollab.sh -t myteam -p study                     # Team member join
 #          ./zzcollab.sh --help                                 # Show all options
-#          ./zzcollab.sh config list                            # Configuration management
+#          ./zzcollab.sh --config list                          # Configuration management
 #
 # DEPENDENCIES: Docker, Git, optional: GitHub CLI (gh), yq for config files
 ##############################################################################
@@ -85,7 +85,7 @@ else
 fi
 
 # Process all command-line arguments passed to this script
-# This function (from cli.sh) parses flags like -i, -t, -p, --help, etc.
+# This function (from cli.sh) parses flags like -t, -p, --help, etc.
 # and sets global variables that control script behavior
 # "$@" passes all script arguments to the function
 process_cli "$@"
@@ -403,11 +403,11 @@ detect_file_conflicts() {
     # Check for existing files that would conflict
     for item in "${zzcollab_files[@]}"; do
         if [[ -f "$item" ]]; then
-            # Skip expected files from team setup (-i flag)
+            # Skip expected files from team setup
             if [[ "$is_team_setup_dir" == "true" ]]; then
                 case "$item" in
                     DESCRIPTION|Dockerfile.teamcore|.zshrc_docker|config.yaml|profiles.yaml)
-                        # These are expected from 'zzcollab -i' - not conflicts
+                        # These are expected from team initialization - not conflicts
                         continue
                         ;;
                 esac
