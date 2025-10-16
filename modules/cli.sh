@@ -144,7 +144,7 @@ parse_profile_list() {
 #   - Shows the invalid value and lists all valid options
 #   - Uses stderr to avoid interfering with normal program output
 # EXAMPLE:
-#   validate_enum "--renv-mode" "$mode" "build mode" "fast" "standard" "comprehensive"
+#   validate_enum "--profile-name" "$profile" "Docker profile" "minimal" "analysis" "publishing"
 #   validate_enum "--interface" "$interface" "interface type" "shell" "rstudio" "verse"
 ##############################################################################
 validate_enum() {

@@ -101,7 +101,7 @@ check_yq_dependency() {
 # USAGE:    yaml_get "config.yaml" "defaults.team_name"
 # ARGS:     
 #   $1 - file: Path to YAML configuration file
-#   $2 - path: YAML path specification (e.g., "defaults.team_name", "renv_modes.fast.packages")
+#   $2 - path: YAML path specification (e.g., "defaults.team_name", "profiles.minimal.packages")
 # RETURNS:  
 #   0 - Always succeeds, outputs extracted value or "null"
 # GLOBALS:  
@@ -144,10 +144,10 @@ yaml_get() {
 ##############################################################################
 # FUNCTION: yaml_get_array
 # PURPOSE:  Extract array values from YAML configuration file
-# USAGE:    yaml_get_array "config.yaml" "renv_modes.fast.packages"
+# USAGE:    yaml_get_array "config.yaml" "profiles.minimal.packages"
 # ARGS:     
 #   $1 - file: Path to YAML configuration file
-#   $2 - path: YAML path to array (e.g., "renv_modes.fast.packages")
+#   $2 - path: YAML path to array (e.g., "profiles.minimal.packages")
 # RETURNS:  
 #   0 - Always succeeds, outputs comma-separated array values or empty string
 # GLOBALS:  
@@ -165,7 +165,7 @@ yaml_get() {
 #   - Fallback parsing does not support arrays (returns empty string)
 #   - Requires yq for full functionality
 # EXAMPLE:
-#   packages=$(yaml_get_array "config.yaml" "renv_modes.fast.docker_packages")
+#   packages=$(yaml_get_array "config.yaml" "profiles.minimal.docker_packages")
 #   IFS=',' read -ra PACKAGE_ARRAY <<< "$packages"
 #   for pkg in "${PACKAGE_ARRAY[@]}"; do
 #       echo "Package: $pkg"
@@ -215,7 +215,7 @@ yaml_get_array() {
 #   - Creates backup files during modification to prevent corruption
 # EXAMPLE:
 #   yaml_set "zzcollab.yaml" "defaults.team_name" "rgt47"
-#   yaml_set "config.yaml" "defaults.renv_mode" "fast"
+#   yaml_set "config.yaml" "defaults.profile_name" "minimal"
 ##############################################################################
 yaml_set() {
     local file="$1"
