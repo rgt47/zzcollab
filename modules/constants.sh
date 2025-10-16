@@ -64,11 +64,11 @@ readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE="r-ver"
 readonly ZZCOLLAB_DEFAULT_PROFILE_NAME="minimal"
 
-# Author information (can be overridden via environment variables)
-readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Ronald G. Thomas}"
-readonly ZZCOLLAB_AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-rgthomas@ucsd.edu}"
-readonly ZZCOLLAB_AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-UCSD}"
-readonly ZZCOLLAB_AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-University of California, San Diego}"
+# Author information (should be set via environment variables or config file)
+readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"
+readonly ZZCOLLAB_AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-your.email@example.com}"
+readonly ZZCOLLAB_AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-Your Institution}"
+readonly ZZCOLLAB_AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-Your Institution Full Name}"
 
 #=============================================================================
 # SYSTEM CONSTANTS
