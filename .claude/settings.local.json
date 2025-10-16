@@ -38,7 +38,9 @@
       "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/m03/**)",
       "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/png1/**)",
       "Bash(~/Library/CloudStorage/Dropbox/prj/d07/zzcollab/zzcollab.sh:*)",
-      "Bash(./zzcollab.sh:*)"
+      "Bash(./zzcollab.sh:*)",
+      "Bash(sort:*)",
+      "Bash(git log:*)"
     ],
     "deny": []
   }
