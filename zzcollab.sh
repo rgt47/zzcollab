@@ -657,56 +657,8 @@ validate_directory_for_setup_no_conflicts() {
 
 # Function: handle_special_modes
 # Purpose: Handle init, build profile, help modes that exit early
+# Note: --list-* flags are handled earlier (lines 98-138) before modules are loaded
 handle_special_modes() {
-    # Handle discovery commands (--list-*)
-    if [[ "${LIST_PROFILES:-false}" == "true" ]]; then
-        if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
-            log_error "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml"
-            exit 1
-        fi
-
-        echo "Available Profiles:"
-        echo ""
-        yq eval '.profiles | to_entries | .[] | "  " + .key + " - " + .value.description + " (" + .value.size + ")"' \
-            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
-        echo ""
-        echo "Usage: zzcollab --profile-name PROFILE"
-        echo "Example: zzcollab --profile-name bioinformatics"
-        exit 0
-    fi
-
-    if [[ "${LIST_LIBS:-false}" == "true" ]]; then
-        if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
-            log_error "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml"
-            exit 1
-        fi
-
-        echo "Available Library Bundles:"
-        echo ""
-        yq eval '.library_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
-            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
-        echo ""
-        echo "Usage: zzcollab --libs BUNDLE"
-        echo "Example: zzcollab -b rocker/r-ver --libs geospatial"
-        exit 0
-    fi
-
-    if [[ "${LIST_PKGS:-false}" == "true" ]]; then
-        if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
-            log_error "❌ Bundles file not found: ${TEMPLATES_DIR}/bundles.yaml"
-            exit 1
-        fi
-
-        echo "Available Package Bundles:"
-        echo ""
-        yq eval '.package_bundles | to_entries | .[] | "  " + .key + " - " + .value.description' \
-            "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null
-        echo ""
-        echo "Usage: zzcollab --pkgs BUNDLE"
-        echo "Example: zzcollab -t TEAM -p PROJECT --pkgs modeling"
-        exit 0
-    fi
-
     # Handle help and next-steps options for normal mode
     if [[ "${SHOW_HELP:-false}" == "true" ]]; then
         # Check if a specific topic was requested
