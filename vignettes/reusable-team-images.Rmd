@@ -37,21 +37,21 @@ This approach is particularly valuable for:
 ```bash
 # Project 1: Build from rocker/rstudio (15-20 minutes)
 mkdir study1 && cd study1
-zzcollab -t mylab -p study1 -C -d ~/dotfiles
+zzcollab -t mylab -p study1 --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 cd ..
 
 # Project 2: Build from rocker/rstudio again (15-20 minutes)
 mkdir study2 && cd study2
-zzcollab -t mylab -p study2 -C -d ~/dotfiles
+zzcollab -t mylab -p study2 --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 cd ..
 
 # Project 3: Build from rocker/rstudio again (15-20 minutes)
 mkdir study3 && cd study3
-zzcollab -t mylab -p study3 -C -d ~/dotfiles
+zzcollab -t mylab -p study3 --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 
@@ -61,9 +61,9 @@ make docker-push-team
 ### Reusable Team Image Approach
 
 ```bash
-# One-time: Build comprehensive team base image (15-20 minutes)
+# One-time: Build analysis team base image (15-20 minutes)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -116,10 +116,10 @@ New projects use the pre-built team image as their base, avoiding package reinst
 The team lead creates a one-time base image with all preferred packages.
 
 ```bash
-# Create comprehensive team base image
+# Create analysis team base image
 # This takes 15-20 minutes but only needs to be done once
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -131,62 +131,62 @@ cd ..
 **What this does:**
 - Creates project structure with DESCRIPTION, Makefile, etc.
 - Builds from `rocker/rstudio:latest`
-- Installs 47+ comprehensive packages (tidyverse, tidymodels, shiny, etc.)
+- Installs analysis profile packages (tidyverse, here, testthat, knitr, rmarkdown)
 - Creates `mylab/baseimage:latest`
 - Pushes to Docker Hub for team access
 
-**Build mode options:**
+**Profile options:**
 ```bash
-# Comprehensive mode (47+ packages, recommended for team bases)
+# Analysis profile (recommended for general team bases)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
-git commit -m "Create comprehensive team base image"
+git commit -m "Create analysis team base image"
 git push -u origin main
 cd ..
 
-# Standard mode (17 packages, balanced)
+# Modeling profile (machine learning focused)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -S --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name modeling -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
-git commit -m "Create standard team base image"
+git commit -m "Create modeling team base image"
 git push -u origin main
 cd ..
 
-# Fast mode (9 packages, minimal overhead)
+# Minimal profile (lightweight)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -F --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name minimal -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
-git commit -m "Create fast team base image"
+git commit -m "Create minimal team base image"
 git push -u origin main
 cd ..
 ```
 
-**Multiple interface profiles:**
+**Specialized domain profiles:**
 ```bash
-# RStudio interface (most common)
+# Bioinformatics (Bioconductor genomics)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name bioinformatics -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
-git commit -m "Create RStudio team base image"
+git commit -m "Create bioinformatics team base image"
 git push -u origin main
 cd ..
 
-# Shell only (command-line work)
+# Geospatial (GIS and spatial analysis)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -C --profile-name minimal -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name geospatial -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
-git commit -m "Create shell-only team base image"
+git commit -m "Create geospatial team base image"
 git push -u origin main
 cd ..
 ```
@@ -242,7 +242,7 @@ Dr. Smith works on various analyses and wants consistent environments.
 ```bash
 # One-time setup: Create personal base image (Sunday afternoon)
 mkdir mybase && cd mybase
-zzcollab -t drsmith -p mybase -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t drsmith -p mybase --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -275,9 +275,9 @@ A genomics lab with 5 researchers and multiple ongoing studies.
 
 **Team Lead (one-time setup):**
 ```bash
-# Create lab base image with comprehensive bioinformatics tools
+# Create lab base image with bioinformatics tools
 mkdir labbase && cd labbase
-zzcollab -t genomicslab -p labbase -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t genomicslab -p labbase --profile-name bioinformatics -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -285,12 +285,8 @@ git commit -m "Create lab base image with bioinformatics tools"
 git push -u origin main
 cd ..
 
-# Optionally add specialized profile
-cd labbase
-cd /path/to/zzcollab
-./add_profile.sh
-# Select: bioinformatics profile
-# Builds genomicslab/labbase:latest with Bioconductor packages
+# The bioinformatics profile includes Bioconductor base image and packages
+# Additional packages can be added via renv::install() as needed
 ```
 
 **Team Members (joining existing projects):**
@@ -325,7 +321,7 @@ A data science consulting firm requires consistent package versions across all c
 ```bash
 # Q1 2025: Create standardized base image
 mkdir q1-2025-base && cd q1-2025-base
-zzcollab -t datasci-firm -p q1-2025-base -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t datasci-firm -p q1-2025-base --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -369,7 +365,7 @@ Create different base images for different research domains:
 ```bash
 # Bioinformatics base (Bioconductor packages)
 mkdir bio-base && cd bio-base
-zzcollab -t mylab -p bio-base -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p bio-base --profile-name bioinformatics -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -378,9 +374,9 @@ git push -u origin main
 cd ..
 # Use for: genomics, transcriptomics, proteomics projects
 
-# Geospatial base (sf, terra, leaflet)
+# Geospatial base (sf, terra, raster)
 mkdir geo-base && cd geo-base
-zzcollab -t mylab -p geo-base -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p geo-base --profile-name geospatial -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -389,9 +385,9 @@ git push -u origin main
 cd ..
 # Use for: climate modeling, ecology, urban planning projects
 
-# Machine learning base (tidymodels, xgboost)
+# Machine learning base (modeling packages)
 mkdir ml-base && cd ml-base
-zzcollab -t mylab -p ml-base -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p ml-base --profile-name modeling -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -400,16 +396,16 @@ git push -u origin main
 cd ..
 # Use for: predictive modeling, classification, regression projects
 
-# Web apps base (shiny, plotly, flexdashboard)
-mkdir shiny-base && cd shiny-base
-zzcollab -t mylab -p shiny-base -C --profile-name rstudio -d ~/dotfiles
+# Publishing base (LaTeX, Quarto, rmarkdown)
+mkdir pub-base && cd pub-base
+zzcollab -t mylab -p pub-base --profile-name publishing -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
-git commit -m "Create web apps base image"
+git commit -m "Create publishing base image"
 git push -u origin main
 cd ..
-# Use for: interactive dashboards, web applications
+# Use for: manuscripts, reports, reproducible documents
 ```
 
 ### Pattern 2: Versioned Base Images
@@ -419,7 +415,7 @@ Maintain version history for reproducibility:
 ```bash
 # Create dated base image
 mkdir base-2025-01 && cd base-2025-01
-zzcollab -t mylab -p base-2025-01 -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p base-2025-01 --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -474,7 +470,7 @@ make docker-push-team
 ```bash
 # Use public repositories (no cost)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -659,16 +655,16 @@ Create `BASE_IMAGE_README.md` in base image project:
 # Lab Base Image: mylab/baseimage
 
 ## Purpose
-Comprehensive data science environment for lab projects.
+Data analysis environment for lab projects.
 
-## Build Mode
-Comprehensive (-C): 47+ packages
+## Docker Profile
+analysis: tidyverse, here, testthat, knitr, rmarkdown
 
 ## Key Packages
-- tidyverse (2.0.0): Data manipulation
-- tidymodels (1.2.0): Machine learning
-- shiny (1.8.0): Web applications
-- targets (1.7.0): Pipeline management
+- tidyverse: Data manipulation
+- here: Project-relative paths
+- testthat: Unit testing
+- knitr/rmarkdown: Reproducible reports
 
 ## Last Updated
 2025-01-15
@@ -697,7 +693,7 @@ mylab/baseimage:v1.0.1
 ```bash
 # Build test base image
 mkdir baseimage-test && cd baseimage-test
-zzcollab -t mylab -p baseimage-test -C --profile-name rstudio -d ~/dotfiles
+zzcollab -t mylab -p baseimage-test --profile-name analysis -d ~/dotfiles
 make docker-build
 make docker-push-team
 git add .
@@ -731,12 +727,12 @@ Keep a centralized list of available base images:
 # team-base-images.md
 # Lab Base Images
 
-| Name | Build Mode | Purpose | Last Updated |
-|------|------------|---------|--------------|
-| mylab/bio-base | Comprehensive | Bioconductor genomics | 2025-01-15 |
-| mylab/geo-base | Comprehensive | Geospatial analysis | 2025-01-10 |
-| mylab/ml-base | Standard | Machine learning | 2025-01-05 |
-| mylab/shiny-base | Standard | Web dashboards | 2024-12-20 |
+| Name | Profile | Purpose | Last Updated |
+|------|---------|---------|--------------|
+| mylab/bio-base | bioinformatics | Bioconductor genomics | 2025-01-15 |
+| mylab/geo-base | geospatial | Geospatial analysis | 2025-01-10 |
+| mylab/ml-base | modeling | Machine learning | 2025-01-05 |
+| mylab/pub-base | publishing | LaTeX/Quarto docs | 2024-12-20 |
 
 ## Usage
 # For bioinformatics projects:
@@ -767,15 +763,16 @@ zzcollab -t mylab -p <project-name>  -d ~/dotfiles
 - Storage constraints (Docker Hub free tier, limited disk space)
 - Team members have different R version requirements
 
-### Build Mode Selection for Base Images
+### Profile Selection for Base Images
 
-| Use Case | Recommended Mode | Rationale |
-|----------|------------------|-----------|
-| General purpose team base | Comprehensive (-C) | 47+ packages covers most needs |
-| Specialized domain (bio/geo) | Comprehensive (-C) | Domain packages + general tools |
-| Lightweight CI/CD base | Fast (-F) | 9 packages, quick builds |
-| Teaching/workshops | Standard (-S) | 17 packages, balanced |
-| Minimal custom base | Minimal (-M) | 3 packages, add via renv |
+| Use Case | Recommended Profile | Rationale |
+|----------|---------------------|-----------|
+| General purpose team base | analysis | Tidyverse ecosystem for data work |
+| Bioinformatics domain | bioinformatics | Bioconductor genomics packages |
+| Geospatial work | geospatial | GDAL/PROJ spatial tools |
+| Machine learning | modeling | Tidymodels ML framework |
+| Publishing/reports | publishing | LaTeX, Quarto, rmarkdown |
+| Lightweight base | minimal | Essential dev tools only |
 
 ## Summary
 
