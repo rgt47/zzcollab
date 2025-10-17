@@ -597,7 +597,7 @@ config_list() {
     echo "Configuration files (in priority order):"
     [[ -f "$CONFIG_PROJECT_FILE" ]] && echo "  ✓ $CONFIG_PROJECT_FILE" || echo "  ✗ $CONFIG_PROJECT_FILE"
     [[ -f "$CONFIG_USER_FILE" ]] && echo "  ✓ $CONFIG_USER_FILE" || echo "  ✗ $CONFIG_USER_FILE"
-    [[ -f "$CONFIG_SYSTEM_FILE" ]] && echo "  ✗ $CONFIG_SYSTEM_FILE (system-wide)"
+    [[ -f "$CONFIG_SYSTEM_FILE" ]] && echo "  ✓ $CONFIG_SYSTEM_FILE (system-wide)" || echo "  ✗ $CONFIG_SYSTEM_FILE (system-wide)"
 }
 
 # Function: config_validate
