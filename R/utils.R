@@ -896,7 +896,7 @@ zzcollab_next_steps <- function() {
 #' @param key Character string specifying the configuration key to retrieve.
 #'   Common keys include:
 #'   - "team_name": Docker Hub team/organization name
-#'   - "build_mode": Package installation mode ("minimal", "fast", "standard", "comprehensive")
+#'   - "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
 #'   - "dotfiles_dir": Path to personal dotfiles directory
 #'   - "github_account": GitHub account for repository creation
 #'   - "dotfiles_nodot": Whether dotfiles need leading dots added ("true"/"false")
@@ -925,9 +925,9 @@ zzcollab_next_steps <- function() {
 #'   cat("No team name configured\n")
 #' }
 #' 
-#' # Check build mode setting
-#' mode <- get_config("build_mode")
-#' cat("Build mode:", mode %||% "standard", "\n")
+#' # Check Docker profile setting
+#' profile <- get_config("profile_name")
+#' cat("Docker profile:", profile %||% "minimal", "\n")
 #' 
 #' # Get dotfiles directory with fallback
 #' dotfiles <- get_config("dotfiles_dir") %||% "~/dotfiles"
@@ -963,7 +963,7 @@ get_config <- function(key) {
 #' @param key Character string specifying the configuration key to set.
 #'   Recommended keys include:
 #'   - "team_name": Your Docker Hub team/organization name
-#'   - "build_mode": Preferred package mode ("minimal", "fast", "standard", "comprehensive")
+#'   - "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
 #'   - "dotfiles_dir": Path to your personal dotfiles directory
 #'   - "github_account": Your GitHub account for repository creation
 #'   - "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")
