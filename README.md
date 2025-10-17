@@ -25,8 +25,7 @@ environments, automated CI/CD workflows, and team collaboration tools.
 - **Advanced configuration system** with user/project-level settings
 - **14+ specialized Docker profiles** (from 200MB Alpine to 3.5GB
   full-featured)
-- **Four build modes** (minimal, fast, standard, comprehensive) for
-  different use cases
+- **Profile-based architecture**: Team lead selects Docker profile, members add packages via renv
 - **Automated CI/CD** workflows
 - **Analysis and reporting** tools
 - **Git integration** for version control
@@ -101,6 +100,52 @@ https://github.com/rgt47/zzcollab/tree/main/examples
 - Complete example research compendia
 - Reusable code patterns
 
+## Team Collaboration Model
+
+zzcollab implements a **two-layer reproducibility architecture**:
+
+### Layer 1: Docker Profile (Team Lead Decision)
+
+The **team lead** selects a Docker profile that defines the foundational environment:
+
+- **Base R version** (e.g., R 4.4.0)
+- **System dependencies** (GDAL, PROJ, LaTeX, etc.)
+- **Pre-installed packages** (tidyverse, sf, etc.)
+- **14+ specialized profiles** available (see docs/VARIANTS.md)
+
+**Key principle**: Once selected, the Docker profile is **fixed** for the team. Team members cannot change the base image to ensure consistent environments.
+
+### Layer 2: R Packages (Individual Flexibility)
+
+**All team members** can independently add R packages as needed:
+
+```r
+# Inside the Docker container
+renv::install("tidymodels")
+renv::install("plotly")
+renv::snapshot()  # Save to renv.lock
+```
+
+The `renv.lock` file accumulates packages from **all team members** (union model), ensuring everyone has access to all required packages while maintaining flexibility.
+
+### Workflow Example
+
+**Team Lead** (one-time setup):
+```bash
+zzcollab -t mylab -p study --profile-name analysis
+make docker-build
+make docker-push-team
+git add . && git commit -m "Initial setup" && git push
+```
+
+**Team Member** (joining project):
+```bash
+git clone https://github.com/mylab/study.git && cd study
+zzcollab --use-team-image  # Uses team's Docker profile
+make docker-zsh
+# Inside container: renv::install("package") as needed
+```
+
 ## R Interface Implementation
 
 ### Configuration Setup (One-time)
@@ -110,7 +155,6 @@ library(zzcollab)
 
 # Set up your defaults once
 set_config("team_name", "myteam")
-set_config("build_mode", "standard")
 set_config("dotfiles_dir", "~/dotfiles")
 set_config("github_account", "myusername")
 
@@ -128,7 +172,6 @@ init_project(project_name = "myproject")
 init_project(
   team_name = "myteam",
   project_name = "myproject",
-  build_mode = "standard",
   dotfiles_path = "~/dotfiles"
 )
 ```
@@ -142,24 +185,53 @@ join_project(project_name = "myproject")
 # Or with explicit parameters
 join_project(
   team_name = "myteam",
-  project_name = "myproject",
-  build_mode = "standard"
+  project_name = "myproject"
 )
 ```
 
-## Build Modes
+## Docker Profiles
 
-zzcollab supports four build modes to optimize for different use cases:
+zzcollab provides 14+ specialized Docker profiles optimized for different research needs. The **team lead** selects the appropriate profile when initializing the project.
 
-| Mode | Description | Docker Size | Package Count | Key Packages | Build Time |
-|------|-------------|-------------|---------------|--------------|------------|
-| **Minimal** (`-M`) | Bare essentials | Minimal | 3 packages | renv, remotes, here | Ultra-fast |
-| **Fast** (`-F`) | Essential setup | Small | 9 packages | + devtools, testthat, knitr, rmarkdown, targets | Fast |
-| **Standard** (`-S`) | Balanced (default) | Medium | 17 packages | + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT | Medium |
-| **Comprehensive** (`-C`) | Full-featured | Large | 47 packages | + tidymodels, shiny, plotly, quarto, bookdown, papaja, pkgdown | Slow |
+| Category | Profiles | Base Size | Use Case |
+|----------|----------|-----------|----------|
+| **Standard** | minimal, analysis, modeling | 200MB-1.5GB | General research, data analysis |
+| **Publishing** | publishing, shiny, shiny_verse | 2-3.5GB | Manuscript writing, web apps |
+| **Specialized** | bioinformatics, geospatial | 2-3GB | Domain-specific workflows |
+| **Lightweight** | alpine_minimal, alpine_analysis, hpc_alpine | 200-500MB | HPC clusters, CI/CD |
+| **Testing** | rhub_ubuntu, rhub_fedora, rhub_windows | Varies | Cross-platform package testing |
 
-All packages are compatible with data analysis, manuscript writing, and
-package development workflows.
+See [docs/VARIANTS.md](docs/VARIANTS.md) for detailed profile specifications.
+
+### Selecting a Profile
+
+```bash
+# Team lead selects profile during initialization
+zzcollab -t myteam -p study --profile-name analysis
+zzcollab -t myteam -p study --profile-name publishing
+zzcollab -t myteam -p study --profile-name geospatial
+```
+
+### Adding Packages (All Team Members)
+
+After the Docker profile is set, team members add packages as needed:
+
+```bash
+# Enter container
+make docker-zsh
+
+# Inside container - add packages dynamically
+R
+> renv::install("tidymodels")
+> renv::install("here")
+> renv::snapshot()
+> quit()
+
+# Commit the updated renv.lock
+git add renv.lock
+git commit -m "Add tidymodels and here packages"
+git push
+```
 
 ## Configuration System
 
@@ -185,28 +257,8 @@ zzcollab --config validate               # Validate YAML syntax
 ### Customizable Settings
 
 - **Team settings**: `team_name`, `github_account`
-- **Build settings**: `build_mode`, `dotfiles_dir`, `dotfiles_nodot`
+- **Personal settings**: `dotfiles_dir`, `dotfiles_nodot`
 - **Automation**: `auto_github`, `skip_confirmation`
-- **Custom package lists**: Override default packages for each build mode
-
-### Custom Package Lists
-
-Edit your config file to customize packages for different build modes:
-
-```yaml
-build_modes:
-  fast:
-    description: "Quick development setup"
-    docker_packages: [renv, remotes, here, usethis]
-    renv_packages: [renv, here, usethis, devtools, testthat]
-
-  standard:
-    description: "Balanced research workflow"
-    docker_packages: [renv, remotes, tidyverse, here, usethis,
-                      devtools]
-    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2,
-                    tidyr, testthat, palmerpenguins]
-```
 
 ## Core R Functions
 
@@ -254,14 +306,15 @@ build_modes:
 ```r
 # 0. One-time setup (configure your defaults)
 set_config("team_name", "datascience")
-set_config("build_mode", "standard")
 set_config("dotfiles_dir", "~/dotfiles")
 
 # 1. Initialize project (uses config defaults)
 init_project(project_name = "covid-analysis")
 
-# 2. Add required packages
-add_package(c("tidyverse", "lubridate", "plotly"))
+# 2. Add required packages (inside container via make docker-zsh)
+# In container:
+#   renv::install(c("tidyverse", "lubridate", "plotly"))
+#   renv::snapshot()
 
 # 3. Create feature branch
 create_branch("feature/exploratory-analysis")
@@ -357,23 +410,20 @@ zzcollab [OPTIONS]
 zzcollab config [SUBCOMMAND]
 
 OPTIONS:
-  --dotfiles DIR, -d   Copy dotfiles from directory (with leading
-                       dots)
-  --dotfiles-nodot DIR Copy dotfiles from directory (without
-                       leading dots)
-  --base-image NAME    Use custom Docker base image
-                       (default: rocker/r-ver)
-  --no-docker, -n      Skip Docker image build during setup
-  --minimal, -M        Minimal build mode (bare essentials)
-  --fast, -F           Fast build mode (essential packages)
-  --standard, -S       Standard build mode (balanced packages,
-                       default)
-  --comprehensive, -C  Comprehensive build mode (full packages)
-  --team NAME, -t      Team name for Docker Hub namespace
-  --project NAME, -p   Project name
-  --use-team-image     Pull and use existing team Docker image
-  --next-steps         Show development workflow and next steps
-  --help, -h           Show help message
+  --dotfiles DIR, -d       Copy dotfiles from directory (with leading
+                           dots)
+  --dotfiles-nodot DIR     Copy dotfiles from directory (without
+                           leading dots)
+  --base-image NAME        Use custom Docker base image
+                           (default: rocker/r-ver)
+  --no-docker, -n          Skip Docker image build during setup
+  --profile-name NAME      Select Docker profile (analysis, publishing,
+                           geospatial, etc.)
+  --team NAME, -t          Team name for Docker Hub namespace
+  --project NAME, -p       Project name
+  --use-team-image         Pull and use existing team Docker image
+  --next-steps             Show development workflow and next steps
+  --help, -h               Show help message
 
 CONFIG COMMANDS:
   zzcollab config init                    # Create default config
@@ -386,14 +436,14 @@ EXAMPLES:
   # Configuration setup
   zzcollab config init                        # One-time setup
   zzcollab config set team_name "myteam"      # Set team default
-  zzcollab config set build_mode "fast"       # Set build mode
+  zzcollab config set dotfiles_dir "~/dotfiles"
 
-  # Basic usage (uses config defaults)
-  zzcollab --fast                             # Fast mode setup
-  zzcollab --dotfiles ~/dotfiles              # Include dotfiles
+  # Solo researcher
+  zzcollab --dotfiles ~/dotfiles              # Basic setup
+  zzcollab --profile-name publishing          # With specific profile
 
   # Team collaboration - Lead
-  zzcollab -t myteam -p study --profile-name modeling  # Create foundation
+  zzcollab -t myteam -p study --profile-name analysis
   make docker-build                           # Build team image
   make docker-push-team                       # Push to Docker Hub
   git add .
@@ -404,6 +454,7 @@ EXAMPLES:
   git clone https://github.com/myteam/study.git && cd study
   zzcollab --use-team-image                   # Pull and use team image
   make docker-zsh                             # Start development
+  # Inside container: renv::install("pkg") as needed
 
   # Traditional usage
   zzcollab --base-image rgt47/r-pluspackages  # Custom base
@@ -453,18 +504,17 @@ zzcollab --base-image myorg/r-base
 
 ### Team Collaboration
 
-- Standardized structure across team projects
-- Consistent environments with Docker
+- Team lead defines Docker profile (R version, system dependencies)
+- Team members add R packages independently via renv
+- Consistent base environment across all team members
 - Version control integration with Git/GitHub
-- Documentation with package-style help system
 
 
 ## Documentation
 
-- [Unified Paradigm Guide](docs/UNIFIED_PARADIGM_GUIDE.md) - Complete
-  framework documentation
-- [Marwick Comparison](docs/MARWICK_COMPARISON_ANALYSIS.md) - Research
-  compendium alignment
+- [Profile System Guide](docs/VARIANTS.md) - Docker profile specifications
+- [Configuration Guide](docs/CONFIGURATION.md) - Multi-layer configuration system
+- [Testing Guide](docs/TESTING_GUIDE.md) - Test framework and best practices
 - [Tutorial Examples](examples/) - Step-by-step learning resources
 - [Command Reference](#command-line-options) - All available options
 - [Docker Guide](#docker-integration) - Container workflows
