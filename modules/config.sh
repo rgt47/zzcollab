@@ -576,9 +576,6 @@ config_get() {
 # Function: config_list
 # Purpose: List all configuration values
 config_list() {
-    # Make sure config is loaded
-    load_all_configs
-    
     echo "Current zzcollab configuration:"
     echo ""
     echo "Defaults:"
