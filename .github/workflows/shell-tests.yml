@@ -210,12 +210,12 @@ jobs:
 
         # Config tests
         config_output=$(bats tests/shell/test-config.bats 2>&1 || true)
-        config_total=$(echo "$config_output" | tail -1 | grep -oP '^\d+\.\.\d+' | cut -d'.' -f3 || echo "0")
+        config_total=$(echo "$config_output" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
         config_passed=$(echo "$config_output" | grep -c '^ok ' || echo "0")
 
         # Docker tests
         docker_output=$(bats tests/shell/test-docker.bats 2>&1 || true)
-        docker_total=$(echo "$docker_output" | tail -1 | grep -oP '^\d+\.\.\d+' | cut -d'.' -f3 || echo "0")
+        docker_total=$(echo "$docker_output" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
         docker_passed=$(echo "$docker_output" | grep -c '^ok ' || echo "0")
 
         # Calculate totals
