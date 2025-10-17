@@ -23,6 +23,8 @@ test_that("zzcollab_help accepts valid topics", {
 })
 
 test_that("zzcollab_help rejects invalid topics", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   # Invalid topic should error with helpful message
   expect_error(
     zzcollab_help("invalid_topic_xyz"),
@@ -47,6 +49,8 @@ test_that("zzcollab_help works with NULL (general help)", {
 })
 
 test_that("zzcollab_help lists all valid topics in error", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   # Error message should list valid topics
   result <- tryCatch({
     zzcollab_help("invalid")

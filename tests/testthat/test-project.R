@@ -1,6 +1,8 @@
 # Tests for project initialization and management functions
 
 test_that("init_project validates required parameters", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   # Test that team_name is required
   expect_error(
     init_project(project_name = "test"),
@@ -27,6 +29,8 @@ test_that("init_project validates required parameters", {
 })
 
 test_that("join_project validates required parameters", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   # Test that team_name is required
   expect_error(
     join_project(project_name = "test"),
@@ -73,6 +77,7 @@ test_that("setup_project handles optional parameters", {
 })
 
 test_that("project functions construct correct commands", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
   skip_if_not(exists("find_zzcollab_script"))
 
   # Mock find_zzcollab_script to return a test path

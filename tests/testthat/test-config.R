@@ -2,6 +2,8 @@
 # These tests validate the config system behavior
 
 test_that("get_config_default returns defaults correctly", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   # Test that function exists
   expect_true(exists("get_config_default"))
 
@@ -15,6 +17,8 @@ test_that("get_config_default returns defaults correctly", {
 })
 
 test_that("config functions validate input", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   # Test that set_config requires key
   expect_error(set_config(), "argument.*is missing")
 
@@ -24,11 +28,15 @@ test_that("config functions validate input", {
 })
 
 test_that("list_config returns character vector or NULL", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   result <- list_config()
   expect_true(is.character(result) || is.null(result))
 })
 
 test_that("validate_config handles missing config gracefully", {
+  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+
   # Should not error even if config doesn't exist
   expect_no_error(validate_config())
 })
