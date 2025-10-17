@@ -549,11 +549,11 @@ zzcollab -i -t myteam -p analysis-project -B rstudio -S
 #### Multi-Platform Consistency
 ```bash
 # Team member on macOS:
-zzcollab -t myteam -p analysis-project -I rstudio
+zzcollab -t myteam -p analysis-project --use-team-image
 # Identical Ubuntu 20.04 environment in container
 
 # Team member on Windows:
-zzcollab -t myteam -p analysis-project -I rstudio
+zzcollab -t myteam -p analysis-project --use-team-image
 # Same Ubuntu 20.04 environment, same packages
 
 # Production Linux server:

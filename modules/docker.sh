@@ -269,7 +269,7 @@ create_docker_files() {
         local team_name project_name profile_name
         team_name=$(grep "^team_name=" ".zzcollab_team_setup" | cut -d= -f2)
         project_name=$(grep "^project_name=" ".zzcollab_team_setup" | cut -d= -f2)
-        profile_name=$(grep "^build_mode=" ".zzcollab_team_setup" | cut -d= -f2)
+        profile_name=$(grep "^profile_name=" ".zzcollab_team_setup" | cut -d= -f2)
 
         if [[ -n "$team_name" ]] && [[ -n "$project_name" ]] && [[ -n "$profile_name" ]]; then
             # Construct team image name (without :latest tag, will be added by Dockerfile.personal template)

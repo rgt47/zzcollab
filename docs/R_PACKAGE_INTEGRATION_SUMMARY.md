@@ -89,7 +89,7 @@ All functions support the three build modes:
 library(zzcollab)
 
 # Initialize new team project
-init_project("myteam", "myproject", build_mode = "standard")
+init_project(team_name = "myteam", project_name = "myproject")
 
 # Add packages
 add_package(c("tidyverse", "plotly"))
@@ -110,7 +110,7 @@ git_push()
 library(zzcollab)
 
 # Join existing project
-join_project("myteam", "myproject", interface = "rstudio")
+join_project(team_name = "myteam", project_name = "myproject")
 
 # Sync environment
 sync_env()
@@ -127,7 +127,7 @@ validate_repro()
 library(zzcollab)
 
 # Setup project in current directory
-setup_project(build_mode = "standard", dotfiles_path = "~/dotfiles")
+setup_project(dotfiles_path = "~/dotfiles")
 
 # Run analysis
 run_script("scripts/analysis.R")

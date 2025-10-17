@@ -254,12 +254,6 @@ EXAMPLES:
 
     Note: Foundation flags (--profile-name, -b, --libs, --pkgs) are automatically
           blocked when Dockerfile exists. To change foundation: rm Dockerfile first.
-
-    Simplified Build Modes:
-    zzcollab --profile-name bioinformatics -M               # Minimal mode: ultra-fast (~30s)
-    zzcollab --profile-name geospatial -F                   # Fast mode: essentials (2-3 min)
-    zzcollab --profile-name modeling -S                     # Standard mode: balanced (4-6 min, default)
-    zzcollab --profile-name publishing -C                   # Comprehensive mode: full (15-20 min)
 EOF
 }
 

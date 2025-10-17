@@ -2125,6 +2125,15 @@ EOF
 }
 
 
+# Build Modes Help  
+# Purpose: Build mode selection guide
+show_build_modes_help() {
+    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
+        show_build_modes_help_content
+    else
+        show_build_modes_help_content | "${PAGER:-less}" -R
+    fi
+}
 
 show_build_modes_help_content() {
     cat << 'EOF'

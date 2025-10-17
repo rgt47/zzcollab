@@ -251,10 +251,10 @@ The ZZCOLLAB framework addresses many common CI/CD challenges through integrated
 
 ```bash
 # Team lead creates reproducible project environment
-zzcollab -i -t mylab -p customer-analysis -P analysis -B rstudio -S
+zzcollab -t mylab -p customer-analysis --profile-name analysis
 
 # Team members join with identical environment
-zzcollab -t mylab -p customer-analysis -I rstudio
+zzcollab -t mylab -p customer-analysis --use-team-image
 
 # Development workflow with built-in validation
 make docker-zsh                    # Enter reproducible environment

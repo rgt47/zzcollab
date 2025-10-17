@@ -1282,8 +1282,8 @@ require unit tests to ensure correctness. Geospatial packages (sf, terra) have
 complex system dependencies.
 
 ```bash
-# Team lead setup
-zzcollab -i -t climate-team -p precipitation -S -D ~/dotfiles
+# Team lead setup with geospatial profile
+zzcollab -t climate-team -p precipitation --profile-name geospatial -d ~/dotfiles
 
 # Add testing infrastructure
 make docker-zsh
@@ -1297,6 +1297,7 @@ exit
 # Team members (any platform)
 git clone https://github.com/climate-team/precipitation
 cd precipitation
+zzcollab --use-team-image -d ~/dotfiles
 make docker-zsh  # Identical environment on all platforms
 
 # Inside container - everyone has same GDAL, GEOS versions
@@ -1318,7 +1319,7 @@ passes checks before merge.
 
 ```bash
 # Package maintainer setup
-zzcollab -i -t myname -p mypackage -S -D ~/dotfiles -G
+zzcollab -t myname -p mypackage --profile-name analysis -d ~/dotfiles --create-github-repo
 
 # Testing and CI/CD included automatically
 # Every contributor push triggers:
@@ -1346,8 +1347,8 @@ and data quality checks should be tested to prevent silent errors in automated
 reports. CI/CD (Level 5) optional if code changes infrequently.
 
 ```bash
-# Setup with Docker for production
-zzcollab -F -D ~/dotfiles  # Fast mode sufficient
+# Setup with Docker for production (minimal profile sufficient for reporting)
+zzcollab --profile-name minimal -d ~/dotfiles
 
 # Add tests for report calculations
 make docker-zsh
