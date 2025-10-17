@@ -592,7 +592,7 @@ esac'
 # Validate that required variables are available for dotfiles
 if [[ -n "${DOTFILES_DIR:-}" ]]; then
     # Expand tilde in DOTFILES_DIR for validation
-    local expanded_dotfiles_dir="${DOTFILES_DIR/#\~/$HOME}"
+    expanded_dotfiles_dir="${DOTFILES_DIR/#\~/$HOME}"
     if [[ ! -d "$expanded_dotfiles_dir" ]]; then
         log_warn "DOTFILES_DIR specified but directory not found: $DOTFILES_DIR (expanded: $expanded_dotfiles_dir)"
     fi

@@ -45,7 +45,8 @@
       "Bash(./tests/run-all-tests.sh:*)",
       "Bash(do bash -n \"$file\")",
       "Bash(git reset:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(gh run view:*)"
     ],
     "deny": []
   }
