@@ -11,7 +11,7 @@ set_config(key, value)
 Recommended keys include:
 \itemize{
 \item "team_name": Your Docker Hub team/organization name
-\item "build_mode": Preferred package mode ("minimal", "fast", "standard", "comprehensive")
+\item "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
 \item "dotfiles_dir": Path to your personal dotfiles directory
 \item "github_account": Your GitHub account for repository creation
 \item "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")
@@ -53,7 +53,7 @@ for easy editing and cross-platform compatibility.
 \dontrun{
 # Set up your personal defaults (run once)
 set_config("team_name", "mylab")
-set_config("build_mode", "standard")
+set_config("profile_name", "analysis")
 set_config("dotfiles_dir", "~/dotfiles")
 set_config("github_account", "myuniversity")
 

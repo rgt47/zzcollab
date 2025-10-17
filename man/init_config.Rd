@@ -38,7 +38,7 @@ This function creates the complete zzcollab user configuration infrastructure:
 \strong{Template Content Includes:}
 \itemize{
 \item team_name: (empty, to be filled by user)
-\item build_mode: "standard" (balanced default)
+\item profile_name: "analysis" (balanced default)
 \item dotfiles_dir: (empty, commonly ~/dotfiles)
 \item github_account: (empty, for repository creation)
 \item dotfiles_nodot: "false" (assumes dotfiles have leading dots)

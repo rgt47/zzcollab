@@ -11,7 +11,7 @@ get_config(key)
 Common keys include:
 \itemize{
 \item "team_name": Docker Hub team/organization name
-\item "build_mode": Package installation mode ("minimal", "fast", "standard", "comprehensive")
+\item "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
 \item "dotfiles_dir": Path to personal dotfiles directory
 \item "github_account": GitHub account for repository creation
 \item "dotfiles_nodot": Whether dotfiles need leading dots added ("true"/"false")
@@ -49,9 +49,9 @@ if (!is.null(team)) {
   cat("No team name configured\n")
 }
 
-# Check build mode setting
-mode <- get_config("build_mode")
-cat("Build mode:", mode \%||\% "standard", "\n")
+# Check Docker profile setting
+profile <- get_config("profile_name")
+cat("Docker profile:", profile \%||\% "minimal", "\n")
 
 # Get dotfiles directory with fallback
 dotfiles <- get_config("dotfiles_dir") \%||\% "~/dotfiles"

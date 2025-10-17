@@ -65,7 +65,7 @@ if (validate_config()) {
 validate_config() || stop("Invalid zzcollab configuration")
 
 # Validation after making changes
-set_config("build_mode", "comprehensive")
+set_config("profile_name", "publishing")
 if (!validate_config()) {
   warning("Configuration may have issues")
 }

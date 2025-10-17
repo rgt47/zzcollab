@@ -9,7 +9,7 @@ get_config_default(key, default = NULL)
 \arguments{
 \item{key}{Character string specifying the configuration key to retrieve.
 Should match keys used in the zzcollab configuration system (e.g.,
-\"team_name\", \"build_mode\", \"dotfiles_dir\").}
+\"team_name\", \"profile_name\", \"dotfiles_dir\").}
 
 \item{default}{Default value to return if the configuration key is not set
 or if \code{get_config()} returns NULL. Can be any type, but typically
@@ -43,7 +43,7 @@ to provide sensible defaults when users haven't configured specific values.
 \dontrun{
 # Internal usage pattern in zzcollab functions
 team_name <- get_config_default(\"team_name\", \"defaultteam\")
-build_mode <- get_config_default(\"build_mode\", \"standard\")
+profile_name <- get_config_default(\"profile_name\", \"analysis\")
 
 # Equivalent to using the \%||\% operator
 team_name <- get_config(\"team_name\") \%||\% \"defaultteam\"

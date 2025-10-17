@@ -995,7 +995,7 @@ get_config <- function(key) {
 #' \dontrun{
 #' # Set up your personal defaults (run once)
 #' set_config("team_name", "mylab")
-#' set_config("build_mode", "standard")
+#' set_config("profile_name", "analysis")
 #' set_config("dotfiles_dir", "~/dotfiles")
 #' set_config("github_account", "myuniversity")
 #' 
@@ -1137,7 +1137,7 @@ list_config <- function() {
 #' validate_config() || stop("Invalid zzcollab configuration")
 #' 
 #' # Validation after making changes
-#' set_config("build_mode", "comprehensive")
+#' set_config("profile_name", "publishing")
 #' if (!validate_config()) {
 #'   warning("Configuration may have issues")
 #' }
@@ -1185,7 +1185,7 @@ validate_config <- function() {
 #' 
 #' **Template Content Includes:**
 #' - team_name: (empty, to be filled by user)
-#' - build_mode: "standard" (balanced default)
+#' - profile_name: "analysis" (balanced default)
 #' - dotfiles_dir: (empty, commonly ~/dotfiles)
 #' - github_account: (empty, for repository creation)
 #' - dotfiles_nodot: "false" (assumes dotfiles have leading dots)
@@ -1240,7 +1240,7 @@ init_config <- function() {
 #'
 #' @param key Character string specifying the configuration key to retrieve.
 #'   Should match keys used in the zzcollab configuration system (e.g.,
-#'   \"team_name\", \"build_mode\", \"dotfiles_dir\").
+#'   \"team_name\", \"profile_name\", \"dotfiles_dir\").
 #'   
 #' @param default Default value to return if the configuration key is not set
 #'   or if \code{get_config()} returns NULL. Can be any type, but typically
@@ -1267,7 +1267,7 @@ init_config <- function() {
 #' \dontrun{
 #' # Internal usage pattern in zzcollab functions
 #' team_name <- get_config_default(\"team_name\", \"defaultteam\")
-#' build_mode <- get_config_default(\"build_mode\", \"standard\")
+#' profile_name <- get_config_default(\"profile_name\", \"analysis\")
 #' 
 #' # Equivalent to using the %||% operator
 #' team_name <- get_config(\"team_name\") %||% \"defaultteam\"
