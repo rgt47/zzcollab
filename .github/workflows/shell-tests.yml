@@ -63,8 +63,8 @@ jobs:
           echo "### Configuration Module (modules/config.sh)"
           echo ""
           config_result=$(bats tests/shell/test-config.bats 2>&1)
-          config_passed=$(echo "$config_result" | grep -oP '\d+(?= tests?, 0 failures?)' || echo "0")
-          config_total=$(echo "$config_result" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
+          config_total=$(echo "$config_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          config_passed=$(echo "$config_result" | grep -c '^ok ' || echo "0")
           config_failed=$((config_total - config_passed))
           if [ "$config_total" -gt 0 ]; then
             config_percent=$(awk "BEGIN {printf \"%.1f\", ($config_passed / $config_total) * 100}")
@@ -82,8 +82,8 @@ jobs:
           echo "### Docker Module (modules/docker.sh)"
           echo ""
           docker_result=$(bats tests/shell/test-docker.bats 2>&1)
-          docker_passed=$(echo "$docker_result" | grep -oP '\d+(?= tests?, 0 failures?)' || echo "0")
-          docker_total=$(echo "$docker_result" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
+          docker_total=$(echo "$docker_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          docker_passed=$(echo "$docker_result" | grep -c '^ok ' || echo "0")
           docker_failed=$((docker_total - docker_passed))
           if [ "$docker_total" -gt 0 ]; then
             docker_percent=$(awk "BEGIN {printf \"%.1f\", ($docker_passed / $docker_total) * 100}")
@@ -210,12 +210,12 @@ jobs:
 
         # Config tests
         config_output=$(bats tests/shell/test-config.bats 2>&1 || true)
-        config_total=$(echo "$config_output" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
+        config_total=$(echo "$config_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
         config_passed=$(echo "$config_output" | grep -c '^ok ' || echo "0")
 
         # Docker tests
         docker_output=$(bats tests/shell/test-docker.bats 2>&1 || true)
-        docker_total=$(echo "$docker_output" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
+        docker_total=$(echo "$docker_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
         docker_passed=$(echo "$docker_output" | grep -c '^ok ' || echo "0")
 
         # Calculate totals
