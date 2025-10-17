@@ -18,10 +18,8 @@ Options include:
 \item "config": Configuration system guide
 \item "dotfiles": Dotfiles setup and management
 \item "renv": Package management with renv
-\item "build-modes": Build mode selection guide
 \item "docker": Docker essentials for researchers
 \item "cicd": CI/CD and GitHub Actions
-\item "variants": Docker variants configuration
 \item "github": GitHub integration and automation
 \item "next-steps": Development workflow guidance
 }}
@@ -52,9 +50,6 @@ zzcollab_help("quickstart")
 
 # Learn about configuration system
 zzcollab_help("config")
-
-# Understanding build modes
-zzcollab_help("build-modes")
 
 # Troubleshooting common issues
 zzcollab_help("troubleshooting")

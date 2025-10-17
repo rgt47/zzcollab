@@ -9,8 +9,7 @@ init_project(
   project_name = NULL,
   github_account = NULL,
   dotfiles_path = NULL,
-  dotfiles_nodots = NULL,
-  build_mode = NULL
+  dotfiles_nodots = NULL
 )
 }
 \arguments{
@@ -33,15 +32,6 @@ personalized development environments. If NULL, uses config default.}
 \item{dotfiles_nodots}{Logical indicating whether dotfiles need leading dots added.
 Set to TRUE if your dotfiles are named without leading dots (e.g., "vimrc"
 instead of ".vimrc"). If NULL, uses config default.}
-
-\item{build_mode}{Character string specifying package installation mode:
-\itemize{
-\item "minimal": Bare essentials (renv, remotes, here) - fastest, ~30 seconds
-\item "fast": Essential packages (~9) for quick setup and CI/CD
-\item "standard": Balanced package set (~17) for typical research workflows (default)
-\item "comprehensive": Full ecosystem (~47+) for complex analyses
-If NULL, uses config default or "standard".
-}}
 }
 \value{
 Logical value indicating success (TRUE) or failure (FALSE) of the
@@ -92,17 +82,15 @@ success <- init_project(
 # Full specification with all parameters
 success <- init_project(
   team_name = "datascience",
-  project_name = "market-analysis", 
+  project_name = "market-analysis",
   github_account = "myuniversity",
   dotfiles_path = "~/dotfiles",
-  dotfiles_nodots = FALSE,
-  build_mode = "comprehensive"
+  dotfiles_nodots = FALSE
 )
 
 # Using configuration defaults (recommended workflow)
 # First, set up your defaults
 set_config("team_name", "mylab")
-set_config("build_mode", "standard")
 set_config("dotfiles_dir", "~/dotfiles")
 
 # Then initialize projects easily

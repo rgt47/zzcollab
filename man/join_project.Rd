@@ -7,10 +7,8 @@
 join_project(
   team_name = NULL,
   project_name = NULL,
-  interface = "shell",
   dotfiles_path = NULL,
-  dotfiles_nodots = NULL,
-  build_mode = NULL
+  dotfiles_nodots = NULL
 )
 }
 \arguments{
@@ -22,14 +20,6 @@ If NULL, uses value from configuration file via \code{get_config("team_name")}.}
 Must match the project name used during initialization.
 Used to identify the correct team Docker images and repository.}
 
-\item{interface}{Character string specifying the development interface:
-\itemize{
-\item "shell": Command-line development with enhanced shell (zsh/bash)
-\item "rstudio": RStudio Server GUI at http://localhost:8787
-\item "verse": Publishing workflow with LaTeX support
-Default is "shell" for broad compatibility.
-}}
-
 \item{dotfiles_path}{Character string specifying path to personal dotfiles.
 These configuration files (.vimrc, .zshrc, etc.) personalize your
 development environment within the team's standardized setup.
@@ -38,15 +28,6 @@ If NULL, uses config default.}
 \item{dotfiles_nodots}{Logical indicating whether dotfiles need leading dots added.
 Set to TRUE if your dotfiles are stored without leading dots.
 If NULL, uses config default.}
-
-\item{build_mode}{Character string specifying package installation mode:
-\itemize{
-\item "minimal": Bare essentials (renv, remotes, here) - fastest
-\item "fast": Essential packages for quick setup
-\item "standard": Balanced package set (default)
-\item "comprehensive": Full ecosystem for complex analyses
-If NULL, uses config default or "standard".
-}}
 }
 \value{
 Logical value indicating success (TRUE) or failure (FALSE).
@@ -67,7 +48,7 @@ the necessary team infrastructure.
 \enumerate{
 \item \strong{Validation}: Checks that team Docker images exist and are accessible
 \item \strong{Project Setup}: Creates local project structure and configuration
-\item \strong{Environment}: Sets up development environment with chosen interface
+\item \strong{Environment}: Configures to use team's Docker image via --use-team-image
 \item \strong{Integration}: Configures local tools and personal dotfiles
 }
 
@@ -79,24 +60,22 @@ the necessary team infrastructure.
 \item Git repository cloned locally (typically done before calling this function)
 }
 
-\strong{Error Handling:}
-The function provides helpful error messages when team images are not
-available, including suggestions for resolution and alternative interfaces.
+\strong{Development Workflow:}
+After joining, start development with \code{make docker-zsh} (shell) or
+\code{make docker-rstudio} (RStudio Server at http://localhost:8787).
 }
 \examples{
 \dontrun{
 # Basic team project joining
 success <- join_project(
   team_name = "mylab",
-  project_name = "covid-study",
-  interface = "shell"
+  project_name = "covid-study"
 )
 
-# Join with RStudio interface
+# Join with personal dotfiles
 join_project(
   team_name = "datascience",
   project_name = "market-analysis",
-  interface = "rstudio",
   dotfiles_path = "~/dotfiles"
 )
 
@@ -105,7 +84,7 @@ set_config("team_name", "mylab")
 set_config("dotfiles_dir", "~/dotfiles")
 
 # Then join projects easily
-join_project(project_name = "new-study", interface = "shell")
+join_project(project_name = "new-study")
 
 # Complete workflow for team member
 # 1. Clone repository (outside R)
