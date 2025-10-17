@@ -49,59 +49,65 @@ The following software components must be installed and configured:
 - Git version control system (configured with user credentials)
 - (Optional) Personal dotfiles repository for shell customization
 
-# Build Mode Selection
+# Docker Profile Selection
 
-ZZCOLLAB provides three build modes representing different levels of
-pre-installed R package dependencies. Selection depends on project
-computational requirements and build time constraints.
+ZZCOLLAB provides a flexible Docker profile system with two approaches:
+predefined profiles for common use cases, or custom composition using
+bundle-based configuration. The profile determines which R packages are
+pre-installed in the Docker image (Layer 1), while additional packages
+can be added dynamically via `renv::install()` inside containers (Layer 2).
 
-## Build Mode Specifications
+## Predefined Docker Profiles
 
-**Fast Mode** (`-F`): Minimal dependency environment (9 packages)
+**minimal**: Lightweight development environment (~780MB)
+- Base: rocker/r-ver
+- Packages: renv, devtools, usethis (essential development tools only)
 
-```bash
-# Core development and testing infrastructure
-renv, here, usethis, devtools, testthat, knitr, rmarkdown, targets
-```
+**analysis**: Balanced environment for typical analyses (~1.2GB, recommended)
+- Base: rocker/rstudio
+- Packages: minimal + tidyverse, here, testthat, knitr, rmarkdown
 
-**Standard Mode** (`-S`): Balanced environment for typical analyses
-(17 packages)
+**bioinformatics**: Genomics and proteomics workflows (~1.98GB)
+- Base: bioconductor/bioconductor_docker
+- Packages: DESeq2, edgeR, limma, GenomicRanges, Biostrings
 
-```bash
-# Fast Mode packages plus tidyverse core components
-+ dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT,
-  conflicted
-```
-
-**Comprehensive Mode** (`-C`): Extended environment for complex workflows
-(47 packages)
-
-```bash
-# Standard Mode packages plus specialized tools
-+ tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4,
-  database connectors, parallel processing libraries
-```
+**geospatial**: Spatial data analysis (~1.5GB)
+- Base: rocker/geospatial
+- System libs: GDAL, PROJ, GEOS
+- Packages: sf, terra, raster, mapview
 
 ## Project Initialization
 
-For this Palmer Penguins analysis, Standard Mode provides necessary
-dependencies including the palmerpenguins package and tidyverse ecosystem:
+For this Palmer Penguins analysis, the `analysis` profile provides necessary
+dependencies including tidyverse ecosystem:
 
 ```bash
 # Navigate to project workspace
 cd ~/projects
 
-# Initialize with Standard Mode
-zzcollab -S
+# Initialize with analysis profile (recommended)
+zzcollab --profile-name analysis
 
 # Alternative: Specify explicit project name
-zzcollab -S -p penguin-analysis
+zzcollab --profile-name analysis -p penguin-analysis
 
 # Include personal shell configuration
-zzcollab -S -d ~/dotfiles
+zzcollab --profile-name analysis -d ~/dotfiles
 
 # Include team namespace for collaborative work
-zzcollab -S -t myname -p penguin-analysis -d ~/dotfiles
+zzcollab -t myname -p penguin-analysis --profile-name analysis -d ~/dotfiles
+```
+
+## Custom Profile Composition
+
+For specialized needs, compose custom profiles using bundles:
+
+```bash
+# Custom: bioinformatics base with modeling packages
+zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs modeling
+
+# Custom: minimal base with geospatial packages
+zzcollab -b rocker/r-ver --libs geospatial --pkgs tidyverse
 ```
 
 ## Initialization Process
@@ -646,7 +652,7 @@ make docker-zsh
 
 This command performs the following operations:
 
-1. Builds or starts the Docker container with Standard Mode packages
+1. Builds or starts the Docker container with profile packages
 2. Loads personal dotfiles (if specified during initialization)
 3. Provides Zsh shell within the container environment
 4. Mounts project directory at /home/analyst/project
@@ -679,7 +685,7 @@ Confirm proper container configuration:
 # Verify R installation
 R --version
 
-# Verify package availability (Standard Mode)
+# Verify package availability (analysis profile)
 R -e "library(palmerpenguins); library(tidyverse); sessionInfo()"
 
 # Verify dotfiles configuration (if specified)
@@ -1239,12 +1245,6 @@ Rscript validate_package_environment.R --quiet --fail-on-issues
 
 # Auto-fix missing packages
 Rscript validate_package_environment.R --fix --fail-on-issues
-
-# Validate specific build mode
-Rscript validate_package_environment.R --build-mode standard --quiet
-
-# Use environment variable for build mode
-ZZCOLLAB_BUILD_MODE=standard Rscript validate_package_environment.R
 ```
 
 **Interpreting validation results:**
@@ -1307,7 +1307,7 @@ This ensures reproducibility is maintained throughout the project lifecycle.
 
 ```bash
 # Project initialization
-zzcollab -S -d ~/dotfiles
+zzcollab --profile-name analysis -d ~/dotfiles
 
 # Raw data placement (host environment)
 cp ~/Downloads/data.csv ~/projects/penguin-analysis/data/raw_data/
@@ -1332,13 +1332,14 @@ git commit -m "Commit message"
 git push
 ```
 
-## Build Mode Comparison
+## Docker Profile Comparison
 
-| Mode           | Packages | Application                   | Build Time |
-|----------------|----------|-------------------------------|------------|
-| Fast           | 9        | Rapid prototyping             | 2 min      |
-| Standard       | 17       | General analyses (recommended)| 5 min      |
-| Comprehensive  | 47       | Complex workflows             | 15 min     |
+| Profile        | Size     | Application                   | Base Image         |
+|----------------|----------|-------------------------------|--------------------|
+| minimal        | ~780MB   | Lightweight development       | rocker/r-ver       |
+| analysis       | ~1.2GB   | General analyses (recommended)| rocker/rstudio     |
+| bioinformatics | ~1.98GB  | Genomics workflows            | bioconductor       |
+| geospatial     | ~1.5GB   | Spatial data analysis         | rocker/geospatial  |
 
 ## Data Directory Functions
 
@@ -1496,7 +1497,7 @@ cd ~/projects
 mkdir penguin-analysis && cd penguin-analysis
 
 # Initialize project with team namespace
-zzcollab -S -t myname -p penguin-analysis -d ~/dotfiles
+zzcollab --profile-name analysis -t myname -p penguin-analysis -d ~/dotfiles
 
 # Customize Dockerfile if needed (optional)
 vim Dockerfile
