@@ -163,7 +163,7 @@ install.packages("renv")  # One-time global install
 renv::init()
 
 # Or create new project with ZZCOLLAB
-zzcollab -M  # Minimal mode includes renv
+zzcollab --profile-name minimal  # Minimal profile includes renv
 ```
 
 ## Typical Workflow
@@ -277,7 +277,7 @@ my-project/
 
 ```bash
 # Create project with Docker environment
-zzcollab -M -D ~/dotfiles
+zzcollab --profile-name minimal -d ~/dotfiles
 
 # Or add Docker to existing renv project
 # (requires manual Dockerfile creation)
@@ -369,40 +369,47 @@ this gap.
 ## Example Workflow
 
 ```bash
-# Team lead creates environment
-zzcollab -i -t mylab -p climate-study -S -D ~/dotfiles
+# Team lead creates environment with geospatial profile
+zzcollab -t mylab -p climate-study --profile-name geospatial -d ~/dotfiles
 
-# Dockerfile specifies:
-# - R version: 4.3.1
-# - System libraries: gdal, geos, netcdf
-# - Base packages: tidyverse, sf, raster
+# Profile provides:
+# - R version: latest stable
+# - System libraries: gdal, geos, proj
+# - Base packages: tidyverse, sf, terra, raster
 
 # Team member joins
 git clone https://github.com/mylab/climate-study
 cd climate-study
-make docker-zsh  # Builds identical environment
+zzcollab --use-team-image -d ~/dotfiles  # Gets team's Docker image
+make docker-zsh
 
 # Inside container - everyone has same environment
-R --version  # R version 4.3.1
-sf::sf_extSoftVersion()  # GDAL 3.6.2 (same for everyone)
+R --version  # Same R version for all
+sf::sf_extSoftVersion()  # Same GDAL version for all
 ```
 
-## Docker Build Modes
+## Docker Profiles
 
-ZZCOLLAB provides four build modes to balance build time and capabilities:
+ZZCOLLAB provides 14+ predefined Docker profiles to balance image size and capabilities:
 
 ```bash
-# Minimal: Ultra-fast (3 packages, ~30s)
-zzcollab -M -D ~/dotfiles
+# Minimal: Essential R development (~780MB)
+zzcollab --profile-name minimal -d ~/dotfiles
 
-# Fast: Development essentials (9 packages, 2-3 min)
-zzcollab -F -D ~/dotfiles
+# Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
+zzcollab --profile-name analysis -d ~/dotfiles
 
-# Standard: Balanced (17 packages, 4-6 min) [default]
-zzcollab -S -D ~/dotfiles
+# Geospatial: GIS and spatial analysis (~1.5GB)
+zzcollab --profile-name geospatial -d ~/dotfiles
 
-# Comprehensive: Full ecosystem (47+ packages, 15-20 min)
-zzcollab -C -D ~/dotfiles
+# Bioinformatics: Genomics and proteomics (~1.98GB)
+zzcollab --profile-name bioinformatics -d ~/dotfiles
+
+# Alpine Minimal: Lightweight (~200MB)
+zzcollab --profile-name alpine_minimal -d ~/dotfiles
+
+# List all available profiles
+zzcollab --list-profiles
 ```
 
 # Level 4: renv + Docker + Unit Testing (Computational Correctness)
@@ -454,8 +461,8 @@ my-project/
 ## Setup
 
 ```bash
-# Create project with Docker environment
-zzcollab -S -D ~/dotfiles
+# Create project with Docker environment (analysis profile recommended)
+zzcollab --profile-name analysis -d ~/dotfiles
 
 # Add testthat infrastructure
 make docker-zsh
@@ -961,7 +968,7 @@ my-project/
 
 ```bash
 # Create project with CI/CD workflows
-zzcollab -S -D ~/dotfiles -G  # -G creates GitHub repo
+zzcollab --profile-name analysis -d ~/dotfiles --create-github-repo
 
 # GitHub Actions workflows automatically created
 ```
@@ -1069,7 +1076,7 @@ ZZCOLLAB creates two standard workflows:
 
 ```bash
 # Day 1: Setup with CI/CD
-zzcollab -i -t mylab -p paper2024 -S -D ~/dotfiles -G
+zzcollab -t mylab -p paper2024 --profile-name analysis -d ~/dotfiles --create-github-repo
 
 # Automatically created GitHub repo with Actions enabled
 
@@ -1195,7 +1202,8 @@ Level 1 → Level 2:
   renv::init()  # 5 minutes
 
 Level 2 → Level 3:
-  zzcollab -M   # 30 seconds (minimal) or 4-6 minutes (standard)
+  zzcollab --profile-name minimal  # Quick minimal setup
+  zzcollab --profile-name analysis # Or full analysis environment
 
 Level 3 → Level 4:
   # Inside Docker container
@@ -1204,7 +1212,7 @@ Level 3 → Level 4:
   # 1-2 days for comprehensive test suite
 
 Level 4 → Level 5:
-  zzcollab -G   # Adds GitHub workflows (already done if using zzcollab)
+  zzcollab --create-github-repo   # Adds GitHub workflows (or already done)
 ```
 
 No need to commit to Level 5 immediately - start at Level 2, add Docker when
