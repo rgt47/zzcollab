@@ -78,3 +78,86 @@ get_workflow_template() {
 **Status**: To be addressed in MED-4
 **Target**: Split `help_guides.sh` into smaller, focused modules
 
+
+---
+
+## Large Module Size - help_guides.sh (MED-4)
+
+**Status**: Documented, not yet refactored
+**Priority**: Medium  
+**Effort**: 3-4 hours
+**File Size**: 3597 lines (exceeds recommended 500-line limit)
+
+### Problem
+
+`modules/help_guides.sh` is extremely large (3597 lines), making it difficult to:
+- Navigate and maintain
+- Test individual components
+- Load efficiently
+- Follow single responsibility principle
+
+### Current Structure
+
+The module contains three main help content functions:
+1. `show_workflow_help()` - Daily development workflow guidance
+2. `show_troubleshooting_help()` - Common issues and solutions
+3. `show_config_help()` - Configuration system documentation
+
+Each function includes extensive documentation content (hundreds of lines of HERE documents).
+
+### Proposed Split
+
+Create focused modules:
+
+```
+modules/help/
+├── workflow.sh         (~1200 lines) - Daily workflow guidance
+├── troubleshooting.sh  (~1200 lines) - Troubleshooting guides
+└── configuration.sh    (~1200 lines) - Configuration documentation
+```
+
+### Migration Plan
+
+1. Create `modules/help/` directory
+2. Split content:
+   - Move `show_workflow_help*` to `workflow.sh`
+   - Move `show_troubleshooting_help*` to `troubleshooting.sh`
+   - Move `show_config_help*` to `configuration.sh`
+3. Create `modules/help.sh` as orchestrator that loads submodules
+4. Update `zzcollab.sh` to load help system properly
+5. Add module dependency checks
+6. Test all help commands work correctly
+
+### Alternative Approach
+
+Instead of shell modules, convert help content to Markdown files:
+
+```
+docs/help/
+├── workflow.md
+├── troubleshooting.md  
+└── configuration.md
+```
+
+Then create simple shell functions that display these files using `less` or `cat`.
+
+**Benefits**:
+- Easier to edit (Markdown vs HERE documents)
+- Better for version control (smaller diffs)
+- Can be viewed outside zzcollab
+- Reduces shell code size significantly
+
+### Impact
+
+- **Risk**: Medium (affects help system, user-facing)
+- **Benefit**: Much easier maintenance, better code organization
+- **Testing**: Verify all help commands display correctly
+
+### Recommendation
+
+Use the Markdown approach:
+1. Convert HERE document content to Markdown files
+2. Create simple display functions
+3. Reduces `help_guides.sh` from 3597 to ~200 lines
+4. Makes documentation more accessible
+
