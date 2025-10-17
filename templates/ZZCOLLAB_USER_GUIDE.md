@@ -1,918 +1,494 @@
-# ZZCOLLAB Framework User Guide v3.1
+# ZZCOLLAB Framework User Guide v4.0
 
 ## Table of Contents
 1. [What is ZZCOLLAB?](#what-is-zzcollab)
-2. [Architecture Overview](#architecture-overview)
-3. [Unified Research Compendium](#unified-research-compendium)
-4. [Configuration System](#configuration-system)
-5. [Docker Profile System](#docker-profile-system)
-6. [Data Documentation System](#data-documentation-system)
-7. [Getting Started](#getting-started)
-8. [Installation & Distribution](#installation--distribution)
-9. [Solo Developer Workflow](#solo-developer-workflow)
-10. [Team Collaboration Setup](#team-collaboration-setup)
-11. [Directory Structure](#directory-structure)
-12. [Navigation Shortcuts](#navigation-shortcuts)
-13. [Development Environments](#development-environments)
-14. [Package Management with renv](#package-management-with-renv)
-15. [Docker Environment](#docker-environment)
-16. [Build System with Make](#build-system-with-make)
-17. [GitHub Actions CI/CD](#github-actions-cicd)
-18. [R Interface Functions](#r-interface-functions)
-19. [Team Collaboration Workflows](#team-collaboration-workflows)
-20. [Common Tasks](#common-tasks)
-21. [Recent Enhancements](#recent-enhancements)
-22. [Troubleshooting](#troubleshooting)
-23. [Platform-Specific Notes](#platform-specific-notes)
+2. [Quick Start](#quick-start)
+3. [Docker Profile System](#docker-profile-system)
+4. [Team Lead Workflow](#team-lead-workflow)
+5. [Team Member Workflow](#team-member-workflow)
+6. [Solo Developer Workflow](#solo-developer-workflow)
+7. [Package Management](#package-management)
+8. [Development Environments](#development-environments)
+9. [Build System with Make](#build-system-with-make)
+10. [GitHub Actions CI/CD](#github-actions-cicd)
+11. [Configuration System](#configuration-system)
+12. [Troubleshooting](#troubleshooting)
+13. [Platform-Specific Notes](#platform-specific-notes)
 
 ## What is ZZCOLLAB?
 
-**ZZCOLLAB** is a framework for creating **research compendia** with
-systematic team collaboration capabilities - self-contained, reproducible
-research projects that combine:
-- **Unified research structure** following Marwick et al. (2018) framework
-- R package structure for code organization
-- Data management and documentation
-- Analysis scripts and notebooks
-- Manuscript preparation
-- Docker containerization for reproducibility
-- **Automated team collaboration workflows**
-- **Automated package management**
-- **Integrated Git/GitHub workflows**
+**ZZCOLLAB** is a framework for creating **reproducible research compendia** - self-contained research projects that combine code, data, documentation, and computational environment specifications to enable complete reproducibility.
 
-### Key Characteristics
+### Key Features
 
-- **Unified Structure**: Single flexible workflow for entire research lifecycle
-- **Progressive Disclosure**: Start simple, add complexity as research evolves
-- **Team Collaboration**: Automated workflows for multiple researchers
-- **Reproducibility**: Systematic recreation of analytical procedures
-- **Organization**: Standardized structure for project components
-- **Publication**: Integrated manuscript preparation workflow
-- **Portability**: Cross-platform compatibility
-- **Containerized**: Isolated computational environments
-- **Automated CI/CD**: Systematic development workflows
+- **Docker-based reproducibility**: Isolated computational environments
+- **Two-layer architecture**: Team Docker profiles + dynamic package management
+- **Unified research structure**: Single flexible workflow from data to publication
+- **Automated CI/CD**: GitHub Actions for testing and validation
+- **Team collaboration**: Automated workflows for multiple researchers
+- **14+ Docker profiles**: From lightweight Alpine (~200MB) to full-featured environments (~3GB)
 
-## Architecture Overview
+### Architecture Overview
 
-ZZCOLLAB employs a modular architecture designed to provide
-research infrastructure that maintains accessibility for users
-with varying levels of technical expertise.
+ZZCOLLAB uses a **two-layer reproducibility architecture**:
 
-### Core Components
+#### Layer 1: Docker Profile (Team/Shared)
+- **Controlled by**: Team lead via `--profile-name`, `-b`, `--libs`, `--pkgs` flags
+- **Purpose**: Defines foundational Docker environment
+- **Components**: Base R version, system dependencies, pre-installed packages
+- **Fixed**: Once selected, shared by all team members
 
-**Main Executable**: `zzcollab.sh`
+#### Layer 2: Dynamic Packages (Personal/Independent)
+- **Controlled by**: Any team member via `renv::install()` inside containers
+- **Purpose**: Add packages as needed for specific analyses
+- **Flexible**: Each member can add packages independently
+- **Collaborative**: renv.lock accumulates packages from all contributors
 
-- Primary framework script (439 lines, representing a 64% reduction
-  from the original monolithic implementation)
-- Command-line interface for all major operations
+## Quick Start
 
-**Modular Shell System**: `modules/` directory
+### Prerequisites
+- **Docker** installed and running
+- **Git** for version control
+- **GitHub CLI** (`gh`) for repository management (optional)
+- **Docker Hub account** for team image publishing (team workflows only)
 
-- **constants.sh**: Centralized configuration and global variables
-- **cli.sh**: Command-line argument parsing
-- **core.sh**: Core utility functions
-- **docker.sh**: Docker image management
-- **structure.sh**: Project structure creation, including data templates
-- **team_init.sh**: Team collaboration setup
-- **help.sh**: Help system with pagination
-- Additional modules for git operations, validation, and logging
+### One-Time Configuration (30 seconds)
 
-**Docker-First Workflow**
-
-- Development occurs within containers to ensure reproducibility
-- Team base images inherit from specialized profiles
-- Personal development images layer dotfiles on team images
-
-**Template System**: `templates/` directory
-
-- Project scaffolding for three research paradigms
-- Docker profile definitions (`profiles.yaml`)
-- Configuration templates (`config.yaml`)
-- Data documentation templates (created automatically)
-
-**Profile System**
-
-- Single source of truth: `profiles.yaml`
-- 14+ Docker profiles ranging from lightweight Alpine (~200MB) to
-  full-featured environments (~3.5GB)
-- Team configuration selects which profiles to enable
-
-**Configuration System**
-
-- Multi-level hierarchy: project > user > system > built-in defaults
-- Centralized constants reduce repetitive parameter specification
-- User and team customization without repository forking
-
-### Key Architecture Patterns
-
-**Modular Design**
-
-- Functions adhere to single responsibility principle (< 60 lines each)
-- Unified validation system employing single `require_module()`
-  function
-- Elimination of code duplication: 3,000+ lines of redundant code
-  removed
-
-**Docker Inheritance Chain**
-
-```
-rocker/r-ver (base image)
-  → Team core image (shared packages)
-    → Personal development image (+ dotfiles)
-```
-
-**Automated CI/CD**
-
-- GitHub Actions for R package validation
-- Automatic team image rebuilds upon dependency changes
-- Multi-platform builds supporting AMD64 and ARM64 architectures
-
-**Test-Driven Development**
-
-- Unit tests in `tests/testthat/`
-- Integration tests for analysis pipelines
-- Data validation framework with >90% coverage requirements
-
-**Single Source of Truth**
-
-- Profile definitions maintained in single file
-  (`profiles.yaml`)
-- Teams reference profiles by name, eliminating duplication
-- Configuration inheritance: user → team → project
-
-### Code Quality Improvements (2024-2025)
-
-**Architecture Enhancements**
-
-- Expanded to 15 specialized modules from monolithic script
-- Function decomposition: refactored 7 oversized functions (963 lines
-  total) into 30 focused functions
-- Unified validation: replaced 17 duplicate validation patterns with
-  single system
-- Performance optimization through caching of expensive operations
-
-**Maintainability**
-
-- Eliminated 150+ lines of duplicate code
-- All functions conform to single responsibility principle
-- Complete dependency mapping and loading order documentation
-- Quality monitoring tools to prevent regression
-
-**Backward Compatibility**
-
-- Preservation of all existing functionality
-- No breaking changes to user interfaces
-- Enhanced performance through systematic optimization
-
-## Unified Research Compendium
-
-ZZCOLLAB follows the **unified research compendium framework** proposed by Marwick, Boettiger, and Mullen (2018). This single flexible structure supports your entire research lifecycle from initial data exploration to package distribution—**without requiring upfront decisions or structural migrations**.
-
-### **Core Philosophy: Progressive Disclosure**
-
-**Key Principle**: Research evolves organically. No upfront choice. No migration friction.
-
-Start with data analysis, naturally progress to manuscript writing, and ultimately create distributable packages—all within the same structure.
-
-### **Unified Directory Structure**
-
-```
-your-research-project/
-├── analysis/
-│   ├── data/
-│   │   ├── raw_data/         # Original, unmodified data (read-only)
-│   │   └── derived_data/     # Processed, analysis-ready data
-│   ├── paper/
-│   │   ├── paper.Rmd         # Manuscript (add when ready)
-│   │   └── references.bib    # Bibliography
-│   ├── figures/              # Generated visualizations
-│   └── scripts/              # Analysis code (empty initially - you create)
-├── R/                        # Reusable functions (add as needed)
-├── tests/                    # Unit tests (add as needed)
-├── man/                      # Documentation (add for packages)
-├── vignettes/                # Tutorials (add for packages)
-├── Dockerfile                # Computational environment
-└── renv.lock                 # Exact package versions
-```
-
-**Compatible with**: benmarwick/rrtools, Marwick et al. (2018) research compendium standards
-
-### **Four-Stage Research Evolution**
-
-**Stage 1: Data Analysis** (Day 1)
-```r
-# Start simple - create analysis scripts
-analysis/scripts/01_explore_data.R
-analysis/scripts/02_model_data.R
-```
-
-**Stage 2: Manuscript Writing** (Week 2)
-```r
-# Add manuscript when ready
-analysis/paper/paper.Rmd
-analysis/paper/references.bib
-```
-
-**Stage 3: Function Extraction** (Month 1)
-```r
-# Extract reusable code to functions
-R/data_cleaning.R
-R/modeling_functions.R
-tests/testthat/test-functions.R
-```
-
-**Stage 4: Package Distribution** (Month 3)
-```r
-# Add package documentation
-man/data_cleaning.Rd
-vignettes/getting-started.Rmd
-```
-
-**No migration required** - research evolves organically within the unified structure.
-
-### **Quick Start**
-
-**Command Line:**
-```bash
-# Create unified research project
-zzcollab -t myteam -p my-research -d ~/dotfiles
-
-# Build and share team image
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Initial team project setup"
-git push -u origin main
-```
-
-**R Interface:**
-```r
-library(zzcollab)
-
-# Create unified project
-init_project("my-research")
-
-# Or with team
-init_project(team_name = "myteam", project_name = "research-project")
-```
-
-### **Learning Resources**
-
-For detailed information about the unified paradigm approach:
-- `docs/UNIFIED_PARADIGM_GUIDE.md` - Complete guide
-- `docs/MARWICK_COMPARISON_ANALYSIS.md` - Comparison with Marwick framework
-- `examples/` directory - Practical examples for different research stages
-
-## Configuration System
-
-ZZCOLLAB implements a multi-layered configuration system designed to
-reduce parameter repetition and establish consistent project defaults
-across different organizational contexts.
-
-### Configuration Architecture
-
-The system employs a hierarchical configuration structure where settings
-at more specific levels override broader defaults:
-
-**Configuration Hierarchy** (highest priority first):
-
-1. **Project config** (`./zzcollab.yaml`) - Team-specific settings for
-   shared projects
-2. **User config** (`~/.zzcollab/config.yaml`) - Personal defaults
-   across all projects
-3. **System config** (`/etc/zzcollab/config.yaml`) - Organization-wide
-   defaults
-4. **Built-in defaults** - Fallback values ensuring system functionality
-
-**Three Configuration Domains**:
-
-- **Docker Variant Management** - 14+ specialized environments with
-  custom base images and packages
-- **Package Management** - Build modes (Fast/Standard/Comprehensive)
-  with flexible package selection
-- **Development Settings** - Team collaboration, GitHub integration,
-  and automation preferences
-
-### Configuration Files
-
-- **User config**: `~/.zzcollab/config.yaml` (personal defaults)
-- **Project config**: `./zzcollab.yaml` (team-specific overrides)
-- **System config**: `/etc/zzcollab/config.yaml` (organizational
-  defaults)
-
-### Configuration Commands
-```bash
-zzcollab --config init                    # Create default config file
-zzcollab --config set team-name "myteam"  # Set a configuration value
-zzcollab --config get team-name           # Get a configuration value
-zzcollab --config list                    # List all configuration
-zzcollab --config validate               # Validate YAML syntax
-```
-
-### One-time Setup
 ```bash
 # Initialize configuration
 zzcollab --config init
 
-# Set your team defaults
+# Set your defaults
 zzcollab --config set team-name "myteam"
 zzcollab --config set github-account "myusername"
-zzcollab --config set build-mode "standard"
 zzcollab --config set dotfiles-dir "~/dotfiles"
-
-# View your configuration
-zzcollab --config list
 ```
 
-### Customizable Settings
-- **Team settings**: `team_name`, `github_account`
-- **Build settings**: `build_mode`, `dotfiles_dir`, `dotfiles_nodot`
-- **Automation**: `auto_github`, `skip_confirmation`
-- **Custom package lists**: Override default packages for each build mode
-
-### Custom Package Lists
-Edit your config file (`~/.zzcollab/config.yaml`) to customize packages:
-
-```yaml
-build_modes:
-  fast:
-    description: "Quick development setup"
-    docker_packages: [renv, remotes, here, usethis]
-    renv_packages: [renv, here, usethis, devtools, testthat]
-  
-  standard:
-    description: "Balanced research workflow"  
-    docker_packages: [renv, remotes, tidyverse, here, usethis, devtools]
-    renv_packages: [renv, here, usethis, devtools, dplyr, ggplot2, tidyr, testthat, palmerpenguins]
-```
-
-### Comprehensive Configuration Examples
-
-**User Configuration** (`~/.zzcollab/config.yaml`):
-
-```yaml
-defaults:
-  # Personal development preferences
-  team_name: "myteam"
-  github_account: "myusername"
-  build_mode: "standard"          # fast, standard, comprehensive
-  dotfiles_dir: "~/dotfiles"
-  dotfiles_nodot: false
-
-  # Automation preferences
-  auto_github: false
-  skip_confirmation: false
-
-# Custom package lists for build modes (optional)
-build_modes:
-  fast:
-    description: "Quick development setup"
-    docker_packages: [renv, remotes, here, usethis]
-    renv_packages: [renv, here, usethis, devtools, testthat]
-
-  custom_analysis:
-    description: "Personal data science workflow"
-    docker_packages: [renv, tidyverse, targets, pins]
-    renv_packages: [renv, tidyverse, targets, pins, vetiver,
-                    plumber, shiny]
-```
-
-**Team Project Configuration** (`./zzcollab.yaml`):
-
-```yaml
-#=========================================================
-# TEAM METADATA
-#=========================================================
-team:
-  name: "datasci-lab"
-  project: "customer-churn-analysis"
-  description: "Machine learning analysis of customer
-                retention patterns"
-  maintainer: "Dr. Smith <smith@university.edu>"
-
-#=========================================================
-# BUILD CONFIGURATION
-#=========================================================
-build:
-  use_config_profiles: true
-  profile_library: "profiles.yaml"
-
-  docker:
-    platform: "auto"              # auto, linux/amd64, linux/arm64
-    no_cache: false
-    parallel_builds: true
-
-  packages:
-    repos: "https://cran.rstudio.com/"
-    install_suggests: false
-    dependencies: ["Depends", "Imports", "LinkingTo"]
-
-#=========================================================
-# TEAM COLLABORATION SETTINGS
-#=========================================================
-collaboration:
-  github:
-    auto_create_repo: false
-    default_visibility: "private"
-    enable_actions: true
-
-  development:
-    default_interface: "analysis"
-    container:
-      default_user: "analyst"
-      working_dir: "/home/analyst/project"
-```
-
-### Configuration Workflows
-
-**Solo Developer Setup**:
+### Create First Project (3-4 minutes)
 
 ```bash
-# Initialize personal configuration
-zzcollab --config init
-zzcollab --config set team-name "myteam"
-zzcollab --config set build-mode "standard"
+# Create project directory
+mkdir my-analysis && cd my-analysis
 
-# Create projects using defaults
-zzcollab -t myteam -p data-analysis -d ~/dotfiles    # Uses config defaults
+# Initialize project (uses config defaults)
+zzcollab
+
+# Build Docker image
 make docker-build
-make docker-push-team
-git add .
-git commit -m "Initial project setup"
-git push -u origin main
-```
 
-**Team Leader Setup**:
-
-```bash
-# Create team configuration
-mkdir team-project && cd team-project
-zzcollab -t myteam -p team-project -d ~/dotfiles
-
-# Customize Dockerfile if needed
-vim Dockerfile
-
-# Build and share team images
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Initial team configuration"
-git push -u origin main
-```
-
-**Team Member Joining**:
-
-```bash
-# Clone team project
-git clone https://github.com/team/team-project.git
-cd team-project
-
-# Pull and use team image
-zzcollab --use-team-image -d ~/dotfiles
+# Enter development environment
 make docker-zsh
-```
-
-### Configuration Validation
-
-```bash
-# Check configuration syntax and values
-zzcollab --config validate
-
-# Debug configuration loading
-zzcollab --config list
-
-# Verify Docker platform compatibility
-zzcollab --config get docker.platform
-```
-
-### R Interface for Configuration
-
-```r
-library(zzcollab)
-
-# Configuration management
-init_config()                           # Initialize config file
-set_config("team_name", "myteam")       # Set configuration values
-get_config("team_name")                 # Get configuration values
-list_config()                           # List all configuration
-validate_config()                       # Validate configuration files
-
-# Use config-aware functions
-init_project(project_name = "my-analysis")   # Uses config defaults
-join_project(project_name = "my-analysis")   # Uses config defaults
-setup_project()                              # Uses all defaults
 ```
 
 ## Docker Profile System
 
-ZZCOLLAB supports 14+ specialized Docker environments through a
-single source of truth architecture that eliminates duplication
-and provides extensive customization options.
+ZZCOLLAB's Docker profile system provides three ways to specify your computational environment:
 
-### Variant Library Overview
+### 1. Complete Profiles (`--profile-name`)
 
-**Standard Research Environments (6 profiles)**
+**Predefined combinations** of base image + system libraries + R packages:
 
-- **minimal** (~800MB) - Essential R packages only
-- **analysis** (~1.2GB) - Tidyverse with data analysis tools
-- **modeling** (~1.5GB) - Machine learning with tidymodels
-- **publishing** (~3GB) - LaTeX, Quarto, bookdown, blogdown
-- **shiny** (~1.8GB) - Interactive web applications
-- **shiny_verse** (~3.5GB) - Shiny with tidyverse and publishing
+| Profile | Base Image | System Libs | R Packages | Size | Use Case |
+|---------|------------|-------------|------------|------|----------|
+| `minimal` | rocker/r-ver | minimal | renv, devtools, usethis | ~780MB | Essential development |
+| `rstudio` | rocker/rstudio | minimal | renv, devtools, usethis | ~980MB | GUI development |
+| `analysis` | rocker/tidyverse | minimal | tidyverse ecosystem | ~1.18GB | Data analysis |
+| `modeling` | rocker/r-ver | modeling | tidymodels, xgboost | ~1.48GB | Machine learning |
+| `bioinformatics` | bioconductor/bioconductor_docker | bioinfo | DESeq2, edgeR, limma | ~1.98GB | Genomics |
+| `geospatial` | rocker/geospatial | geospatial | sf, terra, leaflet | ~2.48GB | Spatial analysis |
+| `publishing` | rocker/verse | publishing | quarto, bookdown, LaTeX | ~3GB | Manuscripts |
+| `alpine_minimal` | velaco/alpine-r | alpine | renv, devtools | ~200MB | Ultra-lightweight |
+| `alpine_analysis` | velaco/alpine-r | alpine | tidyverse | ~400MB | Lightweight analysis |
 
-**Specialized Domains (2 profiles)**
+**Usage:**
 
-- **bioinformatics** (~2GB) - Bioconductor genomics packages
-- **geospatial** (~2.5GB) - sf, terra, leaflet mapping tools
+```bash
+# Method 1: Set in config (recommended)
+zzcollab --config set profile-name "bioinformatics"
+mkdir study && cd study
+zzcollab  # Uses bioinformatics profile
+make docker-build
 
-**Lightweight Alpine Variants (3 profiles)**
+# Method 2: Use flag for one-time selection
+mkdir analysis && cd analysis
+zzcollab --profile-name geospatial
+make docker-build
 
-- **alpine_minimal** (~200MB) - Ultra-lightweight for CI/CD
-- **alpine_analysis** (~400MB) - Essential analysis in minimal
-  container
-- **hpc_alpine** (~600MB) - High-performance parallel processing
+# List all available profiles
+zzcollab --list-profiles
+```
 
-**R-Hub Testing Environments (3 profiles)**
+### 2. Custom Composition (Bundles)
 
-- **rhub_ubuntu** (~1GB) - CRAN-compatible package testing
-- **rhub_fedora** (~1.2GB) - Test against R-devel
-- **rhub_windows** (~1.5GB) - Windows compatibility testing
+**Build custom environments** by combining components:
 
-### Single Source of Truth Architecture
+```bash
+# Custom composition: bioconductor base + geospatial libraries + modeling packages
+mkdir custom-project && cd custom-project
+zzcollab -b bioconductor/bioconductor_docker --libs geospatial --pkgs modeling
+make docker-build
+```
 
-All profile definitions are centralized in `profiles.yaml`
-with team configurations referencing them by name:
+**Available bundles:**
 
-**Master Library**: `templates/profiles.yaml`
+System Library Bundles (`--libs`):
+- `minimal`: Essential development libraries
+- `geospatial`: GDAL, PROJ, GEOS for spatial analysis
+- `bioinfo`: Genomics libraries (zlib, libbz2, liblzma)
+- `modeling`: Statistical modeling libraries (libgsl)
+- `publishing`: LaTeX, pandoc for manuscripts
+- `alpine`: Alpine Linux libraries (different package manager)
+
+R Package Bundles (`--pkgs`):
+- `minimal`: renv, devtools, usethis, testthat
+- `tidyverse`: tidyverse ecosystem + data tools
+- `modeling`: tidymodels, xgboost, randomForest
+- `bioinfo`: Bioconductor genomics packages
+- `geospatial`: sf, terra, leaflet mapping tools
+- `publishing`: quarto, bookdown, blogdown
+- `shiny`: Shiny web applications
+
+```bash
+# View all available bundles
+zzcollab --list-libs   # System library bundles
+zzcollab --list-pkgs   # R package bundles
+```
+
+### 3. Custom Base Images
+
+**Use any Docker base image**:
+
+```bash
+# Use custom or alternative base image
+mkdir project && cd project
+zzcollab -b "my-organization/custom-r:latest" --libs minimal --pkgs tidyverse
+make docker-build
+```
+
+### How Dockerfiles are Generated
+
+ZZCOLLAB creates Dockerfiles dynamically based on your profile/bundle choices:
+
+#### Profile Expansion Process
+
+1. **Parse Profile**: If `--profile-name` specified, load from `bundles.yaml`
+   ```yaml
+   # Example: bioinformatics profile
+   bioinformatics:
+     base_image: "bioconductor/bioconductor_docker"
+     libs: bioinfo
+     pkgs: bioinfo
+   ```
+
+2. **Expand Bundles**: Convert bundle names to actual dependencies
+   ```yaml
+   # libs: bioinfo expands to:
+   library_bundles:
+     bioinfo:
+       deps:
+         - zlib1g-dev
+         - libbz2-dev
+         - liblzma-dev
+
+   # pkgs: bioinfo expands to:
+   package_bundles:
+     bioinfo:
+       packages:
+         - renv
+         - BiocManager
+         - DESeq2
+         - edgeR
+   ```
+
+3. **Generate Dockerfile**: Create Dockerfile with expanded specifications
+
+#### Example: Generated Dockerfile for Bioinformatics Profile
+
+```dockerfile
+# Command: zzcollab --profile-name bioinformatics
+FROM bioconductor/bioconductor_docker:latest
+
+# Set environment variables for reproducibility
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC \
+    OMP_NUM_THREADS=1
+
+# Install system dependencies (from bioinfo libs bundle)
+RUN apt-get update && apt-get install -y \
+    zlib1g-dev \
+    libbz2-dev \
+    liblzma-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install R packages (from bioinfo pkgs bundle)
+RUN R -e "install.packages(c('renv', 'devtools'))" && \
+    R -e "BiocManager::install(c('DESeq2', 'edgeR', 'limma', 'GenomicRanges', 'Biostrings'))"
+
+# Create analyst user with sudo access
+RUN useradd -m -s /bin/bash analyst && \
+    echo "analyst:analyst" | chpasswd && \
+    usermod -aG sudo analyst
+
+# Set working directory
+WORKDIR /home/analyst/project
+
+USER analyst
+```
+
+#### Example: Custom Composition
+
+```bash
+# Command: zzcollab -b rocker/r-ver --libs geospatial --pkgs modeling
+```
+
+Generated Dockerfile:
+```dockerfile
+FROM rocker/r-ver:latest
+
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC \
+    OMP_NUM_THREADS=1
+
+# Install system dependencies (from geospatial libs bundle)
+RUN apt-get update && apt-get install -y \
+    gdal-bin \
+    proj-bin \
+    libgeos-dev \
+    libproj-dev \
+    libgdal-dev \
+    libudunits2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install R packages (from modeling pkgs bundle)
+RUN R -e "install.packages(c('renv', 'devtools', 'tidyverse', 'tidymodels', 'xgboost', 'randomForest', 'glmnet', 'caret'))"
+
+# ... rest of Dockerfile
+```
+
+### Validation and Compatibility
+
+ZZCOLLAB validates profile/bundle combinations:
 
 ```yaml
-minimal:
-  base_image: "rocker/r-ver:latest"
-  description: "Minimal development environment with
-                essential R packages"
-  packages: [renv, devtools, usethis, testthat, roxygen2]
-  system_deps: [libxml2-dev, libcurl4-openssl-dev, libssl-dev]
-  category: "standard"
-  size: "~800MB"
-
-modeling:
-  base_image: "rocker/r-ver:latest"
-  description: "Machine learning and statistical modeling
-                environment"
-  packages: [renv, devtools, tidyverse, tidymodels, xgboost,
-             randomForest]
-  system_deps: [libxml2-dev, libssl-dev, build-essential,
-                gfortran]
-  category: "standard"
-  size: "~1.5GB"
+# From bundles.yaml compatibility_rules:
+compatibility_rules:
+  geospatial_pkgs_require_libs:
+    condition: "pkgs == 'geospatial'"
+    requires_libs: ["geospatial"]
+    error: "Geospatial packages require --libs geospatial (GDAL/PROJ libraries)"
 ```
 
-**Team Configuration**: `templates/config.yaml`
+**Example validation:**
+```bash
+# This will fail validation:
+zzcollab -b rocker/r-ver --pkgs geospatial
+# Error: Geospatial packages require --libs geospatial
 
-```yaml
-profiles:
-  minimal:
-    enabled: true    # Essential development (~800MB)
-    # Full definition in profiles.yaml
-
-  modeling:
-    enabled: false   # Machine learning environment (~1.5GB)
-    # Full definition in profiles.yaml
-
-build:
-  use_config_profiles: true
-  profile_library: "profiles.yaml"
+# Correct usage:
+zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
 ```
 
-### Interactive Variant Management
+## Team Lead Workflow
+
+### Complete Team Setup
+
+**Scenario:** You are Developer 1 creating a new team project with specialized Docker environment.
+
+#### Step 1: Choose Docker Profile
 
 ```bash
-# Interactive profile browser with 14 options
-./add_profile.sh
+# Option A: Use predefined profile
+zzcollab --config set profile-name "bioinformatics"
 
-# Displays categorized menu showing all available profiles
-# organized by: Standard Research, Specialized Domains,
-# Lightweight Alpine, R-Hub Testing
-
-# Select profiles and they are automatically added to config.yaml
+# Option B: Use custom composition
+# (set via flags in step 2)
 ```
 
-### Variant Usage Commands
-
-**Team Initialization**:
+#### Step 2: Create Project Structure
 
 ```bash
-# Quick start - creates optimal default profiles
-zzcollab -t myteam -p myproject -d ~/dotfiles
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Initial project setup with default profiles"
-git push -u origin main
+mkdir genomics-study && cd genomics-study
 
-# Custom profiles via config file
-mkdir myproject && cd myproject
-zzcollab -t myteam -p myproject -d ~/dotfiles
-./add_profile.sh
-vim Dockerfile  # Customize as needed
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Initial project setup with custom profiles"
-git push -u origin main
+# Option A: Using profile from config
+zzcollab -t mylab -p genomics-study -D ~/dotfiles
+
+# Option B: Using custom composition
+zzcollab -t mylab -p genomics-study -b bioconductor/bioconductor_docker \
+  --libs bioinfo --pkgs bioinfo -D ~/dotfiles
 ```
 
-**Solo Developer Workflow**:
+**What happens:**
+- Creates complete R package structure (R/, analysis/, tests/, etc.)
+- Generates Dockerfile from selected profile/bundles
+- Sets up CI/CD workflows (.github/workflows/)
+- Initializes renv for dependency tracking
+- Creates development environment files
+
+#### Step 3: Customize Dockerfile (Optional)
 
 ```bash
-# Configuration-based (recommended)
-zzcollab --config set team-name "myteam"
-zzcollab -t myteam -p research-paper -d ~/dotfiles
-make docker-build
-
-# With custom profile selection
-mkdir research-paper && cd research-paper
-zzcollab -t myteam -p research-paper -d ~/dotfiles
-./add_profile.sh
-make docker-build
-```
-
-### Benefits of Profile System
-
-- Eliminates duplication through single source of truth
-- Provides 14+ specialized environments from 200MB to 3.5GB
-- Offers domain-specific profiles for bioinformatics, geospatial,
-  HPC, web applications
-- Includes professional testing environments matching CRAN
-  infrastructure
-- Supports lightweight Alpine profiles (5x smaller than standard
-  images)
-- Enables interactive discovery through profile browser
-- Maintains backward compatibility with legacy full definitions
-- Simplifies maintenance through centralized updates
-
-## Data Documentation System
-
-ZZCOLLAB includes an automated data documentation system that
-implements research best practices for data management and
-reproducibility.
-
-### Automated Data README Creation
-
-Every new zzcollab project automatically includes a comprehensive
-`data/README.md` template with:
-
-**Data Organization Structure**:
-
-```
-data/
-├── raw_data/           # Original, untouched data files
-├── derived_data/       # Cleaned and processed data files
-├── correspondence/     # Email communications, data transfer notes
-└── README.md          # Comprehensive data documentation
-```
-
-**Template Features**:
-
-- Complete data dictionary with column descriptions, types, valid
-  ranges, missing value codes
-- Processing documentation linking derived files to their creating
-  scripts
-- Quality notes documenting known issues, validation checks,
-  reproducibility instructions
-- Palmer Penguins example providing ready-to-customize template
-  with realistic data scenario
-
-### Data Workflow Guide
-
-ZZCOLLAB includes a detailed `DATA_WORKFLOW_GUIDE.md` providing
-step-by-step guidance for data management throughout the research
-lifecycle. The guide is automatically installed with all new
-projects.
-
-**6-Phase Workflow Process**:
-
-1. **Data Receipt & Initial Setup** (HOST) - File placement, initial
-   documentation, data source recording
-2. **Data Exploration & Validation** (CONTAINER) - Quality assessment,
-   diagnostic plots, missing data analysis
-3. **Data Preparation Development** (CONTAINER) - Function development,
-   processing scripts, transformation logic
-4. **Unit Testing & Validation** (CONTAINER) - Comprehensive test
-   coverage, edge case testing
-5. **Integration Testing & Documentation** (HOST/CONTAINER) - Pipeline
-   validation, full workflow testing
-6. **Final Validation & Deployment** (HOST/CONTAINER) - Production
-   readiness, reproducibility verification
-
-**Key Features**:
-
-- Scientific rationale explaining how data testing prevents research
-  integrity issues
-- Clear HOST vs CONTAINER operation indicators for environment
-  context
-- Complete documentation structure guidance with 13 specific sections
-- Palmer Penguins examples with working code throughout all 6 phases
-- Template integration automatically installed via
-  `create_data_templates()`
-- Testing framework including unit tests, integration tests, helper
-  functions, data file validation
-- Quality assurance requirements with >90% test coverage
-- Container workflow guidance indicating when to exit/enter
-  containers
-
-### Example Data Workflow Documentation
-
-The guide includes practical Palmer Penguins examples for all phases:
-
-```r
-# Palmer Penguins data preparation function
-prepare_penguin_data <- function(data, n_records = 50) {
-  # Input validation
-  required_cols <- c("species", "island", "bill_length_mm",
-                     "bill_depth_mm", "flipper_length_mm",
-                     "body_mass_g", "sex", "year")
-
-  # Processing with log transformation
-  result <- data %>%
-    slice_head(n = n_records) %>%
-    filter(!is.na(body_mass_g)) %>%
-    mutate(log_body_mass_g = log(body_mass_g)) %>%
-    mutate(species = as.factor(species))
-
-  return(result)
-}
-```
-
-### Benefits for Reproducible Research
-
-- Standardized documentation following consistent patterns with 13
-  structured sections
-- Traceability through clear links between raw data, processing
-  scripts, and derived datasets
-- Quality assurance via built-in data validation and quality check
-  documentation
-- Research standards compliance following academic data management
-  standards
-- Collaboration support enabling team members to immediately
-  understand data structure and processing
-- Testing framework providing comprehensive validation preventing
-  silent data quality issues
-- Docker workflow integration with proper separation of host file
-  management and container analysis
-- Template automation with both `data/README.md` and
-  `DATA_WORKFLOW_GUIDE.md` automatically installed
-- Enhanced documentation including scientific rationale,
-  troubleshooting guidance, and complete command references
-
-## Getting Started
-
-### Prerequisites
-- **Docker** (required for containerized workflow)
-- **Git** (required for collaboration)
-- **GitHub CLI** (`gh`) for automated repository management
-- **Docker Hub account** for team image publishing
-
-### Quick Start for Teams
-
-#### Developer 1 (Team Lead) - Automated Setup
-```bash
-# 1. Install zzcollab (one-time)
-git clone https://github.com/your-org/zzcollab.git
-cd zzcollab
-./install.sh                    # Installs to ~/bin
-
-# 2. Create project structure and team foundation
-cd ~/projects                   # Your preferred projects directory
-mkdir study2024 && cd study2024
-
-# Create project with team configuration
-zzcollab -t mylab -p study2024 -d ~/dotfiles
-
-# Customize Dockerfile if needed (optional)
+# If you need additional system dependencies or packages:
 vim Dockerfile
 
-# 3. Build and share team Docker image
-make docker-build              # Build team image (mylab/study2024:latest)
-make docker-push-team          # Push to Docker Hub for team access
+# Example additions:
+# RUN apt-get install -y additional-library
+# RUN R -e "install.packages('specialized-package')"
+```
 
-# 4. Create GitHub repository (optional)
-gh repo create mylab/study2024 --private
-git remote add origin https://github.com/mylab/study2024.git
+#### Step 4: Build and Share Team Image
+
+```bash
+# Build Docker image with your profile
+make docker-build
+
+# Push to Docker Hub for team access
+make docker-push-team
+
+# Commit project structure to GitHub
+git add .
+git commit -m "Initial project setup with bioinformatics profile"
 git push -u origin main
-
-# 5. Start developing immediately
-make docker-zsh                # → Enhanced development environment
 ```
 
-#### Developers 2+ (Team Members) - Join Project
+**What team members will get:**
+- Identical Docker environment via `mylab/genomics-study:latest` image
+- Complete project structure from GitHub
+- Base Bioconductor packages pre-installed
+- System dependencies for genomics work
+
+#### Step 5: Development
+
 ```bash
-# 1. Clone team repository (private)
-git clone https://github.com/mylab/study2024.git
-cd study2024
+# Enter Docker environment
+make docker-zsh
 
-# 2. Pull and use team image (Dockerfile already exists)
-zzcollab --use-team-image -d ~/dotfiles
+# Inside container: add packages as needed
+renv::install("ComplexHeatmap")
+renv::install("clusterProfiler")
+renv::snapshot()
 
-# 3. Start developing immediately
-make docker-zsh                # → Same environment as team lead
+# Exit and validate
+exit
+make check-renv-ci
+make docker-test
+
+# Commit changes
+git add renv.lock DESCRIPTION
+git commit -m "Add heatmap and pathway analysis packages"
+git push
 ```
 
-## Installation & Distribution
+### Team Lead Responsibilities
 
-### One-Time Installation
+1. **Select Docker profile**: Choose appropriate environment for team's research domain
+2. **Build team image**: Create and push Docker image to Docker Hub
+3. **Manage base environment**: Decide which packages to pre-install in Docker vs add via renv
+4. **Add collaborators**: Grant GitHub repository access
+5. **Maintain infrastructure**: Update team image when base dependencies change
+
+## Team Member Workflow
+
+### Joining Existing Project
+
+**Scenario:** You are Developer 2+ joining a team project.
+
+#### Step 1: Clone Repository
 
 ```bash
-# Clone and install globally
-git clone https://github.com/your-org/zzcollab.git
-cd zzcollab
-./install.sh                   # Installs zzcollab to ~/bin
-
-# Verify installation
-which zzcollab                 # Should show ~/bin/zzcollab
+git clone https://github.com/mylab/genomics-study.git
+cd genomics-study
 ```
 
-### Self-Replicating Team Strategy
-
-ZZCOLLAB implements automated team distribution:
-
-- Team lead runs `zzcollab -i` once to create team infrastructure
-- Creates private GitHub repository with full project structure
-- Team members clone and obtain everything automatically
-- No separate installation required for team members
-
-### Team Collaboration Workflow
+#### Step 2: Pull Team Image
 
 ```bash
-# Team member workflow
-git clone https://github.com/mylab/study2024.git
-cd study2024
+# Pull and use team's Docker image
+zzcollab --use-team-image -D ~/dotfiles
+```
 
-# Pull and use team image (Dockerfile exists, auto-detects role)
-zzcollab --use-team-image -d ~/dotfiles
+**What happens:**
+- Downloads `mylab/genomics-study:latest` from Docker Hub
+- Uses team's Docker profile (bioinformatics environment)
+- Creates personal development layer on top of team image
+- Copies your dotfiles into container
 
-# Start development with available environments
-make docker-zsh          # Enhanced shell
-make docker-rstudio      # RStudio Server (if configured)
+#### Step 3: Start Development
+
+```bash
+# Enter identical Docker environment as team lead
+make docker-zsh
+
+# Inside container: work on analysis
+renv::restore()  # Install all team packages from renv.lock
+
+# Add your own packages as needed
+renv::install("pheatmap")
+renv::snapshot()
+
+# Exit container
+exit
+
+# Validate and commit
+make check-renv-ci
+git add renv.lock DESCRIPTION
+git commit -m "Add pheatmap for visualization"
+git push
+```
+
+### Team Member Capabilities
+
+✅ **Can do:**
+- Add R packages via `renv::install()` (Layer 2)
+- Create analysis scripts and functions
+- Run tests and CI/CD workflows
+- Commit changes to renv.lock
+- Propose modifications to team image via pull requests
+
+❌ **Cannot do:**
+- Change Docker profile (fixed by team lead in Layer 1)
+- Modify base image
+- Add system libraries (requires team lead to rebuild team image)
+- Change R version (fixed in team's Dockerfile)
+
+### Requesting New System Dependencies
+
+If you need system libraries:
+
+```bash
+# Option 1: Request via GitHub issue
+gh issue create --title "Request: Add libgsl-dev for modeling" \
+  --body "Need GSL library for statistical modeling packages"
+
+# Option 2: Submit pull request
+vim Dockerfile  # Add: RUN apt-get install -y libgsl-dev
+git checkout -b add-gsl-library
+git add Dockerfile
+git commit -m "Add GSL library for statistical modeling"
+gh pr create --title "Add GSL system library"
 ```
 
 ## Solo Developer Workflow
 
-ZZCOLLAB provides a streamlined workflow for individual researchers
-requiring professional-grade reproducibility with minimal overhead.
+### Quick Start
 
-### Quick Start Solo Workflow
-
-**Initial Setup (One-Time)**:
+Solo developers get streamlined workflow without team image management:
 
 ```bash
-# Install ZZCOLLAB
-git clone https://github.com/rgt47/zzcollab.git
-cd zzcollab && ./install.sh
-
-# Configure defaults to eliminate repetitive typing
+# One-time config
 zzcollab --config init
-zzcollab --config set team-name "myteam"
-zzcollab --config set build-mode "standard"
-zzcollab --config set dotfiles-dir "~/dotfiles"
-```
+zzcollab --config set team-name "myusername"
+zzcollab --config set profile-name "analysis"
 
-**Project Creation**:
-
-```bash
-# Quick start - create project and build image
+# Create project
 mkdir penguin-analysis && cd penguin-analysis
-zzcollab -t myteam -p penguin-analysis -d ~/dotfiles
+zzcollab
 make docker-build
 
-# Advanced users can browse 14+ profiles interactively
-mkdir penguin-analysis && cd penguin-analysis
-zzcollab -t myteam -p penguin-analysis -d ~/dotfiles
-./add_profile.sh
-vim Dockerfile  # Customize as needed
-make docker-build
-```
-
-**Daily Development Cycle**:
-
-```bash
-# Start development environment
-cd penguin-analysis
+# Daily development
 make docker-zsh
-
-# Work inside container
-vim scripts/01_penguin_exploration.R
-vim R/penguin_functions.R
-vim tests/testthat/test-functions.R
-
-# Test and run analysis
-R
-devtools::load_all()
-devtools::test()
-source("scripts/01_penguin_exploration.R")
-quit()
-
-# Exit container
+# ... work inside container ...
 exit
 
 # Validate and commit
@@ -920,1414 +496,362 @@ make docker-test
 git add . && git commit -m "Add analysis" && git push
 ```
 
-### Practical Example: Penguin Bill Analysis
-
-**Initial Analysis (First Iteration)**:
-
-```r
-# scripts/01_penguin_exploration.R
-library(palmerpenguins)
-library(ggplot2)
-library(dplyr)
-
-create_bill_plot <- function() {
-  penguins %>%
-    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
-    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
-    geom_point(aes(color = species), alpha = 0.7, size = 2) +
-    labs(title = "Penguin Bill Depth vs Log(Bill Length)",
-         x = "Log(Bill Length) (mm)",
-         y = "Bill Depth (mm)") +
-    theme_minimal()
-}
-
-bill_plot <- create_bill_plot()
-ggsave("figures/bill_analysis.png", bill_plot,
-       width = 8, height = 6)
-```
-
-**Function with Tests**:
-
-```r
-# R/penguin_functions.R
-#' Create scatter plot of bill depth vs log(bill length)
-#' @export
-create_bill_plot <- function(data =
-                              palmerpenguins::penguins) {
-  # Implementation with proper error handling
-}
-
-# tests/testthat/test-penguin_functions.R
-test_that("create_bill_plot works correctly", {
-  plot <- create_bill_plot()
-  expect_s3_class(plot, "ggplot")
-  expect_equal(plot$labels$title,
-               "Penguin Bill Depth vs Log(Bill Length)")
-})
-```
-
-**Enhanced Analysis (Second Iteration)**:
-
-```r
-# Add regression analysis
-create_enhanced_bill_plot <- function() {
-  penguins %>%
-    filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
-    ggplot(aes(x = log(bill_length_mm), y = bill_depth_mm)) +
-    geom_point(aes(color = species), alpha = 0.7, size = 2) +
-    geom_smooth(method = "lm", se = TRUE) +
-    labs(title = "Penguin Bill Analysis with Regression")
-}
-
-fit_bill_model <- function() {
-  # Linear regression with model diagnostics
-  # Returns list with model, r_squared, coefficients
-}
-```
-
-### Solo Developer Benefits
-
-- **Reproducible**: Identical environment for every development session
-- **Professional**: Automated testing, validation, and CI/CD
-- **Flexible**: 14+ profiles for different research domains
-- **Lightweight**: Alpine profiles at approximately 200MB versus
-  standard 1GB+
-- **Team-ready**: Facilitates transition to collaboration
-- **Container-based**: Eliminates conflicts with host system R
-  installation
-
-### From Solo to Team Transition
+### Transitioning to Team
 
 Solo projects are inherently team-ready:
 
 ```bash
-# Others can join your project immediately
-git clone https://github.com/yourname/penguin-analysis.git
-cd penguin-analysis
+# Push team image for others to use
+make docker-push-team
 
-# Pull team image (Dockerfile exists, role auto-detected)
-zzcollab --use-team-image -d ~/dotfiles
+# Share repository
+gh repo edit --add-collaborator colleague
+
+# Colleague joins:
+git clone https://github.com/myusername/penguin-analysis.git
+cd penguin-analysis
+zzcollab --use-team-image
 make docker-zsh
 ```
 
-## Team Collaboration Setup
+## Package Management
 
-### Developer 1 (Team Lead): Complete Project Initialization
+### Two-Layer Package Management
 
-#### Automated Approach (Three Options)
-**Choose between modern profile system, legacy approach, or R interface:**
+#### Layer 1: Docker Image (Pre-installed, Team/Shared)
 
-**Option A: Modern Profile System (NEW - Recommended)**
+**Controlled by:** Team lead's profile/bundle choice
+
+**Purpose:** Fast container startup with base packages
+
+**Example:**
 ```bash
-# Advanced Variant Management: Create Custom Docker Environments
-# Default: Creates minimal + analysis profiles automatically
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Modern approach
-
-# Interactive profile discovery and management:
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles                     # Creates config.yaml
-./add_profile.sh                                                    # Interactive profile browser
-
-# Profile categories available:
-# Standard: minimal, analysis, modeling, publishing (~800MB-3GB)
-# Specialized: bioinformatics (Bioconductor), geospatial (sf/terra) (~2-2.5GB)
-# Alpine: ultra-lightweight for CI/CD (~200-600MB vs ~1GB rocker)
-# R-hub: CRAN-compatible testing (Ubuntu, Fedora, Windows environments)
-
-# Manual profile configuration (edit config.yaml):
-# Set enabled: true for profiles you want built
-# Customize packages and system dependencies as needed
+# Team lead chooses bioinformatics profile
+zzcollab --profile-name bioinformatics
+# Docker image includes: BiocManager, DESeq2, edgeR, limma
 ```
 
-**Option B: Legacy Selective Building**
+**Benefits:**
+- Faster container startup (packages already compiled)
+- Consistent base environment across team
+- System dependencies bundled correctly
+
+#### Layer 2: renv.lock (Dynamic, Personal/Collaborative)
+
+**Controlled by:** Any team member via `renv::install()`
+
+**Purpose:** Source of truth for reproducibility
+
+**Example:**
 ```bash
-# Traditional approach: limited to r-ver, rstudio, verse profiles
-zzcollab -i -t mylab -p study2024 -B rstudio -d ~/dotfiles          # RStudio only
-zzcollab -i -t mylab -p study2024 -B all -S -d ~/dotfiles           # All 3 profiles
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles                  # Fast mode (8 packages)
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles                  # Comprehensive (27+ packages)
+# Inside container:
+renv::install("ComplexHeatmap")  # Alice adds heatmap package
+renv::install("clusterProfiler")  # Bob adds pathway analysis
+renv::snapshot()  # Update renv.lock
 ```
 
-**Step 2: Create Full Project Structure Separately**
-```bash
-# After team images are created and pushed, create project structure:
-mkdir study2024 && cd study2024  # or git clone if repository exists
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles               # Full
-                                                                       # project
-                                                                       # setup with shell interface
-zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles             # Or with RStudio interface
+**Key principle:** renv.lock is the source of truth, NOT the Docker image.
 
-# Auto-detect with fast build mode
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -F -d ~/dotfiles
+### Package Workflow
 
-# Auto-detect with comprehensive build mode
-mkdir study2024 && cd study2024
-zzcollab -i -t mylab -C -d ~/dotfiles
-
-
-# OR with custom Dockerfile editing:
-zzcollab -i -t mylab -p study2024 -P
-# Edit study2024/Dockerfile.teamcore as needed, then:
-zzcollab -i -t mylab -p study2024 -d ~/dotfiles
-```
-
-**Option B: R Interface (R-Centric Workflow)**
-```r
-# From R console
-library(zzcollab)
-
-# Complete automated setup from within R
-init_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  dotfiles_path = "~/dotfiles"
-)
-```
-
-**Both approaches automatically:**
-- Creates project directory with complete R package structure
-- Sets up customizable Dockerfile.teamcore for team's packages
-- Builds shell and RStudio core images (multi-platform)
-- Tags and pushes images to Docker Hub (public for reproducibility)
-- Initializes zzcollab project with team base image
-- Creates private GitHub repository
-- Sets up initial commit with proper structure
-- Configures automated CI/CD for team image management
-
-### Developers 2+ (Team Members): Join Existing Project
-
-**Choose between command-line or R interface:**
-
-**Option A: Command-Line Interface**
-```bash
-# 1. Clone team repository (must be added as collaborator first or use public repo)
-git clone https://github.com/mylab/study2024.git
-cd study2024
-
-# 2. Join project with automated environment setup using existing team images
-zzcollab -t mylab -p study2024 -I shell -d ~/dotfiles             # Shell interface
-zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles           # RStudio interface (if team built this profile)
-zzcollab -t mylab -p study2024 -I verse -d ~/dotfiles             # Publishing interface (if available)
-# Note: --project-name can be omitted if current directory name matches project
-
-# If team image profile not available, you'll get helpful guidance:
-# Error: Team image 'mylab/study2024core-rstudio:latest' not found
-# Available profiles: mylab/study2024core-shell:latest
-# Solutions: Use available profile or ask team lead to build missing profile
-
-# 3. Start development immediately
-make docker-zsh                # Shell interface with vim/tmux
-# OR (if RStudio profile was built by team)
-make docker-rstudio            # RStudio Server at localhost:8787
-```
-
-**Option B: R Interface (R-Centric Workflow)**
-```r
-# From R console after cloning repository
-library(zzcollab)
-
-# Standard join
-join_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  interface = "shell",          # or "rstudio"
-  dotfiles_path = "~/dotfiles"
-)
-
-# With specific build mode
-join_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  interface = "shell",
-  build_mode = "fast",          # or "comprehensive"
-  dotfiles_path = "~/dotfiles"
-)
-```
-
-### Configuration Options
-
-#### Build Modes
-zzcollab supports four build modes optimized for different use cases:
-
-| Mode | Flag | Packages | Build Time | Use Case |
-|------|------|----------|------------|----------|
-| **Minimal** | `-M` | 3 packages | Ultra-fast (~30s) | Learning, bare essentials |
-| **Fast** | `-F` | ~9 packages | Fast (2-3 min) | Quick development, CI/CD |
-| **Standard** | `-S` (default) | ~17 packages | Medium (4-6 min) | Balanced workflows |
-| **Comprehensive** | `-C` | ~47 packages | Slow (15-20 min) | Full feature environments |
+#### Adding Packages
 
 ```bash
-# Build mode examples
-zzcollab -i -t mylab -p study2024 -M -d ~/dotfiles    # Minimal mode (ultra-fast)
-zzcollab -i -t mylab -p study2024 -F -d ~/dotfiles    # Fast mode
-zzcollab -i -t mylab -p study2024 -S -d ~/dotfiles    # Standard mode (default)
-zzcollab -i -t mylab -p study2024 -C -d ~/dotfiles    # Comprehensive mode
+# Enter container
+make docker-zsh
 
-# Build mode detection via environment variable
-ZZCOLLAB_BUILD_MODE=fast zzcollab -i -t mylab -p study2024 -d ~/dotfiles
+# Install package
+renv::install("tidymodels")
 
-# Team member with specific build mode
-zzcollab -t mylab -p study2024 -I shell -F -d ~/dotfiles
-```
+# Save to renv.lock
+renv::snapshot()
 
-#### Advanced Configuration
-```bash
-# Team lead with custom GitHub account
-zzcollab -i -t mylab -p study2024 --github-account myuniversity
-
-# With dotfiles that need dots added (files like: bashrc, vimrc)
-zzcollab -i -t mylab -p study2024 --dotfiles-nodot ~/Dropbox/dotfiles
-
-# Team member with specific interface preference
-zzcollab -t mylab -p study2024 -I rstudio -d ~/dotfiles
-```
-
-## Directory Structure
-
-### Core Directories
-
-```
-your-project/
-├── R/                          # Package functions (exported to users)
-├── man/                        # Function documentation (auto-generated)
-├── scripts/                    # Working R scripts and analysis code
-├── data/                       # All data files and documentation
-│   ├── raw_data/              # Original, unmodified datasets
-│   ├── derived_data/          # Processed, analysis-ready data
-│   ├── metadata/              # Data dictionaries and documentation
-│   ├── validation/            # Data quality reports
-│   └── external_data/         # Third-party datasets
-├── analysis/                   # Research analysis components
-│   ├── report/                # Manuscript files (report.Rmd → report.pdf)
-│   ├── figures/               # Generated plots and figures
-│   ├── tables/                # Generated tables
-│   └── templates/             # Document templates
-├── tests/                      # Unit tests for R functions
-│   ├── testthat/              # Unit tests for package functions
-│   └── integration/           # Integration tests for analysis scripts
-├── vignettes/                  # Package tutorials and examples
-├── docs/                       # Project documentation and outputs
-├── archive/                    # Moved files and legacy code
-├── .github/workflows/          # GitHub Actions CI/CD (automated team image management)
-└── Key files (DESCRIPTION, Makefile, Docker files, etc.)
-```
-
-### What Goes Where?
-
-| Content Type | Location | Purpose |
-|--------------|----------|---------|
-| **Reusable functions** | `R/` | Functions you want others to use |
-| **Function documentation** | `man/` | Auto-generated help files (.Rd) |
-| **Analysis scripts** | `scripts/` | Working code, exploratory analysis |
-| **Research paper** | `analysis/report/` | Manuscript and publication files |
-| **Generated figures** | `analysis/figures/` | Plots and visualizations |
-| **Generated tables** | `analysis/tables/` | Statistical tables |
-| **Raw data** | `data/raw_data/` | Original, unmodified datasets |
-| **Clean data** | `data/derived_data/` | Processed, analysis-ready data |
-| **Data documentation** | `data/metadata/` | Data dictionaries, codebooks |
-| **Unit tests** | `tests/testthat/` | Tests for your R functions |
-| **Integration tests** | `tests/integration/` | Tests for analysis scripts |
-| **Tutorials** | `vignettes/` | Package examples and tutorials |
-
-## Navigation Shortcuts
-
-Convenient navigation scripts for quick directory access:
-
-```bash
-# First, generate the navigation scripts (one-time setup)
-./navigation_scripts.sh
-
-# Then use the generated navigation shortcuts
-./a     # → Navigate to ./data              (data files)
-./n     # → Navigate to ./analysis          (analysis files)
-./f     # → Navigate to ./analysis/figures  (figures)
-./t     # → Navigate to ./analysis/tables   (tables)
-./s     # → Navigate to ./scripts           (working R scripts)
-./m     # → Navigate to ./man               (function documentation)
-./e     # → Navigate to ./tests             (tests)
-./o     # → Navigate to ./docs              (documentation)
-./c     # → Navigate to ./archive           (archived files)
-./p     # → Navigate to ./analysis/report   (research paper)
-```
-
-**Setup**: Run `./navigation_scripts.sh` once to create the navigation shortcuts.
-
-**Usage**: `./a` to go to data directory, `./n` to go to analysis, etc. Each command opens a new shell in the target directory.
-
-## Development Environments
-
-### Team Development Workflow
-
-#### Daily Development Cycle (All Team Members)
-```bash
-# 1. Sync with latest team changes
-git pull                        # Get latest code changes
-docker pull mylab/study2024:latest  # Get latest team environment
-
-# 2. Start development environment
-make docker-zsh                # → Enhanced zsh shell with vim/tmux
-# OR
-make docker-rstudio            # → RStudio at http://localhost:8787
-
-# 3. Do your analysis, install packages as needed
-# Inside container: install.packages("package_name")
-# 4. When done, exit container
+# Exit container
 exit
 
-# 5. Validate dependencies before committing
-make docker-check-renv-fix
+# Validate dependencies (RECOMMENDED)
+make check-renv-ci
 
-# 6. Commit and push your work
-git add .
-git commit -m "Analysis update with comprehensive tests"
+# Run tests
+make docker-test
+
+# Commit if validation passed
+git add renv.lock DESCRIPTION
+git commit -m "Add tidymodels for modeling workflow"
 git push
 ```
 
-#### Team Synchronization (When Dependencies Change)
+#### Package Accumulation (Team Collaboration)
+
 ```bash
-# When any team member adds packages and pushes changes:
-git pull                        # Get latest renv.lock changes
-# GitHub Actions automatically rebuilds team image
-docker pull mylab/study2024:latest  # Get updated environment
-make docker-zsh                # Continue development with new packages
+# Alice adds packages
+renv::install("tidymodels")
+renv::snapshot()  # renv.lock: [tidymodels]
+
+# Bob adds packages
+git pull  # Gets Alice's changes
+renv::install("sf")
+renv::snapshot()  # renv.lock: [tidymodels, sf]
+
+# Charlie reproduces
+git pull
+renv::restore()  # Installs both tidymodels AND sf
 ```
 
-### Development Environment Options
+**Final renv.lock contains packages from ALL contributors.**
 
-| Environment | Command | Use Case |
-|-------------|---------|----------|
-| **Enhanced Shell** | `make docker-zsh` | Vim/tmux development with dotfiles |
-| **RStudio Server** | `make docker-rstudio` | GUI-based development |
-| **R Console** | `make docker-r` | Command-line R work |
-| **Bash Shell** | `make docker-bash` | File management, git operations |
-| **Paper Rendering** | `make docker-render` | Generate manuscript |
-| **Package Testing** | `make docker-test` | Run unit tests |
+### When to Update Team Image
 
-## Package Management with renv
+Update team Docker image when:
+- Base R version changes
+- System dependencies needed (GDAL, PROJ, LaTeX)
+- Core packages used by everyone (tidyverse, Bioconductor)
 
-### Automated Team Package Management
-ZZCOLLAB includes **systematic automated package management**:
+Don't update team image for:
+- Individual analysis packages (add via renv)
+- Experimental packages
+- Personal workflow tools
 
-1. **Team image creation**: Base packages pre-installed in team Docker images
-2. **Individual additions**: Use normal `install.packages()` in development
-3. **Automatic synchronization**: `renv::snapshot()` when adding packages
-4. **Team notification**: GitHub Actions rebuilds and notifies team
-5. **Zero friction sync**: Team members get updates automatically
+## Development Environments
 
-### Package Workflow (Any Team Member)
+### Available Environments
+
+| Environment | Command | Use Case | Access |
+|-------------|---------|----------|--------|
+| **Enhanced Shell** | `make docker-zsh` | Vim/tmux development | Terminal |
+| **RStudio Server** | `make docker-rstudio` | GUI-based development | http://localhost:8787 |
+| **R Console** | `make docker-r` | Interactive R work | Terminal |
+| **Bash Shell** | `make docker-bash` | File management, git | Terminal |
+| **Paper Rendering** | `make docker-render` | Generate manuscript | Automated |
+| **Package Testing** | `make docker-test` | Run unit tests | Automated |
+
+### Daily Development Cycle
+
 ```bash
-# Inside Docker container:
-install.packages("tidymodels")    # Install new package
-# Use package in your analysis...
-renv::snapshot()                  # Save to renv.lock
+# Morning: Sync with team
+git pull
+docker pull mylab/project:latest  # If using team image
+
+# Enter development environment
+make docker-zsh
+
+# Work inside container
+vim R/my_function.R
+vim analysis/paper/paper.Rmd
+
+# Test as you go
+R
+devtools::load_all()
+devtools::test()
+quit()
+
+# Exit container
 exit
 
-# Outside container:
-make docker-check-renv-fix        # Validate and update DESCRIPTION
-git add .                         # Commit changes
-git commit -m "Add tidymodels for machine learning analysis"
-git push                          # → Triggers automatic team image rebuild
+# Validate before committing
+make docker-test
+make check-renv-ci
+
+# Commit and push
+git add .
+git commit -m "Add new analysis function with tests"
+git push
 ```
 
-### Automated Team Image Management
-When any team member adds packages:
-1. **Push triggers GitHub Actions** → detects renv.lock changes
-2. **New Docker image built** → includes all team packages
-3. **Image pushed to Docker Hub** → available to all team members
-4. **Team notification** → commit comment with update instructions
-5. **Team members sync** → `docker pull` gets new environment
+### GUI Support (Optional)
 
-### renv Validation System
-**Automated validation** ensures package consistency:
+For interactive graphics on macOS:
 
 ```bash
-# Check if packages are in sync
-make check-renv
+# One-time XQuartz setup
+brew install --cask xquartz
+open -a XQuartz
+# XQuartz > Preferences > Security > Enable "Allow connections from network clients"
 
-# Auto-fix any issues
-make check-renv-fix
+# Each session
+export DISPLAY=:0
+/opt/X11/bin/xhost +localhost
 
-# Silent check for CI/CD (with build mode awareness)
-Rscript validate_package_environment.R --fix --strict-imports --fail-on-issues
+# Launch container with GUI
+make docker-zsh-gui
 
-# With explicit build mode override
-Rscript validate_package_environment.R --fix --build-mode fast --fail-on-issues
-
-# Using environment variable for build mode detection
-ZZCOLLAB_BUILD_MODE=comprehensive Rscript validate_package_environment.R --fix --fail-on-issues
-```
-
-**Enhanced validation features**:
-- **Build mode awareness**: Adapts validation rules based on fast/standard/comprehensive modes
-- **Robust package extraction**: Handles wrapped calls like `suppressMessages(library(pkg))`
-- **Enhanced edge case handling**: Detects conditional package loading, roxygen imports
-- **Comprehensive error handling**: Structured exit codes and detailed error messages
-- **zzcollab integration**: Uses zzcollab logging and respects system configuration
-- **Base package filtering**: Automatically excludes R base packages from CRAN validation
-- **Network resilience**: Graceful handling of CRAN API failures
-
-**What it validates**:
-- All packages used in code (R/, scripts/, analysis/, tests/, vignettes/, inst/) are in DESCRIPTION
-- All packages in DESCRIPTION exist on CRAN (with base package exclusion)
-- renv.lock is synchronized with DESCRIPTION
-- Build mode compatibility (fast mode limits to essential packages)
-- **Strict mode**: Scans all directories for maximum reproducibility
-
-## Docker Environment
-
-### Single-Image Interface Architecture
-ZZCOLLAB uses a **single Docker image approach** where you select one interface type at setup time:
-
-| Interface | Purpose | Setup Command | Access |
-|-----------|---------|---------------|---------|
-| `shell` | Enhanced shell development | `zzcollab -I shell` | `make docker-zsh` |
-| `rstudio` | GUI development | `zzcollab -I rstudio` | http://localhost:8787 |
-| `verse` | Publishing workflow with LaTeX | `zzcollab -I verse` | `make docker-verse` |
-
-Each interface provides access to specialized development tasks:
-- **Research tasks**: `make docker-render`, `make docker-test`, `make docker-check`
-- **Shell access**: `make docker-bash`, `make docker-r` (R console)
-
-### Team Docker Image Strategy
-- **Team core images**: Public on Docker Hub (software only, no data)
-- **Personal development images**: Local only (includes dotfiles)
-- **Automated rebuilds**: GitHub Actions triggers on renv.lock changes
-- **Multi-platform**: Supports AMD64 and ARM64 architectures
-
-### Docker Features
-- **Automatic R version detection** from renv.lock
-- **Team base image integration**: Inherits from custom team environments
-- **Persistent package cache** for faster rebuilds
-- **Developer tools included**: vim, tmux, ripgrep, fzf, zsh, etc.
-- **Dotfiles support**: Your `.vimrc`, `.zshrc`, etc. copied to container
-
-### Docker Commands
-```bash
-# Build/rebuild environment
-make docker-build
-
-# Development environments (interface-specific)
-make docker-zsh                 # Enhanced zsh with dotfiles (shell interface)
-make docker-rstudio             # RStudio GUI (rstudio interface)
-make docker-verse               # Publishing workflow (verse interface)
-make docker-r                   # R console (all interfaces)
-make docker-bash                # Shell access (all interfaces)
-
-# Automated tasks
-make docker-render              # Render paper
-make docker-test                # Run tests
-make docker-check              # Validate package
-make docker-check-renv         # Check dependencies
-
-# Cleanup
-make docker-clean              # Remove images and volumes
+# Test inside container
+R
+plot(1:10, 1:10)  # Graphics window appears
 ```
 
 ## Build System with Make
 
-### Native R Commands
-*Require local R installation*
+### Docker Commands
 
 ```bash
-make document                   # Generate documentation
-make build                      # Build package
-make check                      # Check package
-make install                    # Install package locally
-make test                       # Run tests
-make vignettes                  # Build vignettes
+make docker-build              # Build Docker image
+make docker-push-team          # Push team image to Docker Hub
+make docker-zsh                # Enter zsh development environment
+make docker-zsh-gui            # Enter zsh with GUI support (X11)
+make docker-rstudio            # Start RStudio Server
+make docker-r                  # Interactive R console
+make docker-bash               # Bash shell in container
+make docker-render             # Render paper in container
+make docker-test               # Run tests in container
+make docker-check              # R CMD check in container
+make docker-check-renv         # Validate dependencies in container
+make docker-check-renv-fix     # Auto-fix dependencies in container
+make docker-clean              # Remove Docker images/volumes
+```
 
-# Dependency management
-make deps                       # Run setup_renv.R
-make check-renv                 # Validate dependencies
+### Native R Commands
+
+*(Require local R installation)*
+
+```bash
+make document                  # Generate documentation
+make build                     # Build package
+make check                     # R CMD check
+make install                   # Install package locally
+make test                      # Run tests
+make vignettes                 # Build vignettes
+make deps                      # Run setup_renv.R
+make check-renv                # Validate dependencies
 make check-renv-fix            # Auto-fix dependency issues
 make check-renv-ci             # Silent validation for CI
 ```
 
-### Docker Commands
-*Work without local R installation*
-
-```bash
-make docker-build              # Build Docker image
-make docker-document           # Generate docs in container
-make docker-test               # Run tests in container
-make docker-check-renv         # Validate deps in container
-make docker-check-renv-fix     # Fix deps in container
-make docker-render             # Render paper in container
-```
-
 ### Cleanup Commands
+
 ```bash
 make clean                     # Remove build artifacts
-make docker-clean             # Remove Docker images/volumes
-```
-
-### Help System
-```bash
-make help                      # Show all available targets
+make docker-clean              # Remove Docker images/volumes
 ```
 
 ## GitHub Actions CI/CD
 
 ### Automated Team Image Management
 
-ZZCOLLAB includes sophisticated automated Docker image management that reduces manual container maintenance while ensuring consistent environment compatibility across research teams.
+When any team member adds packages:
 
-#### Complete GitHub Actions Workflow
+1. **Push triggers GitHub Actions** → detects renv.lock changes
+2. **New Docker image built** → includes all team packages
+3. **Image pushed to Docker Hub** → available to all team members
+4. **Team notification** → commit comment with update instructions
+5. **Team members sync** → `docker pull` gets new environment
 
-The system automatically detects package changes, rebuilds Docker images, and notifies team members through a comprehensive GitHub Actions workflow:
+### Workflow Triggers
 
-**Key Features:**
-- **Intelligent change detection**: Monitors `renv.lock`, `DESCRIPTION`, `Dockerfile`
-- **Multi-platform support**: AMD64 and ARM64 architectures
-- **Advanced caching**: GitHub Actions cache with BuildKit optimization
-- **Comprehensive tagging**: `latest`, `r4.3.0`, `abc1234`, `2024-01-15` tags
-- **Automated configuration**: Updates Dockerfile references
-- **Team communication**: Detailed commit comments with usage instructions
-
-#### Workflow Triggers
 ```yaml
-# Automatic triggers
+# Automatic triggers in .github/workflows/update-team-image.yml
 on:
   push:
     branches: [main]
-    paths: 
-      - 'renv.lock'           # R package dependency changes
-      - 'DESCRIPTION'         # Package metadata changes
-      - 'Dockerfile'          # Container definition changes
-  workflow_dispatch:           # Manual triggering
-```
-
-#### Usage Scenarios
-
-**Scenario 1: Developer Adds New Package**
-```bash
-# Developer workflow
-R
-install.packages("tidymodels")
-renv::snapshot()
-# Create PR and merge
-
-# Automatic result:
-# GitHub Actions detects renv.lock changes
-# Rebuilds image with tidymodels
-# Pushes to mylab/study2024:latest on Docker Hub
-# Updates Dockerfile configuration
-# Notifies team via commit comment
-```
-
-**Scenario 2: Team Member Gets Updates**
-```bash
-# Team member workflow
-git pull                        # Gets latest changes
-docker pull mylab/study2024:latest  # Gets updated environment
-make docker-zsh                # Instant access to new packages
+    paths:
+      - 'renv.lock'      # R package changes
+      - 'DESCRIPTION'    # Package metadata changes
+      - 'Dockerfile'     # Container definition changes
+  workflow_dispatch:      # Manual triggering
 ```
 
 ### Security and Privacy Model
 
 **🔒 PRIVATE GitHub Repository:**
-- Protects unpublished research and sensitive methodologies
-- Secures proprietary data analysis and preliminary results
-- Controls access to research collaborators only
+- Protects unpublished research
+- Secures proprietary analysis
+- Controls access to collaborators only
 
 **🌍 PUBLIC Docker Images (Docker Hub):**
-- Enables reproducible research by sharing computational environments
-- Supports open science through transparent methodology
-- No sensitive data included - only software packages and configurations
+- Enables reproducible research
+- Shares computational environments
+- No sensitive data - only software
 
 ### Repository Secrets Setup
-For automated Docker Hub publishing, configure these secrets in your **private** GitHub repository:
+
+For automated Docker Hub publishing:
 
 ```bash
-# In GitHub repository: Settings → Secrets and variables → Actions
+# In GitHub: Settings → Secrets and variables → Actions
 DOCKERHUB_USERNAME: your-dockerhub-username
-DOCKERHUB_TOKEN: your-dockerhub-access-token  # Create at hub.docker.com/settings/security
+DOCKERHUB_TOKEN: your-dockerhub-access-token
 ```
 
-### Standard R Package Validation
+Create access token at: https://hub.docker.com/settings/security
 
-#### R Package Check (`.github/workflows/r-package.yml`)
-- **Triggers**: Push/PR to main/master
-- **Purpose**: Validate package structure and dependencies
-- **Features**:
-  - Native R setup (fast execution)
-  - renv synchronization validation with enhanced dependency scanning
-  - Package checks across platforms
-  - Dependency validation with `validate_package_environment.R --strict-imports`
+## Configuration System
 
-#### Paper Rendering (`.github/workflows/render-report.yml`)
-- **Triggers**: Manual dispatch, changes to analysis files
-- **Purpose**: Generate research paper automatically
-- **Features**:
-  - Automatic PDF generation
-  - Artifact upload
-  - Native R environment (faster than Docker)
+### Multi-Level Hierarchy
 
-## R Interface Functions
+Settings at more specific levels override broader defaults:
 
-ZZCOLLAB provides a comprehensive R interface that allows you to manage your research workflow entirely from within R. These functions provide R-native access to Docker infrastructure, project management, and reproducibility tools.
+1. **Project config** (`./zzcollab.yaml`) - Team-specific settings
+2. **User config** (`~/.zzcollab/config.yaml`) - Personal defaults
+3. **System config** (`/etc/zzcollab/config.yaml`) - Organization-wide
+4. **Built-in defaults** - Fallback values
 
-### Docker Environment Helpers
-
-#### `status()`
-Check the status of running zzcollab containers.
-
-```r
-# Check container status
-status()
-# Returns container information or message if none running
-```
-
-#### `rebuild(target = "docker-build")`
-Trigger a Docker image rebuild for your project.
-
-```r
-# Rebuild the Docker image
-rebuild()
-
-# Rebuild specific target
-rebuild("docker-test")
-```
-
-#### `team_images()`
-List available team Docker images with details.
-
-```r
-# View team images
-images <- team_images()
-print(images)
-# Returns data frame with repository, tag, size, created columns
-```
-
-### Project Management Functions
-
-#### `init_project()`
-Initialize a new zzcollab project from within R. **Note**: This is the R interface to `zzcollab --init` and should only be used by **Developer 1 (team lead)** to create the initial team infrastructure.
-
-```r
-# Developer 1: Complete team setup (creates team images + GitHub repo)
-init_project(
-  team_name = "mylab", 
-  project_name = "study2024"
-)
-
-# With dotfiles and specific build mode
-init_project(
-  team_name = "mylab",
-  project_name = "study2024", 
-  build_mode = "standard",        # "fast", "standard", or "comprehensive"
-  dotfiles_path = "~/dotfiles"
-)
-
-# Fast setup for quick development (8 packages)
-init_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  build_mode = "fast",
-  dotfiles_path = "~/dotfiles"
-)
-
-# Comprehensive setup for full ecosystem (27+ packages)
-init_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  build_mode = "comprehensive",
-  dotfiles_path = "~/dotfiles"
-)
-```
-
-#### `join_project()`
-Join an existing zzcollab project (for **Developers 2+**).
-
-```r
-# Join existing project with shell interface
-join_project(
-  team_name = "mylab",
-  project_name = "study2024", 
-  interface = "shell",
-  dotfiles_path = "~/dotfiles"
-)
-
-# Join with RStudio interface and specific build mode
-join_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  interface = "rstudio",
-  build_mode = "standard",        # "fast", "standard", or "comprehensive"
-  dotfiles_path = "~/dotfiles"
-)
-
-# Join with fast build mode for quick setup
-join_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  interface = "shell",
-  build_mode = "fast",
-  dotfiles_path = "~/dotfiles"
-)
-```
-
-#### `add_package(packages, update_snapshot = TRUE)`
-Add R packages to your project with automatic renv integration.
-
-```r
-# Add single package
-add_package("tidyverse")
-
-# Add multiple packages
-add_package(c("brms", "targets", "cmdstanr"))
-
-# Add packages without updating renv.lock immediately
-add_package("ggplot2", update_snapshot = FALSE)
-```
-
-#### `sync_env()`
-Synchronize your R environment across team members.
-
-```r
-# Restore environment from renv.lock
-sync_env()
-# Automatically checks if Docker rebuild is needed
-```
-
-### Analysis Workflow Functions
-
-#### `run_script(script_path, container_cmd = "docker-r")`
-Execute R scripts inside Docker containers.
-
-```r
-# Run analysis script in container
-run_script("scripts/01_data_processing.R")
-
-# Run with specific container command
-run_script("scripts/02_modeling.R", "docker-rstudio")
-```
-
-#### `render_report(report_path = NULL)`
-Render analysis reports in containerized environment.
-
-```r
-# Render default report
-render_report()
-
-# Render specific report
-render_report("analysis/report/manuscript.Rmd")
-```
-
-#### `validate_repro()`
-Check reproducibility of your research project.
-
-```r
-# Run all reproducibility checks
-is_reproducible <- validate_repro()
-
-if (is_reproducible) {
-  message("Project is fully reproducible")
-} else {
-  message("Reproducibility issues detected")
-}
-```
-
-### Git and GitHub Integration Functions
-
-#### `git_status()`
-Check the current git status of your project.
-
-```r
-# Check for uncommitted changes
-git_status()
-```
-
-#### `create_branch(branch_name)`
-Create and switch to a new feature branch.
-
-```r
-# Create feature branch for new analysis
-create_branch("feature/advanced-modeling")
-```
-
-#### `git_commit(message, add_all = TRUE)`
-Create a git commit with all changes.
-
-```r
-# Commit your analysis work
-git_commit("Add multilevel modeling analysis with comprehensive tests")
-```
-
-#### `git_push(branch = NULL)`
-Push commits to GitHub.
-
-```r
-# Push current branch to GitHub
-git_push()
-
-# Push specific branch
-git_push("feature/advanced-modeling")
-```
-
-#### `create_pr(title, body = NULL, base = "main")`
-Create a GitHub pull request.
-
-```r
-# Create pull request
-create_pr(
-  title = "Add advanced multilevel modeling analysis",
-  body = "This PR adds comprehensive multilevel modeling with full test coverage and reproducibility validation."
-)
-```
-
-### Help System Functions
-
-#### `zzcollab_help(topic = NULL)`
-Access zzcollab's comprehensive help system directly from R. Displays specialized help pages covering configuration, workflows, Docker, and more.
-
-```r
-# Display main help
-zzcollab_help()
-
-# Get quick start guide for individual researchers
-zzcollab_help("quickstart")
-
-# Learn about daily development workflow
-zzcollab_help("workflow")
-
-# Troubleshooting common issues
-zzcollab_help("troubleshooting")
-
-# Configuration system guide
-zzcollab_help("config")
-
-# Dotfiles setup and management
-zzcollab_help("dotfiles")
-
-# Package management with renv
-zzcollab_help("renv")
-
-# Build mode selection guide
-zzcollab_help("build-modes")
-
-# Docker essentials for researchers
-zzcollab_help("docker")
-
-# CI/CD and GitHub Actions
-zzcollab_help("cicd")
-
-# Docker profiles configuration
-zzcollab_help("profiles")
-
-# GitHub integration
-zzcollab_help("github")
-
-# Team initialization help
-zzcollab_help("init")
-
-# Development workflow guidance
-zzcollab_help("next-steps")
-```
-
-**Available Topics:**
-- `"quickstart"` - Individual researcher quick start guide
-- `"workflow"` - Daily development workflow
-- `"troubleshooting"` - Top 10 common issues and solutions
-- `"config"` - Configuration system guide
-- `"dotfiles"` - Dotfiles setup and management
-- `"renv"` - Package management with renv
-- `"build-modes"` - Build mode selection guide
-- `"docker"` - Docker essentials for researchers
-- `"cicd"` - CI/CD and GitHub Actions
-- `"profiles"` - Docker profiles configuration
-- `"github"` - GitHub integration and automation
-- `"init"` - Team initialization process
-- `"next-steps"` - Development workflow guidance
-
-### Benefits of R Interface
-
-- **Native R workflow**: No need to switch between R and terminal
-- **RStudio integration**: Works effectively in RStudio environment
-- **Error handling**: R-style error messages and debugging
-- **Return values**: Functions return logical values for programmatic use
-- **Documentation**: Full R help system with `?status`
-- **Type safety**: R parameter validation and type checking
-
-## Team Collaboration Workflows
-
-### Developer 1 (Team Lead): Complete R Workflow
-
-#### Setup Phase (R Console)
-```r
-library(zzcollab)
-
-# 1. Initialize new team project (creates team infrastructure)
-init_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  dotfiles_path = "~/dotfiles"
-)
-# This creates Docker images, GitHub repo, and full project structure
-
-# Change to project directory and exit R for containerized development
-setwd("study2024")
-quit()
-```
-
-#### Development Phase (Container)
-```bash
-# Enter containerized development environment
-make docker-zsh  # or make docker-rstudio
-```
-
-#### Analysis Phase (Back in R - now containerized)
-```r
-library(zzcollab)
-
-# 2. Add required packages
-add_package(c("tidyverse", "brms", "targets", "rmarkdown", "here"))
-
-# 3. Run analysis pipeline
-run_script("scripts/01_data_import.R")
-run_script("scripts/02_data_analysis.R") 
-run_script("scripts/03_visualization.R")
-
-# 4. Render final report
-render_report("analysis/report/report.Rmd")
-
-# 5. Validate reproducibility
-validate_repro()
-
-# 6. Git workflow - all from R!
-git_status()  # Check what changed
-git_commit("Initial analysis pipeline with reproducibility validation")
-git_push()   # Push to GitHub
-
-# 7. Sync environment for team
-sync_env()
-```
-
-### Developers 2+ (Team Members): Complete R Workflow
-
-#### Initial Setup (Command Line)
-```bash
-git clone https://github.com/mylab/study2024.git
-cd study2024
-```
-
-#### Project Join (R Console)
-```r
-library(zzcollab)
-
-# 1. Join the project
-join_project(
-  team_name = "mylab",
-  project_name = "study2024",
-  interface = "shell",  # or "rstudio"
-  dotfiles_path = "~/dotfiles"
-)
-
-# Exit R to enter containerized environment
-quit()
-```
-
-#### Development Phase (Container)
-```bash
-make docker-zsh  # Enter containerized development with team packages
-```
-
-#### Analysis Phase (Back in R - now containerized)
-```r
-library(zzcollab)
-
-# 2. Sync with team environment
-sync_env()
-
-# 3. Create feature branch for your work
-create_branch("feature/visualization-analysis")
-
-# 4. Add any additional packages needed
-add_package("ggridges")  # Example: specific package for your analysis
-
-# 5. Run your analysis pipeline
-run_script("scripts/my_visualization_analysis.R")
-render_report("analysis/my_section.Rmd")
-
-# 6. Validate reproducibility
-validate_repro()
-
-# 7. Complete R-based git workflow
-git_status()  # Check your changes
-git_commit("Add visualization analysis with ridge plots and comprehensive tests")
-git_push("feature/visualization-analysis")
-
-# 8. Create pull request - all from R!
-create_pr(
-  title = "Add visualization analysis with ridge plots",
-  body = "This PR adds new visualization analysis using ggridges with full test coverage and reproducibility validation."
-)
-```
-
-### Collaboration Features
-
-#### Automated Quality Assurance on Every Push
-- **R Package Validation**: R CMD check with dependency validation
-- **Comprehensive Testing Suite**: Unit tests, integration tests, and data validation
-- **Paper Rendering**: Automated PDF generation and artifact upload
-- **Multi-platform Testing**: Ensures compatibility across environments
-- **Dependency Sync**: renv validation and DESCRIPTION file updates
-
-#### Test-Driven Development Workflow
-- **Unit Tests**: Every R function has corresponding tests in `tests/testthat/`
-- **Integration Tests**: Analysis scripts tested end-to-end in `tests/integration/`
-- **Data Validation**: Automated data quality checks
-- **Reproducibility Testing**: Environment validation with enhanced dependency scanning
-- **Paper Testing**: Manuscript rendering validation for each commit
-
-#### Enhanced GitHub Templates
-- **Pull Request Template**: Analysis impact assessment, reproducibility checklist
-- **Issue Templates**: Bug reports with environment details, feature requests with research use cases
-- **Collaboration Guidelines**: Research-specific workflow standards
-
-## Common Tasks
-
-### Starting a New Analysis
-```bash
-# 1. Start development environment
-make docker-zsh
-
-# 2. Create new analysis script (in container with vim/tmux)
-vim scripts/01_data_exploration.R
-
-# 3. Install needed packages
-R
-renv::install(c("tidyverse", "ggplot2"))  # Or install.packages()
-renv::snapshot()
-quit()
-
-# 4. Write your analysis...
-
-# 5. Exit container and validate dependencies
-exit
-make check-renv-ci
-
-# 6. If validation passes, commit
-git add renv.lock scripts/01_data_exploration.R
-git commit -m "Add data exploration analysis"
-git push
-```
-
-### Validating Package Dependencies
-
-**Before committing renv.lock changes:**
+### Configuration Commands
 
 ```bash
-# Quick validation (recommended before every commit)
-make check-renv-ci
+zzcollab --config init                      # Create config file
+zzcollab --config set team-name "myteam"    # Set values
+zzcollab --config get team-name             # Get values
+zzcollab --config list                      # List all configuration
+zzcollab --config validate                  # Validate YAML syntax
 ```
 
-**What it checks:**
-- Packages used in code are declared in DESCRIPTION
-- DESCRIPTION imports exist in renv.lock
-- No missing dependencies
-- Valid package sources (CRAN/Bioconductor/GitHub)
-
-**Auto-fix mode (if validation finds issues):**
+### Common Configuration
 
 ```bash
-# Automatically update DESCRIPTION and renv.lock
-Rscript validate_package_environment.R --fix --fail-on-issues
+# One-time setup
+zzcollab --config init
+zzcollab --config set team-name "myteam"
+zzcollab --config set github-account "myusername"
+zzcollab --config set profile-name "analysis"
+zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
-**Integration:**
-- Runs automatically in GitHub Actions on every push
-- Local validation provides fast feedback (prevents CI failures)
-- Optional but highly recommended for team workflows
+### Project-Level Configuration
 
-### Rendering Your Paper
-```bash
-# Render paper to PDF
-make docker-render
+Create `zzcollab.yaml` in project root:
 
-# View generated paper
-open analysis/report/report.pdf
+```yaml
+team:
+  name: "datasci-lab"
+  project: "customer-churn"
+  description: "ML analysis of retention patterns"
+
+build:
+  use_config_profiles: true
+  profile_library: "bundles.yaml"
+
+  docker:
+    platform: "auto"              # auto, linux/amd64, linux/arm64
+
+collaboration:
+  github:
+    auto_create_repo: false
+    default_visibility: "private"
+
+  development:
+    default_profile: "analysis"
 ```
-
-### Running Tests
-```bash
-# Run all package tests
-make docker-test
-
-# Check package structure
-make docker-check
-```
-
-### Adding a New Function
-```bash
-# 1. Start R environment
-make docker-zsh
-
-# 2. Create function file (in container)
-vim R/my_function.R
-
-# 3. Document and test the function
-R
-devtools::document()
-devtools::load_all()
-my_function(test_data)
-
-# 4. Add unit tests
-# Edit tests/testthat/test-my_function.R
-
-# 5. Run tests
-devtools::test()
-quit()
-```
-
-### Team Package Management (Recommended Workflow)
-
-**Complete workflow with validation:**
-
-```bash
-# Step 1: Add packages inside container
-make docker-zsh
-
-# Inside container:
-R
-renv::install("tidyverse")      # Or install.packages("tidyverse")
-renv::install("tidymodels")
-renv::snapshot()                # Updates renv.lock
-quit()
-
-# Step 2: Exit container
-exit
-
-# Step 3: Validate dependencies (RECOMMENDED before commit)
-make check-renv-ci
-
-# If validation passes:
-# Step 4: Commit and push
-git add renv.lock
-git commit -m "Add tidyverse and tidymodels for analysis"
-git push
-
-# Step 5: GitHub Actions automatically validates and rebuilds image
-# Other team members sync automatically:
-# - GitHub Actions rebuilds image with new packages
-# - Team gets notification via commit comment
-# - `docker pull` gets updates
-```
-
-**What `make check-renv-ci` validates:**
-
-- All packages used in code are declared in DESCRIPTION
-- All DESCRIPTION imports are in renv.lock
-- No missing dependencies that would break CI/CD
-- Package sources are valid (CRAN/Bioconductor/GitHub)
-
-**Why validate before committing:**
-
-- Catches issues locally (fast feedback)
-- Prevents CI failures (saves team time)
-- Ensures renv.lock is always valid
-- Documents what packages are actually used
-
-**Note:** GitHub Actions runs the same validation automatically, so this
-step is optional but highly recommended for faster iteration.
-
-## Recent Enhancements
-
-ZZCOLLAB has undergone substantial development during 2024-2025,
-with focus on architecture, usability, and comprehensive
-documentation.
-
-### Data Documentation System (2025)
-
-**Automated Data Templates**:
-
-- Comprehensive `data/README.md` automatically created with Palmer
-  Penguins examples
-- Complete `DATA_WORKFLOW_GUIDE.md` with 6-phase workflow process
-- Standardized data structure: raw_data/, derived_data/,
-  correspondence/
-- Template integration via `create_data_templates()` in
-  `modules/structure.sh`
-- Testing framework with >90% coverage requirements
-- Scientific rationale explaining research integrity benefits
-
-**Critical Safety Improvements**:
-
-- Home directory protection preventing accidental installation in
-  `$HOME`
-- System directory protection blocking dangerous directories
-- Intelligent conflict detection showing only actual zzcollab file
-  conflicts
-- Enhanced uninstall system with complete cleanup
-
-### Docker Profile System Refactoring (2025)
-
-**Single Source of Truth Architecture**:
-
-- Profile definitions centralized in `profiles.yaml`
-- Eliminated duplication: team configs reference central library
-- Added 14+ profiles including shiny, shiny_verse, specialized
-  domains
-- Interactive profile browser via `./add_profile.sh`
-- Backward compatibility maintained for legacy definitions
-- Verified system libraries across all profiles
-
-**Technical Implementation**:
-
-- Simplified config.yaml: reduced from 455 to 154 lines (66%
-  reduction)
-- Enhanced add_profile.sh generating lightweight YAML entries
-- Updated team_init.sh with dynamic profile loading
-- Comprehensive testing validating new format and integration
-
-### Selective Base Image Building System (2024)
-
-**Incremental Workflow**:
-
-- Teams can build only required profiles (r-ver, rstudio, verse)
-- Start with one profile, add others later with `-V` flag
-- Enhanced error handling with helpful guidance
-- Short flags for all major options (-i, -t, -p, -I, -B, -V)
-- Verse support for publishing workflow with LaTeX via rocker/verse
-- Clear team communication about available tooling
-
-**CLI Improvements**:
-
-```bash
-# Selective base image flags
--B, --init-base-image TYPE   # r-ver, rstudio, verse, all
--V, --build-profile TYPE     # r-ver, rstudio, verse
--I, --interface TYPE         # shell, rstudio, verse
-```
-
-### Enhanced Dependency Validation (2025)
-
-**validate_package_environment.R Improvements**:
-
-- Build mode integration adapting validation rules
-- Enhanced package extraction handling wrapped calls, conditional
-  loading
-- Robust error handling with structured exit codes
-- zzcollab integration using system logging
-- Base package filtering excluding R base packages from CRAN
-  validation
-- Network resilience with graceful CRAN API failure handling
-
-### Complete CI/CD Pipeline Resolution (2025)
-
-**R Package Pipeline**:
-
-- Fixed NAMESPACE imports for utils and jsonlite
-- Resolved vignette system with proper VignetteBuilder
-- Fixed workflow-team.Rmd undefined variables
-- Corrected non-ASCII characters using escape sequences
-- Resolved roxygen2 documentation warnings
-- Added proper operator documentation
-
-**Quality Assurance**:
-
-- All GitHub Actions workflows passing
-- Eliminated blocking warnings
-- Complete roxygen2 documentation with proper LaTeX formatting
-- Clean dependency management
-- Robust vignette system with executable examples
-
-### R-Only Workflow Vignettes (2025)
-
-**Pure R Interface Documentation**:
-
-- r-solo-workflow.Rmd for solo developers using only R functions
-- r-team-workflow.Rmd for team collaboration via R interface
-- Zero Docker exposure for R users unfamiliar with containers
-- Complete workflow coverage from setup to deployment
-- Real-world examples: penguin analysis and customer churn
-  analysis
-
-**Target Audience Expansion**:
-
-- R users familiar with RStudio/tidyverse but not Docker/bash
-- Research teams requiring reproducibility without DevOps
-  complexity
-- Data scientists focused on analysis rather than infrastructure
-- Academic labs with varying technical skill levels
-
-### Professional Help System (2025)
-
-**Smart Pagination Implementation**:
-
-- Interactive terminals automatically pipe through `less -R`
-- Script-friendly output for redirection
-- Color preservation in paged output
-- User customizable via `$PAGER` environment variable
-
-**Specialized Help Sections**:
-
-```bash
-zzcollab -h                    # Main help
-zzcollab --help-init          # Team initialization
-zzcollab --help-profiles      # Docker profiles system
-zzcollab --next-steps         # Development workflow
-```
-
-### Security Assessment (2025)
-
-**Comprehensive Security Audit Results**:
-
-- No unsafe cd commands (all use proper error handling)
-- No unquoted rm operations (all file operations properly quoted)
-- No unquoted test conditions (variables safely handled)
-- No word splitting vulnerabilities
-- Production-ready security posture with no HIGH RISK
-  vulnerabilities
-
-### Repository Cleanup (2025)
-
-**Production Readiness**:
-
-- Proper R package vignettes following R package standards
-- Consolidated documentation with single source of truth
-- Safe artifact removal using trash-put
-- Enhanced .gitignore preventing future artifact accumulation
-- Professional repository structure for contributors
-
-### Critical Bug Fixes
-
-**-i Flag Behavior (2025)**:
-
-- Fixed incorrect continuation with full project setup
-- Modified `modules/team_init.sh` to stop after team image creation
-- Added clear completion messages with next steps guidance
-- Two-step process: team images creation, then project setup
-
-**Conflict Detection System (2025)**:
-
-- Fixed array handling bugs causing "unbound variable" errors
-- Enhanced conflict intelligence distinguishing true conflicts from
-  safe coexistence
-- Proper .github directory handling
-- Comprehensive testing across all scenarios
 
 ## Troubleshooting
 
-### Common Issues and Solutions
+### Docker Problems
 
-#### Docker Problems
 ```bash
 # Docker not running
-Error: Docker is installed but not running
+Error: Docker daemon not running
 Solution: Start Docker Desktop
 
 # Permission denied
-Error: Permission denied writing to directory
+Error: Permission denied
 Solution: Check directory permissions, run as correct user
 
 # Out of disk space
 Error: No space left on device
-Solution: make docker-clean, docker system prune
+Solution: make docker-clean && docker system prune
 ```
 
-#### Package Issues
+### Package Issues
+
 ```bash
 # Package installation fails
 Error: Package 'xyz' not available
@@ -2339,274 +863,150 @@ Solution: make docker-check-renv-fix
 
 # renv cache issues
 Error: renv cache corrupted
-Solution: renv::restore(), renv::rebuild()
+Solution: renv::restore() && renv::rebuild()
 ```
 
-#### Team Collaboration Issues
+### Team Collaboration Issues
+
 ```bash
 # Team image not found
 Error: Unable to pull team/project:latest
-Solution: Check Docker Hub permissions, verify team member has access
+Solution:
+  1. Check Docker Hub permissions
+  2. Verify team member has access
+  3. Ensure team lead pushed image
 
 # GitHub repository creation fails
 Error: Repository creation failed
-Solution: Check GitHub CLI authentication: gh auth login
+Solution: gh auth login
 
-# Environment inconsistency across team
+# Environment inconsistency
 Error: Package versions differ between team members
-Solution: All team members run: git pull && docker pull team/project:latest
+Solution: All team members run:
+  git pull && docker pull team/project:latest
 ```
 
-#### Build Issues
+### Build Issues
+
 ```bash
 # Make targets fail
 Error: make: *** [target] Error 1
-Solution: Check Docker is running, try make docker-build
+Solution:
+  1. Check Docker is running
+  2. Try make docker-build
 
 # Paper rendering fails
 Error: Pandoc not found
-Solution: Use make docker-render instead of local rendering
+Solution: Use make docker-render instead
 
 # Tests fail
 Error: Test failures
-Solution: Check function implementations, update tests
+Solution:
+  1. Check function implementations
+  2. Update tests
+  3. Run make docker-test for clean environment
 ```
 
-#### Performance Issues
-```bash
-# Slow Docker builds
-Solution: Use .dockerignore, clean up large files, leverage team images
-
-# RStudio slow in browser
-Solution: Check available RAM, close other containers
-
-# Large repository
-Solution: Use .gitignore for data files, Git LFS for large files
-```
-
-### Team Workflow Debugging
-```bash
-# Check team image status
-docker images | grep mylab/study2024
-
-# Verify team environment
-docker run --rm mylab/study2024:latest R --version
-docker run --rm mylab/study2024:latest R -e "installed.packages()[,1]"
-
-# Manual team image pull
-docker pull mylab/study2024:latest
-
-# Check GitHub Actions status
-gh run list --workflow=update-team-image.yml
-```
-
-### Getting Help
-
-1. **Check this guide** for common workflows
-2. **Use `make help`** to see available targets
-3. **Check script help**: `zzcollab --help` or `zzcollab --init --help`
-4. **Validate environment**: `make docker-check-renv`
-5. **Clean and rebuild**: `make docker-clean && make docker-build`
-6. **Team sync**: `git pull && docker pull team/project:latest`
-
-### Advanced Configuration
-
-#### Custom Team Docker Environment
-```bash
-# Modify templates/Dockerfile.pluspackages for team needs
-# Add domain-specific R packages, system tools, etc.
-# Team lead rebuilds: zzcollab --init rebuilds and pushes new images
-```
-
-#### Custom Build Targets
-```bash
-# Add to Makefile:
-my-analysis:
-	docker run --rm -v $(PWD):/home/analyst/project $(TEAM_NAME)/$(PROJECT_NAME):latest Rscript scripts/my_analysis.R
-
-.PHONY: my-analysis
-```
-
-#### Environment Variables for Team Setup
+### Profile/Bundle Issues
 
 ```bash
-# Set in shell or .env file:
-export DOCKERHUB_USERNAME="mylab"
-export GITHUB_ACCOUNT="myuniversity"
-export DOTFILES_PATH="~/dotfiles"
+# Incompatible combination
+Error: Geospatial packages require --libs geospatial
+Solution: zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
+
+# Alpine/Debian mismatch
+Error: Alpine base images require --libs alpine
+Solution: zzcollab -b velaco/alpine-r --libs alpine --pkgs minimal
+
+# Profile not found
+Error: Unknown profile 'xyz'
+Solution: zzcollab --list-profiles  # See available profiles
 ```
 
 ## Platform-Specific Notes
 
 ### ARM64 Compatibility (Apple Silicon)
 
-ZZCOLLAB supports multi-platform Docker builds, but certain base
-images have architecture-specific limitations.
+**Architecture Support:**
 
-**Architecture Support Matrix**:
+✅ **ARM64 and AMD64 Compatible:**
+- rocker/r-ver
+- rocker/rstudio
+- velaco/alpine-r
 
+❌ **AMD64 Only:**
+- rocker/verse
+- rocker/tidyverse
+- rocker/geospatial
+- rocker/shiny
+
+**Solutions for ARM64:**
+
+1. **Use compatible profiles:**
+```bash
+zzcollab --profile-name minimal     # ✅ Works on ARM64
+zzcollab --profile-name rstudio     # ✅ Works on ARM64
+zzcollab --profile-name alpine_analysis  # ✅ Works on ARM64
 ```
-ARM64 and AMD64 Compatible:
-- rocker/r-ver     (Both architectures supported)
-- rocker/rstudio   (Both architectures supported)
 
-AMD64 Only:
-- rocker/verse     (Publishing workflow with LaTeX)
-- rocker/tidyverse (AMD64 only)
-- rocker/geospatial (AMD64 only)
-- rocker/shiny     (AMD64 only)
+2. **Automatic emulation:**
+```bash
+# ZZCOLLAB automatically uses --platform linux/amd64 on ARM64 for:
+zzcollab --profile-name publishing  # Uses AMD64 emulation
+zzcollab --profile-name geospatial  # Uses AMD64 emulation
 ```
 
-**Solutions for ARM64 Users**:
+3. **Build custom ARM64 images:**
+```bash
+# Create custom publishing environment for ARM64
+mkdir project && cd project
+zzcollab -b rocker/r-ver --libs publishing --pkgs publishing
+make docker-build  # Native ARM64 build
+```
 
-1. **Use compatible base images only**:
+### Platform Configuration
 
 ```bash
-zzcollab -i -t TEAM -p PROJECT -B r-ver,rstudio -S
+# Auto-detect (default)
+zzcollab --config set docker.platform "auto"
+
+# Force AMD64 (works on both architectures)
+zzcollab --config set docker.platform "amd64"
+
+# Force ARM64 (only on ARM64 systems)
+zzcollab --config set docker.platform "arm64"
+
+# Use native platform
+zzcollab --config set docker.platform "native"
 ```
-
-2. **Build custom ARM64 verse equivalent**:
-
-```dockerfile
-# Dockerfile.verse-arm64 - ARM64 compatible verse + shiny
-FROM rocker/tidyverse:latest
-
-# Install system dependencies (from official rocker
-# install_verse.sh)
-RUN apt-get update && apt-get install -y \
-    cmake \
-    default-jdk \
-    fonts-roboto \
-    ghostscript \
-    hugo \
-    less \
-    libglpk-dev \
-    libgmp3-dev \
-    libfribidi-dev \
-    libharfbuzz-dev \
-    libmagick++-dev \
-    qpdf \
-    texinfo \
-    vim \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install R packages (official verse packages)
-RUN install2.r --error --skipinstalled --ncpus -1 \
-    blogdown \
-    bookdown \
-    distill \
-    rticles \
-    rmdshower \
-    rJava \
-    xaringan \
-    redland \
-    tinytex \
-    && rm -rf /tmp/downloaded_packages
-
-# Add Shiny support (not in official verse)
-RUN install2.r --error --skipinstalled --ncpus -1 \
-    shiny \
-    shinydashboard \
-    DT \
-    && rm -rf /tmp/downloaded_packages
-
-# Install TinyTeX for LaTeX support
-RUN R -e "tinytex::install_tinytex()"
-```
-
-3. **Build and deploy custom image**:
-
-```bash
-# Build ARM64 compatible verse+shiny image
-docker build -f Dockerfile.verse-arm64 \
-  -t rgt47/verse-arm64:latest .
-
-# Test locally
-docker run --rm -p 8787:8787 rgt47/verse-arm64:latest
-
-# Push to Docker Hub (free for public images)
-docker login
-docker push rgt47/verse-arm64:latest
-```
-
-4. **Use in zzcollab workflows**:
-
-Modify team Dockerfile to use custom image for verse profile
-conditionally based on architecture.
-
-**Key Insights**:
-
-- Public Docker Hub storage is provided at no cost
-- rocker/verse combines rocker/tidyverse with publishing tools
-  (bookdown, blogdown, LaTeX)
-- rocker/rstudio does not include Shiny by default
-- Custom images can combine verse and shiny functionality for
-  complete publishing workflow
-
-### Configuration Validation and Troubleshooting
-
-**Common Configuration Issues**:
-
-- **Missing yq dependency**: Install with `brew install yq` (macOS)
-  or `snap install yq` (Ubuntu)
-- **Variant build failures**: Check Docker platform compatibility
-  (ARM64 vs AMD64)
-- **Package installation errors**: Verify custom package lists in
-  build_modes section
-- **Permission issues**: Ensure proper Docker daemon access and
-  directory permissions
-
-**Validation Commands**:
-
-```bash
-# Test profile definitions
-./add_profile.sh --validate
-
-# Verify Docker platform compatibility
-zzcollab --config get docker.platform
-```
-
----
 
 ## Summary
 
-ZZCOLLAB provides a comprehensive research collaboration platform
-with the following capabilities:
+ZZCOLLAB provides comprehensive reproducible research infrastructure:
 
-- Systematic team collaboration with automated workflows
-- Docker-first development eliminating local R installation
-  requirements
-- Automatic dependency management with renv and intelligent scanning
-- Integrated collaboration tools via Git/GitHub with CI/CD
-- Publication-ready workflows from analysis to manuscript
-- Reproducible environments across team members
-- Automated package management with systematic team image updates
-- Comprehensive R interface for R-centric workflows
-- Professional testing infrastructure with unit and integration tests
-- Flexible initialization options with minimal (9 packages),
-  standard (17 packages), or comprehensive (47+ packages) modes
+### For Team Leads
+1. Choose Docker profile for research domain
+2. Build and share team image
+3. Manage base environment dependencies
+4. Coordinate team collaboration
 
-### Automation Benefits
+### For Team Members
+1. Clone repository and pull team image
+2. Develop in identical environment
+3. Add packages dynamically via renv
+4. Contribute to collaborative renv.lock
 
-| Traditional Workflow | ZZCOLLAB Workflow |
-|----------------------|-------------------|
-| Manual image rebuilds | Automatic rebuilds on package changes |
-| Inconsistent environments | Guaranteed environment consistency |
-| 30-60 min setup per developer | 3-5 min setup with pre-built images |
-| Manual dependency management | Automated dependency tracking |
-| Docker expertise required | Minimal Docker knowledge needed |
-| Build failures block development | Centralized, tested builds |
-| Slow initialization (5-10 min) | Fast setup (2-3 min with fast mode) |
+### For Solo Developers
+1. Configure once, use everywhere
+2. Choose appropriate Docker profile
+3. Add packages as needed
+4. Transition to team when ready
 
-### Developer Experience
+### Key Principles
+- **Two-layer architecture**: Team Docker profile + dynamic packages
+- **renv.lock is source of truth**: Not the Docker image
+- **Package accumulation**: renv.lock contains packages from all contributors
+- **Profile flexibility**: 14+ profiles from 200MB to 3GB
+- **Complete reproducibility**: Dockerfile + renv.lock + .Rprofile + source code + data
 
-- Researchers can focus on research rather than DevOps operations
-- Onboarding new team members requires minutes rather than hours
-- Package management occurs transparently
-- Environment drift cannot occur
-- Collaboration friction is minimized
-
-The framework manages technical complexity, enabling researchers
-to focus on their work while maintaining rigorous collaboration
-standards and complete reproducibility across research teams.
+For comprehensive technical details, see `docs/` directory.
