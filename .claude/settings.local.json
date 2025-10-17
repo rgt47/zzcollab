@@ -46,7 +46,8 @@
       "Bash(do bash -n \"$file\")",
       "Bash(git reset:*)",
       "Bash(git push)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "Bash(shellcheck:*)"
     ],
     "deny": []
   }

@@ -236,13 +236,13 @@ apply_smart_defaults() {
                 LIBS_BUNDLE="geospatial"
                 log_info "ℹ️  Auto-detected: --libs geospatial (from base image)"
                 ;;
-            *verse*)
-                LIBS_BUNDLE="publishing"
-                log_info "ℹ️  Auto-detected: --libs publishing (from base image)"
-                ;;
             *tidyverse*)
                 LIBS_BUNDLE="minimal"
                 log_info "ℹ️  Auto-detected: --libs minimal (from base image)"
+                ;;
+            *verse*)
+                LIBS_BUNDLE="publishing"
+                log_info "ℹ️  Auto-detected: --libs publishing (from base image)"
                 ;;
             *)
                 LIBS_BUNDLE="minimal"
@@ -265,13 +265,13 @@ apply_smart_defaults() {
                 PKGS_BUNDLE="geospatial"
                 log_info "ℹ️  Auto-detected: --pkgs geospatial (from base image)"
                 ;;
-            *verse*)
-                PKGS_BUNDLE="publishing"
-                log_info "ℹ️  Auto-detected: --pkgs publishing (from base image)"
-                ;;
             *tidyverse*)
                 PKGS_BUNDLE="tidyverse"
                 log_info "ℹ️  Auto-detected: --pkgs tidyverse (from base image)"
+                ;;
+            *verse*)
+                PKGS_BUNDLE="publishing"
+                log_info "ℹ️  Auto-detected: --pkgs publishing (from base image)"
                 ;;
             *)
                 PKGS_BUNDLE="minimal"
@@ -317,9 +317,11 @@ generate_r_package_install_commands() {
         R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('renv', 'devtools', 'BiocManager'), repos = c(CRAN = 'https://cloud.r-project.org'))\" && \\\\\n    R -e \"BiocManager::install(c('${bioc_packages}'))\""
     else
         # Regular CRAN packages
+        # shellcheck disable=SC2089,SC2090  # Intentional: command stored for template substitution
         R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('${packages}'), repos = c(CRAN = 'https://cloud.r-project.org'))\""
     fi
 
+    # shellcheck disable=SC2090  # Intentional: command stored for template substitution
     export R_PACKAGES_INSTALL_CMD
 }
 
