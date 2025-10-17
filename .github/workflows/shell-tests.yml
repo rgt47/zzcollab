@@ -66,7 +66,11 @@ jobs:
           config_passed=$(echo "$config_result" | grep -oP '\d+(?= tests?, 0 failures?)' || echo "0")
           config_total=$(echo "$config_result" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
           config_failed=$((config_total - config_passed))
-          config_percent=$(awk "BEGIN {printf \"%.1f\", ($config_passed / $config_total) * 100}")
+          if [ "$config_total" -gt 0 ]; then
+            config_percent=$(awk "BEGIN {printf \"%.1f\", ($config_passed / $config_total) * 100}")
+          else
+            config_percent="0.0"
+          fi
 
           echo "- **Total Tests**: $config_total"
           echo "- **Passing**: $config_passed"
@@ -81,7 +85,11 @@ jobs:
           docker_passed=$(echo "$docker_result" | grep -oP '\d+(?= tests?, 0 failures?)' || echo "0")
           docker_total=$(echo "$docker_result" | grep -oP '\d+(?= tests?)' | head -1 || echo "0")
           docker_failed=$((docker_total - docker_passed))
-          docker_percent=$(awk "BEGIN {printf \"%.1f\", ($docker_passed / $docker_total) * 100}")
+          if [ "$docker_total" -gt 0 ]; then
+            docker_percent=$(awk "BEGIN {printf \"%.1f\", ($docker_passed / $docker_total) * 100}")
+          else
+            docker_percent="0.0"
+          fi
 
           echo "- **Total Tests**: $docker_total"
           echo "- **Passing**: $docker_passed"
@@ -95,7 +103,11 @@ jobs:
           total_tests=$((config_total + docker_total))
           total_passed=$((config_passed + docker_passed))
           total_failed=$((config_failed + docker_failed))
-          total_percent=$(awk "BEGIN {printf \"%.1f\", ($total_passed / $total_tests) * 100}")
+          if [ "$total_tests" -gt 0 ]; then
+            total_percent=$(awk "BEGIN {printf \"%.1f\", ($total_passed / $total_tests) * 100}")
+          else
+            total_percent="0.0"
+          fi
 
           echo "- **Total Tests**: $total_tests"
           echo "- **Passing**: $total_passed"
@@ -278,7 +290,11 @@ jobs:
 
           total_modules=$(ls modules/*.sh | wc -l)
           tested_modules=$(find tests/shell -name "test-*.bats" | wc -l)
-          coverage_percent=$(awk "BEGIN {printf \"%.1f\", ($tested_modules / $total_modules) * 100}")
+          if [ "$total_modules" -gt 0 ]; then
+            coverage_percent=$(awk "BEGIN {printf \"%.1f\", ($tested_modules / $total_modules) * 100}")
+          else
+            coverage_percent="0.0"
+          fi
 
           echo "- **Total Modules**: $total_modules"
           echo "- **Modules with Tests**: $tested_modules"
