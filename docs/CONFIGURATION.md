@@ -2,11 +2,7 @@
 
 ## Overview
 
-ZZCOLLAB implements a sophisticated multi-layered configuration
-system that enables teams and individuals to establish consistent
-defaults while maintaining flexibility for project-specific
-requirements. This guide provides comprehensive documentation of
-configuration architecture, file formats, and usage patterns.
+ZZCOLLAB implements a sophisticated multi-layered configuration system that enables teams and individuals to establish consistent defaults while maintaining flexibility for project-specific requirements. This guide provides comprehensive documentation of configuration architecture, file formats, and usage patterns.
 
 ## Configuration Philosophy
 
@@ -14,37 +10,29 @@ configuration architecture, file formats, and usage patterns.
 
 The configuration system adheres to four key principles:
 
-1. **Hierarchy**: Project-specific settings override user defaults,
-   which override system defaults
-2. **Transparency**: All configuration decisions are explicit and
-   traceable
-3. **Flexibility**: Users can customize any aspect while maintaining
-   sensible defaults
-4. **Reproducibility**: Configuration files are version-controlled
-   and portable
+1. **Hierarchy**: Project-specific settings override user defaults, which override system defaults
+2. **Transparency**: All configuration decisions are explicit and traceable
+3. **Flexibility**: Users can customize any aspect while maintaining sensible defaults
+4. **Reproducibility**: Configuration files are version-controlled and portable
 
 ### Configuration Domains
 
 ZZCOLLAB configuration spans three distinct domains:
 
-- **Docker Variant Management**: Selection and customization of 14+
-  specialized environments
-- **Package Management**: Build mode selection and custom package
-  lists
-- **Development Settings**: Team collaboration preferences and
-  automation options
+- **Docker Profile Management**: Selection of 14+ specialized environments
+- **Package Management**: Dynamic via `renv::install()` inside containers
+- **Development Settings**: Team collaboration preferences and automation options
 
 ## Configuration Hierarchy
 
-### Four-Level Precedence
+### Six-Level Precedence
 
-Configuration values are resolved through a hierarchical precedence
-system:
+Configuration values are resolved through a hierarchical precedence system:
 
 ```
-Priority 1: Command-line flags (-F, -t, -p, etc.)
+Priority 1: Command-line flags (--profile-name, -t, -p, -b, --libs, --pkgs)
     ↓ (overrides)
-Priority 2: Environment variables (ZZCOLLAB_BUILD_MODE, etc.)
+Priority 2: Environment variables (ZZCOLLAB_PROFILE_NAME, etc.)
     ↓ (overrides)
 Priority 3: Project config (./zzcollab.yaml)
     ↓ (overrides)
@@ -57,17 +45,16 @@ Priority 6: Built-in defaults (hardcoded fallbacks)
 
 ### Resolution Examples
 
-**Scenario 1: Build Mode Resolution**
+**Scenario 1: Profile Resolution**
 
 ```bash
-# User config: build_mode: standard
-# Command-line: -F (fast)
-# Result: Fast mode (command-line overrides config)
+# User config: profile_name: analysis
+# Command-line: --profile-name bioinformatics
+# Result: bioinformatics profile (command-line overrides config)
 
 mkdir study && cd study
-zzcollab -t lab -p study -F
+zzcollab -t lab -p study --profile-name bioinformatics
 make docker-build
-make docker-push-team
 ```
 
 **Scenario 2: Team Name Resolution**
@@ -82,17 +69,12 @@ zzcollab -p study
 make docker-build
 ```
 
-**Scenario 3: Complete Override Chain**
+**Scenario 3: Custom Composition**
 
 ```bash
-# System config: build_mode: standard
-# User config: build_mode: fast
-# Project config: build_mode: comprehensive
-# Command-line: --fast
-# Result: fast (command-line overrides all)
-
+# Override profile with custom bundle composition
 mkdir research && cd research
-zzcollab -p research --fast
+zzcollab -p research -b rocker/r-ver --libs geospatial --pkgs modeling
 make docker-build
 ```
 
@@ -116,116 +98,29 @@ defaults:
   # Team and account settings
   team_name: "mylab"
   github_account: "myusername"
+  dockerhub_account: "myusername"  # Defaults to team_name if not set
 
-  # Project defaults
-  build_mode: "standard"        # fast, standard, comprehensive
+  # Docker profile selection
+  profile_name: "analysis"          # Default profile for new projects
+  # Alternative: Specify bundles
+  # libs_bundle: "minimal"
+  # pkgs_bundle: "tidyverse"
 
   # Development environment
   dotfiles_dir: "~/dotfiles"
   dotfiles_nodot: false
 
   # Automation preferences
-  auto_github: false            # Automatically create GitHub repos
-  skip_confirmation: false      # Skip confirmation prompts
+  auto_github: false                # Automatically create GitHub repos
+  skip_confirmation: false          # Skip confirmation prompts
 
 #=========================================================
-# CUSTOM BUILD MODES (Optional)
+# DOCKER PLATFORM (Optional)
 #=========================================================
-# Define specialized build modes for specific workflows
+# Platform architecture for Docker builds
 
-build_modes:
-  fast:
-    description: "Minimal development environment"
-    docker_packages:
-      - renv
-      - remotes
-      - here
-      - usethis
-      - devtools
-      - testthat
-      - knitr
-      - rmarkdown
-      - targets
-    renv_packages:
-      - renv
-      - remotes
-      - here
-      - usethis
-      - devtools
-      - testthat
-      - knitr
-      - rmarkdown
-      - targets
-
-  custom_ml:
-    description: "Machine learning workflow"
-    docker_packages:
-      - renv
-      - tidyverse
-      - tidymodels
-      - xgboost
-      - keras
-      - tensorflow
-    renv_packages:
-      - renv
-      - tidyverse
-      - tidymodels
-      - xgboost
-      - keras
-      - tensorflow
-      - caret
-      - mlr3
-
-  custom_spatial:
-    description: "Geospatial analysis workflow"
-    docker_packages:
-      - renv
-      - tidyverse
-      - sf
-      - terra
-      - leaflet
-    renv_packages:
-      - renv
-      - tidyverse
-      - sf
-      - terra
-      - leaflet
-      - tmap
-      - raster
-
-#=========================================================
-# PARADIGM CUSTOMIZATION (Optional)
-#=========================================================
-# Override default packages for research paradigms
-
-paradigms:
-  analysis:
-    docker_packages:
-      - renv
-      - tidyverse
-      - targets
-      - plotly
-    renv_packages:
-      - renv
-      - tidyverse
-      - targets
-      - plotly
-      - DT
-      - flexdashboard
-
-  manuscript:
-    docker_packages:
-      - renv
-      - tidyverse
-      - rmarkdown
-      - bookdown
-    renv_packages:
-      - renv
-      - tidyverse
-      - rmarkdown
-      - bookdown
-      - papaja
-      - kableExtra
+docker:
+  platform: "auto"                  # auto, amd64, arm64, native
 ```
 
 ### Project Configuration
@@ -245,50 +140,32 @@ paradigms:
 team:
   name: "datasci-lab"
   project: "customer-churn-analysis"
-  description: "Machine learning analysis of customer
-                retention patterns"
+  description: "Machine learning analysis of customer retention patterns"
   maintainer: "Dr. Smith <smith@university.edu>"
   created: "2024-01-15"
 
 #=========================================================
-# DOCKER VARIANTS
+# DOCKER PROFILE
 #=========================================================
-# Specify which Docker profiles to build
+# Specify Docker environment for team
 
-profiles:
-  minimal:
-    enabled: true             # Essential development (~800MB)
+docker_profile:
+  # Option 1: Use predefined profile
+  profile_name: "bioinformatics"
 
-  analysis:
-    enabled: true             # Primary analysis environment (~1.2GB)
-
-  modeling:
-    enabled: true             # Machine learning (~1.5GB)
-
-  alpine_minimal:
-    enabled: true             # CI/CD testing (~200MB)
-
-  publishing:
-    enabled: false            # LaTeX documents (~3GB)
-
-  geospatial:
-    enabled: false            # Spatial analysis (~2.5GB)
-
-  bioinformatics:
-    enabled: false            # Genomics (~2GB)
+  # Option 2: Custom composition with bundles
+  # base_image: "bioconductor/bioconductor_docker"
+  # libs: "bioinfo"
+  # pkgs: "bioinfo"
 
 #=========================================================
 # BUILD CONFIGURATION
 #=========================================================
 
 build:
-  # Profile management
-  use_config_profiles: true
-  profile_library: "profiles.yaml"
-
   # Docker build settings
   docker:
-    platform: "auto"          # auto, linux/amd64, linux/arm64
+    platform: "auto"                # auto, linux/amd64, linux/arm64
     no_cache: false
     parallel_builds: true
 
@@ -313,42 +190,12 @@ collaboration:
     enable_actions: true
     required_reviews: 1
 
-  # Development environment
-  development:
-    default_interface: "analysis"    # Which profile for new members
-    default_build_mode: "standard"
-
   # Container settings
   container:
     default_user: "analyst"
     working_dir: "/home/analyst/project"
     shared_volumes:
       - "${HOME}/data:/data:ro"     # Read-only data mount
-
-#=========================================================
-# PROJECT-SPECIFIC SETTINGS
-#=========================================================
-
-project:
-  # Package requirements (beyond build mode defaults)
-  additional_packages:
-    - survival
-    - lme4
-    - brms
-
-  # Data management
-  data:
-    raw_data_dir: "data/raw_data"
-    derived_data_dir: "data/derived_data"
-    external_data_sources:
-      - name: "Public dataset"
-        url: "https://example.com/data.csv"
-
-  # Output management
-  outputs:
-    figures_dir: "outputs/figures"
-    tables_dir: "outputs/tables"
-    reports_dir: "outputs/reports"
 
 #=========================================================
 # QUALITY ASSURANCE
@@ -388,8 +235,8 @@ defaults:
   github_org: "university-research"
   docker_registry: "registry.university.edu"
 
-  # Standard build mode
-  build_mode: "standard"
+  # Standard Docker profile
+  profile_name: "analysis"
 
   # Networking
   proxy: "http://proxy.university.edu:8080"
@@ -430,12 +277,15 @@ ZZCOLLAB_CONFIG_USER=~/custom/config.yaml zzcollab --config init
 # Set single values
 zzcollab --config set team-name "mylab"
 zzcollab --config set github-account "myusername"
-zzcollab --config set build-mode "fast"
+zzcollab --config set profile-name "bioinformatics"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Set boolean values
 zzcollab --config set auto-github true
 zzcollab --config set skip-confirmation false
+
+# Set Docker platform
+zzcollab --config set docker.platform "auto"
 ```
 
 ### Getting Values
@@ -443,7 +293,7 @@ zzcollab --config set skip-confirmation false
 ```bash
 # Get single values
 zzcollab --config get team-name
-zzcollab --config get build-mode
+zzcollab --config get profile-name
 
 # Get all configuration
 zzcollab --config list
@@ -479,10 +329,9 @@ zzcollab --config precedence
 **team_name**
 
 - **Type**: String
-- **Description**: Team identifier for Docker images and
-  collaboration
+- **Description**: Team identifier for Docker images and collaboration
 - **Example**: `"datasci-lab"`
-- **Used in**: Docker image naming, GitHub repository creation
+- **Used in**: Docker image naming (`datasci-lab/project:latest`)
 
 **project_name**
 
@@ -500,12 +349,40 @@ zzcollab --config precedence
 - **Default**: Current user
 - **Example**: `"myusername"`
 
-**build_mode**
+**dockerhub_account**
 
-- **Type**: Enum
-- **Values**: `fast`, `standard`, `comprehensive`
-- **Default**: `standard`
-- **Description**: Package installation mode
+- **Type**: String
+- **Description**: Docker Hub username
+- **Default**: Same as team_name
+- **Example**: `"myorganization"`
+
+**profile_name**
+
+- **Type**: String
+- **Values**: `minimal`, `rstudio`, `analysis`, `modeling`, `bioinformatics`, `geospatial`, `publishing`, `alpine_minimal`, `alpine_analysis`
+- **Default**: `minimal`
+- **Description**: Predefined Docker environment profile
+
+**base_image** (for custom composition)
+
+- **Type**: String
+- **Description**: Docker base image
+- **Default**: `rocker/r-ver`
+- **Example**: `"bioconductor/bioconductor_docker"`
+
+**libs_bundle** (for custom composition)
+
+- **Type**: String
+- **Values**: `minimal`, `geospatial`, `bioinfo`, `modeling`, `publishing`, `alpine`
+- **Description**: System library bundle
+- **Example**: `"geospatial"`
+
+**pkgs_bundle** (for custom composition)
+
+- **Type**: String
+- **Values**: `minimal`, `tidyverse`, `modeling`, `bioinfo`, `geospatial`, `publishing`, `shiny`
+- **Description**: R package bundle
+- **Example**: `"modeling"`
 
 **dotfiles_dir**
 
@@ -535,113 +412,15 @@ zzcollab --config precedence
 - **Default**: `false`
 - **Example**: `true`
 
-## Advanced Configuration
-
-### Custom Build Modes
-
-Define specialized build modes for specific workflows:
-
-```yaml
-build_modes:
-  bioinformatics:
-    description: "Bioinformatics pipeline"
-    docker_packages:
-      - renv
-      - tidyverse
-      - BiocManager
-      - Biostrings
-      - GenomicRanges
-    renv_packages:
-      - renv
-      - tidyverse
-      - BiocManager
-      - Biostrings
-      - GenomicRanges
-      - DESeq2
-      - edgeR
-      - limma
-
-  timeseries:
-    description: "Time series forecasting"
-    docker_packages:
-      - renv
-      - tidyverse
-      - forecast
-      - tsibble
-    renv_packages:
-      - renv
-      - tidyverse
-      - forecast
-      - tsibble
-      - fable
-      - prophet
-```
-
-### Custom Paradigm Packages
-
-Override default packages for research paradigms:
-
-```yaml
-paradigms:
-  analysis:
-    docker_packages:
-      - renv
-      - tidyverse
-      - targets
-      - arrow
-    renv_packages:
-      - renv
-      - tidyverse
-      - targets
-      - arrow
-      - pins
-      - vetiver
-
-  manuscript:
-    docker_packages:
-      - renv
-      - rmarkdown
-      - bookdown
-      - quarto
-    renv_packages:
-      - renv
-      - rmarkdown
-      - bookdown
-      - quarto
-      - distill
-      - posterdown
-```
-
-### Docker Variant Customization
-
-Define completely custom Docker profiles:
-
-```yaml
-profiles:
-  custom_ml:
-    base_image: "nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04"
-    description: "GPU-accelerated machine learning"
-    packages:
-      - renv
-      - tidyverse
-      - keras
-      - tensorflow
-      - xgboost
-    system_deps:
-      - libcudnn8
-      - python3-pip
-    enabled: true
-```
-
 ## Environment Variables
 
 ### Configuration Override Variables
 
-**ZZCOLLAB_BUILD_MODE**
+**ZZCOLLAB_PROFILE_NAME**
 
-- **Description**: Override build mode
-- **Values**: `fast`, `standard`, `comprehensive`
-- **Example**: `export ZZCOLLAB_BUILD_MODE=fast`
+- **Description**: Override Docker profile
+- **Values**: Profile names (minimal, analysis, bioinformatics, etc.)
+- **Example**: `export ZZCOLLAB_PROFILE_NAME=bioinformatics`
 
 **ZZCOLLAB_TEAM_NAME**
 
@@ -684,8 +463,8 @@ profiles:
 zzcollab --config init
 
 # 2. Set personal defaults
-zzcollab --config set team-name "myteam"
-zzcollab --config set build-mode "standard"
+zzcollab --config set team-name "myusername"
+zzcollab --config set profile-name "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # 3. Verify configuration
@@ -697,13 +476,17 @@ zzcollab --config list
 ```bash
 # Configuration is automatically applied
 mkdir research-project && cd research-project
-zzcollab -p research-project
+zzcollab
 make docker-build
-# Optional: make docker-push-team if sharing with others
 
-# Override specific settings with build mode
-mkdir comprehensive-project && cd comprehensive-project
-zzcollab -p comprehensive-project --comprehensive
+# Override profile for specific project
+mkdir genomics && cd genomics
+zzcollab --profile-name bioinformatics
+make docker-build
+
+# Custom composition
+mkdir spatial && cd spatial
+zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
 make docker-build
 ```
 
@@ -712,20 +495,18 @@ make docker-build
 **Team Configuration Setup**:
 
 ```bash
-# 1. Create project with initial config
+# 1. Create project with Docker profile
 mkdir study && cd study
-zzcollab -t lab -p study
+zzcollab -t lab -p study --profile-name bioinformatics
 make docker-build
 make docker-push-team
 
-# 2. Customize team configuration
+# 2. Customize team configuration (optional)
 vim zzcollab.yaml
 
-# 3. Edit profiles, collaboration settings, build options
-
-# 4. Commit configuration to repository
-git add zzcollab.yaml
-git commit -m "Add team configuration"
+# 3. Commit configuration to repository
+git add zzcollab.yaml Dockerfile
+git commit -m "Initial setup with bioinformatics profile"
 git push
 ```
 
@@ -736,10 +517,10 @@ git push
 git clone https://github.com/lab/study.git
 cd study
 
-# 2. Join with team configuration
+# 2. Pull team's Docker image
 zzcollab --use-team-image
 
-# Team configuration automatically applied
+# Team's Docker profile automatically used
 # Start development environment
 make docker-zsh
 ```
@@ -755,7 +536,7 @@ sudo mkdir -p /etc/zzcollab
 # 2. Create system configuration
 sudo vim /etc/zzcollab/config.yaml
 
-# 3. Set organization-wide defaults
+# 3. Set organization-wide defaults (profile, platform, etc.)
 
 # 4. Validate configuration
 zzcollab --config validate /etc/zzcollab/config.yaml
@@ -773,12 +554,12 @@ init_config()
 
 # Set configuration values
 set_config("team_name", "mylab")
-set_config("build_mode", "fast")
+set_config("profile_name", "analysis")
 set_config("dotfiles_dir", "~/dotfiles")
 
 # Get configuration values
 team <- get_config("team_name")
-mode <- get_config("build_mode")
+profile <- get_config("profile_name")
 
 # List all configuration
 config <- list_config()
@@ -793,18 +574,18 @@ validate_config()
 ```r
 # Functions automatically use configuration defaults
 
-# Team initialization (uses config for team_name, build_mode)
+# Project initialization (uses config for team_name, profile_name)
 init_project(project_name = "study")
 
 # Explicit parameter override
 init_project(
   project_name = "study",
-  team_name = "otherlab",  # Overrides config
-  build_mode = "comprehensive"
+  team_name = "otherlab",          # Overrides config
+  profile_name = "bioinformatics"  # Overrides config
 )
 
-# Team member joining (uses config for team_name, build_mode)
-join_project(project_name = "study", interface = "shell")
+# Team member joining
+join_project(project_name = "study")
 ```
 
 ## Configuration Validation
@@ -821,7 +602,7 @@ zzcollab --config validate ./zzcollab.yaml
 # Output:
 # ✓ Configuration syntax valid
 # ✓ All required fields present
-# ✓ Package lists properly formatted
+# ✓ Profile names properly formatted
 ```
 
 ### Semantic Validation
@@ -830,10 +611,9 @@ Configuration validation checks:
 
 1. **Required fields**: team_name, project_name present when needed
 2. **Value types**: Correct types for all parameters
-3. **Enum values**: build_mode in allowed set (fast, standard, comprehensive)
+3. **Profile names**: Valid profile from bundles.yaml
 4. **File paths**: Dotfiles directories exist
-5. **Package names**: Valid R package identifiers
-6. **YAML structure**: Proper nesting and formatting
+5. **YAML structure**: Proper nesting and formatting
 
 ### Common Validation Errors
 
@@ -844,19 +624,19 @@ Error: Required field 'team_name' not found in configuration
 Solution: zzcollab --config set team-name "myteam"
 ```
 
-**Invalid Build Mode**:
+**Invalid Profile Name**:
 
 ```
-Error: build_mode 'ultra-fast' not recognized
-Valid values: fast, standard, comprehensive
-Solution: zzcollab --config set build-mode "fast"
+Error: profile_name 'ultra-fast' not recognized
+Valid profiles: minimal, rstudio, analysis, modeling, bioinformatics, geospatial, publishing
+Solution: zzcollab --list-profiles  # See all available profiles
 ```
 
-**Invalid Package Name**:
+**Incompatible Bundle Combination**:
 
 ```
-Error: Package 'tidyvurse' contains invalid characters
-Solution: Check spelling, correct to 'tidyverse'
+Error: Geospatial packages require --libs geospatial (GDAL/PROJ libraries)
+Solution: zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
 ```
 
 ## Troubleshooting
@@ -874,12 +654,11 @@ zzcollab --config precedence
 # Verify configuration loading
 zzcollab --config sources
 
-# Check for command-line overrides
-echo $ZZCOLLAB_BUILD_MODE
+# Check for environment variable overrides
+echo $ZZCOLLAB_PROFILE_NAME
 ```
 
-**Solution**: Remove higher-precedence overrides or use
-explicit command-line flags
+**Solution**: Remove higher-precedence overrides or use explicit command-line flags
 
 ### YAML Parsing Errors
 
@@ -939,7 +718,7 @@ ls -la /etc/zzcollab/config.yaml
 **Solution**: Use sudo for system configuration:
 
 ```bash
-sudo zzcollab --config set-system parameter value
+sudo vim /etc/zzcollab/config.yaml
 ```
 
 ## Best Practices
@@ -956,7 +735,8 @@ sudo zzcollab --config set-system parameter value
 **Include in Git**:
 
 - `zzcollab.yaml` (project configuration)
-- `profiles.yaml` (if customized)
+- `bundles.yaml` (if customized)
+- `Dockerfile` (generated from profile/bundles)
 
 **Exclude from Git**:
 
@@ -965,14 +745,13 @@ sudo zzcollab --config set-system parameter value
 
 ### Security Considerations
 
-1. **Sensitive Data**: Never commit credentials or tokens to
-   configuration files
+1. **Sensitive Data**: Never commit credentials or tokens to configuration files
 2. **Access Control**: Restrict system config to administrators
-3. **Audit Trail**: Track configuration changes through version
-   control
+3. **Audit Trail**: Track configuration changes through version control
 4. **Environment Variables**: Use for sensitive values:
    ```bash
    export GITHUB_TOKEN="ghp_..."
+   export DOCKERHUB_TOKEN="dckr_..."
    ```
 
 ### Documentation Standards
@@ -982,15 +761,81 @@ Document configuration decisions:
 ```yaml
 # zzcollab.yaml
 
-# RATIONALE: Using comprehensive mode for advanced statistical methods
+# RATIONALE: Using bioinformatics profile for genomics workflows
+docker_profile:
+  profile_name: "bioinformatics"  # Includes Bioconductor packages
+
+# RATIONALE: AMD64 platform for rocker/verse compatibility on ARM64 Macs
 build:
   docker:
-    platform: "linux/amd64"  # Required for rocker/verse compatibility
+    platform: "amd64"  # Required for publishing profile on Apple Silicon
+```
 
-# RATIONALE: Enabling modeling profile for machine learning workflows
-profiles:
-  modeling:
-    enabled: true           # Team requires tidymodels and xgboost
+## Docker Profile Configuration
+
+### Predefined Profiles
+
+View all available profiles:
+
+```bash
+zzcollab --list-profiles
+```
+
+**Output**:
+```
+Available Docker Profiles:
+
+Standard Research:
+  minimal          (~780MB)  - Essential development packages
+  rstudio          (~980MB)  - RStudio Server environment
+  analysis         (~1.18GB) - Data analysis with tidyverse
+  modeling         (~1.48GB) - Machine learning environment
+
+Specialized Domains:
+  bioinformatics   (~1.98GB) - Genomics with Bioconductor
+  geospatial       (~2.48GB) - Spatial analysis
+  publishing       (~3GB)    - Document publishing with LaTeX
+
+Lightweight Alpine:
+  alpine_minimal   (~200MB)  - Ultra-lightweight
+  alpine_analysis  (~400MB)  - Lightweight tidyverse
+```
+
+### Bundle Configuration
+
+View available bundles:
+
+```bash
+# System library bundles
+zzcollab --list-libs
+
+# R package bundles
+zzcollab --list-pkgs
+```
+
+### Custom Profile Configuration
+
+Create custom profiles in project `zzcollab.yaml`:
+
+```yaml
+docker_profile:
+  # Option 1: Predefined profile
+  profile_name: "bioinformatics"
+
+  # Option 2: Custom composition
+  base_image: "rocker/r-ver:4.4.0"
+  libs: "geospatial"
+  pkgs: "modeling"
+
+  # Option 3: Fully custom
+  base_image: "my-org/custom-r:latest"
+  system_deps:
+    - libgsl-dev
+    - libnetcdf-dev
+  r_packages:
+    - renv
+    - tidyverse
+    - specialized-package
 ```
 
 ## Configuration Migration
@@ -1025,8 +870,8 @@ zzcollab --config import < config-export.yaml
 ### Documentation
 
 - ZZCOLLAB User Guide: Comprehensive usage documentation
-- Build Modes Guide: Detailed build mode specifications
-- Profile System Guide: Docker profile customization
+- Docker Profile Guide: Profile system and customization (docs/VARIANTS.md)
+- Package Management: Dynamic renv workflow
 
 ### Technical Specifications
 
