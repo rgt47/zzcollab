@@ -20,8 +20,10 @@ knitr::opts_chunk$set(
 This vignette explains how to create **reusable team Docker images** that dramatically speed up project initialization. Rather than building a new Docker image from rocker base images for each project (15-20 minutes for comprehensive builds), you can:
 
 1. **Build once**: Create a comprehensive team image with all your preferred packages
-2. **Push to Docker Hub**: Store the image in a central repository
+2. **Push to Docker Hub** (optional): Store the image in a central repository for faster team setup
 3. **Reuse everywhere**: New projects use your team image as the base (~30 seconds setup)
+
+**Note**: Pushing images to Docker Hub is optional. Team members can alternatively build from the Dockerfile committed to the repository. Pushing images provides faster setup times but requires Docker Hub access.
 
 This approach is particularly valuable for:
 
@@ -294,13 +296,19 @@ cd ..
 # Researcher 1: Join existing cancer genomics project
 git clone https://github.com/genomicslab/cancer-study.git
 cd cancer-study
+
+# Option 1: Pull pre-built image (faster, if team lead pushed one)
 zzcollab --use-team-image
 make docker-rstudio  # Start RStudio at localhost:8787
+
+# Option 2: Build from Dockerfile (slower, works without Docker Hub)
+# make docker-build
+# make docker-rstudio
 
 # Researcher 2: Join existing RNA-seq analysis
 git clone https://github.com/genomicslab/rnaseq-analysis.git
 cd rnaseq-analysis
-zzcollab --use-team-image
+zzcollab --use-team-image  # Or: make docker-build
 make docker-rstudio
 
 # Researcher 3: Create new variant calling project
@@ -309,7 +317,7 @@ zzcollab -t genomicslab -p variant-calling  -d ~/dotfiles
 # Uses genomicslab/labbase:latest as base automatically
 make docker-rstudio
 
-# All 3 researchers ready in ~90 seconds total
+# All 3 researchers ready in ~90 seconds total (using pre-built images)
 # Traditional approach: 45-60 minutes total
 ```
 

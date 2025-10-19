@@ -1533,9 +1533,11 @@ make docker-zsh
 Rscript scripts/01_penguin_bill_analysis.R
 ```
 
-The `--use-team-image` flag automatically pulls the team's Docker image from
-Docker Hub, ensuring all team members work in identical computational
-environments.
+The `--use-team-image` flag pulls a pre-built Docker image from Docker Hub
+(if the team lead pushed one), which is faster than building from the Dockerfile.
+Alternatively, team members can build from the Dockerfile using `make docker-build`.
+Either way, all team members get identical Docker environments from the same
+Dockerfile specification.
 
 # References
 

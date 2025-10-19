@@ -342,9 +342,20 @@ Rscript -e 'renv::install("dplyr")'
 # Render the report
 Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 
-# Save dependencies
-Rscript -e 'renv::snapshot()'
+# Save dependencies (thorough validation approach)
+Rscript validate_package_environment.R --fix
 ```
+
+**Best Practice: Comprehensive Dependency Validation**
+
+`validate_package_environment.R` is a thorough version of `renv::snapshot()` that:
+- Scans all R code for package references
+- Validates package names against CRAN/Bioconductor/GitHub (catches typos!)
+- Updates DESCRIPTION file (adds missing packages, removes invalid ones)
+- Identifies unused packages for cleanup
+- Then calls `renv::snapshot()` to update renv.lock
+
+This comprehensive approach ensures consistency between your code, DESCRIPTION, and renv.lock before committing.
 
 ## Step 5: Add Unit Tests - Level 4 (2 minutes)
 
@@ -847,7 +858,7 @@ make docker-zsh
 
 **Adding Packages to Analysis:**
 
-Team members can add R packages to the analysis (updates renv.lock):
+Team members can add R packages to the analysis (updates renv.lock and DESCRIPTION):
 
 ```bash
 # Enter container
@@ -855,7 +866,9 @@ make docker-zsh
 
 # Inside container: Add packages for your analysis
 renv::install("tidymodels")
-renv::snapshot()  # Updates renv.lock
+
+# Validate and update dependencies (recommended)
+Rscript validate_package_environment.R --fix
 quit()
 
 # Exit container and commit
@@ -864,6 +877,13 @@ git add renv.lock DESCRIPTION
 git commit -m "Add tidymodels for modeling workflow"
 git push
 ```
+
+**Why validate_package_environment.R?**
+- Scans code to find all package references (not just what you installed)
+- Validates package names (catches typos before they break CI/CD)
+- Updates DESCRIPTION file automatically
+- Then updates renv.lock via `renv::snapshot()`
+- Ensures consistency across code, DESCRIPTION, and renv.lock
 
 **Team member permissions:**
 - ✗ Cannot modify Docker image specification (Dockerfile, profile, base image, system libraries)
@@ -1089,11 +1109,11 @@ make docker-zsh
 
 # Inside container - Alice adds modeling packages
 renv::install("tidymodels")
-renv::snapshot()
+Rscript validate_package_environment.R --fix
 
 # Bob adds geospatial packages
 renv::install("sf")
-renv::snapshot()
+Rscript validate_package_environment.R --fix
 ```
 
 **Result**:
@@ -1111,19 +1131,16 @@ make docker-zsh
 
 # Inside container:
 renv::install("tidymodels")
-renv::snapshot()
+Rscript validate_package_environment.R --fix
 quit()
 
 # Exit container
 exit
 
-# STEP 1: Validate dependencies (RECOMMENDED - prevents CI failures)
-make check-renv-ci
-
-# STEP 2: Run tests to ensure nothing broke
+# STEP 1: Run tests to ensure nothing broke
 make docker-test
 
-# STEP 3: Commit if validation passed
+# STEP 2: Commit if tests passed
 git add renv.lock DESCRIPTION
 git commit -m "Add tidymodels for modeling workflow"
 git push
@@ -1134,19 +1151,16 @@ make docker-zsh
 
 # Inside container:
 renv::install("sf")
-renv::snapshot()  # renv.lock now has tidymodels + sf
+Rscript validate_package_environment.R --fix  # renv.lock now has tidymodels + sf
 quit()
 
 # Exit container
 exit
 
-# STEP 1: Validate dependencies (catch issues before CI runs)
-make check-renv-ci
-
-# STEP 2: Test functionality
+# STEP 1: Test functionality
 make docker-test
 
-# STEP 3: Commit
+# STEP 2: Commit
 git add renv.lock DESCRIPTION
 git commit -m "Add sf for geospatial analysis"
 git push

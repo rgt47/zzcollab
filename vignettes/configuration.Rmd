@@ -29,7 +29,7 @@ ZZCOLLAB's configuration system provides flexible control over Docker environmen
 - **Multi-layered configuration**: User, project, system, and built-in defaults
 - **Docker profile system**: 14+ specialized environments from 200MB to 3.5GB
 - **Dynamic package management**: Add packages via `renv::install()` as needed
-- **Two-layer architecture**: Docker profiles (team/shared) + renv packages (personal/flexible)
+- **Two-layer architecture**: Docker environment specification + renv packages
 - **CLI and R interfaces**: Work via command line or entirely within R/RStudio
 
 ## Configuration Philosophy
@@ -382,9 +382,12 @@ zzcollab --check-team-image
 ```
 
 **Team Image Workflow**:
-1. Team lead builds and pushes: `make docker-build && make docker-push-team`
-2. Team members pull: `zzcollab --use-team-image`
-3. Everyone has identical Docker environment
+1. Team lead commits Dockerfile to repository
+2. Team lead optionally pushes image: `make docker-build && make docker-push-team` (for faster team setup)
+3. Team members either:
+   - Pull pre-built image: `zzcollab --use-team-image` (faster)
+   - Build from Dockerfile: `make docker-build` (slower, works without Docker Hub)
+4. Everyone has identical Docker environment from same Dockerfile specification
 
 ### Configuration File Override
 
