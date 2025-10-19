@@ -364,14 +364,19 @@ git push -u origin main
 # Enter Docker environment
 make docker-zsh
 
-# Inside container: add packages as needed
+# Inside container (R prompt): add packages as needed
 renv::install("ComplexHeatmap")
 renv::install("clusterProfiler")
-renv::snapshot()
+# ... do your analysis work ...
+quit()
 
-# Exit and validate
+# Exit container
 exit
-make check-renv-ci
+
+# Validate dependencies
+Rscript validate_package_environment.R --fix
+
+# Test
 make docker-test
 
 # Commit changes
@@ -420,18 +425,19 @@ zzcollab --use-team-image -D ~/dotfiles
 # Enter identical Docker environment as team lead
 make docker-zsh
 
-# Inside container: work on analysis
+# Inside container (R prompt): work on analysis
 renv::restore()  # Install all team packages from renv.lock
 
 # Add your own packages as needed
 renv::install("pheatmap")
-renv::snapshot()
+# ... do your analysis work ...
+quit()
 
 # Exit container
 exit
 
-# Validate and commit
-make check-renv-ci
+# Validate dependencies
+Rscript validate_package_environment.R --fix
 git add renv.lock DESCRIPTION
 git commit -m "Add pheatmap for visualization"
 git push
@@ -544,10 +550,15 @@ zzcollab --profile-name bioinformatics
 
 **Example:**
 ```bash
-# Inside container:
+# Inside container (R prompt):
 renv::install("ComplexHeatmap")  # Alice adds heatmap package
 renv::install("clusterProfiler")  # Bob adds pathway analysis
-renv::snapshot()  # Update renv.lock
+# ... do analysis ...
+quit()
+
+# Exit container and validate
+exit
+Rscript validate_package_environment.R --fix  # Updates renv.lock and DESCRIPTION
 ```
 
 **Key principle:** renv.lock is the source of truth, NOT the Docker image.
@@ -560,17 +571,16 @@ renv::snapshot()  # Update renv.lock
 # Enter container
 make docker-zsh
 
-# Install package
+# Inside container (R prompt): Install package
 renv::install("tidymodels")
-
-# Save to renv.lock
-renv::snapshot()
+# ... do your work ...
+quit()
 
 # Exit container
 exit
 
-# Validate dependencies (RECOMMENDED)
-make check-renv-ci
+# Validate dependencies (comprehensive validation)
+Rscript validate_package_environment.R --fix
 
 # Run tests
 make docker-test
@@ -585,16 +595,29 @@ git push
 
 ```bash
 # Alice adds packages
+make docker-zsh
 renv::install("tidymodels")
-renv::snapshot()  # renv.lock: [tidymodels]
+quit()
+exit
+Rscript validate_package_environment.R --fix  # renv.lock: [tidymodels]
+git add renv.lock DESCRIPTION
+git commit -m "Add tidymodels"
+git push
 
 # Bob adds packages
 git pull  # Gets Alice's changes
+make docker-zsh
 renv::install("sf")
-renv::snapshot()  # renv.lock: [tidymodels, sf]
+quit()
+exit
+Rscript validate_package_environment.R --fix  # renv.lock: [tidymodels, sf]
+git add renv.lock DESCRIPTION
+git commit -m "Add sf"
+git push
 
 # Charlie reproduces
 git pull
+make docker-zsh
 renv::restore()  # Installs both tidymodels AND sf
 ```
 

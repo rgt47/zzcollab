@@ -61,14 +61,14 @@ Use the comprehensive checklist in `getting-started.Rmd` vignette, section
 ### Pillar 2: Package Dependencies
 
 **Do**:
-- ✅ Run `renv::snapshot()` after installing new packages
-- ✅ Commit renv.lock after every package change
-- ✅ Use `validate_package_environment.R` before commits
+- ✅ Run `validate_package_environment.R --fix` after installing packages (replaces renv::snapshot())
+- ✅ Commit renv.lock and DESCRIPTION after every package change
+- ✅ Exit container before running validation
 - ✅ Document package purpose in code comments
 
 **Do Not**:
-- ❌ Manually edit renv.lock
-- ❌ Use `install.packages()` without running `renv::snapshot()`
+- ❌ Manually edit renv.lock or DESCRIPTION
+- ❌ Use `install.packages()` without running validation
 - ❌ Commit code that uses packages not in renv.lock
 - ❌ Update packages without verifying tests still pass
 
@@ -194,14 +194,17 @@ all packages.
 ```bash
 # Alice adds geospatial packages
 make docker-zsh
-# Inside container:
+# Inside container (R prompt):
 renv::install("sf")
-renv::snapshot()
+# ... do geospatial analysis ...
+quit()
+
+# Exit container
+exit
 
 # CRITICAL: Validate before committing
 Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()
-exit
+make docker-test
 
 git add renv.lock DESCRIPTION
 git commit -m "Add geospatial packages"
@@ -210,14 +213,17 @@ git push
 # Bob adds machine learning packages
 git pull  # Gets Alice's changes
 make docker-zsh
-# Inside container:
-renv::install("tidymodels")
-renv::snapshot()  # renv.lock now has sf + tidymodels
+# Inside container (R prompt):
+renv::install("tidymodels")  # renv.lock will have sf + tidymodels after validation
+# ... do ML analysis ...
+quit()
+
+# Exit container
+exit
 
 # CRITICAL: Validate before committing
 Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()
-exit
+make docker-test
 
 git add renv.lock DESCRIPTION
 git commit -m "Add ML packages"
@@ -225,7 +231,7 @@ git push
 ```
 
 **Key principles**:
-- renv::snapshot() scans ALL code files, generating union of dependencies
+- validate_package_environment.R scans ALL code files, generating union of dependencies
 - validate_package_environment.R MUST run before every commit
 - Tests MUST pass before committing package changes
 
@@ -235,18 +241,20 @@ git push
 commit that changes renv.lock or code dependencies.
 
 ```bash
-# Inside container (after making code/package changes):
+# Inside container (R prompt) - after making code/package changes:
+# ... your R work ...
+quit()
 
-# 1. VALIDATE dependencies
+# Exit container
+exit
+
+# 1. VALIDATE dependencies (outside container)
 Rscript validate_package_environment.R --fix --fail-on-issues
 
 # 2. RUN tests
-devtools::test()
+make docker-test
 
-# 3. EXIT container
-exit
-
-# 4. COMMIT only if validation passed and tests passed
+# 3. COMMIT only if validation passed and tests passed
 git add renv.lock DESCRIPTION <other-files>
 git commit -m "Add analysis"
 git push
@@ -352,15 +360,15 @@ make docker-test
 
 ```
 1. Does validate_package_environment.R pass?
-   NO → Fix dependencies, run renv::snapshot()
+   NO → Fix dependencies, run validate_package_environment.R --fix
    YES → Continue to 2
 
-2. Do all tests pass (devtools::test())?
+2. Do all tests pass (make docker-test)?
    NO → Fix code or update tests
    YES → Continue to 3
 
-3. Is renv.lock current (git status)?
-   NO → Run renv::snapshot(), commit renv.lock
+3. Are renv.lock and DESCRIPTION current (git status)?
+   NO → Run validate_package_environment.R --fix, commit both files
    YES → Continue to 4
 
 4. Are data files documented (data/README.md)?
