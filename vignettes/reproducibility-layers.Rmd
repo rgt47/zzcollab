@@ -235,12 +235,12 @@ Still insufficient for:
 # Day 1: Start project
 renv::init()
 renv::install("tidyverse")
-renv::snapshot()
+# In practice: exit R and run Rscript validate_package_environment.R --fix
 
 # Day 30: Add new analysis
 renv::install("lme4")
 # ... write code ...
-renv::snapshot()  # Don't forget!
+# In practice: exit R and run Rscript validate_package_environment.R --fix
 
 # Year 2: Collaborator joins
 git clone project
@@ -293,11 +293,13 @@ make docker-zsh
 R
 > renv::install("tidyverse")
 > # ... work normally ...
-> renv::snapshot()
 > quit()
 
 # Exit container
 exit
+
+# Validate dependencies
+Rscript validate_package_environment.R --fix
 
 # Collaborator gets identical environment
 git clone project
@@ -1260,8 +1262,9 @@ renv::install("lme4")
 
 # Analysis code...
 
-# Snapshot before sharing with advisor
-renv::snapshot()
+# Validate before sharing with advisor
+# Exit R and run:
+Rscript validate_package_environment.R --fix
 
 # Advisor runs:
 renv::restore()  # Gets exact package versions
@@ -1447,8 +1450,10 @@ renv::restore()  # Doesn't get new-package
 
 # Correct workflow
 renv::install("new-package")
-renv::snapshot()  # Update renv.lock
-git add renv.lock
+# ... use package in code ...
+# Exit R and validate
+Rscript validate_package_environment.R --fix  # Updates both DESCRIPTION and renv.lock
+git add renv.lock DESCRIPTION
 git commit
 ```
 

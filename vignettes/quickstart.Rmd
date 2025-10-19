@@ -342,13 +342,16 @@ Rscript -e 'renv::install("dplyr")'
 # Render the report
 Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 
-# Save dependencies (thorough validation approach)
+# Exit container
+exit
+
+# Back at shell: Validate dependencies (thorough approach)
 Rscript validate_package_environment.R --fix
 ```
 
 **Best Practice: Comprehensive Dependency Validation**
 
-`validate_package_environment.R` is a thorough version of `renv::snapshot()` that:
+After completing your work in the container, run `validate_package_environment.R` once to comprehensively validate all dependencies. This is a thorough version of `renv::snapshot()` that:
 - Scans all R code for package references
 - Validates package names against CRAN/Bioconductor/GitHub (catches typos!)
 - Updates DESCRIPTION file (adds missing packages, removes invalid ones)
@@ -864,26 +867,31 @@ Team members can add R packages to the analysis (updates renv.lock and DESCRIPTI
 # Enter container
 make docker-zsh
 
-# Inside container: Add packages for your analysis
+# Inside container (R prompt): Add packages for your analysis
+library(devtools)  # or whatever packages you're working with
 renv::install("tidymodels")
-
-# Validate and update dependencies (recommended)
-Rscript validate_package_environment.R --fix
+# ... do your analysis work ...
 quit()
 
-# Exit container and commit
+# Exit container - back at shell
 exit
+
+# Validate dependencies before committing
+Rscript validate_package_environment.R --fix
+
+# Commit changes
 git add renv.lock DESCRIPTION
 git commit -m "Add tidymodels for modeling workflow"
 git push
 ```
 
 **Why validate_package_environment.R?**
-- Scans code to find all package references (not just what you installed)
+- Scans code to find all package references (not just what you manually installed)
 - Validates package names (catches typos before they break CI/CD)
 - Updates DESCRIPTION file automatically
 - Then updates renv.lock via `renv::snapshot()`
 - Ensures consistency across code, DESCRIPTION, and renv.lock
+- Run once per session after completing your work
 
 **Team member permissions:**
 - ✗ Cannot modify Docker image specification (Dockerfile, profile, base image, system libraries)
@@ -1107,12 +1115,14 @@ zzcollab --use-team-image
 # Enter container and add packages
 make docker-zsh
 
-# Inside container - Alice adds modeling packages
+# Inside container (R prompt) - Alice adds modeling packages
 renv::install("tidymodels")
-Rscript validate_package_environment.R --fix
+# ... Alice does her work ...
+quit()
 
-# Bob adds geospatial packages
-renv::install("sf")
+exit  # Back to shell
+
+# Validate dependencies
 Rscript validate_package_environment.R --fix
 ```
 
@@ -1129,18 +1139,21 @@ Rscript validate_package_environment.R --fix
 # Alice adds modeling packages
 make docker-zsh
 
-# Inside container:
+# Inside container (R prompt):
 renv::install("tidymodels")
-Rscript validate_package_environment.R --fix
+# ... Alice does her modeling work ...
 quit()
 
-# Exit container
+# Back at shell - exit container
 exit
 
-# STEP 1: Run tests to ensure nothing broke
+# Validate dependencies (scans all code, updates DESCRIPTION and renv.lock)
+Rscript validate_package_environment.R --fix
+
+# Run tests to ensure nothing broke
 make docker-test
 
-# STEP 2: Commit if tests passed
+# Commit if tests passed
 git add renv.lock DESCRIPTION
 git commit -m "Add tidymodels for modeling workflow"
 git push
@@ -1149,18 +1162,21 @@ git push
 git pull  # Gets Alice's changes
 make docker-zsh
 
-# Inside container:
+# Inside container (R prompt):
 renv::install("sf")
-Rscript validate_package_environment.R --fix  # renv.lock now has tidymodels + sf
+# ... Bob does his geospatial work ...
 quit()
 
-# Exit container
+# Back at shell - exit container
 exit
 
-# STEP 1: Test functionality
+# Validate dependencies (renv.lock now has tidymodels + sf)
+Rscript validate_package_environment.R --fix
+
+# Test functionality
 make docker-test
 
-# STEP 2: Commit
+# Commit
 git add renv.lock DESCRIPTION
 git commit -m "Add sf for geospatial analysis"
 git push

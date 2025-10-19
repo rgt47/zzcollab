@@ -216,17 +216,21 @@ Use RStudio's **Packages** pane or the Console:
 renv::install("palmerpenguins")
 renv::install("ggplot2")
 renv::install("dplyr")
-
-# Save dependencies
-renv::snapshot()
+# ... do your analysis work ...
 ```
 
-**RStudio Advantage:** You can also use the Packages pane:
+**Then validate dependencies** - Switch to Terminal pane in RStudio:
+```bash
+# In Terminal pane (bottom-left, next to Console):
+Rscript validate_package_environment.R --fix
+```
+
+**RStudio Advantage:** You can also install using the Packages pane:
 1. Click "Packages" tab (bottom-right)
 2. Click "Install"
 3. Type package name
 4. Click "Install"
-5. Then run `renv::snapshot()` to save
+5. Then validate in Terminal pane: `Rscript validate_package_environment.R --fix`
 
 ### 4.4 Render Report in RStudio
 
@@ -439,7 +443,8 @@ save.image()  # Workspace not portable
 
 # Instead use:
 saveRDS(my_data, "data/my_data.rds")  # Portable, reproducible
-renv::snapshot()  # Save package versions
+# Switch to Terminal pane and run:
+# Rscript validate_package_environment.R --fix  # Save package versions
 ```
 
 # Transitioning to Command Line
@@ -549,7 +554,9 @@ renv::restore()
 # If package source unavailable, try:
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 install.packages("package-name")
-renv::snapshot()
+
+# Then validate in Terminal pane:
+# Rscript validate_package_environment.R --fix
 ```
 
 ## Files Not Appearing
