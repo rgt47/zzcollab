@@ -422,6 +422,108 @@ get_config_value() {
     esac
 }
 
+# Function: get_default_value
+# Purpose: Get the system default value for a configuration key
+# Arguments: $1 = key (e.g., "team_name")
+# Returns: The default value (may be empty string for truly unset keys)
+get_default_value() {
+    local key="$1"
+    case "$key" in
+        team_name) echo "" ;;
+        github_account) echo "" ;;
+        dockerhub_account) echo "" ;;
+        profile_name) echo "minimal" ;;
+        libs_bundle) echo "minimal" ;;
+        pkgs_bundle) echo "minimal" ;;
+        dotfiles_dir) echo "~/dotfiles" ;;
+        dotfiles_nodot) echo "true" ;;
+        auto_github) echo "false" ;;
+        skip_confirmation) echo "false" ;;
+        init_base_image)
+            if [[ -n "${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-}" ]]; then
+                echo "$ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE"
+            else
+                echo "r-ver"
+            fi
+            ;;
+        *) echo "" ;;
+    esac
+}
+
+# Function: is_value_from_config
+# Purpose: Check if a configuration value comes from a config file or is using default
+# Arguments: $1 = key (e.g., "team_name")
+# Returns: 0 if from config file, 1 if using default
+is_value_from_config() {
+    local key="$1"
+    local current_value=""
+
+    # Get the current CONFIG_* variable value
+    case "$key" in
+        team_name) current_value="$CONFIG_TEAM_NAME" ;;
+        github_account) current_value="$CONFIG_GITHUB_ACCOUNT" ;;
+        dockerhub_account) current_value="$CONFIG_DOCKERHUB_ACCOUNT" ;;
+        profile_name) current_value="$CONFIG_PROFILE_NAME" ;;
+        libs_bundle) current_value="$CONFIG_LIBS_BUNDLE" ;;
+        pkgs_bundle) current_value="$CONFIG_PKGS_BUNDLE" ;;
+        dotfiles_dir) current_value="$CONFIG_DOTFILES_DIR" ;;
+        dotfiles_nodot) current_value="$CONFIG_DOTFILES_NODOT" ;;
+        auto_github) current_value="$CONFIG_AUTO_GITHUB" ;;
+        skip_confirmation) current_value="$CONFIG_SKIP_CONFIRMATION" ;;
+        init_base_image) return 1 ;; # Always from system default
+        *) return 1 ;;
+    esac
+
+    # Check if any config file exists and contains this value
+    local found_in_config=false
+    for config_file in "$CONFIG_PROJECT_FILE" "$CONFIG_USER_FILE" "$CONFIG_SYSTEM_FILE"; do
+        if [[ -f "$config_file" ]]; then
+            local file_value=$(yaml_get "$config_file" "defaults.$key" 2>/dev/null)
+            if [[ "$file_value" != "null" && -n "$file_value" ]]; then
+                found_in_config=true
+                break
+            fi
+        fi
+    done
+
+    if [[ "$found_in_config" == "true" ]]; then
+        return 0  # Value is from config file
+    else
+        return 1  # Value is default
+    fi
+}
+
+# Function: format_config_value_with_indicator
+# Purpose: Format a config value with appropriate indicator (default) or <not set>
+# Arguments: $1 = key (e.g., "team_name")
+# Returns: Formatted string with value and indicator
+format_config_value_with_indicator() {
+    local key="$1"
+    local current_value=$(get_config_value "$key")
+    local default_value=$(get_default_value "$key")
+
+    # Special handling for init_base_image which is always system default
+    if [[ "$key" == "init_base_image" ]]; then
+        echo "$current_value (system default)"
+        return 0
+    fi
+
+    # Check if value is from config file or is default
+    if is_value_from_config "$key"; then
+        # Value is explicitly set in a config file
+        echo "$current_value"
+    else
+        # Value is using default
+        if [[ -z "$default_value" ]]; then
+            # Default is empty, show <not set>
+            echo "<not set>"
+        else
+            # Show default value with indicator
+            echo "$default_value (default)"
+        fi
+    fi
+}
+
 #=============================================================================
 # CONFIG FILE MANAGEMENT FUNCTIONS
 #=============================================================================
@@ -574,22 +676,22 @@ config_get() {
 }
 
 # Function: config_list
-# Purpose: List all configuration values
+# Purpose: List all configuration values with indicators for defaults and unset values
 config_list() {
     echo "Current zzcollab configuration:"
     echo ""
     echo "Defaults:"
-    echo "  team_name: $(get_config_value team_name)"
-    echo "  github_account: $(get_config_value github_account)"
-    echo "  dockerhub_account: $(get_config_value dockerhub_account)"
-    echo "  profile_name: $(get_config_value profile_name)"
-    echo "  libs_bundle: $(get_config_value libs_bundle)"
-    echo "  pkgs_bundle: $(get_config_value pkgs_bundle)"
-    echo "  init_base_image: $(get_config_value init_base_image) (system default)"
-    echo "  dotfiles_dir: $(get_config_value dotfiles_dir)"
-    echo "  dotfiles_nodot: $(get_config_value dotfiles_nodot)"
-    echo "  auto_github: $(get_config_value auto_github)"
-    echo "  skip_confirmation: $(get_config_value skip_confirmation)"
+    echo "  team_name: $(format_config_value_with_indicator team_name)"
+    echo "  github_account: $(format_config_value_with_indicator github_account)"
+    echo "  dockerhub_account: $(format_config_value_with_indicator dockerhub_account)"
+    echo "  profile_name: $(format_config_value_with_indicator profile_name)"
+    echo "  libs_bundle: $(format_config_value_with_indicator libs_bundle)"
+    echo "  pkgs_bundle: $(format_config_value_with_indicator pkgs_bundle)"
+    echo "  init_base_image: $(format_config_value_with_indicator init_base_image)"
+    echo "  dotfiles_dir: $(format_config_value_with_indicator dotfiles_dir)"
+    echo "  dotfiles_nodot: $(format_config_value_with_indicator dotfiles_nodot)"
+    echo "  auto_github: $(format_config_value_with_indicator auto_github)"
+    echo "  skip_confirmation: $(format_config_value_with_indicator skip_confirmation)"
     echo ""
     echo "Configuration files (in priority order):"
     [[ -f "$CONFIG_PROJECT_FILE" ]] && echo "  ✓ $CONFIG_PROJECT_FILE" || echo "  ✗ $CONFIG_PROJECT_FILE"
