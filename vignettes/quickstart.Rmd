@@ -93,8 +93,9 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 
 **Configuration Options Explained:**
 
-- **profile-name**: Controls Docker environment (team/shared)
+- **profile-name**: Controls Docker environment specification
   - Options: minimal, rstudio, analysis, bioinformatics, geospatial, etc.
+  - See full list: `zzcollab --list-profiles`
   - Leave empty for minimal profile (default)
   - Can also set libs-bundle and pkgs-bundle for custom composition
 
@@ -765,30 +766,28 @@ test_that("model includes species interaction", {
 
 ### Team Lead Workflow
 
-Create a team project and share the Docker image:
+Create a team project and share the Docker specification:
 
 ```bash
 # Option 1: Set team config once
 zzcollab --config set team-name "genomicslab"
 zzcollab --config set profile-name "bioinformatics"
 
-# Create team project structure
+# Create team project structure (generates Dockerfile with profile)
 mkdir study && cd study
 zzcollab -t genomicslab -p study --profile-name bioinformatics
 
 # Customize Dockerfile if needed (optional)
 vim Dockerfile
 
-# Build team Docker image
-make docker-build
-
-# Push team image to Docker Hub
-make docker-push-team
-
 # Commit and push project structure to GitHub
 git add .
 git commit -m "Initial project setup with bioinformatics profile"
 git push -u origin main
+
+# Optional: Build and push team image to Docker Hub for faster team setup
+make docker-build
+make docker-push-team
 
 # Share with collaborators
 gh repo edit --add-collaborator username
@@ -800,23 +799,26 @@ gh repo edit --add-collaborator username
 # Option 2: Custom composition with bundles
 mkdir study && cd study
 zzcollab -t genomicslab -p study -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
-make docker-build
-make docker-push-team
+
+# Commit Dockerfile to GitHub
 git add .
 git commit -m "Initial project setup with custom bioinfo composition"
 git push -u origin main
+
+# Optional: Build and push image for faster team setup
+make docker-build
+make docker-push-team
 ```
 
 **Team Lead Responsibilities:**
-1. Creates complete project structure with chosen Docker profile
-2. Builds team Docker image with all necessary dependencies
-3. Pushes team image to Docker Hub for team members to access
-4. Commits and pushes project structure to GitHub
-5. Adds collaborators to GitHub repository
+1. Creates complete project structure with chosen Docker profile (generates Dockerfile)
+2. Commits and pushes Dockerfile to GitHub repository
+3. Adds collaborators to GitHub repository
+4. Optionally: Builds and pushes Docker image to Docker Hub for faster team member setup
 
 **Profile Selection for Teams:**
-- Team lead chooses Docker profile (bioinformatics, geospatial, etc.)
-- All team members get identical Docker environment via team image
+- Team lead chooses Docker profile (bioinformatics, geospatial, etc.) which generates the Dockerfile
+- All team members get identical Docker environment from the Dockerfile (either by building it or pulling pre-built image)
 - Team members add packages dynamically using `renv::install()` as needed
 
 ### Team Member Workflow
@@ -824,45 +826,48 @@ git push -u origin main
 Clone and join the team project:
 
 ```bash
-# Clone the repository
+# Clone the repository (gets the Dockerfile)
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Pull and use team Docker image
+# Option 1: Pull pre-built image (faster, if team lead pushed one)
 zzcollab --use-team-image
+make docker-zsh
 
-# Enter identical development environment
+# Option 2: Build from Dockerfile (slower, works without Docker Hub)
+make docker-build
 make docker-zsh
 ```
 
 **What happens for team members:**
-1. `--use-team-image` flag pulls team image from Docker Hub (e.g., `genomicslab/study:latest`)
-2. Team image has the Docker profile chosen by team lead (e.g., bioinformatics)
-3. Uses the exact same Docker environment as team lead
-4. Add packages as needed using `renv::install()` inside the container
+1. Clone gets the Dockerfile committed by team lead
+2. Either pull pre-built image (`--use-team-image`) OR build from Dockerfile (`make docker-build`)
+3. Everyone gets identical Docker environment from the same Dockerfile specification
+4. Add packages to analysis via `renv::install()` inside the container
 
-**Environment Consistency:**
-- **Docker environment**: Identical for all team members (from team image via `--use-team-image`)
-- **Package management**: Add packages dynamically with `renv::install()` as needed
+**Adding Packages to Analysis:**
 
-### Adding Packages to Team Environment
-
-Team members can add additional R packages to their personal Docker layer:
+Team members can add R packages to the analysis (updates renv.lock):
 
 ```bash
-# Add modeling packages on top of team image
-zzcollab -t genomicslab -p study --pkgs modeling
+# Enter container
+make docker-zsh
 
-# This installs modeling packages in your personal Docker layer
-# Team image remains unchanged
+# Inside container: Add packages for your analysis
+renv::install("tidymodels")
+renv::snapshot()  # Updates renv.lock
+quit()
+
+# Exit container and commit
+exit
+git add renv.lock DESCRIPTION
+git commit -m "Add tidymodels for modeling workflow"
+git push
 ```
 
-**Team member restrictions:**
-- ✗ Cannot change Docker profile (use `--profile-name`)
-- ✗ Cannot change base image (use `-b`)
-- ✗ Cannot add system libraries (use `--libs`)
-- ✓ Can add R packages to Docker (use `--pkgs`)
-- ✓ Can add packages to renv.lock (use `renv::install()` in container)
+**Team member permissions:**
+- ✗ Cannot modify Docker image specification (Dockerfile, profile, base image, system libraries)
+- ✓ Can add R packages to analysis via `renv::install()` (updates renv.lock only)
 
 ## Publish Results
 
