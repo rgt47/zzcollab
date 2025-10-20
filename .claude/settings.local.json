@@ -50,7 +50,8 @@
       "Bash(shellcheck:*)",
       "Bash(zzcollab.sh)",
       "Bash(bats -f \"config_list displays all configuration values\" tests/shell/test-config.bats)",
-      "Bash(gh run list --limit 3)"
+      "Bash(gh run list --limit 3)",
+      "Bash(do pkill -f \"sleep.*gh run list\")"
     ],
     "deny": []
   }
