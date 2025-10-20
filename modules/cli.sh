@@ -435,16 +435,16 @@ check_team_image_availability() {
             echo "   1. Use available variant:"
             for variant in "${available_images[@]}"; do
                 local profile_name="${variant% (legacy)}"
-                echo "      zzcollab -t $team_name -p $project_name -I $profile_name"
+                echo "      zzcollab -t $team_name -p $project_name --use-team-image"
             done
             echo "   2. Ask team lead to build $requested_variant variant:"
-            echo "      cd $project_name && zzcollab -V $requested_variant"
+            echo "      cd $project_name && zzcollab --profile-name $requested_variant"
         else
             echo "⚠️  No team images found for $team_name/$project_name"
             echo ""
             echo "💡 Solutions:"
             echo "   1. Check if team lead has run initial setup:"
-            echo "      zzcollab -i -p $project_name"
+            echo "      zzcollab -t $team_name -p $project_name"
             echo "   2. Verify team and project names are correct"
             echo "   3. Check Docker Hub for available images:"
             echo "      docker search ${team_name}/${project_name}"

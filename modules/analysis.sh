@@ -22,10 +22,10 @@ require_module "core" "templates"
 #=============================================================================
 
 # Function: create_analysis_files
-# Purpose: Creates research report templates and analysis framework
+# Purpose: Creates research paper templates and analysis framework (rrtools structure)
 # Creates:
-#   - analysis/report/report.Rmd (main research report template)
-#   - analysis/report/references.bib (bibliography file)
+#   - analysis/paper/paper.Rmd (main research paper template)
+#   - analysis/paper/references.bib (bibliography file)
 #   - Citation style files for academic publishing
 #
 # Template Features:
@@ -48,28 +48,28 @@ create_analysis_files() {
     
     # Ensure analysis directories exist (self-contained module)
     safe_mkdir "analysis" "analysis directory"
-    safe_mkdir "analysis/report" "analysis report directory"
+    safe_mkdir "analysis/paper" "analysis report directory"
     safe_mkdir "analysis/figures" "analysis figures directory"
     safe_mkdir "analysis/tables" "analysis tables directory"
     safe_mkdir "analysis/templates" "analysis templates directory"
     
     # Create research report template from R Markdown template
     # Template includes: YAML header, author info, bibliography setup, standard sections
-    if ! install_template "report.Rmd" "analysis/report/report.Rmd" "Research report template" "Created research report template with academic structure"; then
+    if ! install_template "paper.Rmd" "analysis/paper/paper.Rmd" "Research report template" "Created research report template with academic structure"; then
         log_error "Failed to create research report template"
         return 1
     fi
     
     # Create bibliography file for citations and references
     # BibTeX format for academic reference management
-    if ! install_template "references.bib" "analysis/report/references.bib" "references.bib file" "Created bibliography file for citation management"; then
+    if ! install_template "references.bib" "analysis/paper/references.bib" "references.bib file" "Created bibliography file for citation management"; then
         log_error "Failed to create bibliography file"
         return 1
     fi
     
     # Create citation style file for academic journals
     # CSL (Citation Style Language) file for formatting citations
-    if ! install_template "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
+    if ! install_template "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
         log_warn "Citation style file not found - citations will use default format"
     fi
     
@@ -82,18 +82,18 @@ create_analysis_files() {
 
 # Function: validate_analysis_structure
 # Purpose: Verify that all required analysis files were created successfully
-# Checks: report.Rmd, references.bib, analysis directories
+# Checks: paper.Rmd, references.bib, analysis directories
 # Returns: 0 if all files exist, 1 if any are missing
 validate_analysis_structure() {
     log_info "Validating analysis structure..."
     
     local -r required_files=(
-        "analysis/report/report.Rmd"
-        "analysis/report/references.bib"
+        "analysis/paper/paper.Rmd"
+        "analysis/paper/references.bib"
     )
     
     local -r required_dirs=(
-        "analysis/report"
+        "analysis/paper"
         "analysis/figures"
         "analysis/tables"
         "analysis/templates"
@@ -133,7 +133,7 @@ show_analysis_summary() {
 
 ├── analysis/
 │   ├── report/
-│   │   ├── report.Rmd            # Main research report template
+│   │   ├── paper.Rmd            # Main research report template
 │   │   ├── references.bib       # Bibliography for citations
 │   │   └── *.csl               # Citation style files (optional)
 │   ├── figures/                # Generated plots and visualizations
@@ -141,11 +141,11 @@ show_analysis_summary() {
 │   └── templates/              # Analysis templates and snippets
 
 📊 RESEARCH WORKFLOW:
-1. Edit analysis/report/report.Rmd for your research report
-2. Add references to analysis/report/references.bib
+1. Edit analysis/paper/paper.Rmd for your research report
+2. Add references to analysis/paper/references.bib
 3. Generate figures and save to analysis/figures/
 4. Create tables and save to analysis/tables/
-5. Use knitr to render report.Rmd to PDF
+5. Use knitr to render paper.Rmd to PDF
 
 📚 KEY FEATURES:
 - R Markdown integration with package functions
@@ -155,12 +155,12 @@ show_analysis_summary() {
 - Citation management with BibTeX
 
 🔧 RENDERING COMMANDS:
-- rmarkdown::render("analysis/report/report.Rmd")     # Render to PDF
+- rmarkdown::render("analysis/paper/paper.Rmd")     # Render to PDF
 - make docker-render                                 # Render in container
-- knitr::knit("analysis/report/report.Rmd")           # Process R chunks
+- knitr::knit("analysis/paper/paper.Rmd")           # Process R chunks
 
 📝 EDITING WORKFLOW:
-1. Write analysis code in R chunks within report.Rmd
+1. Write analysis code in R chunks within paper.Rmd
 2. Reference package functions with PKG_NAME::function_name
 3. Include figures with knitr chunk options
 4. Cite references with [@citation_key] syntax
@@ -615,7 +615,7 @@ cat("\\n=== FILE INTEGRITY CHECK ===\\n")
 # Check for required files
 required_files <- c(
   "DESCRIPTION",
-  "analysis/report/report.Rmd",
+  "analysis/paper/paper.Rmd",
   "R/utils.R",
   "scripts"
 )

@@ -389,7 +389,7 @@ validate_team_member_flags() {
         log_error "   System libraries are in the team image (immutable)."
         log_error ""
         log_error "   To add system libraries, ask team lead to rebuild:"
-        log_error "   zzcollab -i -t $TEAM_NAME -p $PROJECT_NAME --libs BUNDLE"
+        log_error "   zzcollab -t $TEAM_NAME -p $PROJECT_NAME --libs BUNDLE"
         exit 1
     fi
 

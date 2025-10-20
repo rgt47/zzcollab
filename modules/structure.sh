@@ -58,23 +58,22 @@ create_directory_structure() {
     
     # Define all directories to create in logical order
     # Each directory serves a specific purpose in the research workflow
+    # Following rrtools framework structure (Marwick et al. 2018)
     local -r dirs=(
         "R"                      # R package functions
         "man"                    # Manual pages
         "tests/testthat"         # Unit tests with testthat subdirectory
         "vignettes"              # Package vignettes
-        "data"                   # Data management root
-        "data/raw_data"          # Raw, unmodified data
-        "data/derived_data"      # Processed data ready for analysis
-        "data/metadata"          # Data documentation and dictionaries
-        "data/validation"        # Data quality and validation reports
+        "data"                   # R package data (for package distribution)
         "analysis"               # Analysis workflow root
-        "analysis/report"         # Research paper development
+        "analysis/data"          # Research data root
+        "analysis/data/raw_data"          # Raw, unmodified data
+        "analysis/data/derived_data"      # Processed data ready for analysis
+        "analysis/paper"         # Research paper development (rrtools standard)
         "analysis/figures"       # Generated plots and figures
         "analysis/tables"        # Generated tables and summaries
         "analysis/templates"     # Analysis templates and reusable code
-        "scripts"                # Working scripts and exploration
-        "archive"                # Archived and legacy files
+        "analysis/scripts"       # Working R scripts and exploratory analysis
         "docs"                   # Project documentation
         ".github/workflows"      # GitHub Actions CI/CD workflows
     )
@@ -100,12 +99,12 @@ create_directory_structure() {
 #=============================================================================
 
 # Function: create_data_templates
-# Purpose: Create documentation templates for data directory
+# Purpose: Create documentation templates for data directory (rrtools structure)
 create_data_templates() {
     log_info "Creating data directory templates..."
-    
-    # Install data README template to document data structure and processing
-    if install_template "data_README.md" "data/README.md" "data directory documentation" "Created data directory README with Palmer Penguins example"; then
+
+    # Install data README template to document data structure and processing (rrtools location)
+    if install_template "data_README.md" "analysis/data/README.md" "data directory documentation" "Created data directory README with Palmer Penguins example"; then
         log_success "Data README template created"
     else
         log_error "Failed to create data README template"
@@ -129,17 +128,16 @@ create_data_templates() {
 # Purpose: Creates navigation_scripts.sh that generates one-letter navigation links
 # Creates: A single navigation_scripts.sh file that can create navigation shortcuts
 #
-# Navigation Links Created:
-#   a → ./data                 - Quick access to data directory
+# Navigation Links Created (rrtools structure):
+#   a → ./analysis/data        - Quick access to research data
 #   n → ./analysis             - Quick access to analysis directory
 #   f → ./analysis/figures     - Quick access to figures
 #   t → ./analysis/tables      - Quick access to tables
-#   s → ./scripts              - Quick access to scripts
+#   s → ./analysis/scripts     - Quick access to analysis scripts
 #   m → ./man                  - Quick access to manual pages
 #   e → ./tests                - Quick access to tests
 #   o → ./docs                 - Quick access to documentation
-#   c → ./archive              - Quick access to archive
-#   p → ./analysis/report      - Quick access to report directory
+#   p → ./analysis/paper       - Quick access to paper directory
 #
 # Usage Examples:
 #   ./navigation_scripts.sh    # Create navigation links
@@ -162,7 +160,7 @@ create_navigation_scripts() {
 # Function to clean up navigation links
 cleanup_links() {
     echo "Removing navigation links..."
-    rm -f a n f t s m e o c p
+    rm -f a n f t s m e o p
     echo "All navigation links removed."
     exit 0
 }
@@ -172,15 +170,15 @@ if [[ "$1" == "--clean" || "$1" == "-c" ]]; then
     cleanup_links
 fi
 
-echo "Creating navigation symbolic links..."
+echo "Creating navigation symbolic links (rrtools structure)..."
 
 # Remove existing navigation links first
-rm -f a n f t s m e o c p
+rm -f a n f t s m e o p
 
 # Create symbolic links for existing directories
-if [[ -d "./data" ]]; then
-    ln -sf "./data" a
-    echo "Created: a → ./data"
+if [[ -d "./analysis/data" ]]; then
+    ln -sf "./analysis/data" a
+    echo "Created: a → ./analysis/data"
 fi
 
 if [[ -d "./analysis" ]]; then
@@ -218,18 +216,13 @@ if [[ -d "./docs" ]]; then
     echo "Created: o → ./docs"
 fi
 
-if [[ -d "./archive" ]]; then
-    ln -sf "./archive" c
-    echo "Created: c → ./archive"
-fi
-
-if [[ -d "./analysis/report" ]]; then
-    ln -sf "./analysis/report" p
-    echo "Created: p → ./analysis/report"
+if [[ -d "./analysis/paper" ]]; then
+    ln -sf "./analysis/paper" p
+    echo "Created: p → ./analysis/paper"
 fi
 
 echo "Navigation symbolic links created successfully!"
-echo "Usage: cd a (data), cd n (analysis), cd p (report), etc."
+echo "Usage: cd a (data), cd n (analysis), cd p (paper), etc."
 echo "To remove all links: ./navigation_scripts.sh --clean"
 EOF
 
@@ -248,12 +241,12 @@ EOF
 # Returns: 0 if all directories exist, 1 if any are missing
 validate_directory_structure() {
     local -r required_dirs=(
-        "R" "man" "tests/testthat" "vignettes" "data" "data/raw_data"
-        "data/derived_data" "data/metadata" "data/validation" "analysis"
-        "analysis/report" "analysis/figures" "analysis/tables" "analysis/templates"
-        "scripts" "archive" "docs" ".github/workflows"
+        "R" "man" "tests/testthat" "vignettes" "data" "analysis"
+        "analysis/data" "analysis/data/raw_data" "analysis/data/derived_data"
+        "analysis/paper" "analysis/figures" "analysis/tables" "analysis/templates"
+        "analysis/scripts" "docs" ".github/workflows"
     )
-    
+
     validate_directories_exist "Directory structure" "${required_dirs[@]}"
 }
 
@@ -262,34 +255,31 @@ validate_directory_structure() {
 show_structure_summary() {
     log_info "Project structure summary:"
     cat << 'EOF'
-📁 PROJECT STRUCTURE CREATED:
+📁 PROJECT STRUCTURE CREATED (rrtools framework):
 
 ├── R/                     # Package functions (exported to users)
-├── man/                   # Manual pages (generated by roxygen2)  
+├── man/                   # Manual pages (generated by roxygen2)
 ├── tests/testthat/        # Unit tests using testthat framework
 ├── vignettes/             # Package vignettes and tutorials
-├── data/                  # Data management
-│   ├── raw_data/          # Original, unmodified datasets
-│   ├── derived_data/      # Processed, analysis-ready data
-│   ├── metadata/          # Data dictionaries and documentation
-│   └── validation/        # Data quality reports
-├── analysis/              # Research analysis workflow
-│   ├── report/             # Research paper (Rmd → PDF)
+├── data/                  # R package data (for distribution)
+├── analysis/              # Research analysis workflow (rrtools)
+│   ├── data/              # Research data
+│   │   ├── raw_data/      # Original, unmodified datasets
+│   │   └── derived_data/  # Processed, analysis-ready data
+│   ├── paper/             # Research paper (Rmd → PDF)
 │   ├── figures/           # Generated plots and visualizations
 │   ├── tables/            # Generated statistical tables
 │   ├── templates/         # Analysis templates
 │   └── scripts/           # Working R scripts and exploration
-├── archive/               # Archived files and old versions
 ├── docs/                  # Project documentation
-├── .github/workflows/     # GitHub Actions CI/CD pipelines
-└── Symbolic links (a→data, n→analysis, p→paper, etc.)
+└── .github/workflows/     # GitHub Actions CI/CD pipelines
 
 🔗 QUICK NAVIGATION:
-   cd a  →  data/           cd n  →  analysis/
-   cd f  →  figures/        cd t  →  tables/
-   cd s  →  analysis/scripts/   cd p  →  analysis/report/
-   cd m  →  man/            cd e  →  tests/
-   cd o  →  docs/           cd c  →  archive/
+   cd a  →  analysis/data/      cd n  →  analysis/
+   cd f  →  analysis/figures/   cd t  →  analysis/tables/
+   cd s  →  analysis/scripts/   cd p  →  analysis/paper/
+   cd m  →  man/                cd e  →  tests/
+   cd o  →  docs/
 EOF
 }
 

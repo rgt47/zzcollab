@@ -89,7 +89,7 @@ docker-vignettes: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/report/report.Rmd')"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/paper/paper.Rmd')"
 
 docker-check-renv:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::status()"

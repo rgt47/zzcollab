@@ -118,7 +118,7 @@ show_collaboration_guidance() {
     log_info "  git clone https://github.com/${github_account}/${project_name}.git"
     log_info "  cd ${project_name}"
     if [[ -n "$TEAM_NAME" ]]; then
-        log_info "  zzcollab -t ${TEAM_NAME} -p ${project_name} -I shell -d ~/dotfiles"
+        log_info "  zzcollab -t ${TEAM_NAME} -p ${project_name} --use-team-image -d ~/dotfiles"
     else
         log_info "  zzcollab -d ~/dotfiles"
     fi

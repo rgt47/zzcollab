@@ -309,7 +309,7 @@ show_cicd_summary() {
 - Artifacts: test results and check logs
 
 📄 Report Rendering:
-- Triggers: changes to analysis/report/, R/ directories
+- Triggers: changes to analysis/paper/, R/ directories
 - Actions: render report.Rmd to PDF
 - Artifacts: downloadable PDF from Actions tab
 - Integration: automatic on manuscript updates

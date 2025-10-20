@@ -981,7 +981,7 @@ zzcollab --config set profile-name "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Now joining team projects is simple:
-zzcollab -t labteam -p study -I rstudio
+zzcollab -t labteam -p study --use-team-image
 # Uses your dotfiles automatically!
 
 Example 4: Minimal Build for Speed
@@ -1512,22 +1512,23 @@ EXPLANATION:
 SOLUTION:
   # Team lead: Use minimal/generic dotfiles for team images
   # Team members: Use their own dotfiles when joining
-  
+
   Team lead builds images:
-    zzcollab -i -t TEAM -p PROJECT -d ~/dotfiles-minimal
-  
+    zzcollab -t TEAM -p PROJECT -d ~/dotfiles-minimal
+
   Team member joins with their dotfiles:
-    zzcollab -t TEAM -p PROJECT -I shell -d ~/my-dotfiles
+    zzcollab -t TEAM -p PROJECT --use-team-image -d ~/my-dotfiles
 
 ISSUE 6: "Changes to dotfiles don't appear in container"
 
 CAUSE:
   Dotfiles copied during IMAGE BUILD, not container start
-  
+
 SOLUTION:
   Must rebuild Docker image to pick up dotfile changes:
     cd ~/projects/my-project
-    zzcollab -t TEAM -p PROJECT -I shell -d ~/dotfiles  # Rebuild
+    zzcollab -t TEAM -p PROJECT -d ~/dotfiles  # Rebuild
+    make docker-build
 
   Alternative: Mount dotfiles for testing (advanced)
     docker run -v ~/dotfiles/zshrc:/home/analyst/.zshrc ...
@@ -1750,7 +1751,7 @@ git clone https://github.com/team/project.git
 cd project
 
 # Start container
-zzcollab -t team -p project -I rstudio
+zzcollab -t team -p project --use-team-image
 make docker-rstudio
 
 # In RStudio:
@@ -2372,12 +2373,14 @@ zzcollab -p analysis
 
 Team Collaboration:
 ──────────────────────────────────────────────────────────────────────────
-# Team lead: Build comprehensive base image once
-zzcollab -i -t mylab -p baseimage -C -B rstudio
+# Team lead: Build team image with profile once
+zzcollab -t mylab -p baseimage --profile-name analysis
+make docker-build
+make docker-push-team
 
-# Team members: Reuse comprehensive image
-zzcollab -t mylab -p study -I rstudio
-# Inherits all 47+ packages from baseimage
+# Team members: Reuse team image
+zzcollab -t mylab -p study --use-team-image
+# Inherits all packages from team image
 
 ═══════════════════════════════════════════════════════════════════════════
 CHANGING BUILD MODES
@@ -2393,9 +2396,10 @@ zzcollab --config set profile-name "analysis"
 
 Upgrading Existing Project:
 ──────────────────────────────────────────────────────────────────────────
-# Project created with minimal, want comprehensive:
+# Project created with minimal, want different profile:
 cd myproject
-zzcollab -p myproject -C  # Rebuild with comprehensive mode
+zzcollab -p myproject --profile-name analysis  # Rebuild with analysis profile
+make docker-build
 
 # Docker image rebuilt with new packages
 # Project files unchanged
@@ -2430,15 +2434,17 @@ Advantage: Only install what you actually use
 
 Strategy 2: Reusable Team Base Image
 ──────────────────────────────────────────────────────────────────────────
-# Build comprehensive image once (15-20 minutes)
-zzcollab -i -t myname -p base -C -B rstudio
+# Build team image with profile once (15-20 minutes)
+zzcollab -t myname -p base --profile-name analysis
+make docker-build
+make docker-push-team
 
 # All projects reuse base (~30 seconds each)
 mkdir project1 && cd project1
-zzcollab -t myname -p project1 -I rstudio  # Fast!
+zzcollab -t myname -p project1 --use-team-image  # Fast!
 
-mkdir ../project2 && cd ../project2  
-zzcollab -t myname -p project2 -I rstudio  # Fast!
+mkdir ../project2 && cd ../project2
+zzcollab -t myname -p project2 --use-team-image  # Fast!
 
 Total time for 3 projects: ~16 minutes
 Traditional approach: 45-60 minutes (3 × 15-20 min)
@@ -2512,16 +2518,18 @@ Check configuration:
 Check project DESCRIPTION file:
   grep "BuildMode" DESCRIPTION
 
-Issue: "Want different mode for one project"
+Issue: "Want different profile for one project"
 ──────────────────────────────────────────────────────────────────────────
 Override default with flag:
-  zzcollab -p special-project -C  # Use comprehensive this once
+  zzcollab -p special-project --profile-name publishing  # Use publishing profile this once
+  make docker-build
 
 Issue: "Team members have different package sets"
 ──────────────────────────────────────────────────────────────────────────
-Coordinate on build mode:
-  Team lead: zzcollab -i -t team -p project -S
-  Members: zzcollab -t team -p project -I rstudio
+Coordinate on profile:
+  Team lead: zzcollab -t team -p project --profile-name analysis
+  Team lead: make docker-build && make docker-push-team
+  Members: zzcollab -t team -p project --use-team-image
   Everyone: renv::restore() to sync additional packages
 
 ═══════════════════════════════════════════════════════════════════════════

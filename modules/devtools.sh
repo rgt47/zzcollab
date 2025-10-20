@@ -457,11 +457,11 @@ IMPORTANT: You must create a zzcollab PROJECT first (not use this source repo).
    cd ~/projects   # Or wherever you keep your work
 
 2. Create a new zzcollab project:
-   zzcollab -i -t TEAMNAME -p PROJECTNAME -B rstudio -S -d ~/dotfiles
-
-3. Set up project structure:
    mkdir PROJECTNAME && cd PROJECTNAME
-   zzcollab -t TEAMNAME -p PROJECTNAME -I rstudio -d ~/dotfiles
+   zzcollab -t TEAMNAME -p PROJECTNAME --profile-name analysis -d ~/dotfiles
+
+3. Build Docker image:
+   make docker-build
 
 4. Start development in your PROJECT directory:
    make docker-rstudio    # RStudio at localhost:8787
@@ -542,11 +542,11 @@ dev_test() {
 dev_render() {
     log_info "Rendering research report..."
     
-    if [[ -f "analysis/report/report.Rmd" ]]; then
-        Rscript -e "rmarkdown::render('\''analysis/report/report.Rmd'\'')" || log_error "Report rendering failed"
+    if [[ -f "analysis/paper/report.Rmd" ]]; then
+        Rscript -e "rmarkdown::render('\''analysis/paper/report.Rmd'\'')" || log_error "Report rendering failed"
         log_info "Report rendered successfully!"
     else
-        log_error "No report.Rmd found in analysis/report/"
+        log_error "No report.Rmd found in analysis/paper/"
     fi
 }
 
