@@ -97,3 +97,6 @@ ENV/
 node_modules/
 npm-debug.log*
 temp
+
+# Example/test projects (should be in separate repos)
+png1/
