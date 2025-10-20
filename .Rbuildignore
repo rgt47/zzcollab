@@ -40,7 +40,7 @@
 ^vignettes/\.claude$
 ^vignettes/paper\.Rmd$
 ^.*_PLAN\.md$
-^.*_AUDIT\.md$
+^.*_AUDIT.*\.md$
 ^.*_REPORT\.md$
 ^.*_SUMMARY\.md$
 ^.*_FINDINGS\.md$
