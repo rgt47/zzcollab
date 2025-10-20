@@ -22,7 +22,9 @@ make docker-rstudio
 
 **🐳 CONTAINER (Browser)**:
 - Browser opens at `localhost:8787`
-- Login: analyst / analyst
+- **Login**: Set password when starting container (see Security section below)
+  - Start with: `docker run -e PASSWORD=yourpassword ...` (via Makefile)
+  - Or disable auth: `docker run -e RSTUDIO_AUTH=none ...` (local use only)
 - You're now in RStudio running in Docker
 
 ### During the Day: Doing Your Analysis
@@ -417,8 +419,44 @@ make docker-render
 
 ---
 
+## Security: RStudio Authentication
+
+**IMPORTANT**: ZZCOLLAB containers do not set default passwords for security.
+
+### Setting Up RStudio Access
+
+**Option 1: Set password via environment variable** (Recommended)
+```bash
+# Modify Makefile or run directly:
+docker run -e PASSWORD=your_secure_password -p 8787:8787 your-image
+```
+
+**Option 2: Disable authentication** (Local development only)
+```bash
+docker run -e RSTUDIO_AUTH=none -p 8787:8787 your-image
+```
+
+**Option 3: Set password in running container**
+```bash
+docker exec -it container_name bash
+echo "analyst:your_password" | chpasswd
+exit
+```
+
+### Security Best Practices
+
+- ✅ Use strong passwords if running on shared systems
+- ✅ Never expose RStudio to the internet without HTTPS and authentication
+- ✅ Containers are for local development, not production deployment
+- ✅ Keep containers updated by rebuilding with latest base images
+
+For more details, see README.md "Security Considerations" section.
+
+---
+
 ## See Also
 
 - `zzcollab --help` - Quick start guide
 - `zzcollab --help troubleshooting` - Fix common problems
 - `zzcollab --help renv` - Package management
+- README.md - Security considerations

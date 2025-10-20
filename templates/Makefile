@@ -2,10 +2,14 @@
 # Docker-first workflow for reproducible research
 
 PACKAGE_NAME = ${PKG_NAME}
-R_VERSION = latest
+R_VERSION = ${R_VERSION}
 TEAM_NAME = ${TEAM_NAME}
 PROJECT_NAME = ${PROJECT_NAME}
 DOCKERHUB_ACCOUNT = ${DOCKERHUB_ACCOUNT}
+
+# Git-based versioning for reproducibility (use git SHA or date)
+GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo "$(shell date +%Y%m%d)")
+IMAGE_TAG = $(GIT_SHA)
 
 # Help target (default)
 help:
@@ -67,11 +71,12 @@ docker-build:
 	DOCKER_BUILDKIT=1 docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 docker-push-team:
-	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):latest"
-	docker tag $(PACKAGE_NAME) $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):latest
+	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
+	docker tag $(PACKAGE_NAME) $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
 	@echo "Pushing to Docker Hub..."
-	docker push $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):latest
-	@echo "✅ Team image pushed successfully"
+	docker push $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
+	@echo "✅ Team image pushed: $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
+	@echo "   Team members should update .zzcollab_team_setup to reference this tag"
 
 docker-document:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::document()"

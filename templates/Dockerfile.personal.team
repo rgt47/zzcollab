@@ -1,4 +1,4 @@
-FROM ${BASE_IMAGE}:latest
+FROM ${BASE_IMAGE}:${IMAGE_TAG}
 
 # Build arguments
 ARG TEAM_NAME=team

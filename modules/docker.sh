@@ -316,10 +316,22 @@ create_docker_files() {
         profile_name=$(grep "^profile_name=" ".zzcollab_team_setup" | cut -d= -f2)
 
         if [[ -n "$team_name" ]] && [[ -n "$project_name" ]] && [[ -n "$profile_name" ]]; then
-            # Construct team image name (without :latest tag, will be added by Dockerfile.personal template)
+            # Construct team image name
             team_base_image="${team_name}/${project_name}_core-${profile_name}"
             use_team_image=true
-            log_info "Detected team setup - using team image as base: ${team_base_image}:latest"
+
+            # Determine image tag for reproducibility
+            # Priority: 1) git SHA (most precise), 2) date stamp, 3) latest (fallback only)
+            local image_tag=""
+            if git rev-parse --short HEAD >/dev/null 2>&1; then
+                image_tag=$(git rev-parse --short HEAD)
+                log_info "Detected team setup - using team image: ${team_base_image}:${image_tag} (git SHA)"
+            else
+                image_tag=$(date +%Y%m%d)
+                log_warn "No git repository - using date-based tag: ${team_base_image}:${image_tag}"
+                log_warn "Consider using git for better reproducibility tracking"
+            fi
+            export IMAGE_TAG="$image_tag"
         fi
     fi
 

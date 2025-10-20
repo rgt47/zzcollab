@@ -55,6 +55,40 @@ jobs:
           shellcheck --severity=warning "$file"
         done
         
+    - name: Check for :latest defaults (CRITICAL for reproducibility)
+      run: |
+        echo "Checking for :latest Docker tag defaults in critical files..."
+
+        # Files that should NEVER have :latest defaults
+        CRITICAL_FILES=(
+          "templates/Dockerfile.unified"
+          "templates/Dockerfile.personal.team"
+          "templates/Makefile"
+        )
+
+        VIOLATIONS=0
+        for file in "${CRITICAL_FILES[@]}"; do
+          if [ -f "$file" ]; then
+            echo "Checking $file..."
+            # Look for problematic :latest patterns
+            if grep -n "=latest\|:latest" "$file" | grep -v "# \|@echo\|IMAGE_TAG"; then
+              echo "❌ ERROR: Found :latest default in $file"
+              ((VIOLATIONS++))
+            else
+              echo "✓ $file OK (no :latest defaults)"
+            fi
+          fi
+        done
+
+        if [ $VIOLATIONS -gt 0 ]; then
+          echo ""
+          echo "❌ FAILED: Found $VIOLATIONS file(s) with :latest defaults"
+          echo "This breaks reproducibility! Docker images must be version-pinned."
+          exit 1
+        fi
+
+        echo "✓ All critical files OK - no :latest defaults found"
+
     - name: Generate ShellCheck report
       run: |
         echo "Generating comprehensive ShellCheck report..."
