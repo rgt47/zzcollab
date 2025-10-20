@@ -100,15 +100,9 @@ jobs:
       run: |
         cd test-project
 
-        # Build with BuildKit
+        # zzcollab already created the Dockerfile with all variables substituted
+        # Just build it directly
         DOCKER_BUILDKIT=1 docker build \
-          --build-arg R_VERSION=${{ matrix.r_version }} \
-          --build-arg BASE_IMAGE=rocker/r-ver \
-          --build-arg LIBS_BUNDLE=${{ matrix.profile }} \
-          --build-arg PKGS_BUNDLE=${{ matrix.profile }} \
-          --build-arg TEAM_NAME=test \
-          --build-arg PROJECT_NAME=testproject \
-          --build-arg USERNAME=analyst \
           --tag testproject:test \
           .
 
