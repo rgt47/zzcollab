@@ -49,7 +49,8 @@
       "Bash(gh run view:*)",
       "Bash(shellcheck:*)",
       "Bash(zzcollab.sh)",
-      "Bash(bats -f \"config_list displays all configuration values\" tests/shell/test-config.bats)"
+      "Bash(bats -f \"config_list displays all configuration values\" tests/shell/test-config.bats)",
+      "Bash(gh run list --limit 3)"
     ],
     "deny": []
   }
