@@ -181,20 +181,16 @@ make docker-zsh
 Team members can add packages independently:
 
 ```bash
-# Inside Docker container (R prompt)
+# Inside Docker container
 renv::install("ggplot2")
 renv::install("dplyr")
-# ... do your analysis work ...
-quit()
 
-# Exit container
+# Save to renv.lock
+renv::snapshot()
+
+# Exit and commit
 exit
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
-
-# Commit
-git add renv.lock DESCRIPTION
+git add renv.lock
 git commit -m "Add ggplot2 and dplyr packages"
 git push
 ```
@@ -254,10 +250,8 @@ renv::restore()
 # 1. Pull latest changes
 git pull
 
-# 2. Restore packages and work on analysis
+# 2. Restore packages
 make docker-zsh
-
-# Inside container (R prompt):
 renv::restore()
 
 # 3. Work on analysis
@@ -265,17 +259,11 @@ renv::restore()
 
 # 4. Add any new packages needed
 renv::install("newpackage")
-# ... continue your analysis ...
-quit()
+renv::snapshot()
 
-# 5. Exit container
+# 5. Commit and push
 exit
-
-# 6. Validate dependencies
-Rscript validate_package_environment.R --fix
-
-# 7. Commit and push
-git add renv.lock DESCRIPTION .
+git add .
 git commit -m "Add analysis for aim 2"
 git push
 ```
@@ -325,20 +313,12 @@ docker pull myteam/study:latest
 
 ```bash
 # Anyone can add:
-make docker-zsh
-# Inside container (R prompt):
 renv::install("tidyverse")
-# ... do work ...
-quit()
-exit
-Rscript validate_package_environment.R --fix
-git add renv.lock DESCRIPTION
-git commit -m "Add tidyverse"
+renv::snapshot()
 git push
 
 # Everyone syncs:
 git pull
-make docker-zsh
 renv::restore()
 ```
 
@@ -450,7 +430,7 @@ renv::restore()  # Install all packages
 ### For Team Members
 
 1. **Pull Before Push**: Always `git pull` before starting work
-2. **Validate Regularly**: Run `validate_package_environment.R --fix` after adding packages
+2. **Snapshot Regularly**: Run `renv::snapshot()` after adding packages
 3. **Don't Build Locally**: Use `--use-team-image` for consistency
 4. **Test Packages**: Ensure packages work before committing renv.lock
 5. **Communicate**: Mention major package additions in commits

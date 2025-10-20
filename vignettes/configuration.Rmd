@@ -29,7 +29,7 @@ ZZCOLLAB's configuration system provides flexible control over Docker environmen
 - **Multi-layered configuration**: User, project, system, and built-in defaults
 - **Docker profile system**: 14+ specialized environments from 200MB to 3.5GB
 - **Dynamic package management**: Add packages via `renv::install()` as needed
-- **Two-layer architecture**: Docker environment specification + renv packages
+- **Two-layer architecture**: Docker profiles (team/shared) + renv packages (personal/flexible)
 - **CLI and R interfaces**: Work via command line or entirely within R/RStudio
 
 ## Configuration Philosophy
@@ -382,12 +382,9 @@ zzcollab --check-team-image
 ```
 
 **Team Image Workflow**:
-1. Team lead commits Dockerfile to repository
-2. Team lead optionally pushes image: `make docker-build && make docker-push-team` (for faster team setup)
-3. Team members either:
-   - Pull pre-built image: `zzcollab --use-team-image` (faster)
-   - Build from Dockerfile: `make docker-build` (slower, works without Docker Hub)
-4. Everyone has identical Docker environment from same Dockerfile specification
+1. Team lead builds and pushes: `make docker-build && make docker-push-team`
+2. Team members pull: `zzcollab --use-team-image`
+3. Everyone has identical Docker environment
 
 ### Configuration File Override
 
@@ -712,20 +709,16 @@ make docker-push-team
 # Inside container
 make docker-zsh
 
-# Inside container (R prompt): Install packages as needed
+# Install packages as needed
 renv::install("tidymodels")
 renv::install("pins")
 renv::install("vetiver")
-# ... do your work ...
-quit()
 
-# Back at shell - exit container
+# Save to renv.lock
+renv::snapshot()
+
+# Exit and commit
 exit
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
-
-# Commit
 git add renv.lock DESCRIPTION
 git commit -m "Add ML deployment packages"
 git push
@@ -756,16 +749,9 @@ cd rnaseq-study
 zzcollab --use-team-image
 make docker-zsh
 
-# Inside container (R prompt): Add RNA-seq specific packages
+# Add RNA-seq specific packages
 renv::install(c("tximport", "DESeq2", "apeglm", "EnhancedVolcano"))
-# ... do RNA-seq analysis ...
-quit()
-
-# Back at shell - exit container
-exit
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
+renv::snapshot()
 ```
 
 **Team Member Bob (Layer 2 - ChIP-seq)**:
@@ -775,16 +761,9 @@ cd chipseq-study
 zzcollab --use-team-image
 make docker-zsh
 
-# Inside container (R prompt): Add ChIP-seq specific packages
+# Add ChIP-seq specific packages
 renv::install(c("ChIPseeker", "ChIPpeakAnno", "DiffBind", "csaw"))
-# ... do ChIP-seq analysis ...
-quit()
-
-# Back at shell - exit container
-exit
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
+renv::snapshot()
 ```
 
 **Result**:
@@ -969,17 +948,8 @@ zzcollab --use-team-image  # Gets appropriate base image
 
 # Add analysis-specific packages
 make docker-zsh
-
-# Inside container (R prompt):
 renv::install("workflow_specific_package")
-# ... do analysis ...
-quit()
-
-# Back at shell - exit container
-exit
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
+renv::snapshot()
 ```
 
 ## Scenario 4: Data Science Consulting Firm
@@ -1022,16 +992,9 @@ zzcollab -t datasci-firm -p client-churn --profile-name modeling
 # Team base image provides foundation
 make docker-zsh
 
-# Inside container (R prompt): Add client-specific packages
+# Add client-specific packages
 renv::install(c("probably", "workflowsets", "themis"))
-# ... do client analysis ...
-quit()
-
-# Back at shell - exit container
-exit
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
+renv::snapshot()
 
 # All projects use same Q1 2025 foundation
 # Client-specific packages in renv.lock
@@ -1430,16 +1393,9 @@ zzcollab --use-team-image
 
 **Package management**:
 ```bash
-# Inside container (R prompt):
+# Inside container:
 renv::install("package")
-# ... do your work ...
-quit()
-
-# Back at shell - exit container
-exit
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
+renv::snapshot()
 ```
 
 ## Further Reading

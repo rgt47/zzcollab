@@ -171,9 +171,6 @@ if [[ "${CONFIG_COMMAND:-false}" == "true" ]]; then
     if [[ -f "$MODULES_DIR/config.sh" ]]; then
         source "$MODULES_DIR/config.sh" >/dev/null 2>&1
 
-        # Initialize config system to load values from files
-        init_config_system
-
         # Call handle_config_command with subcommand and args
         if [[ ${#CONFIG_ARGS[@]} -gt 0 ]]; then
             handle_config_command "${CONFIG_SUBCOMMAND}" "${CONFIG_ARGS[@]}"

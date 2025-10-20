@@ -93,9 +93,8 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 
 **Configuration Options Explained:**
 
-- **profile-name**: Controls Docker environment specification
+- **profile-name**: Controls Docker environment (team/shared)
   - Options: minimal, rstudio, analysis, bioinformatics, geospatial, etc.
-  - See full list: `zzcollab --list-profiles`
   - Leave empty for minimal profile (default)
   - Can also set libs-bundle and pkgs-bundle for custom composition
 
@@ -342,23 +341,9 @@ Rscript -e 'renv::install("dplyr")'
 # Render the report
 Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 
-# Exit container
-exit
-
-# Back at shell: Validate dependencies (thorough approach)
-Rscript validate_package_environment.R --fix
+# Save dependencies
+Rscript -e 'renv::snapshot()'
 ```
-
-**Best Practice: Comprehensive Dependency Validation**
-
-After completing your work in the container, run `validate_package_environment.R` once to comprehensively validate all dependencies. This is a thorough version of `renv::snapshot()` that:
-- Scans all R code for package references
-- Validates package names against CRAN/Bioconductor/GitHub (catches typos!)
-- Updates DESCRIPTION file (adds missing packages, removes invalid ones)
-- Identifies unused packages for cleanup
-- Then calls `renv::snapshot()` to update renv.lock
-
-This comprehensive approach ensures consistency between your code, DESCRIPTION, and renv.lock before committing.
 
 ## Step 5: Add Unit Tests - Level 4 (2 minutes)
 
@@ -780,28 +765,30 @@ test_that("model includes species interaction", {
 
 ### Team Lead Workflow
 
-Create a team project and share the Docker specification:
+Create a team project and share the Docker image:
 
 ```bash
 # Option 1: Set team config once
 zzcollab --config set team-name "genomicslab"
 zzcollab --config set profile-name "bioinformatics"
 
-# Create team project structure (generates Dockerfile with profile)
+# Create team project structure
 mkdir study && cd study
 zzcollab -t genomicslab -p study --profile-name bioinformatics
 
 # Customize Dockerfile if needed (optional)
 vim Dockerfile
 
+# Build team Docker image
+make docker-build
+
+# Push team image to Docker Hub
+make docker-push-team
+
 # Commit and push project structure to GitHub
 git add .
 git commit -m "Initial project setup with bioinformatics profile"
 git push -u origin main
-
-# Optional: Build and push team image to Docker Hub for faster team setup
-make docker-build
-make docker-push-team
 
 # Share with collaborators
 gh repo edit --add-collaborator username
@@ -813,26 +800,23 @@ gh repo edit --add-collaborator username
 # Option 2: Custom composition with bundles
 mkdir study && cd study
 zzcollab -t genomicslab -p study -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
-
-# Commit Dockerfile to GitHub
+make docker-build
+make docker-push-team
 git add .
 git commit -m "Initial project setup with custom bioinfo composition"
 git push -u origin main
-
-# Optional: Build and push image for faster team setup
-make docker-build
-make docker-push-team
 ```
 
 **Team Lead Responsibilities:**
-1. Creates complete project structure with chosen Docker profile (generates Dockerfile)
-2. Commits and pushes Dockerfile to GitHub repository
-3. Adds collaborators to GitHub repository
-4. Optionally: Builds and pushes Docker image to Docker Hub for faster team member setup
+1. Creates complete project structure with chosen Docker profile
+2. Builds team Docker image with all necessary dependencies
+3. Pushes team image to Docker Hub for team members to access
+4. Commits and pushes project structure to GitHub
+5. Adds collaborators to GitHub repository
 
 **Profile Selection for Teams:**
-- Team lead chooses Docker profile (bioinformatics, geospatial, etc.) which generates the Dockerfile
-- All team members get identical Docker environment from the Dockerfile (either by building it or pulling pre-built image)
+- Team lead chooses Docker profile (bioinformatics, geospatial, etc.)
+- All team members get identical Docker environment via team image
 - Team members add packages dynamically using `renv::install()` as needed
 
 ### Team Member Workflow
@@ -840,62 +824,45 @@ make docker-push-team
 Clone and join the team project:
 
 ```bash
-# Clone the repository (gets the Dockerfile)
+# Clone the repository
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Option 1: Pull pre-built image (faster, if team lead pushed one)
+# Pull and use team Docker image
 zzcollab --use-team-image
-make docker-zsh
 
-# Option 2: Build from Dockerfile (slower, works without Docker Hub)
-make docker-build
+# Enter identical development environment
 make docker-zsh
 ```
 
 **What happens for team members:**
-1. Clone gets the Dockerfile committed by team lead
-2. Either pull pre-built image (`--use-team-image`) OR build from Dockerfile (`make docker-build`)
-3. Everyone gets identical Docker environment from the same Dockerfile specification
-4. Add packages to analysis via `renv::install()` inside the container
+1. `--use-team-image` flag pulls team image from Docker Hub (e.g., `genomicslab/study:latest`)
+2. Team image has the Docker profile chosen by team lead (e.g., bioinformatics)
+3. Uses the exact same Docker environment as team lead
+4. Add packages as needed using `renv::install()` inside the container
 
-**Adding Packages to Analysis:**
+**Environment Consistency:**
+- **Docker environment**: Identical for all team members (from team image via `--use-team-image`)
+- **Package management**: Add packages dynamically with `renv::install()` as needed
 
-Team members can add R packages to the analysis (updates renv.lock and DESCRIPTION):
+### Adding Packages to Team Environment
+
+Team members can add additional R packages to their personal Docker layer:
 
 ```bash
-# Enter container
-make docker-zsh
+# Add modeling packages on top of team image
+zzcollab -t genomicslab -p study --pkgs modeling
 
-# Inside container (R prompt): Add packages for your analysis
-library(devtools)  # or whatever packages you're working with
-renv::install("tidymodels")
-# ... do your analysis work ...
-quit()
-
-# Exit container - back at shell
-exit
-
-# Validate dependencies before committing
-Rscript validate_package_environment.R --fix
-
-# Commit changes
-git add renv.lock DESCRIPTION
-git commit -m "Add tidymodels for modeling workflow"
-git push
+# This installs modeling packages in your personal Docker layer
+# Team image remains unchanged
 ```
 
-**Why validate_package_environment.R?**
-- Scans code to find all package references (not just what you manually installed)
-- Validates package names (catches typos before they break CI/CD)
-- Updates DESCRIPTION file automatically
-- Then updates renv.lock via `renv::snapshot()`
-- Ensures consistency across code, DESCRIPTION, and renv.lock
-- Run once per session after completing your work
-
-**Team member permissions:**
-- ✗ Cannot modify Docker image specification (Dockerfile, profile, base image, system libraries)
-- ✓ Can add R packages to analysis via `renv::install()` (updates renv.lock only)
+**Team member restrictions:**
+- ✗ Cannot change Docker profile (use `--profile-name`)
+- ✗ Cannot change base image (use `-b`)
+- ✗ Cannot add system libraries (use `--libs`)
+- ✓ Can add R packages to Docker (use `--pkgs`)
+- ✓ Can add packages to renv.lock (use `renv::install()` in container)
 
 ## Publish Results
 
@@ -1115,15 +1082,13 @@ zzcollab --use-team-image
 # Enter container and add packages
 make docker-zsh
 
-# Inside container (R prompt) - Alice adds modeling packages
+# Inside container - Alice adds modeling packages
 renv::install("tidymodels")
-# ... Alice does her work ...
-quit()
+renv::snapshot()
 
-exit  # Back to shell
-
-# Validate dependencies
-Rscript validate_package_environment.R --fix
+# Bob adds geospatial packages
+renv::install("sf")
+renv::snapshot()
 ```
 
 **Result**:
@@ -1139,21 +1104,21 @@ Rscript validate_package_environment.R --fix
 # Alice adds modeling packages
 make docker-zsh
 
-# Inside container (R prompt):
+# Inside container:
 renv::install("tidymodels")
-# ... Alice does her modeling work ...
+renv::snapshot()
 quit()
 
-# Back at shell - exit container
+# Exit container
 exit
 
-# Validate dependencies (scans all code, updates DESCRIPTION and renv.lock)
-Rscript validate_package_environment.R --fix
+# STEP 1: Validate dependencies (RECOMMENDED - prevents CI failures)
+make check-renv-ci
 
-# Run tests to ensure nothing broke
+# STEP 2: Run tests to ensure nothing broke
 make docker-test
 
-# Commit if tests passed
+# STEP 3: Commit if validation passed
 git add renv.lock DESCRIPTION
 git commit -m "Add tidymodels for modeling workflow"
 git push
@@ -1162,21 +1127,21 @@ git push
 git pull  # Gets Alice's changes
 make docker-zsh
 
-# Inside container (R prompt):
+# Inside container:
 renv::install("sf")
-# ... Bob does his geospatial work ...
+renv::snapshot()  # renv.lock now has tidymodels + sf
 quit()
 
-# Back at shell - exit container
+# Exit container
 exit
 
-# Validate dependencies (renv.lock now has tidymodels + sf)
-Rscript validate_package_environment.R --fix
+# STEP 1: Validate dependencies (catch issues before CI runs)
+make check-renv-ci
 
-# Test functionality
+# STEP 2: Test functionality
 make docker-test
 
-# Commit
+# STEP 3: Commit
 git add renv.lock DESCRIPTION
 git commit -m "Add sf for geospatial analysis"
 git push
