@@ -139,27 +139,49 @@ Created comprehensive integration test workflow (`integration-tests.yml`):
 ### Problem
 32% of codebase is documentation in shell scripts (3,596 lines in help_guides.sh). Difficult to maintain, poor version control diffs.
 
-### Solution (Planned)
+### Solution
 Move documentation from shell heredocs to markdown files in `docs/guides/`.
 
 ### Progress
 - ✅ Created `docs/guides/` directory structure
 - ✅ Created migration plan document
-- ⏳ Content extraction (pending)
+- ✅ Created docs/guides/README.md (guide index)
+- ✅ Migrated workflow.md (375 lines - 1 of 8 guides complete)
+- ⏳ 7 remaining guides (3,200+ lines)
 - ⏳ Update help_guides.sh functions (pending)
 - ⏳ Testing (pending)
 
+### What's Complete
+**workflow.md** (375 lines):
+- Daily development workflow
+- Host vs container operations
+- 5 common workflow patterns
+- File persistence
+- Project lifecycle examples
+- 12 Q&A items
+- Troubleshooting guide
+- Advanced patterns
+- Best practices
+
 ### Remaining Work
-- Extract 8 guides to markdown (~8 hours)
+- Extract 7 guides to markdown (~12 hours)
+  - troubleshooting.md
+  - config.md
+  - dotfiles.md
+  - renv.md
+  - docker.md
+  - cicd.md
+  - quickstart.md
 - Update help_guides.sh to read markdown (~4 hours)
 - Test all help commands (~2 hours)
-- Update documentation references (~2 hours)
 
-**Estimated completion**: 16 hours
+**Estimated completion**: 18 hours (was 16, adjusted for partial completion)
 
 ### Files Modified
-- `docs/FIX4_DOCUMENTATION_MIGRATION_PLAN.md` (created)
+- `docs/FIX4_DOCUMENTATION_MIGRATION_PLAN.md` (created, updated)
 - `docs/guides/` (directory created)
+- `docs/guides/README.md` (created)
+- `docs/guides/workflow.md` (created)
 
 ---
 
@@ -186,8 +208,10 @@ Move documentation from shell heredocs to markdown files in `docs/guides/`.
 ### Commits
 1. **9793a3e, 81ce524**: Fix #1 - Pin Docker versions
 2. **c71d561**: Fix #2 - Security improvements
-3. **7685a85**: Fix #3 - Integration tests
-4. **Pending**: Fix #4 - Documentation migration
+3. **7685a85**: Fix #3 - Integration tests (initial)
+4. **7abe9fd**: Fix #3 - Integration test bugfix (Docker build args)
+5. **28c4f2a**: Fix #4 - Documentation migration (partial - workflow.md)
+6. **Pending**: Fix #4 - Complete remaining 7 guides
 
 ---
 
