@@ -187,14 +187,13 @@ teardown() {
 # R VERSION DETECTION TESTS
 #=============================================================================
 
-@test "extract_r_version_from_lockfile returns 'latest' when renv.lock missing" {
+@test "extract_r_version_from_lockfile fails when renv.lock missing" {
     # No renv.lock file created
 
     run extract_r_version_from_lockfile
-    [ "$status" -eq 0 ]
-    # Get last line of output (function should only echo version)
-    local version=$(echo "$output" | tail -n 1)
-    [[ "$version" == "latest" ]]
+    [ "$status" -eq 1 ]
+    # Should output error message
+    [[ "$output" =~ "renv.lock not found" ]]
 }
 
 @test "extract_r_version_from_lockfile extracts version from valid renv.lock" {
@@ -220,7 +219,7 @@ EOF
     [[ "$version" == "4.3.1" ]]
 }
 
-@test "extract_r_version_from_lockfile handles missing R.Version field" {
+@test "extract_r_version_from_lockfile fails with missing R.Version field" {
     # Create renv.lock without R.Version
     cat > "renv.lock" << 'EOF'
 {
@@ -236,13 +235,12 @@ EOF
 EOF
 
     run extract_r_version_from_lockfile
-    [ "$status" -eq 0 ]
-    # Get last line of output (function should only echo version)
-    local version=$(echo "$output" | tail -n 1)
-    [[ "$version" == "latest" ]]
+    [ "$status" -eq 1 ]
+    # Should output error message about failed extraction
+    [[ "$output" =~ "Failed to extract R version" ]]
 }
 
-@test "extract_r_version_from_lockfile handles invalid JSON" {
+@test "extract_r_version_from_lockfile fails with invalid JSON" {
     # Create invalid JSON
     cat > "renv.lock" << 'EOF'
 {
@@ -252,10 +250,9 @@ EOF
 EOF
 
     run extract_r_version_from_lockfile
-    [ "$status" -eq 0 ]
-    # Get last line of output (function should only echo version)
-    local version=$(echo "$output" | tail -n 1)
-    [[ "$version" == "latest" ]]
+    [ "$status" -eq 1 ]
+    # Should output error message about failed extraction
+    [[ "$output" =~ "Failed to extract R version" ]]
 }
 
 @test "extract_r_version_from_lockfile returns 'latest' when python3 unavailable" {
@@ -347,8 +344,9 @@ EOF
     [ "$status" -eq 0 ]
 }
 
-@test "create_docker_files uses 'latest' when no renv.lock exists" {
+@test "create_docker_files fails when no renv.lock exists and no --r-version provided" {
     # No renv.lock created
+    # No USER_PROVIDED_R_VERSION set
 
     # Mock install_template
     function install_template() {
@@ -358,13 +356,22 @@ EOF
     export -f install_template
 
     run create_docker_files
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 1 ]
 
-    # R_VERSION should default to latest
-    [[ "${R_VERSION}" == "latest" ]]
+    # Should output error about missing R version
+    [[ "$output" =~ "Failed to determine R version" ]]
 }
 
 @test "create_docker_files handles team setup marker file" {
+    # Create renv.lock with R version
+    cat > "renv.lock" << 'EOF'
+{
+  "R": {
+    "Version": "4.3.1"
+  }
+}
+EOF
+
     # Create team setup marker
     cat > ".zzcollab_team_setup" << 'EOF'
 team_name=myteam
@@ -385,6 +392,15 @@ EOF
 }
 
 @test "create_docker_files uses default base image without team setup" {
+    # Create renv.lock with R version
+    cat > "renv.lock" << 'EOF'
+{
+  "R": {
+    "Version": "4.3.1"
+  }
+}
+EOF
+
     # No team setup marker
 
     # Mock install_template

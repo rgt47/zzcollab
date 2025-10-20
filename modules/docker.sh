@@ -330,8 +330,8 @@ create_docker_files() {
 
     if [[ "${USER_PROVIDED_R_VERSION:-false}" == "true" ]] && [[ -n "${R_VERSION:-}" ]]; then
         # User explicitly provided R version via --r-version flag
-        r_version="$R_VERSION"
-        log_info "Using user-specified R version: $r_version"
+        r_version="${R_VERSION}"
+        log_info "Using user-specified R version: ${r_version}"
     else
         # Try to extract from renv.lock (will fail if missing)
         if ! r_version=$(extract_r_version_from_lockfile); then
@@ -339,18 +339,18 @@ create_docker_files() {
             log_error "Docker builds require explicit R version for reproducibility"
             return 1
         fi
-        log_info "Using R version from renv.lock: $r_version"
+        log_info "Using R version from renv.lock: ${r_version}"
     fi
 
     # Validate R version format (should be like 4.4.0 or 4.3.1)
-    if [[ ! "$r_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "$r_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
-        log_warn "R version '$r_version' has unusual format (expected X.Y.Z)"
+    if [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        log_warn "R version '${r_version}' has unusual format (expected X.Y.Z)"
         log_warn "Proceeding anyway, but Docker build may fail"
     fi
 
     # Export R_VERSION for template substitution
     # This variable is used in Dockerfile template
-    export R_VERSION="$r_version"
+    export R_VERSION="${r_version}"
 
     # Set BASE_IMAGE for template substitution
     if [[ "$use_team_image" == "true" ]]; then

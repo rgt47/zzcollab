@@ -1,5 +1,5 @@
 ARG BASE_IMAGE=rocker/r-ver
-ARG R_VERSION=latest
+ARG R_VERSION
 FROM ${BASE_IMAGE}:${R_VERSION}
 
 # Build arguments for package selection
