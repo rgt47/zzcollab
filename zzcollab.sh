@@ -867,12 +867,17 @@ execute_project_creation_workflow() {
 # Function: finalize_and_report_results  
 # Purpose: Complete setup with Docker build, renv, GitHub, and reporting
 finalize_and_report_results() {
-    # Extract R version for Docker build
-    log_info "🔍 Detecting R version..."
-    R_VERSION=$(extract_r_version_from_lockfile)
-    export R_VERSION
-    log_info "Using R version: $R_VERSION"
-    
+    # Determine R version for Docker build
+    # Priority: 1) User-provided --r-version, 2) renv.lock
+    if [[ "${USER_PROVIDED_R_VERSION:-false}" != "true" ]]; then
+        log_info "🔍 Detecting R version from renv.lock..."
+        R_VERSION=$(extract_r_version_from_lockfile)
+        export R_VERSION
+        log_info "Using R version: $R_VERSION"
+    else
+        log_info "Using user-specified R version: $R_VERSION"
+    fi
+
     # Install uninstall script
     install_uninstall_script
     
