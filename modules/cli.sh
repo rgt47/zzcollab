@@ -254,7 +254,7 @@ parse_cli_arguments() {
                 export ENABLE_LOG_FILE=true
                 shift
                 ;;
-            --log-file)
+            --log-file|-w)
                 export ENABLE_LOG_FILE=true
                 shift
                 ;;
@@ -331,25 +331,25 @@ parse_cli_arguments() {
                     shift
                 fi
                 ;;
-            --profile-name)
+            --profile-name|-r)
                 require_arg "$1" "$2"
                 PROFILE_NAME="$2"
                 USER_PROVIDED_PROFILE=true
                 shift 2
                 ;;
-            --libs)
+            --libs|-l)
                 require_arg "$1" "$2"
                 LIBS_BUNDLE="$2"
                 USER_PROVIDED_LIBS=true
                 shift 2
                 ;;
-            --pkgs)
+            --pkgs|-k)
                 require_arg "$1" "$2"
                 PKGS_BUNDLE="$2"
                 USER_PROVIDED_PKGS=true
                 shift 2
                 ;;
-            --tag)
+            --tag|-a)
                 require_arg "$1" "$2"
                 IMAGE_TAG="$2"
                 shift 2
@@ -370,7 +370,7 @@ parse_cli_arguments() {
                 SKIP_CONFIRMATION=true
                 shift
                 ;;
-            --use-team-image)
+            --use-team-image|-u)
                 USE_TEAM_IMAGE=true
                 shift
                 ;;

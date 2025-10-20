@@ -166,19 +166,19 @@ OPTIONS:
     -t, --team NAME              Team name (Docker Hub namespace for images)
     -p, --project-name NAME      Project name (directory and package name)
     -g, --github-account NAME    GitHub account (default: same as team)
-    --use-team-image             Pull and use existing team Docker image from Docker Hub
+    -u, --use-team-image         Pull and use existing team Docker image from Docker Hub
                                  (for team members joining existing projects)
 
     Profile system (three usage patterns):
-    --profile-name NAME          Use complete predefined profile (base-image + libs + pkgs)
+    -r, --profile-name NAME      Use complete predefined profile (base-image + libs + pkgs)
                                  Examples: bioinformatics, geospatial, alpine_minimal
-    --pkgs BUNDLE                Override package selection (can combine with --profile-name)
+    -k, --pkgs BUNDLE            Override package selection (can combine with --profile-name)
                                  If used alone, applies minimal profile as base
                                  Bundles: minimal, tidyverse, modeling, bioinfo, geospatial, publishing, shiny
-    --libs BUNDLE                System dependency bundle (for custom composition with -b)
+    -l, --libs BUNDLE            System dependency bundle (for custom composition with -b)
                                  Bundles: minimal, geospatial, bioinfo, modeling, publishing, alpine
     -b, --base-image NAME        Custom Docker base image (for manual composition)
-    --tag TAG                    Docker image tag for selecting team image variants
+    -a, --tag TAG                Docker image tag for selecting team image variants
     --list-profiles              List all available predefined profiles
     --list-libs                  List all available library bundles
     --list-pkgs                  List all available package bundles
@@ -198,7 +198,7 @@ OPTIONS:
     -q, --quiet                  Quiet mode (errors only, ~0 lines)
     -v, --verbose                Verbose mode (show progress, ~25 lines)
     -vv, --debug                 Debug mode (show everything, ~400 lines + log file)
-        --log-file               Enable detailed logging to .zzcollab.log
+    -w, --log-file               Enable detailed logging to .zzcollab.log
 
     Utilities:
     -h, --help [TOPIC]           Show help (general or specific topic)
@@ -216,17 +216,17 @@ EXAMPLES:
     Solo Developer - Three Profile Usage Patterns:
 
     Pattern 1: Complete Profile (no overrides)
-    zzcollab --profile-name bioinformatics -G   # Uses: bioconductor base + bioinfo libs + bioinfo pkgs
-    zzcollab --profile-name geospatial          # Uses: rocker/r-ver + geospatial libs + geospatial pkgs
-    zzcollab --profile-name alpine_minimal      # Uses: alpine-r + alpine libs + minimal pkgs
+    zzcollab -r bioinformatics -G               # Uses: bioconductor base + bioinfo libs + bioinfo pkgs
+    zzcollab -r geospatial                      # Uses: rocker/r-ver + geospatial libs + geospatial pkgs
+    zzcollab -r alpine_minimal                  # Uses: alpine-r + alpine libs + minimal pkgs
 
     Pattern 2: Profile with Package Override
-    zzcollab --profile-name bioinformatics --pkgs minimal   # Uses: bioconductor base + bioinfo libs + minimal pkgs (OVERRIDE)
-    zzcollab --profile-name geospatial --pkgs tidyverse       # Uses: rocker/r-ver + geospatial libs + tidyverse pkgs (OVERRIDE)
+    zzcollab -r bioinformatics -k minimal       # Uses: bioconductor base + bioinfo libs + minimal pkgs (OVERRIDE)
+    zzcollab -r geospatial -k tidyverse         # Uses: rocker/r-ver + geospatial libs + tidyverse pkgs (OVERRIDE)
 
     Pattern 3: Package-Only (uses minimal profile as base)
-    zzcollab --pkgs modeling                    # Uses: rocker/r-ver + minimal libs + modeling pkgs
-    zzcollab --pkgs tidyverse                   # Uses: rocker/r-ver + minimal libs + tidyverse pkgs
+    zzcollab -k modeling                        # Uses: rocker/r-ver + minimal libs + modeling pkgs
+    zzcollab -k tidyverse                       # Uses: rocker/r-ver + minimal libs + tidyverse pkgs
 
     Discovery Commands:
     zzcollab --list-profiles                    # See all available profiles with descriptions
@@ -234,19 +234,19 @@ EXAMPLES:
     zzcollab --list-pkgs                        # See all package bundles
 
     Solo Developer - Manual Composition (advanced):
-    zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial    # Full manual control
-    zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
+    zzcollab -b rocker/r-ver -l geospatial -k geospatial            # Full manual control
+    zzcollab -b bioconductor/bioconductor_docker -l bioinfo -k bioinfo
 
     Team Lead - Create Foundation and Push:
-    zzcollab -t rgt47 -p study --profile-name bioinformatics -G
+    zzcollab -t mylab -p study -r bioinformatics -G  # Initialize with profile
     make docker-build                           # Build team Docker image
-    make docker-push-team                       # Push to Docker Hub (rgt47/study:latest)
+    make docker-push-team                       # Push to Docker Hub (mylab/study:latest)
     git add .
     git commit -m "Initial team project setup"
     git push -u origin main
 
     Team Lead - Custom Composition:
-    zzcollab -t rgt47 -p study -b rocker/r-ver --libs modeling --pkgs modeling
+    zzcollab -t mylab -p study -b rocker/r-ver -l modeling -k modeling
     make docker-build
     make docker-push-team
     git add .
@@ -254,8 +254,8 @@ EXAMPLES:
     git push -u origin main
 
     Team Members - Join Existing Project:
-    git clone https://github.com/rgt47/study.git && cd study
-    zzcollab --use-team-image                   # Pull and use team image (rgt47/study:latest)
+    git clone https://github.com/mylab/study.git && cd study
+    zzcollab -u -d ~/dotfiles                   # Pull and use team image (mylab/study:latest)
     make docker-zsh                             # Start development (auto-pulls latest image)
 
     Output Control:
@@ -263,9 +263,10 @@ EXAMPLES:
     zzcollab -t team -p project -q              # Quiet: errors only (for CI/CD)
     zzcollab -t team -p project -v              # Verbose: show progress (~25 lines)
     zzcollab -t team -p project -vv             # Debug: everything + log file (~400 lines)
+    zzcollab -t team -p project -w              # Enable log file without debug verbosity
 
-    Note: Foundation flags (--profile-name, -b, --libs, --pkgs) are automatically
-          blocked when Dockerfile exists. To change foundation: rm Dockerfile first.
+    Note: Foundation flags (-r/--profile-name, -b, -l/--libs, -k/--pkgs) are
+          automatically blocked when Dockerfile exists. To change: rm Dockerfile first.
 EOF
 }
 
