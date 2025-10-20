@@ -48,7 +48,8 @@
       "Bash(git push)",
       "Bash(gh run view:*)",
       "Bash(shellcheck:*)",
-      "Bash(zzcollab.sh)"
+      "Bash(zzcollab.sh)",
+      "Bash(bats -f \"config_list displays all configuration values\" tests/shell/test-config.bats)"
     ],
     "deny": []
   }
