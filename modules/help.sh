@@ -194,6 +194,12 @@ OPTIONS:
     -G, --github                 Automatically create private GitHub repository and push
         --next-steps             Show development workflow and next steps
 
+    Output control:
+    -q, --quiet                  Quiet mode (errors only, ~0 lines)
+    -v, --verbose                Verbose mode (show progress, ~25 lines)
+    -vv, --debug                 Debug mode (show everything, ~400 lines + log file)
+        --log-file               Enable detailed logging to .zzcollab.log
+
     Utilities:
     -h, --help [TOPIC]           Show help (general or specific topic)
                                  Topics: init, github, quickstart, workflow, troubleshooting,
@@ -251,6 +257,12 @@ EXAMPLES:
     git clone https://github.com/rgt47/study.git && cd study
     zzcollab --use-team-image                   # Pull and use team image (rgt47/study:latest)
     make docker-zsh                             # Start development (auto-pulls latest image)
+
+    Output Control:
+    zzcollab -t team -p project                 # Default: concise output (~8 lines)
+    zzcollab -t team -p project -q              # Quiet: errors only (for CI/CD)
+    zzcollab -t team -p project -v              # Verbose: show progress (~25 lines)
+    zzcollab -t team -p project -vv             # Debug: everything + log file (~400 lines)
 
     Note: Foundation flags (--profile-name, -b, --libs, --pkgs) are automatically
           blocked when Dockerfile exists. To change foundation: rm Dockerfile first.

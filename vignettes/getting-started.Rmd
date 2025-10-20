@@ -211,13 +211,14 @@ ZZCOLLAB implements the following data organization hierarchy:
 
 ```
 penguin-analysis/
-├── data/
-│   ├── raw_data/           # Immutable original data files
-│   ├── derived_data/       # Processed analysis-ready datasets
-│   ├── metadata/           # Data dictionaries and codebooks
-│   ├── validation/         # Quality assessment reports
-│   ├── README.md           # Data documentation
-│   └── DATA_WORKFLOW_GUIDE.md  # Processing workflow documentation
+├── analysis/
+│   ├── data/
+│   │   ├── raw_data/           # Immutable original data files
+│   │   ├── derived_data/       # Processed analysis-ready datasets
+│   │   ├── metadata/           # Data dictionaries and codebooks
+│   │   ├── validation/         # Quality assessment reports
+│   │   ├── README.md           # Data documentation
+│   │   └── DATA_WORKFLOW_GUIDE.md  # Processing workflow documentation
 ```
 
 ## Raw Data Acquisition
@@ -234,14 +235,14 @@ to demonstrate proper raw data handling:
 ```bash
 # Execute from host environment (outside container)
 R -e "library(palmerpenguins); \
-      write.csv(penguins, 'data/raw_data/penguins_raw.csv', \
+      write.csv(penguins, 'analysis/data/raw_data/penguins_raw.csv', \
                 row.names = FALSE)"
 ```
 
 Verify successful data placement:
 
 ```bash
-ls -lh data/raw_data/
+ls -lh analysis/data/raw_data/
 # Expected output:
 # -rw-r--r--  1 user  staff   14K Oct  2 15:30 penguins_raw.csv
 ```
@@ -256,7 +257,7 @@ of research findings.
 Complete documentation of data sources enables verification and citation:
 
 ```bash
-vim data/README.md
+vim analysis/data/README.md
 ```
 
 Add the following metadata to the Data Sources section:
@@ -276,7 +277,7 @@ Add the following metadata to the Data Sources section:
   Sexual Dimorphism and Environmental Variability within a Community
   of Antarctic Penguins (Genus Pygoscelis). PLoS ONE 9(3): e90081.
 - **File Size**: 14 KB
-- **MD5 Checksum**: [compute via md5sum data/raw_data/penguins_raw.csv]
+- **MD5 Checksum**: [compute via md5sum analysis/data/raw_data/penguins_raw.csv]
 - **Observations**: 344 individuals
 - **Variables**: 8 measurements
 ```
@@ -362,7 +363,7 @@ library(testthat)
 #            accidental modifications
 
 test_that("penguins raw data file exists and is accessible", {
-  data_file <- "data/raw_data/penguins_raw.csv"
+  data_file <- "analysis/data/raw_data/penguins_raw.csv"
 
   # Verify file existence
   expect_true(
@@ -377,7 +378,7 @@ test_that("penguins raw data file exists and is accessible", {
 })
 
 test_that("penguins raw data has expected structure", {
-  data <- read.csv("data/raw_data/penguins_raw.csv")
+  data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
 
   # Validate observation count (raw data invariant)
   expect_equal(
@@ -404,7 +405,7 @@ test_that("penguins raw data has expected structure", {
 
 test_that("penguins raw data has expected data types", {
   data <- read.csv(
-    "data/raw_data/penguins_raw.csv",
+    "analysis/data/raw_data/penguins_raw.csv",
     stringsAsFactors = TRUE
   )
 
@@ -449,7 +450,7 @@ test_that("penguins raw data has expected data types", {
 
 test_that("penguins raw data has expected factor levels", {
   data <- read.csv(
-    "data/raw_data/penguins_raw.csv",
+    "analysis/data/raw_data/penguins_raw.csv",
     stringsAsFactors = TRUE
   )
 
@@ -476,7 +477,7 @@ test_that("penguins raw data has expected factor levels", {
 })
 
 test_that("penguins raw data values within expected ranges", {
-  data <- read.csv("data/raw_data/penguins_raw.csv")
+  data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
 
   # Remove NA values for range validation
   bill_length <-
@@ -520,7 +521,7 @@ test_that("penguins raw data values within expected ranges", {
 })
 
 test_that("penguins raw data has expected missing pattern", {
-  data <- read.csv("data/raw_data/penguins_raw.csv")
+  data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
 
   # Quantify missing values per variable
   missing_counts <- colSums(is.na(data))
@@ -566,7 +567,7 @@ test_that("penguins raw data has expected missing pattern", {
 
 test_that("penguins raw data sample sizes per group", {
   data <- read.csv(
-    "data/raw_data/penguins_raw.csv",
+    "analysis/data/raw_data/penguins_raw.csv",
     stringsAsFactors = TRUE
   )
 
@@ -602,7 +603,7 @@ test_that("penguins raw data sample sizes per group", {
 })
 
 test_that("penguins raw data file integrity verification", {
-  data_file <- "data/raw_data/penguins_raw.csv"
+  data_file <- "analysis/data/raw_data/penguins_raw.csv"
 
   # Calculate MD5 checksum for file integrity
   file_md5 <- tools::md5sum(data_file)
@@ -731,7 +732,7 @@ cat > R/prepare_penguin_data.R << 'EOF'
 #' penguins_clean <- prepare_penguin_data()
 #' summary(penguins_clean)
 prepare_penguin_data <- function(
-    data_file = "data/raw_data/penguins_raw.csv",
+    data_file = "analysis/data/raw_data/penguins_raw.csv",
     n_records = NULL) {
 
   # Input validation
@@ -807,10 +808,10 @@ head(
 attr(penguins_clean, "n_removed")  # Expected: 11 records
 
 # Write to derived data directory
-saveRDS(penguins_clean, "data/derived_data/penguins_clean.rds")
+saveRDS(penguins_clean, "analysis/data/derived_data/penguins_clean.rds")
 write.csv(
   penguins_clean,
-  "data/derived_data/penguins_clean.csv",
+  "analysis/data/derived_data/penguins_clean.csv",
   row.names = FALSE
 )
 
@@ -824,7 +825,7 @@ Document the transformation process for reproducibility:
 
 ```bash
 # Within container environment
-cat >> data/README.md << 'EOF'
+cat >> analysis/data/README.md << 'EOF'
 
 ## Derived Data Files
 
@@ -834,7 +835,7 @@ cat >> data/README.md << 'EOF'
 complete cases and derived analytical variables.
 
 **Source Script**: R/prepare_penguin_data.R
-**Source Data**: data/raw_data/penguins_raw.csv
+**Source Data**: analysis/data/raw_data/penguins_raw.csv
 **Creation Date**: 2025-10-02
 
 **Transformations Applied**:
@@ -861,7 +862,7 @@ complete cases and derived analytical variables.
 
 ```r
 # Load prepared data in R
-penguins_clean <- readRDS("data/derived_data/penguins_clean.rds")
+penguins_clean <- readRDS("analysis/data/derived_data/penguins_clean.rds")
 ```
 EOF
 ```
@@ -1056,7 +1057,7 @@ Confirm work persists after container exit:
 
 ```bash
 # Verify derived data persistence
-ls -lh data/derived_data/
+ls -lh analysis/data/derived_data/
 # Expected: penguins_clean.rds, penguins_clean.csv
 
 # Verify function code persistence
@@ -1091,7 +1092,7 @@ library(palmerpenguins)
 library(broom)
 
 # Load prepared dataset
-penguins_clean <- readRDS("data/derived_data/penguins_clean.rds")
+penguins_clean <- readRDS("analysis/data/derived_data/penguins_clean.rds")
 
 #=======================================================================
 # Exploratory Analysis
@@ -1175,8 +1176,8 @@ results <- list(
 )
 
 # Write results to file
-saveRDS(results, "data/derived_data/bill_analysis_results.rds")
-print("Results: data/derived_data/bill_analysis_results.rds")
+saveRDS(results, "analysis/data/derived_data/bill_analysis_results.rds")
+print("Results: analysis/data/derived_data/bill_analysis_results.rds")
 EOF
 ```
 
@@ -1208,7 +1209,7 @@ xdg-open analysis/figures/bill_length_vs_mass.png
 
 # Load and inspect results in R
 R
-results <- readRDS("data/derived_data/bill_analysis_results.rds")
+results <- readRDS("analysis/data/derived_data/bill_analysis_results.rds")
 print(results$summary_stats)
 print(results$model_summary)
 quit(save = "no")
@@ -1310,7 +1311,7 @@ This ensures reproducibility is maintained throughout the project lifecycle.
 zzcollab --profile-name analysis -d ~/dotfiles
 
 # Raw data placement (host environment)
-cp ~/Downloads/data.csv ~/projects/penguin-analysis/data/raw_data/
+cp ~/Downloads/data.csv ~/projects/penguin-analysis/analysis/data/raw_data/
 
 # Container entry
 cd ~/projects/penguin-analysis
@@ -1343,12 +1344,12 @@ git push
 
 ## Data Directory Functions
 
-| Directory          | Function                  | Modification |
-|--------------------|---------------------------|--------------|
-| data/raw_data/     | Original immutable data   | Prohibited   |
-| data/derived_data/ | Analysis-ready datasets   | Permitted    |
-| data/metadata/     | Documentation files       | Permitted    |
-| data/validation/   | Quality reports           | Permitted    |
+| Directory                      | Function                  | Modification |
+|--------------------------------|---------------------------|--------------|
+| analysis/data/raw_data/        | Original immutable data   | Prohibited   |
+| analysis/data/derived_data/    | Analysis-ready datasets   | Permitted    |
+| analysis/data/metadata/        | Documentation files       | Permitted    |
+| analysis/data/validation/      | Quality reports           | Permitted    |
 
 # Reproducibility Verification Checklist
 
@@ -1409,7 +1410,7 @@ devtools::check()          # R CMD check should succeed
 
 ## Pillar 5: Research Data
 
-- ✅ Raw data preserved in data/raw_data/ (read-only, original files)
+- ✅ Raw data preserved in analysis/data/raw_data/ (read-only, original files)
 - ✅ Data provenance documented (source, collection dates, DOI/citation)
 - ✅ Data dictionary complete (variables, types, units, missing codes)
 - ✅ Processing scripts link raw to derived data
@@ -1417,9 +1418,9 @@ devtools::check()          # R CMD check should succeed
 
 **Verification**:
 ```bash
-ls -lh data/raw_data/        # Raw data files present
-cat data/README.md           # Documentation complete
-devtools::test()             # Data validation tests pass
+ls -lh analysis/data/raw_data/        # Raw data files present
+cat analysis/data/README.md           # Documentation complete
+devtools::test()                      # Data validation tests pass
 ```
 
 ## Continuous Integration
