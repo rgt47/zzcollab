@@ -513,12 +513,15 @@ format_config_value_with_indicator() {
         # Value is explicitly set in a config file
         echo "$current_value"
     else
-        # Value is using default
-        if [[ -z "$default_value" ]]; then
-            # Default is empty, show <not set>
+        # Value is not from config file - check if set via environment/CLI
+        if [[ -n "$current_value" ]]; then
+            # Set via environment variable or CLI argument
+            echo "$current_value"
+        elif [[ -z "$default_value" ]]; then
+            # No value set and no default available
             echo "<not set>"
         else
-            # Show default value with indicator
+            # Using built-in default
             echo "$default_value (default)"
         fi
     fi
@@ -851,12 +854,12 @@ config_get_local() {
 ##############################################################################
 config_list_local() {
     if [[ ! -f "$CONFIG_PROJECT_FILE" ]]; then
-        log_info "ℹ️  No project-level config found"
-        log_info "📍 Location would be: $CONFIG_PROJECT_FILE"
-        log_info "💡 Use 'zzcollab --config set-local KEY VALUE' to create one"
+        echo "ℹ️  No project-level config found"
+        echo "📍 Location would be: $CONFIG_PROJECT_FILE"
+        echo "💡 Use 'zzcollab --config set-local KEY VALUE' to create one"
         echo ""
-        log_info "Project-level config allows you to override user defaults"
-        log_info "for this specific project. For example:"
+        echo "Project-level config allows you to override user defaults"
+        echo "for this specific project. For example:"
         echo ""
         echo "  zzcollab --config set-local team-name myteam"
         echo "  zzcollab --config set-local profile-name analysis"
