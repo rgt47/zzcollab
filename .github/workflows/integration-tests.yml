@@ -77,6 +77,8 @@ jobs:
     - name: Install zzcollab
       run: |
         sudo ./install.sh
+        echo "/root/bin" >> $GITHUB_PATH
+        export PATH="/root/bin:$PATH"
         which zzcollab
         zzcollab --version || echo "No version flag"
 
@@ -214,6 +216,8 @@ jobs:
     - name: Install zzcollab
       run: |
         sudo ./install.sh
+        echo "/root/bin" >> $GITHUB_PATH
+        export PATH="/root/bin:$PATH"
         which zzcollab
 
     - name: Initialize config
