@@ -148,13 +148,16 @@ project/
 # Solo Developer
 zzcollab -d ~/dotfiles
 
+# Solo Developer with profile
+zzcollab -r analysis -d ~/dotfiles
+
 # Team Lead
-zzcollab -t mylab -p study -d ~/dotfiles
+zzcollab -t mylab -p study -r analysis -d ~/dotfiles
 make docker-build && make docker-push-team && git add . && git commit -m "Initial project setup" && git push -u origin main
 
 # Team Member
 git clone https://github.com/mylab/study.git && cd study
-zzcollab --use-team-image -d ~/dotfiles
+zzcollab -u -d ~/dotfiles
 make docker-zsh
 ```
 
@@ -172,6 +175,63 @@ init_project(team_name = "mylab", project_name = "study")
 join_project(team_name = "mylab", project_name = "study")
 ```
 
+## CLI Flags and Conventions
+
+ZZCOLLAB follows strict Unix CLI conventions with comprehensive short flag support for improved ergonomics.
+
+### Short Flag Philosophy
+
+**Lowercase by default**: All short flags use lowercase letters following Unix conventions
+**Uppercase for variants**: Uppercase flags (`-D`, `-G`, `-P`) indicate semantic variants of their lowercase counterparts
+
+### Complete Short Flag Reference
+
+| Short | Long Flag          | Purpose                    | Usage Example           |
+|-------|--------------------|----------------------------|-------------------------|
+| `-a`  | `--tag`            | Docker image tag           | `zzcollab -a v2.1`      |
+| `-b`  | `--base-image`     | Custom Docker base         | `zzcollab -b rocker/r-ver` |
+| `-c`  | `--config`         | Configuration management   | `zzcollab -c init`      |
+| `-d`  | `--dotfiles`       | Copy dotfiles (with dots)  | `zzcollab -d ~/dotfiles` |
+| `-D`  | `--dotfiles-nodot` | Copy dotfiles (no dots)    | `zzcollab -D ~/dotfiles` |
+| `-f`  | `--dockerfile`     | Custom Dockerfile path     | `zzcollab -f custom.df` |
+| `-g`  | `--github-account` | GitHub account name        | `zzcollab -g myaccount` |
+| `-G`  | `--github`         | Create GitHub repo         | `zzcollab -G`           |
+| `-h`  | `--help`           | Show help                  | `zzcollab -h`           |
+| `-k`  | `--pkgs`           | Package bundle             | `zzcollab -k tidyverse` |
+| `-l`  | `--libs`           | Library bundle             | `zzcollab -l geospatial` |
+| `-n`  | `--no-docker`      | Skip Docker build          | `zzcollab -n`           |
+| `-p`  | `--project-name`   | Project name               | `zzcollab -p study`     |
+| `-P`  | `--prepare-dockerfile` | Prepare without build  | `zzcollab -P`           |
+| `-q`  | `--quiet`          | Quiet mode (errors only)   | `zzcollab -q`           |
+| `-r`  | `--profile-name`   | Docker profile selection   | `zzcollab -r analysis`  |
+| `-t`  | `--team`           | Team name                  | `zzcollab -t mylab`     |
+| `-u`  | `--use-team-image` | Pull team Docker image     | `zzcollab -u`           |
+| `-v`  | `--verbose`        | Verbose output             | `zzcollab -v`           |
+| `-vv` | `--debug`          | Debug output + log file    | `zzcollab -vv`          |
+| `-w`  | `--log-file`       | Enable log file            | `zzcollab -w`           |
+| `-y`  | `--yes`            | Skip confirmations         | `zzcollab -y`           |
+
+### Usage Comparison
+
+**Before (verbose)**:
+```bash
+zzcollab --team mylab --project-name study --profile-name analysis --use-team-image --dotfiles ~/dotfiles
+```
+
+**After (concise)**:
+```bash
+zzcollab -t mylab -p study -r analysis -u -d ~/dotfiles
+```
+
+**Custom composition**:
+```bash
+# Verbose
+zzcollab --base-image rocker/r-ver --libs geospatial --pkgs tidyverse
+
+# Concise
+zzcollab -b rocker/r-ver -l geospatial -k tidyverse
+```
+
 ## Configuration System
 
 ZZCOLLAB features a powerful multi-layered configuration system. *For comprehensive details, see [Configuration Guide](docs/CONFIGURATION.md)*
@@ -186,10 +246,10 @@ ZZCOLLAB features a powerful multi-layered configuration system. *For comprehens
 
 **Essential Commands**:
 ```bash
-zzcollab --config init                      # Create config file
-zzcollab --config set team-name "myteam"    # Set values
-zzcollab --config get team-name             # Get values
-zzcollab --config list                      # List all configuration
+zzcollab -c init                      # Create config file
+zzcollab -c set team-name "myteam"    # Set values
+zzcollab -c get team-name             # Get values
+zzcollab -c list                      # List all configuration
 ```
 
 **Key Configuration Domains**:
@@ -211,7 +271,7 @@ ZZCOLLAB supports **14+ specialized Docker profiles** with single source of trut
 ```bash
 ./add_profile.sh          # Browse and add profiles
 vim config.yaml           # Edit team profiles
-zzcollab -t TEAM -p PROJECT --profiles-config config.yaml
+zzcollab -t TEAM -p PROJECT -r PROFILE
 ```
 
 ## Package Management
@@ -305,9 +365,9 @@ ZZCOLLAB provides streamlined workflow for solo developers with professional-gra
 ```bash
 # 1. One-time setup
 git clone https://github.com/rgt47/zzcollab.git && cd zzcollab && ./install.sh
-zzcollab --config init
-zzcollab --config set team-name "myteam"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab -c init
+zzcollab -c set team-name "myteam"
+zzcollab -c set dotfiles-dir "~/dotfiles"
 
 # 2. Create project
 mkdir penguin-analysis && cd penguin-analysis
@@ -323,7 +383,7 @@ make docker-test && git add . && git commit -m "Add analysis" && git push
 ### Transition to Team
 ```bash
 # Convert solo project to team collaboration
-zzcollab -t yourname -p penguin-analysis -d ~/dotfiles
+zzcollab -t yourname -p penguin-analysis -r analysis -d ~/dotfiles
 make docker-build && make docker-push-team
 git add . && git commit -m "Convert to team collaboration" && git push
 ```
