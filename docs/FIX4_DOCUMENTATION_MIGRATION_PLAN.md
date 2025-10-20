@@ -125,9 +125,9 @@ Fallback: Basic `cat` command (always available)
 ## Implementation Checklist
 
 - [x] Phase 1: Create docs/guides/ directory
-- [ ] Phase 2: Extract guides to markdown
+- [x] Phase 2: Extract guides to markdown (IN PROGRESS - 1 of 8 complete)
   - [ ] quickstart.md
-  - [ ] workflow.md
+  - [x] workflow.md (375 lines - COMPLETE)
   - [ ] troubleshooting.md
   - [ ] config.md
   - [ ] dotfiles.md
@@ -137,7 +137,8 @@ Fallback: Basic `cat` command (always available)
 - [ ] Phase 3: Update help_guides.sh functions
 - [ ] Phase 4: Test all help commands
 - [ ] Phase 5: Update documentation references
-- [ ] Commit and push changes
+- [x] Create docs/guides/README.md
+- [x] Commit partial progress
 
 ## Estimated Effort
 - Total: 16 hours
