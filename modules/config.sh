@@ -435,7 +435,7 @@ get_default_value() {
         profile_name) echo "minimal" ;;
         libs_bundle) echo "minimal" ;;
         pkgs_bundle) echo "minimal" ;;
-        dotfiles_dir) echo "~/dotfiles" ;;
+        dotfiles_dir) echo "$HOME/dotfiles" ;;
         dotfiles_nodot) echo "true" ;;
         auto_github) echo "false" ;;
         skip_confirmation) echo "false" ;;
