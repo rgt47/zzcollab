@@ -50,7 +50,7 @@ require_module "core" "templates"
 #
 # Tracking: Makefile is tracked in manifest for uninstall
 create_makefile() {
-    log_info "Creating Makefile for development workflow automation..."
+    log_debug "Creating Makefile for development workflow automation..."
 
     # Copy comprehensive Makefile from template
     # Template includes: Docker targets, R package targets, help system, platform detection
@@ -299,7 +299,7 @@ cleanup_dotfiles_from_workdir() {
 # Integration: Configurations work with both native and Docker development
 # Tracking: All created config files are tracked in manifest for uninstall
 create_config_files() {
-    log_info "Creating development configuration files..."
+    log_debug "Creating development configuration files..."
     
     # Copy personal dotfiles first (if specified via command line options)
     # This allows personal configurations to be available before creating project configs
@@ -487,7 +487,7 @@ show_devtools_summary() {
 # Purpose: Create additional development utility scripts
 # Optional: Provides common development tasks as standalone scripts
 create_development_scripts() {
-    log_info "Creating development utility scripts..."
+    log_debug "Creating development utility scripts..."
     
     # Create package development helper script
     local dev_script='#!/bin/bash
@@ -576,7 +576,7 @@ esac'
     if create_file_if_missing "dev.sh" "$dev_script" "development helper script"; then
         chmod +x "dev.sh"
         track_file "dev.sh"
-        log_info "Created development helper script: ./dev.sh"
+        log_debug "Created development helper script: ./dev.sh"
         log_info "Usage: ./dev.sh {setup|test|render}"
     else
         log_warn "Failed to create development helper script"

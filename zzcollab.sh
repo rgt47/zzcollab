@@ -214,7 +214,7 @@ load_module() {
     local post_load_func="${3:-}"
     
     if [[ -f "$MODULES_DIR/${module}.sh" ]]; then
-        log_info "Loading ${module} module..."
+        log_debug "Loading ${module} module..."
         # shellcheck source=/dev/null
         source "$MODULES_DIR/${module}.sh"
         
@@ -233,7 +233,7 @@ load_module() {
 }
 
 # Load modules in dependency order
-log_info "Loading all zzcollab modules..."
+log_debug "Loading all zzcollab modules..."
 
 # Load core module first (required by all others)
 load_module "core" "true"
@@ -466,7 +466,7 @@ confirm_overwrite_conflicts() {
     done < <(detect_file_conflicts)
     
     if [[ ${#conflicts[@]} -eq 0 ]]; then
-        log_info "✅ No file conflicts detected - safe to proceed"
+        log_debug "✅ No file conflicts detected - safe to proceed"
         return 0
     fi
     
@@ -497,7 +497,7 @@ confirm_overwrite_conflicts() {
         exit 0
     fi
     
-    log_info "✅ Proceeding with setup - existing files will be preserved"
+    log_debug "✅ Proceeding with setup - existing files will be preserved"
     return 0
 }
 
@@ -527,7 +527,7 @@ validate_directory_for_setup() {
     
     # Check if this is an existing zzcollab project (allow parameter updates)
     if [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]] || [[ -f "DESCRIPTION" && -d "R" && -d "analysis" ]]; then
-        log_info "✅ Detected existing zzcollab project - allowing parameter updates"
+        log_debug "✅ Detected existing zzcollab project - allowing parameter updates"
         log_info "You can safely run zzcollab here to modify build settings, base images, etc."
         return 0
     fi
@@ -599,7 +599,7 @@ validate_directory_for_setup_no_conflicts() {
 
     # Check if this is an existing zzcollab project (allow parameter updates)
     if [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]] || [[ -f "DESCRIPTION" && -d "R" && -d "analysis" ]]; then
-        log_info "✅ Detected existing zzcollab project - allowing parameter updates"
+        log_debug "✅ Detected existing zzcollab project - allowing parameter updates"
         log_info "You can safely run zzcollab here to modify build settings, base images, etc."
         return 0
     fi
@@ -651,7 +651,7 @@ validate_directory_for_setup_no_conflicts() {
     fi
 
     # Note: conflict detection removed - assumed to have been performed separately
-    log_info "✅ Directory validation passed"
+    log_debug "✅ Directory validation passed"
     return 0
 }
 
@@ -720,9 +720,15 @@ handle_special_modes() {
 # Function: validate_and_setup_environment
 # Purpose: Validate prerequisites and setup environment
 validate_and_setup_environment() {
+    # Concise startup message at default verbosity
+    if [[ $VERBOSITY_LEVEL -eq 1 ]]; then
+        echo "Creating project '$PKG_NAME'..." >&2
+    fi
+
+    # Detailed messages only in verbose/debug mode
     log_info "🚀 Starting modular rrtools project setup..."
     log_info "📦 Package name: '$PKG_NAME'"
-    log_info "🔧 All modules loaded successfully"
+    log_debug "🔧 All modules loaded successfully"
     echo ""
 
     # Foundation detection: Dockerfile presence determines mode
@@ -730,7 +736,7 @@ validate_and_setup_environment() {
     # If Dockerfile absent → Team lead mode (creating foundation)
     if [[ -f "Dockerfile" ]]; then
         # Team member mode (or lead working on analysis)
-        log_info "✅ Detected existing Dockerfile - using existing foundation"
+        log_debug "✅ Detected existing Dockerfile - using existing foundation"
 
         # Block foundation-changing flags (foundation is locked)
         if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]]; then
@@ -912,39 +918,41 @@ finalize_and_report_results() {
         log_info "🧹 Cleaned up team initialization marker (full setup now complete)"
     fi
     
-    # Final success message and summary
+    # Final success message and concise summary
     echo ""
-    log_success "🎉 Modular project setup completed successfully!"
-    echo ""
-    
-    # Show created items count
-    local dir_count file_count symlink_count
-    dir_count=$(find . -type d | wc -l)
-    file_count=$(find . -type f \( ! -path "./.git/*" \) | wc -l)
-    symlink_count=$(find . -type l | wc -l)
-    
-    log_info "📊 Created: $dir_count directories, $file_count files, $symlink_count symlinks"
-    log_info "📄 Manifest: $([[ -f "$MANIFEST_FILE" ]] && echo "$MANIFEST_FILE" || echo "$MANIFEST_TXT")"
-    
-    # Show module summaries
-    echo ""
-    show_structure_summary
-    echo ""
-    show_rpackage_summary
-    echo ""
-    show_docker_summary
-    echo ""
-    show_analysis_summary
-    echo ""
-    show_cicd_summary
-    echo ""
-    show_devtools_summary
-    
-    echo ""
-    log_info "📚 Run '$0 --next-steps' for development workflow guidance"
-    log_info "🆘 Run './zzcollab-uninstall.sh' if you need to remove created files"
-    log_info "📖 See ZZCOLLAB_USER_GUIDE.md for comprehensive documentation"
-    echo ""
+    log_success "Done! Next: make docker-build"
+
+    # Show created items count (only in verbose mode)
+    if [[ $VERBOSITY_LEVEL -ge 2 ]]; then
+        echo ""
+        local dir_count file_count symlink_count
+        dir_count=$(find . -type d | wc -l)
+        file_count=$(find . -type f \( ! -path "./.git/*" \) | wc -l)
+        symlink_count=$(find . -type l | wc -l)
+
+        log_info "📊 Created: $dir_count directories, $file_count files, $symlink_count symlinks"
+        log_info "📄 Manifest: $([[ -f "$MANIFEST_FILE" ]] && echo "$MANIFEST_FILE" || echo "$MANIFEST_TXT")"
+
+        # Show module summaries (only in verbose mode)
+        echo ""
+        show_structure_summary
+        echo ""
+        show_rpackage_summary
+        echo ""
+        show_docker_summary
+        echo ""
+        show_analysis_summary
+        echo ""
+        show_cicd_summary
+        echo ""
+        show_devtools_summary
+
+        echo ""
+        log_info "📚 Run '$0 --next-steps' for development workflow guidance"
+        log_info "🆘 Run './zzcollab-uninstall.sh' if you need to remove created files"
+        log_info "📖 See ZZCOLLAB_USER_GUIDE.md for comprehensive documentation"
+        echo ""
+    fi
 }
 
 #=============================================================================

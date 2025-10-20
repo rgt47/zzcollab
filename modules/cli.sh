@@ -241,6 +241,23 @@ parse_cli_arguments() {
                 BUILD_DOCKER=false
                 shift
                 ;;
+            --quiet|-q)
+                export VERBOSITY_LEVEL=0
+                shift
+                ;;
+            -v|--verbose)
+                export VERBOSITY_LEVEL=2
+                shift
+                ;;
+            -vv|--debug)
+                export VERBOSITY_LEVEL=3
+                export ENABLE_LOG_FILE=true
+                shift
+                ;;
+            --log-file)
+                export ENABLE_LOG_FILE=true
+                shift
+                ;;
             --dotfiles|-d)
                 require_arg "$1" "$2"
                 DOTFILES_DIR="$2"

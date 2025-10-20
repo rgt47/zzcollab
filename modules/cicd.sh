@@ -44,7 +44,7 @@ require_module "core" "templates"
 #
 # Tracking: All created workflow files are tracked in manifest for uninstall
 create_github_workflows() {
-    log_info "Creating GitHub Actions workflows..."
+    log_debug "Creating GitHub Actions workflows..."
     
     # Ensure .github/workflows directory exists
     # This directory is the standard location for GitHub Actions workflows
@@ -89,7 +89,7 @@ create_github_workflows() {
 # Purpose: Create additional GitHub repository templates and configuration
 # Optional: Adds issue templates, PR templates, and repository settings
 create_github_templates() {
-    log_info "Creating GitHub repository templates..."
+    log_debug "Creating GitHub repository templates..."
     
     # Create pull request template
     local pr_template='## Description
@@ -130,7 +130,7 @@ Add any other context about the pull request here.'
     
     if create_file_if_missing ".github/pull_request_template.md" "$pr_template" "pull request template"; then
         track_file ".github/pull_request_template.md"
-        log_info "Created pull request template"
+        log_debug "Created pull request template"
     else
         log_warn "Failed to create pull request template"
     fi
@@ -189,7 +189,7 @@ If possible, provide a minimal reproducible example:
     
     if create_file_if_missing "$issue_templates_dir/bug_report.md" "$bug_template" "bug report template"; then
         track_file "$issue_templates_dir/bug_report.md"
-        log_info "Created bug report template"
+        log_debug "Created bug report template"
     else
         log_warn "Failed to create bug report template"
     fi
@@ -223,7 +223,7 @@ Add any other context or screenshots about the feature request here.'
     
     if create_file_if_missing "$issue_templates_dir/feature_request.md" "$feature_template" "feature request template"; then
         track_file "$issue_templates_dir/feature_request.md"
-        log_info "Created feature request template"
+        log_debug "Created feature request template"
     else
         log_warn "Failed to create feature request template"
     fi

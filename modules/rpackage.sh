@@ -47,7 +47,7 @@ create_core_files() {
     local pkg_name="$PKG_NAME"
     local year=$(date +%Y)
 
-    log_info "Creating core R package files..."
+    log_debug "Creating core R package files..."
 
     # DESCRIPTION file - R package metadata and dependencies
     # Uses template-based approach (dynamic package management via renv)
@@ -73,7 +73,7 @@ See https://www.gnu.org/licenses/gpl-3.0.en.html for details."
     
     if create_file_if_missing "LICENSE" "$license_content" "LICENSE file"; then
         track_file "LICENSE"
-        log_info "Created LICENSE file with GPL-3 reference"
+        log_debug "Created LICENSE file with GPL-3 reference"
     else
         log_error "Failed to create LICENSE file"
         return 1
@@ -86,7 +86,7 @@ See https://www.gnu.org/licenses/gpl-3.0.en.html for details."
     
     if create_file_if_missing "NAMESPACE" "$namespace_content" "NAMESPACE file"; then
         track_file "NAMESPACE"
-        log_info "Created NAMESPACE file with function exports"
+        log_debug "Created NAMESPACE file with function exports"
     else
         log_error "Failed to create NAMESPACE file"
         return 1
@@ -124,7 +124,7 @@ PackageInstallArgs: --no-multiarch --with-keep.source"
     
     if create_file_if_missing "${pkg_name}.Rproj" "$rproj_content" "R project file"; then
         track_file "${pkg_name}.Rproj"
-        log_info "Created RStudio project file: ${pkg_name}.Rproj"
+        log_debug "Created RStudio project file: ${pkg_name}.Rproj"
     else
         log_error "Failed to create R project file"
         return 1
@@ -143,7 +143,7 @@ test_check(\"$pkg_name\")"
     
     if create_file_if_missing "tests/testthat.R" "$testthat_runner" "testthat runner"; then
         track_file "tests/testthat.R"
-        log_info "Created testthat test runner"
+        log_debug "Created testthat test runner"
     else
         log_error "Failed to create testthat runner"
         return 1
@@ -158,7 +158,7 @@ test_check(\"$pkg_name\")"
     
     if create_file_if_missing "tests/testthat/test-utils.R" "$test_utils" "utility function tests"; then
         track_file "tests/testthat/test-utils.R"
-        log_info "Created basic utility function tests"
+        log_debug "Created basic utility function tests"
     else
         log_error "Failed to create utility tests"
         return 1
@@ -196,7 +196,7 @@ test_check(\"$pkg_name\")"
 #
 # Tracking: The setup script is tracked for uninstall
 create_renv_setup() {
-    log_info "Creating renv setup for package management..."
+    log_debug "Creating renv setup for package management..."
     
     # Create comprehensive renv setup script
     # This script initializes renv and installs essential packages for R development

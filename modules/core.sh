@@ -47,80 +47,135 @@ fi
 # LOGGING AND OUTPUT FUNCTIONS (extracted from lines 219-248)
 #=============================================================================
 
+# Verbosity levels:
+#   0 = quiet (errors only)
+#   1 = default (successes and errors) ~8 lines
+#   2 = verbose (includes info messages) ~25 lines
+#   3 = debug (everything) ~400 lines
+export VERBOSITY_LEVEL="${VERBOSITY_LEVEL:-1}"
+
+# Optional: Write all messages to log file regardless of verbosity
+export LOG_FILE="${LOG_FILE:-.zzcollab.log}"
+export ENABLE_LOG_FILE="${ENABLE_LOG_FILE:-false}"
+
+##############################################################################
+# FUNCTION: _write_to_log_file
+# PURPOSE:  Write message to log file if enabled
+# USAGE:    _write_to_log_file "level" "message"
+##############################################################################
+_write_to_log_file() {
+    if [[ "$ENABLE_LOG_FILE" == "true" && -n "$LOG_FILE" ]]; then
+        printf "[%s] %s: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$1" "$2" >> "$LOG_FILE"
+    fi
+}
+
+##############################################################################
+# FUNCTION: log_debug
+# PURPOSE:  Display detailed debug messages (only with -vv/--debug)
+# USAGE:    log_debug "debug message"
+# ARGS:
+#   $* - Debug message text to display
+# RETURNS:
+#   0 - Always succeeds
+# GLOBALS:
+#   READ:  VERBOSITY_LEVEL
+#   WRITE: None (outputs to stderr if VERBOSITY_LEVEL >= 3)
+# EXAMPLE:
+#   log_debug "Created directory: R"
+#   log_debug "Loading module: core.sh"
+##############################################################################
+log_debug() {
+    _write_to_log_file "DEBUG" "$*"
+    if [[ $VERBOSITY_LEVEL -ge 3 ]]; then
+        printf "🔍 %s\n" "$*" >&2
+    fi
+}
+
 ##############################################################################
 # FUNCTION: log_info
-# PURPOSE:  Display informational messages with an icon
+# PURPOSE:  Display informational messages (shown with -v or higher)
 # USAGE:    log_info "message text"
-# ARGS:     
+# ARGS:
 #   $* - Message text to display
-# RETURNS:  
+# RETURNS:
 #   0 - Always succeeds
-# GLOBALS:  
-#   READ:  None
-#   WRITE: None (outputs to stderr)
+# GLOBALS:
+#   READ:  VERBOSITY_LEVEL
+#   WRITE: None (outputs to stderr if VERBOSITY_LEVEL >= 2)
 # EXAMPLE:
 #   log_info "Starting process..."
 #   log_info "Found $count files"
 ##############################################################################
 log_info() {
-    printf "ℹ️  %s\n" "$*" >&2
+    _write_to_log_file "INFO" "$*"
+    if [[ $VERBOSITY_LEVEL -ge 2 ]]; then
+        printf "ℹ️  %s\n" "$*" >&2
+    fi
 }
 
 ##############################################################################
 # FUNCTION: log_warn
-# PURPOSE:  Display warning messages that don't stop execution
+# PURPOSE:  Display warning messages (shown at default level and higher)
 # USAGE:    log_warn "warning message"
-# ARGS:     
+# ARGS:
 #   $* - Warning message text to display
-# RETURNS:  
+# RETURNS:
 #   0 - Always succeeds
-# GLOBALS:  
-#   READ:  None
-#   WRITE: None (outputs to stderr)
+# GLOBALS:
+#   READ:  VERBOSITY_LEVEL
+#   WRITE: None (outputs to stderr if VERBOSITY_LEVEL >= 1)
 # EXAMPLE:
 #   log_warn "Configuration file not found, using defaults"
 #   log_warn "Deprecated option used: $option"
 ##############################################################################
 log_warn() {
-    printf "⚠️  %s\n" "$*" >&2
+    _write_to_log_file "WARN" "$*"
+    if [[ $VERBOSITY_LEVEL -ge 1 ]]; then
+        printf "⚠️  %s\n" "$*" >&2
+    fi
 }
 
 ##############################################################################
 # FUNCTION: log_error
-# PURPOSE:  Display error messages (typically before exiting)
+# PURPOSE:  Display error messages (always shown, even in quiet mode)
 # USAGE:    log_error "error message"
-# ARGS:     
+# ARGS:
 #   $* - Error message text to display
-# RETURNS:  
+# RETURNS:
 #   0 - Always succeeds
-# GLOBALS:  
-#   READ:  None
+# GLOBALS:
+#   READ:  None (always displays)
 #   WRITE: None (outputs to stderr)
 # EXAMPLE:
 #   log_error "Failed to create directory: $dir"
 #   log_error "Invalid argument: $arg"
 ##############################################################################
 log_error() {
+    _write_to_log_file "ERROR" "$*"
+    # Errors always show, regardless of verbosity
     printf "❌ %s\n" "$*" >&2
 }
 
 ##############################################################################
 # FUNCTION: log_success
-# PURPOSE:  Display success messages for completed operations
+# PURPOSE:  Display success messages (shown at default level and higher)
 # USAGE:    log_success "success message"
-# ARGS:     
+# ARGS:
 #   $* - Success message text to display
-# RETURNS:  
+# RETURNS:
 #   0 - Always succeeds
-# GLOBALS:  
-#   READ:  None
-#   WRITE: None (outputs to stderr)
+# GLOBALS:
+#   READ:  VERBOSITY_LEVEL
+#   WRITE: None (outputs to stderr if VERBOSITY_LEVEL >= 1)
 # EXAMPLE:
 #   log_success "Package installed successfully"
 #   log_success "Created $count files"
 ##############################################################################
 log_success() {
-    printf "✅ %s\n" "$*" >&2
+    _write_to_log_file "SUCCESS" "$*"
+    if [[ $VERBOSITY_LEVEL -ge 1 ]]; then
+        printf "✅ %s\n" "$*" >&2
+    fi
 }
 
 # Function: log_warning

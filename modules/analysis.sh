@@ -44,7 +44,7 @@ require_module "core" "templates"
 #
 # Tracking: All created files are tracked in manifest for uninstall
 create_analysis_files() {
-    log_info "Creating analysis and paper files..."
+    log_debug "Creating analysis and paper files..."
     
     # Ensure analysis directories exist (self-contained module)
     safe_mkdir "analysis" "analysis directory"
@@ -179,7 +179,7 @@ EOF
 # Purpose: Create example analysis scripts and templates
 # Optional: Provides examples for common analysis patterns
 create_analysis_examples() {
-    log_info "Creating analysis examples and templates..."
+    log_debug "Creating analysis examples and templates..."
     
     # Create example data analysis script
     local example_analysis='# Example Data Analysis Script
@@ -227,7 +227,7 @@ cat("Edit this file to implement your specific analysis\\n")'
     
     if create_file_if_missing "analysis/templates/example_analysis.R" "$example_analysis" "example analysis script"; then
         track_file "analysis/templates/example_analysis.R"
-        log_info "Created example analysis script"
+        log_debug "Created example analysis script"
     else
         log_warn "Failed to create example analysis script"
     fi
@@ -287,7 +287,7 @@ cat("Use create_example_figure() and save_figure() in your analysis\\n")'
     
     if create_file_if_missing "analysis/templates/figure_template.R" "$figure_template" "figure creation template"; then
         track_file "analysis/templates/figure_template.R"
-        log_info "Created figure creation template"
+        log_debug "Created figure creation template"
     else
         log_warn "Failed to create figure template"
     fi
@@ -299,7 +299,7 @@ cat("Use create_example_figure() and save_figure() in your analysis\\n")'
 # Purpose: Create essential research scripts in the analysis/scripts/ directory (coordinating function)
 # Creates data validation, parallel computing, database setup, and reproducibility scripts
 create_scripts_directory() {
-    log_info "Creating essential research scripts..."
+    log_debug "Creating essential research scripts..."
 
     # Ensure scripts directory exists
     safe_mkdir "analysis/scripts" "research scripts directory"
@@ -406,7 +406,7 @@ cat("Review the output above for any data quality issues\\n")'
     
     if create_file_if_missing "analysis/scripts/02_data_validation.R" "$data_validation_script" "data validation script"; then
         track_file "analysis/scripts/02_data_validation.R"
-        log_info "Created data validation script"
+        log_debug "Created data validation script"
     else
         log_warn "Failed to create data validation script"
     fi
@@ -499,7 +499,7 @@ cat("Parallel computing setup complete\\n")'
     
     if create_file_if_missing "analysis/scripts/00_setup_parallel.R" "$parallel_setup_script" "parallel computing setup script"; then
         track_file "analysis/scripts/00_setup_parallel.R"
-        log_info "Created parallel computing setup script"
+        log_debug "Created parallel computing setup script"
     else
         log_warn "Failed to create parallel computing setup script"
     fi
@@ -573,7 +573,7 @@ cat("Use setup_sqlite(), setup_postgresql(), setup_mysql(), or setup_odbc()\\n")
     
     if create_file_if_missing "analysis/scripts/00_database_setup.R" "$database_setup_script" "database setup script"; then
         track_file "analysis/scripts/00_database_setup.R"
-        log_info "Created database setup script"
+        log_debug "Created database setup script"
     else
         log_warn "Failed to create database setup script"
     fi
@@ -690,7 +690,7 @@ cat("\\n=== REPRODUCIBILITY CHECK COMPLETE ===\\n")'
     
     if create_file_if_missing "analysis/scripts/99_reproducibility_check.R" "$reproducibility_script" "reproducibility check script"; then
         track_file "analysis/scripts/99_reproducibility_check.R"
-        log_info "Created reproducibility check script"
+        log_debug "Created reproducibility check script"
     else
         log_warn "Failed to create reproducibility check script"
     fi
@@ -916,7 +916,7 @@ cat("5. Check test coverage with covr package\\n")'
 
     if create_file_if_missing "analysis/scripts/00_testing_guide.R" "$testing_guide_script" "testing guide script"; then
         track_file "analysis/scripts/00_testing_guide.R"
-        log_info "Created comprehensive testing guide script"
+        log_debug "Created comprehensive testing guide script"
     else
         log_warn "Failed to create testing guide script"
     fi
