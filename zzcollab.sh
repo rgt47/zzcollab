@@ -197,6 +197,7 @@ fi
 # Note: This is intentional duplication - not a bug
 log_info() { printf "ℹ️  %s\n" "$*" >&2; }
 log_error() { printf "❌ %s\n" "$*" >&2; }
+log_debug() { : ; }  # No-op during bootstrap (will be redefined by core.sh)
 
 # Validate modules directory exists
 if [[ ! -d "$MODULES_DIR" ]]; then
