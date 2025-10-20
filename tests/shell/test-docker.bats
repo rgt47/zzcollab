@@ -369,7 +369,7 @@ EOF
     cat > ".zzcollab_team_setup" << 'EOF'
 team_name=myteam
 project_name=myproject
-build_mode=analysis
+profile_name=analysis
 EOF
 
     # Mock install_template to check BASE_IMAGE was set correctly

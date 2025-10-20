@@ -542,7 +542,7 @@ validate_docker_environment() {
     if docker image inspect "$PKG_NAME" >/dev/null 2>&1; then
         log_success "Docker image '$PKG_NAME' exists and ready to use"
     else
-        log_info "Docker image '$PKG_NAME' not built yet - run build_docker_image()"
+        echo "Docker image '$PKG_NAME' not built yet - run build_docker_image()"
     fi
     
     return 0
