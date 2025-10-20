@@ -189,6 +189,7 @@ GITHUB_ACCOUNT=""
 DOCKERHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
 IMAGE_TAG=""
+R_VERSION=""  # R version for Docker build (extracted from renv.lock or specified via --r-version)
 
 # Base image selection for team initialization
 readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
@@ -210,6 +211,7 @@ USER_PROVIDED_BASE_IMAGE=false
 USER_PROVIDED_LIBS=false
 USER_PROVIDED_PKGS=false
 USER_PROVIDED_PROFILE=false
+USER_PROVIDED_R_VERSION=false
 USE_TEAM_IMAGE=false    # Team member flag to pull and use team image
 
 # Show flags (processed after modules are loaded)
@@ -352,6 +354,12 @@ parse_cli_arguments() {
             --tag|-a)
                 require_arg "$1" "$2"
                 IMAGE_TAG="$2"
+                shift 2
+                ;;
+            --r-version)
+                require_arg "$1" "$2"
+                R_VERSION="$2"
+                USER_PROVIDED_R_VERSION=true
                 shift 2
                 ;;
             --list-profiles)

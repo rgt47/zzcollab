@@ -159,50 +159,94 @@ get_docker_platform_args() {
 
 # Function: extract_r_version_from_lockfile
 # Purpose: Extract R version from renv.lock file for Docker builds
-# Returns: R version string (e.g., "4.3.1") or "latest" if not found
-# 
+# Returns: R version string (e.g., "4.3.1") or exits with error
+#
 # Process:
-#   1. Check if renv.lock exists and python3 is available
-#   2. Parse JSON to extract R.Version field
-#   3. Fall back to "latest" if parsing fails or file doesn't exist
+#   1. Verify renv.lock exists (REQUIRED for reproducibility)
+#   2. Check python3 or jq available for JSON parsing
+#   3. Parse JSON to extract R.Version field
+#   4. FAIL if version cannot be determined (never default to "latest")
 #
 # Used by: Docker build process to ensure container matches project R version
-# Dependencies: python3 (for JSON parsing), renv.lock file (optional)
+# Dependencies: python3 or jq (for JSON parsing), renv.lock file (REQUIRED)
 extract_r_version_from_lockfile() {
-    # Check if renv.lock file exists and python3 is available for JSON parsing
-    if [[ -f "renv.lock" ]] && command_exists python3; then
-        log_info "Extracting R version from renv.lock..."
-        
-        # Use Python to parse JSON and extract R version
-        # This approach is more reliable than bash JSON parsing
+    # CRITICAL: renv.lock is REQUIRED for reproducible builds
+    if [[ ! -f "renv.lock" ]]; then
+        log_error "Cannot determine R version: renv.lock not found"
+        log_error ""
+        log_error "For reproducible builds, you must specify the R version."
+        log_error "Choose one of these options:"
+        log_error ""
+        log_error "  Option 1 (Recommended): Initialize renv to create renv.lock"
+        log_error "    R -e \"renv::init()\""
+        log_error ""
+        log_error "  Option 2: Specify R version explicitly with --r-version flag"
+        log_error "    zzcollab --r-version 4.4.0 [other options]"
+        log_error ""
+        log_error "  Option 3: Use system R version (not reproducible)"
+        log_error "    zzcollab --r-version \$(R --version | grep -oP 'R version \\K[0-9.]+') [options]"
+        log_error ""
+        return 1
+    fi
+
+    log_info "Extracting R version from renv.lock..."
+
+    # Try jq first (faster and more reliable)
+    if command_exists jq; then
+        local r_version
+        r_version=$(jq -r '.R.Version // empty' renv.lock 2>/dev/null)
+
+        if [[ -n "$r_version" ]]; then
+            log_success "Found R version in lockfile: $r_version"
+            echo "$r_version"
+            return 0
+        fi
+    fi
+
+    # Fall back to Python if jq not available
+    if command_exists python3; then
         local r_version
         r_version=$(python3 -c "
 import json
+import sys
 try:
     with open('renv.lock', 'r') as f:
         data = json.load(f)
-        print(data.get('R', {}).get('Version', 'latest'))
-except:
-    print('latest')
-" 2>/dev/null)
-        
-        # Validate the extracted version
-        if [[ -n "$r_version" ]] && [[ "$r_version" != "latest" ]]; then
-            log_info "Found R version in lockfile: $r_version"
+        version = data.get('R', {}).get('Version')
+        if version:
+            print(version)
+            sys.exit(0)
+        else:
+            sys.exit(1)
+except Exception as e:
+    print(f'Error parsing renv.lock: {e}', file=sys.stderr)
+    sys.exit(1)
+" 2>&1)
+
+        if [[ $? -eq 0 ]] && [[ -n "$r_version" ]]; then
+            log_success "Found R version in lockfile: $r_version"
             echo "$r_version"
-        else
-            log_info "Could not extract R version from lockfile, using 'latest'"
-            echo "latest"
+            return 0
         fi
-    else
-        # Fallback when renv.lock doesn't exist or python3 not available
-        if [[ ! -f "renv.lock" ]]; then
-            log_info "No renv.lock file found, using R version 'latest'"
-        else
-            log_info "python3 not available for JSON parsing, using R version 'latest'"
-        fi
-        echo "latest"
     fi
+
+    # If we get here, parsing failed
+    log_error "Failed to extract R version from renv.lock"
+    log_error ""
+    if ! command_exists python3 && ! command_exists jq; then
+        log_error "Neither python3 nor jq is available for JSON parsing."
+        log_error "Please install one of them:"
+        log_error "  - Ubuntu/Debian: apt-get install python3"
+        log_error "  - macOS: brew install python3 (or jq)"
+    else
+        log_error "renv.lock may be corrupted or missing R version field."
+        log_error "Try regenerating it with: R -e \"renv::snapshot()\""
+    fi
+    log_error ""
+    log_error "Alternatively, specify R version explicitly:"
+    log_error "  zzcollab --r-version 4.4.0 [other options]"
+    log_error ""
+    return 1
 }
 
 #=============================================================================
@@ -281,12 +325,27 @@ create_docker_files() {
 
     # Determine R version for Docker build
     # This ensures the container uses the same R version as the project
-    local r_version="latest"
-    if [[ -f "renv.lock" ]]; then
-        r_version=$(extract_r_version_from_lockfile)
-        log_info "Using R version from lockfile: $r_version"
+    # Priority: 1) User-provided --r-version, 2) renv.lock, 3) FAIL (no default)
+    local r_version=""
+
+    if [[ "${USER_PROVIDED_R_VERSION:-false}" == "true" ]] && [[ -n "${R_VERSION:-}" ]]; then
+        # User explicitly provided R version via --r-version flag
+        r_version="$R_VERSION"
+        log_info "Using user-specified R version: $r_version"
     else
-        log_info "No renv.lock found, using R version: $r_version"
+        # Try to extract from renv.lock (will fail if missing)
+        if ! r_version=$(extract_r_version_from_lockfile); then
+            log_error "Failed to determine R version for Docker build"
+            log_error "Docker builds require explicit R version for reproducibility"
+            return 1
+        fi
+        log_info "Using R version from renv.lock: $r_version"
+    fi
+
+    # Validate R version format (should be like 4.4.0 or 4.3.1)
+    if [[ ! "$r_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "$r_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        log_warn "R version '$r_version' has unusual format (expected X.Y.Z)"
+        log_warn "Proceeding anyway, but Docker build may fail"
     fi
 
     # Export R_VERSION for template substitution
