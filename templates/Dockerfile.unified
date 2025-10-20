@@ -53,7 +53,6 @@ RUN apt-get update && \
     eza \
     man-db \
     kitty \
-    sudo \
     && rm -rf /var/lib/apt/lists/*
 
 # Install bundle-specific system dependencies
@@ -92,11 +91,12 @@ LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 RUN useradd --create-home --shell /bin/zsh ${USERNAME} || \
     echo "User ${USERNAME} already exists"
 
-# Set password for analyst user (required for RStudio Server authentication and sudo)
-RUN echo "${USERNAME}:${USERNAME}" | chpasswd
-
-# Add analyst to sudo group for administrative tasks
-RUN usermod -aG sudo ${USERNAME}
+# SECURITY: No default password set
+# For RStudio Server, either:
+#   1. Pass PASSWORD env var when starting container: docker run -e PASSWORD=yourpass ...
+#   2. Set password inside container: docker exec CONTAINER chpasswd (interactive)
+#   3. Disable auth: Set RSTUDIO_AUTH=none environment variable
+# Default: Password must be set explicitly by user before RStudio access
 
 # Install R packages based on selected profile
 # Command generated from bundles.yaml (single source of truth)

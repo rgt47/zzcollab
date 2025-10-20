@@ -486,6 +486,45 @@ docker push myorg/r-base:latest
 zzcollab --base-image myorg/r-base
 ```
 
+## Security Considerations
+
+**IMPORTANT**: ZZCOLLAB containers are designed for local development and research environments, not production deployment.
+
+### Container Security
+
+- **No default passwords**: Containers do not set default passwords for security
+- **No sudo access**: Users do not have root/sudo privileges in containers
+- **Local use only**: Containers are intended for local development, not internet-facing services
+
+### RStudio Server Authentication
+
+RStudio Server requires authentication. Choose one option:
+
+**Option 1: Set password when starting container** (recommended)
+```bash
+docker run -e PASSWORD=your_secure_password -p 8787:8787 your-image
+```
+
+**Option 2: Set password in running container**
+```bash
+docker exec -it CONTAINER_NAME bash
+echo "analyst:your_password" | chpasswd
+exit
+```
+
+**Option 3: Disable authentication** (local use only)
+```bash
+docker run -e RSTUDIO_AUTH=none -p 8787:8787 your-image
+```
+
+### Best Practices
+
+- **Do not use default/weak passwords** in any deployment
+- **Do not expose RStudio Server to the internet** without proper authentication and HTTPS
+- **Use strong passwords** if running containers on shared systems
+- **Keep containers updated** by rebuilding with latest base images
+- **Limit port exposure** - only expose ports you need (e.g., 8787 for RStudio)
+
 ## Use Cases
 
 ### Academic Research
