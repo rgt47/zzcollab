@@ -1,0 +1,265 @@
+name: Integration Tests (Docker)
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+  # Run weekly to catch base image issues
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  docker-integration:
+    name: Docker Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [minimal, analysis]
+        r_version: ['4.4.0', '4.3.1']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Install test dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq python3
+
+    - name: Create test project structure
+      run: |
+        mkdir -p test-project
+        cd test-project
+
+        # Create minimal DESCRIPTION file
+        cat > DESCRIPTION << 'EOF'
+        Package: testproject
+        Title: Test Project
+        Version: 0.1.0
+        Authors@R: person("Test", "User", email = "test@example.com", role = c("aut", "cre"))
+        Description: Test project for integration tests.
+        License: GPL-3
+        Encoding: UTF-8
+        EOF
+
+        # Create renv.lock with specified R version
+        cat > renv.lock << EOF
+        {
+          "R": {
+            "Version": "${{ matrix.r_version }}",
+            "Repositories": [
+              {
+                "Name": "CRAN",
+                "URL": "https://cloud.r-project.org"
+              }
+            ]
+          },
+          "Packages": {}
+        }
+        EOF
+
+        # Create minimal .Rprofile
+        cat > .Rprofile << 'EOF'
+        options(
+          repos = c(CRAN = "https://cloud.r-project.org"),
+          renv.config.auto.snapshot = FALSE
+        )
+        EOF
+
+    - name: Install zzcollab
+      run: |
+        sudo ./install.sh
+        which zzcollab
+        zzcollab --version || echo "No version flag"
+
+    - name: Initialize project with zzcollab
+      run: |
+        cd test-project
+
+        # Run zzcollab to create Dockerfile and project structure
+        zzcollab \
+          --team test \
+          --project-name testproject \
+          --profile-name ${{ matrix.profile }} \
+          --r-version ${{ matrix.r_version }} \
+          --no-docker
+
+        # Verify Dockerfile was created
+        test -f Dockerfile
+        echo "Dockerfile created successfully"
+
+    - name: Build Docker image
+      run: |
+        cd test-project
+
+        # Build with BuildKit
+        DOCKER_BUILDKIT=1 docker build \
+          --build-arg R_VERSION=${{ matrix.r_version }} \
+          --build-arg BASE_IMAGE=rocker/r-ver \
+          --build-arg LIBS_BUNDLE=${{ matrix.profile }} \
+          --build-arg PKGS_BUNDLE=${{ matrix.profile }} \
+          --build-arg TEAM_NAME=test \
+          --build-arg PROJECT_NAME=testproject \
+          --build-arg USERNAME=analyst \
+          --tag testproject:test \
+          .
+
+    - name: Test container starts
+      run: |
+        # Start container in background
+        docker run -d \
+          --name test-container \
+          testproject:test \
+          sleep 3600
+
+        # Wait for container to be running
+        sleep 5
+
+        # Verify container is running
+        docker ps | grep test-container
+
+    - name: Test R installation
+      run: |
+        # Test R works
+        docker exec test-container R --version
+
+        # Test R version matches
+        R_VERSION=$(docker exec test-container R --slave -e "cat(paste0(R.version\$major, '.', R.version\$minor))")
+        echo "Container R version: $R_VERSION"
+        echo "Expected R version: ${{ matrix.r_version }}"
+
+        # Check version matches (allowing minor version differences)
+        R_MAJOR=$(echo "$R_VERSION" | cut -d. -f1-2)
+        EXPECTED_MAJOR=$(echo "${{ matrix.r_version }}" | cut -d. -f1-2)
+
+        if [ "$R_MAJOR" != "$EXPECTED_MAJOR" ]; then
+          echo "ERROR: R version mismatch"
+          exit 1
+        fi
+
+    - name: Test project structure
+      run: |
+        # Verify user exists
+        docker exec test-container id analyst
+
+        # Verify project directory exists
+        docker exec test-container test -d /home/analyst/project
+
+        # Verify DESCRIPTION file exists
+        docker exec test-container test -f /home/analyst/project/DESCRIPTION
+
+        # Verify renv.lock exists
+        docker exec test-container test -f /home/analyst/project/renv.lock
+
+    - name: Test R package installation
+      run: |
+        # Test that project is installed as package
+        docker exec test-container \
+          R --slave -e "stopifnot(requireNamespace('testproject', quietly = TRUE))"
+
+    - name: Test user permissions
+      run: |
+        # Verify user can write to project directory
+        docker exec test-container \
+          touch /home/analyst/project/test-file.txt
+
+        # Verify user can write to R library
+        docker exec test-container \
+          test -w /usr/local/lib/R/site-library
+
+    - name: Test no sudo access
+      run: |
+        # Verify sudo command is not available
+        if docker exec test-container which sudo 2>/dev/null; then
+          echo "ERROR: sudo should not be installed"
+          exit 1
+        fi
+        echo "PASS: sudo not available (as expected)"
+
+    - name: Test shell environment
+      run: |
+        # Test zsh is available
+        docker exec test-container which zsh
+
+        # Test vim is available
+        docker exec test-container which vim
+
+    - name: Cleanup
+      if: always()
+      run: |
+        docker stop test-container || true
+        docker rm test-container || true
+        docker rmi testproject:test || true
+
+    - name: Test results summary
+      if: always()
+      run: |
+        echo "=========================================="
+        echo "Integration Test Summary"
+        echo "Profile: ${{ matrix.profile }}"
+        echo "R Version: ${{ matrix.r_version }}"
+        echo "=========================================="
+
+  end-to-end-workflow:
+    name: End-to-End Workflow Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install zzcollab
+      run: |
+        sudo ./install.sh
+        which zzcollab
+
+    - name: Initialize config
+      run: |
+        zzcollab --config init
+        zzcollab --config set team-name testteam
+        zzcollab --config set project-name testproject
+
+    - name: Create test project
+      run: |
+        mkdir -p ~/test-workflow
+        cd ~/test-workflow
+
+        # Initialize with zzcollab (using --r-version to avoid renv.lock requirement)
+        zzcollab \
+          --team testteam \
+          --project-name testproject \
+          --profile-name minimal \
+          --r-version 4.4.0 \
+          --no-docker
+
+        # Verify files were created
+        test -f Dockerfile
+        test -f DESCRIPTION
+        test -f Makefile
+
+    - name: Verify Makefile targets
+      run: |
+        cd ~/test-workflow
+
+        # List available make targets
+        make help || echo "Help target not required"
+
+        # Verify critical targets exist in Makefile
+        grep -q "docker-build" Makefile
+        grep -q "docker-zsh" Makefile || grep -q "docker-r" Makefile
+
+    - name: Test results summary
+      if: always()
+      run: |
+        echo "=========================================="
+        echo "End-to-End Workflow Test Complete"
+        echo "=========================================="
