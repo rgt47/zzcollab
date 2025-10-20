@@ -3,7 +3,8 @@
   "permissions": {
     "allow": [
       "Bash(bats tests/shell/test-docker.bats)",
-      "Bash(bats tests/shell/test-config.bats tests/shell/test-docker.bats)"
+      "Bash(bats tests/shell/test-config.bats tests/shell/test-docker.bats)",
+      "Bash(python3 -c \"import yaml; yaml.safe_load(open(''.github/workflows/integration-tests.yml''))\")"
     ],
     "deny": [],
     "ask": []
