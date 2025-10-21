@@ -1,5 +1,13 @@
 # 🔄 Daily Development Workflow
 
+**Related Guides**:
+- 🐳 [Docker Guide](docker.md) - Understanding Docker concepts and commands
+- 📦 [Package Management](renv.md) - Managing R packages with renv
+- 🔧 [Troubleshooting](troubleshooting.md) - Fix common workflow issues
+- ⚙️ [Configuration](config.md) - Customize your setup
+
+---
+
 ## Understanding the Workflow
 
 **Key Concept**: You work in TWO places:
@@ -7,6 +15,8 @@
 2. **CONTAINER** (isolated R environment) - for R analysis, RStudio
 
 Think of the container as a "virtual computer" that has R perfectly configured.
+
+> 📖 **New to Docker?** See the [Docker Guide](docker.md) for a beginner-friendly explanation.
 
 ---
 
@@ -456,7 +466,9 @@ For more details, see README.md "Security Considerations" section.
 
 ## See Also
 
-- `zzcollab --help` - Quick start guide
-- `zzcollab --help troubleshooting` - Fix common problems
-- `zzcollab --help renv` - Package management
-- README.md - Security considerations
+- [Troubleshooting Guide](troubleshooting.md) - Fix common workflow issues
+- [Package Management](renv.md) - Managing R packages with renv
+- [Docker Guide](docker.md) - Understanding Docker concepts
+- [Configuration Guide](config.md) - Customize your zzcollab setup
+- [CI/CD Guide](cicd.md) - Automate testing and deployment
+- README.md - Security considerations and overview

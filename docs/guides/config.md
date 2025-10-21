@@ -443,6 +443,7 @@ zzcollab --config get team-name             # Get one setting
 
 ## See Also
 
-- `zzcollab --help` - General help
-- `zzcollab --help-quickstart` - Getting started
-- `zzcollab --help-variants` - Docker variants config
+- [Docker Guide](docker.md) - Understanding Docker profiles and variants
+- [Dotfiles Guide](dotfiles.md) - Setting up personal dotfiles configuration
+- [Workflow Guide](workflow.md) - Daily development workflow
+- [Troubleshooting Guide](troubleshooting.md) - Fix configuration issues

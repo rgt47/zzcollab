@@ -505,7 +505,7 @@ If issue persists:
 
 ## See Also
 
-- `zzcollab --help` - General help
-- `zzcollab --help-docker` - Docker essentials
-- `zzcollab --help-workflow` - Daily workflow
-- `zzcollab --help-renv` - Package management
+- [Docker Guide](docker.md) - Understanding Docker concepts and commands
+- [Workflow Guide](workflow.md) - Daily development workflow
+- [Package Management](renv.md) - Managing R packages with renv
+- [Configuration Guide](config.md) - Customize your zzcollab setup

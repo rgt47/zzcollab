@@ -507,6 +507,65 @@ This creates an image ready for your research!
 
 ---
 
+## Advanced: Alpine Linux Profiles
+
+ZZCOLLAB supports ultra-lightweight Alpine Linux profiles for minimal container sizes (~200MB vs ~3GB for standard profiles).
+
+### Available Alpine Profiles
+
+- **alpine_minimal** - Bare-bones Alpine Linux environment
+- **alpine_analysis** - Alpine with common analysis libraries
+
+### Important Limitations
+
+**⚠️ Alpine profiles require third-party base images**
+
+Alpine profiles use `velaco/alpine-r` instead of official Rocker images because:
+- Rocker project does not provide official Alpine builds
+- Alpine uses `apk` package manager instead of `apt-get`
+- Package availability differs from Debian/Ubuntu
+
+### When to Use Alpine
+
+**✅ Good for**:
+- Minimal compute environments (HPC, cloud)
+- Container size constraints
+- Simple R scripts without many dependencies
+
+**❌ Not recommended for**:
+- Complex geospatial workflows (GDAL/PROJ harder to install)
+- Bioinformatics (many packages assume Debian)
+- RStudio Server (works but less tested)
+- First-time Docker users
+
+### Usage Example
+
+```bash
+# Create Alpine-based project
+zzcollab --profile-name alpine_minimal --r-version 4.4.0
+
+# Build image (may take longer due to package compilation)
+make docker-build
+
+# Enter container
+make docker-zsh
+```
+
+### Troubleshooting Alpine
+
+**Package installation fails**:
+- Many R packages compile from source on Alpine
+- Build times are longer
+- Some packages may not work
+
+**Missing system dependencies**:
+- Use `apk add <package>` instead of `apt-get`
+- Package names differ from Debian (e.g., `python3` vs `python`)
+
+**For most users**: Stick with standard profiles unless you have specific size constraints.
+
+---
+
 ## Quick Reference
 
 ### Essential Concepts
@@ -548,6 +607,7 @@ docker system prune     # Clean up
 
 ## See Also
 
-- `zzcollab --help` - General help
-- `zzcollab --help-workflow` - Daily development workflow
-- `zzcollab --help-troubleshooting` - Fix common problems
+- [Workflow Guide](workflow.md) - Daily development workflow using Docker
+- [Troubleshooting Guide](troubleshooting.md) - Fix Docker-related issues
+- [Configuration Guide](config.md) - Configure Docker profiles and settings
+- [CI/CD Guide](cicd.md) - Automating Docker builds in GitHub Actions
