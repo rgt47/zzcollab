@@ -52,7 +52,6 @@ RUN apt-get update && \
     ripgrep \
     eza \
     man-db \
-    kitty \
     && rm -rf /var/lib/apt/lists/*
 
 # Install bundle-specific system dependencies
