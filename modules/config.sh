@@ -354,6 +354,7 @@ load_all_configs() {
     CONFIG_PROFILE_NAME=""
     CONFIG_LIBS_BUNDLE=""
     CONFIG_PKGS_BUNDLE=""
+    CONFIG_R_VERSION=""
     CONFIG_DOTFILES_DIR=""
     CONFIG_DOTFILES_NODOT="false"
     CONFIG_AUTO_GITHUB="false"
@@ -409,6 +410,7 @@ get_config_value() {
         profile_name) echo "$CONFIG_PROFILE_NAME" ;;
         libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
         pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
+        r_version) echo "$CONFIG_R_VERSION" ;;
         dotfiles_dir) echo "$CONFIG_DOTFILES_DIR" ;;
         dotfiles_nodot) echo "$CONFIG_DOTFILES_NODOT" ;;
         auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
