@@ -295,6 +295,172 @@ git push
 
 ---
 
+## Real-World Example: Complete Analysis Workflow
+
+This example shows a complete workflow for analyzing the Palmer Penguins dataset, from project setup to final report.
+
+### Day 1: Project Setup
+
+**💻 HOST (Terminal)**:
+```bash
+# Create project
+mkdir ~/projects/penguin-analysis && cd ~/projects/penguin-analysis
+zzcollab --project-name penguins --r-version 4.4.0
+git init
+git add .
+git commit -m "Initial project setup with zzcollab"
+
+# Start container
+make docker-rstudio
+```
+
+**🐳 CONTAINER (RStudio - localhost:8787)**:
+```r
+# Install packages
+install.packages(c("palmerpenguins", "tidyverse", "ggplot2"))
+renv::snapshot()  # Save package versions
+
+# Create analysis script
+dir.create("analysis/scripts", recursive = TRUE)
+```
+
+**💻 HOST (Terminal)**:
+```bash
+# Ctrl+C to stop container
+git add renv.lock
+git commit -m "Add analysis packages"
+```
+
+### Day 2: Data Exploration
+
+**💻 HOST**: `cd ~/projects/penguin-analysis && make docker-rstudio`
+
+**🐳 CONTAINER (RStudio)**:
+
+Create `analysis/scripts/01_explore.R`:
+```r
+library(palmerpenguins)
+library(tidyverse)
+
+# Load data
+data(penguins)
+
+# Explore
+summary(penguins)
+glimpse(penguins)
+
+# Basic visualization
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point() +
+  theme_minimal()
+
+ggsave("analysis/figures/species_comparison.png", width = 8, height = 6)
+```
+
+**💻 HOST**:
+```bash
+# Ctrl+C
+git add analysis/scripts/01_explore.R analysis/figures/species_comparison.png
+git commit -m "Add exploratory analysis"
+git push
+```
+
+### Day 3: Statistical Analysis
+
+**🐳 CONTAINER (RStudio)**:
+
+Create `analysis/scripts/02_analysis.R`:
+```r
+library(tidyverse)
+library(palmerpenguins)
+
+# Statistical test
+model <- lm(body_mass_g ~ bill_length_mm + species, data = penguins)
+summary(model)
+
+# Save results
+results <- broom::tidy(model)
+write_csv(results, "analysis/results/model_results.csv")
+```
+
+**💻 HOST**:
+```bash
+git add analysis/
+git commit -m "Add statistical analysis"
+```
+
+### Day 4: Final Report
+
+**🐳 CONTAINER (RStudio)**:
+
+Create `analysis/paper/analysis_report.Rmd`:
+```r
+---
+title: "Palmer Penguins Analysis"
+output: html_document
+---
+
+## Introduction
+Analysis of penguin morphology across three species...
+
+## Methods
+`{r}
+library(palmerpenguins)
+data(penguins)
+`
+
+## Results
+`{r}
+ggplot(penguins, aes(x = species, y = body_mass_g)) +
+  geom_boxplot()
+`
+
+## Conclusion
+Our analysis shows significant differences...
+```
+
+Knit to HTML in RStudio.
+
+**💻 HOST**:
+```bash
+git add analysis/paper/
+git commit -m "Add final report"
+git push
+```
+
+### Team Member Reproduces Analysis
+
+**Team member (different computer)**:
+```bash
+# Clone repository
+git clone https://github.com/username/penguin-analysis.git
+cd penguin-analysis
+
+# Run zzcollab (reads existing renv.lock for R version)
+zzcollab
+
+# Start container
+make docker-rstudio
+```
+
+**🐳 CONTAINER (RStudio)**:
+```r
+# Restore exact package versions
+renv::restore()  # Installs exact versions from renv.lock
+
+# Knit report - produces identical results!
+```
+
+### Key Takeaways
+
+1. **One-time setup**: `zzcollab` runs once per project
+2. **Daily pattern**: `make docker-rstudio` → work → Ctrl+C → git commit
+3. **Package management**: `install.packages()` → `renv::snapshot()` → git commit
+4. **File persistence**: Everything in `/home/analyst/project` is saved
+5. **Reproducibility**: `renv.lock` ensures identical environments
+
+---
+
 ## Common Workflow Questions
 
 **Q: "Do I need to run 'zzcollab' every time I work on my project?"**

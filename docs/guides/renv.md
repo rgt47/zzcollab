@@ -546,6 +546,198 @@ A: Use feature branch, install+snapshot there, merge when stable.
 
 ---
 
+## Real-World Example: Team Collaboration
+
+This example shows how three team members collaborate on a time-series forecasting project using renv.
+
+### Day 1: Team Lead Sets Up Project
+
+**Alice (Team Lead)**:
+```bash
+mkdir ~/projects/sales-forecast && cd ~/projects/sales-forecast
+zzcollab --team acme --project-name sales-forecast --r-version 4.4.0
+git init && git add . && git commit -m "Initial setup"
+make docker-rstudio
+```
+
+**In RStudio**:
+```r
+# Install core packages
+install.packages(c("tidyverse", "forecast", "tsibble"))
+renv::snapshot()  # Records: tidyverse 2.0.0, forecast 8.21, tsibble 1.1.3
+```
+
+```bash
+# Back on host
+git add renv.lock && git commit -m "Add forecasting packages" && git push
+```
+
+### Day 2: Bob Joins Project
+
+**Bob (Team Member)**:
+```bash
+git clone https://github.com/acme/sales-forecast.git
+cd sales-forecast
+zzcollab --use-team-image
+make docker-rstudio
+```
+
+**In RStudio**:
+```r
+# renv automatically detects renv.lock
+renv::restore()  # Installs EXACT versions: tidyverse 2.0.0, forecast 8.21, tsibble 1.1.3
+
+# Bob's analysis needs prophet
+install.packages("prophet")
+renv::snapshot()  # Updates renv.lock: adds prophet 1.0
+```
+
+```bash
+git add renv.lock && git commit -m "Add prophet for seasonal decomposition" && git push
+```
+
+### Day 3: Alice Pulls Bob's Changes
+
+**Alice**:
+```bash
+git pull
+make docker-rstudio
+```
+
+**In RStudio**:
+```r
+# renv detects Bob added prophet
+renv::status()
+# > - "prophet" [1.0] is recorded in the lockfile but not installed
+
+renv::restore()  # Installs prophet 1.0 (exact version Bob used)
+
+# Now Alice can run Bob's code!
+source("analysis/scripts/seasonal_analysis.R")  # Uses prophet
+```
+
+### Day 5: Carol Adds Visualization Packages
+
+**Carol (Team Member)**:
+```bash
+git clone https://github.com/acme/sales-forecast.git
+cd sales-forecast
+zzcollab --use-team-image && make docker-rstudio
+```
+
+**In RStudio**:
+```r
+renv::restore()  # Gets tidyverse, forecast, tsibble, prophet (all exact versions!)
+
+# Add interactive visualizations
+install.packages(c("plotly", "shiny"))
+renv::snapshot()
+```
+
+```bash
+git add renv.lock && git commit -m "Add interactive visualization packages" && git push
+```
+
+### Day 6: Full Team Sync
+
+**Everyone runs**:
+```bash
+git pull
+make docker-rstudio
+```
+
+**In RStudio**:
+```r
+renv::restore()  # All team members now have IDENTICAL package versions
+renv::status()   # "No issues found -- the project is in a consistent state"
+```
+
+### Key Observations
+
+1. **Automatic detection**: renv notices when renv.lock changes
+2. **Exact versions**: Everyone has tidyverse 2.0.0 (not 2.0.1 or 2.1.0)
+3. **Incremental updates**: Each team member adds packages, team accumulates them
+4. **No conflicts**: renv merges package additions automatically
+5. **Reproducible analysis**: Any team member can run any script
+
+### What's in renv.lock
+
+```json
+{
+  "R": {
+    "Version": "4.4.0"
+  },
+  "Packages": {
+    "tidyverse": {
+      "Package": "tidyverse",
+      "Version": "2.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "forecast": {
+      "Package": "forecast",
+      "Version": "8.21",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "prophet": {
+      "Package": "prophet",
+      "Version": "1.0",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    }
+  }
+}
+```
+
+### Troubleshooting Scenario
+
+**Problem**: Bob's machine-learning code fails on Carol's computer
+
+```r
+# Carol's R session:
+Error in library(caret) : there is no package called 'caret'
+```
+
+**Diagnosis**:
+```r
+renv::status()
+# > - "caret" [6.0-94] is used in the project but is not recorded in the lockfile
+```
+
+**Bob forgot to snapshot!**
+
+**Solution (Bob)**:
+```r
+install.packages("caret")  # Install if needed
+renv::snapshot()           # Record in renv.lock
+```
+
+```bash
+git add renv.lock && git commit -m "Add caret package" && git push
+```
+
+**Carol**:
+```bash
+git pull
+make docker-rstudio
+```
+
+```r
+renv::restore()  # Installs caret 6.0-94
+source("analysis/scripts/ml_model.R")  # Now works!
+```
+
+### Best Practices Illustrated
+
+1. **Always snapshot after installing**: `install.packages()` → `renv::snapshot()`
+2. **Commit renv.lock frequently**: Keeps team in sync
+3. **Run renv::restore() after pull**: Gets latest package changes
+4. **Use renv::status() to debug**: Shows missing/extra packages
+5. **Don't commit renv/ directory**: It's a cache, can be regenerated
+
+---
+
 ## Quick Reference
 
 ### Essential commands

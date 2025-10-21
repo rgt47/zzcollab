@@ -507,6 +507,151 @@ This creates an image ready for your research!
 
 ---
 
+## Real-World Example: Geospatial Analysis Project
+
+This example shows how to set up a Docker environment for geospatial analysis with specific R packages and system dependencies.
+
+### Scenario
+
+You're analyzing satellite imagery and need:
+- R with geospatial packages (sf, terra, raster)
+- System libraries (GDAL, PROJ, GEOS)
+- Specific R version (4.4.0) for reproducibility
+
+### Setup
+
+```bash
+# Create project with geospatial profile
+mkdir ~/projects/forest-analysis && cd ~/projects/forest-analysis
+zzcollab --profile-name geospatial --project-name forest --r-version 4.4.0
+```
+
+**What happens**:
+1. zzcollab selects `rocker/geospatial:4.4.0` base image
+2. Installs GDAL, PROJ, GEOS system libraries
+3. Pre-installs sf, terra, raster R packages
+4. Creates Dockerfile, Makefile, project structure
+
+### Build and Test
+
+```bash
+# Build Docker image (5-10 minutes first time)
+make docker-build
+
+# Start RStudio
+make docker-rstudio
+```
+
+**In RStudio (localhost:8787)**:
+```r
+# Test geospatial stack
+library(sf)
+library(terra)
+
+# Load shapefile
+nc <- st_read(system.file("shape/nc.shp", package="sf"))
+
+# Create map
+plot(st_geometry(nc), main = "North Carolina Counties")
+
+# Save to project directory (persists!)
+ggsave("analysis/figures/nc_map.png")
+```
+
+### Add More Packages
+
+```r
+# Need additional packages
+install.packages(c("mapview", "leaflet", "tmap"))
+renv::snapshot()  # Record in renv.lock
+```
+
+```bash
+# Back on host
+# Ctrl+C to stop container
+git add renv.lock
+git commit -m "Add interactive mapping packages"
+```
+
+### Share with Team
+
+```bash
+# Build and push team image
+make docker-build
+make docker-push-team  # Pushes to Docker Hub: yourteam/forest:gitSHA
+
+# Commit Dockerfile
+git add Dockerfile renv.lock
+git commit -m "Add geospatial analysis environment"
+git push
+```
+
+**Team member workflow**:
+```bash
+git clone https://github.com/yourteam/forest-analysis.git
+cd forest-analysis
+zzcollab --use-team-image  # Downloads pre-built image (faster!)
+make docker-rstudio
+```
+
+**In RStudio**:
+```r
+renv::restore()  # Installs exact package versions
+# Ready to work! All dependencies match leader's environment
+```
+
+### Debugging: Package Not Found
+
+If a package fails to install:
+
+```bash
+# Enter container shell
+make docker-zsh
+
+# Check system libraries
+dpkg -l | grep gdal
+pkg-config --modversion gdal
+
+# Install missing system dependency
+# (Won't persist - add to Dockerfile instead)
+apt-get update && apt-get install libgdal-dev
+```
+
+**Fix permanently**:
+Edit `Dockerfile`, add to the `RUN apt-get install` section:
+```dockerfile
+RUN apt-get update && apt-get install -y \
+    ...existing packages... \
+    libgdal-dev \  # Add this
+    && rm -rf /var/lib/apt/lists/*
+```
+
+Rebuild: `make docker-build`
+
+### Key Docker Concepts Illustrated
+
+1. **Base Image Selection**: `rocker/geospatial` includes GDAL/PROJ
+2. **Image Building**: `make docker-build` creates custom environment
+3. **Container Running**: `make docker-rstudio` starts temporary instance
+4. **File Persistence**: `/home/analyst/project` mounted from host
+5. **Team Sharing**: Pre-built images via `--use-team-image`
+
+### Comparison: With vs Without Docker
+
+**Without Docker** (traditional setup):
+1. Install R
+2. Install GDAL (configure paths, potential version conflicts)
+3. Install PROJ (more path configuration)
+4. Install R packages (may fail due to library mismatches)
+5. Team member repeats 1-4 (different results!)
+
+**With Docker** (zzcollab):
+1. `zzcollab --profile-name geospatial --r-version 4.4.0`
+2. `make docker-rstudio`
+3. Done! Team member: `zzcollab --use-team-image && make docker-rstudio`
+
+---
+
 ## Advanced: Alpine Linux Profiles
 
 ZZCOLLAB supports ultra-lightweight Alpine Linux profiles for minimal container sizes (~200MB vs ~3GB for standard profiles).
