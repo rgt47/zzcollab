@@ -423,8 +423,28 @@ validate_r_version_early() {
         r_version_to_check="${CONFIG_R_VERSION}"
         log_info "Validating R version from config: ${r_version_to_check}"
     else
-        # No R version specified yet - will be determined from renv.lock during Docker file creation
-        log_debug "No R version specified, will check renv.lock during Docker setup"
+        # No R version specified - check if renv.lock exists
+        if [[ ! -f "renv.lock" ]]; then
+            log_error "Cannot determine R version: renv.lock not found"
+            log_error ""
+            log_error "For reproducible builds, you must specify the R version."
+            log_error "Choose one of these options:"
+            log_error ""
+            log_error "  Option 1: Set default R version in config (recommended)"
+            log_error "    zzcollab --config set r-version 4.4.0"
+            log_error "    zzcollab  # Then run zzcollab again"
+            log_error ""
+            log_error "  Option 2: Specify R version with --r-version flag"
+            log_error "    zzcollab --r-version 4.4.0"
+            log_error ""
+            log_error "  Option 3: Initialize renv first to create renv.lock"
+            log_error "    R -e \"renv::init()\""
+            log_error "    zzcollab  # Then run zzcollab again"
+            log_error ""
+            return 1
+        fi
+        # renv.lock exists - will validate it during Docker file creation
+        log_debug "No R version specified, will extract from renv.lock during Docker setup"
         return 0
     fi
 
