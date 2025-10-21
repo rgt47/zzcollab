@@ -510,12 +510,9 @@ create_docker_files() {
     # This catches typos and unavailable versions before Docker build fails
     log_debug "Validating R version ${r_version} exists on Docker Hub..."
     if ! check_docker_image_exists "rocker/r-ver" "${r_version}"; then
-        log_warn "Docker image 'rocker/r-ver:${r_version}' not found on Docker Hub"
+        log_error "Docker image 'rocker/r-ver:${r_version}' not found on Docker Hub"
         suggest_r_version "${r_version}" "rocker/r-ver"
-        log_error ""
-        log_error "Proceeding anyway, but Docker build will likely fail."
-        log_error "Press Ctrl+C to cancel and use a valid R version."
-        sleep 3  # Give user time to read and cancel
+        return 1  # FAIL - don't proceed with invalid R version
     else
         log_debug "✓ Confirmed rocker/r-ver:${r_version} exists on Docker Hub"
     fi
