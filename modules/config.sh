@@ -382,6 +382,13 @@ apply_config_defaults() {
     [[ -z "${PROFILE_NAME:-}" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
     [[ -z "${LIBS_BUNDLE:-}" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
     [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
+
+    # Apply R version from config if not specified by --r-version flag
+    if [[ -z "${R_VERSION:-}" ]] && [[ -n "$CONFIG_R_VERSION" ]]; then
+        R_VERSION="$CONFIG_R_VERSION"
+        USER_PROVIDED_R_VERSION="false"  # Set to false since it came from config, not CLI
+    fi
+
     [[ -z "${DOTFILES_DIR:-}" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
 
     # Handle boolean flags
