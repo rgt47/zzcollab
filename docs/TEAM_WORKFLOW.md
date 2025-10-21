@@ -357,6 +357,24 @@ zzcollab -t TEAM -p PROJECT --use-team-image -d ~/dotfiles
 zzcollab -t TEAM -p PROJECT  # omit --use-team-image
 ```
 
+### Automation Flags
+
+```bash
+# For CI/CD pipelines (skip file conflict prompts)
+zzcollab -t TEAM -p PROJECT --force
+
+# Combine with other flags
+zzcollab -t TEAM -p PROJECT --use-team-image --force -d ~/dotfiles
+```
+
+**When to use `--force`**:
+- CI/CD workflows (GitHub Actions, GitLab CI, etc.)
+- Automated testing environments
+- Container build pipelines
+- Any non-interactive context where prompts would fail
+
+**Security note**: Only use `--force` in trusted automation contexts. It will overwrite existing files without confirmation.
+
 ---
 
 ## Troubleshooting

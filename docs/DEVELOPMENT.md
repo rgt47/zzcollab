@@ -208,78 +208,91 @@ make docker-zsh            # Automatically uses updated image
 #    3. Build image locally if needed: make docker-build
 ```
 
-## Build Modes Reference
+## Package Management
 
-### Build Mode Comparison
+### Dynamic Package Installation
+
+ZZCOLLAB uses **dynamic package management** via renv for maximum flexibility:
+
 ```bash
-# Minimal (-M): Ultra-fast bare essentials (~30 seconds, 3 packages)
-#   → renv, remotes, here
+# Inside Docker container
+make docker-zsh
 
-# Fast (-F): Development essentials (2-3 minutes, 9 packages)
-#   → renv, remotes, here, usethis, devtools, testthat, knitr, rmarkdown, targets
+# Add packages as needed
+renv::install("tidyverse")
+renv::install("sf")
+renv::install("targets")
 
-# Standard (-S): Balanced Docker + standard packages (4-6 minutes, 17 packages, default)
-#   → + dplyr, ggplot2, tidyr, palmerpenguins, broom, janitor, DT, conflicted
+# Save to renv.lock
+renv::snapshot()
 
-# Comprehensive (-C): Extended Docker + full packages (15-20 minutes, 47 packages)
-#   → + tidymodels, shiny, plotly, quarto, flexdashboard, survival, lme4, databases
+# Exit and commit
+exit
+git add renv.lock
+git commit -m "Add analysis packages"
 ```
+
+### Docker Profiles
+
+**Profile System**: Select pre-configured Docker environments optimized for different use cases:
+
+```bash
+# Minimal profile (lightweight, ~200MB)
+zzcollab --profile-name minimal
+
+# Analysis profile (tidyverse + common packages)
+zzcollab --profile-name analysis
+
+# Bioinformatics profile (Bioconductor packages)
+zzcollab --profile-name bioinformatics
+
+# Geospatial profile (GDAL, PROJ, sf, terra)
+zzcollab --profile-name geospatial
+```
+
+*For complete profile documentation, see [Variants Guide](VARIANTS.md)*
 
 ### Dockerfile Customization
 
-#### Bundle System
-```bash
-# bundles.yaml defines three package collections:
-# - fast-bundle: 9 essential packages (2-3 minutes)
-# - standard-bundle: 17 balanced packages (4-6 minutes, default)
-# - comprehensive-bundle: 47+ full ecosystem (15-20 minutes)
-```
+Team leads can customize the Docker environment:
 
-#### Customizing Dockerfile
 ```dockerfile
-# Team leads modify Dockerfile to select bundle and base image:
+# 1. Choose base image (line ~3):
+FROM rocker/rstudio:4.4.0     # RStudio Server
+# FROM rocker/r-ver:4.4.0     # Shell-only
+# FROM rocker/verse:4.4.0     # Publishing with LaTeX
 
-# 1. Choose base image (line ~10):
-FROM rocker/rstudio:latest    # RStudio Server
-# FROM rocker/r-ver:latest    # Shell-only
-# FROM rocker/verse:latest    # Publishing with LaTeX
-
-# 2. Choose package bundle (line ~50):
-COPY --from=bundles standard-bundle /   # Default
-# COPY --from=bundles fast-bundle /      # Minimal
-# COPY --from=bundles comprehensive-bundle /  # Full
-
-# 3. Add custom packages (optional, line ~60):
-RUN Rscript -e "install.packages(c('sf', 'terra', 'leaflet'))"
-
-# 4. Add system dependencies (optional, line ~30):
+# 2. Add system dependencies (line ~29):
 RUN apt-get update && apt-get install -y \
     libgdal-dev \
     libproj-dev
+
+# 3. Install base R packages (line ~106):
+RUN ${R_PACKAGES_INSTALL_CMD}
 ```
 
-### Example Workflow
+### Team Collaboration Workflow
+
 ```bash
 # Team Lead:
-zzcollab -t team -p project -d ~/dotfiles
-vim Dockerfile             # Select bundle, base image, add custom packages
-make docker-build
-make docker-push-team
+zzcollab -t team -p project --profile-name analysis
+make docker-build && make docker-push-team
+git add . && git commit -m "Initial setup" && git push
 
 # Team Members:
-git clone https://github.com/team/project.git
-cd project
-zzcollab --use-team-image -d ~/dotfiles
+git clone https://github.com/team/project.git && cd project
+zzcollab --use-team-image
 make docker-zsh
+# Add packages as needed with renv::install()
 ```
 
 ## Key Benefits
 
-- **Single source of truth**: Dockerfile defines entire environment
-- **Full Docker control**: Use any base image, add any package
-- **Efficient caching**: Multi-stage builds for fast rebuilds
-- **Easy sharing**: One command to push, one flag to use team image
-- **Transparent**: Team sees exact Dockerfile configuration
+- **Dynamic flexibility**: Add packages on-demand via renv::install()
+- **Docker profiles**: Pre-configured environments for common use cases
+- **Full Docker control**: Customize base image and system dependencies
+- **Easy sharing**: Team members use --use-team-image
+- **Collaborative renv.lock**: Accumulates packages from all contributors
 
 ## Related Documentation
 

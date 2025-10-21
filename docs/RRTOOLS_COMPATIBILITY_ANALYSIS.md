@@ -1,10 +1,44 @@
 # ZZCOLLAB Framework Compatibility Analysis with rrtools
 
-**Date:** September 29, 2025
+**Date:** September 29, 2025 (Original Analysis)
+**Updated:** October 20, 2025 (Unified Paradigm Context Added)
 **Analysis Type:** Directory Structure and Framework Compatibility Assessment
 **Frameworks Compared:** ZZCOLLAB vs. rrtools Research Compendium Framework
 
-## Executive Summary
+---
+
+## 🔄 October 2025 Update: Unified Paradigm Framework
+
+**IMPORTANT**: As of October 2025, ZZCOLLAB has transitioned from three separate paradigms to a **unified research compendium framework** following the Marwick, Boettiger, and Mullen (2018) model.
+
+### Key Changes
+
+**Before (September 2025)**: Three paradigms
+- Analysis paradigm
+- Manuscript paradigm
+- Package paradigm
+
+**After (October 2025)**: Single unified structure
+- One flexible research compendium
+- Progressive disclosure philosophy
+- Supports entire research lifecycle
+
+### Why This Matters for rrtools Compatibility
+
+The unified paradigm **increases** compatibility with rrtools by:
+
+1. **Direct Alignment**: Single structure matches rrtools philosophy exactly
+2. **No Paradigm Choice**: Users don't choose workflow upfront (matches rrtools)
+3. **Natural Evolution**: Projects evolve from analysis → manuscript → package organically
+4. **Simplified Migration**: Existing rrtools projects adopt ZZCOLLAB structure seamlessly
+
+**The analysis below remains valuable** for understanding structural evolution, but the current ZZCOLLAB framework is now **more aligned with rrtools** than when this analysis was written.
+
+*For current unified structure documentation, see CLAUDE.md and ZZCOLLAB_USER_GUIDE.md*
+
+---
+
+## Executive Summary (Original Analysis - September 2025)
 
 This analysis evaluates the compatibility between ZZCOLLAB's three research
 paradigms (analysis, manuscript, package) and the established rrtools framework

@@ -83,81 +83,61 @@ get_workflow_template() {
 
 ## Large Module Size - help_guides.sh (MED-4)
 
-**Status**: Documented, not yet refactored
-**Priority**: Medium  
+**Status**: ✅ COMPLETED (October 2025)
+**Priority**: Medium
 **Effort**: 3-4 hours
-**File Size**: 3597 lines (exceeds recommended 500-line limit)
+**Original File Size**: 3,596 lines
+**Current File Size**: 173 lines (95% reduction)
 
-### Problem
+### Problem (RESOLVED)
 
-`modules/help_guides.sh` is extremely large (3597 lines), making it difficult to:
+`modules/help_guides.sh` was extremely large (3,596 lines), making it difficult to:
 - Navigate and maintain
 - Test individual components
 - Load efficiently
 - Follow single responsibility principle
 
-### Current Structure
+### Solution Implemented
 
-The module contains three main help content functions:
-1. `show_workflow_help()` - Daily development workflow guidance
-2. `show_troubleshooting_help()` - Common issues and solutions
-3. `show_config_help()` - Configuration system documentation
+**Markdown Migration Approach** (Recommended approach was chosen):
 
-Each function includes extensive documentation content (hundreds of lines of HERE documents).
-
-### Proposed Split
-
-Create focused modules:
+All documentation migrated from shell heredocs to professional markdown files:
 
 ```
-modules/help/
-├── workflow.sh         (~1200 lines) - Daily workflow guidance
-├── troubleshooting.sh  (~1200 lines) - Troubleshooting guides
-└── configuration.sh    (~1200 lines) - Configuration documentation
+docs/guides/
+├── workflow.md           (462 lines) - Daily development workflow
+├── troubleshooting.md    (511 lines) - Common issues and solutions
+├── config.md             (448 lines) - Configuration system guide
+├── dotfiles.md           (509 lines) - Dotfiles setup and management
+├── renv.md               (581 lines) - Package management with renv
+├── docker.md             (553 lines) - Docker essentials
+└── cicd.md               (544 lines) - CI/CD workflows
 ```
 
-### Migration Plan
+**Total**: 3,146 lines of documentation migrated to markdown
 
-1. Create `modules/help/` directory
-2. Split content:
-   - Move `show_workflow_help*` to `workflow.sh`
-   - Move `show_troubleshooting_help*` to `troubleshooting.sh`
-   - Move `show_config_help*` to `configuration.sh`
-3. Create `modules/help.sh` as orchestrator that loads submodules
-4. Update `zzcollab.sh` to load help system properly
-5. Add module dependency checks
-6. Test all help commands work correctly
+### Implementation Details
 
-### Alternative Approach
+1. Created `docs/guides/` directory structure
+2. Migrated all 7 guides to markdown with professional formatting
+3. Refactored `help_guides.sh` to use `read_guide_markdown()` helper
+4. Reduced module from 3,596 to 173 lines (95% reduction)
+5. Maintained pager integration (less/more)
+6. Added error handling for missing guide files
 
-Instead of shell modules, convert help content to Markdown files:
+### Benefits Achieved
 
-```
-docs/help/
-├── workflow.md
-├── troubleshooting.md  
-└── configuration.md
-```
+- ✅ Easier to edit (Markdown vs HERE documents)
+- ✅ Better for version control (smaller diffs)
+- ✅ Can be viewed outside zzcollab
+- ✅ Reduced shell code size by 95%
+- ✅ Professional documentation formatting
+- ✅ No functional changes to help system API
 
-Then create simple shell functions that display these files using `less` or `cat`.
+### Files Modified
 
-**Benefits**:
-- Easier to edit (Markdown vs HERE documents)
-- Better for version control (smaller diffs)
-- Can be viewed outside zzcollab
-- Reduces shell code size significantly
+- `modules/help_guides.sh` (3,519 lines removed, 96 lines added)
+- All 7 guide files created in `docs/guides/`
 
-### Impact
-
-- **Risk**: Medium (affects help system, user-facing)
-- **Benefit**: Much easier maintenance, better code organization
-- **Testing**: Verify all help commands display correctly
-
-### Recommendation
-
-Use the Markdown approach:
-1. Convert HERE document content to Markdown files
-2. Create simple display functions
-3. Reduces `help_guides.sh` from 3597 to ~200 lines
-4. Makes documentation more accessible
+**Commit Reference**: See TECHNICAL_FIXES_SUMMARY.md Fix #4 for complete details
 
