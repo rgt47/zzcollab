@@ -155,6 +155,7 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
 zzcollab --config set team-name "jsmith"
 zzcollab --config set github-account "jsmith"
 zzcollab --config set profile-name "analysis"
+zzcollab --config set r-version "4.4.0"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 zzcollab --config set auto-github false
 ```
@@ -245,7 +246,34 @@ zzcollab --config set profile-name "analysis"
 # Existing projects unaffected
 ```
 
-### Workflow 4: Reset Everything
+### Workflow 4: Set Default R Version
+
+```bash
+# Set default R version for all projects
+zzcollab --config set r-version "4.4.0"
+
+# Now all new projects use R 4.4.0 automatically
+cd new-project && zzcollab
+# ✓ Uses R 4.4.0 from config (no --r-version flag needed!)
+
+# Override for specific project
+zzcollab --r-version "4.3.1"  # Uses 4.3.1 instead
+```
+
+**Benefits**:
+- Set once, use everywhere
+- No need to specify --r-version for every project
+- Ensures consistent R version across all projects
+- Validated against Docker Hub before builds
+- Easy to override when needed
+
+**Priority**:
+1. `--r-version` flag (highest priority)
+2. Config `r-version` (second priority)
+3. `renv.lock` R version (third priority)
+4. FAIL with error (no defaults to `:latest`)
+
+### Workflow 5: Reset Everything
 
 ```bash
 # Start over with defaults
@@ -419,11 +447,13 @@ This overrides user config for THIS PROJECT ONLY.
 ### Essential commands
 
 ```bash
-zzcollab --config init                      # Create config file
-zzcollab --config set team-name "name"      # Set your name
-zzcollab --config set profile-name "analysis" # Set build mode
-zzcollab --config list                      # See all settings
-zzcollab --config get team-name             # Get one setting
+zzcollab --config init                         # Create config file
+zzcollab --config set team-name "name"         # Set your name
+zzcollab --config set profile-name "analysis"  # Set Docker profile
+zzcollab --config set r-version "4.4.0"        # Set default R version
+zzcollab --config set dotfiles-dir "~/dotfiles" # Set dotfiles location
+zzcollab --config list                         # See all settings
+zzcollab --config get team-name                # Get one setting
 ```
 
 ### Files

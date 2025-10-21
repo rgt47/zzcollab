@@ -106,6 +106,9 @@ defaults:
   # libs_bundle: "minimal"
   # pkgs_bundle: "tidyverse"
 
+  # R version (for Docker builds)
+  r_version: "4.4.0"                # Default R version for all projects
+
   # Development environment
   dotfiles_dir: "~/dotfiles"
   dotfiles_nodot: false
