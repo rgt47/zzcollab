@@ -881,14 +881,22 @@ execute_project_creation_workflow() {
 # Purpose: Complete setup with Docker build, renv, GitHub, and reporting
 finalize_and_report_results() {
     # Determine R version for Docker build
-    # Priority: 1) User-provided --r-version, 2) renv.lock
-    if [[ "${USER_PROVIDED_R_VERSION:-false}" != "true" ]]; then
+    # Priority: 1) User-provided --r-version, 2) Config r-version, 3) renv.lock
+    # Note: R_VERSION should already be set by apply_config_defaults() if from config
+    if [[ -z "${R_VERSION:-}" ]]; then
+        # R_VERSION not set - try to extract from renv.lock
         log_info "🔍 Detecting R version from renv.lock..."
         R_VERSION=$(extract_r_version_from_lockfile)
         export R_VERSION
-        log_info "Using R version: $R_VERSION"
+        log_info "Using R version from renv.lock: $R_VERSION"
     else
-        log_info "Using user-specified R version: $R_VERSION"
+        # R_VERSION already set (from --r-version flag or config)
+        export R_VERSION
+        if [[ "${USER_PROVIDED_R_VERSION:-false}" == "true" ]]; then
+            log_info "Using user-specified R version: $R_VERSION"
+        else
+            log_info "Using R version from config: $R_VERSION"
+        fi
     fi
 
     # Install uninstall script
