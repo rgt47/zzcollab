@@ -87,11 +87,13 @@ jobs:
         cd test-project
 
         # Run zzcollab to create Dockerfile and project structure
+        # --force flag allows overwriting test files in CI/CD
         zzcollab \
           --team test \
           --project-name testproject \
           --profile-name ${{ matrix.profile }} \
           --r-version ${{ matrix.r_version }} \
+          --force \
           --no-docker
 
         # Verify Dockerfile was created

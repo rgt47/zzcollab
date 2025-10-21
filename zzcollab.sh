@@ -458,6 +458,12 @@ detect_file_conflicts() {
 # Function: confirm_overwrite_conflicts
 # Purpose: Ask user about overwriting conflicting files
 confirm_overwrite_conflicts() {
+    # Skip prompts if --force flag is set (for CI/CD and automated workflows)
+    if [[ "${FORCE_DIRECTORY:-false}" == "true" ]]; then
+        log_debug "✅ --force flag set - skipping conflict confirmation"
+        return 0
+    fi
+
     local conflicts
     # Using while read loop for broader shell compatibility instead of mapfile
     conflicts=()
@@ -465,7 +471,7 @@ confirm_overwrite_conflicts() {
     while IFS= read -r conflict; do
         [[ -n "$conflict" ]] && conflicts+=("$conflict")
     done < <(detect_file_conflicts)
-    
+
     if [[ ${#conflicts[@]} -eq 0 ]]; then
         log_debug "✅ No file conflicts detected - safe to proceed"
         return 0

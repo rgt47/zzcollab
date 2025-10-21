@@ -194,6 +194,7 @@ OPTIONS:
         --build-docker           Build Docker image automatically during setup
     -n, --no-docker              Skip Docker image build (default; build manually with 'make docker-build')
     -G, --github                 Automatically create private GitHub repository and push
+        --force                  Skip file conflict confirmation prompts (for CI/CD and automation)
         --next-steps             Show development workflow and next steps
 
     Output control:
