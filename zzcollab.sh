@@ -925,6 +925,14 @@ finalize_and_report_results() {
     log_info "📦 Creating renv.lock file..."
     if command -v R >/dev/null 2>&1; then
         if R --slave -e "renv::init(bare = TRUE, restart = FALSE); renv::snapshot(prompt = FALSE)" 2>/dev/null; then
+            # Fix R version in renv.lock to match configured/Dockerfile version
+            # renv::snapshot() uses local R version, but we need Docker R version
+            if [[ -f "renv.lock" ]] && [[ -n "${R_VERSION:-}" ]]; then
+                log_debug "Correcting R version in renv.lock to match Dockerfile: ${R_VERSION}"
+                if command -v python3 >/dev/null 2>&1; then
+                    python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['R']['Version']='${R_VERSION}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
+                fi
+            fi
             log_success "Created renv.lock with current package environment"
         else
             log_warning "Failed to create renv.lock - run 'renv::init(); renv::snapshot()' manually"
