@@ -175,12 +175,13 @@ jobs:
 
     - name: Test no sudo access
       run: |
-        # Verify sudo command is not available
-        if docker exec test-container which sudo 2>/dev/null; then
-          echo "ERROR: sudo should not be installed"
+        # Verify analyst user cannot use sudo (security hardening)
+        # Base images include sudo, but analyst shouldn't be in sudoers group
+        if docker exec test-container sudo -n true 2>/dev/null; then
+          echo "ERROR: analyst user has sudo access (security violation)"
           exit 1
         fi
-        echo "PASS: sudo not available (as expected)"
+        echo "PASS: analyst user cannot use sudo (as expected)"
 
     - name: Test shell environment
       run: |

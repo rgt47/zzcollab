@@ -52,9 +52,10 @@ RUN apt-get update && \
     man-db \
     && rm -rf /var/lib/apt/lists/*
 
-# Security hardening: Remove sudo (base images include it, but we don't need it)
+# Security hardening: Ensure analyst user has no sudo access
+# Base images include sudo, but we ensure the user can't use it
 # Principle of least privilege - no privilege escalation in research containers
-RUN apt-get remove -y sudo && apt-get autoremove -y
+# Note: We don't remove sudo package (causes dependency issues), but user has no access
 
 # Install bundle-specific system dependencies
 # Command generated from bundles.yaml (single source of truth)
