@@ -825,6 +825,13 @@ validate_and_setup_environment() {
         exit 1
     fi
 
+    # Validate R version EARLY (before creating any files)
+    # This catches invalid R versions immediately, not after creating 40+ files
+    log_info "🔍 Validating R version..."
+    if ! validate_r_version_early; then
+        exit 1
+    fi
+
     # Run conflict detection FIRST, before any directory creation
     confirm_overwrite_conflicts
 

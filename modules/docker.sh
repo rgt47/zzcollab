@@ -390,6 +390,63 @@ suggest_r_version() {
     log_error ""
 }
 
+##############################################################################
+# FUNCTION: validate_r_version_early
+# PURPOSE:  Validate R version BEFORE creating any project files
+# USAGE:    validate_r_version_early
+# ARGS:     None (uses global variables)
+# RETURNS:
+#   0 - R version is valid or will be determined from renv.lock
+#   1 - R version is invalid
+# GLOBALS:
+#   READ:  USER_PROVIDED_R_VERSION, R_VERSION, CONFIG_R_VERSION
+#   WRITE: None
+# DESCRIPTION:
+#   This function validates the R version early in the project setup workflow,
+#   before any files are created. It checks format and Docker Hub availability
+#   for user-provided or config-specified R versions.
+# VALIDATION PRIORITY:
+#   1. User-provided --r-version flag (validate immediately)
+#   2. Config r-version (validate immediately)
+#   3. renv.lock (skip validation - will be checked during Docker file creation)
+# EXAMPLE:
+#   validate_r_version_early || exit 1
+##############################################################################
+validate_r_version_early() {
+    local r_version_to_check=""
+
+    # Determine which R version to validate
+    if [[ "${USER_PROVIDED_R_VERSION:-false}" == "true" ]] && [[ -n "${R_VERSION:-}" ]]; then
+        r_version_to_check="${R_VERSION}"
+        log_info "Validating user-provided R version: ${r_version_to_check}"
+    elif [[ -n "${CONFIG_R_VERSION:-}" ]]; then
+        r_version_to_check="${CONFIG_R_VERSION}"
+        log_info "Validating R version from config: ${r_version_to_check}"
+    else
+        # No R version specified yet - will be determined from renv.lock during Docker file creation
+        log_debug "No R version specified, will check renv.lock during Docker setup"
+        return 0
+    fi
+
+    # Validate R version format (X.Y.Z or X.Y)
+    if [[ ! "${r_version_to_check}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "${r_version_to_check}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        log_error "R version '${r_version_to_check}' has invalid format (expected X.Y.Z)"
+        suggest_r_version "${r_version_to_check}" "rocker/r-ver"
+        return 1
+    fi
+
+    # Validate that Docker image exists on Docker Hub
+    log_debug "Validating R version ${r_version_to_check} exists on Docker Hub..."
+    if ! check_docker_image_exists "rocker/r-ver" "${r_version_to_check}"; then
+        log_error "Docker image 'rocker/r-ver:${r_version_to_check}' not found on Docker Hub"
+        suggest_r_version "${r_version_to_check}" "rocker/r-ver"
+        return 1
+    fi
+
+    log_info "✓ Confirmed R version ${r_version_to_check} is available on Docker Hub"
+    return 0
+}
+
 #=============================================================================
 # DOCKER TEMPLATE SELECTION
 #=============================================================================
@@ -499,21 +556,24 @@ create_docker_files() {
         log_info "Using R version from renv.lock: ${r_version}"
     fi
 
-    # Validate R version format (should be like 4.4.0 or 4.3.1)
-    if [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+$ ]]; then
-        log_error "R version '${r_version}' has invalid format (expected X.Y.Z)"
-        suggest_r_version "${r_version}" "rocker/r-ver"
-        return 1
-    fi
+    # Note: R version validation happens earlier in validate_r_version_early()
+    # for user-provided and config R versions. Here we only validate renv.lock versions
+    # since those are determined at this point in the workflow.
 
-    # Validate that Docker image exists on Docker Hub
-    # This catches typos and unavailable versions before Docker build fails
-    log_debug "Validating R version ${r_version} exists on Docker Hub..."
-    if ! check_docker_image_exists "rocker/r-ver" "${r_version}"; then
-        log_error "Docker image 'rocker/r-ver:${r_version}' not found on Docker Hub"
-        suggest_r_version "${r_version}" "rocker/r-ver"
-        return 1  # FAIL - don't proceed with invalid R version
-    else
+    if [[ "${USER_PROVIDED_R_VERSION:-false}" != "true" ]] && [[ -z "${CONFIG_R_VERSION:-}" ]]; then
+        # This R version came from renv.lock - validate it now
+        if [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            log_error "R version '${r_version}' from renv.lock has invalid format (expected X.Y.Z)"
+            suggest_r_version "${r_version}" "rocker/r-ver"
+            return 1
+        fi
+
+        log_debug "Validating R version ${r_version} from renv.lock exists on Docker Hub..."
+        if ! check_docker_image_exists "rocker/r-ver" "${r_version}"; then
+            log_error "Docker image 'rocker/r-ver:${r_version}' not found on Docker Hub"
+            suggest_r_version "${r_version}" "rocker/r-ver"
+            return 1
+        fi
         log_debug "✓ Confirmed rocker/r-ver:${r_version} exists on Docker Hub"
     fi
 
