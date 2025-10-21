@@ -463,6 +463,44 @@ validate_r_version_early() {
         return 1
     fi
 
+    # CRITICAL: Check for mismatch between specified R version and renv.lock
+    # If renv.lock exists and has a different R version, this will cause:
+    # - Binary package incompatibility
+    # - renv::restore() failures
+    # - Silent behavior differences
+    # - Breaking reproducibility
+    if [[ -f "renv.lock" ]]; then
+        local lockfile_r_version
+        if lockfile_r_version=$(extract_r_version_from_lockfile 2>/dev/null); then
+            if [[ "${r_version_to_check}" != "${lockfile_r_version}" ]]; then
+                log_error "R version MISMATCH detected!"
+                log_error ""
+                log_error "  Specified R version:  ${r_version_to_check}"
+                log_error "  renv.lock R version:  ${lockfile_r_version}"
+                log_error ""
+                log_error "This mismatch will cause:"
+                log_error "  • Binary package incompatibility"
+                log_error "  • renv::restore() failures"
+                log_error "  • Different computational results"
+                log_error ""
+                log_error "Choose one of these solutions:"
+                log_error ""
+                log_error "  Solution 1: Use R version from renv.lock (recommended)"
+                log_error "    zzcollab --r-version ${lockfile_r_version}"
+                log_error "    # OR set in config:"
+                log_error "    zzcollab --config set r-version ${lockfile_r_version}"
+                log_error ""
+                log_error "  Solution 2: Update renv.lock to match specified version"
+                log_error "    # Install R ${r_version_to_check}, then:"
+                log_error "    R -e \"renv::init(force = TRUE)\""
+                log_error "    zzcollab --r-version ${r_version_to_check}"
+                log_error ""
+                return 1
+            fi
+            log_debug "✓ R version ${r_version_to_check} matches renv.lock"
+        fi
+    fi
+
     log_info "✓ Confirmed R version ${r_version_to_check} is available on Docker Hub"
     return 0
 }
