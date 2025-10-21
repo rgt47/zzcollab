@@ -40,6 +40,7 @@ CONFIG_DOCKERHUB_ACCOUNT=""
 CONFIG_PROFILE_NAME=""
 CONFIG_LIBS_BUNDLE=""
 CONFIG_PKGS_BUNDLE=""
+CONFIG_R_VERSION=""
 CONFIG_DOTFILES_DIR=""
 CONFIG_DOTFILES_NODOT="false"
 CONFIG_AUTO_GITHUB="false"
@@ -321,6 +322,7 @@ load_config_file() {
     local profile_name=$(yaml_get "$config_file" "defaults.profile_name")
     local libs_bundle=$(yaml_get "$config_file" "defaults.libs_bundle")
     local pkgs_bundle=$(yaml_get "$config_file" "defaults.pkgs_bundle")
+    local r_version=$(yaml_get "$config_file" "defaults.r_version")
     local dotfiles_dir=$(yaml_get "$config_file" "defaults.dotfiles_dir")
     local dotfiles_nodot=$(yaml_get "$config_file" "defaults.dotfiles_nodot")
     local auto_github=$(yaml_get "$config_file" "defaults.auto_github")
@@ -333,6 +335,7 @@ load_config_file() {
     [[ "$profile_name" != "null" && -n "$profile_name" ]] && CONFIG_PROFILE_NAME="$profile_name"
     [[ "$libs_bundle" != "null" && -n "$libs_bundle" ]] && CONFIG_LIBS_BUNDLE="$libs_bundle"
     [[ "$pkgs_bundle" != "null" && -n "$pkgs_bundle" ]] && CONFIG_PKGS_BUNDLE="$pkgs_bundle"
+    [[ "$r_version" != "null" && -n "$r_version" ]] && CONFIG_R_VERSION="$r_version"
     [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DOTFILES_DIR="$dotfiles_dir"
     [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DOTFILES_NODOT="$dotfiles_nodot"
     [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
@@ -641,6 +644,16 @@ config_set() {
         profile-name|profile_name) yaml_key="profile_name" ;;
         libs-bundle|libs_bundle) yaml_key="libs_bundle" ;;
         pkgs-bundle|pkgs_bundle) yaml_key="pkgs_bundle" ;;
+        r-version|r_version)
+            yaml_key="r_version"
+            # Validate R version format before setting
+            if [[ ! "$value" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "$value" =~ ^[0-9]+\.[0-9]+$ ]]; then
+                log_error "Invalid R version format: '$value'"
+                log_error "Expected format: X.Y.Z (e.g., 4.4.0)"
+                log_info "Common versions: 4.4.0, 4.3.1, 4.2.3"
+                return 1
+            fi
+            ;;
         dotfiles-dir|dotfiles_dir) yaml_key="dotfiles_dir" ;;
         dotfiles-nodot|dotfiles_nodot) yaml_key="dotfiles_nodot" ;;
         auto-github|auto_github) yaml_key="auto_github" ;;
@@ -690,6 +703,7 @@ config_list() {
     echo "  profile_name: $(format_config_value_with_indicator profile_name)"
     echo "  libs_bundle: $(format_config_value_with_indicator libs_bundle)"
     echo "  pkgs_bundle: $(format_config_value_with_indicator pkgs_bundle)"
+    echo "  r_version: $(format_config_value_with_indicator r_version)"
     echo "  init_base_image: $(format_config_value_with_indicator init_base_image)"
     echo "  dotfiles_dir: $(format_config_value_with_indicator dotfiles_dir)"
     echo "  dotfiles_nodot: $(format_config_value_with_indicator dotfiles_nodot)"

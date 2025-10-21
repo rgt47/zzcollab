@@ -249,6 +249,147 @@ except Exception as e:
     return 1
 }
 
+##############################################################################
+# FUNCTION: check_docker_image_exists
+# PURPOSE:  Verify that a Docker image exists on Docker Hub
+# USAGE:    check_docker_image_exists "rocker/r-ver" "4.4.0"
+# ARGS:
+#   $1 - image_name: Docker image name (e.g., "rocker/r-ver")
+#   $2 - tag: Image tag/version to check (e.g., "4.4.0")
+# RETURNS:
+#   0 - Image exists on Docker Hub
+#   1 - Image not found or API query failed
+# GLOBALS:
+#   READ:  None
+#   WRITE: None
+# DESCRIPTION:
+#   Queries Docker Hub API to verify that a specific image:tag combination exists.
+#   Used to validate R versions before attempting Docker builds.
+# API ENDPOINT:
+#   https://hub.docker.com/v2/repositories/{image}/tags/{tag}
+# EXAMPLE:
+#   if check_docker_image_exists "rocker/r-ver" "4.4.0"; then
+#       echo "Image exists!"
+#   fi
+##############################################################################
+check_docker_image_exists() {
+    local image_name="$1"
+    local tag="$2"
+
+    # Query Docker Hub API
+    local api_url="https://hub.docker.com/v2/repositories/${image_name}/tags/${tag}"
+
+    # Use curl with timeout to check if tag exists
+    if command -v curl >/dev/null 2>&1; then
+        if curl -sf --max-time 5 "$api_url" >/dev/null 2>&1; then
+            return 0  # Image exists
+        else
+            return 1  # Image not found or API error
+        fi
+    else
+        # curl not available, skip validation
+        log_debug "curl not available, skipping Docker Hub validation"
+        return 0  # Assume image exists
+    fi
+}
+
+##############################################################################
+# FUNCTION: get_latest_r_version_from_dockerhub
+# PURPOSE:  Query Docker Hub for the latest available R version
+# USAGE:    latest=$(get_latest_r_version_from_dockerhub "rocker/r-ver")
+# ARGS:
+#   $1 - image_name: Docker image name (e.g., "rocker/r-ver")
+# RETURNS:
+#   0 - Success, outputs latest version number
+#   1 - Failed to query or parse
+# GLOBALS:
+#   READ:  None
+#   WRITE: None (outputs to stdout)
+# DESCRIPTION:
+#   Queries Docker Hub API for available tags and finds the latest semantic version.
+#   Filters out tags like "latest", "devel", etc., and returns highest X.Y.Z version.
+# EXAMPLE:
+#   latest=$(get_latest_r_version_from_dockerhub "rocker/r-ver")
+#   echo "Latest R version: $latest"
+##############################################################################
+get_latest_r_version_from_dockerhub() {
+    local image_name="$1"
+
+    # Query Docker Hub API for tags
+    local api_url="https://hub.docker.com/v2/repositories/${image_name}/tags/?page_size=100"
+
+    if ! command -v curl >/dev/null 2>&1; then
+        log_debug "curl not available for version lookup"
+        return 1
+    fi
+
+    # Fetch tags and parse JSON
+    local tags
+    if ! tags=$(curl -sf --max-time 10 "$api_url" 2>/dev/null); then
+        return 1
+    fi
+
+    # Extract version tags (X.Y.Z format) and find latest
+    # Use grep and sort to find highest semantic version
+    local latest_version
+    latest_version=$(echo "$tags" | \
+        grep -oE '"name":"[0-9]+\.[0-9]+\.[0-9]+"' | \
+        sed 's/"name":"//g' | sed 's/"//g' | \
+        sort -V | tail -1)
+
+    if [[ -n "$latest_version" ]]; then
+        echo "$latest_version"
+        return 0
+    else
+        return 1
+    fi
+}
+
+##############################################################################
+# FUNCTION: suggest_r_version
+# PURPOSE:  Suggest available R versions when user provides invalid version
+# USAGE:    suggest_r_version "4.99.0" "rocker/r-ver"
+# ARGS:
+#   $1 - invalid_version: The version user tried that doesn't exist
+#   $2 - image_name: Docker image name (e.g., "rocker/r-ver")
+# RETURNS:
+#   Always returns 0, outputs suggestions to stderr
+# GLOBALS:
+#   READ:  None
+#   WRITE: None (outputs suggestions via log functions)
+# DESCRIPTION:
+#   Provides helpful suggestions when an R version doesn't exist on Docker Hub.
+#   Queries for latest version and provides actionable next steps.
+# EXAMPLE:
+#   suggest_r_version "4.99.0" "rocker/r-ver"
+##############################################################################
+suggest_r_version() {
+    local invalid_version="$1"
+    local image_name="${2:-rocker/r-ver}"
+
+    log_error "R version '$invalid_version' not found in $image_name Docker image"
+    log_error ""
+
+    # Try to get latest version
+    local latest_version
+    if latest_version=$(get_latest_r_version_from_dockerhub "$image_name"); then
+        log_error "💡 Latest available R version: $latest_version"
+        log_error ""
+        log_error "Try one of these options:"
+        log_error "  zzcollab --r-version $latest_version"
+        log_error "  zzcollab --config set r-version $latest_version"
+    else
+        log_error "💡 Common R versions available:"
+        log_error "  - 4.4.0 (latest stable)"
+        log_error "  - 4.3.1 (previous stable)"
+        log_error "  - 4.2.3"
+        log_error ""
+        log_error "Check available versions at:"
+        log_error "  https://hub.docker.com/r/$image_name/tags"
+    fi
+    log_error ""
+}
+
 #=============================================================================
 # DOCKER TEMPLATE SELECTION
 #=============================================================================
@@ -337,15 +478,19 @@ create_docker_files() {
 
     # Determine R version for Docker build
     # This ensures the container uses the same R version as the project
-    # Priority: 1) User-provided --r-version, 2) renv.lock, 3) FAIL (no default)
+    # Priority: 1) User-provided --r-version, 2) Config r-version, 3) renv.lock, 4) FAIL (no default)
     local r_version=""
 
     if [[ "${USER_PROVIDED_R_VERSION:-false}" == "true" ]] && [[ -n "${R_VERSION:-}" ]]; then
-        # User explicitly provided R version via --r-version flag
+        # User explicitly provided R version via --r-version flag (highest priority)
         r_version="${R_VERSION}"
         log_info "Using user-specified R version: ${r_version}"
+    elif [[ -n "${CONFIG_R_VERSION:-}" ]]; then
+        # Use R version from config file (second priority)
+        r_version="${CONFIG_R_VERSION}"
+        log_info "Using R version from config: ${r_version}"
     else
-        # Try to extract from renv.lock (will fail if missing)
+        # Try to extract from renv.lock (third priority, will fail if missing)
         if ! r_version=$(extract_r_version_from_lockfile); then
             log_error "Failed to determine R version for Docker build"
             log_error "Docker builds require explicit R version for reproducibility"
@@ -356,8 +501,23 @@ create_docker_files() {
 
     # Validate R version format (should be like 4.4.0 or 4.3.1)
     if [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "${r_version}" =~ ^[0-9]+\.[0-9]+$ ]]; then
-        log_warn "R version '${r_version}' has unusual format (expected X.Y.Z)"
-        log_warn "Proceeding anyway, but Docker build may fail"
+        log_error "R version '${r_version}' has invalid format (expected X.Y.Z)"
+        suggest_r_version "${r_version}" "rocker/r-ver"
+        return 1
+    fi
+
+    # Validate that Docker image exists on Docker Hub
+    # This catches typos and unavailable versions before Docker build fails
+    log_debug "Validating R version ${r_version} exists on Docker Hub..."
+    if ! check_docker_image_exists "rocker/r-ver" "${r_version}"; then
+        log_warn "Docker image 'rocker/r-ver:${r_version}' not found on Docker Hub"
+        suggest_r_version "${r_version}" "rocker/r-ver"
+        log_error ""
+        log_error "Proceeding anyway, but Docker build will likely fail."
+        log_error "Press Ctrl+C to cancel and use a valid R version."
+        sleep 3  # Give user time to read and cancel
+    else
+        log_debug "✓ Confirmed rocker/r-ver:${r_version} exists on Docker Hub"
     fi
 
     # Export R_VERSION for template substitution
