@@ -924,7 +924,7 @@ finalize_and_report_results() {
     # Initialize renv with snapshot of current environment
     log_info "📦 Creating renv.lock file..."
     if command -v R >/dev/null 2>&1; then
-        if R --slave -e "renv::init(bare = TRUE, restart = FALSE); renv::snapshot(prompt = FALSE)" 2>/dev/null; then
+        if R --slave -e "renv::init(bare = TRUE, restart = FALSE); renv::snapshot(prompt = FALSE)" &>/dev/null; then
             # Fix R version in renv.lock to match configured/Dockerfile version
             # renv::snapshot() uses local R version, but we need Docker R version
             if [[ -f "renv.lock" ]] && [[ -n "${R_VERSION:-}" ]]; then
