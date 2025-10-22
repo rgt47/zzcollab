@@ -309,16 +309,39 @@ generate_r_package_install_commands() {
     local is_bioc
     is_bioc=$(yq eval ".package_bundles.${pkgs_bundle}.bioconductor // false" "$BUNDLES_FILE" 2>/dev/null)
 
+    # Determine if we should use install2.r (rocker images) or install.packages (non-rocker)
+    # install2.r is only available in rocker/* images
+    local use_install2r=false
+    if [[ "${BASE_IMAGE:-rocker/r-ver}" =~ ^rocker/ ]]; then
+        use_install2r=true
+    fi
+
     if [[ "$is_bioc" == "true" ]]; then
         # Bioconductor packages: install BiocManager first, then use it
         # Extract BiocManager and regular packages
         local bioc_packages
         bioc_packages=$(echo "$packages" | sed 's/BiocManager, //')
-        R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('renv', 'devtools', 'BiocManager'), repos = c(CRAN = 'https://cloud.r-project.org'))\" && \\\\\n    R -e \"BiocManager::install(c('${bioc_packages}'))\""
+
+        if [[ "$use_install2r" == "true" ]]; then
+            # Use install2.r for pre-compiled binaries (rocker images)
+            R_PACKAGES_INSTALL_CMD="install2.r --error --skipinstalled renv devtools BiocManager && \\\\\n    R -e \"BiocManager::install(c('${bioc_packages}'))\" && \\\\\n    rm -rf /tmp/downloaded_packages"
+        else
+            # Use install.packages with PPM repo (non-rocker images)
+            R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('renv', 'devtools', 'BiocManager'), repos = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest')\" && \\\\\n    R -e \"BiocManager::install(c('${bioc_packages}'))\""
+        fi
     else
         # Regular CRAN packages
         # shellcheck disable=SC2089,SC2090  # Intentional: command stored for template substitution
-        R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('${packages}'), repos = c(CRAN = 'https://cloud.r-project.org'))\""
+
+        if [[ "$use_install2r" == "true" ]]; then
+            # Use install2.r for pre-compiled binaries from Posit PPM (rocker images)
+            local packages_space
+            packages_space=$(echo "$packages" | sed "s/', '/ /g")
+            R_PACKAGES_INSTALL_CMD="install2.r --error --skipinstalled ${packages_space} && rm -rf /tmp/downloaded_packages"
+        else
+            # Use install.packages with PPM repo for pre-compiled binaries (non-rocker images)
+            R_PACKAGES_INSTALL_CMD="R -e \"install.packages(c('${packages}'), repos = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest')\""
+        fi
     fi
 
     # shellcheck disable=SC2090  # Intentional: command stored for template substitution

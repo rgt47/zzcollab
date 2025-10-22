@@ -103,6 +103,7 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME} || \
 # Install R packages based on selected profile
 # Command generated from bundles.yaml (single source of truth)
 # Bundle: ${PKGS_BUNDLE}
+# Uses install2.r for pre-compiled binaries from Posit PPM (much faster than source)
 RUN ${R_PACKAGES_INSTALL_CMD}
 
 # Give user write permission to R library directory
