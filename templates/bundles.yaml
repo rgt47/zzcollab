@@ -69,6 +69,26 @@ library_bundles:
     compatible_bases: ["rocker/verse", "rocker/*"]
     note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev in common section"
 
+  gui:
+    description: "X11 GUI support for graphical applications"
+    deps:
+      - xorg
+      - x11-apps
+      - xauth
+      - libx11-dev
+      - libxt-dev
+      - libcairo2-dev
+      - libgl1-mesa-dev
+      - libglu1-mesa-dev
+      - fonts-dejavu
+      - fonts-liberation
+      - kitty
+      - firefox-esr
+      - gedit
+    package_manager: "apt-get"
+    compatible_bases: ["rocker/*"]
+    note: "Requires X11 forwarding from host (XQuartz on macOS, X11 on Linux)"
+
   alpine:
     description: "Alpine Linux libraries (apk package manager)"
     deps:
@@ -178,6 +198,19 @@ package_bundles:
       - bslib
     requires_libs: ["minimal"]
 
+  gui:
+    description: "GUI applications and interactive graphics"
+    packages:
+      - renv
+      - devtools
+      - tidyverse
+      - rgl
+      - plotly
+      - shiny
+      - Cairo
+      - svglite
+    requires_libs: ["gui"]
+
 #=============================================================================
 # COMPLETE PROFILES (--profile-name)
 #=============================================================================
@@ -246,6 +279,15 @@ profiles:
     libs: alpine
     pkgs: tidyverse
     size: "~400MB"
+
+  gui:
+    description: "GUI applications with X11 forwarding"
+    base_image: "rocker/rstudio"
+    libs: gui
+    pkgs: gui
+    size: "~2.2GB"
+    note: "Requires XQuartz (macOS) or X11 (Linux) for display forwarding"
+    usage: "make docker-zsh-gui  # Launch with GUI support"
 
 #=============================================================================
 # COMPATIBILITY RULES
