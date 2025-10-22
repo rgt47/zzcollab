@@ -70,8 +70,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
 # - Minimal, analysis, modeling profiles: NO (users can add manually)
 # - Publishing profile: YES (requires PDF output)
 # - Base images with LaTeX (verse, tidyverse): SKIP (already included)
-RUN if [ "${PKGS_BUNDLE}" = "publishing" ] || [ "${LIBS_BUNDLE}" = "publishing" ]; then \
-        if ! echo "${BASE_IMAGE}" | grep -E "(verse|tidyverse)" >/dev/null; then \
+RUN if [ "\${PKGS_BUNDLE}" = "publishing" ] || [ "\${LIBS_BUNDLE}" = "publishing" ]; then \
+        if ! echo "\${BASE_IMAGE}" | grep -E "(verse|tidyverse)" >/dev/null; then \
             R -e "install.packages('tinytex')" && \
             R -e "tinytex::install_tinytex()" && \
             /root/.TinyTeX/bin/*/tlmgr path add; \

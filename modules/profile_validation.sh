@@ -298,11 +298,11 @@ generate_r_package_install_commands() {
 
     # Extract package list from bundles.yaml
     local packages
-    packages=$(yq eval ".package_bundles.${pkgs_bundle}.packages | join(\", \")" "$BUNDLES_FILE" 2>/dev/null)
+    packages=$(yq eval ".package_bundles.${pkgs_bundle}.packages | join(\"', '\")" "$BUNDLES_FILE" 2>/dev/null)
 
     if [[ "$packages" == "null" ]] || [[ -z "$packages" ]]; then
         log_warning "⚠️  Unknown package bundle: ${pkgs_bundle}, using minimal"
-        packages=$(yq eval ".package_bundles.minimal.packages | join(\", \")" "$BUNDLES_FILE" 2>/dev/null)
+        packages=$(yq eval ".package_bundles.minimal.packages | join(\"', '\")" "$BUNDLES_FILE" 2>/dev/null)
     fi
 
     # Check if this is a bioconductor bundle
