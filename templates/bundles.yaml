@@ -289,6 +289,30 @@ profiles:
     note: "Requires XQuartz (macOS) or X11 (Linux) for display forwarding"
     usage: "make docker-zsh-gui  # Launch with GUI support"
 
+  gui_minimal:
+    description: "Minimal R environment with GUI/X11 support"
+    base_image: "rocker/r-ver"
+    libs: gui
+    pkgs: minimal
+    size: "~1.5GB"
+    note: "GUI apps (kitty, firefox) with minimal R packages"
+
+  gui_analysis:
+    description: "Data analysis with tidyverse and GUI support"
+    base_image: "rocker/tidyverse"
+    libs: gui
+    pkgs: tidyverse
+    size: "~2.5GB"
+    note: "Full analysis stack with GUI applications"
+
+  gui_rstudio:
+    description: "RStudio Server with GUI support for desktop apps"
+    base_image: "rocker/rstudio"
+    libs: gui
+    pkgs: minimal
+    size: "~2GB"
+    note: "RStudio Server + GUI apps (kitty, firefox) via X11"
+
 #=============================================================================
 # COMPATIBILITY RULES
 #=============================================================================
