@@ -51,6 +51,9 @@ RUN apt-get update && \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
+    # R package dependencies (devtools, httpuv, promises, shiny)
+    libsodium-dev \
+    libuv1-dev \
     # Graphics libraries for R plotting (ggplot2, base graphics)
     libfontconfig1-dev \
     libharfbuzz-dev \

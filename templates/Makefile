@@ -70,6 +70,11 @@ check-renv-ci:
 docker-build:
 	DOCKER_BUILDKIT=1 docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
+docker-build-log:
+	@echo "Building Docker image and saving log to docker-build.log..."
+	DOCKER_BUILDKIT=1 docker build --progress=plain --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) . 2>&1 | tee docker-build.log
+	@echo "✅ Build complete. Log saved to docker-build.log"
+
 docker-push-team:
 	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
 	docker tag $(PACKAGE_NAME) $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
