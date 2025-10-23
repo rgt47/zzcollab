@@ -89,6 +89,9 @@ RUN vim +PlugInstall +qall || true
 # Copy rest of project
 COPY --chown=${USERNAME}:${USERNAME} . .
 
+# Restore renv dependencies before installing the package
+RUN R -e "renv::restore()"
+
 # Install the research compendium as a package (analyst has write
 # permissions)
 RUN R -e "remotes::install_local('.', dependencies = TRUE)"
