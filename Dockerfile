@@ -88,26 +88,13 @@ RUN R -e "install.packages('tinytex')" && \
 ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
 
-# Configure Posit Public Package Manager (RSPM) for binary R packages
-# EFFICIENCY: RSPM provides pre-compiled binaries for Ubuntu, avoiding compilation
-#   - 10-50x faster installation than building from source
-#   - Critical for renv::restore() to use binaries instead of compiling
-#
-# REPRODUCIBILITY: Pinned to specific snapshot date (2025-10-23)
-#   - Using 'latest' is a moving target that changes daily/weekly
-#   - Snapshot date ensures builds are reproducible months/years later
-#   - Update snapshot date when you want newer package versions
-#
-# SAFETY: RSPM URL must match the Ubuntu version of the base image
-#   - This Dockerfile uses rgt47/r-pluspackages:latest (check its OS version)
-#   - If base image uses Ubuntu 22.04 (jammy) → jammy/2025-10-23 ✓
-#   - If base image uses Ubuntu 20.04 (focal) → focal/2025-10-23
-#   - Verify OS with: docker run --rm rgt47/r-pluspackages:latest cat /etc/os-release
-RUN echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/jammy/2025-10-23', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site
-
 # Install essential R packages (remotes is much faster than devtools)
+# NOTE: Using latest RSPM snapshot for framework packages
+#   - These are development tools, not analysis dependencies
+#   - Analysis dependencies are managed by renv.lock (installed later)
+#   - RSPM will be reconfigured below to match renv.lock date
 RUN R -e "install.packages(c('renv', 'remotes'), \
-      repos = c(CRAN = 'https://cloud.r-project.org'))"
+      repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest', CRAN = 'https://cloud.r-project.org'))"
 
 # Give analyst user write permission to R library directory
 RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
@@ -116,9 +103,28 @@ RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
 WORKDIR /home/${USERNAME}/project
 RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/project
 
-# Copy project files first (for better Docker layer caching)
-COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
+# Copy renv.lock FIRST to extract its modification date for RSPM snapshot
+# CRITICAL: RSPM snapshot date must match when renv.lock was generated
+#   - This ensures package versions in renv.lock are available in RSPM
+#   - Using file modification date makes this automatic and self-maintaining
 COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
+
+# Extract renv.lock modification date and configure RSPM dynamically
+# AUTOMATIC RSPM DATE: Reads renv.lock file date, no manual updates needed
+#   - When you update renv.lock, RSPM date updates automatically
+#   - Ensures 5-year reproducibility: exact package versions available
+#   - Fallback to 'latest' if renv.lock doesn't exist (development mode)
+RUN if [ -f renv.lock ]; then \
+        RENV_DATE=$(date -r renv.lock +%Y-%m-%d 2>/dev/null || stat -c %y renv.lock | cut -d' ' -f1) && \
+        echo "# RSPM snapshot automatically set to renv.lock date: ${RENV_DATE}" >> /usr/local/lib/R/etc/Rprofile.site && \
+        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/jammy/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
+    else \
+        echo "# No renv.lock found, using latest RSPM snapshot" >> /usr/local/lib/R/etc/Rprofile.site && \
+        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
+    fi
+
+# Copy remaining project files (for better Docker layer caching)
+COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
 COPY --chown=${USERNAME}:${USERNAME} .Rprofile* ./
 COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
 
