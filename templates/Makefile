@@ -19,7 +19,9 @@ help:
 	@echo "    check-renv, check-renv-fix, check-renv-ci"
 	@echo ""
 	@echo "  Docker - works without local R:"
-	@echo "    docker-build, docker-build-log, docker-push-team, docker-document, docker-build-pkg, docker-check"
+	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
+	@echo "    docker-build-no-snapshot - Build without snapshot (advanced)"
+	@echo "    docker-build-log, docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
 	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo ""
@@ -67,8 +69,27 @@ check-renv-ci:
 	Rscript validate_package_environment.R --quiet --fail-on-issues
 
 # Docker targets (work without local R)
-docker-build:
+# SAFETY IMPROVEMENT: docker-build is now safe by default
+#   - Automatically runs renv::snapshot() to update renv.lock
+#   - Ensures Docker image matches your current R environment
+#   - Critical for automatic RSPM date detection from renv.lock
+docker-build: check-renv-fix docker-build-no-snapshot
+
+# Advanced: Build without updating renv.lock (rarely needed)
+# Use this only when:
+#   - Debugging Dockerfile changes (no package changes)
+#   - You know renv.lock is already up-to-date
+#   - Faster iteration during Dockerfile development
+docker-build-no-snapshot:
 	DOCKER_BUILDKIT=1 docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
+
+# DEPRECATED: Use docker-build instead (now safe by default)
+docker-build-safe:
+	@echo "⚠️  WARNING: 'docker-build-safe' is deprecated."
+	@echo "           'docker-build' is now safe by default (auto-snapshots renv.lock)."
+	@echo "           Please use 'docker-build' instead."
+	@echo ""
+	@$(MAKE) docker-build
 
 docker-build-log:
 	@echo "Building Docker image and saving log to docker-build.log..."
@@ -169,4 +190,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
