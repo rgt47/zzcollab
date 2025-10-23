@@ -1,5 +1,15 @@
 FROM ${BASE_IMAGE}:${IMAGE_TAG}
 
+# Personal development image that builds on team's base image
+# Team base image already includes:
+#   - System dependencies and development tools
+#   - Nerd Fonts, vim-plug, zsh plugins (all pinned versions)
+#   - R framework packages (renv, devtools, etc.)
+# This layer adds:
+#   - Personal dotfiles
+#   - Project-specific R packages via renv.lock
+#   - Research compendium installation
+
 # Build arguments
 ARG TEAM_NAME=team
 ARG PROJECT_NAME=project
@@ -22,14 +32,44 @@ COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* .inputrc* .
 # Install vim plugins (vim-plug already installed in base image)
 RUN vim +PlugInstall +qall || true
 
-# Copy project files
-COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
+# Copy renv.lock FIRST to extract its modification date for RSPM snapshot
+# CRITICAL: RSPM snapshot date must match when renv.lock was generated
+#   - This ensures package versions in renv.lock are available in RSPM
+#   - Using file modification date makes this automatic and self-maintaining
+#   - This is ESSENTIAL for the Five Pillars of Reproducibility (renv.lock is source of truth)
 COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
+
+# Extract renv.lock modification date and configure RSPM dynamically
+# AUTOMATIC RSPM DATE: Reads renv.lock file date, no manual updates needed
+#   - When you update renv.lock, RSPM date updates automatically
+#   - Ensures 5-year reproducibility: exact package versions available
+#   - Fallback to 'latest' if renv.lock doesn't exist (development mode)
+#   - Detects Ubuntu version (jammy/focal) automatically for RSPM URL
+#   - Overrides base image RSPM configuration with project-specific date
+RUN if [ -f renv.lock ]; then \
+        RENV_DATE=$(date -r renv.lock +%Y-%m-%d 2>/dev/null || stat -c %y renv.lock | cut -d' ' -f1) && \
+        UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+        echo "# RSPM snapshot automatically set to renv.lock date: ${RENV_DATE} (${UBUNTU_CODENAME})" >> /usr/local/lib/R/etc/Rprofile.site && \
+        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
+    else \
+        UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+        echo "# No renv.lock found, using latest RSPM snapshot (${UBUNTU_CODENAME})" >> /usr/local/lib/R/etc/Rprofile.site && \
+        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/latest', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
+    fi
+
+# Copy remaining project files
+COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
 COPY --chown=${USERNAME}:${USERNAME} .Rprofile* ./
 COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
 
 # Copy rest of project
 COPY --chown=${USERNAME}:${USERNAME} . .
+
+# Restore renv dependencies before installing the package
+# CRITICAL: This uses the RSPM snapshot configured above based on renv.lock date
+#   - Ensures binary package availability for fast installation
+#   - Part of the Five Pillars of Reproducibility framework
+RUN R -e "renv::restore()"
 
 # Install the research compendium as an R package
 RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
