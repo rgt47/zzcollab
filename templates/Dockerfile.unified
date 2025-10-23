@@ -77,16 +77,6 @@ RUN apt-get update && \
     tree \
     man-db \
     sudo \
-    # X11 terminal emulators (work with XQuartz on macOS)
-    xfce4-terminal \
-    terminator \
-    xterm \
-    # Popular monospaced fonts for terminal and coding
-    fonts-jetbrains-mono \
-    fonts-firacode \
-    fonts-hack \
-    fonts-dejavu \
-    fonts-liberation-mono \
     && rm -rf /var/lib/apt/lists/*
 
 # Install bundle-specific system dependencies

@@ -69,6 +69,22 @@ library_bundles:
     compatible_bases: ["rocker/verse", "rocker/*"]
     note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev in common section"
 
+  terminals:
+    description: "GUI terminals, fonts, and firefox (lightweight GUI)"
+    deps:
+      - xfce4-terminal
+      - terminator
+      - xterm
+      - firefox-esr
+      - fonts-jetbrains-mono
+      - fonts-firacode
+      - fonts-hack
+      - fonts-dejavu
+      - fonts-liberation-mono
+    package_manager: "apt-get"
+    compatible_bases: ["rocker/*"]
+    note: "Requires X11 forwarding (XQuartz on macOS). Includes Nerd Fonts."
+
   gui:
     description: "X11 GUI support for graphical applications"
     deps:
@@ -218,11 +234,20 @@ package_bundles:
 
 profiles:
   minimal:
-    description: "Minimal development environment"
+    description: "Minimal development environment (command-line only)"
     base_image: "rocker/r-ver"
     libs: minimal
     pkgs: minimal
+    size: "~650MB"
+    note: "No GUI terminals, no fonts. Pure command-line: vim, zsh, git."
+
+  minimal-gui:
+    description: "Minimal with GUI terminals, fonts, and firefox"
+    base_image: "rocker/r-ver"
+    libs: terminals
+    pkgs: minimal
     size: "~780MB"
+    note: "Adds GUI terminals (xfce4-terminal, terminator) + Nerd Fonts + firefox"
 
   rstudio:
     description: "RStudio Server development environment"
