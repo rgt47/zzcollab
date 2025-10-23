@@ -71,12 +71,17 @@ RUN apt-get update && \
     # Git integration for R packages
     libgit2-dev \
     # ZZCOLLAB framework tools (will use PPA versions if available)
+    git \
     vim \
+    tmux \
     zsh \
     ssh \
     tree \
     man-db \
     sudo \
+    curl \
+    wget \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install bundle-specific system dependencies
