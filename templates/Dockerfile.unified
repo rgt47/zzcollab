@@ -23,8 +23,6 @@ RUN apt-get update && \
     (add-apt-repository ppa:c2d4u.team/c2d4u4.0+ -y 2>/dev/null || echo "R CRAN PPA unavailable, using default repos") && \
     # Git PPA for latest version
     (add-apt-repository ppa:git-core/ppa -y 2>/dev/null || echo "Git PPA unavailable, using default repos") && \
-    # Kitty terminal emulator PPA for latest version
-    (add-apt-repository ppa:yurivkhan/kitty -y 2>/dev/null || echo "Kitty PPA unavailable, using default repos") && \
     apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
@@ -70,11 +68,8 @@ RUN apt-get update && \
     ssh \
     tree \
     man-db \
-    kitty \
-    # Mesa GL libraries for kitty software rendering (limited functionality)
-    libgl1-mesa-glx \
-    libgl1-mesa-dri \
-    mesa-utils \
+    # X11 terminal emulator (works with XQuartz on macOS)
+    xfce4-terminal \
     && rm -rf /var/lib/apt/lists/*
 
 # Install sudo for analyst user access

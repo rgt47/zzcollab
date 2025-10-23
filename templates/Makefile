@@ -24,7 +24,7 @@ help:
 	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo ""
 	@echo "  Docker GUI (requires XQuartz):"
-	@echo "    docker-zsh-gui           - Launch zsh with X11 forwarding (kitty, GUI apps)"
+	@echo "    docker-zsh-gui           - Launch zsh with X11 forwarding (xfce4-terminal, GUI apps)"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, clean-dotfiles, docker-clean, docker-build-clean"
@@ -118,7 +118,8 @@ docker-zsh:
 
 docker-zsh-gui:
 	@echo "Launching zsh with X11 forwarding enabled"
-	@echo "GUI apps available: kitty, firefox, etc."
+	@echo "GUI apps available: xfce4-terminal, firefox, etc."
+	@echo "Run 'xfce4-terminal' to open a GUI terminal window"
 	@echo ""
 	@echo "Prerequisites:"
 	@echo "  1. XQuartz installed: brew install --cask xquartz"
