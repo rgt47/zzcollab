@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     ssh \
     curl \
     wget \
+    unzip \
     vim \
     tmux \
     zsh \
@@ -26,11 +27,39 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     man-db \
     pandoc \
+    # X11 terminal emulators (work with XQuartz on macOS)
+    xfce4-terminal \
+    terminator \
+    xterm \
+    # Popular monospaced fonts for terminal and coding
+    fonts-jetbrains-mono \
+    fonts-firacode \
+    fonts-hack \
+    fonts-dejavu \
+    fonts-liberation-mono \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (required for coc.nvim and other vim plugins)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
+
+# Install Nerd Fonts (required for vim-airline and other plugins with icons)
+RUN mkdir -p /usr/local/share/fonts/nerd-fonts && \
+    cd /usr/local/share/fonts/nerd-fonts && \
+    # JetBrains Mono Nerd Font
+    curl -fLo "JetBrainsMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip && \
+    unzip -q JetBrainsMono.zip && rm JetBrainsMono.zip && \
+    # Fira Code Nerd Font
+    curl -fLo "FiraCode.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip && \
+    unzip -q FiraCode.zip && rm FiraCode.zip && \
+    # Hack Nerd Font
+    curl -fLo "Hack.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hack.zip && \
+    unzip -q Hack.zip && rm Hack.zip && \
+    # DejaVu Sans Mono Nerd Font
+    curl -fLo "DejaVuSansMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/DejaVuSansMono.zip && \
+    unzip -q DejaVuSansMono.zip && rm DejaVuSansMono.zip && \
+    # Update font cache
+    fc-cache -fv
 
 # Install Claude CLI (Anthropic's AI assistant)
 RUN npm install -g @anthropic-ai/claude
