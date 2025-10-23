@@ -113,6 +113,14 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME} || \
 # Set analyst user password (provided via build argument)
 # Build with: docker build --build-arg ANALYST_PASSWORD=yourpassword .
 # If no password provided, user will have sudo access but no password set
+#
+# The analyst user can now use sudo:
+#   sudo apt-get update
+#   sudo apt-get install somepackage
+#
+# Security Note: The password is passed at build time and stored in the image layer.
+# For production use, consider using Docker secrets or other secure methods.
+# For development/research containers, this approach is convenient and acceptable.
 RUN if [ -n "$ANALYST_PASSWORD" ]; then \
         echo "${USERNAME}:$ANALYST_PASSWORD" | chpasswd; \
     else \
