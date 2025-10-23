@@ -91,29 +91,35 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Nerd Fonts (required for vim-airline and other plugins with icons)
+# Only installed for profiles with GUI support (terminals, gui bundles)
 # SAFETY: Pinned to v3.3.0 release (latest stable as of 2025-10-23)
 #   - Using 'latest' in URL is security risk (no version control)
 #   - Specific version ensures reproducible builds
 #   - Update version when you want newer fonts
 # EFFICIENCY: Only extract .ttf files, exclude unnecessary files (Windows, OTF variants)
 #   - Saves ~100MB per font by excluding .otf and extra metadata
-RUN NERD_FONT_VERSION=v3.3.0 && \
-    mkdir -p /usr/local/share/fonts/nerd-fonts && \
-    cd /usr/local/share/fonts/nerd-fonts && \
-    # JetBrains Mono Nerd Font
-    curl -fLo "JetBrainsMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/JetBrainsMono.zip" && \
-    unzip -q -j JetBrainsMono.zip "*.ttf" && rm JetBrainsMono.zip && \
-    # Fira Code Nerd Font
-    curl -fLo "FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/FiraCode.zip" && \
-    unzip -q -j FiraCode.zip "*.ttf" && rm FiraCode.zip && \
-    # Hack Nerd Font
-    curl -fLo "Hack.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/Hack.zip" && \
-    unzip -q -j Hack.zip "*.ttf" && rm Hack.zip && \
-    # DejaVu Sans Mono Nerd Font
-    curl -fLo "DejaVuSansMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/DejaVuSansMono.zip" && \
-    unzip -q -j DejaVuSansMono.zip "*.ttf" && rm DejaVuSansMono.zip && \
-    # Update font cache
-    fc-cache -fv
+ARG LIBS_BUNDLE
+RUN if [ "${LIBS_BUNDLE}" = "terminals" ] || [ "${LIBS_BUNDLE}" = "gui" ] || [ "${LIBS_BUNDLE}" = "gui_minimal" ]; then \
+        NERD_FONT_VERSION=v3.3.0 && \
+        mkdir -p /usr/local/share/fonts/nerd-fonts && \
+        cd /usr/local/share/fonts/nerd-fonts && \
+        # JetBrains Mono Nerd Font
+        curl -fLo "JetBrainsMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/JetBrainsMono.zip" && \
+        unzip -q -j JetBrainsMono.zip "*.ttf" && rm JetBrainsMono.zip && \
+        # Fira Code Nerd Font
+        curl -fLo "FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/FiraCode.zip" && \
+        unzip -q -j FiraCode.zip "*.ttf" && rm FiraCode.zip && \
+        # Hack Nerd Font
+        curl -fLo "Hack.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/Hack.zip" && \
+        unzip -q -j Hack.zip "*.ttf" && rm Hack.zip && \
+        # DejaVu Sans Mono Nerd Font
+        curl -fLo "DejaVuSansMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/DejaVuSansMono.zip" && \
+        unzip -q -j DejaVuSansMono.zip "*.ttf" && rm DejaVuSansMono.zip && \
+        # Update font cache
+        fc-cache -fv; \
+    else \
+        echo "Skipping Nerd Fonts installation (not needed for ${LIBS_BUNDLE} profile)"; \
+    fi
 
 # Install TinyTeX only for publishing profiles
 # - Minimal, analysis, modeling profiles: NO (users can add manually)
