@@ -19,7 +19,7 @@ help:
 	@echo "    check-renv, check-renv-fix, check-renv-ci"
 	@echo ""
 	@echo "  Docker - works without local R:"
-	@echo "    docker-build, docker-push-team, docker-document, docker-build-pkg, docker-check"
+	@echo "    docker-build, docker-build-log, docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
 	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo ""
