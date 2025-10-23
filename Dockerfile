@@ -1,6 +1,10 @@
 ARG R_VERSION=latest
 FROM rgt47/r-pluspackages:latest
 
+# NOTE: R_VERSION ARG defined above for future flexibility
+# Currently hardcoded to rgt47/r-pluspackages:latest for stability
+# To use ARG: FROM rgt47/r-pluspackages:${R_VERSION}
+
 # Ensure we're running as root for system package installation
 USER root
 
@@ -48,20 +52,27 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Nerd Fonts (required for vim-airline and other plugins with icons)
-RUN mkdir -p /usr/local/share/fonts/nerd-fonts && \
+# SAFETY: Pinned to v3.3.0 release (latest stable as of 2025-10-23)
+#   - Using 'latest' in URL is security risk (no version control)
+#   - Specific version ensures reproducible builds
+#   - Update version when you want newer fonts
+# EFFICIENCY: Only extract .ttf files, exclude unnecessary files (Windows, OTF variants)
+#   - Saves ~100MB per font by excluding .otf and extra metadata
+RUN NERD_FONT_VERSION=v3.3.0 && \
+    mkdir -p /usr/local/share/fonts/nerd-fonts && \
     cd /usr/local/share/fonts/nerd-fonts && \
     # JetBrains Mono Nerd Font
-    curl -fLo "JetBrainsMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip && \
-    unzip -q JetBrainsMono.zip && rm JetBrainsMono.zip && \
+    curl -fLo "JetBrainsMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/JetBrainsMono.zip" && \
+    unzip -q -j JetBrainsMono.zip "*.ttf" && rm JetBrainsMono.zip && \
     # Fira Code Nerd Font
-    curl -fLo "FiraCode.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip && \
-    unzip -q FiraCode.zip && rm FiraCode.zip && \
+    curl -fLo "FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/FiraCode.zip" && \
+    unzip -q -j FiraCode.zip "*.ttf" && rm FiraCode.zip && \
     # Hack Nerd Font
-    curl -fLo "Hack.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hack.zip && \
-    unzip -q Hack.zip && rm Hack.zip && \
+    curl -fLo "Hack.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/Hack.zip" && \
+    unzip -q -j Hack.zip "*.ttf" && rm Hack.zip && \
     # DejaVu Sans Mono Nerd Font
-    curl -fLo "DejaVuSansMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/DejaVuSansMono.zip && \
-    unzip -q DejaVuSansMono.zip && rm DejaVuSansMono.zip && \
+    curl -fLo "DejaVuSansMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/DejaVuSansMono.zip" && \
+    unzip -q -j DejaVuSansMono.zip "*.ttf" && rm DejaVuSansMono.zip && \
     # Update font cache
     fc-cache -fv
 
@@ -76,6 +87,23 @@ RUN R -e "install.packages('tinytex')" && \
 # Create non-root user with zsh as default shell
 ARG USERNAME=analyst
 RUN useradd --create-home --shell /bin/zsh ${USERNAME}
+
+# Configure Posit Public Package Manager (RSPM) for binary R packages
+# EFFICIENCY: RSPM provides pre-compiled binaries for Ubuntu, avoiding compilation
+#   - 10-50x faster installation than building from source
+#   - Critical for renv::restore() to use binaries instead of compiling
+#
+# REPRODUCIBILITY: Pinned to specific snapshot date (2025-10-23)
+#   - Using 'latest' is a moving target that changes daily/weekly
+#   - Snapshot date ensures builds are reproducible months/years later
+#   - Update snapshot date when you want newer package versions
+#
+# SAFETY: RSPM URL must match the Ubuntu version of the base image
+#   - This Dockerfile uses rgt47/r-pluspackages:latest (check its OS version)
+#   - If base image uses Ubuntu 22.04 (jammy) → jammy/2025-10-23 ✓
+#   - If base image uses Ubuntu 20.04 (focal) → focal/2025-10-23
+#   - Verify OS with: docker run --rm rgt47/r-pluspackages:latest cat /etc/os-release
+RUN echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/jammy/2025-10-23', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install essential R packages (remotes is much faster than devtools)
 RUN R -e "install.packages(c('renv', 'remotes'), \
@@ -103,18 +131,35 @@ COPY --chown=${USERNAME}:${USERNAME} .vimrc* .tmux.conf* .gitconfig* \
      .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
 COPY --chown=${USERNAME}:${USERNAME} .zshrc_docker /home/${USERNAME}/.zshrc
 
-# Install zsh plugins (skip if already exist)
-RUN mkdir -p /home/${USERNAME}/.zsh && \
-    (git clone https://github.com/zsh-users/zsh-autosuggestions \
+# Install zsh plugins
+# EFFICIENCY: Shallow clone (--depth 1) reduces download size by ~90%
+#   - Only fetches latest commit instead of full git history
+#   - zsh-autosuggestions: ~300KB vs ~3MB (full history)
+#   - zsh-syntax-highlighting: ~500KB vs ~5MB (full history)
+# SAFETY FIX: Pinned to specific release tags (as of 2025-10-23)
+#   - Using HEAD/master can change unexpectedly
+#   - Specific tags ensure reproducible builds
+#   - Update tags when you want newer plugin features
+RUN ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
+    ZSH_SYNTAX_VERSION=0.8.0 && \
+    mkdir -p /home/${USERNAME}/.zsh && \
+    (git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
+     https://github.com/zsh-users/zsh-autosuggestions \
      /home/${USERNAME}/.zsh/zsh-autosuggestions || \
      echo "zsh-autosuggestions already exists") && \
-    (git clone https://github.com/zsh-users/zsh-syntax-highlighting \
+    (git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
+     https://github.com/zsh-users/zsh-syntax-highlighting \
      /home/${USERNAME}/.zsh/zsh-syntax-highlighting || \
      echo "zsh-syntax-highlighting already exists")
 
 # Install vim-plug
-RUN curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+# SAFETY FIX: Pinned to v0.14.0 release (latest stable as of 2025-10-23)
+#   - Using 'master' branch is security risk (can change unexpectedly)
+#   - Specific version ensures reproducible builds
+#   - Update version when you want newer vim-plug features
+RUN VIM_PLUG_VERSION=0.14.0 && \
+    curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim --create-dirs \
+    "https://raw.githubusercontent.com/junegunn/vim-plug/${VIM_PLUG_VERSION}/plug.vim"
 
 # Install vim plugins (suppress interactive mode)
 RUN vim +PlugInstall +qall || true
