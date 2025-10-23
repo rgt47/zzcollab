@@ -10,6 +10,23 @@ ARG TEAM_NAME=rgt47
 ARG PROJECT_NAME=r-project
 ARG ADDITIONAL_PACKAGES=""
 ARG USERNAME=analyst
+ARG ANALYST_PASSWORD
+
+# Add PPAs with fallback strategy for latest versions
+# This ensures we get updated packages when available, but gracefully
+# falls back to Ubuntu repos if PPAs are unavailable
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    # Vim PPA for latest version
+    (add-apt-repository ppa:jonathonf/vim -y 2>/dev/null || echo "Vim PPA unavailable, using default repos") && \
+    # R CRAN PPA for latest R packages
+    (add-apt-repository ppa:c2d4u.team/c2d4u4.0+ -y 2>/dev/null || echo "R CRAN PPA unavailable, using default repos") && \
+    # Git PPA for latest version
+    (add-apt-repository ppa:git-core/ppa -y 2>/dev/null || echo "Git PPA unavailable, using default repos") && \
+    # Kitty terminal emulator PPA for latest version
+    (add-apt-repository ppa:yurivkhan/kitty -y 2>/dev/null || echo "Kitty PPA unavailable, using default repos") && \
+    apt-get update && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install system dependencies (common to all profiles)
 #
@@ -44,18 +61,17 @@ RUN apt-get update && \
     libjpeg-dev \
     # Git integration for R packages
     libgit2-dev \
-    # ZZCOLLAB framework tools
+    # ZZCOLLAB framework tools (will use PPA versions if available)
     vim \
     zsh \
     ssh \
     tree \
     man-db \
+    kitty \
     && rm -rf /var/lib/apt/lists/*
 
-# Security hardening: Ensure analyst user has no sudo access
-# Base images include sudo, but we ensure the user can't use it
-# Principle of least privilege - no privilege escalation in research containers
-# Note: We don't remove sudo package (causes dependency issues), but user has no access
+# Install sudo for analyst user access
+RUN apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
 
 # Install bundle-specific system dependencies
 # Command generated from bundles.yaml (single source of truth)
@@ -88,17 +104,20 @@ LABEL org.opencontainers.image.description="R environment with \
       ${LIBS_BUNDLE} libraries and ${PKGS_BUNDLE} packages"
 LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 
-# Create non-root user with zsh as default shell
+# Create non-root user with zsh as default shell and sudo access
 # Always create the user since we reference it throughout the Dockerfile
 RUN useradd --create-home --shell /bin/zsh ${USERNAME} || \
-    echo "User ${USERNAME} already exists"
+    echo "User ${USERNAME} already exists" && \
+    usermod -aG sudo ${USERNAME}
 
-# SECURITY: No default password set
-# For RStudio Server, either:
-#   1. Pass PASSWORD env var when starting container: docker run -e PASSWORD=yourpass ...
-#   2. Set password inside container: docker exec CONTAINER chpasswd (interactive)
-#   3. Disable auth: Set RSTUDIO_AUTH=none environment variable
-# Default: Password must be set explicitly by user before RStudio access
+# Set analyst user password (provided via build argument)
+# Build with: docker build --build-arg ANALYST_PASSWORD=yourpassword .
+# If no password provided, user will have sudo access but no password set
+RUN if [ -n "$ANALYST_PASSWORD" ]; then \
+        echo "${USERNAME}:$ANALYST_PASSWORD" | chpasswd; \
+    else \
+        echo "WARNING: No ANALYST_PASSWORD provided. User has sudo access but no password set."; \
+    fi
 
 # Install R packages based on selected profile
 # Command generated from bundles.yaml (single source of truth)
