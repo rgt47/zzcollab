@@ -5,7 +5,9 @@ FROM rgt47/r-pluspackages:latest
 USER root
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+# EFFICIENCY: --no-install-recommends reduces image size by ~100-200MB
+#   by skipping suggested packages that aren't strictly required
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     ssh \
     curl \
@@ -40,8 +42,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (required for coc.nvim and other vim plugins)
+# EFFICIENCY: Clean up apt lists to reduce layer size (~50MB savings)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
-    apt-get install -y nodejs
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Nerd Fonts (required for vim-airline and other plugins with icons)
 RUN mkdir -p /usr/local/share/fonts/nerd-fonts && \
