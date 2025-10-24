@@ -236,6 +236,10 @@ COPY --chown=${USERNAME}:${USERNAME} .vimrc* .gitconfig* \
      .zshrc* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
      .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
 
+# Copy .config directory (XDG Base Directory Specification)
+# Includes terminator and other XDG-compliant configs from dotfiles
+COPY --chown=${USERNAME}:${USERNAME} .config /home/${USERNAME}/.config
+
 # Install zsh plugins
 # EFFICIENCY: Shallow clone (--depth 1) reduces download size by ~90%
 #   - Only fetches latest commit instead of full git history
