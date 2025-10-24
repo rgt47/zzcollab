@@ -17,7 +17,7 @@ ARG USERNAME=analyst
 ARG ANALYST_PASSWORD
 
 # Install all system dependencies in a single consolidated layer
-# EFFICIENCY IMPROVEMENT: Consolidated PPA setup with main apt installation
+# EFFICIENCY IMPROVEMENT: Consolidated r2u + PPA setup with main apt installation
 #   - Reduces from 2 layers to 1 layer
 #   - Only one apt-get update instead of two
 #   - Better layer caching (PPA failures don't invalidate package cache)
@@ -29,25 +29,30 @@ ARG ANALYST_PASSWORD
 #   - Build tools: g++, gfortran, make
 #   - But REMOVES development headers after building R
 #
-# REPRODUCIBILITY NOTE: PPAs and Maximum Reproducibility
-#   - PPAs provide latest versions of vim, git, R packages (desirable for development)
-#   - BUT: PPA versions can change over time, reducing 5-year reproducibility
-#   - For MAXIMUM reproducibility, consider removing PPA lines below (lines 38-40)
-#   - Without PPAs: Ubuntu's stable repos provide frozen versions (tied to Ubuntu release)
-#   - Tradeoff: Convenience (latest tools) vs Reproducibility (frozen versions)
-#   - Current choice: Keep PPAs for better development experience
+# BINARY R PACKAGES: Using r2u (successor to c2d4u PPA)
+#   - r2u provides binary packages for ALL CRAN packages on Ubuntu 20.04/22.04/24.04
+#   - Maintained by Dirk Eddelbuettel: https://eddelbuettel.github.io/r2u/
+#   - Much faster than source installation via install.packages()
+#   - c2d4u PPA is deprecated and doesn't support Ubuntu Noble (24.04)
+#
+# REPRODUCIBILITY NOTE: r2u and Maximum Reproducibility
+#   - r2u binaries track CRAN closely (usually within 24 hours)
+#   - For MAXIMUM reproducibility, use RSPM snapshots instead (configured later)
+#   - Tradeoff: Speed (r2u binaries) vs Exact reproducibility (RSPM snapshots)
+#   - Current choice: r2u for system packages, RSPM for renv-managed packages
 #
 # This consolidated layer:
-#   1. Adds PPAs (vim, git, R packages) with graceful fallback
-#   2. Installs all dependencies in one operation
-#   3. Cleans up apt lists
+#   1. Sets up r2u repository for binary R packages
+#   2. Adds git-core PPA for latest git
+#   3. Installs all dependencies in one operation
+#   4. Cleans up apt lists
 #
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends software-properties-common && \
-    # Add PPAs with fallback strategy for latest versions
-    # NOTE: Comment out these 3 lines for maximum reproducibility
-    (add-apt-repository ppa:jonathonf/vim -y 2>/dev/null || echo "Vim PPA unavailable, using default repos") && \
-    (add-apt-repository ppa:c2d4u.team/c2d4u4.0+ -y 2>/dev/null || echo "R CRAN PPA unavailable, using default repos") && \
+    apt-get install -y --no-install-recommends software-properties-common wget && \
+    # Add r2u repository for binary R packages (replaces c2d4u)
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
+    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > /etc/apt/sources.list.d/cranapt.list && \
+    # Add git-core PPA for latest git (Noble 24.04 supported)
     (add-apt-repository ppa:git-core/ppa -y 2>/dev/null || echo "Git PPA unavailable, using default repos") && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
