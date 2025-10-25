@@ -145,7 +145,8 @@ docker-zsh-gui:
 	@echo "Prerequisites:"
 	@echo "  1. XQuartz installed: brew install --cask xquartz"
 	@echo "  2. XQuartz running with 'Allow connections from network clients' enabled"
-	@echo "  3. Run: xhost +localhost"
+	@echo "  3. Set DISPLAY variable: export DISPLAY=:0"
+	@echo "  4. Run: xhost +localhost"
 	@echo ""
 	docker run --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
 
