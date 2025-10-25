@@ -232,7 +232,7 @@ USER ${USERNAME}
 
 # Copy dotfiles (consolidated with wildcards)
 # Note: .zshrc copied directly from dotfiles directory (no filtering)
-COPY --chown=${USERNAME}:${USERNAME} .vimrc* .gitconfig* \
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .gitconfig* .tmux.conf* \
      .zshrc* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
      .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
 
