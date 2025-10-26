@@ -1,0 +1,179 @@
+# syntax=docker/dockerfile:1.4
+#=================================================================
+# ZZCOLLAB HPC Alpine Profile - High-Performance Computing
+#=================================================================
+# Profile: hpc_alpine (~600MB)
+# Purpose: HPC-focused with parallel processing, lightweight
+# Base: velaco/alpine-r (Alpine + R)
+# Packages: renv, parallel, foreach, doParallel, future, furrr
+#
+# Build: DOCKER_BUILDKIT=1 docker build \
+#          -f Dockerfile.hpc_alpine -t myteam/project:hpc .
+# Optimized for: Computational efficiency, container orchestration
+#=================================================================
+
+ARG R_VERSION=latest
+ARG USERNAME=analyst
+ARG TEAM_NAME=zzcollab
+ARG PROJECT_NAME=project
+
+#=================================================================
+# STAGE 1: BUILDER
+#=================================================================
+FROM velaco/alpine-r:${R_VERSION} AS builder
+
+# Install build dependencies for HPC
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    set -ex && \
+    apk add --no-cache \
+        gcc \
+        g++ \
+        gfortran \
+        make \
+        cmake \
+        musl-dev \
+        linux-headers \
+        # High-performance libraries
+        openblas-dev \
+        lapack-dev \
+        # Development libraries
+        curl-dev \
+        openssl-dev \
+        libxml2-dev \
+        git
+
+# Configure CRAN
+WORKDIR /build
+COPY renv.lock* ./
+
+RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
+        >> /usr/local/lib/R/etc/Rprofile.site
+
+# Install HPC packages
+RUN --mount=type=cache,target=/tmp/R-cache \
+    R -e "install.packages(c('renv', 'devtools', 'parallel', \
+           'foreach', 'doParallel', 'future', 'furrr', \
+           'data.table', 'Rcpp', 'RcppArmadillo', 'RcppEigen'))"
+
+# Restore renv
+COPY DESCRIPTION setup_renv.R* ./
+RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
+
+#=================================================================
+# STAGE 2: RUNTIME
+#=================================================================
+FROM velaco/alpine-r:${R_VERSION}
+
+ARG USERNAME=analyst
+ARG TEAM_NAME=zzcollab
+ARG PROJECT_NAME=project
+
+# Copy R libraries from builder
+COPY --from=builder /usr/local/lib/R/site-library \
+     /usr/local/lib/R/site-library
+COPY --from=builder /usr/local/lib/R/etc/Rprofile.site \
+     /usr/local/lib/R/etc/Rprofile.site
+
+# Install runtime dependencies
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    set -ex && \
+    apk add --no-cache \
+        # Runtime libraries for HPC
+        openblas \
+        lapack \
+        libgfortran \
+        # Standard runtime
+        libcurl \
+        openssl \
+        libxml2 \
+        # Development tools
+        git \
+        vim \
+        zsh \
+        tmux \
+        curl \
+        wget \
+        sudo \
+        shadow \
+        nodejs \
+        npm
+
+# External dependencies
+RUN --mount=type=cache,target=/tmp/downloads \
+    set -ex && \
+    ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
+    ZSH_SYNTAX_VERSION=0.8.0 && \
+    mkdir -p /tmp/.zsh && \
+    git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
+        https://github.com/zsh-users/zsh-autosuggestions \
+        /tmp/.zsh/zsh-autosuggestions & \
+    git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
+        https://github.com/zsh-users/zsh-syntax-highlighting \
+        /tmp/.zsh/zsh-syntax-highlighting & \
+    VIM_PLUG_VERSION=0.14.0 && \
+    mkdir -p /tmp/.vim/autoload && \
+    curl -fLo /tmp/.vim/autoload/plug.vim \
+        https://raw.githubusercontent.com/junegunn/vim-plug/\
+${VIM_PLUG_VERSION}/plug.vim & \
+    wait
+
+# User setup
+RUN adduser -D -s /bin/zsh ${USERNAME} && \
+    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > \
+        /etc/sudoers.d/${USERNAME} && \
+    chmod 0440 /etc/sudoers.d/${USERNAME} && \
+    mkdir -p /home/${USERNAME}/project && \
+    mv /tmp/.zsh /home/${USERNAME}/.zsh && \
+    mv /tmp/.vim /home/${USERNAME}/.vim && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+
+# Password
+RUN --mount=type=secret,id=password \
+    if [ -f /run/secrets/password ]; then \
+        echo "${USERNAME}:$(cat /run/secrets/password)" | chpasswd; \
+    else \
+        PASSWORD=$(openssl rand -base64 12) && \
+        echo "${USERNAME}:${PASSWORD}" | chpasswd && \
+        echo "=============================================" && \
+        echo "Generated password: ${PASSWORD}" && \
+        echo "User: ${USERNAME}" && \
+        echo "HPC Alpine (parallel processing optimized)" && \
+        echo "=============================================="; \
+    fi
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}/project
+
+# Dotfiles
+COPY --chown=${USERNAME}:${USERNAME} \
+    .vimrc \
+    .gitconfig \
+    .tmux.conf \
+    .zshrc \
+    /home/${USERNAME}/
+
+# Vim plugins
+RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
+        tee /tmp/vim-install.log || true
+
+# Project files
+COPY --chown=${USERNAME}:${USERNAME} . .
+
+# Install package
+RUN R -e "install.packages('.', repos = NULL, type = 'source', \
+           dependencies = TRUE)"
+
+# Metadata
+LABEL org.opencontainers.image.title=\
+"ZZCOLLAB HPC Alpine Environment" \
+      org.opencontainers.image.description=\
+"HPC-focused with parallel processing and lightweight footprint" \
+      org.opencontainers.image.vendor="ZZCOLLAB" \
+      org.opencontainers.image.authors="${TEAM_NAME}" \
+      org.opencontainers.image.source=\
+"https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
+      zzcollab.profile="hpc_alpine" \
+      zzcollab.size="~600MB"
+
+CMD ["/bin/zsh"]

@@ -1,0 +1,175 @@
+# syntax=docker/dockerfile:1.4
+#=================================================================
+# ZZCOLLAB Alpine Minimal Profile - Ultra-Lightweight CI/CD
+#=================================================================
+# Profile: alpine_minimal (~200MB)
+# Purpose: Ultra-lightweight Alpine Linux with R for CI/CD
+# Base: velaco/alpine-r (Alpine + R)
+# Packages: renv, devtools, testthat
+#
+# Build: DOCKER_BUILDKIT=1 docker build \
+#          -f Dockerfile.alpine_minimal -t myteam/project:alpine .
+# Size: ~200MB vs ~1GB for rocker images (5x smaller)
+#=================================================================
+
+ARG R_VERSION=latest
+ARG USERNAME=analyst
+ARG TEAM_NAME=zzcollab
+ARG PROJECT_NAME=project
+
+#=================================================================
+# STAGE 1: BUILDER
+#=================================================================
+FROM velaco/alpine-r:${R_VERSION} AS builder
+
+# Alpine uses apk instead of apt-get
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    set -ex && \
+    apk add --no-cache \
+        # Build tools
+        gcc \
+        g++ \
+        make \
+        musl-dev \
+        linux-headers \
+        # Development libraries
+        curl-dev \
+        openssl-dev \
+        libxml2-dev \
+        git
+
+# Configure RSPM (Alpine uses musl, limited binary support)
+WORKDIR /build
+COPY renv.lock* ./
+
+# Note: Alpine doesn't have prebuilt R packages like Debian
+# Must compile from source - slower but smaller image
+RUN if [ -f renv.lock ]; then \
+        echo "options(repos = c(CRAN = '\
+https://cloud.r-project.org'))" \
+            >> /usr/local/lib/R/etc/Rprofile.site; \
+    fi
+
+# Install minimal R packages (compile from source)
+RUN --mount=type=cache,target=/tmp/R-cache \
+    R -e "install.packages(c('renv', 'devtools', 'testthat', \
+           'remotes'))"
+
+# Restore renv
+COPY DESCRIPTION setup_renv.R* ./
+RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
+
+#=================================================================
+# STAGE 2: RUNTIME
+#=================================================================
+FROM velaco/alpine-r:${R_VERSION}
+
+ARG USERNAME=analyst
+ARG TEAM_NAME=zzcollab
+ARG PROJECT_NAME=project
+
+# Copy R libraries from builder
+COPY --from=builder /usr/local/lib/R/site-library \
+     /usr/local/lib/R/site-library
+COPY --from=builder /usr/local/lib/R/etc/Rprofile.site \
+     /usr/local/lib/R/etc/Rprofile.site
+
+# Install runtime dependencies (Alpine packages)
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    set -ex && \
+    apk add --no-cache \
+        # Runtime libraries
+        libcurl \
+        openssl \
+        libxml2 \
+        # Development tools
+        git \
+        vim \
+        zsh \
+        tmux \
+        curl \
+        wget \
+        sudo \
+        shadow \
+        nodejs \
+        npm
+
+# External dependencies (same as other profiles)
+RUN --mount=type=cache,target=/tmp/downloads \
+    set -ex && \
+    ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
+    ZSH_SYNTAX_VERSION=0.8.0 && \
+    mkdir -p /tmp/.zsh && \
+    git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
+        https://github.com/zsh-users/zsh-autosuggestions \
+        /tmp/.zsh/zsh-autosuggestions & \
+    git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
+        https://github.com/zsh-users/zsh-syntax-highlighting \
+        /tmp/.zsh/zsh-syntax-highlighting & \
+    VIM_PLUG_VERSION=0.14.0 && \
+    mkdir -p /tmp/.vim/autoload && \
+    curl -fLo /tmp/.vim/autoload/plug.vim \
+        https://raw.githubusercontent.com/junegunn/vim-plug/\
+${VIM_PLUG_VERSION}/plug.vim & \
+    wait
+
+# User setup (Alpine uses different commands)
+RUN adduser -D -s /bin/zsh ${USERNAME} && \
+    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > \
+        /etc/sudoers.d/${USERNAME} && \
+    chmod 0440 /etc/sudoers.d/${USERNAME} && \
+    mkdir -p /home/${USERNAME}/project && \
+    mv /tmp/.zsh /home/${USERNAME}/.zsh && \
+    mv /tmp/.vim /home/${USERNAME}/.vim && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+
+# Password
+RUN --mount=type=secret,id=password \
+    if [ -f /run/secrets/password ]; then \
+        echo "${USERNAME}:$(cat /run/secrets/password)" | chpasswd; \
+    else \
+        PASSWORD=$(openssl rand -base64 12) && \
+        echo "${USERNAME}:${PASSWORD}" | chpasswd && \
+        echo "=============================================" && \
+        echo "Generated password: ${PASSWORD}" && \
+        echo "User: ${USERNAME}" && \
+        echo "Alpine Linux (ultra-lightweight)" && \
+        echo "=============================================="; \
+    fi
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}/project
+
+# Dotfiles
+COPY --chown=${USERNAME}:${USERNAME} \
+    .vimrc \
+    .gitconfig \
+    .tmux.conf \
+    .zshrc \
+    /home/${USERNAME}/
+
+# Vim plugins
+RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
+        tee /tmp/vim-install.log || true
+
+# Project files
+COPY --chown=${USERNAME}:${USERNAME} . .
+
+# Install package
+RUN R -e "install.packages('.', repos = NULL, type = 'source', \
+           dependencies = TRUE)"
+
+# Metadata
+LABEL org.opencontainers.image.title=\
+"ZZCOLLAB Alpine Minimal Environment" \
+      org.opencontainers.image.description=\
+"Ultra-lightweight Alpine Linux with R for CI/CD" \
+      org.opencontainers.image.vendor="ZZCOLLAB" \
+      org.opencontainers.image.authors="${TEAM_NAME}" \
+      org.opencontainers.image.source=\
+"https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
+      zzcollab.profile="alpine_minimal" \
+      zzcollab.size="~200MB"
+
+CMD ["/bin/zsh"]
