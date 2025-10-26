@@ -1,30 +1,44 @@
 # syntax=docker/dockerfile:1.4
 #=================================================================
-# ZZCOLLAB Analysis Profile - Data Analysis
+# ZZCOLLAB Custom Profile Dockerfile (GENERATED)
 #=================================================================
-# Profile: analysis (~1.2GB)
-# Purpose: Tidyverse ecosystem for data analysis
-# Base: rocker/tidyverse (R + tidyverse + RStudio)
-# Packages: tidyverse, renv, devtools, here, janitor, scales, patchwork, gt, DT
+# This Dockerfile is GENERATED from user specifications
+# DO NOT edit manually - regenerate with zzcollab command
+#
+# Generated: ${GENERATION_DATE}
+# Base image: ${BASE_IMAGE}:${R_VERSION}
+# System libraries: ${LIBS_BUNDLE_LIST}
+# R packages: ${PKGS_BUNDLE_LIST}
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.analysis -t myteam/project:analysis .
-# RStudio: docker run -p 8787:8787 -e PASSWORD=yourpass myteam/project:analysis
+#          -t ${TEAM_NAME}/${PROJECT_NAME}:custom .
 #=================================================================
 
-ARG R_VERSION=latest
+ARG BASE_IMAGE=${BASE_IMAGE}
+ARG R_VERSION=${R_VERSION}
 ARG USERNAME=analyst
-ARG TEAM_NAME=zzcollab
-ARG PROJECT_NAME=project
+ARG TEAM_NAME=${TEAM_NAME}
+ARG PROJECT_NAME=${PROJECT_NAME}
+ARG TARGETPLATFORM
 
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION} AS builder
+FROM ${BASE_IMAGE}:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TARGETPLATFORM
 
-# Install build dependencies
+# Platform compatibility check
+RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
+        case "${BASE_IMAGE}" in \
+            *verse*|*geospatial*|*shiny*) \
+                echo "WARNING: ${BASE_IMAGE} may have limited ARM64 support" >&2; \
+                ;; \
+        esac; \
+    fi
+
+# Install build dependencies with cache mount
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
@@ -32,7 +46,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -y --no-install-recommends \
         wget \
         ca-certificates && \
-    # r2u repository
+    # r2u repository for binary R packages
     wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
 dirk_eddelbuettel_key.asc | \
         tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
@@ -40,17 +54,33 @@ dirk_eddelbuettel_key.asc | \
 https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
+    # Core build dependencies (always needed)
     apt-get install -y --no-install-recommends \
         build-essential \
+        cmake \
+        pkg-config \
         libcurl4-openssl-dev \
         libssl-dev \
         libxml2-dev \
         libgit2-dev \
+        libssh2-1-dev \
         libfontconfig1-dev \
         libharfbuzz-dev \
-        libfribidi-dev
+        libfribidi-dev \
+        libfreetype6-dev \
+        libpng-dev \
+        libjpeg-dev
 
-# Configure RSPM
+# Custom system dependencies (generated from bundles.yaml)
+# Libraries: ${LIBS_BUNDLE_LIST}
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    set -ex && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+${CUSTOM_SYSTEM_DEPS_INSTALL}
+
+# Configure RSPM with renv.lock date
 WORKDIR /build
 COPY renv.lock* ./
 
@@ -58,41 +88,53 @@ RUN RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | cut -d' ' -f1 || \
                 stat -f %Sm -t %Y-%m-%d renv.lock 2>/dev/null || \
                 date +%Y-%m-%d) && \
     UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+    echo "# RSPM snapshot date: ${RENV_DATE} (${UBUNTU_CODENAME})" \
+        >> /usr/local/lib/R/etc/Rprofile.site && \
     echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install analysis packages
+# Install custom R packages (generated from bundles.yaml)
+# Packages: ${PKGS_BUNDLE_LIST}
 RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'here', 'janitor', 'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
+    R -e "install.packages(c(${CUSTOM_R_PACKAGES_INSTALL}))"
 
-# Restore renv
+# Restore renv packages
 COPY DESCRIPTION setup_renv.R* ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION}
+FROM ${BASE_IMAGE}:${R_VERSION}
 
 ARG USERNAME=analyst
-ARG TEAM_NAME=zzcollab
-ARG PROJECT_NAME=project
+ARG TEAM_NAME=${TEAM_NAME}
+ARG PROJECT_NAME=${PROJECT_NAME}
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Copy R libraries from builder
+# Copy R libraries and configuration from builder
 COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=builder /usr/local/lib/R/etc/Rprofile.site /usr/local/lib/R/etc/Rprofile.site
 
-# Install runtime dependencies
+# Install runtime dependencies (NOT -dev versions)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
+        # Core runtime libraries
         libcurl4 \
         libssl3 \
         libxml2 \
         libgit2-1.7 \
+        libssh2-1 \
+        libfontconfig1 \
+        libharfbuzz0b \
+        libfribidi0 \
+        libfreetype6 \
+        libpng16-16 \
+        libjpeg8 \
+        # Development tools
         git \
         vim \
         zsh \
@@ -100,13 +142,27 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         curl \
         wget \
         sudo \
-        procps && \
+        procps
+
+# Custom runtime libraries (generated from bundles.yaml)
+# Libraries: ${LIBS_BUNDLE_LIST}
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    set -ex && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+${CUSTOM_RUNTIME_LIBS_INSTALL}
+
+# Node.js for vim plugins
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
 
-# External dependencies
+# Install external dependencies in parallel
 RUN --mount=type=cache,target=/tmp/downloads \
     set -ex && \
+    # ZSH plugins
     ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
     ZSH_SYNTAX_VERSION=0.8.0 && \
     mkdir -p /tmp/.zsh && \
@@ -114,13 +170,14 @@ RUN --mount=type=cache,target=/tmp/downloads \
         https://github.com/zsh-users/zsh-autosuggestions /tmp/.zsh/zsh-autosuggestions & \
     git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
         https://github.com/zsh-users/zsh-syntax-highlighting /tmp/.zsh/zsh-syntax-highlighting & \
+    # vim-plug
     VIM_PLUG_VERSION=0.14.0 && \
     mkdir -p /tmp/.vim/autoload && \
     curl -fLo /tmp/.vim/autoload/plug.vim \
         https://raw.githubusercontent.com/junegunn/vim-plug/${VIM_PLUG_VERSION}/plug.vim & \
     wait
 
-# User setup
+# Create user and set up environment
 RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
     usermod -aG sudo ${USERNAME} && \
     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} && \
@@ -131,7 +188,7 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
 
-# Password
+# Set password using BuildKit secrets or auto-generate
 RUN --mount=type=secret,id=password \
     if [ -f /run/secrets/password ]; then \
         echo "${USERNAME}:$(cat /run/secrets/password)" | chpasswd; \
@@ -141,14 +198,15 @@ RUN --mount=type=secret,id=password \
         echo "=============================================" && \
         echo "Generated password: ${PASSWORD}" && \
         echo "User: ${USERNAME}" && \
-        echo "RStudio: http://localhost:8787" && \
+        echo "Save this password!" && \
         echo "=============================================="; \
     fi
 
+# Switch to user
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Dotfiles
+# Copy dotfiles
 COPY --chown=${USERNAME}:${USERNAME} \
     .vimrc \
     .gitconfig \
@@ -156,26 +214,24 @@ COPY --chown=${USERNAME}:${USERNAME} \
     .zshrc \
     /home/${USERNAME}/
 
-# Vim plugins
+# Install vim plugins
 RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
 
-# Project files
+# Copy project files (last - most frequent changes)
 COPY --chown=${USERNAME}:${USERNAME} . .
 
-# Install package
+# Install research compendium
 RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
 
 # Metadata
-LABEL org.opencontainers.image.title="ZZCOLLAB Analysis Environment" \
-      org.opencontainers.image.description="Tidyverse ecosystem for data analysis" \
+LABEL org.opencontainers.image.title="ZZCOLLAB Custom Environment" \
+      org.opencontainers.image.description="Custom profile: ${LIBS_BUNDLE_LIST} + ${PKGS_BUNDLE_LIST}" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source="https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="analysis" \
-      zzcollab.size="~1.2GB"
-
-# Health check for RStudio
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8787/ || exit 1
+      zzcollab.profile="custom" \
+      zzcollab.base="${BASE_IMAGE}:${R_VERSION}" \
+      zzcollab.libraries="${LIBS_BUNDLE_LIST}" \
+      zzcollab.packages="${PKGS_BUNDLE_LIST}"
 
 CMD ["/bin/zsh"]

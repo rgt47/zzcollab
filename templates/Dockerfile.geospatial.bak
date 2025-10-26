@@ -1,28 +1,35 @@
 # syntax=docker/dockerfile:1.4
 #=================================================================
-# ZZCOLLAB Analysis Profile - Data Analysis
+# ZZCOLLAB Geospatial Profile - Spatial Analysis
 #=================================================================
-# Profile: analysis (~1.2GB)
-# Purpose: Tidyverse ecosystem for data analysis
-# Base: rocker/tidyverse (R + tidyverse + RStudio)
-# Packages: tidyverse, renv, devtools, here, janitor, scales, patchwork, gt, DT
+# Profile: geospatial (~2.5GB)
+# Purpose: Geospatial data analysis with sf, terra, and mapping
+# Base: rocker/geospatial (R + tidyverse + spatial libraries)
+# Packages: sf, terra, leaflet, mapview, tmap, raster, stars
 #
-# Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.analysis -t myteam/project:analysis .
-# RStudio: docker run -p 8787:8787 -e PASSWORD=yourpass myteam/project:analysis
+# Build: DOCKER_BUILDKIT=1 docker build -f Dockerfile.geospatial -t myteam/project:geospatial .
+# Note: AMD64 only - ARM64 not fully supported
 #=================================================================
 
 ARG R_VERSION=latest
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
+ARG TARGETPLATFORM
 
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION} AS builder
+FROM rocker/geospatial:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TARGETPLATFORM
+
+# Platform check (geospatial has limited ARM64 support)
+RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
+        echo "WARNING: rocker/geospatial has limited ARM64 support" >&2; \
+        echo "Some spatial libraries may not work correctly" >&2; \
+    fi
 
 # Install build dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -33,11 +40,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         wget \
         ca-certificates && \
     # r2u repository
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
-dirk_eddelbuettel_key.asc | \
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
         tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] \
-https://r2u.stat.illinois.edu/ubuntu noble main" > \
+    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -45,10 +50,13 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         libcurl4-openssl-dev \
         libssl-dev \
         libxml2-dev \
-        libgit2-dev \
-        libfontconfig1-dev \
-        libharfbuzz-dev \
-        libfribidi-dev
+        # Geospatial build dependencies
+        libgdal-dev \
+        libproj-dev \
+        libgeos-dev \
+        libudunits2-dev \
+        netcdf-bin \
+        libsqlite3-dev
 
 # Configure RSPM
 WORKDIR /build
@@ -61,9 +69,9 @@ RUN RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | cut -d' ' -f1 || \
     echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install analysis packages
+# Install geospatial packages
 RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'here', 'janitor', 'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
+    R -e "install.packages(c('renv', 'devtools', 'sf', 'terra', 'leaflet', 'mapview', 'tmap', 'raster', 'stars', 'gstat', 'spatstat'))"
 
 # Restore renv
 COPY DESCRIPTION setup_renv.R* ./
@@ -72,7 +80,7 @@ RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION}
+FROM rocker/geospatial:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
@@ -89,10 +97,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
+        # Core runtime
         libcurl4 \
         libssl3 \
         libxml2 \
-        libgit2-1.7 \
+        # Geospatial runtime libraries (NOT -dev)
+        libgdal30 \
+        libproj25 \
+        libgeos-c1v5 \
+        libudunits2-0 \
+        libsqlite3-0 \
+        # Development tools
         git \
         vim \
         zsh \
@@ -141,7 +156,6 @@ RUN --mount=type=secret,id=password \
         echo "=============================================" && \
         echo "Generated password: ${PASSWORD}" && \
         echo "User: ${USERNAME}" && \
-        echo "RStudio: http://localhost:8787" && \
         echo "=============================================="; \
     fi
 
@@ -166,16 +180,12 @@ COPY --chown=${USERNAME}:${USERNAME} . .
 RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
 
 # Metadata
-LABEL org.opencontainers.image.title="ZZCOLLAB Analysis Environment" \
-      org.opencontainers.image.description="Tidyverse ecosystem for data analysis" \
+LABEL org.opencontainers.image.title="ZZCOLLAB Geospatial Environment" \
+      org.opencontainers.image.description="Spatial analysis with sf, terra, and mapping" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source="https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="analysis" \
-      zzcollab.size="~1.2GB"
-
-# Health check for RStudio
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8787/ || exit 1
+      zzcollab.profile="geospatial" \
+      zzcollab.size="~2.5GB"
 
 CMD ["/bin/zsh"]

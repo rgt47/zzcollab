@@ -7,7 +7,8 @@
 # Base: rocker/r-ver (R + minimal dependencies)
 # Packages: renv, devtools, usethis, testthat, roxygen2
 #
-# Build: DOCKER_BUILDKIT=1 docker build -f Dockerfile.minimal -t myteam/project:minimal .
+# Build: DOCKER_BUILDKIT=1 docker build \
+#          -f Dockerfile.minimal -t myteam/project:minimal .
 #=================================================================
 
 ARG R_VERSION=latest
@@ -31,9 +32,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         wget \
         ca-certificates && \
     # r2u repository for binary R packages
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
+dirk_eddelbuettel_key.asc | \
         tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
+    echo "deb [arch=amd64,arm64] \
+https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
     # Build dependencies for R packages
@@ -55,16 +58,22 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 WORKDIR /build
 COPY renv.lock* ./
 
-RUN RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | cut -d' ' -f1 || \
+RUN RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | \
+                    cut -d' ' -f1 || \
                 stat -f %Sm -t %Y-%m-%d renv.lock 2>/dev/null || \
                 date +%Y-%m-%d) && \
-    UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-    echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" \
+    UBUNTU_CODENAME=$(. /etc/os-release && \
+        echo $VERSION_CODENAME) && \
+    echo "options(repos = c(RSPM = '\
+https://packagemanager.posit.co/cran/__linux__/\
+${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = '\
+https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install framework packages
 RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'usethis', 'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
+    R -e "install.packages(c('renv', 'devtools', 'usethis', \
+           'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
 
 # Restore renv packages
 COPY DESCRIPTION setup_renv.R* ./
@@ -81,8 +90,10 @@ ARG PROJECT_NAME=project
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Copy R libraries and configuration from builder
-COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
-COPY --from=builder /usr/local/lib/R/etc/Rprofile.site /usr/local/lib/R/etc/Rprofile.site
+COPY --from=builder /usr/local/lib/R/site-library \
+     /usr/local/lib/R/site-library
+COPY --from=builder /usr/local/lib/R/etc/Rprofile.site \
+     /usr/local/lib/R/etc/Rprofile.site
 
 # Install runtime dependencies and development tools in single layer
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -123,14 +134,17 @@ RUN --mount=type=cache,target=/tmp/downloads \
     ZSH_SYNTAX_VERSION=0.8.0 && \
     mkdir -p /tmp/.zsh && \
     git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
-        https://github.com/zsh-users/zsh-autosuggestions /tmp/.zsh/zsh-autosuggestions & \
+        https://github.com/zsh-users/zsh-autosuggestions \
+        /tmp/.zsh/zsh-autosuggestions & \
     git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
-        https://github.com/zsh-users/zsh-syntax-highlighting /tmp/.zsh/zsh-syntax-highlighting & \
+        https://github.com/zsh-users/zsh-syntax-highlighting \
+        /tmp/.zsh/zsh-syntax-highlighting & \
     # vim-plug
     VIM_PLUG_VERSION=0.14.0 && \
     mkdir -p /tmp/.vim/autoload && \
     curl -fLo /tmp/.vim/autoload/plug.vim \
-        https://raw.githubusercontent.com/junegunn/vim-plug/${VIM_PLUG_VERSION}/plug.vim & \
+        https://raw.githubusercontent.com/junegunn/vim-plug/\
+${VIM_PLUG_VERSION}/plug.vim & \
     wait
 
 # Create user and set up environment
@@ -171,20 +185,24 @@ COPY --chown=${USERNAME}:${USERNAME} \
     /home/${USERNAME}/
 
 # Install vim plugins
-RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
+RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
+        tee /tmp/vim-install.log || true
 
 # Copy project files (last - most frequent changes)
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 # Install research compendium
-RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
+RUN R -e "install.packages('.', repos = NULL, type = 'source', \
+           dependencies = TRUE)"
 
 # Metadata
 LABEL org.opencontainers.image.title="ZZCOLLAB Minimal Environment" \
-      org.opencontainers.image.description="Essential R packages for package development" \
+      org.opencontainers.image.description=\
+"Essential R packages for package development" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
-      org.opencontainers.image.source="https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
+      org.opencontainers.image.source=\
+"https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
       zzcollab.profile="minimal" \
       zzcollab.size="~800MB"
 

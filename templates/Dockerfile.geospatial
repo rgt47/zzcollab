@@ -7,7 +7,8 @@
 # Base: rocker/geospatial (R + tidyverse + spatial libraries)
 # Packages: sf, terra, leaflet, mapview, tmap, raster, stars
 #
-# Build: DOCKER_BUILDKIT=1 docker build -f Dockerfile.geospatial -t myteam/project:geospatial .
+# Build: DOCKER_BUILDKIT=1 docker build \
+#          -f Dockerfile.geospatial -t myteam/project:geospatial .
 # Note: AMD64 only - ARM64 not fully supported
 #=================================================================
 
@@ -40,9 +41,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         wget \
         ca-certificates && \
     # r2u repository
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
+dirk_eddelbuettel_key.asc | \
         tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
+    echo "deb [arch=amd64,arm64] \
+https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \

@@ -513,28 +513,59 @@ validate_r_version_early() {
 # FUNCTION: get_dockerfile_template
 # PURPOSE:  Select appropriate Dockerfile template based on build mode
 # USAGE:    get_dockerfile_template
-# ARGS:     
+# ARGS:
 #   None (uses global PROFILE_NAME variable)
-# RETURNS:  
-#   0 - Always succeeds, outputs template filename
-# GLOBALS:  
-#   READ:  PROFILE_NAME (minimal|analysis|publishing|etc.)
+# RETURNS:
+#   0 - Always succeeds, outputs template filename or "GENERATE"
+# GLOBALS:
+#   READ:  PROFILE_NAME, BASE_IMAGE_FLAG, LIBS_BUNDLE, PKGS_BUNDLE
 #   WRITE: None (outputs to stdout)
 # DESCRIPTION:
-#   This function maps build modes to their corresponding Dockerfile templates.
-#   The unified Dockerfile system uses a single template with build arguments
-#   to control package installation, replacing the previous multiple template approach.
+#   v3.0 Profile-Specific Dockerfile System:
+#   - Standard profiles (minimal, analysis, geospatial, modeling, publishing)
+#     use optimized static Dockerfiles
+#   - Custom configurations (custom base image or bundle combinations)
+#     trigger generation from Dockerfile.base.template
+#   - Team images use simplified Dockerfile.personal.team
 # TEMPLATE MAPPING:
-#   - All modes: "Dockerfile.unified" (single template with PACKAGE_MODE arg)
-#   - Legacy support maintained for backward compatibility
+#   - Standard profiles: Dockerfile.{profile} (static, multi-stage, optimized)
+#   - Custom profiles: "GENERATE" (triggers dockerfile_generator.sh)
+#   - Team member: Dockerfile.personal.team
 # EXAMPLE:
 #   template=$(get_dockerfile_template)
-#   echo "Using template: $template"
+#   if [[ "$template" == "GENERATE" ]]; then
+#       generate_custom_dockerfile
+#   else
+#       install_template "$template" "Dockerfile"
+#   fi
 ##############################################################################
 get_dockerfile_template() {
-    # Use unified Dockerfile template for all build modes
-    # The template uses PACKAGE_MODE build argument to control package installation
-    echo "Dockerfile.unified"
+    # Load dockerfile generator module for strategy selection
+    if [[ -f "$MODULES_DIR/dockerfile_generator.sh" ]]; then
+        source "$MODULES_DIR/dockerfile_generator.sh"
+
+        # Get strategy from generator module
+        local strategy=$(select_dockerfile_strategy)
+
+        case "$strategy" in
+            static:*)
+                # Extract template name from "static:Dockerfile.minimal"
+                echo "${strategy#static:}"
+                ;;
+            generate:*)
+                # Signal that generation is needed
+                echo "GENERATE"
+                ;;
+            *)
+                log_error "Unknown Dockerfile strategy: $strategy"
+                echo "Dockerfile.unified"  # Fallback to legacy
+                ;;
+        esac
+    else
+        # Fallback to legacy unified template if generator not available
+        log_warn "Dockerfile generator module not found, using legacy unified template"
+        echo "Dockerfile.unified"
+    fi
 }
 
 #=============================================================================
@@ -653,37 +684,61 @@ create_docker_files() {
         fi
     fi
 
-    # Create Dockerfile from template
-    # Choose template based on whether using team image or not
+    # Create Dockerfile from template OR generate custom
+    # v3.0: Use optimized profile-specific Dockerfiles or generate from template
     local dockerfile_template
     if [[ "$use_team_image" == "true" ]]; then
         # Use simplified team-specific template
         dockerfile_template="Dockerfile.personal.team"
         log_info "Using Dockerfile.personal.team template (simplified for team images)"
     else
-        # Use unified template for solo developers
+        # Get template strategy from get_dockerfile_template
         dockerfile_template=$(get_dockerfile_template)
     fi
-    
-    case "$PROFILE_NAME" in
-        minimal)
-            log_info "Using minimal Dockerfile template for ultra-fast builds (~30 seconds)"
-            ;;
-        analysis)
-            log_info "Using analysis Dockerfile template for rapid builds (2-3 minutes)"
-            ;;
-        publishing)
-            log_info "Using extended Dockerfile template with comprehensive packages (15-20 minutes)"
-            ;;
-        *)
-            log_info "Using standard Dockerfile template (4-6 minutes)"
-            ;;
-    esac
-    
-    # Contains: R environment, system dependencies, development tools, project setup
-    if ! install_template "$dockerfile_template" "Dockerfile" "Dockerfile" "Created Dockerfile from $dockerfile_template with R version $r_version"; then
-        log_error "Failed to create Dockerfile"
-        return 1
+
+    # Handle generation vs static template
+    if [[ "$dockerfile_template" == "GENERATE" ]]; then
+        # Load generator module and create custom Dockerfile
+        if [[ -f "$MODULES_DIR/dockerfile_generator.sh" ]]; then
+            source "$MODULES_DIR/dockerfile_generator.sh"
+            log_info "Generating custom Dockerfile for your specifications..."
+            if ! generate_custom_dockerfile; then
+                log_error "Failed to generate custom Dockerfile"
+                return 1
+            fi
+            log_success "✓ Custom Dockerfile generated successfully"
+        else
+            log_error "Dockerfile generator module not found"
+            return 1
+        fi
+    else
+        # Use static profile Dockerfile
+        case "$PROFILE_NAME" in
+            minimal)
+                log_info "Using optimized Dockerfile.minimal (multi-stage, ~800MB)"
+                ;;
+            analysis)
+                log_info "Using optimized Dockerfile.analysis (multi-stage, ~1.2GB)"
+                ;;
+            geospatial)
+                log_info "Using optimized Dockerfile.geospatial (multi-stage, ~2.5GB)"
+                ;;
+            modeling)
+                log_info "Using optimized Dockerfile.modeling (multi-stage, ~1.5GB)"
+                ;;
+            publishing)
+                log_info "Using optimized Dockerfile.publishing (multi-stage, ~3GB)"
+                ;;
+            *)
+                log_info "Using Dockerfile template: $dockerfile_template"
+                ;;
+        esac
+
+        # Contains: R environment, system dependencies, development tools, project setup
+        if ! install_template "$dockerfile_template" "Dockerfile" "Dockerfile" "Created Dockerfile from $dockerfile_template with R version $r_version"; then
+            log_error "Failed to create Dockerfile"
+            return 1
+        fi
     fi
     
     # Create docker-compose.yml from template

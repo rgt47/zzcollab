@@ -7,8 +7,7 @@
 # Base: rocker/tidyverse (R + tidyverse + RStudio)
 # Packages: tidyverse, renv, devtools, here, janitor, scales, patchwork, gt, DT
 #
-# Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.analysis -t myteam/project:analysis .
+# Build: DOCKER_BUILDKIT=1 docker build -f Dockerfile.analysis -t myteam/project:analysis .
 # RStudio: docker run -p 8787:8787 -e PASSWORD=yourpass myteam/project:analysis
 #=================================================================
 
@@ -33,11 +32,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         wget \
         ca-certificates && \
     # r2u repository
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
-dirk_eddelbuettel_key.asc | \
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
         tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] \
-https://r2u.stat.illinois.edu/ubuntu noble main" > \
+    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \

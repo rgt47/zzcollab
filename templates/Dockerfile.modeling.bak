@@ -1,15 +1,13 @@
 # syntax=docker/dockerfile:1.4
 #=================================================================
-# ZZCOLLAB Analysis Profile - Data Analysis
+# ZZCOLLAB Modeling Profile - Machine Learning
 #=================================================================
-# Profile: analysis (~1.2GB)
-# Purpose: Tidyverse ecosystem for data analysis
-# Base: rocker/tidyverse (R + tidyverse + RStudio)
-# Packages: tidyverse, renv, devtools, here, janitor, scales, patchwork, gt, DT
+# Profile: modeling (~1.5GB)
+# Purpose: Statistical modeling and machine learning
+# Base: rocker/r-ver (lightweight base for custom ML stack)
+# Packages: tidymodels, xgboost, randomForest, glmnet, caret, mlr3
 #
-# Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.analysis -t myteam/project:analysis .
-# RStudio: docker run -p 8787:8787 -e PASSWORD=yourpass myteam/project:analysis
+# Build: DOCKER_BUILDKIT=1 docker build -f Dockerfile.modeling -t myteam/project:modeling .
 #=================================================================
 
 ARG R_VERSION=latest
@@ -20,7 +18,7 @@ ARG PROJECT_NAME=project
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION} AS builder
+FROM rocker/r-ver:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -33,22 +31,25 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         wget \
         ca-certificates && \
     # r2u repository
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
-dirk_eddelbuettel_key.asc | \
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
         tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] \
-https://r2u.stat.illinois.edu/ubuntu noble main" > \
+    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
+        cmake \
         libcurl4-openssl-dev \
         libssl-dev \
         libxml2-dev \
         libgit2-dev \
-        libfontconfig1-dev \
-        libharfbuzz-dev \
-        libfribidi-dev
+        # ML/statistical computing dependencies
+        libgsl-dev \
+        libblas-dev \
+        liblapack-dev \
+        libopenblas-dev \
+        gfortran \
+        libarmadillo-dev
 
 # Configure RSPM
 WORKDIR /build
@@ -61,9 +62,9 @@ RUN RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | cut -d' ' -f1 || \
     echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install analysis packages
+# Install modeling packages
 RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'here', 'janitor', 'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
+    R -e "install.packages(c('renv', 'devtools', 'tidyverse', 'tidymodels', 'xgboost', 'randomForest', 'glmnet', 'caret', 'mlr3', 'mlr3learners', 'mlr3tuning', 'ranger', 'lightgbm'))"
 
 # Restore renv
 COPY DESCRIPTION setup_renv.R* ./
@@ -72,7 +73,7 @@ RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION}
+FROM rocker/r-ver:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
@@ -93,6 +94,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libssl3 \
         libxml2 \
         libgit2-1.7 \
+        # ML runtime libraries (NOT -dev)
+        libgsl27 \
+        libopenblas0 \
+        libarmadillo11 \
+        # Development tools
         git \
         vim \
         zsh \
@@ -141,7 +147,6 @@ RUN --mount=type=secret,id=password \
         echo "=============================================" && \
         echo "Generated password: ${PASSWORD}" && \
         echo "User: ${USERNAME}" && \
-        echo "RStudio: http://localhost:8787" && \
         echo "=============================================="; \
     fi
 
@@ -166,16 +171,12 @@ COPY --chown=${USERNAME}:${USERNAME} . .
 RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
 
 # Metadata
-LABEL org.opencontainers.image.title="ZZCOLLAB Analysis Environment" \
-      org.opencontainers.image.description="Tidyverse ecosystem for data analysis" \
+LABEL org.opencontainers.image.title="ZZCOLLAB Modeling Environment" \
+      org.opencontainers.image.description="Machine learning and statistical modeling" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source="https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="analysis" \
-      zzcollab.size="~1.2GB"
-
-# Health check for RStudio
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8787/ || exit 1
+      zzcollab.profile="modeling" \
+      zzcollab.size="~1.5GB"
 
 CMD ["/bin/zsh"]

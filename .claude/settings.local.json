@@ -4,7 +4,11 @@
     "allow": [
       "Bash(bats tests/shell/test-docker.bats)",
       "Bash(bats tests/shell/test-config.bats tests/shell/test-docker.bats)",
-      "Bash(python3 -c \"import yaml; yaml.safe_load(open(''.github/workflows/integration-tests.yml''))\")"
+      "Bash(python3 -c \"import yaml; yaml.safe_load(open(''.github/workflows/integration-tests.yml''))\")",
+      "Bash(for f in Dockerfile.minimal Dockerfile.analysis Dockerfile.geospatial Dockerfile.modeling Dockerfile.publishing Dockerfile.base.template)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(awk:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

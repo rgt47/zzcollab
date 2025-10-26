@@ -1,28 +1,38 @@
 # syntax=docker/dockerfile:1.4
 #=================================================================
-# ZZCOLLAB Analysis Profile - Data Analysis
+# ZZCOLLAB Publishing Profile - Document Publishing
 #=================================================================
-# Profile: analysis (~1.2GB)
-# Purpose: Tidyverse ecosystem for data analysis
-# Base: rocker/tidyverse (R + tidyverse + RStudio)
-# Packages: tidyverse, renv, devtools, here, janitor, scales, patchwork, gt, DT
+# Profile: publishing (~3GB)
+# Purpose: Academic papers, books, blogs with LaTeX and Quarto
+# Base: rocker/verse (R + tidyverse + LaTeX + publishing tools)
+# Packages: quarto, bookdown, blogdown, rmarkdown, knitr, tinytex
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.analysis -t myteam/project:analysis .
-# RStudio: docker run -p 8787:8787 -e PASSWORD=yourpass myteam/project:analysis
+#          -f Dockerfile.publishing -t myteam/project:publishing .
+# Note: AMD64 only - ARM64 not supported by rocker/verse
 #=================================================================
 
 ARG R_VERSION=latest
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
+ARG TARGETPLATFORM
 
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION} AS builder
+FROM rocker/verse:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TARGETPLATFORM
+
+# Platform check (verse is AMD64 only)
+RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
+        echo "ERROR: rocker/verse does not support ARM64" >&2; \
+        echo "Use rocker/tidyverse and manually install LaTeX" >&2; \
+        echo "See docs/DOCKER_ARCHITECTURE.md for alternatives" >&2; \
+        exit 1; \
+    fi
 
 # Install build dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -46,9 +56,11 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         libssl-dev \
         libxml2-dev \
         libgit2-dev \
-        libfontconfig1-dev \
-        libharfbuzz-dev \
-        libfribidi-dev
+        # Publishing dependencies
+        pandoc \
+        pandoc-citeproc \
+        texlive-xetex \
+        texlive-fonts-extra
 
 # Configure RSPM
 WORKDIR /build
@@ -61,9 +73,9 @@ RUN RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | cut -d' ' -f1 || \
     echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install analysis packages
+# Install publishing packages
 RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'here', 'janitor', 'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
+    R -e "install.packages(c('renv', 'devtools', 'tidyverse', 'quarto', 'bookdown', 'blogdown', 'distill', 'rmarkdown', 'knitr', 'flexdashboard', 'xaringan'))"
 
 # Restore renv
 COPY DESCRIPTION setup_renv.R* ./
@@ -72,7 +84,7 @@ RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM rocker/tidyverse:${R_VERSION}
+FROM rocker/verse:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
@@ -93,6 +105,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libssl3 \
         libxml2 \
         libgit2-1.7 \
+        # Publishing runtime
+        pandoc \
+        # Development tools
         git \
         vim \
         zsh \
@@ -141,7 +156,6 @@ RUN --mount=type=secret,id=password \
         echo "=============================================" && \
         echo "Generated password: ${PASSWORD}" && \
         echo "User: ${USERNAME}" && \
-        echo "RStudio: http://localhost:8787" && \
         echo "=============================================="; \
     fi
 
@@ -166,16 +180,12 @@ COPY --chown=${USERNAME}:${USERNAME} . .
 RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
 
 # Metadata
-LABEL org.opencontainers.image.title="ZZCOLLAB Analysis Environment" \
-      org.opencontainers.image.description="Tidyverse ecosystem for data analysis" \
+LABEL org.opencontainers.image.title="ZZCOLLAB Publishing Environment" \
+      org.opencontainers.image.description="Document publishing with LaTeX and Quarto" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source="https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="analysis" \
-      zzcollab.size="~1.2GB"
-
-# Health check for RStudio
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8787/ || exit 1
+      zzcollab.profile="publishing" \
+      zzcollab.size="~3GB"
 
 CMD ["/bin/zsh"]
