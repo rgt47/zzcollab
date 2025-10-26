@@ -82,10 +82,12 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
-    # R package dependencies (devtools, httpuv, promises, shiny)
+    # R package dependencies (devtools, httpuv, promises,
+    # shiny)
     libsodium-dev \
     libuv1-dev \
-    # Graphics libraries for R plotting (ggplot2, base graphics)
+    # Graphics libraries for R plotting (ggplot2, base
+    # graphics)
     libfontconfig1-dev \
     libharfbuzz-dev \
     libfribidi-dev \
@@ -95,7 +97,8 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
     libjpeg-dev \
     # Git integration for R packages
     libgit2-dev \
-    # ZZCOLLAB framework tools (will use PPA versions if available)
+    # ZZCOLLAB framework tools (will use PPA versions if
+    # available)
     git \
     vim \
     tmux \
@@ -114,53 +117,81 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
 # Bundle: ${LIBS_BUNDLE}
 RUN ${SYSTEM_DEPS_INSTALL_CMD}
 
-# Install Node.js (required for coc.nvim and other vim plugins)
-# EFFICIENCY: Clean up apt lists to reduce layer size (~50MB savings)
-RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+# Install Node.js (required for coc.nvim and other vim
+# plugins)
+# EFFICIENCY: Clean up apt lists to reduce layer size (~50MB
+# savings)
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | \
+      bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Nerd Fonts (required for vim-airline and other plugins with icons)
-# Only installed for profiles with GUI support (terminals, gui bundles)
-# SAFETY: Pinned to v3.3.0 release (latest stable as of 2025-10-23)
-#   - Using 'latest' in URL is security risk (no version control)
+# Install Nerd Fonts (required for vim-airline and other
+# plugins with icons)
+# Only installed for profiles with GUI support (terminals, gui
+# bundles)
+# SAFETY: Pinned to v3.3.0 release (latest stable as of
+#   2025-10-23)
+#   - Using 'latest' in URL is security risk (no version
+#     control)
 #   - Specific version ensures reproducible builds
 #   - Update version when you want newer fonts
-# EFFICIENCY: Only extract .ttf files, exclude unnecessary files (Windows, OTF variants)
-#   - Saves ~100MB per font by excluding .otf and extra metadata
+# EFFICIENCY: Only extract .ttf files, exclude unnecessary
+#   files (Windows, OTF variants)
+#   - Saves ~100MB per font by excluding .otf and extra
+#     metadata
 ARG LIBS_BUNDLE
-RUN if [ "${LIBS_BUNDLE}" = "terminals" ] || [ "${LIBS_BUNDLE}" = "gui" ] || [ "${LIBS_BUNDLE}" = "gui_minimal" ]; then \
+RUN if [ "${LIBS_BUNDLE}" = "terminals" ] || \
+       [ "${LIBS_BUNDLE}" = "gui" ] || \
+       [ "${LIBS_BUNDLE}" = "gui_minimal" ]; then \
         NERD_FONT_VERSION=v3.3.0 && \
         mkdir -p /usr/local/share/fonts/nerd-fonts && \
         cd /usr/local/share/fonts/nerd-fonts && \
         # JetBrains Mono Nerd Font
-        curl -fLo "JetBrainsMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/JetBrainsMono.zip" && \
-        unzip -q -j JetBrainsMono.zip "*.ttf" && rm JetBrainsMono.zip && \
+        curl -fLo "JetBrainsMono.zip" \
+          "https://github.com/ryanoasis/nerd-fonts/releases/\
+download/${NERD_FONT_VERSION}/JetBrainsMono.zip" && \
+        unzip -q -j JetBrainsMono.zip "*.ttf" && \
+        rm JetBrainsMono.zip && \
         # Fira Code Nerd Font
-        curl -fLo "FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/FiraCode.zip" && \
-        unzip -q -j FiraCode.zip "*.ttf" && rm FiraCode.zip && \
+        curl -fLo "FiraCode.zip" \
+          "https://github.com/ryanoasis/nerd-fonts/releases/\
+download/${NERD_FONT_VERSION}/FiraCode.zip" && \
+        unzip -q -j FiraCode.zip "*.ttf" && \
+        rm FiraCode.zip && \
         # Hack Nerd Font
-        curl -fLo "Hack.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/Hack.zip" && \
+        curl -fLo "Hack.zip" \
+          "https://github.com/ryanoasis/nerd-fonts/releases/\
+download/${NERD_FONT_VERSION}/Hack.zip" && \
         unzip -q -j Hack.zip "*.ttf" && rm Hack.zip && \
         # DejaVu Sans Mono Nerd Font
-        curl -fLo "DejaVuSansMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONT_VERSION}/DejaVuSansMono.zip" && \
-        unzip -q -j DejaVuSansMono.zip "*.ttf" && rm DejaVuSansMono.zip && \
+        curl -fLo "DejaVuSansMono.zip" \
+          "https://github.com/ryanoasis/nerd-fonts/releases/\
+download/${NERD_FONT_VERSION}/DejaVuSansMono.zip" && \
+        unzip -q -j DejaVuSansMono.zip "*.ttf" && \
+        rm DejaVuSansMono.zip && \
         # Update font cache
         fc-cache -fv; \
     else \
-        echo "Skipping Nerd Fonts installation (not needed for ${LIBS_BUNDLE} profile)"; \
+        echo "Skipping Nerd Fonts installation (not needed \
+for ${LIBS_BUNDLE} profile)"; \
     fi
 
 # Install TinyTeX only for publishing profiles
-# - Minimal, analysis, modeling profiles: NO (users can add manually)
+# - Minimal, analysis, modeling profiles: NO (users can add
+#   manually)
 # - Publishing profile: YES (requires PDF output)
-# - Base images with LaTeX (verse, tidyverse): SKIP (already included)
-# BUG FIX: Re-declare ARGs for use in RUN context, fix variable expansion
+# - Base images with LaTeX (verse, tidyverse): SKIP (already
+#   included)
+# BUG FIX: Re-declare ARGs for use in RUN context, fix
+#   variable expansion
 ARG LIBS_BUNDLE
 ARG PKGS_BUNDLE
 ARG BASE_IMAGE
-RUN if [ "${PKGS_BUNDLE}" = "publishing" ] || [ "${LIBS_BUNDLE}" = "publishing" ]; then \
-        if ! echo "${BASE_IMAGE}" | grep -E "(verse|tidyverse)" >/dev/null; then \
+RUN if [ "${PKGS_BUNDLE}" = "publishing" ] || \
+       [ "${LIBS_BUNDLE}" = "publishing" ]; then \
+        if ! echo "${BASE_IMAGE}" | \
+             grep -E "(verse|tidyverse)" >/dev/null; then \
             R -e "install.packages('tinytex')" && \
             R -e "tinytex::install_tinytex()" && \
             /root/.TinyTeX/bin/*/tlmgr path add; \
@@ -172,77 +203,118 @@ LABEL maintainer="${TEAM_NAME}"
 LABEL project="${PROJECT_NAME}"
 LABEL libs.bundle="${LIBS_BUNDLE}"
 LABEL pkgs.bundle="${PKGS_BUNDLE}"
-LABEL org.opencontainers.image.title="ZZCOLLAB Docker Image"
-LABEL org.opencontainers.image.description="R environment with \
-      ${LIBS_BUNDLE} libraries and ${PKGS_BUNDLE} packages"
+LABEL org.opencontainers.image.title=\
+"ZZCOLLAB Docker Image"
+LABEL org.opencontainers.image.description=\
+"R environment with ${LIBS_BUNDLE} libraries and \
+${PKGS_BUNDLE} packages"
 LABEL org.opencontainers.image.vendor="ZZCOLLAB"
 
-# Create non-root user with zsh as default shell and sudo access
-# Always create the user since we reference it throughout the Dockerfile
-# BUG FIX: Wrapped useradd in parentheses so usermod only runs after success/already-exists
-#   Previous logic: usermod ran even on other failures (e.g., permission denied)
+# Create non-root user with zsh as default shell and sudo
+# access. Always create the user since we reference it
+# throughout the Dockerfile
+# BUG FIX: Wrapped useradd in parentheses so usermod only runs
+#   after success/already-exists
+#   Previous logic: usermod ran even on other failures (e.g.,
+#   permission denied)
 RUN (useradd --create-home --shell /bin/zsh ${USERNAME} || \
     echo "User ${USERNAME} already exists") && \
     usermod -aG sudo ${USERNAME}
 
 # Set analyst user password (provided via build argument)
-# Build with: docker build --build-arg ANALYST_PASSWORD=yourpassword .
-# If no password provided, user will have sudo access but no password set
+# Build with:
+#   docker build --build-arg ANALYST_PASSWORD=yourpassword .
+# If no password provided, user will have sudo access but no
+# password set
 #
 # The analyst user can now use sudo:
 #   sudo apt-get update
 #   sudo apt-get install somepackage
 #
-# Security Note: The password is passed at build time and stored in the image layer.
-# For production use, consider using Docker secrets or other secure methods.
-# For development/research containers, this approach is convenient and acceptable.
+# Security Note: The password is passed at build time and
+# stored in the image layer. For production use, consider using
+# Docker secrets or other secure methods. For
+# development/research containers, this approach is convenient
+# and acceptable.
 RUN if [ -n "$ANALYST_PASSWORD" ]; then \
         echo "${USERNAME}:$ANALYST_PASSWORD" | chpasswd; \
     else \
-        echo "WARNING: No ANALYST_PASSWORD provided. User has sudo access but no password set."; \
+        echo "WARNING: No ANALYST_PASSWORD provided. User has \
+sudo access but no password set."; \
     fi
 
 # Install R framework packages (renv, devtools, etc)
 # Command generated from bundles.yaml (single source of truth)
 # Bundle: ${PKGS_BUNDLE}
-# NOTE: Framework packages installed here with latest RSPM snapshot
+# NOTE: Framework packages installed here with latest RSPM
+#   snapshot
 #   - These are development tools, not analysis dependencies
-#   - Analysis dependencies are managed by renv.lock (installed later)
+#   - Analysis dependencies are managed by renv.lock (installed
+#     later)
 #   - RSPM will be reconfigured below to match renv.lock date
 RUN ${R_PACKAGES_INSTALL_CMD}
 
 # Give user write permission to R library directory
-RUN chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+RUN chown -R ${USERNAME}:${USERNAME} \
+      /usr/local/lib/R/site-library
 
 # Set working directory and ensure user owns it
 WORKDIR /home/${USERNAME}/project
-RUN chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/project
+RUN chown -R ${USERNAME}:${USERNAME} \
+      /home/${USERNAME}/project
 
-# Copy renv.lock FIRST to extract its modification date for RSPM snapshot
-# CRITICAL: RSPM snapshot date must match when renv.lock was generated
-#   - This ensures package versions in renv.lock are available in RSPM
-#   - Using file modification date makes this automatic and self-maintaining
-#   - This is ESSENTIAL for the Five Pillars of Reproducibility (renv.lock is source of truth)
+# Copy renv.lock FIRST to extract its modification date for
+# RSPM snapshot
+# CRITICAL: RSPM snapshot date must match when renv.lock was
+#   generated
+#   - This ensures package versions in renv.lock are available
+#     in RSPM
+#   - Using file modification date makes this automatic and
+#     self-maintaining
+#   - This is ESSENTIAL for the Five Pillars of Reproducibility
+#     (renv.lock is source of truth)
 COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
 
-# Extract renv.lock modification date and configure RSPM dynamically
-# AUTOMATIC RSPM DATE: Reads renv.lock file date, no manual updates needed
-#   - When you update renv.lock, RSPM date updates automatically
-#   - Ensures 5-year reproducibility: exact package versions available
-#   - Fallback to 'latest' if renv.lock doesn't exist (development mode)
-#   - Detects Ubuntu version (jammy/focal) automatically for RSPM URL
+# Extract renv.lock modification date and configure RSPM
+# dynamically
+# AUTOMATIC RSPM DATE: Reads renv.lock file date, no manual
+#   updates needed
+#   - When you update renv.lock, RSPM date updates
+#     automatically
+#   - Ensures 5-year reproducibility: exact package versions
+#     available
+#   - Fallback to 'latest' if renv.lock doesn't exist
+#     (development mode)
+#   - Detects Ubuntu version (jammy/focal) automatically for
+#     RSPM URL
 RUN if [ -f renv.lock ]; then \
-        RENV_DATE=$(date -r renv.lock +%Y-%m-%d 2>/dev/null || stat -c %y renv.lock | cut -d' ' -f1) && \
-        UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-        echo "# RSPM snapshot automatically set to renv.lock date: ${RENV_DATE} (${UBUNTU_CODENAME})" >> /usr/local/lib/R/etc/Rprofile.site && \
-        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
+        RENV_DATE=$(date -r renv.lock +%Y-%m-%d 2>/dev/null || \
+          stat -c %y renv.lock | cut -d' ' -f1) && \
+        UBUNTU_CODENAME=$(. /etc/os-release && \
+          echo $VERSION_CODENAME) && \
+        echo "# RSPM snapshot automatically set to renv.lock \
+date: ${RENV_DATE} (${UBUNTU_CODENAME})" >> \
+          /usr/local/lib/R/etc/Rprofile.site && \
+        echo "options(repos = c(RSPM = '\
+https://packagemanager.posit.co/cran/__linux__/\
+${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = '\
+https://cloud.r-project.org'))" >> \
+          /usr/local/lib/R/etc/Rprofile.site; \
     else \
-        UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-        echo "# No renv.lock found, using latest RSPM snapshot (${UBUNTU_CODENAME})" >> /usr/local/lib/R/etc/Rprofile.site && \
-        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/latest', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
+        UBUNTU_CODENAME=$(. /etc/os-release && \
+          echo $VERSION_CODENAME) && \
+        echo "# No renv.lock found, using latest RSPM \
+snapshot (${UBUNTU_CODENAME})" >> \
+          /usr/local/lib/R/etc/Rprofile.site && \
+        echo "options(repos = c(RSPM = '\
+https://packagemanager.posit.co/cran/__linux__/\
+${UBUNTU_CODENAME}/latest', CRAN = '\
+https://cloud.r-project.org'))" >> \
+          /usr/local/lib/R/etc/Rprofile.site; \
     fi
 
-# Copy remaining project files (for better Docker layer caching)
+# Copy remaining project files (for better Docker layer
+# caching)
 COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .
 COPY --chown=${USERNAME}:${USERNAME} .Rprofile* ./
 COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
@@ -251,42 +323,54 @@ COPY --chown=${USERNAME}:${USERNAME} setup_renv.R* ./
 USER ${USERNAME}
 
 # Copy dotfiles (consolidated with wildcards)
-# Note: .zshrc copied directly from dotfiles directory (no filtering)
-COPY --chown=${USERNAME}:${USERNAME} .vimrc* .gitconfig* .tmux.conf* \
-     .zshrc* .inputrc* .bashrc* .profile* .aliases* .functions* .exports* \
-     .editorconfig* .ctags* .ackrc* .ripgreprc* /home/${USERNAME}/
+# Note: .zshrc copied directly from dotfiles directory (no
+# filtering)
+COPY --chown=${USERNAME}:${USERNAME} .vimrc* .gitconfig* \
+     .tmux.conf* .zshrc* .inputrc* .bashrc* .profile* \
+     .aliases* .functions* .exports* .editorconfig* .ctags* \
+     .ackrc* .ripgreprc* /home/${USERNAME}/
 
 # Copy .config directory (XDG Base Directory Specification)
-# Includes terminator and other XDG-compliant configs from dotfiles
-COPY --chown=${USERNAME}:${USERNAME} .config /home/${USERNAME}/.config
+# Includes terminator and other XDG-compliant configs from
+# dotfiles
+COPY --chown=${USERNAME}:${USERNAME} .config \
+     /home/${USERNAME}/.config
 
 # Install zsh plugins
-# EFFICIENCY: Shallow clone (--depth 1) reduces download size by ~90%
+# EFFICIENCY: Shallow clone (--depth 1) reduces download size
+#   by ~90%
 #   - Only fetches latest commit instead of full git history
 #   - zsh-autosuggestions: ~300KB vs ~3MB (full history)
 #   - zsh-syntax-highlighting: ~500KB vs ~5MB (full history)
-# SAFETY FIX: Pinned to specific release tags (as of 2025-10-23)
+# SAFETY FIX: Pinned to specific release tags (as of
+#   2025-10-23)
 #   - Using HEAD/master can change unexpectedly
 #   - Specific tags ensure reproducible builds
 #   - Update tags when you want newer plugin features
 RUN ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
     ZSH_SYNTAX_VERSION=0.8.0 && \
     mkdir -p /home/${USERNAME}/.zsh && \
-    git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
-     https://github.com/zsh-users/zsh-autosuggestions \
-     /home/${USERNAME}/.zsh/zsh-autosuggestions && \
-    git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
-     https://github.com/zsh-users/zsh-syntax-highlighting \
-     /home/${USERNAME}/.zsh/zsh-syntax-highlighting
+    git clone --depth 1 \
+      --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
+      https://github.com/zsh-users/zsh-autosuggestions \
+      /home/${USERNAME}/.zsh/zsh-autosuggestions && \
+    git clone --depth 1 \
+      --branch ${ZSH_SYNTAX_VERSION} \
+      https://github.com/zsh-users/zsh-syntax-highlighting \
+      /home/${USERNAME}/.zsh/zsh-syntax-highlighting
 
 # Install vim-plug
-# SAFETY FIX: Pinned to v0.14.0 release (latest stable as of 2025-10-23)
-#   - Using 'master' branch is security risk (can change unexpectedly)
+# SAFETY FIX: Pinned to v0.14.0 release (latest stable as of
+#   2025-10-23)
+#   - Using 'master' branch is security risk (can change
+#     unexpectedly)
 #   - Specific version ensures reproducible builds
 #   - Update version when you want newer vim-plug features
 RUN VIM_PLUG_VERSION=0.14.0 && \
-    curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim --create-dirs \
-    "https://raw.githubusercontent.com/junegunn/vim-plug/${VIM_PLUG_VERSION}/plug.vim"
+    curl -fLo /home/${USERNAME}/.vim/autoload/plug.vim \
+      --create-dirs \
+      "https://raw.githubusercontent.com/junegunn/vim-plug/\
+${VIM_PLUG_VERSION}/plug.vim"
 
 # Install vim plugins (suppress interactive mode)
 RUN vim +PlugInstall +qall || true
@@ -295,16 +379,18 @@ RUN vim +PlugInstall +qall || true
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 # Restore renv dependencies before installing the package
-# CRITICAL: This uses the RSPM snapshot configured above based on renv.lock date
+# CRITICAL: This uses the RSPM snapshot configured above based
+#   on renv.lock date
 #   - Ensures binary package availability for fast installation
 #   - Part of the Five Pillars of Reproducibility framework
 RUN R -e "renv::restore()"
 
-# Install the research compendium as a package (analyst has write
-# permissions)
-# Use standard R installation approach that works with any R setup
-RUN R -e "install.packages('.', repos = NULL, type = 'source', \
-           dependencies = TRUE)"
+# Install the research compendium as a package (analyst has
+# write permissions)
+# Use standard R installation approach that works with any R
+# setup
+RUN R -e "install.packages('.', repos = NULL, \
+           type = 'source', dependencies = TRUE)"
 
 # Set default shell and working directory
 WORKDIR /home/${USERNAME}/project
