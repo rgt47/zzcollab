@@ -427,3 +427,6 @@ validate_team_member_flags() {
         exit 1
     fi
 }
+
+# Mark module as loaded
+readonly ZZCOLLAB_PROFILE_VALIDATION_LOADED=true

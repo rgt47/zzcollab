@@ -267,7 +267,7 @@ export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL 
 log_info "Package name determined: $PKG_NAME"
 
 # Load remaining modules that depend on PKG_NAME being set
-modules_to_load=("rpackage" "docker" "analysis" "cicd" "devtools" "help" "help_guides" "github" "profile_validation")
+modules_to_load=("rpackage" "profile_validation" "dockerfile_generator" "docker" "analysis" "cicd" "devtools" "help" "help_guides" "github")
 
 for module in "${modules_to_load[@]}"; do
     load_module "$module" "true"
