@@ -73,11 +73,6 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
 
 # Custom system dependencies (generated from bundles.yaml)
 # Libraries: ${LIBS_BUNDLE_LIST}
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    set -ex && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
 ${CUSTOM_SYSTEM_DEPS_INSTALL}
 
 # Configure RSPM with renv.lock date
