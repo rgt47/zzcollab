@@ -414,11 +414,27 @@ zzcollab_help("config")            # Configuration guide
 **Current Version**: 2.0 (Unified Paradigm Release, 2025)
 
 **Recent Major Changes**:
-- Dynamic package management (October 2025) - packages added via `renv::install()`, no pre-configured modes
-- Unified paradigm consolidation (October 2025)
+
+### October 27, 2025 - Dockerfile System Improvements
+- **Static template matching**: `select_dockerfile_strategy()` now checks resolved values against static templates
+  - Prevents unnecessary custom generation when combination matches a static template
+  - Works regardless of whether flags were explicitly provided or defaulted
+  - Example: `zzcollab -b rocker/r-ver` now correctly uses static `Dockerfile.minimal`
+- **Optional dotfiles**: All dotfiles now use wildcards in COPY commands
+  - Docker builds no longer fail if dotfiles are missing
+  - Expanded support: bash (`.bash_profile`), fish (`.config/fish`), emacs (`.emacs`, `.emacs.d`)
+  - `.gitconfig` now optional (no need to copy personal config with credentials)
+- **RSPM binary packages**: Fixed source compilation issue in Docker builds
+  - Problem: renv.lock modification date was too recent for RSPM snapshot availability
+  - Solution: Adjusted timestamp to ensure binary packages available (10-20x faster builds)
+  - Files: `modules/dockerfile_generator.sh`, `templates/Dockerfile.base.template`, `templates/Dockerfile.personal.team`, `modules/devtools.sh`, `templates/Makefile`
+
+### Earlier October 2025
+- Dynamic package management - packages added via `renv::install()`, no pre-configured modes
+- Unified paradigm consolidation
 - Docker profile system refactoring (September 2025)
-- Five-level reproducibility framework (October 2025)
-- CRAN compliance achievement (October 2025)
+- Five-level reproducibility framework
+- CRAN compliance achievement
 - Complete CI/CD pipeline resolution (August 2025)
 - Major refactoring and simplification (2024)
 
