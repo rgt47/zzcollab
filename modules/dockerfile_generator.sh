@@ -20,6 +20,107 @@ require_module "core" "profile_validation"
 #=============================================================================
 
 ##############################################################################
+# FUNCTION: get_profile_defaults
+# PURPOSE:  Get default base image, libs, and packages for a profile
+# USAGE:    get_profile_defaults "minimal"
+# ARGS:     $1 - profile_name
+# RETURNS:  Outputs "base_image:libs:pkgs" or empty if profile unknown
+# DESCRIPTION:
+#   Maps profile names to their default specifications
+##############################################################################
+get_profile_defaults() {
+    local profile="$1"
+
+    case "$profile" in
+        minimal)
+            echo "rocker/r-ver:minimal:minimal"
+            ;;
+        analysis)
+            echo "rocker/r-ver:minimal:analysis"
+            ;;
+        modeling)
+            echo "rocker/r-ver:modeling:modeling"
+            ;;
+        geospatial)
+            echo "rocker/r-ver:geospatial:geospatial"
+            ;;
+        bioinformatics)
+            echo "bioconductor/bioconductor_docker:bioinformatics:bioinformatics"
+            ;;
+        publishing)
+            echo "rocker/verse:publishing:publishing"
+            ;;
+        shiny)
+            echo "rocker/shiny:minimal:shiny"
+            ;;
+        alpine_minimal)
+            echo "alpine-r:alpine:minimal"
+            ;;
+        alpine_analysis)
+            echo "alpine-r:alpine:analysis"
+            ;;
+        hpc_alpine)
+            echo "alpine-r:hpc:minimal"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
+##############################################################################
+# FUNCTION: match_static_template
+# PURPOSE:  Check if resolved combination matches any static template
+# USAGE:    match_static_template "rocker/r-ver" "minimal" "minimal"
+# ARGS:     $1 - base_image, $2 - libs_bundle, $3 - pkgs_bundle
+# RETURNS:  Outputs "Dockerfile.{profile}" if match found, empty otherwise
+# DESCRIPTION:
+#   Iterates through known profiles and checks if the combination matches
+##############################################################################
+match_static_template() {
+    local base="$1"
+    local libs="$2"
+    local pkgs="$3"
+
+    # List of profiles with static Dockerfiles (excluding .bak files)
+    local profiles=(
+        "minimal"
+        "analysis"
+        "modeling"
+        "geospatial"
+        "bioinformatics"
+        "publishing"
+        "shiny"
+        "alpine_minimal"
+        "alpine_analysis"
+        "hpc_alpine"
+    )
+
+    for profile in "${profiles[@]}"; do
+        local defaults=$(get_profile_defaults "$profile")
+        if [[ -z "$defaults" ]]; then
+            continue
+        fi
+
+        IFS=':' read -r def_base def_libs def_pkgs <<< "$defaults"
+
+        # Check if current combination matches this profile's defaults
+        if [[ "$base" == "$def_base" ]] && \
+           [[ "$libs" == "$def_libs" ]] && \
+           [[ "$pkgs" == "$def_pkgs" ]]; then
+            # Verify static template exists
+            if [[ -f "${TEMPLATES_DIR}/Dockerfile.${profile}" ]]; then
+                echo "Dockerfile.${profile}"
+                return 0
+            fi
+        fi
+    done
+
+    echo ""
+    return 1
+}
+
+##############################################################################
 # FUNCTION: select_dockerfile_strategy
 # PURPOSE:  Determine whether to use static profile Dockerfile or generate custom
 # USAGE:    select_dockerfile_strategy
@@ -28,13 +129,13 @@ require_module "core" "profile_validation"
 #   0 - Success, outputs "static:Dockerfile.{profile}" or "generate:custom"
 #   1 - Error
 # GLOBALS:
-#   READ:  PROFILE_NAME, BASE_IMAGE_FLAG, LIBS_BUNDLE, PKGS_BUNDLE
+#   READ:  BASE_IMAGE, LIBS_BUNDLE, PKGS_BUNDLE, USE_TEAM_IMAGE
 #   WRITE: None (outputs to stdout)
 # DESCRIPTION:
-#   Decision tree:
-#   1. If standard profile (minimal/analysis/etc) AND no custom flags → static
-#   2. If custom base image OR custom libs/pkgs → generate
-#   3. If team image → static (Dockerfile.personal.team)
+#   New logic: Check resolved values against static templates
+#   1. If using team image → static (Dockerfile.personal.team)
+#   2. Check if resolved combination matches any static template → use static
+#   3. Otherwise → generate custom
 # EXAMPLE:
 #   strategy=$(select_dockerfile_strategy)
 #   case "$strategy" in
@@ -43,13 +144,10 @@ require_module "core" "profile_validation"
 #   esac
 ##############################################################################
 select_dockerfile_strategy() {
-    local profile="${PROFILE_NAME:-}"
-    local custom_base="${BASE_IMAGE_FLAG:-}"  # Only set if user specified -b
-    local custom_libs="${LIBS_BUNDLE:-}"
-    local custom_pkgs="${PKGS_BUNDLE:-}"
-
-    # Check if static profile Dockerfile exists
-    local static_dockerfile="Dockerfile.${profile}"
+    # Use resolved values, not just flags
+    local base="${BASE_IMAGE:-rocker/r-ver}"
+    local libs="${LIBS_BUNDLE:-minimal}"
+    local pkgs="${PKGS_BUNDLE:-minimal}"
 
     # Decision logic:
     # 1. If using team image, use personal template
@@ -58,29 +156,18 @@ select_dockerfile_strategy() {
         return 0
     fi
 
-    # 2. If user specified custom base image → must generate
-    if [[ -n "$custom_base" ]]; then
-        log_debug "Custom base image specified: $custom_base - using generator"
-        echo "generate:custom"
+    # 2. Check if resolved combination matches any static template
+    local matched_template=$(match_static_template "$base" "$libs" "$pkgs")
+    if [[ -n "$matched_template" ]]; then
+        log_debug "Resolved combination matches static template: $matched_template"
+        log_debug "  Base: $base, Libs: $libs, Pkgs: $pkgs"
+        echo "static:${matched_template}"
         return 0
     fi
 
-    # 3. If user specified custom libs/pkgs → must generate
-    if [[ -n "$custom_libs" ]] || [[ -n "$custom_pkgs" ]]; then
-        log_debug "Custom libraries or packages specified - using generator"
-        echo "generate:custom"
-        return 0
-    fi
-
-    # 4. If standard profile exists → use static
-    if [[ -f "${TEMPLATES_DIR}/${static_dockerfile}" ]]; then
-        log_debug "Using optimized static Dockerfile: $static_dockerfile"
-        echo "static:${static_dockerfile}"
-        return 0
-    fi
-
-    # 5. Fallback to generation for unknown profiles
-    log_debug "Profile '$profile' has no static Dockerfile - using generator"
+    # 3. No match found → generate custom
+    log_debug "No static template matches resolved combination - using generator"
+    log_debug "  Base: $base, Libs: $libs, Pkgs: $pkgs"
     echo "generate:custom"
     return 0
 }
