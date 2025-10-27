@@ -46,16 +46,11 @@ COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
 #   - Fallback to 'latest' if renv.lock doesn't exist (development mode)
 #   - Detects Ubuntu version (jammy/focal) automatically for RSPM URL
 #   - Overrides base image RSPM configuration with project-specific date
-RUN if [ -f renv.lock ]; then \
-        RENV_DATE=$(date -r renv.lock +%Y-%m-%d 2>/dev/null || stat -c %y renv.lock | cut -d' ' -f1) && \
-        UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-        echo "# RSPM snapshot automatically set to renv.lock date: ${RENV_DATE} (${UBUNTU_CODENAME})" >> /usr/local/lib/R/etc/Rprofile.site && \
-        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
-    else \
-        UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-        echo "# No renv.lock found, using latest RSPM snapshot (${UBUNTU_CODENAME})" >> /usr/local/lib/R/etc/Rprofile.site && \
-        echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/latest', CRAN = 'https://cloud.r-project.org'))" >> /usr/local/lib/R/etc/Rprofile.site; \
-    fi
+RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+    echo "# RSPM snapshot set to fixed date: 2024-10-26 (${UBUNTU_CODENAME})" >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "options(repos = c(" >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "    CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/2024-10-26'))" >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" >> /usr/local/lib/R/etc/Rprofile.site
 
 # Copy remaining project files
 COPY --chown=${USERNAME}:${USERNAME} DESCRIPTION .

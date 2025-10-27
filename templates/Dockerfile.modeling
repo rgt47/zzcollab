@@ -58,11 +58,11 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
 WORKDIR /build
 COPY renv.lock* ./
 
-RUN RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | cut -d' ' -f1 || \
-                stat -f %Sm -t %Y-%m-%d renv.lock 2>/dev/null || \
-                date +%Y-%m-%d) && \
-    UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-    echo "options(repos = c(RSPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = 'https://cloud.r-project.org'))" \
+RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+    echo "options(repos = c(" \
+        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
+        >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install modeling packages
