@@ -135,9 +135,10 @@ copy_dotfiles() {
         log_info "Copying dotfiles without leading dots (adding dots during copy)"
         
         local dotfiles_nodot=(
-            "vimrc" "tmux.conf" "gitconfig" "inputrc" "bashrc" 
-            "profile" "aliases" "functions" "exports" "editorconfig" 
-            "ctags" "ackrc" "ripgreprc"
+            "vimrc" "tmux.conf" "gitconfig" "inputrc" "bashrc"
+            "bash_profile" "profile" "aliases" "functions" "exports"
+            "editorconfig" "ctags" "ackrc" "ripgreprc"
+            "emacs" "config/fish/config.fish"
         )
         
         for dotfile in "${dotfiles_nodot[@]}"; do
@@ -160,8 +161,9 @@ copy_dotfiles() {
 
         local dotfiles_withdot=(
             ".vimrc" ".tmux.conf" ".gitconfig" ".inputrc" ".bashrc"
-            ".profile" ".aliases" ".functions" ".exports" ".editorconfig"
-            ".ctags" ".ackrc" ".ripgreprc"
+            ".bash_profile" ".profile" ".aliases" ".functions" ".exports"
+            ".editorconfig" ".ctags" ".ackrc" ".ripgreprc"
+            ".emacs" ".config/fish/config.fish"
         )
 
         for dotfile in "${dotfiles_withdot[@]}"; do
