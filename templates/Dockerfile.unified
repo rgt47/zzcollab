@@ -397,54 +397,26 @@ RUN chown -R ${USERNAME}:${USERNAME} \
 #     (renv.lock is source of truth)
 COPY --chown=${USERNAME}:${USERNAME} renv.lock* ./
 
-# Extract renv.lock modification date and configure RSPM
-# dynamically
-# AUTOMATIC RSPM DATE: Reads renv.lock file date, no manual
-#   updates needed
-#   - When you update renv.lock, RSPM date updates
-#     automatically
-#   - Ensures 5-year reproducibility: exact package versions
-#     available
-#   - Fallback to 'latest' if renv.lock doesn't exist
-#     (development mode)
-#   - Detects Ubuntu version (jammy/focal/noble) automatically for
-#     RSPM URL
-# ROBUSTNESS: Tries multiple date extraction methods (GNU stat, BSD stat, fallback)
-RUN if [ -f renv.lock ]; then \
-        RENV_DATE=$(stat -c %y renv.lock 2>/dev/null | cut -d' ' -f1 || \
-                    stat -f %Sm -t %Y-%m-%d renv.lock 2>/dev/null || \
-                    date -r renv.lock +%Y-%m-%d 2>/dev/null || \
-                    date +%Y-%m-%d) && \
-        echo "======================================" && \
-        echo "RSPM snapshot date: ${RENV_DATE}" && \
-        echo "Source: renv.lock modification time" && \
-        echo "======================================" && \
-        UBUNTU_CODENAME=$(. /etc/os-release && \
-          echo $VERSION_CODENAME) && \
-        echo "# RSPM snapshot automatically set to renv.lock \
-date: ${RENV_DATE} (${UBUNTU_CODENAME})" >> \
-          /usr/local/lib/R/etc/Rprofile.site && \
-        echo "options(repos = c(RSPM = '\
-https://packagemanager.posit.co/cran/__linux__/\
-${UBUNTU_CODENAME}/${RENV_DATE}', CRAN = '\
-https://cloud.r-project.org'))" >> \
-          /usr/local/lib/R/etc/Rprofile.site; \
-    else \
-        echo "======================================" && \
-        echo "WARNING: No renv.lock found" && \
-        echo "Using latest RSPM snapshot" && \
-        echo "======================================" && \
-        UBUNTU_CODENAME=$(. /etc/os-release && \
-          echo $VERSION_CODENAME) && \
-        echo "# No renv.lock found, using latest RSPM \
-snapshot (${UBUNTU_CODENAME})" >> \
-          /usr/local/lib/R/etc/Rprofile.site && \
-        echo "options(repos = c(RSPM = '\
-https://packagemanager.posit.co/cran/__linux__/\
-${UBUNTU_CODENAME}/latest', CRAN = '\
-https://cloud.r-project.org'))" >> \
-          /usr/local/lib/R/etc/Rprofile.site; \
-    fi
+# Configure repositories: RSPM with binary packages
+# Use a known good date (2024-10-26) to ensure packages are available
+# RSPM CONFIGURATION: Using fixed date for reproducibility
+#   - Date: 2024-10-26 (known good snapshot)
+#   - Removed pkgType option (causes errors on Linux)
+#   - HTTPUserAgent configuration for compatibility
+#   - Ensures binary package availability for fast installation
+#   - Part of the Five Pillars of Reproducibility framework
+RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+    echo "======================================" && \
+    echo "RSPM snapshot date: 2024-10-26" && \
+    echo "Ubuntu codename: ${UBUNTU_CODENAME}" && \
+    echo "======================================" && \
+    echo "# RSPM snapshot set to 2024-10-26 (${UBUNTU_CODENAME})" \
+        >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "options(repos = c(" \
+        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
+        >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
+        >> /usr/local/lib/R/etc/Rprofile.site
 
 #=================================================================
 # PROJECT METADATA FILES

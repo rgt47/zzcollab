@@ -81,7 +81,7 @@ docker-build: check-renv-fix docker-build-no-snapshot
 #   - You know renv.lock is already up-to-date
 #   - Faster iteration during Dockerfile development
 docker-build-no-snapshot:
-	DOCKER_BUILDKIT=1 docker build --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
+	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 # DEPRECATED: Use docker-build instead (now safe by default)
 docker-build-safe:
@@ -93,7 +93,7 @@ docker-build-safe:
 
 docker-build-log:
 	@echo "Building Docker image and saving log to docker-build.log..."
-	DOCKER_BUILDKIT=1 docker build --progress=plain --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) . 2>&1 | tee docker-build.log
+	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --progress=plain --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) . 2>&1 | tee docker-build.log
 	@echo "✅ Build complete. Log saved to docker-build.log"
 
 docker-push-team:
@@ -105,55 +105,78 @@ docker-push-team:
 	@echo "   Team members should update .zzcollab_team_setup to reference this tag"
 
 docker-document:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::document()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::document()"
 
 docker-build-pkg:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
 
 docker-check: docker-document
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::test()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::test()"
 
 docker-vignettes: docker-document
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/paper/paper.Rmd')"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/paper/paper.Rmd')"
 
 docker-check-renv:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::status()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::status()"
 
 docker-check-renv-fix:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::snapshot()"
+	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::snapshot()"
 
 docker-r:
-	docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R
+	docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R
 
 docker-bash:
-	docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/bash
+	docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/bash
 
 docker-zsh:
-	docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
+	docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
 
 docker-zsh-gui:
-	@echo "Launching zsh with X11 forwarding enabled"
+	@echo "Setting up X11 forwarding for GUI apps..."
+	@# Check if XQuartz is installed
+	@if ! command -v xquartz >/dev/null 2>&1 && ! [ -d /Applications/Utilities/XQuartz.app ]; then \
+		echo "❌ XQuartz not found. Installing..."; \
+		brew install --cask xquartz; \
+		echo "⚠️  XQuartz installed. Please log out and log back in, then run this command again."; \
+		exit 1; \
+	fi
+	@# Configure XQuartz to allow network connections
+	@CURRENT_SETTING=$$(defaults read org.xquartz.X11 nolisten_tcp 2>/dev/null || echo "1"); \
+	if [ "$$CURRENT_SETTING" != "0" ]; then \
+		echo "Configuring XQuartz to allow network connections..."; \
+		defaults write org.xquartz.X11 nolisten_tcp 0; \
+		echo "⚠️  XQuartz configuration updated. Restarting XQuartz..."; \
+		killall XQuartz 2>/dev/null || killall Xquartz 2>/dev/null || true; \
+		sleep 1; \
+	fi
+	@# Check if XQuartz is running, start it if not
+	@if ! pgrep -x "XQuartz" >/dev/null && ! pgrep -x "Xquartz" >/dev/null; then \
+		echo "Starting XQuartz..."; \
+		open -a XQuartz; \
+		sleep 3; \
+	fi
+	@# Set DISPLAY and allow connections
+	@export DISPLAY=:0 && \
+	if command -v xhost >/dev/null 2>&1; then \
+		xhost +localhost >/dev/null 2>&1 || true; \
+	fi
+	@echo "✅ X11 setup complete"
+	@echo ""
 	@echo "GUI apps available: xfce4-terminal, firefox, etc."
 	@echo "Run 'xfce4-terminal' to open a GUI terminal window"
 	@echo ""
-	@echo "Prerequisites:"
-	@echo "  1. XQuartz installed: brew install --cask xquartz"
-	@echo "  2. XQuartz running with 'Allow connections from network clients' enabled"
-	@echo "  3. Set DISPLAY variable: export DISPLAY=:0"
-	@echo "  4. Run: xhost +localhost"
-	@echo ""
-	docker run --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
+	DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: analyst, Password: analyst"
-	docker run --rm --user root -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
+	docker run --platform linux/amd64 --rm --user root -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
 
 # Cleanup
 clean:
