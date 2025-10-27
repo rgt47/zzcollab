@@ -250,10 +250,16 @@ extract_system_deps_runtime() {
         esac
     done
 
+    # Generate complete RUN command or comment if no deps
     if [[ ${#deps[@]} -gt 0 ]]; then
+        echo "RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\"
+        echo "    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \\"
+        echo "    set -ex && \\"
+        echo "    apt-get update && \\"
+        echo "    apt-get install -y --no-install-recommends \\"
         printf "        %s \\\\\n" "${deps[@]}" | sed '$ s/ \\$//'
     else
-        echo "        # No additional runtime dependencies"
+        echo "# No additional runtime dependencies for ${libs_list} profile"
     fi
 }
 

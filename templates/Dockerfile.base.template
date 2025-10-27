@@ -141,11 +141,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Custom runtime libraries (generated from bundles.yaml)
 # Libraries: ${LIBS_BUNDLE_LIST}
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    set -ex && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
 ${CUSTOM_RUNTIME_LIBS_INSTALL}
 
 # Node.js for vim plugins
