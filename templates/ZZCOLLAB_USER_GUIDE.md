@@ -1,4 +1,4 @@
-# ZZCOLLAB Framework User Guide v4.0
+# ZZCOLLAB Framework User Guide v4.1
 
 ## Table of Contents
 1. [What is ZZCOLLAB?](#what-is-zzcollab)
@@ -367,11 +367,11 @@ make docker-zsh
 # Inside container: add packages as needed
 renv::install("ComplexHeatmap")
 renv::install("clusterProfiler")
-renv::snapshot()
 
-# Exit and validate
+# Exit (auto-snapshot + validation happen automatically!)
 exit
-make check-renv-ci
+
+# Run tests
 make docker-test
 
 # Commit changes
@@ -425,13 +425,14 @@ renv::restore()  # Install all team packages from renv.lock
 
 # Add your own packages as needed
 renv::install("pheatmap")
-renv::snapshot()
 
-# Exit container
+# Exit container (auto-snapshot + validation happen automatically!)
 exit
 
-# Validate and commit
-make check-renv-ci
+# Run tests (optional)
+make docker-test
+
+# Commit
 git add renv.lock DESCRIPTION
 git commit -m "Add pheatmap for visualization"
 git push
@@ -489,9 +490,10 @@ make docker-build
 # Daily development
 make docker-zsh
 # ... work inside container ...
-exit
+# Install packages: renv::install("package")
+exit  # Auto-snapshot + validation happen automatically!
 
-# Validate and commit
+# Test and commit
 make docker-test
 git add . && git commit -m "Add analysis" && git push
 ```
@@ -515,6 +517,16 @@ make docker-zsh
 ```
 
 ## Package Management
+
+**✨ NEW: Auto-Snapshot Architecture**
+
+ZZCOLLAB now features **automatic snapshot-on-exit**:
+- **No manual `renv::snapshot()` required**: Automatically runs when you exit any Docker container
+- **Automatic validation**: Pure shell validation runs after container exit (no host R needed!)
+- **RSPM timestamp optimization**: Adjusts renv.lock timestamp for binary packages (10-20x faster builds)
+- **Accurate git history**: Timestamp restored to current time after validation
+
+**Simply work and exit** - reproducibility is automatic!
 
 ### Two-Layer Package Management
 
@@ -547,7 +559,7 @@ zzcollab --profile-name bioinformatics
 # Inside container:
 renv::install("ComplexHeatmap")  # Alice adds heatmap package
 renv::install("clusterProfiler")  # Bob adds pathway analysis
-renv::snapshot()  # Update renv.lock
+exit  # Auto-snapshot on exit!
 ```
 
 **Key principle:** renv.lock is the source of truth, NOT the Docker image.
@@ -563,14 +575,11 @@ make docker-zsh
 # Install package
 renv::install("tidymodels")
 
-# Save to renv.lock
-renv::snapshot()
-
-# Exit container
+# Exit container (auto-snapshot + validation happen automatically!)
 exit
 
-# Validate dependencies (RECOMMENDED)
-make check-renv-ci
+# Optional: Manually validate (pure shell, no R required)
+make check-renv
 
 # Run tests
 make docker-test
@@ -581,17 +590,23 @@ git commit -m "Add tidymodels for modeling workflow"
 git push
 ```
 
+**What happens automatically on exit:**
+1. `renv::snapshot()` captures dependencies
+2. Timestamp adjusted to "7 days ago" for RSPM binary packages
+3. `modules/validation.sh` validates DESCRIPTION ↔ renv.lock consistency
+4. Timestamp restored to current time for accurate git history
+
 #### Package Accumulation (Team Collaboration)
 
 ```bash
 # Alice adds packages
 renv::install("tidymodels")
-renv::snapshot()  # renv.lock: [tidymodels]
+exit  # Auto-snapshot: renv.lock now has [tidymodels]
 
 # Bob adds packages
 git pull  # Gets Alice's changes
 renv::install("sf")
-renv::snapshot()  # renv.lock: [tidymodels, sf]
+exit  # Auto-snapshot: renv.lock now has [tidymodels, sf]
 
 # Charlie reproduces
 git pull
@@ -695,14 +710,23 @@ make docker-bash               # Bash shell in container
 make docker-render             # Render paper in container
 make docker-test               # Run tests in container
 make docker-check              # R CMD check in container
-make docker-check-renv         # Validate dependencies in container
-make docker-check-renv-fix     # Auto-fix dependencies in container
 make docker-clean              # Remove Docker images/volumes
 ```
 
+### Package Validation (NO HOST R REQUIRED!)
+
+**NEW: Pure shell validation**
+
+```bash
+make check-renv                # Validate dependencies (pure shell, fast!)
+make check-renv-strict         # Strict mode (scan tests/, vignettes/)
+```
+
+**Note:** All `docker-*` targets now automatically validate packages after container exit!
+
 ### Native R Commands
 
-*(Require local R installation)*
+*(Require local R installation - rarely needed now!)*
 
 ```bash
 make document                  # Generate documentation
@@ -711,10 +735,7 @@ make check                     # R CMD check
 make install                   # Install package locally
 make test                      # Run tests
 make vignettes                 # Build vignettes
-make deps                      # Run setup_renv.R
-make check-renv                # Validate dependencies
-make check-renv-fix            # Auto-fix dependency issues
-make check-renv-ci             # Silent validation for CI
+make check-renv-ci             # Legacy R-based validation (for CI with R pre-installed)
 ```
 
 ### Cleanup Commands

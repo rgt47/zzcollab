@@ -188,6 +188,16 @@ Start the Docker development environment:
 make docker-zsh
 ```
 
+**✨ NEW: Auto-Snapshot Architecture**
+
+When you exit the container, ZZCOLLAB automatically:
+1. Runs `renv::snapshot()` to capture package dependencies
+2. Adjusts timestamp for RSPM binary package availability (10-20x faster Docker builds)
+3. Validates package consistency (pure shell, no host R required!)
+4. Restores timestamp to current time for accurate git history
+
+**You no longer need to manually run `renv::snapshot()`!** Just work and exit.
+
 ### Optional: GUI Support for Interactive Graphics
 
 If you want to view R plots interactively (instead of saving to PNG files), you can use X11 forwarding with the `docker-zsh-gui` target. This enables GUI applications like R graphics windows and terminal emulators.
@@ -341,8 +351,8 @@ Rscript -e 'renv::install("dplyr")'
 # Render the report
 Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 
-# Save dependencies
-Rscript -e 'renv::snapshot()'
+# Note: renv::snapshot() is NO LONGER NEEDED!
+# It will run automatically when you exit the container
 ```
 
 ## Step 5: Add Unit Tests - Level 4 (2 minutes)
@@ -405,13 +415,14 @@ Exit the container and validate everything works in a clean environment:
 
 ```bash
 # Exit the Docker container (if still inside from Step 5)
+# This automatically runs renv::snapshot() and validates packages!
 exit
 
 # Run tests in clean environment
 make docker-test
 
-# Validate dependencies
-Rscript validate_package_environment.R --quiet --fail-on-issues
+# Optional: Manually validate dependencies (now pure shell, no R required!)
+make check-renv
 ```
 
 Now commit your work:
@@ -455,9 +466,11 @@ gh repo view --web
 
 GitHub Actions will automatically:
 1. Build Docker container from scratch
-2. Validate package dependencies
+2. Validate package dependencies (uses shell-based validation)
 3. Run unit tests
 4. Report results
+
+**Note**: CI/CD now uses pure shell validation (`make check-renv`) which doesn't require R on the host!
 
 ## Step 8: Verify Report Rendering CI/CD (Optional, 30 seconds)
 
@@ -1084,11 +1097,11 @@ make docker-zsh
 
 # Inside container - Alice adds modeling packages
 renv::install("tidymodels")
-renv::snapshot()
+exit  # Auto-snapshot on exit!
 
-# Bob adds geospatial packages
+# Bob adds geospatial packages (in his container)
 renv::install("sf")
-renv::snapshot()
+exit  # Auto-snapshot on exit!
 ```
 
 **Result**:
@@ -1106,14 +1119,11 @@ make docker-zsh
 
 # Inside container:
 renv::install("tidymodels")
-renv::snapshot()
-quit()
-
-# Exit container
+# Exit container (auto-snapshot happens here!)
 exit
 
-# STEP 1: Validate dependencies (RECOMMENDED - prevents CI failures)
-make check-renv-ci
+# Validation runs automatically after container exit
+# Then timestamp is restored for accurate git history
 
 # STEP 2: Run tests to ensure nothing broke
 make docker-test
@@ -1129,14 +1139,10 @@ make docker-zsh
 
 # Inside container:
 renv::install("sf")
-renv::snapshot()  # renv.lock now has tidymodels + sf
-quit()
-
-# Exit container
+# Exit container (auto-snapshot, renv.lock now has tidymodels + sf)
 exit
 
-# STEP 1: Validate dependencies (catch issues before CI runs)
-make check-renv-ci
+# Validation runs automatically after container exit
 
 # STEP 2: Test functionality
 make docker-test
