@@ -276,21 +276,38 @@ zzcollab -t TEAM -p PROJECT -r PROFILE
 
 ## Package Management
 
-ZZCOLLAB uses dynamic package management for maximum flexibility.
+ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** architecture.
+
+**Auto-Snapshot Architecture** (NEW):
+- **No manual `renv::snapshot()` required**: Automatically runs on container exit
+- **Docker entrypoint integration**: `zzcollab-entrypoint.sh` wraps all container commands
+- **RSPM timestamp optimization**: Adjusts renv.lock timestamp for binary package availability (10-20x faster builds)
+- **Host validation without R**: Pure shell validation via `modules/validation.sh`
+
+**Workflow** (Simplified):
+```bash
+make docker-zsh              # 1. Enter container (entrypoint active)
+renv::install("tidyverse")   # 2. Add packages as needed
+exit                         # 3. Exit → auto-snapshot + validation
+# renv.lock automatically updated and validated!
+git add renv.lock && git commit -m "Add tidyverse" && git push
+```
 
 **How It Works**:
 - **No pre-configured modes**: Packages are added as needed via `renv::install()`
 - **Docker profiles**: Control base Docker environment and pre-installed packages (team/shared)
 - **Dynamic addition**: Team members add packages independently inside containers
-- **Collaborative renv.lock**: Accumulates packages from all contributors
+- **Automatic snapshot**: Container exit hook runs `renv::snapshot()`
+- **Host validation**: Pure shell script validates DESCRIPTION ↔ renv.lock consistency
+- **No host R required**: Entire workflow works without R installed on host machine
 
-**Example Workflow**:
+**Configuration**:
 ```bash
-make docker-zsh              # Enter container
-renv::install("tidyverse")   # Add packages as needed
-renv::snapshot()             # Save to renv.lock
-exit                         # Exit container
-git add renv.lock && git commit -m "Add tidyverse" && git push
+# Disable auto-snapshot if needed
+docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false ...
+
+# Disable RSPM timestamp adjustment
+docker run -e ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST=false ...
 ```
 
 ## Data Documentation System
@@ -313,19 +330,27 @@ ZZCOLLAB includes automated data documentation templates following research best
 
 ### Quick Development Reference
 
+**Package Validation (NO HOST R REQUIRED!)**:
+```bash
+make check-renv            # Pure shell validation (recommended)
+make check-renv-strict     # Strict mode (scan tests/, vignettes/)
+```
+
 **R Package Development**:
 ```bash
 make test                    # Run R package tests
 make docker-test            # Run tests in container
 make check                  # R CMD check validation
-Rscript validate_package_environment.R --quiet --fail-on-issues
 ```
 
-**Docker Environments**:
+**Docker Environments (Auto-snapshot on Exit)**:
 ```bash
 make docker-zsh            # Zsh shell with dotfiles (recommended)
 make docker-rstudio        # RStudio Server at localhost:8787
 make docker-verse          # Verse environment with LaTeX
+# All docker-* targets automatically:
+#   1. Snapshot renv.lock on container exit
+#   2. Validate packages on host (pure shell)
 ```
 
 **Team Collaboration**:

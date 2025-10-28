@@ -14,19 +14,26 @@ IMAGE_TAG = $(GIT_SHA)
 # Help target (default)
 help:
 	@echo "Available targets:"
+	@echo ""
+	@echo "  Validation (NO HOST R REQUIRED!):"
+	@echo "    check-renv            - Pure shell validation (recommended)"
+	@echo "    check-renv-strict     - Strict mode (scan tests/, vignettes/)"
+	@echo ""
 	@echo "  Native R - requires local R installation:"
 	@echo "    document, build, check, install, vignettes, test, deps"
-	@echo "    check-renv, check-renv-fix, check-renv-ci"
+	@echo "    check-renv-fix, check-renv-ci (legacy)"
 	@echo ""
 	@echo "  Docker - works without local R:"
 	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
 	@echo "    docker-build-no-snapshot - Build without snapshot (advanced)"
+	@echo "    docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo "    docker-build-log, docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
-	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
+	@echo "    docker-check-renv-fix"
+	@echo "    All docker-* targets auto-snapshot renv.lock on exit and validate packages!"
 	@echo ""
 	@echo "  Docker GUI (requires XQuartz):"
-	@echo "    docker-zsh-gui           - Launch zsh with X11 forwarding (xfce4-terminal, GUI apps)"
+	@echo "    docker-zsh-gui        - Launch zsh with X11 forwarding (xfce4-terminal, GUI apps)"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, clean-dotfiles, docker-clean, docker-build-clean"
@@ -62,9 +69,18 @@ check-renv:
 check-renv-fix:
 	R -e "renv::snapshot()"
 
-# Validate package dependencies before committing (RECOMMENDED)
+# Validate package dependencies (NEW: Pure shell, no host R required!)
 # Checks that all packages used in code are in DESCRIPTION and renv.lock
 # Run this before `git commit` to catch issues locally (prevents CI failures)
+check-renv:
+	@bash modules/validation.sh
+
+# Validate in strict mode (scan all directories including tests/)
+check-renv-strict:
+	@bash modules/validation.sh --strict
+
+# Legacy: R-based validation (for CI/CD that has R pre-installed)
+# This is the old approach, kept for backward compatibility
 check-renv-ci:
 	Rscript validate_package_environment.R --quiet --fail-on-issues
 
@@ -129,13 +145,22 @@ docker-check-renv-fix:
 	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R -e "renv::snapshot()"
 
 docker-r:
-	docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R
+	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
+	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R
+	@echo "📋 Validating package dependencies..."
+	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 
 docker-bash:
-	docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/bash
+	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
+	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/bash
+	@echo "📋 Validating package dependencies..."
+	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 
 docker-zsh:
-	docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
+	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
+	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
+	@echo "📋 Validating package dependencies..."
+	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 
 docker-zsh-gui:
 	@echo "Setting up X11 forwarding for GUI apps..."
@@ -171,7 +196,10 @@ docker-zsh-gui:
 	@echo "GUI apps available: xfce4-terminal, firefox, etc."
 	@echo "Run 'xfce4-terminal' to open a GUI terminal window"
 	@echo ""
-	DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
+	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
+	@DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
+	@echo "📋 Validating package dependencies..."
+	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"

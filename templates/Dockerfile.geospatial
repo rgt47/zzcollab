@@ -191,4 +191,9 @@ LABEL org.opencontainers.image.title="ZZCOLLAB Geospatial Environment" \
       zzcollab.profile="geospatial" \
       zzcollab.size="~2.5GB"
 
+# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
+COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
+RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/zzcollab-entrypoint.sh"]
 CMD ["/bin/zsh"]

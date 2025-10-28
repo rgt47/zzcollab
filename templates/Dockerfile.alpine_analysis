@@ -171,4 +171,9 @@ LABEL org.opencontainers.image.title=\
       zzcollab.profile="alpine_analysis" \
       zzcollab.size="~400MB"
 
+# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
+COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
+RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/zzcollab-entrypoint.sh"]
 CMD ["/bin/zsh"]
