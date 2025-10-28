@@ -37,28 +37,35 @@ GitHub as a private repository.
 - GitHub account (example: rgt47)
 - Personal access token for GitHub (with repo permissions)
 - zzcollab installed (`./install.sh`)
-- Dotfiles directory at `~/dotfiles` with files named without leading dots
-  (e.g., `vimrc`, `tmux.conf`, `gitconfig`, `zshrc` not `.vimrc`, `.tmux.conf`, etc.)
+- Dotfiles directory (optional) at `~/dotfiles`
 
 **Important Note About Dotfiles:**
 
-ZZCOLLAB expects dotfiles to be stored WITHOUT leading dots in your dotfiles
-directory. This makes them easier to manage in version control and avoids
-hidden file issues.
+ZZCOLLAB supports **two dotfiles modes**:
 
+**Option 1: Files WITH dots (use `-d` flag) - RECOMMENDED**
 ```bash
-# Correct dotfiles structure
 ~/dotfiles/
-  vimrc          # NOT .vimrc
-  tmux.conf      # NOT .tmux.conf
-  gitconfig      # NOT .gitconfig
-  zshrc          # NOT .zshrc
+  .vimrc        # WITH leading dot
+  .tmux.conf    # WITH leading dot
+  .gitconfig    # WITH leading dot
+  .zshrc        # WITH leading dot
 ```
 
-When you use the `-D ~/dotfiles` flag, ZZCOLLAB automatically:
-1. Copies files from `~/dotfiles/` to the project
-2. Adds the leading dot when copying to Docker container
-3. Result: `~/dotfiles/vimrc` becomes `~/.vimrc` in container
+**Option 2: Files WITHOUT dots (use `-D` flag)**
+```bash
+~/dotfiles/
+  vimrc         # WITHOUT leading dot
+  tmux.conf     # WITHOUT leading dot
+  gitconfig     # WITHOUT leading dot
+  zshrc         # WITHOUT leading dot
+```
+
+**How it works:**
+- `-d ~/dotfiles`: Copies files WITH dots as-is (`.vimrc` → `.vimrc` in container)
+- `-D ~/dotfiles`: Adds dots during copy (`vimrc` → `.vimrc` in container)
+
+**Note**: All dotfiles are now OPTIONAL (wildcards used). Docker builds succeed even if dotfiles are missing.
 
 # Step-by-Step Instructions
 
