@@ -41,13 +41,14 @@ cleanup() {
         # RSPM needs 7-10 days to build binaries for new package versions
         # Setting timestamp to 7 days ago ensures binary packages are available
         # This provides 10-20x faster Docker builds (binaries vs source compilation)
+        # Note: Makefile will restore timestamp to "now" after validation completes
         if [[ "$SNAPSHOT_TIMESTAMP_ADJUST" == "true" ]]; then
             if touch -d "7 days ago" "$PROJECT_DIR/renv.lock" 2>/dev/null; then
-                echo "🕐 Adjusted renv.lock timestamp for RSPM binary package compatibility"
+                echo "🕐 Adjusted renv.lock timestamp for RSPM (will be restored after validation)"
             else
                 # macOS fallback (touch -d doesn't work on macOS)
                 if touch -t "$(date -v-7d +%Y%m%d%H%M.%S)" "$PROJECT_DIR/renv.lock" 2>/dev/null; then
-                    echo "🕐 Adjusted renv.lock timestamp for RSPM binary package compatibility"
+                    echo "🕐 Adjusted renv.lock timestamp for RSPM (will be restored after validation)"
                 fi
             fi
         fi

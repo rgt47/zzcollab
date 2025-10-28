@@ -281,7 +281,9 @@ ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** arc
 **Auto-Snapshot Architecture** (NEW):
 - **No manual `renv::snapshot()` required**: Automatically runs on container exit
 - **Docker entrypoint integration**: `zzcollab-entrypoint.sh` wraps all container commands
-- **RSPM timestamp optimization**: Adjusts renv.lock timestamp for binary package availability (10-20x faster builds)
+- **RSPM timestamp optimization**: Temporarily adjusts renv.lock timestamp to "7 days ago" for binary package availability
+  - Docker builds use binaries (10-20x faster) instead of compiling from source
+  - Timestamp restored to "now" after validation (accurate git history)
 - **Host validation without R**: Pure shell validation via `modules/validation.sh`
 
 **Workflow** (Simplified):
@@ -440,7 +442,32 @@ zzcollab_help("config")            # Configuration guide
 
 **Recent Major Changes**:
 
-### October 27, 2025 - Dockerfile System Improvements
+### October 27, 2025 - Auto-Snapshot Architecture & Docker-First Validation
+
+**Major Architectural Improvement**: Complete elimination of host R dependency for development workflow
+
+- **Auto-snapshot on container exit**: `zzcollab-entrypoint.sh` Docker entrypoint
+  - Automatically runs `renv::snapshot()` when exiting any Docker container
+  - No manual snapshot commands required
+  - Applies to all targets: `docker-zsh`, `docker-bash`, `docker-r`, `docker-rstudio`, `docker-zsh-gui`
+  - Configurable via environment variables (`ZZCOLLAB_AUTO_SNAPSHOT`, `ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST`)
+  - Files: `templates/zzcollab-entrypoint.sh`, all `templates/Dockerfile.*` files
+
+- **Pure shell validation** (`modules/validation.sh`): NO HOST R REQUIRED!
+  - Package extraction from code: pure shell (grep, sed, awk)
+  - DESCRIPTION parsing: pure shell (awk)
+  - renv.lock parsing: jq (JSON)
+  - Validates DESCRIPTION ↔ renv.lock consistency without R
+  - New Makefile targets: `make check-renv`, `make check-renv-strict`
+  - Runs automatically after all `docker-*` targets exit
+  - Files: `modules/validation.sh`, `templates/Makefile`
+
+- **Developer workflow transformation**:
+  - **Before**: Developers needed R on host to run `Rscript validate_package_environment.R`
+  - **After**: Entire development cycle works without host R installation
+  - Workflow: `make docker-zsh` → work → `exit` → auto-snapshot → auto-validate
+
+**Earlier improvements** (same day):
 - **Static template matching**: `select_dockerfile_strategy()` now checks resolved values against static templates
   - Prevents unnecessary custom generation when combination matches a static template
   - Works regardless of whether flags were explicitly provided or defaulted
@@ -452,6 +479,7 @@ zzcollab_help("config")            # Configuration guide
 - **RSPM binary packages**: Fixed source compilation issue in Docker builds
   - Problem: renv.lock modification date was too recent for RSPM snapshot availability
   - Solution: Adjusted timestamp to ensure binary packages available (10-20x faster builds)
+  - Integrated into auto-snapshot entrypoint for automatic timestamp management
   - Files: `modules/dockerfile_generator.sh`, `templates/Dockerfile.base.template`, `templates/Dockerfile.personal.team`, `modules/devtools.sh`, `templates/Makefile`
 
 ### Earlier October 2025
