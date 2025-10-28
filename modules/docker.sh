@@ -757,7 +757,15 @@ create_docker_files() {
         log_error "Failed to create package environment validation script"
         return 1
     fi
-    
+
+    # Create entrypoint script for Docker container
+    # Used by: Dockerfile ENTRYPOINT, auto-snapshots renv.lock on container exit
+    # Purpose: Manages container lifecycle and ensures renv.lock stays synchronized
+    if ! install_template "zzcollab-entrypoint.sh" "zzcollab-entrypoint.sh" "container entrypoint script" "Created container entrypoint script"; then
+        log_error "Failed to create entrypoint script"
+        return 1
+    fi
+
     # Create comprehensive user guide
     # Contains: detailed usage instructions, troubleshooting, best practices
     if ! install_template "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide" "Created comprehensive user guide"; then

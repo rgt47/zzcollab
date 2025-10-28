@@ -36,7 +36,7 @@ get_profile_defaults() {
             echo "rocker/r-ver:minimal:minimal"
             ;;
         analysis)
-            echo "rocker/r-ver:minimal:analysis"
+            echo "rocker/tidyverse:minimal:analysis"
             ;;
         modeling)
             echo "rocker/r-ver:modeling:modeling"
