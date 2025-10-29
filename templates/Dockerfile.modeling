@@ -182,9 +182,11 @@ LABEL org.opencontainers.image.title="ZZCOLLAB Modeling Environment" \
       zzcollab.profile="modeling" \
       zzcollab.size="~1.5GB"
 
-# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
+# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit (requires root)
+USER root
 COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
 RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
 
+# Stay as root - entrypoint will exec as ${USERNAME} for shell sessions
 ENTRYPOINT ["/usr/local/bin/zzcollab-entrypoint.sh"]
 CMD ["/bin/zsh"]
