@@ -54,13 +54,13 @@ get_profile_defaults() {
             echo "rocker/shiny:minimal:shiny"
             ;;
         alpine_minimal)
-            echo "alpine-r:alpine:minimal"
+            echo "rhub/r-minimal:alpine:minimal"
             ;;
         alpine_analysis)
-            echo "alpine-r:alpine:analysis"
+            echo "rhub/r-minimal:alpine:analysis"
             ;;
         hpc_alpine)
-            echo "alpine-r:hpc:minimal"
+            echo "rhub/r-minimal:hpc:minimal"
             ;;
         *)
             echo ""

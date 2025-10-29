@@ -4,7 +4,7 @@
 #=================================================================
 # Profile: hpc_alpine (~600MB)
 # Purpose: HPC-focused with parallel processing, lightweight
-# Base: velaco/alpine-r (Alpine + R)
+# Base: rhub/r-minimal (Alpine + R)
 # Packages: renv, parallel, foreach, doParallel, future, furrr
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
@@ -20,7 +20,7 @@ ARG PROJECT_NAME=project
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM velaco/alpine-r:${R_VERSION} AS builder
+FROM rhub/r-minimal:${R_VERSION} AS builder
 
 # Install build dependencies for HPC
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
@@ -62,7 +62,7 @@ RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM velaco/alpine-r:${R_VERSION}
+FROM rhub/r-minimal:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab

@@ -146,7 +146,7 @@ geospatial:
 #=============================================================================
 
 alpine_minimal:
-  base_image: "velaco/alpine-r:latest"
+  base_image: "rhub/r-minimal:latest"
   description: "Ultra-lightweight Alpine Linux with R (small footprint for CI/CD)"
   packages:
     - "renv"
@@ -168,7 +168,7 @@ alpine_minimal:
   notes: "~200MB vs ~1GB for rocker images"
 
 alpine_analysis:
-  base_image: "velaco/alpine-r:latest"
+  base_image: "rhub/r-minimal:latest"
   description: "Lightweight Alpine with core data analysis packages"
   packages:
     - "renv"
@@ -195,7 +195,7 @@ alpine_analysis:
   size: "~400MB"
 
 hpc_alpine:
-  base_image: "velaco/alpine-r:latest"
+  base_image: "rhub/r-minimal:latest"
   description: "HPC-focused environment with parallel processing and lightweight footprint"
   packages:
     - "renv"

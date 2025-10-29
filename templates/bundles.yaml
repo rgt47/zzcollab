@@ -116,7 +116,7 @@ library_bundles:
       - openssl-dev
       - libxml2-dev
     package_manager: "apk"
-    compatible_bases: ["velaco/alpine-r"]
+    compatible_bases: ["rhub/r-minimal"]
     incompatible_bases: ["rocker/*", "bioconductor/*"]
 
 #=============================================================================
@@ -291,14 +291,14 @@ profiles:
 
   alpine_minimal:
     description: "Ultra-lightweight Alpine Linux"
-    base_image: "velaco/alpine-r"
+    base_image: "rhub/r-minimal"
     libs: alpine
     pkgs: minimal
     size: "~200MB"
 
   alpine_analysis:
     description: "Lightweight data analysis"
-    base_image: "velaco/alpine-r"
+    base_image: "rhub/r-minimal"
     libs: alpine
     pkgs: tidyverse
     size: "~400MB"
