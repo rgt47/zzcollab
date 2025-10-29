@@ -571,6 +571,161 @@ get_template() {
     esac
 }
 
+#=============================================================================
+# DYNAMIC DESCRIPTION GENERATION
+#=============================================================================
+
+# Generate DESCRIPTION file content based on Docker profile
+# Reads profiles.yaml to extract packages for the specified profile
+# Arguments:
+#   $1 - Profile name (minimal, analysis, alpine_minimal, etc.)
+# Returns:
+#   DESCRIPTION file content with appropriate dependencies
+# Dependencies:
+#   - yq (YAML parser)
+#   - profiles.yaml in TEMPLATES_DIR
+generate_description_from_profile() {
+    local profile="$1"
+    local pkg_name="${PKG_NAME:-myproject}"
+    local author_name="${AUTHOR_NAME:-Author Name}"
+    local author_email="${AUTHOR_EMAIL:-author@example.com}"
+
+    # Locate profiles.yaml
+    local profiles_file="${TEMPLATES_DIR}/profiles.yaml"
+
+    if [[ ! -f "$profiles_file" ]]; then
+        log_error "profiles.yaml not found at: $profiles_file"
+        return 1
+    fi
+
+    # Check if yq is available
+    if ! command -v yq >/dev/null 2>&1; then
+        log_error "yq is required for dynamic DESCRIPTION generation"
+        log_error "Install with: brew install yq (macOS) or snap install yq (Ubuntu)"
+        return 1
+    fi
+
+    # Extract packages from profile
+    local packages
+    packages=$(yq eval ".${profile}.packages[]" "$profiles_file" 2>/dev/null)
+
+    if [[ -z "$packages" ]]; then
+        log_warning "No packages found for profile '$profile', using minimal defaults"
+        packages="renv
+here
+usethis
+devtools"
+    fi
+
+    # Base DESCRIPTION header (common to all profiles)
+    cat <<EOF
+Package: ${pkg_name}
+Title: Research Compendium for ${pkg_name}
+Version: 0.0.0.9000
+Authors@R:
+    person("${author_name}", email = "${author_email}", role = c("aut", "cre"))
+Description: This is a research compendium for the ${pkg_name} project.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+EOF
+
+    # Determine which packages go in Imports vs Suggests
+    # Core workflow packages (renv, here, devtools, usethis) → Imports
+    # Analysis packages (dplyr, ggplot2, tidyr, etc.) → Imports if present
+    # Testing/documentation packages → Suggests
+
+    local imports=()
+    local suggests=()
+
+    # Always add core packages to Imports if present in profile
+    while IFS= read -r pkg; do
+        case "$pkg" in
+            renv|here|usethis|devtools)
+                imports+=("$pkg")
+                ;;
+            dplyr|ggplot2|tidyr|readr|stringr|lubridate|forcats|purrr)
+                # Core tidyverse packages → Imports
+                imports+=("$pkg")
+                ;;
+            sf|terra|leaflet|mapview)
+                # Geospatial core → Imports
+                imports+=("$pkg")
+                ;;
+            shiny|shinydashboard)
+                # Shiny core → Imports
+                imports+=("$pkg")
+                ;;
+            quarto|bookdown|rmarkdown|knitr)
+                # Publishing → could be Imports or Suggests
+                imports+=("$pkg")
+                ;;
+            tidymodels|caret|xgboost)
+                # ML frameworks → Imports
+                imports+=("$pkg")
+                ;;
+            BiocManager|DESeq2|edgeR)
+                # Bioconductor → Imports
+                imports+=("$pkg")
+                ;;
+            parallel|foreach|doParallel|future|furrr|data.table)
+                # HPC packages → Imports
+                imports+=("$pkg")
+                ;;
+            testthat|roxygen2|pkgdown|rcmdcheck|covr)
+                # Dev/test packages → Suggests
+                suggests+=("$pkg")
+                ;;
+            *)
+                # Default: everything else → Suggests
+                suggests+=("$pkg")
+                ;;
+        esac
+    done <<< "$packages"
+
+    # Add standard suggests that aren't in profile packages
+    local standard_suggests=("testthat (>= 3.0.0)" "knitr" "rmarkdown")
+    for pkg in "${standard_suggests[@]}"; do
+        local pkg_name_only="${pkg%% *}"  # Remove version constraint
+        # Check if not already in suggests or imports
+        if [[ ! " ${suggests[*]} " =~ " ${pkg_name_only} " ]] && \
+           [[ ! " ${imports[*]} " =~ " ${pkg_name_only} " ]]; then
+            suggests+=("$pkg")
+        fi
+    done
+
+    # Output Imports section
+    if [[ ${#imports[@]} -gt 0 ]]; then
+        echo "Imports:"
+        for i in "${!imports[@]}"; do
+            if [[ $i -eq $((${#imports[@]} - 1)) ]]; then
+                echo "    ${imports[$i]}"
+            else
+                echo "    ${imports[$i]},"
+            fi
+        done
+    fi
+
+    # Output Suggests section
+    if [[ ${#suggests[@]} -gt 0 ]]; then
+        echo "Suggests:"
+        for i in "${!suggests[@]}"; do
+            if [[ $i -eq $((${#suggests[@]} - 1)) ]]; then
+                echo "    ${suggests[$i]}"
+            else
+                echo "    ${suggests[$i]},"
+            fi
+        done
+    fi
+
+    # Common footer
+    cat <<'EOF'
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+EOF
+}
+
 # Legacy wrapper functions for backward compatibility
 # Note: get_dockerfile_template() removed - use docker.sh version instead
 get_description_template() { get_template "DESCRIPTION"; }

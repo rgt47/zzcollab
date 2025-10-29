@@ -50,13 +50,26 @@ create_core_files() {
     log_debug "Creating core R package files..."
 
     # DESCRIPTION file - R package metadata and dependencies
-    # Uses template-based approach (dynamic package management via renv)
-    local description_template
-    description_template=$(get_description_template)
+    # Generate dynamically based on Docker profile to ensure package compatibility
+    log_debug "Generating DESCRIPTION file for profile: ${PROFILE_NAME}"
 
-    if ! install_template "$description_template" "DESCRIPTION" "DESCRIPTION file" "Created DESCRIPTION file from template"; then
-        log_error "Failed to create DESCRIPTION file"
-        return 1
+    local description_content
+    description_content=$(generate_description_from_profile "${PROFILE_NAME}")
+
+    if [[ $? -ne 0 ]] || [[ -z "$description_content" ]]; then
+        log_warning "Failed to generate DESCRIPTION from profile, falling back to template"
+        local description_template
+        description_template=$(get_description_template)
+
+        if ! install_template "$description_template" "DESCRIPTION" "DESCRIPTION file" "Created DESCRIPTION file from template"; then
+            log_error "Failed to create DESCRIPTION file"
+            return 1
+        fi
+    else
+        # Write the dynamically generated DESCRIPTION
+        echo "$description_content" > DESCRIPTION
+        track_file "DESCRIPTION"
+        log_success "Created DESCRIPTION file from profile: ${PROFILE_NAME}"
     fi
 
     # .Rbuildignore file - Specifies files to exclude from R package build
