@@ -225,6 +225,46 @@ hpc_alpine:
   size: "~600MB"
   notes: "Optimized for computational efficiency and container orchestration"
 
+alpine_gui:
+  base_image: "rhub/r-minimal:latest"
+  description: "Lightweight Alpine with X11 support for graphics viewing"
+  packages:
+    - "renv"
+    - "devtools"
+    - "dplyr"
+    - "ggplot2"
+    - "readr"
+    - "tidyr"
+    - "here"
+    - "janitor"
+    - "Cairo"
+    - "svglite"
+  system_deps:
+    - "git"
+    - "make"
+    - "gcc"
+    - "g++"
+    - "gfortran"
+    - "musl-dev"
+    - "linux-headers"
+    - "curl"
+    - "curl-dev"
+    - "openssl-dev"
+    - "libxml2-dev"
+    # X11 minimal support
+    - "xorg-server"
+    - "xauth"
+    - "libx11"
+    - "libx11-dev"
+    - "cairo"
+    - "cairo-dev"
+    - "mesa-dri-gallium"
+    - "font-misc-misc"
+    - "ttf-dejavu"
+  category: "alpine"
+  size: "~500MB"
+  notes: "Alpine (~500MB) with minimal X11 for graphics vs gui_analysis (~2.5GB). Requires X forwarding."
+
 #=============================================================================
 # R-HUB TESTING ENVIRONMENTS
 #=============================================================================

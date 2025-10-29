@@ -119,6 +119,33 @@ library_bundles:
     compatible_bases: ["rhub/r-minimal"]
     incompatible_bases: ["rocker/*", "bioconductor/*"]
 
+  alpine_gui:
+    description: "Alpine Linux with minimal X11 for graphics (apk package manager)"
+    deps:
+      - git
+      - make
+      - gcc
+      - "g++"
+      - musl-dev
+      - linux-headers
+      - curl-dev
+      - openssl-dev
+      - libxml2-dev
+      # X11 minimal support
+      - xorg-server
+      - xauth
+      - libx11
+      - libx11-dev
+      - cairo
+      - cairo-dev
+      - mesa-dri-gallium
+      - font-misc-misc
+      - ttf-dejavu
+    package_manager: "apk"
+    compatible_bases: ["rhub/r-minimal"]
+    incompatible_bases: ["rocker/*", "bioconductor/*"]
+    note: "Minimal X11 support for graphics viewing. Requires X forwarding."
+
 #=============================================================================
 # R PACKAGE BUNDLES (--pkgs)
 #=============================================================================
@@ -302,6 +329,14 @@ profiles:
     libs: alpine
     pkgs: tidyverse
     size: "~400MB"
+
+  alpine_gui:
+    description: "Lightweight Alpine with X11 graphics"
+    base_image: "rhub/r-minimal"
+    libs: alpine_gui
+    pkgs: tidyverse
+    size: "~500MB"
+    note: "Alpine (~500MB) with minimal X11 vs gui_analysis (~2.5GB). Requires X forwarding."
 
   gui:
     description: "GUI applications with X11 forwarding"

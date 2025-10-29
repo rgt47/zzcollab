@@ -59,6 +59,9 @@ get_profile_defaults() {
         alpine_analysis)
             echo "rhub/r-minimal:alpine:analysis"
             ;;
+        alpine_gui)
+            echo "rhub/r-minimal:alpine_gui:tidyverse"
+            ;;
         hpc_alpine)
             echo "rhub/r-minimal:hpc:minimal"
             ;;
