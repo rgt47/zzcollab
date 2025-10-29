@@ -93,7 +93,10 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
         sudo \
         shadow \
         nodejs \
-        npm
+        npm \
+        # Python for vim plugins
+        python3 \
+        py3-pip
 
 # External dependencies (same as other profiles)
 RUN --mount=type=cache,target=/tmp/downloads \
@@ -151,7 +154,6 @@ COPY --chown=${USERNAME}:${USERNAME} \
     .bashrc* \
     .bash_profile* \
     .profile* \
-    .config/fish* \
     .emacs* \
     .emacs.d* \
     /home/${USERNAME}/

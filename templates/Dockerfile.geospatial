@@ -190,7 +190,6 @@ COPY --chown=${USERNAME}:${USERNAME} \
     .bashrc* \
     .bash_profile* \
     .profile* \
-    .config/fish* \
     .emacs* \
     .emacs.d* \
     /home/${USERNAME}/
