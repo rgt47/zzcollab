@@ -166,12 +166,8 @@ COPY --chown=${USERNAME}:${USERNAME} \
 RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
         tee /tmp/vim-install.log || true
 
-# Project files
+# Project files (package not installed - use source files directly for interactive analysis)
 COPY --chown=${USERNAME}:${USERNAME} . .
-
-# Install package (deactivate renv since dependencies are system-installed)
-RUN R -e "renv::deactivate(); \
-          install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
 
 # Metadata
 LABEL org.opencontainers.image.title=\
