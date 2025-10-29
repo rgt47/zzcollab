@@ -172,12 +172,18 @@ RUN --mount=type=secret,id=password \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Copy dotfiles
+# Copy dotfiles (optional - wildcards allow missing files)
 COPY --chown=${USERNAME}:${USERNAME} \
-    .vimrc \
-    .gitconfig \
-    .tmux.conf \
-    .zshrc \
+    .vimrc* \
+    .gitconfig* \
+    .tmux.conf* \
+    .zshrc* \
+    .bashrc* \
+    .bash_profile* \
+    .profile* \
+    .config/fish* \
+    .emacs* \
+    .emacs.d* \
     /home/${USERNAME}/
 
 # Install vim plugins

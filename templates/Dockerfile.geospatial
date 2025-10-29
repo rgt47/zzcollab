@@ -53,6 +53,14 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         libcurl4-openssl-dev \
         libssl-dev \
         libxml2-dev \
+        libgit2-dev \
+        libssh2-1-dev \
+        libfontconfig1-dev \
+        libharfbuzz-dev \
+        libfribidi-dev \
+        libfreetype6-dev \
+        libpng-dev \
+        libjpeg-dev \
         # Geospatial build dependencies
         libgdal-dev \
         libproj-dev \
@@ -104,6 +112,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libcurl4 \
         libssl3 \
         libxml2 \
+        libgit2-1.7 \
+        libssh2-1 \
+        libfontconfig1 \
+        libharfbuzz0b \
+        libfribidi0 \
+        libfreetype6 \
+        libpng16-16 \
+        libjpeg8 \
         # Geospatial runtime libraries (NOT -dev)
         libgdal30 \
         libproj25 \
@@ -165,12 +181,18 @@ RUN --mount=type=secret,id=password \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Dotfiles
+# Copy dotfiles (optional - wildcards allow missing files)
 COPY --chown=${USERNAME}:${USERNAME} \
-    .vimrc \
-    .gitconfig \
-    .tmux.conf \
-    .zshrc \
+    .vimrc* \
+    .gitconfig* \
+    .tmux.conf* \
+    .zshrc* \
+    .bashrc* \
+    .bash_profile* \
+    .profile* \
+    .config/fish* \
+    .emacs* \
+    .emacs.d* \
     /home/${USERNAME}/
 
 # Vim plugins

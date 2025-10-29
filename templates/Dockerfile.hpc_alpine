@@ -69,8 +69,9 @@ ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
 # Copy R libraries from builder
-COPY --from=builder /usr/local/lib/R/site-library \
-     /usr/local/lib/R/site-library
+# Note: rhub/r-minimal uses 'library' not 'site-library'
+COPY --from=builder /usr/local/lib/R/library \
+     /usr/local/lib/R/library
 COPY --from=builder /usr/local/lib/R/etc/Rprofile.site \
      /usr/local/lib/R/etc/Rprofile.site
 
@@ -126,7 +127,7 @@ RUN adduser -D -s /bin/zsh ${USERNAME} && \
     mv /tmp/.zsh /home/${USERNAME}/.zsh && \
     mv /tmp/.vim /home/${USERNAME}/.vim && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/library
 
 # Password
 RUN --mount=type=secret,id=password \
@@ -145,12 +146,18 @@ RUN --mount=type=secret,id=password \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Dotfiles
+# Copy dotfiles (optional - wildcards allow missing files)
 COPY --chown=${USERNAME}:${USERNAME} \
-    .vimrc \
-    .gitconfig \
-    .tmux.conf \
-    .zshrc \
+    .vimrc* \
+    .gitconfig* \
+    .tmux.conf* \
+    .zshrc* \
+    .bashrc* \
+    .bash_profile* \
+    .profile* \
+    .config/fish* \
+    .emacs* \
+    .emacs.d* \
     /home/${USERNAME}/
 
 # Vim plugins
