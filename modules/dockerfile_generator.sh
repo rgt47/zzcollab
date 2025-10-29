@@ -32,38 +32,62 @@ get_profile_defaults() {
     local profile="$1"
 
     case "$profile" in
+        # Ubuntu Standard profiles
+        ubuntu_standard_minimal)
+            echo "rocker/r-ver:standard:minimal"
+            ;;
+        ubuntu_standard_analysis)
+            echo "rocker/tidyverse:standard:analysis"
+            ;;
+        ubuntu_standard_publishing)
+            echo "rocker/verse:standard:publishing"
+            ;;
+        # Ubuntu Shiny profiles
+        ubuntu_shiny_minimal)
+            echo "rocker/shiny:shiny:minimal"
+            ;;
+        ubuntu_shiny_analysis)
+            echo "rocker/shiny-verse:shiny:analysis"
+            ;;
+        # Ubuntu X11 profiles
+        ubuntu_x11_minimal)
+            echo "rocker/r-ver:x11:minimal"
+            ;;
+        ubuntu_x11_analysis)
+            echo "rocker/tidyverse:x11:analysis"
+            ;;
+        # Alpine Standard profiles
+        alpine_standard_minimal)
+            echo "rhub/r-minimal:alpine_standard:minimal"
+            ;;
+        alpine_standard_analysis)
+            echo "rhub/r-minimal:alpine_standard:analysis"
+            ;;
+        # Alpine X11 profiles
+        alpine_x11_minimal)
+            echo "rhub/r-minimal:alpine_x11:minimal"
+            ;;
+        alpine_x11_analysis)
+            echo "rhub/r-minimal:alpine_x11:analysis"
+            ;;
+        # Legacy profile names (for backward compatibility)
         minimal)
-            echo "rocker/r-ver:minimal:minimal"
+            echo "rocker/r-ver:standard:minimal"
             ;;
         analysis)
-            echo "rocker/tidyverse:minimal:analysis"
-            ;;
-        modeling)
-            echo "rocker/r-ver:modeling:modeling"
-            ;;
-        geospatial)
-            echo "rocker/r-ver:geospatial:geospatial"
-            ;;
-        bioinformatics)
-            echo "bioconductor/bioconductor_docker:bioinformatics:bioinformatics"
+            echo "rocker/tidyverse:standard:analysis"
             ;;
         publishing)
-            echo "rocker/verse:publishing:publishing"
+            echo "rocker/verse:standard:publishing"
             ;;
         shiny)
-            echo "rocker/shiny:minimal:shiny"
+            echo "rocker/shiny:shiny:minimal"
             ;;
         alpine_minimal)
-            echo "rhub/r-minimal:alpine:minimal"
+            echo "rhub/r-minimal:alpine_standard:minimal"
             ;;
         alpine_analysis)
-            echo "rhub/r-minimal:alpine:analysis"
-            ;;
-        alpine_gui)
-            echo "rhub/r-minimal:alpine_gui:tidyverse"
-            ;;
-        hpc_alpine)
-            echo "rhub/r-minimal:hpc:minimal"
+            echo "rhub/r-minimal:alpine_standard:analysis"
             ;;
         *)
             echo ""
