@@ -89,7 +89,8 @@ RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM rocker/shiny:${R_VERSION}
+# Force AMD64 platform for rocker/shiny (ARM64 not natively supported)
+FROM --platform=linux/amd64 rocker/shiny:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
