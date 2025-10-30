@@ -21,17 +21,17 @@ ARG TARGETPLATFORM
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM rocker/verse:${R_VERSION} AS builder
+# Force AMD64 platform for rocker/verse (ARM64 not natively supported)
+FROM --platform=linux/amd64 rocker/verse:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TARGETPLATFORM
 
-# Platform check (verse is AMD64 only)
+# Platform note (verse is AMD64 only, using emulation on ARM64)
 RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
-        echo "ERROR: rocker/verse does not support ARM64" >&2; \
-        echo "Use rocker/tidyverse and manually install LaTeX" >&2; \
+        echo "NOTE: rocker/verse does not support ARM64 natively" >&2; \
+        echo "Running AMD64 image via emulation (slower)" >&2; \
         echo "See docs/DOCKER_ARCHITECTURE.md for alternatives" >&2; \
-        exit 1; \
     fi
 
 # Install build dependencies
@@ -91,7 +91,8 @@ RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM rocker/verse:${R_VERSION}
+# Force AMD64 platform for rocker/verse (ARM64 not natively supported)
+FROM --platform=linux/amd64 rocker/verse:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab

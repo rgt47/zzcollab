@@ -20,9 +20,18 @@ ARG PROJECT_NAME=project
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM rocker/shiny-verse:${R_VERSION} AS builder
+# Force AMD64 platform for rocker/shiny-verse (ARM64 not natively supported)
+FROM --platform=linux/amd64 rocker/shiny-verse:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TARGETPLATFORM
+
+# Platform note (shiny-verse is AMD64 only, using emulation on ARM64)
+RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
+        echo "NOTE: rocker/shiny-verse does not support ARM64 natively" >&2; \
+        echo "Running AMD64 image via emulation (slower)" >&2; \
+        echo "See docs/DOCKER_ARCHITECTURE.md for alternatives" >&2; \
+    fi
 
 # Install build dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \

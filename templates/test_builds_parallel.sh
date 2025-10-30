@@ -43,13 +43,69 @@ done
 
 echo ""
 echo "All 11 builds started in parallel!"
-echo "Monitoring progress..."
+echo "Monitoring progress (will exit on first failure)..."
 echo ""
 
-# Wait for all builds to complete
-for profile in "${PROFILES[@]}"; do
-    wait ${PIDS[$profile]}
+# Monitor builds and exit immediately on first failure
+LAST_COMPLETED=0
+while true; do
+    COMPLETED=0
+    FAILED_PROFILE=""
+
+    for profile in "${PROFILES[@]}"; do
+        # Check if this build has completed
+        if [ -f /tmp/result_${profile}.txt ]; then
+            ((COMPLETED++))
+            result=$(cat /tmp/result_${profile}.txt)
+
+            # If any build failed, exit immediately
+            if [[ $result == *"FAILED"* ]]; then
+                FAILED_PROFILE=$profile
+                break 2
+            fi
+
+            # Print success as soon as we see it
+            if [[ $result == *"SUCCESS"* ]] && [ $COMPLETED -gt $LAST_COMPLETED ]; then
+                echo "  ✓ $profile"
+            fi
+        fi
+    done
+
+    LAST_COMPLETED=$COMPLETED
+
+    # Exit if all completed successfully
+    if [ $COMPLETED -eq ${#PROFILES[@]} ]; then
+        break
+    fi
+
+    sleep 2
 done
+
+# If a build failed, print error and exit
+if [ -n "$FAILED_PROFILE" ]; then
+    echo ""
+    echo "=========================================="
+    echo "BUILD FAILED: $FAILED_PROFILE"
+    echo "=========================================="
+    echo ""
+    echo "Error log (last 50 lines):"
+    tail -50 /tmp/build_${FAILED_PROFILE}.log
+    echo ""
+    echo "Full log: /tmp/build_${FAILED_PROFILE}.log"
+
+    # Kill remaining builds
+    echo ""
+    echo "Terminating remaining builds..."
+    for profile in "${PROFILES[@]}"; do
+        if [ -n "${PIDS[$profile]}" ]; then
+            kill ${PIDS[$profile]} 2>/dev/null
+        fi
+    done
+
+    # Cleanup
+    rm -f /tmp/result_*.txt /tmp/build_*.log
+    exit 1
+fi
 
 echo ""
 echo "=========================================="
