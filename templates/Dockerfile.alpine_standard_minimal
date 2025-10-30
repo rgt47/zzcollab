@@ -44,11 +44,9 @@ COPY renv.lock* ./
 
 # Note: Alpine doesn't have prebuilt R packages like Debian
 # Must compile from source - slower but smaller image
-RUN if [ -f renv.lock ]; then \
-        echo "options(repos = c(CRAN = '\
-https://cloud.r-project.org'))" \
-            >> /usr/local/lib/R/etc/Rprofile.site; \
-    fi
+# Configure CRAN mirror
+RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
+        >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install minimal R packages (compile from source)
 RUN --mount=type=cache,target=/tmp/R-cache \
