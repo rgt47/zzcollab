@@ -65,7 +65,6 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         libjpeg-dev \
         # Publishing dependencies
         pandoc \
-        pandoc-citeproc \
         texlive-xetex \
         texlive-fonts-extra
 
