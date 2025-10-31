@@ -26,6 +26,7 @@ help:
 	@echo "  Docker - works without local R:"
 	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
 	@echo "    docker-build-no-snapshot - Build without snapshot (advanced)"
+	@echo "    docker-run            - Smart run: auto-detects profile and runs appropriately"
 	@echo "    docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo "    docker-build-log, docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
@@ -210,6 +211,55 @@ docker-rstudio:
 	@echo "Username: analyst, Password: analyst"
 	docker run --platform linux/amd64 --rm --user root -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
 
+# Smart docker-run: Automatically detect profile and run appropriately
+docker-run:
+	@if [ ! -f Dockerfile ]; then \
+		echo "❌ No Dockerfile found in current directory"; \
+		exit 1; \
+	fi
+	@PROFILE=$$(head -20 Dockerfile | grep -o 'Profile: [a-z_]*' | head -1 | cut -d' ' -f2); \
+	if [ -z "$$PROFILE" ]; then \
+		echo "❌ Could not detect profile from Dockerfile"; \
+		echo "   Add '# Profile: <name>' comment to Dockerfile header"; \
+		exit 1; \
+	fi; \
+	echo "🔍 Detected profile: $$PROFILE"; \
+	echo ""; \
+	case "$$PROFILE" in \
+		minimal) \
+			echo "🐳 Starting minimal profile (zsh shell)..."; \
+			docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh; \
+			;; \
+		analysis|publishing) \
+			echo "🐳 Starting $$PROFILE profile (RStudio Server)..."; \
+			echo "📊 RStudio: http://localhost:8787"; \
+			echo "👤 Username: analyst, Password: analyst"; \
+			echo ""; \
+			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
+			;; \
+		shiny_minimal|shiny_verse) \
+			echo "🐳 Starting Shiny Server..."; \
+			echo "📊 Shiny: http://localhost:3838"; \
+			echo ""; \
+			docker run --platform linux/amd64 --rm -p 3838:3838 -v $$(pwd):/home/analyst/project $(PACKAGE_NAME); \
+			;; \
+		x11_minimal|x11_analysis) \
+			echo "🐳 Starting X11 profile (GUI support)..."; \
+			echo "⚠️  Requires XQuartz running with 'Allow connections from network clients'"; \
+			echo ""; \
+			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh; \
+			;; \
+		alpine_*) \
+			echo "🐳 Starting Alpine profile (ash shell)..."; \
+			docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/ash; \
+			;; \
+		*) \
+			echo "❌ Unknown profile: $$PROFILE"; \
+			echo "   Supported: minimal, analysis, publishing, shiny_minimal, shiny_verse, x11_minimal, x11_analysis, alpine_*"; \
+			exit 1; \
+			;; \
+	esac
+
 # Cleanup
 clean:
 	rm -f *.tar.gz
@@ -247,4 +297,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-run docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help

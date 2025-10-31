@@ -19,7 +19,8 @@ ARG PROJECT_NAME=project
 #=================================================================
 # STAGE 1: BUILDER
 #=================================================================
-FROM rocker/r-ver:${R_VERSION} AS builder
+# Force AMD64 platform for RSPM binary packages (even on ARM64 hosts)
+FROM --platform=linux/amd64 rocker/r-ver:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -28,18 +29,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
     apt-get update && \
-    apt-get install -y --no-install-recommends \
-        wget \
-        ca-certificates && \
-    # r2u repository for binary R packages
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
-dirk_eddelbuettel_key.asc | \
-        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] \
-https://r2u.stat.illinois.edu/ubuntu noble main" > \
-        /etc/apt/sources.list.d/cranapt.list && \
-    apt-get update && \
-    # Build dependencies for R packages
     apt-get install -y --no-install-recommends \
         build-essential \
         libcurl4-openssl-dev \
@@ -54,19 +43,22 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         libpng-dev \
         libjpeg-dev
 
-# Configure repositories: RSPM with binary packages
-# Use a known good date (2024-10-26) to ensure packages are available
+# Configure repositories: RSPM with AMD64 binary packages
+# Use date 7 days ago to ensure binary packages are available
+# RSPM binary packages lag by ~1-2 days; 7 days ensures availability
+# Platform forced to AMD64 above for fast binary installation
 WORKDIR /build
 COPY renv.lock* ./
 
 RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+    RSPM_DATE=$(date -u -d '7 days ago' '+%Y-%m-%d' 2>/dev/null || date -u -v-7d '+%Y-%m-%d') && \
     echo "options(repos = c(" \
-        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
+        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RSPM_DATE}'))" \
         >> /usr/local/lib/R/etc/Rprofile.site && \
     echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install framework packages
+# Install framework packages (installs as AMD64 binaries - 10-20x faster)
 RUN --mount=type=cache,target=/tmp/R-cache \
     R -e "install.packages(c('renv', 'devtools', 'usethis', \
            'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
@@ -78,7 +70,8 @@ RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 #=================================================================
 # STAGE 2: RUNTIME
 #=================================================================
-FROM rocker/r-ver:${R_VERSION}
+# Force AMD64 platform for consistency with builder stage
+FROM --platform=linux/amd64 rocker/r-ver:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
@@ -189,12 +182,10 @@ COPY --chown=${USERNAME}:${USERNAME} \
 RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
         tee /tmp/vim-install.log || true
 
-# Copy project files (last - most frequent changes)
-COPY --chown=${USERNAME}:${USERNAME} . .
-
-# Install research compendium
-RUN R -e "install.packages('.', repos = NULL, type = 'source', \
-           dependencies = TRUE)"
+# NOTE: Project files are NOT copied into the image
+# They are accessed via volume mount: -v $(pwd):/home/${USERNAME}/project
+# This keeps images small and rebuilds fast (no cache invalidation on code changes)
+# Use devtools::load_all() inside the container to load your R package
 
 # Metadata
 LABEL org.opencontainers.image.title="ZZCOLLAB Minimal Environment" \
