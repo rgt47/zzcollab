@@ -371,6 +371,94 @@ profiles:
     size: "~2GB"
     note: "RStudio Server + GUI apps (kitty, firefox) via X11"
 
+  ubuntu_standard_minimal:
+    description: "Minimal Ubuntu environment with essential R packages"
+    base_image: "rocker/r-ver"
+    libs: minimal
+    pkgs: minimal
+    size: "~800MB"
+    note: "Add RStudio: docker run -e ADD=rstudio -e PASSWORD=pass"
+
+  ubuntu_standard_analysis:
+    description: "Data analysis with tidyverse + modeling packages"
+    base_image: "rocker/tidyverse"
+    libs: modeling
+    pkgs: modeling
+    size: "~1.5GB"
+    note: "Tidyverse + ML packages. Add RStudio: docker run -e ADD=rstudio"
+
+  ubuntu_standard_publishing:
+    description: "Document publishing with LaTeX, Quarto, and web tools"
+    base_image: "rocker/verse"
+    libs: publishing
+    pkgs: publishing
+    size: "~3GB"
+    note: "Full LaTeX + Quarto publishing stack"
+
+  ubuntu_shiny_minimal:
+    description: "Shiny Server with minimal packages"
+    base_image: "rocker/shiny"
+    libs: minimal
+    pkgs: shiny
+    size: "~1.8GB"
+    note: "Shiny Server on port 3838"
+
+  ubuntu_shiny_analysis:
+    description: "Shiny Server with tidyverse and publishing capabilities"
+    base_image: "rocker/shiny-verse"
+    libs: minimal
+    pkgs: shiny
+    size: "~3.5GB"
+    note: "Full-featured Shiny with tidyverse"
+
+  ubuntu_x11_minimal:
+    description: "Minimal R with X11 support for graphics viewing"
+    base_image: "rocker/r-ver"
+    libs: gui
+    pkgs: minimal
+    size: "~1.5GB"
+    note: "Requires XQuartz (macOS) or X11 (Linux). Use 'docker run -e DISPLAY'"
+
+  ubuntu_x11_analysis:
+    description: "Data analysis with tidyverse and X11 support"
+    base_image: "rocker/tidyverse"
+    libs: gui
+    pkgs: gui
+    size: "~2.5GB"
+    note: "Full analysis stack with interactive graphics and X11"
+
+  alpine_standard_minimal:
+    description: "Ultra-lightweight Alpine Linux with R for CI/CD"
+    base_image: "rhub/r-minimal"
+    libs: alpine
+    pkgs: minimal
+    size: "~200MB"
+    note: "~200MB vs ~800MB for Ubuntu (4x smaller)"
+
+  alpine_standard_analysis:
+    description: "Lightweight Alpine with core data analysis packages"
+    base_image: "rhub/r-minimal"
+    libs: alpine
+    pkgs: tidyverse
+    size: "~400MB"
+    note: "~400MB vs ~1.5GB for Ubuntu (3.5x smaller)"
+
+  alpine_x11_minimal:
+    description: "Lightweight Alpine with minimal X11 for base R graphics"
+    base_image: "rhub/r-minimal"
+    libs: alpine_gui
+    pkgs: minimal
+    size: "~300MB"
+    note: "Base R plotting with X11. ~5x smaller than ubuntu_x11_minimal"
+
+  alpine_x11_analysis:
+    description: "Lightweight Alpine with X11 support for graphics viewing"
+    base_image: "rhub/r-minimal"
+    libs: alpine_gui
+    pkgs: tidyverse
+    size: "~500MB"
+    note: "Alpine (~500MB) with minimal X11 vs ubuntu_x11_analysis (~2.5GB). Requires X forwarding."
+
 #=============================================================================
 # COMPATIBILITY RULES
 #=============================================================================
