@@ -64,17 +64,14 @@ test:
 deps:
 	R -e "devtools::install_deps(dependencies = TRUE)"
 
-check-renv:
-	R -e "renv::status()"
-
-check-renv-fix:
-	R -e "renv::snapshot()"
-
-# Validate package dependencies (NEW: Pure shell, no host R required!)
+# Validate package dependencies (Pure shell, no host R required!)
 # Checks that all packages used in code are in DESCRIPTION and renv.lock
 # Run this before `git commit` to catch issues locally (prevents CI failures)
 check-renv:
 	@bash modules/validation.sh
+
+check-renv-fix:
+	R -e "renv::snapshot()"
 
 # Validate in strict mode (scan all directories including tests/)
 check-renv-strict:

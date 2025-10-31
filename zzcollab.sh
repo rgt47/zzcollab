@@ -359,19 +359,22 @@ install_uninstall_script() {
 get_zzcollab_files() {
     local files=(
         # Core project files
-        "DESCRIPTION" "NAMESPACE" "Makefile" ".gitignore" ".Rprofile" 
+        "DESCRIPTION" "NAMESPACE" "Makefile" ".gitignore" ".Rprofile"
         "renv.lock" "setup_renv.R" "LICENSE"
-        
+
         # Docker files
         "Dockerfile" "docker-compose.yml" "Dockerfile.teamcore" "Dockerfile.personal"
         ".zshrc_docker"
-        
+
+        # Shell modules
+        "modules/validation.sh"
+
         # Documentation and guides
         "ZZCOLLAB_USER_GUIDE.md" "check_renv_for_commit.R"
-        
+
         # Configuration files
         "zzcollab.yaml" "config.yaml" "dev.sh"
-        
+
         # R project file (dynamic based on package name)
         "${PKG_NAME}.Rproj"
     )
@@ -380,14 +383,17 @@ get_zzcollab_files() {
         # R package structure
         "R" "tests" "tests/testthat" "tests/integration" "data" "data/raw_data"
         "inst" "man" "vignettes"
-        
-        # Analysis structure  
+
+        # Shell modules
+        "modules"
+
+        # Analysis structure
         "analysis" "analysis/report" "analysis/templates" "scripts"
         "figures" "output"
-        
+
         # Development and CI
         ".github" ".github/workflows" ".github/ISSUE_TEMPLATE"
-        
+
         # renv
         "renv"
     )

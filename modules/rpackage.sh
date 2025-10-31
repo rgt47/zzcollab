@@ -263,6 +263,15 @@ cat("- Use renv::snapshot() to update lockfile after adding packages\n")'
         log_error "Failed to create renv setup script"
         return 1
     fi
+
+    # Install validation.sh script (pure shell validation, no R required)
+    if install_template "modules/validation.sh" "modules/validation.sh" "package validation script" "Created validation.sh for dependency checking"; then
+        chmod +x "modules/validation.sh"
+        log_success "Created validation script (no host R required)"
+    else
+        log_error "Failed to create validation script"
+        return 1
+    fi
 }
 
 #=============================================================================
