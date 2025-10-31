@@ -40,17 +40,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        wget \
-        ca-certificates && \
-    # r2u repository
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
-dirk_eddelbuettel_key.asc | \
-        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] \
-https://r2u.stat.illinois.edu/ubuntu noble main" > \
-        /etc/apt/sources.list.d/cranapt.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
         build-essential \
         libcurl4-openssl-dev \
         libssl-dev \
@@ -63,18 +52,20 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         libfreetype6-dev \
         libpng-dev \
         libjpeg-dev \
-        # Publishing dependencies
-        pandoc \
-        texlive-xetex \
-        texlive-fonts-extra
+        # Publishing dependencies (TinyTeX already in rocker/verse)
+        pandoc
 
-# Configure RSPM
+# Configure repositories: RSPM with AMD64 binary packages
+# Use date 7 days ago to ensure binary packages are available
+# RSPM binary packages lag by ~1-2 days; 7 days ensures availability
+# Platform forced to AMD64 above for fast binary installation
 WORKDIR /build
 COPY renv.lock* ./
 
 RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+    RSPM_DATE=$(date -u -d '7 days ago' '+%Y-%m-%d' 2>/dev/null || date -u -v-7d '+%Y-%m-%d') && \
     echo "options(repos = c(" \
-        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
+        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RSPM_DATE}'))" \
         >> /usr/local/lib/R/etc/Rprofile.site && \
     echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
         >> /usr/local/lib/R/etc/Rprofile.site
@@ -192,11 +183,10 @@ COPY --chown=${USERNAME}:${USERNAME} \
 # Vim plugins
 RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
 
-# Project files
-COPY --chown=${USERNAME}:${USERNAME} . .
-
-# Install package
-RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
+# NOTE: Project files are NOT copied into the image
+# They are accessed via volume mount: -v $(pwd):/home/${USERNAME}/project
+# This keeps images small and rebuilds fast (no cache invalidation on code changes)
+# Use devtools::load_all() inside the container to load your R package
 
 # Metadata
 LABEL org.opencontainers.image.title="ZZCOLLAB Publishing Environment" \
