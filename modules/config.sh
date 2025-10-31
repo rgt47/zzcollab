@@ -332,6 +332,7 @@ load_config_file() {
     [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_TEAM_NAME="$team_name"
     [[ "$github_account" != "null" && -n "$github_account" ]] && CONFIG_GITHUB_ACCOUNT="$github_account"
     [[ "$dockerhub_account" != "null" && -n "$dockerhub_account" ]] && CONFIG_DOCKERHUB_ACCOUNT="$dockerhub_account"
+
     [[ "$profile_name" != "null" && -n "$profile_name" ]] && CONFIG_PROFILE_NAME="$profile_name"
     [[ "$libs_bundle" != "null" && -n "$libs_bundle" ]] && CONFIG_LIBS_BUNDLE="$libs_bundle"
     [[ "$pkgs_bundle" != "null" && -n "$pkgs_bundle" ]] && CONFIG_PKGS_BUNDLE="$pkgs_bundle"
@@ -359,7 +360,7 @@ load_all_configs() {
     CONFIG_DOTFILES_NODOT="false"
     CONFIG_AUTO_GITHUB="false"
     CONFIG_SKIP_CONFIRMATION="false"
-    
+
     # Load configs in reverse priority order (later files override earlier ones)
     load_config_file "$CONFIG_SYSTEM_FILE" 2>/dev/null || true
     load_config_file "$CONFIG_USER_FILE" 2>/dev/null || true
@@ -379,6 +380,7 @@ apply_config_defaults() {
     [[ -z "${TEAM_NAME:-}" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
     [[ -z "${GITHUB_ACCOUNT:-}" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
     [[ -z "${DOCKERHUB_ACCOUNT:-}" && -n "$CONFIG_DOCKERHUB_ACCOUNT" ]] && DOCKERHUB_ACCOUNT="$CONFIG_DOCKERHUB_ACCOUNT"
+
     [[ -z "${PROFILE_NAME:-}" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
     [[ -z "${LIBS_BUNDLE:-}" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
     [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
@@ -444,7 +446,7 @@ get_default_value() {
         team_name) echo "" ;;
         github_account) echo "" ;;
         dockerhub_account) echo "" ;;
-        profile_name) echo "minimal" ;;
+        profile_name) echo "${ZZCOLLAB_DEFAULT_PROFILE_NAME:-ubuntu_standard_minimal}" ;;
         libs_bundle) echo "minimal" ;;
         pkgs_bundle) echo "minimal" ;;
         dotfiles_dir) echo "$HOME/dotfiles" ;;
@@ -603,9 +605,9 @@ defaults:
   dockerhub_account: ""            # Your Docker Hub account (defaults to team_name if empty)
 
   # Docker profile settings (system defaults shown)
-  profile_name: "minimal"          # Docker profile (minimal, rstudio, analysis, bioinformatics, geospatial, etc.)
-  libs_bundle: "minimal"           # System libraries bundle
-  pkgs_bundle: "minimal"           # R packages bundle (pre-installed in Docker)
+  profile_name: "ubuntu_standard_minimal"  # Docker profile (ubuntu_standard_minimal, ubuntu_standard_analysis, alpine_standard_minimal, etc.)
+  libs_bundle: "minimal"           # System libraries bundle (for custom builds with -b/-l/-k)
+  pkgs_bundle: "minimal"           # R packages bundle (for custom builds with -b/-l/-k)
 
   # Dotfiles integration (common defaults shown)
   dotfiles_dir: "~/dotfiles"       # Path to your dotfiles directory
@@ -1015,10 +1017,10 @@ handle_config_command() {
 init_config_system() {
     # Load all configuration files
     load_all_configs
-    
+
     # Apply defaults to CLI variables (only if not already set)
     apply_config_defaults
-    
+
     log_info "Configuration system initialized"
 }
 

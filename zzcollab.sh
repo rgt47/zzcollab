@@ -1,20 +1,33 @@
 #!/bin/bash
 ##############################################################################
-# ZZCOLLAB - DOCKER-BASED RESEARCH COLLABORATION FRAMEWORK
+# ZZCOLLAB MAIN EXECUTABLE (Installed Version)
 ##############################################################################
-# 
-# PURPOSE: Creates reproducible research compendia with containerized workflows
-#          - Modular architecture with 15 specialized shell modules
-#          - Docker-first development with team collaboration support
-#          - R package structure with automated testing and CI/CD
-#          - Configuration system for user defaults and team settings
-#          - Enterprise-grade dependency validation and environment management
-#
-# ARCHITECTURE:
-#          Main Script (zzcollab.sh) 
-#          ├── Module Loading (constants → core → cli → config → others)
-#          ├── Command Processing (CLI argument parsing and validation)
-#          ├── Workflow Execution (team init, individual setup, help system)
+
+set -euo pipefail
+
+# Determine the installation directory
+INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ZZCOLLAB_SUPPORT_DIR="$INSTALL_DIR/zzcollab-support"
+
+# Set up paths for the installed version
+SCRIPT_DIR="$ZZCOLLAB_SUPPORT_DIR"
+TEMPLATES_DIR="$SCRIPT_DIR/templates"
+MODULES_DIR="$SCRIPT_DIR/modules"
+
+# Validate installation
+if [[ ! -d "$MODULES_DIR" ]]; then
+    echo "❌ Error: Modules directory not found: $MODULES_DIR"
+    echo "❌ zzcollab installation may be corrupted"
+    exit 1
+fi
+
+if [[ ! -d "$TEMPLATES_DIR" ]]; then
+    echo "❌ Error: Templates directory not found: $TEMPLATES_DIR"
+    echo "❌ zzcollab installation may be corrupted"
+    exit 1
+fi
+
+# Source the main zzcollab script logic
 #          └── Cleanup and Exit (manifest tracking, error handling)
 #
 # USAGE:   ./zzcollab.sh [OPTIONS]
@@ -786,14 +799,14 @@ validate_and_setup_environment() {
     if [[ -n "${PROFILE_NAME:-}" ]]; then
         expand_profile_name "$PROFILE_NAME"
     elif [[ "${USER_PROVIDED_PKGS:-false}" == "true" ]]; then
-        # Scenario 3: --pkgs without --profile-name → use default profile (minimal)
-        log_info "Using default profile 'minimal' with custom packages"
-        expand_profile_name "minimal"
+        # Scenario 3: --pkgs without --profile-name → use default profile
+        log_info "Using default profile '${ZZCOLLAB_DEFAULT_PROFILE_NAME}' with custom packages"
+        expand_profile_name "${ZZCOLLAB_DEFAULT_PROFILE_NAME}"
     else
-        # Scenario 4: No profile specified → use default minimal profile
-        # This ensures LIBS_BUNDLE and PKGS_BUNDLE are always set
-        log_info "Using default profile 'minimal'"
-        expand_profile_name "minimal"
+        # Scenario 4: No profile specified → use default profile
+        # This ensures a valid Dockerfile template is selected
+        log_info "Using default profile '${ZZCOLLAB_DEFAULT_PROFILE_NAME}'"
+        expand_profile_name "${ZZCOLLAB_DEFAULT_PROFILE_NAME}"
     fi
 
     # Apply smart defaults based on base image if needed (may override profile defaults)

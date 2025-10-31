@@ -5,9 +5,24 @@
 # Load bundles configuration
 BUNDLES_FILE="${TEMPLATES_DIR}/bundles.yaml"
 
+# Function: list_available_profiles
+# Purpose: List all available profiles from Dockerfile templates
+# Returns: List of profile names (one per line)
+list_available_profiles() {
+    find "${TEMPLATES_DIR}" -name "Dockerfile.*" -type f \
+        ! -name "*.bak" \
+        ! -name "*.template" \
+        ! -name "Dockerfile.base.template" \
+        ! -name "Dockerfile.unified" \
+        ! -name "Dockerfile.personal.team" \
+        -exec basename {} \; \
+        | sed 's/^Dockerfile\.//' \
+        | sort
+}
+
 # Function: expand_profile_name
-# Purpose: Expand --profile-name into base-image, libs, and pkgs
-# Note: Respects --pkgs override if USER_PROVIDED_PKGS is true
+# Purpose: Validate profile name and check if Dockerfile exists
+# Note: Profiles are defined by existing Dockerfile templates
 expand_profile_name() {
     local profile_name="$1"
 
@@ -15,81 +30,48 @@ expand_profile_name() {
         return 0
     fi
 
-    if [[ ! -f "$BUNDLES_FILE" ]]; then
-        log_error "❌ Bundles file not found: $BUNDLES_FILE"
-        exit 1
-    fi
+    # Check if Dockerfile template exists for this profile
+    local dockerfile="${TEMPLATES_DIR}/Dockerfile.${profile_name}"
 
-    if ! command -v yq >/dev/null 2>&1; then
-        log_error "❌ yq is required for profile expansion. Install with:"
-        log_error "   brew install yq  # macOS"
-        log_error "   snap install yq  # Ubuntu"
-        exit 1
-    fi
-
-    # Extract profile definition
-    local base_image libs_bundle pkgs_bundle
-    base_image=$(yq eval ".profiles.${profile_name}.base_image" "$BUNDLES_FILE" 2>/dev/null)
-    libs_bundle=$(yq eval ".profiles.${profile_name}.libs" "$BUNDLES_FILE" 2>/dev/null)
-    pkgs_bundle=$(yq eval ".profiles.${profile_name}.pkgs" "$BUNDLES_FILE" 2>/dev/null)
-
-    if [[ "$base_image" == "null" ]] || [[ -z "$base_image" ]]; then
+    if [[ ! -f "$dockerfile" ]]; then
         log_error "❌ Unknown profile: ${profile_name}"
         log_error ""
         log_error "Available profiles:"
-        yq eval '.profiles | keys | .[]' "$BUNDLES_FILE" 2>/dev/null | sed 's/^/  - /'
         log_error ""
-        log_error "See: zzcollab --list-profiles"
+        log_error "📦 UBUNTU STANDARD (CLI + optional RStudio via ADD=rstudio):"
+        log_error "  ubuntu_standard_minimal     - Minimal Ubuntu (~800MB)"
+        log_error "  ubuntu_standard_analysis    - Tidyverse + ML packages (~1.5GB)"
+        log_error "  ubuntu_standard_publishing  - LaTeX + Quarto publishing (~3GB)"
+        log_error ""
+        log_error "🌐 UBUNTU SHINY (Web applications with Shiny Server):"
+        log_error "  ubuntu_shiny_minimal        - Basic Shiny Server (~1.8GB)"
+        log_error "  ubuntu_shiny_analysis       - Shiny + tidyverse (~3.5GB)"
+        log_error ""
+        log_error "🖥️  UBUNTU X11 (GUI applications with X11 forwarding):"
+        log_error "  ubuntu_x11_minimal          - Basic R with X11 (~1.5GB)"
+        log_error "  ubuntu_x11_analysis         - Tidyverse + interactive graphics (~2.5GB)"
+        log_error ""
+        log_error "⛰️  ALPINE STANDARD (Lightweight, great for CI/CD):"
+        log_error "  alpine_standard_minimal     - Ultra-lightweight (~200MB, 4x smaller)"
+        log_error "  alpine_standard_analysis    - Core analysis packages (~400MB)"
+        log_error ""
+        log_error "🗻 ALPINE X11 (Lightweight with graphics):"
+        log_error "  alpine_x11_minimal          - Base R plotting with X11 (~300MB)"
+        log_error "  alpine_x11_analysis         - Analysis + X11 support (~500MB)"
+        log_error ""
+        log_error "🔬 LEGACY PROFILES (specialized):"
+        log_error "  bioinformatics              - Bioconductor packages"
+        log_error "  geospatial                  - Geospatial analysis"
+        log_error "  modeling                    - Machine learning"
+        log_error "  hpc_alpine                  - HPC on Alpine Linux"
+        log_error ""
+        log_error "Usage: zzcollab --profile-name <profile>"
+        log_error "Example: zzcollab --profile-name ubuntu_standard_analysis"
         exit 1
     fi
 
-    # Save user-provided values if explicitly set via command-line flags
-    local user_base_image="" user_libs="" user_pkgs=""
-    if [[ "${USER_PROVIDED_BASE_IMAGE:-false}" == "true" ]]; then
-        user_base_image="$BASE_IMAGE"
-    fi
-    if [[ "${USER_PROVIDED_LIBS:-false}" == "true" ]]; then
-        user_libs="$LIBS_BUNDLE"
-    fi
-    if [[ "${USER_PROVIDED_PKGS:-false}" == "true" ]]; then
-        user_pkgs="$PKGS_BUNDLE"
-    fi
-
-    # Set global variables from profile
-    BASE_IMAGE="$base_image"
-    LIBS_BUNDLE="$libs_bundle"
-    PKGS_BUNDLE="$pkgs_bundle"
-
-    # Override with user-provided values (command-line flags take precedence)
-    local overrides=()
-    if [[ -n "$user_base_image" ]]; then
-        BASE_IMAGE="$user_base_image"
-        overrides+=("Base image: $user_base_image (OVERRIDE)")
-    fi
-    if [[ -n "$user_libs" ]]; then
-        LIBS_BUNDLE="$user_libs"
-        overrides+=("Libraries: $user_libs (OVERRIDE)")
-    fi
-    if [[ -n "$user_pkgs" ]]; then
-        PKGS_BUNDLE="$user_pkgs"
-        overrides+=("Packages: $user_pkgs (OVERRIDE)")
-    fi
-
-    # Log expanded profile with overrides
-    if [[ ${#overrides[@]} -gt 0 ]]; then
-        log_info "📋 Expanded profile '${profile_name}' with overrides:"
-        log_info "   Base image: ${BASE_IMAGE}"
-        log_info "   Libraries:  ${LIBS_BUNDLE}"
-        log_info "   Packages:   ${PKGS_BUNDLE}"
-        for override in "${overrides[@]}"; do
-            log_info "   ⚠️  $override"
-        done
-    else
-        log_info "📋 Expanded profile '${profile_name}':"
-        log_info "   Base image: $base_image"
-        log_info "   Libraries:  $libs_bundle"
-        log_info "   Packages:   $pkgs_bundle"
-    fi
+    # Profile is valid - Dockerfile exists
+    log_info "✓ Using profile: ${profile_name}"
 }
 
 # Function: validate_profile_combination

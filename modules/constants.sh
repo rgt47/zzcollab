@@ -34,7 +34,7 @@ readonly NC='\033[0m'          # No Color - resets terminal to default
 # ${BASH_SOURCE[1]} refers to the calling script (not this constants file)
 # This allows modules to find the main zzcollab directory regardless of
 # where they are called from
-readonly ZZCOLLAB_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
+readonly ZZCOLLAB_SCRIPT_DIR="/Users/zenn/bin/zzcollab-support"
 # Derived directories - built from main script directory
 readonly ZZCOLLAB_TEMPLATES_DIR="$ZZCOLLAB_SCRIPT_DIR/templates"    # Template files location
 readonly ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_SCRIPT_DIR/modules"        # Shell modules location
@@ -62,7 +62,7 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="/etc/zzcollab/config.yaml"         # System-wid
 # Docker and build defaults
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE="r-ver"
-readonly ZZCOLLAB_DEFAULT_PROFILE_NAME="minimal"
+readonly ZZCOLLAB_DEFAULT_PROFILE_NAME="ubuntu_standard_minimal"
 
 # Author information (should be set via environment variables or config file)
 readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"
