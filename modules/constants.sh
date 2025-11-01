@@ -82,6 +82,25 @@ readonly ZZCOLLAB_SCRIPT_NAME="$(basename "${BASH_SOURCE[1]}")"
 readonly ZZCOLLAB_TODAY="$(date '+%B %d, %Y')"
 
 #=============================================================================
+# EXIT CODE CONSTANTS (LOW severity Issue #16 fix)
+#=============================================================================
+
+# Standard exit codes for consistent error handling across all modules
+# Using named constants instead of magic numbers improves code readability
+# and makes error handling more maintainable
+
+readonly EXIT_SUCCESS=0        # Successful execution
+readonly EXIT_ERROR=1          # General error
+readonly EXIT_USAGE=2          # Usage error (invalid arguments)
+readonly EXIT_CONFIG=3         # Configuration error
+readonly EXIT_NOTFOUND=4       # Required file or resource not found
+readonly EXIT_PERMISSION=5     # Permission denied
+readonly EXIT_VALIDATION=6     # Validation failed
+readonly EXIT_DOCKER=7         # Docker-related error
+readonly EXIT_NETWORK=8        # Network error
+readonly EXIT_INTERRUPT=130    # User interrupted (Ctrl+C)
+
+#=============================================================================
 # MODULE LOADING FLAGS
 #=============================================================================
 
