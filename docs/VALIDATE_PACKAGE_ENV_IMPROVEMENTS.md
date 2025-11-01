@@ -1,8 +1,15 @@
 # validate_package_environment.R Improvements Summary
 
-## Status: IN PROGRESS
+> **DEPRECATED**: The `validate_package_environment.R` R script has been **replaced** with pure shell validation (`modules/validation.sh`) as of October 2025. This document is **historical only**.
+>
+> **Current System**:
+> - **Pure shell validation**: `make check-renv` (NO HOST R REQUIRED!)
+> - **Auto-snapshot**: Automatic `renv::snapshot()` on container exit
+> - See [DEVELOPMENT.md](DEVELOPMENT.md) for current validation system
 
-This document tracks improvements to the critical `validate_package_environment.R` script (formerly `validate_package_environment.R`) based on comprehensive code review.
+## Status: HISTORICAL DOCUMENT (Superseded)
+
+This document tracks historical improvements to the `validate_package_environment.R` script which has been replaced by pure shell validation.
 
 ---
 

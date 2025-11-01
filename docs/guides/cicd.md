@@ -335,7 +335,7 @@ docker run --rm -v $(pwd):/project rocker/r-ver:latest \
     key: renv-${{ hashFiles('renv.lock') }}
 ```
 
-**2. Use minimal build mode for CI**
+**2. Use lightweight Docker profile for CI** (e.g., alpine_minimal ~200MB for faster builds)
 
 **3. Split into separate workflows** (test vs. full analysis)
 

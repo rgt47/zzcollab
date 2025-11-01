@@ -1,5 +1,7 @@
 # The Critical Importance of renv in Data Analysis: Preventing Dependency Hell and Reproducibility Failures
 
+> **Current Implementation Note**: ZZCOLLAB implements renv with **auto-snapshot architecture** (automatic renv::snapshot() on container exit) and **dynamic package management** (add packages as needed via renv::install()). Historical references to "build modes" now replaced with Docker profiles + dynamic workflow. See [guides/renv.md](guides/renv.md).
+
 **Document Version:** 1.0
 **Date:** September 30, 2025
 **Scope:** R Package Management, Data Analysis Reproducibility, and Research Collaboration

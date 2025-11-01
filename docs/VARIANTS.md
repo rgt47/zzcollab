@@ -786,8 +786,9 @@ docker history lab/study-analysis:latest
 ### Related Guides
 
 - ZZCOLLAB User Guide: Comprehensive usage documentation
-- Configuration Guide: Advanced configuration options
-- Build Modes Guide: Package management strategies
+- Configuration Guide (CONFIGURATION.md): Advanced configuration options
+- Development Guide (DEVELOPMENT.md): Package management and workflows
+- Package Management Guide (guides/renv.md): Dynamic package management with renv
 
 ### Technical Specifications
 

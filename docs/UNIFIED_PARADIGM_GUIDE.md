@@ -588,7 +588,8 @@ Start with everything in `scripts/`, extract to `R/` when you find reusable patt
 - [Marwick Comparison Analysis](./MARWICK_COMPARISON_ANALYSIS.md) - How zzcollab relates to research compendium literature
 - [CI/CD Guide](./CICD_GUIDE.md) - Advanced GitHub Actions patterns
 - [Configuration Guide](./CONFIGURATION.md) - Multi-level configuration system
-- [Build Modes Guide](./BUILD_MODES.md) - Package management strategies
+- [Development Guide](./DEVELOPMENT.md) - Package management and workflows
+- [Variants Guide](./VARIANTS.md) - Docker profile system (14+ profiles)
 
 **Related Resources**:
 - [rrtools](https://github.com/benmarwick/rrtools) - Marwick's implementation

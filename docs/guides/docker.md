@@ -477,7 +477,7 @@ ls /home/analyst/project
    - Use environment variables instead
 
 7. **Rebuild images occasionally**
-   - When updating zzcollab or changing build modes
+   - When updating zzcollab or changing Docker profiles
 
 8. **Use Docker Desktop dashboard**
    - Visual way to manage containers and images

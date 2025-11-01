@@ -234,10 +234,24 @@ After completing all fixes:
 
 ## FILES COMPLETED
 
+### Phase 0: Documentation
+✅ **modules/profile_validation.sh** - Complete documentation (8 functions, 600+ lines)
+
+### Phase 1: Critical User-Facing Documents
 ✅ **DEVELOPMENT.md** - Complete validation + auto-snapshot update
 ✅ **TESTING_GUIDE.md** - Paradigms → unified research compendium
 ✅ **docs/guides/config.md** - Build mode → Docker profile
-✅ **modules/profile_validation.sh** - Complete documentation (8 functions, 600+ lines)
+✅ **docs/guides/renv.md** - Build modes → dynamic package management + auto-snapshot
+✅ **docs/guides/docker.md** - Build mode → Docker profiles
+✅ **docs/guides/troubleshooting.md** - Build mode → Docker profiles
+✅ **docs/guides/cicd.md** - Minimal build mode → lightweight Docker profile
+
+### Phase 2: Technical Documentation
+✅ **docs/VARIANTS.md** - Removed Build Modes Guide reference
+✅ **docs/README.md** - Paradigms → unified research compendium, build modes → Docker profiles
+
+### Tracking
+✅ **docs/DOCUMENTATION_FIXES_2025.md** - This file!
 
 ## NEXT ACTIONS
 

@@ -183,8 +183,14 @@ Installation of package 'X' had non-zero exit status
 **Solution**:
 ```r
 # Some packages need system libraries
-# Example: sf package needs gdal, geos
-# Contact zzcollab maintainer or use different build mode
+# Example: sf package needs GDAL, GEOS, PROJ
+
+# Option 1: Use specialized Docker profile
+# zzcollab --profile-name geospatial  # For sf, terra, raster
+
+# Option 2: Ask team lead to add system libraries to Docker image
+
+# Option 3: Use alternative package without system dependencies
 ```
 
 ### Cause: CRAN server down

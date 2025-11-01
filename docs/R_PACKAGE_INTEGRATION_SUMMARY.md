@@ -1,5 +1,7 @@
 # R Package Integration Summary
 
+> **Historical Note**: This document describes the R package integration process. References to "build modes" are historical - the current framework uses **Docker profiles** (14+ environments) with **dynamic package management** via renv. See [Development Guide](DEVELOPMENT.md) and [Variants Guide](VARIANTS.md) for current features.
+
 ## Overview
 
 Successfully integrated zzcollab as a fully functional R package with comprehensive functions that interface with the bash command-line tools. The R package provides integration for zzcollab functionality directly from R.

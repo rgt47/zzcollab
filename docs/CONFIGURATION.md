@@ -23,6 +23,63 @@ ZZCOLLAB configuration spans three distinct domains:
 - **Package Management**: Dynamic via `renv::install()` inside containers
 - **Development Settings**: Team collaboration preferences and automation options
 
+## CLI Flag Reference
+
+ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All long flags have short equivalents.
+
+### Complete Short Flag Table
+
+| Short | Long Flag          | Purpose                           | Example                          |
+|-------|--------------------|-----------------------------------|----------------------------------|
+| `-a`  | `--tag`            | Docker image tag                  | `zzcollab -a v2.1`               |
+| `-b`  | `--base-image`     | Custom Docker base                | `zzcollab -b rocker/r-ver`       |
+| `-c`  | `--config`         | Configuration management          | `zzcollab -c init`               |
+| `-d`  | `--dotfiles`       | Copy dotfiles (with dots)         | `zzcollab -d ~/dotfiles`         |
+| `-D`  | `--dotfiles-nodot` | Copy dotfiles (no dots)           | `zzcollab -D ~/dotfiles`         |
+| `-f`  | `--dockerfile`     | Custom Dockerfile path            | `zzcollab -f custom.df`          |
+| `-g`  | `--github-account` | GitHub account name               | `zzcollab -g myaccount`          |
+| `-G`  | `--github`         | Create GitHub repo                | `zzcollab -G`                    |
+| `-h`  | `--help`           | Show help                         | `zzcollab -h`                    |
+| `-k`  | `--pkgs`           | Package bundle                    | `zzcollab -k tidyverse`          |
+| `-l`  | `--libs`           | Library bundle                    | `zzcollab -l geospatial`         |
+| `-n`  | `--no-docker`      | Skip Docker build                 | `zzcollab -n`                    |
+| `-p`  | `--project-name`   | Project name                      | `zzcollab -p study`              |
+| `-P`  | `--prepare-dockerfile` | Prepare without build         | `zzcollab -P`                    |
+| `-q`  | `--quiet`          | Quiet mode (errors only)          | `zzcollab -q`                    |
+| `-r`  | `--profile-name`   | Docker profile selection          | `zzcollab -r analysis`           |
+| `-t`  | `--team`           | Team name                         | `zzcollab -t mylab`              |
+| `-u`  | `--use-team-image` | Pull team Docker image            | `zzcollab -u`                    |
+| `-v`  | `--verbose`        | Verbose output                    | `zzcollab -v`                    |
+| `-vv` | `--debug`          | Debug output + log file           | `zzcollab -vv`                   |
+| `-w`  | `--log-file`       | Enable log file                   | `zzcollab -w`                    |
+| `-y`  | `--yes`            | Skip confirmations                | `zzcollab -y`                    |
+
+### Short Flag Philosophy
+
+**Lowercase by default**: Standard flags use lowercase letters (`-p`, `-t`, `-d`)
+**Uppercase for variants**: Uppercase indicates semantic variants (`-D` for dotfiles without dots vs `-d` with dots)
+
+### Usage Examples
+
+**Verbose form**:
+```bash
+zzcollab --team mylab --project-name study --profile-name analysis --dotfiles ~/dotfiles
+```
+
+**Concise form** (equivalent):
+```bash
+zzcollab -t mylab -p study -r analysis -d ~/dotfiles
+```
+
+**Custom composition**:
+```bash
+# Verbose
+zzcollab --base-image rocker/verse --libs publishing --pkgs tidyverse
+
+# Concise
+zzcollab -b rocker/verse -l publishing -k tidyverse
+```
+
 ## Configuration Hierarchy
 
 ### Six-Level Precedence

@@ -290,7 +290,7 @@ docker build .
 
 ## Related Documentation
 
-- **Build Modes**: [Build Modes Guide](BUILD_MODES.md)
 - **Development Commands**: [Development Guide](DEVELOPMENT.md)
-- **Docker Profiles**: [Variants Guide](VARIANTS.md)
+- **Docker Profiles**: [Variants Guide](VARIANTS.md) - 14+ specialized environments
+- **Package Management**: [Package Management Guide](guides/renv.md) - Dynamic renv workflow
 - **Configuration**: [Configuration Guide](CONFIGURATION.md)

@@ -1,5 +1,7 @@
 # The Synergy of Docker and renv: Achieving Complete Computational Reproducibility
 
+> **Current Implementation Note**: This document describes Docker + renv synergy principles. The current ZZCOLLAB framework implements these principles through **14+ Docker profiles** (instead of build modes) with **dynamic package management** and **auto-snapshot architecture**. See [Development Guide](DEVELOPMENT.md) for current workflow.
+
 **Document Version:** 1.0
 **Date:** September 30, 2025
 **Scope:** Layered Environment Management, R Data Science Reproducibility, and Multi-Level Dependency Control

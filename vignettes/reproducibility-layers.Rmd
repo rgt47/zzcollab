@@ -177,8 +177,11 @@ renv::install("ggplot2")
 library(dplyr)
 library(ggplot2)
 
-# Save dependency state
+# Save dependency state (manual or automatic)
 renv::snapshot()  # Updates renv.lock
+
+# Note: In ZZCOLLAB Docker containers, snapshot happens automatically on exit!
+# See Level 3 for auto-snapshot workflow
 
 # Collaborator restores exact versions
 renv::restore()   # Installs from renv.lock
@@ -200,7 +203,7 @@ renv::restore()   # Installs from renv.lock
   (~100-500MB typical)
 - **Initial setup time**: First `renv::restore()` downloads all packages
 - **Snapshot discipline**: Must remember `renv::snapshot()` after package
-  changes
+  changes (automated in ZZCOLLAB Docker containers - see Level 3)
 - **R version dependency**: Still depends on user's R version
 - **System library dependency**: Still depends on system libraries
   (gdal, geos, etc.)
@@ -240,7 +243,9 @@ renv::snapshot()
 # Day 30: Add new analysis
 renv::install("lme4")
 # ... write code ...
-renv::snapshot()  # Don't forget!
+renv::snapshot()  # Remember to snapshot!
+
+# Note: With ZZCOLLAB Docker (Level 3), snapshot happens automatically on container exit!
 
 # Year 2: Collaborator joins
 git clone project
@@ -293,11 +298,15 @@ make docker-zsh
 R
 > renv::install("tidyverse")
 > # ... work normally ...
-> renv::snapshot()
 > quit()
 
-# Exit container
+# Exit container - AUTO-SNAPSHOT HAPPENS AUTOMATICALLY!
 exit
+
+# ✨ NEW: Auto-snapshot architecture (October 2025)
+# - renv::snapshot() runs automatically on container exit
+# - No manual snapshot command required!
+# - renv.lock automatically updated and validated (pure shell)
 
 # Collaborator gets identical environment
 git clone project
@@ -953,7 +962,8 @@ my-project/
 │   └── workflows/
 │       ├── r-package.yml           # R package validation
 │       └── render-paper.yml        # Manuscript rendering
-├── validate_package_environment.R  # Dependency validation
+├── modules/
+│   └── validation.sh               # Pure shell dependency validation (NO R REQUIRED!)
 ├── tests/
 │   └── testthat/
 │       └── test-analysis.R         # Automated tests
@@ -979,10 +989,10 @@ zzcollab --profile-name analysis -d ~/dotfiles --create-github-repo
 # Develop locally
 make docker-zsh
 # ... work in container ...
-exit
+exit  # Auto-snapshot runs on exit!
 
-# Validate before committing
-Rscript validate_package_environment.R --quiet --fail-on-issues
+# Validate before committing (pure shell - NO R REQUIRED!)
+make check-renv  # Pure shell validation (grep, awk, jq)
 make docker-test
 
 # Commit and push
@@ -992,7 +1002,7 @@ git push
 
 # GitHub Actions automatically:
 # 1. Builds Docker container from scratch
-# 2. Validates package dependencies
+# 2. Validates package dependencies (pure shell validation)
 # 3. Runs R CMD check
 # 4. Executes test suite
 # 5. Renders manuscripts
@@ -1056,7 +1066,7 @@ ZZCOLLAB creates two standard workflows:
 ```yaml
 # Runs on: every push, every pull request
 # Validates:
-#   - Package dependencies synchronized (validate_package_environment.R)
+#   - Package dependencies synchronized (pure shell validation via make check-renv)
 #   - R CMD check passes
 #   - Test suite passes
 #   - Project structure valid
@@ -1084,10 +1094,10 @@ zzcollab -t mylab -p paper2024 --profile-name analysis -d ~/dotfiles --create-gi
 make docker-zsh
 # ... develop code ...
 # ... write tests in tests/testthat/ ...
-exit
+exit  # Auto-snapshot runs automatically!
 
-# Validate locally first
-Rscript validate_package_environment.R --quiet
+# Validate locally first (pure shell - NO R REQUIRED!)
+make check-renv  # Pure shell validation (grep, awk, jq)
 make docker-test
 
 # Commit and push
@@ -1097,7 +1107,7 @@ git push
 
 # GitHub Actions runs automatically:
 # - Builds Docker container
-# - Validates dependencies
+# - Validates dependencies (pure shell validation)
 # - Runs all tests
 # - Success: green checkmark on commit
 # - Failure: email notification with logs
@@ -1123,8 +1133,8 @@ test_that("prepare_data removes missing values", {
 
 **Validate dependencies before committing**:
 ```bash
-# Check that all packages used in code are declared
-Rscript validate_package_environment.R --quiet --fail-on-issues
+# Check that all packages used in code are declared (pure shell - NO R REQUIRED!)
+make check-renv  # Pure shell validation (grep, awk, jq)
 
 # This prevents CI failures due to missing packages
 ```
@@ -1425,8 +1435,8 @@ jobs:
     container: rocker/tidyverse:latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate dependencies
-        run: Rscript validate_package_environment.R --quiet --fail-on-issues
+      - name: Validate dependencies (pure shell - NO R REQUIRED!)
+        run: make check-renv  # Pure shell validation (grep, awk, jq)
 ```
 
 # Common Pitfalls
