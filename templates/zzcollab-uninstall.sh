@@ -166,7 +166,7 @@ remove_files() {
     standard_files="$standard_files Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .zshrc_docker"
 
     # Configuration and documentation
-    standard_files="$standard_files ZZCOLLAB_USER_GUIDE.md zzcollab.yaml config.yaml .Rbuildignore"
+    standard_files="$standard_files zzcollab.yaml config.yaml .Rbuildignore"
 
     # Validation and development scripts
     standard_files="$standard_files check_rprofile_options.R dev.sh dev_workflow.R"
@@ -260,7 +260,7 @@ should_remove_file() {
     
     # Always confirm removal of certain important files
     case "$file" in
-        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile*|docker-compose.yml|ZZCOLLAB_USER_GUIDE.md|.Rprofile|renv.lock|*.yaml)
+        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile*|docker-compose.yml|.Rprofile|renv.lock|*.yaml)
             confirm "Remove $file (may contain custom changes)?"
             return $?
             ;;
@@ -583,7 +583,6 @@ main() {
             echo ".zshrc_docker"
 
             # Configuration and documentation
-            echo "ZZCOLLAB_USER_GUIDE.md"
             echo "zzcollab.yaml"
             echo "config.yaml"
             echo ".Rbuildignore"

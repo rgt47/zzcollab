@@ -758,11 +758,19 @@ create_docker_files() {
         return 1
     fi
 
-    # Create comprehensive user guide
+    # Create comprehensive user guide in docs/ with symlink in root
     # Contains: detailed usage instructions, troubleshooting, best practices
-    if ! install_template "ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide" "Created comprehensive user guide"; then
+    if ! install_template "ZZCOLLAB_USER_GUIDE.md" "docs/ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide" "Created comprehensive user guide in docs/"; then
         log_error "Failed to create user guide"
         return 1
+    fi
+
+    # Create symlink in root for convenience
+    if ln -sf "docs/ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md"; then
+        track_symlink "ZZCOLLAB_USER_GUIDE.md"
+        log_debug "Created symlink to user guide in root"
+    else
+        log_warn "Failed to create user guide symlink (non-fatal)"
     fi
     
     log_success "Docker configuration files created successfully"
