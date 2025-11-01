@@ -28,71 +28,132 @@ require_module "core" "profile_validation"
 # DESCRIPTION:
 #   Maps profile names to their default specifications
 ##############################################################################
+##############################################################################
+# FUNCTION: validate_bundle_exists
+# PURPOSE:  Validate that a bundle name exists in bundles.yaml
+# USAGE:    validate_bundle_exists "library_bundles" "geospatial"
+# RETURNS:  0 if bundle exists, 1 if not found or validation unavailable
+##############################################################################
+validate_bundle_exists() {
+    local bundle_type="$1"  # "library_bundles" or "package_bundles"
+    local bundle_name="$2"
+
+    # Check if bundles.yaml exists
+    if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
+        log_warn "bundles.yaml not found - skipping bundle validation"
+        return 0  # Non-fatal, validation is best-effort
+    fi
+
+    # Check if yq is available for YAML parsing
+    if command -v yq >/dev/null 2>&1; then
+        # Use yq to check if bundle exists
+        local bundle_check
+        bundle_check=$(yq eval ".${bundle_type}.${bundle_name}" "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null)
+
+        if [[ "$bundle_check" == "null" ]] || [[ -z "$bundle_check" ]]; then
+            log_debug "Bundle not found: ${bundle_type}.${bundle_name}"
+            return 1  # Bundle doesn't exist
+        fi
+
+        log_debug "✓ Validated bundle exists: ${bundle_type}.${bundle_name}"
+        return 0  # Bundle exists
+    else
+        # yq not available - use grep as fallback (less reliable)
+        if grep -q "^  ${bundle_name}:" "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null; then
+            log_debug "✓ Bundle found (grep fallback): ${bundle_name}"
+            return 0
+        else
+            log_debug "Bundle not found (grep fallback): ${bundle_name}"
+            return 1
+        fi
+    fi
+}
+
 get_profile_defaults() {
     local profile="$1"
 
+    local defaults=""
     case "$profile" in
         # Ubuntu Standard profiles
         ubuntu_standard_minimal)
-            echo "rocker/r-ver:standard:minimal"
+            defaults="rocker/r-ver:standard:minimal"
             ;;
         ubuntu_standard_analysis)
-            echo "rocker/tidyverse:standard:analysis"
+            defaults="rocker/tidyverse:standard:analysis"
             ;;
         ubuntu_standard_publishing)
-            echo "rocker/verse:standard:publishing"
+            defaults="rocker/verse:standard:publishing"
             ;;
         # Ubuntu Shiny profiles
         ubuntu_shiny_minimal)
-            echo "rocker/shiny:shiny:minimal"
+            defaults="rocker/shiny:shiny:minimal"
             ;;
         ubuntu_shiny_analysis)
-            echo "rocker/shiny-verse:shiny:analysis"
+            defaults="rocker/shiny-verse:shiny:analysis"
             ;;
         # Ubuntu X11 profiles
         ubuntu_x11_minimal)
-            echo "rocker/r-ver:x11:minimal"
+            defaults="rocker/r-ver:x11:minimal"
             ;;
         ubuntu_x11_analysis)
-            echo "rocker/tidyverse:x11:analysis"
+            defaults="rocker/tidyverse:x11:analysis"
             ;;
         # Alpine Standard profiles
         alpine_standard_minimal)
-            echo "rhub/r-minimal:alpine_standard:minimal"
+            defaults="rhub/r-minimal:alpine_standard:minimal"
             ;;
         alpine_standard_analysis)
-            echo "rhub/r-minimal:alpine_standard:analysis"
+            defaults="rhub/r-minimal:alpine_standard:analysis"
             ;;
         # Alpine X11 profiles
         alpine_x11_minimal)
-            echo "rhub/r-minimal:alpine_x11:minimal"
+            defaults="rhub/r-minimal:alpine_x11:minimal"
             ;;
         alpine_x11_analysis)
-            echo "rhub/r-minimal:alpine_x11:analysis"
+            defaults="rhub/r-minimal:alpine_x11:analysis"
             ;;
         # Legacy profile names (for backward compatibility)
         minimal)
-            echo "rocker/r-ver:standard:minimal"
+            defaults="rocker/r-ver:standard:minimal"
             ;;
         analysis)
-            echo "rocker/tidyverse:standard:analysis"
+            defaults="rocker/tidyverse:standard:analysis"
             ;;
         publishing)
-            echo "rocker/verse:standard:publishing"
+            defaults="rocker/verse:standard:publishing"
             ;;
         shiny)
-            echo "rocker/shiny:shiny:minimal"
+            defaults="rocker/shiny:shiny:minimal"
             ;;
         alpine_minimal)
-            echo "rhub/r-minimal:alpine_standard:minimal"
+            defaults="rhub/r-minimal:alpine_standard:minimal"
             ;;
         alpine_analysis)
-            echo "rhub/r-minimal:alpine_standard:analysis"
+            defaults="rhub/r-minimal:alpine_standard:analysis"
             ;;
         *)
-            echo ""
+            log_error "Unknown profile: $profile"
+            return 1
             ;;
     esac
+
+    # Validate that libs and pkgs bundles exist in bundles.yaml
+    IFS=':' read -r base libs pkgs <<< "$defaults"
+
+    if ! validate_bundle_exists "library_bundles" "$libs"; then
+        log_error "Profile $profile references non-existent library bundle: $libs"
+        log_error "Check templates/bundles.yaml for available library bundles"
+        return 1
+    fi
+
+    if ! validate_bundle_exists "package_bundles" "$pkgs"; then
+        log_error "Profile $profile references non-existent package bundle: $pkgs"
+        log_error "Check templates/bundles.yaml for available package bundles"
+        return 1
+    fi
+
+    echo "$defaults"
+    return 0
 }
 
 ##############################################################################

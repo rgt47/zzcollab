@@ -120,18 +120,40 @@ parse_description_imports() {
     fi
 
     awk '
+        BEGIN { in_imports = 0; imports = "" }
+
+        # Start of Imports field
         /^Imports:/ {
+            in_imports = 1
             imports = $0
-            # Continue reading continuation lines (start with whitespace)
-            while (getline > 0 && /^[[:space:]]/) {
-                imports = imports $0
+            next
+        }
+
+        # Continuation lines (start with whitespace) while in Imports field
+        in_imports && /^[[:space:]]/ {
+            # Add space before appending to avoid concatenation issues
+            imports = imports " " $0
+            next
+        }
+
+        # Stop when we hit a new field (line that does not start with whitespace)
+        in_imports && /^[A-Z]/ {
+            in_imports = 0
+        }
+
+        # Process and output when done
+        END {
+            if (imports) {
+                # Remove "Imports:" prefix
+                gsub(/^Imports:[[:space:]]*/, "", imports)
+                # Remove version constraints (handles multi-line constraints)
+                gsub(/\([^)]*\)/, "", imports)
+                # Normalize whitespace
+                gsub(/[[:space:]]+/, " ", imports)
+                # Split on commas
+                gsub(/,/, "\n", imports)
+                print imports
             }
-            # Clean up the imports field
-            gsub(/Imports:[[:space:]]*/, "", imports)
-            gsub(/\([^)]*\)/, "", imports)  # Remove version constraints
-            gsub(/,/, "\n", imports)
-            print imports
-            exit
         }
     ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
 }
@@ -143,16 +165,36 @@ parse_description_suggests() {
     fi
 
     awk '
+        BEGIN { in_suggests = 0; suggests = "" }
+
+        # Start of Suggests field
         /^Suggests:/ {
+            in_suggests = 1
             suggests = $0
-            while (getline > 0 && /^[[:space:]]/) {
-                suggests = suggests $0
+            next
+        }
+
+        # Continuation lines (start with whitespace) while in Suggests field
+        in_suggests && /^[[:space:]]/ {
+            # Add space before appending to avoid concatenation issues
+            suggests = suggests " " $0
+            next
+        }
+
+        # Stop when we hit a new field
+        in_suggests && /^[A-Z]/ {
+            in_suggests = 0
+        }
+
+        # Process and output when done
+        END {
+            if (suggests) {
+                gsub(/^Suggests:[[:space:]]*/, "", suggests)
+                gsub(/\([^)]*\)/, "", suggests)
+                gsub(/[[:space:]]+/, " ", suggests)
+                gsub(/,/, "\n", suggests)
+                print suggests
             }
-            gsub(/Suggests:[[:space:]]*/, "", suggests)
-            gsub(/\([^)]*\)/, "", suggests)
-            gsub(/,/, "\n", suggests)
-            print suggests
-            exit
         }
     ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
 }
