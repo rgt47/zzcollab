@@ -37,8 +37,27 @@ FILE_EXTENSIONS=("R" "Rmd" "qmd" "Rnw")
 # PACKAGE EXTRACTION (PURE SHELL)
 #==============================================================================
 
-# Extract package names from R code using grep/sed
-# Handles: library(), require(), package::function(), @importFrom
+#-----------------------------------------------------------------------------
+# FUNCTION: extract_code_packages
+# PURPOSE:  Extract R package names from source code using pure shell tools
+# DESCRIPTION:
+#   Scans R source files for package references and extracts package names
+#   using grep/sed. Handles library(), require(), namespace calls (pkg::fn),
+#   and roxygen2 imports (@import, @importFrom).
+# ARGS:
+#   $@ - Directory paths to scan for R files
+# RETURNS:
+#   0 - Always succeeds
+# OUTPUTS:
+#   Package names to stdout, one per line (may contain duplicates)
+# GLOBALS READ:
+#   FILE_EXTENSIONS - Array of file extensions to search (.R, .Rmd, etc.)
+# NOTES:
+#   - Pure shell implementation (no R required on host)
+#   - Extracts from: library(), require(), pkg::fn, @importFrom, @import
+#   - Returns raw list with possible duplicates (use clean_packages() after)
+#   - Requires closing parenthesis to avoid incomplete calls
+#-----------------------------------------------------------------------------
 extract_code_packages() {
     local dirs=("$@")
     local packages=()
@@ -77,7 +96,39 @@ extract_code_packages() {
     done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) 2>/dev/null")
 }
 
-# Clean and deduplicate package list
+#-----------------------------------------------------------------------------
+# FUNCTION: clean_packages
+# PURPOSE:  Clean, validate, and deduplicate extracted package names
+# DESCRIPTION:
+#   Takes a raw list of package names (possibly with duplicates, invalid names)
+#   and returns a cleaned, deduplicated, sorted list of valid R package names.
+#   Filters out base R packages that don't need declaration, validates package
+#   name format according to R package naming rules, and removes duplicates.
+# ARGS:
+#   $@ - Raw package names (one per argument, may include duplicates/invalid)
+# RETURNS:
+#   0 - Always succeeds
+# OUTPUTS:
+#   Cleaned package names to stdout, one per line, sorted alphabetically
+# GLOBALS READ:
+#   BASE_PACKAGES - Array of base R packages to exclude
+# VALIDATION RULES:
+#   - Minimum 2 characters (R package requirement)
+#   - Must start with a letter (a-zA-Z)
+#   - Can contain letters, numbers, and dots only
+#   - Cannot start or end with a dot
+#   - CRAN doesn't allow underscores, but BioConductor does (we allow them)
+# FILTERS APPLIED:
+#   1. Remove empty strings and names < 2 characters
+#   2. Remove base R packages (base, utils, stats, etc.)
+#   3. Validate format: ^[a-zA-Z][a-zA-Z0-9.]*$
+#   4. Remove names starting or ending with dots
+#   5. Sort and deduplicate
+# EXAMPLE:
+#   packages=(dplyr ggplot2 dplyr base "" "a" ".invalid" "valid.pkg")
+#   clean_packages "${packages[@]}"
+#   # Output: ggplot2, valid.pkg, dplyr (sorted, base and invalid removed)
+#-----------------------------------------------------------------------------
 clean_packages() {
     local packages=("$@")
     local cleaned=()
@@ -114,7 +165,49 @@ clean_packages() {
 # DESCRIPTION FILE PARSING (PURE SHELL)
 #==============================================================================
 
-# Parse Imports field from DESCRIPTION using awk
+#-----------------------------------------------------------------------------
+# FUNCTION: parse_description_imports
+# PURPOSE:  Extract package names from DESCRIPTION Imports field
+# DESCRIPTION:
+#   Parses the Imports field from an R package DESCRIPTION file using pure
+#   awk, extracting package names while removing version constraints and
+#   handling multi-line continuation. Returns clean package names suitable
+#   for validation against code usage.
+# ARGS:
+#   None (operates on ./DESCRIPTION in current directory)
+# RETURNS:
+#   0 - Success (even if DESCRIPTION doesn't exist or has no Imports)
+# OUTPUTS:
+#   Package names to stdout, one per line, sorted and deduplicated
+# FILES READ:
+#   ./DESCRIPTION - R package metadata file
+# AWK PROCESSING:
+#   1. Identifies "Imports:" field start
+#   2. Collects continuation lines (start with whitespace)
+#   3. Stops at next field (line starting with capital letter)
+#   4. Removes "Imports:" prefix
+#   5. Removes version constraints: (>= x.y.z) or any (...)
+#   6. Normalizes whitespace
+#   7. Splits on commas
+# VERSION CONSTRAINT HANDLING:
+#   Removes all parenthetical expressions:
+#   - "pkg (>= 1.0.0)" → "pkg"
+#   - "pkg (>= 1.0.0),\n    pkg2 (< 2.0)" → "pkg", "pkg2"
+# MULTI-LINE HANDLING:
+#   DCF (Debian Control File) format allows continuation:
+#   Imports: pkg1,
+#       pkg2,
+#       pkg3
+#   All collected and processed together.
+# EXAMPLE:
+#   DESCRIPTION contains:
+#     Imports:
+#         dplyr (>= 1.0.0),
+#         ggplot2
+#   Output:
+#     dplyr
+#     ggplot2
+#-----------------------------------------------------------------------------
 parse_description_imports() {
     if [[ ! -f "DESCRIPTION" ]]; then
         return 0
@@ -159,7 +252,38 @@ parse_description_imports() {
     ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
 }
 
-# Parse Suggests field from DESCRIPTION
+#-----------------------------------------------------------------------------
+# FUNCTION: parse_description_suggests
+# PURPOSE:  Extract package names from DESCRIPTION Suggests field
+# DESCRIPTION:
+#   Parses the Suggests field from an R package DESCRIPTION file using pure
+#   awk. Similar to parse_description_imports() but targets Suggests field.
+#   Suggests packages are optional dependencies (testing, vignettes, examples).
+# ARGS:
+#   None (operates on ./DESCRIPTION in current directory)
+# RETURNS:
+#   0 - Success (even if DESCRIPTION doesn't exist or has no Suggests)
+# OUTPUTS:
+#   Package names to stdout, one per line, sorted and deduplicated
+# FILES READ:
+#   ./DESCRIPTION - R package metadata file
+# SUGGESTS VS IMPORTS:
+#   - Imports: Required dependencies, always installed
+#   - Suggests: Optional dependencies, used for testing/vignettes/examples
+#   - This function extracts Suggests to allow optional validation
+# AWK PROCESSING:
+#   Same as parse_description_imports() but for "Suggests:" field
+# EXAMPLE:
+#   DESCRIPTION contains:
+#     Suggests:
+#         testthat (>= 3.0.0),
+#         knitr,
+#         rmarkdown
+#   Output:
+#     knitr
+#     rmarkdown
+#     testthat
+#-----------------------------------------------------------------------------
 parse_description_suggests() {
     if [[ ! -f "DESCRIPTION" ]]; then
         return 0
@@ -204,7 +328,50 @@ parse_description_suggests() {
 # RENV.LOCK PARSING (USING JQ)
 #==============================================================================
 
-# Parse package names from renv.lock using jq
+#-----------------------------------------------------------------------------
+# FUNCTION: parse_renv_lock
+# PURPOSE:  Extract package names from renv.lock file using jq
+# DESCRIPTION:
+#   Parses the renv.lock JSON file to extract all installed package names.
+#   This provides the source of truth for what packages are actually locked
+#   in the reproducible environment. Requires jq for JSON parsing.
+# ARGS:
+#   None (operates on ./renv.lock in current directory)
+# RETURNS:
+#   0 - Success (even if renv.lock doesn't exist or jq not available)
+# OUTPUTS:
+#   Package names to stdout, one per line, sorted and deduplicated
+# FILES READ:
+#   ./renv.lock - renv package lockfile (JSON format)
+# DEPENDENCIES:
+#   jq - Command-line JSON processor
+#   - macOS: brew install jq
+#   - Linux: apt-get install jq
+#   - If jq not found, logs warning and returns gracefully
+# RENV.LOCK STRUCTURE:
+#   {
+#     "R": {...},
+#     "Packages": {
+#       "packageA": {...},
+#       "packageB": {...}
+#     }
+#   }
+#   This function extracts keys from the "Packages" object.
+# ERROR HANDLING:
+#   - Missing renv.lock: Returns success (empty output)
+#   - Missing jq: Logs warning with installation instructions, returns success
+#   - Invalid JSON: jq error silently caught (returns empty)
+# WHY JQ INSTEAD OF SHELL:
+#   - renv.lock is complex nested JSON
+#   - Shell JSON parsing is fragile and error-prone
+#   - jq is standard tool (available on all major platforms)
+# EXAMPLE:
+#   renv.lock contains:
+#     {"Packages": {"dplyr": {...}, "ggplot2": {...}}}
+#   Output:
+#     dplyr
+#     ggplot2
+#-----------------------------------------------------------------------------
 parse_renv_lock() {
     if [[ ! -f "renv.lock" ]]; then
         return 0
@@ -227,7 +394,52 @@ parse_renv_lock() {
 # VALIDATION LOGIC
 #==============================================================================
 
-# Main validation function
+#-----------------------------------------------------------------------------
+# FUNCTION: validate_package_environment
+# PURPOSE:  Main validation logic for R package environment consistency
+# DESCRIPTION:
+#   Validates that all R packages used in source code are properly declared
+#   in DESCRIPTION Imports field and locked in renv.lock for reproducibility.
+#   This is the core validation function that orchestrates package extraction,
+#   parsing, and comparison. Runs entirely on host without requiring R.
+# ARGS:
+#   $1 - strict_mode: "true" to scan all directories (tests/, vignettes/),
+#                     "false" (default) to scan only standard dirs (R/, scripts/)
+#   $2 - auto_fix: "true" to attempt automatic fixes (NOT YET IMPLEMENTED),
+#                  "false" (default) to only report issues
+# RETURNS:
+#   0 - All packages properly declared (validation passed)
+#   1 - Missing packages found (validation failed)
+# OUTPUTS:
+#   Progress messages and validation results to stdout
+#   Error messages for missing packages
+# GLOBALS READ:
+#   STANDARD_DIRS - Array of standard directories to scan (R/, scripts/, analysis/)
+#   STRICT_DIRS - Array of all directories in strict mode (adds tests/, vignettes/, inst/)
+# VALIDATION WORKFLOW:
+#   1. Extract packages from source code (library, require, ::, @import)
+#   2. Clean and validate extracted package names
+#   3. Parse DESCRIPTION Imports field
+#   4. Parse renv.lock (optional, for informational purposes)
+#   5. Compare code packages vs DESCRIPTION
+#   6. Report any packages used in code but not declared in DESCRIPTION
+# STRICT MODE:
+#   Standard mode: Scans R/, scripts/, analysis/ only
+#   Strict mode: Also scans tests/, vignettes/, inst/
+#   Rationale: Tests and vignettes can use Suggests packages, which may not
+#              be in Imports. Strict mode helps catch undeclared Suggests.
+# AUTO-FIX (NOT YET IMPLEMENTED):
+#   Would add missing packages to DESCRIPTION automatically
+#   Currently logs message directing user to manual fix or R script
+# REPRODUCIBILITY SIGNIFICANCE:
+#   This validation ensures that anyone cloning the project can:
+#   1. Install dependencies from DESCRIPTION
+#   2. Restore exact versions from renv.lock
+#   3. Run all code without "package not found" errors
+# EXAMPLE USAGE:
+#   validate_package_environment "false" "false"  # Standard validation
+#   validate_package_environment "true" "false"   # Strict validation
+#-----------------------------------------------------------------------------
 validate_package_environment() {
     local strict_mode="${1:-false}"
     local auto_fix="${2:-false}"
@@ -287,7 +499,37 @@ validate_package_environment() {
     return 0
 }
 
-# Validate and provide actionable feedback
+#-----------------------------------------------------------------------------
+# FUNCTION: validate_and_report
+# PURPOSE:  User-friendly wrapper around validate_package_environment
+# DESCRIPTION:
+#   Convenience function that calls validate_package_environment() and
+#   provides actionable feedback on how to fix issues. Formats output
+#   for end-user consumption with clear success/failure messages and
+#   instructions for resolving validation failures.
+# ARGS:
+#   $1 - strict_mode: "true" or "false" (default), passed to validation
+# RETURNS:
+#   0 - Validation passed
+#   1 - Validation failed (packages missing from DESCRIPTION)
+# OUTPUTS:
+#   Success message if validation passes
+#   Error message plus fix instructions if validation fails
+# FIX INSTRUCTIONS PROVIDED:
+#   1. Manual addition to DESCRIPTION Imports field
+#   2. Run R validation script with --fix flag
+#   3. Install packages inside container (auto-snapshot on exit)
+# USER EXPERIENCE FOCUS:
+#   This function prioritizes clear, actionable guidance over technical details
+#   Goal: Make it easy for researchers to fix validation issues themselves
+# EXAMPLE OUTPUT ON FAILURE:
+#   Package environment validation failed
+#
+#   To fix missing packages, you can:
+#     1. Add them manually to DESCRIPTION Imports field
+#     2. Run: Rscript validate_package_environment.R --fix
+#     3. Inside container: renv::install() then exit (auto-snapshot)
+#-----------------------------------------------------------------------------
 validate_and_report() {
     local strict_mode="${1:-false}"
 
@@ -310,7 +552,49 @@ validate_and_report() {
 # COMMAND LINE INTERFACE
 #==============================================================================
 
-# Main entry point when run as script
+#-----------------------------------------------------------------------------
+# FUNCTION: main
+# PURPOSE:  Command-line entry point for validation module
+# DESCRIPTION:
+#   Provides CLI interface to the validation system. Parses command-line
+#   arguments, displays help, and invokes validate_and_report() with
+#   appropriate settings. Only runs when module is executed directly
+#   (not when sourced by other scripts).
+# ARGS:
+#   --strict : Enable strict mode (scan tests/, vignettes/, inst/)
+#   --help|-h : Display usage information and exit
+# RETURNS:
+#   0 - Validation passed
+#   1 - Validation failed or invalid arguments
+#   (exits script, does not return to caller)
+# USAGE:
+#   ./modules/validation.sh              # Standard validation
+#   ./modules/validation.sh --strict     # Strict validation
+#   ./modules/validation.sh --help       # Show help
+# EXECUTION GUARD:
+#   Only runs if ${BASH_SOURCE[0]} == ${0}
+#   This allows module to be:
+#   - Executed directly: Runs main()
+#   - Sourced by other scripts: Provides functions only
+# CLI DESIGN:
+#   - Simple, focused interface (validation-specific)
+#   - Clear help text with examples
+#   - Minimal dependencies (just bash, grep, sed, awk, jq)
+# HOST REQUIREMENTS:
+#   - Standard Unix tools: bash, grep, sed, awk, find
+#   - jq: For renv.lock parsing (optional, warns if missing)
+#   - No R installation required on host!
+# INTEGRATION:
+#   This script is called by:
+#   - Makefile targets (make check-renv, make check-renv-strict)
+#   - Docker exit hooks (auto-validation after container exit)
+#   - Manual validation by developers
+# WHY HOST-BASED VALIDATION:
+#   Running on host (not in Docker) enables:
+#   - Fast validation without container startup
+#   - Pre-commit hooks and CI/CD integration
+#   - Validation before Docker build (catch issues early)
+#-----------------------------------------------------------------------------
 main() {
     local strict_mode=false
 
