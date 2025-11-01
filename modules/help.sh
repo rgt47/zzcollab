@@ -125,12 +125,12 @@ show_help_and_cleanup_info() {
    - Check .github/workflows/ for CI/CD documentation
 
 🆘 GETTING HELP:
-   make help                 # See all available commands
-   ./zzcollab-uninstall.sh  # Remove created files if needed
-   
+   make help                    # See all available commands
+   ./.zzcollab/uninstall.sh    # Remove created files if needed
+
 🧹 UNINSTALL:
-   All created files are tracked in .zzcollab_manifest.json
-   Run './zzcollab-uninstall.sh' to remove everything cleanly
+   All created files are tracked in .zzcollab/manifest.json
+   Run './.zzcollab/uninstall.sh' to remove everything cleanly
 
 Happy researching! 🎉
 EOF

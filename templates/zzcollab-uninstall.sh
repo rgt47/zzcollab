@@ -9,7 +9,7 @@
 #          - Handles Docker image cleanup
 #          - Preserves user-created content
 #
-# USAGE:   ./zzcollab-uninstall.sh [OPTIONS]
+# USAGE:   ./.zzcollab/uninstall.sh [OPTIONS]
 #
 # AUTHOR:  Companion to zzcollab.sh
 ##############################################################################
@@ -203,7 +203,7 @@ remove_files() {
     standard_files="$standard_files vignettes/getting-started.Rmd vignettes/advanced-usage.Rmd vignettes/README.md"
     standard_files="$standard_files inst/examples/README.md pkgdown/README.md data-raw/README.md man/README.md"
 
-    # NOTE: zzcollab-uninstall.sh is NOT in this list - it will be removed at the very end
+    # NOTE: .zzcollab/uninstall.sh is NOT in this list - it will be removed at the very end
     # to allow the script to complete all operations first
 
     # Add dynamically named .Rproj file if it exists
@@ -610,7 +610,7 @@ main() {
             # Dynamically named .Rproj file
             find . -maxdepth 1 -name "*.Rproj" -type f 2>/dev/null | sed 's|^\./||'
 
-            # Note: zzcollab-uninstall.sh will be removed at the very end (not shown here)
+            # Note: .zzcollab/uninstall.sh will be removed at the very end (not shown here)
         ) | sort -u | sed 's/^/  /'
         
         echo "Directories:"
@@ -722,13 +722,13 @@ main() {
     
     remove_manifest
 
-    # Final step: Remove the uninstall script itself
-    local uninstall_script="zzcollab-uninstall.sh"
+    # Final step: Remove the uninstall script itself and .zzcollab directory
+    local uninstall_script=".zzcollab/uninstall.sh"
     if [[ -f "$uninstall_script" ]]; then
         log_info "Removing uninstall script: $uninstall_script"
-        # Use a subshell to delete the script after this function exits
-        (sleep 1; rm -f "$uninstall_script" 2>/dev/null) &
-        log_success "Uninstall script will be removed in background"
+        # Use a subshell to delete the script and .zzcollab directory after this function exits
+        (sleep 1; rm -f "$uninstall_script" 2>/dev/null; rmdir .zzcollab 2>/dev/null) &
+        log_success "Uninstall script and .zzcollab directory will be removed in background"
     fi
 
     log_success "Uninstall completed!"

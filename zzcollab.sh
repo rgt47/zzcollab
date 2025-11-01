@@ -340,11 +340,16 @@ EOF
 
 install_uninstall_script() {
     local uninstall_script="zzcollab-uninstall.sh"
+    local install_path=".zzcollab/uninstall.sh"
+
+    # Ensure .zzcollab directory exists
+    mkdir -p ".zzcollab"
+
     if [[ -f "$TEMPLATES_DIR/$uninstall_script" ]]; then
-        cp "$TEMPLATES_DIR/$uninstall_script" "./$uninstall_script"
-        chmod +x "./$uninstall_script"
-        track_file "$uninstall_script"
-        log_success "Uninstall script installed: ./$uninstall_script"
+        cp "$TEMPLATES_DIR/$uninstall_script" "$install_path"
+        chmod +x "$install_path"
+        track_file "$install_path"
+        log_success "Uninstall script installed: $install_path"
     else
         log_warning "Uninstall script template not found"
     fi
@@ -1000,7 +1005,7 @@ finalize_and_report_results() {
 
         echo ""
         log_info "📚 Run '$0 --next-steps' for development workflow guidance"
-        log_info "🆘 Run './zzcollab-uninstall.sh' if you need to remove created files"
+        log_info "🆘 Run './.zzcollab/uninstall.sh' if you need to remove created files"
         log_info "📖 See ZZCOLLAB_USER_GUIDE.md for comprehensive documentation"
         echo ""
     fi
