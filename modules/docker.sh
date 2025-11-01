@@ -279,17 +279,48 @@ check_docker_image_exists() {
     # Query Docker Hub API
     local api_url="https://hub.docker.com/v2/repositories/${image_name}/tags/${tag}"
 
-    # Use curl with timeout to check if tag exists
-    if command -v curl >/dev/null 2>&1; then
-        if curl -sf --max-time 5 "$api_url" >/dev/null 2>&1; then
-            return 0  # Image exists
-        else
-            return 1  # Image not found or API error
-        fi
+    # Require curl for validation
+    if ! command -v curl >/dev/null 2>&1; then
+        log_warn "curl not available - cannot validate image on Docker Hub"
+        log_warn "Install curl: 'apt-get install curl' (Linux) or 'brew install curl' (macOS)"
+        log_warn "Skipping Docker Hub validation (build may fail if image doesn't exist)"
+        # Return success for best-effort validation, but user is warned
+        return 0
+    fi
+
+    # Use curl with explicit error handling
+    local http_code
+    local curl_exit
+
+    # Get HTTP status code
+    http_code=$(curl -sf -w "%{http_code}" --max-time 5 "$api_url" -o /dev/null 2>&1)
+    curl_exit=$?
+
+    if [[ $curl_exit -eq 0 ]] && [[ "$http_code" == "200" ]]; then
+        # Success: image confirmed to exist
+        return 0
+    elif [[ $curl_exit -eq 28 ]]; then
+        # Timeout: network may be slow
+        log_warn "Docker Hub API timeout - network may be slow or unavailable"
+        log_debug "Timeout after 5 seconds querying: $api_url"
+        # Timeout is non-fatal: assume image exists
+        return 0
+    elif [[ "$http_code" == "404" ]]; then
+        # Confirmed: image does not exist
+        log_debug "Docker Hub returned 404 for: $image_name:$tag"
+        return 1
+    elif [[ "$http_code" == "429" ]]; then
+        # Rate limited
+        log_warn "Docker Hub API rate limit exceeded"
+        log_debug "Try again later or reduce Docker Hub API calls"
+        # Rate limit is non-fatal: assume image exists
+        return 0
     else
-        # curl not available, skip validation
-        log_debug "curl not available, skipping Docker Hub validation"
-        return 0  # Assume image exists
+        # Other error: API failure, network issue, etc.
+        log_warn "Docker Hub API query failed (HTTP $http_code, curl exit $curl_exit)"
+        log_debug "URL: $api_url"
+        # API errors are non-fatal: assume image exists (Docker build will fail if it doesn't)
+        return 0
     fi
 }
 

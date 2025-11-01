@@ -147,21 +147,33 @@ docker-r:
 	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then touch renv.lock; fi
+	@if [ -f renv.lock ]; then \
+		if ! touch renv.lock; then \
+			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
+		fi; \
+	fi
 
 docker-bash:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
 	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/bash
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then touch renv.lock; fi
+	@if [ -f renv.lock ]; then \
+		if ! touch renv.lock; then \
+			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
+		fi; \
+	fi
 
 docker-zsh:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
 	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then touch renv.lock; fi
+	@if [ -f renv.lock ]; then \
+		if ! touch renv.lock; then \
+			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
+		fi; \
+	fi
 
 docker-zsh-gui:
 	@echo "Setting up X11 forwarding for GUI apps..."
@@ -201,7 +213,11 @@ docker-zsh-gui:
 	@DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then touch renv.lock; fi
+	@if [ -f renv.lock ]; then \
+		if ! touch renv.lock; then \
+			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
+		fi; \
+	fi
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"

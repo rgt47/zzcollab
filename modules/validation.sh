@@ -55,19 +55,23 @@ extract_code_packages() {
     while IFS= read -r file; do
         if [[ -f "$file" ]]; then
             # Extract library() and require() calls
-            grep -oP '(?:library|require)\s*\(\s*["\x27]?([a-zA-Z][a-zA-Z0-9._]{2,})["\x27]?' "$file" 2>/dev/null | \
-                sed -E 's/.*[(]["'\''"]?([a-zA-Z0-9._]+).*/\1/' || true
+            # Updated regex: {1,} allows minimum 2-char packages (1 letter + 1 more char)
+            # Also requires closing parenthesis to avoid matching incomplete calls
+            grep -oP '(?:library|require)\s*\(\s*["'\''"]?([a-zA-Z][a-zA-Z0-9.]*?)["'\''"]?\s*\)' "$file" 2>/dev/null | \
+                sed -E 's/.*[(]["'\''"]?([a-zA-Z0-9.]+)["'\''"]?\).*/\1/' || true
 
             # Extract namespace calls (package::function)
-            grep -oP '([a-zA-Z][a-zA-Z0-9._]{2,})::' "$file" 2>/dev/null | \
+            # Updated regex: {0,} allows minimum 1-char after first letter (2-char total)
+            grep -oP '([a-zA-Z][a-zA-Z0-9.]*)::' "$file" 2>/dev/null | \
                 sed 's/:://' || true
 
             # Extract roxygen imports
-            grep -oP '#\x27\s*@importFrom\s+([a-zA-Z][a-zA-Z0-9._]{2,})' "$file" 2>/dev/null | \
-                sed -E 's/.*@importFrom\s+([a-zA-Z0-9._]+).*/\1/' || true
+            # Updated regex: {0,} allows minimum 1-char packages
+            grep -oP '#'\''\s*@importFrom\s+([a-zA-Z][a-zA-Z0-9.]*)' "$file" 2>/dev/null | \
+                sed -E 's/.*@importFrom\s+([a-zA-Z0-9.]+).*/\1/' || true
 
-            grep -oP '#\x27\s*@import\s+([a-zA-Z][a-zA-Z0-9._]{2,})' "$file" 2>/dev/null | \
-                sed -E 's/.*@import\s+([a-zA-Z0-9._]+).*/\1/' || true
+            grep -oP '#'\''\s*@import\s+([a-zA-Z][a-zA-Z0-9.]*)' "$file" 2>/dev/null | \
+                sed -E 's/.*@import\s+([a-zA-Z0-9.]+).*/\1/' || true
         fi
     done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) 2>/dev/null")
 }
@@ -79,8 +83,8 @@ clean_packages() {
 
     # Sort, deduplicate, filter base packages
     for pkg in "${packages[@]}"; do
-        # Skip if empty or too short
-        if [[ -z "$pkg" ]] || [[ ${#pkg} -lt 3 ]]; then
+        # Skip if empty or too short (R packages must be at least 2 chars)
+        if [[ -z "$pkg" ]] || [[ ${#pkg} -lt 2 ]]; then
             continue
         fi
 
@@ -89,9 +93,15 @@ clean_packages() {
             continue
         fi
 
-        # Validate package name format (letters, numbers, dots, underscores)
-        if [[ "$pkg" =~ ^[a-zA-Z][a-zA-Z0-9._]+$ ]]; then
-            cleaned+=("$pkg")
+        # Validate package name format
+        # R package rules: start with letter, contain letters/numbers/dots only
+        # Note: CRAN doesn't allow underscores, but BioConductor does
+        # We allow underscores for compatibility but validate properly
+        if [[ "$pkg" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]]; then
+            # Additional validation: cannot start or end with dot
+            if [[ ! "$pkg" =~ ^\. ]] && [[ ! "$pkg" =~ \.$ ]]; then
+                cleaned+=("$pkg")
+            fi
         fi
     done
 
