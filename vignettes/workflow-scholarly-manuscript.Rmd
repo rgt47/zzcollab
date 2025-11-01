@@ -1,0 +1,1199 @@
+---
+title: "Scholarly Manuscript Development with ZZCOLLAB"
+author: "ZZCOLLAB Development Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{Scholarly Manuscript Development with ZZCOLLAB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Introduction
+
+This vignette demonstrates the recommended workflow for scholarly manuscript development using ZZCOLLAB, following the unified research compendium framework [@marwick_packaging_2018] and best practices for reproducible computational manuscripts [@gentleman_statistical_2007; @knuth_literate_1984].
+
+**Key Philosophy**: Use the **same structure** for manuscript writing as data analysis. No separate "manuscript paradigm"—simply add `analysis/paper/paper.Rmd` when ready to write [@marwick_packaging_2018].
+
+## What You Will Learn
+
+- Writing reproducible manuscripts with R Markdown [@xie_r_2018]
+- Integrating analysis code with narrative text [@knuth_literate_1984]
+- Managing bibliographies and citations [@xie_r_2018]
+- Rendering to multiple output formats (PDF, Word, HTML)
+- Collaborating on manuscripts with version control [@ram_git_2013]
+- Automating manuscript builds with CI/CD
+
+## Prerequisites
+
+- Docker installed and running
+- ZZCOLLAB installed (`./install.sh`)
+- Completed analysis (see "Data Analysis" vignette)
+- LaTeX distribution (for PDF output) or Quarto (recommended)
+- Git configured with credentials
+
+# The Unified Compendium Approach to Manuscripts
+
+## There Is No "Manuscript Paradigm"
+
+Traditional approach: Create separate "manuscript project" from "analysis project."
+
+**ZZCOLLAB approach** [@marwick_packaging_2018; @gentleman_statistical_2007]: **Same project, just add paper.Rmd**.
+
+```
+Week 1 (Analysis Only):      Week 4 (Add Manuscript):        Month 2 (Publish):
+analysis/                    analysis/                       analysis/
+├── data/                   ├── data/                       ├── data/
+├── scripts/                ├── scripts/                    ├── scripts/
+└── figures/                ├── figures/                    ├── figures/
+                            └── paper/                      └── paper/
+                                ├── paper.Rmd (ADD!)            ├── paper.Rmd
+                                └── references.bib              ├── paper.pdf
+                                                                └── supplementary.pdf
+R/                          R/                              R/
+└── functions.R             └── functions.R                 └── functions.R
+                                                            tests/
+                                                            └── testthat/
+```
+
+**No migration needed**—manuscript sources analysis from same project [@marwick_packaging_2018].
+
+## When to Write as You Go vs. After Analysis
+
+Two valid approaches [@marwick_packaging_2018]:
+
+### Approach 1: Analysis First, Manuscript Later
+**Best for**: Exploratory research, novel methods, uncertain direction
+
+1. **Week 1-8**: Analyze data, develop methods, create functions
+2. **Week 9+**: Add `analysis/paper/paper.Rmd` to write up results
+
+**Advantage**: Clear understanding of findings before writing.
+
+### Approach 2: Write as You Go (Literate Programming)
+**Best for**: Hypothesis-driven research, established methods [@knuth_literate_1984]
+
+1. **Day 1**: Create `analysis/paper/paper.Rmd` with introduction
+2. **Daily**: Add analysis code + narrative as you work
+3. **Final week**: Polish, render final document
+
+**Advantage**: Writing and analysis develop together.
+
+**ZZCOLLAB supports both** - use the same structure [@marwick_packaging_2018].
+
+# Step-by-Step: Manuscript Development Workflow
+
+## Step 1: Project Initialization (Same as Analysis!)
+
+The manuscript workflow starts **identically** to data analysis [@marwick_packaging_2018].
+
+### Configure ZZCOLLAB
+
+```bash
+# One-time configuration
+zzcollab --config init
+zzcollab --config set team-name "myusername"
+zzcollab --config set github-account "myusername"
+zzcollab --config set profile-name "publishing"  # Publishing profile includes LaTeX + Quarto
+```
+
+### Create Research Project
+
+```bash
+# Create project directory
+mkdir penguin-morphology-paper && cd penguin-morphology-paper
+
+# Initialize ZZCOLLAB project (identical to analysis workflow)
+zzcollab
+
+# Build Docker environment with publishing tools
+make docker-build
+```
+
+**What this creates** - **Identical to analysis workflow**:
+
+```
+penguin-morphology-paper/
+├── analysis/
+│   ├── data/
+│   │   ├── raw_data/              # Research data
+│   │   └── derived_data/          # Processed data
+│   ├── figures/                   # Figures for paper
+│   ├── scripts/                   # Analysis code
+│   └── paper/                     # Manuscript (initially empty - add when ready!)
+├── R/                             # Reusable functions
+├── tests/                         # Unit tests
+├── DESCRIPTION                    # Project metadata
+├── Dockerfile                     # Development environment
+├── renv.lock                      # Package versions
+└── Makefile                       # Convenient commands
+```
+
+**Key insight**: This is **exactly the same structure** as data analysis. The only difference is you'll add content to `analysis/paper/` [@marwick_packaging_2018].
+
+## Step 2: Develop Analysis (Standard Workflow)
+
+Complete your analysis first using the standard data analysis workflow (see "Data Analysis" vignette).
+
+### Analysis Pipeline Example
+
+```bash
+# Enter Docker container
+make docker-zsh
+
+# Inside container: Install packages
+R
+> renv::install("palmerpenguins")
+> renv::install("tidyverse")
+> renv::install("broom")
+> quit()
+
+# Exit (auto-snapshot!)
+exit
+```
+
+Create analysis scripts in `analysis/scripts/`:
+- `01_prepare_data.R` - Data cleaning and preparation
+- `02_exploratory_analysis.R` - EDA and visualization
+- `03_statistical_models.R` - Hypothesis testing and modeling
+- `04_generate_figures.R` - Publication-quality figures
+
+Run complete analysis:
+
+```bash
+make docker-zsh
+
+Rscript analysis/scripts/01_prepare_data.R
+Rscript analysis/scripts/02_exploratory_analysis.R
+Rscript analysis/scripts/03_statistical_models.R
+Rscript analysis/scripts/04_generate_figures.R
+
+exit
+```
+
+## Step 3: Create Manuscript Structure
+
+When analysis is complete (or as you go), add manuscript structure.
+
+### Create paper.Rmd
+
+Create `analysis/paper/paper.Rmd`:
+
+````markdown
+---
+title: "Allometric Scaling in Palmer Penguins: Bill Morphology and Body Mass"
+author:
+  - name: Your Name
+    affiliation: 1
+    email: your.email@university.edu
+    orcid: 0000-0000-0000-0000
+  - name: Co-Author Name
+    affiliation: 2
+affiliation:
+  - id: 1
+    name: Department of Biology, Your University
+  - id: 2
+    name: Department of Ecology, Their University
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    keep_tex: true
+    number_sections: true
+    fig_caption: true
+  word_document:
+    reference_docx: templates/manuscript_template.docx
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+bibliography: references.bib
+csl: ecology-letters.csl  # Citation style
+abstract: |
+  **Background**: Allometric scaling relationships between body size and morphological
+  traits provide fundamental insights into ecological and evolutionary processes.
+  However, comparative studies across closely related penguin species are limited.
+
+  **Methods**: We analyzed morphological measurements from 342 adult penguins of three
+  species (Adelie, Chinstrap, Gentoo) collected at Palmer Station, Antarctica (2007-2009).
+  We fit linear mixed-effects models to quantify scaling relationships between bill
+  dimensions and body mass, controlling for species and sex.
+
+  **Results**: Bill length scaled isometrically with body mass (slope = 1.02, 95% CI:
+  0.98-1.06), while bill depth showed negative allometry (slope = 0.78, 95% CI: 0.74-0.82).
+  Species-specific slopes differed significantly (χ² = 24.3, df = 2, p < 0.001), with
+  Gentoo penguins showing the steepest scaling relationships.
+
+  **Conclusions**: Our findings suggest differential selection pressures on bill dimensions
+  across penguin species, likely related to foraging ecology and prey specialization. The
+  negative allometry of bill depth may reflect biomechanical constraints on feeding
+  efficiency.
+keywords: allometry, bill morphology, body mass, ecological scaling, Palmer Penguins
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,           # Hide code in manuscript
+  warning = FALSE,        # Hide warnings
+  message = FALSE,        # Hide messages
+  fig.path = "../figures/manuscript/",  # Figure output directory
+  cache = TRUE            # Cache computations for speed
+)
+
+# Load packages
+library(tidyverse)
+library(broom)
+library(knitr)
+library(kableExtra)
+
+# Source analysis functions
+source("../../R/data_functions.R")
+source("../../R/analysis_functions.R")
+```
+
+# Introduction
+
+Allometric scaling—the relationship between morphological traits and body size—is a
+fundamental principle in ecology and evolution [@schmidt-nielsen_scaling_1984].
+Understanding how specific traits scale with overall body size provides insights into
+biomechanical constraints, physiological demands, and ecological specialization
+[@west_general_1997].
+
+In seabirds, bill morphology is particularly important for foraging ecology, as bill
+dimensions directly influence prey capture efficiency, handling time, and dietary niche
+[@grant_evolution_2002]. Penguins exhibit remarkable morphological diversity despite their
+recent evolutionary radiation [@clarke_scaling_2006], making them ideal subjects for
+comparative allometric studies.
+
+The Palmer Penguins dataset [@horst_palmer_2020] provides detailed morphological
+measurements from three sympatric species: Adelie (*Pygoscelis adeliae*), Chinstrap
+(*P. antarcticus*), and Gentoo (*P. papua*) penguins at Palmer Station, Antarctica. These
+species exhibit substantial body size variation (2700-6300 g) and occupy distinct ecological
+niches [@gorman_ecological_2014], enabling robust comparative analyses of allometric
+scaling patterns.
+
+Here, we quantify scaling relationships between bill dimensions (length and depth) and
+body mass across species and sexes, testing the hypothesis that bill morphology shows
+differential allometry related to foraging specialization.
+
+# Methods
+
+## Study System and Data Collection
+
+We analyzed morphological data from 342 adult penguins collected during the breeding
+seasons of 2007-2009 at Palmer Station, Antarctica (64.77°S, 64.05°W) [@gorman_ecological_2014].
+Data include bill length (mm), bill depth (mm), and body mass (g) for three species, with
+individuals sexed through molecular methods [@horst_palmer_2020].
+
+```{r data-preparation}
+# Load and prepare data
+penguins <- prepare_penguin_data(palmerpenguins::penguins)
+
+# Summary statistics
+n_total <- nrow(penguins)
+n_by_species <- table(penguins$species)
+```
+
+Our final dataset included `r n_total` penguins: `r n_by_species["Adelie"]` Adelie,
+`r n_by_species["Chinstrap"]` Chinstrap, and `r n_by_species["Gentoo"]` Gentoo individuals.
+
+## Statistical Analysis
+
+We fit linear mixed-effects models to quantify allometric scaling relationships:
+
+$$\log(Y) = \alpha + \beta \log(M) + \gamma S + \delta(S \times \log(M)) + \epsilon$$
+
+where $Y$ is the morphological trait (bill length or depth), $M$ is body mass, $S$ is
+species, and $\epsilon$ represents residual error. The slope $\beta$ indicates the scaling
+exponent: $\beta = 1$ indicates isometry, $\beta < 1$ negative allometry, and $\beta > 1$
+positive allometry [@schmidt-nielsen_scaling_1984].
+
+```{r model-fitting}
+# Fit scaling models
+model_bill_length <- fit_body_mass_model(
+  penguins,
+  response = "bill_length_mm"
+)
+
+model_bill_depth <- fit_body_mass_model(
+  penguins,
+  response = "bill_depth_mm"
+)
+
+# Extract coefficients
+coef_length <- tidy(model_bill_length, conf.int = TRUE)
+coef_depth <- tidy(model_bill_depth, conf.int = TRUE)
+```
+
+All analyses were conducted in R version `r getRversion()` [@r_core_team_r_2023] using
+the tidyverse [@wickham_welcome_2019], broom [@robinson_broom_2021], and palmerpenguins
+[@horst_palmer_2020] packages. Complete code and data are available at
+https://github.com/yourusername/penguin-morphology-paper (reproducible research compendium
+following @marwick_packaging_2018).
+
+# Results
+
+## Allometric Scaling Patterns
+
+Bill length showed near-isometric scaling with body mass (slope = `r round(coef_length$estimate[2], 2)`,
+95% CI: `r round(coef_length$conf.low[2], 2)`-`r round(coef_length$conf.high[2], 2)`;
+Fig. 1A). This indicates that bill length increases proportionally with body size across
+species [@schmidt-nielsen_scaling_1984].
+
+In contrast, bill depth exhibited negative allometry (slope = `r round(coef_depth$estimate[2], 2)`,
+95% CI: `r round(coef_depth$conf.low[2], 2)`-`r round(coef_depth$conf.high[2], 2)`;
+Fig. 1B), suggesting biomechanical constraints on bill depth relative to body mass
+[@west_general_1997].
+
+```{r figure-1, fig.width=10, fig.height=5, fig.cap="Allometric scaling relationships between bill dimensions and body mass in Palmer Penguins. (A) Bill length shows isometric scaling. (B) Bill depth shows negative allometry. Points represent individual penguins colored by species. Lines show species-specific regression fits with 95% confidence intervals (shaded regions)."}
+# Generate Figure 1 (combines bill length and bill depth plots)
+# Code for publication-quality figure
+# (Actual implementation would use ggplot2 with custom theme)
+knitr::include_graphics("../figures/manuscript/figure_1_allometry.png")
+```
+
+## Species-Specific Differences
+
+Species-specific scaling slopes differed significantly for both bill dimensions (likelihood
+ratio tests: bill length χ² = 24.3, df = 2, p < 0.001; bill depth χ² = 31.7, df = 2,
+p < 0.001). Gentoo penguins showed the steepest scaling relationships, followed by
+Chinstrap and Adelie species (Table 1).
+
+```{r table-1}
+# Create summary table of model results
+results_table <- data.frame(
+  Trait = c("Bill Length", "Bill Length", "Bill Length",
+            "Bill Depth", "Bill Depth", "Bill Depth"),
+  Species = rep(c("Adelie", "Chinstrap", "Gentoo"), 2),
+  Slope = c(0.98, 1.03, 1.08, 0.72, 0.78, 0.84),
+  CI_Lower = c(0.93, 0.97, 1.02, 0.67, 0.72, 0.78),
+  CI_Upper = c(1.03, 1.09, 1.14, 0.77, 0.84, 0.90),
+  P_Value = c(0.001, 0.001, 0.001, 0.001, 0.001, 0.001)
+)
+
+kable(results_table,
+      caption = "Species-specific allometric scaling slopes for bill dimensions",
+      col.names = c("Trait", "Species", "Slope", "95% CI Lower", "95% CI Upper", "P-value"),
+      digits = 2,
+      align = "lccccc") %>%
+  kable_styling(bootstrap_options = c("striped", "condensed"),
+                full_width = FALSE) %>%
+  pack_rows("Bill Length", 1, 3) %>%
+  pack_rows("Bill Depth", 4, 6)
+```
+
+# Discussion
+
+Our analysis reveals distinct allometric scaling patterns for bill dimensions in Palmer
+Penguins, with important implications for understanding foraging ecology and morphological
+evolution in this group.
+
+## Isometric Scaling of Bill Length
+
+The near-isometric scaling of bill length (slope ≈ 1.0) suggests that this trait maintains
+geometric similarity across body sizes [@schmidt-nielsen_scaling_1984]. This pattern is
+consistent with previous studies of seabird bill morphology [@grant_evolution_2002] and
+may reflect selective pressure to maintain optimal prey capture efficiency across the body
+size range observed in these species.
+
+## Negative Allometry of Bill Depth
+
+In contrast, bill depth shows negative allometry (slope < 1.0), indicating that larger
+penguins have proportionally shallower bills than smaller individuals. This pattern may
+arise from biomechanical constraints on bite force and gape limitation [@herrel_evolution_2005],
+as excessively deep bills could compromise feeding efficiency despite increasing body size.
+
+## Ecological Implications
+
+The species-specific differences in scaling slopes (Table 1) likely reflect dietary
+specialization and foraging niche partitioning among sympatric penguins [@gorman_ecological_2014].
+Gentoo penguins, which feed primarily on fish, show steeper scaling relationships than
+Adelie and Chinstrap penguins, which consume more krill. This pattern suggests that bill
+morphology has evolved differentially in response to prey type and foraging mode
+[@grant_evolution_2002].
+
+## Study Limitations
+
+Our analysis is cross-sectional and therefore cannot distinguish ontogenetic allometry from
+evolutionary allometry [@klingenberg_ontogeny_1998]. Future longitudinal studies tracking
+individual growth trajectories would provide stronger inference about developmental
+mechanisms underlying these scaling patterns.
+
+# Conclusions
+
+Bill morphology in Palmer Penguins exhibits complex allometric scaling patterns that vary
+by species and trait. The contrasting allometry of bill length (isometric) versus bill
+depth (negative) suggests differential selective pressures and biomechanical constraints
+on feeding apparatus evolution. These findings contribute to broader understanding of
+morphological diversification in recently radiated seabird groups and highlight the value
+of allometric analysis for revealing ecological and evolutionary processes.
+
+# Acknowledgments
+
+We thank Palmer Station LTER for data collection and sharing. AM Horst, AP Hill, and
+KB Gorman curated and published the Palmer Penguins dataset. This research followed
+reproducible research best practices using ZZCOLLAB framework (github.com/rgt47/zzcollab).
+
+# Data Availability
+
+All data and code are available at: https://github.com/yourusername/penguin-morphology-paper
+
+Raw data: `analysis/data/raw_data/penguins.csv`
+Processed data: `analysis/data/derived_data/penguins_clean.csv`
+Analysis code: `analysis/scripts/`
+Manuscript source: `analysis/paper/paper.Rmd`
+
+# Supplementary Materials
+
+Supplementary figures, tables, and sensitivity analyses are provided in Supporting
+Information.
+
+# References
+````
+
+### Create Bibliography
+
+Create `analysis/paper/references.bib`:
+
+```bibtex
+@article{marwick_packaging_2018,
+  title = {Packaging Data Analytical Work Reproducibly Using {R} (and Friends)},
+  author = {Marwick, Ben and Boettiger, Carl and Mullen, Lincoln},
+  year = {2018},
+  journal = {The American Statistician},
+  volume = {72},
+  number = {1},
+  pages = {80--88},
+  doi = {10.1080/00031305.2017.1375986}
+}
+
+@book{schmidt-nielsen_scaling_1984,
+  title = {Scaling: Why Is Animal Size So Important?},
+  author = {Schmidt-Nielsen, Knut},
+  year = {1984},
+  publisher = {Cambridge University Press},
+  address = {Cambridge, UK}
+}
+
+@article{horst_palmer_2020,
+  title = {palmerpenguins: Palmer Archipelago (Antarctica) Penguin Data},
+  author = {Horst, Allison M and Hill, Alison Presmanes and Gorman, Kristen B},
+  year = {2020},
+  journal = {R package version 0.1.0},
+  url = {https://allisonhorst.github.io/palmerpenguins/}
+}
+
+@article{gorman_ecological_2014,
+  title = {Ecological Sexual Dimorphism and Environmental Variability within a Community of Antarctic Penguins (Genus \textit{Pygoscelis})},
+  author = {Gorman, Kristen B and Williams, Tony D and Fraser, William R},
+  year = {2014},
+  journal = {PLOS ONE},
+  volume = {9},
+  number = {3},
+  pages = {e90081},
+  doi = {10.1371/journal.pone.0090081}
+}
+
+@article{gentleman_statistical_2007,
+  title = {Statistical Analyses and Reproducible Research},
+  author = {Gentleman, Robert and Temple Lang, Duncan},
+  year = {2007},
+  journal = {Journal of Computational and Graphical Statistics},
+  volume = {16},
+  number = {1},
+  pages = {1--23}
+}
+
+@article{knuth_literate_1984,
+  title = {Literate Programming},
+  author = {Knuth, Donald E},
+  year = {1984},
+  journal = {The Computer Journal},
+  volume = {27},
+  number = {2},
+  pages = {97--111}
+}
+
+# Add additional references as needed
+```
+
+### Download Citation Style
+
+```bash
+make docker-zsh
+
+# Download citation style (Ecology Letters example)
+wget https://raw.githubusercontent.com/citation-style-language/styles/master/ecology-letters.csl \
+  -O analysis/paper/ecology-letters.csl
+
+exit
+```
+
+## Step 4: Render Manuscript
+
+### Render to PDF (LaTeX)
+
+```bash
+make docker-zsh
+
+R
+> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "pdf_document")
+> quit()
+
+exit
+```
+
+Output: `analysis/paper/paper.pdf`
+
+### Render to Word
+
+Useful for collaborators who prefer Microsoft Word:
+
+```bash
+make docker-zsh
+
+R
+> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "word_document")
+> quit()
+
+exit
+```
+
+Output: `analysis/paper/paper.docx`
+
+### Render to HTML
+
+Great for web sharing and interactive code:
+
+```bash
+make docker-zsh
+
+R
+> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "html_document")
+> quit()
+
+exit
+```
+
+Output: `analysis/paper/paper.html`
+
+### Render to All Formats
+
+```bash
+make docker-zsh
+
+R
+> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "all")
+> quit()
+
+exit
+```
+
+## Step 5: Create Supplementary Materials
+
+Many journals require supplementary materials [@marwick_packaging_2018].
+
+### Create supplementary.Rmd
+
+Create `analysis/paper/supplementary.Rmd`:
+
+````markdown
+---
+title: "Supporting Information: Allometric Scaling in Palmer Penguins"
+output:
+  pdf_document:
+    number_sections: true
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(palmerpenguins)
+```
+
+# Supplementary Methods
+
+## Data Quality Control
+
+Describe additional quality control measures, outlier detection, missing data handling.
+
+## Model Validation
+
+```{r model-diagnostics, fig.width=8, fig.height=6}
+# Residual plots, Q-Q plots, influence diagnostics
+```
+
+# Supplementary Results
+
+## Additional Analyses
+
+### Sexual Dimorphism
+
+```{r sexual-dimorphism}
+# Analysis of sex-specific allometry
+```
+
+### Temporal Trends
+
+```{r temporal-analysis}
+# Year effects on scaling relationships
+```
+
+# Supplementary Figures
+
+## Figure S1: Data Distribution
+
+```{r fig-s1, fig.width=8, fig.height=6}
+# Histograms, boxplots of raw measurements
+```
+
+## Figure S2: Model Diagnostics
+
+```{r fig-s2, fig.width=10, fig.height=8}
+# Comprehensive model diagnostics
+```
+
+# Supplementary Tables
+
+## Table S1: Complete Model Results
+
+```{r table-s1}
+# Full model output with all coefficients
+```
+
+## Table S2: Sensitivity Analysis
+
+```{r table-s2}
+# Results under alternative model specifications
+```
+````
+
+## Step 6: Automated Manuscript Rendering
+
+Automate rendering with Makefile and CI/CD [@marwick_packaging_2018].
+
+### Add Makefile Targets
+
+Add to `Makefile`:
+
+```makefile
+# Manuscript rendering targets
+.PHONY: manuscript manuscript-pdf manuscript-word manuscript-html manuscript-all
+
+manuscript: manuscript-all
+
+manuscript-pdf:
+	@echo "Rendering manuscript to PDF..."
+	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
+		Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'pdf_document')"
+
+manuscript-word:
+	@echo "Rendering manuscript to Word..."
+	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
+		Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'word_document')"
+
+manuscript-html:
+	@echo "Rendering manuscript to HTML..."
+	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
+		Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'html_document')"
+
+manuscript-all: manuscript-pdf manuscript-word manuscript-html supplementary
+	@echo "All manuscript formats rendered successfully"
+
+supplementary:
+	@echo "Rendering supplementary materials..."
+	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
+		Rscript -e "rmarkdown::render('analysis/paper/supplementary.Rmd', output_format = 'all')"
+```
+
+### Usage
+
+```bash
+# Render manuscript to all formats
+make manuscript
+
+# Or specific formats
+make manuscript-pdf
+make manuscript-word
+make manuscript-html
+```
+
+## Step 7: Version Control and Collaboration
+
+Manuscripts benefit enormously from version control [@ram_git_2013; @bryan_excuse_2018].
+
+### Commit Manuscript Source
+
+```bash
+# Add manuscript files
+git add analysis/paper/paper.Rmd
+git add analysis/paper/supplementary.Rmd
+git add analysis/paper/references.bib
+git add analysis/paper/*.csl
+
+# Commit
+git commit -m "Add manuscript draft
+
+- Allometric scaling analysis of Palmer Penguins
+- Methods, results, discussion sections complete
+- Supplementary materials included
+- Citation style: Ecology Letters"
+
+# Push to GitHub
+git push
+```
+
+### Collaborative Writing with GitHub
+
+**Approach 1: Branch-Based Workflow**
+
+```bash
+# Co-author creates branch
+git checkout -b coauthor-edits
+
+# Make changes to paper.Rmd
+# ...
+
+# Commit changes
+git add analysis/paper/paper.Rmd
+git commit -m "Revise introduction and discussion"
+
+# Push and create pull request
+git push -u origin coauthor-edits
+gh pr create --title "Manuscript revisions" --body "Updated intro/discussion based on reviewer feedback"
+```
+
+**Approach 2: Direct Collaboration**
+
+```bash
+# Pull latest changes
+git pull
+
+# Edit manuscript
+# ...
+
+# Commit with descriptive message
+git add analysis/paper/paper.Rmd
+git commit -m "Add sensitivity analysis section
+
+- Test robustness to outlier removal
+- Alternative model specifications
+- Results unchanged (robustness confirmed)"
+
+git push
+```
+
+### Track Manuscript Versions
+
+Use git tags for submission milestones:
+
+```bash
+# Tag initial submission
+git tag -a v1.0-submission -m "Initial submission to Ecology Letters"
+git push origin v1.0-submission
+
+# Tag revision
+git tag -a v1.1-revision1 -m "First revision addressing reviewer comments"
+git push origin v1.1-revision1
+
+# Tag final acceptance
+git tag -a v1.2-accepted -m "Accepted manuscript"
+git push origin v1.2-accepted
+```
+
+## Step 8: Continuous Integration for Manuscripts
+
+Automate manuscript rendering on every commit using CI/CD [@marwick_packaging_2018].
+
+### GitHub Actions Workflow
+
+Create `.github/workflows/render-manuscript.yml`:
+
+```yaml
+name: Render Manuscript
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'analysis/paper/**'
+      - 'analysis/scripts/**'
+      - 'analysis/data/**'
+      - 'R/**'
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  render-manuscript:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-latex-base \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            pandoc
+
+      - name: Restore R packages from renv.lock
+        uses: r-lib/actions/setup-renv@v2
+
+      - name: Render manuscript to PDF
+        run: |
+          Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'pdf_document')"
+
+      - name: Render supplementary materials
+        run: |
+          Rscript -e "rmarkdown::render('analysis/paper/supplementary.Rmd', output_format = 'pdf_document')"
+
+      - name: Upload PDF artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: manuscript-pdf
+          path: |
+            analysis/paper/paper.pdf
+            analysis/paper/supplementary.pdf
+
+      - name: Render manuscript to Word
+        run: |
+          Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'word_document')"
+
+      - name: Upload Word artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: manuscript-word
+          path: analysis/paper/paper.docx
+```
+
+**Benefits**:
+- Manuscript automatically builds on every push
+- Catch rendering errors before submission
+- Collaborators download latest rendered version
+- Ensures reproducibility of manuscript from source
+
+# Advanced Topics
+
+## Journal-Specific Templates
+
+Many journals provide R Markdown templates [@xie_r_2018].
+
+### Using rticles Package
+
+```bash
+make docker-zsh
+
+R
+> install.packages("rticles")
+>
+> # List available templates
+> rticles::journals()
+>
+> # Create journal-specific manuscript
+> rmarkdown::draft(
+>   "analysis/paper/plos_one.Rmd",
+>   template = "plos_article",
+>   package = "rticles"
+> )
+
+> quit()
+exit
+```
+
+### Available Journal Templates
+
+- **PLOS**: PLOS ONE, PLOS Computational Biology
+- **Elsevier**: Most Elsevier journals
+- **Springer**: Most Springer journals
+- **AGU**: American Geophysical Union journals
+- **ASA**: American Statistical Association journals
+- **Biometrics**: Biometrics, Biometrical Journal
+- **Many more**: See `rticles::journals()`
+
+## Quarto for Enhanced Publishing
+
+Quarto (https://quarto.org) is the next-generation R Markdown [@xie_r_2018].
+
+### Install Quarto
+
+```bash
+# In publishing Docker profile, Quarto is pre-installed
+make docker-zsh
+
+quarto --version
+
+exit
+```
+
+### Create Quarto Manuscript
+
+Create `analysis/paper/paper.qmd`:
+
+````markdown
+---
+title: "Allometric Scaling in Palmer Penguins"
+format:
+  pdf:
+    documentclass: article
+    keep-tex: true
+  html:
+    code-fold: true
+    toc: true
+  docx: default
+bibliography: references.bib
+---
+
+## Introduction
+
+(Same content as paper.Rmd, but with enhanced features)
+
+```{r}
+#| label: fig-allometry
+#| fig-cap: "Bill length vs body mass"
+#| fig-width: 8
+#| fig-height: 5
+#| code-fold: true
+
+library(ggplot2)
+library(palmerpenguins)
+
+ggplot(penguins, aes(x = body_mass_g, y = bill_length_mm, color = species)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Allometric Scaling of Bill Length")
+```
+````
+
+### Render Quarto Document
+
+```bash
+make docker-zsh
+
+quarto render analysis/paper/paper.qmd --to all
+
+exit
+```
+
+**Advantages of Quarto**:
+- Multiple output formats from one source
+- Better code annotation (`#| label`, `#| fig-cap`)
+- Cross-references and citations
+- Advanced layouts and themes
+- Dashboards and interactive outputs
+
+## Preprints and Open Access
+
+Share manuscripts before peer review [@marwick_packaging_2018].
+
+### Submit to bioRxiv/arXiv
+
+1. Render manuscript to PDF
+2. Upload to preprint server
+3. Add DOI to repository README
+
+```bash
+# After preprint publication
+echo "Preprint DOI: 10.1101/2024.01.15.123456" >> README.md
+git commit -am "Add preprint DOI"
+git push
+```
+
+### Link Code and Preprint
+
+Add badge to README:
+
+```markdown
+[![bioRxiv](https://img.shields.io/badge/bioRxiv-10.1101%2F2024.01.15.123456-blue)](https://doi.org/10.1101/2024.01.15.123456)
+```
+
+## Managing Large Figures
+
+For manuscripts with many high-resolution figures:
+
+### External Figure Repository
+
+```bash
+# Store figures in separate repository (if very large)
+# Reference in manuscript via URL
+
+# Or use Git LFS for large files
+git lfs track "analysis/figures/*.pdf"
+git add .gitattributes
+git commit -m "Track large PDFs with Git LFS"
+```
+
+### Figure Caching
+
+In `paper.Rmd`:
+
+````markdown
+```{r setup}
+knitr::opts_chunk$set(cache = TRUE, cache.path = "../cache/")
+```
+````
+
+Figures are cached - only regenerate when code changes.
+
+# Best Practices Summary
+
+Following reproducible manuscript development best practices [@marwick_packaging_2018; @gentleman_statistical_2007; @knuth_literate_1984]:
+
+## Manuscript Organization
+✅ **Source in version control** - paper.Rmd tracked with git
+✅ **Literate programming** - Code + narrative integrated [@knuth_literate_1984]
+✅ **Reproducible from source** - `rmarkdown::render()` rebuilds manuscript
+✅ **Multiple output formats** - PDF, Word, HTML from same source
+
+## Citations and References
+✅ **Bibliography in .bib format** - references.bib with all citations
+✅ **Journal citation styles** - Downloaded .csl files
+✅ **Automatic formatting** - pandoc-citeproc handles citations
+✅ **CrossRef integration** - DOIs for all references
+
+## Collaboration
+✅ **Version control everything** - git tracks all manuscript changes
+✅ **Meaningful commit messages** - "Add results section" not "Update"
+✅ **Pull requests for revisions** - Review changes before merging
+✅ **Tag submission versions** - v1.0-submission, v1.1-revision1
+
+## Automation
+✅ **Makefile targets** - `make manuscript` renders all formats
+✅ **CI/CD integration** - GitHub Actions builds on every commit
+✅ **Artifact uploads** - Latest PDF/Word always available
+✅ **Reproducibility validation** - CI checks manuscript builds from scratch
+
+## Data and Code
+✅ **Computational reproducibility** - Same code + data → same results
+✅ **Explicit dependencies** - renv.lock captures exact package versions
+✅ **Analysis pipeline** - Numbered scripts show execution order
+✅ **Tested functions** - Unit tests validate analytical correctness
+
+# Progression From Analysis to Manuscript
+
+## The Natural Workflow
+
+Starting from analysis, manuscript writing is a natural extension [@marwick_packaging_2018]:
+
+### Week 1-4: Analysis Phase
+```
+my-project/
+├── analysis/
+│   ├── data/
+│   ├── scripts/                # Complete analysis pipeline
+│   └── figures/                # Publication figures generated
+└── R/
+    └── functions.R             # Reusable analysis functions
+```
+
+**No manuscript yet** - focus on getting analysis right.
+
+### Week 5: Add Manuscript Structure
+```
+my-project/
+├── analysis/
+│   ├── data/
+│   ├── scripts/
+│   ├── figures/
+│   └── paper/                  # ADD: Manuscript directory
+│       ├── paper.Rmd           # ADD: Manuscript source
+│       └── references.bib      # ADD: Bibliography
+└── R/
+    └── functions.R
+```
+
+**Start writing** - integrate analysis results into narrative.
+
+### Week 6-8: Iterative Writing
+```
+# Daily workflow:
+make docker-zsh
+# Edit paper.Rmd
+# Update analysis if needed
+exit  # Auto-snapshot!
+
+# Render and review
+make manuscript-pdf
+```
+
+**Manuscript develops alongside refinements to analysis** [@knuth_literate_1984].
+
+### Week 9: Submission Prep
+```
+my-project/
+├── analysis/
+│   ├── data/
+│   ├── scripts/
+│   ├── figures/
+│   └── paper/
+│       ├── paper.Rmd
+│       ├── paper.pdf          # Final manuscript
+│       ├── supplementary.Rmd
+│       ├── supplementary.pdf  # Supplementary materials
+│       ├── references.bib
+│       └── ecology-letters.csl
+└── R/
+    └── functions.R
+```
+
+**Ready for submission** - manuscript + supplementary + code repository.
+
+## The Key: No Separation
+
+At every stage, **analysis and manuscript live in the same project**. No copy-paste between "analysis project" and "manuscript project" [@marwick_packaging_2018; @gentleman_statistical_2007].
+
+**Benefits**:
+- Changes to analysis automatically update manuscript
+- No version sync issues between code and text
+- Complete reproducibility - manuscript rebuilds from data
+- Natural progression from exploration to publication
+
+# References
+
+Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging Data Analytical Work Reproducibly Using R (and Friends). *The American Statistician*, 72(1), 80-88.
+
+Gentleman, R., & Temple Lang, D. (2007). Statistical Analyses and Reproducible Research. *Journal of Computational and Graphical Statistics*, 16(1), 1-23.
+
+Knuth, D. E. (1984). Literate Programming. *The Computer Journal*, 27(2), 97-111.
+
+Xie, Y., Allaire, J. J., & Grolemund, G. (2018). *R Markdown: The Definitive Guide*. Chapman and Hall/CRC.
+
+Ram, K. (2013). Git can facilitate greater reproducibility and increased transparency in science. *Source Code for Biology and Medicine*, 8(1), 7.
+
+Bryan, J. (2018). Excuse me, do you have a moment to talk about version control? *The American Statistician*, 72(1), 20-27.
+
+Schmidt-Nielsen, K. (1984). *Scaling: Why Is Animal Size So Important?* Cambridge University Press.
+
+Horst, A. M., Hill, A. P., & Gorman, K. B. (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0.
+
+# Additional Resources
+
+- R Markdown Guide: https://rmarkdown.rstudio.com/
+- Quarto Documentation: https://quarto.org/
+- rticles Package: https://github.com/rstudio/rticles
+- Citation Style Language: https://citationstyles.org/
+- Zotero (bibliography management): https://www.zotero.org/
+- ZZCOLLAB Documentation: `docs/DEVELOPMENT.md`
+- Marwick et al. (2018) rrtools: https://github.com/benmarwick/rrtools
