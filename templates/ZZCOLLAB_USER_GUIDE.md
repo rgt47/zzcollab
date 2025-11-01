@@ -441,7 +441,7 @@ git push
 ### Team Member Capabilities
 
 ✅ **Can do:**
-- Add R packages via `renv::install()` (Layer 2)
+- Add R packages via `install.packages()` (Layer 2)
 - Create analysis scripts and functions
 - Run tests and CI/CD workflows
 - Commit changes to renv.lock
@@ -490,7 +490,7 @@ make docker-build
 # Daily development
 make docker-zsh
 # ... work inside container ...
-# Install packages: renv::install("package")
+# Install packages: install.packages("package")
 exit  # Auto-snapshot + validation happen automatically!
 
 # Test and commit
@@ -584,8 +584,10 @@ renv::install("user/package")    # GitHub
 # Enter container
 make docker-zsh
 
-# Install package
-renv::install("tidymodels")
+# Inside container - add packages using standard R
+R
+> install.packages("tidymodels")
+> quit()
 
 # Exit container (auto-snapshot + validation happen automatically!)
 exit
@@ -602,6 +604,16 @@ git commit -m "Add tidymodels for modeling workflow"
 git push
 ```
 
+**For GitHub packages:**
+```bash
+# Inside container
+R
+> install.packages("remotes")
+> remotes::install_github("tidyverse/dplyr")
+> quit()
+exit
+```
+
 **What happens automatically on exit:**
 1. `renv::snapshot()` captures dependencies
 2. Timestamp adjusted to "7 days ago" for RSPM binary packages
@@ -612,17 +624,18 @@ git push
 
 ```bash
 # Alice adds packages
-renv::install("tidymodels")
+install.packages("tidymodels")
 exit  # Auto-snapshot: renv.lock now has [tidymodels]
 
 # Bob adds packages
 git pull  # Gets Alice's changes
-renv::install("sf")
+install.packages("sf")
 exit  # Auto-snapshot: renv.lock now has [tidymodels, sf]
 
 # Charlie reproduces
 git pull
-renv::restore()  # Installs both tidymodels AND sf
+# Next docker build automatically runs renv::restore()
+# Installs both tidymodels AND sf
 ```
 
 **Final renv.lock contains packages from ALL contributors.**

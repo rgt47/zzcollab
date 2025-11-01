@@ -106,7 +106,8 @@ zzcollab --config set dotfiles-dir "~/dotfiles"
   - Can also set libs-bundle and pkgs-bundle for custom composition
 
 **Note on Package Management:**
-- Packages are added via `renv::install()` inside the container as needed
+- Packages are added via `install.packages()` inside the container as needed
+- Packages automatically captured in renv.lock when you exit the container
 - No need to pre-configure a "mode" - just install packages when you need them
 - The renv.lock accumulates packages from all team members
 
@@ -174,7 +175,7 @@ zzcollab --list-pkgs      # R package bundles
   - Set once in config or specify per project
 
 - **Package Management**: Packages are added dynamically as needed
-  - Use `renv::install("package-name")` inside the container
+  - Use `install.packages("package-name")` inside the container
   - The renv.lock file accumulates packages from all team members
   - No need to pre-configure a "mode" - just install what you need
 
@@ -351,9 +352,9 @@ Then install packages and render the report:
 
 ```bash
 # Install required packages
-Rscript -e 'renv::install("palmerpenguins")'
-Rscript -e 'renv::install("ggplot2")'
-Rscript -e 'renv::install("dplyr")'
+Rscript -e 'install.packages("palmerpenguins")'
+Rscript -e 'install.packages("ggplot2")'
+Rscript -e 'install.packages("dplyr")'
 
 # Render the report
 Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
@@ -837,7 +838,7 @@ git push -u origin main
 **Profile Selection for Teams:**
 - Team lead chooses Docker profile (bioinformatics, geospatial, etc.)
 - All team members get identical Docker environment via team image
-- Team members add packages dynamically using `renv::install()` as needed
+- Team members add packages dynamically using `install.packages()` as needed
 
 ### Team Member Workflow
 
@@ -859,11 +860,13 @@ make docker-zsh
 1. `--use-team-image` flag pulls team image from Docker Hub (e.g., `genomicslab/study:latest`)
 2. Team image has the Docker profile chosen by team lead (e.g., bioinformatics)
 3. Uses the exact same Docker environment as team lead
-4. Add packages as needed using `renv::install()` inside the container
+4. Add packages as needed using `install.packages()` inside the container
+5. Exit container - packages automatically captured in renv.lock
 
 **Environment Consistency:**
 - **Docker environment**: Identical for all team members (from team image via `--use-team-image`)
-- **Package management**: Add packages dynamically with `renv::install()` as needed
+- **Package management**: Add packages dynamically with `install.packages()` as needed
+- **Automatic capture**: Packages tracked automatically when you exit containers
 
 ### Adding Packages to Team Environment
 
@@ -882,7 +885,7 @@ zzcollab -t genomicslab -p study --pkgs modeling
 - ✗ Cannot change base image (use `-b`)
 - ✗ Cannot add system libraries (use `--libs`)
 - ✓ Can add R packages to Docker (use `--pkgs`)
-- ✓ Can add packages to renv.lock (use `renv::install()` in container)
+- ✓ Can add packages to renv.lock (use `install.packages()` in container, auto-captured on exit)
 
 ## Publish Results
 
@@ -1021,9 +1024,10 @@ The profile system has two independent layers:
 - Set via: `zzcollab --config set pkgs-bundle modeling`
 
 **Package Management:**
-- Packages are added dynamically using `renv::install()` inside containers
+- Packages are added dynamically using `install.packages()` inside containers
+- For GitHub packages: `install.packages("remotes")` then `remotes::install_github("user/package")`
 - No pre-configured modes - just install what you need when you need it
-- The renv.lock file accumulates packages from all team members
+- The renv.lock file accumulates packages from all team members automatically on container exit
 - This provides maximum flexibility while maintaining reproducibility
 
 # Time Breakdown
@@ -1071,10 +1075,10 @@ ZZCOLLAB uses a two-layer package management system for maximum flexibility:
 - **When to use**: For packages everyone on team needs
 
 ### Layer 2: Dynamic Package Installation (Personal)
-- **Controlled by**: `renv::install()` inside containers
+- **Controlled by**: `install.packages()` inside containers (auto-captured on exit)
 - **Purpose**: Add packages as needed for specific analyses
 - **Flexible**: Each team member can add packages independently
-- **Collaborative**: renv.lock accumulates packages from all contributors
+- **Collaborative**: renv.lock accumulates packages from all contributors automatically
 - **When to use**: Whenever you need a package for your analysis
 
 ### Practical Example
@@ -1103,11 +1107,11 @@ zzcollab --use-team-image
 make docker-zsh
 
 # Inside container - Alice adds modeling packages
-renv::install("tidymodels")
+install.packages("tidymodels")
 exit  # Auto-snapshot on exit!
 
 # Bob adds geospatial packages (in his container)
-renv::install("sf")
+install.packages("sf")
 exit  # Auto-snapshot on exit!
 ```
 
@@ -1125,7 +1129,7 @@ exit  # Auto-snapshot on exit!
 make docker-zsh
 
 # Inside container:
-renv::install("tidymodels")
+install.packages("tidymodels")
 # Exit container (auto-snapshot happens here!)
 exit
 
@@ -1145,7 +1149,7 @@ git pull  # Gets Alice's changes
 make docker-zsh
 
 # Inside container:
-renv::install("sf")
+install.packages("sf")
 # Exit container (auto-snapshot, renv.lock now has tidymodels + sf)
 exit
 
