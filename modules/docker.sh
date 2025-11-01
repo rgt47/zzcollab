@@ -206,6 +206,9 @@ extract_r_version_from_lockfile() {
     # Fall back to Python if jq not available
     if command_exists python3; then
         local r_version
+        local python_exit
+
+        # Capture stdout only (version), let stderr go to terminal (Issue #12 fix)
         r_version=$(python3 -c "
 import json
 import sys
@@ -221,9 +224,10 @@ try:
 except Exception as e:
     print(f'Error parsing renv.lock: {e}', file=sys.stderr)
     sys.exit(1)
-" 2>&1)
+" 2>/dev/null)
+        python_exit=$?
 
-        if [[ $? -eq 0 ]] && [[ -n "$r_version" ]]; then
+        if [[ $python_exit -eq 0 ]] && [[ -n "$r_version" ]]; then
             log_success "Found R version in lockfile: $r_version"
             echo "$r_version"
             return 0

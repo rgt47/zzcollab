@@ -196,10 +196,18 @@ match_static_template() {
         if [[ "$base" == "$def_base" ]] && \
            [[ "$libs" == "$def_libs" ]] && \
            [[ "$pkgs" == "$def_pkgs" ]]; then
-            # Verify static template exists
-            if [[ -f "${TEMPLATES_DIR}/Dockerfile.${profile}" ]]; then
+            # Verify static template exists and is readable (Issue #13 fix)
+            local template_file="${TEMPLATES_DIR}/Dockerfile.${profile}"
+            if [[ -f "$template_file" ]]; then
+                if [[ ! -r "$template_file" ]]; then
+                    log_warn "Template file exists but is not readable: $template_file"
+                    continue
+                fi
+                log_debug "✓ Matched static template: Dockerfile.${profile}"
                 echo "Dockerfile.${profile}"
                 return 0
+            else
+                log_warn "Profile '$profile' configured but template missing: $template_file"
             fi
         fi
     done
@@ -289,21 +297,22 @@ select_dockerfile_strategy() {
     # Decision logic:
     # 1. If using team image, use personal template
     if [[ "${USE_TEAM_IMAGE:-false}" == "true" ]]; then
+        log_info "Using team Docker image template (Dockerfile.personal.team)"
         echo "static:Dockerfile.personal.team"
         return 0
     fi
 
-    # 2. Check if resolved combination matches any static template
+    # 2. Check if resolved combination matches any static template (Issue #14 fix)
     local matched_template=$(match_static_template "$base" "$libs" "$pkgs")
     if [[ -n "$matched_template" ]]; then
-        log_debug "Resolved combination matches static template: $matched_template"
+        log_info "Using static template: $matched_template"
         log_debug "  Base: $base, Libs: $libs, Pkgs: $pkgs"
         echo "static:${matched_template}"
         return 0
     fi
 
     # 3. No match found → generate custom
-    log_debug "No static template matches resolved combination - using generator"
+    log_info "No static template matches - will generate custom Dockerfile"
     log_debug "  Base: $base, Libs: $libs, Pkgs: $pkgs"
     echo "generate:custom"
     return 0
@@ -339,9 +348,16 @@ generate_custom_dockerfile() {
     local template="${TEMPLATES_DIR}/Dockerfile.base.template"
     local output="Dockerfile"
 
-    # Validate template exists
+    # Validate template exists and is readable (Issue #15 fix)
     if [[ ! -f "$template" ]]; then
         log_error "Template not found: $template"
+        log_error "Check ZZCOLLAB installation and templates/ directory"
+        return 1
+    fi
+
+    if [[ ! -r "$template" ]]; then
+        log_error "Template file exists but is not readable: $template"
+        log_error "Check file permissions: chmod 644 $template"
         return 1
     fi
 

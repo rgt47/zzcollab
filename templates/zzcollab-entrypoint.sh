@@ -10,6 +10,25 @@ AUTO_SNAPSHOT="${ZZCOLLAB_AUTO_SNAPSHOT:-true}"
 SNAPSHOT_TIMESTAMP_ADJUST="${ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST:-true}"
 PROJECT_DIR="${ZZCOLLAB_PROJECT_DIR:-/home/analyst/project}"
 
+# Validate PROJECT_DIR exists and is writable (Issue #11 fix)
+if [[ ! -d "$PROJECT_DIR" ]]; then
+    echo "❌ ERROR: PROJECT_DIR does not exist: $PROJECT_DIR" >&2
+    echo "   Set ZZCOLLAB_PROJECT_DIR to valid project directory" >&2
+    exit 1
+fi
+
+if [[ ! -r "$PROJECT_DIR" ]]; then
+    echo "❌ ERROR: PROJECT_DIR is not readable: $PROJECT_DIR" >&2
+    echo "   Check directory permissions" >&2
+    exit 1
+fi
+
+if [[ ! -w "$PROJECT_DIR" ]]; then
+    echo "❌ ERROR: PROJECT_DIR is not writable: $PROJECT_DIR" >&2
+    echo "   Check directory permissions (needed for renv snapshot)" >&2
+    exit 1
+fi
+
 # Exit cleanup handler
 cleanup() {
     local exit_code=$?
