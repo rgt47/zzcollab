@@ -6,9 +6,47 @@ set -euo pipefail
 # Load bundles configuration
 BUNDLES_FILE="${TEMPLATES_DIR}/bundles.yaml"
 
-# Function: list_available_profiles
-# Purpose: List all available profiles from Dockerfile templates
-# Returns: List of profile names (one per line)
+#-----------------------------------------------------------------------------
+# FUNCTION: list_available_profiles
+# PURPOSE:  List all available Docker profiles by scanning template files
+# DESCRIPTION:
+#   Discovers all available Docker profiles by finding Dockerfile templates
+#   in the templates directory. Profiles are defined by the presence of a
+#   corresponding Dockerfile template file. Excludes internal/backup files.
+#   Returns a sorted list of profile names for user selection.
+# ARGS:
+#   None
+# RETURNS:
+#   0 - Always succeeds
+# OUTPUTS:
+#   Profile names to stdout, one per line, sorted alphabetically
+# FILES READ:
+#   ${TEMPLATES_DIR}/Dockerfile.* - All Dockerfile template files
+# EXCLUSIONS:
+#   - *.bak - Backup files
+#   - *.template - Base templates (not user-selectable profiles)
+#   - Dockerfile.base.template - Base template for generation
+#   - Dockerfile.unified - Internal unified template
+#   - Dockerfile.personal.team - Internal team member template
+# PROFILE NAME EXTRACTION:
+#   Dockerfile.ubuntu_standard_minimal → ubuntu_standard_minimal
+#   Dockerfile.alpine_minimal → alpine_minimal
+#   Basename extraction removes "Dockerfile." prefix
+# GLOBALS READ:
+#   TEMPLATES_DIR - Path to templates directory (from constants.sh)
+# USE CASES:
+#   - Display available profiles to users
+#   - Validate user-provided profile names
+#   - Generate help/documentation
+# EXAMPLE OUTPUT:
+#   alpine_standard_analysis
+#   alpine_standard_minimal
+#   alpine_x11_analysis
+#   bioinformatics
+#   geospatial
+#   ubuntu_standard_minimal
+#   ...
+#-----------------------------------------------------------------------------
 list_available_profiles() {
     find "${TEMPLATES_DIR}" -name "Dockerfile.*" -type f \
         ! -name "*.bak" \
