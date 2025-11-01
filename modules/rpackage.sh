@@ -112,37 +112,6 @@ See https://www.gnu.org/licenses/gpl-3.0.en.html for details."
         return 1
     fi
 
-    # Create R project file (.Rproj) - RStudio project configuration
-    # Configures RStudio for package development with optimal settings
-    local rproj_content="Version: 1.0
-
-RestoreWorkspace: Default
-SaveWorkspace: Default
-AlwaysSaveHistory: Default
-
-EnableCodeIndexing: Yes
-UseSpacesForTab: Yes
-NumSpacesForTab: 2
-Encoding: UTF-8
-
-RnwWeave: Sweave
-LaTeX: pdfLaTeX
-
-AutoAppendNewline: Yes
-StripTrailingWhitespace: Yes
-
-BuildType: Package
-PackageUseDevtools: Yes
-PackageInstallArgs: --no-multiarch --with-keep.source"
-    
-    if create_file_if_missing "${pkg_name}.Rproj" "$rproj_content" "R project file"; then
-        track_file "${pkg_name}.Rproj"
-        log_debug "Created RStudio project file: ${pkg_name}.Rproj"
-    else
-        log_error "Failed to create R project file"
-        return 1
-    fi
-
     # Create test infrastructure using testthat framework
     # testthat is the standard R testing framework
     
@@ -235,13 +204,11 @@ validate_r_package_structure() {
     local -r required_files=(
         "DESCRIPTION"
         ".Rbuildignore"
-        "NAMESPACE" 
+        "NAMESPACE"
         "LICENSE"
         "R/utils.R"
         "tests/testthat.R"
         "tests/testthat/test-utils.R"
-        "${PKG_NAME}.Rproj"
-        "setup_renv.R"
     )
     
     local missing_files=()
@@ -271,8 +238,6 @@ show_rpackage_summary() {
 ├── .Rbuildignore           # Files to exclude from package build
 ├── NAMESPACE               # Function exports (managed by roxygen2)
 ├── LICENSE                 # GPL-3 license reference
-├── setup_renv.R           # Package management initialization
-├── [package-name].Rproj   # RStudio project configuration
 ├── R/
 │   └── utils.R            # Package functions with documentation
 └── tests/
