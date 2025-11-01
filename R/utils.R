@@ -13,6 +13,69 @@
   if (!is.null(lhs)) lhs else rhs
 }
 
+#' Validate Docker repository name format
+#'
+#' @param name Character string to validate
+#' @param param_name Name of parameter for error messages
+#' @return TRUE if valid, stops with error if invalid
+#' @keywords internal
+validate_docker_name <- function(name, param_name) {
+  # Check type
+  if (!is.character(name) || length(name) != 1) {
+    stop(param_name, " must be a single character string", call. = FALSE)
+  }
+
+  # Check for empty string
+  if (nchar(name) == 0) {
+    stop(param_name, " cannot be empty", call. = FALSE)
+  }
+
+  # Docker repository name rules:
+  # - Lowercase letters, numbers, dots, underscores, hyphens
+  # - Cannot start with dot or hyphen
+  # - Max 255 characters
+  if (grepl("^[.-]", name)) {
+    stop(param_name, " cannot start with a dot or hyphen", call. = FALSE)
+  }
+
+  if (grepl("[^a-z0-9._-]", name)) {
+    stop(param_name, " must contain only lowercase letters, numbers, dots, underscores, and hyphens",
+         call. = FALSE)
+  }
+
+  if (nchar(name) > 255) {
+    stop(param_name, " must be 255 characters or less", call. = FALSE)
+  }
+
+  return(TRUE)
+}
+
+#' Validate and normalize file path
+#'
+#' @param path Character string path
+#' @param param_name Name of parameter for error messages
+#' @param must_exist Logical, whether path must exist
+#' @return Normalized path
+#' @keywords internal
+validate_path <- function(path, param_name, must_exist = FALSE) {
+  if (is.null(path)) {
+    return(NULL)
+  }
+
+  if (!is.character(path) || length(path) != 1) {
+    stop(param_name, " must be a single character string", call. = FALSE)
+  }
+
+  # Normalize path
+  path <- normalizePath(path, mustWork = FALSE)
+
+  if (must_exist && !file.exists(path)) {
+    stop(param_name, " does not exist: ", path, call. = FALSE)
+  }
+
+  return(path)
+}
+
 #' Find zzcollab script
 #'
 #' @return Path to zzcollab script
@@ -335,13 +398,30 @@ init_project <- function(team_name = NULL, project_name = NULL,
   github_account <- github_account %||% get_config_default("github_account") %||% team_name
   dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
   dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
-  
+
   # Validate required parameters
   if (is.null(team_name)) {
-    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')")
+    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
+         call. = FALSE)
   }
   if (is.null(project_name)) {
-    stop("project_name is required")
+    stop("project_name is required", call. = FALSE)
+  }
+
+  # Validate parameter formats
+  validate_docker_name(team_name, "team_name")
+  validate_docker_name(project_name, "project_name")
+
+  if (!is.null(github_account)) {
+    validate_docker_name(github_account, "github_account")
+  }
+
+  # Validate and normalize paths
+  dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
+
+  # Validate logical parameters
+  if (!is.null(dotfiles_nodots) && !is.logical(dotfiles_nodots)) {
+    stop("dotfiles_nodots must be TRUE or FALSE", call. = FALSE)
   }
   
   # Find zzcollab script
@@ -465,10 +545,23 @@ join_project <- function(team_name = NULL, project_name = NULL,
 
   # Validate required parameters
   if (is.null(team_name)) {
-    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')")
+    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
+         call. = FALSE)
   }
   if (is.null(project_name)) {
-    stop("project_name is required")
+    stop("project_name is required", call. = FALSE)
+  }
+
+  # Validate parameter formats
+  validate_docker_name(team_name, "team_name")
+  validate_docker_name(project_name, "project_name")
+
+  # Validate and normalize paths
+  dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
+
+  # Validate logical parameters
+  if (!is.null(dotfiles_nodots) && !is.logical(dotfiles_nodots)) {
+    stop("dotfiles_nodots must be TRUE or FALSE", call. = FALSE)
   }
 
   # Find zzcollab script
@@ -768,7 +861,26 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
   # Apply config defaults for missing parameters
   dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
   dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
-  
+
+  # Validate and normalize paths
+  dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
+
+  # Validate logical parameters
+  if (!is.null(dotfiles_nodots) && !is.logical(dotfiles_nodots)) {
+    stop("dotfiles_nodots must be TRUE or FALSE", call. = FALSE)
+  }
+
+  # Validate base_image if provided
+  if (!is.null(base_image)) {
+    if (!is.character(base_image) || length(base_image) != 1) {
+      stop("base_image must be a single character string", call. = FALSE)
+    }
+    # Allow Docker image format: owner/image or owner/image:tag
+    if (!grepl("^[a-z0-9._-]+/[a-z0-9._-]+(:[a-z0-9._-]+)?$", base_image)) {
+      stop("base_image must be in format 'owner/image' or 'owner/image:tag'", call. = FALSE)
+    }
+  }
+
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
   
