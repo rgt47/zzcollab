@@ -432,7 +432,20 @@ sync_env()
 rebuild("docker-check-renv")
 ```
 
-**Note**: ZZCOLLAB now features auto-snapshot on container exit, so manual `renv::snapshot()` is typically unnecessary.
+**Alternative: Direct Installation**
+
+You can also use standard R commands inside containers:
+
+```{r, eval=FALSE}
+# Inside container (make docker-zsh or make docker-rstudio)
+install.packages("tidyverse")
+# For GitHub packages:
+install.packages("remotes")
+remotes::install_github("user/package")
+# Exit container - packages automatically captured in renv.lock
+```
+
+**Note**: ZZCOLLAB features auto-snapshot on container exit, so manual `renv::snapshot()` is typically unnecessary. Both `add_package()` (R function) and `install.packages()` (standard R) work identically - packages are captured automatically when you exit containers.
 
 # RStudio Integration
 

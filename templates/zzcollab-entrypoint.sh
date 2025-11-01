@@ -71,7 +71,9 @@ if [[ -z "$ZZCOLLAB_ENTRYPOINT_QUIET" ]]; then
 ║                                                                ║
 ║ Auto-snapshot enabled: renv.lock will be updated on exit      ║
 ║                                                                ║
-║ Install packages: renv::install("package")                    ║
+║ Install packages: install.packages("package")                 ║
+║ GitHub packages: install.packages("remotes") then              ║
+║                  remotes::install_github("user/package")       ║
 ║ Disable auto-snapshot: ZZCOLLAB_AUTO_SNAPSHOT=false           ║
 ╚════════════════════════════════════════════════════════════════╝
 

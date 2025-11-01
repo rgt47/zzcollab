@@ -48,7 +48,7 @@ ZZCOLLAB is a research collaboration framework that creates Docker-based reprodu
 - **Automated CI/CD**: GitHub Actions for R package validation and image builds
 - **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
 - **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **Dynamic package management**: Packages added via `renv::install()` as needed, no pre-configured modes
+- **Dynamic package management**: Packages added via `install.packages()` as needed, auto-captured on exit
 - **Unified systems**: Single tracking, validation, and logging systems across all modules
 - **Single source of truth**: Profile definitions in `bundles.yaml` eliminate duplication
 - **14+ Docker profiles**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
@@ -254,7 +254,7 @@ zzcollab -c list                      # List all configuration
 
 **Key Configuration Domains**:
 - **Docker Profile Management**: 14+ specialized environments (*see [Variants Guide](docs/VARIANTS.md)*)
-- **Package Management**: Dynamic via `renv::install()`, no pre-configured modes
+- **Package Management**: Dynamic via `install.packages()`, auto-captured on container exit
 - **Development Settings**: Team collaboration, dotfiles integration
 
 ## Docker Profile System
@@ -288,18 +288,19 @@ ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** arc
 
 **Workflow** (Simplified):
 ```bash
-make docker-zsh              # 1. Enter container (entrypoint active)
-renv::install("tidyverse")   # 2. Add packages as needed
-exit                         # 3. Exit → auto-snapshot + validation
+make docker-zsh                   # 1. Enter container (entrypoint active)
+install.packages("tidyverse")    # 2. Add packages (standard R command)
+# For GitHub: install.packages("remotes") then remotes::install_github("user/package")
+exit                              # 3. Exit → auto-snapshot + validation
 # renv.lock automatically updated and validated!
 git add renv.lock && git commit -m "Add tidyverse" && git push
 ```
 
 **How It Works**:
-- **No pre-configured modes**: Packages are added as needed via `renv::install()`
+- **Standard R commands**: Use familiar `install.packages()` - no renv commands needed for users
 - **Docker profiles**: Control base Docker environment and pre-installed packages (team/shared)
 - **Dynamic addition**: Team members add packages independently inside containers
-- **Automatic snapshot**: Container exit hook runs `renv::snapshot()`
+- **Automatic snapshot**: Container exit hook runs `renv::snapshot()` (users don't need to call it)
 - **Host validation**: Pure shell script validates DESCRIPTION ↔ renv.lock consistency
 - **No host R required**: Entire workflow works without R installed on host machine
 
@@ -483,7 +484,8 @@ zzcollab_help("config")            # Configuration guide
   - Files: `modules/dockerfile_generator.sh`, `templates/Dockerfile.base.template`, `templates/Dockerfile.personal.team`, `modules/devtools.sh`, `templates/Makefile`
 
 ### Earlier October 2025
-- Dynamic package management - packages added via `renv::install()`, no pre-configured modes
+- Simplified user documentation - recommend `install.packages()` instead of `renv::install()`
+- Dynamic package management with auto-snapshot on container exit
 - Unified paradigm consolidation
 - Docker profile system refactoring (September 2025)
 - Five-level reproducibility framework
@@ -530,7 +532,7 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
 ### Documentation Cross-References
 
 When working on zzcollab, refer users to:
-- Package management → Dynamic via `renv::install()`, see Package Management section above
+- Package management → Use `install.packages()` in containers (auto-captured on exit), see Package Management section above
 - Testing implementation → `docs/TESTING_GUIDE.md`
 - Configuration setup → `docs/CONFIGURATION.md`
 - Profile customization → `docs/VARIANTS.md`

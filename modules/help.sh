@@ -873,8 +873,8 @@ A: Yes, but you lose reproducibility. The whole point is that your
 Q: "What if I need to install a package?"
 A: In RStudio console:
      install.packages("packagename")
-   Then update your project:
-     renv::snapshot()
+   Exit container - packages automatically captured!
+   (Auto-snapshot runs when you close RStudio or terminal)
 
 Q: "Where do I put my analysis files?"
 A: Follow this structure:
@@ -894,7 +894,7 @@ A: Not required for solo work. But recommended for:
 
 Q: "Which Docker profile should I choose?"
 A: Use 'analysis' profile - has tidyverse, ggplot2, dplyr in Docker image.
-   Packages are added dynamically as needed with renv::install().
+   Additional packages are added dynamically as needed with install.packages().
    That's perfect for most coursework.
 
 Q: "My laptop is slow - can I use a lighter profile?"
@@ -904,9 +904,10 @@ A: Yes! Use minimal profile:
 
 Q: "How do I add packages I need?"
 A: Inside RStudio/container:
-     renv::install("package_name")
-     renv::snapshot()
-   Packages are tracked in renv.lock and shared with team.
+     install.packages("package_name")
+   Exit container (close RStudio or terminal)
+   Packages automatically tracked in renv.lock and shared with team!
+   For GitHub packages: install.packages("remotes"), then remotes::install_github("user/package")
 
 ═══════════════════════════════════════════════════════════════════════════
 INDIVIDUAL RESEARCHER COMPLETE COMMAND REFERENCE
@@ -1062,7 +1063,8 @@ FILE LOCATIONS:
 INSTALL PACKAGE:
   In RStudio console:
     install.packages("packagename")
-    renv::snapshot()
+  Exit container - automatically captured!
+  (For GitHub: install.packages("remotes") then remotes::install_github("user/package"))
 
 HELP:
   zzcollab --help-workflow

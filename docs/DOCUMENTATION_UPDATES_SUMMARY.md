@@ -44,20 +44,49 @@
 
 ## Remaining Updates
 
-### ⏳ 4. vignettes/quickstart.Rmd
-**TODO**: Change `renv::install()` → `install.packages()` examples
+### ✅ 4. vignettes/quickstart.Rmd
+**Changes:**
+- Changed all `renv::install()` → `install.packages()` (10 instances)
+- Updated team workflow examples
+- Added auto-snapshot explanations
+- Added GitHub package workflow with remotes
 
-### ⏳ 5. vignettes/quickstart-R.Rmd
-**TODO**: Change `renv::install()` → `install.packages()` examples
+**Impact**: Consistent with simplified approach across all examples
 
-### ⏳ 6. modules/help.sh
-**TODO**: Update package management help text
+### ✅ 5. vignettes/quickstart-R.Rmd
+**Changes:**
+- Added "Alternative: Direct Installation" section
+- Documented `install.packages()` alongside R package functions
+- Explained auto-capture mechanism
+- Added GitHub package workflow
 
-### ⏳ 7. templates/zzcollab-entrypoint.sh
-**TODO**: Update welcome message to mention `install.packages()`
+**Impact**: Users can choose between R functions or standard R commands
 
-### ⏳ 8. CLAUDE.md
-**TODO**: Update developer context with simplified approach
+### ✅ 6. modules/help.sh
+**Changes:**
+- Updated 4 FAQs to use `install.packages()`
+- Changed "renv::install()" → "install.packages()" in quick reference
+- Added auto-snapshot explanations
+- Added GitHub package workflow
+
+**Impact**: Help system reflects simplified workflow
+
+### ✅ 7. templates/zzcollab-entrypoint.sh
+**Changes:**
+- Updated welcome banner: "renv::install()" → "install.packages()"
+- Added GitHub package instructions
+- Expanded message to show remotes workflow
+
+**Impact**: Users see correct commands when entering containers
+
+### ✅ 8. CLAUDE.md
+**Changes:**
+- Updated 5 references to `renv::install()`
+- Changed "Dynamic via renv::install()" → "Dynamic via install.packages()"
+- Updated Package Management workflow example
+- Added version history entry
+
+**Impact**: Developer/AI assistant context matches simplified approach
 
 ---
 
@@ -161,11 +190,11 @@ Both approaches:
 1. ✅ `/README.md`
 2. ✅ `/templates/ZZCOLLAB_USER_GUIDE.md`
 3. ✅ `/templates/workflows/r-package.yml`
-4. ⏳ `/vignettes/quickstart.Rmd`
-5. ⏳ `/vignettes/quickstart-R.Rmd`
-6. ⏳ `/modules/help.sh`
-7. ⏳ `/templates/zzcollab-entrypoint.sh`
-8. ⏳ `/CLAUDE.md`
+4. ✅ `/vignettes/quickstart.Rmd`
+5. ✅ `/vignettes/quickstart-R.Rmd`
+6. ✅ `/modules/help.sh`
+7. ✅ `/templates/zzcollab-entrypoint.sh`
+8. ✅ `/CLAUDE.md`
 
 ---
 
@@ -228,5 +257,5 @@ Before release, verify:
 
 ---
 
-**Status:** 3 of 8 files updated (38% complete)
-**Estimated remaining time:** 1-2 hours for complete documentation update
+**Status:** 8 of 8 files updated (100% complete)
+**Completion date:** October 31, 2025
