@@ -2,16 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(bats tests/shell/test-docker.bats)",
-      "Bash(bats tests/shell/test-config.bats tests/shell/test-docker.bats)",
-      "Bash(python3 -c \"import yaml; yaml.safe_load(open(''.github/workflows/integration-tests.yml''))\")",
-      "Bash(for f in Dockerfile.minimal Dockerfile.analysis Dockerfile.geospatial Dockerfile.modeling Dockerfile.publishing Dockerfile.base.template)",
-      "Bash(do echo \"=== $f ===\")",
-      "Bash(awk:*)",
-      "Bash(done)",
-      "Bash(bats:*)",
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nAdd comprehensive best practices implementation summary\n\nDocument complete codebase review and Phase 1 implementation of\ncritical improvements for the ZZCOLLAB dual R/shell architecture.\n\nSummary Contents:\n- Executive summary of improvements (Grade B → B+/A-)\n- Detailed implementation documentation for completed work\n- Remaining HIGH/MEDIUM/LOW priority recommendations\n- Implementation roadmap for Phases 2-4\n- Metrics and compliance tracking\n- Best practice references\n\nCompleted Improvements:\n1. CRITICAL: Added set -euo pipefail to all 17 shell modules\n   - Prevents silent failures, better error handling\n   - Fixed 6 undefined variable bugs exposed by strict mode\n   - 79/82 tests passing (3 failures in test setup, not production)\n\n2. CRITICAL: Added comprehensive input validation to R functions\n   - Created validate_docker_name() and validate_path() helpers\n   - Enhanced init_project(), join_project(), setup_project()\n   - Clear error messages following R package best practices\n\nRemaining Recommendations (Documented):\n- HIGH: R error handling (tryCatch, system() checks)\n- HIGH: Expand R test coverage\n- HIGH: Update DESCRIPTION with version constraints\n- MEDIUM: Standardize shell docs, safe_system wrapper\n- LOW: @family tags, dependency graph\n\nEstimated Remaining Effort: ~20-25 hours for full Grade A\n\nBest Practice References:\n- Google Shell Style Guide\n- \"R Packages\" by Hadley Wickham\n- tidyverse design guide\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(Rscript:*)"
     ],
     "deny": [],
     "ask": []
