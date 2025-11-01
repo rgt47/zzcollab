@@ -27,7 +27,7 @@ find_zzcollab_script <- function() {
   zzcollab_path <- Sys.which("zzcollab")
   if (zzcollab_path != "") {
     # Test if this version supports config commands
-    test_result <- system(paste(zzcollab_path, "config list"), 
+    test_result <- system(paste(zzcollab_path, "--config list"),
                          ignore.stdout = TRUE, ignore.stderr = TRUE)
     if (test_result == 0) {
       return("zzcollab")
@@ -44,7 +44,7 @@ find_zzcollab_script <- function() {
   for (path in possible_paths) {
     if (file.exists(path)) {
       # Test if this version supports config commands
-      test_result <- system(paste(path, "config list"), 
+      test_result <- system(paste(path, "--config list"),
                            ignore.stdout = TRUE, ignore.stderr = TRUE)
       if (test_result == 0) {
         return(path)
@@ -942,10 +942,10 @@ zzcollab_next_steps <- function() {
 get_config <- function(key) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  cmd <- paste(zzcollab_path, "config get", key)
+
+  cmd <- paste(zzcollab_path, "--config get", key)
   result <- system(cmd, intern = TRUE)
-  
+
   if (length(result) > 0 && !grepl("\\(not set\\)", result[1])) {
     return(result[1])
   } else {
@@ -1019,8 +1019,8 @@ get_config <- function(key) {
 set_config <- function(key, value) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  cmd <- paste(zzcollab_path, "config set", key, shQuote(value))
+
+  cmd <- paste(zzcollab_path, "--config set", key, shQuote(value))
   result <- system(cmd)
   return(result == 0)
 }
@@ -1080,8 +1080,8 @@ set_config <- function(key, value) {
 list_config <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  cmd <- paste(zzcollab_path, "config list")
+
+  cmd <- paste(zzcollab_path, "--config list")
   result <- system(cmd, intern = TRUE)
   return(result)
 }
@@ -1152,8 +1152,8 @@ list_config <- function() {
 validate_config <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  cmd <- paste(zzcollab_path, "config validate")
+
+  cmd <- paste(zzcollab_path, "--config validate")
   result <- system(cmd)
   return(result == 0)
 }
@@ -1225,8 +1225,8 @@ validate_config <- function() {
 init_config <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
-  cmd <- paste(zzcollab_path, "config init")
+
+  cmd <- paste(zzcollab_path, "--config init")
   result <- system(cmd)
   return(result == 0)
 }
