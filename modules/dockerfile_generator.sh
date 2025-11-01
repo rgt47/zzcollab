@@ -76,60 +76,90 @@ get_profile_defaults() {
     case "$profile" in
         # Ubuntu Standard profiles
         ubuntu_standard_minimal)
-            defaults="rocker/r-ver:standard:minimal"
+            defaults="rocker/r-ver:minimal:minimal"
             ;;
         ubuntu_standard_analysis)
-            defaults="rocker/tidyverse:standard:analysis"
+            defaults="rocker/tidyverse:modeling:modeling"
             ;;
         ubuntu_standard_publishing)
-            defaults="rocker/verse:standard:publishing"
+            defaults="rocker/verse:publishing:publishing"
             ;;
         # Ubuntu Shiny profiles
         ubuntu_shiny_minimal)
-            defaults="rocker/shiny:shiny:minimal"
+            defaults="rocker/shiny:minimal:shiny"
             ;;
         ubuntu_shiny_analysis)
-            defaults="rocker/shiny-verse:shiny:analysis"
+            defaults="rocker/shiny-verse:minimal:shiny"
             ;;
         # Ubuntu X11 profiles
         ubuntu_x11_minimal)
-            defaults="rocker/r-ver:x11:minimal"
+            defaults="rocker/r-ver:gui:minimal"
             ;;
         ubuntu_x11_analysis)
-            defaults="rocker/tidyverse:x11:analysis"
+            defaults="rocker/tidyverse:gui:gui"
             ;;
         # Alpine Standard profiles
         alpine_standard_minimal)
-            defaults="rhub/r-minimal:alpine_standard:minimal"
+            defaults="rhub/r-minimal:alpine:minimal"
             ;;
         alpine_standard_analysis)
-            defaults="rhub/r-minimal:alpine_standard:analysis"
+            defaults="rhub/r-minimal:alpine:tidyverse"
             ;;
         # Alpine X11 profiles
         alpine_x11_minimal)
-            defaults="rhub/r-minimal:alpine_x11:minimal"
+            defaults="rhub/r-minimal:alpine_gui:minimal"
             ;;
         alpine_x11_analysis)
-            defaults="rhub/r-minimal:alpine_x11:analysis"
+            defaults="rhub/r-minimal:alpine_gui:tidyverse"
             ;;
         # Legacy profile names (for backward compatibility)
         minimal)
-            defaults="rocker/r-ver:standard:minimal"
+            defaults="rocker/r-ver:minimal:minimal"
+            ;;
+        rstudio)
+            defaults="rocker/rstudio:minimal:minimal"
             ;;
         analysis)
-            defaults="rocker/tidyverse:standard:analysis"
+            defaults="rocker/tidyverse:minimal:tidyverse"
+            ;;
+        modeling)
+            defaults="rocker/r-ver:modeling:modeling"
+            ;;
+        bioinformatics)
+            defaults="bioconductor/bioconductor_docker:bioinfo:bioinfo"
+            ;;
+        geospatial)
+            defaults="rocker/geospatial:geospatial:geospatial"
             ;;
         publishing)
-            defaults="rocker/verse:standard:publishing"
+            defaults="rocker/verse:publishing:publishing"
             ;;
         shiny)
-            defaults="rocker/shiny:shiny:minimal"
+            defaults="rocker/shiny:minimal:shiny"
             ;;
         alpine_minimal)
-            defaults="rhub/r-minimal:alpine_standard:minimal"
+            defaults="rhub/r-minimal:alpine:minimal"
             ;;
         alpine_analysis)
-            defaults="rhub/r-minimal:alpine_standard:analysis"
+            defaults="rhub/r-minimal:alpine:tidyverse"
+            ;;
+        alpine_gui)
+            defaults="rhub/r-minimal:alpine_gui:tidyverse"
+            ;;
+        hpc_alpine)
+            defaults="rhub/r-minimal:alpine:minimal"
+            ;;
+        gui)
+            defaults="rocker/rstudio:gui:gui"
+            ;;
+        gui_minimal)
+            defaults="rocker/r-ver:gui:minimal"
+            ;;
+        gui_analysis)
+            defaults="rocker/tidyverse:gui:tidyverse"
+            ;;
+        gui_rstudio)
+            defaults="rocker/rstudio:gui:minimal"
             ;;
         *)
             log_error "Unknown profile: $profile"
