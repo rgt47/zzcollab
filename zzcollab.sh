@@ -891,9 +891,6 @@ execute_project_creation_workflow() {
     
     log_info "🛠️ Creating development tools..."
     create_makefile || exit 1
-    
-    log_info "🔗 Creating navigation scripts..."
-    create_navigation_scripts || exit 1
 }
 
 # Function: finalize_and_report_results  
