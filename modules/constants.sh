@@ -45,8 +45,8 @@ readonly ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_SCRIPT_DIR/modules"        # Shell modu
 
 # Manifest files track all files created during zzcollab setup
 # These enable clean uninstallation and prevent conflicts
-readonly ZZCOLLAB_MANIFEST_JSON=".zzcollab_manifest.json"  # Machine-readable manifest
-readonly ZZCOLLAB_MANIFEST_TXT=".zzcollab_manifest.txt"    # Human-readable manifest
+readonly ZZCOLLAB_MANIFEST_JSON=".zzcollab/manifest.json"  # Machine-readable manifest
+readonly ZZCOLLAB_MANIFEST_TXT=".zzcollab/manifest.txt"    # Human-readable manifest
 
 # Configuration file hierarchy (loaded in priority order)
 # Project-level config overrides user-level, which overrides system-level

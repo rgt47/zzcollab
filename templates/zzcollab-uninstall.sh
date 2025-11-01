@@ -20,8 +20,8 @@ set -euo pipefail
 # CONFIGURATION
 #=============================================================================
 
-readonly MANIFEST_FILE=".zzcollab_manifest.json"
-readonly MANIFEST_TXT=".zzcollab_manifest.txt"
+readonly MANIFEST_FILE=".zzcollab/manifest.json"
+readonly MANIFEST_TXT=".zzcollab/manifest.txt"
 readonly SCRIPT_NAME="$(basename "$0")"
 
 # Colors for output

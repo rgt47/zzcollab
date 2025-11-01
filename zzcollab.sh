@@ -71,14 +71,14 @@ if [[ -f "$MODULES_DIR/constants.sh" ]]; then
     # Use centralized constants from constants.sh module
     # These are defined in modules/constants.sh and provide consistent paths
     readonly TEMPLATES_DIR="$ZZCOLLAB_TEMPLATES_DIR"    # templates/ directory
-    readonly MANIFEST_FILE="$ZZCOLLAB_MANIFEST_JSON"    # .zzcollab_manifest.json
-    readonly MANIFEST_TXT="$ZZCOLLAB_MANIFEST_TXT"      # .zzcollab_manifest.txt
+    readonly MANIFEST_FILE="$ZZCOLLAB_MANIFEST_JSON"    # .zzcollab/manifest.json
+    readonly MANIFEST_TXT="$ZZCOLLAB_MANIFEST_TXT"      # .zzcollab/manifest.txt
 else
     # Fallback constants if constants module not available (backwards compatibility)
     # This should rarely happen in normal operation
     readonly TEMPLATES_DIR="$SCRIPT_DIR/templates"
-    readonly MANIFEST_FILE=".zzcollab_manifest.json"
-    readonly MANIFEST_TXT=".zzcollab_manifest.txt"
+    readonly MANIFEST_FILE=".zzcollab/manifest.json"
+    readonly MANIFEST_TXT=".zzcollab/manifest.txt"
 fi
 
 #=============================================================================
@@ -302,6 +302,9 @@ done
 #=============================================================================
 
 init_manifest() {
+    # Ensure .zzcollab directory exists
+    mkdir -p ".zzcollab"
+
     if [[ "$JQ_AVAILABLE" == "true" ]]; then
         cat > "$MANIFEST_FILE" <<EOF
 {
