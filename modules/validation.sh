@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 # modules/validation.sh - Package dependency validation (pure shell, no R required)
 #
 # This module validates that all R packages used in code are properly declared

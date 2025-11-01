@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 # Profile Validation Module
 # Validates compatibility between base images, library bundles, and package bundles
 
