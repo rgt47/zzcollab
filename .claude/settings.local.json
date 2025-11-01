@@ -8,7 +8,8 @@
       "Bash(for f in Dockerfile.minimal Dockerfile.analysis Dockerfile.geospatial Dockerfile.modeling Dockerfile.publishing Dockerfile.base.template)",
       "Bash(do echo \"=== $f ===\")",
       "Bash(awk:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(bats:*)"
     ],
     "deny": [],
     "ask": []

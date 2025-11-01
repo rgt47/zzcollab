@@ -256,7 +256,7 @@ track_item() {
     # Setup cleanup trap for temporary files
     local tmp=""
     cleanup_track_tmp() {
-        if [[ -n "$tmp" ]] && [[ -f "$tmp" ]]; then
+        if [[ -n "${tmp:-}" ]] && [[ -f "${tmp:-}" ]]; then
             rm -f "$tmp"
         fi
     }
@@ -264,10 +264,10 @@ track_item() {
 
     case "$type" in
         directory)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg dir "$data1" '.directories += [$dir]' "$MANIFEST_FILE" > "$tmp"; then
-                    if ! mv "$tmp" "$MANIFEST_FILE"; then
+                if jq --arg dir "$data1" '.directories += [$dir]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for directory: $data1"
                         return 1
                     fi
@@ -275,18 +275,18 @@ track_item() {
                     log_error "jq failed to process manifest for directory: $data1"
                     return 1
                 fi
-            elif [[ -f "$MANIFEST_TXT" ]]; then
-                echo "directory:$data1" >> "$MANIFEST_TXT" || {
+            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
+                echo "directory:$data1" >> "${MANIFEST_TXT:-}" || {
                     log_error "Failed to append to text manifest for directory: $data1"
                     return 1
                 }
             fi
             ;;
         file)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg file "$data1" '.files += [$file]' "$MANIFEST_FILE" > "$tmp"; then
-                    if ! mv "$tmp" "$MANIFEST_FILE"; then
+                if jq --arg file "$data1" '.files += [$file]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for file: $data1"
                         return 1
                     fi
@@ -294,18 +294,18 @@ track_item() {
                     log_error "jq failed to process manifest for file: $data1"
                     return 1
                 fi
-            elif [[ -f "$MANIFEST_TXT" ]]; then
-                echo "file:$data1" >> "$MANIFEST_TXT" || {
+            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
+                echo "file:$data1" >> "${MANIFEST_TXT:-}" || {
                     log_error "Failed to append to text manifest for file: $data1"
                     return 1
                 }
             fi
             ;;
         template)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg template "$data1" --arg dest "$data2" '.template_files += [{"template": $template, "destination": $dest}]' "$MANIFEST_FILE" > "$tmp"; then
-                    if ! mv "$tmp" "$MANIFEST_FILE"; then
+                if jq --arg template "$data1" --arg dest "$data2" '.template_files += [{"template": $template, "destination": $dest}]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for template: $data1 -> $data2"
                         return 1
                     fi
@@ -313,18 +313,18 @@ track_item() {
                     log_error "jq failed to process manifest for template: $data1"
                     return 1
                 fi
-            elif [[ -f "$MANIFEST_TXT" ]]; then
-                echo "template:$data1:$data2" >> "$MANIFEST_TXT" || {
+            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
+                echo "template:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
                     log_error "Failed to append to text manifest for template: $data1"
                     return 1
                 }
             fi
             ;;
         symlink)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg link "$data1" --arg target "$data2" '.symlinks += [{"link": $link, "target": $target}]' "$MANIFEST_FILE" > "$tmp"; then
-                    if ! mv "$tmp" "$MANIFEST_FILE"; then
+                if jq --arg link "$data1" --arg target "$data2" '.symlinks += [{"link": $link, "target": $target}]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for symlink: $data1 -> $data2"
                         return 1
                     fi
@@ -332,18 +332,18 @@ track_item() {
                     log_error "jq failed to process manifest for symlink: $data1"
                     return 1
                 fi
-            elif [[ -f "$MANIFEST_TXT" ]]; then
-                echo "symlink:$data1:$data2" >> "$MANIFEST_TXT" || {
+            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
+                echo "symlink:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
                     log_error "Failed to append to text manifest for symlink: $data1"
                     return 1
                 }
             fi
             ;;
         dotfile)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg dotfile "$data1" '.dotfiles += [$dotfile]' "$MANIFEST_FILE" > "$tmp"; then
-                    if ! mv "$tmp" "$MANIFEST_FILE"; then
+                if jq --arg dotfile "$data1" '.dotfiles += [$dotfile]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for dotfile: $data1"
                         return 1
                     fi
@@ -351,18 +351,18 @@ track_item() {
                     log_error "jq failed to process manifest for dotfile: $data1"
                     return 1
                 fi
-            elif [[ -f "$MANIFEST_TXT" ]]; then
-                echo "dotfile:$data1" >> "$MANIFEST_TXT" || {
+            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
+                echo "dotfile:$data1" >> "${MANIFEST_TXT:-}" || {
                     log_error "Failed to append to text manifest for dotfile: $data1"
                     return 1
                 }
             fi
             ;;
         docker_image)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "$MANIFEST_FILE" ]]; then
+            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg image "$data1" '.docker_image = $image' "$MANIFEST_FILE" > "$tmp"; then
-                    if ! mv "$tmp" "$MANIFEST_FILE"; then
+                if jq --arg image "$data1" '.docker_image = $image' "${MANIFEST_FILE:-}" > "$tmp"; then
+                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for docker_image: $data1"
                         return 1
                     fi
@@ -370,8 +370,8 @@ track_item() {
                     log_error "jq failed to process manifest for docker_image: $data1"
                     return 1
                 fi
-            elif [[ -f "$MANIFEST_TXT" ]]; then
-                echo "docker_image:$data1" >> "$MANIFEST_TXT" || {
+            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
+                echo "docker_image:$data1" >> "${MANIFEST_TXT:-}" || {
                     log_error "Failed to append to text manifest for docker_image: $data1"
                     return 1
                 }
@@ -387,8 +387,8 @@ track_item() {
 # Legacy wrapper functions for backward compatibility
 track_directory() { track_item "directory" "$1"; }
 track_file() { track_item "file" "$1"; }
-track_template_file() { track_item "template" "$1" "$2"; }
-track_symlink() { track_item "symlink" "$1" "$2"; }
+track_template_file() { track_item "template" "$1" "${2:-}"; }
+track_symlink() { track_item "symlink" "$1" "${2:-}"; }
 track_dotfile() { track_item "dotfile" "$1"; }
 track_docker_image() { track_item "docker_image" "$1"; }
 
