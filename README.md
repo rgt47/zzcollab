@@ -469,7 +469,7 @@ EXAMPLES:
   git clone https://github.com/myteam/study.git && cd study
   zzcollab --use-team-image                   # Pull and use team image
   make docker-zsh                             # Start development
-  # Inside container: renv::install("pkg") as needed
+  # Inside container: install.packages("pkg") as needed
 
   # Traditional usage
   zzcollab --base-image rgt47/r-pluspackages  # Custom base
@@ -545,7 +545,7 @@ docker run -e RSTUDIO_AUTH=none -p 8787:8787 your-image
 ### Academic Research
 
 - Manuscript preparation with automated figure/table generation
-- Reproducible analysis with renv dependency management
+- Reproducible analysis with automated dependency management
 - Collaboration with standardized project structure
 - Publication with GitHub Actions workflows
 
@@ -559,7 +559,8 @@ docker run -e RSTUDIO_AUTH=none -p 8787:8787 your-image
 ### Team Collaboration
 
 - Team lead defines Docker profile (R version, system dependencies)
-- Team members add R packages independently via renv
+- Team members add R packages independently using standard R commands
+- Packages automatically captured and shared via renv.lock
 - Consistent base environment across all team members
 - Version control integration with Git/GitHub
 

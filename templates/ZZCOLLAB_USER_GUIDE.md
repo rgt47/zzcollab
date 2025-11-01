@@ -39,7 +39,7 @@ ZZCOLLAB uses a **two-layer reproducibility architecture**:
 - **Fixed**: Once selected, shared by all team members
 
 #### Layer 2: Dynamic Packages (Personal/Independent)
-- **Controlled by**: Any team member via `renv::install()` inside containers
+- **Controlled by**: Any team member using standard R commands inside containers
 - **Purpose**: Add packages as needed for specific analyses
 - **Flexible**: Each member can add packages independently
 - **Collaborative**: renv.lock accumulates packages from all contributors
@@ -550,19 +550,31 @@ zzcollab --profile-name bioinformatics
 
 #### Layer 2: renv.lock (Dynamic, Personal/Collaborative)
 
-**Controlled by:** Any team member via `renv::install()`
+**Controlled by:** Any team member using standard R commands
 
 **Purpose:** Source of truth for reproducibility
 
 **Example:**
 ```bash
 # Inside container:
-renv::install("ComplexHeatmap")  # Alice adds heatmap package
-renv::install("clusterProfiler")  # Bob adds pathway analysis
+install.packages("ComplexHeatmap")  # Alice adds heatmap package
+install.packages("clusterProfiler")  # Bob adds pathway analysis
 exit  # Auto-snapshot on exit!
 ```
 
 **Key principle:** renv.lock is the source of truth, NOT the Docker image.
+
+**For GitHub packages:**
+```r
+install.packages("remotes")
+remotes::install_github("user/package")
+```
+
+**Alternative:** `renv::install()` works for both CRAN and GitHub:
+```r
+renv::install("package")         # CRAN
+renv::install("user/package")    # GitHub
+```
 
 ### Package Workflow
 
