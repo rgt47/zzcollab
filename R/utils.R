@@ -76,6 +76,50 @@ validate_path <- function(path, param_name, must_exist = FALSE) {
   return(path)
 }
 
+#' Safe system call with error handling
+#'
+#' Wrapper around system() with comprehensive error handling via tryCatch.
+#' Provides consistent error messages and behavior across all zzcollab functions.
+#'
+#' @param command Character string command to execute
+#' @param intern Logical, capture output (default: FALSE)
+#' @param ignore.stdout Logical, suppress stdout (default: FALSE)
+#' @param ignore.stderr Logical, suppress stderr (default: FALSE)
+#' @param error_msg Custom error message prefix (optional)
+#' @return For intern=FALSE: exit status (0 for success)
+#'         For intern=TRUE: character vector of output
+#' @keywords internal
+safe_system <- function(command, intern = FALSE, ignore.stdout = FALSE,
+                        ignore.stderr = FALSE, error_msg = NULL) {
+  tryCatch({
+    result <- system(command, intern = intern,
+                    ignore.stdout = ignore.stdout,
+                    ignore.stderr = ignore.stderr)
+
+    # Check exit status for non-intern calls
+    if (!intern) {
+      if (result != 0) {
+        msg <- if (!is.null(error_msg)) {
+          paste0(error_msg, " (exit code: ", result, ")")
+        } else {
+          paste0("Command failed with exit code ", result, ": ", command)
+        }
+        warning(msg, call. = FALSE)
+      }
+    }
+
+    return(result)
+
+  }, error = function(e) {
+    msg <- if (!is.null(error_msg)) {
+      paste0(error_msg, ": ", conditionMessage(e))
+    } else {
+      paste0("System command error: ", conditionMessage(e))
+    }
+    stop(msg, call. = FALSE)
+  })
+}
+
 #' Find zzcollab script
 #'
 #' @return Path to zzcollab script
@@ -85,36 +129,38 @@ find_zzcollab_script <- function() {
   if (file.exists("zzcollab.sh")) {
     return("./zzcollab.sh")
   }
-  
+
   # Second priority: Check if zzcollab is in PATH (but only if it supports config)
   zzcollab_path <- Sys.which("zzcollab")
   if (zzcollab_path != "") {
     # Test if this version supports config commands
-    test_result <- system(paste(zzcollab_path, "--config list"),
-                         ignore.stdout = TRUE, ignore.stderr = TRUE)
+    test_result <- safe_system(paste(zzcollab_path, "--config list"),
+                               ignore.stdout = TRUE, ignore.stderr = TRUE,
+                               error_msg = "Failed to test zzcollab config support")
     if (test_result == 0) {
       return("zzcollab")
     }
   }
-  
+
   # Third priority: Check common installation locations
   possible_paths <- c(
     file.path(Sys.getenv("HOME"), "bin", "zzcollab"),
     "/usr/local/bin/zzcollab",
     "/usr/bin/zzcollab"
   )
-  
+
   for (path in possible_paths) {
     if (file.exists(path)) {
       # Test if this version supports config commands
-      test_result <- system(paste(path, "--config list"),
-                           ignore.stdout = TRUE, ignore.stderr = TRUE)
+      test_result <- safe_system(paste(path, "--config list"),
+                                 ignore.stdout = TRUE, ignore.stderr = TRUE,
+                                 error_msg = "Failed to test zzcollab config support")
       if (test_result == 0) {
         return(path)
       }
     }
   }
-  
+
   stop("zzcollab script with config support not found. Please use zzcollab from source directory or install updated version.")
 }
 
@@ -154,15 +200,16 @@ status <- function() {
   # Use Docker CLI to list containers with zzcollab label
   # --filter: only show containers with 'label=zzcollab'
   # --format: custom table format showing name, status, and image
-  result <- system("docker ps --filter 'label=zzcollab' --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'", 
-                   intern = TRUE)
-  
+  result <- safe_system("docker ps --filter 'label=zzcollab' --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'",
+                       intern = TRUE,
+                       error_msg = "Failed to query Docker containers")
+
   # If no containers found, inform user and return empty vector
   if (length(result) == 0) {
     message("No zzcollab containers running")
     return(character(0))
   }
-  
+
   return(result)
 }
 
@@ -223,11 +270,12 @@ rebuild <- function(target = "docker-build") {
   if (!file.exists("Makefile")) {
     stop("No Makefile found. Are you in a zzcollab project directory?")
   }
-  
+
   # Execute the make command with specified target
   # intern = TRUE captures output, attr(result, "status") contains exit code
-  result <- system(paste("make", target), intern = TRUE)
-  
+  result <- safe_system(paste("make", target), intern = TRUE,
+                       error_msg = paste("Failed to execute make target:", target))
+
   # Return TRUE if command succeeded (exit code 0), FALSE otherwise
   # The %||% operator provides fallback value if status attribute is NULL
   return(attr(result, "status") %||% 0 == 0)
@@ -281,15 +329,16 @@ team_images <- function() {
   # Query Docker for images with zzcollab.team label
   # This label is applied during team image creation
   # Format output as tab-separated values for easy parsing
-  result <- system("docker images --filter 'label=zzcollab.team' --format '{{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}'", 
-                   intern = TRUE)
-  
+  result <- safe_system("docker images --filter 'label=zzcollab.team' --format '{{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}'",
+                       intern = TRUE,
+                       error_msg = "Failed to query Docker images")
+
   # Handle case where no team images exist
   if (length(result) == 0) {
     message("No zzcollab team images found")
     return(data.frame())
   }
-  
+
   # Parse the tab-separated output into a structured data frame
   # Each line contains: repository, tag, size, created_date
   lines <- strsplit(result, "\t")
@@ -443,7 +492,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
   }
 
   message("Running: ", cmd)
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = "Failed to initialize project")
   return(result == 0)
 }
 
@@ -579,7 +628,7 @@ join_project <- function(team_name = NULL, project_name = NULL,
   }
 
   message("Running: ", cmd)
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = "Failed to join project")
   return(result == 0)
 }
 
@@ -625,14 +674,15 @@ sync_env <- function() {
   
   message("Restoring environment from renv.lock...")
   renv::restore()
-  
+
   # Check if we need to rebuild Docker image
-  result <- system("make docker-check-renv", intern = TRUE)
+  result <- safe_system("make docker-check-renv", intern = TRUE,
+                       error_msg = "Failed to check renv status")
   if (attr(result, "status") %||% 0 != 0) {
     message("Environment sync may require Docker image rebuild")
     message("Run rebuild() or 'make docker-build' to update Docker environment")
   }
-  
+
   return(TRUE)
 }
 
@@ -654,7 +704,7 @@ run_script <- function(script_path, container_cmd = "docker-r") {
   # Execute script in container
   cmd <- paste("make", container_cmd, "ARGS='-e \"source(\\\"", script_path, "\\\")\"'")
   message("Running script in container: ", script_path)
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = paste("Failed to run script:", script_path))
   return(result == 0)
 }
 
@@ -680,7 +730,7 @@ render_report <- function(report_path = NULL) {
   }
   
   message("Rendering report in container...")
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = "Failed to render report")
   return(result == 0)
 }
 
@@ -700,7 +750,8 @@ validate_repro <- function() {
   for (script in scripts_to_check) {
     if (file.exists(script)) {
       message("Running reproducibility check: ", script)
-      result <- system(paste("Rscript", script), intern = TRUE)
+      result <- safe_system(paste("Rscript", script), intern = TRUE,
+                           error_msg = paste("Failed to run reproducibility check:", script))
       if (attr(result, "status") %||% 0 != 0) {
         message("FAILED: ", script)
         all_passed <- FALSE
@@ -735,16 +786,16 @@ validate_repro <- function() {
 #' @export
 git_commit <- function(message, add_all = TRUE) {
   if (add_all) {
-    result1 <- system("git add .")
+    result1 <- safe_system("git add .", error_msg = "Failed to add files to git")
     if (result1 != 0) {
       stop("Failed to add files to git")
     }
   }
-  
+
   # Create commit with proper formatting
   commit_cmd <- sprintf('git commit -m "%s"', message)
-  result2 <- system(commit_cmd)
-  
+  result2 <- safe_system(commit_cmd, error_msg = "Failed to create git commit")
+
   if (result2 == 0) {
     message("\u2705 Commit created: ", message)
     return(TRUE)
@@ -765,9 +816,9 @@ git_push <- function(branch = NULL) {
   } else {
     cmd <- paste("git push origin", branch)
   }
-  
-  result <- system(cmd)
-  
+
+  result <- safe_system(cmd, error_msg = "Failed to push to GitHub")
+
   if (result == 0) {
     message("\u2705 Successfully pushed to GitHub")
     return(TRUE)
@@ -787,19 +838,20 @@ git_push <- function(branch = NULL) {
 create_pr <- function(title, body = NULL, base = "main") {
   if (!nzchar(system.file(package = "gh"))) {
     # Check if gh CLI is available
-    if (system("which gh", ignore.stdout = TRUE, ignore.stderr = TRUE) != 0) {
+    if (safe_system("which gh", ignore.stdout = TRUE, ignore.stderr = TRUE,
+                   error_msg = "GitHub CLI check failed") != 0) {
       stop("GitHub CLI (gh) is required. Install with: brew install gh")
     }
   }
-  
+
   cmd <- paste("gh pr create --title", shQuote(title), "--base", base)
-  
+
   if (!is.null(body)) {
     cmd <- paste(cmd, "--body", shQuote(body))
   }
-  
-  result <- system(cmd)
-  
+
+  result <- safe_system(cmd, error_msg = "Failed to create pull request")
+
   if (result == 0) {
     message("\u2705 Pull request created successfully")
     return(TRUE)
@@ -814,8 +866,9 @@ create_pr <- function(title, body = NULL, base = "main") {
 #' @return Character vector with git status output
 #' @export
 git_status <- function() {
-  result <- system("git status --porcelain", intern = TRUE)
-  
+  result <- safe_system("git status --porcelain", intern = TRUE,
+                       error_msg = "Failed to check git status")
+
   if (length(result) == 0) {
     message("\u2705 Working directory clean")
     return(character(0))
@@ -833,12 +886,15 @@ git_status <- function() {
 #' @export
 create_branch <- function(branch_name) {
   # Ensure we're on main and up to date
-  system("git checkout main", ignore.stdout = TRUE)
-  system("git pull", ignore.stdout = TRUE)
-  
+  safe_system("git checkout main", ignore.stdout = TRUE,
+             error_msg = "Failed to checkout main branch")
+  safe_system("git pull", ignore.stdout = TRUE,
+             error_msg = "Failed to pull latest changes")
+
   # Create and checkout new branch
-  result <- system(paste("git checkout -b", branch_name))
-  
+  result <- safe_system(paste("git checkout -b", branch_name),
+                       error_msg = paste("Failed to create branch:", branch_name))
+
   if (result == 0) {
     message("\u2705 Created and switched to branch: ", branch_name)
     return(TRUE)
@@ -900,7 +956,7 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
   }
 
   message("Running: ", cmd)
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = "Failed to setup project")
   return(result == 0)
 }
 
@@ -978,7 +1034,8 @@ zzcollab_help <- function(topic = NULL) {
          "Valid topics: ", paste(valid_topics, collapse = ", "))
   }
 
-  result <- system(cmd, intern = TRUE)
+  result <- safe_system(cmd, intern = TRUE,
+                       error_msg = "Failed to retrieve zzcollab help")
   return(result)
 }
 
@@ -989,9 +1046,10 @@ zzcollab_help <- function(topic = NULL) {
 zzcollab_next_steps <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
+
   cmd <- paste(zzcollab_path, "--next-steps")
-  result <- system(cmd, intern = TRUE)
+  result <- safe_system(cmd, intern = TRUE,
+                       error_msg = "Failed to retrieve next steps information")
   return(result)
 }
 
@@ -1056,7 +1114,8 @@ get_config <- function(key) {
   zzcollab_path <- find_zzcollab_script()
 
   cmd <- paste(zzcollab_path, "--config get", key)
-  result <- system(cmd, intern = TRUE)
+  result <- safe_system(cmd, intern = TRUE,
+                       error_msg = paste("Failed to get config value:", key))
 
   if (length(result) > 0 && !grepl("\\(not set\\)", result[1])) {
     return(result[1])
@@ -1133,7 +1192,7 @@ set_config <- function(key, value) {
   zzcollab_path <- find_zzcollab_script()
 
   cmd <- paste(zzcollab_path, "--config set", key, shQuote(value))
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = paste("Failed to set config value:", key))
   return(result == 0)
 }
 
@@ -1194,7 +1253,8 @@ list_config <- function() {
   zzcollab_path <- find_zzcollab_script()
 
   cmd <- paste(zzcollab_path, "--config list")
-  result <- system(cmd, intern = TRUE)
+  result <- safe_system(cmd, intern = TRUE,
+                       error_msg = "Failed to list configuration")
   return(result)
 }
 
@@ -1266,7 +1326,7 @@ validate_config <- function() {
   zzcollab_path <- find_zzcollab_script()
 
   cmd <- paste(zzcollab_path, "--config validate")
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = "Failed to validate configuration")
   return(result == 0)
 }
 
@@ -1339,7 +1399,7 @@ init_config <- function() {
   zzcollab_path <- find_zzcollab_script()
 
   cmd <- paste(zzcollab_path, "--config init")
-  result <- system(cmd)
+  result <- safe_system(cmd, error_msg = "Failed to initialize configuration")
   return(result == 0)
 }
 
