@@ -237,6 +237,55 @@ select_dockerfile_strategy() {
     local libs="${LIBS_BUNDLE:-minimal}"
     local pkgs="${PKGS_BUNDLE:-minimal}"
 
+    # Normalize bundle names if user didn't explicitly provide them
+    # This ensures default flags match static templates
+    if [[ -z "${USER_PROVIDED_LIBS:-}" ]]; then
+        # User didn't specify --libs, apply smart defaults based on base image
+        case "$base" in
+            *alpine*|*r-minimal*)
+                libs="alpine_standard"
+                ;;
+            *bioconductor*)
+                libs="bioinfo"
+                ;;
+            *geospatial*)
+                libs="geospatial"
+                ;;
+            *verse*)
+                libs="standard"  # verse includes publishing tools
+                ;;
+            *tidyverse*|*rstudio*|*shiny*)
+                libs="standard"  # these images have standard libs
+                ;;
+            *)
+                libs="standard"  # default to standard, not minimal
+                ;;
+        esac
+        log_debug "Normalized libs bundle (user did not specify): $libs"
+    fi
+
+    if [[ -z "${USER_PROVIDED_PKGS:-}" ]]; then
+        # User didn't specify --pkgs, apply smart defaults based on base image
+        case "$base" in
+            *verse*)
+                pkgs="publishing"  # verse is for publishing
+                ;;
+            *tidyverse*|*shiny-verse*)
+                pkgs="analysis"  # tidyverse implies analysis workflow
+                ;;
+            *alpine*|*r-minimal*)
+                pkgs="minimal"  # alpine should stay minimal
+                ;;
+            *shiny*)
+                pkgs="minimal"  # shiny base (not shiny-verse) is minimal
+                ;;
+            *)
+                pkgs="minimal"  # conservative default
+                ;;
+        esac
+        log_debug "Normalized pkgs bundle (user did not specify): $pkgs"
+    fi
+
     # Decision logic:
     # 1. If using team image, use personal template
     if [[ "${USE_TEAM_IMAGE:-false}" == "true" ]]; then
