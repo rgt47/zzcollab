@@ -93,7 +93,7 @@ The package development workflow starts **identically** to data analysis [@marwi
 zzcollab --config init
 zzcollab --config set team-name "myusername"
 zzcollab --config set github-account "myusername"
-zzcollab --config set profile-name "analysis"  # Analysis profile works for packages!
+zzcollab --config set profile-name "ubuntu_standard_analysis"  # Analysis profile works for packages!
 ```
 
 ### Create Package Project

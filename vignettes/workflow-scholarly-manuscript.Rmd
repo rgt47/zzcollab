@@ -106,7 +106,7 @@ The manuscript workflow starts **identically** to data analysis [@marwick_packag
 zzcollab --config init
 zzcollab --config set team-name "myusername"
 zzcollab --config set github-account "myusername"
-zzcollab --config set profile-name "publishing"  # Publishing profile includes LaTeX + Quarto
+zzcollab --config set profile-name "ubuntu_standard_publishing"  # Publishing profile includes LaTeX + Quarto
 ```
 
 ### Create Research Project

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [minimal, analysis]
+        profile: [ubuntu_standard_minimal, ubuntu_standard_analysis]
         r_version: ['4.4.0', '4.3.1']
 
     steps:
@@ -239,7 +239,7 @@ jobs:
         zzcollab \
           --team testteam \
           --project-name testproject \
-          --profile-name minimal \
+          --profile-name ubuntu_standard_minimal \
           --r-version 4.4.0 \
           --no-docker
 
