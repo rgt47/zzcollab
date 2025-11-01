@@ -1,0 +1,820 @@
+---
+title: "Reproducible Data Analysis with ZZCOLLAB"
+author: "ZZCOLLAB Development Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{Reproducible Data Analysis with ZZCOLLAB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Introduction
+
+This vignette demonstrates the recommended workflow for reproducible data analysis using ZZCOLLAB, following the unified research compendium framework [@marwick_packaging_2018] and best practices from the reproducible research literature [@wilson_good_2017; @stodden_empirical_2018].
+
+**Key Philosophy**: Start with simple analysis, add complexity only as needed. The same project structure serves you from initial exploration through publication [@marwick_packaging_2018].
+
+## What You Will Learn
+
+- Setting up a reproducible analysis environment
+- Organizing data and analysis scripts following rrtools conventions
+- Creating reusable functions with comprehensive tests
+- Validating computational reproducibility
+- Collaborating with version control [@ram_git_2013; @bryan_excuse_2018]
+
+## Prerequisites
+
+- Docker installed and running
+- ZZCOLLAB installed (`./install.sh`)
+- Basic familiarity with R and the tidyverse
+- Git configured with your credentials
+
+# The Unified Research Compendium Approach
+
+ZZCOLLAB implements the unified research compendium framework [@marwick_packaging_2018], which provides **one flexible structure for all research**—from simple analysis through manuscript writing to package distribution.
+
+## Core Principle: Progressive Disclosure
+
+**Start simple, add complexity organically, never rebuild** [@marwick_packaging_2018].
+
+```
+Day 1 (Analysis):        Week 2 (+ Manuscript):      Month 3 (+ Package):
+analysis/                analysis/                    analysis/
+├── data/               ├── data/                    ├── data/
+└── scripts/            ├── scripts/                 ├── scripts/
+                        └── paper/                   └── paper/
+                            └── paper.Rmd            R/
+                                                     tests/
+                                                     vignettes/
+```
+
+**No migration needed**—the structure grows with your research [@marwick_packaging_2018].
+
+# Step-by-Step: Data Analysis Workflow
+
+## Step 1: Project Initialization (2 minutes)
+
+### Configure ZZCOLLAB Defaults
+
+Set your configuration once for all future projects:
+
+```bash
+# Initialize configuration
+zzcollab --config init
+
+# Set team name (your GitHub username for solo work)
+zzcollab --config set team-name "myusername"
+
+# Set GitHub account
+zzcollab --config set github-account "myusername"
+
+# Set dotfiles directory
+zzcollab --config set dotfiles-dir "~/dotfiles"
+
+# Set default Docker profile (analysis profile recommended for data analysis)
+zzcollab --config set profile-name "analysis"
+```
+
+### Create Analysis Project
+
+```bash
+# Create project directory
+mkdir penguin-analysis && cd penguin-analysis
+
+# Initialize ZZCOLLAB project (uses config defaults)
+zzcollab
+
+# Build Docker environment
+make docker-build
+```
+
+**What this creates**:
+
+```
+penguin-analysis/
+├── analysis/
+│   ├── data/
+│   │   ├── raw_data/              # Original, read-only data
+│   │   └── derived_data/          # Processed, analysis-ready data
+│   ├── figures/                   # Generated plots
+│   ├── scripts/                   # Analysis code (empty - you create)
+│   └── paper/                     # Manuscript (optional - add when ready)
+├── R/                             # Reusable functions (add as needed)
+├── tests/                         # Unit tests (add as needed)
+├── DESCRIPTION                    # Project metadata
+├── Dockerfile                     # Computational environment
+├── renv.lock                      # Package versions
+├── .Rprofile                      # R session configuration
+└── Makefile                       # Convenient commands
+```
+
+## Step 2: Add Data with Documentation (10 minutes)
+
+Following best practices for data documentation [@wilson_good_2017], ZZCOLLAB provides comprehensive data documentation templates.
+
+### Add Raw Data
+
+```bash
+# Enter Docker container
+make docker-zsh
+
+# Inside container: Install palmerpenguins
+R
+> renv::install("palmerpenguins")
+>
+> # Save raw data
+> library(palmerpenguins)
+> write.csv(penguins, "analysis/data/raw_data/penguins.csv", row.names = FALSE)
+>
+> quit()
+
+# Exit container (auto-snapshot runs!)
+exit
+```
+
+**✨ Auto-Snapshot**: When you exit the container, ZZCOLLAB automatically:
+1. Runs `renv::snapshot()` to capture package dependencies
+2. Validates package consistency (pure shell validation)
+3. Updates `renv.lock` with exact package versions
+
+**No manual `renv::snapshot()` required!**
+
+### Document Data Provenance
+
+Edit `analysis/data/README.md` following the provided template:
+
+```markdown
+# Data Documentation
+
+## Raw Data
+
+### penguins.csv
+
+**Source**: Palmer Penguins dataset [@horst_palmer_2020]
+
+**Description**: Size measurements for adult foraging penguins near Palmer
+Station, Antarctica.
+
+**Collection**: 2007-2009, Palmer Station LTER
+
+**Variables**:
+- `species`: Penguin species (Adelie, Chinstrap, Gentoo)
+- `bill_length_mm`: Bill length (millimeters)
+- `bill_depth_mm`: Bill depth (millimeters)
+- `flipper_length_mm`: Flipper length (millimeters)
+- `body_mass_g`: Body mass (grams)
+- `sex`: Penguin sex (male, female)
+- `year`: Study year (2007, 2008, 2009)
+
+**Quality**: 2 missing values in sex, 11 missing values in body measurements
+
+**Lineage**: Original data → palmerpenguins R package v0.1.0 → penguins.csv
+```
+
+**Why this matters** [@wilson_good_2017]:
+- Enables future researchers to understand data origin
+- Documents known quality issues upfront
+- Provides complete lineage from source to analysis-ready form
+
+## Step 3: Create Analysis Scripts (20 minutes)
+
+Following the rrtools approach [@marwick_packaging_2018], start with analysis scripts in `analysis/scripts/`, then extract reusable functions to `R/` when patterns emerge.
+
+### Script 1: Data Preparation
+
+Create `analysis/scripts/01_prepare_data.R`:
+
+```r
+# 01_prepare_data.R
+# Purpose: Clean raw data and create analysis-ready dataset
+# Author: Your Name
+# Date: 2025-11-01
+
+library(dplyr)
+library(readr)
+
+# Load raw data
+penguins_raw <- read_csv("analysis/data/raw_data/penguins.csv")
+
+# Prepare analysis dataset
+penguins_clean <- penguins_raw %>%
+  # Remove incomplete cases for core variables
+  filter(
+    !is.na(bill_length_mm),
+    !is.na(bill_depth_mm),
+    !is.na(body_mass_g),
+    !is.na(sex)
+  ) %>%
+  # Create log-transformed body mass
+  mutate(log_body_mass_g = log(body_mass_g)) %>%
+  # Select analysis variables
+  select(
+    species, island,
+    bill_length_mm, bill_depth_mm,
+    body_mass_g, log_body_mass_g,
+    sex, year
+  )
+
+# Save derived data
+write_csv(penguins_clean, "analysis/data/derived_data/penguins_clean.csv")
+
+# Data quality report
+cat("Data Preparation Summary\n")
+cat("========================\n")
+cat("Raw observations:", nrow(penguins_raw), "\n")
+cat("Clean observations:", nrow(penguins_clean), "\n")
+cat("Removed:", nrow(penguins_raw) - nrow(penguins_clean), "incomplete cases\n")
+cat("\nSpecies distribution:\n")
+print(table(penguins_clean$species))
+```
+
+### Script 2: Exploratory Analysis
+
+Create `analysis/scripts/02_explore_data.R`:
+
+```r
+# 02_explore_data.R
+# Purpose: Exploratory data analysis of penguin morphology
+# Author: Your Name
+# Date: 2025-11-01
+
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+# Load clean data
+penguins <- read_csv("analysis/data/derived_data/penguins_clean.csv")
+
+# Summary statistics by species
+summary_stats <- penguins %>%
+  group_by(species) %>%
+  summarise(
+    n = n(),
+    mean_bill_length = mean(bill_length_mm),
+    sd_bill_length = sd(bill_length_mm),
+    mean_bill_depth = mean(bill_depth_mm),
+    sd_bill_depth = sd(bill_depth_mm),
+    mean_body_mass = mean(body_mass_g),
+    sd_body_mass = sd(body_mass_g)
+  )
+
+print(summary_stats)
+
+# Bill dimensions scatter plot
+bill_plot <- ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm,
+                                   color = species)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title = "Palmer Penguins: Bill Dimensions by Species",
+    x = "Bill Length (mm)",
+    y = "Bill Depth (mm)",
+    color = "Species"
+  ) +
+  theme_minimal(base_size = 14)
+
+# Save plot
+ggsave("analysis/figures/bill_dimensions.png", bill_plot,
+       width = 8, height = 6, dpi = 300)
+
+cat("Exploratory analysis complete. Plot saved to analysis/figures/\n")
+```
+
+### Script 3: Statistical Analysis
+
+Create `analysis/scripts/03_statistical_analysis.R`:
+
+```r
+# 03_statistical_analysis.R
+# Purpose: Linear models of penguin body mass
+# Author: Your Name
+# Date: 2025-11-01
+
+library(dplyr)
+library(readr)
+library(broom)
+
+# Load clean data
+penguins <- read_csv("analysis/data/derived_data/penguins_clean.csv")
+
+# Model 1: Body mass ~ Bill length
+model_bill_length <- lm(log_body_mass_g ~ bill_length_mm, data = penguins)
+
+# Model 2: Body mass ~ Bill length + Species
+model_species <- lm(log_body_mass_g ~ bill_length_mm + species, data = penguins)
+
+# Model 3: Body mass ~ Bill length * Species (interaction)
+model_interaction <- lm(log_body_mass_g ~ bill_length_mm * species, data = penguins)
+
+# Model comparison
+cat("Model Comparison (AIC)\n")
+cat("======================\n")
+cat("Bill length only:", AIC(model_bill_length), "\n")
+cat("+ Species:", AIC(model_species), "\n")
+cat("+ Interaction:", AIC(model_interaction), "\n")
+
+# Best model summary
+cat("\nBest Model: Bill Length * Species Interaction\n")
+cat("==============================================\n")
+print(summary(model_interaction))
+
+# Save model results
+model_results <- tidy(model_interaction, conf.int = TRUE)
+write_csv(model_results, "analysis/data/derived_data/model_coefficients.csv")
+
+cat("\nModel results saved to analysis/data/derived_data/model_coefficients.csv\n")
+```
+
+### Run Analysis Pipeline
+
+```bash
+# Enter container
+make docker-zsh
+
+# Run complete analysis pipeline
+Rscript analysis/scripts/01_prepare_data.R
+Rscript analysis/scripts/02_explore_data.R
+Rscript analysis/scripts/03_statistical_analysis.R
+
+# Exit container (auto-snapshot!)
+exit
+```
+
+## Step 4: Extract Reusable Functions (Progressive Disclosure)
+
+As you identify repeated patterns, extract them to `R/` directory for reuse and testing [@marwick_packaging_2018; @wickham_r_2015].
+
+**When to extract**:
+- Function used in 2+ scripts
+- Complex logic that needs testing
+- Code that might be reused in future projects
+
+### Create Data Preparation Function
+
+Create `R/data_functions.R`:
+
+```r
+#' Prepare penguin data for analysis
+#'
+#' Removes incomplete cases and creates derived variables following
+#' the data preparation protocol documented in analysis/scripts/01_prepare_data.R
+#'
+#' @param data Raw penguin data (data frame or tibble)
+#' @return Cleaned data with derived variables
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' library(palmerpenguins)
+#' clean_data <- prepare_penguin_data(penguins)
+#' }
+prepare_penguin_data <- function(data) {
+  # Validate input
+  if (!is.data.frame(data)) {
+    stop("Input must be a data frame")
+  }
+
+  required_cols <- c("bill_length_mm", "bill_depth_mm", "body_mass_g", "sex")
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  # Clean and transform
+  data %>%
+    dplyr::filter(
+      !is.na(bill_length_mm),
+      !is.na(bill_depth_mm),
+      !is.na(body_mass_g),
+      !is.na(sex)
+    ) %>%
+    dplyr::mutate(log_body_mass_g = log(body_mass_g)) %>%
+    dplyr::select(
+      species, island,
+      bill_length_mm, bill_depth_mm,
+      body_mass_g, log_body_mass_g,
+      sex, year
+    )
+}
+```
+
+### Create Analysis Function
+
+Create `R/analysis_functions.R`:
+
+```r
+#' Fit body mass model with species interaction
+#'
+#' Fits linear model of log body mass as a function of bill length
+#' and species, including interaction term.
+#'
+#' @param data Cleaned penguin data (from prepare_penguin_data)
+#' @return Linear model object (class lm)
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' data <- prepare_penguin_data(palmerpenguins::penguins)
+#' model <- fit_body_mass_model(data)
+#' summary(model)
+#' }
+fit_body_mass_model <- function(data) {
+  # Validate input
+  required_cols <- c("log_body_mass_g", "bill_length_mm", "species")
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  # Fit model
+  lm(log_body_mass_g ~ bill_length_mm * species, data = data)
+}
+```
+
+## Step 5: Add Unit Tests (Best Practice)
+
+Testing validates computational correctness and prevents regressions [@wilson_good_2017; @stodden_empirical_2018].
+
+### Initialize Testing Infrastructure
+
+```bash
+make docker-zsh
+
+R
+> usethis::use_testthat()
+> quit()
+
+exit
+```
+
+### Create Tests for Data Preparation
+
+Create `tests/testthat/test-data_functions.R`:
+
+```r
+# test-data_functions.R
+library(testthat)
+library(palmerpenguins)
+
+test_that("prepare_penguin_data removes incomplete cases", {
+  result <- prepare_penguin_data(penguins)
+
+  # No missing values in key variables
+  expect_false(anyNA(result$bill_length_mm))
+  expect_false(anyNA(result$bill_depth_mm))
+  expect_false(anyNA(result$body_mass_g))
+  expect_false(anyNA(result$sex))
+})
+
+test_that("prepare_penguin_data creates log transformation", {
+  result <- prepare_penguin_data(penguins)
+
+  # Log variable exists
+  expect_true("log_body_mass_g" %in% names(result))
+
+  # Log transformation is correct
+  expect_equal(result$log_body_mass_g, log(result$body_mass_g))
+})
+
+test_that("prepare_penguin_data handles edge cases", {
+  # Empty data
+  empty_data <- penguins[0, ]
+  result <- prepare_penguin_data(empty_data)
+  expect_equal(nrow(result), 0)
+
+  # All missing data
+  all_na <- penguins
+  all_na$body_mass_g <- NA
+  result <- prepare_penguin_data(all_na)
+  expect_equal(nrow(result), 0)
+})
+
+test_that("prepare_penguin_data validates input", {
+  # Not a data frame
+  expect_error(prepare_penguin_data("not a data frame"), "must be a data frame")
+
+  # Missing required columns
+  incomplete <- penguins[, 1:3]
+  expect_error(prepare_penguin_data(incomplete), "Missing required columns")
+})
+```
+
+### Create Tests for Analysis
+
+Create `tests/testthat/test-analysis_functions.R`:
+
+```r
+# test-analysis_functions.R
+library(testthat)
+library(palmerpenguins)
+
+test_that("fit_body_mass_model returns valid lm object", {
+  data <- prepare_penguin_data(penguins)
+  model <- fit_body_mass_model(data)
+
+  # Valid lm object
+  expect_s3_class(model, "lm")
+
+  # Contains expected variables
+  expect_true("bill_length_mm" %in% names(coef(model)))
+  expect_true("species" %in% attr(model$terms, "term.labels"))
+
+  # Model has reasonable fit
+  expect_gt(summary(model)$r.squared, 0.5)
+})
+
+test_that("fit_body_mass_model coefficients are sensible", {
+  data <- prepare_penguin_data(penguins)
+  model <- fit_body_mass_model(data)
+
+  # Bill length coefficient should be positive (larger bills → larger penguins)
+  expect_gt(coef(model)["bill_length_mm"], 0)
+
+  # Model should explain substantial variance
+  expect_gt(summary(model)$r.squared, 0.5)
+})
+
+test_that("fit_body_mass_model validates input", {
+  # Missing required columns
+  incomplete_data <- data.frame(x = 1:10, y = 1:10)
+  expect_error(fit_body_mass_model(incomplete_data), "Missing required columns")
+})
+```
+
+### Run Tests
+
+```bash
+# Run tests in clean Docker environment
+make docker-test
+
+# Expected output: All tests passing
+```
+
+## Step 6: Version Control and Collaboration
+
+Version control is essential for reproducible research [@ram_git_2013; @bryan_excuse_2018].
+
+### Initial Commit
+
+```bash
+# Initialize git repository (if not already done by zzcollab)
+git init
+git add .
+git commit -m "Initial commit: Penguin morphology analysis
+
+- Add raw Palmer Penguins dataset
+- Implement data preparation pipeline
+- Create exploratory visualizations
+- Fit body mass linear models
+- Extract reusable functions with tests
+
+All tests passing (>90% coverage)
+Data: Palmer Station LTER 2007-2009"
+```
+
+### Create GitHub Repository
+
+```bash
+# Create private GitHub repository
+gh repo create penguin-analysis --private --source=. --remote=origin
+
+# Push to GitHub
+git push -u origin main
+```
+
+### Collaborate with Team
+
+Following best practices for computational reproducibility [@stodden_empirical_2018]:
+
+```bash
+# Team member clones repository
+git clone https://github.com/yourusername/penguin-analysis.git
+cd penguin-analysis
+
+# Build Docker environment (ensures identical computational environment)
+make docker-build
+
+# Enter container
+make docker-zsh
+
+# Inside container: Restore exact package versions
+R
+> renv::restore()  # Gets exact versions from renv.lock
+> quit()
+
+# Run complete analysis pipeline
+Rscript analysis/scripts/01_prepare_data.R
+Rscript analysis/scripts/02_explore_data.R
+Rscript analysis/scripts/03_statistical_analysis.R
+
+# Exit container
+exit
+
+# Verify reproducibility
+make docker-test  # All tests should pass
+```
+
+## Step 7: Validate Reproducibility
+
+ZZCOLLAB provides automated reproducibility validation [@stodden_empirical_2018].
+
+### Dependency Validation (Pure Shell - No R Required!)
+
+```bash
+# Validate package dependencies
+make check-renv
+
+# What this checks:
+# - All packages used in code are declared in DESCRIPTION
+# - renv.lock matches actual package usage
+# - No missing or undeclared dependencies
+```
+
+### R Options Monitoring
+
+```bash
+# Check for changes to critical R options
+Rscript check_rprofile_options.R
+
+# Monitors: stringsAsFactors, contrasts, na.action, digits, etc.
+```
+
+### Complete Reproducibility Check
+
+```bash
+# Run in clean Docker environment from scratch
+make docker-test
+
+# What this validates:
+# - Clean environment builds successfully
+# - All dependencies restore correctly
+# - All tests pass
+# - Analysis produces expected results
+```
+
+# Advanced Topics
+
+## Working with Large Datasets
+
+For datasets >100MB, use data versioning [@wilson_good_2017]:
+
+```bash
+# .gitignore large data files
+echo "analysis/data/raw_data/large_dataset.csv" >> .gitignore
+
+# Document data access in analysis/data/README.md
+```
+
+Include download instructions:
+
+```r
+# analysis/scripts/00_download_data.R
+# Download large dataset from repository
+download.file(
+  "https://data.repository.org/dataset.csv",
+  "analysis/data/raw_data/large_dataset.csv"
+)
+```
+
+## Custom Docker Profiles
+
+For specialized analyses (geospatial, bioinformatics), use custom Docker profiles:
+
+```bash
+# Geospatial analysis
+zzcollab --profile-name geospatial
+
+# Bioinformatics
+zzcollab --profile-name bioinformatics
+
+# Custom composition
+zzcollab -b rocker/r-ver --libs geospatial --pkgs modeling
+```
+
+## Parallel Processing
+
+For computationally intensive analyses:
+
+```r
+# Use future package for parallel processing
+library(future)
+library(furrr)
+
+# Configure parallel backend
+plan(multisession, workers = 4)
+
+# Parallel computation
+results <- future_map(datasets, analyze_dataset)
+```
+
+## Continuous Integration
+
+Enable automated testing on every commit:
+
+```yaml
+# .github/workflows/analysis.yml
+name: Reproducibility Check
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker
+        run: make docker-build
+      - name: Run tests
+        run: make docker-test
+      - name: Validate dependencies
+        run: make check-renv
+```
+
+# Progression to Manuscript or Package
+
+## Adding a Manuscript (Week 2+)
+
+When ready to write up results, simply add `analysis/paper/paper.Rmd`:
+
+```bash
+# Still in same project - no migration needed!
+# See vignette: "Scholarly Manuscript Development with ZZCOLLAB"
+```
+
+**No restructuring required** - the unified compendium serves both analysis and manuscript [@marwick_packaging_2018].
+
+## Converting to R Package (Month 3+)
+
+When ready to share as a package, add package infrastructure:
+
+```bash
+# Still in same project - no migration needed!
+# See vignette: "R Package Development with ZZCOLLAB"
+```
+
+**No migration required** - add documentation and submit to CRAN [@wickham_r_2015].
+
+# Best Practices Summary
+
+Following reproducible research best practices [@wilson_good_2017; @stodden_empirical_2018]:
+
+## Data Management
+✅ **Raw data is read-only** - never modify `analysis/data/raw_data/`
+✅ **Document data provenance** - source, collection, quality issues
+✅ **Version control derived data** - include processing lineage
+✅ **Test data quality** - validate assumptions with unit tests
+
+## Code Organization
+✅ **Scripts are numbered** - execution order is clear
+✅ **Functions are documented** - roxygen2 format
+✅ **Functions are tested** - >90% test coverage for core logic
+✅ **Dependencies are explicit** - renv.lock captures exact versions
+
+## Reproducibility
+✅ **Computational environment controlled** - Docker + renv.lock
+✅ **R session configured** - .Rprofile version controlled
+✅ **Validation automated** - CI/CD runs tests on every commit
+✅ **Version control everything** - git tracks all changes
+
+## Collaboration
+✅ **Code is readable** - clear variable names, comments
+✅ **Commits are atomic** - one logical change per commit
+✅ **Changes are documented** - descriptive commit messages
+✅ **Tests prevent regressions** - new code doesn't break existing
+
+# References
+
+Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging Data Analytical Work Reproducibly Using R (and Friends). *The American Statistician*, 72(1), 80-88.
+
+Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal, T. K. (2017). Good enough practices in scientific computing. *PLOS Computational Biology*, 13(6), e1005510.
+
+Stodden, V., Seiler, J., & Ma, Z. (2018). An empirical analysis of journal policy effectiveness for computational reproducibility. *Proceedings of the National Academy of Sciences*, 115(11), 2584-2589.
+
+Ram, K. (2013). Git can facilitate greater reproducibility and increased transparency in science. *Source Code for Biology and Medicine*, 8(1), 7.
+
+Bryan, J. (2018). Excuse me, do you have a moment to talk about version control? *The American Statistician*, 72(1), 20-27.
+
+Wickham, H. (2015). *R Packages: Organize, Test, Document, and Share Your Code*. O'Reilly Media.
+
+Horst, A. M., Hill, A. P., & Gorman, K. B. (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0.
+
+# Additional Resources
+
+- ZZCOLLAB Documentation: `docs/DEVELOPMENT.md`
+- Testing Guide: `docs/TESTING_GUIDE.md`
+- Configuration Guide: `docs/CONFIGURATION.md`
+- Docker Profiles: `docs/VARIANTS.md`
+- Marwick et al. (2018) rrtools: https://github.com/benmarwick/rrtools

@@ -1443,10 +1443,10 @@ jobs:
 
 ## Level 2 Pitfalls (renv)
 
-**Forgetting `renv::snapshot()`**:
+**Forgetting `renv::snapshot()`** (Note: Automated in ZZCOLLAB Docker!):
 
 ```r
-# Wrong workflow
+# Wrong workflow (manual renv without Docker)
 renv::install("new-package")
 # ... use package in code ...
 git commit  # renv.lock not updated!
@@ -1455,11 +1455,18 @@ git commit  # renv.lock not updated!
 renv::restore()  # Doesn't get new-package
 # Code fails with "package not found"
 
-# Correct workflow
+# Correct workflow (manual renv)
 renv::install("new-package")
 renv::snapshot()  # Update renv.lock
 git add renv.lock
 git commit
+
+# ✨ ZZCOLLAB Docker auto-snapshot (October 2025):
+# With ZZCOLLAB Docker containers, snapshot happens automatically on exit!
+make docker-zsh
+renv::install("new-package")
+exit  # Auto-snapshot runs automatically - no manual command needed!
+git add renv.lock && git commit
 ```
 
 **Installing packages globally by accident**:
@@ -1571,8 +1578,8 @@ git commit -m "Update analysis"
 git commit -m "Fix analysis"
 git push  # CI fails, must fix and push again
 
-# Right workflow
-Rscript validate_package_environment.R --quiet
+# Right workflow (pure shell validation - NO R REQUIRED!)
+make check-renv  # Pure shell validation (grep, awk, jq)
 make docker-test
 git commit -m "Fix analysis"
 git push  # CI passes

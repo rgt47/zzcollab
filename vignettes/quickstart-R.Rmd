@@ -497,8 +497,8 @@ if (validate_repro()) {
   message("Review output above for details")
 }
 
-# Individual validation steps
-system("Rscript validate_package_environment.R")
+# Individual validation steps (pure shell - NO R REQUIRED!)
+system("make check-renv")  # Pure shell validation (grep, awk, jq)
 system("Rscript check_rprofile_options.R")
 
 # Check Docker consistency

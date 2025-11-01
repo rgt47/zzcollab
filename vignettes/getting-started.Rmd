@@ -1225,27 +1225,29 @@ synchronized with the code.
 ZZCOLLAB provides automated dependency checking to ensure reproducibility:
 
 ```bash
-# On HOST (after exiting container)
-# Validate dependencies are synchronized
-Rscript validate_package_environment.R --quiet --fail-on-issues
+# On HOST (after exiting container) - NO R INSTALLATION REQUIRED!
+# Validate dependencies are synchronized (pure shell validation)
+make check-renv  # Uses grep, awk, jq - NO R required!
 ```
 
-This script performs comprehensive validation:
+**✨ NEW: Pure Shell Validation** (October 2025):
+
+This pure shell validation performs comprehensive checks without requiring R on the host:
 
 - Verifies all packages used in R/ code are declared in DESCRIPTION
 - Checks that renv.lock matches actual package usage
 - Validates packages across CRAN, Bioconductor, and GitHub
 - Ensures no missing or undeclared dependencies
-- Automatically backs up and restores renv.lock on failure
+- **Works without R installed on host machine!** (uses grep, awk, jq)
 
 **Common validation scenarios:**
 
 ```bash
 # Standard validation (recommended before every commit)
-Rscript validate_package_environment.R --quiet --fail-on-issues
+make check-renv  # Pure shell validation
 
-# Auto-fix missing packages
-Rscript validate_package_environment.R --fix --fail-on-issues
+# Strict mode (also scans tests/, vignettes/)
+make check-renv-strict
 ```
 
 **Interpreting validation results:**
@@ -1284,7 +1286,7 @@ git commit -m "Implement Palmer Penguins bill dimension analysis
 
 Tests: All 23 tests passing
 Coverage: Complete coverage of data preparation code
-Dependencies: Validated with validate_package_environment.R"
+Dependencies: Validated with pure shell validation (make check-renv)"
 
 # Push to remote repository (if configured)
 git push
@@ -1376,9 +1378,9 @@ grep "ENV LANG" Dockerfile
 - ✅ Packages from all contributors included (for team projects)
 - ✅ renv.lock synchronized with code
 
-**Verification**:
+**Verification** (pure shell - NO R REQUIRED!):
 ```bash
-Rscript validate_package_environment.R --quiet --fail-on-issues
+make check-renv  # Pure shell validation (grep, awk, jq)
 git status renv.lock  # Should show "nothing to commit"
 ```
 

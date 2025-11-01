@@ -634,9 +634,9 @@ jobs:
       run: |
         Rscript -e "source('scripts/99_reproducibility_check.R')"
         
-    - name: Validate environment
+    - name: Validate environment (pure shell - NO R REQUIRED!)
       run: |
-        Rscript validate_package_environment.R --quiet --fail-on-issues
+        make check-renv  # Pure shell validation (grep, awk, jq)
 ```
 
 ### Quality Gates

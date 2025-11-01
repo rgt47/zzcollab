@@ -310,8 +310,8 @@ Close your browser tab, then in terminal:
 # Run tests in clean environment
 make docker-test
 
-# Validate dependencies
-Rscript validate_package_environment.R --quiet --fail-on-issues
+# Validate dependencies (pure shell - NO R REQUIRED!)
+make check-renv  # Pure shell validation (grep, awk, jq)
 ```
 
 ## Step 7: Commit and Push (1 minute)
@@ -450,7 +450,7 @@ RStudio is great for development, but some tasks need terminal:
 
 **Use Terminal for:**
 - Running tests: `make docker-test`
-- Validation: `Rscript validate_package_environment.R`
+- Validation: `make check-renv` (pure shell - NO R required!)
 - Git operations: `git commit`, `git push`
 - Building images: `make docker-build`
 

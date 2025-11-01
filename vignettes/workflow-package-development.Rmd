@@ -1,0 +1,1060 @@
+---
+title: "R Package Development with ZZCOLLAB"
+author: "ZZCOLLAB Development Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{R Package Development with ZZCOLLAB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Introduction
+
+This vignette demonstrates the recommended workflow for R package development using ZZCOLLAB, following the unified research compendium framework [@marwick_packaging_2018] and R package development best practices [@wickham_r_2015].
+
+**Key Philosophy**: Use the **same structure** for package development as data analysis. No separate "package paradigm"—just add package infrastructure progressively as needed [@marwick_packaging_2018].
+
+## What You Will Learn
+
+- Developing R packages following rrtools conventions
+- Test-driven development with comprehensive coverage [@wickham_testthat_2011]
+- Documentation with roxygen2 [@wickham_r_2015]
+- CRAN compliance and submission
+- Continuous integration for multi-platform testing
+- Publishing to CRAN and beyond
+
+## Prerequisites
+
+- Docker installed and running
+- ZZCOLLAB installed (`./install.sh`)
+- Familiarity with R package structure [@wickham_r_2015]
+- Git configured with credentials
+- GitHub account for package hosting
+
+# The Unified Compendium Approach to Packages
+
+## There Is No "Package Paradigm"
+
+Traditional approach: "Analysis" vs "Package" are separate project types.
+
+**ZZCOLLAB approach** [@marwick_packaging_2018]: **Same structure, progressive disclosure**.
+
+```
+Day 1 (Analysis):        Month 3 (Add Package Docs):    Month 6 (CRAN-ready):
+analysis/                analysis/                       analysis/
+├── data/               ├── data/                       ├── data/
+└── scripts/            └── scripts/                    └── scripts/
+R/                      R/                              R/
+└── functions.R         └── functions.R                 └── functions.R
+                        man/                            man/
+                        └── *.Rd (auto-generated)       └── *.Rd
+                        tests/                          tests/
+                        └── testthat/                   └── testthat/
+                                                        vignettes/
+                                                        └── tutorial.Rmd
+                                                        NEWS.md
+                                                        cran-comments.md
+```
+
+**No migration needed**—add CRAN infrastructure when ready [@wickham_r_2015].
+
+## When to Develop as a Package
+
+Develop as a package when [@wickham_r_2015]:
+- **Reusable functions** - Code will be used across multiple projects
+- **Team collaboration** - Multiple developers contributing
+- **Public distribution** - Sharing via CRAN, Bioconductor, GitHub
+- **Formal documentation** - Need help files and vignettes
+- **Quality assurance** - Want automated testing and validation
+
+# Step-by-Step: Package Development Workflow
+
+## Step 1: Project Initialization (Same as Analysis!)
+
+The package development workflow starts **identically** to data analysis [@marwick_packaging_2018].
+
+### Configure ZZCOLLAB
+
+```bash
+# One-time configuration
+zzcollab --config init
+zzcollab --config set team-name "myusername"
+zzcollab --config set github-account "myusername"
+zzcollab --config set profile-name "analysis"  # Analysis profile works for packages!
+```
+
+### Create Package Project
+
+```bash
+# Create project directory (use package name)
+mkdir penguintools && cd penguintools
+
+# Initialize ZZCOLLAB project (identical to analysis workflow)
+zzcollab
+
+# Build Docker environment
+make docker-build
+```
+
+**What this creates** - **Identical to analysis workflow**:
+
+```
+penguintools/
+├── analysis/
+│   ├── data/
+│   │   ├── raw_data/              # Example data for development
+│   │   └── derived_data/          # Processed examples
+│   ├── figures/                   # Generated plots for README/vignettes
+│   └── scripts/                   # Development scripts
+├── R/                             # Package functions
+├── tests/                         # Unit tests
+├── DESCRIPTION                    # Package metadata
+├── Dockerfile                     # Development environment
+├── renv.lock                      # Package dependencies
+└── Makefile                       # Convenient commands
+```
+
+**Key insight**: This is **exactly the same structure** as data analysis. The only difference is **what you put in R/** [@marwick_packaging_2018].
+
+## Step 2: Develop Functions with Tests (TDD Approach)
+
+Following test-driven development [@wickham_testthat_2011], write tests first, then implement functions.
+
+### Initialize Testing
+
+```bash
+make docker-zsh
+
+R
+> usethis::use_testthat()
+> quit()
+
+exit
+```
+
+### Example: Penguin Data Preparation Function
+
+#### Step 2a: Write Test First
+
+Create `tests/testthat/test-prepare_data.R`:
+
+```r
+# test-prepare_data.R
+library(testthat)
+
+test_that("prepare_penguin_data removes incomplete cases", {
+  # Create test data with missing values
+  test_data <- data.frame(
+    species = c("Adelie", "Adelie", "Chinstrap"),
+    bill_length_mm = c(39.1, NA, 46.5),
+    bill_depth_mm = c(18.7, 17.8, 17.9),
+    body_mass_g = c(3750, 3800, NA),
+    sex = c("male", "female", "male")
+  )
+
+  result <- prepare_penguin_data(test_data)
+
+  # Should keep only complete cases
+  expect_equal(nrow(result), 1)
+  expect_false(anyNA(result$bill_length_mm))
+  expect_false(anyNA(result$body_mass_g))
+})
+
+test_that("prepare_penguin_data creates log transformation", {
+  test_data <- data.frame(
+    species = c("Adelie"),
+    bill_length_mm = c(39.1),
+    bill_depth_mm = c(18.7),
+    body_mass_g = c(3750),
+    sex = c("male")
+  )
+
+  result <- prepare_penguin_data(test_data)
+
+  # Log variable should exist and be correct
+  expect_true("log_body_mass_g" %in% names(result))
+  expect_equal(result$log_body_mass_g, log(3750))
+})
+
+test_that("prepare_penguin_data validates input", {
+  # Not a data frame
+  expect_error(prepare_penguin_data("not a data frame"),
+               "must be a data frame")
+
+  # Missing required columns
+  incomplete <- data.frame(x = 1, y = 2)
+  expect_error(prepare_penguin_data(incomplete),
+               "Missing required columns")
+})
+```
+
+#### Step 2b: Run Test (Should Fail)
+
+```bash
+make docker-test
+
+# Expected: Tests fail - function doesn't exist yet
+```
+
+#### Step 2c: Implement Function
+
+Create `R/data_functions.R`:
+
+```r
+#' Prepare penguin data for analysis
+#'
+#' Removes incomplete cases for core morphological variables and creates
+#' log-transformed body mass variable for allometric analyses.
+#'
+#' @param data Data frame containing penguin measurements. Must include columns:
+#'   \code{bill_length_mm}, \code{bill_depth_mm}, \code{body_mass_g}, \code{sex}.
+#'
+#' @return Data frame with complete cases and added \code{log_body_mass_g} variable.
+#'   Retains columns: species, island, bill measurements, body mass (original and log),
+#'   sex, and year.
+#'
+#' @details
+#' This function implements the data preparation protocol documented in
+#' \code{analysis/scripts/01_prepare_data.R}. Missing values in any of the four
+#' core variables (bill length, bill depth, body mass, sex) result in case removal.
+#' The log transformation enables allometric scaling analyses [@schmidt-nielsen_scaling_1984].
+#'
+#' @examples
+#' \dontrun{
+#' library(palmerpenguins)
+#' clean_data <- prepare_penguin_data(penguins)
+#' summary(clean_data)
+#' }
+#'
+#' @seealso \code{\link{fit_body_mass_model}} for allometric model fitting
+#'
+#' @references
+#' Schmidt-Nielsen, K. (1984). *Scaling: Why Is Animal Size So Important?*
+#' Cambridge University Press.
+#'
+#' @export
+prepare_penguin_data <- function(data) {
+  # Input validation following R package best practices (Wickham 2015)
+  if (!is.data.frame(data)) {
+    stop("Input 'data' must be a data frame", call. = FALSE)
+  }
+
+  required_cols <- c("bill_length_mm", "bill_depth_mm", "body_mass_g", "sex")
+  missing_cols <- setdiff(required_cols, names(data))
+
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing required columns: ",
+      paste(missing_cols, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  # Data preparation
+  data %>%
+    dplyr::filter(
+      !is.na(bill_length_mm),
+      !is.na(bill_depth_mm),
+      !is.na(body_mass_g),
+      !is.na(sex)
+    ) %>%
+    dplyr::mutate(log_body_mass_g = log(body_mass_g)) %>%
+    dplyr::select(
+      species, island,
+      bill_length_mm, bill_depth_mm,
+      body_mass_g, log_body_mass_g,
+      sex, year
+    )
+}
+```
+
+#### Step 2d: Run Test (Should Pass)
+
+```bash
+make docker-test
+
+# Expected: All tests pass
+```
+
+### Complete the Package with Additional Functions
+
+Following the same TDD approach, add more functions:
+
+- `fit_body_mass_model()` - Allometric scaling model
+- `plot_bill_dimensions()` - Visualization
+- `calculate_species_summary()` - Summary statistics
+
+See **Data Analysis vignette** for examples.
+
+## Step 3: Documentation with roxygen2
+
+Comprehensive documentation is essential for package users [@wickham_r_2015].
+
+### Document All Exported Functions
+
+Each function in `R/` needs roxygen2 documentation:
+
+```r
+#' @title - Brief description (1 line)
+#' @description - Detailed description (multiple paragraphs OK)
+#' @param - Document each parameter
+#' @return - Describe return value
+#' @details - Additional implementation details
+#' @examples - Executable examples
+#' @seealso - Related functions
+#' @references - Citations for methods
+#' @export - Make function available to users
+```
+
+### Generate Documentation
+
+```bash
+make docker-zsh
+
+R
+> devtools::document()  # Generates man/*.Rd files from roxygen2 comments
+> quit()
+
+exit
+```
+
+### Verify Documentation
+
+```bash
+# Check all functions are documented
+R CMD check
+
+# Or use ZZCOLLAB convenience target
+make check
+```
+
+## Step 4: Create Package Vignettes
+
+Vignettes provide long-form documentation for package workflows [@wickham_r_2015].
+
+### Create Tutorial Vignette
+
+```bash
+make docker-zsh
+
+R
+> usethis::use_vignette("penguin-analysis-tutorial")
+> quit()
+
+exit
+```
+
+Edit `vignettes/penguin-analysis-tutorial.Rmd`:
+
+````markdown
+---
+title: "Penguin Morphology Analysis Tutorial"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Penguin Morphology Analysis Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+This vignette demonstrates how to use the `penguintools` package to analyze
+Palmer Penguins morphological data.
+
+## Data Preparation
+
+```{r}
+library(penguintools)
+library(palmerpenguins)
+
+# Prepare data
+clean_data <- prepare_penguin_data(penguins)
+```
+
+## Allometric Analysis
+
+```{r}
+# Fit scaling model
+model <- fit_body_mass_model(clean_data)
+summary(model)
+```
+
+## Visualization
+
+```{r, fig.width=7, fig.height=5}
+# Create bill dimensions plot
+plot_bill_dimensions(clean_data)
+```
+````
+
+### Build Vignettes
+
+```bash
+make docker-zsh
+
+R
+> devtools::build_vignettes()
+> quit()
+
+exit
+```
+
+## Step 5: CRAN Compliance
+
+CRAN has strict requirements for package submission [@wickham_r_2015].
+
+### Update DESCRIPTION File
+
+```yaml
+Package: penguintools
+Title: Tools for Palmer Penguins Morphological Analysis
+Version: 0.1.0
+Authors@R:
+    person("Your", "Name", , "your.email@example.com", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Provides data preparation, statistical modeling, and visualization
+    tools for analyzing Palmer Penguins morphological data. Implements
+    allometric scaling analyses following Schmidt-Nielsen (1984).
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports:
+    dplyr (>= 1.0.0),
+    ggplot2 (>= 3.3.0)
+Suggests:
+    testthat (>= 3.0.0),
+    palmerpenguins,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+URL: https://github.com/yourusername/penguintools
+BugReports: https://github.com/yourusername/penguintools/issues
+```
+
+### Add LICENSE File
+
+```bash
+make docker-zsh
+
+R
+> usethis::use_mit_license("Your Name")
+> quit()
+
+exit
+```
+
+### Add NEWS.md
+
+Create `NEWS.md` to document version history:
+
+```markdown
+# penguintools 0.1.0
+
+* Initial CRAN submission
+* Core functions for penguin morphology analysis:
+  - `prepare_penguin_data()`: Data preparation
+  - `fit_body_mass_model()`: Allometric scaling
+  - `plot_bill_dimensions()`: Visualization
+* Comprehensive test coverage (>95%)
+* Tutorial vignette
+```
+
+### Add cran-comments.md
+
+Create `cran-comments.md` for CRAN maintainers:
+
+```markdown
+## Test environments
+* local: macOS (M1), R 4.3.1 (via Docker)
+* GitHub Actions:
+  - ubuntu-latest (release, devel, oldrel-1)
+  - windows-latest (release)
+  - macos-latest (release)
+
+## R CMD check results
+
+0 errors | 0 warnings | 0 notes
+
+## Downstream dependencies
+
+There are currently no downstream dependencies for this package.
+```
+
+## Step 6: Comprehensive Testing
+
+Achieve >95% test coverage following best practices [@wickham_testthat_2011].
+
+### Test Coverage Report
+
+```bash
+make docker-zsh
+
+R
+> library(covr)
+> cov <- package_coverage()
+> percent_coverage(cov)
+# Target: >95%
+
+> # Generate HTML report
+> report(cov)
+
+> quit()
+exit
+```
+
+### Test Edge Cases
+
+Ensure tests cover [@wickham_testthat_2011]:
+- **Normal cases**: Expected inputs produce expected outputs
+- **Edge cases**: Empty data, single observation, extreme values
+- **Error cases**: Invalid inputs produce informative errors
+- **Boundary conditions**: Min/max values, NA handling
+
+Example comprehensive test:
+
+```r
+test_that("prepare_penguin_data handles all edge cases", {
+  # Normal case
+  normal_data <- data.frame(
+    species = c("Adelie", "Adelie"),
+    bill_length_mm = c(39.1, 40.3),
+    bill_depth_mm = c(18.7, 18.0),
+    body_mass_g = c(3750, 3900),
+    sex = c("male", "female")
+  )
+  result <- prepare_penguin_data(normal_data)
+  expect_equal(nrow(result), 2)
+
+  # Empty data
+  empty <- normal_data[0, ]
+  expect_equal(nrow(prepare_penguin_data(empty)), 0)
+
+  # Single observation
+  single <- normal_data[1, ]
+  expect_equal(nrow(prepare_penguin_data(single)), 1)
+
+  # All missing values
+  all_na <- normal_data
+  all_na$body_mass_g <- NA
+  expect_equal(nrow(prepare_penguin_data(all_na)), 0)
+
+  # Extreme values (should be kept - data-driven)
+  extreme <- normal_data
+  extreme$body_mass_g[1] <- 10000  # Very large penguin!
+  expect_equal(nrow(prepare_penguin_data(extreme)), 2)
+
+  # Invalid input type
+  expect_error(prepare_penguin_data("not a data frame"))
+  expect_error(prepare_penguin_data(list(x = 1, y = 2)))
+
+  # Missing required columns
+  incomplete <- data.frame(x = 1, y = 2)
+  expect_error(prepare_penguin_data(incomplete), "Missing required columns")
+})
+```
+
+## Step 7: Multi-Platform CI/CD
+
+Test on all CRAN platforms using GitHub Actions.
+
+### GitHub Actions Workflow
+
+Create `.github/workflows/R-CMD-check.yml`:
+
+```yaml
+name: R-CMD-check
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  R-CMD-check:
+    runs-on: ${{ matrix.config.os }}
+
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: macos-latest,   r: 'release'}
+          - {os: windows-latest, r: 'release'}
+          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,  r: 'release'}
+          - {os: ubuntu-latest,  r: 'oldrel-1'}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+```
+
+### Test Coverage Workflow
+
+Create `.github/workflows/test-coverage.yml`:
+
+```yaml
+name: test-coverage
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::covr
+          needs: coverage
+
+      - name: Test coverage
+        run: |
+          covr::codecov(
+            quiet = FALSE,
+            clean = FALSE,
+            install_path = file.path(Sys.getenv("RUNNER_TEMP"), "package")
+          )
+        shell: Rscript {0}
+
+      - name: Show testthat output
+        if: always()
+        run: |
+          ## --------------------------------------------------------------------
+          find ${{ runner.temp }}/package -name 'testthat.Rout*' -exec cat '{}' \; || true
+        shell: bash
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-test-failures
+          path: ${{ runner.temp }}/package
+```
+
+## Step 8: CRAN Submission
+
+Final steps for CRAN submission [@wickham_r_2015].
+
+### Pre-Submission Checklist
+
+```bash
+# 1. Update version number in DESCRIPTION
+# 2. Update NEWS.md with changes
+# 3. Run comprehensive checks
+make docker-zsh
+
+R
+> # Check on multiple R versions
+> devtools::check()  # Current R version
+
+> # Check reverse dependencies (none for new package)
+> devtools::revdep_check()
+
+> # Spell check
+> devtools::spell_check()
+
+> # Check for CRAN policy compliance
+> rhub::check_for_cran()
+
+> # Windows check
+> devtools::check_win_devel()
+> devtools::check_win_release()
+
+> quit()
+exit
+
+# 4. Verify all CI checks pass on GitHub
+# 5. Update cran-comments.md with test results
+```
+
+### Submit to CRAN
+
+```bash
+make docker-zsh
+
+R
+> # Final check
+> devtools::check()
+
+> # Submit to CRAN
+> devtools::release()
+
+> # Follow prompts - answer questions carefully
+> # CRAN maintainers will review and provide feedback
+
+> quit()
+exit
+```
+
+### Post-Submission
+
+After CRAN acceptance:
+
+```bash
+# Tag release
+git tag -a v0.1.0 -m "CRAN release 0.1.0"
+git push origin v0.1.0
+
+# Create GitHub release
+gh release create v0.1.0 --title "v0.1.0: Initial CRAN Release" --notes "See NEWS.md for details"
+```
+
+## Step 9: Package Website with pkgdown
+
+Create professional package documentation website [@wickham_r_2015].
+
+### Setup pkgdown
+
+```bash
+make docker-zsh
+
+R
+> usethis::use_pkgdown()
+> pkgdown::build_site()
+> quit()
+
+exit
+```
+
+### Deploy to GitHub Pages
+
+Create `.github/workflows/pkgdown.yml`:
+
+```yaml
+name: pkgdown
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  pkgdown:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgdown, local::.
+          needs: website
+
+      - name: Build site
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        shell: Rscript {0}
+
+      - name: Deploy to GitHub pages
+        if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        with:
+          clean: false
+          branch: gh-pages
+          folder: docs
+```
+
+Website will be available at: `https://yourusername.github.io/penguintools/`
+
+# Advanced Package Development
+
+## Using Example Data
+
+Include example datasets in your package:
+
+```bash
+make docker-zsh
+
+R
+> # Create data object
+> library(palmerpenguins)
+> penguins_sample <- head(penguins, 20)
+>
+> # Save as package data
+> usethis::use_data(penguins_sample)
+>
+> # Document the dataset
+> usethis::use_r("data")
+
+> quit()
+exit
+```
+
+Document in `R/data.R`:
+
+```r
+#' Sample of Palmer Penguins data
+#'
+#' A subset of 20 observations from the Palmer Penguins dataset,
+#' included for examples and testing.
+#'
+#' @format A data frame with 20 rows and 8 variables:
+#' \describe{
+#'   \item{species}{Penguin species (Adelie, Chinstrap, Gentoo)}
+#'   \item{island}{Island in Palmer Archipelago}
+#'   \item{bill_length_mm}{Bill length (millimeters)}
+#'   \item{bill_depth_mm}{Bill depth (millimeters)}
+#'   \item{flipper_length_mm}{Flipper length (millimeters)}
+#'   \item{body_mass_g}{Body mass (grams)}
+#'   \item{sex}{Penguin sex}
+#'   \item{year}{Study year}
+#' }
+#' @source Palmer Station LTER \url{https://pallter.marine.rutgers.edu/}
+#' @references
+#' Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago
+#' (Antarctica) penguin data. R package version 0.1.0.
+"penguins_sample"
+```
+
+## S3 Methods
+
+Implement S3 methods for clean interfaces:
+
+```r
+#' Print method for penguin model results
+#'
+#' @param x Object of class "penguin_model"
+#' @param ... Additional arguments (unused)
+#' @export
+print.penguin_model <- function(x, ...) {
+  cat("Penguin Allometric Model\n")
+  cat("========================\n")
+  cat("Formula:", deparse(x$formula), "\n")
+  cat("Observations:", nrow(x$data), "\n")
+  cat("R-squared:", round(x$r.squared, 3), "\n")
+  invisible(x)
+}
+```
+
+## Rcpp Integration
+
+For performance-critical functions, integrate C++:
+
+```bash
+make docker-zsh
+
+R
+> usethis::use_rcpp()
+> quit()
+
+exit
+```
+
+Create `src/fast_functions.cpp`:
+
+```cpp
+#include <Rcpp.h>
+using namespace Rcpp;
+
+//' Fast body mass standardization
+//'
+//' @param body_mass Numeric vector of body mass values
+//' @return Standardized body mass (mean=0, sd=1)
+//' @export
+// [[Rcpp::export]]
+NumericVector standardize_mass_cpp(NumericVector body_mass) {
+  double mean = Rcpp::mean(body_mass);
+  double sd = Rcpp::sd(body_mass);
+  return (body_mass - mean) / sd;
+}
+```
+
+# Best Practices Summary
+
+Following R package development best practices [@wickham_r_2015; @wickham_testthat_2011]:
+
+## Code Quality
+✅ **Comprehensive documentation** - All functions have roxygen2 docs
+✅ **Informative examples** - Every function has working examples
+✅ **Input validation** - Check parameters, provide clear error messages
+✅ **Consistent style** - Follow tidyverse style guide
+
+## Testing
+✅ **High test coverage** - >95% code coverage target
+✅ **Edge case testing** - Empty data, NAs, extreme values
+✅ **Error testing** - Invalid inputs produce informative errors
+✅ **Regression tests** - Tests prevent code breakage
+
+## Documentation
+✅ **README with examples** - Clear introduction and usage
+✅ **Vignettes** - Long-form tutorials for workflows
+✅ **NEWS file** - Version history with changes
+✅ **pkgdown website** - Professional online documentation
+
+## CRAN Compliance
+✅ **LICENSE file** - Clear open source license
+✅ **DESCRIPTION complete** - All metadata filled
+✅ **Multi-platform testing** - Windows, macOS, Linux
+✅ **No check errors** - Clean R CMD check on all platforms
+
+## Version Control
+✅ **Git history** - Clear commit messages
+✅ **GitHub integration** - Issues, pull requests, releases
+✅ **CI/CD automation** - Tests run on every commit
+✅ **Semantic versioning** - Clear version numbering
+
+# Progression From Analysis to Package
+
+## Starting from Existing Analysis
+
+If you already have analysis code, the progression is natural [@marwick_packaging_2018]:
+
+### Month 0: Analysis Phase
+```
+my-project/
+├── analysis/
+│   ├── data/
+│   └── scripts/
+│       ├── 01_prepare.R
+│       ├── 02_analyze.R
+│       └── 03_visualize.R
+```
+
+**No package yet** - just analysis scripts.
+
+### Month 1: Extract Reusable Functions
+```
+my-project/
+├── analysis/
+│   ├── data/
+│   └── scripts/
+│       ├── 01_prepare.R      # Now sources R/data_functions.R
+│       ├── 02_analyze.R      # Now sources R/analysis_functions.R
+│       └── 03_visualize.R    # Now sources R/plot_functions.R
+├── R/
+│   ├── data_functions.R      # ADD: Extracted from scripts
+│   ├── analysis_functions.R  # ADD: Extracted from scripts
+│   └── plot_functions.R      # ADD: Extracted from scripts
+```
+
+**Still not a package** - just better organized. Functions are in `R/` but no package infrastructure yet.
+
+### Month 2: Add Tests
+```
+my-project/
+├── analysis/
+├── R/
+└── tests/                    # ADD: Unit tests
+    └── testthat/
+        ├── test-data_functions.R
+        ├── test-analysis_functions.R
+        └── test-plot_functions.R
+```
+
+**Still not a package** - but now with quality assurance.
+
+### Month 3: Add Package Documentation
+```
+my-project/
+├── analysis/
+├── R/
+├── tests/
+├── man/                      # ADD: Generated docs
+│   ├── prepare_data.Rd
+│   └── ...
+├── vignettes/                # ADD: Tutorials
+│   └── tutorial.Rmd
+└── NEWS.md                   # ADD: Version history
+```
+
+**Now it's a package!** Ready for distribution.
+
+### Month 6: CRAN Submission
+```
+my-project/
+├── analysis/
+├── R/
+├── tests/
+├── man/
+├── vignettes/
+├── NEWS.md
+├── cran-comments.md         # ADD: CRAN submission notes
+└── LICENSE                   # ADD: Formal license
+```
+
+**CRAN-ready package** - submit and share with world.
+
+## The Key: No Migration Required
+
+At every stage, you **never rebuild the project**. Just **add what you need, when you need it** [@marwick_packaging_2018].
+
+# References
+
+Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging Data Analytical Work Reproducibly Using R (and Friends). *The American Statistician*, 72(1), 80-88.
+
+Wickham, H. (2015). *R Packages: Organize, Test, Document, and Share Your Code*. O'Reilly Media.
+
+Wickham, H. (2011). testthat: Get Started with Testing. *The R Journal*, 3(1), 5-10.
+
+Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal, T. K. (2017). Good enough practices in scientific computing. *PLOS Computational Biology*, 13(6), e1005510.
+
+Stodden, V., Seiler, J., & Ma, Z. (2018). An empirical analysis of journal policy effectiveness for computational reproducibility. *Proceedings of the National Academy of Sciences*, 115(11), 2584-2589.
+
+Schmidt-Nielsen, K. (1984). *Scaling: Why Is Animal Size So Important?* Cambridge University Press.
+
+# Additional Resources
+
+- Wickham's R Packages: https://r-pkgs.org/
+- CRAN Repository Policy: https://cran.r-project.org/web/packages/policies.html
+- rOpenSci Packaging Guide: https://devguide.ropensci.org/
+- Tidyverse Style Guide: https://style.tidyverse.org/
+- ZZCOLLAB Testing Guide: `docs/TESTING_GUIDE.md`
+- ZZCOLLAB Development Guide: `docs/DEVELOPMENT.md`
