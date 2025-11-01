@@ -471,7 +471,26 @@ validate_r_version_early() {
     # - Breaking reproducibility
     if [[ -f "renv.lock" ]]; then
         local lockfile_r_version
-        if lockfile_r_version=$(extract_r_version_from_lockfile 2>/dev/null); then
+        local extract_output
+        local extract_status
+
+        # Capture both output and exit status, including stderr
+        extract_output=$(extract_r_version_from_lockfile 2>&1)
+        extract_status=$?
+
+        # Validate extraction was successful and returned a non-empty version
+        if [[ $extract_status -ne 0 ]]; then
+            log_warn "Could not extract R version from renv.lock (non-fatal)"
+            log_debug "Extract error (exit $extract_status): $extract_output"
+            # Continue without validation - Docker build will catch issues later
+        elif [[ -z "$extract_output" ]]; then
+            log_warn "renv.lock exists but R version field is empty (non-fatal)"
+            log_debug "This may indicate an incomplete or corrupted renv.lock file"
+            # Continue without validation - Docker build will catch issues later
+        else
+            # Successfully extracted version - validate it matches
+            lockfile_r_version="$extract_output"
+
             if [[ "${r_version_to_check}" != "${lockfile_r_version}" ]]; then
                 log_error "R version MISMATCH detected!"
                 log_error ""
@@ -497,6 +516,7 @@ validate_r_version_early() {
                 log_error ""
                 return 1
             fi
+
             log_debug "✓ R version ${r_version_to_check} matches renv.lock"
         fi
     fi

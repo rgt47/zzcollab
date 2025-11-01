@@ -31,30 +31,42 @@ cleanup() {
 
     echo "📸 Auto-snapshotting renv.lock before container exit..."
 
-    # Run renv::snapshot() to capture current package state
-    # type = "explicit" means only packages explicitly used in code
-    # prompt = FALSE means non-interactive (essential for automation)
-    if Rscript -e "renv::snapshot(type = 'explicit', prompt = FALSE)" 2>/dev/null; then
-        echo "✅ renv.lock updated successfully"
+    # Use file locking to prevent race conditions when multiple containers exit simultaneously
+    # File descriptor 200 is used for the lock to avoid conflicts with stdin/stdout/stderr
+    {
+        # Wait for exclusive lock (blocks if another container is snapshotting)
+        flock -x 200 || {
+            echo "⚠️  Failed to acquire lock on renv.lock (timeout)" >&2
+            exit $exit_code
+        }
 
-        # Adjust timestamp for RSPM binary package availability
-        # RSPM needs 7-10 days to build binaries for new package versions
-        # Setting timestamp to 7 days ago ensures binary packages are available
-        # This provides 10-20x faster Docker builds (binaries vs source compilation)
-        # Note: Makefile will restore timestamp to "now" after validation completes
-        if [[ "$SNAPSHOT_TIMESTAMP_ADJUST" == "true" ]]; then
-            if touch -d "7 days ago" "$PROJECT_DIR/renv.lock" 2>/dev/null; then
-                echo "🕐 Adjusted renv.lock timestamp for RSPM (will be restored after validation)"
-            else
-                # macOS fallback (touch -d doesn't work on macOS)
-                if touch -t "$(date -v-7d +%Y%m%d%H%M.%S)" "$PROJECT_DIR/renv.lock" 2>/dev/null; then
+        # Run renv::snapshot() to capture current package state
+        # type = "explicit" means only packages explicitly used in code
+        # prompt = FALSE means non-interactive (essential for automation)
+        if Rscript -e "renv::snapshot(type = 'explicit', prompt = FALSE)" 2>/dev/null; then
+            echo "✅ renv.lock updated successfully"
+
+            # Adjust timestamp for RSPM binary package availability
+            # RSPM needs 7-10 days to build binaries for new package versions
+            # Setting timestamp to 7 days ago ensures binary packages are available
+            # This provides 10-20x faster Docker builds (binaries vs source compilation)
+            # Note: Makefile will restore timestamp to "now" after validation completes
+            if [[ "$SNAPSHOT_TIMESTAMP_ADJUST" == "true" ]]; then
+                if touch -d "7 days ago" "$PROJECT_DIR/renv.lock" 2>/dev/null; then
                     echo "🕐 Adjusted renv.lock timestamp for RSPM (will be restored after validation)"
+                else
+                    # macOS fallback (touch -d doesn't work on macOS)
+                    if touch -t "$(date -v-7d +%Y%m%d%H%M.%S)" "$PROJECT_DIR/renv.lock" 2>/dev/null; then
+                        echo "🕐 Adjusted renv.lock timestamp for RSPM (will be restored after validation)"
+                    fi
                 fi
             fi
+        else
+            echo "⚠️  renv::snapshot() failed (non-critical, continuing)" >&2
         fi
-    else
-        echo "⚠️  renv::snapshot() failed (non-critical, continuing)" >&2
-    fi
+
+        # Lock is automatically released when file descriptor 200 is closed (end of block)
+    } 200>"$PROJECT_DIR/.renv.lock.lock"
 
     exit $exit_code
 }
