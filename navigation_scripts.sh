@@ -29,7 +29,7 @@ _zzcollab_root() {
 }
 
 # Navigation functions
-a() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/data" || echo "Not in ZZCOLLAB project"; }
+a() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || echo "Not in ZZCOLLAB project"; }
 d() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/data" || echo "Not in ZZCOLLAB project"; }
 n() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || echo "Not in ZZCOLLAB project"; }
 f() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/figures" || echo "Not in ZZCOLLAB project"; }
@@ -46,8 +46,8 @@ c() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/archive" || ec
 nav() {
     echo "ZZCOLLAB Navigation Shortcuts:"
     echo "  r → project root"
-    echo "  a/d → data/"
-    echo "  n → analysis/"
+    echo "  d → data/"
+    echo "  a/n → analysis/"
     echo "  s → analysis/scripts/"
     echo "  p → analysis/paper/"
     echo "  f → analysis/figures/"
