@@ -901,14 +901,11 @@ build_docker_image() {
     # DOCKER_BUILDKIT=1: Enable BuildKit for faster builds and better caching
     # --build-arg R_VERSION: Pass R version to Dockerfile
     # --build-arg BASE_IMAGE: Pass base image to Dockerfile
-    # --build-arg PACKAGE_MODE: Pass build mode to unified Dockerfile (fast/standard/comprehensive)
     # -t "$PKG_NAME": Tag image with package name for easy reference
-    
-    # Determine package selection mode based on profile
-    local package_mode="${PROFILE_NAME:-${ZZCOLLAB_DEFAULT_PROFILE_NAME}}"
-    log_info "Using Docker profile: $package_mode"
 
-    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" --build-arg PACKAGE_MODE=\"$package_mode\" -t \"$PKG_NAME\" ."
+    log_info "Using Docker profile: ${PROFILE_NAME:-${ZZCOLLAB_DEFAULT_PROFILE_NAME}}"
+
+    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" -t \"$PKG_NAME\" ."
     
     log_info "Running: $docker_cmd"
     

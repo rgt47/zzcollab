@@ -362,18 +362,6 @@ parse_cli_arguments() {
                 USER_PROVIDED_R_VERSION=true
                 shift 2
                 ;;
-            --list-profiles)
-                LIST_PROFILES=true
-                shift
-                ;;
-            --list-libs)
-                LIST_LIBS=true
-                shift
-                ;;
-            --list-pkgs)
-                LIST_PKGS=true
-                shift
-                ;;
             --yes|-y)
                 SKIP_CONFIRMATION=true
                 shift
@@ -398,13 +386,6 @@ parse_cli_arguments() {
         esac
     done
 }
-
-#=============================================================================
-# USER-FRIENDLY INTERFACE PROCESSING
-#=============================================================================
-
-# Note: Legacy -I flag removed. Team images now handled via Dockerfile-based approach.
-# Function: process_user_friendly_interface - REMOVED (was no-op)
 
 #=============================================================================
 # TEAM IMAGE AVAILABILITY CHECKING

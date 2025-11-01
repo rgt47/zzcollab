@@ -269,8 +269,6 @@ yaml_set() {
 # CONFIGURATION LOADING FUNCTIONS
 #=============================================================================
 
-# Function: load_custom_package_lists - REMOVED (deprecated with BUILD_MODE system)
-
 ##############################################################################
 # FUNCTION: load_config_file
 # PURPOSE:  Load configuration values from a specific YAML configuration file
@@ -1023,14 +1021,6 @@ init_config_system() {
 
     log_info "Configuration system initialized"
 }
-
-#=============================================================================
-# PACKAGE LIST FUNCTIONS - REMOVED (deprecated with BUILD_MODE system)
-#=============================================================================
-
-# Function: get_docker_packages_for_mode - REMOVED (deprecated with BUILD_MODE system)
-# Function: get_renv_packages_for_mode - REMOVED (deprecated with BUILD_MODE system)
-# Function: generate_description_content - REMOVED (deprecated with BUILD_MODE system)
 
 #=============================================================================
 # MODULE VALIDATION AND LOADING
