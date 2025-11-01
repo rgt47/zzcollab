@@ -591,7 +591,7 @@ generate_description_from_profile() {
     packages=$(yq eval ".${profile}.packages[]" "$profiles_file" 2>/dev/null)
 
     if [[ -z "$packages" ]]; then
-        log_warning "No packages found for profile '$profile', using minimal defaults"
+        log_warn "No packages found for profile '$profile', using minimal defaults"
         packages="renv
 here
 usethis

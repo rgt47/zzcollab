@@ -7,7 +7,7 @@
 #          This is the foundation module that must be loaded before others
 #
 # FEATURES:
-#          - Unified logging system (log_info, log_error, log_success, log_warning)
+#          - Unified logging system (log_info, log_error, log_success, log_warn)
 #          - Module dependency validation system (require_module function)
 #          - Package name validation and sanitization
 #          - Item tracking system for manifest generation
@@ -176,12 +176,6 @@ log_success() {
     if [[ $VERBOSITY_LEVEL -ge 1 ]]; then
         printf "✅ %s\n" "$*" >&2
     fi
-}
-
-# Function: log_warning
-# Purpose: Alias for log_warn (for consistency with documentation)
-log_warning() {
-    log_warn "$@"
 }
 
 #=============================================================================

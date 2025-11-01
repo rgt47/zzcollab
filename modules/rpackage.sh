@@ -57,7 +57,7 @@ create_core_files() {
     description_content=$(generate_description_from_profile "${PROFILE_NAME}")
 
     if [[ $? -ne 0 ]] || [[ -z "$description_content" ]]; then
-        log_warning "Failed to generate DESCRIPTION from profile, falling back to template"
+        log_warn "Failed to generate DESCRIPTION from profile, falling back to template"
         local description_template
         description_template=$(get_description_template)
 
@@ -210,21 +210,9 @@ validate_r_package_structure() {
         "tests/testthat.R"
         "tests/testthat/test-utils.R"
     )
-    
-    local missing_files=()
-    for file in "${required_files[@]}"; do
-        if [[ ! -f "$file" ]]; then
-            missing_files+=("$file")
-        fi
-    done
-    
-    if [[ ${#missing_files[@]} -eq 0 ]]; then
-        log_success "All required R package files exist"
-        return 0
-    else
-        log_error "Missing R package files: ${missing_files[*]}"
-        return 1
-    fi
+
+    # Use centralized validation function from core.sh
+    validate_files_exist "R package structure" "${required_files[@]}"
 }
 
 # Function: show_rpackage_summary

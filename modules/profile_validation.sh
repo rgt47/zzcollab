@@ -283,7 +283,7 @@ generate_r_package_install_commands() {
     packages=$(yq eval ".package_bundles.${pkgs_bundle}.packages | join(\"', '\")" "$BUNDLES_FILE" 2>/dev/null)
 
     if [[ "$packages" == "null" ]] || [[ -z "$packages" ]]; then
-        log_warning "⚠️  Unknown package bundle: ${pkgs_bundle}, using minimal"
+        log_warn "⚠️  Unknown package bundle: ${pkgs_bundle}, using minimal"
         packages=$(yq eval ".package_bundles.minimal.packages | join(\"', '\")" "$BUNDLES_FILE" 2>/dev/null)
     fi
 

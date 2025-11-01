@@ -559,7 +559,7 @@ create_default_config() {
 
     # Check if config file already exists
     if [[ -f "$CONFIG_USER_FILE" ]]; then
-        log_warning "Configuration file already exists: $CONFIG_USER_FILE"
+        log_warn "Configuration file already exists: $CONFIG_USER_FILE"
         echo ""
         echo "Options:"
         echo "  1. Keep existing config (recommended)"
@@ -582,7 +582,7 @@ create_default_config() {
                 log_info "Creating new configuration file..."
                 ;;
             3)
-                log_warning "Overwriting configuration without backup..."
+                log_warn "Overwriting configuration without backup..."
                 ;;
             *)
                 log_error "Invalid choice. Keeping existing configuration."
