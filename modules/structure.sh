@@ -110,125 +110,13 @@ create_data_templates() {
         return 1
     fi
 
-    # Install data workflow guide template
-    if install_template "DATA_WORKFLOW_GUIDE.md" "DATA_WORKFLOW_GUIDE.md" "data workflow documentation" "Created comprehensive data development workflow guide"; then
+    # Install data workflow guide template to docs directory
+    if install_template "DATA_WORKFLOW_GUIDE.md" "docs/DATA_WORKFLOW_GUIDE.md" "data workflow documentation" "Created comprehensive data development workflow guide"; then
         log_debug "Data workflow guide template created"
     else
         log_error "Failed to create data workflow guide template"
         return 1
     fi
-}
-
-#=============================================================================
-# NAVIGATION SCRIPTS CREATION (replaces symbolic links)
-#=============================================================================
-
-# Function: create_navigation_scripts
-# Purpose: Creates navigation_scripts.sh that generates one-letter navigation links
-# Creates: A single navigation_scripts.sh file that can create navigation shortcuts
-#
-# Navigation Links Created (rrtools structure):
-#   a → ./analysis/data        - Quick access to research data
-#   n → ./analysis             - Quick access to analysis directory
-#   f → ./analysis/figures     - Quick access to figures
-#   t → ./analysis/tables      - Quick access to tables
-#   s → ./analysis/scripts     - Quick access to analysis scripts
-#   m → ./man                  - Quick access to manual pages
-#   e → ./tests                - Quick access to tests
-#   o → ./docs                 - Quick access to documentation
-#   p → ./analysis/paper       - Quick access to paper directory
-#
-# Usage Examples:
-#   ./navigation_scripts.sh    # Create navigation links
-#   cd a                       # Go to data directory
-#   cd n                       # Go to analysis directory
-#   ./navigation_scripts.sh -c # Remove all navigation links
-#
-# Note: Creates symbolic links for easier navigation
-create_navigation_scripts() {
-    log_debug "Creating navigation scripts..."
-    
-    # Create navigation_scripts.sh that generates one-letter navigation links
-    cat > navigation_scripts.sh << 'EOF'
-#!/bin/bash
-# Navigation Links Generator
-# Creates one-letter symbolic links for quick directory navigation
-# Usage: ./navigation_scripts.sh [--clean | -c]
-#   --clean | -c : Remove all navigation links
-
-# Function to clean up navigation links
-cleanup_links() {
-    echo "Removing navigation links..."
-    rm -f a n f t s m e o p
-    echo "All navigation links removed."
-    exit 0
-}
-
-# Check for cleanup flag
-if [[ "$1" == "--clean" || "$1" == "-c" ]]; then
-    cleanup_links
-fi
-
-echo "Creating navigation symbolic links (rrtools structure)..."
-
-# Remove existing navigation links first
-rm -f a n f t s m e o p
-
-# Create symbolic links for existing directories
-if [[ -d "./analysis/data" ]]; then
-    ln -sf "./analysis/data" a
-    echo "Created: a → ./analysis/data"
-fi
-
-if [[ -d "./analysis" ]]; then
-    ln -sf "./analysis" n
-    echo "Created: n → ./analysis"
-fi
-
-if [[ -d "./analysis/figures" ]]; then
-    ln -sf "./analysis/figures" f
-    echo "Created: f → ./analysis/figures"
-fi
-
-if [[ -d "./analysis/tables" ]]; then
-    ln -sf "./analysis/tables" t
-    echo "Created: t → ./analysis/tables"
-fi
-
-if [[ -d "./analysis/scripts" ]]; then
-    ln -sf "./analysis/scripts" s
-    echo "Created: s → ./analysis/scripts"
-fi
-
-if [[ -d "./man" ]]; then
-    ln -sf "./man" m
-    echo "Created: m → ./man"
-fi
-
-if [[ -d "./tests" ]]; then
-    ln -sf "./tests" e
-    echo "Created: e → ./tests"
-fi
-
-if [[ -d "./docs" ]]; then
-    ln -sf "./docs" o
-    echo "Created: o → ./docs"
-fi
-
-if [[ -d "./analysis/paper" ]]; then
-    ln -sf "./analysis/paper" p
-    echo "Created: p → ./analysis/paper"
-fi
-
-echo "Navigation symbolic links created successfully!"
-echo "Usage: cd a (data), cd n (analysis), cd p (paper), etc."
-echo "To remove all links: ./navigation_scripts.sh --clean"
-EOF
-
-    chmod +x navigation_scripts.sh
-    log_debug "Navigation links generator created: navigation_scripts.sh"
-    log_debug "Run './navigation_scripts.sh' to create navigation shortcuts"
-    log_debug "Run './navigation_scripts.sh --clean' to remove all shortcuts"
 }
 
 #=============================================================================

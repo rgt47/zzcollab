@@ -166,7 +166,7 @@ remove_files() {
     standard_files="$standard_files Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .zshrc_docker"
 
     # Configuration and documentation
-    standard_files="$standard_files ZZCOLLAB_USER_GUIDE.md DATA_WORKFLOW_GUIDE.md zzcollab.yaml config.yaml .Rbuildignore"
+    standard_files="$standard_files ZZCOLLAB_USER_GUIDE.md zzcollab.yaml config.yaml .Rbuildignore"
 
     # Validation and development scripts
     standard_files="$standard_files check_rprofile_options.R dev.sh navigation_scripts.sh dev_workflow.R"
@@ -584,7 +584,6 @@ main() {
 
             # Configuration and documentation
             echo "ZZCOLLAB_USER_GUIDE.md"
-            echo "DATA_WORKFLOW_GUIDE.md"
             echo "zzcollab.yaml"
             echo "config.yaml"
             echo ".Rbuildignore"
