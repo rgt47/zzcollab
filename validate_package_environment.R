@@ -1,1 +1,0 @@
-templates/validate_package_environment.R

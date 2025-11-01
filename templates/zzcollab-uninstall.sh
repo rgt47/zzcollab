@@ -160,7 +160,7 @@ remove_files() {
 
     # Comprehensive list of all zzcollab files that may not be in manifest
     # Core project files
-    local standard_files="DESCRIPTION NAMESPACE LICENSE Makefile .gitignore .Rprofile .Rprofile_docker renv.lock setup_renv.R"
+    local standard_files="DESCRIPTION NAMESPACE LICENSE Makefile .gitignore .Rprofile .Rprofile_docker renv.lock"
 
     # Docker files
     standard_files="$standard_files Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .zshrc_docker"
@@ -169,7 +169,7 @@ remove_files() {
     standard_files="$standard_files ZZCOLLAB_USER_GUIDE.md DATA_WORKFLOW_GUIDE.md zzcollab.yaml config.yaml .Rbuildignore"
 
     # Validation and development scripts
-    standard_files="$standard_files validate_package_environment.R check_rprofile_options.R dev.sh navigation_scripts.sh dev_workflow.R"
+    standard_files="$standard_files check_rprofile_options.R dev.sh navigation_scripts.sh dev_workflow.R"
 
     # GitHub templates and workflows
     standard_files="$standard_files .github/pull_request_template.md .github/ISSUE_TEMPLATE/bug_report.md .github/ISSUE_TEMPLATE/feature_request.md"
@@ -574,7 +574,6 @@ main() {
             echo ".Rprofile"
             echo ".Rprofile_docker"
             echo "renv.lock"
-            echo "setup_renv.R"
 
             # Docker files
             echo "Dockerfile"
@@ -591,7 +590,6 @@ main() {
             echo ".Rbuildignore"
 
             # Validation and development scripts
-            echo "validate_package_environment.R"
             echo "check_rprofile_options.R"
             echo "dev.sh"
             echo "navigation_scripts.sh"

@@ -750,14 +750,6 @@ create_docker_files() {
     
     # Note: .zshrc is copied directly from user's dotfiles (assumed to have OS conditionals)
 
-    # Create package environment validation script
-    # Used by: CI/CD workflows, development workflow validation
-    # Purpose: Ensures package dependencies are properly synchronized across CRAN, Bioconductor, and GitHub
-    if ! install_template "validate_package_environment.R" "validate_package_environment.R" "package validation script" "Created package environment validation script"; then
-        log_error "Failed to create package environment validation script"
-        return 1
-    fi
-
     # Create entrypoint script for Docker container
     # Used by: Dockerfile ENTRYPOINT, auto-snapshots renv.lock on container exit
     # Purpose: Manages container lifecycle and ensures renv.lock stays synchronized

@@ -95,7 +95,7 @@ RUN --mount=type=cache,target=/tmp/R-cache \
     R -e "install.packages(c(${CUSTOM_R_PACKAGES_INSTALL}))"
 
 # Restore renv packages
-COPY DESCRIPTION setup_renv.R* ./
+COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
 #=================================================================
