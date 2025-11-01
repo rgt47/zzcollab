@@ -25,7 +25,7 @@ environments, automated CI/CD workflows, and team collaboration tools.
 - **Advanced configuration system** with user/project-level settings
 - **14+ specialized Docker profiles** (from 200MB Alpine to 3.5GB
   full-featured)
-- **Profile-based architecture**: Team lead selects Docker profile, members add packages via renv
+- **Profile-based architecture**: Team lead selects Docker profile, members add packages as needed
 - **Automated CI/CD** workflows
 - **Analysis and reporting** tools
 - **Git integration** for version control
@@ -121,12 +121,23 @@ The **team lead** selects a Docker profile that defines the foundational environ
 
 ```r
 # Inside the Docker container
-renv::install("tidymodels")
-renv::install("plotly")
-renv::snapshot()  # Save to renv.lock
+install.packages("tidymodels")
+install.packages("plotly")
 ```
 
-The `renv.lock` file accumulates packages from **all team members** (union model), ensuring everyone has access to all required packages while maintaining flexibility.
+When you exit the container, packages are automatically captured in `renv.lock`. The lock file accumulates packages from **all team members** (union model), ensuring everyone has access to all required packages while maintaining flexibility.
+
+**For GitHub packages:**
+```r
+install.packages("remotes")
+remotes::install_github("user/package")
+```
+
+**Alternative:** `renv::install()` works for both CRAN and GitHub packages:
+```r
+renv::install("tidymodels")              # CRAN
+renv::install("user/package")            # GitHub
+```
 
 ### Workflow Example
 
@@ -143,7 +154,7 @@ git add . && git commit -m "Initial setup" && git push
 git clone https://github.com/mylab/study.git && cd study
 zzcollab --use-team-image  # Uses team's Docker profile
 make docker-zsh
-# Inside container: renv::install("package") as needed
+# Inside container: install.packages("package") as needed
 ```
 
 ## R Interface Implementation
@@ -220,18 +231,22 @@ After the Docker profile is set, team members add packages as needed:
 # Enter container
 make docker-zsh
 
-# Inside container - add packages dynamically
+# Inside container - add packages using standard R
 R
-> renv::install("tidymodels")
-> renv::install("here")
-> renv::snapshot()
+> install.packages("tidymodels")
+> install.packages("here")
 > quit()
+
+# Exit container (packages automatically captured in renv.lock)
+exit
 
 # Commit the updated renv.lock
 git add renv.lock
 git commit -m "Add tidymodels and here packages"
 git push
 ```
+
+Packages are automatically captured in `renv.lock` when you exit the container - no manual snapshot needed!
 
 ## Configuration System
 
@@ -313,8 +328,8 @@ init_project(project_name = "covid-analysis")
 
 # 2. Add required packages (inside container via make docker-zsh)
 # In container:
-#   renv::install(c("tidyverse", "lubridate", "plotly"))
-#   renv::snapshot()
+#   install.packages(c("tidyverse", "lubridate", "plotly"))
+# Packages automatically captured on exit
 
 # 3. Create feature branch
 create_branch("feature/exploratory-analysis")
