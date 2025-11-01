@@ -4,6 +4,52 @@ This directory contains comprehensive documentation for the ZZCOLLAB framework's
 
 ## Documents Overview
 
+### 🎓 Tutorials & Practical Guides
+
+#### [REPRODUCIBILITY_WORKFLOW_TUTORIAL.md](REPRODUCIBILITY_WORKFLOW_TUTORIAL.md)
+**Purpose**: Complete hands-on tutorial demonstrating ZZCOLLAB's reproducibility and validation systems
+**Scope**: 30-45 minute practical workflow using Palmer Penguins dataset
+**ZZCOLLAB Relevance**:
+- Demonstrates complete workflow from project creation through team collaboration
+- Exercises auto-snapshot, validation, Docker, and CI/CD features
+- Provides concrete examples of reproducibility in practice
+- Serves as onboarding tutorial for new users and team members
+
+**Tutorial Sections**:
+- **Part 1**: Solo developer workflow with package management
+- **Part 2**: Team collaboration and environment sharing
+- **Part 3**: Testing reproducibility with clean slate rebuilds
+- **Part 4**: Advanced validation and navigation features
+
+**Key Features Demonstrated**:
+- Docker-first development environment
+- Auto-snapshot on container exit (no manual `renv::snapshot()`)
+- Shell-based validation without host R
+- One-letter navigation shortcuts
+- Team image building and distribution
+
+#### [VALIDATION_QUICK_REFERENCE.md](VALIDATION_QUICK_REFERENCE.md)
+**Purpose**: Fast reference guide for ZZCOLLAB's package validation system
+**Scope**: Quick lookup for common validation scenarios and troubleshooting
+**ZZCOLLAB Relevance**:
+- Essential reference for daily development workflow
+- Explains validation commands and output interpretation
+- Provides decision trees for common issues
+- Documents pure shell validation architecture
+
+**Quick Reference Sections**:
+- Validation commands (`make check-renv`, `make check-renv-strict`)
+- Common scenarios with solutions
+- Validation output explanation
+- Integration with auto-snapshot
+- Troubleshooting guide
+
+**Key Concepts**:
+- Three sources of truth: Code → DESCRIPTION → renv.lock
+- Standard vs strict validation modes
+- No host R required (pure shell: grep, sed, awk, jq)
+- CI/CD integration
+
 ### 📊 Data Science Research & Motivation
 
 #### [UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md](UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md)
@@ -129,6 +175,10 @@ This directory contains comprehensive documentation for the ZZCOLLAB framework's
 
 ## Document Categories
 
+### For New Users (Start Here!)
+- **REPRODUCIBILITY_WORKFLOW_TUTORIAL.md**: Hands-on tutorial with real data analysis
+- **VALIDATION_QUICK_REFERENCE.md**: Essential validation commands and troubleshooting
+
 ### For Decision Makers & Research Leaders
 - **UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md**: Scientific justification for testing frameworks
 - **CICD_MOTIVATION_DATA_ANALYSIS.md**: Business case for CI/CD in data science
@@ -140,7 +190,9 @@ This directory contains comprehensive documentation for the ZZCOLLAB framework's
 - **BASH_IMPROVEMENTS_SUMMARY.md**: Quality standards and security analysis
 - **BASH_STANDARDS.md**: Coding guidelines and development standards
 
-### 📊 For R Users & Data Scientists
+### For R Users & Data Scientists
+- **REPRODUCIBILITY_WORKFLOW_TUTORIAL.md**: Complete workflow with Palmer Penguins example
+- **VALIDATION_QUICK_REFERENCE.md**: Package validation system reference
 - **R_PACKAGE_INTEGRATION_SUMMARY.md**: R interface capabilities and usage
 - **UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md**: Testing best practices for data analysis
 - **CICD_MOTIVATION_DATA_ANALYSIS.md**: Production deployment guidance
@@ -181,6 +233,6 @@ For the most current information, refer to the framework's main documentation in
 
 ---
 
-**Last Updated**: September 30, 2025
+**Last Updated**: October 31, 2025
 **Framework Version**: ZZCOLLAB 2025
-**Total Documents**: 8 comprehensive documents covering all aspects of framework development and usage
+**Total Documents**: 10 comprehensive documents covering all aspects of framework development and usage
