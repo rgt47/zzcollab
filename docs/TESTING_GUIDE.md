@@ -5,7 +5,7 @@
 ZZCOLLAB implements a comprehensive testing framework that ensures
 research code reliability, reproducibility, and maintainability. This
 guide documents testing strategies, implementation patterns, and best
-practices for all three research paradigms.
+practices for the unified research compendium architecture.
 
 ## Testing Philosophy
 
@@ -535,142 +535,150 @@ test_that("data loading handles various file formats", {
 })
 ```
 
-## Paradigm-Specific Testing
+## Unified Research Compendium Testing
 
-### Analysis Paradigm Testing
+ZZCOLLAB uses a **progressive disclosure** testing approach based on the Marwick et al. (2018) unified research compendium architecture. Tests grow organically with your project.
 
-Focus on data analysis pipeline validation:
+### Phase 1: Data Analysis Testing (Day 1)
+
+Start simple with analysis script validation:
 
 ```r
-# tests/integration/test-analysis-paradigm.R
+# tests/integration/test-analysis-workflow.R
 
-test_that("analysis paradigm templates work correctly", {
-  # Test exploratory analysis template
-  source("scripts/01_exploratory_analysis.R")
-  expect_true(exists("eda_summary"))
-  expect_s3_class(eda_summary, "data.frame")
+test_that("data analysis pipeline executes successfully", {
+  # Test data loading
+  source("analysis/scripts/01_load_data.R")
+  expect_true(exists("raw_data"))
+  expect_s3_class(raw_data, "data.frame")
 
-  # Test modeling template
-  source("scripts/02_statistical_modeling.R")
-  expect_true(exists("fitted_model"))
-  expect_true(inherits(fitted_model, "model"))
+  # Test data processing
+  source("analysis/scripts/02_process_data.R")
+  expect_true(exists("processed_data"))
+  expect_true(nrow(processed_data) > 0)
 
-  # Test validation template
-  source("scripts/03_model_validation.R")
-  expect_true(exists("validation_results"))
-  expect_true(validation_results$passed)
+  # Test analysis
+  source("analysis/scripts/03_analyze.R")
+  expect_true(exists("analysis_results"))
 
-  # Test dashboard template
-  expect_true(file.exists("reports/dashboard/dashboard.Rmd"))
-  rmarkdown::render("reports/dashboard/dashboard.Rmd",
-                    quiet = TRUE)
-  expect_true(file.exists("reports/dashboard/dashboard.html"))
+  # Test figure generation
+  source("analysis/scripts/04_create_figures.R")
+  expect_true(file.exists("analysis/figures/figure1.png"))
 })
 ```
 
-### Manuscript Paradigm Testing
+### Phase 2: Manuscript Integration Testing (Week 2)
 
-Focus on reproducibility and manuscript compilation:
+Add manuscript rendering validation when ready:
 
 ```r
-# tests/integration/test-manuscript-paradigm.R
+# tests/integration/test-manuscript-rendering.R
 
-test_that("manuscript paradigm reproduction succeeds", {
-  # Test reproduction scripts execute in order
-  source("analysis/reproduce/01_prepare_data.R")
-  expect_true(file.exists("data/derived_data/prepared_data.rds"))
+test_that("manuscript renders successfully", {
+  # Test manuscript compilation
+  rmarkdown::render("analysis/paper/paper.Rmd", quiet = TRUE)
+  expect_true(file.exists("analysis/paper/paper.pdf"))
 
-  source("analysis/reproduce/02_run_analysis.R")
-  expect_true(file.exists("outputs/analysis_results.rds"))
+  # Test references are resolved
+  pdf_text <- pdftools::pdf_text("analysis/paper/paper.pdf")
+  expect_true(any(grepl("References", pdf_text)))
 
-  source("analysis/reproduce/03_create_figures.R")
-  expect_true(file.exists("outputs/figures/figure1.pdf"))
-
-  source("analysis/reproduce/04_create_tables.R")
-  expect_true(file.exists("outputs/tables/table1.csv"))
-
-  # Test manuscript renders successfully
-  rmarkdown::render("manuscript/paper.Rmd", quiet = TRUE)
-  expect_true(file.exists("manuscript/paper.pdf"))
-
-  # Test supplementary materials render
-  rmarkdown::render("manuscript/supplementary.Rmd", quiet = TRUE)
-  expect_true(file.exists("manuscript/supplementary.pdf"))
-})
-
-test_that("manuscript paradigm tests pass", {
-  # All analysis functions must have tests
-  r_files <- list.files("R", pattern = "\\.R$",
-                        full.names = TRUE)
-  test_files <- list.files("tests/testthat",
-                           pattern = "^test-.*\\.R$",
-                           full.names = TRUE)
-
-  r_basenames <- sub("\\.R$", "",
-                     basename(r_files))
-  test_basenames <- sub("^test-", "",
-                        sub("\\.R$", "", basename(test_files)))
-
-  # Each R file should have corresponding test file
-  expect_true(all(r_basenames %in% test_basenames))
+  # Test figures are embedded
+  pdf_info <- pdftools::pdf_info("analysis/paper/paper.pdf")
+  expect_gt(pdf_info$pages, 1)
 })
 ```
 
-### Package Paradigm Testing
+### Phase 3: Function Extraction Testing (Month 1)
 
-Focus on R CMD check compliance and CRAN readiness:
+When code moves to R/, add comprehensive unit tests:
+
+```r
+# tests/testthat/test-data-functions.R
+
+test_that("data cleaning functions work correctly", {
+  # Test clean_penguin_data()
+  test_data <- data.frame(
+    species = c("Adelie", "Gentoo", NA),
+    bill_length_mm = c(39.1, 50.5, NA),
+    flipper_length_mm = c(181, 230, 195)
+  )
+
+  cleaned <- clean_penguin_data(test_data)
+
+  # Verify NA removal
+  expect_equal(nrow(cleaned), 2)
+  expect_false(any(is.na(cleaned)))
+
+  # Verify column presence
+  expect_true("species" %in% names(cleaned))
+  expect_true("bill_length_mm" %in% names(cleaned))
+})
+
+test_that("statistical functions produce valid output", {
+  # Test calculate_correlation()
+  x <- c(1, 2, 3, 4, 5)
+  y <- c(2, 4, 6, 8, 10)
+
+  result <- calculate_correlation(x, y)
+
+  expect_type(result, "list")
+  expect_true("r" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_equal(result$r, 1.0, tolerance = 0.001)
+})
+```
+
+### Phase 4: Package Distribution Testing (Month 3)
+
+Prepare for CRAN or internal distribution:
 
 ```r
 # tests/testthat/test-package-structure.R
 
-test_that("package structure meets CRAN requirements", {
-  # Test DESCRIPTION file
+test_that("package structure meets R CMD check requirements", {
+  # Test DESCRIPTION file completeness
   desc <- read.dcf("DESCRIPTION")
   expect_true("Package" %in% colnames(desc))
   expect_true("Version" %in% colnames(desc))
   expect_true("License" %in% colnames(desc))
+  expect_true("Authors@R" %in% colnames(desc))
 
-  # Test all functions documented
-  r_files <- list.files("R", pattern = "\\.R$",
-                        full.names = TRUE)
-  rd_files <- list.files("man", pattern = "\\.Rd$",
-                         full.names = TRUE)
+  # Test all exported functions are documented
+  namespace <- getNamespaceExports(desc[1, "Package"])
+  man_files <- list.files("man", pattern = "\\.Rd$")
+  man_topics <- sub("\\.Rd$", "", man_files)
 
-  expect_gt(length(rd_files), 0,
-            info = "No documentation files found")
-
-  # Test examples run successfully
-  for (rd_file in rd_files) {
-    result <- tryCatch({
-      tools::Rd2ex(rd_file, out = tempfile())
-      TRUE
-    }, error = function(e) FALSE)
-
-    expect_true(result,
-                info = paste("Examples failed in", rd_file))
-  }
+  expect_true(all(namespace %in% man_topics),
+              info = "All exported functions must be documented")
 })
 
-test_that("package vignettes build successfully", {
-  vignettes <- list.files("vignettes",
-                          pattern = "\\.Rmd$",
-                          full.names = TRUE)
+test_that("examples run without errors", {
+  # Test all .Rd examples execute successfully
+  pkg <- read.dcf("DESCRIPTION")[1, "Package"]
 
-  for (vig in vignettes) {
-    result <- tryCatch({
-      rmarkdown::render(vig, output_format = "html_document",
-                        quiet = TRUE)
-      TRUE
-    }, error = function(e) {
-      message("Vignette build failed: ", vig)
-      message("Error: ", e$message)
-      FALSE
-    })
+  result <- tryCatch({
+    tools::testInstalledPackage(pkg, types = "examples")
+    TRUE
+  }, error = function(e) {
+    message("Examples failed: ", e$message)
+    FALSE
+  })
 
-    expect_true(result, info = paste("Vignette failed:", vig))
-  }
+  expect_true(result)
 })
 ```
+
+### Progressive Disclosure Philosophy
+
+**Key Principle**: Start simple, add complexity as needed.
+
+1. **Data Analysis** (Day 1): Basic script validation
+2. **Manuscript** (Week 2): Add rendering tests when writing
+3. **Functions** (Month 1): Unit tests when extracting reusable code
+4. **Package** (Month 3): CRAN compliance when ready to distribute
+
+**No Upfront Commitment**: Your testing strategy evolves with your project. No need to decide "analysis vs manuscript vs package" paradigm upfront.
 
 ## Continuous Integration Testing
 
@@ -1044,7 +1052,8 @@ test_that("function completes in reasonable time", {
 ### Related Guides
 
 - ZZCOLLAB User Guide: Comprehensive usage documentation
-- Build Modes Guide: Testing requirements by build mode
+- Development Guide (DEVELOPMENT.md): Testing and validation commands
+- Configuration Guide (CONFIGURATION.md): Testing environment setup
 - Data Workflow Guide: Data validation and testing strategies
 
 ### Academic References

@@ -26,16 +26,24 @@ make docker-render         # Render analysis reports
 
 ### CI/CD Validation
 ```bash
-# CI/CD validation (enhanced with build mode awareness)
-Rscript validate_package_environment.R --quiet --fail-on-issues  # Dependency validation
-Rscript validate_package_environment.R --build-mode fast --quiet --fail-on-issues  # Fast mode validation
-ZZCOLLAB_BUILD_MODE=comprehensive Rscript validate_package_environment.R --fix --fail-on-issues  # Environment variable
-Rscript check_rprofile_options.R                          # R options monitoring
+# Pure shell validation (NO HOST R REQUIRED!)
+make check-renv            # Validate DESCRIPTION ↔ renv.lock consistency
+make check-renv-strict     # Strict mode (scans tests/, vignettes/)
+
+# R options monitoring
+Rscript check_rprofile_options.R    # Track critical R options changes
 
 # Container-based CI commands (used in GitHub Actions)
-docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript validate_package_environment.R --quiet --fail-on-issues
 docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'warning')"
 ```
+
+**Pure Shell Validation System** (October 2025):
+- Uses `modules/validation.sh` - pure shell (grep, awk, jq)
+- Extracts packages from code without R
+- Parses DESCRIPTION with awk
+- Parses renv.lock with jq
+- Works on any system (no R installation required!)
+- Automatically runs after all `docker-*` targets exit
 
 ## Docker Development Environments
 
@@ -46,6 +54,33 @@ make docker-rstudio        # RStudio Server at localhost:8787
 make docker-verse          # Verse environment with LaTeX (publishing)
 make docker-r              # R console only
 make docker-bash           # Bash shell
+```
+
+**✨ Auto-Snapshot Architecture** (October 2025):
+
+All `docker-*` targets automatically snapshot renv.lock on container exit:
+
+1. **No manual `renv::snapshot()` required!** - Just work and exit
+2. **RSPM timestamp optimization** - Adjusts renv.lock timestamp for binary packages (10-20x faster Docker builds)
+3. **Pure shell validation** - Validates packages on host without R
+4. **Timestamp restoration** - Restores to current time for accurate git history
+
+**Workflow**:
+```bash
+make docker-zsh              # 1. Enter container (entrypoint active)
+renv::install("tidyverse")   # 2. Add packages as needed
+exit                         # 3. Exit → auto-snapshot + validation!
+# renv.lock automatically updated and validated
+git add renv.lock && git commit -m "Add tidyverse" && git push
+```
+
+**Configuration** (optional):
+```bash
+# Disable auto-snapshot if needed
+docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false ...
+
+# Disable RSPM timestamp adjustment
+docker run -e ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST=false ...
 ```
 
 ## Docker Environment Management
@@ -73,13 +108,18 @@ zzcollab --use-team-image  # Download and use team's Docker image
 
 ### renv Commands
 ```bash
-make check-renv            # Check renv status
-make check-renv-fix        # Update renv.lock
-make docker-check-renv     # Validate in container
-Rscript validate_package_environment.R --quiet --fail-on-issues  # CI validation
-Rscript validate_package_environment.R --fix --fail-on-issues    # Auto-fix missing packages
-Rscript validate_package_environment.R --build-mode fast --fix   # Build mode aware validation
+# Pure shell validation (recommended - no host R required!)
+make check-renv            # Validate DESCRIPTION ↔ renv.lock consistency
+make check-renv-strict     # Strict mode (scans tests/, vignettes/)
+
+# Docker-based validation
+make docker-check-renv     # Validate inside container
+
+# Status checking
+renv::status()             # Check renv status (inside R session)
 ```
+
+**Note**: With auto-snapshot architecture, you rarely need to manually run validation commands. The system automatically validates after every container exit.
 
 ## Installation and Setup
 
@@ -107,13 +147,9 @@ make docker-build          # Builds TEAM/PROJECTcore:latest
 
 # 4. Share with team
 make docker-push-team      # Push to Docker Hub
-
-# Combine with build modes for different package sets:
-# Edit Dockerfile to reference different bundle:
-# - fast-bundle (9 packages, 2-3 minutes)
-# - standard-bundle (17 packages, 4-6 minutes) [default]
-# - comprehensive-bundle (47+ packages, 15-20 minutes)
 ```
+
+**Dynamic Package Management**: Packages are added as needed via `renv::install()` inside containers. No pre-configured "modes" - just install what you need!
 
 ### Team Member - Use Pre-Built Team Image
 ```bash
@@ -223,14 +259,13 @@ renv::install("tidyverse")
 renv::install("sf")
 renv::install("targets")
 
-# Save to renv.lock
-renv::snapshot()
-
-# Exit and commit
-exit
+# Exit and commit (auto-snapshot happens automatically!)
+exit                      # ← Automatic renv::snapshot() + validation
 git add renv.lock
 git commit -m "Add analysis packages"
 ```
+
+**✨ No manual `renv::snapshot()` needed!** The auto-snapshot architecture automatically captures package changes when you exit the container.
 
 ### Docker Profiles
 
@@ -297,6 +332,6 @@ make docker-zsh
 ## Related Documentation
 
 - **Testing**: [Testing Guide](TESTING_GUIDE.md)
-- **Build Modes**: [Build Modes Guide](BUILD_MODES.md)
 - **Configuration**: [Configuration Guide](CONFIGURATION.md)
 - **Docker Profiles**: [Variants Guide](VARIANTS.md)
+- **Auto-Snapshot Architecture**: See "Docker Development Environments" section above

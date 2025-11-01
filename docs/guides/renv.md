@@ -251,10 +251,10 @@ renv::snapshot()
 
 **SOLUTION**:
 ```r
-# Package needs system libraries (e.g., sf needs gdal)
+# Package needs system libraries (e.g., sf needs GDAL)
 # Options:
-# 1. Use different build mode (comprehensive includes more)
-# 2. Ask team lead to add to Docker image
+# 1. Use specialized Docker profile (e.g., --profile-name geospatial for sf/terra)
+# 2. Ask team lead to add system libraries to Docker image
 # 3. Use alternative package
 ```
 
@@ -487,31 +487,40 @@ renv::restore()
 
 ## renv + zzcollab Integration
 
-zzcollab build modes control initial packages:
+ZZCOLLAB uses **dynamic package management** for maximum flexibility:
 
-### MINIMAL mode (3 packages)
+### Docker Profiles Control Base Environment
 
-- renv, here, usethis
-- Add all analysis packages via `install.packages()`
+Docker profiles provide the foundation (team/shared):
 
-### FAST mode (9 packages)
+- **minimal**: Ultra-lightweight (~200MB) - Add all packages as needed
+- **analysis**: Tidyverse + common packages (~1.5GB)
+- **bioinformatics**: Bioconductor packages (~2GB)
+- **geospatial**: GDAL/PROJ + sf/terra (~2GB)
+- **publishing**: LaTeX + Quarto (~3GB)
 
-- renv, here, usethis, devtools, testthat
-- knitr, rmarkdown, targets, palmerpenguins
-- Add additional packages as needed
+See [Variants Guide](../VARIANTS.md) for all 14+ profiles.
 
-### STANDARD mode (17 packages)
+### renv.lock Captures All Package Changes
 
-- Fast packages + tidyverse core
-- Most workflows covered
-- Occasionally add specialized packages
+Packages are added dynamically inside containers:
 
-### COMPREHENSIVE mode (47+ packages)
+```bash
+make docker-zsh                    # Enter container
+renv::install("tidymodels")        # Add packages as needed
+renv::install("targets")
+exit                               # Auto-snapshot on exit!
+# renv.lock automatically updated
+```
 
-- Includes most common packages
-- Rarely need to add more
+### Two-Layer Architecture
 
-**Key insight**: Build mode affects Docker image → renv.lock records project-specific additions → renv.lock + Docker image = perfect reproducibility!
+**Key insight**:
+- **Docker profile** = Foundation (base image + system libs) - Team/shared
+- **renv.lock** = Complete package record (accumulates from all team members) - Union model
+- **Perfect reproducibility** = Docker profile + renv.lock
+
+**No pre-configured "modes"** - Just install what you need when you need it!
 
 ---
 

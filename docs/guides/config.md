@@ -236,10 +236,10 @@ zzcollab --config get team-name
 zzcollab --config get profile-name
 ```
 
-### Workflow 3: Change Build Mode
+### Workflow 3: Change Docker Profile
 
 ```bash
-# Switch from standard to fast
+# Switch to different Docker environment (e.g., analysis, geospatial, bioinformatics)
 zzcollab --config set profile-name "analysis"
 
 # Applies to all NEW projects
