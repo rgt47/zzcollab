@@ -354,7 +354,7 @@ install_uninstall_script() {
         track_file "$install_path"
         log_success "Uninstall script installed: $install_path"
     else
-        log_warning "Uninstall script template not found"
+        log_warn "Uninstall script template not found"
     fi
 }
 
@@ -505,8 +505,8 @@ confirm_overwrite_conflicts() {
     fi
     
     echo ""
-    log_warning "⚠️  FILE CONFLICT DETECTION:"
-    log_warning "Found ${#conflicts[@]} existing files/directories that zzcollab would modify:"
+    log_warn "⚠️  FILE CONFLICT DETECTION:"
+    log_warn "Found ${#conflicts[@]} existing files/directories that zzcollab would modify:"
     echo ""
     
     for conflict in "${conflicts[@]}"; do
@@ -554,7 +554,7 @@ validate_directory_for_setup() {
     
     # Skip all directory validation if --force is used (advanced users)
     if [[ "${FORCE_DIRECTORY:-false}" == "true" ]]; then
-        log_warning "⚠️  Directory validation skipped due to --force flag"
+        log_warn "⚠️  Directory validation skipped due to --force flag"
         log_info "Proceeding with setup in current directory: $PWD"
         return 0
     fi
@@ -601,8 +601,8 @@ validate_directory_for_setup() {
     
     # Skip validation for certain directories that are expected to be non-empty
     if [[ "$current_dir" == "zzcollab" ]]; then
-        log_warning "Running zzcollab setup in the zzcollab source directory"
-        log_warning "This will create project files alongside the zzcollab source code"
+        log_warn "Running zzcollab setup in the zzcollab source directory"
+        log_warn "This will create project files alongside the zzcollab source code"
         read -p "Are you sure you want to continue? [y/N] " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -626,7 +626,7 @@ validate_directory_for_setup_no_conflicts() {
 
     # Skip all directory validation if --force is used (advanced users)
     if [[ "${FORCE_DIRECTORY:-false}" == "true" ]]; then
-        log_warning "⚠️  Directory validation skipped due to --force flag"
+        log_warn "⚠️  Directory validation skipped due to --force flag"
         log_info "Proceeding with setup in current directory: $PWD"
         return 0
     fi
@@ -673,8 +673,8 @@ validate_directory_for_setup_no_conflicts() {
 
     # Skip validation for certain directories that are expected to be non-empty
     if [[ "$current_dir" == "zzcollab" ]]; then
-        log_warning "Running zzcollab setup in the zzcollab source directory"
-        log_warning "This will create project files alongside the zzcollab source code"
+        log_warn "Running zzcollab setup in the zzcollab source directory"
+        log_warn "This will create project files alongside the zzcollab source code"
         read -p "Are you sure you want to continue? [y/N] " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -937,7 +937,7 @@ finalize_and_report_results() {
                 cleanup_dotfiles_from_workdir
             fi
         else
-            log_warning "Docker build failed - you can build manually later with 'make docker-build'"
+            log_warn "Docker build failed - you can build manually later with 'make docker-build'"
             log_info "💡 Dotfiles kept in working directory for manual Docker build"
         fi
     else
@@ -959,10 +959,10 @@ finalize_and_report_results() {
             fi
             log_success "Created renv.lock with current package environment"
         else
-            log_warning "Failed to create renv.lock - run 'renv::init(); renv::snapshot()' manually"
+            log_warn "Failed to create renv.lock - run 'renv::init(); renv::snapshot()' manually"
         fi
     else
-        log_warning "R not found - run 'renv::init(); renv::snapshot()' after installing R"
+        log_warn "R not found - run 'renv::init(); renv::snapshot()' after installing R"
     fi
     
     # Create GitHub repository if requested
