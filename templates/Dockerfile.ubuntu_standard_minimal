@@ -64,7 +64,7 @@ RUN --mount=type=cache,target=/tmp/R-cache \
            'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
 
 # Restore renv packages
-COPY DESCRIPTION setup_renv.R* ./
+COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
 #=================================================================
@@ -94,7 +94,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libcurl4 \
         libssl3 \
         libxml2 \
-        libgit2-1.1 \
+        libgit2-1.7 \
         libssh2-1 \
         libfontconfig1 \
         libharfbuzz0b \

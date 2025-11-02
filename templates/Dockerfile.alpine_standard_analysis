@@ -54,7 +54,7 @@ RUN --mount=type=cache,target=/tmp/R-cache \
            'stringr', 'lubridate', 'scales'))"
 
 # Restore renv
-COPY DESCRIPTION setup_renv.R* ./
+COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
 #=================================================================
