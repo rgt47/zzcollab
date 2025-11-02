@@ -101,14 +101,14 @@ jobs:
         echo "Dockerfile created successfully"
 
     - name: Build Docker image
-      run: |
-        cd test-project
-
-        # zzcollab already created the Dockerfile with all variables substituted
-        # Just build it directly
-        DOCKER_BUILDKIT=1 docker build \
-          --tag testproject:test \
-          .
+      uses: docker/build-push-action@v5
+      with:
+        context: test-project
+        push: false
+        load: true
+        tags: testproject:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Test container starts
       run: |
