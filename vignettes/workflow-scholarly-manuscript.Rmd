@@ -206,7 +206,7 @@ affiliation:
     name: Department of Biology, Your University
   - id: 2
     name: Department of Ecology, Their University
-date: "`r format(Sys.Date(), '%B %d, %Y')`"
+date: "` r format(Sys.Date(), '%B %d, %Y')`"
 output:
   pdf_document:
     keep_tex: true
@@ -305,8 +305,8 @@ n_total <- nrow(penguins)
 n_by_species <- table(penguins$species)
 ```
 
-Our final dataset included `r n_total` penguins: `r n_by_species["Adelie"]` Adelie,
-`r n_by_species["Chinstrap"]` Chinstrap, and `r n_by_species["Gentoo"]` Gentoo individuals.
+Our final dataset included ` r n_total` penguins: ` r n_by_species["Adelie"]` Adelie,
+` r n_by_species["Chinstrap"]` Chinstrap, and ` r n_by_species["Gentoo"]` Gentoo individuals.
 
 ## Statistical Analysis
 
@@ -336,7 +336,7 @@ coef_length <- tidy(model_bill_length, conf.int = TRUE)
 coef_depth <- tidy(model_bill_depth, conf.int = TRUE)
 ```
 
-All analyses were conducted in R version `r getRversion()` [@r_core_team_r_2023] using
+All analyses were conducted in R version ` r getRversion()` [@r_core_team_r_2023] using
 the tidyverse [@wickham_welcome_2019], broom [@robinson_broom_2021], and palmerpenguins
 [@horst_palmer_2020] packages. Complete code and data are available at
 https://github.com/yourusername/penguin-morphology-paper (reproducible research compendium
@@ -346,13 +346,13 @@ following @marwick2018).
 
 ## Allometric Scaling Patterns
 
-Bill length showed near-isometric scaling with body mass (slope = `r round(coef_length$estimate[2], 2)`,
-95% CI: `r round(coef_length$conf.low[2], 2)`-`r round(coef_length$conf.high[2], 2)`;
+Bill length showed near-isometric scaling with body mass (slope = ` r round(coef_length$estimate[2], 2)`,
+95% CI: ` r round(coef_length$conf.low[2], 2)`-` r round(coef_length$conf.high[2], 2)`;
 Fig. 1A). This indicates that bill length increases proportionally with body size across
 species [@schmidt-nielsen_scaling_1984].
 
-In contrast, bill depth exhibited negative allometry (slope = `r round(coef_depth$estimate[2], 2)`,
-95% CI: `r round(coef_depth$conf.low[2], 2)`-`r round(coef_depth$conf.high[2], 2)`;
+In contrast, bill depth exhibited negative allometry (slope = ` r round(coef_depth$estimate[2], 2)`,
+95% CI: ` r round(coef_depth$conf.low[2], 2)`-` r round(coef_depth$conf.high[2], 2)`;
 Fig. 1B), suggesting biomechanical constraints on bill depth relative to body mass
 [@west_general_1997].
 
