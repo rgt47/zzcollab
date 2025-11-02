@@ -266,8 +266,9 @@ match_static_template() {
 # DESCRIPTION:
 #   New logic: Check resolved values against static templates
 #   1. If using team image → static (Dockerfile.personal.team)
-#   2. Check if resolved combination matches any static template → use static
-#   3. Otherwise → generate custom
+#   2. If PROFILE_NAME set → check if Dockerfile.{PROFILE_NAME} exists
+#   3. Check if resolved combination matches any static template → use static
+#   4. Otherwise → generate custom
 # EXAMPLE:
 #   strategy=$(select_dockerfile_strategy)
 #   case "$strategy" in
@@ -338,7 +339,17 @@ select_dockerfile_strategy() {
         return 0
     fi
 
-    # 2. Check if resolved combination matches any static template (Issue #14 fix)
+    # 2. If PROFILE_NAME is set, check if static Dockerfile.{PROFILE_NAME} exists
+    if [[ -n "${PROFILE_NAME:-}" ]]; then
+        local profile_template="${TEMPLATES_DIR}/Dockerfile.${PROFILE_NAME}"
+        if [[ -f "$profile_template" ]] && [[ -r "$profile_template" ]]; then
+            log_info "Using static profile template: Dockerfile.${PROFILE_NAME}"
+            echo "static:Dockerfile.${PROFILE_NAME}"
+            return 0
+        fi
+    fi
+
+    # 3. Check if resolved combination matches any static template (Issue #14 fix)
     local matched_template=$(match_static_template "$base" "$libs" "$pkgs")
     if [[ -n "$matched_template" ]]; then
         log_info "Using static template: $matched_template"
