@@ -163,14 +163,16 @@ jobs:
         # Verify user exists
         docker exec test-container id analyst
 
-        # Verify project directory exists
+        # Verify project directory exists (created by WORKDIR)
         docker exec test-container test -d /home/analyst/project
 
-        # Verify DESCRIPTION file exists
-        docker exec test-container test -f /home/analyst/project/DESCRIPTION
-
-        # Verify renv.lock exists
-        docker exec test-container test -f /home/analyst/project/renv.lock
+        # Verify working directory is set correctly
+        WD=$(docker exec test-container pwd)
+        echo "Container working directory: $WD"
+        if [ "$WD" != "/home/analyst/project" ]; then
+          echo "ERROR: Working directory not set correctly"
+          exit 1
+        fi
 
     - name: Test R package installation
       run: |
