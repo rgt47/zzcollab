@@ -1,25 +1,26 @@
 # syntax=docker/dockerfile:1.4
-#=================================================================
+#======================================================================
 # ZZCOLLAB Ubuntu X11 Minimal Profile
-#=================================================================
+#======================================================================
 # Profile: ubuntu_x11_minimal (~1.5GB)
 # Purpose: Minimal R with X11 support for graphics viewing
 # Base: rocker/r-ver (R + minimal dependencies)
 # Packages: renv, devtools, usethis, testthat, roxygen2
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.ubuntu_x11_minimal -t myteam/project:x11-minimal .
+#          -f Dockerfile.ubuntu_x11_minimal \
+#          -t myteam/project:x11-minimal .
 # Run: Requires XQuartz (macOS) or X11 (Linux)
-#=================================================================
+#======================================================================
 
-ARG R_VERSION=latest
+ARG R_VERSION=4.4.2
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
-#=================================================================
+#======================================================================
 # STAGE 1: BUILDER
-#=================================================================
+#======================================================================
 FROM rocker/r-ver:${R_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -33,7 +34,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         wget \
         ca-certificates && \
     # r2u repository for binary R packages
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
+    wget -q -O- \
+        https://eddelbuettel.github.io/r2u/assets/\
 dirk_eddelbuettel_key.asc | \
         tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
     echo "deb [arch=amd64,arm64] \
@@ -69,25 +71,29 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
 WORKDIR /build
 COPY renv.lock* ./
 
-RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
+RUN UBUNTU_CODENAME=$(. /etc/os-release && \
+        echo $VERSION_CODENAME) && \
     echo "options(repos = c(" \
-        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
+        "CRAN = 'https://packagemanager.posit.co/cran/\
+__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
         >> /usr/local/lib/R/etc/Rprofile.site && \
-    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
+    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', \
+getRversion(), paste(getRversion(), R.version\$platform, \
+R.version\$arch, R.version\$os)))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install framework packages
-RUN --mount=type=cache,target=/tmp/R-cache \
+# Install framework packages with version-specific cache
+RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
     R -e "install.packages(c('renv', 'devtools', 'usethis', \
-           'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
+'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
 
 # Restore renv packages
-COPY DESCRIPTION setup_renv.R* ./
+COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
-#=================================================================
+#======================================================================
 # STAGE 2: RUNTIME
-#=================================================================
+#======================================================================
 FROM rocker/r-ver:${R_VERSION}
 
 ARG USERNAME=analyst
@@ -127,36 +133,50 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         curl \
         wget \
         sudo \
-        procps && \
+        procps \
+        # X11 runtime libraries (required for graphics)
+        xauth \
+        x11-apps \
+        libx11-6 \
+        libxt6 \
+        libcairo2 \
+        libgl1 \
+        libglu1-mesa && \
     # Node.js for vim plugins
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
 
-# Install external dependencies in parallel
+# Install external dependencies in parallel with error handling
 RUN --mount=type=cache,target=/tmp/downloads \
-    set -ex && \
+    set -e && \
     # ZSH plugins
     ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
     ZSH_SYNTAX_VERSION=0.8.0 && \
     mkdir -p /tmp/.zsh && \
-    git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
+    git clone --depth 1 \
+        --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
         https://github.com/zsh-users/zsh-autosuggestions \
         /tmp/.zsh/zsh-autosuggestions & \
-    git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
+    pid1=$! && \
+    git clone --depth 1 \
+        --branch ${ZSH_SYNTAX_VERSION} \
         https://github.com/zsh-users/zsh-syntax-highlighting \
         /tmp/.zsh/zsh-syntax-highlighting & \
+    pid2=$! && \
     # vim-plug
     VIM_PLUG_VERSION=0.14.0 && \
     mkdir -p /tmp/.vim/autoload && \
     curl -fLo /tmp/.vim/autoload/plug.vim \
         https://raw.githubusercontent.com/junegunn/vim-plug/\
 ${VIM_PLUG_VERSION}/plug.vim & \
-    wait
+    pid3=$! && \
+    wait $pid1 && wait $pid2 && wait $pid3
 
 # Create user and set up environment
 RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
     usermod -aG sudo ${USERNAME} && \
-    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} && \
+    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > \
+        /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
     mv /tmp/.zsh /home/${USERNAME}/.zsh && \
@@ -167,7 +187,8 @@ RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
 # Set password using BuildKit secrets or auto-generate
 RUN --mount=type=secret,id=password \
     if [ -f /run/secrets/password ]; then \
-        echo "${USERNAME}:$(cat /run/secrets/password)" | chpasswd; \
+        echo "${USERNAME}:$(cat /run/secrets/password)" | \
+            chpasswd; \
     else \
         PASSWORD=$(openssl rand -base64 12) && \
         echo "${USERNAME}:${PASSWORD}" | chpasswd && \
@@ -175,7 +196,7 @@ RUN --mount=type=secret,id=password \
         echo "Generated password: ${PASSWORD}" && \
         echo "User: ${USERNAME}" && \
         echo "Save this password!" && \
-        echo "=============================================="; \
+        echo "============================================="; \
     fi
 
 # Switch to user
@@ -197,27 +218,29 @@ COPY --chown=${USERNAME}:${USERNAME} \
 
 # Install vim plugins
 RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
-        tee /tmp/vim-install.log || true
+    tee /tmp/vim-install.log || true
 
 # Copy project files (last - most frequent changes)
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 # Install research compendium
 RUN R -e "install.packages('.', repos = NULL, type = 'source', \
-           dependencies = TRUE)"
+    dependencies = TRUE)"
 
 # Metadata
-LABEL org.opencontainers.image.title="ZZCOLLAB Minimal Environment" \
+LABEL org.opencontainers.image.title=\
+"ZZCOLLAB Ubuntu X11 Minimal Environment" \
       org.opencontainers.image.description=\
-"Essential R packages for package development" \
+"Minimal R with X11 support for graphics viewing" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source=\
 "https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="minimal" \
-      zzcollab.size="~800MB"
+      zzcollab.profile="ubuntu_x11_minimal" \
+      zzcollab.size="~1.5GB"
 
-# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit (requires root)
+# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
+# (requires root)
 USER root
 COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
 RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
