@@ -19,8 +19,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [ubuntu_standard_minimal, ubuntu_standard_analysis]
-        r_version: ['4.4.0', '4.3.1']
+        profile:
+          # Ubuntu standard profiles
+          - ubuntu_standard_minimal
+          - ubuntu_standard_analysis
+          - ubuntu_standard_publishing
+          # Ubuntu Shiny profiles
+          - ubuntu_shiny_minimal
+          - ubuntu_shiny_analysis
+          # Ubuntu X11 profiles
+          - ubuntu_x11_minimal
+          - ubuntu_x11_analysis
+          # Alpine profiles
+          - alpine_standard_minimal
+          - alpine_standard_analysis
+          - alpine_x11_minimal
+          - alpine_x11_analysis
+        r_version: ['4.4.0']
 
     steps:
     - name: Checkout code
