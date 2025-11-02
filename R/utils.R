@@ -442,24 +442,29 @@ init_project <- function(team_name = NULL, project_name = NULL,
                          dotfiles_path = NULL,
                          dotfiles_nodots = NULL) {
 
-  # Apply config defaults for missing parameters
+  # Validate required parameters FIRST (before getting config defaults)
+  # This allows tests to validate error messages without needing zzcollab script
+  if (is.null(project_name)) {
+    stop("project_name is required", call. = FALSE)
+  }
+
+  # Validate project_name format early (before config lookup)
+  validate_docker_name(project_name, "project_name")
+
+  # Now apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
   github_account <- github_account %||% get_config_default("github_account") %||% team_name
   dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
   dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
 
-  # Validate required parameters
+  # Validate team_name is set (either passed or from config)
   if (is.null(team_name)) {
     stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
          call. = FALSE)
   }
-  if (is.null(project_name)) {
-    stop("project_name is required", call. = FALSE)
-  }
 
-  # Validate parameter formats
+  # Validate team_name format
   validate_docker_name(team_name, "team_name")
-  validate_docker_name(project_name, "project_name")
 
   if (!is.null(github_account)) {
     validate_docker_name(github_account, "github_account")
@@ -587,23 +592,28 @@ init_project <- function(team_name = NULL, project_name = NULL,
 join_project <- function(team_name = NULL, project_name = NULL,
                          dotfiles_path = NULL, dotfiles_nodots = NULL) {
 
-  # Apply config defaults for missing parameters
-  team_name <- team_name %||% get_config_default("team_name")
-  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
-  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
-
-  # Validate required parameters
-  if (is.null(team_name)) {
-    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
-         call. = FALSE)
-  }
+  # Validate required parameters FIRST (before getting config defaults)
+  # This allows tests to validate error messages without needing zzcollab script
   if (is.null(project_name)) {
     stop("project_name is required", call. = FALSE)
   }
 
-  # Validate parameter formats
-  validate_docker_name(team_name, "team_name")
+  # Validate project_name format early (before config lookup)
   validate_docker_name(project_name, "project_name")
+
+  # Now apply config defaults for missing parameters
+  team_name <- team_name %||% get_config_default("team_name")
+  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
+  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
+
+  # Validate team_name is set (either passed or from config)
+  if (is.null(team_name)) {
+    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
+         call. = FALSE)
+  }
+
+  # Validate team_name format
+  validate_docker_name(team_name, "team_name")
 
   # Validate and normalize paths
   dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
