@@ -198,7 +198,7 @@ extract_r_version_from_lockfile() {
         r_version=$(jq -r '.R.Version // empty' renv.lock 2>/dev/null)
 
         if [[ -n "$r_version" ]]; then
-            log_success "Found R version in lockfile: $r_version"
+            log_success "Found R version in lockfile: $r_version" >&2
             echo "$r_version"
             return 0
         fi
@@ -229,7 +229,7 @@ except Exception as e:
         python_exit=$?
 
         if [[ $python_exit -eq 0 ]] && [[ -n "$r_version" ]]; then
-            log_success "Found R version in lockfile: $r_version"
+            log_success "Found R version in lockfile: $r_version" >&2
             echo "$r_version"
             return 0
         fi
