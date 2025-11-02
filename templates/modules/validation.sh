@@ -107,7 +107,9 @@ clean_packages() {
         fi
 
         # Skip if base package
-        if [[ " ${BASE_PACKAGES[*]} " =~ " ${pkg} " ]]; then
+        # Use literal string matching instead of regex to avoid SC2076
+        local base_packages_str=" ${BASE_PACKAGES[*]} "
+        if [[ "$base_packages_str" == *" ${pkg} "* ]]; then
             continue
         fi
 
@@ -212,17 +214,17 @@ validate_package_environment() {
 
     log_info "Scanning for R files in: ${dirs[*]}"
     local code_packages_raw
-    code_packages_raw=($(extract_code_packages "${dirs[@]}"))
+    mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
     local code_packages
-    code_packages=($(clean_packages "${code_packages_raw[@]}"))
+    mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
 
     # Step 2: Parse DESCRIPTION
     local desc_imports
-    desc_imports=($(parse_description_imports))
+    mapfile -t desc_imports < <(parse_description_imports)
 
     # Step 3: Parse renv.lock
     local renv_packages
-    renv_packages=($(parse_renv_lock))
+    mapfile -t renv_packages < <(parse_renv_lock)
 
     # Step 4: Report findings
     log_info "Found ${#code_packages[@]} packages in code"
@@ -232,7 +234,9 @@ validate_package_environment() {
     # Step 5: Find missing packages (in code but not in DESCRIPTION)
     local missing=()
     for pkg in "${code_packages[@]}"; do
-        if [[ ! " ${desc_imports[*]} " =~ " ${pkg} " ]]; then
+        # Use literal string matching instead of regex to avoid SC2076
+        local desc_imports_str=" ${desc_imports[*]} "
+        if [[ "$desc_imports_str" != *" ${pkg} "* ]]; then
             missing+=("$pkg")
         fi
     done
