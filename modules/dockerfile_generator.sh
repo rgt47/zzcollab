@@ -201,7 +201,7 @@ match_static_template() {
     local libs="$2"
     local pkgs="$3"
 
-    # List of profiles with static Dockerfiles (excluding .bak files)
+    # List of profiles with static Dockerfiles (new naming convention only)
     local profiles=(
         "ubuntu_standard_minimal"
         "ubuntu_standard_analysis"
@@ -214,10 +214,6 @@ match_static_template() {
         "alpine_standard_analysis"
         "alpine_x11_minimal"
         "alpine_x11_analysis"
-        "modeling"
-        "geospatial"
-        "bioinformatics"
-        "hpc_alpine"
     )
 
     for profile in "${profiles[@]}"; do
