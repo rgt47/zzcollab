@@ -23,17 +23,17 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-This vignette demonstrates the recommended workflow for scholarly manuscript development using ZZCOLLAB, following the unified research compendium framework [@marwick_packaging_2018] and best practices for reproducible computational manuscripts [@gentleman_statistical_2007; @knuth_literate_1984].
+This vignette demonstrates the recommended workflow for scholarly manuscript development using ZZCOLLAB, following the unified research compendium framework [@marwick2018] and best practices for reproducible computational manuscripts [@gentleman2007; @knuth1984].
 
-**Key Philosophy**: Use the **same structure** for manuscript writing as data analysis. No separate "manuscript paradigm"—simply add `analysis/paper/paper.Rmd` when ready to write [@marwick_packaging_2018].
+**Key Philosophy**: Use the **same structure** for manuscript writing as data analysis. No separate "manuscript paradigm"—simply add `analysis/paper/paper.Rmd` when ready to write [@marwick2018].
 
 ## What You Will Learn
 
-- Writing reproducible manuscripts with R Markdown [@xie_r_2018]
-- Integrating analysis code with narrative text [@knuth_literate_1984]
-- Managing bibliographies and citations [@xie_r_2018]
+- Writing reproducible manuscripts with R Markdown [@xie2018]
+- Integrating analysis code with narrative text [@knuth1984]
+- Managing bibliographies and citations [@xie2018]
 - Rendering to multiple output formats (PDF, Word, HTML)
-- Collaborating on manuscripts with version control [@ram_git_2013]
+- Collaborating on manuscripts with version control [@ram2013]
 - Automating manuscript builds with CI/CD
 
 ## Prerequisites
@@ -50,7 +50,7 @@ This vignette demonstrates the recommended workflow for scholarly manuscript dev
 
 Traditional approach: Create separate "manuscript project" from "analysis project."
 
-**ZZCOLLAB approach** [@marwick_packaging_2018; @gentleman_statistical_2007]: **Same project, just add paper.Rmd**.
+**ZZCOLLAB approach** [@marwick2018; @gentleman2007]: **Same project, just add paper.Rmd**.
 
 ```
 Week 1 (Analysis Only):      Week 4 (Add Manuscript):        Month 2 (Publish):
@@ -68,11 +68,11 @@ R/                          R/                              R/
                                                             └── testthat/
 ```
 
-**No migration needed**—manuscript sources analysis from same project [@marwick_packaging_2018].
+**No migration needed**—manuscript sources analysis from same project [@marwick2018].
 
 ## When to Write as You Go vs. After Analysis
 
-Two valid approaches [@marwick_packaging_2018]:
+Two valid approaches [@marwick2018]:
 
 ### Approach 1: Analysis First, Manuscript Later
 **Best for**: Exploratory research, novel methods, uncertain direction
@@ -83,7 +83,7 @@ Two valid approaches [@marwick_packaging_2018]:
 **Advantage**: Clear understanding of findings before writing.
 
 ### Approach 2: Write as You Go (Literate Programming)
-**Best for**: Hypothesis-driven research, established methods [@knuth_literate_1984]
+**Best for**: Hypothesis-driven research, established methods [@knuth1984]
 
 1. **Day 1**: Create `analysis/paper/paper.Rmd` with introduction
 2. **Daily**: Add analysis code + narrative as you work
@@ -91,13 +91,13 @@ Two valid approaches [@marwick_packaging_2018]:
 
 **Advantage**: Writing and analysis develop together.
 
-**ZZCOLLAB supports both** - use the same structure [@marwick_packaging_2018].
+**ZZCOLLAB supports both** - use the same structure [@marwick2018].
 
 # Step-by-Step: Manuscript Development Workflow
 
 ## Step 1: Project Initialization (Same as Analysis!)
 
-The manuscript workflow starts **identically** to data analysis [@marwick_packaging_2018].
+The manuscript workflow starts **identically** to data analysis [@marwick2018].
 
 ### Configure ZZCOLLAB
 
@@ -141,7 +141,7 @@ penguin-morphology-paper/
 └── Makefile                       # Convenient commands
 ```
 
-**Key insight**: This is **exactly the same structure** as data analysis. The only difference is you'll add content to `analysis/paper/` [@marwick_packaging_2018].
+**Key insight**: This is **exactly the same structure** as data analysis. The only difference is you'll add content to `analysis/paper/` [@marwick2018].
 
 ## Step 2: Develop Analysis (Standard Workflow)
 
@@ -340,7 +340,7 @@ All analyses were conducted in R version `r getRversion()` [@r_core_team_r_2023]
 the tidyverse [@wickham_welcome_2019], broom [@robinson_broom_2021], and palmerpenguins
 [@horst_palmer_2020] packages. Complete code and data are available at
 https://github.com/yourusername/penguin-morphology-paper (reproducible research compendium
-following @marwick_packaging_2018).
+following @marwick2018).
 
 # Results
 
@@ -602,7 +602,7 @@ exit
 
 ## Step 5: Create Supplementary Materials
 
-Many journals require supplementary materials [@marwick_packaging_2018].
+Many journals require supplementary materials [@marwick2018].
 
 ### Create supplementary.Rmd
 
@@ -683,7 +683,7 @@ Describe additional quality control measures, outlier detection, missing data ha
 
 ## Step 6: Automated Manuscript Rendering
 
-Automate rendering with Makefile and CI/CD [@marwick_packaging_2018].
+Automate rendering with Makefile and CI/CD [@marwick2018].
 
 ### Add Makefile Targets
 
@@ -733,7 +733,7 @@ make manuscript-html
 
 ## Step 7: Version Control and Collaboration
 
-Manuscripts benefit enormously from version control [@ram_git_2013; @bryan_excuse_2018].
+Manuscripts benefit enormously from version control [@ram2013; @bryan2018].
 
 ### Commit Manuscript Source
 
@@ -816,7 +816,7 @@ git push origin v1.2-accepted
 
 ## Step 8: Continuous Integration for Manuscripts
 
-Automate manuscript rendering on every commit using CI/CD [@marwick_packaging_2018].
+Automate manuscript rendering on every commit using CI/CD [@marwick2018].
 
 ### GitHub Actions Workflow
 
@@ -899,7 +899,7 @@ jobs:
 
 ## Journal-Specific Templates
 
-Many journals provide R Markdown templates [@xie_r_2018].
+Many journals provide R Markdown templates [@xie2018].
 
 ### Using rticles Package
 
@@ -935,7 +935,7 @@ exit
 
 ## Quarto for Enhanced Publishing
 
-Quarto (https://quarto.org) is the next-generation R Markdown [@xie_r_2018].
+Quarto (https://quarto.org) is the next-generation R Markdown [@xie2018].
 
 ### Install Quarto
 
@@ -1006,7 +1006,7 @@ exit
 
 ## Preprints and Open Access
 
-Share manuscripts before peer review [@marwick_packaging_2018].
+Share manuscripts before peer review [@marwick2018].
 
 ### Submit to bioRxiv/arXiv
 
@@ -1059,11 +1059,11 @@ Figures are cached - only regenerate when code changes.
 
 # Best Practices Summary
 
-Following reproducible manuscript development best practices [@marwick_packaging_2018; @gentleman_statistical_2007; @knuth_literate_1984]:
+Following reproducible manuscript development best practices [@marwick2018; @gentleman2007; @knuth1984]:
 
 ## Manuscript Organization
 ✅ **Source in version control** - paper.Rmd tracked with git
-✅ **Literate programming** - Code + narrative integrated [@knuth_literate_1984]
+✅ **Literate programming** - Code + narrative integrated [@knuth1984]
 ✅ **Reproducible from source** - `rmarkdown::render()` rebuilds manuscript
 ✅ **Multiple output formats** - PDF, Word, HTML from same source
 
@@ -1095,7 +1095,7 @@ Following reproducible manuscript development best practices [@marwick_packaging
 
 ## The Natural Workflow
 
-Starting from analysis, manuscript writing is a natural extension [@marwick_packaging_2018]:
+Starting from analysis, manuscript writing is a natural extension [@marwick2018]:
 
 ### Week 1-4: Analysis Phase
 ```
@@ -1138,7 +1138,7 @@ exit  # Auto-snapshot!
 make manuscript-pdf
 ```
 
-**Manuscript develops alongside refinements to analysis** [@knuth_literate_1984].
+**Manuscript develops alongside refinements to analysis** [@knuth1984].
 
 ### Week 9: Submission Prep
 ```
@@ -1162,7 +1162,7 @@ my-project/
 
 ## The Key: No Separation
 
-At every stage, **analysis and manuscript live in the same project**. No copy-paste between "analysis project" and "manuscript project" [@marwick_packaging_2018; @gentleman_statistical_2007].
+At every stage, **analysis and manuscript live in the same project**. No copy-paste between "analysis project" and "manuscript project" [@marwick2018; @gentleman2007].
 
 **Benefits**:
 - Changes to analysis automatically update manuscript

@@ -23,9 +23,9 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-This vignette demonstrates the recommended workflow for reproducible data analysis using ZZCOLLAB, following the unified research compendium framework [@marwick_packaging_2018] and best practices from the reproducible research literature [@wilson_good_2017; @stodden_empirical_2018].
+This vignette demonstrates the recommended workflow for reproducible data analysis using ZZCOLLAB, following the unified research compendium framework [@marwick2018] and best practices from the reproducible research literature [@wilson2017; @stodden2018].
 
-**Key Philosophy**: Start with simple analysis, add complexity only as needed. The same project structure serves you from initial exploration through publication [@marwick_packaging_2018].
+**Key Philosophy**: Start with simple analysis, add complexity only as needed. The same project structure serves you from initial exploration through publication [@marwick2018].
 
 ## What You Will Learn
 
@@ -33,7 +33,7 @@ This vignette demonstrates the recommended workflow for reproducible data analys
 - Organizing data and analysis scripts following rrtools conventions
 - Creating reusable functions with comprehensive tests
 - Validating computational reproducibility
-- Collaborating with version control [@ram_git_2013; @bryan_excuse_2018]
+- Collaborating with version control [@ram2013; @bryan2018]
 
 ## Prerequisites
 
@@ -44,11 +44,11 @@ This vignette demonstrates the recommended workflow for reproducible data analys
 
 # The Unified Research Compendium Approach
 
-ZZCOLLAB implements the unified research compendium framework [@marwick_packaging_2018], which provides **one flexible structure for all research**—from simple analysis through manuscript writing to package distribution.
+ZZCOLLAB implements the unified research compendium framework [@marwick2018], which provides **one flexible structure for all research**—from simple analysis through manuscript writing to package distribution.
 
 ## Core Principle: Progressive Disclosure
 
-**Start simple, add complexity organically, never rebuild** [@marwick_packaging_2018].
+**Start simple, add complexity organically, never rebuild** [@marwick2018].
 
 ```
 Day 1 (Analysis):        Week 2 (+ Manuscript):      Month 3 (+ Package):
@@ -61,7 +61,7 @@ analysis/                analysis/                    analysis/
                                                      vignettes/
 ```
 
-**No migration needed**—the structure grows with your research [@marwick_packaging_2018].
+**No migration needed**—the structure grows with your research [@marwick2018].
 
 # Step-by-Step: Data Analysis Workflow
 
@@ -123,7 +123,7 @@ penguin-analysis/
 
 ## Step 2: Add Data with Documentation (10 minutes)
 
-Following best practices for data documentation [@wilson_good_2017], ZZCOLLAB provides comprehensive data documentation templates.
+Following best practices for data documentation [@wilson2017], ZZCOLLAB provides comprehensive data documentation templates.
 
 ### Add Raw Data
 
@@ -184,14 +184,14 @@ Station, Antarctica.
 **Lineage**: Original data → palmerpenguins R package v0.1.0 → penguins.csv
 ```
 
-**Why this matters** [@wilson_good_2017]:
+**Why this matters** [@wilson2017]:
 - Enables future researchers to understand data origin
 - Documents known quality issues upfront
 - Provides complete lineage from source to analysis-ready form
 
 ## Step 3: Create Analysis Scripts (20 minutes)
 
-Following the rrtools approach [@marwick_packaging_2018], start with analysis scripts in `analysis/scripts/`, then extract reusable functions to `R/` when patterns emerge.
+Following the rrtools approach [@marwick2018], start with analysis scripts in `analysis/scripts/`, then extract reusable functions to `R/` when patterns emerge.
 
 ### Script 1: Data Preparation
 
@@ -355,7 +355,7 @@ exit
 
 ## Step 4: Extract Reusable Functions (Progressive Disclosure)
 
-As you identify repeated patterns, extract them to `R/` directory for reuse and testing [@marwick_packaging_2018; @wickham_r_2015].
+As you identify repeated patterns, extract them to `R/` directory for reuse and testing [@marwick2018; @wickham2015].
 
 **When to extract**:
 - Function used in 2+ scripts
@@ -446,7 +446,7 @@ fit_body_mass_model <- function(data) {
 
 ## Step 5: Add Unit Tests (Best Practice)
 
-Testing validates computational correctness and prevents regressions [@wilson_good_2017; @stodden_empirical_2018].
+Testing validates computational correctness and prevents regressions [@wilson2017; @stodden2018].
 
 ### Initialize Testing Infrastructure
 
@@ -565,7 +565,7 @@ make docker-test
 
 ## Step 6: Version Control and Collaboration
 
-Version control is essential for reproducible research [@ram_git_2013; @bryan_excuse_2018].
+Version control is essential for reproducible research [@ram2013; @bryan2018].
 
 ### Initial Commit
 
@@ -597,7 +597,7 @@ git push -u origin main
 
 ### Collaborate with Team
 
-Following best practices for computational reproducibility [@stodden_empirical_2018]:
+Following best practices for computational reproducibility [@stodden2018]:
 
 ```bash
 # Team member clones repository
@@ -629,7 +629,7 @@ make docker-test  # All tests should pass
 
 ## Step 7: Validate Reproducibility
 
-ZZCOLLAB provides automated reproducibility validation [@stodden_empirical_2018].
+ZZCOLLAB provides automated reproducibility validation [@stodden2018].
 
 ### Dependency Validation (Pure Shell - No R Required!)
 
@@ -669,7 +669,7 @@ make docker-test
 
 ## Working with Large Datasets
 
-For datasets >100MB, use data versioning [@wilson_good_2017]:
+For datasets >100MB, use data versioning [@wilson2017]:
 
 ```bash
 # .gitignore large data files
@@ -754,7 +754,7 @@ When ready to write up results, simply add `analysis/paper/paper.Rmd`:
 # See vignette: "Scholarly Manuscript Development with ZZCOLLAB"
 ```
 
-**No restructuring required** - the unified compendium serves both analysis and manuscript [@marwick_packaging_2018].
+**No restructuring required** - the unified compendium serves both analysis and manuscript [@marwick2018].
 
 ## Converting to R Package (Month 3+)
 
@@ -765,11 +765,11 @@ When ready to share as a package, add package infrastructure:
 # See vignette: "R Package Development with ZZCOLLAB"
 ```
 
-**No migration required** - add documentation and submit to CRAN [@wickham_r_2015].
+**No migration required** - add documentation and submit to CRAN [@wickham2015].
 
 # Best Practices Summary
 
-Following reproducible research best practices [@wilson_good_2017; @stodden_empirical_2018]:
+Following reproducible research best practices [@wilson2017; @stodden2018]:
 
 ## Data Management
 ✅ **Raw data is read-only** - never modify `analysis/data/raw_data/`

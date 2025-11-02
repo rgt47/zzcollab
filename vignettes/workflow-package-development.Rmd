@@ -23,15 +23,15 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-This vignette demonstrates the recommended workflow for R package development using ZZCOLLAB, following the unified research compendium framework [@marwick_packaging_2018] and R package development best practices [@wickham_r_2015].
+This vignette demonstrates the recommended workflow for R package development using ZZCOLLAB, following the unified research compendium framework [@marwick2018] and R package development best practices [@wickham2015].
 
-**Key Philosophy**: Use the **same structure** for package development as data analysis. No separate "package paradigm"—just add package infrastructure progressively as needed [@marwick_packaging_2018].
+**Key Philosophy**: Use the **same structure** for package development as data analysis. No separate "package paradigm"—just add package infrastructure progressively as needed [@marwick2018].
 
 ## What You Will Learn
 
 - Developing R packages following rrtools conventions
-- Test-driven development with comprehensive coverage [@wickham_testthat_2011]
-- Documentation with roxygen2 [@wickham_r_2015]
+- Test-driven development with comprehensive coverage [@wickham2011]
+- Documentation with roxygen2 [@wickham2015]
 - CRAN compliance and submission
 - Continuous integration for multi-platform testing
 - Publishing to CRAN and beyond
@@ -40,7 +40,7 @@ This vignette demonstrates the recommended workflow for R package development us
 
 - Docker installed and running
 - ZZCOLLAB installed (`./install.sh`)
-- Familiarity with R package structure [@wickham_r_2015]
+- Familiarity with R package structure [@wickham2015]
 - Git configured with credentials
 - GitHub account for package hosting
 
@@ -50,7 +50,7 @@ This vignette demonstrates the recommended workflow for R package development us
 
 Traditional approach: "Analysis" vs "Package" are separate project types.
 
-**ZZCOLLAB approach** [@marwick_packaging_2018]: **Same structure, progressive disclosure**.
+**ZZCOLLAB approach** [@marwick2018]: **Same structure, progressive disclosure**.
 
 ```
 Day 1 (Analysis):        Month 3 (Add Package Docs):    Month 6 (CRAN-ready):
@@ -69,11 +69,11 @@ R/                      R/                              R/
                                                         cran-comments.md
 ```
 
-**No migration needed**—add CRAN infrastructure when ready [@wickham_r_2015].
+**No migration needed**—add CRAN infrastructure when ready [@wickham2015].
 
 ## When to Develop as a Package
 
-Develop as a package when [@wickham_r_2015]:
+Develop as a package when [@wickham2015]:
 - **Reusable functions** - Code will be used across multiple projects
 - **Team collaboration** - Multiple developers contributing
 - **Public distribution** - Sharing via CRAN, Bioconductor, GitHub
@@ -84,7 +84,7 @@ Develop as a package when [@wickham_r_2015]:
 
 ## Step 1: Project Initialization (Same as Analysis!)
 
-The package development workflow starts **identically** to data analysis [@marwick_packaging_2018].
+The package development workflow starts **identically** to data analysis [@marwick2018].
 
 ### Configure ZZCOLLAB
 
@@ -127,11 +127,11 @@ penguintools/
 └── Makefile                       # Convenient commands
 ```
 
-**Key insight**: This is **exactly the same structure** as data analysis. The only difference is **what you put in R/** [@marwick_packaging_2018].
+**Key insight**: This is **exactly the same structure** as data analysis. The only difference is **what you put in R/** [@marwick2018].
 
 ## Step 2: Develop Functions with Tests (TDD Approach)
 
-Following test-driven development [@wickham_testthat_2011], write tests first, then implement functions.
+Following test-driven development [@wickham2011], write tests first, then implement functions.
 
 ### Initialize Testing
 
@@ -301,7 +301,7 @@ See **Data Analysis vignette** for examples.
 
 ## Step 3: Documentation with roxygen2
 
-Comprehensive documentation is essential for package users [@wickham_r_2015].
+Comprehensive documentation is essential for package users [@wickham2015].
 
 ### Document All Exported Functions
 
@@ -343,7 +343,7 @@ make check
 
 ## Step 4: Create Package Vignettes
 
-Vignettes provide long-form documentation for package workflows [@wickham_r_2015].
+Vignettes provide long-form documentation for package workflows [@wickham2015].
 
 ### Create Tutorial Vignette
 
@@ -421,7 +421,7 @@ exit
 
 ## Step 5: CRAN Compliance
 
-CRAN has strict requirements for package submission [@wickham_r_2015].
+CRAN has strict requirements for package submission [@wickham2015].
 
 ### Update DESCRIPTION File
 
@@ -503,7 +503,7 @@ There are currently no downstream dependencies for this package.
 
 ## Step 6: Comprehensive Testing
 
-Achieve >95% test coverage following best practices [@wickham_testthat_2011].
+Achieve >95% test coverage following best practices [@wickham2011].
 
 ### Test Coverage Report
 
@@ -525,7 +525,7 @@ exit
 
 ### Test Edge Cases
 
-Ensure tests cover [@wickham_testthat_2011]:
+Ensure tests cover [@wickham2011]:
 - **Normal cases**: Expected inputs produce expected outputs
 - **Edge cases**: Empty data, single observation, extreme values
 - **Error cases**: Invalid inputs produce informative errors
@@ -681,7 +681,7 @@ jobs:
 
 ## Step 8: CRAN Submission
 
-Final steps for CRAN submission [@wickham_r_2015].
+Final steps for CRAN submission [@wickham2015].
 
 ### Pre-Submission Checklist
 
@@ -749,7 +749,7 @@ gh release create v0.1.0 --title "v0.1.0: Initial CRAN Release" --notes "See NEW
 
 ## Step 9: Package Website with pkgdown
 
-Create professional package documentation website [@wickham_r_2015].
+Create professional package documentation website [@wickham2015].
 
 ### Setup pkgdown
 
@@ -919,7 +919,7 @@ NumericVector standardize_mass_cpp(NumericVector body_mass) {
 
 # Best Practices Summary
 
-Following R package development best practices [@wickham_r_2015; @wickham_testthat_2011]:
+Following R package development best practices [@wickham2015; @wickham2011]:
 
 ## Code Quality
 ✅ **Comprehensive documentation** - All functions have roxygen2 docs
@@ -955,7 +955,7 @@ Following R package development best practices [@wickham_r_2015; @wickham_testth
 
 ## Starting from Existing Analysis
 
-If you already have analysis code, the progression is natural [@marwick_packaging_2018]:
+If you already have analysis code, the progression is natural [@marwick2018]:
 
 ### Month 0: Analysis Phase
 ```
@@ -1034,7 +1034,7 @@ my-project/
 
 ## The Key: No Migration Required
 
-At every stage, you **never rebuild the project**. Just **add what you need, when you need it** [@marwick_packaging_2018].
+At every stage, you **never rebuild the project**. Just **add what you need, when you need it** [@marwick2018].
 
 # References
 
