@@ -671,8 +671,11 @@ EOF
     for pkg in "${standard_suggests[@]}"; do
         local pkg_name_only="${pkg%% *}"  # Remove version constraint
         # Check if not already in suggests or imports
-        if [[ ! " ${suggests[*]} " =~ " ${pkg_name_only} " ]] && \
-           [[ ! " ${imports[*]} " =~ " ${pkg_name_only} " ]]; then
+        # Use literal string matching instead of regex to avoid SC2076
+        local suggests_str=" ${suggests[*]} "
+        local imports_str=" ${imports[*]} "
+        if [[ "$suggests_str" != *" ${pkg_name_only} "* ]] && \
+           [[ "$imports_str" != *" ${pkg_name_only} "* ]]; then
             suggests+=("$pkg")
         fi
     done
