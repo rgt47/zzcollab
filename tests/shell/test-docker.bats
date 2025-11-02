@@ -194,7 +194,7 @@ teardown() {
     run extract_r_version_from_lockfile
     [ "$status" -eq 1 ]
     # Should output error message
-    [[ "$output" =~ "renv.lock not found" ]]
+    [[ "$output" == *"renv.lock not found"* ]]
 }
 
 @test "extract_r_version_from_lockfile extracts version from valid renv.lock" {
@@ -238,7 +238,7 @@ EOF
     run extract_r_version_from_lockfile
     [ "$status" -eq 1 ]
     # Should output error message about failed extraction
-    [[ "$output" =~ "Failed to extract R version" ]]
+    [[ "$output" == *"Failed to extract R version"* ]]
 }
 
 @test "extract_r_version_from_lockfile fails with invalid JSON" {
@@ -253,7 +253,7 @@ EOF
     run extract_r_version_from_lockfile
     [ "$status" -eq 1 ]
     # Should output error message about failed extraction
-    [[ "$output" =~ "Failed to extract R version" ]]
+    [[ "$output" == *"Failed to extract R version"* ]]
 }
 
 @test "extract_r_version_from_lockfile returns 'latest' when python3 unavailable" {
@@ -275,7 +275,7 @@ EOF
 
     run extract_r_version_from_lockfile
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "4.4.0" ]]
+    [[ "${output}" == *"4.4.0"* ]]
 }
 
 #=============================================================================
@@ -366,7 +366,7 @@ EOF
     [ "$status" -eq 1 ]
 
     # Should output error about missing R version
-    [[ "$output" =~ "Failed to determine R version" ]]
+    [[ "$output" == *"Failed to determine R version"* ]]
 }
 
 @test "create_docker_files handles team setup marker file" {
@@ -389,7 +389,7 @@ EOF
     # Mock install_template to check BASE_IMAGE was set correctly
     function install_template() {
         # Return success if BASE_IMAGE contains team/project names
-        [[ "${BASE_IMAGE}" =~ "myteam/myproject" ]]
+        [[ "${BASE_IMAGE}" == *"myteam/myproject"* ]]
         return $?
     }
     export -f install_template
@@ -448,7 +448,7 @@ EOF
 
     run build_docker_image
     [ "$status" -eq 1 ]
-    [[ "${output}" =~ "Docker is not installed" ]]
+    [[ "${output}" == *"Docker is not installed"* ]]
 }
 
 @test "build_docker_image validates Docker daemon is running" {
@@ -462,7 +462,7 @@ EOF
 
     run build_docker_image
     [ "$status" -eq 1 ]
-    [[ "${output}" =~ "Docker daemon is not running" ]]
+    [[ "${output}" == *"Docker daemon is not running"* ]]
 }
 
 @test "build_docker_image validates Dockerfile exists" {
@@ -478,7 +478,7 @@ EOF
 
     run build_docker_image
     [ "$status" -eq 1 ]
-    [[ "${output}" =~ "Dockerfile not found" ]]
+    [[ "${output}" == *"Dockerfile not found"* ]]
 }
 
 @test "build_docker_image validates R_VERSION is set" {
@@ -498,7 +498,7 @@ EOF
 
     run build_docker_image
     [ "$status" -eq 1 ]
-    [[ "${output}" =~ "R_VERSION is not set" ]]
+    [[ "${output}" == *"R_VERSION is not set"* ]]
 }
 
 @test "build_docker_image validates PKG_NAME is set" {
@@ -519,7 +519,7 @@ EOF
 
     run build_docker_image
     [ "$status" -eq 1 ]
-    [[ "${output}" =~ "PKG_NAME is not set" ]]
+    [[ "${output}" == *"PKG_NAME is not set"* ]]
 }
 
 @test "build_docker_image uses platform override on ARM64 for verse" {
@@ -552,7 +552,7 @@ EOF
 
     run build_docker_image
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "--platform linux/amd64" ]]
+    [[ "${output}" == *"--platform linux/amd64"* ]]
 }
 
 @test "build_docker_image constructs correct build command" {
@@ -581,8 +581,8 @@ EOF
 
     run build_docker_image
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "R_VERSION" ]]
-    [[ "${output}" =~ "BASE_IMAGE" ]]
+    [[ "${output}" == *"R_VERSION"* ]]
+    [[ "${output}" == *"BASE_IMAGE"* ]]
 }
 
 #=============================================================================
@@ -617,7 +617,7 @@ EOF
 
     run validate_docker_environment
     [ "$status" -eq 1 ]
-    [[ "${output}" =~ "Docker daemon is not running" ]]
+    [[ "${output}" == *"Docker daemon is not running"* ]]
 }
 
 @test "validate_docker_environment checks required files" {
@@ -678,7 +678,7 @@ EOF
 
     run validate_docker_environment
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "exists and ready to use" ]]
+    [[ "${output}" == *"exists and ready to use"* ]]
 }
 
 @test "validate_docker_environment informs when image not built" {
@@ -712,7 +712,7 @@ EOF
 
     run validate_docker_environment
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "not built yet" ]]
+    [[ "${output}" == *"not built yet"* ]]
 }
 
 #=============================================================================
@@ -722,31 +722,31 @@ EOF
 @test "show_docker_summary displays formatted output" {
     run show_docker_summary
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "DOCKER ENVIRONMENT" ]]
-    [[ "${output}" =~ "Dockerfile" ]]
-    [[ "${output}" =~ "docker-compose.yml" ]]
+    [[ "${output}" == *"DOCKER ENVIRONMENT"* ]]
+    [[ "${output}" == *"Dockerfile"* ]]
+    [[ "${output}" == *"docker-compose.yml"* ]]
 }
 
 @test "show_docker_summary includes common commands" {
     run show_docker_summary
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "make docker-build" ]]
-    [[ "${output}" =~ "make docker-rstudio" ]]
-    [[ "${output}" =~ "make docker-test" ]]
+    [[ "${output}" == *"make docker-build"* ]]
+    [[ "${output}" == *"make docker-rstudio"* ]]
+    [[ "${output}" == *"make docker-test"* ]]
 }
 
 @test "show_docker_summary includes service information" {
     run show_docker_summary
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "rstudio" ]]
-    [[ "${output}" =~ "http://localhost:8787" ]]
+    [[ "${output}" == *"rstudio"* ]]
+    [[ "${output}" == *"http://localhost:8787"* ]]
 }
 
 @test "show_docker_summary includes troubleshooting guidance" {
     run show_docker_summary
     [ "$status" -eq 0 ]
-    [[ "${output}" =~ "TROUBLESHOOTING" ]]
-    [[ "${output}" =~ "Docker Desktop" ]]
+    [[ "${output}" == *"TROUBLESHOOTING"* ]]
+    [[ "${output}" == *"Docker Desktop"* ]]
 }
 
 #=============================================================================
