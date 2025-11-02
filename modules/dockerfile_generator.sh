@@ -290,11 +290,11 @@ select_dockerfile_strategy() {
             *geospatial*)
                 libs="geospatial"
                 ;;
-            *verse*)
-                libs="standard"  # verse includes publishing tools
-                ;;
             *tidyverse*|*rstudio*|*shiny*)
                 libs="standard"  # these images have standard libs
+                ;;
+            *verse*)
+                libs="standard"  # verse includes publishing tools
                 ;;
             *)
                 libs="standard"  # default to standard, not minimal
@@ -306,11 +306,11 @@ select_dockerfile_strategy() {
     if [[ -z "${USER_PROVIDED_PKGS:-}" ]]; then
         # User didn't specify --pkgs, apply smart defaults based on base image
         case "$base" in
-            *verse*)
-                pkgs="publishing"  # verse is for publishing
-                ;;
             *tidyverse*|*shiny-verse*)
                 pkgs="analysis"  # tidyverse implies analysis workflow
+                ;;
+            *verse*)
+                pkgs="publishing"  # verse is for publishing
                 ;;
             *alpine*|*r-minimal*)
                 pkgs="minimal"  # alpine should stay minimal
