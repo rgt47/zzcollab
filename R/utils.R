@@ -442,14 +442,20 @@ init_project <- function(team_name = NULL, project_name = NULL,
                          dotfiles_path = NULL,
                          dotfiles_nodots = NULL) {
 
-  # Validate required parameters FIRST (before getting config defaults)
+  # Validate ALL explicitly-provided parameters FIRST (before getting config defaults)
   # This allows tests to validate error messages without needing zzcollab script
   if (is.null(project_name)) {
     stop("project_name is required", call. = FALSE)
   }
-
-  # Validate project_name format early (before config lookup)
   validate_docker_name(project_name, "project_name")
+
+  if (!is.null(team_name)) {
+    validate_docker_name(team_name, "team_name")
+  }
+
+  if (!is.null(github_account)) {
+    validate_docker_name(github_account, "github_account")
+  }
 
   # Now apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
@@ -461,13 +467,6 @@ init_project <- function(team_name = NULL, project_name = NULL,
   if (is.null(team_name)) {
     stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
          call. = FALSE)
-  }
-
-  # Validate team_name format
-  validate_docker_name(team_name, "team_name")
-
-  if (!is.null(github_account)) {
-    validate_docker_name(github_account, "github_account")
   }
 
   # Validate and normalize paths
@@ -592,14 +591,16 @@ init_project <- function(team_name = NULL, project_name = NULL,
 join_project <- function(team_name = NULL, project_name = NULL,
                          dotfiles_path = NULL, dotfiles_nodots = NULL) {
 
-  # Validate required parameters FIRST (before getting config defaults)
+  # Validate ALL explicitly-provided parameters FIRST (before getting config defaults)
   # This allows tests to validate error messages without needing zzcollab script
   if (is.null(project_name)) {
     stop("project_name is required", call. = FALSE)
   }
-
-  # Validate project_name format early (before config lookup)
   validate_docker_name(project_name, "project_name")
+
+  if (!is.null(team_name)) {
+    validate_docker_name(team_name, "team_name")
+  }
 
   # Now apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
@@ -611,9 +612,6 @@ join_project <- function(team_name = NULL, project_name = NULL,
     stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
          call. = FALSE)
   }
-
-  # Validate team_name format
-  validate_docker_name(team_name, "team_name")
 
   # Validate and normalize paths
   dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
