@@ -217,15 +217,16 @@ jobs:
         docker exec test-container \
           test -w /usr/local/lib/R/site-library
 
-    - name: Test no sudo access
+    - name: Test sudo access
       run: |
-        # Verify analyst user cannot use sudo (security hardening)
-        # Base images include sudo, but analyst shouldn't be in sudoers group
+        # Verify analyst user HAS sudo access (development convenience)
+        # Development containers need sudo to install system packages
         if docker exec test-container sudo -n true 2>/dev/null; then
-          echo "ERROR: analyst user has sudo access (security violation)"
+          echo "✓ Analyst user has passwordless sudo access (as designed)"
+        else
+          echo "ERROR: analyst user lacks sudo access (needed for development)"
           exit 1
         fi
-        echo "PASS: analyst user cannot use sudo (as expected)"
 
     - name: Test shell environment
       run: |
