@@ -510,14 +510,14 @@ validate_r_version_early() {
         local extract_output
         local extract_status
 
-        # Capture both output and exit status, including stderr
-        extract_output=$(extract_r_version_from_lockfile 2>&1)
+        # Capture only stdout (version), let stderr (logs) go to terminal
+        extract_output=$(extract_r_version_from_lockfile)
         extract_status=$?
 
         # Validate extraction was successful and returned a non-empty version
         if [[ $extract_status -ne 0 ]]; then
             log_warn "Could not extract R version from renv.lock (non-fatal)"
-            log_debug "Extract error (exit $extract_status): $extract_output"
+            log_debug "Extract error (exit status: $extract_status)"
             # Continue without validation - Docker build will catch issues later
         elif [[ -z "$extract_output" ]]; then
             log_warn "renv.lock exists but R version field is empty (non-fatal)"
