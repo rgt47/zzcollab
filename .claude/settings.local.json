@@ -3,7 +3,8 @@
   "permissions": {
     "allow": [
       "Bash(Rscript:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
