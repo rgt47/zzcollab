@@ -618,7 +618,7 @@ output:
     toc: true
 ---
 
-```{r setup, include=FALSE}
+```{r supplementary-setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(palmerpenguins)
@@ -1050,7 +1050,7 @@ git commit -m "Track large PDFs with Git LFS"
 In `paper.Rmd`:
 
 ````markdown
-```{r setup}
+```{r caching-setup}
 knitr::opts_chunk$set(cache = TRUE, cache.path = "../cache/")
 ```
 ````
