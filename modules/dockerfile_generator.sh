@@ -203,15 +203,20 @@ match_static_template() {
 
     # List of profiles with static Dockerfiles (excluding .bak files)
     local profiles=(
-        "minimal"
-        "analysis"
+        "ubuntu_standard_minimal"
+        "ubuntu_standard_analysis"
+        "ubuntu_standard_publishing"
+        "ubuntu_shiny_minimal"
+        "ubuntu_shiny_analysis"
+        "ubuntu_x11_minimal"
+        "ubuntu_x11_analysis"
+        "alpine_standard_minimal"
+        "alpine_standard_analysis"
+        "alpine_x11_minimal"
+        "alpine_x11_analysis"
         "modeling"
         "geospatial"
         "bioinformatics"
-        "publishing"
-        "shiny"
-        "alpine_minimal"
-        "alpine_analysis"
         "hpc_alpine"
     )
 
