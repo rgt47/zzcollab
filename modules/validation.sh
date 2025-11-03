@@ -388,6 +388,11 @@ remove_unused_packages_from_description() {
     # Find unused packages (in DESCRIPTION but NOT in code)
     local unused_packages=()
     for pkg in "${desc_packages[@]}"; do
+        # Skip empty package names
+        if [[ -z "$pkg" ]]; then
+            continue
+        fi
+
         # Protected package check
         if [[ "$pkg" == "renv" ]]; then
             continue
@@ -611,6 +616,11 @@ validate_package_environment() {
     # Step 5: Find missing packages (in code but not in DESCRIPTION)
     local missing=()
     for pkg in "${code_packages[@]}"; do
+        # Skip empty package names
+        if [[ -z "$pkg" ]]; then
+            continue
+        fi
+
         # Use literal string matching instead of regex to avoid SC2076
         local desc_imports_str=" ${desc_imports[*]} "
         if [[ "$desc_imports_str" != *" ${pkg} "* ]]; then
