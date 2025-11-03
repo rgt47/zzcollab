@@ -24,11 +24,11 @@ help:
 	@echo "    check-renv-fix, check-renv-ci (legacy)"
 	@echo ""
 	@echo "  Docker - works without local R:"
-	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
-	@echo "    docker-build-no-snapshot - Build without snapshot (advanced)"
+	@echo "    docker-build          - Build image from current renv.lock"
+	@echo "    docker-build-log      - Build with detailed logs (for debugging)"
 	@echo "    docker-run            - Smart run: auto-detects profile and runs appropriately"
 	@echo "    docker-r, docker-bash, docker-zsh, docker-rstudio"
-	@echo "    docker-build-log, docker-push-team, docker-document, docker-build-pkg, docker-check"
+	@echo "    docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
 	@echo "    docker-check-renv-fix"
 	@echo "    All docker-* targets auto-snapshot renv.lock on exit and validate packages!"
@@ -70,7 +70,13 @@ deps:
 check-renv:
 	@bash modules/validation.sh
 
+# Legacy: Manual snapshot (use container auto-snapshot instead)
+# DEPRECATED: Docker-first workflow auto-snapshots on container exit
+# Only use this if developing on HOST (not recommended)
 check-renv-fix:
+	@echo "⚠️  WARNING: Running renv::snapshot() on HOST requires R installed locally"
+	@echo "           Recommended: Work in containers (auto-snapshot on exit)"
+	@echo ""
 	R -e "renv::snapshot()"
 
 # Validate in strict mode (scan all directories including tests/)
@@ -83,27 +89,13 @@ check-renv-ci:
 	Rscript validate_package_environment.R --quiet --fail-on-issues
 
 # Docker targets (work without local R)
-# SAFETY IMPROVEMENT: docker-build is now safe by default
-#   - Automatically runs renv::snapshot() to update renv.lock
-#   - Ensures Docker image matches your current R environment
-#   - Critical for automatic RSPM date detection from renv.lock
-docker-build: check-renv-fix docker-build-no-snapshot
-
-# Advanced: Build without updating renv.lock (rarely needed)
-# Use this only when:
-#   - Debugging Dockerfile changes (no package changes)
-#   - You know renv.lock is already up-to-date
-#   - Faster iteration during Dockerfile development
-docker-build-no-snapshot:
+# Docker-first workflow:
+#   1. Work in containers (make docker-zsh)
+#   2. Install packages (renv::install("pkg"))
+#   3. Exit container (auto-snapshot on exit)
+#   4. Build new image (make docker-build)
+docker-build:
 	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
-
-# DEPRECATED: Use docker-build instead (now safe by default)
-docker-build-safe:
-	@echo "⚠️  WARNING: 'docker-build-safe' is deprecated."
-	@echo "           'docker-build' is now safe by default (auto-snapshots renv.lock)."
-	@echo "           Please use 'docker-build' instead."
-	@echo ""
-	@$(MAKE) docker-build
 
 docker-build-log:
 	@echo "Building Docker image and saving log to docker-build.log..."
@@ -310,4 +302,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-run docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-run docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
