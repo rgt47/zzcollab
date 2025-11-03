@@ -61,6 +61,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Platform forced to AMD64 above for fast binary installation
 WORKDIR /build
 COPY renv.lock* ./
+COPY renv/ ./renv/
+COPY .Rprofile* ./
 
 RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
     RSPM_DATE=$(date -u -d '7 days ago' '+%Y-%m-%d' 2>/dev/null || date -u -v-7d '+%Y-%m-%d') && \
@@ -74,7 +76,7 @@ RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
 RUN --mount=type=cache,target=/tmp/R-cache \
     R -e "install.packages(c('renv', 'devtools', 'tidyverse', 'quarto', 'bookdown', 'blogdown', 'distill', 'rmarkdown', 'knitr', 'flexdashboard', 'xaringan'))"
 
-# Restore renv
+# Restore renv packages (populates project library)
 COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
@@ -187,6 +189,9 @@ RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
 # They are accessed via volume mount: -v $(pwd):/home/${USERNAME}/project
 # This keeps images small and rebuilds fast (no cache invalidation on code changes)
 # Use devtools::load_all() inside the container to load your R package
+
+# Copy populated renv project library from builder (after full project copy)
+COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
 
 # Metadata
 LABEL org.opencontainers.image.title="ZZCOLLAB Publishing Environment" \

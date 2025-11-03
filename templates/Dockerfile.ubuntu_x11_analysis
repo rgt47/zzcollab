@@ -66,6 +66,8 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
 # Configure RSPM
 WORKDIR /build
 COPY renv.lock* ./
+COPY renv/ ./renv/
+COPY .Rprofile* ./
 
 RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
     echo "options(repos = c(" \
@@ -78,7 +80,7 @@ RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
 RUN --mount=type=cache,target=/tmp/R-cache \
     R -e "install.packages(c('renv', 'devtools', 'here', 'janitor', 'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
 
-# Restore renv
+# Restore renv packages (populates project library)
 COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
@@ -187,6 +189,9 @@ RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
 
 # Project files
 COPY --chown=${USERNAME}:${USERNAME} . .
+
+# Copy populated renv project library from builder (after full project copy)
+COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
 
 # Install package
 RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
