@@ -65,17 +65,16 @@ test:
 deps:
 	R -e "devtools::install_deps(dependencies = TRUE)"
 
-# Validate package dependencies (Pure shell, no host R required!)
+# Validate package dependencies (Pure shell, NO HOST R REQUIRED!)
 # Checks that all packages used in code are in DESCRIPTION and renv.lock
 # Full validation with strict mode and auto-fix (DEFAULT behavior)
 # Scans all directories (R/, scripts/, analysis/, tests/, vignettes/)
-# Auto-installs packages from DESCRIPTION if missing from renv.lock
-# Requires R on host. If R not available, provides container instructions.
+# Auto-adds missing packages to renv.lock via CRAN API (pure shell + jq)
 # Run this before `git commit` to catch issues locally (prevents CI failures)
 check-renv:
 	@bash modules/validation.sh
 
-# Validation only, no auto-fix (report issues without installing packages)
+# Validation only, no auto-fix (report issues without modifying renv.lock)
 check-renv-no-fix:
 	@bash modules/validation.sh --no-fix
 

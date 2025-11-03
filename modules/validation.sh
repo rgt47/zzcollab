@@ -68,6 +68,99 @@ format_r_package_vector() {
     fi
 }
 
+#-----------------------------------------------------------------------------
+# FUNCTION: fetch_cran_package_info
+# PURPOSE:  Fetch package metadata from CRAN API
+# ARGS:     $1 - Package name
+# OUTPUTS:  JSON with package info to stdout
+# RETURNS:  0 on success, 1 on failure
+#-----------------------------------------------------------------------------
+fetch_cran_package_info() {
+    local pkg="$1"
+    local cran_url="https://crandb.r-pkg.org/${pkg}"
+
+    local response
+    response=$(curl -s -f "$cran_url" 2>/dev/null)
+    local curl_exit=$?
+
+    if [[ $curl_exit -ne 0 ]] || [[ -z "$response" ]]; then
+        return 1
+    fi
+
+    echo "$response"
+    return 0
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: add_package_to_renv_lock
+# PURPOSE:  Add package entry to renv.lock using pure shell tools
+# ARGS:     $1 - Package name
+# RETURNS:  0 on success, 1 on failure
+# DESCRIPTION:
+#   Queries CRAN for package metadata and adds entry to renv.lock
+#   using jq. No R required! Pure shell implementation.
+#-----------------------------------------------------------------------------
+add_package_to_renv_lock() {
+    local pkg="$1"
+    local renv_lock="renv.lock"
+
+    if [[ ! -f "$renv_lock" ]]; then
+        log_error "renv.lock not found"
+        return 1
+    fi
+
+    log_debug "Fetching metadata for $pkg from CRAN..."
+    local pkg_info
+    pkg_info=$(fetch_cran_package_info "$pkg")
+
+    if [[ $? -ne 0 ]] || [[ -z "$pkg_info" ]]; then
+        log_error "Failed to fetch metadata for $pkg from CRAN"
+        return 1
+    fi
+
+    # Extract version from CRAN response
+    local version
+    version=$(echo "$pkg_info" | jq -r '.Version // empty' 2>/dev/null)
+
+    if [[ -z "$version" ]]; then
+        log_error "Could not determine version for $pkg"
+        return 1
+    fi
+
+    log_debug "Adding $pkg version $version to renv.lock..."
+
+    # Create package entry JSON
+    local package_entry
+    package_entry=$(jq -n \
+        --arg pkg "$pkg" \
+        --arg ver "$version" \
+        '{
+            Package: $pkg,
+            Version: $ver,
+            Source: "Repository",
+            Repository: "CRAN"
+        }')
+
+    # Add to renv.lock using jq
+    local temp_lock
+    temp_lock=$(mktemp)
+
+    jq --argjson entry "$package_entry" \
+       --arg pkg "$pkg" \
+       '.Packages[$pkg] = $entry' \
+       "$renv_lock" > "$temp_lock"
+
+    if [[ $? -eq 0 ]]; then
+        mv "$temp_lock" "$renv_lock"
+        log_success "✅ Added $pkg ($version) to renv.lock"
+        return 0
+    else
+        rm -f "$temp_lock"
+        log_error "Failed to update renv.lock"
+        return 1
+    fi
+}
+
 #==============================================================================
 # PACKAGE EXTRACTION (PURE SHELL)
 #==============================================================================
@@ -720,28 +813,38 @@ validate_package_environment() {
         echo ""
 
         if [[ "$auto_fix" == "true" ]]; then
-            log_info "Auto-installing missing packages..."
-            # Create temp R script to install packages
-            local temp_script=$(mktemp)
-            local pkg_vector=$(format_r_package_vector "${missing_from_lock[@]}")
-            echo "renv::install($pkg_vector)" > "$temp_script"
-            echo "renv::snapshot()" >> "$temp_script"
+            log_info "Auto-fixing: Adding missing packages to renv.lock..."
+            local failed_packages=()
 
-            if command -v R &>/dev/null; then
-                R --quiet --no-save < "$temp_script"
-                rm "$temp_script"
-                log_success "✅ Installed missing packages and updated renv.lock"
+            for pkg in "${missing_from_lock[@]}"; do
+                if ! add_package_to_renv_lock "$pkg"; then
+                    failed_packages+=("$pkg")
+                fi
+            done
+
+            if [[ ${#failed_packages[@]} -eq 0 ]]; then
+                log_success "✅ All missing packages added to renv.lock"
+                echo ""
+                echo "Next steps:"
+                echo "  1. Rebuild Docker image: make docker-build"
+                echo "  2. Commit changes: git add renv.lock && git commit -m 'Add packages to renv.lock'"
+                return 0
             else
-                rm "$temp_script"
-                log_error "R not available on host. Run in container:"
+                log_error "Failed to add packages: ${failed_packages[*]}"
+                echo ""
+                echo "These packages may not be on CRAN. Add them manually:"
                 echo "  make docker-zsh"
+                local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
                 echo "  R> renv::install($pkg_vector)"
                 echo "  R> quit()"
                 return 1
             fi
         else
             local pkg_vector=$(format_r_package_vector "${missing_from_lock[@]}")
-            echo "Fix with:"
+            echo "Fix with auto-fix flag:"
+            echo "  bash modules/validation.sh --fix"
+            echo ""
+            echo "Or manually in container:"
             echo "  make docker-zsh"
             echo "  R> renv::install($pkg_vector)"
             echo "  R> quit()"
@@ -892,27 +995,33 @@ DEFAULTS:
 OPTIONS:
     --strict        Enable strict mode (scan tests/, vignettes/) [DEFAULT]
     --no-strict     Disable strict mode (scan only R/, scripts/, analysis/)
-    --fix           Auto-install missing packages from DESCRIPTION [DEFAULT]
+    --fix           Auto-add missing packages to renv.lock via CRAN API [DEFAULT]
     --no-fix        Report issues without auto-fixing
     --help, -h      Show this help message
 
 EXAMPLES:
     validation.sh              # Full validation with auto-fix (recommended)
-    validation.sh --no-fix     # Validation only, no auto-install
+    validation.sh --no-fix     # Validation only, no auto-add
     validation.sh --no-strict  # Skip tests/ and vignettes/ directories
 
 REQUIREMENTS:
-    - jq (for renv.lock parsing): brew install jq
+    - jq (for renv.lock parsing and editing): brew install jq
+    - curl (for CRAN API queries): pre-installed on macOS/Linux
     - Standard Unix tools: grep, sed, awk, find
-    - R (optional, for --fix flag)
 
-NOTE:
-    This script runs on the host without R. Package installation and
-    renv::snapshot() happen automatically inside Docker containers via
-    the zzcollab-entrypoint.sh exit hook.
+AUTO-FIX IMPLEMENTATION:
+    Pure shell implementation! No R required on host.
+    - Queries CRAN API (crandb.r-pkg.org) for package metadata
+    - Adds package entries to renv.lock using jq
+    - Works anywhere: macOS, Linux, CI/CD, Docker host
+    - Handles CRAN packages automatically
+    - Non-CRAN packages (GitHub, Bioconductor) require manual installation
 
-    The --fix flag requires R on the host. If R is not available, it will
-    provide instructions to fix issues inside a Docker container.
+WORKFLOW:
+    1. Run validation: bash modules/validation.sh
+    2. Missing packages auto-added to renv.lock
+    3. Rebuild Docker image: make docker-build
+    4. Commit: git add renv.lock && git commit
 EOF
                 exit 0
                 ;;
