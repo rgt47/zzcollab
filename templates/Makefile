@@ -18,10 +18,11 @@ help:
 	@echo "  Validation (NO HOST R REQUIRED!):"
 	@echo "    check-renv            - Pure shell validation (recommended)"
 	@echo "    check-renv-strict     - Strict mode (scan tests/, vignettes/)"
+	@echo "    check-renv-fix        - Auto-install packages from DESCRIPTION (needs host R)"
 	@echo ""
 	@echo "  Native R - requires local R installation:"
 	@echo "    document, build, check, install, vignettes, test, deps"
-	@echo "    check-renv-fix, check-renv-ci (legacy)"
+	@echo "    check-renv-ci (legacy)"
 	@echo ""
 	@echo "  Docker - works without local R:"
 	@echo "    docker-build          - Build image from current renv.lock"
@@ -70,14 +71,10 @@ deps:
 check-renv:
 	@bash modules/validation.sh
 
-# Legacy: Manual snapshot (use container auto-snapshot instead)
-# DEPRECATED: Docker-first workflow auto-snapshots on container exit
-# Only use this if developing on HOST (not recommended)
+# Auto-fix validation issues (install missing packages from DESCRIPTION)
+# Requires R on host. If R not available, provides container instructions.
 check-renv-fix:
-	@echo "⚠️  WARNING: Running renv::snapshot() on HOST requires R installed locally"
-	@echo "           Recommended: Work in containers (auto-snapshot on exit)"
-	@echo ""
-	R -e "renv::snapshot()"
+	@bash modules/validation.sh --fix
 
 # Validate in strict mode (scan all directories including tests/)
 check-renv-strict:

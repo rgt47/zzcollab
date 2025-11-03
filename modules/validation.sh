@@ -11,8 +11,9 @@ set -euo pipefail
 # - renv.lock parsing: jq (standard JSON tool)
 # - CRAN validation: curl (HTTP API)
 
-# Source dependencies
+# Source dependencies (core.sh must be first - provides require_module)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/core.sh"
 source "$SCRIPT_DIR/utils.sh"
 source "$SCRIPT_DIR/constants.sh"
 
@@ -32,6 +33,40 @@ STRICT_DIRS=("R" "scripts" "analysis" "tests" "vignettes" "inst")
 
 # File extensions to search
 FILE_EXTENSIONS=("R" "Rmd" "qmd" "Rnw")
+
+#==============================================================================
+# HELPER FUNCTIONS
+#==============================================================================
+
+#-----------------------------------------------------------------------------
+# FUNCTION: format_r_package_vector
+# PURPOSE:  Format package array as R vector string c("pkg1", "pkg2", ...)
+# ARGS:     $@ - Package names
+# OUTPUTS:  R vector string to stdout
+#-----------------------------------------------------------------------------
+format_r_package_vector() {
+    local packages=("$@")
+    local count=${#packages[@]}
+
+    if [[ $count -eq 0 ]]; then
+        echo "c()"
+        return
+    elif [[ $count -eq 1 ]]; then
+        echo "c(\"${packages[0]}\")"
+        return
+    else
+        local result="c("
+        for i in "${!packages[@]}"; do
+            if [[ $i -eq 0 ]]; then
+                result+="\"${packages[i]}\""
+            else
+                result+=", \"${packages[i]}\""
+            fi
+        done
+        result+=")"
+        echo "$result"
+    fi
+}
 
 #==============================================================================
 # PACKAGE EXTRACTION (PURE SHELL)
@@ -373,11 +408,19 @@ remove_unused_packages_from_description() {
         return 1
     fi
 
+    # Determine which directories to scan
+    local dirs
+    if [[ "$strict_mode" == "true" ]]; then
+        dirs=("${STRICT_DIRS[@]}")
+    else
+        dirs=("${STANDARD_DIRS[@]}")
+    fi
+
     # Get packages used in code
-    local code_packages=()
-    while IFS= read -r pkg; do
-        code_packages+=("$pkg")
-    done < <(extract_packages_from_code "$strict_mode")
+    local code_packages_raw
+    mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
+    local code_packages
+    mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
 
     # Get packages in DESCRIPTION
     local desc_packages=()
@@ -628,22 +671,86 @@ validate_package_environment() {
         fi
     done
 
-    # Step 6: Report issues
+    # Step 6: Check DESCRIPTION → renv.lock consistency
+    log_debug "Checking DESCRIPTION → renv.lock consistency..."
+    local missing_from_lock=()
+    for pkg in "${desc_imports[@]}"; do
+        # Skip empty package names
+        if [[ -z "$pkg" ]]; then
+            continue
+        fi
+
+        # Skip base R packages (they don't need to be in renv.lock)
+        local base_pkgs_str=" ${BASE_PACKAGES[*]} "
+        if [[ "$base_pkgs_str" == *" ${pkg} "* ]]; then
+            log_debug "Skipping base package: $pkg"
+            continue
+        fi
+
+        # Check if package exists in renv.lock
+        local renv_pkgs_str=" ${renv_packages[*]} "
+        if [[ "$renv_pkgs_str" != *" ${pkg} "* ]]; then
+            missing_from_lock+=("$pkg")
+        fi
+    done
+
+    # Step 7: Report Code → DESCRIPTION issues
     if [[ ${#missing[@]} -gt 0 ]]; then
         log_error "Missing from DESCRIPTION Imports:"
         for pkg in "${missing[@]}"; do
             echo "  - $pkg"
         done
-
-        if [[ "$auto_fix" == "true" ]]; then
-            log_info "Auto-fix not yet implemented in shell version"
-            log_info "Please run: Rscript validate_package_environment.R --fix"
-        fi
-
+        echo ""
+        local pkg_vector=$(format_r_package_vector "${missing[@]}")
+        echo "Fix by adding to DESCRIPTION Imports, then run:"
+        echo "  make docker-zsh"
+        echo "  R> renv::install($pkg_vector)"
+        echo "  R> quit()"
         return 1
     fi
 
+    # Step 8: Report DESCRIPTION → renv.lock issues
+    if [[ ${#missing_from_lock[@]} -gt 0 ]]; then
+        log_error "Packages in DESCRIPTION but not in renv.lock:"
+        for pkg in "${missing_from_lock[@]}"; do
+            echo "  - $pkg"
+        done
+        echo ""
+        echo "This breaks reproducibility! Collaborators cannot restore your environment."
+        echo ""
+
+        if [[ "$auto_fix" == "true" ]]; then
+            log_info "Auto-installing missing packages..."
+            # Create temp R script to install packages
+            local temp_script=$(mktemp)
+            local pkg_vector=$(format_r_package_vector "${missing_from_lock[@]}")
+            echo "renv::install($pkg_vector)" > "$temp_script"
+            echo "renv::snapshot()" >> "$temp_script"
+
+            if command -v R &>/dev/null; then
+                R --quiet --no-save < "$temp_script"
+                rm "$temp_script"
+                log_success "✅ Installed missing packages and updated renv.lock"
+            else
+                rm "$temp_script"
+                log_error "R not available on host. Run in container:"
+                echo "  make docker-zsh"
+                echo "  R> renv::install($pkg_vector)"
+                echo "  R> quit()"
+                return 1
+            fi
+        else
+            local pkg_vector=$(format_r_package_vector "${missing_from_lock[@]}")
+            echo "Fix with:"
+            echo "  make docker-zsh"
+            echo "  R> renv::install($pkg_vector)"
+            echo "  R> quit()"
+            return 1
+        fi
+    fi
+
     log_success "✅ All packages properly declared in DESCRIPTION"
+    log_success "✅ All DESCRIPTION imports are locked in renv.lock"
     return 0
 }
 
@@ -680,8 +787,9 @@ validate_package_environment() {
 #-----------------------------------------------------------------------------
 validate_and_report() {
     local strict_mode="${1:-false}"
+    local auto_fix="${2:-false}"
 
-    if validate_package_environment "$strict_mode" "false"; then
+    if validate_package_environment "$strict_mode" "$auto_fix"; then
         log_success "Package environment validation passed"
 
         # Clean up unused packages from DESCRIPTION
@@ -751,12 +859,17 @@ validate_and_report() {
 #-----------------------------------------------------------------------------
 main() {
     local strict_mode=false
+    local auto_fix=false
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             --strict)
                 strict_mode=true
+                shift
+                ;;
+            --fix)
+                auto_fix=true
                 shift
                 ;;
             --help|-h)
@@ -767,20 +880,26 @@ Validate R package dependencies without requiring R on host.
 
 OPTIONS:
     --strict        Scan all directories (including tests/, vignettes/)
+    --fix           Auto-install packages declared in DESCRIPTION but missing from renv.lock
     --help, -h      Show this help message
 
 EXAMPLES:
     validation.sh              # Standard validation
     validation.sh --strict     # Strict mode (all directories)
+    validation.sh --fix        # Auto-fix DESCRIPTION → renv.lock inconsistencies
 
 REQUIREMENTS:
     - jq (for renv.lock parsing): brew install jq
     - Standard Unix tools: grep, sed, awk, find
+    - R (optional, for --fix flag)
 
 NOTE:
     This script runs on the host without R. Package installation and
     renv::snapshot() happen automatically inside Docker containers via
     the zzcollab-entrypoint.sh exit hook.
+
+    The --fix flag requires R on the host. If R is not available, it will
+    provide instructions to fix issues inside a Docker container.
 EOF
                 exit 0
                 ;;
@@ -792,7 +911,7 @@ EOF
     done
 
     # Run validation
-    validate_and_report "$strict_mode"
+    validate_and_report "$strict_mode" "$auto_fix"
 }
 
 # Only run main if executed directly (not sourced)
