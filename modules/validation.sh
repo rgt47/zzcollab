@@ -92,6 +92,87 @@ fetch_cran_package_info() {
 }
 
 #-----------------------------------------------------------------------------
+# FUNCTION: add_package_to_description
+# PURPOSE:  Add package to DESCRIPTION Imports field using pure shell tools
+# ARGS:     $1 - Package name
+# RETURNS:  0 on success, 1 on failure
+# DESCRIPTION:
+#   Adds package to Imports field in DESCRIPTION file using awk.
+#   Handles existing Imports field and maintains proper formatting.
+#-----------------------------------------------------------------------------
+add_package_to_description() {
+    local pkg="$1"
+    local desc_file="DESCRIPTION"
+
+    if [[ ! -f "$desc_file" ]]; then
+        log_error "DESCRIPTION file not found"
+        return 1
+    fi
+
+    if [[ ! -w "$desc_file" ]]; then
+        log_error "DESCRIPTION file not writable"
+        return 1
+    fi
+
+    log_debug "Adding $pkg to DESCRIPTION Imports..."
+
+    # Create backup
+    local temp_desc
+    temp_desc=$(mktemp)
+    cp "$desc_file" "$temp_desc"
+
+    # Use awk to add package to Imports field
+    awk -v pkg="$pkg" '
+    BEGIN { in_imports = 0; added = 0; }
+
+    # Detect Imports field start
+    /^Imports:/ {
+        in_imports = 1
+        print $0
+        next
+    }
+
+    # Detect end of Imports (next field starts)
+    in_imports && /^[A-Z]/ {
+        # Add package before next field
+        if (!added) {
+            print "    " pkg ","
+            added = 1
+        }
+        in_imports = 0
+        print $0
+        next
+    }
+
+    # Inside Imports field
+    in_imports {
+        print $0
+        next
+    }
+
+    # All other lines
+    { print $0 }
+
+    END {
+        # If still in imports at end of file
+        if (in_imports && !added) {
+            print "    " pkg
+        }
+    }
+    ' "$temp_desc" > "$desc_file"
+
+    if [[ $? -eq 0 ]]; then
+        rm "$temp_desc"
+        log_success "✅ Added $pkg to DESCRIPTION Imports"
+        return 0
+    else
+        mv "$temp_desc" "$desc_file"
+        log_error "Failed to update DESCRIPTION"
+        return 1
+    fi
+}
+
+#-----------------------------------------------------------------------------
 # FUNCTION: add_package_to_renv_lock
 # PURPOSE:  Add package entry to renv.lock using pure shell tools
 # ARGS:     $1 - Package name
@@ -203,23 +284,23 @@ extract_code_packages() {
     while IFS= read -r file; do
         if [[ -f "$file" ]]; then
             # Extract library() and require() calls
-            # Updated regex: {1,} allows minimum 2-char packages (1 letter + 1 more char)
-            # Also requires closing parenthesis to avoid matching incomplete calls
-            grep -oP '(?:library|require)\s*\(\s*["'\''"]?([a-zA-Z][a-zA-Z0-9.]*?)["'\''"]?\s*\)' "$file" 2>/dev/null | \
-                sed -E 's/.*[(]["'\''"]?([a-zA-Z0-9.]+)["'\''"]?\).*/\1/' || true
+            # BSD grep compatible: use -E for extended regex
+            grep -E '(library|require)[[:space:]]*\(' "$file" 2>/dev/null | \
+                sed -E 's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' || true
 
             # Extract namespace calls (package::function)
-            # Updated regex: {0,} allows minimum 1-char after first letter (2-char total)
-            grep -oP '([a-zA-Z][a-zA-Z0-9.]*)::' "$file" 2>/dev/null | \
+            # BSD grep compatible: match pkg:: then remove ::
+            grep -E '[a-zA-Z][a-zA-Z0-9.]*::' "$file" 2>/dev/null | \
+                grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' | \
                 sed 's/:://' || true
 
             # Extract roxygen imports
-            # Updated regex: {0,} allows minimum 1-char packages
-            grep -oP '#'\''\s*@importFrom\s+([a-zA-Z][a-zA-Z0-9.]*)' "$file" 2>/dev/null | \
-                sed -E 's/.*@importFrom\s+([a-zA-Z0-9.]+).*/\1/' || true
+            # BSD grep compatible
+            grep -E '#'\''[[:space:]]*@importFrom[[:space:]]+[a-zA-Z]' "$file" 2>/dev/null | \
+                sed -E 's/.*@importFrom[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
 
-            grep -oP '#'\''\s*@import\s+([a-zA-Z][a-zA-Z0-9.]*)' "$file" 2>/dev/null | \
-                sed -E 's/.*@import\s+([a-zA-Z0-9.]+).*/\1/' || true
+            grep -E '#'\''[[:space:]]*@import[[:space:]]+[a-zA-Z]' "$file" 2>/dev/null | \
+                sed -E 's/.*@import[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
         fi
     done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) 2>/dev/null")
 }
@@ -787,19 +868,58 @@ validate_package_environment() {
         fi
     done
 
-    # Step 7: Report Code → DESCRIPTION issues
+    # Step 7: Handle Code → DESCRIPTION issues
     if [[ ${#missing[@]} -gt 0 ]]; then
-        log_error "Missing from DESCRIPTION Imports:"
+        log_error "Packages used in code but not in DESCRIPTION Imports:"
         for pkg in "${missing[@]}"; do
             echo "  - $pkg"
         done
         echo ""
-        local pkg_vector=$(format_r_package_vector "${missing[@]}")
-        echo "Fix by adding to DESCRIPTION Imports, then run:"
-        echo "  make docker-zsh"
-        echo "  R> renv::install($pkg_vector)"
-        echo "  R> quit()"
-        return 1
+
+        if [[ "$auto_fix" == "true" ]]; then
+            log_info "Auto-fixing: Adding missing packages to DESCRIPTION and renv.lock..."
+            local failed_packages=()
+
+            for pkg in "${missing[@]}"; do
+                # Add to DESCRIPTION
+                if add_package_to_description "$pkg"; then
+                    # Also add to renv.lock
+                    if ! add_package_to_renv_lock "$pkg"; then
+                        failed_packages+=("$pkg")
+                    fi
+                else
+                    failed_packages+=("$pkg")
+                fi
+            done
+
+            if [[ ${#failed_packages[@]} -eq 0 ]]; then
+                log_success "✅ All missing packages added to DESCRIPTION and renv.lock"
+                echo ""
+                echo "Next steps:"
+                echo "  1. Rebuild Docker image: make docker-build"
+                echo "  2. Commit changes: git add DESCRIPTION renv.lock && git commit"
+                # Continue to check DESCRIPTION → renv.lock consistency
+            else
+                log_error "Failed to add packages: ${failed_packages[*]}"
+                echo ""
+                echo "These packages may not be on CRAN. Add them manually:"
+                echo "  make docker-zsh"
+                local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
+                echo "  R> renv::install($pkg_vector)"
+                echo "  R> quit()"
+                return 1
+            fi
+        else
+            local pkg_vector=$(format_r_package_vector "${missing[@]}")
+            echo "Fix with auto-fix flag:"
+            echo "  bash modules/validation.sh --fix"
+            echo ""
+            echo "Or manually in container:"
+            echo "  make docker-zsh"
+            echo "  R> renv::install($pkg_vector)"
+            echo "  R> quit()"
+            return 1
+        fi
     fi
 
     # Step 8: Report DESCRIPTION → renv.lock issues
