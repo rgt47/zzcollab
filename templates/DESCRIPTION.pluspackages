@@ -1,60 +1,16 @@
 Package: ${PKG_NAME}
-Title: Research Compendium for ${PKG_NAME}
+Title: ${PKG_NAME} Data Analysis
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person("${AUTHOR_NAME}", email = "${AUTHOR_EMAIL}", role = c("aut", "cre"))
-Description: This is a research compendium for the ${PKG_NAME} project with comprehensive package ecosystem for advanced research workflows, complex analyses, and publication-ready outputs.
+Description: Data analysis workspace for the ${PKG_NAME} project.
+    Add packages dynamically as needed using renv::install() inside containers.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Imports:
-    dplyr,
-    ggplot2,
-    tidyr,
-    here,
-    renv,
-    targets,
-    usethis,
-    devtools
-Suggests: 
-    testthat (>= 3.0.0),
-    palmerpenguins,
-    broom,
-    knitr,
-    kableExtra,
-    rmarkdown,
-    bookdown,
-    naniar,
-    skimr,
-    visdat,
-    janitor,
-    pkgdown,
-    rcmdcheck,
-    DT,
-    jsonlite,
-    DBI,
-    RSQLite,
-    car,
-    survival,
-    lme4,
-    digest,
-    doParallel,
-    foreach,
-    furrr,
-    future,
-    odbc,
-    readr,
-    RMySQL,
-    RPostgres,
-    sessioninfo,
-    covr,
-    tidymodels,
-    conflicted,
-    ggthemes,
-    plotly,
-    shiny,
-    flexdashboard,
-    quarto
-Config/testthat/edition: 3
-VignetteBuilder: knitr
+    renv
+# Add analysis packages as you use them via renv::install():
+#   Example: renv::install(c("dplyr", "ggplot2", "tidyr"))
+#   Then add to Imports above after installation
