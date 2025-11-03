@@ -1,0 +1,25 @@
+Package: ${PKG_NAME}
+Title: ${PKG_NAME} Data Analysis
+Version: 0.0.0.9000
+Authors@R:
+    person("${AUTHOR_NAME}", email = "${AUTHOR_EMAIL}", role = c("aut", "cre"))
+Description: Data analysis workspace for ${PKG_NAME} using tidyverse ecosystem.
+    Includes core tidyverse packages and common analysis workflow tools.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    renv,
+    dplyr,
+    ggplot2,
+    tidyr,
+    readr,
+    purrr,
+    stringr,
+    forcats,
+    lubridate,
+    here,
+    janitor,
+    scales,
+    skimr

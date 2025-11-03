@@ -1,0 +1,29 @@
+Package: ${PKG_NAME}
+Title: ${PKG_NAME} Statistical Modeling
+Version: 0.0.0.9000
+Authors@R:
+    person("${AUTHOR_NAME}", email = "${AUTHOR_EMAIL}", role = c("aut", "cre"))
+Description: Statistical modeling workspace for ${PKG_NAME} with tidymodels framework.
+    Includes tidyverse for data manipulation and comprehensive modeling tools.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    renv,
+    dplyr,
+    ggplot2,
+    tidyr,
+    readr,
+    purrr,
+    stringr,
+    forcats,
+    lubridate,
+    here,
+    tidymodels,
+    broom,
+    recipes,
+    parsnip,
+    yardstick,
+    tune,
+    workflows

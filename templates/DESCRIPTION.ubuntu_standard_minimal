@@ -1,0 +1,13 @@
+Package: ${PKG_NAME}
+Title: ${PKG_NAME} Minimal R Package Development
+Version: 0.0.0.9000
+Authors@R:
+    person("${AUTHOR_NAME}", email = "${AUTHOR_EMAIL}", role = c("aut", "cre"))
+Description: Minimal R package development workspace for ${PKG_NAME}.
+    Essential tools for R package development and testing.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    renv

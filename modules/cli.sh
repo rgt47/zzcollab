@@ -714,7 +714,22 @@ EOF
 
 # Legacy wrapper functions for backward compatibility
 # Note: get_dockerfile_template() removed - use docker.sh version instead
-get_description_template() { get_template "DESCRIPTION"; }
+get_description_template() {
+    # Select DESCRIPTION template based on profile name
+    # Matches profile-specific templates if they exist
+    if [[ -n "${PROFILE_NAME:-}" ]]; then
+        local profile_desc="${TEMPLATES_DIR}/DESCRIPTION.${PROFILE_NAME}"
+        if [[ -f "$profile_desc" ]]; then
+            log_debug "Using profile-specific DESCRIPTION: DESCRIPTION.${PROFILE_NAME}"
+            echo "DESCRIPTION.${PROFILE_NAME}"
+            return 0
+        fi
+    fi
+
+    # Fallback to generic DESCRIPTION template
+    log_debug "Using generic DESCRIPTION template"
+    get_template "DESCRIPTION"
+}
 get_workflow_template() {
     # Unified paradigm uses single workflow template from unified/ directory
     echo "unified/.github/workflows/render-paper.yml"

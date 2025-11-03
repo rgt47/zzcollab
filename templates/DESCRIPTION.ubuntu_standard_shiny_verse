@@ -1,0 +1,26 @@
+Package: ${PKG_NAME}
+Title: ${PKG_NAME} Shiny Dashboard with Tidyverse
+Version: 0.0.0.9000
+Authors@R:
+    person("${AUTHOR_NAME}", email = "${AUTHOR_EMAIL}", role = c("aut", "cre"))
+Description: Advanced Shiny dashboard workspace for ${PKG_NAME} with tidyverse support.
+    Combines Shiny for interactivity with tidyverse for data manipulation.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    renv,
+    shiny,
+    shinydashboard,
+    dplyr,
+    ggplot2,
+    tidyr,
+    readr,
+    purrr,
+    stringr,
+    forcats,
+    lubridate,
+    DT,
+    plotly,
+    flexdashboard

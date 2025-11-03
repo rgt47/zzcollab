@@ -327,6 +327,140 @@ parse_description_suggests() {
 }
 
 #==============================================================================
+# DESCRIPTION CLEANUP
+#==============================================================================
+
+#-----------------------------------------------------------------------------
+# FUNCTION: remove_unused_packages_from_description
+# PURPOSE:  Remove packages from DESCRIPTION that are not used in code
+# DESCRIPTION:
+#   Compares packages declared in DESCRIPTION Imports against packages
+#   actually used in code. Removes unused packages from DESCRIPTION file
+#   (except protected packages like renv). This helps keep DESCRIPTION
+#   aligned with actual code dependencies.
+# ARGS:
+#   $1 - packages_in_code: Array of package names used in code
+#   $2 - strict_mode: "true" or "false" for scanning scope
+# RETURNS:
+#   0 - Success (packages removed if any)
+#   1 - Error (DESCRIPTION not found or not writable)
+# OUTPUTS:
+#   Informational messages about removed packages
+# SIDE EFFECTS:
+#   Modifies DESCRIPTION file in-place
+# PROTECTED PACKAGES:
+#   - renv: Always kept (infrastructure package)
+# STRATEGY:
+#   1. Parse current DESCRIPTION Imports
+#   2. Find packages in DESCRIPTION but NOT in code
+#   3. Remove unused packages (except protected ones)
+#   4. Rewrite DESCRIPTION with awk
+# EXAMPLE:
+#   DESCRIPTION has: renv, dplyr, ggplot2
+#   Code uses: dplyr
+#   Result: Remove ggplot2, keep renv (protected) and dplyr (used)
+#-----------------------------------------------------------------------------
+remove_unused_packages_from_description() {
+    local strict_mode="${1:-false}"
+
+    if [[ ! -f "DESCRIPTION" ]]; then
+        log_warn "DESCRIPTION file not found, skipping cleanup"
+        return 1
+    fi
+
+    if [[ ! -w "DESCRIPTION" ]]; then
+        log_warn "DESCRIPTION file not writable, skipping cleanup"
+        return 1
+    fi
+
+    # Get packages used in code
+    local code_packages=()
+    while IFS= read -r pkg; do
+        code_packages+=("$pkg")
+    done < <(extract_packages_from_code "$strict_mode")
+
+    # Get packages in DESCRIPTION
+    local desc_packages=()
+    while IFS= read -r pkg; do
+        desc_packages+=("$pkg")
+    done < <(parse_description_imports)
+
+    # Find unused packages (in DESCRIPTION but NOT in code)
+    local unused_packages=()
+    for pkg in "${desc_packages[@]}"; do
+        # Protected package check
+        if [[ "$pkg" == "renv" ]]; then
+            continue
+        fi
+
+        # Check if package is used in code
+        local found=false
+        for code_pkg in "${code_packages[@]}"; do
+            if [[ "$pkg" == "$code_pkg" ]]; then
+                found=true
+                break
+            fi
+        done
+
+        if [[ "$found" == false ]]; then
+            unused_packages+=("$pkg")
+        fi
+    done
+
+    # No unused packages? Done
+    if [[ ${#unused_packages[@]} -eq 0 ]]; then
+        log_debug "No unused packages to remove from DESCRIPTION"
+        return 0
+    fi
+
+    # Report what we're removing
+    log_info "Removing ${#unused_packages[@]} unused package(s) from DESCRIPTION:"
+    for pkg in "${unused_packages[@]}"; do
+        log_info "  - $pkg"
+    done
+
+    # Create temporary file for new DESCRIPTION
+    local tmp_desc=$(mktemp)
+
+    # Build regex pattern for packages to remove
+    local remove_pattern=""
+    for pkg in "${unused_packages[@]}"; do
+        if [[ -z "$remove_pattern" ]]; then
+            remove_pattern="$pkg"
+        else
+            remove_pattern="$remove_pattern|$pkg"
+        fi
+    done
+
+    # Remove unused packages from Imports section using awk
+    awk -v pattern="^[[:space:]]*(${remove_pattern})[[:space:],]*\$" '
+    /^Imports:/ { in_imports=1; print; next }
+    in_imports {
+        if (/^[A-Z]/) {
+            # New section started, exit Imports
+            in_imports=0
+            print
+            next
+        }
+        # Skip lines matching removal pattern
+        if ($0 ~ pattern) {
+            next
+        }
+        # Keep other lines
+        print
+    }
+    !in_imports { print }
+    ' DESCRIPTION > "$tmp_desc"
+
+    # Replace DESCRIPTION with cleaned version
+    mv "$tmp_desc" DESCRIPTION
+
+    log_success "✅ Removed unused packages from DESCRIPTION"
+    log_info "   Next renv::snapshot() will update renv.lock accordingly"
+    return 0
+}
+
+#==============================================================================
 # RENV.LOCK PARSING (USING JQ)
 #==============================================================================
 
@@ -539,6 +673,12 @@ validate_and_report() {
 
     if validate_package_environment "$strict_mode" "false"; then
         log_success "Package environment validation passed"
+
+        # Clean up unused packages from DESCRIPTION
+        # This runs after validation to ensure all used packages are declared
+        log_debug "Checking for unused packages in DESCRIPTION..."
+        remove_unused_packages_from_description "$strict_mode"
+
         return 0
     else
         log_error "Package environment validation failed"
