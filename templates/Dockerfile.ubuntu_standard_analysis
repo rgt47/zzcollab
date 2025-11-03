@@ -47,6 +47,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Configure RSPM
 WORKDIR /build
 COPY renv.lock* ./
+COPY renv/ ./renv/
+COPY .Rprofile* ./
 
 RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
     echo "options(repos = c(" \
@@ -59,7 +61,7 @@ RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
 RUN --mount=type=cache,target=/tmp/R-cache \
     R -e "install.packages(c('renv', 'devtools', 'here', 'janitor', 'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
 
-# Restore renv
+# Restore renv packages (populates project library)
 COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
@@ -171,6 +173,9 @@ RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
 # They are accessed via volume mount: -v $(pwd):/home/${USERNAME}/project
 # This keeps images small and rebuilds fast (no cache invalidation on code changes)
 # Use devtools::load_all() inside the container to load your R package
+
+# Copy populated renv project library from builder (after full project copy)
+COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
 
 # Metadata
 LABEL org.opencontainers.image.title="ZZCOLLAB Analysis Environment" \

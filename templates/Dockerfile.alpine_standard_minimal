@@ -41,6 +41,8 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
 # Configure RSPM (Alpine uses musl, limited binary support)
 WORKDIR /build
 COPY renv.lock* ./
+COPY renv/ ./renv/
+COPY .Rprofile* ./
 
 # Note: Alpine doesn't have prebuilt R packages like Debian
 # Must compile from source - slower but smaller image
@@ -53,7 +55,7 @@ RUN --mount=type=cache,target=/tmp/R-cache \
     R -e "install.packages(c('renv', 'devtools', 'testthat', \
            'remotes'))"
 
-# Restore renv
+# Restore renv packages (populates project library)
 COPY DESCRIPTION ./
 RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
 
@@ -162,6 +164,9 @@ RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
 
 # Project files (package not installed - use source files directly for interactive analysis)
 COPY --chown=${USERNAME}:${USERNAME} . .
+
+# Copy populated renv project library from builder (after full project copy)
+COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
 
 # Metadata
 LABEL org.opencontainers.image.title=\

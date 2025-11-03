@@ -1,4 +1,7 @@
 # Activate renv for this project
+# Skip bootstrap - renv pre-installed in Docker system library
+# This prevents renv from downloading/installing at runtime
+Sys.setenv(RENV_CONFIG_AUTOLOADER_ENABLED = "FALSE")
 if (file.exists("renv/activate.R")) {
   source("renv/activate.R")
 }
