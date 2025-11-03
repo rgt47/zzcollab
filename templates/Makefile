@@ -16,9 +16,9 @@ help:
 	@echo "Available targets:"
 	@echo ""
 	@echo "  Validation (NO HOST R REQUIRED!):"
-	@echo "    check-renv            - Pure shell validation (recommended)"
-	@echo "    check-renv-strict     - Strict mode (scan tests/, vignettes/)"
-	@echo "    check-renv-fix        - Auto-install packages from DESCRIPTION (needs host R)"
+	@echo "    check-renv            - Full validation: strict + auto-fix (recommended)"
+	@echo "    check-renv-no-fix     - Validation only, no auto-install"
+	@echo "    check-renv-no-strict  - Standard mode (skip tests/, vignettes/)"
 	@echo ""
 	@echo "  Native R - requires local R installation:"
 	@echo "    document, build, check, install, vignettes, test, deps"
@@ -67,18 +67,21 @@ deps:
 
 # Validate package dependencies (Pure shell, no host R required!)
 # Checks that all packages used in code are in DESCRIPTION and renv.lock
+# Full validation with strict mode and auto-fix (DEFAULT behavior)
+# Scans all directories (R/, scripts/, analysis/, tests/, vignettes/)
+# Auto-installs packages from DESCRIPTION if missing from renv.lock
+# Requires R on host. If R not available, provides container instructions.
 # Run this before `git commit` to catch issues locally (prevents CI failures)
 check-renv:
 	@bash modules/validation.sh
 
-# Auto-fix validation issues (install missing packages from DESCRIPTION)
-# Requires R on host. If R not available, provides container instructions.
-check-renv-fix:
-	@bash modules/validation.sh --fix
+# Validation only, no auto-fix (report issues without installing packages)
+check-renv-no-fix:
+	@bash modules/validation.sh --no-fix
 
-# Validate in strict mode (scan all directories including tests/)
-check-renv-strict:
-	@bash modules/validation.sh --strict
+# Standard mode validation (skip tests/ and vignettes/ directories)
+check-renv-no-strict:
+	@bash modules/validation.sh --no-strict
 
 # Legacy: R-based validation (for CI/CD that has R pre-installed)
 # This is the old approach, kept for backward compatibility
@@ -299,4 +302,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-run docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-run docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help

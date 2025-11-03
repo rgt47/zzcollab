@@ -786,8 +786,8 @@ validate_package_environment() {
 #     3. Inside container: renv::install() then exit (auto-snapshot)
 #-----------------------------------------------------------------------------
 validate_and_report() {
-    local strict_mode="${1:-false}"
-    local auto_fix="${2:-false}"
+    local strict_mode="${1:-true}"
+    local auto_fix="${2:-true}"
 
     if validate_package_environment "$strict_mode" "$auto_fix"; then
         log_success "Package environment validation passed"
@@ -858,8 +858,8 @@ validate_and_report() {
 #   - Validation before Docker build (catch issues early)
 #-----------------------------------------------------------------------------
 main() {
-    local strict_mode=false
-    local auto_fix=false
+    local strict_mode=true
+    local auto_fix=true
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -868,8 +868,16 @@ main() {
                 strict_mode=true
                 shift
                 ;;
+            --no-strict)
+                strict_mode=false
+                shift
+                ;;
             --fix)
                 auto_fix=true
+                shift
+                ;;
+            --no-fix)
+                auto_fix=false
                 shift
                 ;;
             --help|-h)
@@ -878,15 +886,20 @@ Usage: validation.sh [OPTIONS]
 
 Validate R package dependencies without requiring R on host.
 
+DEFAULTS:
+    Strict mode and auto-fix are ENABLED by default for comprehensive validation.
+
 OPTIONS:
-    --strict        Scan all directories (including tests/, vignettes/)
-    --fix           Auto-install packages declared in DESCRIPTION but missing from renv.lock
+    --strict        Enable strict mode (scan tests/, vignettes/) [DEFAULT]
+    --no-strict     Disable strict mode (scan only R/, scripts/, analysis/)
+    --fix           Auto-install missing packages from DESCRIPTION [DEFAULT]
+    --no-fix        Report issues without auto-fixing
     --help, -h      Show this help message
 
 EXAMPLES:
-    validation.sh              # Standard validation
-    validation.sh --strict     # Strict mode (all directories)
-    validation.sh --fix        # Auto-fix DESCRIPTION → renv.lock inconsistencies
+    validation.sh              # Full validation with auto-fix (recommended)
+    validation.sh --no-fix     # Validation only, no auto-install
+    validation.sh --no-strict  # Skip tests/ and vignettes/ directories
 
 REQUIREMENTS:
     - jq (for renv.lock parsing): brew install jq
