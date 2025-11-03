@@ -27,9 +27,29 @@ BASE_PACKAGES=(
     "methods" "datasets" "tools" "grid" "parallel"
 )
 
+# Placeholder/invalid package names to exclude from validation
+PLACEHOLDER_PACKAGES=(
+    "package" "pkg" "mypackage" "myproject" "yourpackage"
+    "project" "data" "result" "output" "input"
+    "test" "example" "sample" "demo" "template"
+    "local" "any" "all" "none" "NULL"
+    "foo" "bar" "baz" "qux"
+    "zzcollab"  # Don't declare ourselves as a dependency
+)
+
 # Directories to scan for R code
 STANDARD_DIRS=("R" "scripts" "analysis")
 STRICT_DIRS=("R" "scripts" "analysis" "tests" "vignettes" "inst")
+
+# Files to skip (documentation examples, templates)
+SKIP_FILES=(
+    "*/README.Rmd"
+    "*/README.md"
+    "*/CLAUDE.md"
+    "*/examples/*"
+    "*/inst/examples/*"
+    "*/man/examples/*"
+)
 
 # File extensions to search
 FILE_EXTENSIONS=("R" "Rmd" "qmd" "Rnw")
@@ -280,21 +300,29 @@ extract_code_packages() {
         find_pattern="$find_pattern -name \"*.$ext\""
     done
 
+    # Build exclude pattern for files to skip
+    local exclude_pattern=""
+    for skip_file in "${SKIP_FILES[@]}"; do
+        exclude_pattern="$exclude_pattern ! -path '$skip_file'"
+    done
+
     # Find all R files and extract package references
     while IFS= read -r file; do
         if [[ -f "$file" ]]; then
-            # Extract library() and require() calls
+            # Extract library() and require() calls (skip commented lines)
             # BSD grep compatible: use -E for extended regex
-            grep -E '(library|require)[[:space:]]*\(' "$file" 2>/dev/null | \
+            grep -v '^[[:space:]]*#' "$file" 2>/dev/null | \
+                grep -E '(library|require)[[:space:]]*\(' 2>/dev/null | \
                 sed -E 's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' || true
 
-            # Extract namespace calls (package::function)
+            # Extract namespace calls (package::function) - skip commented lines
             # BSD grep compatible: match pkg:: then remove ::
-            grep -E '[a-zA-Z][a-zA-Z0-9.]*::' "$file" 2>/dev/null | \
+            grep -v '^[[:space:]]*#' "$file" 2>/dev/null | \
+                grep -E '[a-zA-Z][a-zA-Z0-9.]*::' 2>/dev/null | \
                 grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' | \
                 sed 's/:://' || true
 
-            # Extract roxygen imports
+            # Extract roxygen imports (these are comments but intentional)
             # BSD grep compatible
             grep -E '#'\''[[:space:]]*@importFrom[[:space:]]+[a-zA-Z]' "$file" 2>/dev/null | \
                 sed -E 's/.*@importFrom[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
@@ -302,7 +330,7 @@ extract_code_packages() {
             grep -E '#'\''[[:space:]]*@import[[:space:]]+[a-zA-Z]' "$file" 2>/dev/null | \
                 sed -E 's/.*@import[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
         fi
-    done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) 2>/dev/null")
+    done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) $exclude_pattern 2>/dev/null")
 }
 
 #-----------------------------------------------------------------------------
@@ -321,18 +349,21 @@ extract_code_packages() {
 #   Cleaned package names to stdout, one per line, sorted alphabetically
 # GLOBALS READ:
 #   BASE_PACKAGES - Array of base R packages to exclude
+#   PLACEHOLDER_PACKAGES - Array of placeholder names to exclude
 # VALIDATION RULES:
-#   - Minimum 2 characters (R package requirement)
+#   - Minimum 3 characters (R package requirement, avoid "my", "an", etc.)
 #   - Must start with a letter (a-zA-Z)
 #   - Can contain letters, numbers, and dots only
 #   - Cannot start or end with a dot
 #   - CRAN doesn't allow underscores, but BioConductor does (we allow them)
 # FILTERS APPLIED:
-#   1. Remove empty strings and names < 2 characters
+#   1. Remove empty strings and names < 3 characters
 #   2. Remove base R packages (base, utils, stats, etc.)
-#   3. Validate format: ^[a-zA-Z][a-zA-Z0-9.]*$
-#   4. Remove names starting or ending with dots
-#   5. Sort and deduplicate
+#   3. Remove placeholder packages (myproject, package, etc.)
+#   4. Pattern-based filtering (very generic words)
+#   5. Validate format: ^[a-zA-Z][a-zA-Z0-9.]*$
+#   6. Remove names starting or ending with dots
+#   7. Sort and deduplicate
 # EXAMPLE:
 #   packages=(dplyr ggplot2 dplyr base "" "a" ".invalid" "valid.pkg")
 #   clean_packages "${packages[@]}"
@@ -342,24 +373,52 @@ clean_packages() {
     local packages=("$@")
     local cleaned=()
 
-    # Sort, deduplicate, filter base packages
+    # Sort, deduplicate, filter base packages and placeholders
     for pkg in "${packages[@]}"; do
-        # Skip if empty or too short (R packages must be at least 2 chars)
-        if [[ -z "$pkg" ]] || [[ ${#pkg} -lt 2 ]]; then
+        # Skip if empty or too short (R packages must be at least 3 chars)
+        # This filters out "my", "an", "is", "or", etc.
+        if [[ -z "$pkg" ]] || [[ ${#pkg} -lt 3 ]]; then
             continue
         fi
 
         # Skip if base package
-        # Use literal string matching instead of regex to avoid SC2076
         local base_packages_str=" ${BASE_PACKAGES[*]} "
         if [[ "$base_packages_str" == *" ${pkg} "* ]]; then
             continue
         fi
 
+        # Skip if placeholder package
+        local placeholder_packages_str=" ${PLACEHOLDER_PACKAGES[*]} "
+        if [[ "$placeholder_packages_str" == *" ${pkg} "* ]]; then
+            log_debug "Filtering placeholder package: $pkg"
+            continue
+        fi
+
+        # Pattern-based filtering: exclude overly generic single words
+        # Common English words that appear in documentation examples
+        case "$pkg" in
+            # Pronouns and articles
+            my|your|his|her|our|their|the|this|that)
+                log_debug "Filtering generic word: $pkg"
+                continue
+                ;;
+            # Generic nouns commonly used in examples
+            file|dir|path|name|value|object|function|method|class)
+                log_debug "Filtering generic word: $pkg"
+                continue
+                ;;
+            # Words ending in "analysis" or "project" (usually examples)
+            *analysis|*project|*study|*trial)
+                # Only filter if lowercase (real packages often use CamelCase)
+                if [[ "$pkg" =~ ^[a-z]+$ ]]; then
+                    log_debug "Filtering example name: $pkg"
+                    continue
+                fi
+                ;;
+        esac
+
         # Validate package name format
         # R package rules: start with letter, contain letters/numbers/dots only
-        # Note: CRAN doesn't allow underscores, but BioConductor does
-        # We allow underscores for compatibility but validate properly
         if [[ "$pkg" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]]; then
             # Additional validation: cannot start or end with dot
             if [[ ! "$pkg" =~ ^\. ]] && [[ ! "$pkg" =~ \.$ ]]; then
