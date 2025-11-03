@@ -27,8 +27,9 @@ make docker-render         # Render analysis reports
 ### CI/CD Validation
 ```bash
 # Pure shell validation (NO HOST R REQUIRED!)
-make check-renv            # Validate DESCRIPTION ↔ renv.lock consistency
-make check-renv-strict     # Strict mode (scans tests/, vignettes/)
+make check-renv            # Full validation + auto-fix (strict mode, default)
+make check-renv-no-fix     # Validation only, no auto-add
+make check-renv-no-strict  # Standard mode (skip tests/, vignettes/)
 
 # R options monitoring
 Rscript check_rprofile_options.R    # Track critical R options changes
@@ -37,11 +38,14 @@ Rscript check_rprofile_options.R    # Track critical R options changes
 docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'warning')"
 ```
 
-**Pure Shell Validation System** (October 2025):
-- Uses `modules/validation.sh` - pure shell (grep, awk, jq)
-- Extracts packages from code without R
-- Parses DESCRIPTION with awk
-- Parses renv.lock with jq
+**Pure Shell Validation System** (October-November 2025):
+- Uses `modules/validation.sh` - pure shell (curl, jq, awk, grep, sed)
+- Extracts packages from code without R (BSD grep compatible)
+- **Auto-fixes** Code → DESCRIPTION → renv.lock pipeline
+- Parses DESCRIPTION with awk, edits with awk
+- Parses/edits renv.lock with jq
+- Queries CRAN API (crandb.r-pkg.org) for package metadata
+- Smart filtering: 19 filters remove placeholders and false positives
 - Works on any system (no R installation required!)
 - Automatically runs after all `docker-*` targets exit
 
@@ -109,8 +113,9 @@ zzcollab --use-team-image  # Download and use team's Docker image
 ### renv Commands
 ```bash
 # Pure shell validation (recommended - no host R required!)
-make check-renv            # Validate DESCRIPTION ↔ renv.lock consistency
-make check-renv-strict     # Strict mode (scans tests/, vignettes/)
+make check-renv            # Full validation + auto-fix (strict mode, default)
+make check-renv-no-fix     # Validation only, no auto-add
+make check-renv-no-strict  # Standard mode (skip tests/, vignettes/)
 
 # Docker-based validation
 make docker-check-renv     # Validate inside container
