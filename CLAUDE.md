@@ -302,7 +302,37 @@ git add renv.lock && git commit -m "Add tidyverse" && git push
 - **Dynamic addition**: Team members add packages independently inside containers
 - **Automatic snapshot**: Container exit hook runs `renv::snapshot()` (users don't need to call it)
 - **Host validation**: Pure shell script validates DESCRIPTION ↔ renv.lock consistency
+- **Auto-fix**: Automatically adds missing packages to DESCRIPTION and renv.lock (pure shell, no R!)
 - **No host R required**: Entire workflow works without R installed on host machine
+
+**Validation & Auto-Fix** (NEW):
+```bash
+make check-renv              # Validate + auto-fix (default: strict mode)
+make check-renv-no-fix       # Validation only, no auto-add
+make check-renv-no-strict    # Skip tests/ and vignettes/
+```
+
+**Complete Auto-Fix Pipeline**:
+1. **Code → DESCRIPTION**: Detects `library()`, `require()`, `pkg::function()` usage
+2. **DESCRIPTION → renv.lock**: Queries CRAN API for package metadata
+3. **Pure shell tools**: curl (CRAN API) + jq (JSON) + awk (DESCRIPTION) + grep (extraction)
+4. **Smart filtering**: Excludes placeholders, comments, documentation files (19 filters)
+5. **Works on macOS/Linux**: BSD grep compatible (no Perl regex)
+
+**Example Auto-Fix**:
+```bash
+# Add tibble::tibble() to your code
+# Run validation
+make check-renv
+
+# Output:
+# ✅ Added tibble to DESCRIPTION Imports
+# ✅ Added tibble (3.3.0) to renv.lock
+# ✅ All missing packages added
+
+# Commit changes
+git add DESCRIPTION renv.lock && git commit -m "Add tibble package"
+```
 
 **Configuration**:
 ```bash
@@ -335,9 +365,11 @@ ZZCOLLAB includes automated data documentation templates following research best
 
 **Package Validation (NO HOST R REQUIRED!)**:
 ```bash
-make check-renv            # Pure shell validation (recommended)
-make check-renv-strict     # Strict mode (scan tests/, vignettes/)
+make check-renv            # Full validation + auto-fix (strict mode, default)
+make check-renv-no-fix     # Validation only, no auto-add
+make check-renv-no-strict  # Standard mode (skip tests/, vignettes/)
 ```
+**Auto-fixes**: Code → DESCRIPTION → renv.lock (pure shell: curl + jq + awk + grep)
 
 **R Package Development**:
 ```bash
@@ -442,6 +474,52 @@ zzcollab_help("config")            # Configuration guide
 **Current Version**: 2.0 (Unified Paradigm Release, 2025)
 
 **Recent Major Changes**:
+
+### November 2, 2025 - Complete Auto-Fix Pipeline & Package Filtering
+
+**Major Feature Addition**: Full automation of dependency management with intelligent filtering
+
+- **Complete auto-fix pipeline**: Code → DESCRIPTION → renv.lock
+  - Detects packages used in code via `library()`, `require()`, `pkg::function()`
+  - Automatically adds to DESCRIPTION Imports (pure awk)
+  - Automatically adds to renv.lock via CRAN API (curl + jq)
+  - Single `make check-renv` command fixes entire dependency chain
+  - Files: `modules/validation.sh` (lines 103-243, 871-923)
+
+- **Pure shell DESCRIPTION editing**: NO R required!
+  - add_package_to_description() uses awk to modify DESCRIPTION
+  - add_package_to_renv_lock() queries crandb.r-pkg.org API
+  - Creates proper JSON entries with jq
+  - All operations atomic with temp file backups
+
+- **macOS BSD grep compatibility** (CRITICAL FIX)
+  - Problem: grep -P (Perl regex) not available on macOS
+  - Solution: Replaced with grep -E (extended regex) + BSD patterns
+  - Now works on macOS, Linux, CI/CD, all BSD systems
+  - Files: `modules/validation.sh` (lines 283-333)
+
+- **Comprehensive package filtering** (19 filters applied)
+  - **Blocklist**: "package", "myproject", "local", "any", "zzcollab"
+  - **Pattern-based**: Pronouns (my, your), generic nouns (file, path)
+  - **Skip comments**: grep -v '^[[:space:]]*#' before extraction
+  - **Skip documentation**: README.Rmd, examples/, CLAUDE.md
+  - **Length filter**: Minimum 3 characters (removes "my", "an", "if")
+  - Result: 84 → 65 packages (19 false positives removed)
+  - Files: `modules/validation.sh` (lines 30-51, 302-333, 371-431)
+
+- **Default strict + auto-fix behavior**
+  - Changed defaults: strict_mode=true, auto_fix=true
+  - Scans all directories including tests/, vignettes/
+  - Auto-adds missing packages by default
+  - Opt-out flags: --no-strict, --no-fix
+  - Files: `modules/validation.sh` (lines 860-927)
+
+**Updated Makefile targets**:
+```bash
+make check-renv            # Full validation + auto-fix (default)
+make check-renv-no-fix     # Validation only
+make check-renv-no-strict  # Skip tests/ and vignettes/
+```
 
 ### October 27, 2025 - Auto-Snapshot Architecture & Docker-First Validation
 
