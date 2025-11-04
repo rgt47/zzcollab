@@ -350,7 +350,7 @@ zzcollab --list-pkgs   # R package bundles
 ```bash
 # -d, --dotfiles-dir PATH
 # Copy personal dotfiles into container
-zzcollab -d ~/dotfiles
+zzcollab
 
 # Dotfiles directory structure:
 # ~/dotfiles/
@@ -1379,7 +1379,7 @@ zzcollab --config set profile-name "analysis"
 
 **Create project**:
 ```bash
-zzcollab -t myteam -p study --profile-name analysis -d ~/dotfiles
+zzcollab -t myteam -p study --profile-name analysis
 ```
 
 **Team collaboration**:

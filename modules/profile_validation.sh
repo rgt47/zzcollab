@@ -845,7 +845,6 @@ generate_system_deps_install_commands() {
 #     - Fix: Use --pkgs for R package additions
 # ALLOWED FLAGS FOR TEAM MEMBERS:
 #   --pkgs: Team members CAN add R packages (personal layer)
-#   -d/--dotfiles: Personal development environment customization
 #   -u/--use-team-image: Required for team members (how they join)
 #   Git flags: Standard version control operations
 # TWO-LAYER ARCHITECTURE:
@@ -855,7 +854,6 @@ generate_system_deps_install_commands() {
 #     - Set once by team lead, inherited by all members
 #   PERSONAL LAYER (customizable):
 #     - R packages via renv::install()
-#     - Personal dotfiles and environment
 #     - Individual R package additions via --pkgs
 # FLAG DETECTION:
 #   Uses sentinel variables set during flag parsing:
@@ -895,7 +893,7 @@ generate_system_deps_install_commands() {
 #   4. FLEXIBILITY: Team leads can update shared environment when needed
 # EXAMPLE VALID TEAM MEMBER WORKFLOW:
 #   1. Clone project: git clone https://github.com/team/project.git
-#   2. Join project: zzcollab -u -d ~/dotfiles
+#   2. Join project: zzcollab -u
 #   3. Add packages: renv::install("tidymodels")
 #   4. Work in container: make docker-zsh
 #-----------------------------------------------------------------------------

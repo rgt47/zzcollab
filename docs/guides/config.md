@@ -8,9 +8,9 @@ Stop typing the same flags repeatedly! Configure zzcollab once, use everywhere.
 
 **WITHOUT CONFIG** (repetitive):
 ```bash
-zzcollab -t myname -p project1 --profile-name analysis -d ~/dotfiles
-zzcollab -t myname -p project2 --profile-name analysis -d ~/dotfiles
-zzcollab -t myname -p project3 --profile-name analysis -d ~/dotfiles
+zzcollab -t myname -p project1 --profile-name analysis
+zzcollab -t myname -p project2 --profile-name analysis
+zzcollab -t myname -p project3 --profile-name analysis
 # Typing "myname", "analysis", and "~/dotfiles" every time!
 ```
 

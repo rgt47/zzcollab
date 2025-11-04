@@ -94,10 +94,10 @@ The **GUI profile** enables running graphical applications inside Docker contain
 
 ```bash
 # Solo developer with GUI profile
-zzcollab -r gui -d ~/dotfiles
+zzcollab -r gui
 
 # Team collaboration with GUI profile
-zzcollab -t myteam -p myproject -r gui -d ~/dotfiles
+zzcollab -t myteam -p myproject -r gui
 ```
 
 ### 2. Build Docker Image
@@ -443,7 +443,7 @@ xhost -localhost
 
 ```bash
 # Team Lead: Create GUI-enabled team image
-zzcollab -t myteam -p viz-project -r gui -d ~/dotfiles
+zzcollab -t myteam -p viz-project -r gui
 make docker-build
 make docker-push-team
 git add . && git commit -m "Add GUI-enabled environment" && git push
@@ -451,7 +451,7 @@ git add . && git commit -m "Add GUI-enabled environment" && git push
 # Team Member: Use team's GUI image
 git clone https://github.com/myteam/viz-project.git
 cd viz-project
-zzcollab -u -d ~/dotfiles
+zzcollab -u
 make docker-zsh-gui
 ```
 

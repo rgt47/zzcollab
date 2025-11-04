@@ -339,25 +339,6 @@ track_item() {
                 }
             fi
             ;;
-        dotfile)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
-                tmp=$(mktemp)
-                if jq --arg dotfile "$data1" '.dotfiles += [$dotfile]' "${MANIFEST_FILE:-}" > "$tmp"; then
-                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
-                        log_error "Failed to update manifest for dotfile: $data1"
-                        return 1
-                    fi
-                else
-                    log_error "jq failed to process manifest for dotfile: $data1"
-                    return 1
-                fi
-            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                echo "dotfile:$data1" >> "${MANIFEST_TXT:-}" || {
-                    log_error "Failed to append to text manifest for dotfile: $data1"
-                    return 1
-                }
-            fi
-            ;;
         docker_image)
             if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
@@ -389,7 +370,6 @@ track_directory() { track_item "directory" "$1"; }
 track_file() { track_item "file" "$1"; }
 track_template_file() { track_item "template" "$1" "${2:-}"; }
 track_symlink() { track_item "symlink" "$1" "${2:-}"; }
-track_dotfile() { track_item "dotfile" "$1"; }
 track_docker_image() { track_item "docker_image" "$1"; }
 
 #=============================================================================

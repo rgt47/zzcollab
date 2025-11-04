@@ -140,7 +140,7 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 ### Team Lead - Build and Share Team Image
 ```bash
 # 1. Create project with team settings
-zzcollab -t TEAM -p PROJECT -d ~/dotfiles
+zzcollab -t TEAM -p PROJECT
 
 # 2. Customize Docker environment (optional)
 vim Dockerfile              # Modify base image (r-ver, rstudio, verse)
@@ -163,7 +163,7 @@ git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
 
 # 2. Use team's Docker image
-zzcollab --use-team-image -d ~/dotfiles
+zzcollab --use-team-image
 
 # 3. Start development
 make docker-zsh            # Enter container with team environment
@@ -172,7 +172,7 @@ make docker-zsh            # Enter container with team environment
 ### Solo Developer - Build Personal Image
 ```bash
 # 1. Create project (no team)
-zzcollab -p PROJECT -d ~/dotfiles
+zzcollab -p PROJECT
 
 # 2. Customize if needed
 vim Dockerfile             # Adjust packages, base image
@@ -186,7 +186,7 @@ make docker-build          # Builds personal Docker image
 ### Developer 1 (Team Lead) - Complete Workflow
 ```bash
 # Step 1: Create project structure with team settings
-zzcollab -t TEAM -p PROJECT -d ~/dotfiles
+zzcollab -t TEAM -p PROJECT
 
 # Step 2: Customize Docker environment (optional)
 cd PROJECT
@@ -212,7 +212,7 @@ git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
 
 # Step 2: Use team's pre-built Docker image
-zzcollab --use-team-image -d ~/dotfiles
+zzcollab --use-team-image
 
 # Step 3: Start development environment
 make docker-zsh            # Enter container (command-line)

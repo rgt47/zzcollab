@@ -322,7 +322,7 @@ cd zzcollab && ./install.sh
 
 # Create a reproducible project
 mkdir my-analysis && cd my-analysis
-zzcollab -r analysis -d ~/dotfiles
+zzcollab -r analysis
 
 # Build environment (3-4 minutes with RSPM)
 make docker-build

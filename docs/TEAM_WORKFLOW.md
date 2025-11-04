@@ -21,7 +21,7 @@
 mkdir study-project && cd study-project
 
 # 2. Initialize with team configuration
-zzcollab -t myteam -p study -d ~/dotfiles
+zzcollab -t myteam -p study
 
 # 3. Build and push Docker image
 make docker-build
@@ -37,7 +37,7 @@ git add . && git commit -m "Initial team project setup" && git push -u origin ma
 git clone https://github.com/myteam/study.git && cd study
 
 # 2. Pull team's Docker image
-zzcollab -t myteam -p study --use-team-image -d ~/dotfiles
+zzcollab -t myteam -p study --use-team-image
 
 # 3. Start development
 make docker-zsh
@@ -72,7 +72,7 @@ mkdir study-project && cd study-project
 zzcollab -t myteam -p study
 
 # Or with explicit options
-zzcollab -t myteam -p study -d ~/dotfiles --profile-name analysis
+zzcollab -t myteam -p study --profile-name analysis
 ```
 
 **What this creates:**
@@ -151,7 +151,7 @@ cd study
 
 ```bash
 # Option 1: Pull team image automatically
-zzcollab -t myteam -p study --use-team-image -d ~/dotfiles
+zzcollab -t myteam -p study --use-team-image
 
 # Option 2: Pull manually
 docker pull myteam/study:latest
@@ -335,7 +335,7 @@ renv::restore()
 zzcollab -t TEAM -p PROJECT
 
 # With dotfiles
-zzcollab -t TEAM -p PROJECT -d ~/dotfiles
+zzcollab -t TEAM -p PROJECT
 
 # With custom profile
 zzcollab -t TEAM -p PROJECT --profile-name bioinformatics
@@ -351,7 +351,7 @@ zzcollab -t TEAM -p PROJECT -b rocker/geospatial
 zzcollab -t TEAM -p PROJECT --use-team-image
 
 # With dotfiles
-zzcollab -t TEAM -p PROJECT --use-team-image -d ~/dotfiles
+zzcollab -t TEAM -p PROJECT --use-team-image
 
 # Build locally (not recommended)
 zzcollab -t TEAM -p PROJECT  # omit --use-team-image
@@ -364,7 +364,7 @@ zzcollab -t TEAM -p PROJECT  # omit --use-team-image
 zzcollab -t TEAM -p PROJECT --force
 
 # Combine with other flags
-zzcollab -t TEAM -p PROJECT --use-team-image --force -d ~/dotfiles
+zzcollab -t TEAM -p PROJECT --use-team-image --force
 ```
 
 **When to use `--force`**:
@@ -472,7 +472,7 @@ Converting an existing solo project to team collaboration:
 cd my-solo-project
 
 # 2. Re-initialize with team settings
-zzcollab -t myteam -p study -d ~/dotfiles
+zzcollab -t myteam -p study
 
 # 3. Build and push team image
 make docker-build

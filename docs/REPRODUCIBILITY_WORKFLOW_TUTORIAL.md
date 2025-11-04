@@ -22,7 +22,7 @@
 mkdir penguin-analysis && cd penguin-analysis
 
 # Initialize ZZCOLLAB with analysis profile
-zzcollab -r analysis -d ~/dotfiles
+zzcollab -r analysis
 
 # Verify what was created
 ls -la
@@ -316,7 +316,7 @@ git clone https://github.com/mylab/penguin-analysis.git
 cd penguin-analysis
 
 # Join project (pulls team Docker image)
-zzcollab -u -d ~/dotfiles
+zzcollab -u
 
 # Verify Docker image was pulled
 docker images | grep mylab/penguin-analysis

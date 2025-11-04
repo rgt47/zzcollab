@@ -34,7 +34,7 @@ ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All 
 | `-a`  | `--tag`            | Docker image tag                  | `zzcollab -a v2.1`               |
 | `-b`  | `--base-image`     | Custom Docker base                | `zzcollab -b rocker/r-ver`       |
 | `-c`  | `--config`         | Configuration management          | `zzcollab -c init`               |
-| `-d`  | `--dotfiles`       | Copy dotfiles (with dots)         | `zzcollab -d ~/dotfiles`         |
+| `-d`  | `--dotfiles`       | Copy dotfiles (with dots)         | `zzcollab`         |
 | `-D`  | `--dotfiles-nodot` | Copy dotfiles (no dots)           | `zzcollab -D ~/dotfiles`         |
 | `-f`  | `--dockerfile`     | Custom Dockerfile path            | `zzcollab -f custom.df`          |
 | `-g`  | `--github-account` | GitHub account name               | `zzcollab -g myaccount`          |
@@ -68,7 +68,7 @@ zzcollab --team mylab --project-name study --profile-name analysis --dotfiles ~/
 
 **Concise form** (equivalent):
 ```bash
-zzcollab -t mylab -p study -r analysis -d ~/dotfiles
+zzcollab -t mylab -p study -r analysis
 ```
 
 **Custom composition**:

@@ -314,15 +314,12 @@ init_manifest() {
   "modules_loaded": ["core", "templates", "structure", "rpackage", "docker", "analysis", "cicd", "devtools"],
   "command_line_options": {
     "build_docker": $BUILD_DOCKER,
-    "dotfiles_dir": "${DOTFILES_DIR}",
-    "dotfiles_nodot": $DOTFILES_NODOT,
     "base_image": "$BASE_IMAGE"
   },
   "directories": [],
   "files": [],
   "template_files": [],
   "symlinks": [],
-  "dotfiles": [],
   "docker_image": null
 }
 EOF
@@ -333,7 +330,6 @@ EOF
             echo "# Package: $PKG_NAME"
             echo "# Modules: core, templates, structure, rpackage, docker, analysis, cicd, devtools"
             echo "# Build Docker: $BUILD_DOCKER"
-            echo "# Dotfiles: $DOTFILES_DIR"
             echo "# Base Image: $BASE_IMAGE"
             echo "# Format: type:path"
         } > "$MANIFEST_TXT"
@@ -719,9 +715,6 @@ handle_special_modes() {
             config)
                 show_config_help
                 ;;
-            dotfiles)
-                show_dotfiles_help
-                ;;
             renv)
                 show_renv_help
                 ;;
@@ -738,7 +731,7 @@ handle_special_modes() {
             *)
                 echo "❌ Error: Unknown help topic '$SHOW_HELP_TOPIC'" >&2
                 echo "Valid topics: init, github, quickstart, workflow, troubleshooting," >&2
-                echo "              config, dotfiles, renv, docker, cicd" >&2
+                echo "              config, renv, docker, cicd" >&2
                 exit 1
                 ;;
         esac
@@ -932,13 +925,8 @@ finalize_and_report_results() {
         if build_docker_image; then
             log_success "Docker image built successfully"
             
-            # Clean up dotfiles from working directory after successful Docker build
-            if command -v cleanup_dotfiles_from_workdir >/dev/null 2>&1; then
-                cleanup_dotfiles_from_workdir
-            fi
         else
             log_warn "Docker build failed - you can build manually later with 'make docker-build'"
-            log_info "💡 Dotfiles kept in working directory for manual Docker build"
         fi
     else
         log_info "⏭️ Skipping Docker image build (use 'make docker-build' to build)"

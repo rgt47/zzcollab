@@ -92,10 +92,10 @@ zzcollab --profile-name analysis
 zzcollab --profile-name analysis -p penguin-analysis
 
 # Include personal shell configuration
-zzcollab --profile-name analysis -d ~/dotfiles
+zzcollab --profile-name analysis
 
 # Include team namespace for collaborative work
-zzcollab -t myname -p penguin-analysis --profile-name analysis -d ~/dotfiles
+zzcollab -t myname -p penguin-analysis --profile-name analysis
 ```
 
 ## Custom Profile Composition
@@ -1310,7 +1310,7 @@ This ensures reproducibility is maintained throughout the project lifecycle.
 
 ```bash
 # Project initialization
-zzcollab --profile-name analysis -d ~/dotfiles
+zzcollab --profile-name analysis
 
 # Raw data placement (host environment)
 cp ~/Downloads/data.csv ~/projects/penguin-analysis/analysis/data/raw_data/
@@ -1500,7 +1500,7 @@ cd ~/projects
 mkdir penguin-analysis && cd penguin-analysis
 
 # Initialize project with team namespace
-zzcollab --profile-name analysis -t myname -p penguin-analysis -d ~/dotfiles
+zzcollab --profile-name analysis -t myname -p penguin-analysis
 
 # Customize Dockerfile if needed (optional)
 vim Dockerfile

@@ -282,7 +282,7 @@ my-project/
 
 ```bash
 # Create project with Docker environment
-zzcollab --profile-name minimal -d ~/dotfiles
+zzcollab --profile-name minimal
 
 # Or add Docker to existing renv project
 # (requires manual Dockerfile creation)
@@ -379,7 +379,7 @@ this gap.
 
 ```bash
 # Team lead creates environment with geospatial profile
-zzcollab -t mylab -p climate-study --profile-name geospatial -d ~/dotfiles
+zzcollab -t mylab -p climate-study --profile-name geospatial
 
 # Profile provides:
 # - R version: latest stable
@@ -389,7 +389,7 @@ zzcollab -t mylab -p climate-study --profile-name geospatial -d ~/dotfiles
 # Team member joins
 git clone https://github.com/mylab/climate-study
 cd climate-study
-zzcollab --use-team-image -d ~/dotfiles  # Gets team's Docker image
+zzcollab --use-team-image  # Gets team's Docker image
 make docker-zsh
 
 # Inside container - everyone has same environment
@@ -403,19 +403,19 @@ ZZCOLLAB provides 14+ predefined Docker profiles to balance image size and capab
 
 ```bash
 # Minimal: Essential R development (~780MB)
-zzcollab --profile-name minimal -d ~/dotfiles
+zzcollab --profile-name minimal
 
 # Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
-zzcollab --profile-name analysis -d ~/dotfiles
+zzcollab --profile-name analysis
 
 # Geospatial: GIS and spatial analysis (~1.5GB)
-zzcollab --profile-name geospatial -d ~/dotfiles
+zzcollab --profile-name geospatial
 
 # Bioinformatics: Genomics and proteomics (~1.98GB)
-zzcollab --profile-name bioinformatics -d ~/dotfiles
+zzcollab --profile-name bioinformatics
 
 # Alpine Minimal: Lightweight (~200MB)
-zzcollab --profile-name alpine_minimal -d ~/dotfiles
+zzcollab --profile-name alpine_minimal
 
 # List all available profiles
 zzcollab --list-profiles
@@ -471,7 +471,7 @@ my-project/
 
 ```bash
 # Create project with Docker environment (analysis profile recommended)
-zzcollab --profile-name analysis -d ~/dotfiles
+zzcollab --profile-name analysis
 
 # Add testthat infrastructure
 make docker-zsh
@@ -978,7 +978,7 @@ my-project/
 
 ```bash
 # Create project with CI/CD workflows
-zzcollab --profile-name analysis -d ~/dotfiles --create-github-repo
+zzcollab --profile-name analysis --create-github-repo
 
 # GitHub Actions workflows automatically created
 ```
@@ -1086,7 +1086,7 @@ ZZCOLLAB creates two standard workflows:
 
 ```bash
 # Day 1: Setup with CI/CD
-zzcollab -t mylab -p paper2024 --profile-name analysis -d ~/dotfiles --create-github-repo
+zzcollab -t mylab -p paper2024 --profile-name analysis --create-github-repo
 
 # Automatically created GitHub repo with Actions enabled
 
@@ -1293,7 +1293,7 @@ complex system dependencies.
 
 ```bash
 # Team lead setup with geospatial profile
-zzcollab -t climate-team -p precipitation --profile-name geospatial -d ~/dotfiles
+zzcollab -t climate-team -p precipitation --profile-name geospatial
 
 # Add testing infrastructure
 make docker-zsh
@@ -1307,7 +1307,7 @@ exit
 # Team members (any platform)
 git clone https://github.com/climate-team/precipitation
 cd precipitation
-zzcollab --use-team-image -d ~/dotfiles
+zzcollab --use-team-image
 make docker-zsh  # Identical environment on all platforms
 
 # Inside container - everyone has same GDAL, GEOS versions
@@ -1329,7 +1329,7 @@ passes checks before merge.
 
 ```bash
 # Package maintainer setup
-zzcollab -t myname -p mypackage --profile-name analysis -d ~/dotfiles --create-github-repo
+zzcollab -t myname -p mypackage --profile-name analysis --create-github-repo
 
 # Testing and CI/CD included automatically
 # Every contributor push triggers:
@@ -1358,7 +1358,7 @@ reports. CI/CD (Level 5) optional if code changes infrequently.
 
 ```bash
 # Setup with Docker for production (minimal profile sufficient for reporting)
-zzcollab --profile-name minimal -d ~/dotfiles
+zzcollab --profile-name minimal
 
 # Add tests for report calculations
 make docker-zsh
