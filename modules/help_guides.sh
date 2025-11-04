@@ -91,24 +91,6 @@ show_config_help_content() {
 }
 
 #=============================================================================
-# DOTFILES GUIDE
-#=============================================================================
-
-# Function: show_dotfiles_help
-# Purpose: Dotfiles setup and management
-show_dotfiles_help() {
-    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
-        show_dotfiles_help_content
-    else
-        show_dotfiles_help_content | "${PAGER:-less}" -R
-    fi
-}
-
-show_dotfiles_help_content() {
-    read_guide_markdown "dotfiles"
-}
-
-#=============================================================================
 # RENV/PACKAGE MANAGEMENT GUIDE
 #=============================================================================
 

@@ -245,7 +245,7 @@ command_exists() {
 
 # Function: track_item
 # Purpose: Universal tracking function for all manifest items
-# Arguments: $1 - type (directory, file, template, symlink, dotfile, docker_image)
+# Arguments: $1 - type (directory, file, template, symlink, docker_image)
 #           $2 - primary data (path, file, template, etc.)
 #           $3 - secondary data (for symlinks: target, templates: dest)
 track_item() {
