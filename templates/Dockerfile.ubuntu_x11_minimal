@@ -84,11 +84,11 @@ USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
 # Copy project files
-COPY --chown=${USERNAME}:${USERNAME} renv.lock* .Rprofile* DESCRIPTION ./
+COPY --chown=${USERNAME}:${USERNAME} renv.lock .Rprofile DESCRIPTION ./
 COPY --chown=${USERNAME}:${USERNAME} renv ./renv
 
-# Restore renv packages (if renv.lock exists)
-RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
+# Restore renv packages
+RUN R -e "renv::restore()"
 
 # Copy remaining project files (last - most frequent changes)
 COPY --chown=${USERNAME}:${USERNAME} . .

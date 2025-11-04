@@ -42,7 +42,6 @@ set -euo pipefail
 #   - Uses stderr for error output to avoid interfering with normal output
 # EXAMPLE:
 #   require_arg "--team-name" "$team_name_value"
-#   require_arg "--dotfiles" "$dotfiles_path"
 ##############################################################################
 require_arg() {
     [[ -n "${2:-}" ]] || { echo "❌ Error: $1 requires an argument" >&2; exit 1; }
