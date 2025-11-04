@@ -5,7 +5,7 @@
 # Profile: ubuntu_x11_minimal (~1.5GB)
 # Purpose: Minimal R with X11 support for graphics viewing
 # Base: rocker/r-ver (R + minimal dependencies)
-# Packages: renv, devtools, usethis, testthat, roxygen2
+# Packages: renv
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
 #          -f Dockerfile.ubuntu_x11_minimal \
@@ -84,10 +84,9 @@ getRversion(), paste(getRversion(), R.version\$platform, \
 R.version\$arch, R.version\$os)))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install framework packages with version-specific cache
+# Install renv only (minimal profile)
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
-    R -e "install.packages(c('renv', 'devtools', 'usethis', \
-'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
+    R -e "install.packages('renv')"
 
 # Restore renv packages (populates project library)
 COPY DESCRIPTION ./
