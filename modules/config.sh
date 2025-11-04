@@ -42,8 +42,6 @@ CONFIG_PROFILE_NAME=""
 CONFIG_LIBS_BUNDLE=""
 CONFIG_PKGS_BUNDLE=""
 CONFIG_R_VERSION=""
-CONFIG_DOTFILES_DIR=""
-CONFIG_DOTFILES_NODOT="false"
 CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
 
@@ -293,8 +291,6 @@ yaml_set() {
 #   - defaults.profile_name: Default Docker profile
 #   - defaults.libs_bundle: Default system libraries bundle
 #   - defaults.pkgs_bundle: Default R packages bundle
-#   - defaults.dotfiles_dir: Path to personal dotfiles directory
-#   - defaults.dotfiles_nodot: Whether dotfiles need leading dots added
 #   - defaults.auto_github: Automatically create GitHub repositories
 #   - defaults.skip_confirmation: Skip confirmation prompts
 # VALIDATION:
@@ -322,8 +318,6 @@ load_config_file() {
     local libs_bundle=$(yaml_get "$config_file" "defaults.libs_bundle")
     local pkgs_bundle=$(yaml_get "$config_file" "defaults.pkgs_bundle")
     local r_version=$(yaml_get "$config_file" "defaults.r_version")
-    local dotfiles_dir=$(yaml_get "$config_file" "defaults.dotfiles_dir")
-    local dotfiles_nodot=$(yaml_get "$config_file" "defaults.dotfiles_nodot")
     local auto_github=$(yaml_get "$config_file" "defaults.auto_github")
     local skip_confirmation=$(yaml_get "$config_file" "defaults.skip_confirmation")
 

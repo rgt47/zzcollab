@@ -171,8 +171,6 @@ validate_enum() {
 # Initialize variables for command line options
 # Note: BUILD_DOCKER=false by default - users run 'make docker-build' manually
 BUILD_DOCKER=false
-DOTFILES_DIR=""
-DOTFILES_NODOT=false
 # Use centralized constants if available
 readonly DEFAULT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_BASE_IMAGE:-rocker/r-ver}"
 BASE_IMAGE="$DEFAULT_BASE_IMAGE"
@@ -196,7 +194,6 @@ readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
 INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, all
 
 # Initialization mode variables
-USE_DOTFILES=false
 PREPARE_DOCKERFILE=false
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
@@ -259,17 +256,6 @@ parse_cli_arguments() {
             --log-file|-w)
                 export ENABLE_LOG_FILE=true
                 shift
-                ;;
-            --dotfiles|-d)
-                require_arg "$1" "$2"
-                DOTFILES_DIR="$2"
-                shift 2
-                ;;
-            --dotfiles-nodot|-D)
-                require_arg "$1" "$2"
-                DOTFILES_DIR="$2"
-                DOTFILES_NODOT=true
-                shift 2
                 ;;
             --base-image|-b)
                 require_arg "$1" "$2"
@@ -468,13 +454,13 @@ check_team_image_availability() {
 # Purpose: Export all CLI variables for use by other modules
 export_cli_variables() {
     # Core build options
-    export BUILD_DOCKER DOTFILES_DIR DOTFILES_NODOT BASE_IMAGE
+    export BUILD_DOCKER BASE_IMAGE
 
     # Team interface variables
     export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERHUB_ACCOUNT DOCKERFILE_PATH IMAGE_TAG
 
     # Mode and behavior flags
-    export USE_DOTFILES PREPARE_DOCKERFILE USE_TEAM_IMAGE
+    export PREPARE_DOCKERFILE USE_TEAM_IMAGE
 
     # GitHub integration flags
     export CREATE_GITHUB_REPO SKIP_CONFIRMATION
@@ -521,8 +507,6 @@ process_cli() {
 show_cli_debug() {
     echo "🔧 CLI Debug Information:"
     echo "  BUILD_DOCKER: $BUILD_DOCKER"
-    echo "  DOTFILES_DIR: $DOTFILES_DIR"
-    echo "  DOTFILES_NODOT: $DOTFILES_NODOT"
     echo "  BASE_IMAGE: $BASE_IMAGE"
     echo "  TEAM_NAME: $TEAM_NAME"
     echo "  PROJECT_NAME: $PROJECT_NAME"
