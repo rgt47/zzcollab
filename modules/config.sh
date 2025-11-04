@@ -330,8 +330,6 @@ load_config_file() {
     [[ "$libs_bundle" != "null" && -n "$libs_bundle" ]] && CONFIG_LIBS_BUNDLE="$libs_bundle"
     [[ "$pkgs_bundle" != "null" && -n "$pkgs_bundle" ]] && CONFIG_PKGS_BUNDLE="$pkgs_bundle"
     [[ "$r_version" != "null" && -n "$r_version" ]] && CONFIG_R_VERSION="$r_version"
-    [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DOTFILES_DIR="$dotfiles_dir"
-    [[ "$dotfiles_nodot" != "null" && -n "$dotfiles_nodot" ]] && CONFIG_DOTFILES_NODOT="$dotfiles_nodot"
     [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
     [[ "$skip_confirmation" != "null" && -n "$skip_confirmation" ]] && CONFIG_SKIP_CONFIRMATION="$skip_confirmation"
     
@@ -349,8 +347,6 @@ load_all_configs() {
     CONFIG_LIBS_BUNDLE=""
     CONFIG_PKGS_BUNDLE=""
     CONFIG_R_VERSION=""
-    CONFIG_DOTFILES_DIR=""
-    CONFIG_DOTFILES_NODOT="false"
     CONFIG_AUTO_GITHUB="false"
     CONFIG_SKIP_CONFIRMATION="false"
 
@@ -384,12 +380,7 @@ apply_config_defaults() {
         USER_PROVIDED_R_VERSION="false"  # Set to false since it came from config, not CLI
     fi
 
-    [[ -z "${DOTFILES_DIR:-}" && -n "$CONFIG_DOTFILES_DIR" ]] && DOTFILES_DIR="$CONFIG_DOTFILES_DIR"
-
     # Handle boolean flags
-    if [[ "$CONFIG_DOTFILES_NODOT" == "true" ]]; then
-        DOTFILES_NODOT=true
-    fi
     if [[ "$CONFIG_AUTO_GITHUB" == "true" ]]; then
         CREATE_GITHUB_REPO=true
     fi
@@ -413,8 +404,6 @@ get_config_value() {
         libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
         pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
         r_version) echo "$CONFIG_R_VERSION" ;;
-        dotfiles_dir) echo "$CONFIG_DOTFILES_DIR" ;;
-        dotfiles_nodot) echo "$CONFIG_DOTFILES_NODOT" ;;
         auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
         skip_confirmation) echo "$CONFIG_SKIP_CONFIRMATION" ;;
         init_base_image)
@@ -442,8 +431,6 @@ get_default_value() {
         profile_name) echo "${ZZCOLLAB_DEFAULT_PROFILE_NAME:-ubuntu_standard_minimal}" ;;
         libs_bundle) echo "minimal" ;;
         pkgs_bundle) echo "minimal" ;;
-        dotfiles_dir) echo "$HOME/dotfiles" ;;
-        dotfiles_nodot) echo "true" ;;
         auto_github) echo "false" ;;
         skip_confirmation) echo "false" ;;
         init_base_image)
@@ -473,8 +460,6 @@ is_value_from_config() {
         profile_name) current_value="$CONFIG_PROFILE_NAME" ;;
         libs_bundle) current_value="$CONFIG_LIBS_BUNDLE" ;;
         pkgs_bundle) current_value="$CONFIG_PKGS_BUNDLE" ;;
-        dotfiles_dir) current_value="$CONFIG_DOTFILES_DIR" ;;
-        dotfiles_nodot) current_value="$CONFIG_DOTFILES_NODOT" ;;
         auto_github) current_value="$CONFIG_AUTO_GITHUB" ;;
         skip_confirmation) current_value="$CONFIG_SKIP_CONFIRMATION" ;;
         init_base_image) return 1 ;; # Always from system default
@@ -602,10 +587,6 @@ defaults:
   libs_bundle: "minimal"           # System libraries bundle (for custom builds with -b/-l/-k)
   pkgs_bundle: "minimal"           # R packages bundle (for custom builds with -b/-l/-k)
 
-  # Dotfiles integration (common defaults shown)
-  dotfiles_dir: "~/dotfiles"       # Path to your dotfiles directory
-  dotfiles_nodot: true             # Files stored without leading dots (vimrc not .vimrc)
-
   # Automation settings (system defaults shown)
   auto_github: false               # Automatically create GitHub repository
   skip_confirmation: false         # Skip confirmation prompts
@@ -658,8 +639,6 @@ config_set() {
                 return 1
             fi
             ;;
-        dotfiles-dir|dotfiles_dir) yaml_key="dotfiles_dir" ;;
-        dotfiles-nodot|dotfiles_nodot) yaml_key="dotfiles_nodot" ;;
         auto-github|auto_github) yaml_key="auto_github" ;;
         skip-confirmation|skip_confirmation) yaml_key="skip_confirmation" ;;
     esac
@@ -709,8 +688,6 @@ config_list() {
     echo "  pkgs_bundle: $(format_config_value_with_indicator pkgs_bundle)"
     echo "  r_version: $(format_config_value_with_indicator r_version)"
     echo "  init_base_image: $(format_config_value_with_indicator init_base_image)"
-    echo "  dotfiles_dir: $(format_config_value_with_indicator dotfiles_dir)"
-    echo "  dotfiles_nodot: $(format_config_value_with_indicator dotfiles_nodot)"
     echo "  auto_github: $(format_config_value_with_indicator auto_github)"
     echo "  skip_confirmation: $(format_config_value_with_indicator skip_confirmation)"
     echo ""
@@ -897,8 +874,6 @@ config_list_local() {
     temp_profile=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.profile_name")
     temp_libs=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.libs_bundle")
     temp_pkgs=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.pkgs_bundle")
-    temp_dotfiles=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.dotfiles_dir")
-    temp_nodot=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.dotfiles_nodot")
     temp_auto_github=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.auto_github")
     temp_skip_confirm=$(yaml_get "$CONFIG_PROJECT_FILE" "defaults.skip_confirmation")
 
@@ -909,8 +884,6 @@ config_list_local() {
     echo "  profile_name: ${temp_profile}"
     echo "  libs_bundle: ${temp_libs}"
     echo "  pkgs_bundle: ${temp_pkgs}"
-    echo "  dotfiles_dir: ${temp_dotfiles}"
-    echo "  dotfiles_nodot: ${temp_nodot}"
     echo "  auto_github: ${temp_auto_github}"
     echo "  skip_confirmation: ${temp_skip_confirm}"
     echo ""

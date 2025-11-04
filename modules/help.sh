@@ -76,7 +76,7 @@ show_development_workflows() {
    make docker-build          # Build the Docker image
    make docker-rstudio        # → http://localhost:8787 (user: analyst, pass: analyst)
    make docker-r              # R console in container
-   make docker-zsh            # Interactive shell with your dotfiles
+   make docker-zsh            # Interactive shell in container
    
 📝 ANALYSIS WORKFLOW:
    1. Place raw data in data/raw_data/
@@ -185,8 +185,6 @@ OPTIONS:
     --list-pkgs                  List all available package bundles
 
     Common options:
-    -d, --dotfiles DIR           Copy dotfiles from directory (files with leading dots)
-    -D, --dotfiles-nodot DIR     Copy dotfiles from directory (files without leading dots)
 
     Advanced options:
     -b, --base-image NAME        Use custom Docker base image (for composition with --libs and --pkgs)
@@ -207,7 +205,7 @@ OPTIONS:
     Utilities:
     -h, --help [TOPIC]           Show help (general or specific topic)
                                  Topics: init, github, quickstart, workflow, troubleshooting,
-                                         config, dotfiles, renv, docker, cicd
+                                         config, renv, docker, cicd
 EOF
 }
 
@@ -259,7 +257,7 @@ EXAMPLES:
 
     Team Members - Join Existing Project:
     git clone https://github.com/mylab/study.git && cd study
-    zzcollab -u -d ~/dotfiles                   # Pull and use team image (mylab/study:latest)
+    zzcollab -u                                 # Pull and use team image (mylab/study:latest)
     make docker-zsh                             # Start development (auto-pulls latest image)
 
     Output Control:
@@ -292,8 +290,8 @@ CONFIGURATION SYSTEM:
     - User-level: ~/.config/zzcollab/config.yaml
     - Team-level: .zzcollab/config.yaml (if present)
 
-    Settings: team-name, github-account, profile-name, dotfiles-dir,
-              dotfiles-nodot, auto-github, skip-confirmation
+    Settings: team-name, github-account, profile-name,
+              auto-github, skip-confirmation
 EOF
 }
 
@@ -310,7 +308,6 @@ Getting Started:
 
 Configuration:
   zzcollab --help config          Configuration system guide
-  zzcollab --help dotfiles        Dotfiles setup and management
   zzcollab --help renv            Package management with renv
 
 Technical Details:
@@ -404,15 +401,13 @@ FLAGS AND OPTIONS
     Automatically create private GitHub repository and push project
 
     Example:
-    zzcollab -t myteam -p myproject -G -d ~/dotfiles
-
+    zzcollab -t myteam -p myproject -G
 -g, --github-account NAME
     Specify GitHub account for repository creation
     Default: Uses team name (-t) if not specified
 
     Example:
-    zzcollab -t dockerteam -g githubuser -p project -G -d ~/dotfiles
-
+    zzcollab -t dockerteam -g githubuser -p project -G
 ═══════════════════════════════════════════════════════════════════════════
 TEAM NAME vs GITHUB ACCOUNT (CRITICAL CONCEPT)
 ═══════════════════════════════════════════════════════════════════════════
@@ -436,8 +431,7 @@ USAGE EXAMPLES
 
 Example 1: Same name for Docker Hub and GitHub (simplest)
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t myname -p study --profile-name modeling -G -d ~/dotfiles
-make docker-build
+zzcollab -t myname -p study --profile-name modeling -Gmake docker-build
 make docker-push-team
 git add .
 git commit -m "Initial project setup"
@@ -450,8 +444,7 @@ Creates:
 
 Example 2: Different Docker Hub and GitHub accounts
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t labteam -g johndoe -p analysis --profile-name modeling -G -d ~/dotfiles
-make docker-build
+zzcollab -t labteam -g johndoe -p analysis --profile-name modeling -Gmake docker-build
 make docker-push-team
 git add .
 git commit -m "Initial team analysis setup"
@@ -463,8 +456,7 @@ Creates:
 
 Example 3: Personal Docker Hub, Organization GitHub
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t myname -g mycompany -p project --profile-name modeling -G -d ~/dotfiles
-make docker-build
+zzcollab -t myname -g mycompany -p project --profile-name modeling -Gmake docker-build
 make docker-push-team
 git add .
 git commit -m "Initial organization project setup"
@@ -482,8 +474,7 @@ zzcollab --config set github-account "myname"
 zzcollab --config set auto-github true
 
 # Then simply:
-zzcollab -p newproject -d ~/dotfiles
-
+zzcollab -p newproject
 Creates GitHub repo automatically using configured settings
 
 ═══════════════════════════════════════════════════════════════════════════
@@ -512,7 +503,6 @@ Example workflow with configuration:
     zzcollab --config set github-account "rgt47"
     zzcollab --config set auto-github true
     zzcollab --config set profile-name "analysis"
-    zzcollab --config set dotfiles-dir "~/dotfiles"
 
     # Then all new projects are simple:
     zzcollab -p myproject    # GitHub repo created automatically!
@@ -616,8 +606,7 @@ Solutions:
     gh repo delete USERNAME/PROJECTNAME --confirm
 
     Option 2: Use different project name
-    zzcollab -t team -p different-name -G -d ~/dotfiles
-
+    zzcollab -t team -p different-name -G
     Option 3: Skip GitHub creation, push manually
     zzcollab -t team -p project -d ~/dotfiles  # No -G
     git remote add origin https://github.com/USERNAME/PROJECTNAME.git
@@ -628,11 +617,9 @@ Issue: "GitHub account not specified"
 Problem: No team name or GitHub account provided
 Solution:
     Specify team name (used as GitHub account by default):
-    zzcollab -t USERNAME -p project -G -d ~/dotfiles
-
+    zzcollab -t USERNAME -p project -G
     Or specify GitHub account explicitly:
-    zzcollab -t dockerteam -g githubuser -p project -G -d ~/dotfiles
-
+    zzcollab -t dockerteam -g githubuser -p project -G
     Or set in configuration:
     zzcollab --config set github-account "yourusername"
 
@@ -666,8 +653,7 @@ TEAM COLLABORATION WORKFLOWS
 Scenario 1: Team Lead Creates Shared Project
 ──────────────────────────────────────────────────────────────────────────
 Team lead - Step 1: Create foundation and GitHub repo
-    zzcollab -t labteam -p study --profile-name modeling -G -d ~/dotfiles
-
+    zzcollab -t labteam -p study --profile-name modeling -G
 Team lead - Step 2: Build and push team image
     make docker-build                       # Build labteam/study:latest
     make docker-push-team                   # Push to Docker Hub
@@ -693,18 +679,14 @@ zzcollab --config set team-name "myname"
 zzcollab --config set github-account "myname"
 
 # Each new project:
-zzcollab -p analysis1 -G -d ~/dotfiles
-zzcollab -p analysis2 -G -d ~/dotfiles
-zzcollab -p paper3 -G -d ~/dotfiles
-
+zzcollab -p analysis1 -Gzzcollab -p analysis2 -Gzzcollab -p paper3 -G
 Each creates private GitHub repo automatically
 
 Scenario 3: Personal Docker, Organization GitHub
 ──────────────────────────────────────────────────────────────────────────
 Contribute to organization but maintain personal Docker images:
 
-zzcollab -t myname -g myorg -p project --profile-name modeling -G -d ~/dotfiles
-make docker-build
+zzcollab -t myname -g myorg -p project --profile-name modeling -Gmake docker-build
 make docker-push-team
 git add .
 git commit -m "Initial organization project setup"
