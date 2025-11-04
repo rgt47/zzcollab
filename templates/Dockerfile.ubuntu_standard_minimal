@@ -1,209 +1,110 @@
 # syntax=docker/dockerfile:1.4
-#=================================================================
-# ZZCOLLAB Minimal Profile - Package Development
-#=================================================================
-# Profile: minimal (~800MB)
-# Purpose: Essential R packages for package development and CI/CD
+#======================================================================
+# ZZCOLLAB Ubuntu Standard Minimal Profile
+#======================================================================
+# Profile: ubuntu_standard_minimal (~1.0GB)
+# Purpose: Minimal R runtime (no X11, no GUI)
 # Base: rocker/r-ver (R + minimal dependencies)
-# Packages: renv, devtools, usethis, testthat, roxygen2
+# Packages: renv (binary from r2u)
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.minimal -t myteam/project:minimal .
-#=================================================================
+#          -f Dockerfile.ubuntu_standard_minimal \
+#          -t myteam/project:standard-minimal .
+#======================================================================
 
-ARG R_VERSION=latest
+ARG R_VERSION=4.4.2
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
-#=================================================================
-# STAGE 1: BUILDER
-#=================================================================
-# Force AMD64 platform for RSPM binary packages (even on ARM64 hosts)
-FROM --platform=linux/amd64 rocker/r-ver:${R_VERSION} AS builder
-
-ARG DEBIAN_FRONTEND=noninteractive
-
-# Install build dependencies with cache mount
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    set -ex && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential \
-        libcurl4-openssl-dev \
-        libssl-dev \
-        libxml2-dev \
-        libgit2-dev \
-        libssh2-1-dev \
-        libfontconfig1-dev \
-        libharfbuzz-dev \
-        libfribidi-dev \
-        libfreetype6-dev \
-        libpng-dev \
-        libjpeg-dev
-
-# Configure repositories: RSPM with AMD64 binary packages
-# Use date 7 days ago to ensure binary packages are available
-# RSPM binary packages lag by ~1-2 days; 7 days ensures availability
-# Platform forced to AMD64 above for fast binary installation
-WORKDIR /build
-COPY renv.lock* ./
-COPY renv/ ./renv/
-COPY .Rprofile* ./
-
-RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-    RSPM_DATE=$(date -u -d '7 days ago' '+%Y-%m-%d' 2>/dev/null || date -u -v-7d '+%Y-%m-%d') && \
-    echo "options(repos = c(" \
-        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/${RSPM_DATE}'))" \
-        >> /usr/local/lib/R/etc/Rprofile.site && \
-    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
-        >> /usr/local/lib/R/etc/Rprofile.site
-
-# Install framework packages (installs as AMD64 binaries - 10-20x faster)
-RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'usethis', \
-           'testthat', 'roxygen2', 'pkgdown', 'rcmdcheck'))"
-
-# Restore renv packages (populates project library)
-COPY DESCRIPTION ./
-RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
-
-#=================================================================
-# STAGE 2: RUNTIME
-#=================================================================
-# Force AMD64 platform for consistency with builder stage
-FROM --platform=linux/amd64 rocker/r-ver:${R_VERSION}
+FROM rocker/r-ver:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Copy R libraries and configuration from builder
-COPY --from=builder /usr/local/lib/R/site-library \
-     /usr/local/lib/R/site-library
-COPY --from=builder /usr/local/lib/R/etc/Rprofile.site \
-     /usr/local/lib/R/etc/Rprofile.site
-
-# Install runtime dependencies and development tools in single layer
+# Install runtime dependencies and r2u repository in single layer
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        # Runtime libraries (NOT -dev)
-        libcurl4 \
-        libssl3 \
-        libxml2 \
-        libgit2-1.7 \
-        libssh2-1 \
+        wget \
+        ca-certificates && \
+    # r2u repository for binary R packages
+    wget -q -O- \
+        https://eddelbuettel.github.io/r2u/assets/\
+dirk_eddelbuettel_key.asc | \
+        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
+    echo "deb [arch=amd64,arm64] \
+https://r2u.stat.illinois.edu/ubuntu noble main" > \
+        /etc/apt/sources.list.d/cranapt.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # Shell
+        zsh \
+        # Minimal runtime libraries for R packages
         libfontconfig1 \
-        libharfbuzz0b \
-        libfribidi0 \
         libfreetype6 \
         libpng16-16 \
-        libjpeg8 \
-        # Development tools
-        git \
-        vim \
-        zsh \
-        tmux \
-        curl \
-        wget \
-        sudo \
-        procps && \
-    # Node.js for vim plugins
-    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
-    apt-get install -y --no-install-recommends nodejs
+        libjpeg8
 
-# Install external dependencies in parallel
-RUN --mount=type=cache,target=/tmp/downloads \
-    set -ex && \
-    # ZSH plugins
-    ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
-    ZSH_SYNTAX_VERSION=0.8.0 && \
-    mkdir -p /tmp/.zsh && \
-    git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
-        https://github.com/zsh-users/zsh-autosuggestions \
-        /tmp/.zsh/zsh-autosuggestions & \
-    git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
-        https://github.com/zsh-users/zsh-syntax-highlighting \
-        /tmp/.zsh/zsh-syntax-highlighting & \
-    # vim-plug
-    VIM_PLUG_VERSION=0.14.0 && \
-    mkdir -p /tmp/.vim/autoload && \
-    curl -fLo /tmp/.vim/autoload/plug.vim \
-        https://raw.githubusercontent.com/junegunn/vim-plug/\
-${VIM_PLUG_VERSION}/plug.vim & \
-    wait
+# Configure repositories: RSPM with binary packages
+# Use a known good date (2024-10-26) to ensure packages are available
+RUN UBUNTU_CODENAME=$(. /etc/os-release && \
+        echo $VERSION_CODENAME) && \
+    echo "options(repos = c(" \
+        "CRAN = 'https://packagemanager.posit.co/cran/\
+__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
+        >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', \
+getRversion(), paste(getRversion(), R.version\$platform, \
+R.version\$arch, R.version\$os)))" \
+        >> /usr/local/lib/R/etc/Rprofile.site
+
+# Install renv from r2u (binary package)
+RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
+    R -e "install.packages('renv')"
 
 # Create user and set up environment
 RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
-    usermod -aG sudo ${USERNAME} && \
-    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} && \
-    chmod 0440 /etc/sudoers.d/${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
-    mv /tmp/.zsh /home/${USERNAME}/.zsh && \
-    mv /tmp/.vim /home/${USERNAME}/.vim && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
-
-# Set password using BuildKit secrets or auto-generate
-RUN --mount=type=secret,id=password \
-    if [ -f /run/secrets/password ]; then \
-        echo "${USERNAME}:$(cat /run/secrets/password)" | chpasswd; \
-    else \
-        PASSWORD=$(openssl rand -base64 12) && \
-        echo "${USERNAME}:${PASSWORD}" | chpasswd && \
-        echo "=============================================" && \
-        echo "Generated password: ${PASSWORD}" && \
-        echo "User: ${USERNAME}" && \
-        echo "Save this password!" && \
-        echo "=============================================="; \
-    fi
 
 # Switch to user
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Copy dotfiles (optional - wildcards allow missing files)
-COPY --chown=${USERNAME}:${USERNAME} \
-    .vimrc* \
-    .gitconfig* \
-    .tmux.conf* \
-    .zshrc* \
-    .bashrc* \
-    .bash_profile* \
-    .profile* \
-    .emacs* \
-    .emacs.d* \
-    /home/${USERNAME}/
+# Copy project files
+COPY --chown=${USERNAME}:${USERNAME} renv.lock .Rprofile DESCRIPTION ./
+COPY --chown=${USERNAME}:${USERNAME} renv ./renv
 
-# Install vim plugins
-RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
-        tee /tmp/vim-install.log || true
+# Restore renv packages
+RUN R -e "renv::restore()"
 
-# NOTE: Project files are NOT copied into the image
-# They are accessed via volume mount: -v $(pwd):/home/${USERNAME}/project
-# This keeps images small and rebuilds fast (no cache invalidation on code changes)
-# Use devtools::load_all() inside the container to load your R package
+# Copy remaining project files (last - most frequent changes)
+COPY --chown=${USERNAME}:${USERNAME} . .
 
-# Copy populated renv project library from builder (after full project copy)
-COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
+# Install research compendium
+RUN R -e "install.packages('.', repos = NULL, type = 'source', \
+    dependencies = TRUE)"
 
 # Metadata
-LABEL org.opencontainers.image.title="ZZCOLLAB Minimal Environment" \
+LABEL org.opencontainers.image.title=\
+"ZZCOLLAB Ubuntu Standard Minimal Environment" \
       org.opencontainers.image.description=\
-"Essential R packages for package development" \
+"Minimal R runtime (no X11, no GUI)" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source=\
 "https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="minimal" \
-      zzcollab.size="~800MB"
+      zzcollab.profile="ubuntu_standard_minimal" \
+      zzcollab.size="~1.0GB"
 
-# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit (requires root)
+# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
+# (requires root)
 USER root
 COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
 RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
