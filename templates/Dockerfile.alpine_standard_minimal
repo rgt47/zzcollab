@@ -1,186 +1,97 @@
 # syntax=docker/dockerfile:1.4
-#=================================================================
-# ZZCOLLAB Alpine Minimal Profile - Ultra-Lightweight CI/CD
-#=================================================================
-# Profile: alpine_minimal (~200MB)
-# Purpose: Ultra-lightweight Alpine Linux with R for CI/CD
+#======================================================================
+# ZZCOLLAB Alpine Standard Minimal Profile
+#======================================================================
+# Profile: alpine_standard_minimal (~200MB)
+# Purpose: Ultra-lightweight Alpine Linux with minimal R runtime
 # Base: rhub/r-minimal (Alpine + R)
-# Packages: renv, devtools, testthat
+# Packages: renv (compiled from source - Alpine has no binaries)
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.alpine_minimal -t myteam/project:alpine .
-# Size: ~200MB vs ~1GB for rocker images (5x smaller)
-#=================================================================
+#          -f Dockerfile.alpine_standard_minimal \
+#          -t myteam/project:alpine-standard-minimal .
+#======================================================================
 
 ARG R_VERSION=latest
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
-#=================================================================
-# STAGE 1: BUILDER
-#=================================================================
-FROM rhub/r-minimal:${R_VERSION} AS builder
-
-# Alpine uses apk instead of apt-get
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-    set -ex && \
-    apk add --no-cache \
-        # Build tools
-        gcc \
-        g++ \
-        make \
-        musl-dev \
-        linux-headers \
-        # Development libraries
-        curl-dev \
-        openssl-dev \
-        libxml2-dev \
-        git
-
-# Configure RSPM (Alpine uses musl, limited binary support)
-WORKDIR /build
-COPY renv.lock* ./
-COPY renv/ ./renv/
-COPY .Rprofile* ./
-
-# Note: Alpine doesn't have prebuilt R packages like Debian
-# Must compile from source - slower but smaller image
-# Configure CRAN mirror
-RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
-        >> /usr/local/lib/R/etc/Rprofile.site
-
-# Install minimal R packages (compile from source)
-RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'testthat', \
-           'remotes'))"
-
-# Restore renv packages (populates project library)
-COPY DESCRIPTION ./
-RUN if [ -f renv.lock ]; then R -e "renv::restore()"; fi
-
-#=================================================================
-# STAGE 2: RUNTIME
-#=================================================================
 FROM rhub/r-minimal:${R_VERSION}
 
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
-# Copy R libraries from builder
-# Note: rhub/r-minimal uses 'library' not 'site-library'
-COPY --from=builder /usr/local/lib/R/library \
-     /usr/local/lib/R/library
-COPY --from=builder /usr/local/lib/R/etc/Rprofile.site \
-     /usr/local/lib/R/etc/Rprofile.site
-
-# Install runtime dependencies (Alpine packages)
+# Alpine uses apk instead of apt-get
+# Note: Alpine/musl has no binary R packages - must compile from source
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     set -ex && \
     apk add --no-cache \
-        # Runtime libraries
-        libcurl \
-        openssl \
-        libxml2 \
-        # Development tools
-        git \
-        vim \
+        # Shell
         zsh \
-        tmux \
-        curl \
-        wget \
-        sudo \
-        shadow \
-        nodejs \
-        npm \
-        # Python for vim plugins
-        python3 \
-        py3-pip
+        # Build tools (needed for compiling R packages from source)
+        gcc \
+        g++ \
+        make \
+        musl-dev \
+        # Minimal runtime libraries for R packages
+        libpng \
+        libjpeg-turbo \
+        freetype \
+        fontconfig
 
-# External dependencies (same as other profiles)
-RUN --mount=type=cache,target=/tmp/downloads \
-    set -ex && \
-    ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
-    ZSH_SYNTAX_VERSION=0.8.0 && \
-    mkdir -p /tmp/.zsh && \
-    git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
-        https://github.com/zsh-users/zsh-autosuggestions \
-        /tmp/.zsh/zsh-autosuggestions & \
-    git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
-        https://github.com/zsh-users/zsh-syntax-highlighting \
-        /tmp/.zsh/zsh-syntax-highlighting & \
-    VIM_PLUG_VERSION=0.14.0 && \
-    mkdir -p /tmp/.vim/autoload && \
-    curl -fLo /tmp/.vim/autoload/plug.vim \
-        https://raw.githubusercontent.com/junegunn/vim-plug/\
-${VIM_PLUG_VERSION}/plug.vim & \
-    wait
+# Configure CRAN mirror
+RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
+        >> /usr/local/lib/R/etc/Rprofile.site && \
+    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', \
+getRversion(), paste(getRversion(), R.version\$platform, \
+R.version\$arch, R.version\$os)))" \
+        >> /usr/local/lib/R/etc/Rprofile.site
 
-# User setup (Alpine uses different commands)
+# Install renv (must compile from source on Alpine)
+RUN --mount=type=cache,target=/tmp/R-cache \
+    R -e "install.packages('renv')"
+
+# Create user and set up environment
+# Note: Alpine uses 'adduser' not 'useradd'
 RUN adduser -D -s /bin/zsh ${USERNAME} && \
-    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > \
-        /etc/sudoers.d/${USERNAME} && \
-    chmod 0440 /etc/sudoers.d/${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
-    mv /tmp/.zsh /home/${USERNAME}/.zsh && \
-    mv /tmp/.vim /home/${USERNAME}/.vim && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/library
 
-# Password
-RUN --mount=type=secret,id=password \
-    if [ -f /run/secrets/password ]; then \
-        echo "${USERNAME}:$(cat /run/secrets/password)" | chpasswd; \
-    else \
-        PASSWORD=$(openssl rand -base64 12) && \
-        echo "${USERNAME}:${PASSWORD}" | chpasswd && \
-        echo "=============================================" && \
-        echo "Generated password: ${PASSWORD}" && \
-        echo "User: ${USERNAME}" && \
-        echo "Alpine Linux (ultra-lightweight)" && \
-        echo "=============================================="; \
-    fi
-
+# Switch to user
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Copy dotfiles (optional - wildcards allow missing files)
-COPY --chown=${USERNAME}:${USERNAME} \
-    .vimrc* \
-    .gitconfig* \
-    .tmux.conf* \
-    .zshrc* \
-    .bashrc* \
-    .bash_profile* \
-    .profile* \
-    .emacs* \
-    .emacs.d* \
-    /home/${USERNAME}/
+# Copy project files
+COPY --chown=${USERNAME}:${USERNAME} renv.lock .Rprofile DESCRIPTION ./
+COPY --chown=${USERNAME}:${USERNAME} renv ./renv
 
-# Vim plugins
-RUN timeout 300 vim +PlugInstall +qall 2>&1 | \
-        tee /tmp/vim-install.log || true
+# Restore renv packages
+RUN R -e "renv::restore()"
 
-# Project files (package not installed - use source files directly for interactive analysis)
+# Copy remaining project files (last - most frequent changes)
 COPY --chown=${USERNAME}:${USERNAME} . .
 
-# Copy populated renv project library from builder (after full project copy)
-COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
+# Install research compendium
+RUN R -e "install.packages('.', repos = NULL, type = 'source', \
+    dependencies = TRUE)"
 
 # Metadata
 LABEL org.opencontainers.image.title=\
-"ZZCOLLAB Alpine Minimal Environment" \
+"ZZCOLLAB Alpine Standard Minimal Environment" \
       org.opencontainers.image.description=\
-"Ultra-lightweight Alpine Linux with R for CI/CD" \
+"Ultra-lightweight Alpine Linux with minimal R runtime" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source=\
 "https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="alpine_minimal" \
+      zzcollab.profile="alpine_standard_minimal" \
       zzcollab.size="~200MB"
 
-# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit (requires root)
+# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
+# (requires root)
 USER root
 COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
 RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
