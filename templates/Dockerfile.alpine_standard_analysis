@@ -84,17 +84,18 @@ RUN R -e "install.packages('.', repos = NULL, type = 'source', \
 
 # Metadata
 LABEL org.opencontainers.image.title=\
-"ZZCOLLAB Alpine Analysis Environment" \
+"ZZCOLLAB Alpine Standard Analysis Environment" \
       org.opencontainers.image.description=\
 "Lightweight Alpine with core data analysis packages" \
       org.opencontainers.image.vendor="ZZCOLLAB" \
       org.opencontainers.image.authors="${TEAM_NAME}" \
       org.opencontainers.image.source=\
 "https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="alpine_analysis" \
-      zzcollab.size="~400MB"
+      zzcollab.profile="alpine_standard_analysis" \
+      zzcollab.size="~350MB"
 
-# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit (requires root)
+# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
+# (requires root)
 USER root
 COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
 RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
