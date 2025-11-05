@@ -14,9 +14,12 @@ help:
 	@echo "  Docker - works without local R:"
 	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
 	@echo "    docker-build-no-snapshot - Build without snapshot (advanced)"
+	@echo "    docker-run            - Smart run: auto-detects profile and runs appropriately"
+	@echo "    r                     - Shortcut for docker-run (quick: make r)"
+	@echo "    docker-r, docker-bash, docker-zsh, docker-rstudio"
 	@echo "    docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
-	@echo "    docker-check-renv-fix, docker-r, docker-bash, docker-zsh, docker-rstudio"
+	@echo "    docker-check-renv-fix"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, docker-clean"
@@ -116,6 +119,122 @@ docker-rstudio:
 	@echo "Username: analyst, Password: analyst"
 	docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
 
+# Quick alias: 'make r' runs the last built image (same as docker-run)
+r: docker-run
+
+# Smart docker-run: Automatically detect profile and run appropriately
+docker-run:
+	@if [ ! -f Dockerfile ]; then \
+		echo "❌ No Dockerfile found in current directory"; \
+		exit 1; \
+	fi
+	@PROFILE=$$(head -20 Dockerfile | grep -o 'Profile: [a-z0-9_]*' | head -1 | cut -d' ' -f2); \
+	if [ -z "$$PROFILE" ]; then \
+		echo "❌ Could not detect profile from Dockerfile"; \
+		echo "   Add '# Profile: <name>' comment to Dockerfile header"; \
+		exit 1; \
+	fi; \
+	echo "🔍 Detected profile: $$PROFILE"; \
+	echo ""; \
+	case "$$PROFILE" in \
+		ubuntu_standard_minimal|alpine_standard_minimal) \
+			echo "🐳 Starting minimal profile (zsh shell)..."; \
+			docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/zsh; \
+			;; \
+		ubuntu_x11_minimal|alpine_x11_minimal) \
+			echo "🐳 Starting X11 minimal profile (GUI support)..."; \
+			echo "Setting up X11 forwarding..."; \
+			if ! command -v xquartz >/dev/null 2>&1 && ! [ -d /Applications/Utilities/XQuartz.app ]; then \
+				echo "❌ XQuartz not found. Installing..."; \
+				brew install --cask xquartz; \
+				echo "⚠️  XQuartz installed. Please log out and log back in, then run this command again."; \
+				exit 1; \
+			fi; \
+			CURRENT_SETTING=$$(defaults read org.xquartz.X11 nolisten_tcp 2>/dev/null || echo "1"); \
+			if [ "$$CURRENT_SETTING" != "0" ]; then \
+				echo "Configuring XQuartz to allow network connections..."; \
+				defaults write org.xquartz.X11 nolisten_tcp 0; \
+				echo "⚠️  XQuartz configuration updated. Restarting XQuartz..."; \
+				killall XQuartz 2>/dev/null || killall Xquartz 2>/dev/null || true; \
+				sleep 1; \
+			fi; \
+			if ! pgrep -x "XQuartz" >/dev/null && ! pgrep -x "Xquartz" >/dev/null; then \
+				echo "Starting XQuartz..."; \
+				open -a XQuartz; \
+				sleep 3; \
+			fi; \
+			if command -v xhost >/dev/null 2>&1; then \
+				xhost +localhost >/dev/null 2>&1 || true; \
+			fi; \
+			echo "✅ X11 setup complete"; \
+			echo ""; \
+			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh; \
+			;; \
+		ubuntu_standard_analysis|alpine_standard_analysis) \
+			echo "🐳 Starting standard analysis profile (RStudio Server)..."; \
+			echo "📊 RStudio: http://localhost:8787"; \
+			echo "👤 Username: analyst, Password: analyst"; \
+			echo ""; \
+			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
+			;; \
+		ubuntu_x11_analysis|alpine_x11_analysis) \
+			echo "🐳 Starting X11 analysis profile (GUI + RStudio Server)..."; \
+			echo "Setting up X11 forwarding..."; \
+			if ! command -v xquartz >/dev/null 2>&1 && ! [ -d /Applications/Utilities/XQuartz.app ]; then \
+				echo "❌ XQuartz not found. Installing..."; \
+				brew install --cask xquartz; \
+				echo "⚠️  XQuartz installed. Please log out and log back in, then run this command again."; \
+				exit 1; \
+			fi; \
+			CURRENT_SETTING=$$(defaults read org.xquartz.X11 nolisten_tcp 2>/dev/null || echo "1"); \
+			if [ "$$CURRENT_SETTING" != "0" ]; then \
+				echo "Configuring XQuartz to allow network connections..."; \
+				defaults write org.xquartz.X11 nolisten_tcp 0; \
+				echo "⚠️  XQuartz configuration updated. Restarting XQuartz..."; \
+				killall XQuartz 2>/dev/null || killall Xquartz 2>/dev/null || true; \
+				sleep 1; \
+			fi; \
+			if ! pgrep -x "XQuartz" >/dev/null && ! pgrep -x "Xquartz" >/dev/null; then \
+				echo "Starting XQuartz..."; \
+				open -a XQuartz; \
+				sleep 3; \
+			fi; \
+			if command -v xhost >/dev/null 2>&1; then \
+				xhost +localhost >/dev/null 2>&1 || true; \
+			fi; \
+			echo "✅ X11 setup complete"; \
+			echo ""; \
+			echo "📊 RStudio: http://localhost:8787"; \
+			echo "👤 Username: analyst, Password: analyst"; \
+			echo ""; \
+			DISPLAY=:0 docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /init; \
+			;; \
+		ubuntu_shiny_minimal|ubuntu_shiny_analysis) \
+			echo "🐳 Starting Shiny Server ($$PROFILE)..."; \
+			echo "📊 Shiny: http://localhost:3838"; \
+			echo ""; \
+			docker run --platform linux/amd64 --rm -p 3838:3838 -v $$(pwd):/project $(PACKAGE_NAME); \
+			;; \
+		ubuntu_standard_publishing) \
+			echo "🐳 Starting publishing profile (RStudio Server + LaTeX + Quarto)..."; \
+			echo "📊 RStudio: http://localhost:8787"; \
+			echo "👤 Username: analyst, Password: analyst"; \
+			echo ""; \
+			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
+			;; \
+		*) \
+			echo "❌ Unknown profile: $$PROFILE"; \
+			echo "   Supported profiles:"; \
+			echo "     Minimal: ubuntu_standard_minimal, alpine_standard_minimal"; \
+			echo "     X11: ubuntu_x11_minimal, alpine_x11_minimal"; \
+			echo "     Analysis: ubuntu_standard_analysis, alpine_standard_analysis"; \
+			echo "     X11 Analysis: ubuntu_x11_analysis, alpine_x11_analysis"; \
+			echo "     Shiny: ubuntu_shiny_minimal, ubuntu_shiny_analysis"; \
+			echo "     Publishing: ubuntu_standard_publishing"; \
+			exit 1; \
+			;; \
+	esac
+
 # Cleanup
 clean:
 	rm -f *.tar.gz
@@ -145,4 +264,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
