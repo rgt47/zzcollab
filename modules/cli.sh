@@ -576,10 +576,7 @@ generate_description_from_profile() {
 
     if [[ -z "$packages" ]]; then
         log_warn "No packages found for profile '$profile', using minimal defaults"
-        packages="renv
-here
-usethis
-devtools"
+        packages="renv"
     fi
 
     # Base DESCRIPTION header (common to all profiles)
@@ -607,7 +604,7 @@ EOF
     # Always add core packages to Imports if present in profile
     while IFS= read -r pkg; do
         case "$pkg" in
-            renv|here|usethis|devtools)
+            renv)
                 imports+=("$pkg")
                 ;;
             dplyr|ggplot2|tidyr|readr|stringr|lubridate|forcats|purrr)
