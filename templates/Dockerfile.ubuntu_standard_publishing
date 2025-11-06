@@ -84,7 +84,7 @@ R.version\$arch, R.version\$os)))" \
 
 # Install publishing packages from r2u (binary packages)
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
-    R -e "install.packages(c('renv', 'devtools', 'quarto', \
+    R -e "install.packages(c('renv', 'quarto', \
         'bookdown', 'blogdown', 'distill', 'rmarkdown', 'knitr', \
         'flexdashboard', 'xaringan'))"
 

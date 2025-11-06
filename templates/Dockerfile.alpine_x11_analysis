@@ -65,7 +65,7 @@ R.version\$arch, R.version\$os)))" \
 
 # Install analysis + graphics packages (must compile from source on Alpine)
 RUN --mount=type=cache,target=/tmp/R-cache \
-    R -e "install.packages(c('renv', 'devtools', 'dplyr', \
+    R -e "install.packages(c('renv', 'dplyr', \
         'ggplot2', 'readr', 'tidyr', 'here', 'janitor', \
         'stringr', 'lubridate', 'scales', 'Cairo', 'svglite'))"
 

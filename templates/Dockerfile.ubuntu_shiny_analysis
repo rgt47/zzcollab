@@ -81,7 +81,7 @@ R.version\$arch, R.version\$os)))" \
 
 # Install shiny and analysis packages from r2u (binary packages)
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
-    R -e "install.packages(c('renv', 'devtools', 'shiny', \
+    R -e "install.packages(c('renv', 'shiny', \
         'shinydashboard', 'shinyjs', 'plotly', 'DT', \
         'bs4Dash', 'fresh'))"
 

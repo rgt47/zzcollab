@@ -13,10 +13,6 @@ ubuntu_standard_minimal:
   description: "Minimal Ubuntu environment with essential R packages"
   packages:
     - "renv"
-    - "devtools"
-    - "usethis"
-    - "testthat"
-    - "roxygen2"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -37,20 +33,6 @@ ubuntu_standard_analysis:
   description: "Data analysis with tidyverse + modeling packages"
   packages:
     - "renv"
-    - "devtools"
-    - "here"
-    - "janitor"
-    - "scales"
-    - "patchwork"
-    - "gt"
-    - "DT"
-    # Modeling packages
-    - "tidymodels"
-    - "xgboost"
-    - "randomForest"
-    - "glmnet"
-    - "caret"
-    - "MASS"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -75,15 +57,6 @@ ubuntu_standard_publishing:
   description: "Document publishing with LaTeX, Quarto, and web tools"
   packages:
     - "renv"
-    - "devtools"
-    - "quarto"
-    - "bookdown"
-    - "blogdown"
-    - "distill"
-    - "flexdashboard"
-    - "shiny"
-    - "DT"
-    - "plotly"
   system_deps:
     - "pandoc"
     - "texlive-full"
@@ -111,11 +84,6 @@ ubuntu_shiny_minimal:
   description: "Shiny Server with minimal packages"
   packages:
     - "renv"
-    - "devtools"
-    - "shiny"
-    - "shinydashboard"
-    - "DT"
-    - "plotly"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -134,15 +102,6 @@ ubuntu_shiny_analysis:
   description: "Shiny Server with tidyverse and publishing capabilities"
   packages:
     - "renv"
-    - "devtools"
-    - "shiny"
-    - "shinydashboard"
-    - "DT"
-    - "plotly"
-    - "flexdashboard"
-    - "bookdown"
-    - "reactable"
-    - "crosstalk"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -165,10 +124,6 @@ ubuntu_x11_minimal:
   description: "Minimal R with X11 support for graphics viewing"
   packages:
     - "renv"
-    - "devtools"
-    - "usethis"
-    - "testthat"
-    - "roxygen2"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -194,17 +149,6 @@ ubuntu_x11_analysis:
   description: "Data analysis with tidyverse and X11 support"
   packages:
     - "renv"
-    - "devtools"
-    - "here"
-    - "janitor"
-    - "scales"
-    - "patchwork"
-    - "gt"
-    - "DT"
-    - "rgl"
-    - "plotly"
-    - "Cairo"
-    - "svglite"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -234,9 +178,6 @@ alpine_standard_minimal:
   description: "Ultra-lightweight Alpine Linux with R for CI/CD"
   packages:
     - "renv"
-    - "devtools"
-    - "testthat"
-    - "remotes"
   system_deps:
     - "git"
     - "make"
@@ -256,16 +197,6 @@ alpine_standard_analysis:
   description: "Lightweight Alpine with core data analysis packages"
   packages:
     - "renv"
-    - "devtools"
-    - "dplyr"
-    - "ggplot2"
-    - "readr"
-    - "tidyr"
-    - "here"
-    - "janitor"
-    - "stringr"
-    - "lubridate"
-    - "scales"
   system_deps:
     - "git"
     - "make"
@@ -293,9 +224,6 @@ alpine_x11_minimal:
   description: "Lightweight Alpine with minimal X11 for base R graphics"
   packages:
     - "renv"
-    - "devtools"
-    - "testthat"
-    - "Cairo"
   system_deps:
     - "git"
     - "make"
@@ -325,15 +253,6 @@ alpine_x11_analysis:
   description: "Lightweight Alpine with X11 support for graphics viewing"
   packages:
     - "renv"
-    - "devtools"
-    - "dplyr"
-    - "ggplot2"
-    - "readr"
-    - "tidyr"
-    - "here"
-    - "janitor"
-    - "Cairo"
-    - "svglite"
   system_deps:
     - "git"
     - "make"

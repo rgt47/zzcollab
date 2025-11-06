@@ -646,20 +646,7 @@ EOF
         esac
     done <<< "$packages"
 
-    # Add standard suggests that aren't in profile packages
-    local standard_suggests=("testthat (>= 3.0.0)" "knitr" "rmarkdown")
-    for pkg in "${standard_suggests[@]}"; do
-        local pkg_name_only="${pkg%% *}"  # Remove version constraint
-        # Check if not already in suggests or imports
-        # Use literal string matching instead of regex to avoid SC2076
-        # Safe array access with default empty value (handles set -u)
-        local suggests_str=" ${suggests[*]:-} "
-        local imports_str=" ${imports[*]:-} "
-        if [[ "$suggests_str" != *" ${pkg_name_only} "* ]] && \
-           [[ "$imports_str" != *" ${pkg_name_only} "* ]]; then
-            suggests+=("$pkg")
-        fi
-    done
+    # No standard suggests - users add packages as needed via install.packages()
 
     # Output Imports section
     if [[ ${#imports[@]} -gt 0 ]]; then

@@ -74,7 +74,7 @@ R.version\$arch, R.version\$os)))" \
 
 # Install analysis packages from r2u (binary packages)
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
-    R -e "install.packages(c('renv', 'devtools', 'here', 'janitor', \
+    R -e "install.packages(c('renv', 'here', 'janitor', \
         'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
 
 # Create user and set up environment
