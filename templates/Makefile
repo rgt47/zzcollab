@@ -264,6 +264,9 @@ docker-run:
 			;; \
 	esac
 
+# Alias for docker-run (shorthand)
+r: docker-run
+
 # Cleanup
 clean:
 	rm -f *.tar.gz
