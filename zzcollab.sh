@@ -685,11 +685,32 @@ validate_directory_for_setup_no_conflicts() {
     return 0
 }
 
+# Function: get_r2u_renv_version
+# Purpose: Query the Docker base image to find what renv version is available
+# Returns: renv version string, or "1.0.11" as fallback
+get_r2u_renv_version() {
+    local base_image="${BASE_IMAGE:-rocker/r-ver:${R_VERSION:-4.5.1}}"
+
+    # Try to query Docker image for renv version
+    local renv_version
+    renv_version=$(docker run --rm "${base_image}" R --slave -e "cat(as.character(packageVersion('renv')))" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
+
+    if [[ -n "$renv_version" ]]; then
+        log_debug "Detected renv ${renv_version} from ${base_image}"
+        echo "$renv_version"
+    else
+        log_debug "Could not query Docker image, using default renv 1.0.11"
+        echo "1.0.11"
+    fi
+}
+
 # Function: create_minimal_renv_lock
 # Purpose: Create a minimal renv.lock when R is not available on host
-# Uses: renv 1.0.11 (matches r2u binary version for fast builds)
+# Uses: Latest renv version from r2u/Docker base image
 create_minimal_renv_lock() {
     local r_version="${R_VERSION:-4.5.1}"
+    local renv_version
+    renv_version=$(get_r2u_renv_version)
 
     cat > renv.lock << EOF
 {
@@ -705,7 +726,7 @@ create_minimal_renv_lock() {
   "Packages": {
     "renv": {
       "Package": "renv",
-      "Version": "1.0.11",
+      "Version": "${renv_version}",
       "Source": "Repository",
       "Repository": "CRAN"
     }
@@ -713,7 +734,7 @@ create_minimal_renv_lock() {
 }
 EOF
 
-    log_success "Created minimal renv.lock (renv 1.0.11 for fast Docker builds)"
+    log_success "Created minimal renv.lock (renv ${renv_version} from r2u)"
 }
 
 #=============================================================================
@@ -977,9 +998,11 @@ finalize_and_report_results() {
                         log_debug "Correcting R version in renv.lock to match Dockerfile: ${R_VERSION}"
                         python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['R']['Version']='${R_VERSION}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
                     fi
-                    # Fix renv version to 1.0.11 (matches r2u binary for fast builds)
-                    log_debug "Setting renv version to 1.0.11 (r2u binary, no bootstrap needed)"
-                    python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['Packages']['renv']['Version']='1.0.11'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
+                    # Fix renv version to match r2u binary for fast builds
+                    local renv_version
+                    renv_version=$(get_r2u_renv_version)
+                    log_debug "Setting renv version to ${renv_version} (r2u binary, no bootstrap needed)"
+                    python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['Packages']['renv']['Version']='${renv_version}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
                 fi
             fi
             log_success "Created renv.lock with current package environment (renv 1.0.11)"
