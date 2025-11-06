@@ -45,7 +45,7 @@ help:
 
 # Native R targets (require local R installation)
 document:
-	R -e "devtools::document()"
+	R --quiet -e "devtools::document()"
 
 build:
 	R CMD build .
@@ -54,16 +54,16 @@ check: document
 	R CMD check --as-cran *.tar.gz
 
 install: document
-	R -e "devtools::install()"
+	R --quiet -e "devtools::install()"
 
 vignettes: document
-	R -e "devtools::build_vignettes()"
+	R --quiet -e "devtools::build_vignettes()"
 
 test:
-	R -e "devtools::test()"
+	R --quiet -e "devtools::test()"
 
 deps:
-	R -e "devtools::install_deps(dependencies = TRUE)"
+	R --quiet -e "devtools::install_deps(dependencies = TRUE)"
 
 # Validate package dependencies (Pure shell, NO HOST R REQUIRED!)
 # Checks that all packages used in code are in DESCRIPTION and renv.lock
@@ -135,7 +135,7 @@ docker-check-renv-fix:
 
 docker-r:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
-	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R
+	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
