@@ -221,7 +221,7 @@ docker-run:
 		echo "❌ No Dockerfile found in current directory"; \
 		exit 1; \
 	fi
-	@PROFILE=$$(head -20 Dockerfile | grep -o 'Profile: [a-z_]*' | head -1 | cut -d' ' -f2); \
+	@PROFILE=$$(head -20 Dockerfile | grep 'Profile:' | head -1 | sed 's/.*Profile: \([a-z0-9_]*\).*/\1/'); \
 	if [ -z "$$PROFILE" ]; then \
 		echo "❌ Could not detect profile from Dockerfile"; \
 		echo "   Add '# Profile: <name>' comment to Dockerfile header"; \
@@ -230,36 +230,36 @@ docker-run:
 	echo "🔍 Detected profile: $$PROFILE"; \
 	echo ""; \
 	case "$$PROFILE" in \
-		minimal) \
-			echo "🐳 Starting minimal profile (zsh shell)..."; \
-			docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh; \
+		*minimal) \
+			echo "🐳 Starting minimal profile..."; \
+			docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME); \
 			;; \
-		analysis|publishing) \
+		*analysis|*publishing) \
 			echo "🐳 Starting $$PROFILE profile (RStudio Server)..."; \
 			echo "📊 RStudio: http://localhost:8787"; \
 			echo "👤 Username: analyst, Password: analyst"; \
 			echo ""; \
 			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
 			;; \
-		shiny_minimal|shiny_verse) \
+		*shiny*) \
 			echo "🐳 Starting Shiny Server..."; \
 			echo "📊 Shiny: http://localhost:3838"; \
 			echo ""; \
 			docker run --platform linux/amd64 --rm -p 3838:3838 -v $$(pwd):/home/analyst/project $(PACKAGE_NAME); \
 			;; \
-		x11_minimal|x11_analysis) \
+		*x11*) \
 			echo "🐳 Starting X11 profile (GUI support)..."; \
 			echo "⚠️  Requires XQuartz running with 'Allow connections from network clients'"; \
 			echo ""; \
-			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh; \
+			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME); \
 			;; \
 		alpine_*) \
-			echo "🐳 Starting Alpine profile (ash shell)..."; \
-			docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/ash; \
+			echo "🐳 Starting Alpine profile..."; \
+			docker run --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME); \
 			;; \
 		*) \
 			echo "❌ Unknown profile: $$PROFILE"; \
-			echo "   Supported: minimal, analysis, publishing, shiny_minimal, shiny_verse, x11_minimal, x11_analysis, alpine_*"; \
+			echo "   Supported: *minimal, *analysis, *publishing, *shiny*, *x11*, alpine_*"; \
 			exit 1; \
 			;; \
 	esac
