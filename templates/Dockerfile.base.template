@@ -235,9 +235,5 @@ LABEL org.opencontainers.image.title="ZZCOLLAB Custom Environment" \
       zzcollab.libraries="${LIBS_BUNDLE_LIST}" \
       zzcollab.packages="${PKGS_BUNDLE_LIST}"
 
-# Copy and configure ZZCOLLAB entrypoint for auto-snapshot on exit
-COPY zzcollab-entrypoint.sh /usr/local/bin/zzcollab-entrypoint.sh
-RUN chmod +x /usr/local/bin/zzcollab-entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/zzcollab-entrypoint.sh"]
+# Default shell (auto-snapshot handled by .Last() in .Rprofile)
 CMD ["/bin/zsh"]

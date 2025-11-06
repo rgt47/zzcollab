@@ -98,16 +98,3 @@ if (file.exists(".Rprofile.local")) {
     }
   )
 }
-
-# ==========================================
-# Development Tools (Interactive Sessions Only)
-# ==========================================
-# Auto-load common development packages in interactive sessions
-# These do not affect reproducibility of analysis scripts
-
-if (interactive()) {
-  suppressMessages({
-    if (requireNamespace("devtools", quietly = TRUE)) library(devtools)
-    if (requireNamespace("usethis", quietly = TRUE)) library(usethis)
-  })
-}
