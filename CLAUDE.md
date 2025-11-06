@@ -279,8 +279,8 @@ zzcollab -t TEAM -p PROJECT -r PROFILE
 ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** architecture.
 
 **Auto-Snapshot Architecture** (NEW):
-- **No manual `renv::snapshot()` required**: Automatically runs on container exit
-- **Docker entrypoint integration**: `zzcollab-entrypoint.sh` wraps all container commands
+- **No manual `renv::snapshot()` required**: Automatically runs on R exit via .Last() function
+- **.Rprofile integration**: `.Last()` function in .Rprofile handles snapshot on R exit
 - **RSPM timestamp optimization**: Temporarily adjusts renv.lock timestamp to "7 days ago" for binary package availability
   - Docker builds use binaries (10-20x faster) instead of compiling from source
   - Timestamp restored to "now" after validation (accurate git history)
@@ -288,10 +288,10 @@ ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** arc
 
 **Workflow** (Simplified):
 ```bash
-make docker-zsh                   # 1. Enter container (entrypoint active)
+make docker-zsh                   # 1. Enter container → starts R directly
 install.packages("tidyverse")    # 2. Add packages (standard R command)
 # For GitHub: install.packages("remotes") then remotes::install_github("user/package")
-exit                              # 3. Exit → auto-snapshot + validation
+q()                               # 3. Exit R → .Last() runs auto-snapshot + validation
 # renv.lock automatically updated and validated!
 git add renv.lock && git commit -m "Add tidyverse" && git push
 ```
@@ -521,16 +521,35 @@ make check-renv-no-fix     # Validation only
 make check-renv-no-strict  # Skip tests/ and vignettes/
 ```
 
-### October 27, 2025 - Auto-Snapshot Architecture & Docker-First Validation
+### November 5, 2025 - .Rprofile-Based Auto-Snapshot & Critical Options
+
+**Major Architectural Simplification**: Replaced Docker entrypoint with R-native .Last() function
+
+- **Auto-snapshot on R exit**: `.Last()` function in .Rprofile
+  - Automatically runs `renv::snapshot()` when exiting R session
+  - No manual snapshot commands required
+  - R-native, reliable mechanism (no shell trap issues)
+  - Applies when exiting R in any container
+  - Configurable via environment variable (`ZZCOLLAB_AUTO_SNAPSHOT`)
+  - Files: `templates/.Rprofile`
+
+- **Critical reproducibility options**: Five options enforced in .Rprofile
+  - `stringsAsFactors = FALSE`: Character vectors stay as characters
+  - `contrasts = c("contr.treatment", "contr.poly")`: Statistical contrasts for models
+  - `na.action = "na.omit"`: Missing data handling
+  - `digits = 7`: Numeric precision
+  - `OutDec = "."`: Decimal separator consistency
+  - Monitored by `check_rprofile_options.R` (Pillar 3 of reproducibility)
+
+- **Removed Docker entrypoint**: Deleted `zzcollab-entrypoint.sh`
+  - Entrypoint trap approach was broken (`exec` replaces process)
+  - .Last() is R-native and actually works
+  - Containers now start R directly (CMD ["R"])
+  - Navigation shortcuts remain on host (`navigation_scripts.sh`)
+
+### October 27, 2025 - Docker-First Validation
 
 **Major Architectural Improvement**: Complete elimination of host R dependency for development workflow
-
-- **Auto-snapshot on container exit**: `zzcollab-entrypoint.sh` Docker entrypoint
-  - Automatically runs `renv::snapshot()` when exiting any Docker container
-  - No manual snapshot commands required
-  - Applies to all targets: `docker-zsh`, `docker-bash`, `docker-r`, `docker-rstudio`, `docker-zsh-gui`
-  - Configurable via environment variables (`ZZCOLLAB_AUTO_SNAPSHOT`, `ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST`)
-  - Files: `templates/zzcollab-entrypoint.sh`, all `templates/Dockerfile.*` files
 
 - **Pure shell validation** (`modules/validation.sh`): NO HOST R REQUIRED!
   - Package extraction from code: pure shell (grep, sed, awk)
@@ -544,7 +563,7 @@ make check-renv-no-strict  # Skip tests/ and vignettes/
 - **Developer workflow transformation**:
   - **Before**: Developers needed R on host to run `Rscript validate_package_environment.R`
   - **After**: Entire development cycle works without host R installation
-  - Workflow: `make docker-zsh` → work → `exit` → auto-snapshot → auto-validate
+  - Workflow: `make docker-zsh` → work in R → `q()` → auto-snapshot → auto-validate
 
 **Earlier improvements** (same day):
 - **Static template matching**: `select_dockerfile_strategy()` now checks resolved values against static templates

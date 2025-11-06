@@ -235,5 +235,5 @@ LABEL org.opencontainers.image.title="ZZCOLLAB Custom Environment" \
       zzcollab.libraries="${LIBS_BUNDLE_LIST}" \
       zzcollab.packages="${PKGS_BUNDLE_LIST}"
 
-# Default shell (auto-snapshot handled by .Last() in .Rprofile)
-CMD ["/bin/zsh"]
+# Start R directly (auto-snapshot handled by .Last() in .Rprofile)
+CMD ["R"]

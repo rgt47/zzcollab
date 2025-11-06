@@ -90,4 +90,4 @@ LABEL org.opencontainers.image.title=\
       zzcollab.profile="alpine_standard_minimal" \
       zzcollab.size="~200MB"
 
-CMD ["/bin/zsh"]
+CMD ["R"]

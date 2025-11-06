@@ -806,14 +806,6 @@ create_docker_files() {
     
     # Note: .zshrc is copied directly from user's dotfiles (assumed to have OS conditionals)
 
-    # Create entrypoint script for Docker container
-    # Used by: Dockerfile ENTRYPOINT, auto-snapshots renv.lock on container exit
-    # Purpose: Manages container lifecycle and ensures renv.lock stays synchronized
-    if ! install_template "zzcollab-entrypoint.sh" "zzcollab-entrypoint.sh" "container entrypoint script" "Created container entrypoint script"; then
-        log_error "Failed to create entrypoint script"
-        return 1
-    fi
-
     # Create comprehensive user guide in docs/ with symlink in root
     # Contains: detailed usage instructions, troubleshooting, best practices
     if ! install_template "ZZCOLLAB_USER_GUIDE.md" "docs/ZZCOLLAB_USER_GUIDE.md" "comprehensive user guide" "Created comprehensive user guide in docs/"; then

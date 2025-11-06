@@ -315,7 +315,7 @@ REQUIREMENTS:
 NOTE:
     This script runs on the host without R. Package installation and
     renv::snapshot() happen automatically inside Docker containers via
-    the zzcollab-entrypoint.sh exit hook.
+    the .Last() function in .Rprofile.
 EOF
                 exit 0
                 ;;

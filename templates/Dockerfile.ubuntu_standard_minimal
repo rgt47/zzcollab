@@ -103,4 +103,4 @@ LABEL org.opencontainers.image.title=\
       zzcollab.profile="ubuntu_standard_minimal" \
       zzcollab.size="~1.0GB"
 
-CMD ["/bin/zsh"]
+CMD ["R"]
