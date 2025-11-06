@@ -33,6 +33,14 @@ ubuntu_standard_analysis:
   description: "Data analysis with tidyverse + modeling packages"
   packages:
     - "renv"
+    - "here"
+    - "janitor"
+    - "scales"
+    - "patchwork"
+    - "gt"
+    - "DT"
+    - "skimr"
+    - "DataExplorer"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -57,6 +65,14 @@ ubuntu_standard_publishing:
   description: "Document publishing with LaTeX, Quarto, and web tools"
   packages:
     - "renv"
+    - "quarto"
+    - "bookdown"
+    - "blogdown"
+    - "distill"
+    - "rmarkdown"
+    - "knitr"
+    - "flexdashboard"
+    - "xaringan"
   system_deps:
     - "pandoc"
     - "texlive-full"
@@ -102,6 +118,13 @@ ubuntu_shiny_analysis:
   description: "Shiny Server with tidyverse and publishing capabilities"
   packages:
     - "renv"
+    - "shiny"
+    - "shinydashboard"
+    - "shinyjs"
+    - "plotly"
+    - "DT"
+    - "bs4Dash"
+    - "fresh"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -149,6 +172,14 @@ ubuntu_x11_analysis:
   description: "Data analysis with tidyverse and X11 support"
   packages:
     - "renv"
+    - "here"
+    - "janitor"
+    - "scales"
+    - "patchwork"
+    - "gt"
+    - "DT"
+    - "skimr"
+    - "DataExplorer"
   system_deps:
     - "libxml2-dev"
     - "libcurl4-openssl-dev"
@@ -197,6 +228,15 @@ alpine_standard_analysis:
   description: "Lightweight Alpine with core data analysis packages"
   packages:
     - "renv"
+    - "dplyr"
+    - "ggplot2"
+    - "readr"
+    - "tidyr"
+    - "here"
+    - "janitor"
+    - "stringr"
+    - "lubridate"
+    - "scales"
   system_deps:
     - "git"
     - "make"
@@ -253,6 +293,17 @@ alpine_x11_analysis:
   description: "Lightweight Alpine with X11 support for graphics viewing"
   packages:
     - "renv"
+    - "dplyr"
+    - "ggplot2"
+    - "readr"
+    - "tidyr"
+    - "here"
+    - "janitor"
+    - "stringr"
+    - "lubridate"
+    - "scales"
+    - "Cairo"
+    - "svglite"
   system_deps:
     - "git"
     - "make"
