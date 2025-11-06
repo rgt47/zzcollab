@@ -215,4 +215,4 @@ COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
 # No COPY needed - keeps image small and allows live code editing
 
 # Start R directly (auto-snapshot handled by .Last() in .Rprofile)
-CMD ["R"]
+CMD ["R", "--quiet"]

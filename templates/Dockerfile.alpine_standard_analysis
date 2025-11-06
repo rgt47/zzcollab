@@ -82,4 +82,4 @@ RUN R --quiet -e "renv::restore()"
 # Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
 # No COPY needed - keeps image small and allows live code editing
 
-CMD ["R"]
+CMD ["R", "--quiet"]

@@ -112,4 +112,4 @@ RUN R --quiet -e "renv::restore()"
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8787/ || exit 1
 
-CMD ["R"]
+CMD ["R", "--quiet"]
