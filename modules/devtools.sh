@@ -94,31 +94,69 @@ create_makefile() {
 # RPROFILE COPY (simplified from dotfiles integration)
 #=============================================================================
 
-# Function: copy_rprofile
-# Purpose: Copy user's .Rprofile from home directory to project
-# Integration: .Rprofile is used for host-side R work, not copied into Docker
-copy_rprofile() {
+# Function: merge_rprofile
+# Purpose: Merge user's .Rprofile with zzcollab template
+# Strategy:
+#   1. User's personal settings (from ~/.Rprofile)
+#   2. renv activation
+#   3. Critical reproducibility options
+#   4. .Last function for auto-snapshot
+merge_rprofile() {
     local rprofile_source="$HOME/.Rprofile"
     local rprofile_dest=".Rprofile"
+    local template_source="${TEMPLATE_DIR}/.Rprofile"
 
     # Check if .Rprofile already exists in project
     if [[ -f "$rprofile_dest" ]]; then
-        log_debug ".Rprofile already exists in project directory - skipping copy"
+        log_debug ".Rprofile already exists in project directory - skipping merge"
         return 0
     fi
 
-    # Check if user has .Rprofile in home directory
+    log_info "Creating .Rprofile with user settings + zzcollab template..."
+
+    # Start with header
+    cat > "$rprofile_dest" << 'EOF'
+# ==========================================
+# ZZCOLLAB .Rprofile - Three-Part Structure
+# ==========================================
+# Part 1: User Personal Settings (from ~/.Rprofile)
+# Part 2: renv Activation + Reproducibility Options
+# Part 3: Auto-Snapshot on Exit
+# ==========================================
+
+EOF
+
+    # Part 1: Add user's personal .Rprofile if it exists
     if [[ -f "$rprofile_source" ]]; then
-        log_info "Copying .Rprofile from home directory to project..."
-        if cp "$rprofile_source" "$rprofile_dest"; then
-            track_file "$rprofile_dest"
-            log_success "Copied .Rprofile from $rprofile_source"
-        else
-            log_warn "Failed to copy .Rprofile"
-        fi
+        log_info "  - Adding personal settings from ~/.Rprofile"
+        cat >> "$rprofile_dest" << 'EOF'
+# ==========================================
+# Part 1: User Personal Settings
+# ==========================================
+EOF
+        cat "$rprofile_source" >> "$rprofile_dest"
+        echo "" >> "$rprofile_dest"
     else
-        log_debug "No .Rprofile found in home directory - skipping"
+        log_debug "  - No ~/.Rprofile found, skipping personal settings"
     fi
+
+    # Part 2 & 3: Add zzcollab template (renv activation, options, .Last)
+    if [[ -f "$template_source" ]]; then
+        log_info "  - Adding zzcollab template (renv + auto-snapshot)"
+        cat >> "$rprofile_dest" << 'EOF'
+# ==========================================
+# Part 2: ZZCOLLAB Template - renv + Options
+# ==========================================
+EOF
+        # Skip the header from template (first 6 lines), keep the rest
+        tail -n +7 "$template_source" >> "$rprofile_dest"
+    else
+        log_error "Template .Rprofile not found at $template_source"
+        return 1
+    fi
+
+    track_file "$rprofile_dest"
+    log_success "Created merged .Rprofile (user settings + zzcollab template)"
 }
 
 #=============================================================================
@@ -141,11 +179,7 @@ copy_rprofile() {
 # Tracking: All created config files are tracked in manifest for uninstall
 create_config_files() {
     log_debug "Creating development configuration files..."
-    
-    # Copy .Rprofile from home directory if it exists
-    # This allows personal R configuration to be available for host-side R work
-    copy_rprofile
-    
+
     # Create comprehensive .gitignore for R projects
     # Includes: R-specific files, Docker artifacts, IDE files, OS files, data files
     if install_template ".gitignore" ".gitignore" ".gitignore file" "Created comprehensive .gitignore for R projects"; then
@@ -156,17 +190,17 @@ create_config_files() {
         return 1
     fi
 
-    # Create R session configuration file
-    # Includes: renv activation, CRAN mirror, development package loading
-    if install_template ".Rprofile" ".Rprofile" ".Rprofile file" "Created .Rprofile for R session configuration"; then
-        log_info "  - Activates renv for package management"
-        log_info "  - Sets CRAN mirror for package downloads"
-        log_info "  - Loads development tools in interactive sessions"
+    # Merge user's .Rprofile with zzcollab template
+    # Three-part structure: user settings + renv activation + auto-snapshot
+    if merge_rprofile; then
+        log_info "  - Part 1: User personal settings (from ~/.Rprofile)"
+        log_info "  - Part 2: renv activation + reproducibility options"
+        log_info "  - Part 3: Auto-snapshot on exit (.Last function)"
     else
-        log_error "Failed to create .Rprofile file"
+        log_error "Failed to create merged .Rprofile file"
         return 1
     fi
-    
+
     log_success "Development configuration files created successfully"
 }
 
