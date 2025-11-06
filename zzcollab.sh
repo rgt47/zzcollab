@@ -367,7 +367,7 @@ get_zzcollab_files() {
         "renv.lock" "setup_renv.R" "LICENSE"
 
         # Docker files
-        "Dockerfile" "docker-compose.yml" "Dockerfile.teamcore" "Dockerfile.personal"
+        "Dockerfile" "Dockerfile.teamcore" "Dockerfile.personal"
         ".zshrc_docker"
 
         # Shell modules

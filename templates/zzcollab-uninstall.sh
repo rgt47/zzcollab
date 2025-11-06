@@ -163,7 +163,7 @@ remove_files() {
     local standard_files="DESCRIPTION NAMESPACE LICENSE Makefile .gitignore .Rprofile .Rprofile_docker renv.lock"
 
     # Docker files
-    standard_files="$standard_files Dockerfile docker-compose.yml Dockerfile.teamcore Dockerfile.personal .zshrc_docker"
+    standard_files="$standard_files Dockerfile Dockerfile.teamcore Dockerfile.personal .zshrc_docker"
 
     # Configuration and documentation
     standard_files="$standard_files zzcollab.yaml config.yaml .Rbuildignore"
@@ -260,7 +260,7 @@ should_remove_file() {
     
     # Always confirm removal of certain important files
     case "$file" in
-        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile*|docker-compose.yml|.Rprofile|renv.lock|*.yaml)
+        DESCRIPTION|NAMESPACE|*.Rproj|Makefile|Dockerfile*|.Rprofile|renv.lock|*.yaml)
             confirm "Remove $file (may contain custom changes)?"
             return $?
             ;;
@@ -457,7 +457,7 @@ DESCRIPTION:
     It will remove:
     - Symbolic links first
     - All core project files (DESCRIPTION, NAMESPACE, LICENSE, Makefile, etc.)
-    - All Docker files (Dockerfile, docker-compose.yml, .Rprofile, etc.)
+    - All Docker files (Dockerfile, .Rprofile, etc.)
     - All configuration files (zzcollab.yaml, config.yaml, .Rbuildignore, etc.)
     - All paradigm-specific files (analysis scripts, manuscript templates, etc.)
     - All GitHub workflows and templates (.github/workflows/*, .github/ISSUE_TEMPLATE/*)
@@ -577,7 +577,6 @@ main() {
 
             # Docker files
             echo "Dockerfile"
-            echo "docker-compose.yml"
             echo "Dockerfile.teamcore"
             echo "Dockerfile.personal"
             echo ".zshrc_docker"

@@ -5,7 +5,7 @@ set -euo pipefail
 ##############################################################################
 # 
 # PURPOSE: Docker integration and containerized development environment
-#          - Docker configuration files (Dockerfile, docker-compose.yml)
+#          - Docker configuration files (Dockerfile)
 #          - R version detection from renv.lock
 #          - Docker image building with platform detection
 #          - Container shell configuration
@@ -632,7 +632,6 @@ get_dockerfile_template() {
 # Purpose: Creates all Docker configuration files and support scripts
 # Creates:
 #   - Dockerfile (main container definition)
-#   - docker-compose.yml (multi-service container orchestration)
 #   - .zshrc_docker (container shell configuration)
 #   - validate_package_environment.R (package validation script)
 #   - ZZCOLLAB_USER_GUIDE.md (comprehensive documentation)
@@ -796,14 +795,7 @@ create_docker_files() {
             return 1
         fi
     fi
-    
-    # Create docker-compose.yml from template
-    # Defines: rstudio service, development services, volume mounts, networking
-    if ! install_template "docker-compose.yml" "docker-compose.yml" "Docker Compose configuration" "Created Docker Compose configuration"; then
-        log_error "Failed to create docker-compose.yml"
-        return 1
-    fi
-    
+
     # Note: .zshrc is copied directly from user's dotfiles (assumed to have OS conditionals)
 
     # Create comprehensive user guide in docs/ with symlink in root
@@ -960,7 +952,6 @@ build_docker_image() {
 #   4. Docker image build status
 # FILES CHECKED:
 #   - Dockerfile (container definition)
-#   - docker-compose.yml (service orchestration)
 #   - .zshrc_docker (container shell configuration)
 # EXAMPLE:
 #   if validate_docker_environment; then
@@ -984,7 +975,6 @@ validate_docker_environment() {
     # Check required files
     local -r required_files=(
         "Dockerfile"
-        "docker-compose.yml"
         ".zshrc_docker"
     )
     
@@ -1033,17 +1023,16 @@ show_docker_summary() {
 🐳 DOCKER ENVIRONMENT CREATED:
 
 ├── Dockerfile                      # Main container definition
-├── docker-compose.yml              # Multi-service orchestration
 ├── .zshrc_docker                   # Container shell configuration
 ├── validate_package_environment.R  # Package validation script
 └── ZZCOLLAB_USER_GUIDE.md         # Comprehensive documentation
 
-🚀 CONTAINER SERVICES:
-- rstudio    → RStudio Server (http://localhost:8787)
-- r-console  → Interactive R session
-- dev        → Development shell with tools
-- render     → Paper rendering service
-- test       → Package testing service
+🚀 MAKEFILE TARGETS:
+- make docker-build    → Build Docker image
+- make docker-rstudio  → RStudio Server (http://localhost:8787)
+- make docker-r        → Interactive R session
+- make docker-zsh      → Development shell (zsh)
+- make docker-bash     → Development shell (bash)
 
 🔧 COMMON COMMANDS:
 - make docker-build          # Build Docker image

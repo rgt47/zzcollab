@@ -746,7 +746,6 @@ docker system prune     # Clean up
 
 - `Dockerfile` - Build instructions
 - `Makefile` - make commands
-- `docker-compose.yml` - (not used by default)
 
 ---
 

@@ -499,9 +499,9 @@ $ exit
 docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false \
     -it zzcollab/project:latest zsh
 
-# Or set in docker-compose.yml
-environment:
-  ZZCOLLAB_AUTO_SNAPSHOT: "false"
+# Or set in Makefile environment variables
+docker-run:
+	docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false ...
 ```
 
 **Disable timestamp adjustment**:
