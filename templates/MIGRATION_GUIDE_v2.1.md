@@ -384,23 +384,16 @@ docker buildx version >> docker-diagnostics.txt
     # Save as secret or artifact
 ```
 
-### Q: Does this work with docker-compose?
+### Q: Does this work with custom Docker build commands?
 
-**A**: Yes, enable BuildKit for docker-compose:
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  rstudio:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    # BuildKit enabled via environment variable
-```
+**A**: Yes, enable BuildKit for any Docker build:
 
 ```bash
-DOCKER_BUILDKIT=1 docker-compose build
+# Standard build (BuildKit auto-enabled in Docker 23.0+)
+docker build -t myimage .
+
+# Or explicitly enable BuildKit
+DOCKER_BUILDKIT=1 docker build -t myimage .
 ```
 
 ### Q: How do I verify BuildKit is active?
