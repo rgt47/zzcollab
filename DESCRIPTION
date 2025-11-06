@@ -16,7 +16,8 @@ Imports:
     renv (>= 1.0.0)
 Suggests:
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 URL: https://github.com/rgt47/zzcollab
