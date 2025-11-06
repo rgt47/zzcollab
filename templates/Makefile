@@ -146,7 +146,7 @@ docker-r:
 
 docker-bash:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
-	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/bash
+	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME)
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
@@ -157,7 +157,7 @@ docker-bash:
 
 docker-zsh:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
-	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) /bin/zsh
+	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME)
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
@@ -200,8 +200,8 @@ docker-zsh-gui:
 	@echo "GUI apps available: xfce4-terminal, firefox, etc."
 	@echo "Run 'xfce4-terminal' to open a GUI terminal window"
 	@echo ""
-	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
-	@DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh
+	@echo "🐳 Starting Docker container with X11 support (auto-snapshot on exit)..."
+	@DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME)
 	@echo "📋 Validating package dependencies..."
 	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
