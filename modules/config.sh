@@ -315,6 +315,7 @@ load_config_file() {
     local github_account=$(yaml_get "$config_file" "defaults.github_account")
     local dockerhub_account=$(yaml_get "$config_file" "defaults.dockerhub_account")
     local profile_name=$(yaml_get "$config_file" "defaults.profile_name")
+    local dotfiles_dir=$(yaml_get "$config_file" "defaults.dotfiles_dir")
     local libs_bundle=$(yaml_get "$config_file" "defaults.libs_bundle")
     local pkgs_bundle=$(yaml_get "$config_file" "defaults.pkgs_bundle")
     local r_version=$(yaml_get "$config_file" "defaults.r_version")
@@ -327,6 +328,7 @@ load_config_file() {
     [[ "$dockerhub_account" != "null" && -n "$dockerhub_account" ]] && CONFIG_DOCKERHUB_ACCOUNT="$dockerhub_account"
 
     [[ "$profile_name" != "null" && -n "$profile_name" ]] && CONFIG_PROFILE_NAME="$profile_name"
+    [[ "$dotfiles_dir" != "null" && -n "$dotfiles_dir" ]] && CONFIG_DOTFILES_DIR="$dotfiles_dir"
     [[ "$libs_bundle" != "null" && -n "$libs_bundle" ]] && CONFIG_LIBS_BUNDLE="$libs_bundle"
     [[ "$pkgs_bundle" != "null" && -n "$pkgs_bundle" ]] && CONFIG_PKGS_BUNDLE="$pkgs_bundle"
     [[ "$r_version" != "null" && -n "$r_version" ]] && CONFIG_R_VERSION="$r_version"

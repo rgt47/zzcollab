@@ -85,7 +85,7 @@ ${CUSTOM_SYSTEM_DEPS_INSTALL}
 # Use a known good date (2024-10-26) to ensure packages are available
 WORKDIR /build
 COPY renv.lock* ./
-COPY renv/ ./renv/
+COPY ren[v]/ ./renv/
 COPY .Rprofile* ./
 
 RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \

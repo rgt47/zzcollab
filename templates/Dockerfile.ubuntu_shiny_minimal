@@ -94,7 +94,7 @@ WORKDIR /home/${USERNAME}/project
 
 # Copy project files
 COPY --chown=${USERNAME}:${USERNAME} renv.lock DESCRIPTION ./
-COPY --chown=${USERNAME}:${USERNAME} renv ./renv
+COPY --chown=${USERNAME}:${USERNAME} ren[v]/ ./renv/
 
 # Restore renv packages
 RUN R --quiet -e "renv::restore()"
