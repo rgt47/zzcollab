@@ -141,7 +141,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         # Development tools
         git \
         vim \
-        zsh \
         tmux \
         curl \
         wget \
@@ -158,31 +157,20 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
 
-# Install external dependencies in parallel
+# Install vim-plug for vim plugins
 RUN --mount=type=cache,target=/tmp/downloads \
     set -ex && \
-    # ZSH plugins
-    ZSH_AUTOSUGGESTIONS_VERSION=v0.7.1 && \
-    ZSH_SYNTAX_VERSION=0.8.0 && \
-    mkdir -p /tmp/.zsh && \
-    git clone --depth 1 --branch ${ZSH_AUTOSUGGESTIONS_VERSION} \
-        https://github.com/zsh-users/zsh-autosuggestions /tmp/.zsh/zsh-autosuggestions & \
-    git clone --depth 1 --branch ${ZSH_SYNTAX_VERSION} \
-        https://github.com/zsh-users/zsh-syntax-highlighting /tmp/.zsh/zsh-syntax-highlighting & \
-    # vim-plug
     VIM_PLUG_VERSION=0.14.0 && \
     mkdir -p /tmp/.vim/autoload && \
     curl -fLo /tmp/.vim/autoload/plug.vim \
-        https://raw.githubusercontent.com/junegunn/vim-plug/${VIM_PLUG_VERSION}/plug.vim & \
-    wait
+        https://raw.githubusercontent.com/junegunn/vim-plug/${VIM_PLUG_VERSION}/plug.vim
 
 # Create user and set up environment
-RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
+RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
     usermod -aG sudo ${USERNAME} && \
     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
-    mv /tmp/.zsh /home/${USERNAME}/.zsh && \
     mv /tmp/.vim /home/${USERNAME}/.vim && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
@@ -210,7 +198,6 @@ COPY --chown=${USERNAME}:${USERNAME} \
     .vimrc* \
     .gitconfig* \
     .tmux.conf* \
-    .zshrc* \
     .bashrc* \
     .bash_profile* \
     .profile* \

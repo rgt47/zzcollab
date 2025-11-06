@@ -35,8 +35,6 @@ ENV LANG=en_US.UTF-8 \
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     set -ex && \
     apk add --no-cache \
-        # Shell
-        zsh \
         # Build tools (needed for compiling R packages from source)
         gcc \
         g++ \
@@ -65,7 +63,7 @@ RUN --mount=type=cache,target=/tmp/R-cache \
 
 # Create user and set up environment
 # Note: Alpine uses 'adduser' not 'useradd'
-RUN adduser -D -s /bin/zsh ${USERNAME} && \
+RUN adduser -D -s /bin/bash ${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/library

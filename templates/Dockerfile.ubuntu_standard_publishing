@@ -60,8 +60,6 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        # Shell
-        zsh \
         # Publishing runtime (pandoc, LaTeX already in rocker/verse)
         # Minimal runtime libraries for R packages
         libfontconfig1 \
@@ -91,7 +89,7 @@ RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
         'flexdashboard', 'xaringan'))"
 
 # Create user and set up environment
-RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
+RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library

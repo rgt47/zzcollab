@@ -49,8 +49,6 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         /etc/apt/sources.list.d/cranapt.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        # Shell
-        zsh \
         # X11 runtime libraries (minimal for R graphics)
         xauth \
         libx11-6 \
@@ -80,7 +78,7 @@ RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
     R -e "install.packages('renv')"
 
 # Create user and set up environment
-RUN useradd --create-home --shell /bin/zsh ${USERNAME} && \
+RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
