@@ -234,12 +234,11 @@ docker-run:
 			echo "🐳 Starting minimal profile..."; \
 			docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME); \
 			;; \
-		*analysis|*publishing) \
-			echo "🐳 Starting $$PROFILE profile (RStudio Server)..."; \
-			echo "📊 RStudio: http://localhost:8787"; \
-			echo "👤 Username: analyst, Password: analyst"; \
+		*x11*) \
+			echo "🐳 Starting X11 profile (GUI support)..."; \
+			echo "⚠️  Requires XQuartz running with 'Allow connections from network clients'"; \
 			echo ""; \
-			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
+			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME); \
 			;; \
 		*shiny*) \
 			echo "🐳 Starting Shiny Server..."; \
@@ -247,11 +246,12 @@ docker-run:
 			echo ""; \
 			docker run --platform linux/amd64 --rm -p 3838:3838 -v $$(pwd):/home/analyst/project $(PACKAGE_NAME); \
 			;; \
-		*x11*) \
-			echo "🐳 Starting X11 profile (GUI support)..."; \
-			echo "⚠️  Requires XQuartz running with 'Allow connections from network clients'"; \
+		*analysis|*publishing) \
+			echo "🐳 Starting $$PROFILE profile (RStudio Server)..."; \
+			echo "📊 RStudio: http://localhost:8787"; \
+			echo "👤 Username: analyst, Password: analyst"; \
 			echo ""; \
-			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME); \
+			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
 			;; \
 		alpine_*) \
 			echo "🐳 Starting Alpine profile..."; \
