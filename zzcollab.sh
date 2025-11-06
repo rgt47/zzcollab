@@ -968,15 +968,21 @@ finalize_and_report_results() {
     log_info "📦 Creating renv.lock file..."
     if command -v R >/dev/null 2>&1; then
         if R --slave -e "renv::init(bare = TRUE, restart = FALSE); renv::snapshot(prompt = FALSE)" &>/dev/null; then
-            # Fix R version in renv.lock to match configured/Dockerfile version
-            # renv::snapshot() uses local R version, but we need Docker R version
-            if [[ -f "renv.lock" ]] && [[ -n "${R_VERSION:-}" ]]; then
-                log_debug "Correcting R version in renv.lock to match Dockerfile: ${R_VERSION}"
+            # Fix R version and renv version in renv.lock to match Docker image
+            # renv::snapshot() uses local versions, but we need Docker versions for fast builds
+            if [[ -f "renv.lock" ]]; then
                 if command -v python3 >/dev/null 2>&1; then
-                    python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['R']['Version']='${R_VERSION}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
+                    # Fix R version to match Dockerfile
+                    if [[ -n "${R_VERSION:-}" ]]; then
+                        log_debug "Correcting R version in renv.lock to match Dockerfile: ${R_VERSION}"
+                        python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['R']['Version']='${R_VERSION}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
+                    fi
+                    # Fix renv version to 1.0.11 (matches r2u binary for fast builds)
+                    log_debug "Setting renv version to 1.0.11 (r2u binary, no bootstrap needed)"
+                    python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['Packages']['renv']['Version']='1.0.11'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
                 fi
             fi
-            log_success "Created renv.lock with current package environment"
+            log_success "Created renv.lock with current package environment (renv 1.0.11)"
         else
             log_warn "Failed to create renv.lock - creating minimal fallback"
             create_minimal_renv_lock
