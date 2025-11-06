@@ -685,6 +685,37 @@ validate_directory_for_setup_no_conflicts() {
     return 0
 }
 
+# Function: create_minimal_renv_lock
+# Purpose: Create a minimal renv.lock when R is not available on host
+# Uses: renv 1.0.11 (matches r2u binary version for fast builds)
+create_minimal_renv_lock() {
+    local r_version="${R_VERSION:-4.5.1}"
+
+    cat > renv.lock << EOF
+{
+  "R": {
+    "Version": "${r_version}",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "https://cloud.r-project.org"
+      }
+    ]
+  },
+  "Packages": {
+    "renv": {
+      "Package": "renv",
+      "Version": "1.0.11",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    }
+  }
+}
+EOF
+
+    log_success "Created minimal renv.lock (renv 1.0.11 for fast Docker builds)"
+}
+
 #=============================================================================
 # MAIN EXECUTION HELPER FUNCTIONS
 #=============================================================================
@@ -947,10 +978,12 @@ finalize_and_report_results() {
             fi
             log_success "Created renv.lock with current package environment"
         else
-            log_warn "Failed to create renv.lock - run 'renv::init(); renv::snapshot()' manually"
+            log_warn "Failed to create renv.lock - creating minimal fallback"
+            create_minimal_renv_lock
         fi
     else
-        log_warn "R not found - run 'renv::init(); renv::snapshot()' after installing R"
+        log_warn "R not found - creating minimal renv.lock for Docker workflow"
+        create_minimal_renv_lock
     fi
     
     # Create GitHub repository if requested
