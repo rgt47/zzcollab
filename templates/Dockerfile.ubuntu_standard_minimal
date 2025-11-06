@@ -91,16 +91,4 @@ RUN R -e "renv::restore()"
 # Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
 # No COPY needed - keeps image small and allows live code editing
 
-# Metadata
-LABEL org.opencontainers.image.title=\
-"ZZCOLLAB Ubuntu Standard Minimal Environment" \
-      org.opencontainers.image.description=\
-"Minimal R runtime (no X11, no GUI)" \
-      org.opencontainers.image.vendor="ZZCOLLAB" \
-      org.opencontainers.image.authors="${TEAM_NAME}" \
-      org.opencontainers.image.source=\
-"https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="ubuntu_standard_minimal" \
-      zzcollab.size="~1.0GB"
-
 CMD ["R"]

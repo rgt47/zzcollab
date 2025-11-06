@@ -214,16 +214,5 @@ COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
 # Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
 # No COPY needed - keeps image small and allows live code editing
 
-# Metadata
-LABEL org.opencontainers.image.title="ZZCOLLAB Custom Environment" \
-      org.opencontainers.image.description="Custom profile: ${LIBS_BUNDLE_LIST} + ${PKGS_BUNDLE_LIST}" \
-      org.opencontainers.image.vendor="ZZCOLLAB" \
-      org.opencontainers.image.authors="${TEAM_NAME}" \
-      org.opencontainers.image.source="https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="custom" \
-      zzcollab.base="${BASE_IMAGE}:${R_VERSION}" \
-      zzcollab.libraries="${LIBS_BUNDLE_LIST}" \
-      zzcollab.packages="${PKGS_BUNDLE_LIST}"
-
 # Start R directly (auto-snapshot handled by .Last() in .Rprofile)
 CMD ["R"]

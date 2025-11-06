@@ -101,16 +101,4 @@ RUN R -e "renv::restore()"
 # Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
 # No COPY needed - keeps image small and allows live code editing
 
-# Metadata
-LABEL org.opencontainers.image.title=\
-"ZZCOLLAB Ubuntu X11 Analysis Environment" \
-      org.opencontainers.image.description=\
-"Data analysis with tidyverse ecosystem and X11 support" \
-      org.opencontainers.image.vendor="ZZCOLLAB" \
-      org.opencontainers.image.authors="${TEAM_NAME}" \
-      org.opencontainers.image.source=\
-"https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="ubuntu_x11_analysis" \
-      zzcollab.size="~2.0GB"
-
 CMD ["R"]

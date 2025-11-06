@@ -105,18 +105,6 @@ RUN R -e "renv::restore()"
 # Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
 # No COPY needed - keeps image small and allows live code editing
 
-# Metadata
-LABEL org.opencontainers.image.title=\
-"ZZCOLLAB Ubuntu Shiny Analysis Environment" \
-      org.opencontainers.image.description=\
-"Shiny Server with tidyverse and analysis packages" \
-      org.opencontainers.image.vendor="ZZCOLLAB" \
-      org.opencontainers.image.authors="${TEAM_NAME}" \
-      org.opencontainers.image.source=\
-"https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="ubuntu_shiny_analysis" \
-      zzcollab.size="~2.5GB"
-
 # Health check for Shiny Server
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
     --retries=3 CMD curl -f http://localhost:3838/ || exit 1

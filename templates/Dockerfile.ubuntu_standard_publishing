@@ -108,18 +108,6 @@ RUN R -e "renv::restore()"
 # Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
 # No COPY needed - keeps image small and allows live code editing
 
-# Metadata
-LABEL org.opencontainers.image.title=\
-"ZZCOLLAB Ubuntu Standard Publishing Environment" \
-      org.opencontainers.image.description=\
-"Academic papers, books, blogs with LaTeX, Quarto, RStudio" \
-      org.opencontainers.image.vendor="ZZCOLLAB" \
-      org.opencontainers.image.authors="${TEAM_NAME}" \
-      org.opencontainers.image.source=\
-"https://github.com/${TEAM_NAME}/${PROJECT_NAME}" \
-      zzcollab.profile="ubuntu_standard_publishing" \
-      zzcollab.size="~2.5GB"
-
 # Health check for RStudio Server
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8787/ || exit 1
