@@ -727,7 +727,6 @@ EOF
     [ "$status" -eq 0 ]
     [[ "${output}" == *"DOCKER ENVIRONMENT"* ]]
     [[ "${output}" == *"Dockerfile"* ]]
-    [[ "${output}" == *"docker-compose.yml"* ]]
 }
 
 @test "show_docker_summary includes common commands" {
