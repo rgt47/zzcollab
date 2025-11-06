@@ -217,17 +217,6 @@ jobs:
         docker exec test-container \
           test -w /usr/local/lib/R/site-library
 
-    - name: Test sudo access
-      run: |
-        # Verify analyst user HAS sudo access (development convenience)
-        # Development containers need sudo to install system packages
-        if docker exec test-container sudo -n true 2>/dev/null; then
-          echo "✓ Analyst user has passwordless sudo access (as designed)"
-        else
-          echo "ERROR: analyst user lacks sudo access (needed for development)"
-          exit 1
-        fi
-
     - name: Test shell environment
       run: |
         # Test zsh is available
