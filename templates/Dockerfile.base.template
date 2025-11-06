@@ -221,14 +221,11 @@ COPY --chown=${USERNAME}:${USERNAME} \
 # Install vim plugins
 RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
 
-# Copy project files (last - most frequent changes)
-COPY --chown=${USERNAME}:${USERNAME} . .
-
-# Copy populated renv project library from builder (after full project copy)
+# Copy populated renv project library from builder
 COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv
 
-# Install research compendium
-RUN R -e "install.packages('.', repos = NULL, type = 'source', dependencies = TRUE)"
+# Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
+# No COPY needed - keeps image small and allows live code editing
 
 # Metadata
 LABEL org.opencontainers.image.title="ZZCOLLAB Custom Environment" \

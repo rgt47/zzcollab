@@ -77,12 +77,8 @@ COPY --chown=${USERNAME}:${USERNAME} renv ./renv
 # Restore renv packages
 RUN R -e "renv::restore()"
 
-# Copy remaining project files (last - most frequent changes)
-COPY --chown=${USERNAME}:${USERNAME} . .
-
-# Install research compendium
-RUN R -e "install.packages('.', repos = NULL, type = 'source', \
-    dependencies = TRUE)"
+# Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
+# No COPY needed - keeps image small and allows live code editing
 
 # Metadata
 LABEL org.opencontainers.image.title=\
