@@ -104,7 +104,7 @@ create_makefile() {
 merge_rprofile() {
     local rprofile_source="$HOME/.Rprofile"
     local rprofile_dest=".Rprofile"
-    local template_source="${TEMPLATE_DIR}/.Rprofile"
+    local template_source="${TEMPLATES_DIR}/.Rprofile"
 
     # Check if .Rprofile already exists in project
     if [[ -f "$rprofile_dest" ]]; then
