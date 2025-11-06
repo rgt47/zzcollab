@@ -73,7 +73,7 @@ USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
 # Copy project files
-COPY --chown=${USERNAME}:${USERNAME} renv.lock .Rprofile DESCRIPTION ./
+COPY --chown=${USERNAME}:${USERNAME} renv.lock DESCRIPTION ./
 COPY --chown=${USERNAME}:${USERNAME} renv ./renv
 
 # Restore renv packages
