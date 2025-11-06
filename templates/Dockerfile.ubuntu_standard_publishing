@@ -30,6 +30,12 @@ ARG PROJECT_NAME=project
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TARGETPLATFORM
 
+# Reproducibility-critical environment variables (Pillar 1)
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC \
+    OMP_NUM_THREADS=1
+
 # Platform note (verse is AMD64 only, using emulation on ARM64)
 RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
         echo "NOTE: rocker/verse does not support ARM64 natively" >&2; \

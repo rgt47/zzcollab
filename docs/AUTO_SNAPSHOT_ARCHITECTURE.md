@@ -1,7 +1,17 @@
 # Auto-Snapshot Architecture: Build-Time Package Installation for Instant Runtime Availability
 
+> **⚠️ DEPRECATED**: This document describes the Docker entrypoint-based auto-snapshot approach which was replaced on November 5, 2025 with a simpler .Rprofile-based implementation using the .Last() function.
+>
+> **Current Implementation**: Auto-snapshot now uses `.Last()` function in `.Rprofile` instead of Docker entrypoint. See `templates/.Rprofile` for the current implementation.
+>
+> **Why Changed**: The Docker entrypoint trap approach was fundamentally broken because `exec` replaces the shell process, preventing EXIT traps from firing. The .Last() function is R-native and reliably executes when R exits.
+>
+> This document is retained for historical reference and understanding the evolution of the auto-snapshot architecture.
+
+---
+
 **Technical White Paper**
-**Version**: 1.0
+**Version**: 1.0 (DEPRECATED)
 **Date**: November 2, 2025
 **System**: ZZCOLLAB Research Collaboration Framework
 

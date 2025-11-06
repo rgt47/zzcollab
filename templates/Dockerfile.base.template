@@ -29,6 +29,12 @@ FROM ${BASE_IMAGE}:${R_VERSION} AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TARGETPLATFORM
 
+# Reproducibility-critical environment variables (Pillar 1)
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC \
+    OMP_NUM_THREADS=1
+
 # Platform compatibility check
 RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
         case "${BASE_IMAGE}" in \

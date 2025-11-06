@@ -1,6 +1,12 @@
 # ZZCOLLAB Package Validation Architecture: A Host-Independent Reproducibility Framework
 
-**Version:** 2.0
+> **⚠️ PARTIALLY OUTDATED**: This document describes auto-snapshot via Docker entrypoint (Section 3.2), which was replaced on November 5, 2025 with `.Last()` function in `.Rprofile`.
+>
+> **Still Accurate**: Pure shell validation system (Section 4), RSPM timestamp optimization (Section 3.3), and host-independent architecture remain correct.
+>
+> **Current Auto-Snapshot**: Now uses `.Last()` function in `.Rprofile` instead of Docker entrypoint trap. See `templates/.Rprofile` for implementation.
+
+**Version:** 2.0 (Section 3.2 outdated)
 **Date:** October 31, 2025
 **Authors:** ZZCOLLAB Development Team
 

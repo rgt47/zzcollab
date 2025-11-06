@@ -26,6 +26,12 @@ ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
+# Reproducibility-critical environment variables (Pillar 1)
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC \
+    OMP_NUM_THREADS=1
+
 # Alpine uses apk instead of apt-get
 # Note: Alpine/musl has no binary R packages - must compile from source
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \

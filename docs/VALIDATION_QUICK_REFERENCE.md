@@ -313,15 +313,12 @@ Run validation (modules/validation.sh)
 Report results to user
 ```
 
-**Configured in**: `templates/zzcollab-entrypoint.sh`
+**Configured in**: `templates/.Rprofile` (.Last() function)
 
 **Environment Variables**:
 ```bash
 # Disable auto-snapshot (not recommended)
 docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false ...
-
-# Disable timestamp adjustment (not recommended)
-docker run -e ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST=false ...
 ```
 
 ---
@@ -373,19 +370,21 @@ grep -r "library(packagename)" R/ analysis/
 
 ### Auto-Snapshot Didn't Run
 
-**Symptoms**: Exited container, renv.lock unchanged
+**Symptoms**: Exited R session, renv.lock unchanged
 
 **Check**:
 ```bash
-# Verify entrypoint
-docker inspect <image> | jq '.[0].Config.Entrypoint'
+# Verify .Rprofile exists and contains .Last() function
+grep -A 10 "^\.Last <- function" .Rprofile
 
-# Should show: ["/usr/local/bin/zzcollab-entrypoint.sh"]
+# Check if auto-snapshot is enabled
+grep "ZZCOLLAB_AUTO_SNAPSHOT" .Rprofile
 ```
 
 **Manual Snapshot**:
 ```bash
 make docker-zsh
+# In R:
 renv::snapshot()
 exit
 ```

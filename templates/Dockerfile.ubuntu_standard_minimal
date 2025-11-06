@@ -24,6 +24,12 @@ ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Reproducibility-critical environment variables (Pillar 1)
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC \
+    OMP_NUM_THREADS=1
+
 # Install runtime dependencies and r2u repository in single layer
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
