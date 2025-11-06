@@ -5,7 +5,8 @@
       "Bash(Rscript:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git add templates/Dockerfile.* DESCRIPTION)"
+      "Bash(git add templates/Dockerfile.* DESCRIPTION)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
