@@ -62,7 +62,8 @@ RUN --mount=type=cache,target=/tmp/R-cache \
 RUN adduser -D -s /bin/bash ${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/library
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/library && \
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library 2>/dev/null || true
 
 # Switch to user
 USER ${USERNAME}
