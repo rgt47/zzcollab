@@ -869,7 +869,14 @@ build_docker_image() {
         log_error "This should be set automatically from directory name"
         return 1
     fi
-    
+
+    # Update renv.lock to use r2u renv version from Docker base image
+    # This prevents compiling renv from source (~7s) and uses binary (~0.1s)
+    if [[ -n "${BASE_IMAGE:-}" ]]; then
+        local full_base_image="${BASE_IMAGE}:${R_VERSION}"
+        update_renv_version_from_docker "$full_base_image" || log_warn "Could not update renv version"
+    fi
+
     # Auto-detect platform and set appropriate Docker build arguments
     # Use new multi-architecture support functions
     local DOCKER_PLATFORM

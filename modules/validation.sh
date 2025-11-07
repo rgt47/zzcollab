@@ -262,6 +262,78 @@ add_package_to_renv_lock() {
     fi
 }
 
+#-----------------------------------------------------------------------------
+# FUNCTION: update_renv_version_from_docker
+# PURPOSE:  Update renv.lock to use r2u renv version from Docker base image
+# DESCRIPTION:
+#   Queries the Docker base image for its r2u renv version and updates
+#   the local renv.lock file to match. This prevents renv from compiling
+#   from source during Docker builds and runtime bootstrapping.
+# ARGS:
+#   $1 - Docker base image (e.g., "rocker/r-ver:4.4.2")
+# RETURNS:
+#   0 - renv version updated successfully
+#   1 - Error occurred
+# OUTPUTS:
+#   Success/error messages to stderr
+# NOTES:
+#   - Requires Docker to be available
+#   - Requires jq for JSON manipulation
+#   - Performance: 60x speedup (binary vs source compile)
+#-----------------------------------------------------------------------------
+update_renv_version_from_docker() {
+    local base_image="$1"
+    local renv_lock="renv.lock"
+
+    if [[ -z "$base_image" ]]; then
+        log_error "Docker base image not specified"
+        return 1
+    fi
+
+    if [[ ! -f "$renv_lock" ]]; then
+        log_debug "renv.lock not found, skipping renv version update"
+        return 0
+    fi
+
+    # Check if jq is available
+    if ! command -v jq &> /dev/null; then
+        log_warn "jq not found, skipping renv version update"
+        return 0
+    fi
+
+    log_info "Querying r2u renv version from $base_image..."
+
+    # Query renv version from Docker image
+    local renv_version
+    renv_version=$(docker run --rm "$base_image" R --slave -e "cat(as.character(packageVersion('renv')))" 2>/dev/null)
+
+    if [[ $? -ne 0 ]] || [[ -z "$renv_version" ]]; then
+        log_warn "Could not detect renv version from Docker image, skipping update"
+        return 0
+    fi
+
+    log_info "Detected r2u renv version: $renv_version"
+
+    # Update renv.lock using jq
+    local temp_lock
+    temp_lock=$(mktemp)
+
+    jq --arg ver "$renv_version" \
+       '.Packages.renv.Version = $ver | .Packages.renv.Source = "Repository" | .Packages.renv.Repository = "CRAN"' \
+       "$renv_lock" > "$temp_lock"
+
+    if [[ $? -eq 0 ]]; then
+        mv "$temp_lock" "$renv_lock"
+        log_success "✅ Updated renv.lock to use r2u version $renv_version"
+        log_info "   Performance: ~60x faster (binary install vs source compile)"
+        return 0
+    else
+        rm -f "$temp_lock"
+        log_error "Failed to update renv.lock"
+        return 1
+    fi
+}
+
 #==============================================================================
 # PACKAGE EXTRACTION (PURE SHELL)
 #==============================================================================
