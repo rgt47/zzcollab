@@ -897,7 +897,16 @@ build_docker_image() {
 
     log_info "Using Docker profile: ${PROFILE_NAME:-${ZZCOLLAB_DEFAULT_PROFILE_NAME}}"
 
-    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" -t \"$PKG_NAME\" ."
+    # Extract RENV_VERSION from renv.lock if it exists
+    local RENV_VERSION="1.0.11"  # Default fallback
+    if [[ -f "renv.lock" ]] && command -v jq &>/dev/null; then
+        RENV_VERSION=$(jq -r '.Packages.renv.Version // "1.0.11"' renv.lock 2>/dev/null || echo "1.0.11")
+        log_info "Using renv version from renv.lock: $RENV_VERSION"
+    else
+        log_info "Using default renv version: $RENV_VERSION"
+    fi
+
+    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg RENV_VERSION=\"$RENV_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" -t \"$PKG_NAME\" ."
     
     log_info "Running: $docker_cmd"
     
