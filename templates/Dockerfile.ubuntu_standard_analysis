@@ -40,8 +40,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
-        ca-certificates \
-        jq && \
+        ca-certificates && \
     # r2u repository for binary R packages
     wget -q -O- \
         https://eddelbuettel.github.io/r2u/assets/\
@@ -91,18 +90,6 @@ WORKDIR /home/${USERNAME}/project
 # Copy project files
 COPY --chown=${USERNAME}:${USERNAME} renv.lock DESCRIPTION ./
 COPY --chown=${USERNAME}:${USERNAME} ren[v]/ ./renv/
-
-# Update renv.lock to use r2u renv version (avoid compiling from source)
-# This provides 60x speedup: binary install (0.1s) vs source compile (6-8s)
-RUN R_VERSION=$(R --slave -e "cat(paste0(R.version\$major, '.', R.version\$minor))") && \
-    RENV_VERSION=$(R --slave -e "cat(as.character(packageVersion('renv')))") && \
-    echo "Using r2u renv version: $RENV_VERSION" && \
-    if [ -f renv.lock ]; then \
-        jq --arg ver "$RENV_VERSION" \
-           '.Packages.renv.Version = $ver | .Packages.renv.Source = "Repository" | .Packages.renv.Repository = "CRAN"' \
-           renv.lock > renv.lock.tmp && \
-        mv renv.lock.tmp renv.lock; \
-    fi
 
 # Restore renv packages
 RUN R --quiet -e "renv::restore()"
