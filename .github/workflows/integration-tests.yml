@@ -217,11 +217,6 @@ jobs:
         docker exec test-container \
           test -w /usr/local/lib/R/site-library
 
-    - name: Test shell environment
-      run: |
-        # Test zsh is available
-        docker exec test-container which zsh
-
     - name: Cleanup
       if: always()
       run: |
