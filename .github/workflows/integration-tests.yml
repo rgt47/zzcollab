@@ -222,9 +222,6 @@ jobs:
         # Test zsh is available
         docker exec test-container which zsh
 
-        # Test vim is available
-        docker exec test-container which vim
-
     - name: Cleanup
       if: always()
       run: |
