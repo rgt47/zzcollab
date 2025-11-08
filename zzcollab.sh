@@ -699,8 +699,8 @@ get_r2u_renv_version() {
         log_debug "Detected renv ${renv_version} from ${base_image}"
         echo "$renv_version"
     else
-        log_debug "Could not query Docker image, using default renv 1.0.11"
-        echo "1.0.11"
+        log_debug "Could not query Docker image, using default renv 1.1.5"
+        echo "1.1.5"
     fi
 }
 
@@ -1005,7 +1005,7 @@ finalize_and_report_results() {
                     python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['Packages']['renv']['Version']='${renv_version}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
                 fi
             fi
-            log_success "Created renv.lock with current package environment (renv 1.0.11)"
+            log_success "Created renv.lock with current package environment (renv 1.1.5)"
         else
             log_warn "Failed to create renv.lock - creating minimal fallback"
             create_minimal_renv_lock

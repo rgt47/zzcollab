@@ -13,14 +13,14 @@
 #======================================================================
 
 ARG R_VERSION=4.4.2
-ARG RENV_VERSION=1.0.11
+ARG RENV_VERSION=1.1.5
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
 FROM rocker/r-ver:${R_VERSION}
 
-ARG RENV_VERSION=1.0.11
+ARG RENV_VERSION=1.1.5
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project

@@ -898,9 +898,9 @@ build_docker_image() {
     log_info "Using Docker profile: ${PROFILE_NAME:-${ZZCOLLAB_DEFAULT_PROFILE_NAME}}"
 
     # Extract RENV_VERSION from renv.lock if it exists
-    local RENV_VERSION="1.0.11"  # Default fallback
+    local RENV_VERSION="1.1.5"  # Default fallback
     if [[ -f "renv.lock" ]] && command -v jq &>/dev/null; then
-        RENV_VERSION=$(jq -r '.Packages.renv.Version // "1.0.11"' renv.lock 2>/dev/null || echo "1.0.11")
+        RENV_VERSION=$(jq -r '.Packages.renv.Version // "1.1.5"' renv.lock 2>/dev/null || echo "1.1.5")
         log_info "Using renv version from renv.lock: $RENV_VERSION"
     else
         log_info "Using default renv version: $RENV_VERSION"
