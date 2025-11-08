@@ -687,7 +687,7 @@ validate_directory_for_setup_no_conflicts() {
 
 # Function: get_r2u_renv_version
 # Purpose: Query the Docker base image to find what renv version is available
-# Returns: renv version string, or "1.0.11" as fallback
+# Returns: renv version string, or "1.1.5" as fallback
 get_r2u_renv_version() {
     local base_image="${BASE_IMAGE:-rocker/r-ver:${R_VERSION:-4.5.1}}"
 
