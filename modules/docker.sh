@@ -164,12 +164,12 @@ get_docker_platform_args() {
 #
 # Process:
 #   1. Verify renv.lock exists (REQUIRED for reproducibility)
-#   2. Check python3 or jq available for JSON parsing
-#   3. Parse JSON to extract R.Version field
+#   2. Try jq for fast JSON parsing (preferred)
+#   3. Fall back to grep/sed if jq unavailable (no Python dependency!)
 #   4. FAIL if version cannot be determined (never default to "latest")
 #
 # Used by: Docker build process to ensure container matches project R version
-# Dependencies: python3 or jq (for JSON parsing), renv.lock file (REQUIRED)
+# Dependencies: renv.lock file (REQUIRED), jq (optional, for faster parsing)
 extract_r_version_from_lockfile() {
     # CRITICAL: renv.lock is REQUIRED for reproducible builds
     if [[ ! -f "renv.lock" ]]; then
@@ -204,49 +204,23 @@ extract_r_version_from_lockfile() {
         fi
     fi
 
-    # Fall back to Python if jq not available
-    if command_exists python3; then
-        local r_version
-        local python_exit
+    # Fall back to sed/awk if jq not available (no Python dependency!)
+    local r_version
+    # Extract R.Version from JSON using grep + sed (works on macOS BSD and Linux GNU)
+    # Strategy: Find "R" section, get "Version" line within it, extract value
+    r_version=$(grep -A 5 '"R"' renv.lock 2>/dev/null | grep '"Version"' | head -1 | sed 's/.*"Version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
 
-        # Capture stdout only (version), let stderr go to terminal (Issue #12 fix)
-        r_version=$(python3 -c "
-import json
-import sys
-try:
-    with open('renv.lock', 'r') as f:
-        data = json.load(f)
-        version = data.get('R', {}).get('Version')
-        if version:
-            print(version)
-            sys.exit(0)
-        else:
-            sys.exit(1)
-except Exception as e:
-    print(f'Error parsing renv.lock: {e}', file=sys.stderr)
-    sys.exit(1)
-" 2>/dev/null)
-        python_exit=$?
-
-        if [[ $python_exit -eq 0 ]] && [[ -n "$r_version" ]]; then
-            log_success "Found R version in lockfile: $r_version" >&2
-            echo "$r_version"
-            return 0
-        fi
+    if [[ -n "$r_version" ]]; then
+        log_success "Found R version in lockfile: $r_version" >&2
+        echo "$r_version"
+        return 0
     fi
 
     # If we get here, parsing failed
     log_error "Failed to extract R version from renv.lock"
     log_error ""
-    if ! command_exists python3 && ! command_exists jq; then
-        log_error "Neither python3 nor jq is available for JSON parsing."
-        log_error "Please install one of them:"
-        log_error "  - Ubuntu/Debian: apt-get install python3"
-        log_error "  - macOS: brew install python3 (or jq)"
-    else
-        log_error "renv.lock may be corrupted or missing R version field."
-        log_error "Try regenerating it with: R -e \"renv::snapshot()\""
-    fi
+    log_error "renv.lock may be corrupted or missing R version field."
+    log_error "Try regenerating it with: R -e \"renv::snapshot()\""
     log_error ""
     log_error "Alternatively, specify R version explicitly:"
     log_error "  zzcollab --r-version 4.4.0 [other options]"

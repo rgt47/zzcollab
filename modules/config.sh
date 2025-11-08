@@ -380,6 +380,11 @@ apply_config_defaults() {
     if [[ -z "${R_VERSION:-}" ]] && [[ -n "$CONFIG_R_VERSION" ]]; then
         R_VERSION="$CONFIG_R_VERSION"
         USER_PROVIDED_R_VERSION="false"  # Set to false since it came from config, not CLI
+    elif [[ -z "${R_VERSION:-}" ]]; then
+        # No R version from CLI or config - use default for Docker-first workflow
+        R_VERSION="4.5.1"
+        USER_PROVIDED_R_VERSION="false"
+        log_debug "Using default R version: $R_VERSION"
     fi
 
     # Handle boolean flags

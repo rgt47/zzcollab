@@ -949,24 +949,10 @@ execute_project_creation_workflow() {
 # Function: finalize_and_report_results  
 # Purpose: Complete setup with Docker build, renv, GitHub, and reporting
 finalize_and_report_results() {
-    # Determine R version for Docker build
-    # Priority: 1) User-provided --r-version, 2) Config r-version, 3) renv.lock
-    # Note: R_VERSION should already be set by apply_config_defaults() if from config
-    if [[ -z "${R_VERSION:-}" ]]; then
-        # R_VERSION not set - try to extract from renv.lock
-        log_info "🔍 Detecting R version from renv.lock..."
-        R_VERSION=$(extract_r_version_from_lockfile)
-        export R_VERSION
-        log_info "Using R version from renv.lock: $R_VERSION"
-    else
-        # R_VERSION already set (from --r-version flag or config)
-        export R_VERSION
-        if [[ "${USER_PROVIDED_R_VERSION:-false}" == "true" ]]; then
-            log_info "Using user-specified R version: $R_VERSION"
-        else
-            log_info "Using R version from config: $R_VERSION"
-        fi
-    fi
+    # R_VERSION is always set by apply_config_defaults() at this point
+    # Priority: 1) User-provided --r-version, 2) Config r-version, 3) Default (4.5.1)
+    export R_VERSION
+    log_debug "Using R version for Docker build: $R_VERSION"
 
     # Install uninstall script
     install_uninstall_script
@@ -985,35 +971,10 @@ finalize_and_report_results() {
         log_info "💡 Run 'make docker-build' after initialization completes"
     fi
     
-    # Initialize renv with snapshot of current environment
+    # Initialize renv with minimal lock from Docker image (Docker-first workflow)
+    # Uses versions directly from Docker base image - no host R or Python required
     log_info "📦 Creating renv.lock file..."
-    if command -v R >/dev/null 2>&1; then
-        if R --slave -e "renv::init(bare = TRUE, restart = FALSE); renv::snapshot(prompt = FALSE)" &>/dev/null; then
-            # Fix R version and renv version in renv.lock to match Docker image
-            # renv::snapshot() uses local versions, but we need Docker versions for fast builds
-            if [[ -f "renv.lock" ]]; then
-                if command -v python3 >/dev/null 2>&1; then
-                    # Fix R version to match Dockerfile
-                    if [[ -n "${R_VERSION:-}" ]]; then
-                        log_debug "Correcting R version in renv.lock to match Dockerfile: ${R_VERSION}"
-                        python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['R']['Version']='${R_VERSION}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
-                    fi
-                    # Fix renv version to match r2u binary for fast builds
-                    local renv_version
-                    renv_version=$(get_r2u_renv_version)
-                    log_debug "Setting renv version to ${renv_version} (r2u binary, no bootstrap needed)"
-                    python3 -c "import json; f=open('renv.lock','r+'); d=json.load(f); d['Packages']['renv']['Version']='${renv_version}'; f.seek(0); f.truncate(); json.dump(d,f,indent=2); f.write('\n')" 2>/dev/null || true
-                fi
-            fi
-            log_success "Created renv.lock with current package environment (renv 1.1.5)"
-        else
-            log_warn "Failed to create renv.lock - creating minimal fallback"
-            create_minimal_renv_lock
-        fi
-    else
-        log_warn "R not found - creating minimal renv.lock for Docker workflow"
-        create_minimal_renv_lock
-    fi
+    create_minimal_renv_lock
     
     # Create GitHub repository if requested
     if [[ "$CREATE_GITHUB_REPO" == "true" ]]; then
