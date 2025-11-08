@@ -69,13 +69,8 @@ getRversion(), paste(getRversion(), R.version\$platform, \
 R.version\$arch, R.version\$os)))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install specific renv version from CRAN (matching renv.lock)
-# Uses remotes::install_version() to install exact version
-RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
-    R -e "install.packages('remotes')" && \
-    R -e "remotes::install_version('renv', version = '${RENV_VERSION}', repos = 'https://cloud.r-project.org')"
-
 # Create user and set up environment
+# Note: renv will self-bootstrap on first use via renv/activate.R
 RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
@@ -85,14 +80,8 @@ RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Copy project files
-COPY --chown=${USERNAME}:${USERNAME} renv.lock DESCRIPTION ./
-COPY --chown=${USERNAME}:${USERNAME} ren[v]/ ./renv/
-
-# Restore renv packages
-RUN R --quiet -e "renv::restore()"
-
 # Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
-# No COPY needed - keeps image small and allows live code editing
+# renv will self-bootstrap on first R session via renv/activate.R (sourced by .Rprofile)
+# This eliminates Docker build dependency and keeps images lightweight
 
 CMD ["R", "--quiet"]
