@@ -14,13 +14,13 @@
 #======================================================================
 
 # ARGs before FROM are available only for FROM instruction
-ARG R_VERSION=4.4.2
+ARG R_VERSION=4.5.1
 
 FROM rocker/r-ver:${R_VERSION}
 
 # Re-declare ARGs after FROM for use in build stages
 ARG USERNAME=analyst
-ARG RENV_VERSION=1.0.7
+ARG RENV_VERSION=1.1.5
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Reproducibility-critical environment variables (Pillar 1)
