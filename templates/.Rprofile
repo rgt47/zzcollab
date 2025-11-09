@@ -10,6 +10,18 @@ if (file.exists("renv/activate.R")) {
   source("renv/activate.R")
 }
 
+# renv consent (skips first-time prompts)
+options(renv.consent = TRUE)
+
+# Helper function for initializing renv without prompts
+renv_init_quiet <- function() {
+  renv::init(
+    settings = list(snapshot.type = "explicit"),
+    force = TRUE,
+    restart = FALSE
+  )
+}
+
 # ==========================================
 # Critical Reproducibility Options
 # See: docs/COLLABORATIVE_REPRODUCIBILITY.md Pillar 3
