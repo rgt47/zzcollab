@@ -55,7 +55,9 @@ RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
 
 # Create non-root user and set up environment
 RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library && \
+    mkdir -p /home/${USERNAME}/.cache/R/renv && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.cache
 
 # Switch to non-root user
 USER ${USERNAME}

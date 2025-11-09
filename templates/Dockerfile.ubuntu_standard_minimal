@@ -52,6 +52,7 @@ RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
 # Note: renv will self-bootstrap on first use via renv/activate.R
 RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
+    mkdir -p /home/${USERNAME}/.cache/R/renv && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
 
