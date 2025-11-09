@@ -23,6 +23,41 @@ renv_init_quiet <- function() {
 }
 
 # ==========================================
+# Auto-Initialize renv (New Projects)
+# ==========================================
+# Automatically initialize renv for new projects on first R session
+# Only runs if:
+# 1. renv not yet initialized (no renv.lock)
+# 2. This is a project directory (has DESCRIPTION or mounted in container)
+# 3. ZZCOLLAB_AUTO_INIT not disabled
+#
+# Disable with: docker run -e ZZCOLLAB_AUTO_INIT=false ...
+
+if (!file.exists("renv.lock")) {
+  # Check if auto-init is enabled (default: true)
+  auto_init <- Sys.getenv("ZZCOLLAB_AUTO_INIT", "true")
+
+  # Check if this looks like a project directory
+  is_project <- file.exists("DESCRIPTION") ||
+                getwd() == "/home/analyst/project"  # Container path
+
+  if (tolower(auto_init) %in% c("true", "t", "1") && is_project) {
+    message("\n🔧 ZZCOLLAB: Auto-initializing renv for new project...")
+
+    tryCatch({
+      renv_init_quiet()
+      message("✅ renv initialized successfully")
+      message("   Install packages with: install.packages('package')")
+    }, error = function(e) {
+      warning("⚠️  Auto-init failed: ", conditionMessage(e),
+              "\n   Run manually: renv_init_quiet()", call. = FALSE)
+    })
+  } else if (!is_project) {
+    message("\n💡 Tip: Initialize renv with renv_init_quiet()")
+  }
+}
+
+# ==========================================
 # Critical Reproducibility Options
 # See: docs/COLLABORATIVE_REPRODUCIBILITY.md Pillar 3
 # ==========================================
