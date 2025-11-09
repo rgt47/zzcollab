@@ -25,17 +25,14 @@ help:
 	@echo "    check-renv-ci (legacy)"
 	@echo ""
 	@echo "  Docker - works without local R:"
+	@echo "    r                     - Start container (RECOMMENDED! Auto-detects profile, mounts cache)"
+	@echo "    docker-run            - Same as 'make r' (auto-detects profile, mounts cache, validates)"
 	@echo "    docker-build          - Build image from current renv.lock"
 	@echo "    docker-build-log      - Build with detailed logs (for debugging)"
-	@echo "    docker-run            - Smart run: auto-detects profile and runs appropriately"
-	@echo "    docker-r, docker-bash, docker-zsh, docker-rstudio"
+	@echo "    docker-rstudio        - Start RStudio Server"
 	@echo "    docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
 	@echo "    docker-check-renv-fix"
-	@echo "    All docker-* targets auto-snapshot renv.lock on exit and validate packages!"
-	@echo ""
-	@echo "  Docker GUI (requires XQuartz):"
-	@echo "    docker-zsh-gui        - Launch zsh with X11 forwarding (xfce4-terminal, GUI apps)"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, clean-dotfiles, docker-clean, docker-build-clean"
@@ -133,83 +130,6 @@ docker-check-renv:
 docker-check-renv-fix:
 	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::snapshot()"
 
-docker-r:
-	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
-	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet
-	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then \
-		if ! touch renv.lock; then \
-			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
-		fi; \
-	fi
-
-docker-bash:
-	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
-	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME)
-	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then \
-		if ! touch renv.lock; then \
-			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
-		fi; \
-	fi
-
-docker-zsh:
-	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
-	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME)
-	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then \
-		if ! touch renv.lock; then \
-			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
-		fi; \
-	fi
-
-docker-zsh-gui:
-	@echo "Setting up X11 forwarding for GUI apps..."
-	@# Check if XQuartz is installed
-	@if ! command -v xquartz >/dev/null 2>&1 && ! [ -d /Applications/Utilities/XQuartz.app ]; then \
-		echo "❌ XQuartz not found. Installing..."; \
-		brew install --cask xquartz; \
-		echo "⚠️  XQuartz installed. Please log out and log back in, then run this command again."; \
-		exit 1; \
-	fi
-	@# Configure XQuartz to allow network connections
-	@CURRENT_SETTING=$$(defaults read org.xquartz.X11 nolisten_tcp 2>/dev/null || echo "1"); \
-	if [ "$$CURRENT_SETTING" != "0" ]; then \
-		echo "Configuring XQuartz to allow network connections..."; \
-		defaults write org.xquartz.X11 nolisten_tcp 0; \
-		echo "⚠️  XQuartz configuration updated. Restarting XQuartz..."; \
-		killall XQuartz 2>/dev/null || killall Xquartz 2>/dev/null || true; \
-		sleep 1; \
-	fi
-	@# Check if XQuartz is running, start it if not
-	@if ! pgrep -x "XQuartz" >/dev/null && ! pgrep -x "Xquartz" >/dev/null; then \
-		echo "Starting XQuartz..."; \
-		open -a XQuartz; \
-		sleep 3; \
-	fi
-	@# Set DISPLAY and allow connections
-	@export DISPLAY=:0 && \
-	if command -v xhost >/dev/null 2>&1; then \
-		xhost +localhost >/dev/null 2>&1 || true; \
-	fi
-	@echo "✅ X11 setup complete"
-	@echo ""
-	@echo "GUI apps available: xfce4-terminal, firefox, etc."
-	@echo "Run 'xfce4-terminal' to open a GUI terminal window"
-	@echo ""
-	@echo "🐳 Starting Docker container with X11 support (auto-snapshot on exit)..."
-	@DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME)
-	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then \
-		if ! touch renv.lock; then \
-			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
-		fi; \
-	fi
-
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: analyst, Password: analyst"
@@ -263,6 +183,13 @@ docker-run:
 			exit 1; \
 			;; \
 	esac
+	@echo "📋 Validating package dependencies..."
+	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
+	@if [ -f renv.lock ]; then \
+		if ! touch renv.lock; then \
+			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
+		fi; \
+	fi
 
 # Alias for docker-run (shorthand)
 r: docker-run
@@ -304,4 +231,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-zsh-gui docker-rstudio docker-run docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help

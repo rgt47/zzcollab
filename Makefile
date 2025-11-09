@@ -17,11 +17,11 @@ help:
 	@echo "    document, build, check, install, vignettes, test, deps"
 	@echo ""
 	@echo "  Docker - works without local R:"
+	@echo "    r                     - Start container (RECOMMENDED! Auto-detects profile, mounts cache)"
+	@echo "    docker-run            - Same as 'make r' (auto-detects profile, mounts cache)"
 	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
 	@echo "    docker-build-no-snapshot - Build without snapshot (advanced)"
-	@echo "    docker-run            - Smart run: auto-detects profile and runs appropriately"
-	@echo "    r                     - Shortcut for docker-run (quick: make r)"
-	@echo "    docker-r, docker-bash, docker-zsh, docker-rstudio"
+	@echo "    docker-rstudio        - Start RStudio Server"
 	@echo "    docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
 	@echo "    docker-check-renv-fix"
@@ -263,4 +263,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
