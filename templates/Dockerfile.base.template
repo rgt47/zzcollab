@@ -51,17 +51,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
-        ca-certificates && \
-    # r2u repository for binary R packages
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/\
-dirk_eddelbuettel_key.asc | \
-        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] \
-https://r2u.stat.illinois.edu/ubuntu noble main" > \
-        /etc/apt/sources.list.d/cranapt.list && \
-    apt-get update && \
-    # Core build dependencies (always needed)
-    apt-get install -y --no-install-recommends \
+        ca-certificates \
         build-essential \
         cmake \
         pkg-config \
@@ -75,26 +65,25 @@ https://r2u.stat.illinois.edu/ubuntu noble main" > \
         libfribidi-dev \
         libfreetype6-dev \
         libpng-dev \
-        libjpeg-dev
+        libjpeg-dev && \
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
+        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
+    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
+        /etc/apt/sources.list.d/cranapt.list && \
+    apt-get update
 
 # Custom system dependencies (generated from bundles.yaml)
 # Libraries: ${LIBS_BUNDLE_LIST}
 ${CUSTOM_SYSTEM_DEPS_INSTALL}
 
-# Configure repositories: RSPM with binary packages
-# Use a known good date (2024-10-26) to ensure packages are available
+# Configure repositories: r2u for binary packages
+# r2u compiles binaries within hours of CRAN release - no dated snapshot needed
 WORKDIR /build
 COPY renv.lock* ./
 COPY ren[v]/ ./renv/
 COPY .Rprofile* ./
 
-RUN UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-    echo "# RSPM snapshot date: 2024-10-26 (${UBUNTU_CODENAME})" \
-        >> /usr/local/lib/R/etc/Rprofile.site && \
-    echo "options(repos = c(" \
-        "CRAN = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
-        >> /usr/local/lib/R/etc/Rprofile.site && \
-    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version\$platform, R.version\$arch, R.version\$os)))" \
+RUN echo "options(repos = c(CRAN = 'https://r2u.stat.illinois.edu/ubuntu'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install custom R packages (generated from bundles.yaml)

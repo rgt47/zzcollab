@@ -40,36 +40,21 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
-        ca-certificates && \
-    # r2u repository for binary R packages
-    wget -q -O- \
-        https://eddelbuettel.github.io/r2u/assets/\
-dirk_eddelbuettel_key.asc | \
-        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] \
-https://r2u.stat.illinois.edu/ubuntu noble main" > \
-        /etc/apt/sources.list.d/cranapt.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        # Minimal runtime libraries for R packages
+        ca-certificates \
         libfontconfig1 \
         libfreetype6 \
         libpng16-16 \
         libjpeg8 \
-        # RStudio Server needs curl for health checks
-        curl
+        curl && \
+    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
+        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
+    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
+        /etc/apt/sources.list.d/cranapt.list && \
+    apt-get update
 
-# Configure repositories: RSPM with binary packages
-# Use a known good date (2024-10-26) to ensure packages are available
-RUN UBUNTU_CODENAME=$(. /etc/os-release && \
-        echo $VERSION_CODENAME) && \
-    echo "options(repos = c(" \
-        "CRAN = 'https://packagemanager.posit.co/cran/\
-__linux__/${UBUNTU_CODENAME}/2024-10-26'))" \
-        >> /usr/local/lib/R/etc/Rprofile.site && \
-    echo "options(HTTPUserAgent = sprintf('R/%s R (%s)', \
-getRversion(), paste(getRversion(), R.version\$platform, \
-R.version\$arch, R.version\$os)))" \
+# Configure repositories: r2u for binary packages
+# r2u compiles binaries within hours of CRAN release - no dated snapshot needed
+RUN echo "options(repos = c(CRAN = 'https://r2u.stat.illinois.edu/ubuntu'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install analysis packages from r2u (binary packages)
