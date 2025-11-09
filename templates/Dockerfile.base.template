@@ -50,8 +50,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        wget \
-        ca-certificates \
         build-essential \
         cmake \
         pkg-config \
@@ -65,25 +63,19 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libfribidi-dev \
         libfreetype6-dev \
         libpng-dev \
-        libjpeg-dev && \
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
-        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
-        /etc/apt/sources.list.d/cranapt.list && \
-    apt-get update
+        libjpeg-dev
 
 # Custom system dependencies (generated from bundles.yaml)
 # Libraries: ${LIBS_BUNDLE_LIST}
 ${CUSTOM_SYSTEM_DEPS_INSTALL}
 
-# Configure repositories: r2u for binary packages
-# r2u compiles binaries within hours of CRAN release - no dated snapshot needed
+# Configure R to use CRAN
 WORKDIR /build
 COPY renv.lock* ./
 COPY ren[v]/ ./renv/
 COPY .Rprofile* ./
 
-RUN echo "options(repos = c(CRAN = 'https://r2u.stat.illinois.edu/ubuntu'))" \
+RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install custom R packages (generated from bundles.yaml)
