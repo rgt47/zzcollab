@@ -12,6 +12,7 @@ renv/cellar/
 renv/lock/
 renv/python/
 renv/staging/
+.cache/
 
 # OS generated files
 .DS_Store
