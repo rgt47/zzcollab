@@ -165,47 +165,19 @@ test_check(\"$pkg_name\")"
 #=============================================================================
 
 # Function: create_renv_setup
-# Purpose: Creates renv package management setup for reproducible environments
+# Purpose: Creates package validation setup for reproducible environments
 # Creates:
-#   - setup_renv.R script for initializing renv
-#   - Installs essential development packages
-#   - Creates renv.lock for dependency tracking
+#   - validation.sh script for dependency checking (pure shell, no R required)
 #
-# renv Benefits:
-#   - Project-specific package libraries
-#   - Reproducible package versions
-#   - Dependency isolation from system R
-#   - Easy collaboration with locked package versions
+# Note: renv/ directory and renv.lock will be created inside the container
+# on first run, following the Docker-first philosophy (no host R required)
 #
-# Tracking: The setup script is tracked for uninstall
+# Tracking: The validation script is tracked for uninstall
 create_renv_setup() {
-    log_debug "Creating renv structure and package validation setup..."
+    log_debug "Creating package validation setup..."
 
-    # Create renv directory with activate.R (self-bootstrapping)
-    # This allows renv to install itself on first use - no Docker dependency!
-    if [[ ! -d "renv" ]]; then
-        mkdir -p "renv"
-        track_directory "renv"
-    fi
-
-    # Copy activate.R from template (self-contained bootstrap script)
-    if [[ -f "$TEMPLATES_DIR/renv/activate.R" ]]; then
-        cp "$TEMPLATES_DIR/renv/activate.R" "renv/activate.R"
-        track_file "renv/activate.R"
-        log_success "Created renv/activate.R (self-bootstrapping, no Docker install needed)"
-    else
-        log_error "Template renv/activate.R not found: $TEMPLATES_DIR/renv/activate.R"
-        return 1
-    fi
-
-    # Copy renv .gitignore
-    if [[ -f "$TEMPLATES_DIR/renv/.gitignore" ]]; then
-        cp "$TEMPLATES_DIR/renv/.gitignore" "renv/.gitignore"
-        track_file "renv/.gitignore"
-        log_success "Created renv/.gitignore"
-    else
-        log_warn "Template renv/.gitignore not found"
-    fi
+    # Note: renv/ directory and activate.R will be created inside container
+    # This follows Docker-first philosophy - all R operations happen in containers
 
     # Install validation.sh script (pure shell validation, no R required)
     if install_template "modules/validation.sh" "modules/validation.sh" "package validation script" "Created validation.sh for dependency checking"; then

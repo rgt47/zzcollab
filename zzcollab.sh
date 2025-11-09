@@ -970,12 +970,10 @@ finalize_and_report_results() {
         log_info "⏭️ Skipping Docker image build (use 'make docker-build' to build)"
         log_info "💡 Run 'make docker-build' after initialization completes"
     fi
-    
-    # Initialize renv with minimal lock from Docker image (Docker-first workflow)
-    # Uses versions directly from Docker base image - no host R or Python required
-    log_info "📦 Creating renv.lock file..."
-    create_minimal_renv_lock
-    
+
+    # Note: renv.lock will be created inside the container on first run
+    # This follows the Docker-first philosophy - no host R required
+
     # Create GitHub repository if requested
     if [[ "$CREATE_GITHUB_REPO" == "true" ]]; then
         log_info "🐙 Creating GitHub repository..."
