@@ -28,7 +28,8 @@ ARG PROJECT_NAME=project
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
-    OMP_NUM_THREADS=1
+    OMP_NUM_THREADS=1 \
+    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv
 
 # Alpine uses apk instead of apt-get
 # Note: Alpine/musl has no binary R packages - must compile from source

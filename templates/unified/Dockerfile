@@ -12,6 +12,8 @@ ENV TZ=UTC
 # Single-threaded operations for reproducible parallel processing
 # (Adjust OMP_NUM_THREADS if intentionally using parallelization)
 ENV OMP_NUM_THREADS=1
+# renv cache location for persistent package storage
+ENV RENV_PATHS_CACHE=/home/rstudio/.cache/R/renv
 
 # Set working directory
 WORKDIR /project

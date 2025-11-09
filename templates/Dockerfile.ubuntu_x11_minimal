@@ -27,7 +27,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
-    OMP_NUM_THREADS=1
+    OMP_NUM_THREADS=1 \
+    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv
 
 # Install runtime dependencies for X11
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \

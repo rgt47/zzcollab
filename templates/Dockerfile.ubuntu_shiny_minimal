@@ -31,7 +31,8 @@ ARG TARGETPLATFORM
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
-    OMP_NUM_THREADS=1
+    OMP_NUM_THREADS=1 \
+    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv
 
 # Platform note (shiny is AMD64 only, using emulation on ARM64)
 RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
