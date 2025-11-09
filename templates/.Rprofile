@@ -51,7 +51,15 @@ options(
   OutDec = ".",
 
   # CRAN mirror for package installation
-  repos = c(CRAN = "https://cloud.r-project.org")
+  repos = c(CRAN = "https://cloud.r-project.org"),
+
+  # Package installation behavior (non-interactive)
+  # Prevents prompts during install.packages()
+  install.packages.check.source = "no",
+  install.packages.compile.from.source = "never",
+
+  # Parallel installation (faster package installs)
+  Ncpus = parallel::detectCores()
 )
 
 # ==========================================
