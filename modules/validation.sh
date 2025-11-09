@@ -38,8 +38,8 @@ PLACEHOLDER_PACKAGES=(
 )
 
 # Directories to scan for R code
-STANDARD_DIRS=("R" "scripts" "analysis")
-STRICT_DIRS=("R" "scripts" "analysis" "tests" "vignettes" "inst")
+STANDARD_DIRS=("." "R" "scripts" "analysis")
+STRICT_DIRS=("." "R" "scripts" "analysis" "tests" "vignettes" "inst")
 
 # Files to skip (documentation examples, templates)
 SKIP_FILES=(
@@ -896,6 +896,8 @@ parse_renv_lock() {
 #                     "false" (default) to scan only standard dirs (R/, scripts/)
 #   $2 - auto_fix: "true" to attempt automatic fixes (NOT YET IMPLEMENTED),
 #                  "false" (default) to only report issues
+#   $3 - verbose: "true" to list all missing packages,
+#                 "false" (default) to show only count
 # RETURNS:
 #   0 - All packages properly declared (validation passed)
 #   1 - Missing packages found (validation failed)
@@ -932,6 +934,7 @@ parse_renv_lock() {
 validate_package_environment() {
     local strict_mode="${1:-false}"
     local auto_fix="${2:-false}"
+    local verbose="${3:-false}"
 
     log_info "Validating package dependencies..."
 
@@ -1001,11 +1004,20 @@ validate_package_environment() {
 
     # Step 7: Handle Code → DESCRIPTION issues
     if [[ ${#missing[@]} -gt 0 ]]; then
-        log_error "Packages used in code but not in DESCRIPTION Imports:"
-        for pkg in "${missing[@]}"; do
-            echo "  - $pkg"
-        done
-        echo ""
+        log_error "Found ${#missing[@]} packages used in code but not in DESCRIPTION Imports"
+
+        # List packages if verbose mode or auto-fix mode
+        if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
+            echo ""
+            for pkg in "${missing[@]}"; do
+                echo "  - $pkg"
+            done
+            echo ""
+        else
+            echo ""
+            log_info "Run with --verbose to see the list of missing packages"
+            echo ""
+        fi
 
         if [[ "$auto_fix" == "true" ]]; then
             log_info "Auto-fixing: Adding missing packages to DESCRIPTION and renv.lock..."
@@ -1055,11 +1067,21 @@ validate_package_environment() {
 
     # Step 8: Report DESCRIPTION → renv.lock issues
     if [[ ${#missing_from_lock[@]} -gt 0 ]]; then
-        log_error "Packages in DESCRIPTION but not in renv.lock:"
-        for pkg in "${missing_from_lock[@]}"; do
-            echo "  - $pkg"
-        done
-        echo ""
+        log_error "Found ${#missing_from_lock[@]} packages in DESCRIPTION but not in renv.lock"
+
+        # List packages if verbose mode or auto-fix mode
+        if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
+            echo ""
+            for pkg in "${missing_from_lock[@]}"; do
+                echo "  - $pkg"
+            done
+            echo ""
+        else
+            echo ""
+            log_info "Run with --verbose to see the list of missing packages"
+            echo ""
+        fi
+
         echo "This breaks reproducibility! Collaborators cannot restore your environment."
         echo ""
 
@@ -1142,8 +1164,9 @@ validate_package_environment() {
 validate_and_report() {
     local strict_mode="${1:-true}"
     local auto_fix="${2:-true}"
+    local verbose="${3:-false}"
 
-    if validate_package_environment "$strict_mode" "$auto_fix"; then
+    if validate_package_environment "$strict_mode" "$auto_fix" "$verbose"; then
         log_success "Package environment validation passed"
 
         # Clean up unused packages from DESCRIPTION
@@ -1214,6 +1237,7 @@ validate_and_report() {
 main() {
     local strict_mode=true
     local auto_fix=true
+    local verbose=false
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -1234,6 +1258,10 @@ main() {
                 auto_fix=false
                 shift
                 ;;
+            --verbose|-v)
+                verbose=true
+                shift
+                ;;
             --help|-h)
                 cat <<EOF
 Usage: validation.sh [OPTIONS]
@@ -1244,16 +1272,19 @@ DEFAULTS:
     Strict mode and auto-fix are ENABLED by default for comprehensive validation.
 
 OPTIONS:
-    --strict        Enable strict mode (scan tests/, vignettes/) [DEFAULT]
-    --no-strict     Disable strict mode (scan only R/, scripts/, analysis/)
+    --strict        Enable strict mode (scan tests/, vignettes/, root) [DEFAULT]
+    --no-strict     Disable strict mode (scan only R/, scripts/, analysis/, root)
     --fix           Auto-add missing packages to renv.lock via CRAN API [DEFAULT]
     --no-fix        Report issues without auto-fixing
+    --verbose, -v   List all missing packages (always enabled with --fix)
     --help, -h      Show this help message
 
 EXAMPLES:
-    validation.sh              # Full validation with auto-fix (recommended)
-    validation.sh --no-fix     # Validation only, no auto-add
-    validation.sh --no-strict  # Skip tests/ and vignettes/ directories
+    validation.sh                # Full validation with auto-fix (recommended)
+    validation.sh --verbose      # Show list of missing packages
+    validation.sh --no-fix       # Validation only, no auto-add
+    validation.sh --no-strict    # Skip tests/ and vignettes/ directories
+    validation.sh -v --no-fix    # Verbose validation without auto-fix
 
 REQUIREMENTS:
     - jq (for renv.lock parsing and editing): brew install jq
@@ -1284,7 +1315,7 @@ EOF
     done
 
     # Run validation
-    validate_and_report "$strict_mode" "$auto_fix"
+    validate_and_report "$strict_mode" "$auto_fix" "$verbose"
 }
 
 # Only run main if executed directly (not sourced)

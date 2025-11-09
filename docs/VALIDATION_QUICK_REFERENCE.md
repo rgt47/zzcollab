@@ -10,16 +10,18 @@
 ```bash
 make check-renv                    # Check DESCRIPTION ↔ renv.lock consistency
 modules/validation.sh              # Direct validation script call
+modules/validation.sh --verbose    # Show list of missing packages
 ```
 
-**Scans**: `R/`, `analysis/scripts/`, `analysis/paper/`
+**Scans**: `.` (root), `R/`, `scripts/`, `analysis/`
 
 ### Strict Validation
 ```bash
 make check-renv-strict            # Also scans tests/ and vignettes/
+modules/validation.sh --strict    # Direct script call with strict mode
 ```
 
-**Scans**: `R/`, `analysis/scripts/`, `analysis/paper/`, `tests/`, `vignettes/`
+**Scans**: `.` (root), `R/`, `scripts/`, `analysis/`, `tests/`, `vignettes/`, `inst/`
 
 ### Automatic Validation
 ```bash
@@ -204,7 +206,7 @@ DESCRIPTION Imports not in renv.lock:
 
 ### Three Sources of Truth
 
-1. **Code Analysis** (`R/`, `analysis/scripts/`, `analysis/paper/`)
+1. **Code Analysis** (`.` (root), `R/`, `scripts/`, `analysis/`, and optionally `tests/`, `vignettes/`, `inst/`)
    - Scans for `library()`, `require()`, `package::function()` calls
    - Pure shell: grep, sed, awk
 
