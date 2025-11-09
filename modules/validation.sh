@@ -37,6 +37,14 @@ PLACEHOLDER_PACKAGES=(
     "zzcollab"  # Don't declare ourselves as a dependency
 )
 
+# Dynamically add current package name to placeholders (don't self-reference)
+if [[ -f "DESCRIPTION" ]]; then
+    CURRENT_PACKAGE=$(grep '^Package:' DESCRIPTION | sed 's/^Package:[[:space:]]*//')
+    if [[ -n "$CURRENT_PACKAGE" ]]; then
+        PLACEHOLDER_PACKAGES+=("$CURRENT_PACKAGE")
+    fi
+fi
+
 # Directories to scan for R code
 STANDARD_DIRS=("." "R" "scripts" "analysis")
 STRICT_DIRS=("." "R" "scripts" "analysis" "tests" "vignettes" "inst")
