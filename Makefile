@@ -7,9 +7,14 @@ R_VERSION = latest
 # Help target (default)
 help:
 	@echo "Available targets:"
+	@echo "  Validation (NO HOST R REQUIRED!):"
+	@echo "    check-renv            - Full validation: strict + auto-fix + verbose (recommended)"
+	@echo "    check-renv-no-fix     - Validation only, no auto-fix"
+	@echo "    check-renv-no-strict  - Standard mode (skip tests/, vignettes/, inst/)"
+	@echo "    check-renv-ci         - CI/CD validation (same as check-renv)"
+	@echo ""
 	@echo "  Native R - requires local R installation:"
 	@echo "    document, build, check, install, vignettes, test, deps"
-	@echo "    check-renv, check-renv-fix, check-renv-ci"
 	@echo ""
 	@echo "  Docker - works without local R:"
 	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
@@ -50,13 +55,16 @@ deps:
 	R -e "devtools::install_deps(dependencies = TRUE)"
 
 check-renv:
-	R -e "renv::status()"
+	@bash modules/validation.sh --fix --strict --verbose
 
-check-renv-fix:
-	R -e "renv::snapshot()"
+check-renv-no-fix:
+	@bash modules/validation.sh --no-fix --strict --verbose
+
+check-renv-no-strict:
+	@bash modules/validation.sh --fix --verbose
 
 check-renv-ci:
-	Rscript validate_package_environment.R --quiet --fail-on-issues
+	@bash modules/validation.sh --fix --strict --verbose
 
 # Docker targets (work without local R)
 # SAFETY IMPROVEMENT: docker-build is now safe by default
@@ -104,15 +112,6 @@ docker-check-renv:
 
 docker-check-renv-fix:
 	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::snapshot()"
-
-docker-r:
-	docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) R
-
-docker-bash:
-	docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/bash
-
-docker-zsh:
-	docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/zsh
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
@@ -264,4 +263,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-fix check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-r docker-bash docker-zsh docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

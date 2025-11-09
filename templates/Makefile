@@ -67,25 +67,25 @@ deps:
 
 # Validate package dependencies (Pure shell, NO HOST R REQUIRED!)
 # Checks that all packages used in code are in DESCRIPTION and renv.lock
-# Full validation with strict mode and auto-fix (DEFAULT behavior)
-# Scans all directories (R/, scripts/, analysis/, tests/, vignettes/)
-# Auto-adds missing packages to renv.lock via CRAN API (pure shell + jq)
+# Full validation with strict mode, auto-fix, and verbose output (DEFAULT behavior)
+# Scans all directories (root, R/, scripts/, analysis/, tests/, vignettes/, inst/)
+# Auto-adds missing packages to DESCRIPTION and renv.lock
 # Run this before `git commit` to catch issues locally (prevents CI failures)
 check-renv:
-	@bash modules/validation.sh
+	@bash modules/validation.sh --fix --strict --verbose
 
-# Validation only, no auto-fix (report issues without modifying renv.lock)
+# Validation only, no auto-fix (report issues without modifying files)
 check-renv-no-fix:
-	@bash modules/validation.sh --no-fix
+	@bash modules/validation.sh --no-fix --strict --verbose
 
-# Standard mode validation (skip tests/ and vignettes/ directories)
+# Standard mode validation (skip tests/, vignettes/, inst/ directories)
 check-renv-no-strict:
-	@bash modules/validation.sh --no-strict
+	@bash modules/validation.sh --fix --verbose
 
 # Legacy: R-based validation (for CI/CD that has R pre-installed)
 # This is the old approach, kept for backward compatibility
 check-renv-ci:
-	Rscript validate_package_environment.R --quiet --fail-on-issues
+	@bash modules/validation.sh --fix --strict --verbose
 
 # Docker targets (work without local R)
 # Docker-first workflow:
@@ -137,7 +137,7 @@ docker-r:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
 	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet
 	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
+	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
 		if ! touch renv.lock; then \
 			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
@@ -148,7 +148,7 @@ docker-bash:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
 	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME)
 	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
+	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
 		if ! touch renv.lock; then \
 			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
@@ -159,7 +159,7 @@ docker-zsh:
 	@echo "🐳 Starting Docker container (auto-snapshot on exit)..."
 	@docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project $(PACKAGE_NAME)
 	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
+	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
 		if ! touch renv.lock; then \
 			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
@@ -203,7 +203,7 @@ docker-zsh-gui:
 	@echo "🐳 Starting Docker container with X11 support (auto-snapshot on exit)..."
 	@DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME)
 	@echo "📋 Validating package dependencies..."
-	@bash modules/validation.sh || echo "⚠️  Package validation failed - see above for details"
+	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
 		if ! touch renv.lock; then \
 			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
