@@ -34,14 +34,12 @@ ENV LANG=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1
 
-# Install runtime dependencies and r2u repository in single layer
+# Install runtime dependencies for X11
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        wget \
-        ca-certificates \
         xauth \
         libx11-6 \
         libxt6 \
@@ -50,24 +48,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libfreetype6 \
         libpng16-16 \
         libjpeg8 \
-        curl && \
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
-        tee -a /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu noble main" > \
-        /etc/apt/sources.list.d/cranapt.list && \
-    apt-get update
+        curl
 
-# Configure repositories: r2u for binary packages
-# r2u compiles binaries within hours of CRAN release - no dated snapshot needed
-RUN echo "options(repos = c(CRAN = 'https://r2u.stat.illinois.edu/ubuntu'))" \
+# Configure R to use CRAN
+RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install analysis packages from r2u (binary packages)
-# Install renv separately with specific version to match renv.lock
+# Install analysis packages from CRAN
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
-    R -e "install.packages('remotes')" && \
-    R -e "remotes::install_version('renv', version = '${RENV_VERSION}', repos = 'https://cloud.r-project.org')" && \
-    R -e "install.packages(c('here', 'janitor', \
+    R -e "install.packages(c('renv', 'here', 'janitor', \
         'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
 
 # Create user and set up environment

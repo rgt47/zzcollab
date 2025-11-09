@@ -29,14 +29,12 @@ ENV LANG=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1
 
-# Install runtime dependencies, r2u repository, and configure R in single layer
+# Install runtime dependencies for X11
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        wget \
-        ca-certificates \
         xauth \
         libx11-6 \
         libxt6 \
@@ -44,23 +42,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libfontconfig1 \
         libfreetype6 \
         libpng16-16 \
-        libjpeg8 && \
-    # Add r2u repository for binary R packages
-    # Verify GPG key fingerprint: 67C2D66C4B1D4339 (Dirk Eddelbuettel)
-    wget -q -O- https://eddelbuettel.github.io/r2u/assets/dirk_eddelbuettel_key.asc | \
-        tee /etc/apt/trusted.gpg.d/cranapt_key.asc && \
-    UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME) && \
-    echo "deb [arch=amd64,arm64] https://r2u.stat.illinois.edu/ubuntu ${UBUNTU_CODENAME} main" > \
-        /etc/apt/sources.list.d/cranapt.list && \
-    apt-get update && \
-    # Configure R to use r2u repository
-    echo "options(repos = c(CRAN = 'https://r2u.stat.illinois.edu/ubuntu'))" \
+        libjpeg8
+
+# Configure R to use CRAN
+RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install renv with pinned version (binary package from r2u)
+# Install renv from CRAN
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
-    R -e "install.packages('remotes')" && \
-    R -e "remotes::install_version('renv', version = '${RENV_VERSION}', repos = 'https://r2u.stat.illinois.edu/ubuntu')"
+    R -e "install.packages('renv')"
 
 # Create non-root user and set up environment
 RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
