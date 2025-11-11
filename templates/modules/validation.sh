@@ -49,7 +49,7 @@ fi
 STANDARD_DIRS=("." "R" "scripts" "analysis")
 STRICT_DIRS=("." "R" "scripts" "analysis" "tests" "vignettes" "inst")
 
-# Files to skip (documentation examples, templates)
+# Files to skip (documentation examples, templates, infrastructure)
 SKIP_FILES=(
     "*/README.Rmd"
     "*/README.md"
@@ -57,6 +57,9 @@ SKIP_FILES=(
     "*/examples/*"
     "*/inst/examples/*"
     "*/man/examples/*"
+    "*/renv/*"
+    "*/.cache/*"
+    "*/.git/*"
 )
 
 # File extensions to search
@@ -162,7 +165,16 @@ add_package_to_description() {
 
     # Detect end of Imports (next field starts)
     in_imports && /^[A-Z]/ {
-        # Add package before next field
+        # Add comma to last import line if missing, then add new package
+        if (!added && last_import_line != "") {
+            # Check if last line already has comma
+            if (last_import_line !~ /,$/) {
+                last_import_line = last_import_line ","
+            }
+            print last_import_line
+            last_import_line = ""
+        }
+        # Add new package
         if (!added) {
             print "    " pkg ","
             added = 1
@@ -172,9 +184,14 @@ add_package_to_description() {
         next
     }
 
-    # Inside Imports field
+    # Inside Imports field - buffer lines to handle comma on last line
     in_imports {
-        print $0
+        # If we have a buffered line, print it now
+        if (last_import_line != "") {
+            print last_import_line
+        }
+        # Buffer current line
+        last_import_line = $0
         next
     }
 
@@ -184,6 +201,14 @@ add_package_to_description() {
     END {
         # If still in imports at end of file
         if (in_imports && !added) {
+            # Print buffered last import line with comma
+            if (last_import_line != "") {
+                if (last_import_line !~ /,$/) {
+                    last_import_line = last_import_line ","
+                }
+                print last_import_line
+            }
+            # Add new package (last item, no trailing comma)
             print "    " pkg
         }
     }
