@@ -37,35 +37,6 @@ GitHub as a private repository.
 - GitHub account (example: rgt47)
 - Personal access token for GitHub (with repo permissions)
 - zzcollab installed (`./install.sh`)
-- Dotfiles directory (optional) at `~/dotfiles`
-
-**Important Note About Dotfiles:**
-
-ZZCOLLAB supports **two dotfiles modes**:
-
-**Option 1: Files WITH dots (use `-d` flag) - RECOMMENDED**
-```bash
-~/dotfiles/
-  .vimrc        # WITH leading dot
-  .tmux.conf    # WITH leading dot
-  .gitconfig    # WITH leading dot
-  .zshrc        # WITH leading dot
-```
-
-**Option 2: Files WITHOUT dots (use `-D` flag)**
-```bash
-~/dotfiles/
-  vimrc         # WITHOUT leading dot
-  tmux.conf     # WITHOUT leading dot
-  gitconfig     # WITHOUT leading dot
-  zshrc         # WITHOUT leading dot
-```
-
-**How it works:**
-- `-d ~/dotfiles`: Copies files WITH dots as-is (`.vimrc` → `.vimrc` in container)
-- `-D ~/dotfiles`: Adds dots during copy (`vimrc` → `.vimrc` in container)
-
-**Note**: All dotfiles are now OPTIONAL (wildcards used). Docker builds succeed even if dotfiles are missing.
 
 # Step-by-Step Instructions
 
@@ -88,22 +59,20 @@ zzcollab --config set dockerhub-account "rgt47"
 
 # Set default Docker profile (optional - leave empty for minimal)
 zzcollab --config set profile-name ""
-
-# Set dotfiles directory
-zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 **What this accomplishes:**
 - All future `zzcollab` commands use these defaults
-- No need to specify `-t` or `-D` flags repeatedly
+- No need to specify `-t` flag repeatedly
 - Change defaults anytime with `zzcollab --config set`
 
 **Configuration Options Explained:**
 
 - **profile-name**: Controls Docker environment (team/shared)
-  - Options: minimal, rstudio, analysis, bioinformatics, geospatial, etc.
+  - 11 predefined profiles available
+  - Typically specified with `-r` flag when creating projects
   - Leave empty for minimal profile (default)
-  - Can also set libs-bundle and pkgs-bundle for custom composition
+  - Can also compose custom environments with `-b`, `-l`, `-k` flags
 
 **Note on Package Management:**
 - Packages are added via `install.packages()` inside the container as needed
@@ -122,7 +91,6 @@ zzcollab
 
 # Flags come from config (set in Step 1):
 # -t rgt47: from team-name config
-# -D ~/dotfiles: from dotfiles-dir config
 
 # Build Docker image (required step)
 make docker-build
@@ -141,38 +109,36 @@ streamlined development environment optimized for individual work.
 
 **Using Different Docker Profiles:**
 
-If you want a specialized Docker environment (bioinformatics, geospatial, etc.),
-use the `--profile-name` flag or set it in config:
+ZZCOLLAB provides 11 predefined profiles for specialized environments. Use the `-r` flag to specify a profile:
 
 ```bash
-# Option 1: Set profile in config (applies to all future projects)
-zzcollab --config set profile-name "bioinformatics"
+# Option 1: Use -r flag for profile selection (most common)
 mkdir genomics-study && cd genomics-study
-zzcollab
+zzcollab -r bioinformatics
 make docker-build
 
-# Option 2: Use flag for one-time profile selection
+# Option 2: Use -r flag for geospatial work
 mkdir spatial-analysis && cd spatial-analysis
-zzcollab --profile-name geospatial
+zzcollab -r geospatial
 make docker-build
 
-# Option 3: Custom composition with bundles
+# Option 3: Custom composition with base image and bundles
 mkdir custom-project && cd custom-project
-zzcollab -b rocker/r-ver --libs geospatial --pkgs modeling
+zzcollab -b rocker/r-ver -l geospatial -k modeling
 make docker-build
 
 # Browse all available profiles
-zzcollab --list-profiles  # All predefined Docker profiles
+zzcollab --list-profiles  # Show all 11 predefined profiles
 zzcollab --list-libs      # System library bundles
 zzcollab --list-pkgs      # R package bundles
 ```
 
 **How Docker Profiles Work:**
 
-- **Docker Profile** (`--profile-name`): Controls the base Docker image and pre-installed packages
+- **Docker Profile** (`-r` flag): Controls the base Docker image and pre-installed packages
   - Shared across team members
-  - Examples: bioinformatics, geospatial, alpine_minimal
-  - Set once in config or specify per project
+  - 11 predefined profiles: minimal, analysis, modeling, bioinformatics, geospatial, and more
+  - Specify per project with `-r` flag (e.g., `zzcollab -r bioinformatics`)
 
 - **Package Management**: Packages are added dynamically as needed
   - Use `install.packages("package-name")` inside the container
@@ -187,7 +153,13 @@ zzcollab --list-pkgs      # R package bundles
 gh repo edit --visibility private
 ```
 
-## Step 4: Create Analysis Functions and Report (3 minutes)
+## Step 4: Add Research Data and Processing Pipeline (4 minutes)
+
+This step demonstrates the complete data workflow following the Five Pillars of Reproducibility:
+- **Pillar 5**: Raw data in `analysis/data/raw_data/`
+- **Pillar 4**: Processing scripts in `analysis/scripts/`
+- **Pillar 4**: Reusable functions in `R/`
+- **Pillar 4**: Unit tests in `tests/testthat/`
 
 Start the Docker development environment:
 
@@ -196,17 +168,286 @@ Start the Docker development environment:
 make docker-zsh
 ```
 
-**✨ NEW: Auto-Snapshot Architecture**
+### Add Raw Data
 
-When you exit the container, ZZCOLLAB automatically:
-1. Runs `renv::snapshot()` to capture package dependencies
-2. Adjusts timestamp for RSPM binary package availability (10-20x faster Docker builds)
-3. Validates package consistency (pure shell, no host R required!)
-4. Restores timestamp to current time for accurate git history
+Create a raw data file (simulating field-collected penguin measurements):
 
-**You no longer need to manually run `renv::snapshot()`!** Just work and exit.
+```bash
+# Create raw data file
+cat > analysis/data/raw_data/penguins_raw.csv << 'EOF'
+species,island,bill_length_mm,bill_depth_mm,flipper_length_mm,body_mass_g,sex,year
+Adelie,Torgersen,39.1,18.7,181,3750,male,2007
+Adelie,Torgersen,39.5,17.4,186,3800,female,2007
+Adelie,Torgersen,40.3,18.0,195,3250,female,2007
+Adelie,Torgersen,NA,NA,NA,NA,NA,2007
+Gentoo,Biscoe,46.1,13.2,211,4500,female,2007
+Gentoo,Biscoe,50.0,16.3,230,5700,male,2007
+Chinstrap,Dream,46.5,17.9,192,3500,female,2007
+Chinstrap,Dream,50.0,19.5,196,3900,male,2007
+EOF
 
-### Optional: GUI Support for Interactive Graphics
+# Document the raw data
+cat > analysis/data/raw_data/README.md << 'EOF'
+# Raw Data: Palmer Penguins
+
+## Source
+Simulated penguin measurements from Palmer Station Antarctica LTER.
+
+## Collection Methods
+- Field measurements of adult penguins
+- Three species: Adelie, Gentoo, Chinstrap
+- Three islands: Torgersen, Biscoe, Dream
+
+## Variables
+- species: Penguin species (Adelie, Gentoo, Chinstrap)
+- island: Island where observed
+- bill_length_mm: Bill length in millimeters
+- bill_depth_mm: Bill depth in millimeters
+- flipper_length_mm: Flipper length in millimeters
+- body_mass_g: Body mass in grams
+- sex: Penguin sex (male, female)
+- year: Year of observation
+
+## Known Issues
+- Row 4 contains missing values (equipment failure)
+- All measurements subject to ±0.5mm measurement error
+EOF
+```
+
+### Create Data Processing Script
+
+Create a script to clean and process the raw data:
+
+```bash
+# Create processing script
+cat > analysis/scripts/01_process_data.R << 'EOF'
+# Data Processing Script: Clean raw penguin data
+# Input: analysis/data/raw_data/penguins_raw.csv
+# Output: analysis/data/derived_data/penguins_clean.csv
+
+library(dplyr)
+
+# Load raw data
+raw_data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
+
+# Process data
+clean_data <- raw_data %>%
+  # Remove rows with missing values
+  filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+  # Add derived variables
+  mutate(
+    bill_ratio = bill_length_mm / bill_depth_mm,
+    size_category = case_when(
+      body_mass_g < 3500 ~ "small",
+      body_mass_g < 4500 ~ "medium",
+      TRUE ~ "large"
+    )
+  )
+
+# Create output directory if needed
+dir.create("analysis/data/derived_data", showWarnings = FALSE, recursive = TRUE)
+
+# Save processed data
+write.csv(clean_data, "analysis/data/derived_data/penguins_clean.csv", row.names = FALSE)
+
+# Log processing results
+cat("Processed", nrow(clean_data), "valid records from", nrow(raw_data), "raw records\n")
+cat("Removed", nrow(raw_data) - nrow(clean_data), "incomplete records\n")
+EOF
+
+# Document the processed data
+cat > analysis/data/derived_data/README.md << 'EOF'
+# Processed Data: Palmer Penguins (Clean)
+
+## Source
+Processed from `analysis/data/raw_data/penguins_raw.csv`
+
+## Processing Steps
+See: `analysis/scripts/01_process_data.R`
+
+1. Loaded raw data
+2. Removed rows with missing bill measurements
+3. Added derived variables:
+   - bill_ratio: bill_length_mm / bill_depth_mm
+   - size_category: small (<3500g), medium (3500-4500g), large (>4500g)
+
+## Quality Checks
+- All rows have complete bill measurements
+- All derived variables computed successfully
+- No outliers detected beyond expected range
+EOF
+
+# Run the processing script
+Rscript analysis/scripts/01_process_data.R
+```
+
+### Create Reusable Analysis Functions
+
+Create functions in `R/` directory that use the processed data:
+
+```bash
+# Create data loading function
+cat > R/data_utils.R << 'EOF'
+#' Load processed penguin data
+#'
+#' @param path Path to clean data file
+#' @return data.frame of processed penguin data
+#' @export
+load_penguin_data <- function(path = "analysis/data/derived_data/penguins_clean.csv") {
+  if (!file.exists(path)) {
+    stop("Clean data file not found. Run analysis/scripts/01_process_data.R first.")
+  }
+
+  data <- read.csv(path, stringsAsFactors = FALSE)
+
+  # Validate expected columns
+  required_cols <- c("species", "bill_length_mm", "bill_depth_mm", "bill_ratio")
+  missing_cols <- setdiff(required_cols, names(data))
+
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  data
+}
+
+#' Calculate summary statistics by species
+#'
+#' @param data Penguin data
+#' @return data.frame of summary statistics
+#' @export
+summarize_by_species <- function(data) {
+  data %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarize(
+      n = dplyr::n(),
+      mean_bill_length = mean(bill_length_mm, na.rm = TRUE),
+      mean_bill_depth = mean(bill_depth_mm, na.rm = TRUE),
+      mean_bill_ratio = mean(bill_ratio, na.rm = TRUE),
+      .groups = "drop"
+    )
+}
+EOF
+
+# Install required packages
+Rscript -e 'install.packages("dplyr")'
+```
+
+### Create Unit Tests
+
+Add tests for the data processing functions:
+
+```bash
+# Create test file for data utilities
+cat > tests/testthat/test-data_utils.R << 'EOF'
+# Source functions
+source('../../R/data_utils.R')
+
+test_that("load_penguin_data loads valid data", {
+  # This test assumes processing script has been run
+  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+
+  data <- load_penguin_data()
+
+  # Check structure
+  expect_true(is.data.frame(data))
+  expect_gt(nrow(data), 0)
+
+  # Check required columns
+  expect_true("species" %in% names(data))
+  expect_true("bill_length_mm" %in% names(data))
+  expect_true("bill_depth_mm" %in% names(data))
+  expect_true("bill_ratio" %in% names(data))
+})
+
+test_that("load_penguin_data fails gracefully with missing file", {
+  expect_error(
+    load_penguin_data("/nonexistent/path.csv"),
+    "Clean data file not found"
+  )
+})
+
+test_that("summarize_by_species produces valid output", {
+  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+
+  data <- load_penguin_data()
+  summary <- summarize_by_species(data)
+
+  # Check structure
+  expect_true(is.data.frame(summary))
+  expect_true("species" %in% names(summary))
+  expect_true("n" %in% names(summary))
+  expect_true("mean_bill_length" %in% names(summary))
+
+  # Check values are numeric
+  expect_type(summary$mean_bill_length, "double")
+  expect_type(summary$mean_bill_depth, "double")
+
+  # Check all means are positive
+  expect_true(all(summary$mean_bill_length > 0))
+  expect_true(all(summary$mean_bill_depth > 0))
+})
+
+test_that("bill_ratio is calculated correctly", {
+  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+
+  data <- load_penguin_data()
+
+  # Verify bill_ratio calculation
+  expected_ratio <- data$bill_length_mm / data$bill_depth_mm
+  expect_equal(data$bill_ratio, expected_ratio)
+})
+EOF
+
+# Run tests
+Rscript -e 'devtools::test()'
+```
+
+**What this accomplishes:**
+
+1. ✅ **Raw Data** (Pillar 5): Original measurements in `analysis/data/raw_data/`
+2. ✅ **Processing Pipeline**: Script in `analysis/scripts/01_process_data.R`
+3. ✅ **Derived Data**: Cleaned data in `analysis/data/derived_data/`
+4. ✅ **Reusable Functions**: Data utilities in `R/data_utils.R`
+5. ✅ **Unit Tests**: Tests in `tests/testthat/test-data_utils.R`
+6. ✅ **Documentation**: README files documenting data provenance and processing
+
+This establishes the complete data workflow that ensures reproducibility from raw data through to analysis.
+
+## Step 5: Create Analysis Report (2 minutes)
+
+Now create a report that uses the processed data and functions we created in Step 4.
+
+### Create Visualization Function
+
+Add a plotting function to `R/bill_analysis.R`:
+
+```bash
+cat > R/bill_analysis.R << 'EOF'
+#' Create scatter plot of bill dimensions
+#'
+#' @param data Penguin data with bill measurements
+#' @return ggplot object
+#' @export
+create_bill_plot <- function(data) {
+  ggplot2::ggplot(data, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
+                                      color = species)) +
+    ggplot2::geom_point(size = 3, alpha = 0.7) +
+    ggplot2::labs(
+      title = 'Palmer Penguins: Bill Dimensions',
+      x = 'Bill Length (mm)',
+      y = 'Bill Depth (mm)',
+      color = 'Species'
+    ) +
+    ggplot2::theme_minimal()
+}
+EOF
+
+# Install ggplot2
+Rscript -e 'install.packages("ggplot2")'
+```
+
+### Optional: GUI Support for Interactive Graphics (Advanced)
 
 If you want to view R plots interactively (instead of saving to PNG files), you can use X11 forwarding with the `docker-zsh-gui` target. This enables GUI applications like R graphics windows and terminal emulators.
 
@@ -248,44 +489,11 @@ plot(1:10, 1:10)  # Graphics window should appear on your Mac
 - ✗ Not needed for production scripts that save plots to files
 - ✗ Not available in CI/CD environments (use file output there)
 
-For the rest of this tutorial, we'll use `make docker-zsh` (non-GUI) and save plots to files, which works in all environments including CI/CD.
-
-### Create Reusable Function (rrtools approach)
-
-Following rrtools philosophy, create reusable functions in R/ directory first:
-
-```bash
-# Create function file
-vim R/bill_analysis.R
-```
-
-Add this content to `R/bill_analysis.R`:
-
-```r
-#' Create scatter plot of bill dimensions
-#'
-#' @param data Palmer penguins data
-#' @return ggplot object
-#' @export
-create_bill_plot <- function(data = palmerpenguins::penguins) {
-  data %>%
-    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
-    ggplot2::ggplot(ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
-                                  color = species)) +
-    ggplot2::geom_point(size = 3, alpha = 0.7) +
-    ggplot2::labs(
-      title = 'Palmer Penguins: Bill Dimensions',
-      x = 'Bill Length (mm)',
-      y = 'Bill Depth (mm)',
-      color = 'Species'
-    ) +
-    ggplot2::theme_minimal()
-}
-```
+For the rest of this tutorial, we save plots to files, which works in all environments including CI/CD.
 
 ### Create Analysis Report
 
-Now create the report that sources the function:
+Create the report that uses our data workflow (raw data → processing → functions → visualization):
 
 ```bash
 # Create the report file
@@ -314,112 +522,79 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 Analysis of bill length and bill depth measurements across three penguin species
 from the Palmer Station Antarctica LTER.
 
-## Data Loading
+This report demonstrates the complete data workflow:
+- Raw data → Processing → Analysis → Visualization
 
-```{r load-data}
-library(palmerpenguins)
-library(ggplot2)
-library(dplyr)
+## Data Processing
 
-# Source analysis functions from R/
+```{r data-processing}
+# Load data processing functions
+source("../../R/data_utils.R")
 source("../../R/bill_analysis.R")
+
+library(dplyr)
+library(ggplot2)
+
+# Load the processed data
+penguins <- load_penguin_data()
 
 # Preview data
 head(penguins)
 ```
 
-## Analysis
+## Summary Statistics
+
+```{r summary-stats}
+# Calculate summary by species
+summary_stats <- summarize_by_species(penguins)
+knitr::kable(summary_stats, digits = 2, caption = "Bill dimensions by species")
+```
+
+## Visualization
 
 ### Bill Dimensions by Species
 
 ```{r bill-plot, fig.width=8, fig.height=6}
 # Generate plot using function from R/
-plot <- create_bill_plot()
+plot <- create_bill_plot(penguins)
 print(plot)
 
 # Save plot
-ggsave("../figures/bill_scatter.png", plot, width = 8, height = 6)
+dir.create("../figures", showWarnings = FALSE, recursive = TRUE)
+ggplot2::ggsave("../figures/bill_scatter.png", plot, width = 8, height = 6)
 ```
 
 ## Summary
 
-The analysis reveals distinct bill dimension patterns across penguin species.
+The analysis reveals distinct bill dimension patterns across penguin species:
+- Data processed from raw measurements (Step 4)
+- Functions in R/ provide reusable analysis components
+- Unit tests ensure correctness
 ````
 
-### Install Packages and Render
-
-Then install packages and render the report:
+### Render the Report
 
 ```bash
-# Install required packages
-Rscript -e 'install.packages("palmerpenguins")'
-Rscript -e 'install.packages("ggplot2")'
-Rscript -e 'install.packages("dplyr")'
-
 # Render the report
 Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 
-# Note: renv::snapshot() is NO LONGER NEEDED!
-# It will run automatically when you exit the container
+# Exit container (auto-snapshot runs here!)
+exit
 ```
 
-## Step 5: Add Unit Tests - Level 4 (2 minutes)
+**✨ NEW: Auto-Snapshot Architecture**
 
-Still inside the Docker container (from `make docker-zsh`), add tests for the function in R/:
+When you exit the container, ZZCOLLAB automatically:
+1. Runs `renv::snapshot()` to capture package dependencies
+2. Adjusts timestamp for RSPM binary package availability (10-20x faster Docker builds)
+3. Validates package consistency (pure shell, no host R required!)
+4. Restores timestamp to current time for accurate git history
 
-```bash
-# Initialize testing infrastructure
-Rscript -e 'usethis::use_testthat()'
-
-# Create test file
-vim tests/testthat/test-bill_analysis.R
-```
-
-Add this content to `tests/testthat/test-bill_analysis.R`:
-
-```r
-# Source function from R/
-source('../../R/bill_analysis.R')
-
-test_that('create_bill_plot produces valid ggplot', {
-  plot <- create_bill_plot()
-
-  # Valid ggplot object
-  expect_s3_class(plot, 'ggplot')
-
-  # Correct title
-  expect_equal(plot$labels$title, 'Palmer Penguins: Bill Dimensions')
-})
-
-test_that('create_bill_plot handles missing data', {
-  # Data with missing values
-  test_data <- palmerpenguins::penguins
-  test_data$bill_length_mm[1:5] <- NA
-
-  plot <- create_bill_plot(test_data)
-
-  # Should still produce plot
-  expect_s3_class(plot, 'ggplot')
-})
-
-test_that('create_bill_plot includes all species', {
-  plot <- create_bill_plot()
-
-  # Should have species in color aesthetic
-  expect_true('species' %in% names(plot$labels))
-})
-```
-
-Then run the tests:
-
-```bash
-# Run tests
-Rscript -e 'devtools::test()'
-```
+**You no longer need to manually run `renv::snapshot()`!** Just work and exit.
 
 ## Step 6: Validate and Commit (1 minute)
 
-Exit the container and validate everything works in a clean environment:
+Validate everything works in a clean environment:
 
 ```bash
 # Exit the Docker container (if still inside from Step 5)
@@ -438,18 +613,22 @@ Now commit your work:
 ```bash
 git add .
 git commit -m "$(cat <<'EOF'
-Add bill dimensions scatter plot analysis
+Add complete data workflow: raw data to analysis
 
-Analysis:
-- Scatter plot of bill length vs bill depth by species
-- Palmer Penguins dataset
-- Function-based implementation with unit tests
+Data Workflow (5 Pillars):
+- Raw data: analysis/data/raw_data/penguins_raw.csv (Pillar 5)
+- Processing script: analysis/scripts/01_process_data.R (Pillar 4)
+- Derived data: analysis/data/derived_data/penguins_clean.csv (Pillar 5)
+- Functions: R/data_utils.R, R/bill_analysis.R (Pillar 4)
+- Unit tests: tests/testthat/test-data_utils.R (Pillar 4)
+- Analysis report: analysis/paper/paper.Rmd (Pillar 4)
 
 Reproducibility:
-- Level 2: renv dependency tracking
-- Level 3: Docker environment isolation
-- Level 4: Unit tests for computational correctness
-- Level 5: CI/CD automated validation
+- Pillar 1: Dockerfile (computational environment)
+- Pillar 2: renv.lock (dependency tracking)
+- Pillar 3: .Rprofile (R session configuration)
+- Pillar 4: Source code (scripts + functions + tests + reports)
+- Pillar 5: Research data (raw + derived + documentation)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
@@ -789,13 +968,9 @@ test_that("model includes species interaction", {
 Create a team project and share the Docker image:
 
 ```bash
-# Option 1: Set team config once
-zzcollab --config set team-name "genomicslab"
-zzcollab --config set profile-name "bioinformatics"
-
-# Create team project structure
+# Create team project structure with profile
 mkdir study && cd study
-zzcollab -t genomicslab -p study --profile-name bioinformatics
+zzcollab -t genomicslab -p study -r bioinformatics
 
 # Customize Dockerfile if needed (optional)
 vim Dockerfile
@@ -818,9 +993,9 @@ gh repo edit --add-collaborator username
 **Alternative workflows:**
 
 ```bash
-# Option 2: Custom composition with bundles
+# Option 2: Custom composition with base image and bundles
 mkdir study && cd study
-zzcollab -t genomicslab -p study -b bioconductor/bioconductor_docker --libs bioinfo --pkgs bioinfo
+zzcollab -t genomicslab -p study -b bioconductor/bioconductor_docker -l bioinfo -k bioinfo
 make docker-build
 make docker-push-team
 git add .
@@ -836,7 +1011,7 @@ git push -u origin main
 5. Adds collaborators to GitHub repository
 
 **Profile Selection for Teams:**
-- Team lead chooses Docker profile (bioinformatics, geospatial, etc.)
+- Team lead chooses Docker profile with `-r` flag (bioinformatics, geospatial, etc.)
 - All team members get identical Docker environment via team image
 - Team members add packages dynamically using `install.packages()` as needed
 
@@ -874,17 +1049,17 @@ Team members can add additional R packages to their personal Docker layer:
 
 ```bash
 # Add modeling packages on top of team image
-zzcollab -t genomicslab -p study --pkgs modeling
+zzcollab -t genomicslab -p study -k modeling
 
 # This installs modeling packages in your personal Docker layer
 # Team image remains unchanged
 ```
 
 **Team member restrictions:**
-- ✗ Cannot change Docker profile (use `--profile-name`)
+- ✗ Cannot change Docker profile (use `-r`)
 - ✗ Cannot change base image (use `-b`)
-- ✗ Cannot add system libraries (use `--libs`)
-- ✓ Can add R packages to Docker (use `--pkgs`)
+- ✗ Cannot add system libraries (use `-l`)
+- ✓ Can add R packages to Docker (use `-k`)
 - ✓ Can add packages to renv.lock (use `install.packages()` in container, auto-captured on exit)
 
 ## Publish Results
@@ -962,39 +1137,40 @@ zzcollab --list-libs
 zzcollab --list-pkgs
 ```
 
-**Available Profiles:**
-- **minimal** - Essential development packages (~800MB)
-- **rstudio** - RStudio Server environment (~1GB)
-- **analysis** - Data analysis with tidyverse (~1.2GB)
-- **modeling** - Machine learning environment (~1.5GB)
-- **bioinformatics** - Bioconductor genomics (~2GB)
-- **geospatial** - GDAL/PROJ mapping tools (~2.5GB)
-- **publishing** - LaTeX/Quarto publishing (~3GB)
-- **alpine_minimal** - Ultra-lightweight (~200MB)
-- **alpine_analysis** - Lightweight tidyverse (~400MB)
+**11 Available Profiles:**
+- **minimal** - Essential development packages
+- **analysis** - Data analysis with tidyverse
+- **modeling** - Machine learning environment
+- **bioinformatics** - Bioconductor genomics
+- **geospatial** - GDAL/PROJ mapping tools
+- **publishing** - LaTeX/Quarto publishing
+- **shiny** - Shiny server for web apps
+- **shiny_verse** - Shiny with tidyverse
+- **alpine_minimal** - Ultra-lightweight Alpine
+- **alpine_analysis** - Lightweight Alpine with tidyverse
+- **hpc_alpine** - High-performance computing on Alpine
 
 ## Using Profiles
 
 ```bash
-# Method 1: Set in config (recommended for consistent work)
-zzcollab --config set profile-name "bioinformatics"
+# Method 1: Use -r flag for profile selection (most common)
 mkdir my-project && cd my-project
-zzcollab  # Uses bioinformatics profile
+zzcollab -r bioinformatics
 make docker-build
 
-# Method 2: Use flag for one-time selection
+# Method 2: Use -r flag for different profile
 mkdir spatial-analysis && cd spatial-analysis
-zzcollab --profile-name geospatial
+zzcollab -r geospatial
 make docker-build
 
 # Method 3: Compose custom profile with bundles
 mkdir custom-project && cd custom-project
-zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
+zzcollab -b rocker/r-ver -l geospatial -k geospatial
 make docker-build
 
 # Method 4: Mix and match components
 mkdir bioinfo-project && cd bioinfo-project
-zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs modeling
+zzcollab -b bioconductor/bioconductor_docker -l bioinfo -k modeling
 make docker-build
 ```
 
@@ -1004,24 +1180,24 @@ The profile system has two independent layers:
 
 ### Docker Environment Layer (Team/Shared)
 
-**Profiles** (`--profile-name`):
-- Complete Docker environment shortcuts
+**Profiles** (`-r` flag):
+- Complete Docker environment shortcuts (11 predefined)
 - Combines base image + system libraries + R packages
 - Examples: `bioinformatics`, `geospatial`, `alpine_minimal`
 - Shared across all team members
-- Set via: `zzcollab --config set profile-name bioinformatics`
+- Specify via: `zzcollab -r bioinformatics`
 
-**Library Bundles** (`--libs`):
+**Library Bundles** (`-l` flag):
 - System dependencies (apt-get/apk packages)
 - Examples: `minimal`, `geospatial`, `bioinfo`, `modeling`, `publishing`, `alpine`
 - Required for R packages needing system libraries (GDAL, PROJ, etc.)
-- Set via: `zzcollab --config set libs-bundle geospatial`
+- Specify via: `zzcollab -l geospatial`
 
-**Package Bundles** (`--pkgs`):
+**Package Bundles** (`-k` flag):
 - Pre-installed R packages in Docker image
 - Examples: `essential`, `tidyverse`, `modeling`, `bioinfo`, `geospatial`, `publishing`, `shiny`
 - Baked into Docker image for fast container startup
-- Set via: `zzcollab --config set pkgs-bundle modeling`
+- Specify via: `zzcollab -k modeling`
 
 **Package Management:**
 - Packages are added dynamically using `install.packages()` inside containers
@@ -1068,7 +1244,7 @@ correct and maintainable.
 ZZCOLLAB uses a two-layer package management system for maximum flexibility:
 
 ### Layer 1: Docker Environment (Team/Shared)
-- **Controlled by**: `--profile-name`, `-b`, `--libs`, `--pkgs`
+- **Controlled by**: `-r` (profile), `-b` (base image), `-l` (libs), `-k` (pkgs)
 - **Purpose**: Pre-installed packages in Docker image
 - **Shared**: All team members get identical Docker environment
 - **Examples**: Bioinformatics profile, geospatial libraries, tidyverse packages
@@ -1086,7 +1262,7 @@ ZZCOLLAB uses a two-layer package management system for maximum flexibility:
 Team lead sets up bioinformatics environment:
 ```bash
 mkdir study && cd study
-zzcollab -t genomicslab -p study --profile-name bioinformatics
+zzcollab -t genomicslab -p study -r bioinformatics
 make docker-build
 make docker-push-team
 git add .
