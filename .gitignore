@@ -57,6 +57,11 @@ test.md
 *-mini.*
 dev-archive/
 
+# Documentation generated files
+docs/*.pdf
+*.backup
+*.bak
+
 # Vignette build artifacts
 vignettes/*.html
 vignettes/*.pdf

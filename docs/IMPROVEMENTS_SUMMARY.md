@@ -145,7 +145,8 @@ This document summarizes the comprehensive improvements made to the ZZCOLLAB cod
 ## Quantifiable Results
 
 ### Code Metrics
-- **Total Modules**: 15 (including new constants.sh)
+- **Total Modules**: 18 framework modules (including constants.sh, dockerfile_generator.sh, help_guides.sh, profile_validation.sh)
+- **Template Modules**: 4 modules copied to user projects (constants.sh, core.sh, utils.sh, validation.sh)
 - **Functions Refactored**: 7 large functions → 30 focused functions
 - **Lines Reduced**: 150+ duplicate lines eliminated
 - **Performance Optimizations**: 6+ system calls → 1 cached check
