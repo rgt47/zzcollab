@@ -195,7 +195,19 @@ extract_r_version_from_lockfile() {
     # Try jq first (faster and more reliable)
     if command_exists jq; then
         local r_version
+        local jq_exit_code
         r_version=$(jq -r '.R.Version // empty' renv.lock 2>/dev/null)
+        jq_exit_code=$?
+
+        # If jq failed (invalid JSON), don't try fallback
+        if [[ $jq_exit_code -ne 0 ]]; then
+            log_error "Failed to extract R version from renv.lock"
+            log_error ""
+            log_error "renv.lock contains invalid JSON and cannot be parsed."
+            log_error "Try regenerating it with: R -e \"renv::snapshot()\""
+            log_error ""
+            return 1
+        fi
 
         if [[ -n "$r_version" ]]; then
             log_success "Found R version in lockfile: $r_version" >&2
