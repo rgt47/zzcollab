@@ -168,16 +168,28 @@ test_check(\"$pkg_name\")"
 # Purpose: Creates package validation setup for reproducible environments
 # Creates:
 #   - validation.sh script for dependency checking (pure shell, no R required)
+#   - core.sh, utils.sh, constants.sh modules required by validation.sh
 #
 # Note: renv/ directory and renv.lock will be created inside the container
 # on first run, following the Docker-first philosophy (no host R required)
 #
-# Tracking: The validation script is tracked for uninstall
+# Tracking: The validation script and its dependencies are tracked for uninstall
 create_renv_setup() {
     log_debug "Creating package validation setup..."
 
     # Note: renv/ directory and activate.R will be created inside container
     # This follows Docker-first philosophy - all R operations happen in containers
+
+    # Install module dependencies first (required by validation.sh)
+    local module_files=("core.sh" "utils.sh" "constants.sh")
+    for module_file in "${module_files[@]}"; do
+        if install_template "modules/$module_file" "modules/$module_file" "validation module" "Created $module_file"; then
+            chmod +x "modules/$module_file"
+        else
+            log_error "Failed to create $module_file"
+            return 1
+        fi
+    done
 
     # Install validation.sh script (pure shell validation, no R required)
     if install_template "modules/validation.sh" "modules/validation.sh" "package validation script" "Created validation.sh for dependency checking"; then
