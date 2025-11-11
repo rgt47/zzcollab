@@ -1,5 +1,5 @@
 ---
-title: "Quick Start: 5-Minute Reproducible Analysis"
+title: "Quick Start: Complete Reproducible Data Workflow"
 author: "ZZCOLLAB Development Team"
 date: "`r Sys.Date()`"
 output:
@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 2
 vignette: >
-  %\VignetteIndexEntry{Quick Start: 5-Minute Reproducible Analysis}
+  %\VignetteIndexEntry{Quick Start: Complete Reproducible Data Workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -23,14 +23,15 @@ knitr::opts_chunk$set(
 # Introduction
 
 This quick start guide demonstrates how to create a fully reproducible analysis
-with all 5 levels of reproducibility in under 10 minutes. You will create a
-scatter plot analysis of Palmer Penguins bill measurements and push it to
-GitHub as a private repository.
+with all 5 pillars of reproducibility. You will create a complete data workflow
+from raw data through processing, analysis, testing, and reporting using Palmer
+Penguins bill measurements.
 
 **What you will build:**
-- Scatter plot: bill length vs bill depth
-- Complete reproducibility: renv + Docker + Unit Testing + CI/CD
-- Private GitHub repository with automated validation
+- Complete data workflow: raw data → processing → analysis → visualization
+- All 5 pillars: Dockerfile + renv + .Rprofile + Source Code + Research Data
+- Functions, tests, and documentation following best practices
+- Private GitHub repository with automated CI/CD validation
 
 **Prerequisites:**
 - Docker installed and running
@@ -40,7 +41,7 @@ GitHub as a private repository.
 
 # Step-by-Step Instructions
 
-## Step 1: Configure ZZCOLLAB (30 seconds)
+## Step 1: Configure ZZCOLLAB
 
 Set your defaults once to eliminate repetitive typing for ALL future projects:
 
@@ -80,7 +81,7 @@ zzcollab --config set profile-name ""
 - No need to pre-configure a "mode" - just install packages when you need them
 - The renv.lock accumulates packages from all team members
 
-## Step 2: Create Project (3-4 minutes)
+## Step 2: Create Project
 
 Create your reproducible analysis project:
 
@@ -145,7 +146,7 @@ zzcollab --list-pkgs      # R package bundles
   - The renv.lock file accumulates packages from all team members
   - No need to pre-configure a "mode" - just install what you need
 
-## Step 3: Set Repository to Private (30 seconds)
+## Step 3: Set Repository to Private
 
 ```bash
 # Already in penguin-bills/ directory from Step 2
@@ -153,7 +154,7 @@ zzcollab --list-pkgs      # R package bundles
 gh repo edit --visibility private
 ```
 
-## Step 4: Add Research Data and Processing Pipeline (4 minutes)
+## Step 4: Add Research Data and Processing Pipeline
 
 This step demonstrates the complete data workflow following the Five Pillars of Reproducibility:
 - **Pillar 5**: Raw data in `analysis/data/raw_data/`
@@ -164,8 +165,8 @@ This step demonstrates the complete data workflow following the Five Pillars of 
 Start the Docker development environment:
 
 ```bash
-# Enter Docker container
-make docker-zsh
+# Enter Docker container (default target launches image for current Dockerfile)
+make r  # or: make docker-run
 ```
 
 ### Add Raw Data
@@ -414,7 +415,7 @@ Rscript -e 'devtools::test()'
 
 This establishes the complete data workflow that ensures reproducibility from raw data through to analysis.
 
-## Step 5: Create Analysis Report (2 minutes)
+## Step 5: Create Analysis Report
 
 Now create a report that uses the processed data and functions we created in Step 4.
 
@@ -447,49 +448,28 @@ EOF
 Rscript -e 'install.packages("ggplot2")'
 ```
 
-### Optional: GUI Support for Interactive Graphics (Advanced)
+### About GUI Support (Automatic)
 
-If you want to view R plots interactively (instead of saving to PNG files), you can use X11 forwarding with the `docker-zsh-gui` target. This enables GUI applications like R graphics windows and terminal emulators.
+**The `make r` command auto-detects your profile and configures GUI support automatically:**
 
-**One-time XQuartz setup** (macOS only):
+- **X11 profiles** (e.g., `x11_minimal`): Automatically enables DISPLAY for interactive graphics
+- **RStudio profiles** (e.g., `analysis`, `publishing`): Launches RStudio Server at http://localhost:8787
+- **Shiny profiles**: Launches Shiny Server at http://localhost:3838
+- **Standard profiles**: Opens interactive shell
 
+**For X11 GUI support** (if using an X11 profile):
+
+One-time XQuartz setup (macOS):
 ```bash
-# Install XQuartz (if not already installed)
 brew install --cask xquartz
-
-# Launch XQuartz and configure
 open -a XQuartz
-# In XQuartz: Preferences > Security > Enable "Allow connections from network clients"
-# Restart XQuartz after enabling this setting
-
-# Allow localhost connections (run this each time you restart your Mac)
+# In Preferences > Security: Enable "Allow connections from network clients"
+# Restart XQuartz, then:
 export DISPLAY=:0
 /opt/X11/bin/xhost +localhost
 ```
 
-**Launch container with GUI support:**
-
-```bash
-# Instead of make docker-zsh, use:
-make docker-zsh-gui
-```
-
-**Test interactive graphics:**
-
-```r
-# Inside the container
-R
-plot(1:10, 1:10)  # Graphics window should appear on your Mac
-```
-
-**When to use GUI support:**
-- ✓ Interactive plot exploration and refinement
-- ✓ Using GUI terminal emulators (kitty)
-- ✓ Quick visualization during analysis development
-- ✗ Not needed for production scripts that save plots to files
-- ✗ Not available in CI/CD environments (use file output there)
-
-For the rest of this tutorial, we save plots to files, which works in all environments including CI/CD.
+For this tutorial, we use the default profile and save plots to files (works in all environments including CI/CD).
 
 ### Create Analysis Report
 
@@ -592,7 +572,7 @@ When you exit the container, ZZCOLLAB automatically:
 
 **You no longer need to manually run `renv::snapshot()`!** Just work and exit.
 
-## Step 6: Validate and Commit (1 minute)
+## Step 6: Validate and Commit
 
 Validate everything works in a clean environment:
 
@@ -639,7 +619,7 @@ EOF
 git push
 ```
 
-## Step 7: Verify CI/CD (30 seconds)
+## Step 7: Verify CI/CD
 
 Check that automated validation runs:
 
@@ -659,7 +639,7 @@ GitHub Actions will automatically:
 
 **Note**: CI/CD now uses pure shell validation (`make check-renv`) which doesn't require R on the host!
 
-## Step 8: Verify Report Rendering CI/CD (Optional, 30 seconds)
+## Step 8: Verify Report Rendering CI/CD (Optional)
 
 GitHub Actions is already configured to automatically render your paper on every
 push. The default workflow renders `analysis/paper/paper.Rmd`.
@@ -701,7 +681,7 @@ git push
 
 **Level 3**: Docker ✓
 - Dockerfile specifies complete environment
-- Anyone can reproduce with `make docker-zsh`
+- Anyone can reproduce with `make r` (launches image for current Dockerfile)
 
 **Level 4**: Unit Testing ✓
 - Tests validate plot creation
@@ -1028,7 +1008,7 @@ cd study
 zzcollab --use-team-image
 
 # Enter identical development environment
-make docker-zsh
+make r  # Auto-detects profile from Dockerfile
 ```
 
 **What happens for team members:**
@@ -1205,25 +1185,6 @@ The profile system has two independent layers:
 - No pre-configured modes - just install what you need when you need it
 - The renv.lock file accumulates packages from all team members automatically on container exit
 - This provides maximum flexibility while maintaining reproducibility
-
-# Time Breakdown
-
-- **Step 1** (Configuration): 30 seconds
-- **Step 2** (Create project): 3-4 minutes
-- **Step 3** (Make private): 30 seconds
-- **Step 4** (Analysis Rmd paper): 3 minutes
-- **Step 5** (Unit tests): 2 minutes
-- **Step 6** (Validate & commit): 1 minute
-- **Step 7** (Verify CI/CD): 30 seconds
-- **Step 8** (Verify report rendering): 30 seconds (optional)
-
-**Total**: ~10-12 minutes for complete 5-level reproducible analysis
-(~11-12 minutes with optional Step 8)
-
-**Team Member Time** (joining existing project): ~6-8 minutes
-- Skips Step 1 (uses team config)
-- Pulls pre-built team images (faster than building from scratch)
-- Only needs Steps 2-8
 
 # Summary
 
