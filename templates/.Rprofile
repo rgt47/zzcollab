@@ -11,7 +11,10 @@ if (file.exists("renv/activate.R")) {
 }
 
 # renv consent (skips first-time prompts)
-options(renv.consent = TRUE)
+options(
+  renv.consent = TRUE,
+  renv.config.install.prompt = FALSE  # Skip "Do you want to proceed?" prompts
+)
 
 # Helper function for initializing renv without prompts
 renv_init_quiet <- function() {
