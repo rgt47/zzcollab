@@ -139,6 +139,14 @@ cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_SUPPORT_DIR/"
 log_info "Copying templates directory..."
 cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_SUPPORT_DIR/"
 
+# Copy navigation_scripts.sh to modules
+log_info "Copying navigation_scripts.sh to modules..."
+if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
+    cp "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_SUPPORT_DIR/modules/"
+else
+    log_warn "navigation_scripts.sh not found - skipping"
+fi
+
 # Update constants.sh for installed version
 log_info "Updating constants.sh for installed version..."
 sed "s|readonly ZZCOLLAB_SCRIPT_DIR=.*|readonly ZZCOLLAB_SCRIPT_DIR=\"$ZZCOLLAB_SUPPORT_DIR\"|" \

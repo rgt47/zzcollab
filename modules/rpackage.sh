@@ -181,7 +181,7 @@ create_renv_setup() {
     # This follows Docker-first philosophy - all R operations happen in containers
 
     # Install module dependencies first (required by validation.sh)
-    local module_files=("core.sh" "utils.sh" "constants.sh")
+    local module_files=("core.sh" "utils.sh" "constants.sh" "navigation_scripts.sh")
     for module_file in "${module_files[@]}"; do
         if install_template "modules/$module_file" "modules/$module_file" "validation module" "Created $module_file"; then
             chmod +x "modules/$module_file"

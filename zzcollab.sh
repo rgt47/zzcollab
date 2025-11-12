@@ -371,7 +371,7 @@ get_zzcollab_files() {
         ".zshrc_docker"
 
         # Shell modules
-        "modules/validation.sh" "modules/core.sh" "modules/utils.sh" "modules/constants.sh"
+        "modules/validation.sh" "modules/core.sh" "modules/utils.sh" "modules/constants.sh" "modules/navigation_scripts.sh"
 
         # Documentation and guides
         "ZZCOLLAB_USER_GUIDE.md" "check_renv_for_commit.R"
