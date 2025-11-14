@@ -162,7 +162,7 @@ if [[ "${SHOW_HELP:-false}" == "true" ]] || [[ "${SHOW_NEXT_STEPS:-false}" == "t
         source "$MODULES_DIR/help.sh" >/dev/null 2>&1
 
         if [[ "${SHOW_HELP:-false}" == "true" ]]; then
-            show_help
+            show_help "${SHOW_HELP_TOPIC:-}"
             exit 0
         fi
 

@@ -162,6 +162,426 @@ show_help_full() {
 
 
 #=============================================================================
+# HELP TOPIC FUNCTIONS
+#=============================================================================
+
+# Function: show_help_topics_list
+# Purpose: List all available help topics with descriptions
+show_help_topics_list() {
+    cat << 'EOF'
+zzcollab help topics:
+
+Guides:
+  quickstart      Quick start guide for solo developers
+  workflow        Daily development workflow and common tasks
+  team            Team collaboration setup and workflows
+
+Configuration:
+  config          Configuration system (config files, defaults)
+  profiles        Docker profile selection and customization
+  examples        Example files and templates (--with-examples)
+
+Technical:
+  docker          Docker architecture and container usage
+  renv            Package management with renv
+  cicd            CI/CD automation with GitHub Actions
+
+Other:
+  options         Complete list of all command-line options
+  troubleshoot    Common issues and solutions
+
+Usage:
+  zzcollab help <topic>       Show help for specific topic
+  zzcollab help --all         Show this list
+  zzcollab --help             Show complete options (legacy format)
+EOF
+}
+
+# Function: show_help_quickstart
+# Purpose: Quick start guide for solo developers
+show_help_quickstart() {
+    cat << 'EOF'
+ZZCOLLAB QUICK START
+
+Solo Developer Workflow:
+
+1. Initialize project:
+   zzcollab -p myproject
+   cd myproject
+
+2. Build Docker environment:
+   make docker-build
+
+3. Start development:
+   make docker-zsh
+   # Now you're in R inside Docker container
+
+4. Work in R:
+   library(tidyverse)
+   # ... your analysis ...
+   # Packages auto-captured when you exit
+
+5. Exit and test:
+   q()                    # Exit R (auto-snapshots packages)
+   make docker-test       # Run tests
+
+6. Commit and share:
+   git add .
+   git commit -m "Add analysis"
+   git push
+
+Configuration (one-time setup):
+   zzcollab -c init
+   zzcollab -c set team-name "myname"
+   zzcollab -c set profile-name "analysis"
+
+See also:
+  zzcollab help workflow      Daily development patterns
+  zzcollab help config        Configuration system
+  zzcollab help docker        Docker details
+EOF
+}
+
+# Function: show_help_workflow
+# Purpose: Daily development workflow
+show_help_workflow() {
+    cat << 'EOF'
+DAILY DEVELOPMENT WORKFLOW
+
+Basic Cycle:
+   make docker-zsh          # Enter development container
+   # ... work in R ...
+   q()                      # Exit (auto-snapshots packages)
+   make docker-test         # Run tests
+   git add . && git commit && git push
+
+Common Tasks:
+   make docker-rstudio      # RStudio Server (localhost:8787)
+   make docker-build        # Rebuild Docker image
+   make check-renv          # Validate package dependencies
+   make docker-push-team    # Share team Docker image
+
+Adding Packages:
+   make docker-zsh
+   install.packages("tidyverse")
+   q()                      # Automatically captured in renv.lock
+
+Navigation Shortcuts (optional):
+   ./navigation_scripts.sh --install
+   r → project root
+   a → analysis/
+   s → analysis/scripts/
+   p → analysis/paper/
+
+Troubleshooting:
+   make docker-build 2>&1 | tee build.log
+   cat .zzcollab.log        # Debug log (if using -vv)
+
+See also:
+  zzcollab help quickstart    Getting started
+  zzcollab help renv          Package management
+  zzcollab help docker        Docker usage
+EOF
+}
+
+# Function: show_help_team
+# Purpose: Team collaboration setup
+show_help_team() {
+    cat << 'EOF'
+TEAM COLLABORATION
+
+Team Lead Setup:
+   1. Initialize project:
+      zzcollab -t mylab -p study -r analysis
+
+   2. Build and share Docker image:
+      make docker-build
+      make docker-push-team
+
+   3. Push to GitHub:
+      git add .
+      git commit -m "Initial project setup"
+      git push -u origin main
+
+Team Member Join:
+   1. Clone repository:
+      git clone https://github.com/mylab/study.git
+      cd study
+
+   2. Pull team Docker image:
+      zzcollab -u
+
+   3. Start development:
+      make docker-zsh
+
+Workflow:
+   - Team members work independently in containers
+   - Packages added by anyone appear in shared renv.lock
+   - Docker image rebuilt/pushed by team lead when needed
+   - Everyone pulls updated image: zzcollab -u
+
+See also:
+  zzcollab help workflow      Daily development
+  zzcollab help docker        Docker architecture
+  zzcollab help config        Team configuration
+EOF
+}
+
+# Function: show_help_config_topic
+# Purpose: Configuration system help
+show_help_config_topic() {
+    cat << 'EOF'
+CONFIGURATION SYSTEM
+
+Configuration Files (priority order):
+  1. ./zzcollab.yaml          Project-specific
+  2. ~/.zzcollab/config.yaml  User defaults
+  3. Built-in defaults
+
+Commands:
+  zzcollab -c init                 Create config file
+  zzcollab -c set KEY VALUE        Set configuration
+  zzcollab -c get KEY              Get configuration
+  zzcollab -c list                 List all config
+
+Common Settings:
+  team-name          Your Docker Hub organization
+  github-account     Your GitHub account
+  profile-name       Default Docker profile
+  with-examples      Include example files (true/false)
+
+Example:
+  zzcollab -c init
+  zzcollab -c set team-name "mylab"
+  zzcollab -c set profile-name "analysis"
+  zzcollab -c set with-examples true
+
+See also:
+  zzcollab help profiles     Docker profiles
+  zzcollab help examples     Example files
+EOF
+}
+
+# Function: show_help_profiles
+# Purpose: Docker profile selection
+show_help_profiles() {
+    cat << 'EOF'
+DOCKER PROFILES
+
+14+ Specialized Environments:
+
+Standard Research:
+  minimal          Lightweight R environment (~500MB)
+  analysis         Data analysis (tidyverse, ~1.5GB)
+  modeling         Statistical modeling (~2GB)
+  publishing       LaTeX + knitr for papers (~3.5GB)
+  shiny            Interactive applications
+  shiny_verse      Shiny + tidyverse
+
+Specialized:
+  bioinformatics   Genomics and bioinformatics
+  geospatial       Spatial data analysis (sf, terra)
+
+Lightweight Alpine:
+  alpine_minimal   Minimal Alpine Linux (~200MB)
+  alpine_analysis  Alpine + tidyverse (~800MB)
+  hpc_alpine       HPC-optimized Alpine
+
+Usage:
+  zzcollab -r analysis              Select profile
+  zzcollab --list-profiles          List all profiles
+
+Configuration:
+  zzcollab -c set profile-name "analysis"
+
+See also:
+  zzcollab help config       Configuration
+  zzcollab help docker       Docker details
+EOF
+}
+
+# Function: show_help_examples_topic
+# Purpose: Example files and templates
+show_help_examples_topic() {
+    cat << 'EOF'
+EXAMPLE FILES
+
+By default, zzcollab creates a clean workspace.
+Use --with-examples to include example files.
+
+During Initialization:
+  zzcollab -p myproject -x
+  # or
+  zzcollab -p myproject --with-examples
+
+After Initialization:
+  cd myproject
+  zzcollab --add-examples
+
+Example Files Include:
+  analysis/paper/paper.Rmd          Academic manuscript template
+  analysis/paper/references.bib     Bibliography file
+  analysis/scripts/*.R              Data validation, parallel computing
+  analysis/templates/*.R            Analysis and figure templates
+
+Configuration:
+  zzcollab -c set with-examples true    # Always include examples
+
+See also:
+  zzcollab help workflow     Development workflow
+  zzcollab help config       Configuration
+EOF
+}
+
+# Function: show_help_docker
+# Purpose: Docker architecture and usage
+show_help_docker() {
+    cat << 'EOF'
+DOCKER ARCHITECTURE
+
+Two-Layer System:
+  1. Docker Image (base environment, shared by team)
+  2. renv.lock (R packages, personal additions)
+
+Common Commands:
+  make docker-build        Build Docker image
+  make docker-zsh          Interactive R session
+  make docker-rstudio      RStudio Server (localhost:8787)
+  make docker-test         Run tests in container
+  make docker-push-team    Share team image
+
+Logs:
+  docker-build.log         Build output
+  .zzcollab.log            Framework log (with -vv)
+
+Platform Compatibility:
+  ARM64: r-ver, rstudio profiles
+  AMD64: verse, tidyverse, geospatial, shiny
+
+Custom Images:
+  zzcollab -b rocker/r-ver -l geospatial -k tidyverse
+
+See also:
+  zzcollab help profiles     Profile selection
+  zzcollab help renv         Package management
+  zzcollab help team         Team collaboration
+EOF
+}
+
+# Function: show_help_renv
+# Purpose: Package management with renv
+show_help_renv() {
+    cat << 'EOF'
+PACKAGE MANAGEMENT (renv)
+
+Auto-Snapshot Workflow:
+  make docker-zsh
+  install.packages("tidyverse")
+  q()                       # Automatic snapshot on exit
+
+Validation:
+  make check-renv           # Validate + auto-fix
+  make check-renv-no-fix    # Validation only
+  make check-renv-no-strict # Skip tests/ and vignettes/
+
+Auto-Fix Pipeline:
+  1. Detects packages used in code
+  2. Adds to DESCRIPTION
+  3. Adds to renv.lock (via CRAN API)
+  4. Pure shell (no R required on host!)
+
+Files:
+  renv.lock                 Package versions (source of truth)
+  DESCRIPTION               Package metadata
+  .Rprofile                 R session configuration
+
+GitHub Packages:
+  install.packages("remotes")
+  remotes::install_github("user/package")
+  q()                       # Auto-captured
+
+See also:
+  zzcollab help workflow     Development workflow
+  zzcollab help docker       Docker architecture
+EOF
+}
+
+# Function: show_help_cicd
+# Purpose: CI/CD automation
+show_help_cicd() {
+    cat << 'EOF'
+CI/CD AUTOMATION
+
+GitHub Actions:
+  .github/workflows/        Automation workflows
+  R CMD check               Runs on every push
+  Docker image builds       Automated builds
+
+Workflow Triggers:
+  - Push to main branch
+  - Pull requests
+  - Manual workflow dispatch
+
+Validation:
+  - R package structure
+  - Tests (testthat)
+  - DESCRIPTION ↔ renv.lock consistency
+  - Docker builds
+
+Logs:
+  GitHub Actions tab        View workflow runs
+  Build artifacts           Download logs
+
+See also:
+  zzcollab help workflow     Development workflow
+  zzcollab help docker       Docker builds
+EOF
+}
+
+# Function: show_help_troubleshooting
+# Purpose: Common issues and solutions
+show_help_troubleshooting() {
+    cat << 'EOF'
+TROUBLESHOOTING
+
+Common Issues:
+
+1. Docker build fails:
+   make docker-build 2>&1 | tee build.log
+   cat docker-build.log
+   # Check for network issues, CRAN package availability
+
+2. Package validation fails:
+   make check-renv          # Auto-fixes most issues
+   cat .zzcollab.log        # If using -vv flag
+
+3. Tests fail:
+   make docker-test
+   # Check test output for specific failures
+
+4. Navigation shortcuts don't work:
+   ./navigation_scripts.sh --install
+   source ~/.zshrc          # or ~/.bashrc
+
+5. Team image not found:
+   # Team lead must push first:
+   make docker-build && make docker-push-team
+
+Debug Mode:
+   zzcollab -vv ...         # Creates .zzcollab.log
+   cat .zzcollab.log        # Review detailed logs
+
+Get Help:
+   zzcollab help --all      # List all topics
+   GitHub Issues            # Report bugs
+
+See also:
+  zzcollab help workflow     Common workflows
+  zzcollab help docker       Docker troubleshooting
+EOF
+}
+
+#=============================================================================
 # NEXT STEPS GUIDANCE FUNCTION
 #=============================================================================
 

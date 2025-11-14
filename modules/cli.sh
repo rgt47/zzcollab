@@ -231,6 +231,15 @@ CONFIG_ARGS=()
 # Purpose: Parse all command line arguments and set global variables
 # Arguments: All command line arguments passed to script
 parse_cli_arguments() {
+    # Git-like help subcommand: zzcollab help <topic>
+    if [[ "${1:-}" == "help" ]]; then
+        SHOW_HELP=true
+        if [[ -n "${2:-}" ]] && [[ ! "$2" =~ ^- ]]; then
+            SHOW_HELP_TOPIC="$2"
+        fi
+        return 0
+    fi
+
     # Process all command line arguments (identical to original zzcollab.sh)
     while [[ $# -gt 0 ]]; do
         case $1 in
