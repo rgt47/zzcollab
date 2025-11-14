@@ -719,6 +719,92 @@ cat("\\n=== REPRODUCIBILITY CHECK COMPLETE ===\\n")'
     fi
 }
 
+# Function: add_examples_to_existing_project
+# Purpose: Add example files to an existing zzcollab project
+# This function can be called after initialization to add examples
+add_examples_to_existing_project() {
+    log_info "Adding example files to existing project..."
+
+    # Validate we're in a zzcollab project
+    if [[ ! -f "DESCRIPTION" ]]; then
+        log_error "Not in a zzcollab project directory (DESCRIPTION file not found)"
+        log_error "This command must be run from the root of an initialized zzcollab project"
+        return 1
+    fi
+
+    # Ensure required directories exist
+    safe_mkdir "analysis/paper" "analysis report directory"
+    safe_mkdir "analysis/scripts" "research scripts directory"
+    safe_mkdir "analysis/templates" "analysis templates directory"
+
+    local files_added=0
+    local files_skipped=0
+
+    # Add paper template if it doesn't exist
+    if [[ ! -f "analysis/paper/paper.Rmd" ]]; then
+        if install_template "paper.Rmd" "analysis/paper/paper.Rmd" "Research report template" "Added research report template"; then
+            ((files_added++))
+        fi
+    else
+        log_info "analysis/paper/paper.Rmd already exists, skipping"
+        ((files_skipped++))
+    fi
+
+    # Add bibliography file if it doesn't exist
+    if [[ ! -f "analysis/paper/references.bib" ]]; then
+        if install_template "references.bib" "analysis/paper/references.bib" "references.bib file" "Added bibliography file"; then
+            ((files_added++))
+        fi
+    else
+        log_info "analysis/paper/references.bib already exists, skipping"
+        ((files_skipped++))
+    fi
+
+    # Add citation style file if it doesn't exist
+    if [[ ! -f "analysis/paper/statistics-in-medicine.csl" ]]; then
+        if install_template "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl" "citation style file" "Added citation style file"; then
+            ((files_added++))
+        fi
+    else
+        log_info "analysis/paper/statistics-in-medicine.csl already exists, skipping"
+        ((files_skipped++))
+    fi
+
+    # Add example scripts by calling the individual creation functions
+    # These functions already check for file existence
+    local scripts_before=$files_added
+    create_data_validation_script && ((files_added++)) || ((files_skipped++))
+    create_parallel_computing_script && ((files_added++)) || ((files_skipped++))
+    create_database_setup_script && ((files_added++)) || ((files_skipped++))
+    create_reproducibility_check_script && ((files_added++)) || ((files_skipped++))
+    create_testing_guide_script && ((files_added++)) || ((files_skipped++))
+
+    # Add analysis example templates
+    if [[ ! -f "analysis/templates/example_analysis.R" ]] || [[ ! -f "analysis/templates/figure_template.R" ]]; then
+        # Temporarily set WITH_EXAMPLES to true to trigger example creation
+        local original_with_examples="${WITH_EXAMPLES}"
+        WITH_EXAMPLES=true
+        create_analysis_examples
+        WITH_EXAMPLES="${original_with_examples}"
+        ((files_added+=2))
+    else
+        log_info "analysis/templates examples already exist, skipping"
+        ((files_skipped+=2))
+    fi
+
+    # Summary
+    echo ""
+    log_success "Example files added to project"
+    log_info "Files added: $files_added"
+    log_info "Files skipped (already exist): $files_skipped"
+    echo ""
+    log_info "Example files are now available in:"
+    log_info "  - analysis/paper/paper.Rmd"
+    log_info "  - analysis/paper/references.bib"
+    log_info "  - analysis/scripts/*.R (data validation, parallel setup, etc.)"
+    log_info "  - analysis/templates/*.R (example analysis, figure templates)"
+}
+
 # Function: create_testing_guide_script
 # Purpose: Create comprehensive testing guide script
 create_testing_guide_script() {

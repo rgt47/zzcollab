@@ -200,6 +200,31 @@ if [[ "${CONFIG_COMMAND:-false}" == "true" ]]; then
     fi
 fi
 
+# Handle --add-examples command
+if [[ "${ADD_EXAMPLES:-false}" == "true" ]]; then
+    # Load core module first
+    if [[ -f "$MODULES_DIR/core.sh" ]]; then
+        source "$MODULES_DIR/core.sh" >/dev/null 2>&1
+    fi
+
+    # Load templates module (required by analysis module)
+    if [[ -f "$MODULES_DIR/templates.sh" ]]; then
+        source "$MODULES_DIR/templates.sh" >/dev/null 2>&1
+    fi
+
+    # Load analysis module
+    if [[ -f "$MODULES_DIR/analysis.sh" ]]; then
+        source "$MODULES_DIR/analysis.sh" >/dev/null 2>&1
+
+        # Call the add examples function
+        add_examples_to_existing_project
+        exit $?
+    else
+        echo "❌ Error: Analysis module not found" >&2
+        exit 1
+    fi
+fi
+
 #=============================================================================
 # MODULE LOADING SYSTEM
 #=============================================================================

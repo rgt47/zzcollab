@@ -241,6 +241,10 @@ zzcollab -p myproject
 # Include example files for learning
 zzcollab -p myproject -x
 
+# Add examples to existing project later
+cd myproject
+zzcollab --add-examples
+
 # Set as default preference
 zzcollab -c set with-examples true
 ```

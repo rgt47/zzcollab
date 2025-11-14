@@ -196,6 +196,8 @@ OPTIONS:
     -x, --with-examples          Include example files (paper.Rmd, analysis scripts, vignettes)
                                  Default: skip examples (create clean workspace)
                                  Can also set via: zzcollab -c set with-examples true
+        --add-examples           Add example files to existing project (run from project root)
+                                 Use this after initialization if you initially skipped examples
         --force                  Skip file conflict confirmation prompts (for CI/CD and automation)
         --next-steps             Show development workflow and next steps
 
@@ -427,6 +429,23 @@ FLAGS AND OPTIONS
     - analysis/paper/references.bib  (bibliography file)
     - analysis/scripts/*.R           (data validation, parallel computing, etc.)
     - analysis/templates/*.R         (analysis and figure templates)
+
+--add-examples
+    Add example files to an existing project after initialization.
+    Run this command from the root of an initialized zzcollab project.
+
+    Use case: You initially created a project without examples (default),
+    but now want to add them for reference.
+
+    Examples:
+    cd myproject
+    zzcollab --add-examples
+
+    Behavior:
+    - Checks you're in a zzcollab project (looks for DESCRIPTION file)
+    - Adds example files that don't already exist
+    - Skips files that already exist (won't overwrite your work)
+    - Provides summary of files added vs. skipped
 ═══════════════════════════════════════════════════════════════════════════
 TEAM NAME vs GITHUB ACCOUNT (CRITICAL CONCEPT)
 ═══════════════════════════════════════════════════════════════════════════
