@@ -25,9 +25,9 @@ require_module "core" "templates"
 # Function: create_analysis_files
 # Purpose: Creates research paper templates and analysis framework (rrtools structure)
 # Creates:
-#   - analysis/paper/paper.Rmd (main research paper template)
-#   - analysis/paper/references.bib (bibliography file)
-#   - Citation style files for academic publishing
+#   - analysis/paper/paper.Rmd (main research paper template) - OPTIONAL with --with-examples
+#   - analysis/paper/references.bib (bibliography file) - OPTIONAL with --with-examples
+#   - Citation style files for academic publishing - OPTIONAL with --with-examples
 #
 # Template Features:
 #   - Complete R Markdown paper structure
@@ -45,36 +45,45 @@ require_module "core" "templates"
 #
 # Tracking: All created files are tracked in manifest for uninstall
 create_analysis_files() {
-    log_debug "Creating analysis and paper files..."
-    
+    log_debug "Creating analysis directory structure..."
+
     # Ensure analysis directories exist (self-contained module)
     safe_mkdir "analysis" "analysis directory"
     safe_mkdir "analysis/paper" "analysis report directory"
     safe_mkdir "analysis/figures" "analysis figures directory"
     safe_mkdir "analysis/tables" "analysis tables directory"
     safe_mkdir "analysis/templates" "analysis templates directory"
-    
-    # Create research report template from R Markdown template
-    # Template includes: YAML header, author info, bibliography setup, standard sections
-    if ! install_template "paper.Rmd" "analysis/paper/paper.Rmd" "Research report template" "Created research report template with academic structure"; then
-        log_error "Failed to create research report template"
-        return 1
+
+    # Only create example files if --with-examples flag is set
+    if [[ "${WITH_EXAMPLES:-false}" == "true" ]]; then
+        log_debug "Creating example analysis files (--with-examples enabled)..."
+
+        # Create research report template from R Markdown template
+        # Template includes: YAML header, author info, bibliography setup, standard sections
+        if ! install_template "paper.Rmd" "analysis/paper/paper.Rmd" "Research report template" "Created research report template with academic structure"; then
+            log_error "Failed to create research report template"
+            return 1
+        fi
+
+        # Create bibliography file for citations and references
+        # BibTeX format for academic reference management
+        if ! install_template "references.bib" "analysis/paper/references.bib" "references.bib file" "Created bibliography file for citation management"; then
+            log_error "Failed to create bibliography file"
+            return 1
+        fi
+
+        # Create citation style file for academic journals
+        # CSL (Citation Style Language) file for formatting citations
+        if ! install_template "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
+            log_warn "Citation style file not found - citations will use default format"
+        fi
+
+        log_success "Example analysis files created"
+    else
+        log_debug "Skipping example files (use --with-examples to include)"
     fi
-    
-    # Create bibliography file for citations and references
-    # BibTeX format for academic reference management
-    if ! install_template "references.bib" "analysis/paper/references.bib" "references.bib file" "Created bibliography file for citation management"; then
-        log_error "Failed to create bibliography file"
-        return 1
-    fi
-    
-    # Create citation style file for academic journals
-    # CSL (Citation Style Language) file for formatting citations
-    if ! install_template "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
-        log_warn "Citation style file not found - citations will use default format"
-    fi
-    
-    log_success "Analysis files created successfully"
+
+    log_success "Analysis directory structure created"
 }
 
 #=============================================================================
@@ -299,20 +308,26 @@ cat("Use create_example_figure() and save_figure() in your analysis\\n")'
 # Function: create_scripts_directory
 # Purpose: Create essential research scripts in the analysis/scripts/ directory (coordinating function)
 # Creates data validation, parallel computing, database setup, and reproducibility scripts
+# Only creates example scripts if --with-examples flag is set
 create_scripts_directory() {
-    log_debug "Creating essential research scripts..."
-
     # Ensure scripts directory exists
     safe_mkdir "analysis/scripts" "research scripts directory"
-    
-    # Create all research scripts
-    create_data_validation_script
-    create_parallel_computing_script
-    create_database_setup_script
-    create_reproducibility_check_script
-    create_testing_guide_script
-    
-    log_success "Essential research scripts created in analysis/scripts/ directory"
+
+    # Only create example scripts if --with-examples flag is set
+    if [[ "${WITH_EXAMPLES:-false}" == "true" ]]; then
+        log_debug "Creating example research scripts (--with-examples enabled)..."
+
+        # Create all research scripts
+        create_data_validation_script
+        create_parallel_computing_script
+        create_database_setup_script
+        create_reproducibility_check_script
+        create_testing_guide_script
+
+        log_success "Example research scripts created in analysis/scripts/"
+    else
+        log_debug "Skipping example scripts (use --with-examples to include)"
+    fi
 }
 
 # Function: create_data_validation_script

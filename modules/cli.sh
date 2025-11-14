@@ -198,6 +198,7 @@ PREPARE_DOCKERFILE=false
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
+WITH_EXAMPLES=false      # Include example files and templates in workspace
 
 # Profile bundle variables (system libraries and R packages)
 LIBS_BUNDLE=""    # System library bundle (e.g., alpine, bioinfo, geospatial)
@@ -364,6 +365,10 @@ parse_cli_arguments() {
                 FORCE_DIRECTORY=true
                 shift
                 ;;
+            --with-examples|-x)
+                WITH_EXAMPLES=true
+                shift
+                ;;
             *)
                 echo "❌ Error: Unknown option '$1'" >&2
                 echo "Use --help for usage information" >&2
@@ -460,7 +465,7 @@ export_cli_variables() {
     export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERHUB_ACCOUNT DOCKERFILE_PATH IMAGE_TAG
 
     # Mode and behavior flags
-    export PREPARE_DOCKERFILE USE_TEAM_IMAGE
+    export PREPARE_DOCKERFILE USE_TEAM_IMAGE WITH_EXAMPLES
 
     # GitHub integration flags
     export CREATE_GITHUB_REPO SKIP_CONFIRMATION
