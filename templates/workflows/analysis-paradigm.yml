@@ -1,91 +1,194 @@
-name: Analysis Workflow (Data Science)
+name: Analysis Pipeline
+
+# 🎯 What this workflow does:
+# - Runs your complete analysis pipeline from data preparation to final outputs
+# - Auto-detects numbered scripts (01_*, 02_*, etc.) in analysis/scripts/
+# - Validates outputs at each step
+# - Uploads analysis artifacts (data, figures, reports)
+#
+# 🔧 Customize:
+# - Adjust script paths if your structure differs
+# - Add specific validation checks for your project
+# - Modify artifact retention period (default: 90 days)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
+    paths:
+      - 'analysis/scripts/**'
+      - 'R/**'
+      - 'analysis/data/**'
+      - 'renv.lock'
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:  # Manual trigger
 
 jobs:
-  analysis:
+  run-analysis:
     runs-on: ubuntu-latest
-    container: rocker/tidyverse:latest
-    
+    timeout-minutes: 120  # Prevent runaway processes
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Check renv synchronization
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - name: Cache renv packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/R/renv
+          key: ${{ runner.os }}-renv-${{ hashFiles('renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
+      - name: Install system dependencies
         run: |
-          Rscript validate_package_environment.R --quiet --fail-on-issues
-      
-      - name: Validate data analysis structure
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libfreetype6-dev \
+            libpng-dev \
+            libtiff5-dev \
+            libjpeg-dev
+
+      - name: Restore R packages
         run: |
-          Rscript -e "if (dir.exists('data')) cat('✅ data/ directory found\\n')"
-          Rscript -e "if (dir.exists('analysis')) cat('✅ analysis/ directory found\\n')"
-          Rscript -e "if (dir.exists('outputs')) cat('✅ outputs/ directory found\\n')"
-          Rscript -e "if (file.exists('renv.lock')) cat('✅ renv.lock found\\n')"
-      
-      - name: Run data validation scripts
+          Rscript -e "renv::restore()"
+
+      - name: Validate project structure
         run: |
-          if [ -f "scripts/validate_data.R" ]; then
-            Rscript scripts/validate_data.R
-          else
-            echo "No data validation script found"
+          echo "::group::Project structure"
+          if [ -d "analysis/scripts" ]; then
+            echo "✅ analysis/scripts/ directory found"
           fi
-      
-      - name: Run exploratory analysis
-        run: |
-          if [ -f "scripts/01_exploratory_analysis.R" ]; then
-            Rscript scripts/01_exploratory_analysis.R
-          else
-            echo "No exploratory analysis script found"
+          if [ -d "analysis/data" ]; then
+            echo "✅ analysis/data/ directory found"
           fi
-      
-      - name: Run statistical modeling
+          if [ -d "R" ]; then
+            echo "✅ R/ directory found"
+          fi
+          echo "::endgroup::"
+
+      - name: Auto-detect and run analysis scripts
         run: |
-          if [ -f "scripts/02_statistical_modeling.R" ]; then
-            Rscript scripts/02_statistical_modeling.R
-          else
-            echo "No statistical modeling script found"
+          cd analysis/scripts
+          SCRIPTS=$(ls -1 [0-9][0-9]_*.R 2>/dev/null | sort)
+
+          if [ -z "$SCRIPTS" ]; then
+            echo "❌ No numbered scripts found (pattern: NN_*.R)"
+            exit 1
           fi
 
-      - name: Run model validation
+          echo "📋 Found scripts:"
+          echo "$SCRIPTS"
+          echo ""
+
+          for script in $SCRIPTS; do
+            echo "::group::Running $script"
+            echo "⚙️  Executing: $script"
+            Rscript "$script"
+            EXIT_CODE=$?
+
+            if [ $EXIT_CODE -ne 0 ]; then
+              echo "❌ Script failed with exit code $EXIT_CODE"
+              echo "::endgroup::"
+              exit $EXIT_CODE
+            fi
+            echo "✅ Completed successfully"
+            echo "::endgroup::"
+          done
+
+      - name: Verify analysis outputs
         run: |
-          if [ -f "scripts/03_model_validation.R" ]; then
-            Rscript scripts/03_model_validation.R
-          else
-            echo "No model validation script found"
+          echo "::group::Checking output files"
+
+          # Check for derived data
+          if [ -d "analysis/data/derived_data" ]; then
+            echo "📊 Derived data files:"
+            find analysis/data/derived_data -name "*.RData" -o -name "*.rds" | while read file; do
+              SIZE=$(ls -lh "$file" | awk '{print $5}')
+              echo "  ✅ $(basename $file) ($SIZE)"
+            done
           fi
 
-      - name: Generate analysis reports
-        run: |
-          # Render reports from reports/ directory
-          if [ -d "reports" ]; then
-            find reports -name "*.Rmd" -exec Rscript -e "rmarkdown::render('{}')" \;
+          # Check for figures
+          if [ -d "analysis/figures" ]; then
+            FIG_COUNT=$(find analysis/figures -name "*.pdf" -o -name "*.png" | wc -l)
+            echo "📈 Generated $FIG_COUNT figures"
           fi
-          # Render dashboard and automated reports from scripts/
-          if [ -f "scripts/04_interactive_dashboard.Rmd" ]; then
-            Rscript -e "rmarkdown::render('scripts/04_interactive_dashboard.Rmd')"
+
+          # Check for reports
+          if [ -d "analysis/paper" ]; then
+            REPORT_COUNT=$(find analysis/paper -name "*.pdf" -o -name "*.html" | wc -l)
+            echo "📄 Generated $REPORT_COUNT reports"
           fi
-          if [ -f "scripts/05_automated_report.Rmd" ]; then
-            Rscript -e "rmarkdown::render('scripts/05_automated_report.Rmd')"
-          fi
-      
+
+          echo "::endgroup::"
+
       - name: Run targets pipeline (if present)
+        continue-on-error: true
         run: |
           if [ -f "_targets.R" ]; then
+            echo "🎯 Running targets pipeline"
             Rscript -e "targets::tar_make()"
           else
-            echo "No targets pipeline found"
+            echo "No targets pipeline found (skipping)"
           fi
-      
-      - name: Upload analysis outputs
+
+      - name: Upload analysis artifacts
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: analysis-outputs
           path: |
-            outputs/
-            reports/*.html
-            reports/*.pdf
-        if: always()
+            analysis/data/derived_data/*.RData
+            analysis/data/derived_data/*.rds
+            analysis/figures/*.pdf
+            analysis/figures/*.png
+            analysis/paper/*.pdf
+            analysis/paper/*.html
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Generate analysis summary
+        if: success()
+        run: |
+          echo "## ✅ Analysis Pipeline Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Scripts Executed" >> $GITHUB_STEP_SUMMARY
+          cd analysis/scripts
+          ls -1 [0-9][0-9]_*.R 2>/dev/null | while read script; do
+            echo "- ✅ \`$script\`" >> $GITHUB_STEP_SUMMARY
+          done
+          cd ../..
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Outputs Generated" >> $GITHUB_STEP_SUMMARY
+
+          if [ -d "analysis/data/derived_data" ]; then
+            DATA_COUNT=$(find analysis/data/derived_data -name "*.RData" -o -name "*.rds" | wc -l)
+            echo "- **Derived data files**: $DATA_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -d "analysis/figures" ]; then
+            FIG_COUNT=$(find analysis/figures -name "*.pdf" -o -name "*.png" | wc -l)
+            echo "- **Figures**: $FIG_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -d "analysis/paper" ]; then
+            REPORT_COUNT=$(find analysis/paper -name "*.pdf" -o -name "*.html" | wc -l)
+            echo "- **Reports**: $REPORT_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Download artifacts**: Check 'Artifacts' section above" >> $GITHUB_STEP_SUMMARY

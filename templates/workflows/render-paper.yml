@@ -1,26 +1,115 @@
-name: Render Research Paper (Container)
+name: Render Research Paper
 
 on:
   workflow_dispatch:  # Manual trigger
   push:
+    branches: [main, master]
     paths:
       - 'analysis/paper/**'
+      - 'analysis/scripts/**'
       - 'R/**'
+      - 'renv.lock'
 
 jobs:
   render:
     runs-on: ubuntu-latest
-    container: rocker/tidyverse:latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Render report to PDF
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - name: Install system dependencies
         run: |
-          Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd')"
-      
-      - name: Upload report
+          sudo apt-get update
+          sudo apt-get install -y \
+            pandoc \
+            texlive-latex-base \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-latex-extra
+
+      - name: Restore R packages
+        run: |
+          Rscript -e "renv::restore()"
+
+      - name: Detect main manuscript
+        id: detect
+        run: |
+          # Try common manuscript locations and patterns
+          if [ -f "analysis/paper/paper.Rmd" ]; then
+            echo "manuscript=analysis/paper/paper.Rmd" >> $GITHUB_OUTPUT
+          elif [ -f "analysis/paper/manuscript.Rmd" ]; then
+            echo "manuscript=analysis/paper/manuscript.Rmd" >> $GITHUB_OUTPUT
+          elif [ -f "analysis/paper/main.Rmd" ]; then
+            echo "manuscript=analysis/paper/main.Rmd" >> $GITHUB_OUTPUT
+          else
+            # Find largest Rmd in paper directory (likely the main manuscript)
+            MAIN=$(find analysis/paper -name "*.Rmd" -type f -exec ls -lS {} + 2>/dev/null | head -1 | awk '{print $NF}')
+            if [ -n "$MAIN" ]; then
+              echo "manuscript=$MAIN" >> $GITHUB_OUTPUT
+            else
+              echo "No manuscript found"
+              exit 1
+            fi
+          fi
+          echo "📄 Detected manuscript: $(cat $GITHUB_OUTPUT | grep manuscript | cut -d= -f2)"
+
+      - name: Render main manuscript
+        run: |
+          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
+          echo "Rendering $MANUSCRIPT..."
+          Rscript -e "rmarkdown::render('$MANUSCRIPT')"
+
+      - name: Render supplementary files (optional)
+        continue-on-error: true
+        run: |
+          # Render other Rmd files in analysis/scripts if they exist
+          find analysis/scripts -name "*.Rmd" -type f 2>/dev/null | while read rmd; do
+            echo "Rendering supplementary: $rmd"
+            Rscript -e "rmarkdown::render('$rmd')" || echo "Failed to render $rmd"
+          done
+
+      - name: Check rendering output
+        run: |
+          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
+          PDF_FILE="${MANUSCRIPT%.Rmd}.pdf"
+          if [ -f "$PDF_FILE" ]; then
+            echo "✅ Manuscript rendered successfully"
+            ls -lh "$PDF_FILE"
+          else
+            echo "❌ PDF not generated"
+            exit 1
+          fi
+
+      - name: Upload rendered documents
         uses: actions/upload-artifact@v4
         with:
-          name: research-report-pdf
-          path: analysis/paper/paper.pdf
+          name: rendered-documents
+          path: |
+            analysis/paper/*.pdf
+            analysis/paper/*.html
+            analysis/scripts/*.pdf
+            analysis/figures/*.pdf
+            analysis/figures/*.png
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Generate summary
+        if: success()
+        run: |
+          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
+          PDF_FILE="${MANUSCRIPT%.Rmd}.pdf"
+
+          echo "## ✅ Documents Rendered Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Main Manuscript" >> $GITHUB_STEP_SUMMARY
+          echo "- **File**: \`$(basename $MANUSCRIPT)\`" >> $GITHUB_STEP_SUMMARY
+          if [ -f "$PDF_FILE" ]; then
+            echo "- **Size**: $(ls -lh $PDF_FILE | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Download**: Check 'Artifacts' section above" >> $GITHUB_STEP_SUMMARY
