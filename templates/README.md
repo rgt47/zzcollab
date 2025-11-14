@@ -119,12 +119,33 @@ nav   # → list all shortcuts
 
 ### Getting Help
 
+The zzcollab framework has a comprehensive git-like help system:
+
 ```bash
-zzcollab --help              # General help
-zzcollab --help quickstart   # Quick start guide
-zzcollab --help workflow     # Development workflow
-zzcollab --help config       # Configuration system
+# Brief overview
+zzcollab                     # Show common workflows
+zzcollab help                # Same
+
+# Specific topics
+zzcollab help quickstart     # Solo developer guide
+zzcollab help workflow       # Daily development
+zzcollab help team           # Team collaboration
+zzcollab help config         # Configuration
+zzcollab help docker         # Docker details
+zzcollab help renv           # Package management
+
+# List all topics
+zzcollab help --all
+
+# Legacy format (full options)
+zzcollab --help
 ```
+
+**Help Topics**:
+- **Guides**: quickstart, workflow, team
+- **Configuration**: config, profiles, examples
+- **Technical**: docker, renv, cicd
+- **Other**: options, troubleshoot
 
 ---
 
