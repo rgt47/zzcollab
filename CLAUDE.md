@@ -209,6 +209,7 @@ ZZCOLLAB follows strict Unix CLI conventions with comprehensive short flag suppo
 | `-v`  | `--verbose`        | Verbose output             | `zzcollab -v`           |
 | `-vv` | `--debug`          | Debug output + log file    | `zzcollab -vv`          |
 | `-w`  | `--log-file`       | Enable log file            | `zzcollab -w`           |
+| `-x`  | `--with-examples`  | Include example files      | `zzcollab -x`           |
 | `-y`  | `--yes`            | Skip confirmations         | `zzcollab -y`           |
 
 ### Usage Comparison
@@ -230,6 +231,18 @@ zzcollab --base-image rocker/r-ver --libs geospatial --pkgs tidyverse
 
 # Concise
 zzcollab -b rocker/r-ver -l geospatial -k tidyverse
+```
+
+**With examples**:
+```bash
+# Clean workspace (default)
+zzcollab -p myproject
+
+# Include example files for learning
+zzcollab -p myproject -x
+
+# Set as default preference
+zzcollab -c set with-examples true
 ```
 
 ## Configuration System

@@ -188,7 +188,14 @@ EOF
 # Function: create_analysis_examples
 # Purpose: Create example analysis scripts and templates
 # Optional: Provides examples for common analysis patterns
+# Only creates examples if --with-examples flag is set
 create_analysis_examples() {
+    # Skip if --with-examples flag is not set
+    if [[ "${WITH_EXAMPLES:-false}" != "true" ]]; then
+        log_debug "Skipping analysis examples (use --with-examples to include)"
+        return 0
+    fi
+
     log_debug "Creating analysis examples and templates..."
     
     # Create example data analysis script

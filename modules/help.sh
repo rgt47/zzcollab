@@ -193,6 +193,9 @@ OPTIONS:
         --build-docker           Build Docker image automatically during setup
     -n, --no-docker              Skip Docker image build (default; build manually with 'make docker-build')
     -G, --github                 Automatically create private GitHub repository and push
+    -x, --with-examples          Include example files (paper.Rmd, analysis scripts, vignettes)
+                                 Default: skip examples (create clean workspace)
+                                 Can also set via: zzcollab -c set with-examples true
         --force                  Skip file conflict confirmation prompts (for CI/CD and automation)
         --next-steps             Show development workflow and next steps
 
@@ -402,12 +405,28 @@ FLAGS AND OPTIONS
 
     Example:
     zzcollab -t myteam -p myproject -G
+
 -g, --github-account NAME
     Specify GitHub account for repository creation
     Default: Uses team name (-t) if not specified
 
     Example:
     zzcollab -t dockerteam -g githubuser -p project -G
+
+-x, --with-examples
+    Include example files in workspace (paper.Rmd, analysis scripts, etc.)
+    By default, zzcollab creates a clean workspace without examples.
+    Use this flag to include example files for learning/reference.
+
+    Examples:
+    zzcollab -x                      # Include examples
+    zzcollab -c set with-examples true   # Set as default
+
+    Example files included:
+    - analysis/paper/paper.Rmd       (academic manuscript template)
+    - analysis/paper/references.bib  (bibliography file)
+    - analysis/scripts/*.R           (data validation, parallel computing, etc.)
+    - analysis/templates/*.R         (analysis and figure templates)
 ═══════════════════════════════════════════════════════════════════════════
 TEAM NAME vs GITHUB ACCOUNT (CRITICAL CONCEPT)
 ═══════════════════════════════════════════════════════════════════════════
@@ -493,6 +512,13 @@ auto-github:
 
     zzcollab --config set auto-github false
     Disables automatic GitHub repo creation (default)
+
+with-examples:
+    zzcollab --config set with-examples true
+    Include example files by default (paper.Rmd, analysis scripts, etc.)
+
+    zzcollab --config set with-examples false
+    Create clean workspace without examples (default)
 
 View current settings:
     zzcollab --config list

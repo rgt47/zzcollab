@@ -44,6 +44,7 @@ CONFIG_PKGS_BUNDLE=""
 CONFIG_R_VERSION=""
 CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
+CONFIG_WITH_EXAMPLES="false"
 
 # Package management: Dynamic via renv::install() (no pre-configured modes)
 
@@ -321,6 +322,7 @@ load_config_file() {
     local r_version=$(yaml_get "$config_file" "defaults.r_version")
     local auto_github=$(yaml_get "$config_file" "defaults.auto_github")
     local skip_confirmation=$(yaml_get "$config_file" "defaults.skip_confirmation")
+    local with_examples=$(yaml_get "$config_file" "defaults.with_examples")
 
     # Store in global config variables (only if not "null")
     [[ "$team_name" != "null" && -n "$team_name" ]] && CONFIG_TEAM_NAME="$team_name"
@@ -334,6 +336,7 @@ load_config_file() {
     [[ "$r_version" != "null" && -n "$r_version" ]] && CONFIG_R_VERSION="$r_version"
     [[ "$auto_github" != "null" && -n "$auto_github" ]] && CONFIG_AUTO_GITHUB="$auto_github"
     [[ "$skip_confirmation" != "null" && -n "$skip_confirmation" ]] && CONFIG_SKIP_CONFIRMATION="$skip_confirmation"
+    [[ "$with_examples" != "null" && -n "$with_examples" ]] && CONFIG_WITH_EXAMPLES="$with_examples"
     
     return 0
 }
@@ -351,12 +354,13 @@ load_all_configs() {
     CONFIG_R_VERSION=""
     CONFIG_AUTO_GITHUB="false"
     CONFIG_SKIP_CONFIRMATION="false"
+    CONFIG_WITH_EXAMPLES="false"
 
     # Load configs in reverse priority order (later files override earlier ones)
     load_config_file "$CONFIG_SYSTEM_FILE" 2>/dev/null || true
     load_config_file "$CONFIG_USER_FILE" 2>/dev/null || true
     load_config_file "$CONFIG_PROJECT_FILE" 2>/dev/null || true
-    
+
     log_info "Configuration loading complete"
 }
 
@@ -393,6 +397,10 @@ apply_config_defaults() {
     fi
     if [[ "$CONFIG_SKIP_CONFIRMATION" == "true" ]]; then
         SKIP_CONFIRMATION=true
+    fi
+    # Apply with-examples config only if not explicitly set via CLI flag
+    if [[ "${WITH_EXAMPLES:-false}" == "false" ]] && [[ "$CONFIG_WITH_EXAMPLES" == "true" ]]; then
+        WITH_EXAMPLES=true
     fi
 
     log_info "Applied configuration defaults to CLI variables"
@@ -597,6 +605,7 @@ defaults:
   # Automation settings (system defaults shown)
   auto_github: false               # Automatically create GitHub repository
   skip_confirmation: false         # Skip confirmation prompts
+  with_examples: false             # Include example files/templates (paper.Rmd, analysis scripts, etc.)
 
 # Package Management
 # Packages are added dynamically as needed using renv::install() inside containers
