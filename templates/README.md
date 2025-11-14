@@ -99,6 +99,33 @@ make docker-push-team    # Push team image to Docker Hub
 make check-renv          # Validate package dependencies
 ```
 
+### Navigation Shortcuts (Optional)
+
+Install one-letter navigation shortcuts for faster workflow:
+
+```bash
+# Install navigation functions
+./navigation_scripts.sh --install
+
+# Now you can jump to directories from anywhere in the project:
+r     # → project root
+a     # → analysis/
+s     # → analysis/scripts/
+p     # → analysis/paper/
+f     # → analysis/figures/
+d     # → data/
+nav   # → list all shortcuts
+```
+
+### Getting Help
+
+```bash
+zzcollab --help              # General help
+zzcollab --help quickstart   # Quick start guide
+zzcollab --help workflow     # Development workflow
+zzcollab --help config       # Configuration system
+```
+
 ---
 
 ## Reproducibility
