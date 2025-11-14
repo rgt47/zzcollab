@@ -24,19 +24,136 @@ require_module "core"
 
 # Function: show_help
 # Purpose: Display comprehensive help for main zzcollab usage
+# Function: show_help_brief
+# Purpose: Show brief overview (git-like) with common workflows and topics
+show_help_brief() {
+    cat << 'EOF'
+usage: zzcollab [OPTIONS]
+   or: zzcollab help <topic>
+
+zzcollab - Complete Research Compendium Setup
+Creates reproducible research projects with R package structure,
+Docker integration, and collaborative workflows.
+
+Common workflows:
+
+  start a new project (solo developer)
+    zzcollab -p myproject                     # Initialize new project
+    cd myproject && make docker-build         # Build Docker environment
+    make docker-zsh                           # Start development
+
+  start a new project (team lead)
+    zzcollab -t mylab -p study -r analysis    # Initialize team project
+    make docker-build && make docker-push-team # Build and share image
+    git add . && git commit -m "init" && git push
+
+  join an existing project (team member)
+    git clone https://github.com/team/project.git
+    cd project && zzcollab -u                 # Pull team Docker image
+    make docker-zsh                           # Start development
+
+  development workflow
+    make docker-zsh        # Enter container
+    # ... work in R ...
+    q()                    # Exit (auto-snapshots packages)
+    make docker-test       # Run tests
+    git add . && git commit -m "..." && git push
+
+See 'zzcollab help <topic>' for detailed information:
+
+  Guides
+    quickstart    Quick start for solo developers
+    workflow      Daily development workflow
+    team          Team collaboration setup
+
+  Configuration
+    config        Configuration system
+    profiles      Docker profile selection
+    examples      Example files and templates
+
+  Technical
+    docker        Docker architecture
+    renv          Package management
+    cicd          CI/CD automation
+
+  Other
+    options       Complete list of all command-line options
+    troubleshoot  Common issues and solutions
+
+'zzcollab help --all' lists all help topics
+'zzcollab --help' shows complete options (old format)
+EOF
+}
+
 show_help() {
+    local topic="${1:-}"
+
+    case "$topic" in
+        "")
+            # No topic - show brief overview
+            show_help_brief
+            ;;
+        --all|-a)
+            # List all available topics
+            show_help_topics_list
+            ;;
+        quickstart)
+            show_help_quickstart
+            ;;
+        workflow)
+            show_help_workflow
+            ;;
+        team)
+            show_help_team
+            ;;
+        config)
+            show_help_config_topic
+            ;;
+        profiles)
+            show_help_profiles
+            ;;
+        examples)
+            show_help_examples_topic
+            ;;
+        docker)
+            show_help_docker
+            ;;
+        renv)
+            show_help_renv
+            ;;
+        cicd)
+            show_help_cicd
+            ;;
+        options)
+            # Show full options list (original help)
+            show_help_full
+            ;;
+        troubleshoot|troubleshooting)
+            show_help_troubleshooting
+            ;;
+        *)
+            echo "Unknown help topic: $topic"
+            echo "See 'zzcollab help --all' for list of all topics"
+            return 1
+            ;;
+    esac
+}
+
+# Function: show_help_full
+# Purpose: Show complete options list (original comprehensive help)
+show_help_full() {
     # Check if output is being redirected or if we're in a non-interactive terminal
     if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
         # Direct output for redirects, scripts, or when PAGER=cat
         show_help_header
-        show_help_examples  
+        show_help_examples
         show_help_config
         show_help_footer
     else
         # Interactive terminal - use pager for long help output
         {
             show_help_header
-            show_help_examples  
+            show_help_examples
             show_help_config
             show_help_footer
         } | "${PAGER:-less}" -R
