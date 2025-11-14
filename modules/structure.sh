@@ -63,7 +63,6 @@ create_directory_structure() {
         "man"                    # Manual pages
         "tests/testthat"         # Unit tests with testthat subdirectory
         "vignettes"              # Package vignettes
-        "data"                   # R package data (for package distribution)
         "modules"                # Shell scripts for package validation and tooling
         "analysis"               # Analysis workflow root
         "analysis/data"          # Research data root
