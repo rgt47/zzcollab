@@ -950,6 +950,7 @@ execute_project_creation_workflow() {
     
     log_info "📦 Creating R package files..."
     create_core_files || exit 1
+    create_readme_file || exit 1
     create_renv_setup || exit 1
     
     log_info "⚙️ Creating configuration files..."

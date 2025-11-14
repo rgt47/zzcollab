@@ -164,6 +164,31 @@ test_check(\"$pkg_name\")"
 # R ENVIRONMENT MANAGEMENT (extracted from lines 551-559)
 #=============================================================================
 
+# Function: create_readme_file
+# Purpose: Creates root README.md with project information and zzcollab setup instructions
+# Creates:
+#   - README.md - Project overview and quickstart for team members
+#
+# Template Features:
+#   - zzcollab framework identification
+#   - Team member onboarding instructions
+#   - Project structure overview
+#   - Development workflow
+#   - GPL-3 license information
+#   - TODO sections for customization
+#
+# Tracking: README.md is tracked for uninstall
+create_readme_file() {
+    log_debug "Creating root README.md file..."
+
+    if ! install_template "README.md" "README.md" "project README" "Created project README with zzcollab quickstart"; then
+        log_error "Failed to create README.md"
+        return 1
+    fi
+
+    log_success "Created README.md"
+}
+
 # Function: create_renv_setup
 # Purpose: Creates package validation setup for reproducible environments
 # Creates:
