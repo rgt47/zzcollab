@@ -158,7 +158,8 @@ docker-run:
 			echo "🐳 Starting X11 profile (GUI support)..."; \
 			echo "⚠️  Requires XQuartz running with 'Allow connections from network clients'"; \
 			echo ""; \
-			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME); \
+			xhost + 127.0.0.1 > /dev/null 2>&1 || echo "⚠️  xhost command failed - XQuartz may not be running"; \
+			docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME); \
 			;; \
 		*shiny*) \
 			echo "🐳 Starting Shiny Server..."; \
