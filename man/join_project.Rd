@@ -61,7 +61,7 @@ the necessary team infrastructure.
 }
 
 \strong{Development Workflow:}
-After joining, start development with \code{make docker-zsh} (shell) or
+After joining, start development with \code{make r} (shell) or
 \code{make docker-rstudio} (RStudio Server at http://localhost:8787).
 }
 \examples{
@@ -95,7 +95,7 @@ join_project(project_name = "new-study")
 join_project(team_name = "mylab", project_name = "study")
 
 # 3. Start development (outside R)
-# system("make docker-zsh")  # or make docker-rstudio
+# system("make r")  # or make docker-rstudio
 }
 
 }

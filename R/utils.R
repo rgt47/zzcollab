@@ -545,7 +545,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' - Git repository cloned locally (typically done before calling this function)
 #'
 #' **Development Workflow:**
-#' After joining, start development with \code{make docker-zsh} (shell) or
+#' After joining, start development with \code{make r} (shell) or
 #' \code{make docker-rstudio} (RStudio Server at http://localhost:8787).
 #'
 #' @examples
@@ -579,7 +579,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' join_project(team_name = "mylab", project_name = "study")
 #'
 #' # 3. Start development (outside R)
-#' # system("make docker-zsh")  # or make docker-rstudio
+#' # system("make r")  # or make docker-rstudio
 #' }
 #'
 #' @seealso

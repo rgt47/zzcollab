@@ -276,7 +276,7 @@ Modern research increasingly involves geographically distributed teams working a
 
 Platform-specific differences manifest at multiple levels: operating systems provide different versions of system libraries, package managers use different compilation flags, binary package availability varies by platform, and even floating-point arithmetic can differ based on underlying BLAS implementations [@eddelbuettel2019blas]. These differences compound, creating scenarios where code that works perfectly on one researcher's laptop fails or produces different results on a collaborator's system.
 
-The "works on my machine" syndrome damages team productivity by forcing researchers to spend time debugging environmental issues rather than conducting science. @ram2019building documents how environmental inconsistencies create friction that reduces collaboration efficiency by 30-40%, as teams spend significant time on technical support rather than research activities.
+The "works on my machine" syndrome damages team productivity by forcing researchers to spend time debugging environmental issues rather than conducting science. @wilson2017good documents how environmental inconsistencies create friction that reduces collaboration efficiency, as teams spend significant time on technical support rather than research activities.
 
 ## Scenario: International Geospatial Ecology Team
 

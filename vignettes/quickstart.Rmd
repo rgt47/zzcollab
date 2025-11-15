@@ -165,8 +165,8 @@ This step demonstrates the complete data workflow following the Five Pillars of 
 Start the Docker development environment:
 
 ```bash
-# Enter Docker container (default target launches image for current Dockerfile)
-make r  # or: make docker-run
+# Enter Docker container
+make r
 ```
 
 ### Add Raw Data
@@ -1007,8 +1007,8 @@ cd study
 # Pull and use team Docker image
 zzcollab --use-team-image
 
-# Enter identical development environment
-make r  # Auto-detects profile from Dockerfile
+# Enter development environment
+make r
 ```
 
 **What happens for team members:**
@@ -1083,8 +1083,7 @@ make docker-build
 
 ```bash
 # Run tests with verbose output
-make docker-zsh
-R
+make r
 devtools::test()  # See detailed failure messages
 
 # Check test coverage
@@ -1241,7 +1240,7 @@ cd study
 zzcollab --use-team-image
 
 # Enter container and add packages
-make docker-zsh
+make r
 
 # Inside container - Alice adds modeling packages
 install.packages("tidymodels")
@@ -1263,7 +1262,7 @@ exit  # Auto-snapshot on exit!
 
 ```bash
 # Alice adds modeling packages
-make docker-zsh
+make r
 
 # Inside container:
 install.packages("tidymodels")
@@ -1283,7 +1282,7 @@ git push
 
 # Bob adds geospatial packages
 git pull  # Gets Alice's changes
-make docker-zsh
+make r
 
 # Inside container:
 install.packages("sf")
@@ -1313,7 +1312,7 @@ cd study
 
 # Uses team Docker image (has base bioinformatics packages)
 zzcollab --use-team-image
-make docker-zsh
+make r
 
 # Restores ALL packages from renv.lock (Alice's + Bob's)
 renv::restore()  # Installs tidymodels + sf + all other packages

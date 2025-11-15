@@ -138,21 +138,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
 
-# Install vim-plug for vim plugins
-RUN --mount=type=cache,target=/tmp/downloads \
-    set -ex && \
-    VIM_PLUG_VERSION=0.14.0 && \
-    mkdir -p /tmp/.vim/autoload && \
-    curl -fLo /tmp/.vim/autoload/plug.vim \
-        https://raw.githubusercontent.com/junegunn/vim-plug/${VIM_PLUG_VERSION}/plug.vim
-
 # Create user and set up environment
 RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
     usermod -aG sudo ${USERNAME} && \
     echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
     mkdir -p /home/${USERNAME}/project && \
-    mv /tmp/.vim /home/${USERNAME}/.vim && \
     chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
 
@@ -173,21 +164,6 @@ RUN --mount=type=secret,id=password \
 # Switch to user
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
-
-# Copy dotfiles (optional - wildcards allow missing files)
-COPY --chown=${USERNAME}:${USERNAME} \
-    .vimrc* \
-    .gitconfig* \
-    .tmux.conf* \
-    .bashrc* \
-    .bash_profile* \
-    .profile* \
-    .emacs* \
-    .emacs.d* \
-    /home/${USERNAME}/
-
-# Install vim plugins
-RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
 
 # Copy populated renv project library from builder
 COPY --from=builder --chown=${USERNAME}:${USERNAME} /build/renv ./renv

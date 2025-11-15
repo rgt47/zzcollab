@@ -35,7 +35,7 @@ help:
 	@echo "    docker-check-renv-fix"
 	@echo ""
 	@echo "  Cleanup:"
-	@echo "    clean, clean-dotfiles, docker-clean, docker-build-clean"
+	@echo "    clean, docker-clean"
 	@echo "    docker-prune-cache       - Remove Docker build cache"
 	@echo "    docker-prune-all         - Deep clean (all unused Docker resources)"
 	@echo "    docker-disk-usage        - Show Docker disk usage"
@@ -200,16 +200,8 @@ clean:
 	rm -f *.tar.gz
 	rm -rf *.Rcheck
 
-clean-dotfiles:
-	@echo "Cleaning up dotfiles from working directory..."
-	@rm -f .vimrc .tmux.conf .gitconfig .inputrc .bashrc .bash_profile .profile .aliases .functions .exports .editorconfig .ctags .ackrc .ripgreprc .emacs 2>/dev/null || true
-	@rm -rf .emacs.d .config/fish 2>/dev/null || true
-	@echo "Dotfiles cleanup complete (preserved in Docker image)"
-
 docker-clean:
 	docker rmi $(PACKAGE_NAME) || true
-
-docker-build-clean: docker-build clean-dotfiles
 	docker system prune -f
 
 # Docker disk management
@@ -232,4 +224,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean clean-dotfiles docker-clean docker-build-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

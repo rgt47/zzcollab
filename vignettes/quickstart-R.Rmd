@@ -437,7 +437,7 @@ rebuild("docker-check-renv")
 You can also use standard R commands inside containers:
 
 ```{r, eval=FALSE}
-# Inside container (make docker-zsh or make docker-rstudio)
+# Inside container (make r or make docker-rstudio)
 install.packages("tidyverse")
 # For GitHub packages:
 install.packages("remotes")

@@ -707,7 +707,7 @@ make docker-push-team
 
 ```bash
 # Inside container
-make docker-zsh
+make r
 
 # Install packages as needed
 renv::install("tidymodels")
@@ -747,7 +747,7 @@ make docker-push-team
 git clone https://github.com/genomicslab/rnaseq-study.git
 cd rnaseq-study
 zzcollab --use-team-image
-make docker-zsh
+make r
 
 # Add RNA-seq specific packages
 renv::install(c("tximport", "DESeq2", "apeglm", "EnhancedVolcano"))
@@ -759,7 +759,7 @@ renv::snapshot()
 git clone https://github.com/genomicslab/chipseq-study.git
 cd chipseq-study
 zzcollab --use-team-image
-make docker-zsh
+make r
 
 # Add ChIP-seq specific packages
 renv::install(c("ChIPseeker", "ChIPpeakAnno", "DiffBind", "csaw"))
@@ -782,7 +782,7 @@ cd rnaseq-study
 
 # Can use ANY compatible Docker base image
 zzcollab --profile-name minimal  # or analysis, or bioinformatics
-make docker-zsh
+make r
 
 # renv restores EXACT packages Alice used
 renv::restore()  # Installs tximport, DESeq2, apeglm, EnhancedVolcano at exact versions
@@ -901,7 +901,7 @@ cd attention-study
 zzcollab --use-team-image
 
 # Start working immediately
-make docker-zsh
+make r
 ```
 
 ## Scenario 3: Bioinformatics Core Facility
@@ -947,7 +947,7 @@ cd rnaseq-study
 zzcollab --use-team-image  # Gets appropriate base image
 
 # Add analysis-specific packages
-make docker-zsh
+make r
 renv::install("workflow_specific_package")
 renv::snapshot()
 ```
@@ -990,7 +990,7 @@ mkdir client-churn-prediction && cd client-churn-prediction
 zzcollab -t datasci-firm -p client-churn --profile-name modeling
 
 # Team base image provides foundation
-make docker-zsh
+make r
 
 # Add client-specific packages
 renv::install(c("probably", "workflowsets", "themis"))
