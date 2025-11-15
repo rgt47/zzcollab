@@ -230,27 +230,6 @@ create_renv_setup() {
 # R PACKAGE VALIDATION AND UTILITIES
 #=============================================================================
 
-# Function: validate_r_package_structure
-# Purpose: Verify that all required R package files were created successfully
-# Checks: DESCRIPTION, NAMESPACE, R/, tests/, .Rproj file
-# Returns: 0 if all files exist, 1 if any are missing
-validate_r_package_structure() {
-    log_info "Validating R package structure..."
-    
-    local -r required_files=(
-        "DESCRIPTION"
-        ".Rbuildignore"
-        "NAMESPACE"
-        "LICENSE"
-        "R/utils.R"
-        "tests/testthat.R"
-        "tests/testthat/test-utils.R"
-    )
-
-    # Use centralized validation function from core.sh
-    validate_files_exist "R package structure" "${required_files[@]}"
-}
-
 # Function: show_rpackage_summary
 # Purpose: Display summary of created R package structure and next steps
 show_rpackage_summary() {

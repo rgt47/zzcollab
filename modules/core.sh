@@ -12,7 +12,7 @@ set -euo pipefail
 #          - Module dependency validation system (require_module function)
 #          - Package name validation and sanitization
 #          - Item tracking system for manifest generation
-#          - File safety utilities (safe_mkdir, safe_copy)
+#          - File safety utilities (safe_mkdir)
 #          - Command availability caching
 #          - Cross-platform compatibility helpers
 #
@@ -444,25 +444,6 @@ validate_commands_exist() {
         return 0
     else
         log_error "$description: missing commands: ${missing_commands[*]}"
-        return 1
-    fi
-}
-
-# Function: validate_with_callback
-# Purpose: Generic validation with custom validation function
-# Arguments: $1 - description, $2 - validation function, $3+ - arguments to validation function
-validate_with_callback() {
-    local description="$1"
-    local validation_func="$2"
-    shift 2
-    
-    log_info "Validating $description..."
-    
-    if "$validation_func" "$@"; then
-        log_success "$description validation passed"
-        return 0
-    else
-        log_error "$description validation failed"
         return 1
     fi
 }

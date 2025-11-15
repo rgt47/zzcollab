@@ -148,27 +148,6 @@ parse_description_imports() {
     ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
 }
 
-# Parse Suggests field from DESCRIPTION
-parse_description_suggests() {
-    if [[ ! -f "DESCRIPTION" ]]; then
-        return 0
-    fi
-
-    awk '
-        /^Suggests:/ {
-            suggests = $0
-            while (getline > 0 && /^[[:space:]]/) {
-                suggests = suggests $0
-            }
-            gsub(/Suggests:[[:space:]]*/, "", suggests)
-            gsub(/\([^)]*\)/, "", suggests)
-            gsub(/,/, "\n", suggests)
-            print suggests
-            exit
-        }
-    ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
-}
-
 #==============================================================================
 # RENV.LOCK PARSING (USING JQ)
 #==============================================================================

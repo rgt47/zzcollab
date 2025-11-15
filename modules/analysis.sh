@@ -90,50 +90,6 @@ create_analysis_files() {
 # ANALYSIS FRAMEWORK UTILITIES
 #=============================================================================
 
-# Function: validate_analysis_structure
-# Purpose: Verify that all required analysis files were created successfully
-# Checks: paper.Rmd, references.bib, analysis directories
-# Returns: 0 if all files exist, 1 if any are missing
-validate_analysis_structure() {
-    log_info "Validating analysis structure..."
-    
-    local -r required_files=(
-        "analysis/paper/paper.Rmd"
-        "analysis/paper/references.bib"
-    )
-    
-    local -r required_dirs=(
-        "analysis/paper"
-        "analysis/figures"
-        "analysis/tables"
-        "analysis/templates"
-    )
-    
-    local missing_items=()
-    
-    # Check required files
-    for file in "${required_files[@]}"; do
-        if [[ ! -f "$file" ]]; then
-            missing_items+=("file: $file")
-        fi
-    done
-    
-    # Check required directories
-    for dir in "${required_dirs[@]}"; do
-        if [[ ! -d "$dir" ]]; then
-            missing_items+=("directory: $dir")
-        fi
-    done
-    
-    if [[ ${#missing_items[@]} -eq 0 ]]; then
-        log_success "All required analysis files and directories exist"
-        return 0
-    else
-        log_error "Missing analysis items: ${missing_items[*]}"
-        return 1
-    fi
-}
-
 # Function: show_analysis_summary
 # Purpose: Display analysis framework summary and usage instructions
 show_analysis_summary() {

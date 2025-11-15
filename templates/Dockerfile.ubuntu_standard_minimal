@@ -48,20 +48,28 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Create user and set up environment
-# Note: renv will self-bootstrap on first use via renv/activate.R
-RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
-    mkdir -p /home/${USERNAME}/project && \
-    mkdir -p /home/${USERNAME}/.cache/R/renv && \
-    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+# Install renv from CRAN
+RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
+    R -e "install.packages('renv')"
 
-# Switch to user
+# Create non-root user and set up environment
+RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library && \
+    mkdir -p /home/${USERNAME}/.cache/R/renv && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.cache
+
+# Switch to non-root user
 USER ${USERNAME}
+
+# WORKDIR automatically creates directory with correct ownership
 WORKDIR /home/${USERNAME}/project
 
-# Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
-# renv will self-bootstrap on first R session via renv/activate.R (sourced by .Rprofile)
-# This eliminates Docker build dependency and keeps images lightweight
+# Health check: Verify R is functional
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=2 \
+    CMD R --quiet --slave -e "quit(status = 0)" || exit 1
+
+# Note: Project files mounted at runtime via -v $(pwd):/home/analyst/project
+# This keeps image reusable across projects. Run renv::restore() in first session.
+# .Rprofile is accessed from the mounted volume for auto-snapshot functionality.
 
 CMD ["R", "--quiet"]

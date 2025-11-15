@@ -50,34 +50,32 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install analysis packages from CRAN
+# Install base analysis packages from CRAN
+# Note: These are "base packages" included in the profile for convenience.
+# Project-specific packages are managed via renv and renv.lock.
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
     R -e "install.packages(c('renv', 'here', 'janitor', \
         'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
 
-# Create user and set up environment
+# Create non-root user and set up environment
 RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
-    mkdir -p /home/${USERNAME}/project && \
+    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library && \
     mkdir -p /home/${USERNAME}/.cache/R/renv && \
-    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.cache
 
-# Switch to user
+# Switch to non-root user
 USER ${USERNAME}
+
+# WORKDIR automatically creates directory with correct ownership
 WORKDIR /home/${USERNAME}/project
 
-# Copy project files
-COPY --chown=${USERNAME}:${USERNAME} renv.lock DESCRIPTION ./
-COPY --chown=${USERNAME}:${USERNAME} ren[v]/ ./renv/
+# Health check: Verify R is functional
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=2 \
+    CMD R --quiet --slave -e "quit(status = 0)" || exit 1
 
-# Restore renv packages
-RUN R --quiet -e "renv::restore()"
-
-# Note: Project files are mounted at runtime via -v $(pwd):/home/analyst/project
-# No COPY needed - keeps image small and allows live code editing
-
-# Health check for RStudio Server
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8787/ || exit 1
+# Note: Project files mounted at runtime via -v $(pwd):/home/analyst/project
+# This keeps image reusable across projects. Run renv::restore() in first session.
+# .Rprofile is accessed from the mounted volume for auto-snapshot functionality.
+# For RStudio Server: Use CMD ["/init"] or run with 'docker run -p 8787:8787 ... /init'
 
 CMD ["R", "--quiet"]

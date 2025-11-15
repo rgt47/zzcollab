@@ -232,59 +232,6 @@ Add any other context or screenshots about the feature request here.'
     log_success "GitHub repository templates created"
 }
 
-# Function: validate_cicd_structure
-# Purpose: Verify that all required CI/CD files were created successfully
-# Checks: GitHub Actions workflows, templates, directory structure
-# Returns: 0 if all files exist, 1 if any are missing
-validate_cicd_structure() {
-    log_info "Validating CI/CD structure..."
-    
-    local -r required_files=(
-        ".github/workflows/r-package.yml"
-        ".github/workflows/render-paper.yml"
-    )
-    
-    local -r optional_files=(
-        ".github/pull_request_template.md"
-        ".github/ISSUE_TEMPLATE/bug_report.md"
-        ".github/ISSUE_TEMPLATE/feature_request.md"
-    )
-    
-    local missing_files=()
-    local missing_optional=()
-    
-    # Check required files
-    for file in "${required_files[@]}"; do
-        if [[ ! -f "$file" ]]; then
-            missing_files+=("$file")
-        fi
-    done
-    
-    # Check optional files
-    for file in "${optional_files[@]}"; do
-        if [[ ! -f "$file" ]]; then
-            missing_optional+=("$file")
-        fi
-    done
-    
-    # Report results
-    if [[ ${#missing_files[@]} -eq 0 ]]; then
-        log_success "All required CI/CD files exist"
-        
-        if [[ ${#missing_optional[@]} -gt 0 ]]; then
-            log_info "Optional files missing: ${missing_optional[*]}"
-            log_info "Run create_github_templates() to create them"
-        else
-            log_success "All optional CI/CD files exist"
-        fi
-        
-        return 0
-    else
-        log_error "Missing required CI/CD files: ${missing_files[*]}"
-        return 1
-    fi
-}
-
 # Function: show_cicd_summary
 # Purpose: Display CI/CD setup summary and usage instructions
 show_cicd_summary() {

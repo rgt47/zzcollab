@@ -38,24 +38,6 @@ safe_mkdir() {
     fi
 }
 
-# Function: safe_copy
-# Purpose: Copy file with error handling and logging
-# Arguments: $1 - source, $2 - destination, $3 - description (optional)
-safe_copy() {
-    local src="$1"
-    local dest="$2"
-    local description="${3:-file}"
-    
-    if cp "$src" "$dest" 2>/dev/null; then
-        log_info "Copied $description: $src → $dest"
-        track_file "$dest"
-        return 0
-    else
-        log_error "Failed to copy $description: $src → $dest"
-        return 1
-    fi
-}
-
 # Function: safe_symlink - REMOVED (unused)
 # All symlink operations use direct ln -sf commands
 # Removed to eliminate dead code (0 calls found)

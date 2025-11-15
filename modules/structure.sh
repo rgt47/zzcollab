@@ -126,20 +126,6 @@ create_data_templates() {
 # STRUCTURE VALIDATION AND REPORTING
 #=============================================================================
 
-# Function: validate_directory_structure
-# Purpose: Verify that all required directories were created successfully
-# Returns: 0 if all directories exist, 1 if any are missing
-validate_directory_structure() {
-    local -r required_dirs=(
-        "R" "man" "tests/testthat" "vignettes" "analysis"
-        "analysis/data" "analysis/data/raw_data" "analysis/data/derived_data"
-        "analysis/paper" "analysis/figures" "analysis/tables" "analysis/templates"
-        "analysis/scripts" "docs" ".github/workflows"
-    )
-
-    validate_directories_exist "Directory structure" "${required_dirs[@]}"
-}
-
 # Function: show_structure_summary
 # Purpose: Display a summary of the created project structure (only with -v)
 show_structure_summary() {
