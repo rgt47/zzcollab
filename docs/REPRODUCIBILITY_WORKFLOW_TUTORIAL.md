@@ -88,8 +88,8 @@ Adelie,Torgersen,39.5,17.4,186,3800,female,2007
 # Build Docker image (first time only, ~5-10 minutes)
 make docker-build
 
-# Enter container with Zsh shell
-make docker-zsh
+# Enter container
+make r
 ```
 
 **Inside Container**:
@@ -140,7 +140,7 @@ make check-renv
 
 ```bash
 # Re-enter container
-make docker-zsh
+make r
 ```
 
 **Inside Container**:
@@ -322,7 +322,7 @@ zzcollab -u
 docker images | grep mylab/penguin-analysis
 
 # Enter container (same environment as team lead!)
-make docker-zsh
+make r
 ```
 
 **Inside Container (Team Member)**:
@@ -374,7 +374,7 @@ git pull
 jq '.Packages.broom' renv.lock
 
 # Enter container and restore
-make docker-zsh
+make r
 ```
 
 **Inside Container**:
@@ -406,7 +406,7 @@ git clone https://github.com/mylab/penguin-analysis.git .
 zzcollab -u
 
 # Enter container
-make docker-zsh
+make r
 ```
 
 **Inside Container**:
@@ -494,7 +494,7 @@ git push
 
 ```bash
 # Enter container
-make docker-zsh
+make r
 ```
 
 **Inside Container**:
@@ -527,7 +527,7 @@ jq '.R.Repositories[0].URL' renv.lock
 
 ```bash
 # Enter container
-make docker-zsh
+make r
 ```
 
 **Inside Container**:
@@ -667,7 +667,7 @@ docker inspect <container-id> | jq '.[0].Config.Entrypoint'
 # Should show: ["/usr/local/bin/zzcollab-entrypoint.sh"]
 
 # Manually snapshot if needed
-make docker-zsh
+make r
 renv::snapshot()
 exit
 ```

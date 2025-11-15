@@ -158,7 +158,7 @@ make docker-build && make docker-push-team && git add . && git commit -m "Initia
 # Team Member
 git clone https://github.com/mylab/study.git && cd study
 zzcollab -u -d ~/dotfiles
-make docker-zsh
+make docker-sh
 ```
 
 **R Interface**:
@@ -305,7 +305,7 @@ ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** arc
 
 **Workflow** (Simplified):
 ```bash
-make docker-zsh                   # 1. Enter container → starts R directly
+make r                            # 1. Enter container → starts R directly
 install.packages("tidyverse")    # 2. Add packages (standard R command)
 # For GitHub: install.packages("remotes") then remotes::install_github("user/package")
 q()                               # 3. Exit R → .Last() runs auto-snapshot + validation
@@ -397,7 +397,7 @@ make check                  # R CMD check validation
 
 **Docker Environments (Auto-snapshot on Exit)**:
 ```bash
-make docker-zsh            # Zsh shell with dotfiles (recommended)
+make docker-sh             # Shell with dotfiles (recommended)
 make docker-rstudio        # RStudio Server at localhost:8787
 make docker-verse          # Verse environment with LaTeX
 # All docker-* targets automatically:
@@ -414,7 +414,7 @@ git add . && git commit -m "Initial project setup" && git push
 
 # Team Member
 zzcollab --use-team-image  # Download team's Docker image
-make docker-zsh            # Start development
+make docker-sh             # Start development
 ```
 
 ## Docker Architecture
@@ -451,7 +451,7 @@ mkdir penguin-analysis && cd penguin-analysis
 zzcollab
 
 # 3. Daily development
-make docker-zsh     # Enter container
+make r              # Enter container
 # ... work inside container ...
 exit                # Exit container
 make docker-test && git add . && git commit -m "Add analysis" && git push
@@ -580,7 +580,7 @@ make check-renv-no-strict  # Skip tests/ and vignettes/
 - **Developer workflow transformation**:
   - **Before**: Developers needed R on host to run `Rscript validate_package_environment.R`
   - **After**: Entire development cycle works without host R installation
-  - Workflow: `make docker-zsh` → work in R → `q()` → auto-snapshot → auto-validate
+  - Workflow: `make r` → work in R → `q()` → auto-snapshot → auto-validate
 
 **Earlier improvements** (same day):
 - **Static template matching**: `select_dockerfile_strategy()` now checks resolved values against static templates

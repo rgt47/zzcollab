@@ -153,7 +153,7 @@ git add . && git commit -m "Initial setup" && git push
 ```bash
 git clone https://github.com/mylab/study.git && cd study
 zzcollab --use-team-image  # Uses team's Docker profile
-make docker-zsh
+make docker-sh
 # Inside container: install.packages("package") as needed
 ```
 
@@ -229,7 +229,7 @@ After the Docker profile is set, team members add packages as needed:
 
 ```bash
 # Enter container
-make docker-zsh
+make docker-sh
 
 # Inside container - add packages using standard R
 R
@@ -326,7 +326,7 @@ set_config("dotfiles_dir", "~/dotfiles")
 # 1. Initialize project (uses config defaults)
 init_project(project_name = "covid-analysis")
 
-# 2. Add required packages (inside container via make docker-zsh)
+# 2. Add required packages (inside container via make r)
 # In container:
 #   install.packages(c("tidyverse", "lubridate", "plotly"))
 # Packages automatically captured on exit
@@ -386,7 +386,7 @@ make docker-rstudio
 # Available development environments
 make docker-rstudio    # RStudio Server GUI
 make docker-r          # R console
-make docker-zsh        # Zsh shell with dotfiles
+make docker-sh         # Shell with dotfiles
 make docker-bash       # Bash shell
 
 # Common tasks
@@ -468,7 +468,7 @@ EXAMPLES:
   # Team collaboration - Member
   git clone https://github.com/myteam/study.git && cd study
   zzcollab --use-team-image                   # Pull and use team image
-  make docker-zsh                             # Start development
+  make docker-sh                              # Start development
   # Inside container: install.packages("pkg") as needed
 
   # Traditional usage

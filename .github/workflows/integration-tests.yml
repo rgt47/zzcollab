@@ -283,7 +283,7 @@ jobs:
 
         # Verify critical targets exist in Makefile
         grep -q "docker-build" Makefile
-        grep -q "docker-zsh" Makefile || grep -q "docker-r" Makefile
+        grep -q "docker-run" Makefile || grep -q "docker-r" Makefile
 
     - name: Test results summary
       if: always()

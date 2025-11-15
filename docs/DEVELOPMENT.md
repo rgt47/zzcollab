@@ -53,7 +53,7 @@ docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck
 
 ### Development Shells
 ```bash
-make docker-zsh            # Zsh shell with dotfiles (recommended)
+make docker-sh             # Shell with dotfiles (recommended)
 make docker-rstudio        # RStudio Server at localhost:8787
 make docker-verse          # Verse environment with LaTeX (publishing)
 make docker-r              # R console only
@@ -71,7 +71,7 @@ All `docker-*` targets automatically snapshot renv.lock on container exit:
 
 **Workflow**:
 ```bash
-make docker-zsh              # 1. Enter container (entrypoint active)
+make r                       # 1. Enter container (entrypoint active)
 renv::install("tidyverse")   # 2. Add packages as needed
 exit                         # 3. Exit → auto-snapshot + validation!
 # renv.lock automatically updated and validated
@@ -166,7 +166,7 @@ cd PROJECT
 zzcollab --use-team-image
 
 # 3. Start development
-make docker-zsh            # Enter container with team environment
+make docker-sh             # Enter container with team environment
 ```
 
 ### Solo Developer - Build Personal Image
@@ -215,7 +215,7 @@ cd PROJECT
 zzcollab --use-team-image
 
 # Step 3: Start development environment
-make docker-zsh            # Enter container (command-line)
+make docker-sh             # Enter container (command-line)
 # OR
 make docker-rstudio        # Start RStudio Server at localhost:8787
 
@@ -235,7 +235,7 @@ make docker-push-team
 
 # Team members update their images:
 docker pull TEAM/PROJECTcore:latest
-make docker-zsh            # Automatically uses updated image
+make docker-sh             # Automatically uses updated image
 ```
 
 ### Error Handling
@@ -257,7 +257,7 @@ ZZCOLLAB uses **dynamic package management** via renv for maximum flexibility:
 
 ```bash
 # Inside Docker container
-make docker-zsh
+make r
 
 # Add packages as needed
 renv::install("tidyverse")
@@ -322,7 +322,7 @@ git add . && git commit -m "Initial setup" && git push
 # Team Members:
 git clone https://github.com/team/project.git && cd project
 zzcollab --use-team-image
-make docker-zsh
+make docker-sh
 # Add packages as needed with renv::install()
 ```
 

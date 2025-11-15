@@ -393,7 +393,6 @@ get_zzcollab_files() {
 
         # Docker files
         "Dockerfile" "Dockerfile.teamcore" "Dockerfile.personal"
-        ".zshrc_docker"
 
         # Shell modules
         "modules/validation.sh" "modules/core.sh" "modules/utils.sh" "modules/constants.sh" "modules/navigation_scripts.sh"
@@ -458,7 +457,7 @@ detect_file_conflicts() {
             # Skip expected files from team setup
             if [[ "$is_team_setup_dir" == "true" ]]; then
                 case "$item" in
-                    DESCRIPTION|Dockerfile.teamcore|.zshrc_docker|config.yaml|profiles.yaml)
+                    DESCRIPTION|Dockerfile.teamcore|config.yaml|profiles.yaml)
                         # These are expected from team initialization - not conflicts
                         continue
                         ;;

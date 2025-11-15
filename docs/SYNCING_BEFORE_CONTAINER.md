@@ -54,7 +54,7 @@ After developing on the host machine with R installed:
 
 ```bash
 # Enter container with minimal/outdated renv.lock
-make docker-zsh
+make r
 
 # Inside container:
 source("my_analysis.R")
@@ -101,7 +101,7 @@ git add DESCRIPTION renv.lock
 git commit -m "Sync dependencies before containerization"
 
 # 4. Enter container with complete renv.lock
-make docker-zsh
+make r
 
 # Inside container:
 # renv::restore() automatically installs all packages
@@ -183,7 +183,7 @@ git commit -m "Sync dependencies before containerization"
 # ============================================
 
 # Enter container with complete environment
-make docker-zsh
+make r
 
 # Your code runs immediately
 source("analysis/scripts/my_analysis.R")
@@ -205,7 +205,7 @@ make check-renv-no-fix
 make check-renv-no-strict
 
 # Enter container after validation
-make docker-zsh
+make r
 ```
 
 ## Edge Cases and Alternatives
@@ -224,7 +224,7 @@ git add renv.lock
 git commit -m "Capture exact host package versions"
 
 # Enter container
-make docker-zsh                  # Gets identical versions
+make r                           # Gets identical versions
 ```
 
 **Trade-off:**
@@ -245,7 +245,7 @@ vim DESCRIPTION
 make check-renv
 
 # 3. For GitHub packages, install in container
-make docker-zsh
+make r
 # Inside container:
 install.packages("remotes")
 remotes::install_github("tidyverse/dplyr")
@@ -264,7 +264,7 @@ If you wrote code but never executed it (no host R usage):
 make check-renv
 
 # Enter container with complete dependencies
-make docker-zsh
+make r
 
 # Code runs for the first time in container
 ```
@@ -295,7 +295,7 @@ library(dplyr)  # ✅ Works immediately
 ```bash
 # Clean handoff from host to container
 make check-renv              # Sync state
-make docker-zsh              # Enter with complete environment
+make r                       # Enter with complete environment
 # Work continues seamlessly
 ```
 
@@ -369,12 +369,12 @@ curl -s "https://crandb.r-pkg.org/dplyr" | jq '.'
 
 ```bash
 # Problematic workflow:
-make docker-zsh              # Enter with outdated renv.lock
+make r                       # Enter with outdated renv.lock
 # Manual package installation nightmare begins
 
 # Correct workflow:
 make check-renv              # Sync dependencies first
-make docker-zsh              # Enter with complete environment
+make r                       # Enter with complete environment
 ```
 
 ### ❌ Not Committing Sync Results
@@ -382,7 +382,7 @@ make docker-zsh              # Enter with complete environment
 ```bash
 # Lost work:
 make check-renv              # Updates DESCRIPTION and renv.lock
-make docker-zsh              # Uses updated files
+make r                       # Uses updated files
 # Exit container, discard changes
 # Next container entry has outdated renv.lock again
 
@@ -390,7 +390,7 @@ make docker-zsh              # Uses updated files
 make check-renv
 git add DESCRIPTION renv.lock
 git commit -m "Sync dependencies"
-make docker-zsh
+make r
 ```
 
 ## Integration with zzcollab Workflow
@@ -411,7 +411,7 @@ git add DESCRIPTION renv.lock
 git commit -m "Add initial dependencies"
 
 # 4. Container-based development
-make docker-zsh
+make r
 # Work in container
 # Packages auto-captured on exit via .Last()
 
@@ -435,13 +435,13 @@ git push
 
 # Team Member workflow:
 git pull                     # Get updated renv.lock
-make docker-zsh              # Container installs team's packages
+make r                       # Container installs team's packages
 # Work continues with consistent environment
 ```
 
 ## Summary
 
-**Always run `make check-renv` before `make docker-zsh`** when transitioning from host development to container development.
+**Always run `make check-renv` before `make r`** when transitioning from host development to container development.
 
 **Why:**
 - Host R and container R are isolated environments
@@ -455,7 +455,7 @@ make docker-zsh              # Container installs team's packages
 **Pattern to remember:**
 ```bash
 make check-renv              # Sync state
-make docker-zsh              # Enter with complete environment
+make r                       # Enter with complete environment
 ```
 
 This ensures your container environment matches your code's expectations and provides a smooth development experience.

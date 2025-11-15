@@ -202,7 +202,7 @@ clean:
 
 clean-dotfiles:
 	@echo "Cleaning up dotfiles from working directory..."
-	@rm -f .vimrc .tmux.conf .gitconfig .inputrc .bashrc .bash_profile .profile .aliases .functions .exports .editorconfig .ctags .ackrc .ripgreprc .zshrc .zshrc_docker .emacs 2>/dev/null || true
+	@rm -f .vimrc .tmux.conf .gitconfig .inputrc .bashrc .bash_profile .profile .aliases .functions .exports .editorconfig .ctags .ackrc .ripgreprc .emacs 2>/dev/null || true
 	@rm -rf .emacs.d .config/fish 2>/dev/null || true
 	@echo "Dotfiles cleanup complete (preserved in Docker image)"
 

@@ -5,9 +5,9 @@
 #   --install   : Add navigation functions to your shell config
 #   --uninstall : Remove navigation functions from your shell config
 
-SHELL_RC="${HOME}/.zshrc"
-if [[ "$SHELL" == *"bash"* ]]; then
-    SHELL_RC="${HOME}/.bashrc"
+SHELL_RC="${HOME}/.bashrc"
+if [[ "$SHELL" == *"zsh"* ]]; then
+    SHELL_RC="${HOME}/.zshrc"
 fi
 
 # Navigation functions to be added

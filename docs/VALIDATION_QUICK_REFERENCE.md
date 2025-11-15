@@ -25,7 +25,7 @@ modules/validation.sh --strict    # Direct script call with strict mode
 
 ### Automatic Validation
 ```bash
-make docker-zsh                   # Enter container
+make r                            # Enter container
 # ... work inside container ...
 exit                              # Auto-validates on exit!
 ```
@@ -40,7 +40,7 @@ All `docker-*` targets automatically validate after container exits.
 
 **Workflow**:
 ```bash
-make docker-zsh
+make r
 ```
 
 Inside container:
@@ -71,7 +71,7 @@ make check-renv
 
 **Solution**:
 ```bash
-make docker-zsh
+make r
 install.packages("dplyr")
 exit
 # Auto-snapshot adds to renv.lock
@@ -122,7 +122,7 @@ make check-renv
 
 **Solution**:
 ```bash
-make docker-zsh
+make r
 install.packages("tidyr")
 exit
 # Auto-snapshot adds to renv.lock ✓
@@ -142,7 +142,7 @@ zzcollab -u                       # Pull team Docker image
 make check-renv                   # Validate consistency
 # ✓ Package validation passed
 
-make docker-zsh
+make r
 renv::restore()                   # Install all packages
 exit
 ```
@@ -171,7 +171,7 @@ exit
 
 **Action** (Optional):
 ```bash
-make docker-zsh
+make r
 renv::remove("oldpackage")
 exit
 ```
@@ -385,7 +385,7 @@ grep "ZZCOLLAB_AUTO_SNAPSHOT" .Rprofile
 
 **Manual Snapshot**:
 ```bash
-make docker-zsh
+make r
 # In R:
 renv::snapshot()
 exit
@@ -407,7 +407,7 @@ git push
 ```bash
 # Don't manually snapshot!
 # Just exit container, it happens automatically
-make docker-zsh
+make r
 install.packages("pkg")
 exit  # ← Auto-snapshot here
 ```
@@ -447,7 +447,7 @@ make check-renv
 
 ```
 Need to add package?
-├─ Enter container: make docker-zsh
+├─ Enter container: make r
 ├─ Install: install.packages("pkg")
 ├─ Exit: exit (auto-snapshot + validate)
 └─ Add to DESCRIPTION Imports: if used in R/
@@ -469,7 +469,7 @@ Team member joining?
 ├─ Clone repo: git clone
 ├─ Pull image: zzcollab -u
 ├─ Validate: make check-renv
-└─ Restore: make docker-zsh → renv::restore()
+└─ Restore: make r → renv::restore()
 ```
 
 ---
@@ -479,7 +479,7 @@ Team member joining?
 **Three Commands to Remember**:
 
 1. `make check-renv` - Validate consistency
-2. `make docker-zsh` - Work in container (auto-validates on exit)
+2. `make r` - Work in container (auto-validates on exit)
 3. `modules/validation.sh` - Direct validation call
 
 **Key Principle**:

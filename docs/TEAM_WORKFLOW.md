@@ -40,7 +40,7 @@ git clone https://github.com/myteam/study.git && cd study
 zzcollab -t myteam -p study --use-team-image
 
 # 3. Start development
-make docker-zsh
+make docker-sh
 ```
 
 ---
@@ -155,7 +155,7 @@ zzcollab -t myteam -p study --use-team-image
 
 # Option 2: Pull manually
 docker pull myteam/study:latest
-make docker-zsh
+make docker-sh
 ```
 
 **What `--use-team-image` does:**
@@ -168,7 +168,7 @@ make docker-zsh
 
 ```bash
 # Enter Docker environment
-make docker-zsh
+make docker-sh
 
 # Inside container:
 # - All team packages available
@@ -238,7 +238,7 @@ git pull
 git log -p renv.lock
 
 # Restore environment
-make docker-zsh
+make r
 renv::restore()
 ```
 
@@ -251,7 +251,7 @@ renv::restore()
 git pull
 
 # 2. Restore packages
-make docker-zsh
+make r
 renv::restore()
 
 # 3. Work on analysis
@@ -281,7 +281,7 @@ git log --oneline Dockerfile
 docker pull myteam/study:latest
 
 # Restore packages
-make docker-zsh
+make r
 renv::restore()
 ```
 
@@ -414,7 +414,7 @@ docker pull myteam/study:latest
 **Solution**:
 ```bash
 # Temporary: Install in container
-make docker-zsh
+make r
 install.packages("problematic-package")
 
 # Permanent: Ask lead to update Docker image
