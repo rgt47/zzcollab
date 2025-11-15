@@ -137,8 +137,8 @@ docker-run:
 	echo ""; \
 	case "$$PROFILE" in \
 		ubuntu_standard_minimal|alpine_standard_minimal) \
-			echo "🐳 Starting minimal profile (zsh shell)..."; \
-			docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/zsh; \
+			echo "🐳 Starting minimal profile (sh shell)..."; \
+			docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/sh; \
 			;; \
 		ubuntu_x11_minimal|alpine_x11_minimal) \
 			echo "🐳 Starting X11 minimal profile (GUI support)..."; \
@@ -167,7 +167,7 @@ docker-run:
 			fi; \
 			echo "✅ X11 setup complete"; \
 			echo ""; \
-			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/zsh; \
+			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/sh; \
 			;; \
 		ubuntu_standard_analysis|alpine_standard_analysis) \
 			echo "🐳 Starting standard analysis profile (RStudio Server)..."; \

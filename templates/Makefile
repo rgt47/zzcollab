@@ -86,7 +86,7 @@ check-renv-ci:
 
 # Docker targets (work without local R)
 # Docker-first workflow:
-#   1. Work in containers (make docker-zsh)
+#   1. Work in containers (make r or make docker-run)
 #   2. Install packages (renv::install("pkg"))
 #   3. Exit container (auto-snapshot on exit)
 #   4. Build new image (make docker-build)
