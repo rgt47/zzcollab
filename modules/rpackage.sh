@@ -51,22 +51,30 @@ create_core_files() {
     log_debug "Creating core R package files..."
 
     # DESCRIPTION file - R package metadata and dependencies
-    # Generate dynamically based on Docker profile to ensure package compatibility
-    log_debug "Generating DESCRIPTION file for profile: ${PROFILE_NAME}"
+    # Use static template if available, otherwise generate dynamically
+    log_debug "Creating DESCRIPTION file for profile: ${PROFILE_NAME}"
 
-    local description_content
-    description_content=$(generate_description_from_profile "${PROFILE_NAME}")
+    local description_template
+    description_template=$(get_description_template)
 
-    if [[ $? -ne 0 ]] || [[ -z "$description_content" ]]; then
-        log_warn "Failed to generate DESCRIPTION from profile, falling back to template"
-        local description_template
-        description_template=$(get_description_template)
-
+    # Check if static template exists for this profile
+    if [[ -f "${TEMPLATES_DIR}/${description_template}" ]]; then
+        # Use static template (preferred - contains languageserver and other dev tools)
         if ! install_template "$description_template" "DESCRIPTION" "DESCRIPTION file" "Created DESCRIPTION file from template"; then
-            log_error "Failed to create DESCRIPTION file"
+            log_error "Failed to create DESCRIPTION file from template"
             return 1
         fi
     else
+        # Fallback to dynamic generation if no static template exists
+        log_debug "No static template found, generating DESCRIPTION dynamically"
+        local description_content
+        description_content=$(generate_description_from_profile "${PROFILE_NAME}")
+
+        if [[ $? -ne 0 ]] || [[ -z "$description_content" ]]; then
+            log_error "Failed to generate DESCRIPTION from profile"
+            return 1
+        fi
+
         # Write the dynamically generated DESCRIPTION
         echo "$description_content" > DESCRIPTION
         track_file "DESCRIPTION"
