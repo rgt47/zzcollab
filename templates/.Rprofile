@@ -4,6 +4,23 @@
 # This file is version-controlled and affects analysis reproducibility.
 # Changes to critical options should be reviewed by the team.
 
+# ==========================================
+# renv Cache Path Configuration
+# ==========================================
+# Set project-local cache path BEFORE activating renv
+# CRITICAL: Ensures host R and container R use the same cache location
+#
+# Container: /home/analyst/.cache/R/renv (set by Dockerfile ENV)
+# Host: <project>/.cache/R/renv (set here)
+# Both paths point to same physical location via volume mount:
+#   -v $(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv
+#
+# Without this setting:
+#   - Host would use system default: ~/Library/Caches/... (macOS)
+#   - Container uses project cache: <project>/.cache/R/renv
+#   - Result: Packages installed twice, cache not shared
+Sys.setenv(RENV_PATHS_CACHE = file.path(getwd(), ".cache/R/renv"))
+
 # Activate renv (set project-local library paths)
 # renv is pre-installed in Docker system library
 if (file.exists("renv/activate.R")) {
