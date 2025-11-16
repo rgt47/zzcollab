@@ -26,4 +26,5 @@ Imports:
     knitr,
     tinytex,
     broom,
-    kableExtra
+    kableExtra,
+    languageserver

@@ -26,4 +26,5 @@ Imports:
     parsnip,
     yardstick,
     tune,
-    workflows
+    workflows,
+    languageserver

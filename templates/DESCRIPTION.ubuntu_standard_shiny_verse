@@ -23,4 +23,5 @@ Imports:
     lubridate,
     DT,
     plotly,
-    flexdashboard
+    flexdashboard,
+    languageserver

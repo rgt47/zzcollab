@@ -23,4 +23,5 @@ Imports:
     rgl,
     plotly,
     Cairo,
-    svglite
+    svglite,
+    languageserver

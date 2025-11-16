@@ -22,4 +22,5 @@ Imports:
     here,
     janitor,
     scales,
-    skimr
+    skimr,
+    languageserver
