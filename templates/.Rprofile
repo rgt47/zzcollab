@@ -35,11 +35,27 @@ options(
 
 # Helper function for initializing renv without prompts
 renv_init_quiet <- function() {
+  # Use bare = TRUE to skip prompts even if partial initialization exists
+  # This creates infrastructure without installing packages initially
   renv::init(
+    bare = TRUE,
     settings = list(snapshot.type = "explicit"),
     force = TRUE,
     restart = FALSE
   )
+
+  # Now install packages from DESCRIPTION (snapshot.type = "explicit")
+  # This reads DESCRIPTION Imports and installs those packages
+  if (file.exists("DESCRIPTION")) {
+    message("📦 Installing packages from DESCRIPTION...")
+    tryCatch({
+      renv::install()  # Installs packages listed in DESCRIPTION
+      renv::snapshot(prompt = FALSE)  # Create renv.lock
+      message("✅ Packages installed and renv.lock created")
+    }, error = function(e) {
+      warning("Package installation incomplete: ", conditionMessage(e), call. = FALSE)
+    })
+  }
 }
 
 # ==========================================
