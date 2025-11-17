@@ -974,9 +974,12 @@ validate_package_environment() {
             if [[ ${#failed_packages[@]} -eq 0 ]]; then
                 log_success "✅ All missing packages added to DESCRIPTION and renv.lock"
                 echo ""
+                echo ""
                 echo "Next steps:"
-                echo "  1. Rebuild Docker image: make docker-build"
-                echo "  2. Commit changes: git add DESCRIPTION renv.lock && git commit"
+                echo "  1. Start R to auto-install packages: make r"
+                echo "     (Auto-restore will install dependencies automatically)"
+                echo "  2. Rebuild Docker image: make docker-build"
+                echo "  3. Commit changes: git add DESCRIPTION renv.lock && git commit"
                 # Continue to check DESCRIPTION → renv.lock consistency
             else
                 log_error "Failed to add packages: ${failed_packages[*]}"
@@ -1034,9 +1037,12 @@ validate_package_environment() {
             if [[ ${#failed_packages[@]} -eq 0 ]]; then
                 log_success "✅ All missing packages added to renv.lock"
                 echo ""
+                echo ""
                 echo "Next steps:"
-                echo "  1. Rebuild Docker image: make docker-build"
-                echo "  2. Commit changes: git add renv.lock && git commit -m 'Add packages to renv.lock'"
+                echo "  1. Start R to auto-install packages: make r"
+                echo "     (Auto-restore will install all dependencies automatically)"
+                echo "  2. Rebuild Docker image: make docker-build"
+                echo "  3. Commit changes: git add DESCRIPTION renv.lock && git commit -m 'Add packages'"
                 return 0
             else
                 log_error "Failed to add packages: ${failed_packages[*]}"

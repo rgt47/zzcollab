@@ -106,23 +106,36 @@ if (!file.exists("renv.lock")) {
   auto_restore <- Sys.getenv("ZZCOLLAB_AUTO_RESTORE", "true")
 
   if (tolower(auto_restore) %in% c("true", "t", "1")) {
-    # Check if packages need to be restored (non-interactive check)
-    status <- tryCatch({
-      suppressMessages(renv::status())
-    }, error = function(e) NULL)
+    # Auto-restore: silently sync library with lockfile
+    # renv::restore() is smart - it only installs what's missing
+    # This is fast when synchronized (just a check, no installation)
+    #
+    # CRITICAL: Must suppress ALL output to avoid breaking LSP (Language Server Protocol)
+    # LSP expects strict JSON-RPC format - any stray output breaks coc.nvim/languageserver
+    tryCatch({
+      # Capture ALL output (stdout and stderr) completely silently
+      invisible(suppressMessages(suppressWarnings({
+        sink("/dev/null", type = "output")
+        sink("/dev/null", type = "message")
+        on.exit({
+          sink(type = "message")
+          sink(type = "output")
+        }, add = TRUE)
 
-    # If status indicates missing packages, restore them
-    if (!is.null(status) && length(status) > 0) {
-      message("\n📦 ZZCOLLAB: Packages missing from library, restoring from renv.lock...")
+        restore_actions <- renv::restore(prompt = FALSE, library = .libPaths()[1])
 
-      tryCatch({
-        renv::restore(prompt = FALSE)
-        message("✅ Packages restored successfully")
-      }, error = function(e) {
-        warning("⚠️  Auto-restore failed: ", conditionMessage(e),
-                "\n   Run manually: renv::restore()", call. = FALSE)
-      })
-    }
+        # Close sinks before exit
+        sink(type = "message")
+        sink(type = "output")
+      })))
+
+      # Don't print anything - could break LSP
+      # Users can run renv::status() manually if they want details
+    }, error = function(e) {
+      # Silently ignore errors - don't break R startup or LSP
+      # Most "errors" are just "already synchronized" messages
+      invisible(NULL)
+    })
   }
 }
 

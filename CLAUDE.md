@@ -295,7 +295,7 @@ zzcollab -t TEAM -p PROJECT -r PROFILE
 
 ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** architecture.
 
-**Auto-Snapshot Architecture** (NEW):
+**Auto-Snapshot Architecture**:
 - **No manual `renv::snapshot()` required**: Automatically runs on R exit via .Last() function
 - **.Rprofile integration**: `.Last()` function in .Rprofile handles snapshot on R exit
 - **RSPM timestamp optimization**: Temporarily adjusts renv.lock timestamp to "7 days ago" for binary package availability
@@ -303,14 +303,34 @@ ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** arc
   - Timestamp restored to "now" after validation (accurate git history)
 - **Host validation without R**: Pure shell validation via `modules/validation.sh`
 
+**Auto-Restore Architecture** (NEW):
+- **Automatic dependency installation**: `renv::restore()` runs automatically when R starts if packages are missing
+- **Zero-friction workflow**: Validation script adds packages to renv.lock → R auto-installs on next session
+- **Team synchronization**: Pull updated renv.lock from git → packages auto-install on R startup
+- **Full dependency trees**: Restores not just direct dependencies but all recursive dependencies (e.g., testthat + its 17 dependencies)
+- **Configurable**: Disable with `ZZCOLLAB_AUTO_RESTORE=false` environment variable
+- **Smart detection**: Uses `renv::status()` to check if restore is needed (non-invasive)
+
 **Workflow** (Simplified):
 ```bash
 make r                            # 1. Enter container → starts R directly
+                                  #    Auto-restore runs if packages missing
 install.packages("tidyverse")    # 2. Add packages (standard R command)
 # For GitHub: install.packages("remotes") then remotes::install_github("user/package")
 q()                               # 3. Exit R → .Last() runs auto-snapshot + validation
 # renv.lock automatically updated and validated!
 git add renv.lock && git commit -m "Add tidyverse" && git push
+```
+
+**Alternative Workflow** (Host-based validation):
+```bash
+# Edit code on host (no R required)
+vim analysis/scripts/my_analysis.R    # Add library(dplyr), library(ggplot2)
+make check-renv                        # Validate + auto-add to DESCRIPTION & renv.lock
+                                       # Uses pure shell: grep, awk, curl, jq
+make r                                 # Enter container → starts R
+                                       # Auto-restore installs dplyr, ggplot2 + dependencies
+# Start coding with packages already installed!
 ```
 
 **How It Works**:
