@@ -353,7 +353,7 @@ if (!rebuild("docker-build")) {
 # Create analysis files, write code, etc.
 # See vignette("quickstart") for analysis details
 
-# 5. ADD PACKAGES
+# 5. ADD PACKAGES (auto-captured in renv.lock on container exit)
 add_package("palmerpenguins")
 add_package("ggplot2")
 add_package("dplyr")
@@ -415,6 +415,26 @@ if (nrow(images) > 0) {
 
 ## Dynamic Package Installation
 
+**Recommended: Use Standard R Commands**
+
+The simplest approach is to use standard R commands inside containers:
+
+```{r, eval=FALSE}
+# Inside container (make r or make docker-rstudio)
+install.packages("tidyverse")
+
+# For GitHub packages:
+install.packages("remotes")
+remotes::install_github("user/package")
+
+# Exit container - packages automatically captured in renv.lock
+# Auto-restore installs them automatically next time you start R
+```
+
+**Alternative: R Function Interface**
+
+You can also use ZZCOLLAB's R functions:
+
 ```{r}
 # Add single package
 add_package("tidyverse")
@@ -422,30 +442,17 @@ add_package("tidyverse")
 # Add multiple packages
 add_package(c("sf", "terra", "mapview"))
 
-# Add without auto-snapshot (manual control)
-add_package("ggplot2", update_snapshot = FALSE)
-
 # Sync from renv.lock (e.g., after git pull)
 sync_env()
 
-# Validate package consistency
+# Validate package consistency (pure shell - NO R required!)
 rebuild("docker-check-renv")
 ```
 
-**Alternative: Direct Installation**
-
-You can also use standard R commands inside containers:
-
-```{r, eval=FALSE}
-# Inside container (make r or make docker-rstudio)
-install.packages("tidyverse")
-# For GitHub packages:
-install.packages("remotes")
-remotes::install_github("user/package")
-# Exit container - packages automatically captured in renv.lock
-```
-
-**Note**: ZZCOLLAB features auto-snapshot on container exit, so manual `renv::snapshot()` is typically unnecessary. Both `add_package()` (R function) and `install.packages()` (standard R) work identically - packages are captured automatically when you exit containers.
+**Auto-Snapshot & Auto-Restore Architecture**:
+- **Auto-snapshot**: Packages captured in renv.lock when you exit containers (no manual `renv::snapshot()` needed)
+- **Auto-restore**: Missing packages installed automatically when you start R (no manual `renv::restore()` needed)
+- Both `add_package()` (R function) and `install.packages()` (standard R) work identically
 
 # RStudio Integration
 
@@ -497,9 +504,9 @@ if (validate_repro()) {
   message("Review output above for details")
 }
 
-# Individual validation steps (pure shell - NO R REQUIRED!)
-system("make check-renv")  # Pure shell validation (grep, awk, jq)
-system("Rscript check_rprofile_options.R")
+# Individual validation steps
+system("make check-renv")  # Pure shell - NO R REQUIRED! (grep, awk, curl, jq)
+system("Rscript check_rprofile_options.R")  # R options monitoring
 
 # Check Docker consistency
 rebuild("docker-check-renv")
@@ -548,8 +555,10 @@ load_all()
 test()
 check()
 
-# Add dependencies
-add_package("usethis")
+# Add dependencies (standard R command)
+# Inside container:
+# install.packages("usethis")
+# Exit container - auto-captured in renv.lock
 
 # Validate and commit
 validate_repro()
@@ -589,10 +598,12 @@ rebuild("docker-clean")
 rebuild("docker-build")
 
 # Issue: Package sync fails
+# Note: Auto-restore runs on R startup, so manual restore rarely needed
 if (!sync_env()) {
   message("Sync failed, checking renv status...")
   renv::status()
-  renv::restore()
+  # Auto-restore should handle this, but can manually restore if needed:
+  # renv::restore()
 }
 
 # Issue: Tests failing

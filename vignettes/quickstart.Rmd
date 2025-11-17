@@ -70,14 +70,15 @@ zzcollab --config set profile-name ""
 **Configuration Options Explained:**
 
 - **profile-name**: Controls Docker environment (team/shared)
-  - 11 predefined profiles available
+  - 14+ predefined profiles available
   - Typically specified with `-r` flag when creating projects
   - Leave empty for minimal profile (default)
   - Can also compose custom environments with `-b`, `-l`, `-k` flags
 
 **Note on Package Management:**
-- Packages are added via `install.packages()` inside the container as needed
-- Packages automatically captured in renv.lock when you exit the container
+- Packages are added via standard `install.packages()` inside the container as needed
+- **Auto-snapshot**: Packages automatically captured in renv.lock when you exit the container
+- **Auto-restore**: Missing packages automatically installed when you start R
 - No need to pre-configure a "mode" - just install packages when you need them
 - The renv.lock accumulates packages from all team members
 
@@ -110,7 +111,7 @@ streamlined development environment optimized for individual work.
 
 **Using Different Docker Profiles:**
 
-ZZCOLLAB provides 11 predefined profiles for specialized environments. Use the `-r` flag to specify a profile:
+ZZCOLLAB provides 14+ predefined profiles for specialized environments. Use the `-r` flag to specify a profile:
 
 ```bash
 # Option 1: Use -r flag for profile selection (most common)
@@ -129,7 +130,7 @@ zzcollab -b rocker/r-ver -l geospatial -k modeling
 make docker-build
 
 # Browse all available profiles
-zzcollab --list-profiles  # Show all 11 predefined profiles
+zzcollab --list-profiles  # Show all 14+ predefined profiles
 zzcollab --list-libs      # System library bundles
 zzcollab --list-pkgs      # R package bundles
 ```
@@ -138,11 +139,13 @@ zzcollab --list-pkgs      # R package bundles
 
 - **Docker Profile** (`-r` flag): Controls the base Docker image and pre-installed packages
   - Shared across team members
-  - 11 predefined profiles: minimal, analysis, modeling, bioinformatics, geospatial, and more
+  - 14+ predefined profiles: minimal, analysis, modeling, bioinformatics, geospatial, and more
   - Specify per project with `-r` flag (e.g., `zzcollab -r bioinformatics`)
 
 - **Package Management**: Packages are added dynamically as needed
-  - Use `install.packages("package-name")` inside the container
+  - Use standard `install.packages("package-name")` inside the container
+  - **Auto-snapshot**: Packages captured in renv.lock when you exit container
+  - **Auto-restore**: Missing packages installed automatically when you start R
   - The renv.lock file accumulates packages from all team members
   - No need to pre-configure a "mode" - just install what you need
 
@@ -330,8 +333,9 @@ summarize_by_species <- function(data) {
 }
 EOF
 
-# Install required packages
+# Install required packages (standard R command)
 Rscript -e 'install.packages("dplyr")'
+# Packages will be captured in renv.lock when you exit the container
 ```
 
 ### Create Unit Tests
@@ -562,15 +566,20 @@ Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 exit
 ```
 
-**✨ NEW: Auto-Snapshot Architecture**
+**✨ Auto-Snapshot & Auto-Restore Architecture**
 
-When you exit the container, ZZCOLLAB automatically:
-1. Runs `renv::snapshot()` to capture package dependencies
+When you **exit the container**, ZZCOLLAB automatically:
+1. Runs `renv::snapshot()` to capture package dependencies in renv.lock
 2. Adjusts timestamp for RSPM binary package availability (10-20x faster Docker builds)
 3. Validates package consistency (pure shell, no host R required!)
 4. Restores timestamp to current time for accurate git history
 
-**You no longer need to manually run `renv::snapshot()`!** Just work and exit.
+When you **start R**, ZZCOLLAB automatically:
+1. Checks if packages are missing via `renv::status()`
+2. Runs `renv::restore()` to install missing packages and all dependencies
+3. Ensures you always have a working environment without manual intervention
+
+**You no longer need to manually run `renv::snapshot()` or `renv::restore()`!** Just work, exit, and restart.
 
 ## Step 6: Validate and Commit
 
@@ -1116,18 +1125,11 @@ zzcollab --list-libs
 zzcollab --list-pkgs
 ```
 
-**11 Available Profiles:**
-- **minimal** - Essential development packages
-- **analysis** - Data analysis with tidyverse
-- **modeling** - Machine learning environment
-- **bioinformatics** - Bioconductor genomics
-- **geospatial** - GDAL/PROJ mapping tools
-- **publishing** - LaTeX/Quarto publishing
-- **shiny** - Shiny server for web apps
-- **shiny_verse** - Shiny with tidyverse
-- **alpine_minimal** - Ultra-lightweight Alpine
-- **alpine_analysis** - Lightweight Alpine with tidyverse
-- **hpc_alpine** - High-performance computing on Alpine
+**14+ Available Profiles:**
+- **Standard Research (6)**: minimal, analysis, modeling, publishing, shiny, shiny_verse
+- **Specialized Domains (2)**: bioinformatics, geospatial
+- **Lightweight Alpine (3)**: alpine_minimal, alpine_analysis, hpc_alpine
+- **R-Hub Testing (3)**: rhub_ubuntu, rhub_fedora, rhub_windows
 
 ## Using Profiles
 
@@ -1160,7 +1162,7 @@ The profile system has two independent layers:
 ### Docker Environment Layer (Team/Shared)
 
 **Profiles** (`-r` flag):
-- Complete Docker environment shortcuts (11 predefined)
+- Complete Docker environment shortcuts (14+ predefined)
 - Combines base image + system libraries + R packages
 - Examples: `bioinformatics`, `geospatial`, `alpine_minimal`
 - Shared across all team members
@@ -1179,10 +1181,12 @@ The profile system has two independent layers:
 - Specify via: `zzcollab -k modeling`
 
 **Package Management:**
-- Packages are added dynamically using `install.packages()` inside containers
+- Packages are added dynamically using standard `install.packages()` inside containers
 - For GitHub packages: `install.packages("remotes")` then `remotes::install_github("user/package")`
+- **Auto-restore**: Missing packages installed automatically when R starts (no manual restore needed)
+- **Auto-snapshot**: Packages captured in renv.lock when container exits (no manual snapshot needed)
 - No pre-configured modes - just install what you need when you need it
-- The renv.lock file accumulates packages from all team members automatically on container exit
+- The renv.lock file accumulates packages from all team members automatically
 - This provides maximum flexibility while maintaining reproducibility
 
 # Summary
@@ -1241,14 +1245,16 @@ zzcollab --use-team-image
 
 # Enter container and add packages
 make r
+# Auto-restore runs if any packages missing
 
 # Inside container - Alice adds modeling packages
-install.packages("tidymodels")
-exit  # Auto-snapshot on exit!
+install.packages("tidymodels")  # Standard R command
+exit  # Auto-snapshot captures tidymodels in renv.lock!
 
 # Bob adds geospatial packages (in his container)
-install.packages("sf")
-exit  # Auto-snapshot on exit!
+make r  # Auto-restore installs tidymodels (from Alice)
+install.packages("sf")  # Standard R command
+exit  # Auto-snapshot captures both tidymodels + sf!
 ```
 
 **Result**:
@@ -1313,9 +1319,8 @@ cd study
 # Uses team Docker image (has base bioinformatics packages)
 zzcollab --use-team-image
 make r
-
-# Restores ALL packages from renv.lock (Alice's + Bob's)
-renv::restore()  # Installs tidymodels + sf + all other packages
+# Auto-restore runs automatically on R startup!
+# Installs tidymodels + sf + ALL dependencies (no manual restore needed)
 ```
 
 **Key Insight**: The Docker image provides the foundation (system dependencies, R version, base packages for performance), but `renv.lock` ensures complete reproducibility by specifying exact versions of ALL packages needed for the analysis.
