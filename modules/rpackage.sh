@@ -220,13 +220,35 @@ create_renv_setup() {
     fi
 
     # Create renv/ directory and install activate.R
-    # This ensures renv is activated when R starts (see .Rprofile)
+    # Query CRAN for latest renv version (no R required!)
     safe_mkdir "renv" "renv directory"
 
-    if ! install_template "renv/activate.R" "renv/activate.R" "renv activation script" "Created renv/activate.R"; then
+    log_info "Querying CRAN for latest renv version..."
+    local renv_version
+    renv_version=$(curl -s 'https://crandb.r-pkg.org/renv' | jq -r '.Version')
+
+    if [[ -z "$renv_version" || "$renv_version" == "null" ]]; then
+        log_warning "Failed to query CRAN, using default version 1.1.4"
+        renv_version="1.1.4"
+    else
+        log_success "Found renv version: $renv_version"
+    fi
+
+    # Copy activate.R template and substitute version placeholders
+    # Note: SHA is NULL for CRAN releases (only needed for GitHub dev versions)
+    if ! install_template "renv/activate.R" "renv/activate.R" "renv activation script" "Created renv/activate.R template"; then
         log_error "Failed to create renv/activate.R"
         return 1
     fi
+
+    # Substitute placeholders in activate.R (pure shell, no R!)
+    # Note: Use literal string matching, not regex (dots are literal)
+    sed -i.bak \
+        -e "s/\\.\\.version\\.\\./\"${renv_version}\"/g" \
+        -e "s/\\.\\.sha\\.\\./NULL/g" \
+        "renv/activate.R" && rm "renv/activate.R.bak"
+
+    log_success "Configured renv/activate.R with version ${renv_version}"
 
     # Install renv .gitignore to exclude library/ directory from version control
     if ! install_template "renv/.gitignore" "renv/.gitignore" "renv gitignore" "Created renv/.gitignore"; then

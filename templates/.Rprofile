@@ -91,6 +91,39 @@ if (!file.exists("renv.lock")) {
   } else if (!is_project) {
     message("\n💡 Tip: Initialize renv with renv_init_quiet()")
   }
+} else {
+  # ==========================================
+  # Auto-Restore Missing Packages
+  # ==========================================
+  # If renv.lock exists but packages are missing, restore them automatically
+  # This happens when:
+  # 1. Validation script added packages to renv.lock
+  # 2. Team member pulls updated renv.lock from git
+  # 3. Switching between branches with different dependencies
+  #
+  # Disable with: docker run -e ZZCOLLAB_AUTO_RESTORE=false ...
+
+  auto_restore <- Sys.getenv("ZZCOLLAB_AUTO_RESTORE", "true")
+
+  if (tolower(auto_restore) %in% c("true", "t", "1")) {
+    # Check if packages need to be restored (non-interactive check)
+    status <- tryCatch({
+      suppressMessages(renv::status())
+    }, error = function(e) NULL)
+
+    # If status indicates missing packages, restore them
+    if (!is.null(status) && length(status) > 0) {
+      message("\n📦 ZZCOLLAB: Packages missing from library, restoring from renv.lock...")
+
+      tryCatch({
+        renv::restore(prompt = FALSE)
+        message("✅ Packages restored successfully")
+      }, error = function(e) {
+        warning("⚠️  Auto-restore failed: ", conditionMessage(e),
+                "\n   Run manually: renv::restore()", call. = FALSE)
+      })
+    }
+  }
 }
 
 # ==========================================
