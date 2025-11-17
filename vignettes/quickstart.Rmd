@@ -174,11 +174,11 @@ make r
 
 ### Add Raw Data
 
-Create a raw data file (simulating field-collected penguin measurements):
+Create a raw data file (simulating field-collected penguin measurements).
 
-```bash
-# Create raw data file
-cat > analysis/data/raw_data/penguins_raw.csv << 'EOF'
+Create `analysis/data/raw_data/penguins_raw.csv`:
+
+```csv
 species,island,bill_length_mm,bill_depth_mm,flipper_length_mm,body_mass_g,sex,year
 Adelie,Torgersen,39.1,18.7,181,3750,male,2007
 Adelie,Torgersen,39.5,17.4,186,3800,female,2007
@@ -188,10 +188,11 @@ Gentoo,Biscoe,46.1,13.2,211,4500,female,2007
 Gentoo,Biscoe,50.0,16.3,230,5700,male,2007
 Chinstrap,Dream,46.5,17.9,192,3500,female,2007
 Chinstrap,Dream,50.0,19.5,196,3900,male,2007
-EOF
+```
 
-# Document the raw data
-cat > analysis/data/raw_data/README.md << 'EOF'
+Create `analysis/data/raw_data/README.md`:
+
+```markdown
 # Raw Data: Palmer Penguins
 
 ## Source
@@ -215,16 +216,15 @@ Simulated penguin measurements from Palmer Station Antarctica LTER.
 ## Known Issues
 - Row 4 contains missing values (equipment failure)
 - All measurements subject to ±0.5mm measurement error
-EOF
 ```
 
 ### Create Data Processing Script
 
-Create a script to clean and process the raw data:
+Create a script to clean and process the raw data.
 
-```bash
-# Create processing script
-cat > analysis/scripts/01_process_data.R << 'EOF'
+Create `analysis/scripts/01_process_data.R`:
+
+```r
 # Data Processing Script: Clean raw penguin data
 # Input: analysis/data/raw_data/penguins_raw.csv
 # Output: analysis/data/derived_data/penguins_clean.csv
@@ -257,10 +257,11 @@ write.csv(clean_data, "analysis/data/derived_data/penguins_clean.csv", row.names
 # Log processing results
 cat("Processed", nrow(clean_data), "valid records from", nrow(raw_data), "raw records\n")
 cat("Removed", nrow(raw_data) - nrow(clean_data), "incomplete records\n")
-EOF
+```
 
-# Document the processed data
-cat > analysis/data/derived_data/README.md << 'EOF'
+Create `analysis/data/derived_data/README.md`:
+
+```markdown
 # Processed Data: Palmer Penguins (Clean)
 
 ## Source
@@ -279,19 +280,21 @@ See: `analysis/scripts/01_process_data.R`
 - All rows have complete bill measurements
 - All derived variables computed successfully
 - No outliers detected beyond expected range
-EOF
+```
 
-# Run the processing script
+Run the processing script:
+
+```bash
 Rscript analysis/scripts/01_process_data.R
 ```
 
 ### Create Reusable Analysis Functions
 
-Create functions in `R/` directory that use the processed data:
+Create functions in `R/` directory that use the processed data.
 
-```bash
-# Create data loading function
-cat > R/data_utils.R << 'EOF'
+Create `R/data_utils.R`:
+
+```r
 #' Load processed penguin data
 #'
 #' @param path Path to clean data file
@@ -331,20 +334,22 @@ summarize_by_species <- function(data) {
       .groups = "drop"
     )
 }
-EOF
+```
 
-# Install required packages (standard R command)
-Rscript -e 'install.packages("dplyr")'
+Install required packages:
+
+```bash
 # Packages will be captured in renv.lock when you exit the container
+Rscript -e 'install.packages("dplyr")'
 ```
 
 ### Create Unit Tests
 
-Add tests for the data processing functions:
+Add tests for the data processing functions.
 
-```bash
-# Create test file for data utilities
-cat > tests/testthat/test-data_utils.R << 'EOF'
+Create `tests/testthat/test-data_utils.R`:
+
+```r
 # Source functions
 source('../../R/data_utils.R')
 
@@ -402,9 +407,11 @@ test_that("bill_ratio is calculated correctly", {
   expected_ratio <- data$bill_length_mm / data$bill_depth_mm
   expect_equal(data$bill_ratio, expected_ratio)
 })
-EOF
+```
 
-# Run tests
+Run tests:
+
+```bash
 Rscript -e 'devtools::test()'
 ```
 
@@ -425,10 +432,11 @@ Now create a report that uses the processed data and functions we created in Ste
 
 ### Create Visualization Function
 
-Add a plotting function to `R/bill_analysis.R`:
+Add a plotting function.
 
-```bash
-cat > R/bill_analysis.R << 'EOF'
+Create `R/bill_analysis.R`:
+
+```r
 #' Create scatter plot of bill dimensions
 #'
 #' @param data Penguin data with bill measurements
@@ -446,9 +454,11 @@ create_bill_plot <- function(data) {
     ) +
     ggplot2::theme_minimal()
 }
-EOF
+```
 
-# Install ggplot2
+Install ggplot2:
+
+```bash
 Rscript -e 'install.packages("ggplot2")'
 ```
 
@@ -477,14 +487,9 @@ For this tutorial, we use the default profile and save plots to files (works in 
 
 ### Create Analysis Report
 
-Create the report that uses our data workflow (raw data → processing → functions → visualization):
+Create the report that uses our data workflow (raw data → processing → functions → visualization).
 
-```bash
-# Create the report file
-vim analysis/paper/paper.Rmd
-```
-
-Add this content to `analysis/paper/paper.Rmd`:
+Create `analysis/paper/paper.Rmd`:
 
 ````
 ---
