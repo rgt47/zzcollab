@@ -25,5 +25,4 @@
 ^zzcollab-init-team$
 ^modules$
 ^templates$
-^[a-z]$
 ^.*\.Rproj$
