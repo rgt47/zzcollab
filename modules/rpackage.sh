@@ -200,15 +200,23 @@ create_readme_file() {
 # Function: create_renv_setup
 # Purpose: Creates package validation setup for reproducible environments
 # Creates:
+#   - renv.lock - Initial empty lockfile for package dependencies
 #   - validation.sh script for dependency checking (pure shell, no R required)
 #   - core.sh, utils.sh, constants.sh modules required by validation.sh
 #
-# Note: renv/ directory and renv.lock will be created inside the container
+# Note: renv/ directory and activate.R will be created inside the container
 # on first run, following the Docker-first philosophy (no host R required)
 #
 # Tracking: The validation script and its dependencies are tracked for uninstall
 create_renv_setup() {
     log_debug "Creating package validation setup..."
+
+    # Create initial empty renv.lock file
+    # This allows validation script to add packages without needing to check if file exists
+    if ! install_template "renv.lock" "renv.lock" "renv lockfile" "Created initial renv.lock"; then
+        log_error "Failed to create renv.lock"
+        return 1
+    fi
 
     # Note: renv/ directory and activate.R will be created inside container
     # This follows Docker-first philosophy - all R operations happen in containers

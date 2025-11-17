@@ -997,9 +997,62 @@ validate_package_environment() {
     log_info "Found ${#desc_imports[@]} packages in DESCRIPTION Imports"
     log_info "Found ${#renv_packages[@]} packages in renv.lock"
 
-    # Step 5: Find missing packages (in code but not in DESCRIPTION)
-    local missing=()
+    # Step 5: Compute union of all packages from all three sources
+    # The final set should be: code ∪ DESCRIPTION ∪ renv.lock
+    local all_packages=()
+
+    # Add packages from code
     for pkg in "${code_packages[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            all_packages+=("$pkg")
+        fi
+    done
+
+    # Add packages from DESCRIPTION
+    for pkg in "${desc_imports[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            # Check if not already in all_packages
+            local found=false
+            for existing in "${all_packages[@]}"; do
+                if [[ "$pkg" == "$existing" ]]; then
+                    found=true
+                    break
+                fi
+            done
+            if [[ "$found" == false ]]; then
+                all_packages+=("$pkg")
+            fi
+        fi
+    done
+
+    # Add packages from renv.lock (excluding base packages)
+    for pkg in "${renv_packages[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            # Skip base R packages
+            local base_pkgs_str=" ${BASE_PACKAGES[*]} "
+            if [[ "$base_pkgs_str" == *" ${pkg} "* ]]; then
+                continue
+            fi
+
+            # Check if not already in all_packages
+            local found=false
+            for existing in "${all_packages[@]}"; do
+                if [[ "$pkg" == "$existing" ]]; then
+                    found=true
+                    break
+                fi
+            done
+            if [[ "$found" == false ]]; then
+                all_packages+=("$pkg")
+            fi
+        fi
+    done
+
+    log_info "Union of all packages: ${#all_packages[@]} packages"
+
+    # Step 6: Find packages missing from DESCRIPTION (in union but not in DESCRIPTION)
+    local missing_from_desc=()
+    for pkg in "${all_packages[@]}"; do
         # Skip empty package names
         if [[ -z "$pkg" ]]; then
             continue
@@ -1008,14 +1061,15 @@ validate_package_environment() {
         # Use literal string matching instead of regex to avoid SC2076
         local desc_imports_str=" ${desc_imports[*]} "
         if [[ "$desc_imports_str" != *" ${pkg} "* ]]; then
-            missing+=("$pkg")
+            missing_from_desc+=("$pkg")
         fi
     done
 
-    # Step 6: Check DESCRIPTION → renv.lock consistency
-    log_debug "Checking DESCRIPTION → renv.lock consistency..."
+    # Step 8: Check union → renv.lock consistency
+    # All packages in the union should also be in renv.lock
+    log_debug "Checking union → renv.lock consistency..."
     local missing_from_lock=()
-    for pkg in "${desc_imports[@]}"; do
+    for pkg in "${all_packages[@]}"; do
         # Skip empty package names
         if [[ -z "$pkg" ]]; then
             continue
@@ -1035,14 +1089,14 @@ validate_package_environment() {
         fi
     done
 
-    # Step 7: Handle Code → DESCRIPTION issues
-    if [[ ${#missing[@]} -gt 0 ]]; then
-        log_error "Found ${#missing[@]} packages used in code but not in DESCRIPTION Imports"
+    # Step 9: Handle missing packages from DESCRIPTION
+    if [[ ${#missing_from_desc[@]} -gt 0 ]]; then
+        log_error "Found ${#missing_from_desc[@]} packages missing from DESCRIPTION Imports"
 
         # List packages if verbose mode or auto-fix mode
         if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
             echo ""
-            for pkg in "${missing[@]}"; do
+            for pkg in "${missing_from_desc[@]}"; do
                 echo "  - $pkg"
             done
             echo ""
@@ -1053,54 +1107,36 @@ validate_package_environment() {
         fi
 
         if [[ "$auto_fix" == "true" ]]; then
-            log_info "Auto-fixing: Adding missing packages to DESCRIPTION and renv.lock..."
+            log_info "Auto-fixing: Adding missing packages to DESCRIPTION..."
             local failed_packages=()
 
-            for pkg in "${missing[@]}"; do
+            for pkg in "${missing_from_desc[@]}"; do
                 # Add to DESCRIPTION
-                if add_package_to_description "$pkg"; then
-                    # Also add to renv.lock
-                    if ! add_package_to_renv_lock "$pkg"; then
-                        failed_packages+=("$pkg")
-                    fi
-                else
+                if ! add_package_to_description "$pkg"; then
                     failed_packages+=("$pkg")
                 fi
             done
 
             if [[ ${#failed_packages[@]} -eq 0 ]]; then
-                log_success "✅ All missing packages added to DESCRIPTION and renv.lock"
-                echo ""
-                echo "Next steps:"
-                echo "  1. Rebuild Docker image: make docker-build"
-                echo "  2. Commit changes: git add DESCRIPTION renv.lock && git commit"
-                # Continue to check DESCRIPTION → renv.lock consistency
+                log_success "✅ All missing packages added to DESCRIPTION"
+                # Continue to check renv.lock consistency
             else
-                log_error "Failed to add packages: ${failed_packages[*]}"
-                echo ""
-                echo "These packages may not be on CRAN. Add them manually:"
-                echo "  make docker-zsh"
-                local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
-                echo "  R> renv::install($pkg_vector)"
-                echo "  R> quit()"
+                log_error "Failed to add packages to DESCRIPTION: ${failed_packages[*]}"
                 return 1
             fi
         else
-            local pkg_vector=$(format_r_package_vector "${missing[@]}")
+            local pkg_vector=$(format_r_package_vector "${missing_from_desc[@]}")
             echo "Fix with auto-fix flag:"
             echo "  bash modules/validation.sh --fix"
             echo ""
-            echo "Or manually in container:"
-            echo "  make docker-zsh"
-            echo "  R> renv::install($pkg_vector)"
-            echo "  R> quit()"
+            echo "Or manually add to DESCRIPTION Imports field"
             return 1
         fi
     fi
 
-    # Step 8: Report DESCRIPTION → renv.lock issues
+    # Step 10: Report union → renv.lock issues
     if [[ ${#missing_from_lock[@]} -gt 0 ]]; then
-        log_error "Found ${#missing_from_lock[@]} packages in DESCRIPTION but not in renv.lock"
+        log_error "Found ${#missing_from_lock[@]} packages in union but not in renv.lock"
 
         # List packages if verbose mode or auto-fix mode
         if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
@@ -1201,12 +1237,6 @@ validate_and_report() {
 
     if validate_package_environment "$strict_mode" "$auto_fix" "$verbose"; then
         log_success "Package environment validation passed"
-
-        # Clean up unused packages from DESCRIPTION
-        # This runs after validation to ensure all used packages are declared
-        log_debug "Checking for unused packages in DESCRIPTION..."
-        remove_unused_packages_from_description "$strict_mode"
-
         return 0
     else
         log_error "Package environment validation failed"
