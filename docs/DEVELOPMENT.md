@@ -60,28 +60,40 @@ make docker-r              # R console only
 make docker-bash           # Bash shell
 ```
 
-**✨ Auto-Snapshot Architecture** (October 2025):
+**✨ Auto-Snapshot & Auto-Restore Architecture** (October-November 2025):
 
-All `docker-*` targets automatically snapshot renv.lock on container exit:
+All `docker-*` targets automatically snapshot renv.lock on container exit and auto-restore on R startup:
 
+**Auto-Snapshot on Exit**:
 1. **No manual `renv::snapshot()` required!** - Just work and exit
 2. **RSPM timestamp optimization** - Adjusts renv.lock timestamp for binary packages (10-20x faster Docker builds)
 3. **Pure shell validation** - Validates packages on host without R
 4. **Timestamp restoration** - Restores to current time for accurate git history
 
+**Auto-Restore on Startup**:
+1. **Automatic dependency installation** - `renv::restore()` runs automatically when R starts if packages are missing
+2. **Zero-friction workflow** - Pull updated renv.lock from git → packages auto-install on R startup
+3. **Full dependency trees** - Restores all recursive dependencies automatically
+4. **Smart detection** - Uses `renv::status()` to check if restore is needed (non-invasive)
+
 **Workflow**:
 ```bash
-make r                       # 1. Enter container (entrypoint active)
-renv::install("tidyverse")   # 2. Add packages as needed
-exit                         # 3. Exit → auto-snapshot + validation!
+make r                            # 1. Enter container → starts R
+                                  #    Auto-restore installs any missing packages
+install.packages("tidyverse")    # 2. Add packages (standard R command)
+# For GitHub: install.packages("remotes") then remotes::install_github("user/package")
+exit                              # 3. Exit → auto-snapshot + validation!
 # renv.lock automatically updated and validated
-git add renv.lock && git commit -m "Add tidyverse" && git push
+git add renv.lock DESCRIPTION && git commit -m "Add tidyverse" && git push
 ```
 
 **Configuration** (optional):
 ```bash
 # Disable auto-snapshot if needed
 docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false ...
+
+# Disable auto-restore if needed
+docker run -e ZZCOLLAB_AUTO_RESTORE=false ...
 
 # Disable RSPM timestamp adjustment
 docker run -e ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST=false ...
@@ -154,7 +166,7 @@ make docker-build          # Builds TEAM/PROJECTcore:latest
 make docker-push-team      # Push to Docker Hub
 ```
 
-**Dynamic Package Management**: Packages are added as needed via `renv::install()` inside containers. No pre-configured "modes" - just install what you need!
+**Dynamic Package Management**: Packages are added as needed via standard `install.packages()` inside containers. No pre-configured "modes" - just install what you need! Auto-snapshot captures packages on container exit, auto-restore installs missing packages on R startup.
 
 ### Team Member - Use Pre-Built Team Image
 ```bash
@@ -253,24 +265,29 @@ make docker-sh             # Automatically uses updated image
 
 ### Dynamic Package Installation
 
-ZZCOLLAB uses **dynamic package management** via renv for maximum flexibility:
+ZZCOLLAB uses **dynamic package management** with auto-snapshot/auto-restore for maximum flexibility:
 
 ```bash
 # Inside Docker container
 make r
+# Auto-restore runs if packages missing
 
-# Add packages as needed
-renv::install("tidyverse")
-renv::install("sf")
-renv::install("targets")
+# Add packages as needed (standard R commands)
+install.packages("tidyverse")
+install.packages("sf")
+install.packages("targets")
+
+# For GitHub packages:
+install.packages("remotes")
+remotes::install_github("user/package")
 
 # Exit and commit (auto-snapshot happens automatically!)
 exit                      # ← Automatic renv::snapshot() + validation
-git add renv.lock
+git add renv.lock DESCRIPTION
 git commit -m "Add analysis packages"
 ```
 
-**✨ No manual `renv::snapshot()` needed!** The auto-snapshot architecture automatically captures package changes when you exit the container.
+**✨ No manual `renv::snapshot()` or `renv::restore()` needed!** The auto-snapshot architecture automatically captures package changes when you exit the container, and auto-restore installs missing packages when you start R.
 
 ### Docker Profiles
 
@@ -323,12 +340,13 @@ git add . && git commit -m "Initial setup" && git push
 git clone https://github.com/team/project.git && cd project
 zzcollab --use-team-image
 make docker-sh
-# Add packages as needed with renv::install()
+# Add packages as needed with install.packages()
 ```
 
 ## Key Benefits
 
-- **Dynamic flexibility**: Add packages on-demand via renv::install()
+- **Dynamic flexibility**: Add packages on-demand via standard `install.packages()`
+- **Auto-snapshot/restore**: No manual `renv::snapshot()` or `renv::restore()` needed
 - **Docker profiles**: Pre-configured environments for common use cases
 - **Full Docker control**: Customize base image and system dependencies
 - **Easy sharing**: Team members use --use-team-image

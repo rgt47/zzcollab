@@ -234,9 +234,9 @@ make docker-zsh-gui
 
 # 2. Install packages for visualization
 R
-> renv::install("ggplot2")
-> renv::install("patchwork")
-> renv::install("gganimate")
+> install.packages("ggplot2")
+> install.packages("patchwork")
+> install.packages("gganimate")
 > quit()
 
 # 3. Create analysis script
@@ -357,8 +357,8 @@ p3 <- ggplot(mtcars, aes(wt, mpg)) + geom_point()
 
 ```r
 # Install interactive plotting packages
-renv::install("plotly")
-renv::install("htmlwidgets")
+install.packages("plotly")
+install.packages("htmlwidgets")
 
 library(plotly)
 
@@ -909,7 +909,7 @@ The `ubuntu_x11_minimal` profile provides **instant R graphics capability in Doc
 4. Share pre-built images with `make docker-push-team`
 
 **Next steps**:
-- Install your preferred visualization packages: `renv::install("ggplot2")`
+- Install your preferred visualization packages: `install.packages("ggplot2")`
 - Create analysis scripts in `analysis/scripts/`
 - Develop reusable plotting functions in `R/`
 - Document your visualizations in `analysis/paper/paper.Rmd`

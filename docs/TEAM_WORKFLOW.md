@@ -182,14 +182,13 @@ Team members can add packages independently:
 
 ```bash
 # Inside Docker container
-renv::install("ggplot2")
-renv::install("dplyr")
+install.packages("ggplot2")
+install.packages("dplyr")
 
-# Save to renv.lock
-renv::snapshot()
-
-# Exit and commit
+# Exit container - auto-snapshot saves to renv.lock
 exit
+
+# Commit changes
 git add renv.lock
 git commit -m "Add ggplot2 and dplyr packages"
 git push
@@ -258,8 +257,8 @@ renv::restore()
 # ... make changes ...
 
 # 4. Add any new packages needed
-renv::install("newpackage")
-renv::snapshot()
+install.packages("newpackage")
+# Auto-snapshot on exit
 
 # 5. Commit and push
 exit
@@ -313,13 +312,15 @@ docker pull myteam/study:latest
 
 ```bash
 # Anyone can add:
-renv::install("tidyverse")
-renv::snapshot()
+install.packages("tidyverse")
+exit  # Auto-snapshot on exit
+git add renv.lock DESCRIPTION
+git commit -m "Add tidyverse"
 git push
 
 # Everyone syncs:
 git pull
-renv::restore()
+make r  # Auto-restore installs new packages on R startup
 ```
 
 **Key Principle**: Docker provides speed and consistency. renv provides flexibility and reproducibility.

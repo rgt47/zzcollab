@@ -20,7 +20,7 @@ The configuration system adheres to four key principles:
 ZZCOLLAB configuration spans three distinct domains:
 
 - **Docker Profile Management**: Selection of 14+ specialized environments
-- **Package Management**: Dynamic via `renv::install()` inside containers
+- **Package Management**: Dynamic via standard `install.packages()` inside containers with auto-snapshot/auto-restore
 - **Development Settings**: Team collaboration preferences and automation options
 
 ## CLI Flag Reference

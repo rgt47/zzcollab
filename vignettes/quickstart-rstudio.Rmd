@@ -209,16 +209,20 @@ Save as: `analysis/paper/paper.Rmd`
 
 ### 4.3 Install Packages in RStudio
 
-Use RStudio's **Packages** pane or the Console:
+Use standard R commands (packages auto-captured when you exit container):
 
 ```r
 # In RStudio Console:
-renv::install("palmerpenguins")
-renv::install("ggplot2")
-renv::install("dplyr")
+install.packages("palmerpenguins")
+install.packages("ggplot2")
+install.packages("dplyr")
 
-# Save dependencies
-renv::snapshot()
+# For GitHub packages:
+install.packages("remotes")
+remotes::install_github("user/package")
+
+# When you stop the RStudio container, packages are automatically saved to renv.lock
+# No manual renv::snapshot() needed!
 ```
 
 **RStudio Advantage:** You can also use the Packages pane:
@@ -226,7 +230,7 @@ renv::snapshot()
 2. Click "Install"
 3. Type package name
 4. Click "Install"
-5. Then run `renv::snapshot()` to save
+5. Packages automatically captured when you exit container (no manual snapshot needed)
 
 ### 4.4 Render Report in RStudio
 
@@ -306,12 +310,14 @@ Close your browser tab, then in terminal:
 
 ```bash
 # Stop RStudio container (Ctrl+C in terminal where docker-rstudio is running)
+# Auto-snapshot runs when container exits - packages saved to renv.lock!
 
 # Run tests in clean environment
 make docker-test
+# Auto-restore runs when R starts - all packages installed automatically!
 
 # Validate dependencies (pure shell - NO R REQUIRED!)
-make check-renv  # Pure shell validation (grep, awk, jq)
+make check-renv  # Pure shell validation (grep, awk, curl, jq)
 ```
 
 ## Step 7: Commit and Push (1 minute)
@@ -429,7 +435,7 @@ docker-rstudio:
 ## Persistent Sessions
 
 RStudio session is temporary - work is saved but R workspace isn't:
-- **Saved:** All file edits, created files, installed packages (via renv)
+- **Saved:** All file edits, created files, installed packages (auto-captured in renv.lock on exit)
 - **Not saved:** R workspace (.RData), unless you explicitly save
 
 **Best Practice:** Save work via files, not R workspace:
@@ -439,7 +445,7 @@ save.image()  # Workspace not portable
 
 # Instead use:
 saveRDS(my_data, "data/my_data.rds")  # Portable, reproducible
-renv::snapshot()  # Save package versions
+# Packages auto-saved when you exit container - no manual renv::snapshot() needed
 ```
 
 # Transitioning to Command Line
@@ -453,6 +459,7 @@ RStudio is great for development, but some tasks need terminal:
 - Validation: `make check-renv` (pure shell - NO R required!)
 - Git operations: `git commit`, `git push`
 - Building images: `make docker-build`
+- Note: Auto-snapshot and auto-restore run automatically
 
 **Use RStudio for:**
 - Writing analysis code
@@ -465,11 +472,13 @@ RStudio is great for development, but some tasks need terminal:
 
 **Typical workflow:**
 1. **RStudio:** Write and test code interactively
-2. **RStudio:** Author report and render locally
-3. **Terminal:** Run full test suite
-4. **Terminal:** Validate dependencies
-5. **Terminal:** Commit and push
-6. **CI/CD:** Automated validation runs
+2. **RStudio:** Install packages with standard `install.packages()`
+3. **RStudio:** Author report and render locally
+4. **Exit RStudio:** Auto-snapshot captures packages in renv.lock
+5. **Terminal:** Run full test suite (auto-restore installs packages)
+6. **Terminal:** Validate dependencies (pure shell - no R needed)
+7. **Terminal:** Commit and push
+8. **CI/CD:** Automated validation runs
 
 # Team Collaboration with RStudio
 
@@ -540,16 +549,18 @@ docker run --rm -p 8888:8787 -v $(pwd):/project \
 
 ```r
 # In RStudio Console:
-# Check renv status
-renv::status()
+# Use standard install.packages() - auto-captured on container exit
+install.packages("package-name")
 
-# Restore from lockfile
-renv::restore()
-
-# If package source unavailable, try:
+# If package source unavailable, try different CRAN mirror:
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 install.packages("package-name")
-renv::snapshot()
+
+# Check renv status if issues persist:
+renv::status()
+
+# Auto-restore should handle missing packages, but can manually restore if needed:
+# renv::restore()
 ```
 
 ## Files Not Appearing
@@ -578,6 +589,8 @@ You created a fully reproducible analysis using RStudio Server:
 - ✅ **No Local R:** Everything runs in Docker
 - ✅ **Interactive Development:** Point-and-click + code
 - ✅ **Reproducible:** Docker + renv ensure consistency
+- ✅ **Auto-Snapshot:** Packages captured automatically on container exit
+- ✅ **Auto-Restore:** Missing packages installed automatically on R startup
 - ✅ **Testable:** Unit tests validate logic
 - ✅ **Automated:** CI/CD runs on every commit
 - ✅ **Collaborative:** Team members get identical environment
@@ -589,6 +602,8 @@ You created a fully reproducible analysis using RStudio Server:
 - RStudio Server
 - Essential packages: renv, here, usethis, devtools
 - System libraries: git, pandoc, LaTeX (basic)
+- Auto-snapshot on container exit
+- Auto-restore on R startup
 
 ## Next Steps
 

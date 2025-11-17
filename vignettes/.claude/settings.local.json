@@ -10,7 +10,11 @@
       "Bash(add_profile.sh)",
       "Bash(cat:*)",
       "Bash(docker run:*)",
-      "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/d07/zzcollab/**)"
+      "Read(//Users/zenn/Library/CloudStorage/Dropbox/prj/d07/zzcollab/**)",
+      "Bash(for file in docs/CONFIGURATION.md docs/DEVELOPMENT.md docs/VARIANTS.md docs/TESTING_GUIDE.md docs/TEAM_WORKFLOW.md docs/X11_PLOTTING_WORKFLOW.md docs/VALIDATION_QUICK_REFERENCE.md docs/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md)",
+      "Bash(do if grep -q \"renv::install\\|renv::snapshot\\|renv::restore\" \"$file\")",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
