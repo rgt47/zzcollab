@@ -512,6 +512,34 @@ zzcollab_help("config")            # Configuration guide
 
 **Recent Major Changes**:
 
+### November 17, 2025 - Documentation Consistency Update
+
+**Comprehensive documentation alignment** - Systematic update of vignettes and technical documentation to reflect latest architecture:
+
+- **Vignettes updated (3 files)**:
+  - `quickstart.Rmd`: Updated package installation instructions, auto-restore documentation, profile counts (11→14+)
+  - `quickstart-R.Rmd`: Emphasized standard `install.packages()`, documented auto-snapshot/auto-restore architecture
+  - `quickstart-rstudio.Rmd`: Complete rewrite of package installation section (lines 215-233), removed incorrect `renv::install()` patterns
+
+- **Technical documentation updated (4 files)**:
+  - `docs/CONFIGURATION.md`: Changed package management description to emphasize `install.packages()` with auto-snapshot/auto-restore
+  - `docs/DEVELOPMENT.md`: Added comprehensive auto-restore documentation (lines 63-100), updated all workflow examples
+  - `docs/X11_PLOTTING_WORKFLOW.md`: Changed all `renv::install()` to `install.packages()` (3 occurrences)
+  - `docs/TEAM_WORKFLOW.md`: Updated team collaboration workflows with auto-snapshot/auto-restore patterns
+
+- **Key corrections**:
+  - Replaced `renv::install()` → `install.packages()` throughout user-facing documentation
+  - Added auto-restore documentation (missing from several docs)
+  - Updated profile count from "11 profiles" to "14+ profiles"
+  - Emphasized pure shell validation (no R required on host)
+  - Aligned all documentation with CLAUDE.md authoritative source
+
+- **Consistency achieved**:
+  - All vignettes now correctly recommend `install.packages()` not `renv::install()`
+  - All docs explain auto-snapshot on container exit and auto-restore on R startup
+  - Profile counts consistent across all documentation (14+)
+  - Workflow examples consistent with current architecture
+
 ### November 15, 2025 - Dead Code Cleanup
 
 **Code Quality Improvement**: Systematic removal of unused functions to improve maintainability
