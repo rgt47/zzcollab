@@ -110,30 +110,36 @@ if (!file.exists("renv.lock")) {
     # renv::restore() is smart - it only installs what's missing
     # This is fast when synchronized (just a check, no installation)
     #
-    # CRITICAL: Must suppress ALL output to avoid breaking LSP (Language Server Protocol)
+    # CRITICAL: Check if running in LSP context (language server)
     # LSP expects strict JSON-RPC format - any stray output breaks coc.nvim/languageserver
+    in_lsp <- !interactive() || nzchar(Sys.getenv("NVIM_LISTEN_ADDRESS")) ||
+              nzchar(Sys.getenv("RSTUDIO"))
+
     tryCatch({
-      # Capture ALL output (stdout and stderr) completely silently
-      invisible(suppressMessages(suppressWarnings({
-        sink("/dev/null", type = "output")
-        sink("/dev/null", type = "message")
-        on.exit({
+      if (in_lsp) {
+        # In LSP context: completely silent (sink to /dev/null)
+        invisible(suppressMessages(suppressWarnings({
+          sink("/dev/null", type = "output")
+          sink("/dev/null", type = "message")
+          on.exit({
+            sink(type = "message")
+            sink(type = "output")
+          }, add = TRUE)
+
+          renv::restore(prompt = FALSE)
+
           sink(type = "message")
           sink(type = "output")
-        }, add = TRUE)
-
-        restore_actions <- renv::restore(prompt = FALSE, library = .libPaths()[1])
-
-        # Close sinks before exit
-        sink(type = "message")
-        sink(type = "output")
-      })))
-
-      # Don't print anything - could break LSP
-      # Users can run renv::status() manually if they want details
+        })))
+      } else {
+        # In interactive R: show messages normally
+        renv::restore(prompt = FALSE)
+      }
     }, error = function(e) {
-      # Silently ignore errors - don't break R startup or LSP
-      # Most "errors" are just "already synchronized" messages
+      # Silently ignore "already synchronized" errors
+      if (!in_lsp && !grepl("already synchronized|consistent state", conditionMessage(e))) {
+        warning("⚠️  Auto-restore failed: ", conditionMessage(e), call. = FALSE)
+      }
       invisible(NULL)
     })
   }
