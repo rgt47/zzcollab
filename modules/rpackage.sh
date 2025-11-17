@@ -201,13 +201,14 @@ create_readme_file() {
 # Purpose: Creates package validation setup for reproducible environments
 # Creates:
 #   - renv.lock - Initial empty lockfile for package dependencies
+#   - renv/activate.R - renv activation script
+#   - renv/.gitignore - Excludes renv library from git
 #   - validation.sh script for dependency checking (pure shell, no R required)
 #   - core.sh, utils.sh, constants.sh modules required by validation.sh
 #
-# Note: renv/ directory and activate.R will be created inside the container
-# on first run, following the Docker-first philosophy (no host R required)
+# This provides a complete renv setup without requiring R on the host
 #
-# Tracking: The validation script and its dependencies are tracked for uninstall
+# Tracking: All renv files and validation scripts are tracked for uninstall
 create_renv_setup() {
     log_debug "Creating package validation setup..."
 
@@ -218,8 +219,20 @@ create_renv_setup() {
         return 1
     fi
 
-    # Note: renv/ directory and activate.R will be created inside container
-    # This follows Docker-first philosophy - all R operations happen in containers
+    # Create renv/ directory and install activate.R
+    # This ensures renv is activated when R starts (see .Rprofile)
+    safe_mkdir "renv" "renv directory"
+
+    if ! install_template "renv/activate.R" "renv/activate.R" "renv activation script" "Created renv/activate.R"; then
+        log_error "Failed to create renv/activate.R"
+        return 1
+    fi
+
+    # Install renv .gitignore to exclude library/ directory from version control
+    if ! install_template "renv/.gitignore" "renv/.gitignore" "renv gitignore" "Created renv/.gitignore"; then
+        log_error "Failed to create renv/.gitignore"
+        return 1
+    fi
 
     # Install module dependencies first (required by validation.sh)
     local module_files=("core.sh" "utils.sh" "constants.sh" "navigation_scripts.sh")
