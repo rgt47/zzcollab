@@ -10,6 +10,11 @@ if [[ "$SHELL" == *"bash"* ]]; then
     SHELL_RC="${HOME}/.bashrc"
 fi
 
+# Resolve symlinks to get the actual file path
+if [[ -L "$SHELL_RC" ]]; then
+    SHELL_RC="$(readlink -f "$SHELL_RC" 2>/dev/null || readlink "$SHELL_RC")"
+fi
+
 # Navigation functions to be added
 NAVIGATION_FUNCTIONS='
 # ZZCOLLAB Navigation Functions (added by navigation_scripts.sh)

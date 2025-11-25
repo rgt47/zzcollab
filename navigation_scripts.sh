@@ -5,9 +5,14 @@
 #   --install   : Add navigation functions to your shell config
 #   --uninstall : Remove navigation functions from your shell config
 
-SHELL_RC="${HOME}/.bashrc"
-if [[ "$SHELL" == *"zsh"* ]]; then
-    SHELL_RC="${HOME}/.zshrc"
+SHELL_RC="${HOME}/.zshrc"
+if [[ "$SHELL" == *"bash"* ]]; then
+    SHELL_RC="${HOME}/.bashrc"
+fi
+
+# Resolve symlinks to get the actual file path
+if [[ -L "$SHELL_RC" ]]; then
+    SHELL_RC="$(readlink -f "$SHELL_RC" 2>/dev/null || readlink "$SHELL_RC")"
 fi
 
 # Navigation functions to be added
@@ -30,7 +35,9 @@ _zzcollab_root() {
 
 # Navigation functions
 a() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || echo "Not in ZZCOLLAB project"; }
-d() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/data" || echo "Not in ZZCOLLAB project"; }
+d() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/data" || echo "Not in ZZCOLLAB project"; }
+w() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/data/raw_data" || echo "Not in ZZCOLLAB project"; }
+y() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/data/derived_data" || echo "Not in ZZCOLLAB project"; }
 n() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || echo "Not in ZZCOLLAB project"; }
 f() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/figures" || echo "Not in ZZCOLLAB project"; }
 t() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/tables" || echo "Not in ZZCOLLAB project"; }
@@ -46,8 +53,10 @@ c() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/archive" || ec
 nav() {
     echo "ZZCOLLAB Navigation Shortcuts:"
     echo "  r → project root"
-    echo "  d → data/"
     echo "  a/n → analysis/"
+    echo "  d → analysis/data/"
+    echo "  w → analysis/data/raw_data/"
+    echo "  y → analysis/data/derived_data/"
     echo "  s → analysis/scripts/"
     echo "  p → analysis/paper/"
     echo "  f → analysis/figures/"
@@ -78,7 +87,8 @@ install_functions() {
     echo "Usage examples:"
     echo "  cd analysis/paper"
     echo "  s              # Jump to scripts/ from paper/"
-    echo "  d              # Jump to data/ from scripts/"
+    echo "  w              # Jump to raw_data/"
+    echo "  y              # Jump to derived_data/"
     echo "  p              # Jump back to paper/"
     echo "  r              # Jump to project root"
     echo "  nav            # List all shortcuts"
@@ -121,7 +131,9 @@ case "$1" in
         echo ""
         echo "After installation, you can use:"
         echo "  r  → Jump to project root"
-        echo "  d  → Jump to data/"
+        echo "  d  → Jump to analysis/data/"
+        echo "  w  → Jump to analysis/data/raw_data/"
+        echo "  y  → Jump to analysis/data/derived_data/"
         echo "  s  → Jump to analysis/scripts/"
         echo "  p  → Jump to analysis/paper/"
         echo "  f  → Jump to analysis/figures/"
@@ -130,7 +142,8 @@ case "$1" in
         echo "Example workflow:"
         echo "  cd analysis/paper    # Working on paper"
         echo "  s                    # Jump to scripts to edit analysis"
-        echo "  d                    # Jump to data to check raw data"
+        echo "  w                    # Jump to raw_data to check source data"
+        echo "  y                    # Jump to derived_data for processed data"
         echo "  p                    # Jump back to paper"
         ;;
 esac
