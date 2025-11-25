@@ -1,238 +1,169 @@
 # ==========================================
-# ZZCOLLAB .Rprofile - Reproducibility Layer
+# ZZCOLLAB .Rprofile - Container-Aware
 # ==========================================
-# This file is version-controlled and affects analysis reproducibility.
-# Changes to critical options should be reviewed by the team.
+# Host R: Fast startup, no renv (development)
+# Container R: Full renv workflow (reproducibility)
+# ==========================================
 
 # ==========================================
-# renv Cache Path Configuration
+# Part 1: User Personal Settings (always)
 # ==========================================
-# Set project-local cache path BEFORE activating renv
-# CRITICAL: Ensures host R and container R use the same cache location
-#
-# Container: /home/analyst/.cache/R/renv (set by Dockerfile ENV)
-# Host: <project>/.cache/R/renv (set here)
-# Both paths point to same physical location via volume mount:
-#   -v $(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv
-#
-# Without this setting:
-#   - Host would use system default: ~/Library/Caches/... (macOS)
-#   - Container uses project cache: <project>/.cache/R/renv
-#   - Result: Packages installed twice, cache not shared
-Sys.setenv(RENV_PATHS_CACHE = file.path(getwd(), ".cache/R/renv"))
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+q <- function(save="no", ...) quit(save=save, ...)
 
-# Activate renv (set project-local library paths)
-# renv is pre-installed in Docker system library
-if (file.exists("renv/activate.R")) {
-  source("renv/activate.R")
-}
-
-# renv consent (skips first-time prompts)
+# Package installation behavior (non-interactive)
 options(
-  renv.consent = TRUE,
-  renv.config.install.prompt = FALSE  # Skip "Do you want to proceed?" prompts
-)
-
-# Helper function for initializing renv without prompts
-renv_init_quiet <- function() {
-  # Use bare = TRUE to skip prompts even if partial initialization exists
-  # This creates infrastructure without installing packages initially
-  renv::init(
-    bare = TRUE,
-    settings = list(snapshot.type = "explicit"),
-    force = TRUE,
-    restart = FALSE
-  )
-
-  # Now install packages from DESCRIPTION (snapshot.type = "explicit")
-  # This reads DESCRIPTION Imports and installs those packages
-  if (file.exists("DESCRIPTION")) {
-    message("📦 Installing packages from DESCRIPTION...")
-    tryCatch({
-      renv::install()  # Installs packages listed in DESCRIPTION
-      renv::snapshot(prompt = FALSE)  # Create renv.lock
-      message("✅ Packages installed and renv.lock created")
-    }, error = function(e) {
-      warning("Package installation incomplete: ", conditionMessage(e), call. = FALSE)
-    })
-  }
-}
-
-# ==========================================
-# Auto-Initialize renv (New Projects)
-# ==========================================
-# Automatically initialize renv for new projects on first R session
-# Only runs if:
-# 1. renv not yet initialized (no renv.lock)
-# 2. This is a project directory (has DESCRIPTION or mounted in container)
-# 3. ZZCOLLAB_AUTO_INIT not disabled
-#
-# Disable with: docker run -e ZZCOLLAB_AUTO_INIT=false ...
-
-if (!file.exists("renv.lock")) {
-  # Check if auto-init is enabled (default: true)
-  auto_init <- Sys.getenv("ZZCOLLAB_AUTO_INIT", "true")
-
-  # Check if this looks like a project directory
-  is_project <- file.exists("DESCRIPTION") ||
-                getwd() == "/home/analyst/project"  # Container path
-
-  if (tolower(auto_init) %in% c("true", "t", "1") && is_project) {
-    message("\n🔧 ZZCOLLAB: Auto-initializing renv for new project...")
-
-    tryCatch({
-      renv_init_quiet()
-      message("✅ renv initialized successfully")
-      message("   Install packages with: install.packages('package')")
-    }, error = function(e) {
-      warning("⚠️  Auto-init failed: ", conditionMessage(e),
-              "\n   Run manually: renv_init_quiet()", call. = FALSE)
-    })
-  } else if (!is_project) {
-    message("\n💡 Tip: Initialize renv with renv_init_quiet()")
-  }
-} else {
-  # ==========================================
-  # Auto-Restore Missing Packages
-  # ==========================================
-  # If renv.lock exists but packages are missing, restore them automatically
-  # This happens when:
-  # 1. Validation script added packages to renv.lock
-  # 2. Team member pulls updated renv.lock from git
-  # 3. Switching between branches with different dependencies
-  #
-  # Disable with: docker run -e ZZCOLLAB_AUTO_RESTORE=false ...
-
-  auto_restore <- Sys.getenv("ZZCOLLAB_AUTO_RESTORE", "true")
-
-  if (tolower(auto_restore) %in% c("true", "t", "1")) {
-    # Auto-restore: silently sync library with lockfile
-    # renv::restore() is smart - it only installs what's missing
-    # This is fast when synchronized (just a check, no installation)
-    #
-    # CRITICAL: Check if running in LSP context (language server)
-    # LSP expects strict JSON-RPC format - any stray output breaks coc.nvim/languageserver
-    in_lsp <- !interactive() || nzchar(Sys.getenv("NVIM_LISTEN_ADDRESS")) ||
-              nzchar(Sys.getenv("RSTUDIO"))
-
-    tryCatch({
-      if (in_lsp) {
-        # In LSP context: completely silent (sink to /dev/null)
-        invisible(suppressMessages(suppressWarnings({
-          sink("/dev/null", type = "output")
-          sink("/dev/null", type = "message")
-          on.exit({
-            sink(type = "message")
-            sink(type = "output")
-          }, add = TRUE)
-
-          renv::restore(prompt = FALSE)
-
-          sink(type = "message")
-          sink(type = "output")
-        })))
-      } else {
-        # In interactive R: show messages normally
-        renv::restore(prompt = FALSE)
-      }
-    }, error = function(e) {
-      # Silently ignore "already synchronized" errors
-      if (!in_lsp && !grepl("already synchronized|consistent state", conditionMessage(e))) {
-        warning("⚠️  Auto-restore failed: ", conditionMessage(e), call. = FALSE)
-      }
-      invisible(NULL)
-    })
-  }
-}
-
-# ==========================================
-# Critical Reproducibility Options
-# See: docs/COLLABORATIVE_REPRODUCIBILITY.md Pillar 3
-# ==========================================
-# These options affect computational results and should not be modified
-# without team review. Changes are monitored by check_rprofile_options.R
-
-options(
-  # Character vector treatment in data.frames
-  # FALSE ensures characters stay as characters (R >= 4.0.0 default)
-  stringsAsFactors = FALSE,
-
-  # Statistical contrasts for factor variables in models
-  # Treatment contrasts for unordered factors, polynomial for ordered
-  contrasts = c("contr.treatment", "contr.poly"),
-
-  # Missing data handling in modeling functions
-  # na.omit removes rows with any NA values
-  na.action = "na.omit",
-
-  # Numeric precision in printed output
-  # 7 significant digits (R default)
-  digits = 7,
-
-  # Decimal separator for output
-  # Period (US standard) ensures consistency across locales
-  OutDec = ".",
-
-  # CRAN mirror for package installation
-  repos = c(CRAN = "https://cloud.r-project.org"),
-
-  # Package installation behavior (non-interactive)
-  # Prevents prompts during install.packages()
   install.packages.check.source = "no",
   install.packages.compile.from.source = "never",
-
-  # Parallel installation (faster package installs)
   Ncpus = parallel::detectCores()
 )
 
 # ==========================================
-# Auto-Snapshot on R Exit
+# Part 2: Container Detection
 # ==========================================
-# Automatically updates renv.lock when exiting R session
-# This captures any packages installed during the session
+# Set ZZCOLLAB_CONTAINER=true in Dockerfile to enable renv
+in_container <- Sys.getenv("ZZCOLLAB_CONTAINER") == "true"
 
-.Last <- function() {
-  # Check if auto-snapshot is enabled (default: true)
-  auto_snapshot <- Sys.getenv("ZZCOLLAB_AUTO_SNAPSHOT", "true")
+if (!in_container) {
+  # ==========================================
+  # Host R: Skip renv
+  # ==========================================
+  message("ℹ️ Host R session (renv skipped - use container for reproducibility)")
 
-  if (tolower(auto_snapshot) %in% c("true", "t", "1")) {
-    # Check if we're in an renv project
-    if (file.exists("renv.lock") && file.exists("renv/activate.R")) {
-      message("\n📸 Auto-snapshot: Updating renv.lock...")
+} else {
+  # ==========================================
+  # Container R: Full renv workflow
+  # ==========================================
 
-      snapshot_result <- tryCatch({
-        # Snapshot with prompt disabled (non-interactive)
-        # Uses default snapshot type (captures all installed packages)
-        renv::snapshot(prompt = FALSE)
-        TRUE
+  # renv Cache Path Configuration
+  # Container uses /home/analyst/.cache/R/renv (set by Dockerfile ENV)
+  # Volume mount shares cache: -v $(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv
+  Sys.setenv(RENV_PATHS_CACHE = file.path(getwd(), ".cache/R/renv"))
+
+  # Activate renv (set project-local library paths)
+  if (file.exists("renv/activate.R")) {
+    source("renv/activate.R")
+  }
+
+  # renv consent (skips first-time prompts)
+  options(
+    renv.consent = TRUE,
+    renv.config.install.prompt = FALSE
+  )
+
+  # Helper function for initializing renv without prompts
+  renv_init_quiet <- function() {
+    renv::init(
+      bare = TRUE,
+      settings = list(snapshot.type = "implicit"),
+      force = TRUE,
+      restart = FALSE
+    )
+
+    message("✅ renv initialized")
+    message("   Install packages with: install.packages('package')")
+  }
+
+  # ==========================================
+  # Auto-Initialize renv (New Projects)
+  # ==========================================
+  if (!file.exists("renv.lock")) {
+    auto_init <- Sys.getenv("ZZCOLLAB_AUTO_INIT", "true")
+    is_project <- file.exists("DESCRIPTION") || getwd() == "/home/analyst/project"
+
+    if (tolower(auto_init) %in% c("true", "t", "1") && is_project) {
+      message("\n🔧 ZZCOLLAB: Auto-initializing renv for new project...")
+      tryCatch({
+        renv_init_quiet()
       }, error = function(e) {
-        warning("Auto-snapshot failed: ", conditionMessage(e), call. = FALSE)
-        FALSE
+        warning("⚠️  Auto-init failed: ", conditionMessage(e),
+                "\n   Run manually: renv_init_quiet()", call. = FALSE)
       })
+    }
+  } else {
+    # ==========================================
+    # Auto-Restore Missing Packages
+    # ==========================================
+    auto_restore <- Sys.getenv("ZZCOLLAB_AUTO_RESTORE", "true")
 
-      if (snapshot_result) {
-        message("✅ renv.lock updated successfully")
-        message("   Commit changes: git add renv.lock && git commit -m 'Update packages'")
-      }
+    if (tolower(auto_restore) %in% c("true", "t", "1")) {
+      in_lsp <- !interactive() || nzchar(Sys.getenv("NVIM_LISTEN_ADDRESS")) ||
+                nzchar(Sys.getenv("RSTUDIO"))
+
+      tryCatch({
+        if (in_lsp) {
+          invisible(suppressMessages(suppressWarnings({
+            sink("/dev/null", type = "output")
+            sink("/dev/null", type = "message")
+            on.exit({
+              sink(type = "message")
+              sink(type = "output")
+            }, add = TRUE)
+            renv::restore(prompt = FALSE)
+            sink(type = "message")
+            sink(type = "output")
+          })))
+        } else {
+          renv::restore(prompt = FALSE)
+        }
+      }, error = function(e) {
+        if (!in_lsp && !grepl("already synchronized|consistent state", conditionMessage(e))) {
+          warning("⚠️  Auto-restore failed: ", conditionMessage(e), call. = FALSE)
+        }
+        invisible(NULL)
+      })
     }
   }
 
-  # Call any user-defined .Last function from .Rprofile.local
-  if (exists(".Last.user", mode = "function", envir = .GlobalEnv)) {
-    tryCatch(
-      .Last.user(),
-      error = function(e) warning("User .Last failed: ", conditionMessage(e))
-    )
+  # ==========================================
+  # Auto-Snapshot on R Exit (Container only)
+  # ==========================================
+  .Last <- function() {
+    auto_snapshot <- Sys.getenv("ZZCOLLAB_AUTO_SNAPSHOT", "true")
+
+    if (tolower(auto_snapshot) %in% c("true", "t", "1")) {
+      if (file.exists("renv.lock") && file.exists("renv/activate.R")) {
+        message("\n📸 Auto-snapshot: Updating renv.lock...")
+
+        snapshot_result <- tryCatch({
+          renv::snapshot(prompt = FALSE)
+          TRUE
+        }, error = function(e) {
+          warning("Auto-snapshot failed: ", conditionMessage(e), call. = FALSE)
+          FALSE
+        })
+
+        if (snapshot_result) {
+          message("✅ renv.lock updated successfully")
+          message("   Commit changes: git add renv.lock && git commit -m 'Update packages'")
+        }
+      }
+    }
+
+    if (exists(".Last.user", mode = "function", envir = .GlobalEnv)) {
+      tryCatch(
+        .Last.user(),
+        error = function(e) warning("User .Last failed: ", conditionMessage(e))
+      )
+    }
   }
 }
 
 # ==========================================
-# Personal/Team Customizations (Optional)
+# Part 3: Reproducibility Options (always)
 # ==========================================
-# Load personal settings from git-ignored file
-# This allows team members to have personal preferences without
-# affecting version-controlled reproducibility settings
+# These ensure consistent behavior on both host and container
+options(
+  stringsAsFactors = FALSE,
+  contrasts = c("contr.treatment", "contr.poly"),
+  na.action = "na.omit",
+  digits = 7,
+  OutDec = "."
+)
 
+# ==========================================
+# Part 4: Personal Customizations (always)
+# ==========================================
 if (file.exists(".Rprofile.local")) {
   tryCatch(
     source(".Rprofile.local"),

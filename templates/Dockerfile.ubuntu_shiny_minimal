@@ -28,11 +28,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG TARGETPLATFORM
 
 # Reproducibility-critical environment variables (Pillar 1)
+# ZZCOLLAB_CONTAINER enables renv workflow in .Rprofile
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1 \
-    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv
+    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
+    ZZCOLLAB_CONTAINER=true
 
 # Platform note (shiny is AMD64 only, using emulation on ARM64)
 RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \

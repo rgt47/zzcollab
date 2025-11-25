@@ -24,11 +24,13 @@ ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
 # Reproducibility-critical environment variables (Pillar 1)
+# ZZCOLLAB_CONTAINER enables renv workflow in .Rprofile
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1 \
-    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv
+    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
+    ZZCOLLAB_CONTAINER=true
 
 # Alpine uses apk instead of apt-get
 # Note: Alpine/musl has no binary R packages - must compile from source
