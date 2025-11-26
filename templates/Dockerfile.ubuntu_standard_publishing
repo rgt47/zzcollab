@@ -32,11 +32,13 @@ ARG TARGETPLATFORM
 
 # Reproducibility-critical environment variables (Pillar 1)
 # ZZCOLLAB_CONTAINER enables renv workflow in .Rprofile
+# RENV_CONFIG_REPOS_OVERRIDE forces renv to use Posit PM binaries (ignores lockfile repos)
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1 \
     RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
+    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/jammy/latest" \
     ZZCOLLAB_CONTAINER=true
 
 # Platform note (verse is AMD64 only, using emulation on ARM64)
@@ -57,8 +59,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libjpeg8 \
         curl
 
-# Configure R to use CRAN
-RUN echo "options(repos = c(CRAN = 'https://cloud.r-project.org'))" \
+# Configure R to use Posit Package Manager (pre-compiled Ubuntu binaries)
+RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install base publishing packages from CRAN

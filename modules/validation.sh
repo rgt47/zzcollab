@@ -49,7 +49,7 @@ fi
 STANDARD_DIRS=("." "R" "scripts" "analysis")
 STRICT_DIRS=("." "R" "scripts" "analysis" "tests" "vignettes" "inst")
 
-# Files to skip (documentation examples, templates)
+# Files to skip (documentation examples, templates, infrastructure)
 SKIP_FILES=(
     "*/README.Rmd"
     "*/README.md"
@@ -57,6 +57,9 @@ SKIP_FILES=(
     "*/examples/*"
     "*/inst/examples/*"
     "*/man/examples/*"
+    "*/renv/*"
+    "*/.cache/*"
+    "*/.git/*"
 )
 
 # File extensions to search
@@ -162,7 +165,16 @@ add_package_to_description() {
 
     # Detect end of Imports (next field starts)
     in_imports && /^[A-Z]/ {
-        # Add package before next field
+        # Add comma to last import line if missing, then add new package
+        if (!added && last_import_line != "") {
+            # Check if last line already has comma
+            if (last_import_line !~ /,$/) {
+                last_import_line = last_import_line ","
+            }
+            print last_import_line
+            last_import_line = ""
+        }
+        # Add new package
         if (!added) {
             print "    " pkg ","
             added = 1
@@ -172,9 +184,14 @@ add_package_to_description() {
         next
     }
 
-    # Inside Imports field
+    # Inside Imports field - buffer lines to handle comma on last line
     in_imports {
-        print $0
+        # If we have a buffered line, print it now
+        if (last_import_line != "") {
+            print last_import_line
+        }
+        # Buffer current line
+        last_import_line = $0
         next
     }
 
@@ -184,6 +201,14 @@ add_package_to_description() {
     END {
         # If still in imports at end of file
         if (in_imports && !added) {
+            # Print buffered last import line with comma
+            if (last_import_line != "") {
+                if (last_import_line !~ /,$/) {
+                    last_import_line = last_import_line ","
+                }
+                print last_import_line
+            }
+            # Add new package (last item, no trailing comma)
             print "    " pkg
         }
     }
@@ -602,6 +627,78 @@ parse_description_imports() {
     ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
 }
 
+#-----------------------------------------------------------------------------
+# FUNCTION: parse_description_suggests
+# PURPOSE:  Extract package names from DESCRIPTION Suggests field
+# DESCRIPTION:
+#   Parses the Suggests field from an R package DESCRIPTION file using pure
+#   awk. Similar to parse_description_imports() but targets Suggests field.
+#   Suggests packages are optional dependencies (testing, vignettes, examples).
+# ARGS:
+#   None (operates on ./DESCRIPTION in current directory)
+# RETURNS:
+#   0 - Success (even if DESCRIPTION doesn't exist or has no Suggests)
+# OUTPUTS:
+#   Package names to stdout, one per line, sorted and deduplicated
+# FILES READ:
+#   ./DESCRIPTION - R package metadata file
+# SUGGESTS VS IMPORTS:
+#   - Imports: Required dependencies, always installed
+#   - Suggests: Optional dependencies, used for testing/vignettes/examples
+#   - This function extracts Suggests to allow optional validation
+# AWK PROCESSING:
+#   Same as parse_description_imports() but for "Suggests:" field
+# EXAMPLE:
+#   DESCRIPTION contains:
+#     Suggests:
+#         testthat (>= 3.0.0),
+#         knitr,
+#         rmarkdown
+#   Output:
+#     knitr
+#     rmarkdown
+#     testthat
+#-----------------------------------------------------------------------------
+parse_description_suggests() {
+    if [[ ! -f "DESCRIPTION" ]]; then
+        return 0
+    fi
+
+    awk '
+        BEGIN { in_suggests = 0; suggests = "" }
+
+        # Start of Suggests field
+        /^Suggests:/ {
+            in_suggests = 1
+            suggests = $0
+            next
+        }
+
+        # Continuation lines (start with whitespace) while in Suggests field
+        in_suggests && /^[[:space:]]/ {
+            # Add space before appending to avoid concatenation issues
+            suggests = suggests " " $0
+            next
+        }
+
+        # Stop when we hit a new field
+        in_suggests && /^[A-Z]/ {
+            in_suggests = 0
+        }
+
+        # Process and output when done
+        END {
+            if (suggests) {
+                gsub(/^Suggests:[[:space:]]*/, "", suggests)
+                gsub(/\([^)]*\)/, "", suggests)
+                gsub(/[[:space:]]+/, " ", suggests)
+                gsub(/,/, "\n", suggests)
+                print suggests
+            }
+        }
+    ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
+}
+
 #==============================================================================
 # DESCRIPTION CLEANUP
 #==============================================================================
@@ -754,6 +851,67 @@ remove_unused_packages_from_description() {
 #==============================================================================
 
 #-----------------------------------------------------------------------------
+# FUNCTION: create_renv_lock
+# PURPOSE:  Create a minimal renv.lock file for new projects
+# DESCRIPTION:
+#   Creates a minimal renv.lock JSON structure with R version and repository
+#   configuration. This enables fully host-based project bootstrap without
+#   requiring R to be installed. The Packages section starts empty and gets
+#   populated by the auto-fix workflow.
+# ARGS:
+#   $1 - R version (optional, defaults to "4.5.1")
+#   $2 - CRAN URL (optional, defaults to "https://cloud.r-project.org")
+# RETURNS:
+#   0 - Success (renv.lock created)
+#   1 - Error (jq not available or write failed)
+# OUTPUTS:
+#   Creates ./renv.lock file in current directory
+# DEPENDENCIES:
+#   jq - Required for JSON generation
+# EXAMPLE:
+#   create_renv_lock "4.5.1" "https://cloud.r-project.org"
+#-----------------------------------------------------------------------------
+create_renv_lock() {
+    local r_version="${1:-4.5.1}"
+    local cran_url="${2:-https://cloud.r-project.org}"
+    local renv_lock="renv.lock"
+
+    # Check if jq is available
+    if ! command -v jq &>/dev/null; then
+        log_error "jq is required to create renv.lock"
+        log_error "Install jq: brew install jq (macOS) or apt-get install jq (Linux)"
+        return 1
+    fi
+
+    log_info "Creating minimal renv.lock for new project..."
+
+    # Create minimal renv.lock structure using jq
+    jq -n \
+        --arg r_ver "$r_version" \
+        --arg cran "$cran_url" \
+        '{
+            R: {
+                Version: $r_ver,
+                Repositories: [
+                    {
+                        Name: "CRAN",
+                        URL: $cran
+                    }
+                ]
+            },
+            Packages: {}
+        }' > "$renv_lock"
+
+    if [[ $? -eq 0 ]] && [[ -f "$renv_lock" ]]; then
+        log_success "✅ Created renv.lock (R $r_version)"
+        return 0
+    else
+        log_error "Failed to create renv.lock"
+        return 1
+    fi
+}
+
+#-----------------------------------------------------------------------------
 # FUNCTION: parse_renv_lock
 # PURPOSE:  Extract package names from renv.lock file using jq
 # DESCRIPTION:
@@ -783,7 +941,7 @@ remove_unused_packages_from_description() {
 #   }
 #   This function extracts keys from the "Packages" object.
 # ERROR HANDLING:
-#   - Missing renv.lock: Returns success (empty output)
+#   - Missing renv.lock: Creates minimal renv.lock via create_renv_lock()
 #   - Missing jq: Logs warning with installation instructions, returns success
 #   - Invalid JSON: jq error silently caught (returns empty)
 # WHY JQ INSTEAD OF SHELL:
@@ -798,15 +956,20 @@ remove_unused_packages_from_description() {
 #     ggplot2
 #-----------------------------------------------------------------------------
 parse_renv_lock() {
-    if [[ ! -f "renv.lock" ]]; then
-        return 0
-    fi
-
-    # Check if jq is available
+    # Check if jq is available first (needed for both create and parse)
     if ! command -v jq &>/dev/null; then
         log_warn "jq not found, skipping renv.lock parsing"
         log_warn "Install jq: brew install jq (macOS) or apt-get install jq (Linux)"
         return 0
+    fi
+
+    # Create renv.lock if it doesn't exist
+    if [[ ! -f "renv.lock" ]]; then
+        log_info "No renv.lock found - creating one for new project"
+        if ! create_renv_lock; then
+            log_error "Failed to create renv.lock"
+            return 1
+        fi
     fi
 
     # Extract package names from Packages section
@@ -900,9 +1063,62 @@ validate_package_environment() {
     log_info "Found ${#desc_imports[@]} packages in DESCRIPTION Imports"
     log_info "Found ${#renv_packages[@]} packages in renv.lock"
 
-    # Step 5: Find missing packages (in code but not in DESCRIPTION)
-    local missing=()
+    # Step 5: Compute union of all packages from all three sources
+    # The final set should be: code ∪ DESCRIPTION ∪ renv.lock
+    local all_packages=()
+
+    # Add packages from code
     for pkg in "${code_packages[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            all_packages+=("$pkg")
+        fi
+    done
+
+    # Add packages from DESCRIPTION
+    for pkg in "${desc_imports[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            # Check if not already in all_packages
+            local found=false
+            for existing in "${all_packages[@]}"; do
+                if [[ "$pkg" == "$existing" ]]; then
+                    found=true
+                    break
+                fi
+            done
+            if [[ "$found" == false ]]; then
+                all_packages+=("$pkg")
+            fi
+        fi
+    done
+
+    # Add packages from renv.lock (excluding base packages)
+    for pkg in "${renv_packages[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            # Skip base R packages
+            local base_pkgs_str=" ${BASE_PACKAGES[*]} "
+            if [[ "$base_pkgs_str" == *" ${pkg} "* ]]; then
+                continue
+            fi
+
+            # Check if not already in all_packages
+            local found=false
+            for existing in "${all_packages[@]}"; do
+                if [[ "$pkg" == "$existing" ]]; then
+                    found=true
+                    break
+                fi
+            done
+            if [[ "$found" == false ]]; then
+                all_packages+=("$pkg")
+            fi
+        fi
+    done
+
+    log_info "Union of all packages: ${#all_packages[@]} packages"
+
+    # Step 6: Find packages missing from DESCRIPTION (in union but not in DESCRIPTION)
+    local missing_from_desc=()
+    for pkg in "${all_packages[@]}"; do
         # Skip empty package names
         if [[ -z "$pkg" ]]; then
             continue
@@ -911,14 +1127,15 @@ validate_package_environment() {
         # Use literal string matching instead of regex to avoid SC2076
         local desc_imports_str=" ${desc_imports[*]} "
         if [[ "$desc_imports_str" != *" ${pkg} "* ]]; then
-            missing+=("$pkg")
+            missing_from_desc+=("$pkg")
         fi
     done
 
-    # Step 6: Check DESCRIPTION → renv.lock consistency
-    log_debug "Checking DESCRIPTION → renv.lock consistency..."
+    # Step 7: Check union → renv.lock consistency
+    # All packages in the union should also be in renv.lock
+    log_debug "Checking union → renv.lock consistency..."
     local missing_from_lock=()
-    for pkg in "${desc_imports[@]}"; do
+    for pkg in "${all_packages[@]}"; do
         # Skip empty package names
         if [[ -z "$pkg" ]]; then
             continue
@@ -938,14 +1155,14 @@ validate_package_environment() {
         fi
     done
 
-    # Step 7: Handle Code → DESCRIPTION issues
-    if [[ ${#missing[@]} -gt 0 ]]; then
-        log_error "Found ${#missing[@]} packages used in code but not in DESCRIPTION Imports"
+    # Step 8: Handle missing packages from DESCRIPTION
+    if [[ ${#missing_from_desc[@]} -gt 0 ]]; then
+        log_error "Found ${#missing_from_desc[@]} packages missing from DESCRIPTION Imports"
 
         # List packages if verbose mode or auto-fix mode
         if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
             echo ""
-            for pkg in "${missing[@]}"; do
+            for pkg in "${missing_from_desc[@]}"; do
                 echo "  - $pkg"
             done
             echo ""
@@ -956,57 +1173,36 @@ validate_package_environment() {
         fi
 
         if [[ "$auto_fix" == "true" ]]; then
-            log_info "Auto-fixing: Adding missing packages to DESCRIPTION and renv.lock..."
+            log_info "Auto-fixing: Adding missing packages to DESCRIPTION..."
             local failed_packages=()
 
-            for pkg in "${missing[@]}"; do
+            for pkg in "${missing_from_desc[@]}"; do
                 # Add to DESCRIPTION
-                if add_package_to_description "$pkg"; then
-                    # Also add to renv.lock
-                    if ! add_package_to_renv_lock "$pkg"; then
-                        failed_packages+=("$pkg")
-                    fi
-                else
+                if ! add_package_to_description "$pkg"; then
                     failed_packages+=("$pkg")
                 fi
             done
 
             if [[ ${#failed_packages[@]} -eq 0 ]]; then
-                log_success "✅ All missing packages added to DESCRIPTION and renv.lock"
-                echo ""
-                echo ""
-                echo "Next steps:"
-                echo "  1. Start R to auto-install packages: make r"
-                echo "     (Auto-restore will install dependencies automatically)"
-                echo "  2. Rebuild Docker image: make docker-build"
-                echo "  3. Commit changes: git add DESCRIPTION renv.lock && git commit"
-                # Continue to check DESCRIPTION → renv.lock consistency
+                log_success "✅ All missing packages added to DESCRIPTION"
+                # Continue to check renv.lock consistency
             else
-                log_error "Failed to add packages: ${failed_packages[*]}"
-                echo ""
-                echo "These packages may not be on CRAN. Add them manually:"
-                echo "  make docker-zsh"
-                local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
-                echo "  R> renv::install($pkg_vector)"
-                echo "  R> quit()"
+                log_error "Failed to add packages to DESCRIPTION: ${failed_packages[*]}"
                 return 1
             fi
         else
-            local pkg_vector=$(format_r_package_vector "${missing[@]}")
+            local pkg_vector=$(format_r_package_vector "${missing_from_desc[@]}")
             echo "Fix with auto-fix flag:"
             echo "  bash modules/validation.sh --fix"
             echo ""
-            echo "Or manually in container:"
-            echo "  make docker-zsh"
-            echo "  R> renv::install($pkg_vector)"
-            echo "  R> quit()"
+            echo "Or manually add to DESCRIPTION Imports field"
             return 1
         fi
     fi
 
-    # Step 8: Report DESCRIPTION → renv.lock issues
+    # Step 9: Report union → renv.lock issues
     if [[ ${#missing_from_lock[@]} -gt 0 ]]; then
-        log_error "Found ${#missing_from_lock[@]} packages in DESCRIPTION but not in renv.lock"
+        log_error "Found ${#missing_from_lock[@]} packages in union but not in renv.lock"
 
         # List packages if verbose mode or auto-fix mode
         if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
