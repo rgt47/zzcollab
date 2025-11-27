@@ -49,6 +49,20 @@ e() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/tests" || echo
 o() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/docs" || echo "Not in ZZCOLLAB project"; }
 c() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/archive" || echo "Not in ZZCOLLAB project"; }
 
+# Run make targets from any subdirectory (defaults to "make r")
+mr() {
+    local root=$(_zzcollab_root)
+    if [[ -z "$root" ]]; then
+        echo "Not in ZZCOLLAB project"
+        return 1
+    fi
+    if [[ ! -f "$root/Makefile" ]]; then
+        echo "No Makefile in project root: $root"
+        return 1
+    fi
+    make -C "$root" "${@:-r}"
+}
+
 # List navigation shortcuts
 nav() {
     echo "ZZCOLLAB Navigation Shortcuts:"
@@ -65,6 +79,11 @@ nav() {
     echo "  e → tests/"
     echo "  o → docs/"
     echo "  c → archive/"
+    echo ""
+    echo "Make Commands (from any subdirectory):"
+    echo "  mr        → make r (start container)"
+    echo "  mr test   → make test"
+    echo "  mr [target] → make [target]"
 }
 # End ZZCOLLAB Navigation Functions
 '
@@ -91,6 +110,8 @@ install_functions() {
     echo "  y              # Jump to derived_data/"
     echo "  p              # Jump back to paper/"
     echo "  r              # Jump to project root"
+    echo "  mr             # Run container (make r) from anywhere"
+    echo "  mr test        # Run tests (make test) from anywhere"
     echo "  nav            # List all shortcuts"
 }
 
@@ -130,20 +151,23 @@ case "$1" in
         echo "  ./navigation_scripts.sh --uninstall  Remove navigation functions"
         echo ""
         echo "After installation, you can use:"
-        echo "  r  → Jump to project root"
-        echo "  d  → Jump to analysis/data/"
-        echo "  w  → Jump to analysis/data/raw_data/"
-        echo "  y  → Jump to analysis/data/derived_data/"
-        echo "  s  → Jump to analysis/scripts/"
-        echo "  p  → Jump to analysis/paper/"
-        echo "  f  → Jump to analysis/figures/"
+        echo "  r   → Jump to project root"
+        echo "  d   → Jump to analysis/data/"
+        echo "  w   → Jump to analysis/data/raw_data/"
+        echo "  y   → Jump to analysis/data/derived_data/"
+        echo "  s   → Jump to analysis/scripts/"
+        echo "  p   → Jump to analysis/paper/"
+        echo "  f   → Jump to analysis/figures/"
+        echo "  mr  → Run make targets from anywhere (defaults to 'make r')"
         echo "  nav → List all shortcuts"
         echo ""
         echo "Example workflow:"
         echo "  cd analysis/paper    # Working on paper"
+        echo "  mr                   # Start container from paper/"
         echo "  s                    # Jump to scripts to edit analysis"
         echo "  w                    # Jump to raw_data to check source data"
         echo "  y                    # Jump to derived_data for processed data"
         echo "  p                    # Jump back to paper"
+        echo "  mr test              # Run tests from anywhere"
         ;;
 esac

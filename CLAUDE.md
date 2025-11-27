@@ -425,6 +425,23 @@ make docker-verse          # Verse environment with LaTeX
 #   2. Validate packages on host (pure shell)
 ```
 
+**Navigation Shortcuts** (install via `./modules/navigation_scripts.sh --install`):
+```bash
+# Run make targets from any subdirectory
+mr                         # make r (start container) from anywhere
+mr test                    # make test from anywhere
+mr docker-sh               # make docker-sh from anywhere
+
+# One-letter directory navigation
+r                          # Jump to project root
+s                          # Jump to analysis/scripts/
+p                          # Jump to analysis/paper/
+d                          # Jump to analysis/data/
+w                          # Jump to analysis/data/raw_data/
+y                          # Jump to analysis/data/derived_data/
+nav                        # List all shortcuts
+```
+
 **Team Collaboration**:
 ```bash
 # Team Lead
@@ -511,6 +528,28 @@ zzcollab_help("config")            # Configuration guide
 **Current Version**: 2.0 (Unified Paradigm Release, 2025)
 
 **Recent Major Changes**:
+
+### November 27, 2025 - Navigation Shortcuts Enhancement
+
+**New `mr()` function** - Run make targets from any subdirectory in a zzcollab project:
+
+- **Added `mr()` to navigation_scripts.sh**: Runs make targets from anywhere in project
+  - Uses `_zzcollab_root()` to find project root (looks for DESCRIPTION or .zzcollab_project)
+  - Defaults to `make r` (start container) when called without arguments
+  - Supports any make target: `mr test`, `mr docker-sh`, `mr check-renv`
+  - Files: `templates/modules/navigation_scripts.sh`
+
+- **Updated documentation**:
+  - `nav()` function now documents `mr` command
+  - Install/help text updated with `mr` examples
+  - CLAUDE.md Development Workflows section updated
+
+- **Usage**:
+  ```bash
+  cd analysis/scripts
+  mr              # Runs 'make r' from project root
+  mr test         # Runs 'make test' from project root
+  ```
 
 ### November 17, 2025 - Documentation Consistency Update
 
