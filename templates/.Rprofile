@@ -60,7 +60,8 @@ if (!in_container) {
   # renv consent (skips first-time prompts)
   options(
     renv.consent = TRUE,
-    renv.config.install.prompt = FALSE
+    renv.config.install.prompt = FALSE,
+    renv.config.auto.snapshot = FALSE
   )
 
   # Helper function for initializing renv without prompts
