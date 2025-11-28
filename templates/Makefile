@@ -140,7 +140,9 @@ docker-rstudio:
 	docker run --platform linux/amd64 --rm --user root -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
 
 # Smart docker-run: Automatically detect profile and run appropriately
-docker-run:
+# Runs validation BEFORE launching container (ensures DESCRIPTION/renv.lock are in sync)
+# Runs validation AFTER exiting container (captures any new packages installed)
+docker-run: check-renv
 	@if [ ! -f Dockerfile ]; then \
 		echo "❌ No Dockerfile found in current directory"; \
 		exit 1; \
@@ -188,7 +190,8 @@ docker-run:
 			exit 1; \
 			;; \
 	esac
-	@echo "📋 Validating package dependencies..."
+	@echo ""
+	@echo "📋 Post-session validation: checking for new packages..."
 	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
 	@if [ -f renv.lock ]; then \
 		if ! touch renv.lock; then \
