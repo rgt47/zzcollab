@@ -34,7 +34,7 @@ ENV LANG=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1 \
     RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
-    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/jammy/latest" \
+    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \
     ZZCOLLAB_CONTAINER=true
 
 # Install runtime dependencies
@@ -46,10 +46,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libfontconfig1 \
         libfreetype6 \
         libpng16-16 \
-        libjpeg8
+        libjpeg8 \
+        libicu74 \
+        pandoc
 
 # Configure R to use Posit Package Manager (pre-compiled Ubuntu binaries)
-RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest'))" \
+RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install renv from CRAN
