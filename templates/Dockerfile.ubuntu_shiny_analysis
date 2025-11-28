@@ -35,7 +35,7 @@ ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1 \
-    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
+    RENV_PATHS_CACHE=/home/shiny/.cache/R/renv \
     RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \
     ZZCOLLAB_CONTAINER=true
 
@@ -71,17 +71,13 @@ RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
         'shinydashboard', 'shinyjs', 'plotly', 'DT', \
         'bs4Dash', 'fresh'))"
 
-# Create non-root user and set up environment
-RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library && \
-    mkdir -p /home/${USERNAME}/.cache/R/renv && \
-    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.cache
+# Set up renv cache directory (rocker/shiny-verse runs as root, /init handles user switching)
+# The default user 'shiny' is created by rocker/shiny-verse base image
+RUN mkdir -p /home/shiny/.cache/R/renv && \
+    chown -R shiny:shiny /home/shiny/.cache
 
-# Switch to non-root user
-USER ${USERNAME}
-
-# WORKDIR automatically creates directory with correct ownership
-WORKDIR /home/${USERNAME}/project
+# Set working directory (will be owned by mapped user at runtime)
+WORKDIR /home/shiny/project
 
 # Health check for Shiny Server
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
