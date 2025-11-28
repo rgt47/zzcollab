@@ -38,7 +38,7 @@ ENV LANG=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1 \
     RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
-    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/jammy/latest" \
+    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \
     ZZCOLLAB_CONTAINER=true
 
 # Platform note (verse is AMD64 only, using emulation on ARM64)
@@ -47,20 +47,22 @@ RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
         echo "Running AMD64 image via emulation (slower)" >&2; \
     fi
 
-# Install runtime dependencies
+# Install runtime dependencies (pinned to Ubuntu Noble 24.04)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        libfontconfig1 \
-        libfreetype6 \
-        libpng16-16 \
-        libjpeg8 \
+        libfontconfig1=2.15.0-1.1ubuntu2 \
+        libfreetype6=2.13.2+dfsg-1build3 \
+        libpng16-16t64=1.6.43-5build1 \
+        libjpeg8=8c-2ubuntu11 \
+        libicu74 \
+        pandoc=3.1.3+ds-2 \
         curl
 
 # Configure R to use Posit Package Manager (pre-compiled Ubuntu binaries)
-RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest'))" \
+RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))" \
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install base publishing packages from CRAN
