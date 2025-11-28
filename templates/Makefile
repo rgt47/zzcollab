@@ -28,6 +28,7 @@ help:
 	@echo "    r                     - Start container (RECOMMENDED! Auto-detects profile, mounts cache)"
 	@echo "    docker-run            - Same as 'make r' (auto-detects profile, mounts cache, validates)"
 	@echo "    docker-build          - Build image from current renv.lock"
+	@echo "    docker-rebuild        - Rebuild image without cache (force fresh build)"
 	@echo "    docker-build-log      - Build with detailed logs (for debugging)"
 	@echo "    docker-rstudio        - Start RStudio Server"
 	@echo "    docker-push-team, docker-document, docker-build-pkg, docker-check"
@@ -92,6 +93,9 @@ check-renv-ci:
 #   4. Build new image (make docker-build)
 docker-build:
 	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
+
+docker-rebuild:
+	DOCKER_BUILDKIT=1 docker build --no-cache --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 docker-build-log:
 	@echo "Building Docker image and saving log to docker-build.log..."
@@ -224,4 +228,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
