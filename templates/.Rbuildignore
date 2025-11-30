@@ -28,3 +28,9 @@
 ^.*\.Rproj$
 ^docs$
 ^LICENSE$
+^\.zzcollab$
+^figures$
+^media$
+^index\.qmd$
+^index\.html$
+^index_files$
