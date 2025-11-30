@@ -109,6 +109,43 @@ find_templates_dir() {
     return 1
 }
 
+# Update .Rbuildignore with blog-specific entries
+update_rbuildignore() {
+    local rbuildignore=".Rbuildignore"
+
+    # Blog-specific entries to add
+    local entries=(
+        "^index\\.qmd$"
+        "^index\\.html$"
+        "^index_files$"
+        "^figures$"
+        "^media$"
+        "^\\.zzcollab$"
+    )
+
+    if [[ ! -f "$rbuildignore" ]]; then
+        # Create new .Rbuildignore with blog entries
+        printf '%s\n' "${entries[@]}" > "$rbuildignore"
+        success "Created .Rbuildignore with blog post entries"
+        return 0
+    fi
+
+    # Add entries that don't already exist
+    local added=0
+    for entry in "${entries[@]}"; do
+        if ! grep -qF "$entry" "$rbuildignore" 2>/dev/null; then
+            echo "$entry" >> "$rbuildignore"
+            ((added++))
+        fi
+    done
+
+    if [[ $added -gt 0 ]]; then
+        success "Added $added blog-specific entries to .Rbuildignore"
+    else
+        info ".Rbuildignore already has blog entries"
+    fi
+}
+
 # Copy index.qmd template if it doesn't exist
 copy_index_template() {
     local target="analysis/paper/index.qmd"
@@ -208,6 +245,11 @@ create_symlinks() {
     create_symlink "../media" "media" "  media/"
     create_symlink "../data" "data" "  data/"
     cd ../..
+
+    echo ""
+
+    # Update .Rbuildignore for R CMD check compatibility
+    update_rbuildignore
 
     echo ""
     success "Symlink structure created!"
