@@ -303,7 +303,7 @@ R
 # Exit container - AUTO-SNAPSHOT HAPPENS AUTOMATICALLY!
 exit
 
-# ✨ NEW: Auto-snapshot architecture (October 2025)
+# NEW: Auto-snapshot architecture (October 2025)
 # - renv::snapshot() runs automatically on container exit
 # - No manual snapshot command required!
 # - renv.lock automatically updated and validated (pure shell)
@@ -1461,7 +1461,7 @@ renv::snapshot()  # Update renv.lock
 git add renv.lock
 git commit
 
-# ✨ ZZCOLLAB Docker auto-snapshot (October 2025):
+# ZZCOLLAB Docker auto-snapshot (October 2025):
 # With ZZCOLLAB Docker containers, snapshot happens automatically on exit!
 make docker-zsh
 renv::install("new-package")

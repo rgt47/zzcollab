@@ -143,7 +143,7 @@ make r
 # Exiting R triggers auto-snapshot!
 ```
 
-**✨ Auto-Snapshot**: When you exit the container, ZZCOLLAB automatically:
+**Auto-Snapshot**: When you exit the container, ZZCOLLAB automatically:
 1. Runs `renv::snapshot()` to capture package dependencies
 2. Validates package consistency (pure shell validation)
 3. Updates `renv.lock` with exact package versions
@@ -625,7 +625,7 @@ exit
 make docker-test  # All tests should pass
 ```
 
-**✨ Auto-Restore**: When R starts, ZZCOLLAB automatically restores packages from `renv.lock` if they're missing. No manual `renv::restore()` required!
+**Auto-Restore**: When R starts, ZZCOLLAB automatically restores packages from `renv.lock` if they're missing. No manual `renv::restore()` required.
 
 ## Step 7: Validate Reproducibility
 
@@ -758,7 +758,7 @@ When ready to write up results, simply add `analysis/paper/paper.Rmd`:
 
 ## Publishing as Blog Post
 
-Want to share your analysis as a blog post? ZZCOLLAB projects integrate seamlessly with Quarto blogs:
+Want to share your analysis as a blog post? ZZCOLLAB projects integrate with Quarto blogs:
 
 ```bash
 # Run the blog setup script to create symlink structure

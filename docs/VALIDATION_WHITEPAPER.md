@@ -120,7 +120,7 @@ This architecture provides the following benefits:
 
 ### 2.2 Workflow Integration
 
-This pipeline integrates seamlessly with the developer workflow:
+This pipeline integrates with the developer workflow:
 
 ```bash
 # Developer workflow (completely automatic)
@@ -350,7 +350,7 @@ docker run --entrypoint=/usr/local/bin/zzcollab-entrypoint.sh IMAGE /bin/zsh
 
 ### 4.1 The RSPM Binary Package Problem
 
-**Problem**: Posit Package Manager (RSPM) provides pre-compiled binary packages for R, dramatically accelerating Docker builds (10-20x faster than source compilation). However, RSPM requires 7-10 days to build binaries after a package version is released.
+**Problem**: Posit Package Manager (RSPM) provides pre-compiled binary packages for R, which accelerates Docker builds (10-20x faster than source compilation). However, RSPM requires 7-10 days to build binaries after a package version is released.
 
 **Scenario**:
 ```r
@@ -948,7 +948,7 @@ jobs:
           fi
 ```
 
-**Key benefit**: No R installation needed in CI/CD, dramatically faster workflow execution.
+**Key benefit**: No R installation needed in CI/CD, faster workflow execution.
 
 ### 8.2 Pre-commit Hook Integration
 

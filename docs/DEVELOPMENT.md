@@ -60,7 +60,7 @@ make docker-r              # R console only
 make docker-bash           # Bash shell
 ```
 
-**✨ Auto-Snapshot & Auto-Restore Architecture** (October-November 2025):
+**Auto-Snapshot & Auto-Restore Architecture** (October-November 2025):
 
 All `docker-*` targets automatically snapshot renv.lock on container exit and auto-restore on R startup:
 
@@ -287,7 +287,7 @@ git add renv.lock DESCRIPTION
 git commit -m "Add analysis packages"
 ```
 
-**✨ No manual `renv::snapshot()` or `renv::restore()` needed!** The auto-snapshot architecture automatically captures package changes when you exit the container, and auto-restore installs missing packages when you start R.
+**No manual `renv::snapshot()` or `renv::restore()` needed.** The auto-snapshot architecture automatically captures package changes when you exit the container, and auto-restore installs missing packages when you start R.
 
 ### Docker Profiles
 

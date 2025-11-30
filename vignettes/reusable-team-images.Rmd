@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-This vignette explains how to create **reusable team Docker images** that dramatically speed up project initialization. Rather than building a new Docker image from rocker base images for each project (15-20 minutes for comprehensive builds), you can:
+This vignette explains how to create **reusable team Docker images** that reduce project initialization time. Rather than building a new Docker image from rocker base images for each project (15-20 minutes for comprehensive builds), you can:
 
 1. **Build once**: Create a comprehensive team image with all your preferred packages
 2. **Push to Docker Hub**: Store the image in a central repository
@@ -796,4 +796,4 @@ Reusable team base images provide substantial time savings for teams and solo re
 - Organizations requiring standardized environments
 - Teams needing reproducible collaboration tools
 
-This approach transforms zzcollab from a per-project build system into a reusable infrastructure platform, dramatically improving developer productivity while maintaining full reproducibility guarantees.
+This approach transforms zzcollab from a per-project build system into a reusable infrastructure platform, improving developer productivity while maintaining reproducibility guarantees.

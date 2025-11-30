@@ -100,7 +100,7 @@ posts/palmer_penguins_part1/
 
 ## Why Dual Symlinks?
 
-Quarto blogs expect `posts/*/index.qmd` at the post root, but ZZCOLLAB places documents in `analysis/paper/`. The dual-symlink system solves this elegantly:
+Quarto blogs expect `posts/*/index.qmd` at the post root, but ZZCOLLAB places documents in `analysis/paper/`. The dual-symlink system addresses this:
 
 **At post root** (for Quarto and HTML resolution):
 ```

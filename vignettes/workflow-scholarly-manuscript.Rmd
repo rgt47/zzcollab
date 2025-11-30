@@ -935,7 +935,7 @@ exit
 
 ## Quarto for Enhanced Publishing
 
-Quarto (https://quarto.org) is the next-generation R Markdown [@xie2018].
+Quarto (https://quarto.org) is the successor to R Markdown [@xie2018].
 
 ### Install Quarto
 
@@ -1172,7 +1172,7 @@ At every stage, **analysis and manuscript live in the same project**. No copy-pa
 
 ## Publishing as Blog Post
 
-Want to share your manuscript findings as a blog post? ZZCOLLAB projects integrate seamlessly with Quarto blogs:
+Want to share your manuscript findings as a blog post? ZZCOLLAB projects integrate with Quarto blogs:
 
 ```bash
 # Run the blog setup script

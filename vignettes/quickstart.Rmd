@@ -571,7 +571,7 @@ Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
 exit
 ```
 
-**✨ Auto-Snapshot & Auto-Restore Architecture**
+**Auto-Snapshot & Auto-Restore Architecture**
 
 When you **exit the container**, ZZCOLLAB automatically:
 1. Runs `renv::snapshot()` to capture package dependencies in renv.lock

@@ -1038,7 +1038,7 @@ At every stage, you **never rebuild the project**. Just **add what you need, whe
 
 ## Sharing as Blog Post
 
-Want to share your package development journey or analysis as a blog post? ZZCOLLAB projects integrate seamlessly with Quarto blogs:
+Want to share your package development journey or analysis as a blog post? ZZCOLLAB projects integrate with Quarto blogs:
 
 ```bash
 # Run the blog setup script

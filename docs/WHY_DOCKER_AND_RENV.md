@@ -273,7 +273,7 @@ filter(data, x > 5)        # Behavior changed in new version!
 
 ### Scenario 6: .Rprofile Option Differences
 
-**The Silent Killer**: `.Rprofile` settings are invisible in code but dramatically affect behavior.
+**A Hidden Issue**: `.Rprofile` settings are invisible in code but significantly affect behavior.
 
 #### Example 6a: stringsAsFactors in data.frame()
 

@@ -1145,7 +1145,7 @@ ggplot(outcome_data, aes(x = Approach, y = Percentage, fill = Outcome)) +
 - **18% ran but produced different results** (numerical differences, package changes)
 - **8% successfully reproduced** original results
 
-Docker containers dramatically improve long-term reproducibility:
+Docker containers substantially improve long-term reproducibility:
 
 ```{bash long-term-test, eval=FALSE}
 # Paper published: January 2024
@@ -2061,7 +2061,7 @@ knitr::kable(success_2024, caption = "Spring 2024: Docker-First Approach")
 
 - **Completion rate**: 87% → 100% (15% increase)
 - **Student satisfaction**: 3.2/5 → 4.8/5 (50% increase)
-- **Final project quality**: Instructor reports "dramatically improved" with students focusing on analysis rather than debugging
+- **Final project quality**: Instructor reports significant improvement with students focusing on analysis rather than debugging
 - **Reproducible final projects**: 12% → 98% (students submit Docker environments with projects)
 
 ## Scalability: From One Course to Department-Wide

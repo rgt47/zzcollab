@@ -30,7 +30,7 @@ The unified paradigm **increases** compatibility with rrtools by:
 1. **Direct Alignment**: Single structure matches rrtools philosophy exactly
 2. **No Paradigm Choice**: Users don't choose workflow upfront (matches rrtools)
 3. **Natural Evolution**: Projects evolve from analysis → manuscript → package organically
-4. **Simplified Migration**: Existing rrtools projects adopt ZZCOLLAB structure seamlessly
+4. **Simplified Migration**: Existing rrtools projects adopt ZZCOLLAB structure directly
 
 **The analysis below remains valuable** for understanding structural evolution, but the current ZZCOLLAB framework is now **more aligned with rrtools** than when this analysis was written.
 

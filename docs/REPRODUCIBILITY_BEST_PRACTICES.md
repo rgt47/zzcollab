@@ -382,6 +382,6 @@ Reproducible research with ZZCOLLAB requires:
 4. **Document everything**: Data provenance, analytical decisions, package purposes
 5. **Trust but verify**: CI/CD provides safety net, but local validation prevents issues
 
-The goal is to make reproducibility automatic and effortless, not burdensome.
+The goal is to make reproducibility automatic and straightforward, not burdensome.
 ZZCOLLAB provides the infrastructure; these best practices ensure it is used
 effectively.

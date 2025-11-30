@@ -1230,7 +1230,7 @@ ZZCOLLAB provides automated dependency checking to ensure reproducibility:
 make check-renv  # Uses grep, awk, jq - NO R required!
 ```
 
-**✨ NEW: Pure Shell Validation** (October 2025):
+**Pure Shell Validation** (October 2025):
 
 This pure shell validation performs comprehensive checks without requiring R on the host:
 

@@ -130,6 +130,11 @@ update_rbuildignore() {
         return 0
     fi
 
+    # Ensure file ends with newline before appending
+    if [[ -s "$rbuildignore" ]] && [[ "$(tail -c 1 "$rbuildignore" | wc -l)" -eq 0 ]]; then
+        echo "" >> "$rbuildignore"
+    fi
+
     # Add entries that don't already exist
     local added=0
     for entry in "${entries[@]}"; do

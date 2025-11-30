@@ -839,7 +839,7 @@ zzcollab --config set team-name "datasci"
 zzcollab --config set profile-name "analysis"
 zzcollab --config set dotfiles-dir "~/dotfiles"
 
-# Create projects effortlessly
+# Create projects with configured defaults
 mkdir customer-churn && cd customer-churn
 zzcollab  # Uses all configured defaults
 
@@ -1358,7 +1358,7 @@ profiles:
 
 # Summary
 
-ZZCOLLAB's configuration system provides powerful, flexible control over reproducible research environments:
+ZZCOLLAB's configuration system provides control over reproducible research environments through multiple layers:
 
 ## Key Concepts
 

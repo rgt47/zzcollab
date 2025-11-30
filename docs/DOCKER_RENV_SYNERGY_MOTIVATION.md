@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-While Docker and renv are each powerful tools for addressing different aspects of reproducibility, **neither tool alone can solve the complete reproducibility challenge** facing data analysis projects. Docker addresses system-level environment consistency, while renv manages R package dependencies—but the gap between these layers creates critical vulnerabilities that lead to reproducibility failures.
+While Docker and renv are each effective tools for addressing different aspects of reproducibility, **neither tool alone can solve the complete reproducibility challenge** facing data analysis projects. Docker addresses system-level environment consistency, while renv manages R package dependencies—but the gap between these layers creates critical vulnerabilities that lead to reproducibility failures.
 
 **The Core Challenge**: Modern data science requires **multi-layered reproducibility** spanning:
 - **Operating system** and system libraries (addressed by Docker)

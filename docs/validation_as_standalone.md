@@ -481,7 +481,7 @@ add_to_renv_lock <- function(package, version = NULL, path = ".") {
 Imports:
     desc,        # DESCRIPTION file manipulation (r-lib)
     jsonlite,    # JSON parsing for renv.lock
-    cli,         # Beautiful console output
+    cli,         # Console output formatting
     rlang,       # Error handling and tidyeval
     httr         # CRAN API queries (or curl)
 ```
@@ -611,7 +611,7 @@ fetch_cran_info <- function(package) {
 
 #### 4. User Interface with `cli`
 
-**Beautiful output with colors and symbols**:
+**Formatted output with colors and symbols**:
 
 ```r
 library(cli)
@@ -1336,7 +1336,7 @@ report <- report_packages()
 - ✅ **Comprehensive Detection**: Finds packages from `library()`, `require()`, `pkg::function()`, and roxygen
 - ✅ **Smart Filtering**: 19 filters to avoid false positives
 - ✅ **Auto-Fix**: Automatically add missing packages from CRAN
-- ✅ **Beautiful Output**: Clear, colored console messages
+- ✅ **Formatted Output**: Clear, colored console messages
 - ✅ **Cross-Platform**: Works on Windows, macOS, and Linux
 - ✅ **RStudio Integration**: Addin for GUI workflow
 
@@ -1641,7 +1641,7 @@ check_packages <- function(strict = TRUE,
 - ✅ renv.lock parsing (using `jsonlite`)
 - ✅ Validation logic (code ↔ DESCRIPTION ↔ renv.lock)
 - ✅ Auto-fix for CRAN packages
-- ✅ Beautiful CLI output (using `cli`)
+- ✅ Formatted CLI output (using `cli`)
 
 **Testing**:
 - ✅ Unit tests for all core functions
@@ -1945,7 +1945,7 @@ check_packages <- function(strict = TRUE,
 - [ ] Implement `check_packages()` main function
 - [ ] Implement `fix_packages()` convenience wrapper
 - [ ] Implement `report_packages()` status function
-- [ ] Add beautiful output with `cli`
+- [ ] Add formatted output with `cli`
 - [ ] Write integration tests
 
 **Day 14: Polish & Documentation**

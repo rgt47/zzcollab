@@ -468,7 +468,7 @@ Layer 2 (renv): Personal package additions
     - Team pulls: git pull && renv::restore()
 ```
 
-**This elegantly avoids**:
+**This avoids**:
 - Slow Docker rebuilds for every package change
 - Forcing everyone to rebuild when one person adds a package
 - Package conflicts (everyone gets superset via renv.lock)
@@ -792,7 +792,7 @@ No way to:
 
 ### Dynamic renv Management
 
-The Docker+renv two-layer design genuinely solves team collaboration problem elegantly.
+The Docker+renv two-layer design addresses the team collaboration problem effectively.
 
 **This is the framework's key innovation.**
 

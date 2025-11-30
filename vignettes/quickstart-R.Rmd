@@ -458,7 +458,7 @@ rebuild("docker-check-renv")
 
 ## Working in RStudio
 
-All R functions work seamlessly in RStudio:
+All R functions work in RStudio:
 
 ```{r}
 # In RStudio console:
@@ -690,9 +690,9 @@ ZZCOLLAB provides comprehensive R interface with 25+ functions:
 
 ## Benefits of R Interface
 
-**Seamless Integration**:
+**R Environment Integration**:
 - Work entirely within R/RStudio
-- No context switching to terminal
+- Reduced context switching to terminal
 - Scriptable workflows
 - Integration with RMarkdown
 

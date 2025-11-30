@@ -296,7 +296,7 @@ library(dplyr)  # ✅ Works immediately
 # Clean handoff from host to container
 make check-renv              # Sync state
 make r                       # Enter with complete environment
-# Work continues seamlessly
+# Work continues without interruption
 ```
 
 ### 4. Maintains Best Practices
