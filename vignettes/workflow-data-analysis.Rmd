@@ -128,21 +128,19 @@ Following best practices for data documentation [@wilson2017], ZZCOLLAB provides
 ### Add Raw Data
 
 ```bash
-# Enter Docker container
-make docker-zsh
+# Enter Docker container (starts R directly)
+make r
 
-# Inside container: Install palmerpenguins
-R
-> renv::install("palmerpenguins")
+# Inside R: Install palmerpenguins
+> install.packages("palmerpenguins")
 >
 > # Save raw data
 > library(palmerpenguins)
 > write.csv(penguins, "analysis/data/raw_data/penguins.csv", row.names = FALSE)
 >
-> quit()
+> q()
 
-# Exit container (auto-snapshot runs!)
-exit
+# Exiting R triggers auto-snapshot!
 ```
 
 **✨ Auto-Snapshot**: When you exit the container, ZZCOLLAB automatically:
@@ -341,17 +339,19 @@ cat("\nModel results saved to analysis/data/derived_data/model_coefficients.csv\
 ### Run Analysis Pipeline
 
 ```bash
-# Enter container
-make docker-zsh
+# Enter container shell
+make docker-sh
 
 # Run complete analysis pipeline
 Rscript analysis/scripts/01_prepare_data.R
 Rscript analysis/scripts/02_explore_data.R
 Rscript analysis/scripts/03_statistical_analysis.R
 
-# Exit container (auto-snapshot!)
+# Exit container (auto-snapshot runs on R exit!)
 exit
 ```
+
+**Tip**: Use `make r` if you prefer to work directly in R. Use `make docker-sh` if you need shell access for running multiple scripts.
 
 ## Step 4: Extract Reusable Functions (Progressive Disclosure)
 
@@ -451,13 +451,10 @@ Testing validates computational correctness and prevents regressions [@wilson201
 ### Initialize Testing Infrastructure
 
 ```bash
-make docker-zsh
+make r
 
-R
 > usethis::use_testthat()
-> quit()
-
-exit
+> q()
 ```
 
 ### Create Tests for Data Preparation
@@ -607,25 +604,28 @@ cd penguin-analysis
 # Build Docker environment (ensures identical computational environment)
 make docker-build
 
-# Enter container
-make docker-zsh
+# Enter container - auto-restore runs on R startup!
+make r
 
-# Inside container: Restore exact package versions
-R
-> renv::restore()  # Gets exact versions from renv.lock
-> quit()
+# Inside R: packages are automatically restored from renv.lock
+# Run analysis scripts
+> source("analysis/scripts/01_prepare_data.R")
+> source("analysis/scripts/02_explore_data.R")
+> source("analysis/scripts/03_statistical_analysis.R")
+> q()
 
-# Run complete analysis pipeline
+# Or use shell for batch execution
+make docker-sh
 Rscript analysis/scripts/01_prepare_data.R
 Rscript analysis/scripts/02_explore_data.R
 Rscript analysis/scripts/03_statistical_analysis.R
-
-# Exit container
 exit
 
 # Verify reproducibility
 make docker-test  # All tests should pass
 ```
+
+**✨ Auto-Restore**: When R starts, ZZCOLLAB automatically restores packages from `renv.lock` if they're missing. No manual `renv::restore()` required!
 
 ## Step 7: Validate Reproducibility
 
@@ -755,6 +755,19 @@ When ready to write up results, simply add `analysis/paper/paper.Rmd`:
 ```
 
 **No restructuring required** - the unified compendium serves both analysis and manuscript [@marwick2018].
+
+## Publishing as Blog Post
+
+Want to share your analysis as a blog post? ZZCOLLAB projects integrate seamlessly with Quarto blogs:
+
+```bash
+# Run the blog setup script to create symlink structure
+modules/setup_symlinks.sh
+
+# See vignette: "Blog Post Development with ZZCOLLAB"
+```
+
+The setup script creates a dual-symlink structure that lets Quarto find your `index.qmd` while you work in the familiar `analysis/paper/` directory.
 
 ## Converting to R Package (Month 3+)
 

@@ -147,30 +147,41 @@ mkdir palmer_penguins_part1 && cd palmer_penguins_part1
 
 # Initialize with publishing profile (includes Quarto)
 zzcollab -r ubuntu_standard_publishing
-
-# Create media directories
-mkdir -p analysis/media/{images,audio,video}
 ```
 
-## Step 2: Create Symlink Structure
+## Step 2: Set Up Blog Structure
+
+Run the `setup_symlinks.sh` script to create the blog post structure:
 
 ```bash
-# From post root, create symlinks for Quarto/HTML
-ln -s analysis/paper/index.qmd index.qmd
-ln -s analysis/figures figures
-ln -s analysis/media media
-ln -s analysis/data data
+# Run the setup script (creates symlinks, media dirs, and index.qmd template)
+modules/setup_symlinks.sh
+```
 
-# From analysis/paper/, create symlinks for intuitive editing
-cd analysis/paper
-ln -s ../figures figures
-ln -s ../media media
-ln -s ../data data
-cd ../..
+This single command:
 
-# Verify structure
-ls -la           # Should show symlinks at root
-ls -la analysis/paper/  # Should show symlinks to siblings
+1. Creates media directories (`analysis/media/{images,audio,video}/`)
+2. Copies the `index.qmd` template to `analysis/paper/`
+3. Creates root-level symlinks for Quarto compatibility
+4. Creates `analysis/paper/` symlinks for intuitive editing
+
+**Verify the structure:**
+
+```bash
+# Check root-level symlinks
+ls -la
+
+# Check analysis/paper/ symlinks
+ls -la analysis/paper/
+
+# Check status anytime
+modules/setup_symlinks.sh --status
+```
+
+**To remove blog structure** (revert to standard ZZCOLLAB project):
+
+```bash
+modules/setup_symlinks.sh --remove
 ```
 
 ## Step 3: Add Static Media Assets
@@ -198,9 +209,10 @@ cat > analysis/media/images/README.md << 'EOF'
 EOF
 ```
 
-## Step 4: Create Blog Post
+## Step 4: Edit Blog Post
 
-Create `analysis/paper/index.qmd`:
+The `setup_symlinks.sh` script created a template at `analysis/paper/index.qmd`.
+Edit it to customize your post:
 
 ````markdown
 ---
@@ -408,38 +420,6 @@ docker-post-render:
 docker-post-preview:
 	docker run --rm -p 8080:8080 -v "$$(pwd):/project" -w /project $(DOCKER_IMAGE) \
 		quarto preview index.qmd --host 0.0.0.0 --port 8080
-```
-
-## Step 8: Create Setup Script
-
-To automate symlink creation, add `setup_symlinks.sh`:
-
-```bash
-#!/bin/bash
-# setup_symlinks.sh - Create symlink structure for blog post
-
-set -e
-
-# Create symlinks at post root (for Quarto/HTML)
-[ ! -L index.qmd ] && ln -s analysis/paper/index.qmd index.qmd
-[ ! -L figures ] && ln -s analysis/figures figures
-[ ! -L media ] && ln -s analysis/media media
-[ ! -L data ] && ln -s analysis/data data
-
-# Create symlinks in analysis/paper/ (for intuitive editing)
-cd analysis/paper
-[ ! -L figures ] && ln -s ../figures figures
-[ ! -L media ] && ln -s ../media media
-[ ! -L data ] && ln -s ../data data
-
-echo "Symlinks created successfully"
-```
-
-Make it executable and run:
-
-```bash
-chmod +x setup_symlinks.sh
-./setup_symlinks.sh
 ```
 
 # Integration with Parent Blog

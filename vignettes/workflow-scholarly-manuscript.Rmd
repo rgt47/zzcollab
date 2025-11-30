@@ -150,18 +150,16 @@ Complete your analysis first using the standard data analysis workflow (see "Dat
 ### Analysis Pipeline Example
 
 ```bash
-# Enter Docker container
-make docker-zsh
+# Enter Docker container (starts R directly)
+make r
 
-# Inside container: Install packages
-R
-> renv::install("palmerpenguins")
-> renv::install("tidyverse")
-> renv::install("broom")
-> quit()
+# Inside R: Install packages
+> install.packages("palmerpenguins")
+> install.packages("tidyverse")
+> install.packages("broom")
+> q()
 
-# Exit (auto-snapshot!)
-exit
+# Exiting R triggers auto-snapshot!
 ```
 
 Create analysis scripts in `analysis/scripts/`:
@@ -173,7 +171,7 @@ Create analysis scripts in `analysis/scripts/`:
 Run complete analysis:
 
 ```bash
-make docker-zsh
+make docker-sh
 
 Rscript analysis/scripts/01_prepare_data.R
 Rscript analysis/scripts/02_exploratory_analysis.R
@@ -182,6 +180,8 @@ Rscript analysis/scripts/04_generate_figures.R
 
 exit
 ```
+
+**Tip**: Use `make r` if you prefer to work directly in R. Use `make docker-sh` for shell access when running batch scripts.
 
 ## Step 3: Create Manuscript Structure
 
@@ -531,7 +531,7 @@ Create `analysis/paper/references.bib`:
 ### Download Citation Style
 
 ```bash
-make docker-zsh
+make docker-sh
 
 # Download citation style (Ecology Letters example)
 wget https://raw.githubusercontent.com/citation-style-language/styles/master/ecology-letters.csl \
@@ -545,7 +545,7 @@ exit
 ### Render to PDF (LaTeX)
 
 ```bash
-make docker-zsh
+make docker-sh
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "pdf_document")
@@ -561,7 +561,7 @@ Output: `analysis/paper/paper.pdf`
 Useful for collaborators who prefer Microsoft Word:
 
 ```bash
-make docker-zsh
+make docker-sh
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "word_document")
@@ -577,7 +577,7 @@ Output: `analysis/paper/paper.docx`
 Great for web sharing and interactive code:
 
 ```bash
-make docker-zsh
+make docker-sh
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "html_document")
@@ -591,7 +591,7 @@ Output: `analysis/paper/paper.html`
 ### Render to All Formats
 
 ```bash
-make docker-zsh
+make docker-sh
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "all")
@@ -904,7 +904,7 @@ Many journals provide R Markdown templates [@xie2018].
 ### Using rticles Package
 
 ```bash
-make docker-zsh
+make docker-sh
 
 R
 > install.packages("rticles")
@@ -941,7 +941,7 @@ Quarto (https://quarto.org) is the next-generation R Markdown [@xie2018].
 
 ```bash
 # In publishing Docker profile, Quarto is pre-installed
-make docker-zsh
+make docker-sh
 
 quarto --version
 
@@ -990,7 +990,7 @@ ggplot(penguins, aes(x = body_mass_g, y = bill_length_mm, color = species)) +
 ### Render Quarto Document
 
 ```bash
-make docker-zsh
+make docker-sh
 
 quarto render analysis/paper/paper.qmd --to all
 
@@ -1129,7 +1129,7 @@ my-project/
 ### Week 6-8: Iterative Writing
 ```
 # Daily workflow:
-make docker-zsh
+make docker-sh
 # Edit paper.Rmd
 # Update analysis if needed
 exit  # Auto-snapshot!
@@ -1169,6 +1169,19 @@ At every stage, **analysis and manuscript live in the same project**. No copy-pa
 - No version sync issues between code and text
 - Complete reproducibility - manuscript rebuilds from data
 - Natural progression from exploration to publication
+
+## Publishing as Blog Post
+
+Want to share your manuscript findings as a blog post? ZZCOLLAB projects integrate seamlessly with Quarto blogs:
+
+```bash
+# Run the blog setup script
+modules/setup_symlinks.sh
+
+# See vignette: "Blog Post Development with ZZCOLLAB"
+```
+
+Blog posts can complement formal publications by reaching broader audiences and providing accessible summaries of research findings.
 
 # References
 
