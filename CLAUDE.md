@@ -529,6 +529,27 @@ zzcollab_help("config")            # Configuration guide
 
 **Recent Major Changes**:
 
+### December 1, 2025 - Multi-Language Reproducibility Documentation
+
+**New documentation** - Analysis of ZZCOLLAB's reproducibility limitations with multi-language documents:
+
+- **Created `docs/zzcollab_python.md`**: Comprehensive analysis of multi-language reproducibility gaps
+  - Documents ZZCOLLAB's R-centric Five Pillars design
+  - Explains why Python (via reticulate) and Observable JS break reproducibility guarantees
+  - renv.lock tracks R packages only; Python packages and JS libraries are untracked
+  - Provides risk matrix: Pure R (Low) → R+Python+OJS (Very High)
+  - Documents concrete failure scenarios (version drift over time)
+  - Four potential solutions: extend ZZCOLLAB, Docker-first, separate environments, language-agnostic tools (pixi, conda-lock, nix)
+  - Recommendations for strict reproducibility vs educational content
+
+- **Key technical points documented**:
+  - `reticulate` package is tracked, but Python environment is NOT
+  - Observable JS loads from CDN with floating/unpinned versions by default
+  - Version pinning syntax for OJS: `Plot = require("@observablehq/plot@0.6.11")`
+  - Manual `requirements.txt` or `environment.yml` needed for Python reproducibility
+
+- **Scope clarification**: ZZCOLLAB provides complete R reproducibility; multi-language reproducibility is user responsibility
+
 ### November 30, 2025 - Documentation Tone Standardization
 
 **Scholarly tone enforcement** - Systematic removal of promotional language from all documentation:
