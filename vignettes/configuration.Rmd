@@ -28,7 +28,7 @@ ZZCOLLAB's configuration system provides flexible control over Docker environmen
 
 - **Multi-layered configuration**: User, project, system, and built-in defaults
 - **Docker profile system**: 14+ specialized environments from 200MB to 3.5GB
-- **Dynamic package management**: Add packages via `renv::install()` as needed
+- **Dynamic package management**: Add packages via `install.packages()` with automatic snapshot/restore
 - **Two-layer architecture**: Docker profiles (team/shared) + renv packages (personal/flexible)
 - **CLI and R interfaces**: Work via command line or entirely within R/RStudio
 
@@ -468,7 +468,7 @@ Docker profiles are pre-configured environments optimized for specific research 
 - **System libraries** (e.g., GDAL for geospatial, JAGS for Bayesian)
 - **R packages** (pre-installed for fast container startup)
 
-Profiles provide the Docker environment (Layer 1), while additional packages are added dynamically via `renv::install()` (Layer 2).
+Profiles provide the Docker environment (Layer 1), while additional packages are added dynamically via `install.packages()` with automatic snapshot/restore on container exit (Layer 2).
 
 ## Available Profiles
 
@@ -642,8 +642,9 @@ zzcollab -b rocker/r-ver:latest \
   --pkgs modeling \
   -t myteam -p bayes-study
 
-# Inside container, add specialized Bayesian packages via renv:
-# renv::install(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))
+# Inside container, add specialized Bayesian packages:
+# install.packages(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))
+# (Auto-snapshot on exit saves these to renv.lock)
 ```
 
 ### Example: Web Scraping + NLP Environment
@@ -656,7 +657,8 @@ zzcollab -b rocker/rstudio:latest \
   -t myteam -p nlp-scraper
 
 # Add NLP packages dynamically:
-# renv::install(c("rvest", "httr", "xml2", "tidytext", "textrecipes", "spacyr"))
+# install.packages(c("rvest", "httr", "xml2", "tidytext", "textrecipes", "spacyr"))
+# (Auto-snapshot on exit saves these to renv.lock)
 ```
 
 ### Example: Lightweight Reporting
@@ -669,7 +671,8 @@ zzcollab -b rocker/r-alpine:latest \
   -t myteam -p reports
 
 # Add reporting packages:
-# renv::install(c("rmarkdown", "knitr", "gt", "flextable"))
+# install.packages(c("rmarkdown", "knitr", "gt", "flextable"))
+# (Auto-snapshot on exit saves these to renv.lock)
 ```
 
 # Two-Layer Package Management Architecture
@@ -700,7 +703,7 @@ make docker-push-team
 
 ## Layer 2: Dynamic renv (Personal/Flexible)
 
-**What**: Packages added via `renv::install()` inside containers
+**What**: Packages added via `install.packages()` inside containers with automatic snapshot on exit
 **Control**: Team members install as needed
 **Flexible**: Each person can add different packages
 **Purpose**: Analysis-specific packages, reproducible dependency tracking
@@ -709,16 +712,15 @@ make docker-push-team
 # Inside container
 make r
 
-# Install packages as needed
-renv::install("tidymodels")
-renv::install("pins")
-renv::install("vetiver")
+# Install packages as needed (standard R command)
+install.packages("tidymodels")
+install.packages("pins")
+install.packages("vetiver")
 
-# Save to renv.lock
-renv::snapshot()
+# When you exit R, packages are automatically saved to renv.lock (via .Last() in .Rprofile)
+q()
 
-# Exit and commit
-exit
+# Back on host - commit the updated renv.lock
 git add renv.lock DESCRIPTION
 git commit -m "Add ML deployment packages"
 git push
@@ -750,8 +752,9 @@ zzcollab --use-team-image
 make r
 
 # Add RNA-seq specific packages
-renv::install(c("tximport", "DESeq2", "apeglm", "EnhancedVolcano"))
-renv::snapshot()
+install.packages(c("tximport", "DESeq2", "apeglm", "EnhancedVolcano"))
+# Auto-snapshot on exit captures these packages in renv.lock
+q()  # Exit R - snapshot happens automatically
 ```
 
 **Team Member Bob (Layer 2 - ChIP-seq)**:
@@ -762,8 +765,9 @@ zzcollab --use-team-image
 make r
 
 # Add ChIP-seq specific packages
-renv::install(c("ChIPseeker", "ChIPpeakAnno", "DiffBind", "csaw"))
-renv::snapshot()
+install.packages(c("ChIPseeker", "ChIPpeakAnno", "DiffBind", "csaw"))
+# Auto-snapshot on exit captures these packages in renv.lock
+q()  # Exit R - snapshot happens automatically
 ```
 
 **Result**:
@@ -784,8 +788,9 @@ cd rnaseq-study
 zzcollab --profile-name minimal  # or analysis, or bioinformatics
 make r
 
-# renv restores EXACT packages Alice used
-renv::restore()  # Installs tximport, DESeq2, apeglm, EnhancedVolcano at exact versions
+# renv automatically restores EXACT packages Alice used on R startup
+# Auto-restore installs: tximport, DESeq2, apeglm, EnhancedVolcano at exact versions
+# (No manual renv::restore() call needed - happens automatically)
 
 # Run analysis - identical results
 Rscript analysis/scripts/differential_expression.R
@@ -948,8 +953,9 @@ zzcollab --use-team-image  # Gets appropriate base image
 
 # Add analysis-specific packages
 make r
-renv::install("workflow_specific_package")
-renv::snapshot()
+install.packages("workflow_specific_package")
+# Auto-snapshot on exit captures the package
+q()  # Exit R - snapshot happens automatically
 ```
 
 ## Scenario 4: Data Science Consulting Firm
@@ -993,8 +999,9 @@ zzcollab -t datasci-firm -p client-churn --profile-name modeling
 make r
 
 # Add client-specific packages
-renv::install(c("probably", "workflowsets", "themis"))
-renv::snapshot()
+install.packages(c("probably", "workflowsets", "themis"))
+# Auto-snapshot on exit captures these packages
+q()  # Exit R - snapshot happens automatically
 
 # All projects use same Q1 2025 foundation
 # Client-specific packages in renv.lock
@@ -1087,8 +1094,9 @@ vim ./zzcollab.yaml  # Remove profile-name to use user default
 ```bash
 # Instead of geospatial, use:
 zzcollab --profile-name analysis -t myteam -p study
-# Then add spatial packages via renv:
-# renv::install(c("sf", "terra", "raster"))
+# Then add spatial packages via install.packages():
+# install.packages(c("sf", "terra", "raster"))
+# (Auto-snapshot on exit saves these to renv.lock)
 ```
 
 **Solution 2**: Force AMD64 platform
@@ -1394,8 +1402,9 @@ zzcollab --use-team-image
 **Package management**:
 ```bash
 # Inside container:
-renv::install("package")
-renv::snapshot()
+install.packages("package")
+# Auto-snapshot on exit - no manual snapshot needed
+q()  # Exit R - snapshot happens automatically
 ```
 
 ## Further Reading
