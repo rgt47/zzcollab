@@ -70,6 +70,36 @@ jobs:
         echo "Running dockerfile generator tests..."
         bats tests/shell/test-dockerfile-generator.bats
 
+    - name: Run help module tests
+      run: |
+        echo "Running help module tests..."
+        bats tests/shell/test-help.bats
+
+    - name: Run rpackage module tests
+      run: |
+        echo "Running rpackage module tests..."
+        bats tests/shell/test-rpackage.bats
+
+    - name: Run github module tests
+      run: |
+        echo "Running github module tests..."
+        bats tests/shell/test-github.bats
+
+    - name: Run cicd module tests
+      run: |
+        echo "Running cicd module tests..."
+        bats tests/shell/test-cicd.bats
+
+    - name: Run structure module tests
+      run: |
+        echo "Running structure module tests..."
+        bats tests/shell/test-structure.bats
+
+    - name: Run devtools module tests
+      run: |
+        echo "Running devtools module tests..."
+        bats tests/shell/test-devtools.bats
+
     - name: Generate test coverage report
       if: always()
       run: |
@@ -220,12 +250,126 @@ jobs:
           echo "- **Pass Rate**: ${dockerfile_percent}%"
           echo ""
 
+          # Help module tests
+          echo "### Help Module (modules/help.sh)"
+          echo ""
+          help_result=$(bats tests/shell/test-help.bats 2>&1 || true)
+          help_total=$(echo "$help_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          help_passed=$(echo "$help_result" | grep -c '^ok ' || echo "0")
+          help_failed=$((help_total - help_passed))
+          if [ "$help_total" -gt 0 ]; then
+            help_percent=$(awk "BEGIN {printf \"%.1f\", ($help_passed / $help_total) * 100}")
+          else
+            help_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $help_total"
+          echo "- **Passing**: $help_passed"
+          echo "- **Failing**: $help_failed"
+          echo "- **Pass Rate**: ${help_percent}%"
+          echo ""
+
+          # Rpackage module tests
+          echo "### R Package Module (modules/rpackage.sh)"
+          echo ""
+          rpackage_result=$(bats tests/shell/test-rpackage.bats 2>&1 || true)
+          rpackage_total=$(echo "$rpackage_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          rpackage_passed=$(echo "$rpackage_result" | grep -c '^ok ' || echo "0")
+          rpackage_failed=$((rpackage_total - rpackage_passed))
+          if [ "$rpackage_total" -gt 0 ]; then
+            rpackage_percent=$(awk "BEGIN {printf \"%.1f\", ($rpackage_passed / $rpackage_total) * 100}")
+          else
+            rpackage_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $rpackage_total"
+          echo "- **Passing**: $rpackage_passed"
+          echo "- **Failing**: $rpackage_failed"
+          echo "- **Pass Rate**: ${rpackage_percent}%"
+          echo ""
+
+          # GitHub module tests
+          echo "### GitHub Module (modules/github.sh)"
+          echo ""
+          github_result=$(bats tests/shell/test-github.bats 2>&1 || true)
+          github_total=$(echo "$github_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          github_passed=$(echo "$github_result" | grep -c '^ok ' || echo "0")
+          github_failed=$((github_total - github_passed))
+          if [ "$github_total" -gt 0 ]; then
+            github_percent=$(awk "BEGIN {printf \"%.1f\", ($github_passed / $github_total) * 100}")
+          else
+            github_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $github_total"
+          echo "- **Passing**: $github_passed"
+          echo "- **Failing**: $github_failed"
+          echo "- **Pass Rate**: ${github_percent}%"
+          echo ""
+
+          # CICD module tests
+          echo "### CI/CD Module (modules/cicd.sh)"
+          echo ""
+          cicd_result=$(bats tests/shell/test-cicd.bats 2>&1 || true)
+          cicd_total=$(echo "$cicd_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          cicd_passed=$(echo "$cicd_result" | grep -c '^ok ' || echo "0")
+          cicd_failed=$((cicd_total - cicd_passed))
+          if [ "$cicd_total" -gt 0 ]; then
+            cicd_percent=$(awk "BEGIN {printf \"%.1f\", ($cicd_passed / $cicd_total) * 100}")
+          else
+            cicd_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $cicd_total"
+          echo "- **Passing**: $cicd_passed"
+          echo "- **Failing**: $cicd_failed"
+          echo "- **Pass Rate**: ${cicd_percent}%"
+          echo ""
+
+          # Structure module tests
+          echo "### Structure Module (modules/structure.sh)"
+          echo ""
+          structure_result=$(bats tests/shell/test-structure.bats 2>&1 || true)
+          structure_total=$(echo "$structure_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          structure_passed=$(echo "$structure_result" | grep -c '^ok ' || echo "0")
+          structure_failed=$((structure_total - structure_passed))
+          if [ "$structure_total" -gt 0 ]; then
+            structure_percent=$(awk "BEGIN {printf \"%.1f\", ($structure_passed / $structure_total) * 100}")
+          else
+            structure_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $structure_total"
+          echo "- **Passing**: $structure_passed"
+          echo "- **Failing**: $structure_failed"
+          echo "- **Pass Rate**: ${structure_percent}%"
+          echo ""
+
+          # Devtools module tests
+          echo "### Development Tools Module (modules/devtools.sh)"
+          echo ""
+          devtools_result=$(bats tests/shell/test-devtools.bats 2>&1 || true)
+          devtools_total=$(echo "$devtools_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          devtools_passed=$(echo "$devtools_result" | grep -c '^ok ' || echo "0")
+          devtools_failed=$((devtools_total - devtools_passed))
+          if [ "$devtools_total" -gt 0 ]; then
+            devtools_percent=$(awk "BEGIN {printf \"%.1f\", ($devtools_passed / $devtools_total) * 100}")
+          else
+            devtools_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $devtools_total"
+          echo "- **Passing**: $devtools_passed"
+          echo "- **Failing**: $devtools_failed"
+          echo "- **Pass Rate**: ${devtools_percent}%"
+          echo ""
+
           # Overall summary
           echo "## Overall Test Coverage"
           echo ""
-          total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total + dockerfile_total))
-          total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed + dockerfile_passed))
-          total_failed=$((config_failed + docker_failed + (cli_total - cli_passed) + validation_failed + profile_failed + e2e_failed + dockerfile_failed))
+          total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total + dockerfile_total + help_total + rpackage_total + github_total + cicd_total + structure_total + devtools_total))
+          total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed + dockerfile_passed + help_passed + rpackage_passed + github_passed + cicd_passed + structure_passed + devtools_passed))
+          total_failed=$((config_failed + docker_failed + (cli_total - cli_passed) + validation_failed + profile_failed + e2e_failed + dockerfile_failed + help_failed + rpackage_failed + github_failed + cicd_failed + structure_failed + devtools_failed))
           if [ "$total_tests" -gt 0 ]; then
             total_percent=$(awk "BEGIN {printf \"%.1f\", ($total_passed / $total_tests) * 100}")
           else
@@ -268,6 +412,12 @@ jobs:
           echo "| \`tests/shell/test-profile-validation.bats\` | $profile_total | \`modules/profile_validation.sh\` | ✅ $profile_passed/$profile_total passing |"
           echo "| \`tests/integration/test-e2e-reproducibility.bats\` | $e2e_total | Five Pillars Integration | ✅ $e2e_passed/$e2e_total passing |"
           echo "| \`tests/shell/test-dockerfile-generator.bats\` | $dockerfile_total | \`modules/dockerfile_generator.sh\` | ✅ $dockerfile_passed/$dockerfile_total passing |"
+          echo "| \`tests/shell/test-help.bats\` | $help_total | \`modules/help.sh\` | ✅ $help_passed/$help_total passing |"
+          echo "| \`tests/shell/test-rpackage.bats\` | $rpackage_total | \`modules/rpackage.sh\` | ✅ $rpackage_passed/$rpackage_total passing |"
+          echo "| \`tests/shell/test-github.bats\` | $github_total | \`modules/github.sh\` | ✅ $github_passed/$github_total passing |"
+          echo "| \`tests/shell/test-cicd.bats\` | $cicd_total | \`modules/cicd.sh\` | ✅ $cicd_passed/$cicd_total passing |"
+          echo "| \`tests/shell/test-structure.bats\` | $structure_total | \`modules/structure.sh\` | ✅ $structure_passed/$structure_total passing |"
+          echo "| \`tests/shell/test-devtools.bats\` | $devtools_total | \`modules/devtools.sh\` | ✅ $devtools_passed/$devtools_total passing |"
           echo ""
 
           # CI/CD status
@@ -371,9 +521,39 @@ jobs:
         dockerfile_total=$(echo "$dockerfile_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
         dockerfile_passed=$(echo "$dockerfile_output" | grep -c '^ok ' || echo "0")
 
+        # Help module tests
+        help_output=$(bats tests/shell/test-help.bats 2>&1 || true)
+        help_total=$(echo "$help_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        help_passed=$(echo "$help_output" | grep -c '^ok ' || echo "0")
+
+        # Rpackage module tests
+        rpackage_output=$(bats tests/shell/test-rpackage.bats 2>&1 || true)
+        rpackage_total=$(echo "$rpackage_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        rpackage_passed=$(echo "$rpackage_output" | grep -c '^ok ' || echo "0")
+
+        # GitHub module tests
+        github_output=$(bats tests/shell/test-github.bats 2>&1 || true)
+        github_total=$(echo "$github_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        github_passed=$(echo "$github_output" | grep -c '^ok ' || echo "0")
+
+        # CICD module tests
+        cicd_output=$(bats tests/shell/test-cicd.bats 2>&1 || true)
+        cicd_total=$(echo "$cicd_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        cicd_passed=$(echo "$cicd_output" | grep -c '^ok ' || echo "0")
+
+        # Structure module tests
+        structure_output=$(bats tests/shell/test-structure.bats 2>&1 || true)
+        structure_total=$(echo "$structure_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        structure_passed=$(echo "$structure_output" | grep -c '^ok ' || echo "0")
+
+        # Devtools module tests
+        devtools_output=$(bats tests/shell/test-devtools.bats 2>&1 || true)
+        devtools_total=$(echo "$devtools_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        devtools_passed=$(echo "$devtools_output" | grep -c '^ok ' || echo "0")
+
         # Calculate totals
-        total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total + dockerfile_total))
-        total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed + dockerfile_passed))
+        total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total + dockerfile_total + help_total + rpackage_total + github_total + cicd_total + structure_total + devtools_total))
+        total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed + dockerfile_passed + help_passed + rpackage_passed + github_passed + cicd_passed + structure_passed + devtools_passed))
 
         # Calculate pass rate
         if [ $total_tests -gt 0 ]; then
