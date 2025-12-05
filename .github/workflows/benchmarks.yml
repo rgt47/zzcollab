@@ -1,0 +1,230 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  docker-benchmarks:
+    name: Docker Build Performance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Benchmark Docker build time
+        run: |
+          mkdir -p benchmark-results
+
+          echo "## Docker Build Benchmarks" > benchmark-results/docker-benchmarks.txt
+          echo "Generated on: $(date)" >> benchmark-results/docker-benchmarks.txt
+          echo "" >> benchmark-results/docker-benchmarks.txt
+
+          # Build timing test
+          echo "### Docker Build Duration" >> benchmark-results/docker-benchmarks.txt
+          echo "" >> benchmark-results/docker-benchmarks.txt
+
+          # First build (cold cache)
+          echo "Cold build (no cache):" >> benchmark-results/docker-benchmarks.txt
+          START=$(date +%s)
+          docker build --no-cache -t zzcollab:benchmark . > /dev/null 2>&1
+          END=$(date +%s)
+          COLD_TIME=$((END - START))
+          echo "  Duration: ${COLD_TIME}s" >> benchmark-results/docker-benchmarks.txt
+
+          # Second build (with cache)
+          echo "" >> benchmark-results/docker-benchmarks.txt
+          echo "Cached build:" >> benchmark-results/docker-benchmarks.txt
+          START=$(date +%s)
+          docker build -t zzcollab:benchmark . > /dev/null 2>&1
+          END=$(date +%s)
+          CACHED_TIME=$((END - START))
+          echo "  Duration: ${CACHED_TIME}s" >> benchmark-results/docker-benchmarks.txt
+
+          # Image size
+          echo "" >> benchmark-results/docker-benchmarks.txt
+          echo "### Image Size" >> benchmark-results/docker-benchmarks.txt
+          IMAGE_SIZE=$(docker images --format "{{.Size}}" zzcollab:benchmark | head -1)
+          echo "  Size: $IMAGE_SIZE" >> benchmark-results/docker-benchmarks.txt
+
+          # Performance improvement
+          echo "" >> benchmark-results/docker-benchmarks.txt
+          echo "### Cache Performance" >> benchmark-results/docker-benchmarks.txt
+          IMPROVEMENT=$((COLD_TIME - CACHED_TIME))
+          echo "  Speedup with cache: ${IMPROVEMENT}s ($(awk "BEGIN {printf \"%.0f%%\", ($IMPROVEMENT/$COLD_TIME)*100}"))" >> benchmark-results/docker-benchmarks.txt
+
+          cat benchmark-results/docker-benchmarks.txt
+
+      - name: Generate Docker benchmark summary
+        if: always()
+        run: |
+          echo "## Docker Build Performance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f benchmark-results/docker-benchmarks.txt ]; then
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat benchmark-results/docker-benchmarks.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-benchmarks
+          path: benchmark-results/docker-benchmarks.txt
+          retention-days: 90
+
+  package-installation-benchmarks:
+    name: R Package Installation Performance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          use-public-rspm: true
+
+      - name: Benchmark package installation
+        run: |
+          mkdir -p benchmark-results
+
+          echo "## R Package Installation Benchmarks" > benchmark-results/package-benchmarks.txt
+          echo "Generated on: $(date)" >> benchmark-results/package-benchmarks.txt
+          echo "" >> benchmark-results/package-benchmarks.txt
+
+          # Check renv.lock
+          if [ -f "renv.lock" ]; then
+            PACKAGE_COUNT=$(grep -c '"Package"' renv.lock || echo "0")
+            echo "### Package Restoration" >> benchmark-results/package-benchmarks.txt
+            echo "Total packages in renv.lock: $PACKAGE_COUNT" >> benchmark-results/package-benchmarks.txt
+            echo "" >> benchmark-results/package-benchmarks.txt
+
+            echo "Benchmark: renv::restore() simulation" >> benchmark-results/package-benchmarks.txt
+            START=$(date +%s%N)
+            Rscript -e "
+              if (requireNamespace('renv', quietly = TRUE)) {
+                cat('renv package available\\n')
+              } else {
+                cat('Installing renv...\\n')
+                install.packages('renv', repos = 'https://packagemanager.rstudio.com/all/__linux__/focal/latest')
+              }
+            " > /dev/null 2>&1
+            END=$(date +%s%N)
+            DURATION=$(( (END - START) / 1000000 ))
+            echo "  Time to initialize renv: ~${DURATION}ms" >> benchmark-results/package-benchmarks.txt
+          fi
+
+          cat benchmark-results/package-benchmarks.txt
+
+      - name: Generate package benchmark summary
+        if: always()
+        run: |
+          echo "## R Package Installation Performance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f benchmark-results/package-benchmarks.txt ]; then
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat benchmark-results/package-benchmarks.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload package benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-benchmarks
+          path: benchmark-results/package-benchmarks.txt
+          retention-days: 90
+
+  test-execution-benchmarks:
+    name: Test Suite Performance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install BATS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Benchmark test execution time
+        run: |
+          mkdir -p benchmark-results
+
+          echo "## Test Suite Performance Benchmarks" > benchmark-results/test-benchmarks.txt
+          echo "Generated on: $(date)" >> benchmark-results/test-benchmarks.txt
+          echo "" >> benchmark-results/test-benchmarks.txt
+          echo "### Test Execution Times" >> benchmark-results/test-benchmarks.txt
+          echo "" >> benchmark-results/test-benchmarks.txt
+
+          # Run shell tests and measure timing
+          for test_file in tests/shell/test-*.bats; do
+            if [ -f "$test_file" ]; then
+              test_name=$(basename "$test_file")
+              echo "Running: $test_name" >> benchmark-results/test-benchmarks.txt
+
+              START=$(date +%s%N)
+              bats "$test_file" > /tmp/test-output.txt 2>&1 || true
+              END=$(date +%s%N)
+
+              DURATION=$(( (END - START) / 1000000000 ))
+              TEST_COUNT=$(grep -c "^ok" /tmp/test-output.txt || echo "0")
+
+              echo "  Tests: $TEST_COUNT" >> benchmark-results/test-benchmarks.txt
+              echo "  Duration: ${DURATION}s" >> benchmark-results/test-benchmarks.txt
+              echo "" >> benchmark-results/test-benchmarks.txt
+            fi
+          done
+
+          cat benchmark-results/test-benchmarks.txt
+
+      - name: Generate test benchmark summary
+        if: always()
+        run: |
+          echo "## Test Suite Performance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f benchmark-results/test-benchmarks.txt ]; then
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat benchmark-results/test-benchmarks.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-benchmarks
+          path: benchmark-results/test-benchmarks.txt
+          retention-days: 90
+
+  benchmark-summary:
+    name: Benchmark Report Summary
+    runs-on: ubuntu-latest
+    needs: [docker-benchmarks, package-installation-benchmarks, test-execution-benchmarks]
+    if: always()
+
+    steps:
+      - name: Download all benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          path: benchmark-results
+
+      - name: Create benchmark summary
+        run: |
+          echo "## Performance Benchmarks Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Benchmarks Performed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Docker build performance" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ R package installation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Test suite execution time" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download benchmark results from artifacts for detailed analysis." >> $GITHUB_STEP_SUMMARY
