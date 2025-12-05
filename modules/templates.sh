@@ -22,23 +22,40 @@ require_module "core"
 
 # Function: copy_template_file
 # Purpose: Copy a template file and substitute variables within it
-# Arguments: 
-#   $1 - template filename (relative to TEMPLATES_DIR)
-#   $2 - destination path for the copied file
-#   $3 - optional description for logging (defaults to destination path)
-# Example: copy_template_file "Dockerfile" "Dockerfile" "Docker configuration"
+# USAGE:    copy_template_file "Dockerfile" "Dockerfile" ["Docker config"] [templates_dir]
+# ARGS:
+#   $1 - template: Template filename (relative to templates directory)
+#   $2 - dest: Destination path for the copied file
+#   $3 - description: Optional description for logging (defaults to destination path)
+#   $4 - templates_dir: Optional templates directory (defaults to TEMPLATES_DIR global)
+# RETURNS:
+#   0 - File copied and variables substituted successfully
+#   1 - Failed (template not found, copy failed, substitution failed)
+# GLOBALS:
+#   READ: TEMPLATES_DIR (if $4 not provided - fallback for backward compatibility)
+#   WRITE: None
+# Example:
+#   copy_template_file "Dockerfile" "Dockerfile" "Docker configuration"
+#   copy_template_file "Makefile" "Makefile" "Makefile" "/custom/templates"
 copy_template_file() {
     # Declare local variables to avoid affecting global scope
     local template="$1"
     local dest="$2"
     local description="${3:-$dest}"  # Use $dest as default if $3 not provided
-    
+    local templates_dir="${4:-$TEMPLATES_DIR}"  # Use parameter or fall back to global
+
     # Input validation: ensure minimum required arguments are provided
     [[ $# -ge 2 ]] || { log_error "copy_template_file: need template and destination"; return 1; }
-    
+
+    # Validate templates_dir is set
+    if [[ -z "$templates_dir" ]]; then
+        log_error "copy_template_file: templates directory not specified and TEMPLATES_DIR global not set"
+        return 1
+    fi
+
     # Check if the source template file exists
-    if [[ ! -f "$TEMPLATES_DIR/$template" ]]; then
-        log_error "Template not found: $TEMPLATES_DIR/$template"
+    if [[ ! -f "$templates_dir/$template" ]]; then
+        log_error "Template not found: $templates_dir/$template"
         return 1
     fi
     
@@ -61,7 +78,7 @@ copy_template_file() {
     fi
     
     # Copy the template file to the destination
-    if ! cp "$TEMPLATES_DIR/$template" "$dest"; then
+    if ! cp "$templates_dir/$template" "$dest"; then
         log_error "Failed to copy template: $template"
         return 1
     fi
@@ -78,18 +95,37 @@ copy_template_file() {
 
 # Function: substitute_variables
 # Purpose: Replace template placeholders (${VAR_NAME}) with actual variable values
-# Arguments: $1 - path to file that contains template variables
-# Template variables used: ${PKG_NAME}, ${AUTHOR_NAME}, ${AUTHOR_EMAIL}, etc.
+# USAGE:    substitute_variables "path/to/file" [pkg_name] [author_name] ...
+# ARGS:
+#   $1 - file: Path to file containing template variables to substitute
+#   $2 - pkg_name: Optional package name (overrides PKG_NAME global)
+#   $3 - author_name: Optional author name (overrides AUTHOR_NAME global)
+#   Additional optional parameters for other template variables (can extend as needed)
+# RETURNS:
+#   0 - Variables substituted successfully
+#   1 - File not found or substitution failed
+# GLOBALS:
+#   READ: PKG_NAME, AUTHOR_NAME, AUTHOR_EMAIL, AUTHOR_INSTITUTE, AUTHOR_INSTITUTE_FULL,
+#         BASE_IMAGE, R_VERSION, USERNAME, AUTHOR_LAST, AUTHOR_ORCID, MANUSCRIPT_TITLE,
+#         GITHUB_ACCOUNT, TEAM_NAME, PROJECT_NAME, DOCKERHUB_ACCOUNT,
+#         R_PACKAGES_INSTALL_CMD, SYSTEM_DEPS_INSTALL_CMD, LIBS_BUNDLE, PKGS_BUNDLE
+#   WRITE: None (exports to environment for envsubst)
+# NOTE: Optional parameters override corresponding globals. Falls back to globals if not provided.
 # Uses envsubst (environment variable substitution) tool for safe replacement
 substitute_variables() {
     local file="$1"
-    
+    local pkg_name_override="${2:-}"
+    local author_name_override="${3:-}"
+
     # Verify the file exists before attempting to process it
     [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
     
     # Export all variables that templates might reference
     # envsubst only substitutes variables that are in the environment
-    export PKG_NAME AUTHOR_NAME AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
+    # Use parameter overrides if provided, otherwise use globals
+    export PKG_NAME="${pkg_name_override:-$PKG_NAME}"  # Allow parameter override
+    export AUTHOR_NAME="${author_name_override:-$AUTHOR_NAME}"  # Allow parameter override
+    export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     export R_VERSION="${R_VERSION:-latest}"  # Provide default value if not set
     export USERNAME="${USERNAME:-analyst}"   # Default Docker user
 

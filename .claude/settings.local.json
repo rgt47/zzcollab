@@ -10,7 +10,8 @@
       "Bash(cat:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(sed:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(bash -n:*)"
     ],
     "deny": [],
     "ask": []

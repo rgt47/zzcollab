@@ -899,9 +899,11 @@ execute_project_creation_workflow() {
     create_data_templates || exit 1
     
     log_info "📦 Creating R package files..."
-    create_core_files || exit 1
-    create_readme_file || exit 1
-    create_renv_setup || exit 1
+    # Pass parameters to functions instead of relying on globals
+    # Parameters: pkg_name, profile_name, templates_dir
+    create_core_files "$PKG_NAME" "$PROFILE_NAME" "$TEMPLATES_DIR" || exit 1
+    create_readme_file "$PKG_NAME" "$TEMPLATES_DIR" || exit 1
+    create_renv_setup "$TEMPLATES_DIR" || exit 1
     
     log_info "⚙️ Creating configuration files..."
     create_config_files || exit 1
