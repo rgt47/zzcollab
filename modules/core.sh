@@ -512,7 +512,27 @@ require_module() {
         if [[ "${!module_var:-}" != "true" ]]; then
             # Provide clear error message and exit
             # Use >&2 to send to stderr so it doesn't interfere with return values
-            echo "❌ Error: ${current_module}.sh requires ${module}.sh to be loaded first" >&2
+            {
+                echo "❌ Module Dependency Error: ${current_module}.sh requires ${module}.sh"
+                echo ""
+                echo "Module '${module}.sh' was not loaded before '${current_module}.sh'."
+                echo "This is a framework initialization error."
+                echo ""
+                echo "Recovery steps:"
+                echo "  1. Check module loading order in zzcollab.sh"
+                echo "  2. Ensure modules are sourced in correct order:"
+                echo "     - constants.sh must load first"
+                echo "     - core.sh must load before any other module"
+                echo "     - Modules must load in dependency order (check module headers)"
+                echo ""
+                echo "Common issue: Check that zzcollab.sh has this structure:"
+                echo "  source modules/constants.sh"
+                echo "  source modules/core.sh"
+                echo "  source modules/${module}.sh"
+                echo "  source modules/${current_module}.sh"
+                echo ""
+                echo "See: docs/DEVELOPMENT.md for module initialization details"
+            } >&2
             exit 1
         fi
     done

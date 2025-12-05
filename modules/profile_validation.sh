@@ -35,6 +35,20 @@ query_bundle_value() {
     # Validate bundles file exists
     if [[ ! -f "$BUNDLES_FILE" ]]; then
         log_error "❌ Bundles file not found: $BUNDLES_FILE"
+        log_error ""
+        log_error "Bundle configuration (bundles.yaml) is missing."
+        log_error "This file defines all available Docker profiles, library packages, and compatibility rules."
+        log_error ""
+        log_error "Recovery steps:"
+        log_error "  1. Check if bundles.yaml exists in project root:"
+        log_error "     ls -la bundles.yaml"
+        log_error "  2. If missing, copy from templates:"
+        log_error "     cp templates/bundles.yaml ."
+        log_error "  3. If templates/bundles.yaml missing, restore from git:"
+        log_error "     git checkout templates/bundles.yaml"
+        log_error ""
+        log_error "For details on bundle configuration:"
+        log_error "  See: docs/VARIANTS.md"
         return 1
     fi
 
@@ -44,7 +58,25 @@ query_bundle_value() {
         printf '%s' "$result"
         return 0
     else
-        log_error "❌ Failed to query ${bundle_type}.${bundle_name}${query_path} from $BUNDLES_FILE"
+        log_error "❌ Failed to query bundle configuration from $BUNDLES_FILE"
+        log_error ""
+        log_error "Cannot read: ${bundle_type}.${bundle_name}${query_path}"
+        log_error ""
+        log_error "Possible causes:"
+        log_error "  - Invalid YAML syntax in bundles.yaml"
+        log_error "  - Bundle name does not exist"
+        log_error "  - yq command not installed"
+        log_error ""
+        log_error "Recovery steps:"
+        log_error "  1. Validate YAML syntax:"
+        log_error "     yq eval . $BUNDLES_FILE"
+        log_error "  2. Verify bundle exists:"
+        log_error "     yq eval '.${bundle_type}' $BUNDLES_FILE"
+        log_error "  3. Check yq installation:"
+        log_error "     which yq && yq --version"
+        log_error ""
+        log_error "If YAML syntax error, edit bundles.yaml and fix formatting:"
+        log_error "  See: docs/VARIANTS.md for bundle structure"
         return 1
     fi
 }
@@ -280,18 +312,42 @@ expand_profile_name() {
 #   Called by main workflow after flag parsing, before Dockerfile generation
 #   Prevents invalid Docker builds (fail-fast principle)
 #-----------------------------------------------------------------------------
-validate_profile_combination() {
-    local base_image="${1:-$BASE_IMAGE}"
-    local libs_bundle="${2:-$LIBS_BUNDLE}"
-    local pkgs_bundle="${3:-$PKGS_BUNDLE}"
+
+#=============================================================================
+# VALIDATION HELPER FUNCTIONS (REFACTORING PHASE 1B)
+#=============================================================================
+
+#-----------------------------------------------------------------------------
+# FUNCTION: validate_base_image_constraints
+# PURPOSE:  Validate base image and library bundle compatibility constraints
+# DESCRIPTION:
+#   Checks architectural constraints between Docker base image and libraries:
+#   - Alpine requires apk package manager (--libs alpine only)
+#   - Bioconductor requires specialized dependencies (--libs bioinfo only)
+#   - Geospatial requires GDAL/PROJ libraries (--libs geospatial or minimal)
+#   Returns list of errors, one per line. Empty output means no errors.
+# ARGS:
+#   $1 - base_image: Docker base image name
+#   $2 - libs_bundle: System library bundle name
+# RETURNS:
+#   0 - Always succeeds (pure function)
+# OUTPUTS:
+#   Error strings to stdout, one per line
+#   Format: Each error is multi-line with reason/hint
+# SIDE EFFECTS:
+#   None (pure function)
+# EXAMPLE ERRORS:
+#   ❌ Alpine base image requires --libs alpine
+#      Current: --libs geospatial
+#      Reason: Alpine uses apk package manager, not apt-get
+#
+#   ❌ Geospatial packages cannot work with --libs none
+#-----------------------------------------------------------------------------
+validate_base_image_constraints() {
+    local base_image="$1"
+    local libs_bundle="$2"
 
     local errors=()
-    local warnings=()
-
-    # Skip validation if nothing specified
-    if [[ -z "$base_image" ]] && [[ -z "$libs_bundle" ]] && [[ -z "$pkgs_bundle" ]]; then
-        return 0
-    fi
 
     # Alpine base requires alpine libs
     if [[ "$base_image" == *"alpine"* ]]; then
@@ -327,6 +383,33 @@ validate_profile_combination() {
         fi
     fi
 
+    printf '%s\n' "${errors[@]}"
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: validate_package_bundle_constraints
+# PURPOSE:  Validate package bundle and library bundle compatibility
+# DESCRIPTION:
+#   Checks that package bundles have required system library support:
+#   - geospatial package bundle requires geospatial libs (for GDAL/PROJ)
+#   - bioinfo package bundle requires bioinfo libs (for Bioconductor)
+#   Returns list of errors. Empty output means no errors.
+# ARGS:
+#   $1 - pkgs_bundle: Package bundle name
+#   $2 - libs_bundle: System library bundle name
+# RETURNS:
+#   0 - Always succeeds (pure function)
+# OUTPUTS:
+#   Error strings to stdout, one per line
+# SIDE EFFECTS:
+#   None (pure function)
+#-----------------------------------------------------------------------------
+validate_package_bundle_constraints() {
+    local pkgs_bundle="$1"
+    local libs_bundle="$2"
+
+    local errors=()
+
     # Package bundle validation
     if [[ "$pkgs_bundle" == "geospatial" ]] && [[ "$libs_bundle" != "geospatial" ]]; then
         errors+=("❌ Package bundle 'geospatial' requires --libs geospatial")
@@ -338,6 +421,33 @@ validate_profile_combination() {
         errors+=("   Reason: Bioconductor packages need specific dependencies")
     fi
 
+    printf '%s\n' "${errors[@]}"
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: validate_verse_warnings
+# PURPOSE:  Generate non-fatal warnings for verse base image
+# DESCRIPTION:
+#   Verse base includes LaTeX and publishing tools. Warns if minimal libs
+#   are used (likely user intent was publishing). Non-fatal - validation
+#   continues even if warnings are present.
+# ARGS:
+#   $1 - base_image: Docker base image name
+#   $2 - libs_bundle: System library bundle name
+# RETURNS:
+#   0 - Always succeeds (pure function)
+# OUTPUTS:
+#   Warning strings to stdout, one per line
+#   Empty output if no warnings
+# SIDE EFFECTS:
+#   None (pure function)
+#-----------------------------------------------------------------------------
+validate_verse_warnings() {
+    local base_image="$1"
+    local libs_bundle="$2"
+
+    local warnings=()
+
     # Verse warnings (non-fatal)
     if [[ "$base_image" == *"verse"* ]]; then
         if [[ "$libs_bundle" == "none" ]]; then
@@ -346,7 +456,51 @@ validate_profile_combination() {
         fi
     fi
 
-    # Print errors and warnings
+    printf '%s\n' "${warnings[@]}"
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: report_validation_results
+# PURPOSE:  Report validation errors and warnings, suggest fixes
+# DESCRIPTION:
+#   Consolidated error and warning reporting for profile validation.
+#   Displays errors with "INCOMPATIBLE COMBINATION DETECTED" header,
+#   provides suggested fixes via suggest_compatible_combination(),
+#   and displays warnings separately (non-fatal).
+# ARGS:
+#   Takes base_image, libs_bundle, pkgs_bundle and error/warning array contents
+# RETURNS:
+#   0 - No errors (warnings allowed)
+#   1 - Errors found
+# OUTPUTS:
+#   Formatted error message with suggested fixes to stdout
+#   Formatted warnings to stdout (if any)
+# SIDE EFFECTS:
+#   Calls suggest_compatible_combination() for fix suggestions
+#   Produces stdout output
+#-----------------------------------------------------------------------------
+report_validation_results() {
+    local base_image="$1"
+    local libs_bundle="$2"
+    local pkgs_bundle="$3"
+
+    # Collect all errors passed as remaining arguments
+    local errors=()
+    local warnings=()
+    shift 3
+
+    # Separate errors and warnings from arguments
+    for item in "$@"; do
+        # Warnings contain "⚠️" prefix (from validate_verse_warnings)
+        if [[ "$item" == *"⚠️"* ]]; then
+            warnings+=("$item")
+        else
+            # Everything else is an error
+            errors+=("$item")
+        fi
+    done
+
+    # Report errors
     if [[ ${#errors[@]} -gt 0 ]]; then
         echo ""
         echo "🚫 INCOMPATIBLE COMBINATION DETECTED:"
@@ -361,6 +515,7 @@ validate_profile_combination() {
         return 1
     fi
 
+    # Report warnings (non-fatal)
     if [[ ${#warnings[@]} -gt 0 ]]; then
         echo ""
         for warning in "${warnings[@]}"; do
@@ -370,6 +525,60 @@ validate_profile_combination() {
     fi
 
     return 0
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: validate_profile_combination
+# PURPOSE:  Validate compatibility between base image, libs bundle, and pkgs bundle
+# DESCRIPTION:
+#   Main validation orchestrator that checks compatibility constraints
+#   between Docker base image, system library bundle, and package bundle.
+#   Calls helper functions to validate different constraint categories,
+#   collects results, and reports via consolidated error/warning handler.
+# ARGS:
+#   $1 - base_image: Docker base image (default: $BASE_IMAGE)
+#   $2 - libs_bundle: System library bundle (default: $LIBS_BUNDLE)
+#   $3 - pkgs_bundle: Package bundle (default: $PKGS_BUNDLE)
+# RETURNS:
+#   0 - All validations passed
+#   1 - Validation failed (incompatible combination detected)
+# OUTPUTS:
+#   Error messages with suggested fixes if validation fails
+#   Warnings if conditions are suboptimal but valid
+# SIDE EFFECTS:
+#   Calls suggest_compatible_combination() to provide fix suggestions
+#   Produces formatted output to stdout
+#-----------------------------------------------------------------------------
+validate_profile_combination() {
+    local base_image="${1:-$BASE_IMAGE}"
+    local libs_bundle="${2:-$LIBS_BUNDLE}"
+    local pkgs_bundle="${3:-$PKGS_BUNDLE}"
+
+    # Skip validation if nothing specified
+    if [[ -z "$base_image" ]] && [[ -z "$libs_bundle" ]] && [[ -z "$pkgs_bundle" ]]; then
+        return 0
+    fi
+
+    # Collect all errors and warnings from validators
+    local all_items=()
+
+    # Validate base image constraints
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && all_items+=("$line")
+    done < <(validate_base_image_constraints "$base_image" "$libs_bundle")
+
+    # Validate package bundle constraints
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && all_items+=("$line")
+    done < <(validate_package_bundle_constraints "$pkgs_bundle" "$libs_bundle")
+
+    # Validate verse warnings (non-fatal)
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && all_items+=("$line")
+    done < <(validate_verse_warnings "$base_image" "$libs_bundle")
+
+    # Report all results via consolidated reporter
+    report_validation_results "$base_image" "$libs_bundle" "$pkgs_bundle" "${all_items[@]}"
 }
 
 #-----------------------------------------------------------------------------

@@ -63,12 +63,33 @@ verify_description_file() {
     local require_write="${2:-false}"
 
     if [[ ! -f "$desc_file" ]]; then
-        log_error "DESCRIPTION file not found: $desc_file"
+        log_error "❌ DESCRIPTION file not found: $desc_file"
+        log_error ""
+        log_error "DESCRIPTION is required for R package metadata and dependency tracking."
+        log_error "It lists all packages your project depends on (in the Imports field)."
+        log_error ""
+        log_error "Create one with:"
+        log_error "  printf 'Package: myproject\\nVersion: 0.1.0\\nTitle: My Project\\n' > DESCRIPTION"
+        log_error ""
+        log_error "Or copy the template:"
+        log_error "  cp templates/DESCRIPTION_template DESCRIPTION"
+        log_error ""
+        log_error "See: docs/SETUP_DOCUMENTATION_SYSTEM.md for complete template"
         return 1
     fi
 
     if [[ "$require_write" == "true" ]] && [[ ! -w "$desc_file" ]]; then
-        log_error "DESCRIPTION file not writable: $desc_file"
+        log_error "❌ DESCRIPTION file not writable: $desc_file"
+        log_error ""
+        log_error "The DESCRIPTION file at '$desc_file' cannot be modified."
+        log_error ""
+        log_error "Recovery steps:"
+        log_error "  1. Check file permissions: ls -la $desc_file"
+        log_error "  2. Make writable: chmod u+w $desc_file"
+        log_error "  3. Verify your user owns it: chown \$USER $desc_file"
+        log_error ""
+        log_error "If file is owned by another user, ask them to add you write permission:"
+        log_error "  chmod g+w $desc_file  # for group write"
         return 1
     fi
 
@@ -262,7 +283,19 @@ add_package_to_renv_lock() {
     local renv_lock="renv.lock"
 
     if [[ ! -f "$renv_lock" ]]; then
-        log_error "renv.lock not found"
+        log_error "❌ renv.lock not found in current directory"
+        log_error ""
+        log_error "renv.lock is the package lock file that ensures reproducibility."
+        log_error "It records exact package versions so collaborators install the same packages."
+        log_error ""
+        log_error "Create renv.lock with:"
+        log_error "  R -e \"renv::init()\"  # Initialize renv (runs once)"
+        log_error "  # Then install packages, and renv.lock auto-updates on R exit"
+        log_error ""
+        log_error "Or snapshot current packages:"
+        log_error "  R -e \"renv::snapshot()\"  # Snapshot current packages to renv.lock"
+        log_error ""
+        log_error "See: docs/COLLABORATIVE_REPRODUCIBILITY.md for reproducibility details"
         return 1
     fi
 
@@ -271,7 +304,20 @@ add_package_to_renv_lock() {
     pkg_info=$(fetch_cran_package_info "$pkg")
 
     if [[ $? -ne 0 ]] || [[ -z "$pkg_info" ]]; then
-        log_error "Failed to fetch metadata for $pkg from CRAN"
+        log_error "❌ Failed to fetch metadata for '$pkg' from CRAN"
+        log_error ""
+        log_error "Could not query package information from CRAN."
+        log_error "Possible causes:"
+        log_error "  - Package '$pkg' does not exist on CRAN"
+        log_error "  - Network connection problem"
+        log_error "  - CRAN API temporarily unavailable"
+        log_error ""
+        log_error "Recovery steps:"
+        log_error "  1. Verify package exists on CRAN: https://cran.r-project.org/package=$pkg"
+        log_error "  2. Check your internet connection: curl -I https://cran.r-project.org"
+        log_error "  3. Try again: install.packages(\"$pkg\") in R session"
+        log_error ""
+        log_error "If package is not on CRAN, install from GitHub or local source"
         return 1
     fi
 
@@ -280,7 +326,17 @@ add_package_to_renv_lock() {
     version=$(echo "$pkg_info" | jq -r '.Version // empty' 2>/dev/null)
 
     if [[ -z "$version" ]]; then
-        log_error "Could not determine version for $pkg"
+        log_error "❌ Could not determine version for '$pkg' from CRAN metadata"
+        log_error ""
+        log_error "The CRAN response did not contain version information."
+        log_error "This may indicate:"
+        log_error "  - Malformed response from CRAN API"
+        log_error "  - Package metadata corruption"
+        log_error "  - CRAN API changed format (needs update)"
+        log_error ""
+        log_error "Recovery steps:"
+        log_error "  1. Check CRAN API manually: curl -s https://crandb.r-pkg.org/\"$pkg\""
+        log_error "  2. Report to zzcollab: https://github.com/yourname/zzcollab/issues"
         return 1
     fi
 
@@ -1002,6 +1058,331 @@ parse_renv_lock() {
 #==============================================================================
 
 #-----------------------------------------------------------------------------
+# FUNCTION: compute_union_packages
+# PURPOSE:  Compute union of packages from code, DESCRIPTION, and renv.lock
+# DESCRIPTION:
+#   Combines package lists from three sources into a single deduplicated set.
+#   This union represents all packages that should be present in the environment.
+#   Handles empty arrays gracefully and skips empty package names.
+# ARGS:
+#   $1 - code_packages: Space-separated or array-style package list from code
+#   $2 - desc_imports: Packages declared in DESCRIPTION Imports
+#   $3 - renv_packages: Packages in renv.lock
+# RETURNS:
+#   0 - Always succeeds
+# OUTPUTS:
+#   Union of all packages to stdout, one per line, deduplicated
+# GLOBALS READ:
+#   BASE_PACKAGES - Array of base R packages to exclude
+# PROCESSING:
+#   1. Adds all code packages
+#   2. Adds DESCRIPTION packages not already in union
+#   3. Adds renv.lock packages (excluding base) not already in union
+#   4. Deduplicates by checking membership before adding
+# SIDE EFFECTS:
+#   None (pure function)
+#-----------------------------------------------------------------------------
+compute_union_packages() {
+    local -n code_pkgs_ref="code_packages"
+    local -n desc_pkgs_ref="desc_imports"
+    local -n renv_pkgs_ref="renv_packages"
+
+    local all_packages=()
+
+    # Add packages from code
+    for pkg in "${code_pkgs_ref[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            all_packages+=("$pkg")
+        fi
+    done
+
+    # Add packages from DESCRIPTION (dedup)
+    for pkg in "${desc_pkgs_ref[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            local found=false
+            for existing in "${all_packages[@]}"; do
+                if [[ "$pkg" == "$existing" ]]; then
+                    found=true
+                    break
+                fi
+            done
+            if [[ "$found" == false ]]; then
+                all_packages+=("$pkg")
+            fi
+        fi
+    done
+
+    # Add packages from renv.lock (excluding base packages, dedup)
+    for pkg in "${renv_pkgs_ref[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            # Skip base R packages
+            local base_pkgs_str=" ${BASE_PACKAGES[*]} "
+            if [[ "$base_pkgs_str" == *" ${pkg} "* ]]; then
+                continue
+            fi
+
+            # Check if not already in all_packages
+            local found=false
+            for existing in "${all_packages[@]}"; do
+                if [[ "$pkg" == "$existing" ]]; then
+                    found=true
+                    break
+                fi
+            done
+            if [[ "$found" == false ]]; then
+                all_packages+=("$pkg")
+            fi
+        fi
+    done
+
+    # Output union
+    printf '%s\n' "${all_packages[@]}"
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: find_missing_from_description
+# PURPOSE:  Find packages in union that are missing from DESCRIPTION
+# DESCRIPTION:
+#   Compares the union of all packages against DESCRIPTION Imports field
+#   and returns packages that should be declared but aren't.
+# ARGS:
+#   $1 - all_packages: Array name of union packages
+#   $2 - desc_imports: Array name of DESCRIPTION imports
+# RETURNS:
+#   0 - Always succeeds
+# OUTPUTS:
+#   Package names missing from DESCRIPTION to stdout, one per line
+# SIDE EFFECTS:
+#   None (pure function)
+#-----------------------------------------------------------------------------
+find_missing_from_description() {
+    local -n all_pkgs_ref="$1"
+    local -n desc_pkgs_ref="$2"
+
+    local missing=()
+
+    for pkg in "${all_pkgs_ref[@]}"; do
+        # Skip empty package names
+        if [[ -z "$pkg" ]]; then
+            continue
+        fi
+
+        # Use literal string matching
+        local desc_imports_str=" ${desc_pkgs_ref[*]} "
+        if [[ "$desc_imports_str" != *" ${pkg} "* ]]; then
+            missing+=("$pkg")
+        fi
+    done
+
+    printf '%s\n' "${missing[@]}"
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: find_missing_from_lock
+# PURPOSE:  Find packages in union that are missing from renv.lock
+# DESCRIPTION:
+#   Compares the union of all packages against renv.lock and returns
+#   packages that should be locked but aren't. Excludes base R packages.
+# ARGS:
+#   $1 - all_packages: Array name of union packages
+#   $2 - renv_packages: Array name of renv.lock packages
+# RETURNS:
+#   0 - Always succeeds
+# OUTPUTS:
+#   Package names missing from renv.lock to stdout, one per line
+# SIDE EFFECTS:
+#   None (pure function)
+#-----------------------------------------------------------------------------
+find_missing_from_lock() {
+    local -n all_pkgs_ref="$1"
+    local -n renv_pkgs_ref="$2"
+
+    local missing=()
+
+    for pkg in "${all_pkgs_ref[@]}"; do
+        # Skip empty package names
+        if [[ -z "$pkg" ]]; then
+            continue
+        fi
+
+        # Skip base R packages (they don't need to be in renv.lock)
+        local base_pkgs_str=" ${BASE_PACKAGES[*]} "
+        if [[ "$base_pkgs_str" == *" ${pkg} "* ]]; then
+            log_debug "Skipping base package: $pkg"
+            continue
+        fi
+
+        # Check if package exists in renv.lock
+        local renv_pkgs_str=" ${renv_pkgs_ref[*]} "
+        if [[ "$renv_pkgs_str" != *" ${pkg} "* ]]; then
+            missing+=("$pkg")
+        fi
+    done
+
+    printf '%s\n' "${missing[@]}"
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: report_and_fix_missing_description
+# PURPOSE:  Report and optionally fix packages missing from DESCRIPTION
+# DESCRIPTION:
+#   Handles the case where packages are used in code but not declared
+#   in DESCRIPTION. Can report the issue or auto-fix by adding to DESCRIPTION.
+# ARGS:
+#   $1 - missing_from_desc: Array name of missing packages
+#   $2 - verbose: "true" to list packages, "false" to show only count
+#   $3 - auto_fix: "true" to attempt auto-fix, "false" to report only
+# RETURNS:
+#   0 - No missing packages or successfully fixed
+#   1 - Missing packages found and auto-fix disabled
+# OUTPUTS:
+#   Error message and package list (if verbose) to stdout
+#   Success/failure message if auto-fixing
+# SIDE EFFECTS:
+#   Modifies DESCRIPTION file if auto_fix=true
+#-----------------------------------------------------------------------------
+report_and_fix_missing_description() {
+    local -n missing_ref="$1"
+    local verbose="${2:-false}"
+    local auto_fix="${3:-false}"
+
+    if [[ ${#missing_ref[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    log_error "Found ${#missing_ref[@]} packages missing from DESCRIPTION Imports"
+
+    # List packages if verbose mode or auto-fix mode
+    if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
+        echo ""
+        for pkg in "${missing_ref[@]}"; do
+            echo "  - $pkg"
+        done
+        echo ""
+    else
+        echo ""
+        log_info "Run with --verbose to see the list of missing packages"
+        echo ""
+    fi
+
+    if [[ "$auto_fix" == "true" ]]; then
+        log_info "Auto-fixing: Adding missing packages to DESCRIPTION..."
+        local failed_packages=()
+
+        for pkg in "${missing_ref[@]}"; do
+            # Add to DESCRIPTION
+            if ! add_package_to_description "$pkg"; then
+                failed_packages+=("$pkg")
+            fi
+        done
+
+        if [[ ${#failed_packages[@]} -eq 0 ]]; then
+            log_success "✅ All missing packages added to DESCRIPTION"
+            return 0
+        else
+            log_error "Failed to add packages to DESCRIPTION: ${failed_packages[*]}"
+            return 1
+        fi
+    else
+        local pkg_vector=$(format_r_package_vector "${missing_ref[@]}")
+        echo "Fix with auto-fix flag:"
+        echo "  bash modules/validation.sh --fix"
+        echo ""
+        echo "Or manually add to DESCRIPTION Imports field"
+        return 1
+    fi
+}
+
+#-----------------------------------------------------------------------------
+# FUNCTION: report_and_fix_missing_lock
+# PURPOSE:  Report and optionally fix packages missing from renv.lock
+# DESCRIPTION:
+#   Handles the case where packages are declared but not locked in renv.lock.
+#   This breaks reproducibility. Can report the issue or auto-fix by querying CRAN.
+# ARGS:
+#   $1 - missing_from_lock: Array name of missing packages
+#   $2 - verbose: "true" to list packages, "false" to show only count
+#   $3 - auto_fix: "true" to attempt auto-fix, "false" to report only
+# RETURNS:
+#   0 - No missing packages or successfully fixed
+#   1 - Missing packages found and auto-fix disabled or failed
+# OUTPUTS:
+#   Error message and package list (if verbose) to stdout
+#   Success/failure message if auto-fixing
+#   Next steps guidance if fixed
+# SIDE EFFECTS:
+#   Modifies renv.lock file if auto_fix=true (queries CRAN API)
+#-----------------------------------------------------------------------------
+report_and_fix_missing_lock() {
+    local -n missing_ref="$1"
+    local verbose="${2:-false}"
+    local auto_fix="${3:-false}"
+
+    if [[ ${#missing_ref[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    log_error "Found ${#missing_ref[@]} packages in union but not in renv.lock"
+
+    # List packages if verbose mode or auto-fix mode
+    if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
+        echo ""
+        for pkg in "${missing_ref[@]}"; do
+            echo "  - $pkg"
+        done
+        echo ""
+    else
+        echo ""
+        log_info "Run with --verbose to see the list of missing packages"
+        echo ""
+    fi
+
+    echo "This breaks reproducibility! Collaborators cannot restore your environment."
+    echo ""
+
+    if [[ "$auto_fix" == "true" ]]; then
+        log_info "Auto-fixing: Adding missing packages to renv.lock..."
+        local failed_packages=()
+
+        for pkg in "${missing_ref[@]}"; do
+            if ! add_package_to_renv_lock "$pkg"; then
+                failed_packages+=("$pkg")
+            fi
+        done
+
+        if [[ ${#failed_packages[@]} -eq 0 ]]; then
+            log_success "✅ All missing packages added to renv.lock"
+            echo ""
+            echo "Next steps:"
+            echo "  1. Start R to auto-install packages: make r"
+            echo "     (Auto-restore will install all dependencies automatically)"
+            echo "  2. Rebuild Docker image: make docker-build"
+            echo "  3. Commit changes: git add DESCRIPTION renv.lock && git commit -m 'Add packages'"
+            return 0
+        else
+            log_error "Failed to add packages: ${failed_packages[*]}"
+            echo ""
+            echo "These packages may not be on CRAN. Add them manually:"
+            echo "  make docker-zsh"
+            local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
+            echo "  R> renv::install($pkg_vector)"
+            echo "  R> quit()"
+            return 1
+        fi
+    else
+        local pkg_vector=$(format_r_package_vector "${missing_ref[@]}")
+        echo "Fix with auto-fix flag:"
+        echo "  bash modules/validation.sh --fix"
+        echo ""
+        echo "Or manually in container:"
+        echo "  make docker-zsh"
+        echo "  R> renv::install($pkg_vector)"
+        echo "  R> quit()"
+        return 1
+    fi
+}
+
+#-----------------------------------------------------------------------------
 # FUNCTION: validate_package_environment
 # PURPOSE:  Main validation logic for R package environment consistency
 # DESCRIPTION:
@@ -1083,203 +1464,27 @@ validate_package_environment() {
     log_info "Found ${#renv_packages[@]} packages in renv.lock"
 
     # Step 5: Compute union of all packages from all three sources
-    # The final set should be: code ∪ DESCRIPTION ∪ renv.lock
     local all_packages=()
-
-    # Add packages from code
-    for pkg in "${code_packages[@]}"; do
-        if [[ -n "$pkg" ]]; then
-            all_packages+=("$pkg")
-        fi
-    done
-
-    # Add packages from DESCRIPTION
-    for pkg in "${desc_imports[@]}"; do
-        if [[ -n "$pkg" ]]; then
-            # Check if not already in all_packages
-            local found=false
-            for existing in "${all_packages[@]}"; do
-                if [[ "$pkg" == "$existing" ]]; then
-                    found=true
-                    break
-                fi
-            done
-            if [[ "$found" == false ]]; then
-                all_packages+=("$pkg")
-            fi
-        fi
-    done
-
-    # Add packages from renv.lock (excluding base packages)
-    for pkg in "${renv_packages[@]}"; do
-        if [[ -n "$pkg" ]]; then
-            # Skip base R packages
-            local base_pkgs_str=" ${BASE_PACKAGES[*]} "
-            if [[ "$base_pkgs_str" == *" ${pkg} "* ]]; then
-                continue
-            fi
-
-            # Check if not already in all_packages
-            local found=false
-            for existing in "${all_packages[@]}"; do
-                if [[ "$pkg" == "$existing" ]]; then
-                    found=true
-                    break
-                fi
-            done
-            if [[ "$found" == false ]]; then
-                all_packages+=("$pkg")
-            fi
-        fi
-    done
-
+    mapfile -t all_packages < <(compute_union_packages)
     log_info "Union of all packages: ${#all_packages[@]} packages"
 
-    # Step 6: Find packages missing from DESCRIPTION (in union but not in DESCRIPTION)
+    # Step 6: Find packages missing from DESCRIPTION
     local missing_from_desc=()
-    for pkg in "${all_packages[@]}"; do
-        # Skip empty package names
-        if [[ -z "$pkg" ]]; then
-            continue
-        fi
-
-        # Use literal string matching instead of regex to avoid SC2076
-        local desc_imports_str=" ${desc_imports[*]} "
-        if [[ "$desc_imports_str" != *" ${pkg} "* ]]; then
-            missing_from_desc+=("$pkg")
-        fi
-    done
+    mapfile -t missing_from_desc < <(find_missing_from_description all_packages desc_imports)
 
     # Step 7: Check union → renv.lock consistency
-    # All packages in the union should also be in renv.lock
     log_debug "Checking union → renv.lock consistency..."
     local missing_from_lock=()
-    for pkg in "${all_packages[@]}"; do
-        # Skip empty package names
-        if [[ -z "$pkg" ]]; then
-            continue
-        fi
-
-        # Skip base R packages (they don't need to be in renv.lock)
-        local base_pkgs_str=" ${BASE_PACKAGES[*]} "
-        if [[ "$base_pkgs_str" == *" ${pkg} "* ]]; then
-            log_debug "Skipping base package: $pkg"
-            continue
-        fi
-
-        # Check if package exists in renv.lock
-        local renv_pkgs_str=" ${renv_packages[*]} "
-        if [[ "$renv_pkgs_str" != *" ${pkg} "* ]]; then
-            missing_from_lock+=("$pkg")
-        fi
-    done
+    mapfile -t missing_from_lock < <(find_missing_from_lock all_packages renv_packages)
 
     # Step 8: Handle missing packages from DESCRIPTION
-    if [[ ${#missing_from_desc[@]} -gt 0 ]]; then
-        log_error "Found ${#missing_from_desc[@]} packages missing from DESCRIPTION Imports"
-
-        # List packages if verbose mode or auto-fix mode
-        if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
-            echo ""
-            for pkg in "${missing_from_desc[@]}"; do
-                echo "  - $pkg"
-            done
-            echo ""
-        else
-            echo ""
-            log_info "Run with --verbose to see the list of missing packages"
-            echo ""
-        fi
-
-        if [[ "$auto_fix" == "true" ]]; then
-            log_info "Auto-fixing: Adding missing packages to DESCRIPTION..."
-            local failed_packages=()
-
-            for pkg in "${missing_from_desc[@]}"; do
-                # Add to DESCRIPTION
-                if ! add_package_to_description "$pkg"; then
-                    failed_packages+=("$pkg")
-                fi
-            done
-
-            if [[ ${#failed_packages[@]} -eq 0 ]]; then
-                log_success "✅ All missing packages added to DESCRIPTION"
-                # Continue to check renv.lock consistency
-            else
-                log_error "Failed to add packages to DESCRIPTION: ${failed_packages[*]}"
-                return 1
-            fi
-        else
-            local pkg_vector=$(format_r_package_vector "${missing_from_desc[@]}")
-            echo "Fix with auto-fix flag:"
-            echo "  bash modules/validation.sh --fix"
-            echo ""
-            echo "Or manually add to DESCRIPTION Imports field"
-            return 1
-        fi
+    if ! report_and_fix_missing_description missing_from_desc "$verbose" "$auto_fix"; then
+        return 1
     fi
 
     # Step 9: Report union → renv.lock issues
-    if [[ ${#missing_from_lock[@]} -gt 0 ]]; then
-        log_error "Found ${#missing_from_lock[@]} packages in union but not in renv.lock"
-
-        # List packages if verbose mode or auto-fix mode
-        if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
-            echo ""
-            for pkg in "${missing_from_lock[@]}"; do
-                echo "  - $pkg"
-            done
-            echo ""
-        else
-            echo ""
-            log_info "Run with --verbose to see the list of missing packages"
-            echo ""
-        fi
-
-        echo "This breaks reproducibility! Collaborators cannot restore your environment."
-        echo ""
-
-        if [[ "$auto_fix" == "true" ]]; then
-            log_info "Auto-fixing: Adding missing packages to renv.lock..."
-            local failed_packages=()
-
-            for pkg in "${missing_from_lock[@]}"; do
-                if ! add_package_to_renv_lock "$pkg"; then
-                    failed_packages+=("$pkg")
-                fi
-            done
-
-            if [[ ${#failed_packages[@]} -eq 0 ]]; then
-                log_success "✅ All missing packages added to renv.lock"
-                echo ""
-                echo ""
-                echo "Next steps:"
-                echo "  1. Start R to auto-install packages: make r"
-                echo "     (Auto-restore will install all dependencies automatically)"
-                echo "  2. Rebuild Docker image: make docker-build"
-                echo "  3. Commit changes: git add DESCRIPTION renv.lock && git commit -m 'Add packages'"
-                return 0
-            else
-                log_error "Failed to add packages: ${failed_packages[*]}"
-                echo ""
-                echo "These packages may not be on CRAN. Add them manually:"
-                echo "  make docker-zsh"
-                local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
-                echo "  R> renv::install($pkg_vector)"
-                echo "  R> quit()"
-                return 1
-            fi
-        else
-            local pkg_vector=$(format_r_package_vector "${missing_from_lock[@]}")
-            echo "Fix with auto-fix flag:"
-            echo "  bash modules/validation.sh --fix"
-            echo ""
-            echo "Or manually in container:"
-            echo "  make docker-zsh"
-            echo "  R> renv::install($pkg_vector)"
-            echo "  R> quit()"
-            return 1
-        fi
+    if ! report_and_fix_missing_lock missing_from_lock "$verbose" "$auto_fix"; then
+        return 1
     fi
 
     log_success "✅ All packages properly declared in DESCRIPTION"
