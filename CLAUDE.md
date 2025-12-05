@@ -817,6 +817,64 @@ When working on zzcollab, refer users to:
 - General usage → `ZZCOLLAB_USER_GUIDE.md`
 - Architecture details → `CLAUDE.md` (this file)
 
+## Problem/Solution Documentation Strategy
+
+ZZCOLLAB uses a **three-tier documentation system** for capturing problems and solutions discovered during development and testing. See `docs/DOCUMENTATION_STRATEGY.md` for comprehensive guidance.
+
+### The Three Tiers
+
+**Tier 1: Lessons Learned** (`docs/TESTING_LESSONS_LEARNED.md`)
+- **Purpose**: Capture tactical discoveries - problems found and solutions that worked
+- **When to use**: Same day as discovering a solution
+- **Format**: Narrative + code examples + generalizable lessons
+- **Audience**: All developers on zzcollab projects
+- **Example**: Section 11 - R Version Mismatches in Multi-Environment Development
+
+**Tier 2: Architecture Decision Records** (`docs/adr/`)
+- **Purpose**: Record strategic decisions affecting system design
+- **When to use**: Before/during implementation of major architectural changes
+- **Format**: Formal structure with options analysis, consequences, implementation details
+- **Audience**: Maintainers and future developers making similar decisions
+- **Files**:
+  - `0000-TEMPLATE.md` - ADR template for new decisions
+  - `0001-r-version-detection-and-mismatch-handling.md` - Example ADR
+
+**Tier 3: GitHub Issues** (`.github/ISSUE_TEMPLATE/`)
+- **Purpose**: Track work and discuss problems with team
+- **When to use**: Immediately when issue is discovered
+- **Format**: Structured templates
+- **Types**: Bug reports, feature requests, investigations
+- **Templates**:
+  - `bug_report.md` - For bugs and unexpected behavior
+  - `feature_request.md` - For feature ideas and improvements
+  - `investigation.md` - For problems discovered during development
+  - `config.yml` - Issue template configuration
+
+### Quick Decision Guide
+
+| Situation | Use | Why |
+|-----------|-----|-----|
+| Found solution to a problem | **Lessons Learned** | Captures practical knowledge for reuse |
+| Making major architectural decision | **ADR** | Preserves decision rationale for future |
+| Bug that needs fixing | **GitHub Issue** | Tracks work and enables team discussion |
+| Discovery during development | **Investigation Issue** | Documents problem/solution process |
+| Need guidance on documentation | **DOCUMENTATION_STRATEGY.md** | Comprehensive reference |
+
+### Workflow
+
+1. **Discover a problem** → Create GitHub Issue (Investigation type)
+2. **Find and test a solution** → Add to Lessons Learned (same day)
+3. **Major decision involved** → Create ADR (before/during implementation)
+4. **Link everything** → Reference ADRs in Lessons, link Issues to solutions
+
+### Key Principles
+
+- **Document immediately**: Rough documentation same day is better than perfect documentation never
+- **Link everything**: Lessons → ADRs, ADRs → Issues, Issues → Solutions
+- **Keep Lessons focused**: Document specific discoveries in *this* project
+- **Make ADRs about decisions**: Not explanations, but decision rationale with tradeoff analysis
+- **Use Issues for discussion**: Problems tracked as issues, solutions in Lessons/ADRs
+
 ## Troubleshooting Memories
 
 ### renv Initialization Errors
