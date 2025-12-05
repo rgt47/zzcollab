@@ -44,7 +44,11 @@ set -euo pipefail
 #   require_arg "--team-name" "$team_name_value"
 ##############################################################################
 require_arg() {
-    [[ -n "${2:-}" ]] || { echo "❌ Error: $1 requires an argument" >&2; exit 1; }
+    if [[ -z "${2:-}" ]]; then
+        echo "❌ Error: $1 requires an argument" >&2
+        return 1  # Recoverable: caller can handle error
+    fi
+    return 0
 }
 
 ##############################################################################
@@ -315,28 +319,28 @@ parse_cli_arguments() {
                 shift
                 ;;
             --base-image|-b)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 BASE_IMAGE="$2"
                 USER_PROVIDED_BASE_IMAGE=true
                 shift 2
                 ;;
             --team|-t)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 TEAM_NAME="$2"
                 shift 2
                 ;;
             --project-name|-p)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 PROJECT_NAME="$2"
                 shift 2
                 ;;
             --github-account|-g)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 GITHUB_ACCOUNT="$2"
                 shift 2
                 ;;
             --dockerfile|-f)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 DOCKERFILE_PATH="$2"
                 shift 2
                 ;;
@@ -357,7 +361,7 @@ parse_cli_arguments() {
                     break
                 else
                     echo "❌ Error: --config requires a subcommand (init, set, get, list, validate)" >&2
-                    exit 1
+                    return 1
                 fi
                 ;;
             --next-steps)
@@ -377,30 +381,30 @@ parse_cli_arguments() {
                 fi
                 ;;
             --profile-name|-r)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 PROFILE_NAME="$2"
                 USER_PROVIDED_PROFILE=true
                 shift 2
                 ;;
             --libs|-l)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 LIBS_BUNDLE="$2"
                 USER_PROVIDED_LIBS=true
                 shift 2
                 ;;
             --pkgs|-k)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 PKGS_BUNDLE="$2"
                 USER_PROVIDED_PKGS=true
                 shift 2
                 ;;
             --tag|-a)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 IMAGE_TAG="$2"
                 shift 2
                 ;;
             --r-version)
-                require_arg "$1" "$2"
+                require_arg "$1" "$2" || return 1
                 R_VERSION="$2"
                 USER_PROVIDED_R_VERSION=true
                 shift 2
@@ -432,10 +436,12 @@ parse_cli_arguments() {
             *)
                 echo "❌ Error: Unknown option '$1'" >&2
                 echo "Use --help for usage information" >&2
-                exit 1
+                return 1
                 ;;
         esac
     done
+
+    return 0
 }
 
 #=============================================================================

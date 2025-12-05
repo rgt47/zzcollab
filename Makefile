@@ -48,8 +48,28 @@ install: document
 vignettes: document
 	R -e "devtools::build_vignettes()"
 
-test:
+test: shell-test
 	R -e "devtools::test()"
+
+shell-test:
+	@echo "Running shell unit tests..."
+	@bash tests/shell/run_all_tests.sh
+
+shell-test-verbose:
+	@echo "Running shell unit tests (verbose)..."
+	@bash tests/shell/run_all_tests.sh --verbose
+
+shell-test-core:
+	@echo "Testing core.sh module..."
+	@bash tests/shell/test-core.sh
+
+shell-test-validation:
+	@echo "Testing validation.sh module..."
+	@bash tests/shell/test-validation.sh
+
+shell-test-cli:
+	@echo "Testing cli.sh module..."
+	@bash tests/shell/test-cli.sh
 
 deps:
 	R -e "devtools::install_deps(dependencies = TRUE)"

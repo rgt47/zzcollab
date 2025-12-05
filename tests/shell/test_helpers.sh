@@ -302,7 +302,7 @@ load_module_for_testing() {
     source "$module_path" || {
         echo "❌ Failed to load module: $module_name" >&2
         return 1
-    fi
+    }
 }
 
 ################################################################################
