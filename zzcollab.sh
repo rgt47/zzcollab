@@ -40,11 +40,8 @@ fi
 # DEPENDENCIES: Docker, Git, optional: GitHub CLI (gh), yq for config files
 ##############################################################################
 
-# Bash strict mode: exit on errors, undefined variables, pipe failures
-# -e: exit immediately if any command fails
-# -u: exit if undefined variable is used  
-# -o pipefail: exit if any command in pipeline fails
-set -euo pipefail
+# Bash strict mode is already set above (line 6)
+# No need to set again: -e (exit on error), -u (no undefined vars), -o pipefail (pipe errors)
 
 #=============================================================================
 # SCRIPT CONSTANTS AND DIRECTORY SETUP
@@ -666,6 +663,12 @@ validate_directory_for_setup_no_conflicts() {
 get_r2u_renv_version() {
     local base_image="${BASE_IMAGE:-rocker/r-ver:${R_VERSION:-4.5.1}}"
 
+    # Show progress if verbose (Docker startup takes 5-10 seconds)
+    if [[ "${VERBOSE:-false}" == "true" ]]; then
+        log_info "Checking renv version in Docker image: ${base_image}"
+        log_info "(Docker container startup may take 5-10 seconds...)"
+    fi
+
     # Try to query Docker image for renv version
     local renv_version
     renv_version=$(docker run --rm "${base_image}" R --slave -e "cat(as.character(packageVersion('renv')))" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
@@ -674,7 +677,12 @@ get_r2u_renv_version() {
         log_debug "Detected renv ${renv_version} from ${base_image}"
         echo "$renv_version"
     else
-        log_debug "Could not query Docker image, using default renv 1.1.5"
+        if [[ "${VERBOSE:-false}" == "true" ]]; then
+            log_warn "Could not verify renv version in Docker image"
+            log_warn "Using default renv 1.1.5 (check may have timed out)"
+        else
+            log_debug "Could not query Docker image, using default renv 1.1.5"
+        fi
         echo "1.1.5"
     fi
 }

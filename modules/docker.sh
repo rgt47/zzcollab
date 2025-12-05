@@ -20,6 +20,13 @@ set -euo pipefail
 require_module "core" "templates"
 
 #=============================================================================
+# PLATFORM DETECTION CACHE (Performance optimization)
+#=============================================================================
+
+# Cache platform detection results to avoid redundant checks
+declare -gA PLATFORM_CACHE=()
+
+#=============================================================================
 # MANIFEST TRACKING FUNCTIONS
 #=============================================================================
 
@@ -108,12 +115,13 @@ get_multiarch_base_image() {
 # RETURNS:
 #   0 - Always succeeds, outputs platform arguments for Docker commands
 # GLOBALS:
-#   READ:  None (fully parameterized), uname -m output
-#   WRITE: None (outputs to stdout)
+#   READ:  PLATFORM_CACHE (caching results for performance)
+#   WRITE: PLATFORM_CACHE (stores computed results)
 # DESCRIPTION:
 #   This function determines the appropriate --platform argument for Docker build/run
 #   commands based on system architecture and image compatibility. It handles the
 #   complexity of running AMD64-only images on ARM64 systems through emulation.
+#   Results are cached to avoid redundant architecture detection.
 # PLATFORM LOGIC:
 #   - auto: Automatically detect best platform based on image compatibility
 #   - amd64: Force AMD64 platform (works on both architectures via emulation)
@@ -126,7 +134,18 @@ get_multiarch_base_image() {
 get_docker_platform_args() {
     local base_image="${1:-}"
     local force_platform="${2:-auto}"  # Platform override, defaults to auto
+
+    # Create cache key from parameters
+    local cache_key="${base_image}:${force_platform}"
+
+    # Return cached result if available
+    if [[ -v PLATFORM_CACHE["$cache_key"] ]]; then
+        echo "${PLATFORM_CACHE["$cache_key"]}"
+        return 0
+    fi
+
     local architecture="$(uname -m)"
+    local result=""
 
     case "$force_platform" in
         "auto")
@@ -137,29 +156,33 @@ get_docker_platform_args() {
                        [[ "$base_image" == "rocker/tidyverse" ]] ||
                        [[ "$base_image" == "rocker/geospatial" ]] ||
                        [[ "$base_image" == "rocker/shiny" ]]; then
-                        echo "--platform linux/amd64"  # Force AMD64 for incompatible images
+                        result="--platform linux/amd64"  # Force AMD64 for incompatible images
                     else
-                        echo ""  # Use native platform for multi-arch images
+                        result=""  # Use native platform for multi-arch images
                     fi
                     ;;
                 *)
-                    echo ""  # Use native platform
+                    result=""  # Use native platform
                     ;;
             esac
             ;;
         "amd64")
-            echo "--platform linux/amd64"
+            result="--platform linux/amd64"
             ;;
         "arm64")
-            echo "--platform linux/arm64"
+            result="--platform linux/arm64"
             ;;
         "native")
-            echo ""
+            result=""
             ;;
         *)
-            echo ""
+            result=""
             ;;
     esac
+
+    # Cache the result and output it
+    PLATFORM_CACHE["$cache_key"]="$result"
+    echo "$result"
 }
 
 #=============================================================================

@@ -37,12 +37,12 @@ PLACEHOLDER_PACKAGES=(
     "zzcollab"  # Don't declare ourselves as a dependency
 )
 
-# Dynamically add current package name to placeholders (don't self-reference)
-if [[ -f "DESCRIPTION" ]]; then
-    CURRENT_PACKAGE=$(grep '^Package:' DESCRIPTION | sed 's/^Package:[[:space:]]*//')
-    if [[ -n "$CURRENT_PACKAGE" ]]; then
-        PLACEHOLDER_PACKAGES+=("$CURRENT_PACKAGE")
-    fi
+# Cache the current package name once (avoid redundant file reads)
+readonly CURRENT_PACKAGE="${CURRENT_PACKAGE:-$(grep '^Package:' DESCRIPTION 2>/dev/null | sed 's/^Package:[[:space:]]*//' || echo '')}"
+
+# Add current package to placeholders (don't self-reference)
+if [[ -n "$CURRENT_PACKAGE" ]]; then
+    PLACEHOLDER_PACKAGES+=("$CURRENT_PACKAGE")
 fi
 
 #==============================================================================
