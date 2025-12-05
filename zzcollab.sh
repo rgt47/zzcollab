@@ -101,7 +101,10 @@ fi
 # This function (from cli.sh) parses flags like -t, -p, --help, etc.
 # and sets global variables that control script behavior
 # "$@" passes all script arguments to the function
-process_cli "$@"
+if ! process_cli "$@"; then
+    log_error "Failed to process command line arguments"
+    exit 1
+fi
 
 #=============================================================================
 # EARLY EXIT FOR HELP AND NEXT STEPS (before loading heavy modules)

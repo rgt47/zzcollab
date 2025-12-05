@@ -491,13 +491,21 @@ validate_cli_arguments() {
 # Arguments: All command line arguments
 process_cli() {
     # Parse command line arguments
-    parse_cli_arguments "$@"
+    if ! parse_cli_arguments "$@"; then
+        log_error "Failed to parse command line arguments"
+        return 1
+    fi
 
     # Validate argument combinations
-    validate_cli_arguments
+    if ! validate_cli_arguments; then
+        log_error "Invalid argument combination"
+        return 1
+    fi
 
     # Export variables for other modules
     export_cli_variables
+
+    return 0
 }
 
 # Helper functions for template selection
