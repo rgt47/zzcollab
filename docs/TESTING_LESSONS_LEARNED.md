@@ -755,4 +755,152 @@ test_that("my_new_function works with production parameters (SLOW)", {
 
 ---
 
+## 11. R Version Mismatches in Multi-Environment Development
+
+### The Problem
+
+**Context**: When upgrading your local R installation, existing projects pinned to older R versions (in `renv.lock`) will fail to initialize properly.
+
+**What Happened**:
+```
+❌ R version MISMATCH detected!
+❌
+❌   Specified R version:  4.5.1
+❌   renv.lock R version:  4.5.2
+❌
+❌ This mismatch will cause:
+❌   • Binary package incompatibility
+❌   • renv::restore() failures
+❌   • Different computational results
+```
+
+- User upgraded local R from 4.5.1 to 4.5.2
+- `zzcollab` tool detected mismatch between system R and `renv.lock` version
+- Project failed to initialize until version mismatch was resolved
+- This is particularly important in reproducible research where exact versions matter
+
+### The Solution
+
+**Option 1: Use R version from renv.lock (Recommended for reproducibility)**
+
+```bash
+# Tell zzcollab to use the version specified in renv.lock
+zzcollab --r-version 4.5.2
+# OR set it in zzcollab config
+zzcollab --config set r-version 4.5.2
+```
+
+**Option 2: Update renv.lock to match new R version (For ongoing development)**
+
+```bash
+# 1. Install the new R version you want to use
+# 2. Reinitialize renv with the new version
+R -e "renv::init(force = TRUE)"
+# 3. Tell zzcollab to use the new version
+zzcollab --r-version 4.5.1
+```
+
+**Best Practice: Create a `.zzcollab-rc` file in project root**
+
+```bash
+# .zzcollab-rc
+R_VERSION=4.5.2
+PROFILE=ubuntu_standard_minimal
+```
+
+Then use:
+```bash
+zzcollab  # Reads from .zzcollab-rc automatically
+```
+
+### Generalizable Lessons
+
+1. **Version pinning is intentional, not accidental**
+   - `renv.lock` specifies exact R version because computational reproducibility requires it
+   - Don't casually update R without understanding project requirements
+   - Different R versions can produce slightly different numerical results
+
+2. **Use version configuration files**
+   ```bash
+   # Good: Store in version control
+   echo "R_VERSION=4.5.2" > .zzcollab-rc
+   git add .zzcollab-rc
+
+   # Also document in README
+   # Maintainer: Updates renv.lock when changing R versions
+   ```
+
+3. **Test version compatibility explicitly**
+   - When upgrading R, run the full analysis pipeline with both versions
+   - Compare outputs to identify any divergence
+   - Update renv.lock only if outputs are identical
+
+4. **Communicate version requirements clearly**
+   ```markdown
+   # Project Requirements
+   - **R version**: 4.5.2 (specified in renv.lock)
+   - **Key packages**: mice, glmnet, mediation (see renv.lock for versions)
+
+   ## Getting Started
+   The project will automatically use R 4.5.2 via:
+   ```bash
+   zzcollab --r-version 4.5.2
+   ```
+   ```
+
+### zzcollab Pattern
+
+For zzcollab-based projects:
+
+1. **Always store R version in renv.lock**
+   ```bash
+   # Initialize with exact R version
+   R --version  # Check your current version
+   renv::init()  # Creates renv.lock with current version
+   ```
+
+2. **Document version requirements**
+   - README should mention R version requirement
+   - Include instructions for handling mismatches
+   - Keep `.zzcollab-rc` in version control if using config file
+
+3. **Before upgrading R**
+   ```bash
+   # Step 1: Check what version you're pinned to
+   grep '"R":' renv.lock
+
+   # Step 2: If upgrading R locally, DECIDE:
+   # - Keep project on old version: use `zzcollab --r-version 4.5.1`
+   # - Update project to new version: run `renv::init(force = TRUE)`
+
+   # Step 3: Update renv.lock if upgrading
+   # Step 4: Test the full pipeline
+   # Step 5: Commit updated renv.lock
+   ```
+
+4. **Handle in CI/CD**
+   ```yaml
+   # .github/workflows/test.yml
+   - name: Set up R
+     uses: r-lib/actions/setup-r@v2
+     with:
+       r-version: '4.5.2'  # Match renv.lock exactly
+   ```
+
+### Common Error Messages and Solutions
+
+```
+# Error 1: "R version MISMATCH detected"
+# Solution: Use zzcollab --r-version <version_from_renv.lock>
+
+# Error 2: "renv::restore() failures"
+# Solution: Either match R versions OR update renv.lock with renv::init(force = TRUE)
+
+# Error 3: "Different computational results"
+# Solution: This is expected when R versions differ. Don't ignore it - it matters
+#           for reproducibility. Stick to specified R version.
+```
+
+---
+
 **Conclusion**: These lessons represent battle-tested insights from debugging 873 tests across multiple complex statistical methods. Applying these patterns systematically will save hours of debugging time and create more robust, maintainable zzcollab research compendia.

@@ -1,0 +1,11 @@
+# GitHub Issue Templates Configuration
+# Determines which templates appear in the issue creation UI
+
+blank_issues_enabled: false
+contact_links:
+  - name: Need Help?
+    url: https://github.com/anthropics/claude-code/issues
+    about: Ask questions about using Claude Code or zzcollab
+  - name: Discuss
+    url: https://github.com/anthropics/claude-code/discussions
+    about: Share ideas and discuss features with the community
