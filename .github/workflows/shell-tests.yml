@@ -223,9 +223,9 @@ jobs:
           # Overall summary
           echo "## Overall Test Coverage"
           echo ""
-          total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total))
-          total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed))
-          total_failed=$((config_failed + docker_failed + (cli_total - cli_passed) + validation_failed + profile_failed + e2e_failed))
+          total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total + dockerfile_total))
+          total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed + dockerfile_passed))
+          total_failed=$((config_failed + docker_failed + (cli_total - cli_passed) + validation_failed + profile_failed + e2e_failed + dockerfile_failed))
           if [ "$total_tests" -gt 0 ]; then
             total_percent=$(awk "BEGIN {printf \"%.1f\", ($total_passed / $total_tests) * 100}")
           else
@@ -267,6 +267,7 @@ jobs:
           echo "| \`tests/shell/test-validation.bats\` | $validation_total | \`modules/validation.sh\` | ✅ $validation_passed/$validation_total passing |"
           echo "| \`tests/shell/test-profile-validation.bats\` | $profile_total | \`modules/profile_validation.sh\` | ✅ $profile_passed/$profile_total passing |"
           echo "| \`tests/integration/test-e2e-reproducibility.bats\` | $e2e_total | Five Pillars Integration | ✅ $e2e_passed/$e2e_total passing |"
+          echo "| \`tests/shell/test-dockerfile-generator.bats\` | $dockerfile_total | \`modules/dockerfile_generator.sh\` | ✅ $dockerfile_passed/$dockerfile_total passing |"
           echo ""
 
           # CI/CD status
@@ -365,9 +366,14 @@ jobs:
         e2e_total=$(echo "$e2e_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
         e2e_passed=$(echo "$e2e_output" | grep -c '^ok ' || echo "0")
 
+        # Dockerfile generator tests
+        dockerfile_output=$(bats tests/shell/test-dockerfile-generator.bats 2>&1 || true)
+        dockerfile_total=$(echo "$dockerfile_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        dockerfile_passed=$(echo "$dockerfile_output" | grep -c '^ok ' || echo "0")
+
         # Calculate totals
-        total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total))
-        total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed))
+        total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total + e2e_total + dockerfile_total))
+        total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed + e2e_passed + dockerfile_passed))
 
         # Calculate pass rate
         if [ $total_tests -gt 0 ]; then
