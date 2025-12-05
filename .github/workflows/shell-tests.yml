@@ -55,6 +55,11 @@ jobs:
         echo "Running validation module tests..."
         bats tests/shell/test-validation.bats
 
+    - name: Run profile validation module tests
+      run: |
+        echo "Running profile validation module tests..."
+        bats tests/shell/test-profile-validation.bats
+
     - name: Generate test coverage report
       if: always()
       run: |
@@ -148,12 +153,31 @@ jobs:
           echo "- **Pass Rate**: ${validation_percent}%"
           echo ""
 
+          # Profile validation tests
+          echo "### Profile Validation Module (modules/profile_validation.sh)"
+          echo ""
+          profile_result=$(bats tests/shell/test-profile-validation.bats 2>&1 || true)
+          profile_total=$(echo "$profile_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          profile_passed=$(echo "$profile_result" | grep -c '^ok ' || echo "0")
+          profile_failed=$((profile_total - profile_passed))
+          if [ "$profile_total" -gt 0 ]; then
+            profile_percent=$(awk "BEGIN {printf \"%.1f\", ($profile_passed / $profile_total) * 100}")
+          else
+            profile_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $profile_total"
+          echo "- **Passing**: $profile_passed"
+          echo "- **Failing**: $profile_failed"
+          echo "- **Pass Rate**: ${profile_percent}%"
+          echo ""
+
           # Overall summary
           echo "## Overall Test Coverage"
           echo ""
-          total_tests=$((config_total + docker_total + cli_total + validation_total))
-          total_passed=$((config_passed + docker_passed + cli_passed + validation_passed))
-          total_failed=$((config_failed + docker_failed + (cli_total - cli_passed) + validation_failed))
+          total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total))
+          total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed))
+          total_failed=$((config_failed + docker_failed + (cli_total - cli_passed) + validation_failed + profile_failed))
           if [ "$total_tests" -gt 0 ]; then
             total_percent=$(awk "BEGIN {printf \"%.1f\", ($total_passed / $total_tests) * 100}")
           else
@@ -193,6 +217,7 @@ jobs:
           echo "| \`tests/shell/test-docker.bats\` | $docker_total | \`modules/docker.sh\` | ✅ $docker_passed/$docker_total passing |"
           echo "| \`tests/shell/test-cli.sh\` | $cli_total | \`modules/cli.sh\` | ✅ $cli_passed/$cli_total passing |"
           echo "| \`tests/shell/test-validation.bats\` | $validation_total | \`modules/validation.sh\` | ✅ $validation_passed/$validation_total passing |"
+          echo "| \`tests/shell/test-profile-validation.bats\` | $profile_total | \`modules/profile_validation.sh\` | ✅ $profile_passed/$profile_total passing |"
           echo ""
 
           # CI/CD status
@@ -281,9 +306,14 @@ jobs:
         validation_total=$(echo "$validation_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
         validation_passed=$(echo "$validation_output" | grep -c '^ok ' || echo "0")
 
+        # Profile validation tests
+        profile_output=$(bats tests/shell/test-profile-validation.bats 2>&1 || true)
+        profile_total=$(echo "$profile_output" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+        profile_passed=$(echo "$profile_output" | grep -c '^ok ' || echo "0")
+
         # Calculate totals
-        total_tests=$((config_total + docker_total + cli_total + validation_total))
-        total_passed=$((config_passed + docker_passed + cli_passed + validation_passed))
+        total_tests=$((config_total + docker_total + cli_total + validation_total + profile_total))
+        total_passed=$((config_passed + docker_passed + cli_passed + validation_passed + profile_passed))
 
         # Calculate pass rate
         if [ $total_tests -gt 0 ]; then
