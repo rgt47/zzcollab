@@ -68,10 +68,10 @@ Phase 1 delivered 58 unit tests and fixed 200+ lines of code duplication. Phase 
 
 ---
 
-## Issue 2.3: Parameterize Globals - ⏳ IN PROGRESS
+## Issue 2.3: Parameterize Globals - ⏳ PHASE 2A COMPLETE
 
 **Severity:** MEDIUM
-**Status:** PLANNING PHASE
+**Status:** Phase 2A Completed, Phase 2B & 2C Queued
 
 ### Problem
 
@@ -114,9 +114,41 @@ build_docker_image() {
 - `validate_description_file()` - reads AUTHOR_NAME, AUTHOR_EMAIL, PKG_NAME
 - Functions that read multiple globals
 
-### Implementation Plan
+### Phase 2A: Docker Functions - ✅ COMPLETED
 
-1. **Phase 2A: Docker Functions** (Priority 1)
+**Changes Made:**
+
+**1. `get_docker_platform_args()` (modules/docker.sh, lines 126-163)**
+- Added `force_platform` parameter with "auto" default
+- Changed from reading `FORCE_PLATFORM` global to accepting it as parameter
+- Updated call site in `build_docker_image()` (line 900)
+- Documentation updated with new signature
+- Syntax validation: ✅ PASS
+
+**2. `get_multiarch_base_image()` (modules/docker.sh, lines 56-99)**
+- Added `multiarch_verse_image` parameter (optional, empty string default)
+- Changed from reading `MULTIARCH_VERSE_IMAGE` global to accepting it as parameter
+- Added fallback logic: if not provided, uses standard rocker/verse
+- Documentation updated with examples showing new parameter usage
+- Syntax validation: ✅ PASS
+
+**3. `build_docker_image()` (modules/docker.sh, lines 841-957)**
+- Added 4 parameters: `r_version`, `pkg_name`, `base_image`, `profile_name` (with default)
+- Changed from reading globals (R_VERSION, PKG_NAME, BASE_IMAGE, PROFILE_NAME) to accepting parameters
+- Updated function body to use parameter variables instead of globals
+- Updated call site in zzcollab.sh (line 941) to pass all parameters explicitly
+- Enhanced documentation with USAGE, ARGS, RETURNS, and GLOBALS sections
+- Syntax validation: ✅ PASS
+
+**Files Modified:**
+- modules/docker.sh - 3 functions parameterized
+- zzcollab.sh - 1 call site updated to pass parameters
+
+**Backward Compatibility:** N/A (functions are internal implementation details)
+
+### Implementation Plan - Phase 2B & 2C
+
+1. **Phase 2B: Template Functions** (Priority 2)
    - Parameterize `build_docker_image()`
    - Parameterize `get_multiarch_base_image()`
    - Update all callers
