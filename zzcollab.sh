@@ -568,31 +568,41 @@ confirm_overwrite_conflicts() {
 # - Looks for .zzcollab_manifest.json or .zzcollab_manifest.txt
 # - Checks for R package structure (DESCRIPTION + R/ + analysis/)
 # - Allows updates like changing base images, build modes, etc.
+##############################################################################
+# Function: validate_directory_for_setup
+# Purpose: Validate directory is suitable for zzcollab project initialization
+# Args:
+#   $1 (optional): check_conflicts - true/false (default: true)
+#                  If true, runs conflict detection; if false, skips it
+# Returns: 0 if valid, exits 1 if invalid
+# Side Effects: May prompt user for confirmation
+##############################################################################
 validate_directory_for_setup() {
+    local check_conflicts="${1:-true}"
     local current_dir
     current_dir=$(basename "$PWD")
-    
+
     # Skip all directory validation if --force is used (advanced users)
     if [[ "${FORCE_DIRECTORY:-false}" == "true" ]]; then
         log_warn "⚠️  Directory validation skipped due to --force flag"
         log_info "Proceeding with setup in current directory: $PWD"
         return 0
     fi
-    
+
     # Check if this is an existing zzcollab project (allow parameter updates)
     if [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]] || [[ -f "DESCRIPTION" && -d "R" && -d "analysis" ]]; then
         log_debug "✅ Detected existing zzcollab project - allowing parameter updates"
         log_info "You can safely run zzcollab here to modify build settings, base images, etc."
         return 0
     fi
-    
+
     # Check if this is a directory where team initialization was completed (common workflow)
     if [[ -f ".zzcollab_team_setup" ]]; then
         log_info "✅ Detected directory with completed team initialization"
         log_info "Proceeding with full project setup (this is the intended workflow after -i)"
         return 0
     fi
-    
+
     # Critical protection: Never allow installation in home directory
     if [[ "$PWD" == "$HOME" ]]; then
         log_error "🚫 CRITICAL SAFETY CHECK FAILED:"
@@ -607,7 +617,7 @@ validate_directory_for_setup() {
         log_info "Then run zzcollab in the appropriate project directory"
         exit 1
     fi
-    
+
     # Critical protection: Common problematic directories
     local problematic_dirs=("/Users" "/home" "/root" "/tmp" "/var" "/usr" "/opt" "/etc")
     for dir in "${problematic_dirs[@]}"; do
@@ -618,7 +628,7 @@ validate_directory_for_setup() {
             exit 1
         fi
     done
-    
+
     # Skip validation for certain directories that are expected to be non-empty
     if [[ "$current_dir" == "zzcollab" ]]; then
         log_warn "Running zzcollab setup in the zzcollab source directory"
@@ -631,82 +641,20 @@ validate_directory_for_setup() {
         fi
         return 0
     fi
-    
-    # Use intelligent conflict detection instead of generic file count
-    confirm_overwrite_conflicts
+
+    # Conditional conflict detection based on parameter
+    if [[ "$check_conflicts" == "true" ]]; then
+        confirm_overwrite_conflicts
+    else
+        log_debug "✅ Directory validation passed (conflict detection skipped)"
+    fi
+
     return 0
 }
 
-# Function: validate_directory_for_setup_no_conflicts
-# Purpose: Same as validate_directory_for_setup but without conflict detection
-# Used when conflict detection has already been performed separately
+# Deprecated alias for backwards compatibility
 validate_directory_for_setup_no_conflicts() {
-    local current_dir
-    current_dir=$(basename "$PWD")
-
-    # Skip all directory validation if --force is used (advanced users)
-    if [[ "${FORCE_DIRECTORY:-false}" == "true" ]]; then
-        log_warn "⚠️  Directory validation skipped due to --force flag"
-        log_info "Proceeding with setup in current directory: $PWD"
-        return 0
-    fi
-
-    # Check if this is an existing zzcollab project (allow parameter updates)
-    if [[ -f ".zzcollab_manifest.json" ]] || [[ -f ".zzcollab_manifest.txt" ]] || [[ -f "DESCRIPTION" && -d "R" && -d "analysis" ]]; then
-        log_debug "✅ Detected existing zzcollab project - allowing parameter updates"
-        log_info "You can safely run zzcollab here to modify build settings, base images, etc."
-        return 0
-    fi
-
-    # Check if this is a directory where team initialization was completed (common workflow)
-    if [[ -f ".zzcollab_team_setup" ]]; then
-        log_info "✅ Detected directory with completed team initialization"
-        log_info "Proceeding with full project setup (this is the intended workflow after -i)"
-        return 0
-    fi
-
-    # Critical protection: Never allow installation in home directory
-    if [[ "$PWD" == "$HOME" ]]; then
-        log_error "🚫 CRITICAL SAFETY CHECK FAILED:"
-        log_error "Cannot run zzcollab in your home directory ($HOME)"
-        log_error "This would clutter your home directory with project files"
-        echo ""
-        log_info "💡 RECOMMENDED ACTIONS:"
-        log_info "  1. Create a projects directory: mkdir ~/projects && cd ~/projects"
-        log_info "  2. Create a specific project directory: mkdir ~/my-analysis && cd ~/my-analysis"
-        log_info "  3. Use a dedicated workspace: cd /path/to/your/workspace"
-        echo ""
-        log_info "Then run zzcollab in the appropriate project directory"
-        exit 1
-    fi
-
-    # Critical protection: Common problematic directories
-    local problematic_dirs=("/Users" "/home" "/root" "/tmp" "/var" "/usr" "/opt" "/etc")
-    for dir in "${problematic_dirs[@]}"; do
-        if [[ "$PWD" == "$dir" ]]; then
-            log_error "🚫 CRITICAL SAFETY CHECK FAILED:"
-            log_error "Cannot run zzcollab in system directory: $PWD"
-            log_error "This could damage your system or create security issues"
-            exit 1
-        fi
-    done
-
-    # Skip validation for certain directories that are expected to be non-empty
-    if [[ "$current_dir" == "zzcollab" ]]; then
-        log_warn "Running zzcollab setup in the zzcollab source directory"
-        log_warn "This will create project files alongside the zzcollab source code"
-        read -p "Are you sure you want to continue? [y/N] " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_info "Setup cancelled by user"
-            exit 0
-        fi
-        return 0
-    fi
-
-    # Note: conflict detection removed - assumed to have been performed separately
-    log_debug "✅ Directory validation passed"
-    return 0
+    validate_directory_for_setup false
 }
 
 # Function: get_r2u_renv_version

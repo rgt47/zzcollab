@@ -45,6 +45,36 @@ if [[ -f "DESCRIPTION" ]]; then
     fi
 fi
 
+#==============================================================================
+# HELPER FUNCTIONS
+#==============================================================================
+
+##############################################################################
+# Function: verify_description_file
+# Purpose: Verify DESCRIPTION file exists and is writable
+# Args:
+#   $1 (optional): desc_file - Path to DESCRIPTION file (default: DESCRIPTION)
+#   $2 (optional): require_write - true/false (default: false)
+# Returns: 0 if valid, 1 if missing or not writable
+# Globals: None
+##############################################################################
+verify_description_file() {
+    local desc_file="${1:-DESCRIPTION}"
+    local require_write="${2:-false}"
+
+    if [[ ! -f "$desc_file" ]]; then
+        log_error "DESCRIPTION file not found: $desc_file"
+        return 1
+    fi
+
+    if [[ "$require_write" == "true" ]] && [[ ! -w "$desc_file" ]]; then
+        log_error "DESCRIPTION file not writable: $desc_file"
+        return 1
+    fi
+
+    return 0
+}
+
 # Directories to scan for R code
 STANDARD_DIRS=("." "R" "scripts" "analysis")
 STRICT_DIRS=("." "R" "scripts" "analysis" "tests" "vignettes" "inst")
@@ -135,15 +165,8 @@ add_package_to_description() {
     local pkg="$1"
     local desc_file="DESCRIPTION"
 
-    if [[ ! -f "$desc_file" ]]; then
-        log_error "DESCRIPTION file not found"
-        return 1
-    fi
-
-    if [[ ! -w "$desc_file" ]]; then
-        log_error "DESCRIPTION file not writable"
-        return 1
-    fi
+    # Verify file exists and is writable
+    verify_description_file "$desc_file" true || return 1
 
     log_debug "Adding $pkg to DESCRIPTION Imports..."
 
@@ -736,13 +759,9 @@ parse_description_suggests() {
 remove_unused_packages_from_description() {
     local strict_mode="${1:-false}"
 
-    if [[ ! -f "DESCRIPTION" ]]; then
-        log_warn "DESCRIPTION file not found, skipping cleanup"
-        return 1
-    fi
-
-    if [[ ! -w "DESCRIPTION" ]]; then
-        log_warn "DESCRIPTION file not writable, skipping cleanup"
+    # Verify file exists and is writable
+    if ! verify_description_file "DESCRIPTION" true; then
+        log_warn "Skipping package cleanup - DESCRIPTION file not available"
         return 1
     fi
 

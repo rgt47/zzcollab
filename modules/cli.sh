@@ -47,6 +47,169 @@ require_arg() {
     [[ -n "${2:-}" ]] || { echo "❌ Error: $1 requires an argument" >&2; exit 1; }
 }
 
+##############################################################################
+# FUNCTION: validate_team_name
+# PURPOSE:  Validate team name format and constraints
+# ARGS:     $1 - team name to validate
+# RETURNS:  0 if valid, 1 if invalid
+# DESCRIPTION:
+#   Validates team name:
+#   - Alphanumeric + hyphens only
+#   - 2-50 characters
+#   - Not reserved (zzcollab, docker, github, etc.)
+##############################################################################
+validate_team_name() {
+    local name="$1"
+
+    if [[ -z "$name" ]]; then
+        log_error "Team name cannot be empty"
+        return 1
+    fi
+
+    # Check format: alphanumeric + hyphens, 2-50 chars
+    if ! [[ "$name" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$ ]] || [[ ${#name} -lt 2 ]]; then
+        log_error "Invalid team name: '$name'"
+        log_error "Team names must be 2-50 characters: alphanumeric and hyphens only"
+        log_error "Examples: 'my-team', 'lab-123', 'research'"
+        return 1
+    fi
+
+    # Check length
+    if [[ ${#name} -gt 50 ]]; then
+        log_error "Team name too long: ${#name} characters (max: 50)"
+        return 1
+    fi
+
+    # Check not reserved
+    local reserved=("zzcollab" "docker" "github" "root" "system" "admin" "test")
+    for reserved_name in "${reserved[@]}"; do
+        if [[ "$name" == "$reserved_name" ]]; then
+            log_error "Team name '$name' is reserved and cannot be used"
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+##############################################################################
+# FUNCTION: validate_project_name
+# PURPOSE:  Validate project name format
+# ARGS:     $1 - project name to validate
+# RETURNS:  0 if valid, 1 if invalid
+##############################################################################
+validate_project_name() {
+    local name="$1"
+
+    if [[ -z "$name" ]]; then
+        log_error "Project name cannot be empty"
+        return 1
+    fi
+
+    # Check format: alphanumeric + hyphens + underscores, 1-50 chars
+    if ! [[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
+        log_error "Invalid project name: '$name'"
+        log_error "Project names must start with letter/digit, use alphanumeric, hyphens, underscores"
+        return 1
+    fi
+
+    if [[ ${#name} -gt 50 ]]; then
+        log_error "Project name too long: ${#name} characters (max: 50)"
+        return 1
+    fi
+
+    return 0
+}
+
+##############################################################################
+# FUNCTION: validate_base_image
+# PURPOSE:  Validate Docker base image reference format
+# ARGS:     $1 - base image reference to validate
+# RETURNS:  0 if valid, 1 if invalid
+# DESCRIPTION:
+#   Validates Docker image format: [registry/]image[:tag]
+#   Examples: rocker/rstudio, rocker/rstudio:4.3.1, ghcr.io/org/image
+##############################################################################
+validate_base_image() {
+    local image="$1"
+
+    if [[ -z "$image" ]]; then
+        log_error "Base image cannot be empty"
+        return 1
+    fi
+
+    # Basic docker image format validation
+    # Format: [registry/]image[:tag]
+    # Registry can be: hostname, hostname:port, or org name
+    # Image name: alphanumeric, dots, hyphens, underscores
+    # Tag: alphanumeric, dots, hyphens, underscores
+    if ! [[ "$image" =~ ^[a-zA-Z0-9.-]+(/[a-zA-Z0-9._-]+)?(:[a-zA-Z0-9._-]+)?$ ]]; then
+        log_error "Invalid base image reference: '$image'"
+        log_error "Valid formats:"
+        log_error "  - 'rocker/rstudio' (Docker Hub)"
+        log_error "  - 'rocker/rstudio:4.3.1' (with tag)"
+        log_error "  - 'ghcr.io/org/image' (other registry)"
+        return 1
+    fi
+
+    return 0
+}
+
+##############################################################################
+# FUNCTION: validate_r_version
+# PURPOSE:  Validate R version format (X.Y.Z)
+# ARGS:     $1 - R version to validate
+# RETURNS:  0 if valid, 1 if invalid
+##############################################################################
+validate_r_version() {
+    local version="$1"
+
+    if [[ -z "$version" ]]; then
+        log_error "R version cannot be empty"
+        return 1
+    fi
+
+    # Format: X.Y.Z (e.g., 4.3.1)
+    if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        log_error "Invalid R version: '$version'"
+        log_error "Expected format: X.Y.Z (e.g., '4.3.1')"
+        return 1
+    fi
+
+    return 0
+}
+
+##############################################################################
+# FUNCTION: validate_bundle_name
+# PURPOSE:  Validate bundle name exists in bundles.yaml
+# ARGS:     $1 - bundle type (package_bundles or library_bundles)
+#           $2 - bundle name to validate
+# RETURNS:  0 if valid, 1 if invalid
+##############################################################################
+validate_bundle_name() {
+    local bundle_type="$1"
+    local bundle_name="$2"
+
+    if [[ -z "$bundle_name" ]]; then
+        return 0  # Empty is OK (optional)
+    fi
+
+    if [[ ! -f "${TEMPLATES_DIR}/bundles.yaml" ]]; then
+        log_warn "Bundles file not found, skipping bundle validation"
+        return 0
+    fi
+
+    # Check bundle exists using yq
+    if ! yq eval ".${bundle_type}.${bundle_name}" "${TEMPLATES_DIR}/bundles.yaml" &>/dev/null; then
+        log_error "Bundle not found: $bundle_name"
+        log_error "Available ${bundle_type}:"
+        yq eval ".${bundle_type} | keys" "${TEMPLATES_DIR}/bundles.yaml" 2>/dev/null | sed 's/^/  - /' || true
+        return 1
+    fi
+
+    return 0
+}
+
 #=============================================================================
 # CLI VARIABLE INITIALIZATION
 #=============================================================================

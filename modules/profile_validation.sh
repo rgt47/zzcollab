@@ -7,6 +7,49 @@ set -euo pipefail
 BUNDLES_FILE="${TEMPLATES_DIR}/bundles.yaml"
 
 #-----------------------------------------------------------------------------
+# FUNCTION: query_bundle_value
+# PURPOSE:  Safely query YAML bundle values with error handling
+# DESCRIPTION:
+#   Wraps yq queries with consistent error handling. Validates that bundles
+#   file exists before querying. Returns error message with available options
+#   if bundle not found. Eliminates duplicate yq query patterns.
+# ARGS:
+#   $1 - bundle_type: "package_bundles" or "library_bundles"
+#   $2 - bundle_name: Name of the specific bundle to query
+#   $3 - query_path: yq query path (e.g., ".packages", ".deps[]", ".bioconductor")
+# RETURNS:
+#   0 - Query successful
+#   1 - Error (file not found, query failed)
+# OUTPUTS:
+#   Query result to stdout
+# EXAMPLE:
+#   query_bundle_value "package_bundles" "tidyverse" ".packages | join(\"', '\")"
+#   query_bundle_value "library_bundles" "geospatial" ".deps[]"
+#   query_bundle_value "package_bundles" "tidyverse" ".bioconductor // false"
+#-----------------------------------------------------------------------------
+query_bundle_value() {
+    local bundle_type="$1"
+    local bundle_name="$2"
+    local query_path="$3"
+
+    # Validate bundles file exists
+    if [[ ! -f "$BUNDLES_FILE" ]]; then
+        log_error "❌ Bundles file not found: $BUNDLES_FILE"
+        return 1
+    fi
+
+    # Query value with error handling
+    local result
+    if result=$(yq eval ".${bundle_type}.${bundle_name}${query_path}" "$BUNDLES_FILE" 2>/dev/null); then
+        printf '%s' "$result"
+        return 0
+    else
+        log_error "❌ Failed to query ${bundle_type}.${bundle_name}${query_path} from $BUNDLES_FILE"
+        return 1
+    fi
+}
+
+#-----------------------------------------------------------------------------
 # FUNCTION: list_available_profiles
 # PURPOSE:  List all available Docker profiles by scanning template files
 # DESCRIPTION:
@@ -630,23 +673,21 @@ generate_r_package_install_commands() {
         return 0
     fi
 
-    if [[ ! -f "$BUNDLES_FILE" ]]; then
-        log_error "❌ Bundles file not found: $BUNDLES_FILE"
-        return 1
-    fi
-
     # Extract package list from bundles.yaml
     local packages
-    packages=$(yq eval ".package_bundles.${pkgs_bundle}.packages | join(\"', '\")" "$BUNDLES_FILE" 2>/dev/null)
-
-    if [[ "$packages" == "null" ]] || [[ -z "$packages" ]]; then
+    if ! packages=$(query_bundle_value "package_bundles" "$pkgs_bundle" ".packages | join(\"', '\")"); then
         log_warn "⚠️  Unknown package bundle: ${pkgs_bundle}, using minimal"
-        packages=$(yq eval ".package_bundles.minimal.packages | join(\"', '\")" "$BUNDLES_FILE" 2>/dev/null)
+        if ! packages=$(query_bundle_value "package_bundles" "minimal" ".packages | join(\"', '\")"); then
+            log_error "❌ Could not load minimal package bundle"
+            return 1
+        fi
     fi
 
     # Check if this is a bioconductor bundle
     local is_bioc
-    is_bioc=$(yq eval ".package_bundles.${pkgs_bundle}.bioconductor // false" "$BUNDLES_FILE" 2>/dev/null)
+    if ! is_bioc=$(query_bundle_value "package_bundles" "$pkgs_bundle" ".bioconductor // false"); then
+        is_bioc="false"
+    fi
 
     # Determine if we should use install2.r (rocker images) or install.packages (non-rocker)
     # install2.r is only available in rocker/* images
@@ -788,15 +829,17 @@ generate_system_deps_install_commands() {
         return 0
     fi
 
-    if [[ ! -f "$BUNDLES_FILE" ]]; then
-        log_error "❌ Bundles file not found: $BUNDLES_FILE"
-        return 1
-    fi
-
     # Extract system dependency list from bundles.yaml
     local deps package_manager
-    deps=$(yq eval ".library_bundles.${libs_bundle}.deps[]" "$BUNDLES_FILE" 2>/dev/null | tr '\n' ' ')
-    package_manager=$(yq eval ".library_bundles.${libs_bundle}.package_manager" "$BUNDLES_FILE" 2>/dev/null)
+    if ! deps=$(query_bundle_value "library_bundles" "$libs_bundle" ".deps[]" 2>/dev/null); then
+        deps=""
+    else
+        deps=$(echo "$deps" | tr '\n' ' ')
+    fi
+
+    if ! package_manager=$(query_bundle_value "library_bundles" "$libs_bundle" ".package_manager" 2>/dev/null); then
+        package_manager="apt-get"  # Default fallback
+    fi
 
     if [[ "$deps" == "null" ]] || [[ -z "$deps" ]]; then
         SYSTEM_DEPS_INSTALL_CMD="# No additional system dependencies for bundle: ${libs_bundle}"
