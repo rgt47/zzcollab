@@ -32,13 +32,14 @@ require_module "core" "templates"
 ##############################################################################
 # FUNCTION: get_multiarch_base_image
 # PURPOSE:  Select appropriate Docker base image based on architecture and requirements
-# USAGE:    get_multiarch_base_image "profile_name"
-# ARGS:     
+# USAGE:    get_multiarch_base_image "variant" [custom_verse_image]
+# ARGS:
 #   $1 - requested_variant: Docker image variant (r-ver, rstudio, verse, tidyverse)
-# RETURNS:  
+#   $2 - multiarch_verse_image: Optional custom ARM64 verse alternative (defaults to rocker/verse)
+# RETURNS:
 #   0 - Always succeeds, outputs multi-architecture compatible base image name
-# GLOBALS:  
-#   READ:  MULTIARCH_VERSE_IMAGE (custom ARM64 verse alternative)
+# GLOBALS:
+#   READ:  None (fully parameterized)
 #   WRITE: None (outputs to stdout)
 # DESCRIPTION:
 #   This function handles the complexity of Docker image architecture compatibility.
@@ -50,24 +51,29 @@ require_module "core" "templates"
 #   ❌ AMD64 only: rocker/verse, rocker/tidyverse, rocker/geospatial, rocker/shiny
 # EXAMPLE:
 #   base_image=$(get_multiarch_base_image "rstudio")
-#   echo "Selected: $base_image"
+#   base_image=$(get_multiarch_base_image "verse" "myteam/verse-arm64")
 ##############################################################################
 get_multiarch_base_image() {
     local requested_variant="$1"
+    local multiarch_verse_image="${2:-}"  # Optional custom verse image for ARM64
     local architecture="$(uname -m)"
-    
+
     case "$requested_variant" in
         "r-ver")
             echo "rocker/r-ver"  # Multi-arch available
             ;;
-        "rstudio") 
+        "rstudio")
             echo "rocker/rstudio"  # Multi-arch available
             ;;
         "verse")
             case "$architecture" in
                 arm64|aarch64)
-                    # Use custom ARM64-compatible alternative
-                    echo "${MULTIARCH_VERSE_IMAGE}"
+                    # Use custom ARM64-compatible alternative if provided
+                    if [[ -n "$multiarch_verse_image" ]]; then
+                        echo "$multiarch_verse_image"
+                    else
+                        echo "rocker/verse"  # Fallback to standard (AMD64 only)
+                    fi
                     ;;
                 *)
                     echo "rocker/verse"
@@ -95,13 +101,14 @@ get_multiarch_base_image() {
 ##############################################################################
 # FUNCTION: get_docker_platform_args
 # PURPOSE:  Generate Docker platform arguments for cross-architecture compatibility
-# USAGE:    get_docker_platform_args [base_image_name]
-# ARGS:     
+# USAGE:    get_docker_platform_args [base_image_name] [force_platform]
+# ARGS:
 #   $1 - base_image: Optional Docker base image name for compatibility checking
-# RETURNS:  
+#   $2 - force_platform: Platform override (auto|amd64|arm64|native), defaults to "auto"
+# RETURNS:
 #   0 - Always succeeds, outputs platform arguments for Docker commands
-# GLOBALS:  
-#   READ:  FORCE_PLATFORM (auto|amd64|arm64|native), uname -m output
+# GLOBALS:
+#   READ:  None (fully parameterized), uname -m output
 #   WRITE: None (outputs to stdout)
 # DESCRIPTION:
 #   This function determines the appropriate --platform argument for Docker build/run
@@ -113,19 +120,20 @@ get_multiarch_base_image() {
 #   - arm64: Force ARM64 platform (only works on ARM64 systems)
 #   - native: Use system native platform without override
 # EXAMPLE:
-#   platform_args=$(get_docker_platform_args "rocker/verse")
+#   platform_args=$(get_docker_platform_args "rocker/verse" "auto")
 #   docker build $platform_args -t my-image .
 ##############################################################################
 get_docker_platform_args() {
     local base_image="${1:-}"
+    local force_platform="${2:-auto}"  # Platform override, defaults to auto
     local architecture="$(uname -m)"
-    
-    case "$FORCE_PLATFORM" in
+
+    case "$force_platform" in
         "auto")
             case "$architecture" in
-                arm64|aarch64) 
+                arm64|aarch64)
                     # Check if this is a known ARM64-incompatible image
-                    if [[ "$base_image" == "rocker/verse" ]] || 
+                    if [[ "$base_image" == "rocker/verse" ]] ||
                        [[ "$base_image" == "rocker/tidyverse" ]] ||
                        [[ "$base_image" == "rocker/geospatial" ]] ||
                        [[ "$base_image" == "rocker/shiny" ]]; then
@@ -808,6 +816,18 @@ create_docker_files() {
 
 # Function: build_docker_image
 # Purpose: Build Docker image for the research project with comprehensive error handling
+# USAGE:    build_docker_image "4.4.0" "myproject" "rocker/r-ver" ["analysis"]
+# ARGS:
+#   $1 - r_version: R version for Docker build (e.g., "4.4.0")
+#   $2 - pkg_name: Package name/Docker image tag (e.g., "myproject")
+#   $3 - base_image: Docker base image reference (e.g., "rocker/r-ver")
+#   $4 - profile_name: Profile for logging (optional, defaults to "minimal")
+# RETURNS:
+#   0 - Image built successfully
+#   1 - Build failed (Docker not available, Dockerfile missing, invalid parameters, etc.)
+# GLOBALS:
+#   READ:  FORCE_PLATFORM (optional, defaults to auto-detect)
+#   WRITE: None
 # Features:
 #   - Platform detection (ARM64/AMD64 compatibility)
 #   - BuildKit optimization
@@ -815,58 +835,69 @@ create_docker_files() {
 #   - Detailed error reporting
 #   - Manual fallback instructions
 #
-# Prerequisites: Docker installed, Dockerfile exists, R_VERSION and PKG_NAME set
+# Prerequisites: Docker installed, Dockerfile exists
 # Platform Handling: Automatically adds --platform linux/amd64 for ARM64 systems
 # Error Handling: Provides manual build command on failure
 build_docker_image() {
+    local r_version="$1"
+    local pkg_name="$2"
+    local base_image="$3"
+    local profile_name="${4:-minimal}"
+
     log_info "Building Docker environment..."
     log_info "This may take several minutes on first build..."
-    
+
+    # Validate required parameters are provided and non-empty
+    if [[ -z "$r_version" ]]; then
+        log_error "R_VERSION parameter not provided (required)"
+        log_error "Usage: build_docker_image \"4.4.0\" \"myproject\" \"rocker/r-ver\""
+        return 1
+    fi
+
+    if [[ -z "$pkg_name" ]]; then
+        log_error "PKG_NAME parameter not provided (required)"
+        log_error "Usage: build_docker_image \"4.4.0\" \"myproject\" \"rocker/r-ver\""
+        return 1
+    fi
+
+    if [[ -z "$base_image" ]]; then
+        log_error "BASE_IMAGE parameter not provided (required)"
+        log_error "Usage: build_docker_image \"4.4.0\" \"myproject\" \"rocker/r-ver\""
+        return 1
+    fi
+
     # Validate Docker installation and availability
     if ! command_exists docker; then
         log_error "Docker is not installed or not in PATH"
         log_error "Install Docker Desktop from https://www.docker.com/products/docker-desktop"
         return 1
     fi
-    
+
     # Check if Docker daemon is running
     if ! docker info >/dev/null 2>&1; then
         log_error "Docker daemon is not running"
         log_error "Start Docker Desktop and try again"
         return 1
     fi
-    
+
     # Validate that Dockerfile exists
     if [[ ! -f "Dockerfile" ]]; then
         log_error "Dockerfile not found in current directory"
         log_error "Run the setup script to create Docker configuration files"
         return 1
     fi
-    
-    # Validate required environment variables
-    if [[ -z "${R_VERSION:-}" ]]; then
-        log_error "R_VERSION is not set"
-        log_error "This should be set automatically by create_docker_files()"
-        return 1
-    fi
-    
-    if [[ -z "${PKG_NAME:-}" ]]; then
-        log_error "PKG_NAME is not set"
-        log_error "This should be set automatically from directory name"
-        return 1
-    fi
 
     # Update renv.lock to use r2u renv version from Docker base image
     # This prevents compiling renv from source (~7s) and uses binary (~0.1s)
-    if [[ -n "${BASE_IMAGE:-}" ]]; then
-        local full_base_image="${BASE_IMAGE}:${R_VERSION}"
+    if [[ -n "$base_image" ]]; then
+        local full_base_image="${base_image}:${r_version}"
         update_renv_version_from_docker "$full_base_image" || log_warn "Could not update renv version"
     fi
 
     # Auto-detect platform and set appropriate Docker build arguments
     # Use new multi-architecture support functions
     local DOCKER_PLATFORM
-    DOCKER_PLATFORM=$(get_docker_platform_args "$BASE_IMAGE")
+    DOCKER_PLATFORM=$(get_docker_platform_args "$base_image" "${FORCE_PLATFORM:-auto}")
     
     if [[ -n "$DOCKER_PLATFORM" ]]; then
         log_info "Using platform override: $DOCKER_PLATFORM"
@@ -874,14 +905,14 @@ build_docker_image() {
     else
         log_info "Using native platform for architecture: $(uname -m)"
     fi
-    
+
     # Build the Docker command with all necessary arguments
     # DOCKER_BUILDKIT=1: Enable BuildKit for faster builds and better caching
     # --build-arg R_VERSION: Pass R version to Dockerfile
     # --build-arg BASE_IMAGE: Pass base image to Dockerfile
-    # -t "$PKG_NAME": Tag image with package name for easy reference
+    # -t "$pkg_name": Tag image with package name for easy reference
 
-    log_info "Using Docker profile: ${PROFILE_NAME:-${ZZCOLLAB_DEFAULT_PROFILE_NAME}}"
+    log_info "Using Docker profile: ${profile_name:-${ZZCOLLAB_DEFAULT_PROFILE_NAME}}"
 
     # Extract RENV_VERSION from renv.lock if it exists
     local RENV_VERSION="1.1.5"  # Default fallback
@@ -892,18 +923,18 @@ build_docker_image() {
         log_info "Using default renv version: $RENV_VERSION"
     fi
 
-    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$R_VERSION\" --build-arg RENV_VERSION=\"$RENV_VERSION\" --build-arg BASE_IMAGE=\"$BASE_IMAGE\" -t \"$PKG_NAME\" ."
-    
+    local docker_cmd="DOCKER_BUILDKIT=1 docker build ${DOCKER_PLATFORM} --build-arg R_VERSION=\"$r_version\" --build-arg RENV_VERSION=\"$RENV_VERSION\" --build-arg BASE_IMAGE=\"$base_image\" -t \"$pkg_name\" ."
+
     log_info "Running: $docker_cmd"
-    
+
     # Execute Docker build with comprehensive error handling
     if eval "$docker_cmd"; then
         # Track successful Docker image creation for uninstall capability
-        track_docker_image "$PKG_NAME"
-        
-        log_success "Docker image '$PKG_NAME' built successfully!"
+        track_docker_image "$pkg_name"
+
+        log_success "Docker image '$pkg_name' built successfully!"
         log_success "You can now use Docker commands:"
-        log_info "  docker run -it --rm $PKG_NAME R         # Interactive R session"
+        log_info "  docker run -it --rm $pkg_name R         # Interactive R session"
         log_info "  docker-compose up rstudio              # RStudio Server (http://localhost:8787)"
         log_info "  make docker-rstudio                    # Alternative RStudio launch"
     else
@@ -921,7 +952,7 @@ build_docker_image() {
         log_error "2. Try building with no cache: docker build --no-cache ..."
         log_error "3. Check Docker logs for specific error messages"
         log_error "4. Consult ZZCOLLAB_USER_GUIDE.md for additional troubleshooting"
-        
+
         return 1
     fi
 }

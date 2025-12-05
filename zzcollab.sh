@@ -936,9 +936,11 @@ finalize_and_report_results() {
     # Conditional Docker build (same logic as original)
     if [[ "$BUILD_DOCKER" == "true" ]]; then
         log_info "🐳 Building Docker image..."
-        if build_docker_image; then
+        # Pass parameters to build_docker_image instead of relying on globals
+        # Parameters: r_version, pkg_name, base_image, profile_name
+        if build_docker_image "$R_VERSION" "$PKG_NAME" "$BASE_IMAGE" "${PROFILE_NAME:-minimal}"; then
             log_success "Docker image built successfully"
-            
+
         else
             log_warn "Docker build failed - you can build manually later with 'make docker-build'"
         fi
