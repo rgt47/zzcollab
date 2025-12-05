@@ -65,6 +65,11 @@ jobs:
         echo "Running end-to-end reproducibility tests..."
         bats tests/integration/test-e2e-reproducibility.bats
 
+    - name: Run dockerfile generator tests
+      run: |
+        echo "Running dockerfile generator tests..."
+        bats tests/shell/test-dockerfile-generator.bats
+
     - name: Generate test coverage report
       if: always()
       run: |
@@ -194,6 +199,25 @@ jobs:
           echo "- **Passing**: $e2e_passed"
           echo "- **Failing**: $e2e_failed"
           echo "- **Pass Rate**: ${e2e_percent}%"
+          echo ""
+
+          # Dockerfile generator tests
+          echo "### Dockerfile Generator Module (modules/dockerfile_generator.sh)"
+          echo ""
+          dockerfile_result=$(bats tests/shell/test-dockerfile-generator.bats 2>&1 || true)
+          dockerfile_total=$(echo "$dockerfile_result" | grep -oP '(?<=1\.\.)\d+' || echo "0")
+          dockerfile_passed=$(echo "$dockerfile_result" | grep -c '^ok ' || echo "0")
+          dockerfile_failed=$((dockerfile_total - dockerfile_passed))
+          if [ "$dockerfile_total" -gt 0 ]; then
+            dockerfile_percent=$(awk "BEGIN {printf \"%.1f\", ($dockerfile_passed / $dockerfile_total) * 100}")
+          else
+            dockerfile_percent="0.0"
+          fi
+
+          echo "- **Total Tests**: $dockerfile_total"
+          echo "- **Passing**: $dockerfile_passed"
+          echo "- **Failing**: $dockerfile_failed"
+          echo "- **Pass Rate**: ${dockerfile_percent}%"
           echo ""
 
           # Overall summary
