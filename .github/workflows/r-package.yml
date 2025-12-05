@@ -22,9 +22,29 @@ jobs:
       
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: any::rcmdcheck, any::covr
           needs: check
-      
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
+
+      - name: Test coverage
+        run: |
+          covr::codecov(quiet = FALSE)
+        shell: Rscript {0}
+
+      - name: Calculate and enforce coverage threshold
+        run: |
+          cov <- covr::package_coverage()
+          pct <- covr::percent_coverage(cov)
+
+          cat("Test Coverage:", sprintf("%.1f%%", pct), "\n")
+
+          if (pct < 80) {
+            cat("::error::Coverage", sprintf("%.1f%%", pct), "is below minimum 80%\n")
+            quit(status = 1)
+          } else {
+            cat("::notice::Coverage", sprintf("%.1f%%", pct), "meets minimum threshold\n")
+          }
+        shell: Rscript {0}
