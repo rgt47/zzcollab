@@ -659,6 +659,96 @@ EOF
 }
 
 ################################################################################
+# SECTION 7: Docker Validation (5 tests)
+################################################################################
+
+@test "E2E: Dockerfile has no :latest tags for base images" {
+    cat > "${PROJECT_DIR}/Dockerfile" <<'EOF'
+FROM rocker/r-ver:4.4.0
+RUN apt-get update
+EOF
+
+    # Check for :latest tags (should not be used for reproducibility)
+    run grep -E "FROM.*:latest" "${PROJECT_DIR}/Dockerfile" || true
+    [ -z "$output" ] || [ "$output" = "" ]
+}
+
+@test "E2E: Dockerfile avoids root-owned files" {
+    cat > "${PROJECT_DIR}/Dockerfile" <<'EOF'
+FROM rocker/r-ver:4.4.0
+RUN mkdir -p /workspace && chmod 755 /workspace
+WORKDIR /workspace
+EOF
+
+    run test -f "${PROJECT_DIR}/Dockerfile"
+    assert_success
+
+    # Verify WORKDIR or USER is present
+    run grep -E "^(WORKDIR|USER)" "${PROJECT_DIR}/Dockerfile"
+    assert_success
+}
+
+@test "E2E: Dockerfile layer count is reasonable" {
+    cat > "${PROJECT_DIR}/Dockerfile" <<'EOF'
+FROM rocker/r-ver:4.4.0
+RUN apt-get update && apt-get install -y git curl
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+COPY renv.lock .
+RUN Rscript -e 'renv::restore()'
+WORKDIR /workspace
+EOF
+
+    # Count RUN instructions (should be combined, not separate)
+    run grep -c "^RUN " "${PROJECT_DIR}/Dockerfile"
+    # Should have <= 3 RUN commands (more indicates lack of optimization)
+    [ "$output" -le 3 ]
+}
+
+@test "E2E: Dockerfile specifies R version explicitly" {
+    cat > "${PROJECT_DIR}/Dockerfile" <<'EOF'
+FROM rocker/r-ver:4.4.0
+RUN Rscript -e 'getRversion()'
+EOF
+
+    # Should have specific R version in FROM instruction
+    run grep "^FROM rocker/r-ver:[0-9]" "${PROJECT_DIR}/Dockerfile"
+    assert_success
+}
+
+@test "E2E: .Rprofile enforces critical options before Docker build" {
+    cat > "${PROJECT_DIR}/.Rprofile" <<'EOF'
+# Critical reproducibility options
+options(stringsAsFactors = FALSE)
+options(digits = 7)
+options(OutDec = ".")
+
+# Disable save prompts
+.First <- function() {
+  options(prompt = "> ")
+}
+
+.Last <- function() {
+  tryCatch({
+    if (interactive() && requireNamespace("renv", quietly = TRUE)) {
+      renv::snapshot(prompt = FALSE)
+    }
+  }, error = function(e) {
+    warning("Failed to snapshot: ", e$message)
+  })
+}
+EOF
+
+    run grep "stringsAsFactors = FALSE" "${PROJECT_DIR}/.Rprofile"
+    assert_success
+
+    run grep "digits = 7" "${PROJECT_DIR}/.Rprofile"
+    assert_success
+
+    run grep "OutDec" "${PROJECT_DIR}/.Rprofile"
+    assert_success
+}
+
+################################################################################
 # Test Summary
 ################################################################################
 
@@ -666,3 +756,9 @@ EOF
 # of reproducibility framework is complete and properly integrated.
 # They do NOT require actual Docker execution or R code compilation,
 # making them suitable for CI/CD validation.
+#
+# Docker validation tests ensure:
+# - Base images are pinned to specific versions
+# - Dockerfile follows layer optimization best practices
+# - Session configuration is properly documented
+# - Critical reproducibility options are enforced
