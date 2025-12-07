@@ -139,70 +139,29 @@ docker-rstudio:
 	@echo "Terminal available for code editing with vim"
 	docker run --platform linux/amd64 --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
-# Smart docker-run: Automatically detect profile and run appropriately
-# Runs validation BEFORE launching container (ensures DESCRIPTION/renv.lock are in sync)
-# Runs validation AFTER exiting container (captures any new packages installed)
-docker-run: check-renv
-	@if [ ! -f Dockerfile ]; then \
-		echo "❌ No Dockerfile found in current directory"; \
-		exit 1; \
-	fi
+# Terminal: Interactive bash for vim editing
+r: check-renv
 	@PROFILE=$$(head -20 Dockerfile | grep 'Profile:' | head -1 | sed 's/.*Profile: \([a-z0-9_]*\).*/\1/'); \
 	if [ -z "$$PROFILE" ]; then \
 		echo "❌ Could not detect profile from Dockerfile"; \
-		echo "   Add '# Profile: <name>' comment to Dockerfile header"; \
 		exit 1; \
 	fi; \
-	echo "🔍 Detected profile: $$PROFILE"; \
+	BASE_IMAGE=$$(grep '^FROM' Dockerfile | head -1 | awk '{print $$2}' | sed 's/--platform[^[:space:]]*[[:space:]]//'); \
+	if echo "$$BASE_IMAGE" | grep -qE '(rocker/verse|rocker/tidyverse|rocker/rstudio|rocker/geospatial)'; then \
+		HOME_DIR="/home/rstudio"; \
+	else \
+		HOME_DIR="/home/analyst"; \
+	fi; \
+	echo "🐳 Starting bash terminal ($$PROFILE)..."; \
+	echo "📝 Use vim, R, or any terminal tools"; \
 	echo ""; \
-	case "$$PROFILE" in \
-		*minimal) \
-			echo "🐳 Starting minimal profile..."; \
-			docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv $(PACKAGE_NAME); \
-			;; \
-		*x11*) \
-			echo "🐳 Starting X11 profile (GUI support)..."; \
-			echo "⚠️  Requires XQuartz running with 'Allow connections from network clients'"; \
-			echo ""; \
-			xhost + 127.0.0.1 > /dev/null 2>&1 || echo "⚠️  xhost command failed - XQuartz may not be running"; \
-			docker run --platform linux/amd64 --rm -it -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME); \
-			;; \
-		*shiny*) \
-			echo "🐳 Starting Shiny Server..."; \
-			echo "📊 Shiny: http://localhost:3838"; \
-			echo "📝 Terminal available for code editing with vim"; \
-			echo ""; \
-			docker run --platform linux/amd64 --rm -it -p 3838:3838 -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv $(PACKAGE_NAME); \
-			;; \
-		*analysis|*publishing) \
-			echo "🐳 Starting $$PROFILE profile (RStudio Server + Terminal)..."; \
-			echo "📊 RStudio: http://localhost:8787"; \
-			echo "👤 Username: rstudio, Password: rstudio"; \
-			echo "📝 Terminal available for code editing with vim"; \
-			echo ""; \
-			docker run --platform linux/amd64 --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project -v $$(pwd)/.cache/R/renv:/home/rstudio/.cache/R/renv $(PACKAGE_NAME) /init; \
-			;; \
-		alpine_*) \
-			echo "🐳 Starting Alpine profile..."; \
-			docker run --rm -it -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv $(PACKAGE_NAME); \
-			;; \
-		*) \
-			echo "❌ Unknown profile: $$PROFILE"; \
-			echo "   Supported: *minimal, *analysis, *publishing, *shiny*, *x11*, alpine_*"; \
-			exit 1; \
-			;; \
-	esac
-	@echo ""
-	@echo "📋 Post-session validation: checking for new packages..."
-	@bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed - see above for details"
-	@if [ -f renv.lock ]; then \
-		if ! touch renv.lock; then \
-			echo "⚠️  Warning: Failed to restore renv.lock timestamp (file may be readonly)" >&2; \
-		fi; \
-	fi
+	docker run --platform linux/amd64 --rm -it -v $$(pwd):$$HOME_DIR/project -v $$(pwd)/.cache/R/renv:$$HOME_DIR/.cache/R/renv $(PACKAGE_NAME); \
+	echo ""; \
+	echo "📋 Post-session validation..."; \
+	bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed"
 
-# Alias for docker-run (shorthand)
-r: docker-run
+# Alias for rstudio
+rstudio: docker-rstudio
 
 # Cleanup
 clean:
