@@ -137,7 +137,8 @@ docker-check-renv-fix:
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: rstudio, Password: rstudio"
-	docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
+	@echo "Terminal available for code editing with vim"
+	docker run --platform linux/amd64 --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
 # Smart docker-run: Automatically detect profile and run appropriately
 # Runs validation BEFORE launching container (ensures DESCRIPTION/renv.lock are in sync)
@@ -170,15 +171,17 @@ docker-run: check-renv
 		*shiny*) \
 			echo "🐳 Starting Shiny Server..."; \
 			echo "📊 Shiny: http://localhost:3838"; \
+			echo "📝 Terminal available for code editing with vim"; \
 			echo ""; \
-			docker run --platform linux/amd64 --rm -p 3838:3838 -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv $(PACKAGE_NAME); \
+			docker run --platform linux/amd64 --rm -it -p 3838:3838 -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv $(PACKAGE_NAME); \
 			;; \
 		*analysis|*publishing) \
-			echo "🐳 Starting $$PROFILE profile (RStudio Server)..."; \
+			echo "🐳 Starting $$PROFILE profile (RStudio Server + Terminal)..."; \
 			echo "📊 RStudio: http://localhost:8787"; \
 			echo "👤 Username: rstudio, Password: rstudio"; \
+			echo "📝 Terminal available for code editing with vim"; \
 			echo ""; \
-			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/rstudio/project -v $$(pwd)/.cache/R/renv:/home/rstudio/.cache/R/renv $(PACKAGE_NAME) /init; \
+			docker run --platform linux/amd64 --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project -v $$(pwd)/.cache/R/renv:/home/rstudio/.cache/R/renv $(PACKAGE_NAME) /init; \
 			;; \
 		alpine_*) \
 			echo "🐳 Starting Alpine profile..."; \
