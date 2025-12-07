@@ -477,7 +477,7 @@ If you only need R graphics (not standalone GUI apps), RStudio Server provides w
 ```bash
 make docker-rstudio
 # Open http://localhost:8787
-# Username: analyst, Password: analyst
+# Username: rstudio, Password: rstudio
 ```
 
 RStudio Server provides:

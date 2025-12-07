@@ -102,14 +102,14 @@ make docker-rstudio
 **Expected output:**
 ```
 Starting RStudio Server on http://localhost:8787
-Username: analyst, Password: analyst
+Username: rstudio, Password: rstudio
 ```
 
 **Access RStudio:**
 1. Open browser to **http://localhost:8787**
 2. Login with:
-   - Username: `analyst`
-   - Password: `analyst`
+   - Username: `rstudio`
+   - Password: `rstudio`
 3. You're now in RStudio running inside Docker!
 
 ## Step 4: Create Analysis in RStudio (5 minutes)
@@ -414,8 +414,8 @@ Opens on: **http://localhost:8787**
 
 ## Default Credentials
 
-- **Username:** `analyst`
-- **Password:** `analyst`
+- **Username:** `rstudio`
+- **Password:** `rstudio`
 
 ## Customizing Credentials
 

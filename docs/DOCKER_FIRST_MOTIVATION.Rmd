@@ -1925,10 +1925,11 @@ LABEL version="1.2.0"
 ```{bash teaching-docker-workflow, eval=FALSE}
 # Day 1 of semester:
 docker pull university/bio485:spring2025
-docker run --rm -it -p 8787:8787 -v ~/bio485:/home/analyst/work \\\n  university/bio485:spring2025
+docker run --rm -it -p 8787:8787 -v ~/bio485:/home/rstudio/work \
+  university/bio485:spring2025
 
 # Point browser to localhost:8787
-# Username: analyst, Password: analyst
+# Username: rstudio, Password: rstudio
 
 # Every student has IDENTICAL environment
 # Same R version, same packages, same data, same tools

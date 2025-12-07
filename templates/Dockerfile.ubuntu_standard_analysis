@@ -75,9 +75,10 @@ WORKDIR /home/rstudio/project
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=2 \
     CMD R --quiet --slave -e "quit(status = 0)" || exit 1
 
-# Note: Project files mounted at runtime via -v $(pwd):/home/analyst/project
+# Note: Project files mounted at runtime via -v $(pwd):/home/rstudio/project
 # This keeps image reusable across projects. Run renv::restore() in first session.
 # .Rprofile is accessed from the mounted volume for auto-snapshot functionality.
 # For RStudio Server: Use CMD ["/init"] or run with 'docker run -p 8787:8787 ... /init'
+# Default RStudio credentials: rstudio/rstudio (set by rocker/tidyverse base image)
 
 CMD ["R", "--quiet"]

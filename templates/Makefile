@@ -136,8 +136,8 @@ docker-check-renv-fix:
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
-	@echo "Username: analyst, Password: analyst"
-	docker run --platform linux/amd64 --rm --user root -p 8787:8787 -v $$(pwd):/home/analyst/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
+	@echo "Username: rstudio, Password: rstudio"
+	docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
 # Smart docker-run: Automatically detect profile and run appropriately
 # Runs validation BEFORE launching container (ensures DESCRIPTION/renv.lock are in sync)
@@ -176,9 +176,9 @@ docker-run: check-renv
 		*analysis|*publishing) \
 			echo "🐳 Starting $$PROFILE profile (RStudio Server)..."; \
 			echo "📊 RStudio: http://localhost:8787"; \
-			echo "👤 Username: analyst, Password: analyst"; \
+			echo "👤 Username: rstudio, Password: rstudio"; \
 			echo ""; \
-			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/analyst/project -v $$(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
+			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/home/rstudio/project -v $$(pwd)/.cache/R/renv:/home/rstudio/.cache/R/renv $(PACKAGE_NAME) /init; \
 			;; \
 		alpine_*) \
 			echo "🐳 Starting Alpine profile..."; \
