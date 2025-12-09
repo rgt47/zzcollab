@@ -413,6 +413,111 @@ docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false ...
 docker run -e ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST=false ...
 ```
 
+## System Dependencies Management
+
+ZZCOLLAB provides automated detection and management of system-level dependencies required by R packages.
+
+**Problem**: When users add R packages that require system libraries (e.g., `sf` → `libgdal-dev`, `proj`), Docker rebuilds fail or require manual library installation.
+
+**Solution**: Two-part architecture separates system dependencies from R packages for efficient rebuilds.
+
+### System Dependency Architecture
+
+**Module**: `modules/system_deps_map.sh`
+- Maps 30+ R packages to required system libraries (build and runtime versions)
+- Functions:
+  - `get_package_build_deps(package)` → build-time libraries (`libgdal-dev`, etc.)
+  - `get_package_runtime_deps(package)` → runtime libraries (`libgdal30`, etc.)
+  - `get_all_package_deps(type, packages...)` → batch lookups with deduplication
+  - `package_has_system_deps(package)` → boolean check
+
+**Covered Packages**:
+- **Geospatial**: sf, terra, sp, rgdal, raster, stars (GDAL, PROJ, GEOS)
+- **Graphics**: gdtools, ragg, systemfonts, magick (Cairo, Freetype, ImageMagick)
+- **Databases**: RPostgres, RMySQL, RSQLite (libpq, MySQL, SQLite)
+- **Scientific**: gsl, nlme, Matrix, Biostrings, GenomicRanges (GSL, LAPACK, BLAS, zlib)
+- **Text**: stringi, xml2 (ICU, libxml2)
+
+### Dockerfile Optimization
+
+**Custom Dependency Layers** (`templates/Dockerfile.base.template`):
+```dockerfile
+# Builder Stage - Add project-specific build dependencies
+# CUSTOM_SYSTEM_DEPS_BUILD_START
+# RUN apt-get install -y libgdal-dev libproj-dev libgeos-dev
+# CUSTOM_SYSTEM_DEPS_BUILD_END
+
+# Runtime Stage - Add project-specific runtime dependencies
+# CUSTOM_SYSTEM_DEPS_RUNTIME_START
+# RUN apt-get install -y libgdal30 libproj25 libgeos-c1v5
+# CUSTOM_SYSTEM_DEPS_RUNTIME_END
+```
+
+**Cache Optimization**:
+- Bundle-based dependencies → preinstalled in base Docker image (team/shared)
+- Custom project dependencies → separate layer in Dockerfile (fast rebuild: ~1 min vs 15-20 min)
+- When admin adds system dep to CUSTOM_SYSTEM_DEPS section, only that layer rebuilds
+- renv layer cache remains valid (no recompilation of R packages)
+
+### Detection and Auto-Fix
+
+**Validation Command**:
+```bash
+make check-system-deps
+```
+
+**Workflow**:
+1. Scans codebase for R packages
+2. Looks up required system dependencies via `system_deps_map.sh`
+3. Checks if dependencies are in Dockerfile
+4. Reports missing libraries with exact installation instructions
+5. Suggests where to add CUSTOM_SYSTEM_DEPS sections
+
+**Example Output**:
+```
+⚠ Missing system dependencies detected!
+
+  Package: sf
+    Build-time: libgdal-dev libproj-dev libgeos-dev
+    Runtime:    libgdal30 libproj25 libgeos-c1v5
+
+  Package: RPostgres
+    Build-time: postgresql-client libpq-dev
+    Runtime:    postgresql-client libpq5
+
+To fix: Edit Dockerfile and add to CUSTOM_SYSTEM_DEPS sections
+```
+
+**Integration with Validation**:
+- Part of `modules/validation.sh` - same pure shell approach as package validation
+- Requires no R installation on host
+- Runs independently or as part of larger validation workflow
+
+## Companion Projects
+
+### zzrenvcheck
+
+`zzrenvcheck` is a companion R package that provides an alternative interface to package dependency validation.
+
+**Project**: https://github.com/rgt47/zzrenvcheck
+
+**Features**:
+- R package interface (for R users, cross-platform including Windows)
+- Standalone shell script (for CI/CD, no R required)
+- More granular control and detailed reporting
+- Full testthat test coverage
+
+**Relationship to zzcollab**:
+- **zzcollab validation.sh**: Package validation + system dependency detection (Docker-focused)
+- **zzrenvcheck**: R package validation only (cross-platform R interface)
+- Both use same extraction logic (19 filters, same package patterns)
+- No duplicate work: system_deps_map.sh is Docker-specific (not applicable to zzrenvcheck)
+
+**When to Use**:
+- **zzcollab validation.sh**: Docker projects, system dependency concerns, pure shell preference
+- **zzrenvcheck R package**: Windows users, RStudio integration, programmatic access
+- **zzrenvcheck shell script**: CI/CD pipelines, no R installation available
+
 ## Data Documentation System
 
 ZZCOLLAB includes automated data documentation templates following research best practices.
@@ -435,11 +540,13 @@ ZZCOLLAB includes automated data documentation templates following research best
 
 **Package Validation (NO HOST R REQUIRED!)**:
 ```bash
-make check-renv            # Full validation + auto-fix (strict mode, default)
-make check-renv-no-fix     # Validation only, no auto-add
-make check-renv-no-strict  # Standard mode (skip tests/, vignettes/)
+make check-renv             # Full validation + auto-fix (strict mode, default)
+make check-renv-no-fix      # Validation only, no auto-add
+make check-renv-no-strict   # Standard mode (skip tests/, vignettes/)
+make check-system-deps      # Check for missing system dependencies in Dockerfile
 ```
 **Auto-fixes**: Code → DESCRIPTION → renv.lock (pure shell: curl + jq + awk + grep)
+**System Dependencies**: Detects R packages needing system libraries, suggests Dockerfile additions
 
 **R Package Development**:
 ```bash
