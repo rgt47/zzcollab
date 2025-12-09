@@ -451,9 +451,136 @@ generate_custom_dockerfile() {
     if [[ $? -eq 0 ]]; then
         log_success "✓ Generated custom Dockerfile"
         log_info "  Specification: ${libs_list} + ${pkgs_list}"
+
+        # Also generate custom DESCRIPTION for bundle packages
+        if ! generate_custom_description "$pkgs_list"; then
+            log_warn "Failed to generate DESCRIPTION (non-fatal)"
+        fi
+
         return 0
     else
         log_error "Failed to generate Dockerfile"
+        return 1
+    fi
+}
+
+##############################################################################
+# FUNCTION: generate_custom_description
+# PURPOSE:  Generate custom DESCRIPTION file with bundle packages
+# USAGE:    generate_custom_description "publishing,tidyverse"
+# ARGS:
+#   $1 - pkgs_list: Comma-separated list of package bundles
+# RETURNS:
+#   0 - Success, DESCRIPTION created/updated
+#   1 - Error (template not found, not writable, etc)
+# GLOBALS READ:
+#   TEAM_NAME, PROJECT_NAME (for project metadata)
+# DESCRIPTION:
+#   Creates or updates DESCRIPTION file with:
+#   - Generic template structure (from DESCRIPTION template)
+#   - Imports field populated from package bundles
+#   - Preserves package name and author if DESCRIPTION already exists
+#
+#   This ensures DESCRIPTION Imports matches Dockerfile packages automatically.
+##############################################################################
+generate_custom_description() {
+    local pkgs_list="$1"
+    local desc_file="DESCRIPTION"
+    local generic_template="${TEMPLATES_DIR}/DESCRIPTION"
+
+    # If DESCRIPTION already exists, only update Imports field
+    if [[ -f "$desc_file" ]]; then
+        log_debug "Updating existing DESCRIPTION with bundle packages"
+
+        # Extract Imports field from bundles
+        local imports=$(extract_description_imports "$pkgs_list")
+
+        # Use awk to replace Imports field while preserving other fields
+        awk -v imports="$imports" '
+        BEGIN { in_imports = 0 }
+
+        # Skip old Imports field
+        /^Imports:/ {
+            in_imports = 1
+            next
+        }
+
+        # End of Imports field (line starts with capital letter)
+        in_imports && /^[A-Z]/ {
+            in_imports = 0
+            # Output new Imports before this field
+            print imports ""
+            print $0
+            next
+        }
+
+        # Skip lines within old Imports
+        in_imports { next }
+
+        # Print everything else
+        { print }
+
+        # Handle EOF while still in imports
+        END {
+            if (in_imports) {
+                print imports
+            }
+        }
+        ' "$desc_file" > "${desc_file}.tmp"
+
+        if [[ $? -eq 0 ]]; then
+            mv "${desc_file}.tmp" "$desc_file"
+            log_success "✓ Updated DESCRIPTION Imports from bundles"
+            return 0
+        else
+            rm -f "${desc_file}.tmp"
+            log_error "Failed to update DESCRIPTION Imports"
+            return 1
+        fi
+    fi
+
+    # DESCRIPTION doesn't exist - create from template
+    if [[ ! -f "$generic_template" ]]; then
+        log_warn "DESCRIPTION template not found - skipping DESCRIPTION generation"
+        return 1
+    fi
+
+    log_debug "Creating new DESCRIPTION from template"
+
+    # Extract Imports from bundles
+    local imports=$(extract_description_imports "$pkgs_list")
+
+    # Get metadata
+    local project_name="${PROJECT_NAME:-project}"
+    local author_name="${AUTHOR_NAME:-Researcher}"
+    local author_email="${AUTHOR_EMAIL:-researcher@example.com}"
+
+    # Substitute template variables and add Imports
+    sed -e "s|\${PKG_NAME}|${project_name}|g" \
+        -e "s|\${AUTHOR_NAME}|${author_name}|g" \
+        -e "s|\${AUTHOR_EMAIL}|${author_email}|g" \
+        "$generic_template" | \
+    awk -v imports="$imports" '
+    /^Imports:/ {
+        print imports
+        in_imports = 1
+        next
+    }
+    in_imports && /^[A-Z]/ {
+        in_imports = 0
+        print $0
+        next
+    }
+    in_imports { next }
+    { print }
+    ' > "$desc_file"
+
+    if [[ $? -eq 0 ]]; then
+        log_success "✓ Generated custom DESCRIPTION with bundle packages"
+        return 0
+    else
+        rm -f "$desc_file"
+        log_error "Failed to generate DESCRIPTION"
         return 1
     fi
 }
@@ -464,37 +591,62 @@ generate_custom_dockerfile() {
 
 ##############################################################################
 # FUNCTION: extract_system_deps_build
-# PURPOSE:  Extract build-time system dependencies from bundles.yaml
+# PURPOSE:  Extract build-time system dependencies from bundles.yaml dynamically
 # USAGE:    extract_system_deps_build "geospatial,modeling"
 # ARGS:
 #   $1 - libs_list: Comma-separated list of library bundles
 # RETURNS:
 #   0 - Success, outputs apt-get install command fragment
 # DESCRIPTION:
-#   Looks up system_dependencies for each bundle in bundles.yaml
-#   and formats as apt-get install fragment with proper indentation
+#   Dynamically queries bundles.yaml for system dependencies.
+#   Uses yq to parse YAML (single source of truth).
+#   Falls back to case statement if yq unavailable.
 ##############################################################################
 extract_system_deps_build() {
     local libs_list="$1"
+    local bundles_file="${TEMPLATES_DIR}/bundles.yaml"
 
     # Split comma-separated list
     IFS=',' read -ra LIBS <<< "$libs_list"
 
     local deps=()
-    for lib in "${LIBS[@]}"; do
-        # Look up in bundles.yaml (simplified - use yq in production)
-        case "$lib" in
-            geospatial)
-                deps+=("gdal-bin" "proj-bin" "libgeos-dev" "libproj-dev" "libgdal-dev" "libudunits2-dev")
-                ;;
-            modeling)
-                deps+=("libgsl-dev" "libblas-dev" "liblapack-dev" "libopenblas-dev" "gfortran")
-                ;;
-            bioinformatics)
-                deps+=("zlib1g-dev" "libbz2-dev" "liblzma-dev" "libncurses5-dev")
-                ;;
-        esac
-    done
+
+    # Check if yq is available for dynamic parsing
+    if command -v yq &>/dev/null && [[ -f "$bundles_file" ]]; then
+        for lib in "${LIBS[@]}"; do
+            lib=$(echo "$lib" | xargs)  # Trim whitespace
+            # Query bundles.yaml for deps array
+            local lib_deps=$(yq eval ".library_bundles.${lib}.deps[]?" "$bundles_file" 2>/dev/null)
+            if [[ -n "$lib_deps" ]]; then
+                while IFS= read -r dep; do
+                    [[ -n "$dep" ]] && deps+=("$dep")
+                done <<< "$lib_deps"
+            fi
+        done
+    else
+        # Fallback: use hardcoded case statement if yq unavailable
+        log_warn "yq not available - using hardcoded dependencies (not dynamic)"
+        for lib in "${LIBS[@]}"; do
+            lib=$(echo "$lib" | xargs)
+            case "$lib" in
+                geospatial)
+                    deps+=("gdal-bin" "proj-bin" "libgeos-dev" "libproj-dev" "libgdal-dev" "libudunits2-dev" "netcdf-bin")
+                    ;;
+                modeling)
+                    deps+=("libgsl-dev" "libblas-dev" "liblapack-dev" "libopenblas-dev" "gfortran")
+                    ;;
+                bioinfo)
+                    deps+=("zlib1g-dev" "libbz2-dev" "liblzma-dev")
+                    ;;
+                gui)
+                    deps+=("xorg" "x11-apps" "xauth" "libx11-dev" "libxt-dev" "libcairo2-dev" "libgl1-mesa-dev" "libglu1-mesa-dev")
+                    ;;
+                terminals)
+                    deps+=("xfce4-terminal" "terminator" "xterm" "fonts-jetbrains-mono" "fonts-firacode" "fonts-hack")
+                    ;;
+            esac
+        done
+    fi
 
     # Generate complete RUN command or comment if no deps
     if [[ ${#deps[@]} -gt 0 ]]; then
@@ -511,9 +663,12 @@ extract_system_deps_build() {
 
 ##############################################################################
 # FUNCTION: extract_system_deps_runtime
-# PURPOSE:  Extract runtime system libraries from bundles.yaml
+# PURPOSE:  Extract runtime system libraries (NOT -dev versions)
 # ARGS:     $1 - libs_list: Comma-separated list of library bundles
-# RETURNS:  Runtime libraries (NOT -dev versions)
+# RETURNS:  Runtime libraries for final stage
+# NOTE:     Runtime deps are hardcoded (bundles.yaml only has build deps)
+#           This derives runtime packages from build deps pattern:
+#           libgdal-dev → libgdal30, libxml2-dev → libxml2, etc.
 ##############################################################################
 extract_system_deps_runtime() {
     local libs_list="$1"
@@ -522,6 +677,9 @@ extract_system_deps_runtime() {
 
     local deps=()
     for lib in "${LIBS[@]}"; do
+        lib=$(echo "$lib" | xargs)
+        # Runtime deps are hardcoded based on common patterns
+        # Future: Could extend bundles.yaml to specify runtime_deps
         case "$lib" in
             geospatial)
                 deps+=("libgdal30" "libproj25" "libgeos-c1v5" "libudunits2-0")
@@ -529,7 +687,8 @@ extract_system_deps_runtime() {
             modeling)
                 deps+=("libgsl27" "libopenblas0")
                 ;;
-            # No runtime deps for bioinformatics (static linking)
+            # Most libs have -dev versions handled by rocker base images
+            # No explicit runtime deps needed for: bioinfo, gui, terminals, publishing
         esac
     done
 
@@ -548,37 +707,134 @@ extract_system_deps_runtime() {
 
 ##############################################################################
 # FUNCTION: extract_r_packages
-# PURPOSE:  Extract R packages from bundles.yaml
+# PURPOSE:  Extract R packages from bundles.yaml dynamically
 # ARGS:     $1 - pkgs_list: Comma-separated list of package bundles
-# RETURNS:  Quoted, comma-separated R package list
+# RETURNS:  Quoted, comma-separated R package list for install.packages()
+# DESCRIPTION:
+#   Dynamically queries bundles.yaml for packages in each bundle.
+#   Uses yq to parse YAML (single source of truth).
+#   Falls back to hardcoded case statements if yq unavailable.
 ##############################################################################
 extract_r_packages() {
     local pkgs_list="$1"
+    local bundles_file="${TEMPLATES_DIR}/bundles.yaml"
 
     IFS=',' read -ra PKGS <<< "$pkgs_list"
 
     local packages=()
-    for pkg in "${PKGS[@]}"; do
-        case "$pkg" in
-            minimal)
-                packages+=("'renv'" "'devtools'" "'usethis'" "'testthat'" "'roxygen2'")
-                ;;
-            analysis)
-                packages+=("'renv'" "'devtools'" "'tidyverse'" "'here'" "'janitor'" "'scales'" "'patchwork'" "'gt'" "'DT'")
-                ;;
-            modeling)
-                packages+=("'renv'" "'tidyverse'" "'tidymodels'" "'xgboost'" "'randomForest'" "'glmnet'" "'caret'")
-                ;;
-            geospatial)
-                packages+=("'renv'" "'sf'" "'terra'" "'leaflet'" "'mapview'" "'tmap'" "'tidyverse'")
-                ;;
-            publishing)
-                packages+=("'renv'" "'devtools'" "'tidyverse'" "'quarto'" "'bookdown'" "'blogdown'" "'rmarkdown'" "'knitr'")
-                ;;
-        esac
+
+    # Check if yq is available for dynamic parsing
+    if command -v yq &>/dev/null && [[ -f "$bundles_file" ]]; then
+        for pkg in "${PKGS[@]}"; do
+            pkg=$(echo "$pkg" | xargs)  # Trim whitespace
+            # Query bundles.yaml for packages array
+            local pkg_list=$(yq eval ".package_bundles.${pkg}.packages[]?" "$bundles_file" 2>/dev/null)
+            if [[ -n "$pkg_list" ]]; then
+                while IFS= read -r package; do
+                    [[ -n "$package" ]] && packages+=("'$package'")
+                done <<< "$pkg_list"
+            fi
+        done
+    else
+        # Fallback: use hardcoded case statement if yq unavailable
+        log_warn "yq not available - using hardcoded packages (not dynamic)"
+        for pkg in "${PKGS[@]}"; do
+            pkg=$(echo "$pkg" | xargs)
+            case "$pkg" in
+                minimal)
+                    packages+=("'renv'" "'devtools'" "'usethis'" "'testthat'" "'roxygen2'")
+                    ;;
+                analysis)
+                    packages+=("'renv'" "'devtools'" "'tidyverse'" "'here'" "'janitor'" "'scales'" "'patchwork'" "'gt'" "'DT'")
+                    ;;
+                modeling)
+                    packages+=("'renv'" "'tidyverse'" "'tidymodels'" "'xgboost'" "'randomForest'" "'glmnet'" "'caret'")
+                    ;;
+                geospatial)
+                    packages+=("'renv'" "'sf'" "'terra'" "'leaflet'" "'mapview'" "'tmap'" "'tidyverse'")
+                    ;;
+                publishing)
+                    packages+=("'renv'" "'devtools'" "'tidyverse'" "'quarto'" "'bookdown'" "'blogdown'" "'rmarkdown'" "'knitr'")
+                    ;;
+            esac
+        done
+    fi
+
+    # Join with commas, deduplicating packages
+    # Use printf with dedup: sort | uniq
+    local result=$(printf '%s\n' "${packages[@]}" | sort -u | paste -sd, -)
+    echo "$result"
+}
+
+##############################################################################
+# FUNCTION: extract_description_imports
+# PURPOSE:  Extract R packages for DESCRIPTION Imports field
+# ARGS:     $1 - pkgs_list: Comma-separated list of package bundles
+# RETURNS:  DESCRIPTION Imports field format (indented, newline-separated)
+# DESCRIPTION:
+#   Extracts packages from bundles.yaml and formats for DESCRIPTION file.
+#   Output includes renv (required), then packages from bundles, 4-space indented.
+#   Format:
+#     Imports:
+#         renv,
+#         package1,
+#         package2
+##############################################################################
+extract_description_imports() {
+    local pkgs_list="$1"
+    local bundles_file="${TEMPLATES_DIR}/bundles.yaml"
+
+    IFS=',' read -ra PKGS <<< "$pkgs_list"
+
+    local packages=("renv")  # Always include renv
+
+    # Check if yq is available for dynamic parsing
+    if command -v yq &>/dev/null && [[ -f "$bundles_file" ]]; then
+        for pkg in "${PKGS[@]}"; do
+            pkg=$(echo "$pkg" | xargs)
+            local pkg_list=$(yq eval ".package_bundles.${pkg}.packages[]?" "$bundles_file" 2>/dev/null)
+            if [[ -n "$pkg_list" ]]; then
+                while IFS= read -r package; do
+                    [[ -n "$package" && "$package" != "renv" ]] && packages+=("$package")
+                done <<< "$pkg_list"
+            fi
+        done
+    else
+        # Fallback: hardcoded packages
+        for pkg in "${PKGS[@]}"; do
+            pkg=$(echo "$pkg" | xargs)
+            case "$pkg" in
+                minimal)
+                    packages+=("devtools" "usethis" "testthat" "roxygen2")
+                    ;;
+                analysis)
+                    packages+=("devtools" "tidyverse" "here" "janitor" "scales" "patchwork" "gt" "DT")
+                    ;;
+                modeling)
+                    packages+=("tidyverse" "tidymodels" "xgboost" "randomForest" "glmnet" "caret")
+                    ;;
+                geospatial)
+                    packages+=("sf" "terra" "leaflet" "mapview" "tmap" "tidyverse")
+                    ;;
+                publishing)
+                    packages+=("devtools" "tidyverse" "quarto" "bookdown" "blogdown" "rmarkdown" "knitr")
+                    ;;
+            esac
+        done
+    fi
+
+    # Deduplicate and sort
+    local sorted_packages=($(printf '%s\n' "${packages[@]}" | sort -u))
+
+    # Format as DESCRIPTION Imports with 4-space indentation
+    local result="Imports:"
+    for i in "${!sorted_packages[@]}"; do
+        result+=$'\n    '"${sorted_packages[$i]}"
+        # Add comma if not last item
+        if [[ $i -lt $((${#sorted_packages[@]} - 1)) ]]; then
+            result+=","
+        fi
     done
 
-    # Join with commas
-    local result=$(IFS=,; echo "${packages[*]}")
     echo "$result"
 }

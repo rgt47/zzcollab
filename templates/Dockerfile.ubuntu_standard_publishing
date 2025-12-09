@@ -3,11 +3,22 @@
 # ZZCOLLAB Ubuntu Standard Publishing Profile
 #======================================================================
 # Profile: ubuntu_standard_publishing (~2.5GB)
-# Purpose: Academic papers, books, blogs with LaTeX, Quarto, RStudio
+# Purpose: Document publishing with support for .Rmd, .Rnw, and .qmd files
 # Base: rocker/verse (R + tidyverse + LaTeX + RStudio Server)
-# Packages: tidyverse, quarto, bookdown, blogdown, distill, rmarkdown,
-#           knitr, flexdashboard, xaringan, renv, devtools
-#           (binaries from r2u)
+# System Tools: Quarto CLI (explicit version), pandoc, texlive-full (LaTeX)
+# R Packages: tidyverse, quarto, bookdown, blogdown, distill, rmarkdown,
+#           knitr, flexdashboard, xaringan, renv, devtools (binaries from r2u)
+#
+# Supported File Formats:
+#   .R   - R scripts (any profile)
+#   .Rmd - R Markdown documents (any profile with renv)
+#   .Rnw - R noweb (Sweave) documents - requires LaTeX (this profile)
+#   .qmd - Quarto markdown documents - requires Quarto CLI (this profile)
+#
+# Design Principle:
+#   All system dependencies are version-controlled in the Dockerfile.
+#   Users do NOT install system tools at runtime. If additional tools
+#   are needed, modify this Dockerfile and rebuild.
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
 #          -f Dockerfile.ubuntu_standard_publishing \
@@ -48,6 +59,8 @@ RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ]; then \
     fi
 
 # Install runtime dependencies (pinned to Ubuntu Noble 24.04)
+# Note: Quarto CLI is explicitly installed here to ensure reproducibility
+# rocker/verse may include Quarto, but we install explicitly for clarity
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
@@ -59,7 +72,19 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libjpeg8=8c-2ubuntu11 \
         libicu74 \
         pandoc \
-        curl
+        curl \
+        wget
+
+# Install Quarto CLI explicitly for .qmd document support
+# Quarto enables reproducible documents mixing R, Markdown, LaTeX, and Python
+# Pinned version for reproducibility (update as new versions are released)
+RUN --mount=type=cache,target=/tmp/quarto,sharing=locked \
+    set -ex && \
+    QUARTO_VERSION="1.6.33" && \
+    wget -q "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.deb" \
+        -O /tmp/quarto/quarto.deb && \
+    dpkg -i /tmp/quarto/quarto.deb && \
+    quarto --version
 
 # Configure R to use Posit Package Manager (pre-compiled Ubuntu binaries)
 RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))" \

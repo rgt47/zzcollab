@@ -82,13 +82,23 @@ Production-ready environments for general research computing.
 **publishing** (~3GB)
 
 - **Base Image**: `rocker/verse:latest`
-- **Description**: Document publishing with LaTeX and Quarto
-- **Key Packages**: renv, devtools, quarto, bookdown, blogdown,
+- **Description**: Document publishing with LaTeX, Quarto, and RStudio Server
+- **Supported File Formats**: .R, .Rmd, .Rnw (Sweave), .qmd (Quarto)
+- **Key System Tools**: Quarto CLI (v1.6.33), pandoc, texlive-full (complete LaTeX)
+- **Key R Packages**: renv, devtools, quarto, bookdown, blogdown,
   distill, flexdashboard, shiny, DT, plotly
-- **Use Cases**: Academic papers, books, blogs, interactive
-  documents
-- **System Dependencies**: pandoc, texlive-full, libxml2-dev,
+- **Use Cases**:
+  - Academic papers (.Rnw with LaTeX)
+  - Quarto documents (.qmd for R/Python/JS mixing)
+  - Books (bookdown)
+  - Blogs (blogdown)
+  - Interactive dashboards
+  - Manuscripts with reproducible analysis
+- **System Dependencies**: Quarto CLI, pandoc, texlive-full, libxml2-dev,
   libcurl4-openssl-dev, libssl-dev, libv8-dev
+- **Design Note**: All system dependencies (including Quarto CLI version)
+  are version-controlled in the Dockerfile. Users should NOT install
+  system tools at runtime. To modify, edit the Dockerfile and rebuild.
 - **Note**: AMD64 only, see ARM64 section for alternatives
 
 **shiny** (~1.8GB)

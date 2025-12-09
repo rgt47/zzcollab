@@ -291,6 +291,39 @@ vim config.yaml           # Edit team profiles
 zzcollab -t TEAM -p PROJECT -r PROFILE
 ```
 
+## File Format Support
+
+ZZCOLLAB supports multiple R document formats. All code is scanned for package dependencies regardless of file type (.R, .Rmd, .Rnw, .qmd).
+
+### File Format Requirements
+
+| Format | Description | System Requirements | Recommended Profile |
+|--------|-------------|-------------------|-------------------|
+| **.R** | Plain R scripts | None | Any profile (minimal sufficient) |
+| **.Rmd** | R Markdown documents | Markdown processor (built-in) | Any profile with renv |
+| **.Rnw** | R noweb (Sweave) - LaTeX + R | LaTeX (texlive-full) | **publishing** (~3GB) |
+| **.qmd** | Quarto markdown - modern publishing format | Quarto CLI + LaTeX | **publishing** (~3GB) |
+
+### Design Principle: Dockerfile is Source of Truth
+
+**All system dependencies are version-controlled in the Dockerfile, not installed at runtime:**
+
+- If you need .Rnw support: Use `publishing` profile (includes texlive-full)
+- If you need .qmd support: Use `publishing` profile (includes Quarto CLI v1.6.33+)
+- If you need additional system tools: Modify the Dockerfile and rebuild
+- **Do NOT** install system packages manually inside containers
+
+This ensures reproducibility - anyone can rebuild the image and get identical results.
+
+### Package Detection
+
+The validation system (`modules/validation.sh`) scans all four file formats for R package usage:
+- `library()` and `require()` calls
+- Namespace calls: `pkg::function()`
+- roxygen2 imports: `@import`, `@importFrom`
+
+Example: A `.qmd` file using `library(dplyr)` will be detected and added to renv.lock automatically via `make check-renv`.
+
 ## Package Management
 
 ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** architecture.
