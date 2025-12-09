@@ -16,9 +16,10 @@ help:
 	@echo "Available targets:"
 	@echo ""
 	@echo "  Validation (NO HOST R REQUIRED!):"
-	@echo "    check-renv            - Full validation: strict + auto-fix (recommended)"
-	@echo "    check-renv-no-fix     - Validation only, no auto-install"
-	@echo "    check-renv-no-strict  - Standard mode (skip tests/, vignettes/)"
+	@echo "    check-renv             - Full validation: strict + auto-fix (recommended)"
+	@echo "    check-renv-no-fix      - Validation only, no auto-install"
+	@echo "    check-renv-no-strict   - Standard mode (skip tests/, vignettes/)"
+	@echo "    check-system-deps      - Check for missing system dependencies in Dockerfile"
 	@echo ""
 	@echo "  Main workflow (RECOMMENDED):"
 	@echo "    r                     - Start bash terminal (vim editing, all profiles)"
@@ -83,6 +84,12 @@ check-renv-no-strict:
 # This is the old approach, kept for backward compatibility
 check-renv-ci:
 	@bash modules/validation.sh --fix --strict --verbose
+
+# Check for missing system dependencies in Dockerfile
+# Scans codebase for R packages and detects missing system libraries
+# Suggests where to add missing deps in CUSTOM_SYSTEM_DEPS sections
+check-system-deps:
+	@bash modules/validation.sh --system-deps
 
 # Docker targets (work without local R)
 # Docker-first workflow:

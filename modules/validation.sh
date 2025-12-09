@@ -1624,6 +1624,10 @@ main() {
                 verbose=true
                 shift
                 ;;
+            --system-deps)
+                detect_missing_system_deps "${2:-.}/Dockerfile"
+                shift 2
+                ;;
             --help|-h)
                 cat <<EOF
 Usage: validation.sh [OPTIONS]
@@ -1634,19 +1638,21 @@ DEFAULTS:
     Strict mode and auto-fix are ENABLED by default for comprehensive validation.
 
 OPTIONS:
-    --strict        Enable strict mode (scan tests/, vignettes/, root) [DEFAULT]
-    --no-strict     Disable strict mode (scan only R/, scripts/, analysis/, root)
-    --fix           Auto-add missing packages to renv.lock via CRAN API [DEFAULT]
-    --no-fix        Report issues without auto-fixing
-    --verbose, -v   List all missing packages (always enabled with --fix)
-    --help, -h      Show this help message
+    --strict           Enable strict mode (scan tests/, vignettes/, root) [DEFAULT]
+    --no-strict        Disable strict mode (scan only R/, scripts/, analysis/, root)
+    --fix              Auto-add missing packages to renv.lock via CRAN API [DEFAULT]
+    --no-fix           Report issues without auto-fixing
+    --system-deps      Check for missing system dependencies in Dockerfile
+    --verbose, -v      List all missing packages (always enabled with --fix)
+    --help, -h         Show this help message
 
 EXAMPLES:
-    validation.sh                # Full validation with auto-fix (recommended)
-    validation.sh --verbose      # Show list of missing packages
-    validation.sh --no-fix       # Validation only, no auto-add
-    validation.sh --no-strict    # Skip tests/ and vignettes/ directories
-    validation.sh -v --no-fix    # Verbose validation without auto-fix
+    validation.sh                        # Full validation with auto-fix (recommended)
+    validation.sh --verbose              # Show list of missing packages
+    validation.sh --no-fix               # Validation only, no auto-add
+    validation.sh --no-strict            # Skip tests/ and vignettes/ directories
+    validation.sh --system-deps          # Check for missing system dependencies
+    validation.sh -v --no-fix            # Verbose validation without auto-fix
 
 REQUIREMENTS:
     - jq (for renv.lock parsing and editing): brew install jq
@@ -1678,6 +1684,155 @@ EOF
 
     # Run validation
     validate_and_report "$strict_mode" "$auto_fix" "$verbose"
+}
+
+##############################################################################
+# SYSTEM DEPENDENCY VALIDATION
+##############################################################################
+
+##############################################################################
+# FUNCTION: detect_missing_system_deps
+# PURPOSE:  Detect R packages that need system dependencies not in Dockerfile
+# USAGE:    detect_missing_system_deps "Dockerfile"
+# ARGS:     $1 - Path to Dockerfile to scan (optional, defaults to "./Dockerfile")
+# RETURNS:  0 if all deps found, 1 if missing deps detected
+# DESCRIPTION:
+#   Scans codebase for R packages, looks up system dependencies,
+#   and checks if they are installed in the provided Dockerfile.
+#   Reports missing dependencies with installation suggestions.
+##############################################################################
+detect_missing_system_deps() {
+    local dockerfile="${1:-./Dockerfile}"
+
+    # Check if system_deps_map module is available
+    if ! source "${MODULES_DIR}/system_deps_map.sh" 2>/dev/null; then
+        log_warn "system_deps_map.sh not available - skipping system dependency check"
+        return 0
+    fi
+
+    log_info "Checking for missing system dependencies..."
+
+    if [[ ! -f "$dockerfile" ]]; then
+        log_warn "Dockerfile not found: $dockerfile"
+        return 0
+    fi
+
+    # Extract all R packages from codebase
+    local all_packages=$(extract_code_packages | sort -u)
+
+    if [[ -z "$all_packages" ]]; then
+        log_info "No R packages found in codebase"
+        return 0
+    fi
+
+    local missing_build_deps=()
+    local missing_runtime_deps=()
+    local packages_with_missing_deps=()
+
+    # Check each package for system dependencies
+    while IFS= read -r package; do
+        [[ -z "$package" ]] && continue
+
+        # Get build and runtime deps for this package
+        local build_deps=$(get_package_build_deps "$package")
+        local runtime_deps=$(get_package_runtime_deps "$package")
+
+        if [[ -z "$build_deps" ]]; then
+            continue
+        fi
+
+        # Check if build deps are in Dockerfile
+        local missing_build=()
+        for dep in $build_deps; do
+            if ! grep -q "$dep" "$dockerfile"; then
+                missing_build+=("$dep")
+            fi
+        done
+
+        # Check if runtime deps are in Dockerfile
+        local missing_runtime=()
+        for dep in $runtime_deps; do
+            if ! grep -q "$dep" "$dockerfile"; then
+                missing_runtime+=("$dep")
+            fi
+        done
+
+        # Collect results
+        if [[ ${#missing_build[@]} -gt 0 ]] || [[ ${#missing_runtime[@]} -gt 0 ]]; then
+            packages_with_missing_deps+=("$package")
+            missing_build_deps+=("${missing_build[@]}")
+            missing_runtime_deps+=("${missing_runtime[@]}")
+        fi
+    done <<< "$all_packages"
+
+    # Report findings
+    if [[ ${#packages_with_missing_deps[@]} -eq 0 ]]; then
+        log_success "✓ All R packages have required system dependencies"
+        return 0
+    fi
+
+    # Format missing deps for display
+    log_warn ""
+    log_warn "⚠ Missing system dependencies detected!"
+    log_warn ""
+
+    for package in "${packages_with_missing_deps[@]}"; do
+        local build=$(get_package_build_deps "$package")
+        local runtime=$(get_package_runtime_deps "$package")
+
+        echo ""
+        log_warn "  Package: $package"
+
+        if [[ -n "$build" ]]; then
+            log_warn "    Build-time: $build"
+        fi
+
+        if [[ -n "$runtime" ]]; then
+            log_warn "    Runtime:    $runtime"
+        fi
+    done
+
+    # Provide instructions
+    echo ""
+    log_warn "═══════════════════════════════════════════════════════════════"
+    log_warn "To fix missing system dependencies:"
+    log_warn ""
+    log_warn "1. Edit the Dockerfile"
+    log_warn ""
+    log_warn "2. Add to CUSTOM_SYSTEM_DEPS_BUILD_START section (builder stage):"
+    log_warn ""
+    log_warn "   RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\"
+    log_warn "       --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \\"
+    log_warn "       set -ex && \\"
+    log_warn "       apt-get update && \\"
+    log_warn "       apt-get install -y --no-install-recommends \\"
+
+    # Print unique missing build deps
+    for dep in $(printf '%s\n' "${missing_build_deps[@]}" | sort -u); do
+        log_warn "           $dep \\"
+    done
+
+    log_warn ""
+    log_warn "3. Add to CUSTOM_SYSTEM_DEPS_RUNTIME_START section (runtime stage):"
+    log_warn ""
+    log_warn "   RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\"
+    log_warn "       --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \\"
+    log_warn "       set -ex && \\"
+    log_warn "       apt-get update && \\"
+    log_warn "       apt-get install -y --no-install-recommends \\"
+
+    # Print unique missing runtime deps
+    for dep in $(printf '%s\n' "${missing_runtime_deps[@]}" | sort -u); do
+        log_warn "           $dep \\"
+    done
+
+    log_warn ""
+    log_warn "4. Rebuild Docker image:"
+    log_warn "   make docker-build"
+    log_warn "═══════════════════════════════════════════════════════════════"
+    echo ""
+
+    return 1
 }
 
 # Only run main if executed directly (not sourced)

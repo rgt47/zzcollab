@@ -69,6 +69,28 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Libraries: ${LIBS_BUNDLE_LIST}
 ${CUSTOM_SYSTEM_DEPS_INSTALL}
 
+# CUSTOM/PROJECT-SPECIFIC SYSTEM DEPENDENCIES (build stage)
+# ============================================================
+# Add project-specific system libraries here (not in bundles.yaml)
+# Examples: libgdal-dev, libproj-dev, custom software, etc.
+#
+# Format:
+#   RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+#       --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+#       set -ex && \
+#       apt-get update && \
+#       apt-get install -y --no-install-recommends \
+#           libgdal-dev \
+#           libproj-dev
+#
+# Note: This layer is separate from bundle-based deps for Docker cache optimization.
+#       When custom deps are added/modified, only this layer rebuilds (~1 min).
+#       R package compilation layer (renv::restore) stays cached.
+# ============================================================
+# CUSTOM_SYSTEM_DEPS_BUILD_START
+# (Empty - add custom build dependencies here)
+# CUSTOM_SYSTEM_DEPS_BUILD_END
+
 # Configure R to use CRAN
 WORKDIR /build
 COPY renv.lock* ./
@@ -131,6 +153,31 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Custom runtime libraries (generated from bundles.yaml)
 # Libraries: ${LIBS_BUNDLE_LIST}
 ${CUSTOM_RUNTIME_LIBS_INSTALL}
+
+# CUSTOM/PROJECT-SPECIFIC SYSTEM DEPENDENCIES (runtime stage)
+# ============================================================
+# Add project-specific runtime libraries here (NOT -dev versions)
+# These correspond to build deps added in builder stage.
+#
+# Examples:
+#   Build:   libgdal-dev libproj-dev
+#   Runtime: libgdal30 libproj25
+#
+# Format:
+#   RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+#       --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+#       set -ex && \
+#       apt-get update && \
+#       apt-get install -y --no-install-recommends \
+#           libgdal30 \
+#           libproj25
+#
+# Note: This layer is separate from bundle-based deps for Docker cache optimization.
+#       When custom deps are added/modified, only this layer rebuilds (~1 min).
+# ============================================================
+# CUSTOM_SYSTEM_DEPS_RUNTIME_START
+# (Empty - add custom runtime dependencies here)
+# CUSTOM_SYSTEM_DEPS_RUNTIME_END
 
 # Node.js for vim plugins
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
