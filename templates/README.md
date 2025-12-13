@@ -1,21 +1,47 @@
 # ${PKG_NAME}
 
-> **zzcollab research compendium** | [Framework Documentation](https://github.com/rgt47/zzcollab)
+A reproducible research compendium created with [zzcollab](https://github.com/rgt47/zzcollab).
 
-## Overview
-
-<!--
-TODO: Add a brief description of your research project here.
-Example: "This project analyzes the relationship between X and Y using Z methodology."
--->
-
-**Status**: In Development
-**License**: GPL-3
-**Last Updated**: ${DATE}
+**Status**: In Development | **License**: GPL-3 | **Last Updated**: ${DATE}
 
 ---
 
-## Quick Start for Team Members
+## Quick Start: Run the Analysis
+
+Want to reproduce the analysis? All you need is **Docker** and **Git**.
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (works on macOS, Linux, Windows)
+- Git
+
+### Run the Analysis
+
+```bash
+# Clone the repository
+git clone https://github.com/${GITHUB_ACCOUNT}/${PKG_NAME}.git
+cd ${PKG_NAME}
+
+# Build the Docker image (one-time setup)
+make docker-build
+
+# Run the analysis script
+make r < analysis/scripts/analysis.R
+
+# Or render an R Markdown document
+make r < 'rmarkdown::render("analysis/paper/paper.Rmd")'
+
+# Results in:
+# - analysis/figures/  - Generated plots and visualizations
+# - analysis/data/derived_data/  - Processed datasets
+# - analysis/paper/paper.html (or .pdf) - Rendered report
+```
+
+**That's it!** The Docker image provides the exact computational environment (R version, packages, system dependencies) needed to reproduce the analysis.
+
+---
+
+## For Developers: Using zzcollab
 
 ### Prerequisites
 
@@ -27,7 +53,7 @@ cd zzcollab
 ./install.sh
 ```
 
-### Join This Project
+### Join This Project (Team Collaboration)
 
 ```bash
 # Clone the repository
@@ -66,9 +92,9 @@ ${PKG_NAME}/
 
 ---
 
-## Development Workflow
+### Development Workflow
 
-### Daily Development
+#### Daily Development
 
 ```bash
 # 1. Enter development container
@@ -88,7 +114,7 @@ git commit -m "Add analysis"
 git push
 ```
 
-### Common Tasks
+#### Common Tasks
 
 ```bash
 make docker-zsh          # Start interactive R session
@@ -97,9 +123,10 @@ make docker-test         # Run all tests
 make docker-build        # Build Docker image
 make docker-push-team    # Push team image to Docker Hub
 make check-renv          # Validate package dependencies
+make help                # Show all available targets
 ```
 
-### Navigation Shortcuts (Optional)
+#### Navigation Shortcuts (Optional)
 
 Install one-letter navigation shortcuts for faster workflow:
 
@@ -117,7 +144,7 @@ d     # → data/
 nav   # → list all shortcuts
 ```
 
-### Getting Help
+#### Getting Help
 
 The zzcollab framework has a comprehensive git-like help system:
 
@@ -149,7 +176,7 @@ zzcollab --help
 
 ---
 
-## Reproducibility
+### Reproducibility Architecture
 
 This project ensures reproducibility through five version-controlled components:
 
@@ -159,19 +186,9 @@ This project ensures reproducibility through five version-controlled components:
 4. **Source code** - Analysis scripts and functions
 5. **Data** - Raw and derived datasets
 
-Any researcher can reproduce this analysis by:
+See the [zzcollab reproducibility guide](https://github.com/rgt47/zzcollab#reproducibility) for detailed explanation.
 
-```bash
-git clone https://github.com/${GITHUB_ACCOUNT}/${PKG_NAME}.git
-cd ${PKG_NAME}
-zzcollab -u
-make docker-zsh
-# Analysis runs in identical environment
-```
-
----
-
-## Documentation
+### Documentation
 
 - **Analysis Data**: See `analysis/data/README.md` for data documentation
 - **Development Guide**: See `docs/` for detailed technical documentation
