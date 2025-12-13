@@ -48,9 +48,11 @@ if (!in_container) {
   # ==========================================
 
   # renv Cache Path Configuration
-  # Container uses /home/analyst/.cache/R/renv (set by Dockerfile ENV)
-  # Volume mount shares cache: -v $(pwd)/.cache/R/renv:/home/analyst/.cache/R/renv
-  Sys.setenv(RENV_PATHS_CACHE = file.path(getwd(), ".cache/R/renv"))
+  # If RENV_PATHS_CACHE already set (e.g., via docker -e), use it
+  # Otherwise use project-local cache
+  if (Sys.getenv("RENV_PATHS_CACHE") == "") {
+    Sys.setenv(RENV_PATHS_CACHE = file.path(getwd(), ".cache/R/renv"))
+  }
 
   # Activate renv (set project-local library paths)
   if (file.exists("renv/activate.R")) {
