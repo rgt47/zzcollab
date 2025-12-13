@@ -11,6 +11,7 @@
 ubuntu_standard_minimal:
   base_image: "rocker/r-ver:latest"
   description: "Minimal Ubuntu environment with essential R packages"
+  workflow_type: "package-dev"
   packages:
     - "renv"
   system_deps:
@@ -31,6 +32,7 @@ ubuntu_standard_minimal:
 ubuntu_standard_analysis:
   base_image: "rocker/tidyverse:latest"
   description: "Data analysis with tidyverse + modeling packages"
+  workflow_type: "analysis"
   packages:
     - "renv"
     - "here"
@@ -63,6 +65,7 @@ ubuntu_standard_analysis:
 ubuntu_standard_publishing:
   base_image: "rocker/verse:latest"
   description: "Document publishing with LaTeX, Quarto, and web tools"
+  workflow_type: "blog"
   packages:
     - "renv"
     - "quarto"
@@ -98,6 +101,7 @@ ubuntu_standard_publishing:
 ubuntu_shiny_minimal:
   base_image: "rocker/shiny:latest"
   description: "Shiny Server with minimal packages"
+  workflow_type: "shiny"
   packages:
     - "renv"
   system_deps:
@@ -116,6 +120,7 @@ ubuntu_shiny_minimal:
 ubuntu_shiny_analysis:
   base_image: "rocker/shiny-verse:latest"
   description: "Shiny Server with tidyverse and publishing capabilities"
+  workflow_type: "shiny"
   packages:
     - "renv"
     - "shiny"
@@ -145,6 +150,7 @@ ubuntu_shiny_analysis:
 ubuntu_x11_minimal:
   base_image: "rocker/r-ver:latest"
   description: "Minimal R with X11 support for graphics viewing"
+  workflow_type: "analysis"
   packages:
     - "renv"
   system_deps:
@@ -170,6 +176,7 @@ ubuntu_x11_minimal:
 ubuntu_x11_analysis:
   base_image: "rocker/tidyverse:latest"
   description: "Data analysis with tidyverse and X11 support"
+  workflow_type: "blog"
   packages:
     - "renv"
     - "here"
@@ -207,6 +214,7 @@ ubuntu_x11_analysis:
 alpine_standard_minimal:
   base_image: "rhub/r-minimal:latest"
   description: "Ultra-lightweight Alpine Linux with R for CI/CD"
+  workflow_type: "package-dev"
   packages:
     - "renv"
   system_deps:
@@ -226,6 +234,7 @@ alpine_standard_minimal:
 alpine_standard_analysis:
   base_image: "rhub/r-minimal:latest"
   description: "Lightweight Alpine with core data analysis packages"
+  workflow_type: "analysis"
   packages:
     - "renv"
     - "dplyr"
@@ -262,6 +271,7 @@ alpine_standard_analysis:
 alpine_x11_minimal:
   base_image: "rhub/r-minimal:latest"
   description: "Lightweight Alpine with minimal X11 for base R graphics"
+  workflow_type: "analysis"
   packages:
     - "renv"
   system_deps:
@@ -291,6 +301,7 @@ alpine_x11_minimal:
 alpine_x11_analysis:
   base_image: "rhub/r-minimal:latest"
   description: "Lightweight Alpine with X11 support for graphics viewing"
+  workflow_type: "analysis"
   packages:
     - "renv"
     - "dplyr"

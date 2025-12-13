@@ -28,6 +28,29 @@ team:
 #=============================================================================
 # Define which profiles your team needs from the profile library.
 # Full definitions are automatically pulled from profiles.yaml
+#
+# WORKFLOW TYPE MAPPING (Automatic CI/CD Setup):
+# Each profile declares a workflow_type that determines which GitHub Actions
+# workflow will be installed. This keeps CI/CD maintenance simple and explicit:
+#
+#   workflow_type: "package-dev" → r-package-dev.yml
+#     Use for: R package development, CRAN submission
+#     Includes: R CMD check, tests, vignette building
+#
+#   workflow_type: "analysis"    → r-package-analysis.yml
+#     Use for: Data analysis, exploratory work, script-based projects
+#     Includes: validation, tests, script execution, output verification
+#
+#   workflow_type: "blog"        → r-package-blog.yml
+#     Use for: Blog posts, tutorials, Quarto reports
+#     Includes: validation, tests, scripts, Quarto rendering, artifact upload
+#
+#   workflow_type: "shiny"       → r-package-shiny.yml
+#     Use for: Shiny applications, web applications
+#     Includes: validation, tests, Docker build, deployment checks
+#
+# Run: ./scripts/install-workflows.sh
+#      (Automatically reads enabled profiles and installs correct workflow)
 
 profiles:
 
@@ -38,6 +61,7 @@ profiles:
   minimal:
     enabled: true    # Essential development environment (~800MB)
     # Full definition in profiles.yaml
+    # workflow_type: package-dev
 
   #---------------------------------------------------------------------------
   # ADDITIONAL PROFILES (Set enabled: true to activate)
