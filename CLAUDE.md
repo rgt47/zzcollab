@@ -669,6 +669,45 @@ zzcollab_help("config")            # Configuration guide
 
 **Recent Major Changes**:
 
+### December 12, 2025 - Documentation Reorganization for Wider Project Sharing
+
+**User-focused README restructuring** - Separated end-user and developer documentation:
+
+- **Updated `templates/README.md`**: Split into two clear sections
+  - "Quick Start: Run the Analysis" - For end users who just want reproducible results
+    - Only requires Docker + Git (no zzcollab knowledge needed)
+    - 3 simple commands: clone, build, run
+    - Includes Rmarkdown rendering example: `make r < 'rmarkdown::render("analysis/paper/paper.Rmd")'`
+    - Clear output expectations (figures, data, reports)
+  - "For Developers: Using zzcollab" - For project contributors
+    - Full zzcollab framework setup and team collaboration
+    - Development workflows and helper shortcuts
+    - All technical details for active development
+
+- **Updated `pznblastanalysis` README**: Applied same structure to demonstrate pattern
+  - Quick Start section for reproducibility without framework learning curve
+  - Developer section for zzcollab users and contributors
+  - Both sections now live in template, reused by all new projects
+
+- **Updated `.gitignore`**: Added `.zzcollab/` directory exclusion
+  - User-specific configuration (`.zzcollab/manifest.json`, `uninstall.sh`) no longer committed
+  - Framework files (Dockerfile, Makefile, renv.lock, .Rprofile) remain committed
+  - Prevents merge conflicts from per-user metadata
+  - Applied to both active project and template for consistency
+
+**Impact**:
+- zzcollab projects can now be shared widely with non-technical end users
+- Researchers can reproduce analyses without learning the framework
+- Developers still have full access to collaborative tools
+- All future projects automatically have proper documentation split
+- Reduced friction for GitHub sharing (no user-specific files, clear instructions)
+
+**Files Modified**:
+- `templates/README.md` - Complete restructure (85 lines changed)
+- `templates/.gitignore` - Added `.zzcollab/` (2 lines)
+- `pznblastanalysis/README.md` - Same restructure as template
+- `pznblastanalysis/.gitignore` - Same .zzcollab/ exclusion
+
 ### December 6, 2025 - Comprehensive Test Suite Implementation
 
 **Complete test infrastructure overhaul** - 4-phase implementation achieving 68% shell module coverage with 385+ new tests:
