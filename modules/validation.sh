@@ -197,17 +197,26 @@ add_package_to_description() {
     cp "$desc_file" "$temp_desc"
 
     # Use awk to add package to Imports field
+    # Handles three cases:
+    # 1. Imports field exists in middle of file - append to it
+    # 2. Imports field exists at end of file - append to it
+    # 3. No Imports field exists - create new one at EOF
     awk -v pkg="$pkg" '
-    BEGIN { in_imports = 0; added = 0; }
+    BEGIN {
+        in_imports = 0
+        added = 0
+        found_imports_field = 0  # Track if Imports: field exists at all
+    }
 
     # Detect Imports field start
     /^Imports:/ {
+        found_imports_field = 1
         in_imports = 1
         print $0
         next
     }
 
-    # Detect end of Imports (next field starts)
+    # Detect end of Imports (next field starts with capital letter)
     in_imports && /^[A-Z]/ {
         # Add comma to last import line if missing, then add new package
         if (!added && last_import_line != "") {
@@ -243,7 +252,7 @@ add_package_to_description() {
     { print $0 }
 
     END {
-        # If still in imports at end of file
+        # Case 1: Imports field exists and we are still in it at EOF
         if (in_imports && !added) {
             # Print buffered last import line with comma
             if (last_import_line != "") {
@@ -254,6 +263,14 @@ add_package_to_description() {
             }
             # Add new package (last item, no trailing comma)
             print "    " pkg
+            added = 1
+        }
+
+        # Case 2: No Imports field exists at all - create new one at EOF
+        if (!found_imports_field && !added) {
+            print "Imports:"
+            print "    " pkg
+            added = 1
         }
     }
     ' "$temp_desc" > "$desc_file"
