@@ -1390,16 +1390,24 @@ report_and_fix_missing_description() {
     local verbose="${2:-false}"
     local auto_fix="${3:-false}"
 
-    if [[ ${#missing_ref[@]} -eq 0 ]]; then
+    # Filter out empty strings (edge case from mapfile with empty output)
+    local filtered_missing=()
+    for pkg in "${missing_ref[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            filtered_missing+=("$pkg")
+        fi
+    done
+
+    if [[ ${#filtered_missing[@]} -eq 0 ]]; then
         return 0
     fi
 
-    log_error "Found ${#missing_ref[@]} packages missing from DESCRIPTION Imports"
+    log_error "Found ${#filtered_missing[@]} packages missing from DESCRIPTION Imports"
 
     # List packages if verbose mode or auto-fix mode
     if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
         echo ""
-        for pkg in "${missing_ref[@]}"; do
+        for pkg in "${filtered_missing[@]}"; do
             echo "  - $pkg"
         done
         echo ""
@@ -1413,7 +1421,7 @@ report_and_fix_missing_description() {
         log_info "Auto-fixing: Adding missing packages to DESCRIPTION..."
         local failed_packages=()
 
-        for pkg in "${missing_ref[@]}"; do
+        for pkg in "${filtered_missing[@]}"; do
             # Add to DESCRIPTION
             if ! add_package_to_description "$pkg"; then
                 failed_packages+=("$pkg")
@@ -1428,7 +1436,7 @@ report_and_fix_missing_description() {
             return 1
         fi
     else
-        local pkg_vector=$(format_r_package_vector "${missing_ref[@]}")
+        local pkg_vector=$(format_r_package_vector "${filtered_missing[@]}")
         echo "Fix with auto-fix flag:"
         echo "  bash modules/validation.sh --fix"
         echo ""
@@ -1468,7 +1476,15 @@ report_and_fix_missing_lock() {
     local verbose="${2:-false}"
     local auto_fix="${3:-false}"
 
-    if [[ ${#missing_ref[@]} -eq 0 ]]; then
+    # Filter out empty strings (edge case from mapfile with empty output)
+    local filtered_missing=()
+    for pkg in "${missing_ref[@]}"; do
+        if [[ -n "$pkg" ]]; then
+            filtered_missing+=("$pkg")
+        fi
+    done
+
+    if [[ ${#filtered_missing[@]} -eq 0 ]]; then
         return 0
     fi
 
@@ -1476,8 +1492,8 @@ report_and_fix_missing_lock() {
     local installable_packages=()
     local non_installable_packages=()
 
-    log_info "Validating ${#missing_ref[@]} packages against CRAN/Bioconductor/GitHub..."
-    for pkg in "${missing_ref[@]}"; do
+    log_info "Validating ${#filtered_missing[@]} packages against CRAN/Bioconductor/GitHub..."
+    for pkg in "${filtered_missing[@]}"; do
         if is_installable_package "$pkg"; then
             installable_packages+=("$pkg")
         else
@@ -1752,14 +1768,19 @@ validate_and_report() {
     local strict_mode="${1:-true}"
     local auto_fix="${2:-true}"
     local verbose="${3:-false}"
+    local cleanup_unused="${4:-false}"
 
     if validate_package_environment "$strict_mode" "$auto_fix" "$verbose"; then
         log_success "Package environment validation passed"
 
-        # Clean up unused packages from DESCRIPTION
-        # This runs after validation to ensure all used packages are declared
-        log_debug "Checking for unused packages in DESCRIPTION..."
-        remove_unused_packages_from_description "$strict_mode"
+        # Clean up unused packages from DESCRIPTION if requested
+        # Only when --cleanup-unused flag is used (for final publication)
+        # Skipped by default during development since packages may have implicit usage
+        # (e.g., Quarto dependencies, indirect library calls)
+        if [[ "$cleanup_unused" == "true" ]]; then
+            log_info "Cleaning up unused packages from DESCRIPTION..."
+            remove_unused_packages_from_description "$strict_mode"
+        fi
 
         return 0
     else
@@ -1825,6 +1846,7 @@ main() {
     local strict_mode=true
     local auto_fix=true
     local verbose=false
+    local cleanup_unused=false
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -1849,6 +1871,10 @@ main() {
                 verbose=true
                 shift
                 ;;
+            --cleanup-unused)
+                cleanup_unused=true
+                shift
+                ;;
             --system-deps)
                 detect_missing_system_deps "${2:-.}/Dockerfile"
                 shift 2
@@ -1867,6 +1893,7 @@ OPTIONS:
     --no-strict        Disable strict mode (scan only R/, scripts/, analysis/, root)
     --fix              Auto-add missing packages to renv.lock via CRAN API [DEFAULT]
     --no-fix           Report issues without auto-fixing
+    --cleanup-unused   Remove unused packages from DESCRIPTION (for final publication)
     --system-deps      Check for missing system dependencies in Dockerfile
     --verbose, -v      List all missing packages (always enabled with --fix)
     --help, -h         Show this help message
@@ -1908,7 +1935,7 @@ EOF
     done
 
     # Run validation
-    validate_and_report "$strict_mode" "$auto_fix" "$verbose"
+    validate_and_report "$strict_mode" "$auto_fix" "$verbose" "$cleanup_unused"
 }
 
 ##############################################################################
