@@ -174,6 +174,30 @@ fetch_cran_package_info() {
 }
 
 #-----------------------------------------------------------------------------
+# FUNCTION: validate_package_on_cran
+# PURPOSE:  Check if a package exists on CRAN (upfront validation)
+# DESCRIPTION:
+#   Validates that a package name exists on CRAN before attempting to
+#   add it to renv.lock. This prevents false positives from non-CRAN
+#   packages (local, GitHub, Bioconductor) that should be skipped.
+#   Returns 0 if package is on CRAN, 1 if not found or network error.
+# ARGS:     $1 - Package name
+# RETURNS:  0 if package exists on CRAN
+#           1 if package not on CRAN or not reachable
+# SIDE EFFECTS: None
+#-----------------------------------------------------------------------------
+validate_package_on_cran() {
+    local pkg="$1"
+
+    # Use fetch_cran_package_info to check existence
+    if fetch_cran_package_info "$pkg" > /dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+#-----------------------------------------------------------------------------
 # FUNCTION: add_package_to_description
 # PURPOSE:  Add package to DESCRIPTION Imports field using pure shell tools
 # ARGS:     $1 - Package name
@@ -1316,19 +1340,25 @@ report_and_fix_missing_description() {
 # DESCRIPTION:
 #   Handles the case where packages are declared but not locked in renv.lock.
 #   This breaks reproducibility. Can report the issue or auto-fix by querying CRAN.
+#
+#   WITH UPFRONT CRAN VALIDATION:
+#   - Filters packages through CRAN validation BEFORE attempting to add
+#   - CRAN packages: auto-add to renv.lock
+#   - Non-CRAN packages (local, GitHub, BioConductor): skip gracefully with guidance
+#   - Prevents false positives and confusing error messages
 # ARGS:
 #   $1 - missing_from_lock: Array name of missing packages
 #   $2 - verbose: "true" to list packages, "false" to show only count
 #   $3 - auto_fix: "true" to attempt auto-fix, "false" to report only
 # RETURNS:
-#   0 - No missing packages or successfully fixed
-#   1 - Missing packages found and auto-fix disabled or failed
+#   0 - No missing packages or successfully fixed (including non-CRAN packages skipped)
+#   1 - CRAN packages failed to add or auto-fix disabled with CRAN packages pending
 # OUTPUTS:
 #   Error message and package list (if verbose) to stdout
 #   Success/failure message if auto-fixing
-#   Next steps guidance if fixed
+#   Guidance for non-CRAN packages found
 # SIDE EFFECTS:
-#   Modifies renv.lock file if auto_fix=true (queries CRAN API)
+#   Modifies renv.lock file if auto_fix=true (queries CRAN API for CRAN packages only)
 #-----------------------------------------------------------------------------
 report_and_fix_missing_lock() {
     local -n missing_ref="$1"
@@ -1339,62 +1369,137 @@ report_and_fix_missing_lock() {
         return 0
     fi
 
-    log_error "Found ${#missing_ref[@]} packages in union but not in renv.lock"
+    # UPFRONT CRAN VALIDATION: Filter packages into CRAN vs non-CRAN
+    local cran_packages=()
+    local non_cran_packages=()
+
+    log_info "Validating ${#missing_ref[@]} packages against CRAN..."
+    for pkg in "${missing_ref[@]}"; do
+        if validate_package_on_cran "$pkg"; then
+            cran_packages+=("$pkg")
+            log_debug "  ✅ $pkg (found on CRAN)"
+        else
+            non_cran_packages+=("$pkg")
+            log_debug "  ℹ️  $pkg (not on CRAN - local/GitHub/BioConductor)"
+        fi
+    done
+
+    # If no CRAN packages and no non-CRAN packages, we're done
+    if [[ ${#cran_packages[@]} -eq 0 ]] && [[ ${#non_cran_packages[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    # Report findings
+    if [[ ${#cran_packages[@]} -gt 0 ]]; then
+        log_error "Found ${#cran_packages[@]} CRAN packages missing from renv.lock"
+    fi
+    if [[ ${#non_cran_packages[@]} -gt 0 ]]; then
+        log_warn "Found ${#non_cran_packages[@]} non-CRAN packages (skipping validation)"
+    fi
 
     # List packages if verbose mode or auto-fix mode
-    if [[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]; then
+    if [[ "${#cran_packages[@]}" -gt 0 ]] && ([[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]); then
         echo ""
-        for pkg in "${missing_ref[@]}"; do
+        echo "CRAN packages to add:"
+        for pkg in "${cran_packages[@]}"; do
             echo "  - $pkg"
         done
+    fi
+    if [[ "${#non_cran_packages[@]}" -gt 0 ]] && ([[ "$verbose" == "true" ]] || [[ "$auto_fix" == "true" ]]); then
         echo ""
-    else
-        echo ""
-        log_info "Run with --verbose to see the list of missing packages"
+        echo "Non-CRAN packages (will be skipped):"
+        for pkg in "${non_cran_packages[@]}"; do
+            echo "  - $pkg"
+        done
+    fi
+    echo ""
+
+    # Only report reproducibility issue if we have CRAN packages missing
+    if [[ ${#cran_packages[@]} -gt 0 ]]; then
+        echo "CRAN packages break reproducibility! Collaborators cannot restore your environment."
         echo ""
     fi
 
-    echo "This breaks reproducibility! Collaborators cannot restore your environment."
-    echo ""
-
-    if [[ "$auto_fix" == "true" ]]; then
-        log_info "Auto-fixing: Adding missing packages to renv.lock..."
+    # Handle CRAN packages
+    if [[ "$auto_fix" == "true" ]] && [[ ${#cran_packages[@]} -gt 0 ]]; then
+        log_info "Auto-fixing: Adding ${#cran_packages[@]} CRAN packages to renv.lock..."
         local failed_packages=()
 
-        for pkg in "${missing_ref[@]}"; do
+        for pkg in "${cran_packages[@]}"; do
             if ! add_package_to_renv_lock "$pkg"; then
                 failed_packages+=("$pkg")
             fi
         done
 
         if [[ ${#failed_packages[@]} -eq 0 ]]; then
-            log_success "✅ All missing packages added to renv.lock"
+            log_success "✅ All CRAN packages added to renv.lock"
             echo ""
             echo "Next steps:"
             echo "  1. Start R to auto-install packages: make r"
             echo "     (Auto-restore will install all dependencies automatically)"
             echo "  2. Rebuild Docker image: make docker-build"
             echo "  3. Commit changes: git add DESCRIPTION renv.lock && git commit -m 'Add packages'"
-            return 0
         else
             log_error "Failed to add packages: ${failed_packages[*]}"
             echo ""
-            echo "These packages may not be on CRAN. Add them manually:"
+            echo "These CRAN packages may have network issues. Add them manually:"
             echo "  make docker-zsh"
             local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
             echo "  R> renv::install($pkg_vector)"
             echo "  R> quit()"
-            return 1
         fi
-    else
-        local pkg_vector=$(format_r_package_vector "${missing_ref[@]}")
-        echo "Fix with auto-fix flag:"
+    elif [[ "$auto_fix" != "true" ]] && [[ ${#cran_packages[@]} -gt 0 ]]; then
+        local pkg_vector=$(format_r_package_vector "${cran_packages[@]}")
+        echo "Fix CRAN packages with auto-fix flag:"
         echo "  bash modules/validation.sh --fix"
         echo ""
         echo "Or manually in container:"
         echo "  make docker-zsh"
         echo "  R> renv::install($pkg_vector)"
         echo "  R> quit()"
+    fi
+
+    # Handle non-CRAN packages
+    if [[ ${#non_cran_packages[@]} -gt 0 ]]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Non-CRAN packages detected (local/GitHub/BioConductor):"
+        echo ""
+        for pkg in "${non_cran_packages[@]}"; do
+            echo "  • $pkg"
+        done
+        echo ""
+        echo "These packages must be installed manually in your Docker container:"
+        echo ""
+        echo "  Option 1: Local package (development)"
+        echo "    • Ensure it's available locally: /path/to/$pkg"
+        echo "    • Install in R: remotes::install_local('/path/to/$pkg')"
+        echo ""
+        echo "  Option 2: GitHub package"
+        echo "    • Install in R: remotes::install_github('owner/repo')"
+        echo ""
+        echo "  Option 3: BioConductor package"
+        echo "    • Install in R: BiocManager::install('pkgname')"
+        echo ""
+        echo "  Then snapshot to lock in renv.lock: renv::snapshot()"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+    fi
+
+    # Determine return code:
+    # 0 if: no CRAN packages left, OR all CRAN packages successfully fixed
+    # 1 if: CRAN packages exist and auto-fix is disabled, OR some CRAN packages failed
+    if [[ ${#cran_packages[@]} -eq 0 ]]; then
+        # No CRAN packages (only non-CRAN, which are handled gracefully)
+        return 0
+    elif [[ "$auto_fix" != "true" ]]; then
+        # CRAN packages exist but auto-fix disabled
+        return 1
+    elif [[ ${#failed_packages[@]} -eq 0 ]]; then
+        # CRAN packages all successfully fixed
+        return 0
+    else
+        # Some CRAN packages failed
         return 1
     fi
 }
