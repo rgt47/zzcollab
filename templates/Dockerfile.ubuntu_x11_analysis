@@ -37,7 +37,8 @@ ENV LANG=en_US.UTF-8 \
     OMP_NUM_THREADS=1 \
     RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
     RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \
-    ZZCOLLAB_CONTAINER=true
+    ZZCOLLAB_CONTAINER=true \
+    PATH="/home/analyst/bin:${PATH}"
 
 # Install runtime dependencies for X11 (pinned to Ubuntu Noble 24.04)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -66,7 +67,7 @@ RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux
 # Project-specific packages are managed via renv and renv.lock.
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
     R -e "install.packages(c('renv', 'here', 'janitor', \
-        'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
+        'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer', 'tinytex'))"
 
 # Create non-root user and set up environment
 RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
@@ -76,6 +77,10 @@ RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
 
 # Switch to non-root user
 USER ${USERNAME}
+
+# Install TinyTeX for the analyst user
+RUN R -e "tinytex::install_tinytex()" && \
+    echo 'export PATH="/home/analyst/bin:$PATH"' >> /home/analyst/.bashrc
 
 # WORKDIR automatically creates directory with correct ownership
 WORKDIR /home/${USERNAME}/project

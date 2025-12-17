@@ -36,7 +36,8 @@ ENV LANG=en_US.UTF-8 \
     OMP_NUM_THREADS=1 \
     RENV_PATHS_CACHE=/home/rstudio/.cache/R/renv \
     RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \
-    ZZCOLLAB_CONTAINER=true
+    ZZCOLLAB_CONTAINER=true \
+    PATH="/home/rstudio/bin:${PATH}"
 
 # Install runtime dependencies (pinned to Ubuntu Noble 24.04)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -61,12 +62,16 @@ RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux
 # Project-specific packages are managed via renv and renv.lock.
 RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
     R -e "install.packages(c('renv', 'here', 'janitor', \
-        'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer'))"
+        'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer', 'tinytex'))"
 
 # Set up renv cache directory (rocker/tidyverse runs as root, /init handles user switching)
 # The default user 'rstudio' is created by rocker/tidyverse base image
 RUN mkdir -p /home/rstudio/.cache/R/renv && \
     chown -R rstudio:rstudio /home/rstudio/.cache
+
+# Install TinyTeX for RStudio user
+RUN R -e "tinytex::install_tinytex()" && \
+    echo 'export PATH="/home/rstudio/bin:$PATH"' >> /home/rstudio/.bashrc
 
 # Set working directory (will be owned by mapped user at runtime)
 WORKDIR /home/rstudio/project
