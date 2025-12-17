@@ -55,6 +55,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libpng16-16t64=1.6.43-5build1 \
         libjpeg8=8c-2ubuntu11 \
         libicu74 \
+        libxml2-dev \
         pandoc \
         curl
 
