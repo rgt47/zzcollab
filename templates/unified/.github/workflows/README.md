@@ -17,9 +17,9 @@ rates and easier collaboration compared to manual validation approaches.
 
 ## Current Workflows
 
-### 📄 render-paper.yml
+### 📄 render-report.yml
 
-**Purpose**: Renders `analysis/paper/paper.Rmd` to verify reproducibility
+**Purpose**: Renders `analysis/report/report.Rmd` to verify reproducibility
 **Triggers**: Push to main/master, pull requests affecting analysis files
 **Runtime**: ~5-10 minutes (depending on analysis complexity)
 **Artifacts**: Uploads rendered PDF for download (30-day retention)
@@ -28,7 +28,7 @@ rates and easier collaboration compared to manual validation approaches.
 1. Checks out repository code
 2. Builds Docker container with your computational environment
 3. Restores R packages via renv
-4. Renders paper.Rmd to PDF
+4. Renders report.Rmd to PDF
 5. Uploads PDF as downloadable artifact
 
 **When it runs**: Only on changes to:
@@ -102,7 +102,7 @@ renv::snapshot()
 
 ### Disable CI Temporarily
 
-Add to top of `render-paper.yml`:
+Add to top of `render-report.yml`:
 ```yaml
 on:
   workflow_dispatch  # Manual trigger only
@@ -110,7 +110,7 @@ on:
 
 Or comment out entire workflow:
 ```bash
-mv render-paper.yml render-paper.yml.disabled
+mv render-report.yml render-report.yml.disabled
 ```
 
 ### Add Package Tests
@@ -151,7 +151,7 @@ For compendia using R package structure:
   uses: peaceiris/actions-gh-pages@v3
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
-    publish_dir: ./analysis/paper
+    publish_dir: ./analysis/report
 ```
 
 Then enable GitHub Pages in repository settings → Pages → Source: gh-pages branch.
@@ -223,15 +223,15 @@ Fix any errors, then commit Dockerfile changes.
 
 ### "File not found" errors in rendering
 
-**Problem**: Paper.Rmd references files not in repository
+**Problem**: report.Rmd references files not in repository
 
 **Solution**: Verify all dependencies are committed
 ```bash
 # See what's missing
 git status
 
-# Check what paper.Rmd loads
-grep -E "(read|source|load)" analysis/paper/paper.Rmd
+# Check what report.Rmd loads
+grep -E "(read|source|load)" analysis/report/report.Rmd
 
 # Add missing files
 git add <missing-files>
@@ -243,9 +243,9 @@ git add <missing-files>
 
 1. **Cache renv packages** (see above)
 2. **Use smaller base image**: `rocker/r-ver` instead of `rocker/verse`
-3. **Minimize analysis in paper.Rmd**:
+3. **Minimize analysis in report.Rmd**:
    - Do heavy computation in scripts → save results
-   - Paper.Rmd loads pre-computed results → faster rendering
+   - report.Rmd loads pre-computed results → faster rendering
 4. **Limit workflow triggers**: Only run on main branch pushes
 
 ### CI passes but local rendering fails
@@ -259,7 +259,7 @@ docker build -t local-test .
 
 # Render in container (matches CI environment)
 docker run --rm -v $(pwd):/project -w /project \
-  local-test Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
+  local-test Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 ```
 
 ## Monitoring CI Usage

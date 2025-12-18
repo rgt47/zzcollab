@@ -34,7 +34,7 @@ setup() {
     mkdir -p "${PROJECT_DIR}/analysis/data/derived_data"
     mkdir -p "${PROJECT_DIR}/analysis/scripts"
     mkdir -p "${PROJECT_DIR}/analysis/figures"
-    mkdir -p "${PROJECT_DIR}/analysis/paper"
+    mkdir -p "${PROJECT_DIR}/analysis/report"
     mkdir -p "${PROJECT_DIR}/R"
     mkdir -p "${PROJECT_DIR}/tests"
 }
@@ -587,7 +587,7 @@ EOF
     [ -d "${PROJECT_DIR}/analysis/data/raw_data" ]
     [ -d "${PROJECT_DIR}/analysis/data/derived_data" ]
     [ -d "${PROJECT_DIR}/analysis/scripts" ]
-    [ -d "${PROJECT_DIR}/analysis/paper" ]
+    [ -d "${PROJECT_DIR}/analysis/report" ]
     [ -d "${PROJECT_DIR}/analysis/figures" ]
     [ -d "${PROJECT_DIR}/R" ]
     [ -d "${PROJECT_DIR}/tests" ]

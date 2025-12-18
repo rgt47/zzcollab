@@ -46,11 +46,11 @@ teardown() {
 
 @test "structure: create_directory_structure creates analysis subdirectories" {
     mkdir -p "${TEST_DIR}/analysis/scripts"
-    mkdir -p "${TEST_DIR}/analysis/paper"
+    mkdir -p "${TEST_DIR}/analysis/report"
     mkdir -p "${TEST_DIR}/analysis/figures"
 
     [ -d "${TEST_DIR}/analysis/scripts" ]
-    [ -d "${TEST_DIR}/analysis/paper" ]
+    [ -d "${TEST_DIR}/analysis/report" ]
     [ -d "${TEST_DIR}/analysis/figures" ]
     assert_success
 }

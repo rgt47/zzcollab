@@ -67,8 +67,8 @@ project/
 │   ├── data/
 │   │   ├── raw_data/         # Original, unmodified data
 │   │   └── derived_data/     # Processed, analysis-ready data
-│   ├── paper/
-│   │   ├── paper.Rmd         # Manuscript
+│   ├── report/
+│   │   ├── report.Rmd        # Manuscript
 │   │   └── references.bib
 │   ├── figures/              # Generated visualizations
 │   └── scripts/              # Analysis code
@@ -83,7 +83,7 @@ project/
 **All research workflows supported**:
 
 - **Data Analysis**: Use `analysis/scripts/` and `figures/`
-- **Manuscript Writing**: Use `analysis/paper/paper.Rmd`
+- **Manuscript Writing**: Use `analysis/report/report.Rmd`
 - **Package Development**: Use `R/`, `man/`, `tests/`
 - **Complete Compendium**: Use all directories for full reproducibility
 
@@ -338,7 +338,7 @@ create_branch("feature/exploratory-analysis")
 run_script("analysis/scripts/exploratory_analysis.R")
 
 # 5. Render report
-render_report("analysis/paper/paper.Rmd")
+render_report("analysis/report/report.Rmd")
 
 # 6. Validate reproducibility
 validate_repro()
@@ -404,8 +404,8 @@ your-project/
 │   ├── data/
 │   │   ├── raw_data/     # Original, unmodified data
 │   │   └── derived_data/ # Processed data
-│   ├── paper/
-│   │   ├── paper.Rmd     # Manuscript
+│   ├── report/
+│   │   ├── report.Rmd    # Manuscript
 │   │   └── references.bib
 │   ├── figures/          # Generated visualizations
 │   └── scripts/          # Analysis code

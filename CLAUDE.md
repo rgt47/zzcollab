@@ -83,7 +83,7 @@ ZZCOLLAB ensures complete reproducibility through five version-controlled compon
 4. **Source Code** - Computational logic
    - Analysis scripts (`analysis/scripts/`)
    - Reusable functions (`R/`)
-   - Reports (`analysis/paper/`)
+   - Reports (`analysis/report/`)
    - Tests (`tests/testthat/`)
    - Explicit random seeds (`set.seed()`) for stochastic analyses
 
@@ -118,8 +118,8 @@ project/
 │   ├── data/
 │   │   ├── raw_data/         # Original, unmodified data (read-only)
 │   │   └── derived_data/     # Processed, analysis-ready data
-│   ├── paper/
-│   │   ├── paper.Rmd         # Manuscript
+│   ├── report/
+│   │   ├── report.Rmd        # Manuscript
 │   │   └── references.bib    # Bibliography
 │   ├── figures/              # Generated visualizations
 │   └── scripts/              # Analysis code (empty - user creates)
@@ -135,7 +135,7 @@ project/
 
 **Start Simple, Add Complexity As Needed**:
 1. **Data Analysis** (Day 1): Place raw data, create scripts, generate figures
-2. **Manuscript Writing** (Week 2): Add `analysis/paper/paper.Rmd`
+2. **Manuscript Writing** (Week 2): Add `analysis/report/report.Rmd`
 3. **Function Extraction** (Month 1): Move reusable code to `R/` directory
 4. **Package Distribution** (Month 3): Add documentation and vignettes
 
@@ -575,7 +575,7 @@ mr docker-sh               # make docker-sh from anywhere
 # One-letter directory navigation
 r                          # Jump to project root
 s                          # Jump to analysis/scripts/
-p                          # Jump to analysis/paper/
+p                          # Jump to analysis/report/
 d                          # Jump to analysis/data/
 w                          # Jump to analysis/data/raw_data/
 y                          # Jump to analysis/data/derived_data/
@@ -677,7 +677,7 @@ zzcollab_help("config")            # Configuration guide
   - "Quick Start: Run the Analysis" - For end users who just want reproducible results
     - Only requires Docker + Git (no zzcollab knowledge needed)
     - 3 simple commands: clone, build, run
-    - Includes Rmarkdown rendering example: `make r < 'rmarkdown::render("analysis/paper/paper.Rmd")'`
+    - Includes Rmarkdown rendering example: `make r < 'rmarkdown::render("analysis/report/report.Rmd")'`
     - Clear output expectations (figures, data, reports)
   - "For Developers: Using zzcollab" - For project contributors
     - Full zzcollab framework setup and team collaboration

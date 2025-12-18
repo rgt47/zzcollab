@@ -30,7 +30,7 @@ cat("\\n=== FILE INTEGRITY CHECK ===\\n")
 # Check for required files
 required_files <- c(
   "DESCRIPTION",
-  "analysis/paper/paper.Rmd",
+  "analysis/report/report.Rmd",
   "R/utils.R",
   "scripts"
 )

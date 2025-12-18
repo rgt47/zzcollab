@@ -29,12 +29,12 @@ make docker-build
 make r < analysis/scripts/analysis.R
 
 # Or render an R Markdown document
-make r < 'rmarkdown::render("analysis/paper/paper.Rmd")'
+make r < 'rmarkdown::render("analysis/report/report.Rmd")'
 
 # Results in:
 # - analysis/figures/  - Generated plots and visualizations
 # - analysis/data/derived_data/  - Processed datasets
-# - analysis/paper/paper.html (or .pdf) - Rendered report
+# - analysis/report/report.html (or .pdf) - Rendered report
 ```
 
 **That's it!** The Docker image provides the exact computational environment (R version, packages, system dependencies) needed to reproduce the analysis.
@@ -80,7 +80,7 @@ ${PKG_NAME}/
 │   │   ├── raw_data/       # Original, unmodified data
 │   │   └── derived_data/   # Processed, analysis-ready data
 │   ├── scripts/            # Analysis code
-│   ├── paper/              # Manuscript (paper.Rmd)
+│   ├── report/             # Manuscript (report.Rmd)
 │   ├── figures/            # Generated visualizations
 │   └── templates/          # Analysis templates
 ├── R/                      # Reusable R functions
@@ -138,7 +138,7 @@ Install one-letter navigation shortcuts for faster workflow:
 r     # → project root
 a     # → analysis/
 s     # → analysis/scripts/
-p     # → analysis/paper/
+p     # → analysis/report/
 f     # → analysis/figures/
 d     # → data/
 nav   # → list all shortcuts

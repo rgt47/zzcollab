@@ -107,7 +107,7 @@ n() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || e
 f() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/figures" || echo "Not in ZZCOLLAB project"; }
 t() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/tables" || echo "Not in ZZCOLLAB project"; }
 s() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/scripts" || echo "Not in ZZCOLLAB project"; }
-p() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/paper" || echo "Not in ZZCOLLAB project"; }
+p() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/report" || echo "Not in ZZCOLLAB project"; }
 r() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root" || echo "Not in ZZCOLLAB project"; }
 m() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/man" || echo "Not in ZZCOLLAB project"; }
 e() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/tests" || echo "Not in ZZCOLLAB project"; }
@@ -121,7 +121,7 @@ nav() {
     echo "  d → data/"
     echo "  a/n → analysis/"
     echo "  s → analysis/scripts/"
-    echo "  p → analysis/paper/"
+    echo "  p → analysis/report/"
     echo "  f → analysis/figures/"
     echo "  t → analysis/tables/"
     echo "  m → man/"

@@ -677,7 +677,7 @@ make docker-zsh
 
 # Work inside container
 vim R/my_function.R
-vim analysis/paper/paper.Rmd
+vim analysis/report/report.Rmd
 
 # Test as you go
 R
