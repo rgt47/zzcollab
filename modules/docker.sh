@@ -20,11 +20,11 @@ set -euo pipefail
 require_module "core" "templates"
 
 #=============================================================================
-# PLATFORM DETECTION CACHE (Performance optimization)
+# PLATFORM DETECTION
 #=============================================================================
 
-# Cache platform detection results to avoid redundant checks
-declare -gA PLATFORM_CACHE=()
+# Note: Caching removed for Bash 3.2 compatibility (macOS default)
+# The function is fast enough without caching (simple string comparisons)
 
 #=============================================================================
 # MANIFEST TRACKING FUNCTIONS
@@ -115,13 +115,12 @@ get_multiarch_base_image() {
 # RETURNS:
 #   0 - Always succeeds, outputs platform arguments for Docker commands
 # GLOBALS:
-#   READ:  PLATFORM_CACHE (caching results for performance)
-#   WRITE: PLATFORM_CACHE (stores computed results)
+#   READ:  None
+#   WRITE: None (outputs to stdout)
 # DESCRIPTION:
 #   This function determines the appropriate --platform argument for Docker build/run
 #   commands based on system architecture and image compatibility. It handles the
 #   complexity of running AMD64-only images on ARM64 systems through emulation.
-#   Results are cached to avoid redundant architecture detection.
 # PLATFORM LOGIC:
 #   - auto: Automatically detect best platform based on image compatibility
 #   - amd64: Force AMD64 platform (works on both architectures via emulation)
@@ -134,17 +133,8 @@ get_multiarch_base_image() {
 get_docker_platform_args() {
     local base_image="${1:-}"
     local force_platform="${2:-auto}"  # Platform override, defaults to auto
-
-    # Create cache key from parameters
-    local cache_key="${base_image}:${force_platform}"
-
-    # Return cached result if available
-    if [[ -v PLATFORM_CACHE["$cache_key"] ]]; then
-        echo "${PLATFORM_CACHE["$cache_key"]}"
-        return 0
-    fi
-
-    local architecture="$(uname -m)"
+    local architecture
+    architecture="$(uname -m)"
     local result=""
 
     case "$force_platform" in
@@ -180,8 +170,6 @@ get_docker_platform_args() {
             ;;
     esac
 
-    # Cache the result and output it
-    PLATFORM_CACHE["$cache_key"]="$result"
     echo "$result"
 }
 
