@@ -69,9 +69,9 @@ create_github_workflows() {
     # Automatically renders research paper when analysis files change
     # Uploads rendered PDFs as artifacts for easy access
     local paper_workflow_template=$(get_workflow_template)
-    if install_template "$paper_workflow_template" ".github/workflows/render-paper.yml" "Paper rendering workflow" "Created automated paper rendering workflow"; then
+    if install_template "$paper_workflow_template" ".github/workflows/render-report.yml" "Report rendering workflow" "Created automated report rendering workflow"; then
         log_info "  - Triggers: changes to analysis/, R/ directories"
-        log_info "  - Actions: render analysis/paper/paper.Rmd to PDF, upload artifacts"
+        log_info "  - Actions: render analysis/report/report.Rmd to PDF, upload artifacts"
         log_info "  - Output: downloadable PDF from GitHub Actions tab"
     else
         log_error "Failed to create paper rendering workflow"
@@ -242,7 +242,7 @@ show_cicd_summary() {
 ├── .github/
 │   ├── workflows/
 │   │   ├── r-package.yml           # R package validation workflow
-│   │   └── render-paper.yml        # Automated paper rendering
+│   │   └── render-report.yml        # Automated report rendering
 │   ├── pull_request_template.md    # PR template (optional)
 │   └── ISSUE_TEMPLATE/             # Issue templates (optional)
 │       ├── bug_report.md
@@ -257,7 +257,7 @@ show_cicd_summary() {
 - Artifacts: test results and check logs
 
 📄 Report Rendering:
-- Triggers: changes to analysis/paper/, R/ directories
+- Triggers: changes to analysis/report/, R/ directories
 - Actions: render report.Rmd to PDF
 - Artifacts: downloadable PDF from Actions tab
 - Integration: automatic on manuscript updates

@@ -41,7 +41,7 @@ require_module "core"
 #   ├── data/               - Research data
 #   │   ├── raw_data/       - Original, unmodified datasets
 #   │   └── derived_data/   - Processed, analysis-ready data
-#   ├── paper/              - Research paper (Rmd → PDF, rrtools standard)
+#   ├── report/             - Research report (Rmd → PDF, rrtools standard)
 #   ├── figures/            - Generated plots and visualizations
 #   ├── tables/             - Generated statistical tables
 #   ├── templates/          - Analysis templates and snippets
@@ -71,7 +71,7 @@ create_directory_structure() {
         "analysis/data"          # Research data root
         "analysis/data/raw_data"          # Raw, unmodified data
         "analysis/data/derived_data"      # Processed data ready for analysis
-        "analysis/paper"         # Research paper development (rrtools standard)
+        "analysis/report"        # Research report development (rrtools standard)
         "analysis/figures"       # Generated plots and figures
         "analysis/tables"        # Generated tables and summaries
         "analysis/templates"     # Analysis templates and reusable code
@@ -146,7 +146,7 @@ show_structure_summary() {
 │   ├── data/              # Research data
 │   │   ├── raw_data/      # Original, unmodified datasets
 │   │   └── derived_data/  # Processed, analysis-ready data
-│   ├── paper/             # Research paper (Rmd → PDF)
+│   ├── report/            # Research report (Rmd → PDF)
 │   ├── figures/           # Generated plots and visualizations
 │   ├── tables/            # Generated statistical tables
 │   ├── templates/         # Analysis templates
@@ -157,7 +157,7 @@ show_structure_summary() {
 🔗 QUICK NAVIGATION:
    cd a  →  analysis/data/      cd n  →  analysis/
    cd f  →  analysis/figures/   cd t  →  analysis/tables/
-   cd s  →  analysis/scripts/   cd p  →  analysis/paper/
+   cd s  →  analysis/scripts/   cd p  →  analysis/report/
    cd m  →  man/                cd e  →  tests/
    cd o  →  docs/
 EOF

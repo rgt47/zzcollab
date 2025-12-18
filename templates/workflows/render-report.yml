@@ -1,11 +1,11 @@
-name: Render Research Paper
+name: Render Research Report
 
 on:
   workflow_dispatch:  # Manual trigger
   push:
     branches: [main, master]
     paths:
-      - 'analysis/paper/**'
+      - 'analysis/report/**'
       - 'analysis/scripts/**'
       - 'R/**'
       - 'renv.lock'
@@ -40,15 +40,15 @@ jobs:
         id: detect
         run: |
           # Try common manuscript locations and patterns
-          if [ -f "analysis/paper/paper.Rmd" ]; then
-            echo "manuscript=analysis/paper/paper.Rmd" >> $GITHUB_OUTPUT
-          elif [ -f "analysis/paper/manuscript.Rmd" ]; then
-            echo "manuscript=analysis/paper/manuscript.Rmd" >> $GITHUB_OUTPUT
-          elif [ -f "analysis/paper/main.Rmd" ]; then
-            echo "manuscript=analysis/paper/main.Rmd" >> $GITHUB_OUTPUT
+          if [ -f "analysis/report/report.Rmd" ]; then
+            echo "manuscript=analysis/report/report.Rmd" >> $GITHUB_OUTPUT
+          elif [ -f "analysis/report/manuscript.Rmd" ]; then
+            echo "manuscript=analysis/report/manuscript.Rmd" >> $GITHUB_OUTPUT
+          elif [ -f "analysis/report/main.Rmd" ]; then
+            echo "manuscript=analysis/report/main.Rmd" >> $GITHUB_OUTPUT
           else
-            # Find largest Rmd in paper directory (likely the main manuscript)
-            MAIN=$(find analysis/paper -name "*.Rmd" -type f -exec ls -lS {} + 2>/dev/null | head -1 | awk '{print $NF}')
+            # Find largest Rmd in report directory (likely the main manuscript)
+            MAIN=$(find analysis/report -name "*.Rmd" -type f -exec ls -lS {} + 2>/dev/null | head -1 | awk '{print $NF}')
             if [ -n "$MAIN" ]; then
               echo "manuscript=$MAIN" >> $GITHUB_OUTPUT
             else
@@ -90,8 +90,8 @@ jobs:
         with:
           name: rendered-documents
           path: |
-            analysis/paper/*.pdf
-            analysis/paper/*.html
+            analysis/report/*.pdf
+            analysis/report/*.html
             analysis/scripts/*.pdf
             analysis/figures/*.pdf
             analysis/figures/*.png

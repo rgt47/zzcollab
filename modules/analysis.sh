@@ -25,8 +25,8 @@ require_module "core" "templates"
 # Function: create_analysis_files
 # Purpose: Creates research paper templates and analysis framework (rrtools structure)
 # Creates:
-#   - analysis/paper/paper.Rmd (main research paper template) - OPTIONAL with --with-examples
-#   - analysis/paper/references.bib (bibliography file) - OPTIONAL with --with-examples
+#   - analysis/report/report.Rmd (main research report template) - OPTIONAL with --with-examples
+#   - analysis/report/references.bib (bibliography file) - OPTIONAL with --with-examples
 #   - Citation style files for academic publishing - OPTIONAL with --with-examples
 #
 # Template Features:
@@ -49,7 +49,7 @@ create_analysis_files() {
 
     # Ensure analysis directories exist (self-contained module)
     safe_mkdir "analysis" "analysis directory"
-    safe_mkdir "analysis/paper" "analysis report directory"
+    safe_mkdir "analysis/report" "analysis report directory"
     safe_mkdir "analysis/figures" "analysis figures directory"
     safe_mkdir "analysis/tables" "analysis tables directory"
     safe_mkdir "analysis/templates" "analysis templates directory"
@@ -60,21 +60,21 @@ create_analysis_files() {
 
         # Create research report template from R Markdown template
         # Template includes: YAML header, author info, bibliography setup, standard sections
-        if ! install_template "paper.Rmd" "analysis/paper/paper.Rmd" "Research report template" "Created research report template with academic structure"; then
+        if ! install_template "report.Rmd" "analysis/report/report.Rmd" "Research report template" "Created research report template with academic structure"; then
             log_error "Failed to create research report template"
             return 1
         fi
 
         # Create bibliography file for citations and references
         # BibTeX format for academic reference management
-        if ! install_template "references.bib" "analysis/paper/references.bib" "references.bib file" "Created bibliography file for citation management"; then
+        if ! install_template "references.bib" "analysis/report/references.bib" "references.bib file" "Created bibliography file for citation management"; then
             log_error "Failed to create bibliography file"
             return 1
         fi
 
         # Create citation style file for academic journals
         # CSL (Citation Style Language) file for formatting citations
-        if ! install_template "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
+        if ! install_template "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file" "Created citation style file for academic formatting"; then
             log_warn "Citation style file not found - citations will use default format"
         fi
 
@@ -99,7 +99,7 @@ show_analysis_summary() {
 
 ├── analysis/
 │   ├── report/
-│   │   ├── paper.Rmd            # Main research report template
+│   │   ├── report.Rmd           # Main research report template
 │   │   ├── references.bib       # Bibliography for citations
 │   │   └── *.csl               # Citation style files (optional)
 │   ├── figures/                # Generated plots and visualizations
@@ -107,11 +107,11 @@ show_analysis_summary() {
 │   └── templates/              # Analysis templates and snippets
 
 📊 RESEARCH WORKFLOW:
-1. Edit analysis/paper/paper.Rmd for your research report
-2. Add references to analysis/paper/references.bib
+1. Edit analysis/report/report.Rmd for your research report
+2. Add references to analysis/report/references.bib
 3. Generate figures and save to analysis/figures/
 4. Create tables and save to analysis/tables/
-5. Use knitr to render paper.Rmd to PDF
+5. Use knitr to render report.Rmd to PDF
 
 📚 KEY FEATURES:
 - R Markdown integration with package functions
@@ -121,12 +121,12 @@ show_analysis_summary() {
 - Citation management with BibTeX
 
 🔧 RENDERING COMMANDS:
-- rmarkdown::render("analysis/paper/paper.Rmd")     # Render to PDF
+- rmarkdown::render("analysis/report/report.Rmd")   # Render to PDF
 - make docker-render                                 # Render in container
-- knitr::knit("analysis/paper/paper.Rmd")           # Process R chunks
+- knitr::knit("analysis/report/report.Rmd")         # Process R chunks
 
 📝 EDITING WORKFLOW:
-1. Write analysis code in R chunks within paper.Rmd
+1. Write analysis code in R chunks within report.Rmd
 2. Reference package functions with PKG_NAME::function_name
 3. Include figures with knitr chunk options
 4. Cite references with [@citation_key] syntax
@@ -594,7 +594,7 @@ cat("\\n=== FILE INTEGRITY CHECK ===\\n")
 # Check for required files
 required_files <- c(
   "DESCRIPTION",
-  "analysis/paper/paper.Rmd",
+  "analysis/report/report.Rmd",
   "R/utils.R",
   "scripts"
 )
@@ -689,7 +689,7 @@ add_examples_to_existing_project() {
     fi
 
     # Ensure required directories exist
-    safe_mkdir "analysis/paper" "analysis report directory"
+    safe_mkdir "analysis/report" "analysis report directory"
     safe_mkdir "analysis/scripts" "research scripts directory"
     safe_mkdir "analysis/templates" "analysis templates directory"
 
@@ -697,32 +697,32 @@ add_examples_to_existing_project() {
     local files_skipped=0
 
     # Add paper template if it doesn't exist
-    if [[ ! -f "analysis/paper/paper.Rmd" ]]; then
-        if install_template "paper.Rmd" "analysis/paper/paper.Rmd" "Research report template" "Added research report template"; then
+    if [[ ! -f "analysis/report/report.Rmd" ]]; then
+        if install_template "report.Rmd" "analysis/report/report.Rmd" "Research report template" "Added research report template"; then
             ((files_added++))
         fi
     else
-        log_info "analysis/paper/paper.Rmd already exists, skipping"
+        log_info "analysis/report/report.Rmd already exists, skipping"
         ((files_skipped++))
     fi
 
     # Add bibliography file if it doesn't exist
-    if [[ ! -f "analysis/paper/references.bib" ]]; then
-        if install_template "references.bib" "analysis/paper/references.bib" "references.bib file" "Added bibliography file"; then
+    if [[ ! -f "analysis/report/references.bib" ]]; then
+        if install_template "references.bib" "analysis/report/references.bib" "references.bib file" "Added bibliography file"; then
             ((files_added++))
         fi
     else
-        log_info "analysis/paper/references.bib already exists, skipping"
+        log_info "analysis/report/references.bib already exists, skipping"
         ((files_skipped++))
     fi
 
     # Add citation style file if it doesn't exist
-    if [[ ! -f "analysis/paper/statistics-in-medicine.csl" ]]; then
-        if install_template "statistics-in-medicine.csl" "analysis/paper/statistics-in-medicine.csl" "citation style file" "Added citation style file"; then
+    if [[ ! -f "analysis/report/statistics-in-medicine.csl" ]]; then
+        if install_template "statistics-in-medicine.csl" "analysis/report/statistics-in-medicine.csl" "citation style file" "Added citation style file"; then
             ((files_added++))
         fi
     else
-        log_info "analysis/paper/statistics-in-medicine.csl already exists, skipping"
+        log_info "analysis/report/statistics-in-medicine.csl already exists, skipping"
         ((files_skipped++))
     fi
 
@@ -755,8 +755,8 @@ add_examples_to_existing_project() {
     log_info "Files skipped (already exist): $files_skipped"
     echo ""
     log_info "Example files are now available in:"
-    log_info "  - analysis/paper/paper.Rmd"
-    log_info "  - analysis/paper/references.bib"
+    log_info "  - analysis/report/report.Rmd"
+    log_info "  - analysis/report/references.bib"
     log_info "  - analysis/scripts/*.R (data validation, parallel setup, etc.)"
     log_info "  - analysis/templates/*.R (example analysis, figure templates)"
 }

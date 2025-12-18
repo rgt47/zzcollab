@@ -42,7 +42,7 @@ n() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || e
 f() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/figures" || echo "Not in ZZCOLLAB project"; }
 t() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/tables" || echo "Not in ZZCOLLAB project"; }
 s() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/scripts" || echo "Not in ZZCOLLAB project"; }
-p() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/paper" || echo "Not in ZZCOLLAB project"; }
+p() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/report" || echo "Not in ZZCOLLAB project"; }
 r() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root" || echo "Not in ZZCOLLAB project"; }
 m() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/man" || echo "Not in ZZCOLLAB project"; }
 e() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/tests" || echo "Not in ZZCOLLAB project"; }
@@ -72,7 +72,7 @@ nav() {
     echo "  w → analysis/data/raw_data/"
     echo "  y → analysis/data/derived_data/"
     echo "  s → analysis/scripts/"
-    echo "  p → analysis/paper/"
+    echo "  p → analysis/report/"
     echo "  f → analysis/figures/"
     echo "  t → analysis/tables/"
     echo "  m → man/"
@@ -104,11 +104,11 @@ install_functions() {
     echo "  source $SHELL_RC"
     echo ""
     echo "Usage examples:"
-    echo "  cd analysis/paper"
-    echo "  s              # Jump to scripts/ from paper/"
+    echo "  cd analysis/report"
+    echo "  s              # Jump to scripts/ from report/"
     echo "  w              # Jump to raw_data/"
     echo "  y              # Jump to derived_data/"
-    echo "  p              # Jump back to paper/"
+    echo "  p              # Jump back to report/"
     echo "  r              # Jump to project root"
     echo "  mr             # Run container (make r) from anywhere"
     echo "  mr test        # Run tests (make test) from anywhere"
@@ -156,18 +156,18 @@ case "$1" in
         echo "  w   → Jump to analysis/data/raw_data/"
         echo "  y   → Jump to analysis/data/derived_data/"
         echo "  s   → Jump to analysis/scripts/"
-        echo "  p   → Jump to analysis/paper/"
+        echo "  p   → Jump to analysis/report/"
         echo "  f   → Jump to analysis/figures/"
         echo "  mr  → Run make targets from anywhere (defaults to 'make r')"
         echo "  nav → List all shortcuts"
         echo ""
         echo "Example workflow:"
-        echo "  cd analysis/paper    # Working on paper"
-        echo "  mr                   # Start container from paper/"
+        echo "  cd analysis/report   # Working on report"
+        echo "  mr                   # Start container from report/"
         echo "  s                    # Jump to scripts to edit analysis"
         echo "  w                    # Jump to raw_data to check source data"
         echo "  y                    # Jump to derived_data for processed data"
-        echo "  p                    # Jump back to paper"
+        echo "  p                    # Jump back to report"
         echo "  mr test              # Run tests from anywhere"
         ;;
 esac

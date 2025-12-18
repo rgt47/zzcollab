@@ -271,7 +271,7 @@ Navigation Shortcuts (optional):
    r → project root
    a → analysis/
    s → analysis/scripts/
-   p → analysis/paper/
+   p → analysis/report/
 
 Troubleshooting:
    make docker-build 2>&1 | tee build.log
@@ -419,8 +419,8 @@ After Initialization:
   zzcollab --add-examples
 
 Example Files Include:
-  analysis/paper/paper.Rmd          Academic manuscript template
-  analysis/paper/references.bib     Bibliography file
+  analysis/report/report.Rmd        Academic manuscript template
+  analysis/report/references.bib    Bibliography file
   analysis/scripts/*.R              Data validation, parallel computing
   analysis/templates/*.R            Analysis and figure templates
 
@@ -618,7 +618,7 @@ show_development_workflows() {
 📝 ANALYSIS WORKFLOW:
    1. Place raw data in data/raw_data/
    2. Develop analysis scripts in analysis/scripts/
-   3. Write your report in analysis/paper/report.Rmd
+   3. Write your report in analysis/report/report.Rmd
    4. Use 'make docker-render' to generate PDF
 
 🔧 PACKAGE DEVELOPMENT:
@@ -730,7 +730,7 @@ OPTIONS:
         --build-docker           Build Docker image automatically during setup
     -n, --no-docker              Skip Docker image build (default; build manually with 'make docker-build')
     -G, --github                 Automatically create private GitHub repository and push
-    -x, --with-examples          Include example files (paper.Rmd, analysis scripts, vignettes)
+    -x, --with-examples          Include example files (report.Rmd, analysis scripts, vignettes)
                                  Default: skip examples (create clean workspace)
                                  Can also set via: zzcollab -c set with-examples true
         --add-examples           Add example files to existing project (run from project root)
@@ -953,7 +953,7 @@ FLAGS AND OPTIONS
     zzcollab -t dockerteam -g githubuser -p project -G
 
 -x, --with-examples
-    Include example files in workspace (paper.Rmd, analysis scripts, etc.)
+    Include example files in workspace (report.Rmd, analysis scripts, etc.)
     By default, zzcollab creates a clean workspace without examples.
     Use this flag to include example files for learning/reference.
 
@@ -962,8 +962,8 @@ FLAGS AND OPTIONS
     zzcollab -c set with-examples true   # Set as default
 
     Example files included:
-    - analysis/paper/paper.Rmd       (academic manuscript template)
-    - analysis/paper/references.bib  (bibliography file)
+    - analysis/report/report.Rmd     (academic manuscript template)
+    - analysis/report/references.bib (bibliography file)
     - analysis/scripts/*.R           (data validation, parallel computing, etc.)
     - analysis/templates/*.R         (analysis and figure templates)
 
@@ -1071,7 +1071,7 @@ auto-github:
 
 with-examples:
     zzcollab --config set with-examples true
-    Include example files by default (paper.Rmd, analysis scripts, etc.)
+    Include example files by default (report.Rmd, analysis scripts, etc.)
 
     zzcollab --config set with-examples false
     Create clean workspace without examples (default)
