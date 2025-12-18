@@ -1,35 +1,32 @@
 # syntax=docker/dockerfile:1.4
 #======================================================================
-# ZZCOLLAB Ubuntu X11 Analysis Vim Profile
+# ZZCOLLAB Ubuntu Standard Analysis Vim Profile
 #======================================================================
-# Profile: ubuntu_x11_analysis_vim (~2.2GB)
-# Purpose: Data analysis with tidyverse, X11 support, and R language server
+# Profile: ubuntu_standard_analysis_vim (~1.8GB)
+# Purpose: Data analysis with tidyverse and R language server for LSP
 # Base: rocker/tidyverse (R + tidyverse + RStudio Server)
-# Extras: languageserver (R LSP for IDE integration)
 # Packages: tidyverse, renv, devtools, here, janitor, scales, patchwork,
-#           gt, DT, skimr, DataExplorer, languageserver (binaries from r2u)
+#           gt, DT, skimr, DataExplorer, languageserver (binaries from Posit PM)
 #
 # Build: DOCKER_BUILDKIT=1 docker build \
-#          -f Dockerfile.ubuntu_x11_analysis_vim \
-#          -t myteam/project:ubuntu-x11-analysis-vim .
-# Run: Requires XQuartz (macOS) or X11 (Linux). Use 'docker run -e DISPLAY'
+#          -f Dockerfile.ubuntu_standard_analysis_vim \
+#          -t myteam/project:ubuntu-standard-analysis-vim .
+# RStudio: docker run -p 8787:8787 -e PASSWORD=yourpass myteam/project
 #
-# R Language Server Setup:
-#   This profile includes languageserver for R, enabling IDE features like
-#   autocompletion, go-to-definition, and diagnostics in editors with
-#   an LSP client (vim/neovim with coc.nvim or nvim-lspconfig, VSCode, etc.)
-#   The editor runs on the host; only languageserver runs in the container.
+# R Language Server:
+#   Includes languageserver for LSP integration with editors (vim, neovim,
+#   VSCode, etc.) running on the host. No X11 required - use kitty's native
+#   image protocol or httpgd for graphics.
 #======================================================================
 
 ARG R_VERSION=latest
-ARG RENV_VERSION=1.1.5
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
 
-FROM rocker/tidyverse:${R_VERSION}
+# Force AMD64 platform for RStudio Server (ARM64 not natively supported)
+FROM --platform=linux/amd64 rocker/tidyverse:${R_VERSION}
 
-ARG RENV_VERSION=1.1.5
 ARG USERNAME=analyst
 ARG TEAM_NAME=zzcollab
 ARG PROJECT_NAME=project
@@ -42,22 +39,17 @@ ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1 \
-    RENV_PATHS_CACHE=/home/analyst/.cache/R/renv \
+    RENV_PATHS_CACHE=/home/rstudio/.cache/R/renv \
     RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \
     ZZCOLLAB_CONTAINER=true \
-    PATH="/home/analyst/bin:${PATH}"
+    PATH="/home/rstudio/bin:${PATH}"
 
-# Install runtime dependencies for X11 (pinned to Ubuntu Noble 24.04)
-# Note: rocker/tidyverse already includes xml2/curl; using Posit PM binaries
+# Install runtime dependencies (pinned to Ubuntu Noble 24.04)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        xauth \
-        libx11-6 \
-        libxt6 \
-        libcairo2 \
         libfontconfig1=2.15.0-1.1ubuntu2 \
         libfreetype6=2.13.2+dfsg-1build3 \
         libpng16-16t64=1.6.43-5build1 \
@@ -79,28 +71,26 @@ RUN --mount=type=cache,target=/tmp/R-cache/${R_VERSION} \
         'scales', 'patchwork', 'gt', 'DT', 'skimr', 'DataExplorer', 'tinytex', \
         'languageserver'))"
 
-# Create non-root user and set up environment
-RUN useradd --create-home --shell /bin/bash ${USERNAME} && \
-    chown -R ${USERNAME}:${USERNAME} /usr/local/lib/R/site-library && \
-    mkdir -p /home/${USERNAME}/.cache/R/renv && \
-    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.cache
+# Set up renv cache directory (rocker/tidyverse runs as root, /init handles user switching)
+# The default user 'rstudio' is created by rocker/tidyverse base image
+RUN mkdir -p /home/rstudio/.cache/R/renv && \
+    chown -R rstudio:rstudio /home/rstudio/.cache
 
-# Switch to non-root user
-USER ${USERNAME}
-
-# Install TinyTeX for the analyst user
+# Install TinyTeX for RStudio user
 RUN R -e "tinytex::install_tinytex()" && \
-    echo 'export PATH="/home/analyst/bin:$PATH"' >> /home/analyst/.bashrc
+    echo 'export PATH="/home/rstudio/bin:$PATH"' >> /home/rstudio/.bashrc
 
-# WORKDIR automatically creates directory with correct ownership
-WORKDIR /home/${USERNAME}/project
+# Set working directory (will be owned by mapped user at runtime)
+WORKDIR /home/rstudio/project
 
 # Health check: Verify R is functional
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=2 \
     CMD R --quiet --slave -e "quit(status = 0)" || exit 1
 
-# Note: Project files mounted at runtime via -v $(pwd):/home/analyst/project
+# Note: Project files mounted at runtime via -v $(pwd):/home/rstudio/project
 # This keeps image reusable across projects. Run renv::restore() in first session.
 # .Rprofile is accessed from the mounted volume for auto-snapshot functionality.
+# For RStudio Server: Use CMD ["/init"] or run with 'docker run -p 8787:8787 ... /init'
+# Default RStudio credentials: rstudio/rstudio (set by rocker/tidyverse base image)
 
 CMD ["R", "--quiet"]

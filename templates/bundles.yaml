@@ -387,6 +387,14 @@ profiles:
     size: "~1.5GB"
     note: "Tidyverse + ML packages. Add RStudio: docker run -e ADD=rstudio"
 
+  ubuntu_standard_analysis_vim:
+    description: "Data analysis with tidyverse and R language server"
+    base_image: "rocker/tidyverse"
+    libs: minimal
+    pkgs: tidyverse
+    size: "~1.8GB"
+    note: "Includes languageserver for LSP. No X11 - use kitty icat or httpgd for graphics."
+
   ubuntu_standard_publishing:
     description: "Document publishing with LaTeX, Quarto, and web tools"
     base_image: "rocker/verse"
