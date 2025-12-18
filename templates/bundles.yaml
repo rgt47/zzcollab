@@ -427,6 +427,14 @@ profiles:
     size: "~2.5GB"
     note: "Full analysis stack with interactive graphics and X11"
 
+  ubuntu_x11_analysis_vim:
+    description: "Data analysis with tidyverse, X11, and R language server"
+    base_image: "rocker/tidyverse"
+    libs: gui
+    pkgs: gui
+    size: "~2.2GB"
+    note: "Includes languageserver for R LSP integration (editor runs on host)."
+
   alpine_standard_minimal:
     description: "Ultra-lightweight Alpine Linux with R for CI/CD"
     base_image: "rhub/r-minimal"
