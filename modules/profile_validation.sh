@@ -383,7 +383,7 @@ validate_base_image_constraints() {
         fi
     fi
 
-    printf '%s\n' "${errors[@]}"
+    [[ ${#errors[@]} -gt 0 ]] && printf '%s\n' "${errors[@]}"
 }
 
 #-----------------------------------------------------------------------------
@@ -421,7 +421,7 @@ validate_package_bundle_constraints() {
         errors+=("   Reason: Bioconductor packages need specific dependencies")
     fi
 
-    printf '%s\n' "${errors[@]}"
+    [[ ${#errors[@]} -gt 0 ]] && printf '%s\n' "${errors[@]}"
 }
 
 #-----------------------------------------------------------------------------
@@ -456,7 +456,7 @@ validate_verse_warnings() {
         fi
     fi
 
-    printf '%s\n' "${warnings[@]}"
+    [[ ${#warnings[@]} -gt 0 ]] && printf '%s\n' "${warnings[@]}"
 }
 
 #-----------------------------------------------------------------------------
@@ -578,7 +578,11 @@ validate_profile_combination() {
     done < <(validate_verse_warnings "$base_image" "$libs_bundle")
 
     # Report all results via consolidated reporter
-    report_validation_results "$base_image" "$libs_bundle" "$pkgs_bundle" "${all_items[@]}"
+    if [[ ${#all_items[@]} -gt 0 ]]; then
+        report_validation_results "$base_image" "$libs_bundle" "$pkgs_bundle" "${all_items[@]}"
+    else
+        return 0
+    fi
 }
 
 #-----------------------------------------------------------------------------

@@ -691,7 +691,7 @@ get_description_template() {
 }
 get_workflow_template() {
     # Unified paradigm uses single workflow template from unified/ directory
-    echo "unified/.github/workflows/render-paper.yml"
+    echo "unified/.github/workflows/render-report.yml"
 }
 
 #=============================================================================

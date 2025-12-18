@@ -123,8 +123,15 @@ substitute_variables() {
     # Export all variables that templates might reference
     # envsubst only substitutes variables that are in the environment
     # Use parameter overrides if provided, otherwise use globals
-    export PKG_NAME="${pkg_name_override:-$PKG_NAME}"  # Allow parameter override
-    export AUTHOR_NAME="${author_name_override:-$AUTHOR_NAME}"  # Allow parameter override
+    # Note: PKG_NAME may be readonly from main script - only set if override provided
+    if [[ -n "$pkg_name_override" ]]; then
+        PKG_NAME="$pkg_name_override" 2>/dev/null || true
+    fi
+    export PKG_NAME
+    if [[ -n "$author_name_override" ]]; then
+        AUTHOR_NAME="$author_name_override" 2>/dev/null || true
+    fi
+    export AUTHOR_NAME
     export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     export R_VERSION="${R_VERSION:-latest}"  # Provide default value if not set
     export USERNAME="${USERNAME:-analyst}"   # Default Docker user
