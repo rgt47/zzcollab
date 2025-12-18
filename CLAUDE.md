@@ -495,6 +495,30 @@ To fix: Edit Dockerfile and add to CUSTOM_SYSTEM_DEPS sections
 
 ## Companion Projects
 
+### zzvim-R
+
+`zzvim-R` is a vim plugin for R development with terminal graphics support for kitty and iTerm2.
+
+**Project**: https://github.com/rgt47/zzvim-R
+
+**Features**:
+- Auto-display plots in kitty/iTerm2 terminals (`zzplot()`, `zzggplot()`)
+- Plot history navigation (`plot_prev()`, `plot_next()`)
+- Configuration: sizing, alignment, relative sizing
+- Split pane viewing (`plot_split()`)
+- Multi-terminal R session management
+- Code chunk navigation for R Markdown
+
+**Relationship to zzcollab**:
+- Provides terminal graphics when using vim + Docker workflows
+- `.Rprofile.local` template integrates with zzcollab's `.Rprofile`
+- Documented in `vignettes/workflow-zzvim-r-plots.Rmd`
+
+**When to Use**:
+- Vim/neovim users developing R in kitty or iTerm2
+- Docker development with `make r` workflow
+- Users who want auto-display instead of manual `kitty +kitten icat`
+
 ### zzrenvcheck
 
 `zzrenvcheck` is a companion R package that provides an alternative interface to package dependency validation.
@@ -668,6 +692,49 @@ zzcollab_help("config")            # Configuration guide
 **Current Version**: 2.0 (Unified Paradigm Release, 2025)
 
 **Recent Major Changes**:
+
+### December 18, 2025 - Kitty Terminal Graphics and LSP-Ready Docker Profiles
+
+**New Docker profiles for vim/neovim users** - Added languageserver support without X11 overhead:
+
+- **Created `ubuntu_standard_analysis_vim` profile** (new default):
+  - Based on rocker/tidyverse with languageserver for R LSP integration
+  - No X11 libraries - uses kitty's native graphics protocol or httpgd
+  - ~1.8GB image size (lighter than X11 profiles)
+  - Dockerfile: `templates/Dockerfile.ubuntu_standard_analysis_vim`
+
+- **Created `ubuntu_x11_analysis_vim` profile**:
+  - Same as above but includes X11 support for users not using kitty
+  - ~2.2GB image size
+  - Dockerfile: `templates/Dockerfile.ubuntu_x11_analysis_vim`
+
+- **Changed default profile**: `ubuntu_standard_minimal` → `ubuntu_standard_analysis_vim`
+  - Updated in `modules/constants.sh`
+  - Better out-of-box experience for vim users with LSP
+
+**New vignettes for kitty graphics workflows**:
+
+- **`vignettes/workflow-kitty-graphics.Rmd`**: Manual kitty graphics workflow
+  - Basic `kitty +kitten icat` usage
+  - Docker-aware `kp()` helper function for mounted volumes
+  - httpgd for interactive graphics
+  - Vim + Docker workflow with terminal splits
+  - Comparison with X11 approach
+
+- **`vignettes/workflow-zzvim-r-plots.Rmd`**: zzvim-R terminal graphics integration
+  - Auto-display with `zzplot()` and `zzggplot()`
+  - Plot history navigation (`plot_prev()`, `plot_next()`)
+  - Configuration: `set_plot_size()`, `set_plot_align()`, `set_plot_size_relative()`
+  - Split pane viewing with `plot_split()`
+  - Full function reference and troubleshooting
+
+**Files Modified**:
+- `templates/Dockerfile.ubuntu_standard_analysis_vim` - New profile
+- `templates/Dockerfile.ubuntu_x11_analysis_vim` - New profile
+- `templates/bundles.yaml` - Added both profiles
+- `modules/constants.sh` - Changed default profile
+- `vignettes/workflow-kitty-graphics.Rmd` - New vignette
+- `vignettes/workflow-zzvim-r-plots.Rmd` - New vignette
 
 ### December 12, 2025 - Documentation Reorganization for Wider Project Sharing
 
