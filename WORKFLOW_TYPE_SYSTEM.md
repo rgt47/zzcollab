@@ -53,7 +53,7 @@ Each profile declares a `workflow_type` that determines which CI/CD workflow wil
 - Projects that generate datasets/figures
 
 ### 3. **blog** (Blog Posts & Reports)
-**Profiles:** `ubuntu_standard_publishing`, `ubuntu_x11_analysis`
+**Profiles:** `ubuntu_standard_publishing`
 
 **Purpose:** Blog posts, tutorials, Quarto reports
 
@@ -150,7 +150,7 @@ git push
 | `ubuntu_shiny_minimal` | shiny | Shiny apps |
 | `ubuntu_shiny_analysis` | shiny | Shiny with tidyverse |
 | `ubuntu_x11_minimal` | analysis | Analysis with X11 |
-| `ubuntu_x11_analysis` | blog | Blog with X11 graphics |
+| `ubuntu_x11_analysis` | analysis | Analysis with X11 graphics |
 | `alpine_standard_minimal` | package-dev | Lightweight packages |
 | `alpine_standard_analysis` | analysis | Lightweight analysis |
 | `alpine_x11_minimal` | analysis | Lightweight X11 |

@@ -176,7 +176,7 @@ ubuntu_x11_minimal:
 ubuntu_x11_analysis:
   base_image: "rocker/tidyverse:latest"
   description: "Data analysis with tidyverse and X11 support"
-  workflow_type: "blog"
+  workflow_type: "analysis"
   packages:
     - "renv"
     - "here"
