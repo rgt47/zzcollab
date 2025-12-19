@@ -2,411 +2,537 @@
 
 ## Executive Summary
 
-This document outlines a comprehensive refactoring of the zzcollab framework to:
+This document provides a comprehensive refactoring plan based on a complete
+audit of the zzcollab codebase. The refactoring addresses:
 
-1. Eliminate code duplication in projects (~100KB per project)
-2. Centralize tools for easier maintenance and updates
-3. Modernize the CLI with subcommand patterns
-4. Follow conventional directory structures
+1. **Directory structure**: Relocate from `~/bin/zzcollab-support/` to `~/.zzcollab/`
+2. **CLI architecture**: Modernize with subcommands, remove vestigial flags
+3. **Code consolidation**: Eliminate ~100KB duplication per project
+4. **Help system**: Unify orphaned modular architecture
+5. **Documentation**: Synchronize docs with actual implementation
 
 ---
 
-## Current State
+## Part 1: Current State Analysis
 
-### Installed Location (`~/bin/`)
+### 1.1 Codebase Size by Module
+
+| Module | Lines | Purpose | Status |
+|--------|-------|---------|--------|
+| validation.sh | 2,093 | Package validation | Active, standalone tool candidate |
+| help.sh | 1,651 | Help system | Monolithic, needs integration |
+| profile_validation.sh | 1,198 | Docker profiles | Active |
+| docker.sh | 1,115 | Docker operations | Active |
+| config.sh | 1,015 | Configuration | Active |
+| analysis.sh | 997 | Analysis structure | Active |
+| dockerfile_generator.sh | 840 | Dockerfile creation | Active |
+| cli.sh | 701 | CLI parsing | Needs refactoring |
+| core.sh | 562 | Logging/tracking | Move to lib/ |
+| rpackage.sh | 387 | R package structure | Active |
+| devtools.sh | 322 | Dev tools | Active |
+| cicd.sh | 300 | CI/CD workflows | Active |
+| system_deps_map.sh | 248 | System dependencies | Active |
+| templates.sh | 239 | Template handling | Active |
+| help_core.sh | 231 | Help dispatcher | **ORPHANED** |
+| structure.sh | 179 | Directory structure | Active |
+| github.sh | 170 | GitHub integration | Active |
+| help_guides.sh | 156 | Markdown guides | **UNUSED** |
+| constants.sh | 127 | Global constants | Move to lib/ |
+| utils.sh | 71 | Utilities | Move to lib/ |
+| **Total** | **12,602** | | |
+
+### 1.2 Current Installation Structure
 
 ```
 ~/bin/zzcollab                           # 39KB standalone script
 ~/bin/zzcollab-support/
-    ├── modules/                         # 21 framework modules (~320KB)
-    │   ├── cli.sh, docker.sh, config.sh, ...
-    │   └── validation.sh (77KB)
-    └── templates/                       # Project scaffolding
-        ├── modules/                     # DUPLICATE subset (6 files, ~100KB)
+    ├── modules/                         # 21 modules (~320KB)
+    └── templates/
+        ├── modules/                     # DUPLICATE (6 files, ~100KB)
         │   ├── core.sh, utils.sh, constants.sh
         │   ├── navigation_scripts.sh, setup_symlinks.sh
         │   └── validation.sh
         ├── zzcollab-uninstall.sh        # Copied to each project
-        ├── Makefile                     # References local modules/
-        └── ... (Dockerfiles, templates, etc.)
+        └── ...
 ```
 
-### Source Repository (`~/prj/d07/zzcollab/`)
-
-- Same structure as installed
-- `install.sh` copies to `~/bin/`
-
-### Current Project Structure (After Setup)
+### 1.3 Current Project Structure (After Setup)
 
 ```
 project/
-    ├── modules/                         # ~100KB of framework code
-    │   ├── core.sh, utils.sh, constants.sh
-    │   ├── navigation_scripts.sh, setup_symlinks.sh
-    │   └── validation.sh
+    ├── modules/                         # ~100KB framework duplication
     ├── .zzcollab/
     │   ├── manifest.json
     │   └── uninstall.sh                 # ~26KB duplicate
-    ├── Makefile                         # Calls local modules/validation.sh
-    └── ... (project files)
+    └── ...
 ```
-
-### Problems
-
-| Problem | Impact |
-|---------|--------|
-| `templates/modules/` duplicates framework code | ~100KB per project |
-| `templates/zzcollab-uninstall.sh` copied to each project | ~26KB per project |
-| Updates don't propagate to existing projects | Maintenance burden |
-| Awkward `~/bin/zzcollab-support/` naming | Non-standard |
-| Mixed CLI patterns (`--config` flag vs subcommands) | Inconsistent UX |
 
 ---
 
-## Target State
+## Part 2: CLI Architecture Analysis
 
-### Installed Location
+### 2.1 Current Flags Inventory
+
+#### Active Setup Flags
+
+| Short | Long | Variable | Purpose | Recommendation |
+|-------|------|----------|---------|----------------|
+| `-t` | `--team` | `TEAM_NAME` | Docker Hub namespace | Keep as flag |
+| `-p` | `--project-name` | `PROJECT_NAME` | Project/package name | Keep as flag |
+| `-g` | `--github-account` | `GITHUB_ACCOUNT` | GitHub account | Keep as flag |
+| `-r` | `--profile-name` | `PROFILE_NAME` | Docker profile | Keep as flag |
+| `-b` | `--base-image` | `BASE_IMAGE` | Custom base image | Keep as flag |
+| `-l` | `--libs` | `LIBS_BUNDLE` | System library bundle | Keep as flag |
+| `-k` | `--pkgs` | `PKGS_BUNDLE` | R package bundle | Keep as flag |
+| `-a` | `--tag` | `IMAGE_TAG` | Docker image tag | Keep as flag |
+| `-u` | `--use-team-image` | `USE_TEAM_IMAGE` | Pull team image | Keep as flag |
+| `-x` | `--with-examples` | `WITH_EXAMPLES` | Include examples | Keep as flag |
+| | `--r-version` | `R_VERSION` | R version | Keep as flag |
+| | `--build-docker` | `BUILD_DOCKER` | Build during setup | Keep as flag |
+| `-n` | `--no-docker` | `BUILD_DOCKER=false` | Skip Docker build | Keep as flag |
+| `-P` | `--prepare-dockerfile` | `PREPARE_DOCKERFILE` | Prepare only | Keep as flag |
+| `-f` | `--dockerfile` | `DOCKERFILE_PATH` | Custom Dockerfile | Keep as flag |
+| `-G` | `--github` | `CREATE_GITHUB_REPO` | Create GitHub repo | Keep as flag |
+| | `--force` | `FORCE_DIRECTORY` | Skip validation | Keep as flag |
+| | `--add-examples` | `ADD_EXAMPLES` | Add to existing | Keep as flag |
+
+#### Behavioral Flags
+
+| Short | Long | Variable | Purpose | Recommendation |
+|-------|------|----------|---------|----------------|
+| `-y` | `--yes` | `SKIP_CONFIRMATION` | Skip prompts | Keep as flag |
+| `-q` | `--quiet` | `VERBOSITY_LEVEL=0` | Quiet mode | Keep as flag |
+| `-v` | `--verbose` | `VERBOSITY_LEVEL=2` | Verbose mode | Keep as flag |
+| `-vv` | `--debug` | `VERBOSITY_LEVEL=3` | Debug mode | Keep as flag |
+| `-w` | `--log-file` | `ENABLE_LOG_FILE` | Enable logging | Keep as flag |
+
+#### Help/Info Flags (to be removed, replaced by subcommands)
+
+| Short | Long | Variable | Purpose | Recommendation |
+|-------|------|----------|---------|----------------|
+| `-h` | `--help` | `SHOW_HELP` | Show help | **REMOVE** → `zzcollab help` |
+| | `--help TOPIC` | `SHOW_HELP_TOPIC` | Topic help | **REMOVE** → `zzcollab help <topic>` |
+| | `--next-steps` | `SHOW_NEXT_STEPS` | Workflow guide | **REMOVE** → `zzcollab help workflow` |
+| | `--list-profiles` | `LIST_PROFILES` | List profiles | **REMOVE** → `zzcollab list profiles` |
+| | `--list-libs` | `LIST_LIBS` | List lib bundles | **REMOVE** → `zzcollab list libs` |
+| | `--list-pkgs` | `LIST_PKGS` | List pkg bundles | **REMOVE** → `zzcollab list pkgs` |
+
+#### Config Flags (to be removed, replaced by subcommand)
+
+| Short | Long | Variable | Purpose | Recommendation |
+|-------|------|----------|---------|----------------|
+| `-c` | `--config` | `CONFIG_COMMAND` | Config subcommand | **REMOVE** → `zzcollab config` |
+
+#### Vestigial Variables (Never Populated via CLI)
+
+| Variable | Location | Issue | Action |
+|----------|----------|-------|--------|
+| `DOCKERHUB_ACCOUNT` | cli.sh:237 | Initialized empty, exported but never set | **REMOVE** or add flag |
+| `MULTIARCH_VERSE_IMAGE` | cli.sh:229 | Exported but unused | **REMOVE** |
+| `FORCE_PLATFORM` | cli.sh:230 | Exported but unused | **REMOVE** |
+| `INIT_BASE_IMAGE` | cli.sh:244 | Commented options, never used | **REMOVE** |
+
+#### Placeholder Functions
+
+| Function | Location | Issue | Action |
+|----------|----------|-------|--------|
+| `validate_cli_arguments()` | cli.sh:480-483 | No-op (just `:`) | **REMOVE** or implement |
+
+### 2.2 Subcommand vs Flag Design Rationale
+
+#### Design Principles
+
+**Subcommands** are appropriate when:
+
+- The action is a distinct operation (not project setup)
+- It has its own set of flags/options
+- It can stand alone without other arguments
+- It represents a different "mode" of operation
+
+**Flags** are appropriate when:
+
+- The option modifies the behavior of the primary action
+- It's a boolean toggle or takes a simple value
+- It works in combination with other flags
+- It's part of the setup workflow
+
+#### Recommended CLI Structure
+
+```bash
+# Project Setup (default action, no subcommand)
+zzcollab [flags]                         # Create new project
+zzcollab -t team -p project -r profile   # Full setup
+
+# Subcommands (distinct operations)
+zzcollab validate [flags]                # Package validation
+zzcollab uninstall [flags]               # Remove zzcollab from project
+zzcollab nav <action>                    # Navigation shortcuts
+zzcollab config <action>                 # Configuration management
+zzcollab list <type>                     # List profiles/libs/pkgs
+zzcollab help [topic]                    # Help system
+zzcollab migrate [flags]                 # Migrate old project structure
+```
+
+### 2.3 Proposed Subcommand Specifications
+
+#### `zzcollab validate`
+
+**Purpose**: Package dependency validation (DESCRIPTION ↔ renv.lock)
+
+**Rationale for subcommand**: Distinct operation, not part of setup, has own flags
+
+```bash
+zzcollab validate [options]
+
+Options:
+  --fix              Auto-fix missing packages
+  --no-fix           Validation only (default)
+  --strict           Include tests/ and vignettes/
+  --no-strict        Exclude tests/ and vignettes/ (default)
+  --verbose          Show detailed output
+  --system-deps      Check system dependencies in Dockerfile
+  --help             Show validate help
+```
+
+#### `zzcollab uninstall`
+
+**Purpose**: Remove zzcollab files from current project
+
+**Rationale for subcommand**: Destructive operation, needs own flags, distinct from setup
+
+```bash
+zzcollab uninstall [options]
+
+Options:
+  --dry-run          Preview what would be removed
+  --force            Skip confirmation prompts
+  --keep-docker      Don't remove Docker images
+  --help             Show uninstall help
+```
+
+#### `zzcollab nav`
+
+**Purpose**: Manage shell navigation shortcuts
+
+**Rationale for subcommand**: Distinct operation affecting shell config
+
+```bash
+zzcollab nav <action>
+
+Actions:
+  install            Add navigation shortcuts to shell config
+  uninstall          Remove navigation shortcuts
+  show               Display current shortcuts
+
+Options:
+  --shell <type>     Target shell (zsh, bash, auto)
+  --help             Show nav help
+```
+
+#### `zzcollab config`
+
+**Purpose**: Configuration management
+
+**Rationale for subcommand**: Already hybrid (`--config`), should be pure subcommand
+
+```bash
+zzcollab config <action> [args]
+
+Actions:
+  init               Create default configuration file
+  set <key> <value>  Set configuration value
+  get <key>          Get configuration value
+  list               List all configuration
+  validate           Validate configuration files
+  path               Show configuration file paths
+
+Options:
+  --global           User config (~/.zzcollab/config.yaml)
+  --project          Project config (./zzcollab.yaml)
+  --help             Show config help
+```
+
+#### `zzcollab list`
+
+**Purpose**: List available profiles, libraries, packages
+
+**Rationale for subcommand**: Info retrieval, not setup modification
+
+```bash
+zzcollab list <type>
+
+Types:
+  profiles           List Docker profiles
+  libs               List system library bundles
+  pkgs               List R package bundles
+  all                List everything
+
+Options:
+  --json             Output as JSON
+  --help             Show list help
+```
+
+#### `zzcollab help`
+
+**Purpose**: Unified help system
+
+**Rationale for subcommand**: Standard CLI pattern, integrates with topic system
+
+```bash
+zzcollab help [topic]
+
+Topics:
+  # Commands
+  validate           Package validation help
+  uninstall          Uninstall help
+  nav                Navigation help
+  config             Configuration help
+  list               List command help
+  migrate            Migration help
+
+  # Guides
+  quickstart         Quick start for solo developers
+  workflow           Daily development workflow
+  team               Team collaboration setup
+  profiles           Docker profile selection
+  docker             Docker architecture
+  renv               Package management
+  cicd               CI/CD automation
+  troubleshoot       Common issues
+
+Options:
+  --all              List all topics
+```
+
+#### `zzcollab migrate`
+
+**Purpose**: Migrate old project structure to new format
+
+**Rationale for subcommand**: One-time operation, distinct from setup
+
+```bash
+zzcollab migrate [options]
+
+Options:
+  --dry-run          Preview changes
+  --force            Skip confirmation
+  --help             Show migrate help
+```
+
+---
+
+## Part 3: Directory Structure Refactoring
+
+### 3.1 Target Installation Structure
 
 ```
 ~/.zzcollab/                             # Hidden framework home
-    ├── zzcollab.sh                      # Main CLI with subcommand support
+    ├── zzcollab.sh                      # Main CLI entry point
+    ├── lib/                             # Shared libraries
+    │   ├── core.sh                      # Logging, tracking (from modules/)
+    │   ├── utils.sh                     # Utility functions (from modules/)
+    │   └── constants.sh                 # Global constants (from modules/)
     ├── modules/                         # Internal CLI modules
-    │   ├── cli.sh                       # Updated: subcommand routing
-    │   ├── docker.sh
-    │   ├── config.sh
-    │   ├── structure.sh
-    │   └── ... (other internal modules)
-    ├── lib/                             # NEW: Shared libraries
-    │   ├── core.sh                      # Logging, tracking
-    │   ├── utils.sh                     # Utility functions
-    │   └── constants.sh                 # Global constants
-    ├── bin/                             # NEW: Standalone tools
+    │   ├── cli.sh                       # Subcommand routing (refactored)
+    │   ├── config.sh                    # Configuration management
+    │   ├── docker.sh                    # Docker operations
+    │   ├── dockerfile_generator.sh      # Dockerfile creation
+    │   ├── profile_validation.sh        # Profile system
+    │   ├── structure.sh                 # Directory creation
+    │   ├── templates.sh                 # Template handling
+    │   ├── rpackage.sh                  # R package files
+    │   ├── analysis.sh                  # Analysis structure
+    │   ├── cicd.sh                      # CI/CD workflows
+    │   ├── devtools.sh                  # Development tools
+    │   ├── github.sh                    # GitHub integration
+    │   ├── system_deps_map.sh           # System dependencies
+    │   └── help.sh                      # Help system (consolidated)
+    ├── bin/                             # Standalone tools
     │   ├── validate.sh                  # Package validation
     │   ├── uninstall.sh                 # Project uninstall
     │   └── nav.sh                       # Navigation setup
-    └── templates/                       # Project scaffolding (CLEANED)
-        ├── Makefile                     # Updated: calls `zzcollab validate`
-        ├── Dockerfile.*
-        ├── .Rprofile, DESCRIPTION, etc.
-        └── ... (NO modules/, NO uninstall.sh)
+    └── templates/                       # Project scaffolding
+        ├── Makefile                     # Updated for subcommands
+        ├── Dockerfile.*                 # Docker templates
+        ├── DESCRIPTION.*                # R package templates
+        ├── bundles.yaml                 # Profile definitions
+        ├── workflows/                   # GitHub Actions
+        └── ...                          # Other templates
+        # NO modules/ directory
+        # NO zzcollab-uninstall.sh
 
 ~/bin/zzcollab                           # Symlink → ~/.zzcollab/zzcollab.sh
 ```
 
-### Target Project Structure (After Setup)
+### 3.2 Target Project Structure
 
 ```
 project/
     ├── .zzcollab/
-    │   └── manifest.json                # Metadata only, NO scripts
+    │   └── manifest.json                # Metadata only
     ├── Makefile                         # Calls `zzcollab validate`
     ├── Dockerfile
     ├── .Rprofile
     ├── DESCRIPTION
     ├── renv.lock
-    ├── analysis/, R/, tests/, ...
-    └── (NO modules/ directory)
+    ├── R/
+    ├── analysis/
+    ├── tests/
+    └── ...
+    # NO modules/ directory (~100KB saved)
+    # NO .zzcollab/uninstall.sh (~26KB saved)
 ```
 
-### Comparison
+### 3.3 Comparison
 
-| Aspect | Current | Target |
-|--------|---------|--------|
-| Framework location | `~/bin/zzcollab-support/` | `~/.zzcollab/` |
-| Project overhead | ~126KB scripts | ~1KB manifest only |
-| Update propagation | Manual per-project | Automatic |
-| CLI pattern | Mixed flags/subcommands | Consistent subcommands |
-| Tool invocation | Local `modules/validation.sh` | `zzcollab validate` |
+| Aspect | Current | Target | Savings |
+|--------|---------|--------|---------|
+| Framework location | `~/bin/zzcollab-support/` | `~/.zzcollab/` | Cleaner |
+| Project modules/ | 100KB per project | 0KB | 100KB/project |
+| Project uninstall.sh | 26KB per project | 0KB | 26KB/project |
+| Update propagation | Manual | Automatic | Maintenance |
+| CLI pattern | Mixed | Pure subcommands | Consistency |
 
 ---
 
-## CLI Interface Changes
+## Part 4: Vestigial Code Removal
 
-### Current CLI
+### 4.1 Variables to Remove
 
 ```bash
-# Project setup
-zzcollab [setup flags]
+# cli.sh - Remove these initializations and exports
 
-# Config management (flag-based, unusual pattern)
-zzcollab --config init
-zzcollab --config set key value
-zzcollab --config get key
-zzcollab --config list
+# Line 229-231: Unused multi-arch constants
+MULTIARCH_VERSE_IMAGE="ghcr.io/rocker-org/..."  # REMOVE
+FORCE_PLATFORM=""                                # REMOVE
+
+# Line 237: Never populated via CLI
+DOCKERHUB_ACCOUNT=""                             # REMOVE or add --dockerhub flag
+
+# Line 244: Commented, never used
+INIT_BASE_IMAGE=""                               # REMOVE
+
+# Line 462: Remove from export statement
+export ... DOCKERHUB_ACCOUNT ...                 # REMOVE
 ```
 
-### Target CLI
+### 4.2 Functions to Remove
 
 ```bash
-# Default action (no subcommand) = project setup (unchanged)
-zzcollab [setup flags]
-
-# Subcommands (new)
-zzcollab validate [--fix] [--strict] [--verbose]
-zzcollab uninstall [--dry-run] [--force] [--keep-docker]
-zzcollab nav install
-zzcollab nav uninstall
-
-# Config as subcommand (cleaner)
-zzcollab config init
-zzcollab config set <key> <value>
-zzcollab config get <key>
-zzcollab config list
-
-# Help system
-zzcollab help                            # General help
-zzcollab help <subcommand>               # Subcommand-specific help
-zzcollab --help                          # Alias for help
-zzcollab <subcommand> --help             # Subcommand help
-```
-
-### Subcommand Reference
-
-| Subcommand | Purpose | Key Flags |
-|------------|---------|-----------|
-| `validate` | Package dependency validation | `--fix`, `--strict`, `--verbose`, `--system-deps` |
-| `uninstall` | Remove zzcollab from project | `--dry-run`, `--force`, `--keep-docker` |
-| `nav install` | Install shell navigation shortcuts | None |
-| `nav uninstall` | Remove shell navigation shortcuts | None |
-| `config init` | Create default config file | `--global`, `--project` |
-| `config set` | Set configuration value | None |
-| `config get` | Get configuration value | None |
-| `config list` | List all configuration | `--global`, `--project` |
-| `help` | Show help | None |
-
----
-
-## Implementation Phases
-
-### Phase 1: Create New Directory Structure
-
-**Objective**: Establish `lib/` and `bin/` directories in the repository.
-
-#### Step 1.1: Create `lib/` directory
-
-```bash
-mkdir -p lib/
-```
-
-#### Step 1.2: Move shared libraries to `lib/`
-
-| Source | Destination | Notes |
-|--------|-------------|-------|
-| `modules/core.sh` | `lib/core.sh` | Update path references |
-| `modules/utils.sh` | `lib/utils.sh` | Update path references |
-| `modules/constants.sh` | `lib/constants.sh` | Add `ZZCOLLAB_HOME` |
-
-#### Step 1.3: Create `bin/` directory
-
-```bash
-mkdir -p bin/
-```
-
-#### Step 1.4: Create standalone tools
-
-| Tool | Source | Purpose |
-|------|--------|---------|
-| `bin/validate.sh` | `modules/validation.sh` | Package validation |
-| `bin/uninstall.sh` | `templates/zzcollab-uninstall.sh` | Project cleanup |
-| `bin/nav.sh` | `templates/modules/navigation_scripts.sh` | Shell navigation |
-
-Each tool will:
-
-- Source `$ZZCOLLAB_HOME/lib/core.sh`
-- Source `$ZZCOLLAB_HOME/lib/utils.sh`
-- Source `$ZZCOLLAB_HOME/lib/constants.sh`
-- Be executable standalone
-- Handle `ZZCOLLAB_HOME` detection
-
----
-
-### Phase 2: Update Module Dependencies
-
-**Objective**: Update all modules to use the new `lib/` location.
-
-#### Step 2.1: Update `lib/constants.sh`
-
-Add `ZZCOLLAB_HOME` detection:
-
-```bash
-# Detect ZZCOLLAB_HOME if not set
-if [[ -z "${ZZCOLLAB_HOME:-}" ]]; then
-    # Determine from script location
-    ZZCOLLAB_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-fi
-export ZZCOLLAB_HOME
-
-# Update path constants
-readonly ZZCOLLAB_TEMPLATES_DIR="$ZZCOLLAB_HOME/templates"
-readonly ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_HOME/modules"
-readonly ZZCOLLAB_LIB_DIR="$ZZCOLLAB_HOME/lib"
-readonly ZZCOLLAB_BIN_DIR="$ZZCOLLAB_HOME/bin"
-```
-
-#### Step 2.2: Update `lib/core.sh`
-
-```bash
-# Source constants
-source "${ZZCOLLAB_HOME}/lib/constants.sh"
-
-# Rest of core.sh unchanged
-```
-
-#### Step 2.3: Update all `modules/*.sh`
-
-Change in each module:
-
-```bash
-# Old
-source "$(dirname "${BASH_SOURCE[0]}")/constants.sh"
-source "$(dirname "${BASH_SOURCE[0]}")/core.sh"
-
-# New
-source "${ZZCOLLAB_HOME}/lib/constants.sh"
-source "${ZZCOLLAB_HOME}/lib/core.sh"
-```
-
-#### Step 2.4: Update `require_module` function
-
-Update to look in correct locations:
-
-```bash
-require_module() {
-    for module in "$@"; do
-        local module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
-        local module_var="ZZCOLLAB_${module_upper}_LOADED"
-
-        if [[ "${!module_var:-}" != "true" ]]; then
-            # Try to source it
-            if [[ -f "${ZZCOLLAB_HOME}/modules/${module}.sh" ]]; then
-                source "${ZZCOLLAB_HOME}/modules/${module}.sh"
-            elif [[ -f "${ZZCOLLAB_HOME}/lib/${module}.sh" ]]; then
-                source "${ZZCOLLAB_HOME}/lib/${module}.sh"
-            else
-                echo "❌ Module not found: ${module}" >&2
-                exit 1
-            fi
-        fi
-    done
+# cli.sh line 480-483: No-op placeholder
+validate_cli_arguments() {
+    # No validation needed currently
+    :
 }
+# Called at line 500 - remove both
+```
+
+### 4.3 Modules to Remove/Consolidate
+
+| Module | Lines | Issue | Action |
+|--------|-------|-------|--------|
+| help_core.sh | 231 | Orphaned dispatcher, references non-existent modules | **REMOVE** |
+| help_guides.sh | 156 | References non-existent docs/guides/*.md files | **REMOVE** or implement |
+| templates/modules/ | ~100KB | Duplicated in every project | **REMOVE** |
+| templates/zzcollab-uninstall.sh | 740 | Duplicated in every project | **REMOVE** |
+
+### 4.4 Dead Code Paths
+
+```bash
+# zzcollab.sh - Duplicate validation (lines 18-28 and 241-245)
+# Keep one, remove duplicate
+
+# help_core.sh lines 46-106 - require_module calls for non-existent modules:
+require_module "help_config"      # DOES NOT EXIST
+require_module "help_technical"   # DOES NOT EXIST
+require_module "help_options"     # DOES NOT EXIST
+require_module "help_advanced"    # DOES NOT EXIST
+require_module "help_next_steps"  # DOES NOT EXIST
 ```
 
 ---
 
-### Phase 3: Add Subcommand Support to CLI
+## Part 5: Help System Consolidation
 
-**Objective**: Implement subcommand routing in the main CLI.
+### 5.1 Current State
 
-#### Step 3.1: Update `zzcollab.sh` entry point
-
-```bash
-#!/bin/bash
-set -euo pipefail
-
-# Detect ZZCOLLAB_HOME
-export ZZCOLLAB_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Source core libraries
-source "$ZZCOLLAB_HOME/lib/constants.sh"
-source "$ZZCOLLAB_HOME/lib/core.sh"
-source "$ZZCOLLAB_HOME/lib/utils.sh"
-
-# Source CLI module
-source "$ZZCOLLAB_HOME/modules/cli.sh"
-
-# Main entry point
-main "$@"
+```
+modules/help.sh        (1,651 lines) - All topics, actually used
+modules/help_core.sh   (231 lines)   - Dispatcher, NEVER LOADED
+modules/help_guides.sh (156 lines)   - Markdown loader, BROKEN
 ```
 
-#### Step 3.2: Update `modules/cli.sh` for subcommand routing
+**Problem**: Modular architecture was designed but never completed.
+
+### 5.2 Target State
+
+```
+modules/help.sh        (consolidated) - All help in one place
+```
+
+**Decision**: Consolidate rather than complete modularization.
+
+**Rationale**:
+
+1. Help content is static text, not complex logic
+2. Single file is easier to maintain
+3. Module loading overhead not justified for help
+4. Current monolithic help.sh works correctly
+
+### 5.3 Help System Integration with Subcommands
 
 ```bash
-main() {
-    # Check for subcommand as first argument
-    local subcommand="${1:-}"
+# All of these should work identically:
+zzcollab help validate          # Topic-style
+zzcollab validate --help        # Subcommand flag (delegates to help)
+zzcollab help --all             # Lists commands AND guides
 
-    case "$subcommand" in
-        validate)
-            shift
-            exec "$ZZCOLLAB_HOME/bin/validate.sh" "$@"
-            ;;
-        uninstall)
-            shift
-            exec "$ZZCOLLAB_HOME/bin/uninstall.sh" "$@"
-            ;;
-        nav|navigation)
-            shift
-            exec "$ZZCOLLAB_HOME/bin/nav.sh" "$@"
-            ;;
-        config)
-            shift
-            handle_config_subcommand "$@"
-            ;;
-        help|--help|-h)
-            shift
-            show_help "${1:-}"
-            ;;
-        -*)
-            # Flag-based invocation (existing setup flow)
-            parse_arguments "$@"
-            run_setup
-            ;;
-        "")
-            # No arguments - show help or run default
-            show_help
-            ;;
-        *)
-            # Unknown subcommand - might be a directory or error
-            if [[ -d "$subcommand" ]]; then
-                # Directory provided - use as project path
-                parse_arguments "$@"
-                run_setup
-            else
-                log_error "Unknown subcommand: $subcommand"
-                log_error "Run 'zzcollab help' for usage"
-                exit 1
-            fi
-            ;;
+# help.sh show_help() routing:
+show_help() {
+    local topic="${1:-}"
+    case "$topic" in
+        # Subcommand help (NEW)
+        validate)    show_validate_help ;;
+        uninstall)   show_uninstall_help ;;
+        nav)         show_nav_help ;;
+        config)      show_config_help ;;
+        list)        show_list_help ;;
+        migrate)     show_migrate_help ;;
+
+        # Guide topics (existing)
+        quickstart)  show_quickstart_help ;;
+        workflow)    show_workflow_help ;;
+        team)        show_team_help ;;
+        profiles)    show_profiles_help ;;
+        docker)      show_docker_help ;;
+        renv)        show_renv_help ;;
+        cicd)        show_cicd_help ;;
+        troubleshoot) show_troubleshoot_help ;;
+
+        # Meta
+        ""|--brief)  show_help_brief ;;
+        --all|-a)    show_help_topics_list ;;
+        *)           show_unknown_topic "$topic" ;;
     esac
 }
 ```
 
-#### Step 3.3: Integrate Unified Help System
-
-**Objective**: Create a unified help system where subcommands and documentation
-topics are first-class citizens, following the git model (`git help commit` =
-`git commit --help`).
-
-##### Current Help System (~2000 lines across 3 files)
-
-```
-modules/help.sh        (1651 lines) - Main help with topic routing
-modules/help_core.sh   (231 lines)  - Core help functions
-modules/help_guides.sh (156 lines)  - Guide-related help
-```
-
-Existing topics: `quickstart`, `workflow`, `team`, `config`, `profiles`,
-`docker`, `renv`, `cicd`, `troubleshoot`, etc.
-
-##### Unified Help Architecture
-
-```bash
-# All of these should work equivalently:
-zzcollab help validate        # Topic-style
-zzcollab validate --help      # Subcommand flag delegates to help system
-zzcollab help --all           # Lists both commands AND guide topics
-```
-
-##### Help Categories
+### 5.4 Help Categories Display
 
 ```
 zzcollab help
 
+USAGE:
+    zzcollab [command] [options]
+    zzcollab [setup-flags]
+
 COMMANDS:
-    validate      Package dependency validation
-    uninstall     Remove zzcollab files from current project
+    validate      Validate package dependencies
+    uninstall     Remove zzcollab from project
     nav           Shell navigation shortcuts
     config        Configuration management
+    list          List profiles/libs/pkgs
+    help          Show help information
     migrate       Migrate old project structure
 
 GUIDES:
@@ -414,617 +540,267 @@ GUIDES:
     workflow      Daily development workflow
     team          Team collaboration setup
     profiles      Docker profile selection
-    docker        Docker architecture details
-    renv          Package management with renv
+    docker        Docker architecture
+    renv          Package management
     cicd          CI/CD automation
+    troubleshoot  Common issues
 
-Run 'zzcollab help <topic>' for detailed information.
-Run 'zzcollab help --all' for complete topic list.
-```
-
-##### Implementation in `modules/help.sh`
-
-```bash
-show_help() {
-    local topic="${1:-}"
-
-    case "$topic" in
-        ""|--brief)
-            show_help_brief
-            ;;
-        --all|-a)
-            show_help_topics_list
-            ;;
-        # Subcommand help (NEW - integrated with commands)
-        validate)
-            show_validate_help
-            ;;
-        uninstall)
-            show_uninstall_help
-            ;;
-        nav|navigation)
-            show_nav_help
-            ;;
-        config)
-            show_config_help
-            ;;
-        migrate)
-            show_migrate_help
-            ;;
-        # Existing guide topics (unchanged)
-        quickstart)
-            show_quickstart_help
-            ;;
-        workflow)
-            show_workflow_help
-            ;;
-        team)
-            show_team_help
-            ;;
-        # ... other existing topics ...
-        *)
-            log_error "Unknown help topic: $topic"
-            log_info "Run 'zzcollab help --all' for available topics"
-            exit 1
-            ;;
-    esac
-}
-
-# Subcommand --help delegates to unified help system
-# In bin/validate.sh:
-if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-    exec zzcollab help validate
-fi
-
-# In bin/uninstall.sh:
-if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-    exec zzcollab help uninstall
-fi
-```
-
-##### Subcommand Help Functions
-
-```bash
-show_validate_help() {
-    cat << 'EOF'
-zzcollab validate - Package dependency validation
-
-USAGE:
-    zzcollab validate [options]
-
-DESCRIPTION:
-    Validates that packages used in code are properly declared in
-    DESCRIPTION and renv.lock. Can auto-fix missing packages.
-
-OPTIONS:
-    --fix           Auto-fix missing packages (add to DESCRIPTION/renv.lock)
-    --no-fix        Validation only, no modifications
-    --strict        Include tests/ and vignettes/ in scan
-    --no-strict     Exclude tests/ and vignettes/
-    --verbose       Show detailed output
-    --system-deps   Check system dependencies in Dockerfile
-
-EXAMPLES:
-    zzcollab validate --fix --strict
-    zzcollab validate --no-fix --verbose
-    zzcollab validate --system-deps
-
-SEE ALSO:
-    zzcollab help renv          Package management guide
-    zzcollab help workflow      Daily development workflow
-EOF
-}
-
-show_uninstall_help() {
-    cat << 'EOF'
-zzcollab uninstall - Remove zzcollab from current project
-
-USAGE:
-    zzcollab uninstall [options]
-
-DESCRIPTION:
-    Removes files and directories created by zzcollab setup.
-    Reads .zzcollab/manifest.json to determine what to remove.
-
-OPTIONS:
-    --dry-run       Show what would be removed without removing
-    --force         Skip confirmation prompts
-    --keep-docker   Don't remove Docker images
-
-EXAMPLES:
-    zzcollab uninstall --dry-run    # Preview changes
-    zzcollab uninstall              # Interactive removal
-    zzcollab uninstall --force      # Remove without prompts
-
-SEE ALSO:
-    zzcollab help migrate       Migrate old project structure
-EOF
-}
-
-show_nav_help() {
-    cat << 'EOF'
-zzcollab nav - Shell navigation shortcuts
-
-USAGE:
-    zzcollab nav <command>
-
-COMMANDS:
-    install         Add navigation shortcuts to shell config
-    uninstall       Remove navigation shortcuts from shell config
-
-SHORTCUTS INSTALLED:
-    r               Jump to project root
-    s               Jump to analysis/scripts/
-    d               Jump to analysis/data/
-    w               Jump to analysis/data/raw_data/
-    y               Jump to analysis/data/derived_data/
-    mr [target]     Run make target from any subdirectory
-
-EXAMPLES:
-    zzcollab nav install        # Add to ~/.zshrc or ~/.bashrc
-    zzcollab nav uninstall      # Remove from shell config
-
-SEE ALSO:
-    zzcollab help workflow      Daily development workflow
-EOF
-}
-
-show_config_help() {
-    cat << 'EOF'
-zzcollab config - Configuration management
-
-USAGE:
-    zzcollab config <command> [args]
-
-COMMANDS:
-    init            Create default configuration file
-    set <key> <val> Set configuration value
-    get <key>       Get configuration value
-    list            List all configuration
-    validate        Validate configuration files
-
-OPTIONS:
-    --global        Operate on user config (~/.zzcollab/config.yaml)
-    --project       Operate on project config (./zzcollab.yaml)
-
-CONFIGURATION KEYS:
-    team_name       Default team name for Docker Hub
-    github_account  GitHub account for repository creation
-    dotfiles_dir    Path to dotfiles directory
-    default_profile Default Docker profile
-
-EXAMPLES:
-    zzcollab config init
-    zzcollab config set team_name "mylab"
-    zzcollab config get team_name
-    zzcollab config list
-
-SEE ALSO:
-    zzcollab help profiles      Docker profile selection
-EOF
-}
-
-show_migrate_help() {
-    cat << 'EOF'
-zzcollab migrate - Migrate old project structure
-
-USAGE:
-    zzcollab migrate [options]
-
-DESCRIPTION:
-    Cleans up old project structure from previous zzcollab versions.
-    Removes local modules/ directory and .zzcollab/uninstall.sh.
-
-OPTIONS:
-    --dry-run       Show what would be removed without removing
-    --force         Skip confirmation prompts
-
-WHAT GETS REMOVED:
-    modules/                    Local framework scripts (now centralized)
-    .zzcollab/uninstall.sh      Local uninstall script (now subcommand)
-
-EXAMPLES:
-    zzcollab migrate --dry-run  # Preview changes
-    zzcollab migrate            # Interactive migration
-
-SEE ALSO:
-    zzcollab help uninstall     Remove zzcollab entirely
-EOF
-}
-```
-
-##### Update `show_help_topics_list()` to Include Commands
-
-```bash
-show_help_topics_list() {
-    cat << 'EOF'
-Available help topics:
-
-COMMANDS (zzcollab <command> --help):
-    validate        Package dependency validation
-    uninstall       Remove zzcollab from project
-    nav             Shell navigation shortcuts
-    config          Configuration management
-    migrate         Migrate old project structure
-
-GUIDES (zzcollab help <topic>):
-    quickstart      Quick start for solo developers
-    workflow        Daily development workflow
-    team            Team collaboration setup
-    profiles        Docker profile selection
-    examples        Example files and templates
-    docker          Docker architecture
-    renv            Package management
-    cicd            CI/CD automation
-    troubleshoot    Common issues and solutions
-    options         Complete command-line options
-
-Run 'zzcollab help <topic>' for detailed information.
-EOF
-}
+Run 'zzcollab help <topic>' for details.
+Run 'zzcollab help --all' for complete list.
 ```
 
 ---
 
-### Phase 4: Clean Up Templates
+## Part 6: Documentation Updates
 
-**Objective**: Remove duplicated code from templates.
+### 6.1 Documentation Audit Findings
 
-#### Step 4.1: Remove `templates/modules/`
+| Document | Status | Issues |
+|----------|--------|--------|
+| docs/README.md | **OUTDATED** | References non-existent docs/guides/*.md |
+| ZZCOLLAB_USER_GUIDE.md | **CURRENT** | Accurate but needs subcommand updates |
+| help_guides.sh | **BROKEN** | References docs/guides/ that doesn't exist |
+| docs/TESTING_GUIDE.md | CURRENT | Accurate |
+| docs/DATA_WORKFLOW_GUIDE.md | CURRENT | Accurate |
 
-```bash
-rm -rf templates/modules/
+### 6.2 Required Documentation Updates
+
+#### docs/README.md
+
+**Remove**: References to markdown guide files in docs/guides/
+
+**Update**: Document actual help system architecture
+
+```markdown
+## Help System
+
+Help is provided through the `zzcollab help` command:
+
+    zzcollab help              # Overview
+    zzcollab help <topic>      # Specific topic
+    zzcollab help --all        # All topics
+
+All help content is in modules/help.sh (consolidated).
 ```
 
-Files removed:
+#### ZZCOLLAB_USER_GUIDE.md
 
-- `templates/modules/core.sh`
-- `templates/modules/utils.sh`
-- `templates/modules/constants.sh`
-- `templates/modules/navigation_scripts.sh`
-- `templates/modules/setup_symlinks.sh`
-- `templates/modules/validation.sh`
+**Add**: Subcommand documentation
 
-#### Step 4.2: Remove `templates/zzcollab-uninstall.sh`
+```markdown
+## Commands
 
-```bash
-rm templates/zzcollab-uninstall.sh
+### zzcollab validate
+Validates package dependencies...
+
+### zzcollab uninstall
+Removes zzcollab files...
+
+### zzcollab config
+Manages configuration...
 ```
 
-#### Step 4.3: Update `templates/Makefile`
+#### templates/Makefile
 
-Change validation targets:
+**Update**: Use subcommands instead of local modules
 
 ```makefile
-# Old
+# OLD
 check-renv:
-	@bash modules/validation.sh --fix --strict --verbose
+    @bash modules/validation.sh --fix --strict --verbose
 
-check-renv-no-fix:
-	@bash modules/validation.sh --no-fix --strict --verbose
-
-check-renv-no-strict:
-	@bash modules/validation.sh --fix --verbose
-
-# New
+# NEW
 check-renv:
-	@zzcollab validate --fix --strict --verbose
-
-check-renv-no-fix:
-	@zzcollab validate --no-fix --strict --verbose
-
-check-renv-no-strict:
-	@zzcollab validate --fix --verbose
-
-check-system-deps:
-	@zzcollab validate --system-deps
+    @zzcollab validate --fix --strict --verbose
 ```
 
-#### Step 4.4: Update project creation code
-
-In `modules/structure.sh` (or wherever project files are copied):
+### 6.3 Files to Remove
 
 ```bash
-# Remove these lines:
-copy_template_directory "modules" "$project_dir/modules"
-copy_template_file "zzcollab-uninstall.sh" "$project_dir/.zzcollab/uninstall.sh"
-
-# Keep:
-create_manifest "$project_dir/.zzcollab/manifest.json"
+rm modules/help_core.sh      # Orphaned dispatcher
+rm modules/help_guides.sh    # References non-existent files
+rm -rf templates/modules/    # No longer copied to projects
+rm templates/zzcollab-uninstall.sh  # Replaced by subcommand
 ```
 
 ---
 
-### Phase 5: Update Installer
+## Part 7: Implementation Phases
 
-**Objective**: Install to new location with proper structure.
+### Phase 1: Vestigial Code Cleanup (1-2 hours)
 
-#### Step 5.1: Update `install.sh`
+1. Remove unused variables from cli.sh
+2. Remove validate_cli_arguments() no-op
+3. Remove help_core.sh and help_guides.sh
+4. Update docs/README.md to remove guide references
 
-```bash
-#!/bin/bash
-set -euo pipefail
+### Phase 2: Directory Restructure (2-3 hours)
 
-ZZCOLLAB_HOME="$HOME/.zzcollab"
-BIN_DIR="$HOME/bin"
-OLD_LOCATION="$BIN_DIR/zzcollab-support"
+1. Create lib/ directory
+2. Move core.sh, utils.sh, constants.sh to lib/
+3. Create bin/ directory
+4. Create standalone tools (validate.sh, uninstall.sh, nav.sh)
+5. Update ZZCOLLAB_HOME detection
 
-install_zzcollab() {
-    echo "Installing zzcollab to $ZZCOLLAB_HOME..."
+### Phase 3: Subcommand Implementation (3-4 hours)
 
-    # Create directory structure
-    mkdir -p "$ZZCOLLAB_HOME"/{modules,lib,bin,templates}
-    mkdir -p "$BIN_DIR"
+1. Refactor cli.sh for subcommand routing
+2. Implement each subcommand handler
+3. Update help.sh with subcommand help
+4. Integrate `--help` delegation
 
-    # Copy files
-    cp zzcollab.sh "$ZZCOLLAB_HOME/"
-    cp -r modules/* "$ZZCOLLAB_HOME/modules/"
-    cp -r lib/* "$ZZCOLLAB_HOME/lib/"
-    cp -r bin/* "$ZZCOLLAB_HOME/bin/"
-    cp -r templates/* "$ZZCOLLAB_HOME/templates/"
+### Phase 4: Template Cleanup (1 hour)
 
-    # Make executable
-    chmod +x "$ZZCOLLAB_HOME/zzcollab.sh"
-    chmod +x "$ZZCOLLAB_HOME/bin/"*.sh
+1. Remove templates/modules/
+2. Remove templates/zzcollab-uninstall.sh
+3. Update templates/Makefile for subcommands
+4. Update project creation to not copy modules/
 
-    # Create symlink
-    ln -sf "$ZZCOLLAB_HOME/zzcollab.sh" "$BIN_DIR/zzcollab"
+### Phase 5: Installer Update (1-2 hours)
 
-    echo "✅ Installed zzcollab to $ZZCOLLAB_HOME"
-    echo "✅ Symlink created at $BIN_DIR/zzcollab"
-}
+1. Change install target to ~/.zzcollab/
+2. Create symlink ~/bin/zzcollab
+3. Add migration from old location
+4. Update install.sh
 
-migrate_from_old() {
-    if [[ -d "$OLD_LOCATION" ]]; then
-        echo "⚠️  Found old installation at $OLD_LOCATION"
-        read -p "Remove old installation? [y/N] " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            rm -rf "$OLD_LOCATION"
-            # Remove old standalone script if it exists
-            [[ -f "$BIN_DIR/zzcollab" && ! -L "$BIN_DIR/zzcollab" ]] && rm "$BIN_DIR/zzcollab"
-            echo "✅ Removed old installation"
-        fi
-    fi
-}
+### Phase 6: Documentation (2-3 hours)
 
-uninstall_zzcollab() {
-    echo "Uninstalling zzcollab..."
-    rm -rf "$ZZCOLLAB_HOME"
-    rm -f "$BIN_DIR/zzcollab"
-    echo "✅ Uninstalled zzcollab"
-}
+1. Update ZZCOLLAB_USER_GUIDE.md
+2. Update docs/README.md
+3. Add subcommand examples
+4. Update help.sh content
 
-# Main
-case "${1:-install}" in
-    install)
-        migrate_from_old
-        install_zzcollab
-        ;;
-    uninstall|--uninstall)
-        uninstall_zzcollab
-        ;;
-    *)
-        echo "Usage: ./install.sh [install|uninstall]"
-        exit 1
-        ;;
-esac
-```
+### Phase 7: Testing (2-3 hours)
+
+1. Test all subcommands
+2. Test help system
+3. Test fresh install
+4. Test migration from old structure
+5. Test project creation
+
+**Total Estimated Effort**: 12-18 hours
 
 ---
 
-### Phase 6: Migration Support
-
-**Objective**: Support existing projects and installations.
-
-#### Step 6.1: Detect and handle old project structure
-
-Add to `bin/validate.sh`:
-
-```bash
-# Check for old project structure
-if [[ -d "modules" && -f "modules/validation.sh" ]]; then
-    log_warn "Detected old project structure with local modules/"
-    log_warn "Consider running 'zzcollab migrate' to clean up"
-fi
-```
-
-#### Step 6.2: Add `migrate` subcommand (optional)
-
-```bash
-# zzcollab migrate - Clean up old project structure
-migrate_project() {
-    if [[ -d "modules" ]]; then
-        if confirm "Remove local modules/ directory?"; then
-            rm -rf modules/
-            log_success "Removed modules/"
-        fi
-    fi
-
-    if [[ -f ".zzcollab/uninstall.sh" ]]; then
-        if confirm "Remove .zzcollab/uninstall.sh?"; then
-            rm .zzcollab/uninstall.sh
-            log_success "Removed .zzcollab/uninstall.sh"
-        fi
-    fi
-
-    log_success "Project migrated to new structure"
-}
-```
-
----
-
-## File Change Summary
-
-### Files to CREATE
-
-| File | Description |
-|------|-------------|
-| `lib/core.sh` | Moved from modules/, updated paths |
-| `lib/utils.sh` | Moved from modules/, updated paths |
-| `lib/constants.sh` | Moved from modules/, added ZZCOLLAB_HOME |
-| `bin/validate.sh` | Standalone validation tool |
-| `bin/uninstall.sh` | Standalone uninstall tool |
-| `bin/nav.sh` | Standalone navigation setup |
-
-### Files to MODIFY
-
-| File | Changes |
-|------|---------|
-| `zzcollab.sh` | Add ZZCOLLAB_HOME, subcommand routing |
-| `modules/cli.sh` | Add subcommand parsing |
-| `modules/help.sh` | Integrate subcommands as help topics; add `show_validate_help()`, `show_uninstall_help()`, `show_nav_help()`, `show_config_help()`, `show_migrate_help()`; update `show_help_topics_list()` to show COMMANDS and GUIDES categories |
-| `modules/help_core.sh` | Update help routing to handle subcommand topics |
-| `modules/*.sh` (all) | Update source paths to lib/ |
-| `templates/Makefile` | Change to `zzcollab validate` |
-| `install.sh` | New location, structure, migration |
-
-### Files to DELETE
-
-| File | Reason |
-|------|--------|
-| `templates/modules/` (directory) | No longer copied to projects |
-| `templates/zzcollab-uninstall.sh` | Replaced by `bin/uninstall.sh` |
-
-### Files UNCHANGED
-
-| File | Reason |
-|------|--------|
-| `templates/Dockerfile.*` | Project templates |
-| `templates/.Rprofile` | Project template |
-| `templates/DESCRIPTION.*` | Project templates |
-| `templates/bundles.yaml` | Profile definitions |
-| `templates/workflows/*` | GitHub Actions templates |
-
----
-
-## Testing Plan
+## Part 8: Testing Plan
 
 ### Unit Tests
 
 | Test | Description |
 |------|-------------|
-| `lib/*.sh` sourcing | Each lib file sources without errors |
-| `bin/*.sh` execution | Each tool runs with `--help` |
+| lib/*.sh sourcing | Each lib file sources without errors |
+| bin/*.sh --help | Each tool shows help |
 | Subcommand routing | Each subcommand routes correctly |
-| Path detection | `ZZCOLLAB_HOME` detected correctly |
-| Help system | `zzcollab help <cmd>` works for all subcommands |
-| Help delegation | `zzcollab <cmd> --help` delegates to `zzcollab help <cmd>` |
-| Help topics list | `zzcollab help --all` shows both COMMANDS and GUIDES |
+| ZZCOLLAB_HOME detection | Path detection works |
 
 ### Integration Tests
 
 | Test | Description |
 |------|-------------|
-| Fresh install | `./install.sh` creates correct structure |
-| Project creation | `zzcollab -t test -p test` creates project without `modules/` |
-| Validation | `zzcollab validate` works in project |
-| Uninstall | `zzcollab uninstall` removes files |
-| Config operations | `zzcollab config` works correctly |
-| Migration | Old installation detected and migrated |
+| Fresh install | ~/.zzcollab/ created correctly |
+| Project creation | No modules/ in new projects |
+| zzcollab validate | Works in project |
+| zzcollab uninstall | Removes files correctly |
+| zzcollab config | All subcommands work |
 
-### Backward Compatibility Tests
+### Help System Tests
 
 | Test | Description |
 |------|-------------|
-| Old project with `modules/` | Makefile with local paths still works |
-| Old installation | Detected and migration offered |
+| zzcollab help | Shows categories |
+| zzcollab help validate | Shows validate help |
+| zzcollab validate --help | Delegates to help |
+| zzcollab help --all | Lists all topics |
 
 ---
 
-## Rollback Plan
+## Part 9: Success Criteria
 
-### Before Starting
-
-1. Tag current commit: `git tag pre-refactor-v1`
-2. Backup `install.sh`: `cp install.sh install.sh.backup`
-
-### If Issues Arise
-
-1. Checkout pre-refactor tag: `git checkout pre-refactor-v1`
-2. Run old installer: `./install.sh.backup`
-3. Document issues for investigation
-
----
-
-## Open Questions
-
-### 1. Migration Strategy
-
-**Question**: Should `zzcollab migrate` be a subcommand to clean old projects?
-
-**Options**:
-
-- A) Add `migrate` subcommand (explicit cleanup)
-- B) Auto-detect and warn only (manual cleanup)
-- C) Auto-cleanup with confirmation
-
-**Recommendation**: Option A - explicit is safer
-
-### 2. Backward Compatibility Duration
-
-**Question**: How long to support old `modules/` in projects?
-
-**Options**:
-
-- A) Immediate break (document migration)
-- B) Warn for 1-2 releases, then break
-- C) Permanent backward compatibility
-
-**Recommendation**: Option B - warn, then remove
-
-### 3. Navigation Scripts
-
-**Question**: How should navigation scripts be handled?
-
-**Current**: User sources `modules/navigation_scripts.sh` into shell
-
-**Options**:
-
-- A) `zzcollab nav install` adds source line to `.zshrc`/`.bashrc`
-- B) `zzcollab nav install` copies functions to shell config
-- C) Keep current pattern (source from `~/.zzcollab/bin/nav.sh`)
-
-**Recommendation**: Option A - cleanest integration
-
-### 4. Config Backward Compatibility
-
-**Question**: Keep `--config` flag or only subcommand?
-
-**Options**:
-
-- A) Only `zzcollab config` (breaking change)
-- B) Support both `--config` and `config` (indefinitely)
-- C) Support both, deprecate `--config` with warning
-
-**Recommendation**: Option C - graceful deprecation
+1. ✅ `~/.zzcollab/` contains framework
+2. ✅ `~/bin/zzcollab` is symlink
+3. ✅ No `~/bin/zzcollab-support/`
+4. ✅ New projects have no `modules/`
+5. ✅ New projects have no `.zzcollab/uninstall.sh`
+6. ✅ All subcommands work
+7. ✅ Help system unified
+8. ✅ Documentation current
+9. ✅ All tests pass
+10. ✅ Vestigial code removed
 
 ---
 
-## Timeline Estimate
+## Appendix A: Complete Flag Reference (Target State)
 
-| Phase | Estimated Effort |
-|-------|------------------|
-| Phase 1: Directory structure | 1-2 hours |
-| Phase 2: Module dependencies | 2-3 hours |
-| Phase 3: CLI subcommands | 3-4 hours |
-| Phase 4: Template cleanup | 1 hour |
-| Phase 5: Installer update | 1-2 hours |
-| Phase 6: Migration support | 1-2 hours |
-| Testing | 2-3 hours |
-| **Total** | **11-17 hours** |
+### Setup Flags (used with default action)
+
+```
+-t, --team NAME           Team name for Docker Hub namespace
+-p, --project-name NAME   Project name (defaults to directory name)
+-g, --github-account NAME GitHub account for repository
+-r, --profile-name NAME   Docker profile (default: ubuntu_standard_analysis_vim)
+-b, --base-image IMAGE    Custom Docker base image
+-l, --libs BUNDLE         System library bundle
+-k, --pkgs BUNDLE         R package bundle
+-a, --tag TAG             Docker image tag variant
+-u, --use-team-image      Pull existing team image
+-x, --with-examples       Include example files
+    --r-version VERSION   R version for Docker
+    --build-docker        Build Docker during setup
+-n, --no-docker           Skip Docker build (default)
+-P, --prepare-dockerfile  Prepare Dockerfile only
+-f, --dockerfile PATH     Custom Dockerfile path
+-G, --github              Auto-create GitHub repository
+    --force               Skip directory validation
+    --add-examples        Add examples to existing project
+```
+
+### Behavioral Flags (global)
+
+```
+-y, --yes                 Skip confirmation prompts
+-q, --quiet               Quiet output
+-v, --verbose             Verbose output
+-vv, --debug              Debug mode with logging
+-w, --log-file            Enable log file
+```
+
+### Subcommands
+
+```
+validate                  Package dependency validation
+uninstall                 Remove zzcollab from project
+nav                       Navigation shortcuts
+config                    Configuration management
+list                      List profiles/libs/pkgs
+help                      Help system
+migrate                   Migrate old project structure
+```
 
 ---
 
-## Success Criteria
+## Appendix B: Removed Items
 
-1. ✅ `~/.zzcollab/` contains framework (no `~/bin/zzcollab-support/`)
-2. ✅ `~/bin/zzcollab` is symlink to `~/.zzcollab/zzcollab.sh`
-3. ✅ New projects have NO `modules/` directory
-4. ✅ New projects have NO `.zzcollab/uninstall.sh`
-5. ✅ `zzcollab validate` works in projects
-6. ✅ `zzcollab uninstall` works in projects
-7. ✅ `zzcollab config` works (subcommand style)
-8. ✅ Old installations detected and migration offered
-9. ✅ All existing tests pass
-10. ✅ Documentation updated
+### Variables Removed
+
+- `DOCKERHUB_ACCOUNT` (cli.sh:237)
+- `MULTIARCH_VERSE_IMAGE` (cli.sh:229)
+- `FORCE_PLATFORM` (cli.sh:230)
+- `INIT_BASE_IMAGE` (cli.sh:244)
+
+### Functions Removed
+
+- `validate_cli_arguments()` (cli.sh:480-483)
+
+### Files Removed
+
+- `modules/help_core.sh` (orphaned dispatcher)
+- `modules/help_guides.sh` (broken references)
+- `templates/modules/` (no longer copied)
+- `templates/zzcollab-uninstall.sh` (replaced by subcommand)
+
+### Flags Removed
+
+- `--config` → replaced by `zzcollab config` subcommand
+- `--list-profiles` → replaced by `zzcollab list profiles`
+- `--list-libs` → replaced by `zzcollab list libs`
+- `--list-pkgs` → replaced by `zzcollab list pkgs`
