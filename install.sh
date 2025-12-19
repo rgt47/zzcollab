@@ -2,75 +2,92 @@
 ##############################################################################
 # ZZCOLLAB INSTALLATION SCRIPT
 ##############################################################################
+# Installs zzcollab to ~/.zzcollab/ with bin symlink
+#
+# Structure:
+#   ~/.zzcollab/
+#   ├── lib/           Core libraries
+#   ├── modules/       Feature modules
+#   ├── templates/     Project templates
+#   └── zzcollab.sh    Main entry point
+#
+#   ~/bin/zzcollab → ~/.zzcollab/zzcollab.sh (symlink)
+##############################################################################
 
 set -euo pipefail
 
-# Colors for output
+readonly VERSION="2.0.0"
+
+# Colors
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
+readonly NC='\033[0m'
 
-log_info() {
-    printf "${GREEN}ℹ️  %s${NC}\n" "$*"
-}
-
-log_warn() {
-    printf "${YELLOW}⚠️  %s${NC}\n" "$*"
-}
-
-log_error() {
-    printf "${RED}❌ %s${NC}\n" "$*"
-}
-
-log_success() {
-    printf "${GREEN}✅ %s${NC}\n" "$*"
-}
+log_info()    { printf "${BLUE}ℹ️  %s${NC}\n" "$*"; }
+log_warn()    { printf "${YELLOW}⚠️  %s${NC}\n" "$*"; }
+log_error()   { printf "${RED}❌ %s${NC}\n" "$*"; }
+log_success() { printf "${GREEN}✅ %s${NC}\n" "$*"; }
 
 show_help() {
     cat << EOF
-${BLUE}ZZCOLLAB Installation Script${NC}
+${BLUE}ZZCOLLAB Installation Script v${VERSION}${NC}
 
-Installs zzcollab by copying all necessary files to the specified directory.
+Installs zzcollab framework to ~/.zzcollab with optional symlink.
 
 USAGE:
     $0 [OPTIONS]
 
 OPTIONS:
-    --prefix DIR, -p DIR    Install to specified directory (default: ~/bin)
-    --help, -h              Show this help message
+    --bin-dir DIR       Create symlink in DIR (default: ~/bin)
+    --no-symlink        Don't create symlink
+    --force             Overwrite existing installation
+    --uninstall         Remove zzcollab installation
+    --help, -h          Show this help
 
 EXAMPLES:
-    $0                      # Install to ~/bin
-    $0 --prefix ~/.local    # Install to ~/.local/bin
-    $0 -p /usr/local        # Install to /usr/local/bin (requires sudo)
+    $0                          # Install to ~/.zzcollab, symlink in ~/bin
+    $0 --bin-dir /usr/local/bin # Install, symlink in /usr/local/bin
+    $0 --no-symlink             # Install only, no symlink
+    $0 --uninstall              # Remove installation
 
 INSTALLATION STRUCTURE:
-    INSTALL_DIR/
-    ├── zzcollab           # Main executable script (includes --init functionality)
-    ├── zzcollab-support/  # Support files directory
-    │   ├── modules/        # Module files
-    │   └── templates/      # Template files
-    └── README_zzcollab.md # Installation info
+    ~/.zzcollab/
+    ├── lib/             Core libraries (constants, core, templates)
+    ├── modules/         Feature modules (cli, docker, project, etc.)
+    ├── templates/       Project templates
+    └── zzcollab.sh      Main entry point
 
-The installed zzcollab will be completely self-contained and work from any location.
+    ~/bin/zzcollab       Symlink to ~/.zzcollab/zzcollab.sh
 EOF
 }
 
-# Default installation directory
-INSTALL_PREFIX="$HOME"
+# Configuration
+ZZCOLLAB_HOME="$HOME/.zzcollab"
+BIN_DIR="$HOME/bin"
+CREATE_SYMLINK=true
+FORCE=false
+UNINSTALL=false
 
-# Parse command line arguments
+# Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --prefix|-p)
-            if [[ -z "${2:-}" ]]; then
-                log_error "Error: --prefix requires a directory argument"
-                exit 1
-            fi
-            INSTALL_PREFIX="$2"
+        --bin-dir)
+            BIN_DIR="$2"
             shift 2
+            ;;
+        --no-symlink)
+            CREATE_SYMLINK=false
+            shift
+            ;;
+        --force)
+            FORCE=true
+            shift
+            ;;
+        --uninstall)
+            UNINSTALL=true
+            shift
             ;;
         --help|-h)
             show_help
@@ -78,181 +95,170 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             log_error "Unknown option: $1"
-            log_error "Use --help for usage information"
+            show_help
             exit 1
             ;;
     esac
 done
 
-# Set up installation paths
-INSTALL_DIR="$INSTALL_PREFIX/bin"
-ZZCOLLAB_SUPPORT_DIR="$INSTALL_DIR/zzcollab-support"
+# Get source directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-log_info "Installing zzcollab to $INSTALL_DIR"
-log_info "Support files will be in $ZZCOLLAB_SUPPORT_DIR"
+#=============================================================================
+# UNINSTALL
+#=============================================================================
 
-# Create installation directory if it doesn't exist
-if [[ ! -d "$INSTALL_DIR" ]]; then
-    log_info "Creating installation directory: $INSTALL_DIR"
-    mkdir -p "$INSTALL_DIR"
+do_uninstall() {
+    log_info "Uninstalling zzcollab..."
+
+    if [[ -d "$ZZCOLLAB_HOME" ]]; then
+        rm -rf "$ZZCOLLAB_HOME"
+        log_success "Removed $ZZCOLLAB_HOME"
+    else
+        log_info "No installation found at $ZZCOLLAB_HOME"
+    fi
+
+    # Remove symlinks from common locations
+    for bin_path in "$HOME/bin/zzcollab" "/usr/local/bin/zzcollab"; do
+        if [[ -L "$bin_path" ]]; then
+            rm -f "$bin_path"
+            log_success "Removed symlink $bin_path"
+        fi
+    done
+
+    log_success "Uninstall complete"
+}
+
+if [[ "$UNINSTALL" == "true" ]]; then
+    do_uninstall
+    exit 0
 fi
 
-# Check if required scripts exist
-if [[ ! -f "$SCRIPT_DIR/zzcollab.sh" ]]; then
-    log_error "zzcollab.sh not found in $SCRIPT_DIR"
-    exit 1
-fi
+#=============================================================================
+# VALIDATION
+#=============================================================================
 
-
-# Check required directories exist
-for dir in "modules" "templates"; do
-    if [[ ! -d "$SCRIPT_DIR/$dir" ]]; then
-        log_error "Required directory '$dir' not found in $SCRIPT_DIR"
+# Check source directory has required files
+for required in "zzcollab.sh" "lib" "modules" "templates"; do
+    if [[ ! -e "$SCRIPT_DIR/$required" ]]; then
+        log_error "Required file/directory not found: $SCRIPT_DIR/$required"
+        log_error "Run this script from the zzcollab source directory"
         exit 1
     fi
 done
 
 # Check for existing installation
-if [[ -e "$INSTALL_DIR/zzcollab" ]]; then
-    log_error "Installation target already exists: $INSTALL_DIR/zzcollab"
-    log_error "Please remove it first or choose a different installation directory:"
-    log_error "  tp $INSTALL_DIR/zzcollab"
-    log_error "  # OR"
-    log_error "  $0 --prefix /different/path"
-    exit 1
+if [[ -d "$ZZCOLLAB_HOME" ]]; then
+    if [[ "$FORCE" == "true" ]]; then
+        log_warn "Removing existing installation (--force)"
+        rm -rf "$ZZCOLLAB_HOME"
+    else
+        log_error "Installation already exists at $ZZCOLLAB_HOME"
+        log_error "Use --force to overwrite or --uninstall to remove"
+        exit 1
+    fi
 fi
 
-if [[ -d "$ZZCOLLAB_SUPPORT_DIR" ]]; then
-    log_info "Removing existing zzcollab support directory using tp (trash-put)..."
-    tp "$ZZCOLLAB_SUPPORT_DIR"
+#=============================================================================
+# INSTALLATION
+#=============================================================================
+
+log_info "Installing zzcollab v${VERSION} to $ZZCOLLAB_HOME"
+
+# Create installation directory
+mkdir -p "$ZZCOLLAB_HOME"
+
+# Copy directories
+log_info "Copying lib/..."
+cp -r "$SCRIPT_DIR/lib" "$ZZCOLLAB_HOME/"
+
+log_info "Copying modules/..."
+cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_HOME/"
+
+log_info "Copying templates/..."
+cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_HOME/"
+
+# Copy main entry point
+log_info "Copying zzcollab.sh..."
+cp "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/"
+chmod +x "$ZZCOLLAB_HOME/zzcollab.sh"
+
+# Update version in constants
+if [[ -f "$ZZCOLLAB_HOME/lib/constants.sh" ]]; then
+    sed -i.bak "s/ZZCOLLAB_VERSION=.*/ZZCOLLAB_VERSION=\"$VERSION\"/" \
+        "$ZZCOLLAB_HOME/lib/constants.sh" 2>/dev/null || true
+    rm -f "$ZZCOLLAB_HOME/lib/constants.sh.bak"
 fi
 
-# Create support directory
-log_info "Creating support directory structure..."
-mkdir -p "$ZZCOLLAB_SUPPORT_DIR"
+log_success "Installed to $ZZCOLLAB_HOME"
 
-# Copy modules and templates
-log_info "Copying modules directory..."
-cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_SUPPORT_DIR/"
+#=============================================================================
+# SYMLINK
+#=============================================================================
 
-log_info "Copying templates directory..."
-cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_SUPPORT_DIR/"
+if [[ "$CREATE_SYMLINK" == "true" ]]; then
+    # Create bin directory if needed
+    if [[ ! -d "$BIN_DIR" ]]; then
+        log_info "Creating $BIN_DIR"
+        mkdir -p "$BIN_DIR"
+    fi
 
-# Copy navigation_scripts.sh to modules
-log_info "Copying navigation_scripts.sh to modules..."
-if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
-    cp "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_SUPPORT_DIR/modules/"
+    # Remove existing symlink or file
+    if [[ -e "$BIN_DIR/zzcollab" ]]; then
+        if [[ "$FORCE" == "true" ]]; then
+            rm -f "$BIN_DIR/zzcollab"
+        else
+            log_warn "$BIN_DIR/zzcollab already exists"
+            log_warn "Use --force to overwrite"
+        fi
+    fi
+
+    # Create symlink
+    if [[ ! -e "$BIN_DIR/zzcollab" ]]; then
+        ln -s "$ZZCOLLAB_HOME/zzcollab.sh" "$BIN_DIR/zzcollab"
+        log_success "Created symlink: $BIN_DIR/zzcollab"
+    fi
+
+    # Check PATH
+    if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+        echo ""
+        log_warn "$BIN_DIR is not in your PATH"
+        log_warn "Add to your shell config (~/.bashrc or ~/.zshrc):"
+        echo ""
+        echo "    export PATH=\"$BIN_DIR:\$PATH\""
+        echo ""
+    fi
+fi
+
+#=============================================================================
+# VERIFICATION
+#=============================================================================
+
+log_info "Verifying installation..."
+
+# Test that it can be sourced
+if bash -n "$ZZCOLLAB_HOME/zzcollab.sh" 2>/dev/null; then
+    log_success "Syntax check passed"
 else
-    log_warn "navigation_scripts.sh not found - skipping"
-fi
-
-# Update constants.sh for installed version
-log_info "Updating constants.sh for installed version..."
-sed "s|readonly ZZCOLLAB_SCRIPT_DIR=.*|readonly ZZCOLLAB_SCRIPT_DIR=\"$ZZCOLLAB_SUPPORT_DIR\"|" \
-    "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh" > "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh.tmp" \
-    && mv "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh.tmp" "$ZZCOLLAB_SUPPORT_DIR/modules/constants.sh"
-
-# Create the main zzcollab executable
-log_info "Creating main executable..."
-cat > "$INSTALL_DIR/zzcollab" << 'EOF'
-#!/bin/bash
-##############################################################################
-# ZZCOLLAB MAIN EXECUTABLE (Installed Version)
-##############################################################################
-
-set -euo pipefail
-
-# Determine the installation directory
-INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ZZCOLLAB_SUPPORT_DIR="$INSTALL_DIR/zzcollab-support"
-
-# Set up paths for the installed version
-SCRIPT_DIR="$ZZCOLLAB_SUPPORT_DIR"
-TEMPLATES_DIR="$SCRIPT_DIR/templates"
-MODULES_DIR="$SCRIPT_DIR/modules"
-
-# Validate installation
-if [[ ! -d "$MODULES_DIR" ]]; then
-    echo "❌ Error: Modules directory not found: $MODULES_DIR"
-    echo "❌ zzcollab installation may be corrupted"
+    log_error "Syntax errors in zzcollab.sh"
     exit 1
 fi
 
-if [[ ! -d "$TEMPLATES_DIR" ]]; then
-    echo "❌ Error: Templates directory not found: $TEMPLATES_DIR"
-    echo "❌ zzcollab installation may be corrupted"
-    exit 1
-fi
-
-# Source the main zzcollab script logic
-EOF
-
-# Append the main zzcollab.sh content (excluding the shebang and initial setup)
-# Filter out duplicate readonly declarations that would conflict
-tail -n +18 "$SCRIPT_DIR/zzcollab.sh" | grep -v "^readonly SCRIPT_DIR=" | grep -v "^readonly TEMPLATES_DIR=" | grep -v "^readonly MODULES_DIR=" | grep -v "^readonly ZZCOLLAB_SCRIPT_DIR=" >> "$INSTALL_DIR/zzcollab"
-
-# Make the main executable
-chmod +x "$INSTALL_DIR/zzcollab"
-
-
-# Create installation info file
-cat > "$INSTALL_DIR/README_zzcollab.md" << EOF
-# ZZCOLLAB Installation
-
-This directory contains a complete installation of zzcollab.
-
-## Installation Details
-- Installed on: $(date)
-- Installed from: $SCRIPT_DIR
-- Installation directory: $INSTALL_DIR
-- Support files: $ZZCOLLAB_SUPPORT_DIR
-
-## Files
-- \`zzcollab\` - Main executable (includes --init for team setup)
-- \`zzcollab-support/\` - Support files directory
-- \`README_zzcollab.md\` - This file
-
-## Usage
-Run \`zzcollab --help\` for regular usage or \`zzcollab --init --help\` for team setup.
-
-## Uninstall
-To remove zzcollab:
-\`\`\`bash
-rm -f $INSTALL_DIR/zzcollab
-rm -rf $ZZCOLLAB_SUPPORT_DIR
-rm -f $INSTALL_DIR/README_zzcollab.md
-\`\`\`
-EOF
+# Count files
+lib_count=$(find "$ZZCOLLAB_HOME/lib" -name "*.sh" | wc -l | tr -d ' ')
+mod_count=$(find "$ZZCOLLAB_HOME/modules" -name "*.sh" | wc -l | tr -d ' ')
+tmpl_count=$(find "$ZZCOLLAB_HOME/templates" -type f | wc -l | tr -d ' ')
 
 log_success "Installation complete!"
 echo ""
-log_info "📁 Installed files:"
-log_info "   Main executable: $INSTALL_DIR/zzcollab"
-log_info "   Support files: $ZZCOLLAB_SUPPORT_DIR"
-log_info "   Documentation: $INSTALL_DIR/README_zzcollab.md"
+echo "Installed:"
+echo "  - $lib_count library files"
+echo "  - $mod_count module files"
+echo "  - $tmpl_count template files"
 echo ""
 
-# Test the installation
-log_info "🧪 Testing installation..."
-if "$INSTALL_DIR/zzcollab" --help > /dev/null 2>&1; then
-    log_success "Installation test passed!"
+if [[ "$CREATE_SYMLINK" == "true" ]] && [[ -L "$BIN_DIR/zzcollab" ]]; then
+    echo "Run: zzcollab --help"
 else
-    log_error "Installation test failed - zzcollab may not work correctly"
+    echo "Run: $ZZCOLLAB_HOME/zzcollab.sh --help"
 fi
-
-# Check if directory is in PATH
-if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-    echo ""
-    log_warn "⚠️  $INSTALL_DIR is not in your PATH"
-    log_warn "Add this to your shell config file (~/.bashrc, ~/.zshrc):"
-    log_warn "export PATH=\"$INSTALL_DIR:\$PATH\""
-    echo ""
-    log_info "Or run zzcollab with full path: $INSTALL_DIR/zzcollab"
-else
-    echo ""
-    log_success "🚀 zzcollab is ready! Run 'zzcollab --help' to get started"
-fi
-
-echo ""
-log_info "📖 See $INSTALL_DIR/README_zzcollab.md for installation details"

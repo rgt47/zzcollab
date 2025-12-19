@@ -45,10 +45,12 @@ fi
 readonly ZZCOLLAB_HOME
 
 # Derived directories - built from ZZCOLLAB_HOME
-readonly ZZCOLLAB_BIN_DIR="$ZZCOLLAB_HOME/bin"
-readonly ZZCOLLAB_LIB_DIR="$ZZCOLLAB_HOME/lib"
-readonly ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_HOME/modules"
-readonly ZZCOLLAB_TEMPLATES_DIR="$ZZCOLLAB_HOME/templates"
+# Only set if not already defined (allows zzcollab.sh to pre-set paths)
+[[ -z "${ZZCOLLAB_BIN_DIR:-}" ]] && ZZCOLLAB_BIN_DIR="$ZZCOLLAB_HOME/bin"
+[[ -z "${ZZCOLLAB_LIB_DIR:-}" ]] && ZZCOLLAB_LIB_DIR="$ZZCOLLAB_HOME/lib"
+[[ -z "${ZZCOLLAB_MODULES_DIR:-}" ]] && ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_HOME/modules"
+[[ -z "${ZZCOLLAB_TEMPLATES_DIR:-}" ]] && ZZCOLLAB_TEMPLATES_DIR="$ZZCOLLAB_HOME/templates"
+readonly ZZCOLLAB_BIN_DIR ZZCOLLAB_LIB_DIR ZZCOLLAB_MODULES_DIR ZZCOLLAB_TEMPLATES_DIR
 
 # Legacy compatibility aliases
 readonly ZZCOLLAB_SCRIPT_DIR="$ZZCOLLAB_HOME"

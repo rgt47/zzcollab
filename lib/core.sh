@@ -400,50 +400,47 @@ validate_commands_exist() {
 #=============================================================================
 
 # Function: require_module
-# Purpose: Unified module dependency validation system
+# Purpose: Load modules on demand with dependency tracking
 #
 # DESCRIPTION:
-#   This function provides centralized dependency checking for all zzcollab modules.
-#   It replaces 17 duplicate validation patterns that were scattered across modules,
-#   providing consistent error handling and dependency management.
+#   If entry point hasn't defined this function, provide a default loader.
+#   When called by modules, this loads any dependencies that haven't been loaded yet.
 #
 # ARGUMENTS:
-#   $1+ - Module names to check (e.g., "core", "templates", "config")
-#         Module names should be lowercase, matching the filename without .sh extension
+#   $1+ - Module names to load (e.g., "core", "templates", "config")
 #
 # USAGE EXAMPLES:
 #   require_module "core"                    # Single dependency
 #   require_module "core" "templates"        # Multiple dependencies
-#   require_module "constants" "core" "cli"  # Chain of dependencies
 #
-require_module() {
-    local current_module="${BASH_SOURCE[2]##*/}"
-    current_module="${current_module%.sh}"
+if ! declare -f require_module >/dev/null 2>&1; then
+    require_module() {
+        for module in "$@"; do
+            # Check if already loaded via flag
+            local module_upper
+            module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
+            local module_var="ZZCOLLAB_${module_upper}_LOADED"
 
-    for module in "$@"; do
-        local module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
-        local module_var="ZZCOLLAB_${module_upper}_LOADED"
+            if [[ "${!module_var:-}" == "true" ]]; then
+                continue
+            fi
 
-        if [[ "${!module_var:-}" != "true" ]]; then
-            {
-                echo "❌ Module Dependency Error: ${current_module}.sh requires ${module}.sh"
-                echo ""
-                echo "Module '${module}.sh' was not loaded before '${current_module}.sh'."
-                echo "This is a framework initialization error."
-                echo ""
-                echo "Recovery steps:"
-                echo "  1. Check module loading order in zzcollab.sh"
-                echo "  2. Ensure modules are sourced in correct order:"
-                echo "     - lib/constants.sh must load first"
-                echo "     - lib/core.sh must load before any other module"
-                echo "     - Modules must load in dependency order"
-                echo ""
-                echo "See: docs/DEVELOPMENT.md for module initialization details"
-            } >&2
-            exit 1
-        fi
-    done
-}
+            # Try to load from lib/ or modules/
+            local module_path=""
+            if [[ -f "${ZZCOLLAB_LIB_DIR}/${module}.sh" ]]; then
+                module_path="${ZZCOLLAB_LIB_DIR}/${module}.sh"
+            elif [[ -f "${ZZCOLLAB_MODULES_DIR}/${module}.sh" ]]; then
+                module_path="${ZZCOLLAB_MODULES_DIR}/${module}.sh"
+            else
+                echo "❌ Module not found: $module" >&2
+                exit 1
+            fi
+
+            # shellcheck source=/dev/null
+            source "$module_path"
+        done
+    }
+fi
 
 # Function: confirm
 # Purpose: Interactive confirmation prompt
