@@ -6,10 +6,35 @@ set -euo pipefail
 # Package dependency validation (pure shell, no R required)
 # Validates R packages in code are declared in DESCRIPTION and locked in renv.lock
 #
+# Can run standalone: ./validation.sh [options]
+# Or as module: require_module "validation"
+#
 # DEPENDENCIES: core.sh (logging, utilities)
 ##############################################################################
 
-require_module "core"
+# Bootstrap when run standalone (not sourced via require_module)
+if [[ -z "${ZZCOLLAB_CORE_LOADED:-}" ]]; then
+    # Determine zzcollab home from this script's location
+    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [[ "$_script_dir" == */modules ]]; then
+        ZZCOLLAB_HOME="${_script_dir%/modules}"
+    elif [[ -d "$HOME/.zzcollab" ]]; then
+        ZZCOLLAB_HOME="$HOME/.zzcollab"
+    else
+        echo "Error: Cannot determine ZZCOLLAB_HOME" >&2
+        exit 1
+    fi
+    export ZZCOLLAB_HOME
+    export ZZCOLLAB_LIB_DIR="$ZZCOLLAB_HOME/lib"
+    export ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_HOME/modules"
+
+    # Source core library directly
+    source "$ZZCOLLAB_LIB_DIR/core.sh"
+    unset _script_dir
+else
+    # Already loaded via require_module - just verify core is loaded
+    require_module "core"
+fi
 
 #==============================================================================
 # CONFIGURATION

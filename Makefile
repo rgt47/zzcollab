@@ -75,16 +75,16 @@ deps:
 	R -e "devtools::install_deps(dependencies = TRUE)"
 
 check-renv:
-	@bash modules/validation.sh --fix --strict --verbose
+	@./zzcollab.sh validate --fix --strict --verbose
 
 check-renv-no-fix:
-	@bash modules/validation.sh --no-fix --strict --verbose
+	@./zzcollab.sh validate --no-fix --strict --verbose
 
 check-renv-no-strict:
-	@bash modules/validation.sh --fix --verbose
+	@./zzcollab.sh validate --fix --verbose
 
 check-renv-ci:
-	@bash modules/validation.sh --fix --strict --verbose
+	@./zzcollab.sh validate --fix --strict --verbose
 
 # Docker targets (work without local R)
 # SAFETY IMPROVEMENT: docker-build is now safe by default

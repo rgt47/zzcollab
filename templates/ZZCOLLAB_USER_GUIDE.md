@@ -56,12 +56,12 @@ ZZCOLLAB uses a **two-layer reproducibility architecture**:
 
 ```bash
 # Initialize configuration
-zzcollab --config init
+zzcollab config init
 
 # Set your defaults
-zzcollab --config set team-name "myteam"
-zzcollab --config set github-account "myusername"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config set team-name "myteam"
+zzcollab config set github-account "myusername"
+zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Create First Project (3-4 minutes)
@@ -104,7 +104,7 @@ ZZCOLLAB's Docker profile system provides three ways to specify your computation
 
 ```bash
 # Method 1: Set in config (recommended)
-zzcollab --config set profile-name "bioinformatics"
+zzcollab config set profile-name "bioinformatics"
 mkdir study && cd study
 zzcollab  # Uses bioinformatics profile
 make docker-build
@@ -300,7 +300,7 @@ zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
 
 ```bash
 # Option A: Use predefined profile
-zzcollab --config set profile-name "bioinformatics"
+zzcollab config set profile-name "bioinformatics"
 
 # Option B: Use custom composition
 # (set via flags in step 2)
@@ -478,9 +478,9 @@ Solo developers get streamlined workflow without team image management:
 
 ```bash
 # One-time config
-zzcollab --config init
-zzcollab --config set team-name "myusername"
-zzcollab --config set profile-name "analysis"
+zzcollab config init
+zzcollab config set team-name "myusername"
+zzcollab config set profile-name "analysis"
 
 # Create project
 mkdir penguin-analysis && cd penguin-analysis
@@ -617,7 +617,7 @@ exit
 **What happens automatically on exit:**
 1. `renv::snapshot()` captures dependencies
 2. Timestamp adjusted to "7 days ago" for RSPM binary packages
-3. `modules/validation.sh` validates DESCRIPTION ↔ renv.lock consistency
+3. `zzcollab validate` checks DESCRIPTION ↔ renv.lock consistency
 4. Timestamp restored to current time for accurate git history
 
 #### Package Accumulation (Team Collaboration)
@@ -834,22 +834,22 @@ Settings at more specific levels override broader defaults:
 ### Configuration Commands
 
 ```bash
-zzcollab --config init                      # Create config file
-zzcollab --config set team-name "myteam"    # Set values
-zzcollab --config get team-name             # Get values
-zzcollab --config list                      # List all configuration
-zzcollab --config validate                  # Validate YAML syntax
+zzcollab config init                      # Create config file
+zzcollab config set team-name "myteam"    # Set values
+zzcollab config get team-name             # Get values
+zzcollab config list                      # List all configuration
+zzcollab config validate                  # Validate YAML syntax
 ```
 
 ### Common Configuration
 
 ```bash
 # One-time setup
-zzcollab --config init
-zzcollab --config set team-name "myteam"
-zzcollab --config set github-account "myusername"
-zzcollab --config set profile-name "analysis"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config init
+zzcollab config set team-name "myteam"
+zzcollab config set github-account "myusername"
+zzcollab config set profile-name "analysis"
+zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Project-Level Configuration
@@ -1014,16 +1014,16 @@ make docker-build  # Native ARM64 build
 
 ```bash
 # Auto-detect (default)
-zzcollab --config set docker.platform "auto"
+zzcollab config set docker.platform "auto"
 
 # Force AMD64 (works on both architectures)
-zzcollab --config set docker.platform "amd64"
+zzcollab config set docker.platform "amd64"
 
 # Force ARM64 (only on ARM64 systems)
-zzcollab --config set docker.platform "arm64"
+zzcollab config set docker.platform "arm64"
 
 # Use native platform
-zzcollab --config set docker.platform "native"
+zzcollab config set docker.platform "native"
 ```
 
 ## Summary

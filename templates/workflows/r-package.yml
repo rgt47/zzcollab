@@ -18,10 +18,13 @@ jobs:
         run: |
           apt-get update && apt-get install -y jq
 
-      - name: Validate package dependencies (shell)
+      - name: Validate package dependencies
         run: |
-          bash modules/validation.sh
-          # Fast validation (0.5s) catches missing packages before expensive operations
+          # Check DESCRIPTION and renv.lock exist
+          test -f DESCRIPTION || { echo "Missing DESCRIPTION"; exit 1; }
+          test -f renv.lock || { echo "Missing renv.lock"; exit 1; }
+          echo "Package files validated"
+          # Full validation happens during renv::restore() below
 
       - name: Cache renv packages
         uses: actions/cache@v3

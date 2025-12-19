@@ -70,26 +70,26 @@ deps:
 # Auto-adds missing packages to DESCRIPTION and renv.lock
 # Run this before `git commit` to catch issues locally (prevents CI failures)
 check-renv:
-	@bash modules/validation.sh --fix --strict --verbose
+	@zzcollab validate --fix --strict --verbose
 
 # Validation only, no auto-fix (report issues without modifying files)
 check-renv-no-fix:
-	@bash modules/validation.sh --no-fix --strict --verbose
+	@zzcollab validate --no-fix --strict --verbose
 
 # Standard mode validation (skip tests/, vignettes/, inst/ directories)
 check-renv-no-strict:
-	@bash modules/validation.sh --fix --verbose
+	@zzcollab validate --fix --verbose
 
 # Legacy: R-based validation (for CI/CD that has R pre-installed)
 # This is the old approach, kept for backward compatibility
 check-renv-ci:
-	@bash modules/validation.sh --fix --strict --verbose
+	@zzcollab validate --fix --strict --verbose
 
 # Check for missing system dependencies in Dockerfile
 # Scans codebase for R packages and detects missing system libraries
 # Suggests where to add missing deps in CUSTOM_SYSTEM_DEPS sections
 check-system-deps:
-	@bash modules/validation.sh --system-deps
+	@zzcollab validate --system-deps
 
 # Docker targets (work without local R)
 # Docker-first workflow:
@@ -165,7 +165,7 @@ r: check-renv
 	docker run --platform linux/amd64 --rm -it -v $$(pwd):$$HOME_DIR/project -v $$(pwd)/.cache/R/renv:$$HOME_DIR/.cache/R/renv $(PACKAGE_NAME); \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
-	bash modules/validation.sh --fix --strict --verbose || echo "⚠️  Package validation failed"
+	zzcollab validate --fix --strict --verbose || echo "⚠️  Package validation failed"
 
 # Alias for rstudio
 rstudio: docker-rstudio

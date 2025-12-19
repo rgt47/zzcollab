@@ -196,57 +196,18 @@ cmd_docker() {
 }
 
 cmd_validate() {
-    require_module "validation"
+    # Pass all arguments directly to validation.sh's main function
+    # This supports all validation flags: --fix, --strict, --verbose, --no-fix, --system-deps
 
-    local check_all=false
-    local check_structure=false
-    local check_packages=false
+    local validation_script="$ZZCOLLAB_MODULES_DIR/validation.sh"
 
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --all|-a) check_all=true; shift ;;
-            --structure|-s) check_structure=true; shift ;;
-            --packages|-p) check_packages=true; shift ;;
-            --help|-h)
-                cat << 'EOF'
-Usage: zzcollab validate [options]
-
-Options:
-  -a, --all        Run all validations
-  -s, --structure  Check directory structure
-  -p, --packages   Check R package dependencies
-  -h, --help       Show this help
-EOF
-                exit 0
-                ;;
-            *) log_error "Unknown option: $1"; exit 1 ;;
-        esac
-    done
-
-    # Default to all if nothing specified
-    if [[ "$check_all" == "false" && "$check_structure" == "false" && "$check_packages" == "false" ]]; then
-        check_all=true
+    if [[ ! -f "$validation_script" ]]; then
+        log_error "Validation module not found: $validation_script"
+        return 1
     fi
 
-    local exit_code=0
-
-    if [[ "$check_all" == "true" || "$check_structure" == "true" ]]; then
-        log_info "Validating project structure..."
-        validate_project_structure || exit_code=1
-    fi
-
-    if [[ "$check_all" == "true" || "$check_packages" == "true" ]]; then
-        log_info "Validating R packages..."
-        validate_r_packages || exit_code=1
-    fi
-
-    if [[ $exit_code -eq 0 ]]; then
-        log_success "All validations passed"
-    else
-        log_error "Some validations failed"
-    fi
-
-    return $exit_code
+    # Run validation.sh directly with all passed arguments
+    bash "$validation_script" "$@"
 }
 
 cmd_config() {
