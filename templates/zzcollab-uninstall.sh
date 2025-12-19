@@ -673,6 +673,9 @@ main() {
             [[ -d ".github" ]] && echo ".github"
             [[ -d ".github/workflows" ]] && echo ".github/workflows"
             [[ -d ".github/ISSUE_TEMPLATE" ]] && echo ".github/ISSUE_TEMPLATE"
+
+            # zzcollab metadata directory
+            [[ -d ".zzcollab" ]] && echo ".zzcollab"
         ) | sort -ru | sed 's/^/  /'
         
         echo "Docker images:"
@@ -721,13 +724,26 @@ main() {
     
     remove_manifest
 
-    # Final step: Remove the uninstall script itself and .zzcollab directory
+    # Final step: Remove remaining framework directories that may not be fully cleaned
+    # These directories are created by zzcollab and should be removed entirely
+
+    # Remove .github directory if it exists (may have remaining files not in manifest)
+    if [[ -d ".github" ]]; then
+        if confirm "Remove .github directory and all remaining contents?"; then
+            log_info "Removing .github directory..."
+            rm -rf .github
+            log_success "Removed .github directory"
+        fi
+    fi
+
+    # Remove the uninstall script itself and .zzcollab directory
     local uninstall_script=".zzcollab/uninstall.sh"
-    if [[ -f "$uninstall_script" ]]; then
-        log_info "Removing uninstall script: $uninstall_script"
-        # Use a subshell to delete the script and .zzcollab directory after this function exits
-        (sleep 1; rm -f "$uninstall_script" 2>/dev/null; rmdir .zzcollab 2>/dev/null) &
-        log_success "Uninstall script and .zzcollab directory will be removed in background"
+    if [[ -f "$uninstall_script" ]] || [[ -d ".zzcollab" ]]; then
+        log_info "Removing .zzcollab directory..."
+        # Use a subshell to delete the script and directory after this function exits
+        # Use rm -rf to ensure complete removal even if files remain
+        (sleep 1; rm -rf .zzcollab 2>/dev/null) &
+        log_success ".zzcollab directory will be removed in background"
     fi
 
     log_success "Uninstall completed!"
