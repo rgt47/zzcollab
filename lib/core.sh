@@ -129,20 +129,25 @@ log_success() {
 
 ##############################################################################
 # FUNCTION: validate_package_name
-# PURPOSE:  Converts current directory name into a valid R package name
-# USAGE:    validate_package_name
+# PURPOSE:  Converts name into a valid R package name
+# USAGE:    validate_package_name [name]
+#           If name not provided, uses current directory name
 # RETURNS:  0 - Success, outputs valid package name to stdout
 #           1 - Error, cannot create valid package name
 ##############################################################################
 validate_package_name() {
     local dir_name
-    dir_name=$(basename "$(pwd)")
+    if [[ $# -gt 0 ]]; then
+        dir_name="$1"
+    else
+        dir_name=$(basename "$(pwd)")
+    fi
 
     local pkg_name
     pkg_name=$(printf '%s' "$dir_name" | tr -cd '[:alnum:].' | head -c 50)
 
     if [[ -z "$pkg_name" ]]; then
-        echo "❌ Error: Cannot determine valid package name from directory '$dir_name'" >&2
+        echo "❌ Error: Cannot determine valid package name from '$dir_name'" >&2
         return 1
     fi
 
