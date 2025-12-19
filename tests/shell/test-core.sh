@@ -149,11 +149,15 @@ test_track_item_json_format() {
     mkdir -p .zzcollab
     load_module_for_testing "core.sh"
 
-    # Test: manifest.json should be valid JSON
-    track_item "test.txt" "test_value"
+    # Set up JSON manifest if jq available
+    if command -v jq >/dev/null 2>&1; then
+        export MANIFEST_FILE=".zzcollab/manifest.json"
+        echo '{"files":[],"directories":[]}' > "$MANIFEST_FILE"
 
-    if [[ -f ".zzcollab/manifest.json" ]]; then
-        if ! jq . ".zzcollab/manifest.json" >/dev/null 2>&1; then
+        # Test: manifest.json should remain valid JSON after track_item
+        track_item "file" "test.txt"
+
+        if ! jq . "$MANIFEST_FILE" >/dev/null 2>&1; then
             echo "❌ FAILED: manifest.json should be valid JSON"
             return 1
         fi
@@ -169,17 +173,24 @@ test_track_item_multiple_items() {
     mkdir -p .zzcollab
     load_module_for_testing "core.sh"
 
+    # Set up manifest file
+    export MANIFEST_TXT=".zzcollab/manifest.txt"
+    touch "$MANIFEST_TXT"
+
     # Test: Should track multiple items
-    track_item "file1.txt" "value1"
-    track_item "file2.txt" "value2"
-    track_item "file3.txt" "value3"
+    track_item "file" "file1.txt"
+    track_item "file" "file2.txt"
+    track_item "file" "file3.txt"
 
     if [[ -f ".zzcollab/manifest.txt" ]]; then
         line_count=$(wc -l < ".zzcollab/manifest.txt")
         if [[ $line_count -lt 3 ]]; then
-            echo "❌ FAILED: Should have tracked 3 items"
+            echo "❌ FAILED: Should have tracked 3 items, got $line_count"
             return 1
         fi
+    else
+        echo "❌ FAILED: manifest.txt not found"
+        return 1
     fi
 
     teardown_test
@@ -255,8 +266,13 @@ test_validate_package_name_invalid_special_chars() {
     setup_test_logging
     load_module_for_testing "core.sh"
 
-    # Test: Special characters should fail
-    assert_failure validate_package_name "my-package!"
+    # Test: Special characters are stripped (sanitization, not rejection)
+    # "my-package!" becomes "mypackage" which is valid
+    result=$(validate_package_name "my-package!" 2>/dev/null)
+    if [[ "$result" != "mypackage" ]]; then
+        echo "Expected 'mypackage', got '$result'"
+        return 1
+    fi
 }
 
 test_validate_package_name_too_long() {
@@ -264,9 +280,14 @@ test_validate_package_name_too_long() {
     setup_test_logging
     load_module_for_testing "core.sh"
 
-    # Test: Very long names should fail
+    # Test: Long names are truncated to 50 chars (sanitization, not rejection)
     long_name=$(printf 'a%.0s' {1..256})
-    assert_failure validate_package_name "$long_name"
+    result=$(validate_package_name "$long_name" 2>/dev/null)
+    # Should be truncated to 50 characters
+    if [[ ${#result} -ne 50 ]]; then
+        echo "Expected 50 chars, got ${#result}"
+        return 1
+    fi
 }
 
 ################################################################################

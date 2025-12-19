@@ -143,11 +143,10 @@ validate_base_image() {
     fi
 
     # Basic docker image format validation
-    # Format: [registry/]image[:tag]
-    # Registry can be: hostname, hostname:port, or org name
-    # Image name: alphanumeric, dots, hyphens, underscores
-    # Tag: alphanumeric, dots, hyphens, underscores
-    if ! [[ "$image" =~ ^[a-zA-Z0-9.-]+(/[a-zA-Z0-9._-]+)?(:[a-zA-Z0-9._-]+)?$ ]]; then
+    # Format: [registry[:port]/][org/]image[:tag]
+    # Allow: alphanumeric, dots, colons (port/tag), hyphens, underscores, slashes
+    # Must start with alphanumeric and not contain consecutive special chars
+    if ! [[ "$image" =~ ^[a-zA-Z0-9][a-zA-Z0-9.:/_-]*$ ]] || [[ "$image" =~ [/:]{2,} ]]; then
         log_error "Invalid base image reference: '$image'"
         log_error "Valid formats:"
         log_error "  - 'rocker/rstudio' (Docker Hub)"

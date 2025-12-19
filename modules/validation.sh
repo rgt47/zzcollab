@@ -113,6 +113,12 @@ add_package_to_description() {
     local pkg="$1" desc_file="DESCRIPTION"
     verify_description_file "$desc_file" true || return 1
 
+    # Check if package already exists (avoid duplicates)
+    if grep -qE "^[[:space:]]*${pkg}[,[:space:]]*$|^[[:space:]]*${pkg}$" "$desc_file"; then
+        log_info "$pkg already in DESCRIPTION"
+        return 0
+    fi
+
     local temp_desc; temp_desc=$(mktemp)
     cp "$desc_file" "$temp_desc"
 

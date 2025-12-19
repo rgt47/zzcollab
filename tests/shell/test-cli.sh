@@ -331,12 +331,13 @@ run_tests() {
     echo "=================================="
 
     for test in "${tests[@]}"; do
-        if $test 2>/dev/null; then
+        # Run each test in a subshell to isolate exit calls
+        if ( $test ) 2>/dev/null; then
             echo "✅ $test"
-            ((pass++))
+            pass=$((pass + 1))
         else
             echo "❌ $test"
-            ((fail++))
+            fail=$((fail + 1))
         fi
     done
 
@@ -345,7 +346,10 @@ run_tests() {
     echo "Results: $pass passed, $fail failed"
     echo "=================================="
 
-    return $((fail > 0 ? 1 : 0))
+    if [[ $fail -gt 0 ]]; then
+        return 1
+    fi
+    return 0
 }
 
 # Run all tests if script is executed directly
