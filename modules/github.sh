@@ -3,169 +3,219 @@ set -euo pipefail
 ##############################################################################
 # ZZCOLLAB GITHUB MODULE
 ##############################################################################
-# 
-# PURPOSE: GitHub integration and repository management
+#
+# PURPOSE: GitHub integration, repository management, and CI/CD workflows
 #          - Repository creation and initialization
 #          - Git workflow automation
+#          - GitHub Actions workflows for CI/CD
 #          - Team collaboration setup
-#          - GitHub CLI integration
 #
-# DEPENDENCIES: core.sh (logging)
+# DEPENDENCIES: core.sh, templates.sh
 ##############################################################################
 
+require_module "core" "templates"
+
 #=============================================================================
-# GITHUB REPOSITORY CREATION
+# GITHUB PREREQUISITES
 #=============================================================================
 
-# Function: validate_github_prerequisites
-# Purpose: Validate GitHub CLI and authentication prerequisites
-# Returns: 0 on success, 1 on failure
 validate_github_prerequisites() {
     if ! command -v gh >/dev/null 2>&1; then
-        log_error "GitHub CLI (gh) is not installed. Please install it:"
-        log_error "  brew install gh  (macOS) or see https://cli.github.com/"
+        log_error "GitHub CLI (gh) not installed. Install: brew install gh"
         return 1
     fi
-    
     if ! gh auth status >/dev/null 2>&1; then
-        log_error "GitHub CLI is not authenticated. Please run: gh auth login"
+        log_error "GitHub CLI not authenticated. Run: gh auth login"
         return 1
     fi
-    
     return 0
 }
 
-# Function: prepare_github_repository
-# Purpose: Initialize git repository and commit project files
-# Arguments: $1 - github_account, $2 - project_name
-# Returns: 0 on success, 1 on failure
+#=============================================================================
+# REPOSITORY MANAGEMENT
+#=============================================================================
+
 prepare_github_repository() {
-    local github_account="$1"
-    local project_name="$2"
-    
-    # Check if repository already exists
+    local github_account="$1" project_name="$2"
+
     if gh repo view "${github_account}/${project_name}" >/dev/null 2>&1; then
-        log_error "Repository ${github_account}/${project_name} already exists on GitHub!"
-        log_info "Options:"
-        log_info "  1. Delete existing: gh repo delete ${github_account}/${project_name} --confirm"
-        log_info "  2. Use different name: --project-name NEW_NAME"
-        log_info "  3. Push manually: git remote add origin https://github.com/${github_account}/${project_name}.git"
+        log_error "Repository ${github_account}/${project_name} already exists"
+        log_info "Delete: gh repo delete ${github_account}/${project_name} --confirm"
         return 1
     fi
-    
-    # Initialize git if not already done
-    if [[ ! -d ".git" ]]; then
-        log_info "Initializing git repository..."
-        git init
-    fi
-    
-    # Stage and commit all files
-    log_info "Staging and committing project files..."
-    git add .
-    if git diff --staged --quiet; then
-        log_info "No changes to commit"
-    else
-        git commit -m "🎉 Initial zzcollab project setup
 
-- Complete research compendium structure
+    [[ -d ".git" ]] || git init
+    git add .
+    if ! git diff --staged --quiet; then
+        git commit -m "Initial zzcollab project setup
+
+- Research compendium structure
 - Docker containerization ready
 - CI/CD workflows configured
-- Private repository for collaborative development
 
-🤖 Generated with [zzcollab](https://github.com/rgt47/zzcollab) --github
-
-Co-Authored-By: zzcollab <noreply@zzcollab.dev>"
+Generated with zzcollab --github"
     fi
-    
     return 0
 }
 
-# Function: create_and_push_repository
-# Purpose: Create GitHub repository and push code
-# Arguments: $1 - github_account, $2 - project_name
-# Returns: 0 on success, 1 on failure
 create_and_push_repository() {
-    local github_account="$1"
-    local project_name="$2"
-    
-    # Create private GitHub repository
+    local github_account="$1" project_name="$2"
+
     log_info "Creating private repository on GitHub..."
     gh repo create "${github_account}/${project_name}" \
         --private \
-        --description "Research compendium for ${project_name} project" \
+        --description "Research compendium for ${project_name}" \
         --clone=false
-    
-    # Add remote and push
-    log_info "Adding remote and pushing to GitHub..."
+
     git remote add origin "https://github.com/${github_account}/${project_name}.git"
     git branch -M main
     git push -u origin main
-    
     return 0
 }
 
-# Function: show_collaboration_guidance
-# Purpose: Display final success message and collaboration instructions
-# Arguments: $1 - github_account, $2 - project_name
 show_collaboration_guidance() {
-    local github_account="$1"
-    local project_name="$2"
-    
-    log_success "✅ GitHub repository created: https://github.com/${github_account}/${project_name}"
-    log_info ""
-    log_info "🎉 Team collaboration ready!"
-    log_info ""
-    log_info "Team members can now join with:"
+    local github_account="$1" project_name="$2"
+
+    log_success "GitHub repository created: https://github.com/${github_account}/${project_name}"
+    log_info "Team members can join with:"
     log_info "  git clone https://github.com/${github_account}/${project_name}.git"
-    log_info "  cd ${project_name}"
-    if [[ -n "$TEAM_NAME" ]]; then
-        log_info "  zzcollab -t ${TEAM_NAME} -p ${project_name} --use-team-image"
-    else
-        log_info "  zzcollab"
-    fi
+    log_info "  cd ${project_name} && zzcollab"
 }
 
-# Function: create_github_repository_workflow
-# Purpose: Create GitHub repository and push project (coordinating function)
-# Returns: 0 on success, 1 on failure
-# Globals: GITHUB_ACCOUNT, TEAM_NAME, PROJECT_NAME
 create_github_repository_workflow() {
-    # Validate GitHub CLI prerequisites
-    if ! validate_github_prerequisites; then
-        return 1
-    fi
-    
-    # Set GitHub account (use team name if not specified)
+    validate_github_prerequisites || return 1
+
     local github_account="${GITHUB_ACCOUNT:-$TEAM_NAME}"
-    if [[ -z "$github_account" ]]; then
-        log_error "GitHub account not specified. Use --github-account or --team flag"
-        return 1
-    fi
-    
-    # Determine project name (use current directory if not specified)
+    [[ -z "$github_account" ]] && { log_error "GitHub account not specified"; return 1; }
+
     local project_name="${PROJECT_NAME:-$(basename "$(pwd)")}"
-    
-    log_info "Creating GitHub repository: ${github_account}/${project_name}"
-    
-    # Prepare git repository and commit files
-    if ! prepare_github_repository "$github_account" "$project_name"; then
-        return 1
-    fi
-    
-    # Create GitHub repository and push
-    if ! create_and_push_repository "$github_account" "$project_name"; then
-        return 1
-    fi
-    
-    # Show collaboration guidance
+    log_info "Creating repository: ${github_account}/${project_name}"
+
+    prepare_github_repository "$github_account" "$project_name" || return 1
+    create_and_push_repository "$github_account" "$project_name" || return 1
     show_collaboration_guidance "$github_account" "$project_name"
-    
-    return 0
 }
 
 #=============================================================================
-# GITHUB MODULE VALIDATION
+# GITHUB ACTIONS WORKFLOWS (merged from cicd.sh)
 #=============================================================================
 
-# Set github module loaded flag
+create_github_workflows() {
+    log_debug "Creating GitHub Actions workflows..."
+
+    local workflows_dir=".github/workflows"
+    safe_mkdir "$workflows_dir" "GitHub workflows directory" || return 1
+
+    if install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" \
+        "R package validation workflow" "Created R package workflow"; then
+        log_info "  - Triggers: push/PR to main"
+        log_info "  - Actions: R CMD check, tests"
+    else
+        log_error "Failed to create R package workflow"
+        return 1
+    fi
+
+    local paper_workflow_template
+    paper_workflow_template=$(get_workflow_template 2>/dev/null || echo "workflows/render-report.yml")
+    if install_template "$paper_workflow_template" ".github/workflows/render-report.yml" \
+        "Report rendering workflow" "Created report rendering workflow"; then
+        log_info "  - Triggers: changes to analysis/, R/"
+        log_info "  - Output: PDF artifacts"
+    else
+        log_error "Failed to create report workflow"
+        return 1
+    fi
+
+    log_success "GitHub Actions workflows created"
+}
+
+create_github_templates() {
+    log_debug "Creating GitHub repository templates..."
+
+    local pr_template='## Description
+Brief description of changes.
+
+## Type of change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+- [ ] Analysis update
+
+## Checklist
+- [ ] Tests pass locally
+- [ ] Code follows style guidelines
+- [ ] Documentation updated'
+
+    if create_file_if_missing ".github/pull_request_template.md" "$pr_template" "PR template"; then
+        track_file ".github/pull_request_template.md"
+    fi
+
+    local issue_dir=".github/ISSUE_TEMPLATE"
+    safe_mkdir "$issue_dir" "issue templates directory"
+
+    local bug_template='---
+name: Bug report
+about: Report a bug
+title: "[BUG] "
+labels: bug
+---
+
+**Describe the bug**
+What happened?
+
+**To Reproduce**
+Steps to reproduce.
+
+**Expected behavior**
+What should happen.
+
+**Environment**
+- OS:
+- R Version:
+- Docker: Yes/No'
+
+    if create_file_if_missing "$issue_dir/bug_report.md" "$bug_template" "bug template"; then
+        track_file "$issue_dir/bug_report.md"
+    fi
+
+    local feature_template='---
+name: Feature request
+about: Suggest an idea
+title: "[FEATURE] "
+labels: enhancement
+---
+
+**Problem**
+Describe the problem.
+
+**Solution**
+What you want.
+
+**Alternatives**
+Other options considered.'
+
+    if create_file_if_missing "$issue_dir/feature_request.md" "$feature_template" "feature template"; then
+        track_file "$issue_dir/feature_request.md"
+    fi
+
+    log_success "GitHub templates created"
+}
+
+show_cicd_summary() {
+    log_info "CI/CD summary:"
+    cat << 'EOF' >&2
+GitHub Actions Workflows:
+  .github/workflows/r-package.yml     - R package validation
+  .github/workflows/render-report.yml - Report rendering
+
+Push to GitHub to activate workflows.
+EOF
+}
+
+#=============================================================================
+# MODULE LOADED FLAG
+#=============================================================================
+
 readonly ZZCOLLAB_GITHUB_LOADED=true
+readonly ZZCOLLAB_CICD_LOADED=true

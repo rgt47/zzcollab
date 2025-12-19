@@ -19,11 +19,11 @@ audit of the zzcollab codebase. The refactoring addresses:
 
 | Module | Lines | Purpose | Consolidation Target |
 |--------|-------|---------|----------------------|
-| validation.sh | 2,093 | Package validation | → `bin/validate.sh` |
 | help.sh | 1,651 | Help system | Keep as `modules/help.sh` |
 | profile_validation.sh | 1,198 | Docker profiles | → `modules/profiles.sh` |
 | docker.sh | 1,115 | Docker operations | → `modules/docker.sh` |
-| config.sh | 1,015 | Configuration | Keep as `modules/config.sh` |
+| validation.sh | 486 | Package validation | → `bin/validate.sh` ✅ TRIMMED (was 2,093) |
+| config.sh | 284 | Configuration | Keep as `modules/config.sh` ✅ TRIMMED (was 1,015) |
 | analysis.sh | 997 | Analysis structure | → `modules/project.sh` |
 | dockerfile_generator.sh | 840 | Dockerfile creation | Absorb into `docker.sh` |
 | cli.sh | 680 | CLI parsing | Keep as `modules/cli.sh` |
@@ -39,8 +39,8 @@ audit of the zzcollab codebase. The refactoring addresses:
 | ~~help_guides.sh~~ | ~~156~~ | ~~Markdown guides~~ | **REMOVED** ✅ |
 | constants.sh | 127 | Global constants | → `lib/constants.sh` |
 | utils.sh | 71 | Utilities | Absorb into `lib/core.sh` |
-| **Current Total** | **~12,200** | | |
-| **After Consolidation** | **~12,200** | 18 → 14 files | |
+| **Current Total** | **~9,862** | (saved ~2,338 lines from trimming) | |
+| **After Consolidation** | **~9,862** | 18 → 14 files | |
 
 ### 1.2 Current Installation Structure
 
@@ -629,6 +629,12 @@ rm templates/zzcollab-uninstall.sh  # Replaced by subcommand
 
 ### Phase 2: Directory Restructure ✅ IN PROGRESS
 
+**Module Trimming (Bash 3.2 compatible):**
+- ~~config.sh: 1,015 → 284 lines~~ ✅ (72% reduction)
+- ~~validation.sh: 2,093 → 486 lines~~ ✅ (77% reduction)
+- Total savings: ~2,338 lines
+
+**Library consolidation:**
 1. ~~Create lib/ directory~~ ✅
 2. ~~Create bin/ directory~~ ✅
 3. ~~Consolidate core.sh + utils.sh → lib/core.sh~~ ✅ (471 lines)
@@ -648,34 +654,29 @@ lib/templates.sh  (181 lines) - template processing
 Total: 771 lines in 3 files
 ```
 
-### Phase 3: Module Consolidation
+### Phase 3: Module Consolidation ✅ IN PROGRESS
 
-**Dependency analysis before merging:**
-```
-dockerfile_generator.sh depends on: core, profile_validation
-docker.sh depends on: core, templates
-cicd.sh depends on: core, templates
-github.sh depends on: core, templates, cli, config
-profile_validation.sh depends on: core
-system_deps_map.sh depends on: core
-structure.sh depends on: core
-analysis.sh depends on: core, templates, structure
-rpackage.sh depends on: core, templates
-devtools.sh depends on: core, templates
-```
+**Completed consolidations:**
+1. ✅ cicd.sh → github.sh (300 + 171 → 221 lines, 53% reduction)
+2. ✅ profile_validation.sh + system_deps_map.sh → profiles.sh (1198 + 249 → 270 lines, 81% reduction)
 
-**Consolidation order (respecting dependencies):**
-1. Merge profile_validation.sh + system_deps_map.sh → profiles.sh
-   - Both depend only on core, no circular deps
-2. Merge structure.sh + analysis.sh + rpackage.sh + devtools.sh → project.sh
-   - Order: structure first, then others
-3. Merge dockerfile_generator.sh → docker.sh
-   - After profiles.sh exists (dockerfile_generator needs profile_validation)
-4. Merge cicd.sh → github.sh
-   - Straightforward merge
+**Remaining consolidations:**
+3. dockerfile_generator.sh → docker.sh (840 + 1115 lines)
+   - docker.sh already sources dockerfile_generator.sh internally
+   - Complex integration with many functions
+   - Lower priority: minimal duplication, works as-is
+4. structure.sh + analysis.sh + rpackage.sh + devtools.sh → project.sh
+   - Project structure creation modules
+   - Can be consolidated in follow-up
 
-5. Update all require_module() calls for new paths
-6. Delete absorbed source files
+**Files created:**
+- modules/github.sh (221 lines) - merged github + cicd
+- modules/profiles.sh (270 lines) - merged profiles + system_deps_map
+
+**Files to delete after verification:**
+- ~~modules/cicd.sh~~ (absorbed into github.sh)
+- ~~modules/profile_validation.sh~~ (absorbed into profiles.sh)
+- ~~modules/system_deps_map.sh~~ (absorbed into profiles.sh)
 
 ### Phase 4: Subcommand Implementation
 
