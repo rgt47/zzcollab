@@ -17,29 +17,30 @@ audit of the zzcollab codebase. The refactoring addresses:
 
 ### 1.1 Codebase Size by Module
 
-| Module | Lines | Purpose | Status |
-|--------|-------|---------|--------|
-| validation.sh | 2,093 | Package validation | Active, standalone tool candidate |
-| help.sh | 1,651 | Help system | Monolithic, needs integration |
-| profile_validation.sh | 1,198 | Docker profiles | Active |
-| docker.sh | 1,115 | Docker operations | Active |
-| config.sh | 1,015 | Configuration | Active |
-| analysis.sh | 997 | Analysis structure | Active |
-| dockerfile_generator.sh | 840 | Dockerfile creation | Active |
-| cli.sh | 680 | CLI parsing | Cleaned, needs refactoring |
-| core.sh | 562 | Logging/tracking | Move to lib/ |
-| rpackage.sh | 387 | R package structure | Active |
-| devtools.sh | 322 | Dev tools | Active |
-| cicd.sh | 300 | CI/CD workflows | Active |
-| system_deps_map.sh | 248 | System dependencies | Active |
-| templates.sh | 239 | Template handling | Active |
-| ~~help_core.sh~~ | ~~231~~ | ~~Help dispatcher~~ | **REMOVED** |
-| structure.sh | 179 | Directory structure | Active |
-| github.sh | 170 | GitHub integration | Active |
-| ~~help_guides.sh~~ | ~~156~~ | ~~Markdown guides~~ | **REMOVED** |
-| constants.sh | 127 | Global constants | Move to lib/ |
-| utils.sh | 71 | Utilities | Move to lib/ |
-| **Total** | **~12,200** | | After cleanup |
+| Module | Lines | Purpose | Consolidation Target |
+|--------|-------|---------|----------------------|
+| validation.sh | 2,093 | Package validation | → `bin/validate.sh` |
+| help.sh | 1,651 | Help system | Keep as `modules/help.sh` |
+| profile_validation.sh | 1,198 | Docker profiles | → `modules/profiles.sh` |
+| docker.sh | 1,115 | Docker operations | → `modules/docker.sh` |
+| config.sh | 1,015 | Configuration | Keep as `modules/config.sh` |
+| analysis.sh | 997 | Analysis structure | → `modules/project.sh` |
+| dockerfile_generator.sh | 840 | Dockerfile creation | Absorb into `docker.sh` |
+| cli.sh | 680 | CLI parsing | Keep as `modules/cli.sh` |
+| core.sh | 562 | Logging/tracking | → `lib/core.sh` |
+| rpackage.sh | 387 | R package structure | → `modules/project.sh` |
+| devtools.sh | 322 | Dev tools | → `modules/project.sh` |
+| cicd.sh | 300 | CI/CD workflows | → `modules/github.sh` |
+| system_deps_map.sh | 248 | System dependencies | → `modules/profiles.sh` |
+| templates.sh | 239 | Template handling | → `lib/templates.sh` |
+| ~~help_core.sh~~ | ~~231~~ | ~~Help dispatcher~~ | **REMOVED** ✅ |
+| structure.sh | 179 | Directory structure | → `modules/project.sh` |
+| github.sh | 170 | GitHub integration | Keep as `modules/github.sh` |
+| ~~help_guides.sh~~ | ~~156~~ | ~~Markdown guides~~ | **REMOVED** ✅ |
+| constants.sh | 127 | Global constants | → `lib/constants.sh` |
+| utils.sh | 71 | Utilities | Absorb into `lib/core.sh` |
+| **Current Total** | **~12,200** | | |
+| **After Consolidation** | **~12,200** | 18 → 14 files | |
 
 ### 1.2 Current Installation Structure
 
@@ -323,34 +324,27 @@ Options:
 
 ## Part 3: Directory Structure Refactoring
 
-### 3.1 Target Installation Structure
+### 3.1 Target Installation Structure (After Consolidation)
 
 ```
 ~/.zzcollab/                             # Hidden framework home
-    ├── zzcollab.sh                      # Main CLI entry point
-    ├── lib/                             # Shared libraries
-    │   ├── core.sh                      # Logging, tracking (from modules/)
-    │   ├── utils.sh                     # Utility functions (from modules/)
-    │   └── constants.sh                 # Global constants (from modules/)
-    ├── modules/                         # Internal CLI modules
-    │   ├── cli.sh                       # Subcommand routing (refactored)
+    ├── bin/                             # Executables (4 files)
+    │   ├── zzcollab.sh                  # Main CLI entry point
+    │   ├── validate.sh                  # Package validation (from modules/)
+    │   ├── uninstall.sh                 # Project uninstall (new)
+    │   └── nav.sh                       # Navigation setup (extracted)
+    ├── lib/                             # Shared libraries (3 files)
+    │   ├── constants.sh                 # Global constants
+    │   ├── core.sh                      # Logging, tracking, utilities (absorbs utils.sh)
+    │   └── templates.sh                 # Template handling
+    ├── modules/                         # CLI modules (7 files)
+    │   ├── cli.sh                       # CLI parsing, subcommand routing
     │   ├── config.sh                    # Configuration management
-    │   ├── docker.sh                    # Docker operations
-    │   ├── dockerfile_generator.sh      # Dockerfile creation
-    │   ├── profile_validation.sh        # Profile system
-    │   ├── structure.sh                 # Directory creation
-    │   ├── templates.sh                 # Template handling
-    │   ├── rpackage.sh                  # R package files
-    │   ├── analysis.sh                  # Analysis structure
-    │   ├── cicd.sh                      # CI/CD workflows
-    │   ├── devtools.sh                  # Development tools
-    │   ├── github.sh                    # GitHub integration
-    │   ├── system_deps_map.sh           # System dependencies
-    │   └── help.sh                      # Help system (consolidated)
-    ├── bin/                             # Standalone tools
-    │   ├── validate.sh                  # Package validation
-    │   ├── uninstall.sh                 # Project uninstall
-    │   └── nav.sh                       # Navigation setup
+    │   ├── docker.sh                    # Docker ops (absorbs dockerfile_generator.sh)
+    │   ├── github.sh                    # GitHub/CI (absorbs cicd.sh)
+    │   ├── help.sh                      # Help system
+    │   ├── profiles.sh                  # Profiles (absorbs profile_validation + system_deps_map)
+    │   └── project.sh                   # Project structure (absorbs structure + analysis + rpackage + devtools)
     └── templates/                       # Project scaffolding
         ├── Makefile                     # Updated for subcommands
         ├── Dockerfile.*                 # Docker templates
@@ -361,7 +355,9 @@ Options:
         # NO modules/ directory
         # NO zzcollab-uninstall.sh
 
-~/bin/zzcollab                           # Symlink → ~/.zzcollab/zzcollab.sh
+~/bin/zzcollab                           # Symlink → ~/.zzcollab/bin/zzcollab.sh
+
+# Total: 4 + 3 + 7 = 14 shell files (down from 18)
 ```
 
 ### 3.2 Target Project Structure
@@ -631,51 +627,63 @@ rm templates/zzcollab-uninstall.sh  # Replaced by subcommand
 
 **Remaining:** Update docs/README.md to remove guide references
 
-### Phase 2: Directory Restructure (2-3 hours)
+### Phase 2: Directory Restructure
 
 1. Create lib/ directory
-2. Move core.sh, utils.sh, constants.sh to lib/
-3. Create bin/ directory
-4. Create standalone tools (validate.sh, uninstall.sh, nav.sh)
-5. Update ZZCOLLAB_HOME detection
+2. Create bin/ directory
+3. Consolidate core.sh + utils.sh → lib/core.sh
+4. Move constants.sh → lib/constants.sh
+5. Move templates.sh → lib/templates.sh
+6. Create bin/zzcollab.sh (main entry point)
+7. Create bin/validate.sh (from modules/validation.sh)
+8. Create bin/uninstall.sh (new standalone)
+9. Create bin/nav.sh (extracted from navigation_scripts.sh)
+10. Update ZZCOLLAB_HOME detection to work from bin/ location
 
-### Phase 3: Subcommand Implementation (3-4 hours)
+### Phase 3: Module Consolidation
+
+1. Merge dockerfile_generator.sh → docker.sh
+2. Merge cicd.sh → github.sh
+3. Merge profile_validation.sh + system_deps_map.sh → profiles.sh
+4. Merge structure.sh + analysis.sh + rpackage.sh + devtools.sh → project.sh
+5. Update all require_module() calls for new paths
+6. Delete absorbed source files
+
+### Phase 4: Subcommand Implementation
 
 1. Refactor cli.sh for subcommand routing
 2. Implement each subcommand handler
 3. Update help.sh with subcommand help
 4. Integrate `--help` delegation
 
-### Phase 4: Template Cleanup (1 hour)
+### Phase 5: Template Cleanup
 
 1. Remove templates/modules/
 2. Remove templates/zzcollab-uninstall.sh
 3. Update templates/Makefile for subcommands
 4. Update project creation to not copy modules/
 
-### Phase 5: Installer Update (1-2 hours)
+### Phase 6: Installer Update
 
 1. Change install target to ~/.zzcollab/
-2. Create symlink ~/bin/zzcollab
+2. Create symlink ~/bin/zzcollab → ~/.zzcollab/bin/zzcollab.sh
 3. Add migration from old location
 4. Update install.sh
 
-### Phase 6: Documentation (2-3 hours)
+### Phase 7: Documentation
 
 1. Update ZZCOLLAB_USER_GUIDE.md
 2. Update docs/README.md
 3. Add subcommand examples
 4. Update help.sh content
 
-### Phase 7: Testing (2-3 hours)
+### Phase 8: Testing
 
 1. Test all subcommands
 2. Test help system
 3. Test fresh install
 4. Test migration from old structure
 5. Test project creation
-
-**Total Estimated Effort**: 12-18 hours
 
 ---
 
