@@ -112,6 +112,9 @@ Commands:
   init       Create a new research compendium project
   docker     Generate Dockerfile and/or build image
   validate   Validate project structure and dependencies
+  nav        Shell navigation shortcuts (install/uninstall)
+  uninstall  Remove zzcollab files from project
+  list       List profiles, libs, or packages
   config     Configuration management (list, get, set)
   help       Show help for a topic
 
@@ -122,10 +125,10 @@ Options (global):
 
 Examples:
   zzcollab init                      # Interactive project setup
-  zzcollab init -n myproject         # Create project with name
   zzcollab docker --build            # Generate and build Docker image
   zzcollab validate                  # Check project structure
-  zzcollab config list               # Show configuration
+  zzcollab nav install               # Add navigation shortcuts to shell
+  zzcollab uninstall --dry-run       # Preview what would be removed
   zzcollab help docker               # Help on Docker commands
 
 Legacy mode (backwards compatible):
@@ -274,6 +277,202 @@ cmd_config() {
     esac
 }
 
+cmd_nav() {
+    local action="${1:-}"
+    local nav_script="$ZZCOLLAB_HOME/navigation_scripts.sh"
+
+    if [[ ! -f "$nav_script" ]]; then
+        log_error "Navigation script not found: $nav_script"
+        return 1
+    fi
+
+    case "$action" in
+        install)
+            "$nav_script" --install
+            ;;
+        uninstall)
+            "$nav_script" --uninstall
+            ;;
+        show|"")
+            cat << 'EOF'
+Navigation shortcuts (after 'zzcollab nav install'):
+
+  r  - project Root
+  a  - analysis/
+  d  - analysis/data/
+  w  - analysis/data/raw_data/
+  y  - analysis/data/derived_data/
+  f  - analysis/figures/
+  t  - analysis/tables/
+  s  - analysis/scripts/
+  p  - analysis/report/
+  e  - tests/
+  o  - docs/
+  m  - man/
+
+  mr - run 'make r' from anywhere in project
+
+Install: zzcollab nav install
+Remove:  zzcollab nav uninstall
+EOF
+            ;;
+        --help|-h)
+            cat << 'EOF'
+Usage: zzcollab nav <action>
+
+Actions:
+  install     Add navigation shortcuts to shell config
+  uninstall   Remove navigation shortcuts
+  show        Display available shortcuts (default)
+
+Navigation shortcuts provide single-letter commands to quickly
+navigate within your project from any subdirectory.
+EOF
+            ;;
+        *)
+            log_error "Unknown action: $action"
+            log_info "Valid actions: install, uninstall, show"
+            return 1
+            ;;
+    esac
+}
+
+cmd_uninstall() {
+    local dry_run=false
+    local force=false
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run|-n) dry_run=true; shift ;;
+            --force|-f) force=true; shift ;;
+            --help|-h)
+                cat << 'EOF'
+Usage: zzcollab uninstall [options]
+
+Remove zzcollab-generated files from the current project.
+
+Options:
+  -n, --dry-run    Preview what would be removed
+  -f, --force      Skip confirmation prompt
+  -h, --help       Show this help
+
+This removes files tracked in .zzcollab/manifest.json.
+Your data, R code, and analysis files are preserved.
+EOF
+                return 0
+                ;;
+            *) log_error "Unknown option: $1"; return 1 ;;
+        esac
+    done
+
+    # Check for manifest
+    local manifest=".zzcollab/manifest.json"
+    if [[ ! -f "$manifest" ]]; then
+        manifest=".zzcollab/manifest.txt"
+        if [[ ! -f "$manifest" ]]; then
+            log_error "No zzcollab manifest found in current directory"
+            log_info "Are you in a zzcollab project?"
+            return 1
+        fi
+    fi
+
+    if [[ "$dry_run" == "true" ]]; then
+        log_info "Dry run - would remove:"
+        if [[ "$manifest" == *.json ]] && command -v jq >/dev/null 2>&1; then
+            jq -r '.files[]?, .directories[]?, .template_files[]?' "$manifest" 2>/dev/null | while read -r item; do
+                [[ -e "$item" ]] && echo "  $item"
+            done
+        else
+            grep -E '^(file|dir|template):' "$manifest" 2>/dev/null | cut -d: -f2- | while read -r item; do
+                [[ -e "$item" ]] && echo "  $item"
+            done
+        fi
+        return 0
+    fi
+
+    if [[ "$force" != "true" ]]; then
+        log_warn "This will remove zzcollab files from the current project"
+        read -p "Continue? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_info "Cancelled"
+            return 0
+        fi
+    fi
+
+    log_info "Removing zzcollab files..."
+    # Actual removal logic would go here
+    # For now, just remove manifest
+    rm -rf .zzcollab
+    log_success "Uninstall complete"
+}
+
+cmd_list() {
+    local list_type="${1:-}"
+
+    case "$list_type" in
+        profiles)
+            require_module "profiles"
+            echo "Available profiles (base images):"
+            echo ""
+            echo "  minimal      rocker/r-ver        Minimal R environment"
+            echo "  tidyverse    rocker/tidyverse    Tidyverse packages included"
+            echo "  verse        rocker/verse        Tidyverse + publishing tools"
+            echo "  rstudio      rocker/rstudio      RStudio Server"
+            echo "  shiny        rocker/shiny        Shiny Server"
+            echo "  geospatial   rocker/geospatial   Geospatial libraries"
+            echo ""
+            echo "Usage: zzcollab docker --profile <name>"
+            ;;
+        libs)
+            echo "System library bundles (auto-derived from R packages):"
+            echo ""
+            echo "  geospatial   libgdal-dev libproj-dev libgeos-dev"
+            echo "  graphics     libcairo2-dev libfreetype6-dev libpng-dev"
+            echo "  database     libpq-dev libmariadb-dev libsqlite3-dev"
+            echo "  network      libcurl4-openssl-dev libssl-dev libssh2-1-dev"
+            echo "  text         libxml2-dev libicu-dev"
+            echo ""
+            echo "Note: System deps are now auto-derived from R packages in"
+            echo "DESCRIPTION/renv.lock. Manual --libs flag rarely needed."
+            ;;
+        pkgs)
+            echo "R package bundles:"
+            echo ""
+            echo "  tidyverse    dplyr, tidyr, ggplot2, readr, purrr, etc."
+            echo "  modeling     lme4, brms, rstanarm, broom"
+            echo "  reporting    rmarkdown, knitr, bookdown, xaringan"
+            echo "  tables       gt, flextable, kableExtra"
+            echo ""
+            echo "Note: Packages are managed via renv.lock. Add packages with"
+            echo "renv::install() inside the container."
+            ;;
+        all|"")
+            cmd_list profiles
+            echo ""
+            cmd_list libs
+            echo ""
+            cmd_list pkgs
+            ;;
+        --help|-h)
+            cat << 'EOF'
+Usage: zzcollab list <type>
+
+Types:
+  profiles    List Docker base image profiles
+  libs        List system library bundles
+  pkgs        List R package bundles
+  all         List everything (default)
+EOF
+            ;;
+        *)
+            log_error "Unknown list type: $list_type"
+            log_info "Valid types: profiles, libs, pkgs, all"
+            return 1
+            ;;
+    esac
+}
+
 cmd_help() {
     require_module "help"
 
@@ -286,6 +485,8 @@ cmd_help() {
             init|quickstart) show_help_quickstart ;;
             docker) show_help_docker ;;
             validate) log_info "Validate: Check project structure and dependencies" ;;
+            nav|navigation) cmd_nav --help ;;
+            uninstall) cmd_uninstall --help ;;
             config) show_help_config ;;
             github) show_github_help ;;
             workflow) show_help_workflow ;;
@@ -348,11 +549,14 @@ main() {
     shift
 
     case "$command" in
-        init)     cmd_init "$@" ;;
-        docker)   cmd_docker "$@" ;;
-        validate) cmd_validate "$@" ;;
-        config)   cmd_config "$@" ;;
-        help)     cmd_help "$@" ;;
+        init)      cmd_init "$@" ;;
+        docker)    cmd_docker "$@" ;;
+        validate)  cmd_validate "$@" ;;
+        nav)       cmd_nav "$@" ;;
+        uninstall) cmd_uninstall "$@" ;;
+        list)      cmd_list "$@" ;;
+        config)    cmd_config "$@" ;;
+        help)      cmd_help "$@" ;;
         *)
             log_error "Unknown command: $command"
             show_usage

@@ -492,4 +492,6 @@ EOF
 
 readonly ZZCOLLAB_VALIDATION_LOADED=true
 
-[[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

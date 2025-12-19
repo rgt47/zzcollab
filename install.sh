@@ -183,6 +183,13 @@ log_info "Copying zzcollab.sh..."
 cp "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/"
 chmod +x "$ZZCOLLAB_HOME/zzcollab.sh"
 
+# Copy navigation scripts (user utility for shell navigation functions)
+if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
+    log_info "Copying navigation_scripts.sh..."
+    cp "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/"
+    chmod +x "$ZZCOLLAB_HOME/navigation_scripts.sh"
+fi
+
 # Update version in constants
 if [[ -f "$ZZCOLLAB_HOME/lib/constants.sh" ]]; then
     sed -i.bak "s/ZZCOLLAB_VERSION=.*/ZZCOLLAB_VERSION=\"$VERSION\"/" \
