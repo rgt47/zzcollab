@@ -1,144 +1,121 @@
 #!/bin/bash
-################################################################################
-# Shell Test Runner
+##############################################################################
+# ZZCOLLAB SHELL TEST RUNNER
+##############################################################################
+# Runs all shell-based unit tests for zzcollab modules.
 #
-# Runs all shell unit tests and reports results
-# Usage: ./run_all_tests.sh [--verbose] [--stop-on-fail]
-################################################################################
+# USAGE: ./run_all_tests.sh [options]
+#
+# OPTIONS:
+#   -v, --verbose    Show verbose output
+#   -h, --help       Show this help message
+##############################################################################
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_DIR="$SCRIPT_DIR"
-
-# Parse options
 VERBOSE=false
-STOP_ON_FAIL=false
 
+##############################################################################
+# Parse arguments
+##############################################################################
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --verbose)
+        -v|--verbose)
             VERBOSE=true
+            shift
             ;;
-        --stop-on-fail)
-            STOP_ON_FAIL=true
+        -h|--help)
+            echo "Usage: $0 [options]"
+            echo ""
+            echo "Options:"
+            echo "  -v, --verbose    Show verbose output"
+            echo "  -h, --help       Show this help message"
+            exit 0
             ;;
         *)
-            echo "Unknown option: $1"
+            echo "Unknown option: $1" >&2
             exit 1
             ;;
     esac
-    shift
 done
 
-################################################################################
-# Test execution
-################################################################################
+##############################################################################
+# Run tests
+##############################################################################
+
+echo "=============================================="
+echo "ZZCOLLAB SHELL TEST SUITE"
+echo "=============================================="
+echo ""
 
 total_pass=0
 total_fail=0
-failed_tests=()
+failed_suites=()
 
-run_test_file() {
-    local test_file="$1"
-    local test_name=$(basename "$test_file" .sh)
+# Find all test files
+test_files=("$SCRIPT_DIR"/test-*.sh)
 
-    if [[ ! -f "$test_file" ]]; then
-        echo "⚠️  Test file not found: $test_file"
-        return 1
-    fi
-
-    if [[ "$VERBOSE" == "true" ]]; then
-        echo ""
-        echo "Running: $test_name"
-        echo "=========================================="
-    fi
-
-    # Run test file and capture output
-    output=""
-    exit_code=0
-    if ! output=$(bash "$test_file" 2>&1); then
-        exit_code=$?
-    fi
-
-    # Parse results from output
-    if [[ "$output" =~ Results:\ ([0-9]+)\ passed,\ ([0-9]+)\ failed ]]; then
-        pass="${BASH_REMATCH[1]}"
-        fail="${BASH_REMATCH[2]}"
-
-        total_pass=$((total_pass + pass))
-        total_fail=$((total_fail + fail))
-
-        if [[ $fail -gt 0 ]]; then
-            failed_tests+=("$test_name")
-            if [[ "$VERBOSE" == "true" ]]; then
-                echo "$output"
-            fi
-            if [[ "$STOP_ON_FAIL" == "true" ]]; then
-                return 1
-            fi
-        elif [[ "$VERBOSE" == "true" ]]; then
-            echo "$output"
-        fi
-    fi
-
-    return 0
-}
-
-################################################################################
-# Main execution
-################################################################################
-
-echo "=========================================="
-echo "Shell Unit Test Runner"
-echo "=========================================="
-echo ""
-
-# Find and run all test files
-test_files=(
-    "$TEST_DIR/test-core.sh"
-    "$TEST_DIR/test-validation.sh"
-    "$TEST_DIR/test-cli.sh"
-)
+if [[ ${#test_files[@]} -eq 0 ]]; then
+    echo "No test files found in $SCRIPT_DIR"
+    exit 1
+fi
 
 for test_file in "${test_files[@]}"; do
-    if [[ -f "$test_file" ]]; then
-        run_test_file "$test_file" || {
-            if [[ "$STOP_ON_FAIL" == "true" ]]; then
-                echo "❌ Stopping due to test failure"
-                exit 1
+    if [[ ! -f "$test_file" ]]; then
+        continue
+    fi
+
+    test_name=$(basename "$test_file" .sh)
+    echo "Running: $test_name"
+
+    if $VERBOSE; then
+        if bash "$test_file"; then
+            echo ""
+        else
+            failed_suites+=("$test_name")
+            echo ""
+        fi
+    else
+        output=$(bash "$test_file" 2>&1)
+        exit_code=$?
+
+        # Extract results line
+        results=$(echo "$output" | grep "^Results:" || true)
+        if [[ -n "$results" ]]; then
+            pass=$(echo "$results" | sed -E 's/.*([0-9]+) passed.*/\1/')
+            fail=$(echo "$results" | sed -E 's/.*([0-9]+) failed.*/\1/')
+            total_pass=$((total_pass + pass))
+            total_fail=$((total_fail + fail))
+            echo "  $results"
+        fi
+
+        if [[ $exit_code -ne 0 ]]; then
+            failed_suites+=("$test_name")
+            if [[ "$VERBOSE" != "true" ]]; then
+                # Show failures in non-verbose mode
+                echo "$output" | grep "FAIL:" || true
             fi
-        }
+        fi
     fi
 done
 
-################################################################################
-# Summary
-################################################################################
-
 echo ""
-echo "=========================================="
-echo "Test Summary"
-echo "=========================================="
-echo "Total Passed: $total_pass"
-echo "Total Failed: $total_fail"
+echo "=============================================="
+echo "SUMMARY"
+echo "=============================================="
+echo "Total: $total_pass passed, $total_fail failed"
 
-if [[ ${#failed_tests[@]} -gt 0 ]]; then
+if [[ ${#failed_suites[@]} -gt 0 ]]; then
     echo ""
-    echo "Failed Test Suites:"
-    for failed_test in "${failed_tests[@]}"; do
-        echo "  ❌ $failed_test"
+    echo "Failed test suites:"
+    for suite in "${failed_suites[@]}"; do
+        echo "  - $suite"
     done
-fi
-
-echo "=========================================="
-echo ""
-
-# Exit with appropriate code
-if [[ $total_fail -eq 0 ]]; then
-    echo "✅ All tests passed!"
-    exit 0
-else
-    echo "❌ Some tests failed"
+    echo ""
     exit 1
+else
+    echo ""
+    echo "All tests passed!"
+    exit 0
 fi

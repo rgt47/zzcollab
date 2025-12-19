@@ -1,287 +1,66 @@
 #!/bin/bash
-################################################################################
-# Test Helper Functions for zzcollab Shell Tests
+##############################################################################
+# ZZCOLLAB SHELL TEST HELPERS
+##############################################################################
+# Provides utilities for shell-based unit testing of zzcollab modules.
 #
-# Provides:
-# - Test setup/teardown utilities
-# - Temporary directory management
-# - Logging capture utilities
-# - Assertion helpers
-# - Fixture data
-################################################################################
+# USAGE: source test_helpers.sh
+#
+# FEATURES:
+#   - Module loading with proper path setup
+#   - Test assertion functions
+#   - Temporary directory management
+#   - Output capture utilities
+##############################################################################
 
 set -euo pipefail
 
-# Test configuration - resolve absolute paths
-if [[ -z "${TEST_DIR:-}" ]]; then
-    TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-fi
-export TEST_DIR
-export FIXTURES_DIR="${TEST_DIR}/fixtures"
-export TEMP_TEST_DIR=""
+# Resolve test directory (where this file lives)
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ZZCOLLAB_ROOT="${TEST_DIR}/../.."
 
-################################################################################
-# Setup and Teardown
-################################################################################
+# Export paths for modules
+export ZZCOLLAB_HOME="$ZZCOLLAB_ROOT"
+export ZZCOLLAB_LIB_DIR="$ZZCOLLAB_ROOT/lib"
+export ZZCOLLAB_MODULES_DIR="$ZZCOLLAB_ROOT/modules"
+
+# Temp directory for test artifacts
+TEST_TEMP_DIR=""
 
 ##############################################################################
-# Function: setup_test
-# Purpose: Initialize test environment
-# Creates temporary directory for test files
+# FUNCTION: setup_test
+# PURPOSE:  Initialize test environment
 ##############################################################################
 setup_test() {
-    # Create temporary directory for test
-    TEMP_TEST_DIR=$(mktemp -d) || {
-        echo "❌ Failed to create temporary test directory" >&2
-        exit 1
-    }
-
-    # Create fixtures directory if needed
-    mkdir -p "$FIXTURES_DIR" 2>/dev/null || true
-
-    export TEMP_TEST_DIR
+    TEST_TEMP_DIR=$(mktemp -d)
+    cd "$TEST_TEMP_DIR"
+    export VERBOSITY_LEVEL=0
 }
 
 ##############################################################################
-# Function: teardown_test
-# Purpose: Clean up after test
-# Removes temporary directory and files
+# FUNCTION: teardown_test
+# PURPOSE:  Clean up test environment
 ##############################################################################
 teardown_test() {
-    if [[ -n "$TEMP_TEST_DIR" ]] && [[ -d "$TEMP_TEST_DIR" ]]; then
-        rm -rf "$TEMP_TEST_DIR"
+    if [[ -n "$TEST_TEMP_DIR" && -d "$TEST_TEMP_DIR" ]]; then
+        rm -rf "$TEST_TEMP_DIR"
     fi
-}
-
-################################################################################
-# Logging and Output Capture
-################################################################################
-
-##############################################################################
-# Function: capture_output
-# Purpose: Capture stdout from command
-# Args: Command to execute
-# Returns: Command exit code
-# Globals: CAPTURED_OUTPUT
-##############################################################################
-capture_output() {
-    CAPTURED_OUTPUT=$(
-        set +e
-        "$@" 2>&1
-        set -e
-    ) || return $?
+    cd "$TEST_DIR"
 }
 
 ##############################################################################
-# Function: capture_stderr
-# Purpose: Capture stderr from command
-# Args: Command to execute
-# Returns: Command exit code
-# Globals: CAPTURED_STDERR
-##############################################################################
-capture_stderr() {
-    CAPTURED_STDERR=$(
-        set +e
-        "$@" 2>&1 >/dev/null
-        set -e
-    ) || return $?
-}
-
-################################################################################
-# Assertion Helpers
-################################################################################
-
-##############################################################################
-# Function: assert_success
-# Purpose: Assert command succeeds
-# Args: Command to execute
-##############################################################################
-assert_success() {
-    if ! "$@"; then
-        echo "❌ FAILED: Expected command to succeed but got exit code: $?" >&2
-        return 1
-    fi
-}
-
-##############################################################################
-# Function: assert_failure
-# Purpose: Assert command fails
-# Args: Command to execute
-##############################################################################
-assert_failure() {
-    if "$@" 2>/dev/null; then
-        echo "❌ FAILED: Expected command to fail but succeeded" >&2
-        return 1
-    fi
-}
-
-##############################################################################
-# Function: assert_equals
-# Purpose: Assert two strings are equal
-# Args: $1 - expected, $2 - actual
-##############################################################################
-assert_equals() {
-    local expected="$1"
-    local actual="$2"
-    local message="${3:-}"
-
-    if [[ "$expected" != "$actual" ]]; then
-        echo "❌ FAILED: $message" >&2
-        echo "  Expected: '$expected'" >&2
-        echo "  Got:      '$actual'" >&2
-        return 1
-    fi
-}
-
-##############################################################################
-# Function: assert_contains
-# Purpose: Assert string contains substring
-# Args: $1 - haystack, $2 - needle
-##############################################################################
-assert_contains() {
-    local haystack="$1"
-    local needle="$2"
-
-    if [[ ! "$haystack" =~ $needle ]]; then
-        echo "❌ FAILED: Expected string to contain '$needle'" >&2
-        echo "  Got: '$haystack'" >&2
-        return 1
-    fi
-}
-
-##############################################################################
-# Function: assert_file_exists
-# Purpose: Assert file exists
-# Args: $1 - file path
-##############################################################################
-assert_file_exists() {
-    local file="$1"
-
-    if [[ ! -f "$file" ]]; then
-        echo "❌ FAILED: Expected file to exist: $file" >&2
-        return 1
-    fi
-}
-
-##############################################################################
-# Function: assert_file_not_exists
-# Purpose: Assert file does not exist
-# Args: $1 - file path
-##############################################################################
-assert_file_not_exists() {
-    local file="$1"
-
-    if [[ -f "$file" ]]; then
-        echo "❌ FAILED: Expected file not to exist: $file" >&2
-        return 1
-    fi
-}
-
-################################################################################
-# Fixture Helpers
-################################################################################
-
-##############################################################################
-# Function: create_test_description
-# Purpose: Create a minimal DESCRIPTION file for testing
-# Args: $1 - path, $2 - package name (optional)
-##############################################################################
-create_test_description() {
-    local path="${1:-.}"
-    local pkg_name="${2:-testpackage}"
-
-    mkdir -p "$path"
-    cat > "$path/DESCRIPTION" <<EOF
-Package: $pkg_name
-Version: 0.1.0
-Title: Test Package
-Description: A test package for unit testing
-Authors@R: person("Test", "User")
-License: MIT
-Imports:
-    base,
-    utils
-EOF
-}
-
-##############################################################################
-# Function: create_test_r_file
-# Purpose: Create a test R file with package usage
-# Args: $1 - path, $2 - packages to import (space-separated)
-##############################################################################
-create_test_r_file() {
-    local path="$1"
-    local packages="${2:-}"
-
-    mkdir -p "$(dirname "$path")"
-
-    # Create R file with library calls
-    {
-        echo "# Test R file"
-        for pkg in $packages; do
-            echo "library($pkg)"
-        done
-    } > "$path"
-}
-
-##############################################################################
-# Function: create_test_renv_lock
-# Purpose: Create a minimal renv.lock file
-# Args: $1 - path, $2 - packages (space-separated)
-##############################################################################
-create_test_renv_lock() {
-    local path="${1:-.}"
-    local packages="${2:-}"
-
-    mkdir -p "$path"
-    cat > "$path/renv.lock" <<'EOF'
-{
-  "R": {
-    "Version": "4.3.1",
-    "Repositories": [
-      {
-        "Name": "CRAN",
-        "URL": "https://cran.rstudio.com"
-      }
-    ]
-  },
-  "Packages": {}
-}
-EOF
-}
-
-################################################################################
-# Logging Setup for Tests
-################################################################################
-
-##############################################################################
-# Function: setup_test_logging
-# Purpose: Initialize logging for tests
-# Sets up log capture without interfering with test output
-##############################################################################
-setup_test_logging() {
-    # Disable verbose logging for tests (reduces noise)
-    export VERBOSITY_LEVEL=1  # Only errors
-}
-
-################################################################################
-# Module Loading Helpers
-################################################################################
-
-##############################################################################
-# Function: load_module_for_testing
-# Purpose: Source a module for testing with minimal dependencies
-# Args: $1 - module name (e.g., "core.sh", "validation.sh")
+# FUNCTION: load_module_for_testing
+# PURPOSE:  Load a zzcollab module with proper path setup
+# ARGS:     $1 - module name (e.g., "core.sh", "cli.sh")
 ##############################################################################
 load_module_for_testing() {
     local module_name="$1"
-    local zzcollab_root="${TEST_DIR}/../.."
     local module_path
     local module_base
     local loaded_var
 
-    # Get base name without .sh extension for loaded flag check
     module_base="${module_name%.sh}"
+    local module_base_upper
     module_base_upper=$(echo "$module_base" | tr '[:lower:]' '[:upper:]')
     loaded_var="ZZCOLLAB_${module_base_upper}_LOADED"
 
@@ -291,65 +70,132 @@ load_module_for_testing() {
     fi
 
     # Determine module location (lib/ vs modules/)
-    if [[ "$module_name" == "core.sh" ]] || [[ "$module_name" == "constants.sh" ]] || [[ "$module_name" == "templates.sh" ]]; then
-        module_path="${zzcollab_root}/lib/${module_name}"
+    if [[ "$module_name" == "core.sh" ]] || \
+       [[ "$module_name" == "constants.sh" ]] || \
+       [[ "$module_name" == "templates.sh" ]]; then
+        module_path="${ZZCOLLAB_LIB_DIR}/${module_name}"
     else
-        module_path="${zzcollab_root}/modules/${module_name}"
+        module_path="${ZZCOLLAB_MODULES_DIR}/${module_name}"
     fi
 
     if [[ ! -f "$module_path" ]]; then
-        echo "❌ Module not found: $module_path" >&2
+        echo "ERROR: Module not found: $module_path" >&2
         return 1
     fi
 
-    # Set up minimal environment for refactored structure
-    export ZZCOLLAB_HOME="${zzcollab_root}"
-    export ZZCOLLAB_LIB_DIR="${zzcollab_root}/lib"
-    export ZZCOLLAB_MODULES_DIR="${zzcollab_root}/modules"
-    export ZZCOLLAB_TEMPLATES_DIR="${zzcollab_root}/templates"
-    export SCRIPT_DIR="${zzcollab_root}"
-    export MODULES_DIR="${zzcollab_root}/modules"
-    export TEMPLATES_DIR="${zzcollab_root}/templates"
-    export LOG_FILE=""
-
-    # Source required dependencies in order
-    # (most modules require core.sh which is now in lib/)
-    if [[ "$module_name" != "core.sh" ]] && [[ "$module_name" != "constants.sh" ]]; then
-        # Source dependencies if not already loaded
-        if [[ "${ZZCOLLAB_CONSTANTS_LOADED:-}" != "true" ]]; then
-            # shellcheck source=../../lib/constants.sh
-            source "${zzcollab_root}/lib/constants.sh" 2>/dev/null || true
-        fi
-        if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
-            # shellcheck source=../../lib/core.sh
-            source "${zzcollab_root}/lib/core.sh" 2>/dev/null || true
-        fi
-    fi
-
-    # Source the module
     # shellcheck source=/dev/null
-    source "$module_path" || {
-        echo "❌ Failed to load module: $module_name" >&2
-        return 1
-    }
+    source "$module_path"
 }
 
-################################################################################
-# Export test functions
-################################################################################
+##############################################################################
+# ASSERTION FUNCTIONS
+##############################################################################
 
-export -f setup_test
-export -f teardown_test
-export -f capture_output
-export -f capture_stderr
-export -f assert_success
-export -f assert_failure
-export -f assert_equals
-export -f assert_contains
-export -f assert_file_exists
-export -f assert_file_not_exists
-export -f create_test_description
-export -f create_test_r_file
-export -f create_test_renv_lock
-export -f setup_test_logging
-export -f load_module_for_testing
+assert_equals() {
+    local expected="$1"
+    local actual="$2"
+    local msg="${3:-}"
+
+    if [[ "$expected" != "$actual" ]]; then
+        echo "FAIL: Expected '$expected', got '$actual'" >&2
+        [[ -n "$msg" ]] && echo "  $msg" >&2
+        return 1
+    fi
+}
+
+assert_not_empty() {
+    local value="$1"
+    local msg="${2:-Value should not be empty}"
+
+    if [[ -z "$value" ]]; then
+        echo "FAIL: $msg" >&2
+        return 1
+    fi
+}
+
+assert_true() {
+    local condition="$1"
+    local msg="${2:-Condition should be true}"
+
+    if ! eval "$condition"; then
+        echo "FAIL: $msg" >&2
+        return 1
+    fi
+}
+
+assert_false() {
+    local condition="$1"
+    local msg="${2:-Condition should be false}"
+
+    if eval "$condition"; then
+        echo "FAIL: $msg" >&2
+        return 1
+    fi
+}
+
+assert_file_exists() {
+    local file="$1"
+    local msg="${2:-File should exist: $file}"
+
+    if [[ ! -f "$file" ]]; then
+        echo "FAIL: $msg" >&2
+        return 1
+    fi
+}
+
+assert_dir_exists() {
+    local dir="$1"
+    local msg="${2:-Directory should exist: $dir}"
+
+    if [[ ! -d "$dir" ]]; then
+        echo "FAIL: $msg" >&2
+        return 1
+    fi
+}
+
+assert_exit_code() {
+    local expected="$1"
+    local actual="$2"
+    local msg="${3:-Exit code mismatch}"
+
+    if [[ "$expected" != "$actual" ]]; then
+        echo "FAIL: Expected exit code $expected, got $actual" >&2
+        [[ -n "$msg" ]] && echo "  $msg" >&2
+        return 1
+    fi
+}
+
+assert_output_contains() {
+    local output="$1"
+    local pattern="$2"
+    local msg="${3:-Output should contain pattern}"
+
+    if [[ ! "$output" =~ $pattern ]]; then
+        echo "FAIL: $msg" >&2
+        echo "  Pattern: $pattern" >&2
+        echo "  Output: $output" >&2
+        return 1
+    fi
+}
+
+##############################################################################
+# TEST RUNNER UTILITIES
+##############################################################################
+
+# Run test in subshell to isolate exit calls
+run_test() {
+    local test_func="$1"
+    ( $test_func ) 2>&1
+}
+
+# Print test result
+print_result() {
+    local test_name="$1"
+    local status="$2"
+
+    if [[ "$status" -eq 0 ]]; then
+        echo "  PASS: $test_name"
+    else
+        echo "  FAIL: $test_name"
+    fi
+}

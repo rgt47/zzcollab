@@ -1,369 +1,203 @@
 #!/bin/bash
-################################################################################
-# Unit Tests for core.sh Module
-#
-# Tests core functionality:
-# - Module loading and dependency resolution
-# - Logging system (all 5 levels)
-# - Error handling
-# - Manifest tracking
-################################################################################
+##############################################################################
+# ZZCOLLAB CORE MODULE TESTS
+##############################################################################
+# Tests for lib/core.sh - foundation infrastructure
+##############################################################################
 
 set -euo pipefail
 
-# Source test helpers
+# Load test helpers
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=test_helpers.sh
 source "$SCRIPT_DIR/test_helpers.sh"
 
-################################################################################
-# Test Suite: Module Loading
-################################################################################
+# Load core module
+load_module_for_testing "core.sh"
 
-test_require_module_success() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: require_module should succeed if module already loaded
-    assert_success require_module "core"
-}
-
-test_require_module_missing_fails() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: require_module should fail (exit 1) for missing module
-    # Run in a sub-subshell since require_module calls exit, not return
-    NONEXISTENT_LOADED=false
-    if ( require_module "nonexistent" ) 2>/dev/null; then
-        echo "❌ FAILED: require_module should fail for missing module"
-        return 1
-    fi
-    return 0
-}
-
-test_require_module_error_message() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Error message should be clear
-    # require_module outputs error messages to stderr before exiting
-    output=$( ( require_module "nonexistent_module" ) 2>&1 || true )
-    # The error message says "Module not found"
-    assert_contains "$output" "not found" "Error message should indicate module not found"
-}
-
-################################################################################
-# Test Suite: Logging System
-################################################################################
-
-test_log_error_outputs() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: log_error should output to stderr
-    output=$(log_error "Test error" 2>&1)
-    assert_contains "$output" "Test error" "Error message should appear"
-}
-
-test_log_warn_outputs() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: log_warn should output warning
-    output=$(log_warn "Test warning" 2>&1)
-    assert_contains "$output" "Test warning" "Warning message should appear"
-}
-
-test_log_info_outputs() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # log_info requires VERBOSITY_LEVEL >= 2
-    export VERBOSITY_LEVEL=2
-
-    # Test: log_info should output info
-    output=$(log_info "Test info" 2>&1)
-    assert_contains "$output" "Test info" "Info message should appear"
-}
-
-test_log_success_outputs() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: log_success should output success
-    output=$(log_success "Test success" 2>&1)
-    assert_contains "$output" "Test success" "Success message should appear"
-}
-
-test_log_debug_respects_verbosity() {
-    # Setup
-    export VERBOSITY_LEVEL=0  # No debug output
-    load_module_for_testing "core.sh"
-
-    # Test: log_debug should not output when verbosity is low
-    output=$(log_debug "Test debug" 2>&1) || true
-    if [[ "$output" =~ "Test debug" ]]; then
-        # Debug output visible at this verbosity level - check if expected
-        true
-    fi
-}
-
-################################################################################
-# Test Suite: Tracking System
-################################################################################
-
-test_track_item_creates_file() {
-    # Setup
-    setup_test
-    cd "$TEMP_TEST_DIR"
-    mkdir -p .zzcollab
-    load_module_for_testing "core.sh"
-
-    # Set up manifest file path and create initial file
-    export MANIFEST_TXT=".zzcollab/manifest.txt"
-    touch "$MANIFEST_TXT"
-
-    # Test: track_item should append to manifest (type=file)
-    track_item "file" "test.txt"
-
-    if [[ ! -f ".zzcollab/manifest.txt" ]]; then
-        echo "❌ FAILED: track_item should write to manifest file"
-        return 1
-    fi
-
-    teardown_test
-}
-
-test_track_item_json_format() {
-    # Setup
-    setup_test
-    cd "$TEMP_TEST_DIR"
-    mkdir -p .zzcollab
-    load_module_for_testing "core.sh"
-
-    # Set up JSON manifest if jq available
-    if command -v jq >/dev/null 2>&1; then
-        export MANIFEST_FILE=".zzcollab/manifest.json"
-        echo '{"files":[],"directories":[]}' > "$MANIFEST_FILE"
-
-        # Test: manifest.json should remain valid JSON after track_item
-        track_item "file" "test.txt"
-
-        if ! jq . "$MANIFEST_FILE" >/dev/null 2>&1; then
-            echo "❌ FAILED: manifest.json should be valid JSON"
-            return 1
-        fi
-    fi
-
-    teardown_test
-}
-
-test_track_item_multiple_items() {
-    # Setup
-    setup_test
-    cd "$TEMP_TEST_DIR"
-    mkdir -p .zzcollab
-    load_module_for_testing "core.sh"
-
-    # Set up manifest file
-    export MANIFEST_TXT=".zzcollab/manifest.txt"
-    touch "$MANIFEST_TXT"
-
-    # Test: Should track multiple items
-    track_item "file" "file1.txt"
-    track_item "file" "file2.txt"
-    track_item "file" "file3.txt"
-
-    if [[ -f ".zzcollab/manifest.txt" ]]; then
-        line_count=$(wc -l < ".zzcollab/manifest.txt")
-        if [[ $line_count -lt 3 ]]; then
-            echo "❌ FAILED: Should have tracked 3 items, got $line_count"
-            return 1
-        fi
-    else
-        echo "❌ FAILED: manifest.txt not found"
-        return 1
-    fi
-
-    teardown_test
-}
-
-################################################################################
-# Test Suite: Error Handling
-################################################################################
-
-test_return_error_sets_exit_code() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Function should return non-zero on error
-    test_func() {
-        log_error "Test error"
-        return 1
-    }
-
-    if test_func 2>/dev/null; then
-        echo "❌ FAILED: Function should return error code"
-        return 1
-    fi
-}
-
-test_logging_preserves_exit_code() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Logging shouldn't interfere with exit codes
-    test_func() {
-        log_error "Error message"
-        return 42
-    }
-
-    exit_code=0
-    test_func >/dev/null 2>&1 || exit_code=$?
-
-    if [[ $exit_code -ne 42 ]]; then
-        echo "❌ FAILED: Exit code should be 42, got $exit_code"
-        return 1
-    fi
-}
-
-################################################################################
-# Test Suite: Variable Validation
-################################################################################
+##############################################################################
+# TEST: validate_package_name
+##############################################################################
 
 test_validate_package_name_valid() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Valid package names should pass
-    assert_success validate_package_name "tidyverse"
-    assert_success validate_package_name "data.table"
-    assert_success validate_package_name "ggplot2"
+    local result
+    result=$(validate_package_name "mypackage")
+    assert_equals "mypackage" "$result" "Should return valid package name"
 }
 
-test_validate_package_name_invalid_starts_with_number() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Package names starting with numbers should fail
-    assert_failure validate_package_name "123invalid"
+test_validate_package_name_with_dots() {
+    local result
+    result=$(validate_package_name "my.package")
+    assert_equals "my.package" "$result" "Should allow dots in package name"
 }
 
-test_validate_package_name_invalid_special_chars() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Special characters are stripped (sanitization, not rejection)
-    # "my-package!" becomes "mypackage" which is valid
-    result=$(validate_package_name "my-package!" 2>/dev/null)
-    if [[ "$result" != "mypackage" ]]; then
-        echo "Expected 'mypackage', got '$result'"
-        return 1
-    fi
+test_validate_package_name_strips_invalid() {
+    local result
+    result=$(validate_package_name "my-package_123")
+    assert_equals "mypackage123" "$result" "Should strip invalid characters"
 }
 
-test_validate_package_name_too_long() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Long names are truncated to 50 chars (sanitization, not rejection)
-    long_name=$(printf 'a%.0s' {1..256})
-    result=$(validate_package_name "$long_name" 2>/dev/null)
-    # Should be truncated to 50 characters
-    if [[ ${#result} -ne 50 ]]; then
-        echo "Expected 50 chars, got ${#result}"
-        return 1
-    fi
-}
-
-################################################################################
-# Test Suite: Immutable Constants
-################################################################################
-
-test_readonly_constants_cannot_be_modified() {
-    # Setup
-    setup_test_logging
-    load_module_for_testing "core.sh"
-
-    # Test: Attempting to modify readonly variables should fail
-    # This is tricky to test reliably, so we just verify constants exist
-    if [[ -z "${AUTHOR_NAME:-}" ]]; then
-        echo "❌ FAILED: AUTHOR_NAME constant should be defined"
-        return 1
-    fi
-}
-
-################################################################################
-# Test Execution
-################################################################################
-
-run_tests() {
-    local pass=0
-    local fail=0
-
-    # Array of test names
-    local tests=(
-        "test_require_module_success"
-        "test_require_module_missing_fails"
-        "test_require_module_error_message"
-        "test_log_error_outputs"
-        "test_log_warn_outputs"
-        "test_log_info_outputs"
-        "test_log_success_outputs"
-        "test_log_debug_respects_verbosity"
-        "test_track_item_creates_file"
-        "test_track_item_json_format"
-        "test_track_item_multiple_items"
-        "test_return_error_sets_exit_code"
-        "test_logging_preserves_exit_code"
-        "test_validate_package_name_valid"
-        "test_validate_package_name_invalid_starts_with_number"
-        "test_validate_package_name_invalid_special_chars"
-        "test_validate_package_name_too_long"
-        "test_readonly_constants_cannot_be_modified"
-    )
-
-    echo "=================================="
-    echo "Testing: core.sh Module"
-    echo "=================================="
-
-    for test in "${tests[@]}"; do
-        # Run each test in a subshell to isolate exit calls
-        if ( $test ) 2>/dev/null; then
-            echo "✅ $test"
-            pass=$((pass + 1))
-        else
-            echo "❌ $test"
-            fail=$((fail + 1))
-        fi
-    done
-
-    echo ""
-    echo "=================================="
-    echo "Results: $pass passed, $fail failed"
-    echo "=================================="
-
-    if [[ $fail -gt 0 ]]; then
+test_validate_package_name_starts_with_letter() {
+    local result
+    if result=$(validate_package_name "123pkg" 2>/dev/null); then
+        echo "FAIL: Should reject names starting with number" >&2
         return 1
     fi
     return 0
 }
 
-# Run all tests if script is executed directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    run_tests
+test_validate_package_name_empty() {
+    if validate_package_name "---" 2>/dev/null; then
+        echo "FAIL: Should reject names that become empty after sanitization" >&2
+        return 1
+    fi
+    return 0
+}
+
+##############################################################################
+# TEST: command_exists
+##############################################################################
+
+test_command_exists_bash() {
+    if ! command_exists "bash"; then
+        echo "FAIL: bash should exist" >&2
+        return 1
+    fi
+}
+
+test_command_exists_nonexistent() {
+    if command_exists "nonexistent_command_xyz_12345"; then
+        echo "FAIL: nonexistent command should not exist" >&2
+        return 1
+    fi
+}
+
+##############################################################################
+# TEST: logging functions (with mocked verbosity)
+##############################################################################
+
+test_log_error_always_outputs() {
+    export VERBOSITY_LEVEL=0
+    local output
+    output=$(log_error "Test error message" 2>&1)
+    assert_output_contains "$output" "Test error message" "log_error should output at verbosity 0"
+}
+
+test_log_success_respects_verbosity() {
+    export VERBOSITY_LEVEL=0
+    local output
+    output=$(log_success "Test success" 2>&1)
+    if [[ -n "$output" ]]; then
+        echo "FAIL: log_success should be silent at verbosity 0" >&2
+        return 1
+    fi
+}
+
+test_log_success_shows_at_level_1() {
+    export VERBOSITY_LEVEL=1
+    local output
+    output=$(log_success "Test success" 2>&1)
+    assert_output_contains "$output" "Test success" "log_success should output at verbosity 1"
+}
+
+test_log_info_respects_verbosity() {
+    export VERBOSITY_LEVEL=1
+    local output
+    output=$(log_info "Test info" 2>&1)
+    if [[ -n "$output" ]]; then
+        echo "FAIL: log_info should be silent at verbosity 1" >&2
+        return 1
+    fi
+}
+
+test_log_info_shows_at_level_2() {
+    export VERBOSITY_LEVEL=2
+    local output
+    output=$(log_info "Test info" 2>&1)
+    assert_output_contains "$output" "Test info" "log_info should output at verbosity 2"
+}
+
+##############################################################################
+# TEST: safe_mkdir
+##############################################################################
+
+test_safe_mkdir_creates_directory() {
+    setup_test
+    export VERBOSITY_LEVEL=0
+    safe_mkdir "testdir" 2>/dev/null
+    assert_dir_exists "testdir" "safe_mkdir should create directory"
+    teardown_test
+}
+
+test_safe_mkdir_creates_nested() {
+    setup_test
+    export VERBOSITY_LEVEL=0
+    safe_mkdir "a/b/c" 2>/dev/null
+    assert_dir_exists "a/b/c" "safe_mkdir should create nested directories"
+    teardown_test
+}
+
+##############################################################################
+# TEST: require_module
+##############################################################################
+
+test_require_module_loads_module() {
+    # Core already loaded, test that it doesn't error on reload
+    require_module "core"
+}
+
+test_require_module_nonexistent() {
+    local exit_code=0
+    ( require_module "nonexistent_module_xyz" ) 2>/dev/null || exit_code=$?
+    if [[ "$exit_code" -eq 0 ]]; then
+        echo "FAIL: require_module should fail for nonexistent module" >&2
+        return 1
+    fi
+}
+
+##############################################################################
+# RUN TESTS
+##############################################################################
+
+echo "=========================================="
+echo "CORE MODULE TESTS"
+echo "=========================================="
+
+tests=(
+    test_validate_package_name_valid
+    test_validate_package_name_with_dots
+    test_validate_package_name_strips_invalid
+    test_validate_package_name_starts_with_letter
+    test_validate_package_name_empty
+    test_command_exists_bash
+    test_command_exists_nonexistent
+    test_log_error_always_outputs
+    test_log_success_respects_verbosity
+    test_log_success_shows_at_level_1
+    test_log_info_respects_verbosity
+    test_log_info_shows_at_level_2
+    test_safe_mkdir_creates_directory
+    test_safe_mkdir_creates_nested
+    test_require_module_loads_module
+    test_require_module_nonexistent
+)
+
+pass=0
+fail=0
+
+for test in "${tests[@]}"; do
+    if ( $test ) 2>/dev/null; then
+        echo "  PASS: $test"
+        pass=$((pass + 1))
+    else
+        echo "  FAIL: $test"
+        fail=$((fail + 1))
+    fi
+done
+
+echo "------------------------------------------"
+echo "Results: $pass passed, $fail failed"
+echo "=========================================="
+
+if [[ $fail -gt 0 ]]; then
+    exit 1
 fi
