@@ -627,25 +627,53 @@ rm templates/zzcollab-uninstall.sh  # Replaced by subcommand
 
 **Remaining:** Update docs/README.md to remove guide references
 
-### Phase 2: Directory Restructure
+### Phase 2: Directory Restructure ✅ IN PROGRESS
 
-1. Create lib/ directory
-2. Create bin/ directory
-3. Consolidate core.sh + utils.sh → lib/core.sh
-4. Move constants.sh → lib/constants.sh
-5. Move templates.sh → lib/templates.sh
-6. Create bin/zzcollab.sh (main entry point)
-7. Create bin/validate.sh (from modules/validation.sh)
-8. Create bin/uninstall.sh (new standalone)
-9. Create bin/nav.sh (extracted from navigation_scripts.sh)
-10. Update ZZCOLLAB_HOME detection to work from bin/ location
+1. ~~Create lib/ directory~~ ✅
+2. ~~Create bin/ directory~~ ✅
+3. ~~Consolidate core.sh + utils.sh → lib/core.sh~~ ✅ (471 lines)
+4. ~~Move constants.sh → lib/constants.sh~~ ✅ (119 lines, with dynamic ZZCOLLAB_HOME)
+5. ~~Move templates.sh → lib/templates.sh~~ ✅ (181 lines)
+6. Create bin/zzcollab.sh (main entry point) - PENDING
+7. Create bin/validate.sh (from modules/validation.sh) - PENDING
+8. Create bin/uninstall.sh (new standalone) - PENDING
+9. Create bin/nav.sh (extracted from navigation_scripts.sh) - PENDING
+10. Update ZZCOLLAB_HOME detection to work from bin/ location - PENDING
+
+**Library consolidation summary:**
+```
+lib/constants.sh  (119 lines) - dynamic path resolution
+lib/core.sh       (471 lines) - merged core.sh + utils.sh
+lib/templates.sh  (181 lines) - template processing
+Total: 771 lines in 3 files
+```
 
 ### Phase 3: Module Consolidation
 
-1. Merge dockerfile_generator.sh → docker.sh
-2. Merge cicd.sh → github.sh
-3. Merge profile_validation.sh + system_deps_map.sh → profiles.sh
-4. Merge structure.sh + analysis.sh + rpackage.sh + devtools.sh → project.sh
+**Dependency analysis before merging:**
+```
+dockerfile_generator.sh depends on: core, profile_validation
+docker.sh depends on: core, templates
+cicd.sh depends on: core, templates
+github.sh depends on: core, templates, cli, config
+profile_validation.sh depends on: core
+system_deps_map.sh depends on: core
+structure.sh depends on: core
+analysis.sh depends on: core, templates, structure
+rpackage.sh depends on: core, templates
+devtools.sh depends on: core, templates
+```
+
+**Consolidation order (respecting dependencies):**
+1. Merge profile_validation.sh + system_deps_map.sh → profiles.sh
+   - Both depend only on core, no circular deps
+2. Merge structure.sh + analysis.sh + rpackage.sh + devtools.sh → project.sh
+   - Order: structure first, then others
+3. Merge dockerfile_generator.sh → docker.sh
+   - After profiles.sh exists (dockerfile_generator needs profile_validation)
+4. Merge cicd.sh → github.sh
+   - Straightforward merge
+
 5. Update all require_module() calls for new paths
 6. Delete absorbed source files
 
