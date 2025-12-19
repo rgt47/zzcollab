@@ -371,57 +371,130 @@ main() {
 }
 ```
 
-#### Step 3.3: Update help system
+#### Step 3.3: Integrate Unified Help System
 
-Add subcommand documentation to `modules/help.sh`:
+**Objective**: Create a unified help system where subcommands and documentation
+topics are first-class citizens, following the git model (`git help commit` =
+`git commit --help`).
+
+##### Current Help System (~2000 lines across 3 files)
+
+```
+modules/help.sh        (1651 lines) - Main help with topic routing
+modules/help_core.sh   (231 lines)  - Core help functions
+modules/help_guides.sh (156 lines)  - Guide-related help
+```
+
+Existing topics: `quickstart`, `workflow`, `team`, `config`, `profiles`,
+`docker`, `renv`, `cicd`, `troubleshoot`, etc.
+
+##### Unified Help Architecture
 
 ```bash
-show_main_help() {
-    cat << 'EOF'
-zzcollab - Docker-based Research Collaboration Framework
+# All of these should work equivalently:
+zzcollab help validate        # Topic-style
+zzcollab validate --help      # Subcommand flag delegates to help system
+zzcollab help --all           # Lists both commands AND guide topics
+```
 
-USAGE:
-    zzcollab [command] [options]
-    zzcollab [setup-options]
+##### Help Categories
+
+```
+zzcollab help
 
 COMMANDS:
-    validate     Validate package dependencies (DESCRIPTION ↔ renv.lock)
-    uninstall    Remove zzcollab files from current project
-    nav          Manage shell navigation shortcuts
-    config       Manage configuration settings
-    help         Show help information
+    validate      Package dependency validation
+    uninstall     Remove zzcollab files from current project
+    nav           Shell navigation shortcuts
+    config        Configuration management
+    migrate       Migrate old project structure
 
-SETUP OPTIONS:
-    -t, --team NAME         Team name for Docker Hub
-    -p, --project NAME      Project name
-    -r, --profile NAME      Docker profile (default: ubuntu_standard_analysis_vim)
-    -d, --dotfiles DIR      Copy dotfiles from directory
-    -u, --use-team-image    Pull existing team Docker image
-    -h, --help              Show this help
+GUIDES:
+    quickstart    Quick start for solo developers
+    workflow      Daily development workflow
+    team          Team collaboration setup
+    profiles      Docker profile selection
+    docker        Docker architecture details
+    renv          Package management with renv
+    cicd          CI/CD automation
 
-EXAMPLES:
-    # Create new project
-    zzcollab -t myteam -p myproject -r analysis
+Run 'zzcollab help <topic>' for detailed information.
+Run 'zzcollab help --all' for complete topic list.
+```
 
-    # Validate packages
-    zzcollab validate --fix --strict
+##### Implementation in `modules/help.sh`
 
-    # Remove zzcollab from project
-    zzcollab uninstall --dry-run
+```bash
+show_help() {
+    local topic="${1:-}"
 
-    # Install navigation shortcuts
-    zzcollab nav install
-
-Run 'zzcollab help <command>' for command-specific help.
-EOF
+    case "$topic" in
+        ""|--brief)
+            show_help_brief
+            ;;
+        --all|-a)
+            show_help_topics_list
+            ;;
+        # Subcommand help (NEW - integrated with commands)
+        validate)
+            show_validate_help
+            ;;
+        uninstall)
+            show_uninstall_help
+            ;;
+        nav|navigation)
+            show_nav_help
+            ;;
+        config)
+            show_config_help
+            ;;
+        migrate)
+            show_migrate_help
+            ;;
+        # Existing guide topics (unchanged)
+        quickstart)
+            show_quickstart_help
+            ;;
+        workflow)
+            show_workflow_help
+            ;;
+        team)
+            show_team_help
+            ;;
+        # ... other existing topics ...
+        *)
+            log_error "Unknown help topic: $topic"
+            log_info "Run 'zzcollab help --all' for available topics"
+            exit 1
+            ;;
+    esac
 }
 
+# Subcommand --help delegates to unified help system
+# In bin/validate.sh:
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    exec zzcollab help validate
+fi
+
+# In bin/uninstall.sh:
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    exec zzcollab help uninstall
+fi
+```
+
+##### Subcommand Help Functions
+
+```bash
 show_validate_help() {
     cat << 'EOF'
 zzcollab validate - Package dependency validation
 
 USAGE:
     zzcollab validate [options]
+
+DESCRIPTION:
+    Validates that packages used in code are properly declared in
+    DESCRIPTION and renv.lock. Can auto-fix missing packages.
 
 OPTIONS:
     --fix           Auto-fix missing packages (add to DESCRIPTION/renv.lock)
@@ -435,6 +508,158 @@ EXAMPLES:
     zzcollab validate --fix --strict
     zzcollab validate --no-fix --verbose
     zzcollab validate --system-deps
+
+SEE ALSO:
+    zzcollab help renv          Package management guide
+    zzcollab help workflow      Daily development workflow
+EOF
+}
+
+show_uninstall_help() {
+    cat << 'EOF'
+zzcollab uninstall - Remove zzcollab from current project
+
+USAGE:
+    zzcollab uninstall [options]
+
+DESCRIPTION:
+    Removes files and directories created by zzcollab setup.
+    Reads .zzcollab/manifest.json to determine what to remove.
+
+OPTIONS:
+    --dry-run       Show what would be removed without removing
+    --force         Skip confirmation prompts
+    --keep-docker   Don't remove Docker images
+
+EXAMPLES:
+    zzcollab uninstall --dry-run    # Preview changes
+    zzcollab uninstall              # Interactive removal
+    zzcollab uninstall --force      # Remove without prompts
+
+SEE ALSO:
+    zzcollab help migrate       Migrate old project structure
+EOF
+}
+
+show_nav_help() {
+    cat << 'EOF'
+zzcollab nav - Shell navigation shortcuts
+
+USAGE:
+    zzcollab nav <command>
+
+COMMANDS:
+    install         Add navigation shortcuts to shell config
+    uninstall       Remove navigation shortcuts from shell config
+
+SHORTCUTS INSTALLED:
+    r               Jump to project root
+    s               Jump to analysis/scripts/
+    d               Jump to analysis/data/
+    w               Jump to analysis/data/raw_data/
+    y               Jump to analysis/data/derived_data/
+    mr [target]     Run make target from any subdirectory
+
+EXAMPLES:
+    zzcollab nav install        # Add to ~/.zshrc or ~/.bashrc
+    zzcollab nav uninstall      # Remove from shell config
+
+SEE ALSO:
+    zzcollab help workflow      Daily development workflow
+EOF
+}
+
+show_config_help() {
+    cat << 'EOF'
+zzcollab config - Configuration management
+
+USAGE:
+    zzcollab config <command> [args]
+
+COMMANDS:
+    init            Create default configuration file
+    set <key> <val> Set configuration value
+    get <key>       Get configuration value
+    list            List all configuration
+    validate        Validate configuration files
+
+OPTIONS:
+    --global        Operate on user config (~/.zzcollab/config.yaml)
+    --project       Operate on project config (./zzcollab.yaml)
+
+CONFIGURATION KEYS:
+    team_name       Default team name for Docker Hub
+    github_account  GitHub account for repository creation
+    dotfiles_dir    Path to dotfiles directory
+    default_profile Default Docker profile
+
+EXAMPLES:
+    zzcollab config init
+    zzcollab config set team_name "mylab"
+    zzcollab config get team_name
+    zzcollab config list
+
+SEE ALSO:
+    zzcollab help profiles      Docker profile selection
+EOF
+}
+
+show_migrate_help() {
+    cat << 'EOF'
+zzcollab migrate - Migrate old project structure
+
+USAGE:
+    zzcollab migrate [options]
+
+DESCRIPTION:
+    Cleans up old project structure from previous zzcollab versions.
+    Removes local modules/ directory and .zzcollab/uninstall.sh.
+
+OPTIONS:
+    --dry-run       Show what would be removed without removing
+    --force         Skip confirmation prompts
+
+WHAT GETS REMOVED:
+    modules/                    Local framework scripts (now centralized)
+    .zzcollab/uninstall.sh      Local uninstall script (now subcommand)
+
+EXAMPLES:
+    zzcollab migrate --dry-run  # Preview changes
+    zzcollab migrate            # Interactive migration
+
+SEE ALSO:
+    zzcollab help uninstall     Remove zzcollab entirely
+EOF
+}
+```
+
+##### Update `show_help_topics_list()` to Include Commands
+
+```bash
+show_help_topics_list() {
+    cat << 'EOF'
+Available help topics:
+
+COMMANDS (zzcollab <command> --help):
+    validate        Package dependency validation
+    uninstall       Remove zzcollab from project
+    nav             Shell navigation shortcuts
+    config          Configuration management
+    migrate         Migrate old project structure
+
+GUIDES (zzcollab help <topic>):
+    quickstart      Quick start for solo developers
+    workflow        Daily development workflow
+    team            Team collaboration setup
+    profiles        Docker profile selection
+    examples        Example files and templates
+    docker          Docker architecture
+    renv            Package management
+    cicd            CI/CD automation
+    troubleshoot    Common issues and solutions
+    options         Complete command-line options
+
+Run 'zzcollab help <topic>' for detailed information.
 EOF
 }
 ```
@@ -648,7 +873,8 @@ migrate_project() {
 |------|---------|
 | `zzcollab.sh` | Add ZZCOLLAB_HOME, subcommand routing |
 | `modules/cli.sh` | Add subcommand parsing |
-| `modules/help.sh` | Add subcommand help |
+| `modules/help.sh` | Integrate subcommands as help topics; add `show_validate_help()`, `show_uninstall_help()`, `show_nav_help()`, `show_config_help()`, `show_migrate_help()`; update `show_help_topics_list()` to show COMMANDS and GUIDES categories |
+| `modules/help_core.sh` | Update help routing to handle subcommand topics |
 | `modules/*.sh` (all) | Update source paths to lib/ |
 | `templates/Makefile` | Change to `zzcollab validate` |
 | `install.sh` | New location, structure, migration |
@@ -682,6 +908,9 @@ migrate_project() {
 | `bin/*.sh` execution | Each tool runs with `--help` |
 | Subcommand routing | Each subcommand routes correctly |
 | Path detection | `ZZCOLLAB_HOME` detected correctly |
+| Help system | `zzcollab help <cmd>` works for all subcommands |
+| Help delegation | `zzcollab <cmd> --help` delegates to `zzcollab help <cmd>` |
+| Help topics list | `zzcollab help --all` shows both COMMANDS and GUIDES |
 
 ### Integration Tests
 
