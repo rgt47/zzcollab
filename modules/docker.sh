@@ -37,6 +37,69 @@ get_profile_base_image() {
 }
 
 #=============================================================================
+# BASE IMAGE TOOL DETECTION
+#=============================================================================
+
+# Determine what tools are already in the base image
+get_base_image_tools() {
+    local base_image="$1"
+    local has_pandoc="false"
+    local has_tinytex="false"
+
+    case "$base_image" in
+        *verse*)
+            has_pandoc="true"
+            has_tinytex="true"
+            ;;
+        *tidyverse*|*rstudio*|*geospatial*|*shiny*)
+            has_pandoc="true"
+            has_tinytex="false"
+            ;;
+        *)
+            has_pandoc="false"
+            has_tinytex="false"
+            ;;
+    esac
+
+    echo "${has_pandoc}:${has_tinytex}"
+}
+
+# Generate install commands for missing tools
+generate_tools_install() {
+    local base_image="$1"
+    local tools
+    tools=$(get_base_image_tools "$base_image")
+
+    local has_pandoc="${tools%%:*}"
+    local has_tinytex="${tools##*:}"
+
+    local cmds=""
+
+    # Pandoc installation (if missing)
+    if [[ "$has_pandoc" == "false" ]]; then
+        cmds+="# Install pandoc for document rendering
+RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -rf /var/lib/apt/lists/*
+
+"
+    fi
+
+    # TinyTeX installation (if missing)
+    if [[ "$has_tinytex" == "false" ]]; then
+        cmds+="# Install tinytex for PDF output
+RUN R -e \"install.packages('tinytex')\" && R -e \"tinytex::install_tinytex()\"
+
+"
+    fi
+
+    # Always install languageserver for IDE support
+    cmds+="# Install languageserver for IDE support
+RUN R -e \"install.packages('languageserver')\"
+"
+
+    echo "$cmds"
+}
+
+#=============================================================================
 # R VERSION DETECTION
 #=============================================================================
 
@@ -185,29 +248,45 @@ generate_dockerfile() {
     local system_deps_install
     system_deps_install=$(generate_system_deps_install "$system_deps" "$base_image")
 
+    local tools_install
+    tools_install=$(generate_tools_install "$base_image")
+    log_info "  Tools: pandoc, tinytex, languageserver (as needed)"
+
     local deps_comment="Packages: ${r_packages[*]:0:5}..."
     [[ ${#r_packages[@]} -le 5 ]] && deps_comment="Packages: ${r_packages[*]}"
 
     if [[ ! -f "$template" ]]; then
         log_warn "Template not found: $template"
         log_info "Using inline template"
-        generate_dockerfile_inline "$base_image" "$r_version" "$system_deps_install" "$deps_comment"
+        generate_dockerfile_inline "$base_image" "$r_version" "$system_deps_install" "$tools_install" "$deps_comment"
         return $?
     fi
 
-    sed -e "s|\${BASE_IMAGE}|${base_image}|g" \
+    # Create temp file for multi-line substitution
+    local tmpfile
+    tmpfile=$(mktemp)
+    cp "$template" "$tmpfile"
+
+    # Simple substitutions
+    sed -i.bak -e "s|\${BASE_IMAGE}|${base_image}|g" \
         -e "s|\${R_VERSION}|${r_version}|g" \
         -e "s|\${PROJECT_NAME}|${project_name}|g" \
         -e "s|\${SYSTEM_DEPS_COMMENT}|${deps_comment}|g" \
-        -e "s|\${SYSTEM_DEPS_INSTALL}|${system_deps_install}|g" \
-        "$template" > Dockerfile
+        "$tmpfile"
+
+    # Multi-line substitutions using awk
+    awk -v deps="$system_deps_install" '{gsub(/\${SYSTEM_DEPS_INSTALL}/, deps)}1' "$tmpfile" > "$tmpfile.tmp" && mv "$tmpfile.tmp" "$tmpfile"
+    awk -v tools="$tools_install" '{gsub(/\${TOOLS_INSTALL}/, tools)}1' "$tmpfile" > "$tmpfile.tmp" && mv "$tmpfile.tmp" "$tmpfile"
+
+    mv "$tmpfile" Dockerfile
+    rm -f "$tmpfile.bak"
 
     log_success "Generated Dockerfile"
     log_info "  Build with: docker build -t $project_name ."
 }
 
 generate_dockerfile_inline() {
-    local base_image="$1" r_version="$2" system_deps_install="$3" deps_comment="$4"
+    local base_image="$1" r_version="$2" system_deps_install="$3" tools_install="$4" deps_comment="$5"
 
     cat > Dockerfile << EOF
 # syntax=docker/dockerfile:1.4
@@ -222,22 +301,31 @@ FROM \${BASE_IMAGE}:\${R_VERSION}
 ARG USERNAME=analyst
 ARG DEBIAN_FRONTEND=noninteractive
 
+# RENV_CONFIG_REPOS_OVERRIDE forces renv to use Posit PPM binaries
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
-    RENV_PATHS_CACHE=/home/\${USERNAME}/.cache/R/renv \\
+    RENV_PATHS_CACHE=/renv/cache \\
     RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \\
     ZZCOLLAB_CONTAINER=true
 
 ${system_deps_install}
 
-RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/noble/latest'))" \\
+# Configure R to use Posit Package Manager for pre-compiled binaries
+RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))' \\
+        >> /usr/local/lib/R/etc/Rprofile.site && \\
+    echo 'options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version["platform"], R.version["arch"], R.version["os"])))' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
+# Install renv and restore packages from lockfile (using PPM binaries)
 RUN R -e "install.packages('renv')"
+RUN mkdir -p /renv/cache && chmod 777 /renv/cache
+COPY renv.lock renv.lock
+RUN R -e "renv::restore()"
 
+${tools_install}
+
+# Create non-root user
 RUN useradd --create-home --shell /bin/bash \${USERNAME} && \\
-    chown -R \${USERNAME}:\${USERNAME} /usr/local/lib/R/site-library && \\
-    mkdir -p /home/\${USERNAME}/.cache/R/renv && \\
-    chown -R \${USERNAME}:\${USERNAME} /home/\${USERNAME}/.cache
+    chown -R \${USERNAME}:\${USERNAME} /usr/local/lib/R/site-library
 
 USER \${USERNAME}
 WORKDIR /home/\${USERNAME}/project

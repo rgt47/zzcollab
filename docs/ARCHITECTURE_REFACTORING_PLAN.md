@@ -17,29 +17,29 @@ audit of the zzcollab codebase. The refactoring addresses:
 
 ### 1.1 Codebase Size by Module
 
-| Module | Lines | Purpose | Status |
-|--------|-------|---------|--------|
-| help.sh | 1,651 | Help system | Keep |
-| docker.sh | 321 | Docker + Dockerfile gen | ✅ SIMPLIFIED (was 1,955 combined) |
-| validation.sh | 486 | Package validation | ✅ TRIMMED (was 2,093) |
-| config.sh | 284 | Configuration | ✅ TRIMMED (was 1,015) |
-| github.sh | 221 | GitHub + CI/CD | ✅ MERGED (was 471 combined) |
-| profiles.sh | 189 | System deps mapping | ✅ SIMPLIFIED (was 1,447 combined) |
-| cli.sh | 680 | CLI parsing | Keep |
-| analysis.sh | 997 | Analysis structure | → project.sh (pending) |
-| rpackage.sh | 387 | R package structure | → project.sh (pending) |
-| devtools.sh | 322 | Dev tools | → project.sh (pending) |
-| structure.sh | 179 | Directory structure | → project.sh (pending) |
-| lib/core.sh | 471 | Logging/tracking | ✅ CREATED |
-| lib/templates.sh | 181 | Template handling | ✅ CREATED |
-| lib/constants.sh | 119 | Global constants | ✅ CREATED |
-| ~~dockerfile_generator.sh~~ | ~~840~~ | ~~Dockerfile creation~~ | **DELETED** ✅ |
-| ~~profile_validation.sh~~ | ~~1,198~~ | ~~Profile validation~~ | **DELETED** ✅ |
-| ~~system_deps_map.sh~~ | ~~248~~ | ~~System deps~~ | **DELETED** ✅ |
-| ~~cicd.sh~~ | ~~300~~ | ~~CI/CD~~ | **DELETED** ✅ |
-| ~~help_core.sh~~ | ~~231~~ | ~~Help dispatcher~~ | **DELETED** ✅ |
-| ~~help_guides.sh~~ | ~~156~~ | ~~Markdown guides~~ | **DELETED** ✅ |
-| **Refactored Total** | **~6,488** | Reduced from ~12,200 | **47% reduction** |
+| Directory | Module | Lines | Status |
+|-----------|--------|-------|--------|
+| lib/ | constants.sh | 119 | ✅ Foundation library |
+| lib/ | core.sh | 471 | ✅ Foundation library |
+| lib/ | templates.sh | 181 | ✅ Foundation library |
+| modules/ | cli.sh | 674 | Keep (CLI parsing) |
+| modules/ | config.sh | 284 | ✅ TRIMMED (was 1,015) |
+| modules/ | docker.sh | 408 | ✅ SIMPLIFIED (was 1,955) |
+| modules/ | github.sh | 221 | ✅ MERGED (was 471) |
+| modules/ | help.sh | 1,651 | Keep (user documentation) |
+| modules/ | profiles.sh | 188 | ✅ SIMPLIFIED (was 1,447) |
+| modules/ | project.sh | 263 | ✅ CONSOLIDATED (was 1,885) |
+| modules/ | validation.sh | 486 | ✅ TRIMMED (was 2,093) |
+| **lib/ Total** | | **771** | Foundation libraries |
+| **modules/ Total** | | **4,175** | Feature modules |
+| **GRAND TOTAL** | | **4,946** | **Was ~12,200 → 59% reduction** |
+
+**Deleted files:**
+- dockerfile_generator.sh, profile_validation.sh, system_deps_map.sh
+- cicd.sh, structure.sh, analysis.sh, rpackage.sh, devtools.sh
+- help_core.sh, help_guides.sh, utils.sh (modules/ copy)
+- constants.sh, core.sh, templates.sh (modules/ copies - lib/ is canonical)
+- 14 static Dockerfile templates, 10 profile-specific DESCRIPTION templates
 
 ### 1.2 Current Installation Structure
 
