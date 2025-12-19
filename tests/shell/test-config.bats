@@ -4,19 +4,19 @@
 
 # Setup function - runs before each test
 setup() {
-    # Create temporary directory for test configs BEFORE loading modules
     TEST_CONFIG_DIR="$(mktemp -d)"
     TEST_CONFIG_FILE="${TEST_CONFIG_DIR}/test_config.yaml"
     TEST_USER_CONFIG="${TEST_CONFIG_DIR}/user_config.yaml"
 
-    # Set environment variables BEFORE sourcing modules (since they use readonly)
     export SCRIPT_DIR="${BATS_TEST_DIRNAME}/../.."
+    export ZZCOLLAB_HOME="${SCRIPT_DIR}"
+    export ZZCOLLAB_LIB_DIR="${SCRIPT_DIR}/lib"
+    export ZZCOLLAB_MODULES_DIR="${SCRIPT_DIR}/modules"
     export ZZCOLLAB_CONFIG_USER_DIR="${TEST_CONFIG_DIR}"
     export ZZCOLLAB_CONFIG_USER="${TEST_USER_CONFIG}"
     export ZZCOLLAB_CONFIG_PROJECT="${TEST_CONFIG_FILE}"
 
-    # Now source modules (they'll use our override environment variables)
-    source "${SCRIPT_DIR}/modules/core.sh"
+    source "${SCRIPT_DIR}/lib/core.sh"
     source "${SCRIPT_DIR}/modules/config.sh"
 }
 

@@ -12,27 +12,27 @@
 # - Error handling and edge cases
 ################################################################################
 
-# Load test helpers
-load test_helpers
-
 ################################################################################
 # Setup and Teardown
 ################################################################################
 
 setup() {
+    source "${BATS_TEST_DIRNAME}/test_helpers.sh"
     setup_test
 
-    # Set required environment variables BEFORE sourcing
-    export ZZCOLLAB_ROOT="${TEST_DIR}"
+    export SCRIPT_DIR="${BATS_TEST_DIRNAME}/../.."
+    export ZZCOLLAB_HOME="${SCRIPT_DIR}"
+    export ZZCOLLAB_LIB_DIR="${SCRIPT_DIR}/lib"
+    export ZZCOLLAB_MODULES_DIR="${SCRIPT_DIR}/modules"
+    export ZZCOLLAB_ROOT="${SCRIPT_DIR}"
     export ZZCOLLAB_QUIET=true
     export TEMP_TEST_DIR="${TEST_DIR}"
 
-    # Create test fixtures
     create_test_description
     create_test_renv_lock
 
-    # Source module
-    source "${ZZCOLLAB_ROOT}/modules/validation.sh"
+    source "${SCRIPT_DIR}/lib/core.sh" 2>/dev/null || true
+    source "${SCRIPT_DIR}/modules/validation.sh"
 }
 
 teardown() {

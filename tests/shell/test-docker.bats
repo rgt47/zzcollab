@@ -4,32 +4,30 @@
 
 # Setup function - runs before each test
 setup() {
-    # Create temporary directory for test environment
     TEST_DIR="$(mktemp -d)"
     TEST_PROJECT_DIR="${TEST_DIR}/test-project"
     mkdir -p "${TEST_PROJECT_DIR}"
 
-    # Set environment variables BEFORE sourcing modules
     export SCRIPT_DIR="${BATS_TEST_DIRNAME}/../.."
+    export ZZCOLLAB_HOME="${SCRIPT_DIR}"
+    export ZZCOLLAB_LIB_DIR="${SCRIPT_DIR}/lib"
+    export ZZCOLLAB_MODULES_DIR="${SCRIPT_DIR}/modules"
+    export ZZCOLLAB_TEMPLATES_DIR="${SCRIPT_DIR}/templates"
     export MODULES_DIR="${SCRIPT_DIR}/modules"
     export TEMPLATES_DIR="${SCRIPT_DIR}/templates"
 
-    # Set required variables for Docker module
     export PKG_NAME="testpackage"
     export BASE_IMAGE="rocker/r-ver"
     export R_VERSION="latest"
     export FORCE_PLATFORM="${FORCE_PLATFORM:-auto}"
     export MULTIARCH_VERSE_IMAGE="${MULTIARCH_VERSE_IMAGE:-rocker/rstudio}"
 
-    # Save original directory and change to test project directory
     ORIG_DIR="$(pwd)"
     cd "${TEST_PROJECT_DIR}"
 
-    # Source modules (core.sh must be loaded first)
-    # Note: profile_validation.sh is required by dockerfile_generator.sh
-    source "${SCRIPT_DIR}/modules/core.sh"
-    source "${SCRIPT_DIR}/modules/templates.sh"
-    source "${SCRIPT_DIR}/modules/profile_validation.sh" 2>/dev/null || true
+    source "${SCRIPT_DIR}/lib/core.sh"
+    source "${SCRIPT_DIR}/lib/templates.sh"
+    source "${SCRIPT_DIR}/modules/profiles.sh" 2>/dev/null || true
     source "${SCRIPT_DIR}/modules/docker.sh"
 }
 
