@@ -1,30 +1,14 @@
 Package: testthat
-Title: Research Compendium for testthat
+Title: testthat Data Analysis
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person("Your Name", email = "your.email@example.com", role = c("aut", "cre"))
-Description: This is a research compendium for the testthat project analyzing allometric relationships in Palmer penguins using regression analysis.
+Description: Data analysis workspace for the testthat project.
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Imports:
-    dplyr,
-    ggplot2,
-    tidyr,
-    here,
     renv,
-    usethis,
-    devtools
-Suggests: 
-    testthat (>= 3.0.0),
-    palmerpenguins,
-    broom,
-    knitr,
-    rmarkdown,
-    targets,
-    janitor,
-    DT,
-    conflicted
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3
-VignetteBuilder: knitr

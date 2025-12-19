@@ -90,68 +90,104 @@ fi
 echo ""
 
 #=============================================================================
-# SHELL SCRIPT TESTS (BATS)
+# SHELL SCRIPT TESTS
 #=============================================================================
 
 echo "🔧 Running shell script tests..."
 echo ""
 
+SHELL_TESTS_PASSED=true
+TOTAL_SHELL_PASS=0
+TOTAL_SHELL_FAIL=0
+
+# Run bash test scripts (test-*.sh)
+BASH_TEST_FILES=("tests/shell/"test-*.sh)
+
+if [ ${#BASH_TEST_FILES[@]} -gt 0 ] && [ -f "${BASH_TEST_FILES[0]}" ]; then
+    for test_file in "${BASH_TEST_FILES[@]}"; do
+        if [ -f "$test_file" ] && [ -x "$test_file" ]; then
+            test_name=$(basename "$test_file" .sh)
+            echo "Testing: $test_name"
+
+            if [ "$VERBOSE" = true ]; then
+                if bash "$test_file"; then
+                    TOTAL_SHELL_PASS=$((TOTAL_SHELL_PASS + 1))
+                else
+                    TOTAL_SHELL_FAIL=$((TOTAL_SHELL_FAIL + 1))
+                fi
+            else
+                output=$(bash "$test_file" 2>&1)
+                if [ $? -eq 0 ]; then
+                    results=$(echo "$output" | grep "^Results:" || true)
+                    if [ -n "$results" ]; then
+                        echo -e "  ${GREEN}✓${NC} $results"
+                    else
+                        echo -e "  ${GREEN}✓ Passed${NC}"
+                    fi
+                    TOTAL_SHELL_PASS=$((TOTAL_SHELL_PASS + 1))
+                else
+                    echo -e "  ${RED}✗ Failed${NC}"
+                    TOTAL_SHELL_FAIL=$((TOTAL_SHELL_FAIL + 1))
+                fi
+            fi
+        fi
+    done
+fi
+
+# Run BATS tests if bats is available and .bats files exist
 if command -v bats >/dev/null 2>&1; then
-    # Find all .bats files in tests/shell/
     BATS_FILES=("tests/shell/"*.bats)
 
-    if [ ${#BATS_FILES[@]} -eq 0 ] || [ ! -f "${BATS_FILES[0]}" ]; then
-        echo -e "${YELLOW}⚠ No BATS test files found${NC}"
-        SHELL_TESTS_PASSED=true
-    else
-        TOTAL_BATS_PASS=0
-        TOTAL_BATS_FAIL=0
-
+    if [ ${#BATS_FILES[@]} -gt 0 ] && [ -f "${BATS_FILES[0]}" ]; then
         for test_file in "${BATS_FILES[@]}"; do
             if [ -f "$test_file" ]; then
                 echo "Testing: $(basename "$test_file")"
 
                 if [ "$VERBOSE" = true ]; then
-                    bats "$test_file" && {
-                        TOTAL_BATS_PASS=$((TOTAL_BATS_PASS + 1))
-                    } || {
-                        TOTAL_BATS_FAIL=$((TOTAL_BATS_FAIL + 1))
-                    }
+                    if bats "$test_file"; then
+                        TOTAL_SHELL_PASS=$((TOTAL_SHELL_PASS + 1))
+                    else
+                        TOTAL_SHELL_FAIL=$((TOTAL_SHELL_FAIL + 1))
+                    fi
                 else
-                    # Capture summary
                     output=$(bats "$test_file" 2>&1)
                     if echo "$output" | grep -q "^ok"; then
-                        # Count passing tests
                         pass_count=$(echo "$output" | grep -c "^ok" || echo "0")
                         fail_count=$(echo "$output" | grep -c "^not ok" || echo "0")
 
                         if [ "$fail_count" -eq 0 ]; then
                             echo -e "  ${GREEN}✓ All tests passed${NC} ($pass_count tests)"
-                            TOTAL_BATS_PASS=$((TOTAL_BATS_PASS + 1))
+                            TOTAL_SHELL_PASS=$((TOTAL_SHELL_PASS + 1))
                         else
                             echo -e "  ${YELLOW}⚠ Some tests failed${NC} ($pass_count passed, $fail_count failed)"
-                            TOTAL_BATS_FAIL=$((TOTAL_BATS_FAIL + 1))
+                            TOTAL_SHELL_FAIL=$((TOTAL_SHELL_FAIL + 1))
                         fi
                     else
                         echo -e "  ${RED}✗ Tests failed${NC}"
-                        TOTAL_BATS_FAIL=$((TOTAL_BATS_FAIL + 1))
+                        TOTAL_SHELL_FAIL=$((TOTAL_SHELL_FAIL + 1))
                     fi
                 fi
             fi
         done
-
-        if [ $TOTAL_BATS_FAIL -eq 0 ]; then
-            echo ""
-            echo -e "${GREEN}✓ All shell tests passed${NC} ($TOTAL_BATS_PASS test files)"
-            SHELL_TESTS_PASSED=true
-        else
-            echo ""
-            echo -e "${YELLOW}⚠ Some shell tests failed${NC} ($TOTAL_BATS_PASS passed, $TOTAL_BATS_FAIL failed)"
-            SHELL_TESTS_PASSED=false
-        fi
+    else
+        echo -e "${YELLOW}⚠ No BATS test files found${NC}"
     fi
 else
-    echo -e "${RED}✗ BATS not found. Install with: brew install bats-core${NC}"
+    echo -e "${YELLOW}⚠ BATS not installed (optional)${NC}"
+fi
+
+# Determine overall shell test status
+if [ $TOTAL_SHELL_FAIL -eq 0 ] && [ $TOTAL_SHELL_PASS -gt 0 ]; then
+    echo ""
+    echo -e "${GREEN}✓ All shell tests passed${NC} ($TOTAL_SHELL_PASS test files)"
+    SHELL_TESTS_PASSED=true
+elif [ $TOTAL_SHELL_PASS -eq 0 ] && [ $TOTAL_SHELL_FAIL -eq 0 ]; then
+    echo ""
+    echo -e "${YELLOW}⚠ No shell tests found${NC}"
+    SHELL_TESTS_PASSED=true
+else
+    echo ""
+    echo -e "${YELLOW}⚠ Some shell tests failed${NC} ($TOTAL_SHELL_PASS passed, $TOTAL_SHELL_FAIL failed)"
     SHELL_TESTS_PASSED=false
 fi
 

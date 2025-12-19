@@ -147,7 +147,7 @@ test_that("render_report function can be called", {
 
 test_that("render_report handles optional report_path", {
   formals_list <- formals(zzcollab::render_report)
-  expect_true(!is.null(formals_list$report_path))
+  expect_true("report_path" %in% names(formals_list))
 })
 
 ################################################################################

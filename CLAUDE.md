@@ -693,6 +693,45 @@ zzcollab_help("config")            # Configuration guide
 
 **Recent Major Changes**:
 
+### December 19, 2025 - Test Infrastructure Simplification and Module Refactoring
+
+**Simplified shell test infrastructure** - Replaced complex BATS tests with simpler bash test scripts:
+
+**Shell Test Changes**:
+- Removed 12 BATS test files that referenced non-existent or renamed functions
+- Created 3 new bash test scripts with 52 total tests:
+  - `tests/shell/test-core.sh` (16 tests) - validate_package_name, command_exists, logging, safe_mkdir, require_module
+  - `tests/shell/test-cli.sh` (22 tests) - require_arg, validate_team_name, validate_project_name, validate_base_image
+  - `tests/shell/test-validation.sh` (14 tests) - verify_description_file, format_r_package_vector, add_package_to_description
+- Created `tests/shell/test_helpers.sh` - test utilities, assertions, module loading
+- Created `tests/shell/run_all_tests.sh` - unified test runner
+
+**CI Workflow Updates**:
+- Simplified `.github/workflows/shell-tests.yml` from 692 lines to 58 lines
+- Removed references to non-existent BATS test files
+- Updated `tests/run-all-tests.sh` to run bash test scripts (BATS now optional)
+
+**R Package Fixes**:
+- Fixed test assertion in `test-r-functions.R:150` (incorrect NULL check)
+- Moved mock project files from `tests/testthat/` to `tests/testthat/fixtures/`
+- Updated `.Rbuildignore` to exclude test artifacts and non-standard files
+- Package now builds with 0 errors, 0 warnings, 0 notes
+
+**Module Structure** (lib/ vs modules/):
+- `lib/` contains foundation modules: core.sh, constants.sh, templates.sh
+- `modules/` contains feature modules: cli.sh, config.sh, docker.sh, github.sh, help.sh, profiles.sh, project.sh, validation.sh
+
+**Files Modified**:
+- `tests/shell/test_helpers.sh` - New test helper utilities
+- `tests/shell/test-core.sh` - New core module tests
+- `tests/shell/test-cli.sh` - New CLI module tests
+- `tests/shell/test-validation.sh` - New validation module tests
+- `tests/shell/run_all_tests.sh` - New test runner
+- `.github/workflows/shell-tests.yml` - Simplified CI workflow
+- `tests/run-all-tests.sh` - Updated to run bash tests
+- `tests/testthat/test-r-functions.R` - Fixed test assertion
+- `.Rbuildignore` - Added exclusions for test artifacts
+
 ### December 18, 2025 - Kitty Terminal Graphics and LSP-Ready Docker Profiles
 
 **New Docker profiles for vim/neovim users** - Added languageserver support without X11 overhead:
