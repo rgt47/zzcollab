@@ -351,7 +351,7 @@ report_and_fix_missing_description() {
         [[ ${#failed[@]} -eq 0 ]] && { log_success "All packages added to DESCRIPTION"; return 0; }
         log_error "Failed: ${failed[*]}"; return 1
     fi
-    echo "Fix: bash modules/validation.sh --fix"; return 1
+    echo "Fix: zzcollab validate --fix"; return 1
 }
 
 report_and_fix_missing_lock() {
@@ -382,7 +382,7 @@ report_and_fix_missing_lock() {
         [[ ${#failed[@]} -eq 0 ]] && { log_success "All installable packages added to renv.lock"; } || \
             { log_error "Failed: ${failed[*]}"; }
     elif [[ ${#installable[@]} -gt 0 ]]; then
-        echo "Fix: bash modules/validation.sh --fix"
+        echo "Fix: zzcollab validate --fix"
     fi
 
     [[ ${#non_installable[@]} -gt 0 ]] && {

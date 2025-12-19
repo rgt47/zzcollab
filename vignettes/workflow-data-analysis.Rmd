@@ -73,19 +73,19 @@ Set your configuration once for all future projects:
 
 ```bash
 # Initialize configuration
-zzcollab --config init
+zzcollab config init
 
 # Set team name (your GitHub username for solo work)
-zzcollab --config set team-name "myusername"
+zzcollab config set team-name "myusername"
 
 # Set GitHub account
-zzcollab --config set github-account "myusername"
+zzcollab config set github-account "myusername"
 
 # Set dotfiles directory
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Set default Docker profile (analysis profile recommended for data analysis)
-zzcollab --config set profile-name "ubuntu_standard_analysis"
+zzcollab config set profile-name "ubuntu_standard_analysis"
 ```
 
 ### Create Analysis Project

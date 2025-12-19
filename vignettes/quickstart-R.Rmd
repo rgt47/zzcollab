@@ -68,7 +68,7 @@ validate_config()
 **What this accomplishes:**
 - Creates `~/.zzcollab/config.yaml` with your defaults
 - Eliminates repetitive typing for future projects
-- Provides same functionality as `zzcollab --config` commands
+- Provides same functionality as `zzcollab config` commands
 
 ## Configuration Management
 

@@ -311,7 +311,8 @@ run_tests() {
     echo "=================================="
 
     for test in "${tests[@]}"; do
-        if $test 2>/dev/null; then
+        # Run each test in a subshell to isolate exit calls
+        if ( $test ) 2>/dev/null; then
             echo "✅ $test"
             ((pass++))
         else

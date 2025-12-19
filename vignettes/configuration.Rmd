@@ -133,44 +133,44 @@ collaboration:
 
 ```bash
 # Create user configuration file with interactive prompts
-zzcollab --config init
+zzcollab config init
 
 # Create configuration in specific location
-zzcollab --config init --config-file ./custom-config.yaml
+zzcollab config init --config-file ./custom-config.yaml
 ```
 
 ### Set Configuration Values
 
 ```bash
 # Set team name (typically your GitHub username for solo work)
-zzcollab --config set team-name "myteam"
+zzcollab config set team-name "myteam"
 
 # Set GitHub account
-zzcollab --config set github-account "myusername"
+zzcollab config set github-account "myusername"
 
 # Set Docker Hub account (defaults to team-name if not set)
-zzcollab --config set dockerhub-account "myusername"
+zzcollab config set dockerhub-account "myusername"
 
 # Set default Docker profile
-zzcollab --config set profile-name "analysis"
+zzcollab config set profile-name "analysis"
 
 # Set dotfiles directory
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Get Configuration Values
 
 ```bash
 # Get specific value
-zzcollab --config get team-name
+zzcollab config get team-name
 # Output: myteam
 
 # Get Docker profile
-zzcollab --config get profile-name
+zzcollab config get profile-name
 # Output: analysis
 
 # Get dotfiles directory
-zzcollab --config get dotfiles-dir
+zzcollab config get dotfiles-dir
 # Output: /Users/username/dotfiles
 ```
 
@@ -178,10 +178,10 @@ zzcollab --config get dotfiles-dir
 
 ```bash
 # Show all effective configuration
-zzcollab --config list
+zzcollab config list
 
 # Show configuration sources (which file provides each value)
-zzcollab --config list --verbose
+zzcollab config list --verbose
 
 # Output shows:
 # team-name: "myteam" (from ~/.zzcollab/config.yaml)
@@ -193,10 +193,10 @@ zzcollab --config list --verbose
 
 ```bash
 # Check configuration for errors and inconsistencies
-zzcollab --config validate
+zzcollab config validate
 
 # Validate with detailed output
-zzcollab --config validate --verbose
+zzcollab config validate --verbose
 ```
 
 ## Configuration Workflow Examples
@@ -205,11 +205,11 @@ zzcollab --config validate --verbose
 
 ```bash
 # One-time configuration
-zzcollab --config init
-zzcollab --config set team-name "myresearch"
-zzcollab --config set github-account "myusername"
-zzcollab --config set profile-name "analysis"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config init
+zzcollab config set team-name "myresearch"
+zzcollab config set github-account "myusername"
+zzcollab config set profile-name "analysis"
+zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Create projects using defaults
 mkdir penguin-study && cd penguin-study
@@ -220,9 +220,9 @@ zzcollab  # Uses all configured defaults
 
 ```bash
 # Personal defaults
-zzcollab --config set team-name "genomicslab"
-zzcollab --config set github-account "genomicslab"
-zzcollab --config set profile-name "bioinformatics"
+zzcollab config set team-name "genomicslab"
+zzcollab config set github-account "genomicslab"
+zzcollab config set profile-name "bioinformatics"
 
 # Create team project with project-specific config
 mkdir cancer-study && cd cancer-study
@@ -253,8 +253,8 @@ git add . && git commit -m "Initial team setup" && git push
 
 ```bash
 # Minimal personal config needed
-zzcollab --config set team-name "genomicslab"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config set team-name "genomicslab"
+zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Join existing project
 git clone https://github.com/genomicslab/cancer-study.git
@@ -391,7 +391,7 @@ zzcollab --check-team-image
 ```bash
 # --config-file PATH
 # Use custom configuration file location
-zzcollab --config-file ./team-config.yaml
+zzcollab config-file ./team-config.yaml
 
 # --profiles-config PATH
 # Use custom profile definitions
@@ -839,10 +839,10 @@ Rscript analysis/scripts/differential_expression.R
 **Configuration**:
 ```bash
 # One-time setup
-zzcollab --config init
-zzcollab --config set team-name "datasci"
-zzcollab --config set profile-name "analysis"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config init
+zzcollab config set team-name "datasci"
+zzcollab config set profile-name "analysis"
+zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Create projects with configured defaults
 mkdir customer-churn && cd customer-churn
@@ -864,8 +864,8 @@ zzcollab  # Consistent environment across projects
 **Team Lead Setup**:
 ```bash
 # Personal config
-zzcollab --config set team-name "psychlab"
-zzcollab --config set github-account "psychlab"
+zzcollab config set team-name "psychlab"
+zzcollab config set github-account "psychlab"
 
 # Create shared project
 mkdir attention-study && cd attention-study
@@ -897,8 +897,8 @@ git add . && git commit -m "Team setup" && git push
 **Team Member Workflow**:
 ```bash
 # Minimal personal setup
-zzcollab --config set team-name "psychlab"
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config set team-name "psychlab"
+zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Join project
 git clone https://github.com/psychlab/attention-study.git
@@ -1015,7 +1015,7 @@ q()  # Exit R - snapshot happens automatically
 
 ```bash
 # Validate all configuration files
-zzcollab --config validate
+zzcollab config validate
 
 # Expected output:
 # ✓ User configuration valid: ~/.zzcollab/config.yaml
@@ -1028,10 +1028,10 @@ zzcollab --config validate
 
 ```bash
 # See merged configuration from all sources
-zzcollab --config list
+zzcollab config list
 
 # See which file provides each value
-zzcollab --config list --verbose
+zzcollab config list --verbose
 
 # Output:
 # team-name: "genomicslab"
@@ -1064,14 +1064,14 @@ zzcollab --dry-run -t myteam -p test-project --profile-name analysis
 
 ```bash
 # Symptom: Set profile-name in user config but project uses different profile
-zzcollab --config set profile-name "analysis"
-zzcollab --config get profile-name
+zzcollab config set profile-name "analysis"
+zzcollab config get profile-name
 # Output: bioinformatics  (Expected: analysis)
 ```
 
 **Solution**: Check configuration sources
 ```bash
-zzcollab --config list --verbose
+zzcollab config list --verbose
 # Output shows:
 # profile-name: "bioinformatics"
 #   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting]
@@ -1124,7 +1124,7 @@ zzcollab --list-profiles
 
 **Solution**: Initialize configuration
 ```bash
-zzcollab --config init
+zzcollab config init
 # Interactive prompts:
 # Team name: myteam
 # GitHub account: myusername
@@ -1340,12 +1340,12 @@ profiles:
 
 1. **Check configuration hierarchy**
    ```bash
-   zzcollab --config list --verbose
+   zzcollab config list --verbose
    ```
 
 2. **Validate configuration**
    ```bash
-   zzcollab --config validate
+   zzcollab config validate
    ```
 
 3. **Test with dry-run**
@@ -1380,9 +1380,9 @@ ZZCOLLAB's configuration system provides control over reproducible research envi
 
 **Initialize configuration**:
 ```bash
-zzcollab --config init
-zzcollab --config set team-name "myteam"
-zzcollab --config set profile-name "analysis"
+zzcollab config init
+zzcollab config set team-name "myteam"
+zzcollab config set profile-name "analysis"
 ```
 
 **Create project**:

@@ -1044,9 +1044,9 @@ Creates:
 Example 4: Using configuration (recommended for solo developers)
 ──────────────────────────────────────────────────────────────────────────
 # One-time setup:
-zzcollab --config set team-name "myname"
-zzcollab --config set github-account "myname"
-zzcollab --config set auto-github true
+zzcollab config set team-name "myname"
+zzcollab config set github-account "myname"
+zzcollab config set auto-github true
 
 # Then simply:
 zzcollab -p newproject
@@ -1059,32 +1059,32 @@ CONFIGURATION OPTIONS
 Set defaults to avoid typing them repeatedly:
 
 github-account:
-    zzcollab --config set github-account "yourusername"
+    zzcollab config set github-account "yourusername"
     Sets default GitHub account for all projects
 
 auto-github:
-    zzcollab --config set auto-github true
+    zzcollab config set auto-github true
     Automatically creates GitHub repo without needing -G flag
 
-    zzcollab --config set auto-github false
+    zzcollab config set auto-github false
     Disables automatic GitHub repo creation (default)
 
 with-examples:
-    zzcollab --config set with-examples true
+    zzcollab config set with-examples true
     Include example files by default (report.Rmd, analysis scripts, etc.)
 
-    zzcollab --config set with-examples false
+    zzcollab config set with-examples false
     Create clean workspace without examples (default)
 
 View current settings:
-    zzcollab --config list
+    zzcollab config list
 
 Example workflow with configuration:
     # Setup once:
-    zzcollab --config set team-name "rgt47"
-    zzcollab --config set github-account "rgt47"
-    zzcollab --config set auto-github true
-    zzcollab --config set profile-name "analysis"
+    zzcollab config set team-name "rgt47"
+    zzcollab config set github-account "rgt47"
+    zzcollab config set auto-github true
+    zzcollab config set profile-name "analysis"
 
     # Then all new projects are simple:
     zzcollab -p myproject    # GitHub repo created automatically!
@@ -1203,7 +1203,7 @@ Solution:
     Or specify GitHub account explicitly:
     zzcollab -t dockerteam -g githubuser -p project -G
     Or set in configuration:
-    zzcollab --config set github-account "yourusername"
+    zzcollab config set github-account "yourusername"
 
 Issue: Permission denied (publickey)
 ────────────────────────────────────────────────────────────────────────
@@ -1257,8 +1257,8 @@ Team members - Join existing project:
 Scenario 2: Solo Researcher, Personal Accounts
 ──────────────────────────────────────────────────────────────────────────
 # Setup once:
-zzcollab --config set team-name "myname"
-zzcollab --config set github-account "myname"
+zzcollab config set team-name "myname"
+zzcollab config set github-account "myname"
 
 # Each new project:
 zzcollab -p analysis1 -Gzzcollab -p analysis2 -Gzzcollab -p paper3 -G
@@ -1298,7 +1298,7 @@ Project Resources:
     Examples: https://github.com/rgt47/zzcollab/tree/main/examples
 
 Configuration Guide:
-    Run: zzcollab --config list
+    Run: zzcollab config list
     See: ~/.zzcollab/config.yaml for your configuration file
 
 ═══════════════════════════════════════════════════════════════════════════
@@ -1345,8 +1345,8 @@ Step 1: One-Time Configuration
 ──────────────────────────────────────────────────────────────────────────
 Set your defaults so you never have to type them again:
 
-    zzcollab --config set team-name "yourname"
-    zzcollab --config set profile-name "analysis"
+    zzcollab config set team-name "yourname"
+    zzcollab config set profile-name "analysis"
 
 Replace "yourname" with your actual name or username (e.g., "jsmith")
 This becomes your Docker Hub namespace (like jsmith/project-rstudio:latest)
@@ -1376,8 +1376,8 @@ Scenario: You need to complete a data analysis analysis assignment
 
 1. Set up configuration (one time ever):
    ──────────────────────────────────────────────────────────────────────
-   zzcollab --config set team-name "jsmith"
-   zzcollab --config set profile-name "analysis"
+   zzcollab config set team-name "jsmith"
+   zzcollab config set profile-name "analysis"
 
 2. Create project directory:
    ──────────────────────────────────────────────────────────────────────
@@ -1464,7 +1464,7 @@ A: Use 'analysis' profile - has tidyverse, ggplot2, dplyr in Docker image.
 
 Q: "My laptop is slow - can I use a lighter profile?"
 A: Yes! Use minimal profile:
-     zzcollab --config set profile-name "minimal"
+     zzcollab config set profile-name "minimal"
    Lightweight base, add packages as you need them.
 
 Q: "How do I add packages I need?"
@@ -1480,8 +1480,8 @@ INDIVIDUAL RESEARCHER COMPLETE COMMAND REFERENCE
 
 One-Time Setup:
 ──────────────────────────────────────────────────────────────────────────
-zzcollab --config set team-name "yourname"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "yourname"
+zzcollab config set profile-name "analysis"
 
 Per-Project (First Time):
 ──────────────────────────────────────────────────────────────────────────
@@ -1519,7 +1519,7 @@ AVOIDING COMMON INDIVIDUAL RESEARCHER MISTAKES
    zzcollab -t proj2 -p analysis2  # Confusing!
 
 ✅ DO: Use one team name (yours) for everything
-   zzcollab --config set team-name "yourname"
+   zzcollab config set team-name "yourname"
    Then just: zzcollab -p analysis1, zzcollab -p analysis2
 
 ❌ DON'T: Forget to save your work in the right place
@@ -1542,8 +1542,8 @@ EXAMPLE: TYPICAL SEMESTER WORKFLOW
 
 Week 1: Setup
 ──────────────────────────────────────────────────────────────────────────
-zzcollab --config set team-name "jsmith"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "jsmith"
+zzcollab config set profile-name "analysis"
 
 Week 2-3: Analysis 1
 ──────────────────────────────────────────────────────────────────────────
@@ -1605,8 +1605,8 @@ QUICK REFERENCE CARD (PRINT THIS!)
 ═══════════════════════════════════════════════════════════════════════════
 
 ONE-TIME SETUP:
-  zzcollab --config set team-name "yourname"
-  zzcollab --config set profile-name "analysis"
+  zzcollab config set team-name "yourname"
+  zzcollab config set profile-name "analysis"
 
 NEW PROJECT:
   mkdir ~/projects/projectname && cd ~/projects/projectname

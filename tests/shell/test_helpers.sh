@@ -12,8 +12,11 @@
 
 set -euo pipefail
 
-# Test configuration
-export TEST_DIR="${TEST_DIR:-.}"
+# Test configuration - resolve absolute paths
+if [[ -z "${TEST_DIR:-}" ]]; then
+    TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+export TEST_DIR
 export FIXTURES_DIR="${TEST_DIR}/fixtures"
 export TEMP_TEST_DIR=""
 
@@ -272,28 +275,54 @@ setup_test_logging() {
 ##############################################################################
 load_module_for_testing() {
     local module_name="$1"
-    local module_path="${TEST_DIR}/../../modules/${module_name}"
+    local zzcollab_root="${TEST_DIR}/../.."
+    local module_path
+    local module_base
+    local loaded_var
+
+    # Get base name without .sh extension for loaded flag check
+    module_base="${module_name%.sh}"
+    module_base_upper=$(echo "$module_base" | tr '[:lower:]' '[:upper:]')
+    loaded_var="ZZCOLLAB_${module_base_upper}_LOADED"
+
+    # Skip if module already loaded (readonly variables would cause errors)
+    if [[ "${!loaded_var:-}" == "true" ]]; then
+        return 0
+    fi
+
+    # Determine module location (lib/ vs modules/)
+    if [[ "$module_name" == "core.sh" ]] || [[ "$module_name" == "constants.sh" ]] || [[ "$module_name" == "templates.sh" ]]; then
+        module_path="${zzcollab_root}/lib/${module_name}"
+    else
+        module_path="${zzcollab_root}/modules/${module_name}"
+    fi
 
     if [[ ! -f "$module_path" ]]; then
         echo "❌ Module not found: $module_path" >&2
         return 1
     fi
 
-    # Set up minimal environment
-    export SCRIPT_DIR="${TEST_DIR}/../../"
-    export MODULES_DIR="${TEST_DIR}/../../modules"
-    export TEMPLATES_DIR="${TEST_DIR}/../../templates"
+    # Set up minimal environment for refactored structure
+    export ZZCOLLAB_HOME="${zzcollab_root}"
+    export ZZCOLLAB_LIB_DIR="${zzcollab_root}/lib"
+    export ZZCOLLAB_MODULES_DIR="${zzcollab_root}/modules"
+    export ZZCOLLAB_TEMPLATES_DIR="${zzcollab_root}/templates"
+    export SCRIPT_DIR="${zzcollab_root}"
+    export MODULES_DIR="${zzcollab_root}/modules"
+    export TEMPLATES_DIR="${zzcollab_root}/templates"
     export LOG_FILE=""
 
     # Source required dependencies in order
-    # (most modules require core.sh)
+    # (most modules require core.sh which is now in lib/)
     if [[ "$module_name" != "core.sh" ]] && [[ "$module_name" != "constants.sh" ]]; then
         # Source dependencies if not already loaded
-        if ! type log_error &>/dev/null; then
-            # shellcheck source=../modules/constants.sh
-            source "${TEST_DIR}/../../modules/constants.sh" 2>/dev/null || true
-            # shellcheck source=../modules/core.sh
-            source "${TEST_DIR}/../../modules/core.sh" 2>/dev/null || true
+        if [[ "${ZZCOLLAB_CONSTANTS_LOADED:-}" != "true" ]]; then
+            # shellcheck source=../../lib/constants.sh
+            source "${zzcollab_root}/lib/constants.sh" 2>/dev/null || true
+        fi
+        if [[ "${ZZCOLLAB_CORE_LOADED:-}" != "true" ]]; then
+            # shellcheck source=../../lib/core.sh
+            source "${zzcollab_root}/lib/core.sh" 2>/dev/null || true
         fi
     fi
 

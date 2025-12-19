@@ -52,19 +52,19 @@ Set your defaults once, specifying the RStudio profile:
 
 ```bash
 # Initialize configuration
-zzcollab --config init
+zzcollab config init
 
 # Set team name (typically your GitHub username for solo projects)
-zzcollab --config set team-name "rgt47"
+zzcollab config set team-name "rgt47"
 
 # Set GitHub account
-zzcollab --config set github-account "rgt47"
+zzcollab config set github-account "rgt47"
 
 # Set RStudio profile as default
-zzcollab --config set profile-name "rstudio"
+zzcollab config set profile-name "rstudio"
 
 # Set dotfiles directory (optional)
-zzcollab --config set dotfiles-dir "~/dotfiles"
+zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 **What this accomplishes:**
@@ -486,8 +486,8 @@ RStudio is great for development, but some tasks need terminal:
 
 ```bash
 # Set RStudio as team profile
-zzcollab --config set team-name "genomicslab"
-zzcollab --config set profile-name "rstudio"
+zzcollab config set team-name "genomicslab"
+zzcollab config set profile-name "rstudio"
 
 # Create team project
 mkdir study && cd study
