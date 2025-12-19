@@ -173,7 +173,7 @@ cmd_docker() {
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
             --profile) profile="$2"; shift 2 ;;
-            --help|-h) show_docker_help; exit 0 ;;
+            --help|-h) require_module "help"; show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
     done
@@ -280,17 +280,20 @@ cmd_help() {
     local topic="${1:-}"
 
     if [[ -z "$topic" ]]; then
-        show_usage
+        show_help
     else
         case "$topic" in
-            init) show_init_help ;;
-            docker) show_docker_help ;;
-            validate) show_validate_help 2>/dev/null || log_info "Validate: Check project structure" ;;
-            config) show_config_help ;;
+            init|quickstart) show_help_quickstart ;;
+            docker) show_help_docker ;;
+            validate) log_info "Validate: Check project structure and dependencies" ;;
+            config) show_help_config ;;
             github) show_github_help ;;
-            workflow) show_workflow_help ;;
-            renv) show_renv_help ;;
-            *) log_error "Unknown help topic: $topic"; show_usage ;;
+            workflow) show_help_workflow ;;
+            renv) show_help_renv ;;
+            profiles) show_help_profiles ;;
+            cicd) show_help_cicd ;;
+            troubleshooting) show_help_troubleshooting ;;
+            *) log_error "Unknown help topic: $topic"; show_help_topics_list ;;
         esac
     fi
 }

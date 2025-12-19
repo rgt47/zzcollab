@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# validation.sh - Package dependency validation (pure shell, no R required)
+##############################################################################
+# ZZCOLLAB VALIDATION MODULE
+##############################################################################
+# Package dependency validation (pure shell, no R required)
 # Validates R packages in code are declared in DESCRIPTION and locked in renv.lock
+#
+# DEPENDENCIES: core.sh (logging, utilities)
+##############################################################################
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/core.sh"
-source "$SCRIPT_DIR/utils.sh"
-source "$SCRIPT_DIR/constants.sh"
+require_module "core"
 
 #==============================================================================
 # CONFIGURATION
@@ -482,5 +485,11 @@ EOF
 
     validate_and_report "$strict" "$auto_fix" "$verbose" "$cleanup"
 }
+
+#=============================================================================
+# MODULE LOADED
+#=============================================================================
+
+readonly ZZCOLLAB_VALIDATION_LOADED=true
 
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"
