@@ -225,23 +225,13 @@ BUILD_DOCKER=false
 readonly DEFAULT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_BASE_IMAGE:-rocker/r-ver}"
 BASE_IMAGE="$DEFAULT_BASE_IMAGE"
 
-# Multi-architecture support configuration
-MULTIARCH_VERSE_IMAGE="${MULTIARCH_VERSE_IMAGE:-rocker/verse}"
-FORCE_PLATFORM="${FORCE_PLATFORM:-auto}"
-export MULTIARCH_VERSE_IMAGE FORCE_PLATFORM
-
-# New user-friendly interface variables
+# User-friendly interface variables
 TEAM_NAME=""
 PROJECT_NAME=""
 GITHUB_ACCOUNT=""
-DOCKERHUB_ACCOUNT=""
 DOCKERFILE_PATH=""
 IMAGE_TAG=""
 R_VERSION=""  # R version for Docker build (extracted from renv.lock or specified via --r-version)
-
-# Base image selection for team initialization
-readonly DEFAULT_INIT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE:-r-ver}"
-INIT_BASE_IMAGE="$DEFAULT_INIT_BASE_IMAGE"    # Options: r-ver, rstudio, verse, all
 
 # Initialization mode variables
 PREPARE_DOCKERFILE=false
@@ -459,7 +449,7 @@ export_cli_variables() {
     export BUILD_DOCKER BASE_IMAGE
 
     # Team interface variables
-    export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERHUB_ACCOUNT DOCKERFILE_PATH IMAGE_TAG
+    export TEAM_NAME PROJECT_NAME GITHUB_ACCOUNT DOCKERFILE_PATH IMAGE_TAG
 
     # Mode and behavior flags
     export PREPARE_DOCKERFILE USE_TEAM_IMAGE WITH_EXAMPLES ADD_EXAMPLES
@@ -469,17 +459,6 @@ export_cli_variables() {
 
     # Show/display flags
     export SHOW_HELP SHOW_NEXT_STEPS
-}
-
-#=============================================================================
-# CLI VALIDATION FUNCTIONS
-#=============================================================================
-
-# Function: validate_cli_arguments
-# Purpose: Validate CLI argument combinations and required values
-validate_cli_arguments() {
-    # No validation needed currently
-    :
 }
 
 #=============================================================================
@@ -493,12 +472,6 @@ process_cli() {
     # Parse command line arguments
     if ! parse_cli_arguments "$@"; then
         log_error "Failed to parse command line arguments"
-        return 1
-    fi
-
-    # Validate argument combinations
-    if ! validate_cli_arguments; then
-        log_error "Invalid argument combination"
         return 1
     fi
 

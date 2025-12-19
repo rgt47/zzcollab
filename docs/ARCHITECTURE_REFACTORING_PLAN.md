@@ -26,20 +26,20 @@ audit of the zzcollab codebase. The refactoring addresses:
 | config.sh | 1,015 | Configuration | Active |
 | analysis.sh | 997 | Analysis structure | Active |
 | dockerfile_generator.sh | 840 | Dockerfile creation | Active |
-| cli.sh | 701 | CLI parsing | Needs refactoring |
+| cli.sh | 680 | CLI parsing | Cleaned, needs refactoring |
 | core.sh | 562 | Logging/tracking | Move to lib/ |
 | rpackage.sh | 387 | R package structure | Active |
 | devtools.sh | 322 | Dev tools | Active |
 | cicd.sh | 300 | CI/CD workflows | Active |
 | system_deps_map.sh | 248 | System dependencies | Active |
 | templates.sh | 239 | Template handling | Active |
-| help_core.sh | 231 | Help dispatcher | **ORPHANED** |
+| ~~help_core.sh~~ | ~~231~~ | ~~Help dispatcher~~ | **REMOVED** |
 | structure.sh | 179 | Directory structure | Active |
 | github.sh | 170 | GitHub integration | Active |
-| help_guides.sh | 156 | Markdown guides | **UNUSED** |
+| ~~help_guides.sh~~ | ~~156~~ | ~~Markdown guides~~ | **REMOVED** |
 | constants.sh | 127 | Global constants | Move to lib/ |
 | utils.sh | 71 | Utilities | Move to lib/ |
-| **Total** | **12,602** | | |
+| **Total** | **~12,200** | | After cleanup |
 
 ### 1.2 Current Installation Structure
 
@@ -123,20 +123,20 @@ project/
 |-------|------|----------|---------|----------------|
 | `-c` | `--config` | `CONFIG_COMMAND` | Config subcommand | **REMOVE** → `zzcollab config` |
 
-#### Vestigial Variables (Never Populated via CLI)
+#### Vestigial Variables ✅ REMOVED
 
-| Variable | Location | Issue | Action |
+| Variable | Location | Issue | Status |
 |----------|----------|-------|--------|
-| `DOCKERHUB_ACCOUNT` | cli.sh:237 | Initialized empty, exported but never set | **REMOVE** or add flag |
-| `MULTIARCH_VERSE_IMAGE` | cli.sh:229 | Exported but unused | **REMOVE** |
-| `FORCE_PLATFORM` | cli.sh:230 | Exported but unused | **REMOVE** |
-| `INIT_BASE_IMAGE` | cli.sh:244 | Commented options, never used | **REMOVE** |
+| ~~`DOCKERHUB_ACCOUNT`~~ | cli.sh:237 | Initialized empty, exported but never set | **REMOVED** |
+| ~~`MULTIARCH_VERSE_IMAGE`~~ | cli.sh:229 | Exported but unused | **REMOVED** |
+| ~~`FORCE_PLATFORM`~~ | cli.sh:230 | Exported but unused | **REMOVED** |
+| ~~`INIT_BASE_IMAGE`~~ | cli.sh:244 | Commented options, never used | **REMOVED** |
 
-#### Placeholder Functions
+#### Placeholder Functions ✅ REMOVED
 
-| Function | Location | Issue | Action |
+| Function | Location | Issue | Status |
 |----------|----------|-------|--------|
-| `validate_cli_arguments()` | cli.sh:480-483 | No-op (just `:`) | **REMOVE** or implement |
+| ~~`validate_cli_arguments()`~~ | cli.sh:480-483 | No-op (just `:`) | **REMOVED** |
 
 ### 2.2 Subcommand vs Flag Design Rationale
 
@@ -395,79 +395,67 @@ project/
 
 ---
 
-## Part 4: Vestigial Code Removal
+## Part 4: Vestigial Code Removal ✅ COMPLETED
 
-### 4.1 Variables to Remove
-
-```bash
-# cli.sh - Remove these initializations and exports
-
-# Line 229-231: Unused multi-arch constants
-MULTIARCH_VERSE_IMAGE="ghcr.io/rocker-org/..."  # REMOVE
-FORCE_PLATFORM=""                                # REMOVE
-
-# Line 237: Never populated via CLI
-DOCKERHUB_ACCOUNT=""                             # REMOVE or add --dockerhub flag
-
-# Line 244: Commented, never used
-INIT_BASE_IMAGE=""                               # REMOVE
-
-# Line 462: Remove from export statement
-export ... DOCKERHUB_ACCOUNT ...                 # REMOVE
-```
-
-### 4.2 Functions to Remove
+### 4.1 Variables Removed ✅
 
 ```bash
-# cli.sh line 480-483: No-op placeholder
-validate_cli_arguments() {
-    # No validation needed currently
-    :
-}
-# Called at line 500 - remove both
+# cli.sh - These have been removed:
+
+# ~~Line 229-231: Unused multi-arch constants~~
+# MULTIARCH_VERSE_IMAGE - REMOVED
+# FORCE_PLATFORM - REMOVED
+
+# ~~Line 237: Never populated via CLI~~
+# DOCKERHUB_ACCOUNT - REMOVED
+
+# ~~Line 244: Commented, never used~~
+# INIT_BASE_IMAGE - REMOVED
+
+# ~~Line 462: Removed from export statement~~
+# DOCKERHUB_ACCOUNT removed from export
 ```
 
-### 4.3 Modules to Remove/Consolidate
+### 4.2 Functions Removed ✅
 
-| Module | Lines | Issue | Action |
+```bash
+# cli.sh - validate_cli_arguments() no-op function REMOVED
+# Call to validate_cli_arguments in process_cli() REMOVED
+```
+
+### 4.3 Modules Removed/Pending
+
+| Module | Lines | Issue | Status |
 |--------|-------|-------|--------|
-| help_core.sh | 231 | Orphaned dispatcher, references non-existent modules | **REMOVE** |
-| help_guides.sh | 156 | References non-existent docs/guides/*.md files | **REMOVE** or implement |
-| templates/modules/ | ~100KB | Duplicated in every project | **REMOVE** |
-| templates/zzcollab-uninstall.sh | 740 | Duplicated in every project | **REMOVE** |
+| ~~help_core.sh~~ | 231 | Orphaned dispatcher | **REMOVED** ✅ |
+| ~~help_guides.sh~~ | 156 | Broken references | **REMOVED** ✅ |
+| templates/modules/ | ~100KB | Duplicated in projects | **PENDING** |
+| templates/zzcollab-uninstall.sh | 740 | Duplicated in projects | **PENDING** |
 
-### 4.4 Dead Code Paths
+### 4.4 Dead Code Paths Removed ✅
 
 ```bash
-# zzcollab.sh - Duplicate validation (lines 18-28 and 241-245)
-# Keep one, remove duplicate
-
-# help_core.sh lines 46-106 - require_module calls for non-existent modules:
-require_module "help_config"      # DOES NOT EXIST
-require_module "help_technical"   # DOES NOT EXIST
-require_module "help_options"     # DOES NOT EXIST
-require_module "help_advanced"    # DOES NOT EXIST
-require_module "help_next_steps"  # DOES NOT EXIST
+# help_core.sh entirely removed - no longer have broken require_module calls
 ```
 
 ---
 
 ## Part 5: Help System Consolidation
 
-### 5.1 Current State
+### 5.1 Current State (After Cleanup)
 
 ```
-modules/help.sh        (1,651 lines) - All topics, actually used
-modules/help_core.sh   (231 lines)   - Dispatcher, NEVER LOADED
-modules/help_guides.sh (156 lines)   - Markdown loader, BROKEN
+modules/help.sh        (1,651 lines) - All topics, consolidated ✅
+~~modules/help_core.sh~~   REMOVED ✅
+~~modules/help_guides.sh~~ REMOVED ✅
 ```
 
-**Problem**: Modular architecture was designed but never completed.
+**Problem solved**: Orphaned modular architecture removed.
 
-### 5.2 Target State
+### 5.2 Target State ✅ PARTIALLY COMPLETE
 
 ```
-modules/help.sh        (consolidated) - All help in one place
+modules/help.sh        (consolidated) - All help in one place ✅
 ```
 
 **Decision**: Consolidate rather than complete modularization.
@@ -627,12 +615,21 @@ rm templates/zzcollab-uninstall.sh  # Replaced by subcommand
 
 ## Part 7: Implementation Phases
 
-### Phase 1: Vestigial Code Cleanup (1-2 hours)
+### Phase 1: Vestigial Code Cleanup ✅ COMPLETED
 
-1. Remove unused variables from cli.sh
-2. Remove validate_cli_arguments() no-op
-3. Remove help_core.sh and help_guides.sh
-4. Update docs/README.md to remove guide references
+**Removed from cli.sh:**
+- ~~`MULTIARCH_VERSE_IMAGE`~~ (line 229)
+- ~~`FORCE_PLATFORM`~~ (line 230)
+- ~~`DOCKERHUB_ACCOUNT`~~ (line 237)
+- ~~`INIT_BASE_IMAGE`~~ (lines 243-244)
+- ~~`validate_cli_arguments()` no-op function~~ (lines 478-483)
+- ~~Call to `validate_cli_arguments` in `process_cli()`~~
+
+**Deleted orphaned modules:**
+- ~~`modules/help_core.sh`~~ (231 lines)
+- ~~`modules/help_guides.sh`~~ (156 lines)
+
+**Remaining:** Update docs/README.md to remove guide references
 
 ### Phase 2: Directory Restructure (2-3 hours)
 
@@ -780,27 +777,29 @@ migrate                   Migrate old project structure
 
 ## Appendix B: Removed Items
 
-### Variables Removed
+### Variables Removed ✅
 
-- `DOCKERHUB_ACCOUNT` (cli.sh:237)
-- `MULTIARCH_VERSE_IMAGE` (cli.sh:229)
-- `FORCE_PLATFORM` (cli.sh:230)
-- `INIT_BASE_IMAGE` (cli.sh:244)
+- ~~`DOCKERHUB_ACCOUNT`~~ (cli.sh:237) - DONE
+- ~~`MULTIARCH_VERSE_IMAGE`~~ (cli.sh:229) - DONE
+- ~~`FORCE_PLATFORM`~~ (cli.sh:230) - DONE
+- ~~`INIT_BASE_IMAGE`~~ (cli.sh:244) - DONE
 
-### Functions Removed
+### Functions Removed ✅
 
-- `validate_cli_arguments()` (cli.sh:480-483)
+- ~~`validate_cli_arguments()`~~ (cli.sh:480-483) - DONE
 
 ### Files Removed
 
-- `modules/help_core.sh` (orphaned dispatcher)
-- `modules/help_guides.sh` (broken references)
-- `templates/modules/` (no longer copied)
-- `templates/zzcollab-uninstall.sh` (replaced by subcommand)
+- ~~`modules/help_core.sh`~~ (orphaned dispatcher) - DONE
+- ~~`modules/help_guides.sh`~~ (broken references) - DONE
+- `templates/modules/` (no longer copied) - PENDING
+- `templates/zzcollab-uninstall.sh` (replaced by subcommand) - PENDING
 
-### Flags Removed
+### Flags to Remove (after subcommand implementation)
 
 - `--config` → replaced by `zzcollab config` subcommand
 - `--list-profiles` → replaced by `zzcollab list profiles`
 - `--list-libs` → replaced by `zzcollab list libs`
 - `--list-pkgs` → replaced by `zzcollab list pkgs`
+- `--help` → replaced by `zzcollab help`
+- `--next-steps` → replaced by `zzcollab help workflow`
