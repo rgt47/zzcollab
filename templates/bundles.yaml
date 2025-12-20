@@ -345,7 +345,7 @@ profiles:
     pkgs: gui
     size: "~2.2GB"
     note: "Requires XQuartz (macOS) or X11 (Linux) for display forwarding"
-    usage: "make docker-zsh-gui  # Launch with GUI support"
+    usage: "make r  # Launch interactive shell"
 
   gui_minimal:
     description: "Minimal R environment with GUI/X11 support"

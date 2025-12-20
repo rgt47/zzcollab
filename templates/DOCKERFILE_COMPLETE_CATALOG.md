@@ -421,7 +421,7 @@ All lines wrapped at **76 characters** for readability
 # Minimal profile for package development
 zzcollab -r minimal
 make docker-build
-make docker-zsh
+make r
 ```
 
 ### Data Analyst
@@ -463,7 +463,7 @@ make docker-push-team
 # Team member
 git clone https://github.com/mylab/study && cd study
 zzcollab -u  # Use team image
-make docker-zsh
+make r
 ```
 
 ---

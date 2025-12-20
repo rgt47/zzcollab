@@ -153,7 +153,7 @@ git add . && git commit -m "Initial setup" && git push
 ```bash
 git clone https://github.com/mylab/study.git && cd study
 zzcollab --use-team-image  # Uses team's Docker profile
-make docker-sh
+make r
 # Inside container: install.packages("package") as needed
 ```
 
@@ -227,7 +227,7 @@ After the Docker profile is set, team members add packages as needed:
 
 ```bash
 # Enter container
-make docker-sh
+make r
 
 # Inside container - add packages using standard R
 R
@@ -456,7 +456,7 @@ EXAMPLES:
   # Team collaboration - Member
   git clone https://github.com/myteam/study.git && cd study
   zzcollab --use-team-image                   # Pull and use team image
-  make docker-sh                              # Start development
+  make r                              # Start development
   # Inside container: install.packages("pkg") as needed
 
   # Traditional usage

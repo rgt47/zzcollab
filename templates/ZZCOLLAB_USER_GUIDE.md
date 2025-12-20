@@ -76,7 +76,7 @@ zzcollab
 make docker-build
 
 # Enter development environment
-make docker-zsh
+make r
 ```
 
 ## Docker Profile System
@@ -361,7 +361,7 @@ git push -u origin main
 
 ```bash
 # Enter Docker environment
-make docker-zsh
+make r
 
 # Inside container: add packages as needed
 renv::install("ComplexHeatmap")
@@ -416,7 +416,7 @@ zzcollab --use-team-image
 
 ```bash
 # Enter identical Docker environment as team lead
-make docker-zsh
+make r
 
 # Inside container: work on analysis
 renv::restore()  # Install all team packages from renv.lock
@@ -486,7 +486,7 @@ zzcollab
 make docker-build
 
 # Daily development
-make docker-zsh
+make r
 # ... work inside container ...
 # Install packages: install.packages("package")
 exit  # Auto-snapshot + validation happen automatically!
@@ -511,7 +511,7 @@ gh repo edit --add-collaborator colleague
 git clone https://github.com/myusername/penguin-analysis.git
 cd penguin-analysis
 zzcollab --use-team-image
-make docker-zsh
+make r
 ```
 
 ## Package Management
@@ -580,7 +580,7 @@ renv::install("user/package")    # GitHub
 
 ```bash
 # Enter container
-make docker-zsh
+make r
 
 # Inside container - add packages using standard R
 R
@@ -656,10 +656,8 @@ Don't update team image for:
 
 | Environment | Command | Use Case | Access |
 |-------------|---------|----------|--------|
-| **Enhanced Shell** | `make docker-zsh` | Vim/tmux development | Terminal |
+| **Shell** | `make r` | Interactive R development | Terminal |
 | **RStudio Server** | `make docker-rstudio` | GUI-based development | http://localhost:8787 |
-| **R Console** | `make docker-r` | Interactive R work | Terminal |
-| **Bash Shell** | `make docker-bash` | File management, git | Terminal |
 | **Paper Rendering** | `make docker-render` | Generate manuscript | Automated |
 | **Package Testing** | `make docker-test` | Run unit tests | Automated |
 
@@ -671,7 +669,7 @@ git pull
 docker pull mylab/project:latest  # If using team image
 
 # Enter development environment
-make docker-zsh
+make r
 
 # Work inside container
 vim R/my_function.R
@@ -711,7 +709,7 @@ export DISPLAY=:0
 /opt/X11/bin/xhost +localhost
 
 # Launch container with GUI
-make docker-zsh-gui
+make r-gui
 
 # Test inside container
 R
@@ -725,11 +723,8 @@ plot(1:10, 1:10)  # Graphics window appears
 ```bash
 make docker-build              # Build Docker image
 make docker-push-team          # Push team image to Docker Hub
-make docker-zsh                # Enter zsh development environment
-make docker-zsh-gui            # Enter zsh with GUI support (X11)
+make r                         # Interactive shell in container
 make docker-rstudio            # Start RStudio Server
-make docker-r                  # Interactive R console
-make docker-bash               # Bash shell in container
 make docker-render             # Render paper in container
 make docker-test               # Run tests in container
 make docker-check              # R CMD check in container

@@ -158,7 +158,7 @@ make docker-build && make docker-push-team && git add . && git commit -m "Initia
 # Team Member
 git clone https://github.com/mylab/study.git && cd study
 zzcollab -u
-make docker-sh
+make r
 ```
 
 **R Interface**:
@@ -580,9 +580,8 @@ make check                  # R CMD check validation
 **Docker Environments (Auto-snapshot on Exit)**:
 ```bash
 make r                     # Interactive shell (recommended)
-make docker-rstudio        # RStudio Server at localhost:8787
-make docker-verse          # Verse environment with LaTeX
-# All docker-* targets automatically:
+make rstudio               # RStudio Server at localhost:8787
+# All targets automatically:
 #   1. Snapshot renv.lock on container exit
 #   2. Validate packages on host (pure shell)
 ```
@@ -592,7 +591,6 @@ make docker-verse          # Verse environment with LaTeX
 # Run make targets from any subdirectory
 mr                         # make r (start container) from anywhere
 mr test                    # make test from anywhere
-mr docker-sh               # make docker-sh from anywhere
 
 # One-letter directory navigation
 r                          # Jump to project root
@@ -613,7 +611,7 @@ git add . && git commit -m "Initial project setup" && git push
 
 # Team Member
 zzcollab --use-team-image  # Download team's Docker image
-make docker-sh             # Start development
+make r             # Start development
 ```
 
 ## Docker Architecture
@@ -953,7 +951,7 @@ zzcollab_help("config")            # Configuration guide
 - **Added `mr()` to navigation_scripts.sh**: Runs make targets from anywhere in project
   - Uses `_zzcollab_root()` to find project root (looks for DESCRIPTION or .zzcollab_project)
   - Defaults to `make r` (start container) when called without arguments
-  - Supports any make target: `mr test`, `mr docker-sh`, `mr check-renv`
+  - Supports any make target: `mr test`, `mr r`, `mr check-renv`
   - Files: `templates/modules/navigation_scripts.sh`
 
 - **Updated documentation**:
