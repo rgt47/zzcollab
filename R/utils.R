@@ -484,15 +484,6 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #'   Must match the project name used during initialization.
 #'   Used to identify the correct team Docker images and repository.
 #'
-#' @param dotfiles_path Character string specifying path to personal dotfiles.
-#'   These configuration files (.vimrc, .zshrc, etc.) personalize your
-#'   development environment within the team's standardized setup.
-#'   If NULL, uses config default.
-#'   
-#' @param dotfiles_nodots Logical indicating whether dotfiles need leading dots added.
-#'   Set to TRUE if your dotfiles are stored without leading dots.
-#'   If NULL, uses config default.
-#'
 #' @return Logical value indicating success (TRUE) or failure (FALSE).
 #'   The function validates team images exist before proceeding with setup.
 #'
@@ -500,12 +491,11 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' This function is designed for team members joining existing projects.
 #' The team lead should have already run \code{init_project()} to create
 #' the necessary team infrastructure.
-#' 
+#'
 #' **Setup Process:**
 #' 1. **Validation**: Checks that team Docker images exist and are accessible
 #' 2. **Project Setup**: Creates local project structure and configuration
 #' 3. **Environment**: Configures to use team's Docker image via --use-team-image
-#' 4. **Integration**: Configures local tools and personal dotfiles
 #'
 #' **Prerequisites:**
 #' - Team lead has run \code{init_project()} and shared repository access
@@ -525,16 +515,8 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #'   project_name = "covid-study"
 #' )
 #'
-#' # Join with personal dotfiles
-#' join_project(
-#'   team_name = "datascience",
-#'   project_name = "market-analysis",
-#'   dotfiles_path = "~/dotfiles"
-#' )
-#'
 #' # Using configuration defaults (recommended)
 #' set_config("team_name", "mylab")
-#' set_config("dotfiles_dir", "~/dotfiles")
 #'
 #' # Then join projects easily
 #' join_project(project_name = "new-study")
@@ -557,8 +539,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' \code{\link{team_images}} for checking available team images
 #'
 #' @export
-join_project <- function(team_name = NULL, project_name = NULL,
-                         dotfiles_path = NULL, dotfiles_nodots = NULL) {
+join_project <- function(team_name = NULL, project_name = NULL) {
 
   # Validate ALL explicitly-provided parameters FIRST (before getting config defaults)
   # This allows tests to validate error messages without needing zzcollab script
@@ -573,8 +554,6 @@ join_project <- function(team_name = NULL, project_name = NULL,
 
   # Now apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
-  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
-  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
 
   # Validate team_name is set (either passed or from config)
   if (is.null(team_name)) {
@@ -582,27 +561,11 @@ join_project <- function(team_name = NULL, project_name = NULL,
          call. = FALSE)
   }
 
-  # Validate and normalize paths
-  dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
-
-  # Validate logical parameters
-  if (!is.null(dotfiles_nodots) && !is.logical(dotfiles_nodots)) {
-    stop("dotfiles_nodots must be TRUE or FALSE", call. = FALSE)
-  }
-
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
   # Build command using --use-team-image flag
   cmd <- paste(zzcollab_path, "-t", team_name, "-p", project_name, "--use-team-image")
-  
-  if (!is.null(dotfiles_path)) {
-    if (dotfiles_nodots) {
-      cmd <- paste(cmd, "--dotfiles-nodot", shQuote(dotfiles_path))
-    } else {
-      cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
-    }
-  }
 
   message("Running: ", cmd)
   result <- safe_system(cmd, error_msg = "Failed to join project")
@@ -883,25 +846,10 @@ create_branch <- function(branch_name) {
 
 #' Setup zzcollab project (standard setup, non-init mode)
 #'
-#' @param dotfiles_path Path to dotfiles directory (uses config default if NULL)
-#' @param dotfiles_nodots Logical, if TRUE dotfiles need dots added (uses config default)
 #' @param base_image Base Docker image to use (optional)
 #' @return Logical indicating success
 #' @export
-setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
-                         base_image = NULL) {
-
-  # Apply config defaults for missing parameters
-  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
-  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
-
-  # Validate and normalize paths
-  dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
-
-  # Validate logical parameters
-  if (!is.null(dotfiles_nodots) && !is.logical(dotfiles_nodots)) {
-    stop("dotfiles_nodots must be TRUE or FALSE", call. = FALSE)
-  }
+setup_project <- function(base_image = NULL) {
 
   # Validate base_image if provided
   if (!is.null(base_image)) {
@@ -916,18 +864,10 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
 
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-  
+
   # Build command (no --init flag)
   cmd <- zzcollab_path
-  
-  if (!is.null(dotfiles_path)) {
-    if (dotfiles_nodots) {
-      cmd <- paste(cmd, "--dotfiles-nodot", shQuote(dotfiles_path))
-    } else {
-      cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
-    }
-  }
-  
+
   if (!is.null(base_image)) {
     cmd <- paste(cmd, "--base-image", base_image)
   }
@@ -950,7 +890,6 @@ setup_project <- function(dotfiles_path = NULL, dotfiles_nodots = NULL,
 #'   - "workflow": Daily development workflow
 #'   - "troubleshooting": Top 10 common issues and solutions
 #'   - "config": Configuration system guide
-#'   - "dotfiles": Dotfiles setup and management
 #'   - "renv": Package management with renv
 #'   - "docker": Docker essentials for researchers
 #'   - "cicd": CI/CD and GitHub Actions
@@ -997,7 +936,7 @@ zzcollab_help <- function(topic = NULL) {
 
   # Valid help topics
   valid_topics <- c("general", "init", "quickstart", "workflow", "troubleshooting",
-                    "config", "dotfiles", "renv", "docker", "cicd", "github", "next-steps")
+                    "config", "renv", "docker", "cicd", "github", "next-steps")
 
   # Build command with topic argument
   if (is.null(topic) || topic == "general") {
@@ -1044,9 +983,7 @@ zzcollab_next_steps <- function() {
 #'   Common keys include:
 #'   - "team_name": Docker Hub team/organization name
 #'   - "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
-#'   - "dotfiles_dir": Path to personal dotfiles directory
 #'   - "github_account": GitHub account for repository creation
-#'   - "dotfiles_nodot": Whether dotfiles need leading dots added ("true"/"false")
 #'   
 #' @return Character string with the configuration value, or NULL if the key is not set
 #'   in any configuration file. Returns the highest priority value if the key exists
@@ -1076,8 +1013,8 @@ zzcollab_next_steps <- function() {
 #' profile <- get_config("profile_name")
 #' cat("Docker profile:", profile %||% "minimal", "\n")
 #' 
-#' # Get dotfiles directory with fallback
-#' dotfiles <- get_config("dotfiles_dir") %||% "~/dotfiles"
+#' # Get GitHub account with fallback
+#' github <- get_config("github_account") %||% get_config("team_name")
 #' }
 #'
 #' @seealso
@@ -1112,9 +1049,7 @@ get_config <- function(key) {
 #'   Recommended keys include:
 #'   - "team_name": Your Docker Hub team/organization name
 #'   - "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
-#'   - "dotfiles_dir": Path to your personal dotfiles directory
 #'   - "github_account": Your GitHub account for repository creation
-#'   - "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")
 #'   
 #' @param value Character string specifying the configuration value to set.
 #'   The value will be stored as a string in the YAML configuration file.
@@ -1144,18 +1079,14 @@ get_config <- function(key) {
 #' # Set up your personal defaults (run once)
 #' set_config("team_name", "mylab")
 #' set_config("profile_name", "analysis")
-#' set_config("dotfiles_dir", "~/dotfiles")
 #' set_config("github_account", "myuniversity")
-#' 
+#'
 #' # Check if configuration was successful
 #' if (set_config("team_name", "newteam")) {
 #'   cat("Team name updated successfully\n")
 #' } else {
 #'   cat("Failed to update configuration\n")
 #' }
-#' 
-#' # Configure dotfiles preferences
-#' set_config("dotfiles_nodot", "false")  # Files already have leading dots
 #' }
 #'
 #' @seealso
@@ -1335,9 +1266,7 @@ validate_config <- function() {
 #' **Template Content Includes:**
 #' - team_name: (empty, to be filled by user)
 #' - profile_name: "analysis" (balanced default)
-#' - dotfiles_dir: (empty, commonly ~/dotfiles)
 #' - github_account: (empty, for repository creation)
-#' - dotfiles_nodot: "false" (assumes dotfiles have leading dots)
 #' 
 #' This function is typically run once per system to establish your personal
 #' zzcollab configuration. After initialization, use \code{set_config()} to
@@ -1356,7 +1285,6 @@ validate_config <- function() {
 #' # Complete setup workflow
 #' init_config()  # Create template
 #' set_config("team_name", "mylab")  # Set your values
-#' set_config("dotfiles_dir", "~/dotfiles")
 #' validate_config()  # Verify everything is correct
 #' 
 #' # Check if initialization is needed
@@ -1389,7 +1317,7 @@ init_config <- function() {
 #'
 #' @param key Character string specifying the configuration key to retrieve.
 #'   Should match keys used in the zzcollab configuration system (e.g.,
-#'   \"team_name\", \"profile_name\", \"dotfiles_dir\").
+#'   \"team_name\", \"profile_name\", \"github_account\").
 #'   
 #' @param default Default value to return if the configuration key is not set
 #'   or if \code{get_config()} returns NULL. Can be any type, but typically
@@ -1422,7 +1350,6 @@ init_config <- function() {
 #' team_name <- get_config(\"team_name\") %||% \"defaultteam\"
 #' 
 #' # Common usage with multiple fallbacks
-#' dotfiles_path <- get_config_default(\"dotfiles_dir\", \"~/dotfiles\")
 #' github_account <- get_config_default(\"github_account\", team_name)
 #' }
 #'

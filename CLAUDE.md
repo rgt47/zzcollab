@@ -146,18 +146,18 @@ project/
 **Command Line**:
 ```bash
 # Solo Developer
-zzcollab -d ~/dotfiles
+zzcollab
 
 # Solo Developer with profile
-zzcollab -r analysis -d ~/dotfiles
+zzcollab -r analysis
 
 # Team Lead
-zzcollab -t mylab -p study -r analysis -d ~/dotfiles
+zzcollab -t mylab -p study -r analysis
 make docker-build && make docker-push-team && git add . && git commit -m "Initial project setup" && git push -u origin main
 
 # Team Member
 git clone https://github.com/mylab/study.git && cd study
-zzcollab -u -d ~/dotfiles
+zzcollab -u
 make docker-sh
 ```
 
@@ -191,8 +191,6 @@ ZZCOLLAB follows strict Unix CLI conventions with comprehensive short flag suppo
 | `-a`  | `--tag`            | Docker image tag           | `zzcollab -a v2.1`      |
 | `-b`  | `--base-image`     | Custom Docker base         | `zzcollab -b rocker/r-ver` |
 | `-c`  | `--config`         | Configuration management   | `zzcollab -c init`      |
-| `-d`  | `--dotfiles`       | Copy dotfiles (with dots)  | `zzcollab -d ~/dotfiles` |
-| `-D`  | `--dotfiles-nodot` | Copy dotfiles (no dots)    | `zzcollab -D ~/dotfiles` |
 | `-f`  | `--dockerfile`     | Custom Dockerfile path     | `zzcollab -f custom.df` |
 | `-g`  | `--github-account` | GitHub account name        | `zzcollab -g myaccount` |
 | `-G`  | `--github`         | Create GitHub repo         | `zzcollab -G`           |
@@ -216,12 +214,12 @@ ZZCOLLAB follows strict Unix CLI conventions with comprehensive short flag suppo
 
 **Before (verbose)**:
 ```bash
-zzcollab --team mylab --project-name study --profile-name analysis --use-team-image --dotfiles ~/dotfiles
+zzcollab --team mylab --project-name study --profile-name analysis --use-team-image
 ```
 
 **After (concise)**:
 ```bash
-zzcollab -t mylab -p study -r analysis -u -d ~/dotfiles
+zzcollab -t mylab -p study -r analysis -u
 ```
 
 **Custom composition**:
@@ -272,7 +270,7 @@ zzcollab -c list                      # List all configuration
 **Key Configuration Domains**:
 - **Docker Profile Management**: 14+ specialized environments (*see [Variants Guide](docs/VARIANTS.md)*)
 - **Package Management**: Dynamic via `install.packages()`, auto-captured on container exit
-- **Development Settings**: Team collaboration, dotfiles integration
+- **Development Settings**: Team collaboration, GitHub integration
 
 ## Docker Profile System
 
@@ -581,7 +579,7 @@ make check                  # R CMD check validation
 
 **Docker Environments (Auto-snapshot on Exit)**:
 ```bash
-make docker-sh             # Shell with dotfiles (recommended)
+make r                     # Interactive shell (recommended)
 make docker-rstudio        # RStudio Server at localhost:8787
 make docker-verse          # Verse environment with LaTeX
 # All docker-* targets automatically:
@@ -645,7 +643,6 @@ ZZCOLLAB provides streamlined workflow for solo developers with professional-gra
 git clone https://github.com/rgt47/zzcollab.git && cd zzcollab && ./install.sh
 zzcollab -c init
 zzcollab -c set team-name "myteam"
-zzcollab -c set dotfiles-dir "~/dotfiles"
 
 # 2. Create project
 mkdir penguin-analysis && cd penguin-analysis
@@ -661,7 +658,7 @@ make docker-test && git add . && git commit -m "Add analysis" && git push
 ### Transition to Team
 ```bash
 # Convert solo project to team collaboration
-zzcollab -t yourname -p penguin-analysis -r analysis -d ~/dotfiles
+zzcollab -t yourname -p penguin-analysis -r analysis
 make docker-build && make docker-push-team
 git add . && git commit -m "Convert to team collaboration" && git push
 ```
@@ -1114,10 +1111,6 @@ make check-renv-no-strict  # Skip tests/ and vignettes/
   - Prevents unnecessary custom generation when combination matches a static template
   - Works regardless of whether flags were explicitly provided or defaulted
   - Example: `zzcollab -b rocker/r-ver` now correctly uses static `Dockerfile.minimal`
-- **Optional dotfiles**: All dotfiles now use wildcards in COPY commands
-  - Docker builds no longer fail if dotfiles are missing
-  - Expanded support: bash (`.bash_profile`), fish (`.config/fish`), emacs (`.emacs`, `.emacs.d`)
-  - `.gitconfig` now optional (no need to copy personal config with credentials)
 - **RSPM binary packages**: Fixed source compilation issue in Docker builds
   - Problem: renv.lock modification date was too recent for RSPM snapshot availability
   - Solution: Adjusted timestamp to ensure binary packages available (10-20x faster builds)

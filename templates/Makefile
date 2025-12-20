@@ -154,9 +154,9 @@ r: check-renv
 		echo ""; \
 		echo "Run zzcollab to create a Docker environment:"; \
 		echo ""; \
-		echo "  zzcollab -d ~/dotfiles                    # default profile"; \
-		echo "  zzcollab -r analysis -d ~/dotfiles        # tidyverse"; \
-		echo "  zzcollab -r publishing -d ~/dotfiles      # with LaTeX"; \
+		echo "  zzcollab                                   # default profile"; \
+		echo "  zzcollab -r analysis                      # tidyverse"; \
+		echo "  zzcollab -r publishing                    # with LaTeX"; \
 		echo ""; \
 		echo "See: zzcollab --help for all options"; \
 		echo ""; \
