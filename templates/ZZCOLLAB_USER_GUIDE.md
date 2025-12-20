@@ -61,7 +61,6 @@ zzcollab config init
 # Set your defaults
 zzcollab config set team-name "myteam"
 zzcollab config set github-account "myusername"
-zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Create First Project (3-4 minutes)
@@ -312,11 +311,11 @@ zzcollab config set profile-name "bioinformatics"
 mkdir genomics-study && cd genomics-study
 
 # Option A: Using profile from config
-zzcollab -t mylab -p genomics-study -D ~/dotfiles
+zzcollab -t mylab -p genomics-study
 
 # Option B: Using custom composition
 zzcollab -t mylab -p genomics-study -b bioconductor/bioconductor_docker \
-  --libs bioinfo --pkgs bioinfo -D ~/dotfiles
+  --libs bioinfo --pkgs bioinfo
 ```
 
 **What happens:**
@@ -405,14 +404,13 @@ cd genomics-study
 
 ```bash
 # Pull and use team's Docker image
-zzcollab --use-team-image -D ~/dotfiles
+zzcollab --use-team-image
 ```
 
 **What happens:**
 - Downloads `mylab/genomics-study:latest` from Docker Hub
 - Uses team's Docker profile (bioinformatics environment)
-- Creates personal development layer on top of team image
-- Copies your dotfiles into container
+- Creates local development environment with team image
 
 #### Step 3: Start Development
 
@@ -849,7 +847,6 @@ zzcollab config init
 zzcollab config set team-name "myteam"
 zzcollab config set github-account "myusername"
 zzcollab config set profile-name "analysis"
-zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Project-Level Configuration

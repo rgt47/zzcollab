@@ -140,12 +140,7 @@ build:
 development:
   # Default interface for team members
   default_interface: "minimal"  # Which profile to use by default
-  
-  # Shared development settings
-  dotfiles:
-    auto_filter_macos: true    # Filter macOS commands for Docker
-    preserve_permissions: true
-    
+
   # Container settings
   container:
     default_user: "analyst"

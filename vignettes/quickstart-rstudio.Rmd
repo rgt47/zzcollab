@@ -42,7 +42,6 @@ This quick start guide demonstrates how to use **RStudio Server** inside a Docke
 - Web browser
 - GitHub account (example: rgt47)
 - zzcollab installed (`./install.sh`)
-- Dotfiles directory at `~/dotfiles` (optional)
 
 # Step-by-Step Instructions
 
@@ -62,9 +61,6 @@ zzcollab config set github-account "rgt47"
 
 # Set RStudio profile as default
 zzcollab config set profile-name "rstudio"
-
-# Set dotfiles directory (optional)
-zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 **What this accomplishes:**

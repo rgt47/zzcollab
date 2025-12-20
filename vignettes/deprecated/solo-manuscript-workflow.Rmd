@@ -333,7 +333,6 @@ defaults:
   paradigm: manuscript
   team_name: "myresearch"
   build_mode: standard
-  dotfiles_dir: "~/dotfiles"
 
 build_modes:
   standard:
@@ -528,7 +527,6 @@ Set your defaults once, use everywhere:
 zzcollab --config set paradigm manuscript
 zzcollab --config set team-name "myresearch"
 zzcollab --config set build-mode standard
-zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Now all new projects use your preferences automatically
 zzcollab -i -p new-paper  # Uses manuscript paradigm automatically

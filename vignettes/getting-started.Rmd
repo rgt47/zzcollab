@@ -47,7 +47,6 @@ The following software components must be installed and configured:
 - Docker Desktop (version 20.10 or later)
 - ZZCOLLAB framework (installed in system PATH)
 - Git version control system (configured with user credentials)
-- (Optional) Personal dotfiles repository for shell customization
 
 # Docker Profile Selection
 
@@ -91,9 +90,6 @@ zzcollab --profile-name analysis
 # Alternative: Specify explicit project name
 zzcollab --profile-name analysis -p penguin-analysis
 
-# Include personal shell configuration
-zzcollab --profile-name analysis
-
 # Include team namespace for collaborative work
 zzcollab -t myname -p penguin-analysis --profile-name analysis
 ```
@@ -120,8 +116,7 @@ The initialization procedure performs the following operations:
 4. Configures testing framework using testthat
 5. Generates data documentation templates
 6. Creates GitHub Actions workflow definitions
-7. Copies dotfiles to container environment (if specified)
-8. Sets reproducibility-critical environment variables in Dockerfile
+7. Sets reproducibility-critical environment variables in Dockerfile
 
 ## Reproducibility-Critical Environment Variables
 
@@ -174,31 +169,6 @@ different systems can produce different statistical results.
 These environment variables are automatically verified in continuous
 integration. The Dockerfile template includes these settings by default,
 requiring no user action.
-
-## Dotfiles Integration
-
-Specifying the `-d` flag copies personal configuration files into the
-container environment, preserving familiar development settings:
-
-```bash
-# Typical dotfiles directory structure
-~/dotfiles/
-├── .zshrc          # Zsh shell configuration
-├── .bashrc         # Bash shell configuration
-├── .vimrc          # Vim editor settings
-├── .tmux.conf      # Terminal multiplexer configuration
-└── .gitconfig      # Git configuration
-
-# Files are copied to container home directory
-# Enabling consistent shell behavior across environments
-```
-
-Benefits of dotfiles integration:
-
-- Preservation of custom shell aliases and functions
-- Consistent editor configuration across environments
-- Git identity and alias configuration
-- Personal productivity tool availability
 
 # Data Organization and Provenance
 
@@ -654,16 +624,15 @@ make docker-zsh
 This command performs the following operations:
 
 1. Builds or starts the Docker container with profile packages
-2. Loads personal dotfiles (if specified during initialization)
-3. Provides Zsh shell within the container environment
-4. Mounts project directory at /home/analyst/project
+2. Provides Zsh shell within the container environment
+3. Mounts project directory at /home/analyst/project
 
 ## Alternative Entry Methods
 
 Multiple interfaces are available for container interaction:
 
 ```bash
-# Zsh shell with dotfiles (recommended for development)
+# Zsh shell (recommended for development)
 make docker-zsh
 
 # RStudio Server web interface
@@ -688,10 +657,6 @@ R --version
 
 # Verify package availability (analysis profile)
 R -e "library(palmerpenguins); library(tidyverse); sessionInfo()"
-
-# Verify dotfiles configuration (if specified)
-alias                # Display custom aliases
-echo $PATH           # Display PATH configuration
 
 # Verify project file accessibility
 ls -la
@@ -1501,8 +1466,6 @@ mkdir penguin-analysis && cd penguin-analysis
 
 # Initialize project with team namespace
 zzcollab --profile-name analysis -t myname -p penguin-analysis
-
-# Customize Dockerfile if needed (optional)
 vim Dockerfile
 
 # Build team Docker image

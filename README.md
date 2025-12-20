@@ -166,7 +166,6 @@ library(zzcollab)
 
 # Set up your defaults once
 set_config("team_name", "myteam")
-set_config("dotfiles_dir", "~/dotfiles")
 set_config("github_account", "myusername")
 
 # View your configuration
@@ -182,8 +181,7 @@ init_project(project_name = "myproject")
 # Or with explicit parameters
 init_project(
   team_name = "myteam",
-  project_name = "myproject",
-  dotfiles_path = "~/dotfiles"
+  project_name = "myproject"
 )
 ```
 
@@ -272,7 +270,6 @@ zzcollab --config validate               # Validate YAML syntax
 ### Customizable Settings
 
 - **Team settings**: `team_name`, `github_account`
-- **Personal settings**: `dotfiles_dir`, `dotfiles_nodot`
 - **Automation**: `auto_github`, `skip_confirmation`
 
 ## Core R Functions
@@ -321,7 +318,6 @@ zzcollab --config validate               # Validate YAML syntax
 ```r
 # 0. One-time setup (configure your defaults)
 set_config("team_name", "datascience")
-set_config("dotfiles_dir", "~/dotfiles")
 
 # 1. Initialize project (uses config defaults)
 init_project(project_name = "covid-analysis")
@@ -373,21 +369,18 @@ mkdir my-analysis
 cd my-analysis
 
 # Set up research compendium
-zzcollab --dotfiles ~/dotfiles
+zzcollab
 
 # Start development environment
-# Access at http://localhost:8787 (user: analyst, pass: analyst)
-make docker-rstudio
+make r                  # Interactive shell (edit on host with vim)
 ```
 
 ## Development Workflow
 
 ```bash
 # Available development environments
-make docker-rstudio    # RStudio Server GUI
-make docker-r          # R console
-make docker-sh         # Shell with dotfiles
-make docker-bash       # Bash shell
+make r                 # Interactive shell (recommended)
+make rstudio           # RStudio Server GUI at localhost:8787
 
 # Common tasks
 make docker-render     # Generate research paper PDF
@@ -425,10 +418,6 @@ zzcollab [OPTIONS]
 zzcollab config [SUBCOMMAND]
 
 OPTIONS:
-  --dotfiles DIR, -d       Copy dotfiles from directory (with leading
-                           dots)
-  --dotfiles-nodot DIR     Copy dotfiles from directory (without
-                           leading dots)
   --base-image NAME        Use custom Docker base image
                            (default: rocker/r-ver)
   --no-docker, -n          Skip Docker image build during setup
@@ -451,10 +440,9 @@ EXAMPLES:
   # Configuration setup
   zzcollab config init                        # One-time setup
   zzcollab config set team_name "myteam"      # Set team default
-  zzcollab config set dotfiles_dir "~/dotfiles"
 
   # Solo researcher
-  zzcollab --dotfiles ~/dotfiles              # Basic setup
+  zzcollab                                    # Basic setup
   zzcollab --profile-name publishing          # With specific profile
 
   # Team collaboration - Lead
@@ -637,15 +625,6 @@ zzcollab
 # Already handled automatically with --platform linux/amd64
 # Or set environment variable:
 export DOCKER_DEFAULT_PLATFORM=linux/amd64
-```
-
-**Missing dotfiles in container:**
-
-```bash
-# Make sure to specify dotfiles directory
-zzcollab --dotfiles ~/dotfiles
-# or for files without leading dots:
-zzcollab --dotfiles-nodot ~/dotfiles
 ```
 
 **Package name errors:**

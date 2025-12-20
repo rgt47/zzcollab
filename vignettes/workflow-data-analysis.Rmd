@@ -81,9 +81,6 @@ zzcollab config set team-name "myusername"
 # Set GitHub account
 zzcollab config set github-account "myusername"
 
-# Set dotfiles directory
-zzcollab config set dotfiles-dir "~/dotfiles"
-
 # Set default Docker profile (analysis profile recommended for data analysis)
 zzcollab config set profile-name "ubuntu_standard_analysis"
 ```

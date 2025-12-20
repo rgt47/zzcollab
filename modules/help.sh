@@ -1102,7 +1102,7 @@ After creation, change visibility manually:
     gh repo edit USERNAME/PROJECTNAME --visibility public
 
 Or create without -G and use gh directly:
-    zzcollab -t myteam -p project -d ~/dotfiles    # No -G flag
+    zzcollab -t myteam -p project    # No -G flag
     gh repo create USERNAME/PROJECTNAME --public --source=. --push
 
 Future Enhancement:
@@ -1190,7 +1190,7 @@ Solutions:
     Option 2: Use different project name
     zzcollab -t team -p different-name -G
     Option 3: Skip GitHub creation, push manually
-    zzcollab -t team -p project -d ~/dotfiles  # No -G
+    zzcollab -t team -p project  # No -G
     git remote add origin https://github.com/USERNAME/PROJECTNAME.git
     git push -u origin main
 

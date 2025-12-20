@@ -51,7 +51,6 @@ init_config()
 # Set your defaults
 set_config("team_name", "myteam")
 set_config("github_account", "myusername")
-set_config("dotfiles_dir", "~/dotfiles")
 set_config("profile_name", "analysis")
 
 # View current configuration
@@ -114,7 +113,6 @@ setup_project()
 
 # Method 2: Override specific settings
 setup_project(
-  dotfiles_path = "~/dotfiles",
   base_image = "rocker/rstudio"
 )
 ```
@@ -220,8 +218,7 @@ setwd("~/projects/cancer-study")
 init_project(
   team_name = "genomicslab",
   project_name = "cancer-study",
-  github_account = "genomicslab",
-  dotfiles_path = "~/dotfiles"
+  github_account = "genomicslab"
 )
 ```
 
@@ -263,8 +260,7 @@ setwd("cancer-study")
 # Join project using team image
 join_project(
   team_name = "genomicslab",
-  project_name = "cancer-study",
-  dotfiles_path = "~/dotfiles"
+  project_name = "cancer-study"
 )
 
 # Verify team images available
@@ -319,7 +315,6 @@ zzcollab_next_steps()
 - `"quickstart"` - Quick start guide
 - `"workflow"` - Daily development workflow
 - `"config"` - Configuration system
-- `"dotfiles"` - Dotfiles setup
 - `"renv"` - Package management
 - `"docker"` - Docker essentials
 - `"cicd"` - CI/CD and GitHub Actions
@@ -336,7 +331,6 @@ library(zzcollab)
 # 1. SETUP: Configure once
 init_config()
 set_config("team_name", "myname")
-set_config("dotfiles_dir", "~/dotfiles")
 set_config("profile_name", "analysis")
 
 # 2. CREATE PROJECT
@@ -465,7 +459,7 @@ All R functions work in RStudio:
 library(zzcollab)
 
 # Initialize project
-setup_project(dotfiles_path = "~/dotfiles")
+setup_project()
 
 # Build environment
 rebuild("docker-build")

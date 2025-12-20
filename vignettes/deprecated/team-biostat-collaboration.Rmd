@@ -48,7 +48,6 @@ zzcollab --config set team-name "biostat-lab"
 zzcollab --config set paradigm manuscript
 zzcollab --config set build-mode biostatistics
 zzcollab --config set github-account "drchen-biostat"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 ### 2. Create Team Docker Images

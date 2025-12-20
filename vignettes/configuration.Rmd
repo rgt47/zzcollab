@@ -68,7 +68,6 @@ defaults:
   github-account: "myusername"
   dockerhub-account: "myusername"
   profile-name: "analysis"
-  dotfiles-dir: "~/dotfiles"
 
 # Optional: Custom profile compositions
 profiles:
@@ -93,7 +92,6 @@ team:
 
 defaults:
   profile-name: "bioinformatics"
-  dotfiles-dir: "~/dotfiles"
 
 collaboration:
   github:
@@ -153,9 +151,6 @@ zzcollab config set dockerhub-account "myusername"
 
 # Set default Docker profile
 zzcollab config set profile-name "analysis"
-
-# Set dotfiles directory
-zzcollab config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Get Configuration Values
@@ -169,9 +164,6 @@ zzcollab config get team-name
 zzcollab config get profile-name
 # Output: analysis
 
-# Get dotfiles directory
-zzcollab config get dotfiles-dir
-# Output: /Users/username/dotfiles
 ```
 
 ### List All Configuration
@@ -186,7 +178,6 @@ zzcollab config list --verbose
 # Output shows:
 # team-name: "myteam" (from ~/.zzcollab/config.yaml)
 # profile-name: "bioinformatics" (from ./zzcollab.yaml) [OVERRIDING user config]
-# dotfiles-dir: "~/dotfiles" (from ~/.zzcollab/config.yaml)
 ```
 
 ### Validate Configuration
@@ -209,7 +200,6 @@ zzcollab config init
 zzcollab config set team-name "myresearch"
 zzcollab config set github-account "myusername"
 zzcollab config set profile-name "analysis"
-zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Create projects using defaults
 mkdir penguin-study && cd penguin-study
@@ -254,7 +244,6 @@ git add . && git commit -m "Initial team setup" && git push
 ```bash
 # Minimal personal config needed
 zzcollab config set team-name "genomicslab"
-zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Join existing project
 git clone https://github.com/genomicslab/cancer-study.git
@@ -345,24 +334,6 @@ zzcollab --list-pkgs   # R package bundles
 - **libs**: System dependencies (compiled libraries, command-line tools)
 - **pkgs**: R packages (pre-installed in Docker image for fast startup)
 
-### Dotfiles Integration
-
-```bash
-# -d, --dotfiles-dir PATH
-# Copy personal dotfiles into container
-zzcollab
-
-# Dotfiles directory structure:
-# ~/dotfiles/
-# ├── zshrc       # Becomes ~/.zshrc in container
-# ├── vimrc       # Becomes ~/.vimrc in container
-# ├── tmux.conf   # Becomes ~/.tmux.conf in container
-# └── gitconfig   # Becomes ~/.gitconfig in container
-
-# Files without leading dots in ~/dotfiles get dots added automatically
-```
-
-**Important**: Store dotfiles WITHOUT leading dots in your dotfiles directory for easier version control.
 
 ## Team Collaboration Flags
 
@@ -842,7 +813,6 @@ Rscript analysis/scripts/differential_expression.R
 zzcollab config init
 zzcollab config set team-name "datasci"
 zzcollab config set profile-name "analysis"
-zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Create projects with configured defaults
 mkdir customer-churn && cd customer-churn
@@ -879,7 +849,6 @@ team:
 
 defaults:
   profile-name: "analysis"
-  dotfiles-dir: "~/dotfiles"
 
 collaboration:
   github:
@@ -898,7 +867,6 @@ git add . && git commit -m "Team setup" && git push
 ```bash
 # Minimal personal setup
 zzcollab config set team-name "psychlab"
-zzcollab config set dotfiles-dir "~/dotfiles"
 
 # Join project
 git clone https://github.com/psychlab/attention-study.git
@@ -1038,8 +1006,6 @@ zzcollab config list --verbose
 #   Source: ~/.zzcollab/config.yaml (user config)
 # profile-name: "bioinformatics"
 #   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting "analysis"]
-# dotfiles-dir: "~/dotfiles"
-#   Source: ~/.zzcollab/config.yaml (user config)
 ```
 
 ### Test Configuration
@@ -1129,7 +1095,6 @@ zzcollab config init
 # Team name: myteam
 # GitHub account: myusername
 # Docker profile (default: analysis):
-# Dotfiles directory (default: ~/dotfiles):
 
 # Configuration created at: ~/.zzcollab/config.yaml
 ```
@@ -1191,13 +1156,11 @@ init_config()
 # Set configuration values
 set_config("team_name", "myteam")
 set_config("profile_name", "analysis")
-set_config("dotfiles_dir", "~/dotfiles")
 set_config("github_account", "myusername")
 
 # Get configuration values
 team <- get_config("team_name")
 profile <- get_config("profile_name")
-dotfiles <- get_config("dotfiles_dir")
 
 # List all configuration
 all_config <- list_config()
@@ -1218,7 +1181,7 @@ if (!valid$valid) {
 
 # Create project with defaults from config
 init_project("my-analysis")
-# Uses: team_name, profile_name, dotfiles_dir from config
+# Uses: team_name, profile_name from config
 
 # Override specific settings
 init_project(
@@ -1231,8 +1194,7 @@ init_project(
 init_project(
   team_name = "genomicslab",
   project_name = "cancer-study",
-  profile_name = "bioinformatics",
-  dotfiles_path = "~/lab-dotfiles"
+  profile_name = "bioinformatics"
 )
 ```
 

@@ -11,13 +11,12 @@ Stop typing the same flags repeatedly! Configure zzcollab once, use everywhere.
 zzcollab -t myname -p project1 --profile-name analysis
 zzcollab -t myname -p project2 --profile-name analysis
 zzcollab -t myname -p project3 --profile-name analysis
-# Typing "myname", "analysis", and "~/dotfiles" every time!
+# Typing "myname" and "analysis" every time!
 ```
 
 **WITH CONFIG** (simple):
 ```bash
 zzcollab --config set team-name "myname"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 zzcollab --config set profile-name "analysis"
 
 # Then just:
@@ -30,12 +29,11 @@ zzcollab -p project3
 
 ## Quick Start: Essential Configuration
 
-**One-time setup** (3 commands):
+**One-time setup** (2 commands):
 
 ```bash
 zzcollab --config set team-name "yourname"
 zzcollab --config set profile-name "analysis"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 That's it! Now all future projects use these defaults.
@@ -94,11 +92,6 @@ zzcollab --config validate
 
 - `profile-name` - minimal, analysis, modeling, bioinformatics, geospatial, publishing
 
-### Dotfiles Settings
-
-- `dotfiles-dir` - Path to dotfiles directory (e.g., ~/dotfiles)
-- `dotfiles-nodot` - Use if files don't have leading dots
-
 ### Automation Settings
 
 - `auto-github` - Automatically create GitHub repos (true/false)
@@ -120,7 +113,7 @@ zzcollab uses a 4-level hierarchy (highest priority first):
 
 - **Location**: `~/.zzcollab/config.yaml`
 - **Purpose**: Personal defaults across all projects
-- **Use for**: Your name, dotfiles path, preferences
+- **Use for**: Your name, preferences
 
 ### 3. SYSTEM CONFIG
 
@@ -144,9 +137,6 @@ zzcollab uses a 4-level hierarchy (highest priority first):
 ```bash
 zzcollab --config set team-name "jsmith"
 zzcollab --config set profile-name "analysis"
-
-# Optional but recommended:
-zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 ### Example 2: Solo Researcher (Complete Setup)
@@ -156,7 +146,6 @@ zzcollab --config set team-name "jsmith"
 zzcollab --config set github-account "jsmith"
 zzcollab --config set profile-name "analysis"
 zzcollab --config set r-version "4.4.0"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 zzcollab --config set auto-github false
 ```
 
@@ -166,11 +155,9 @@ zzcollab --config set auto-github false
 zzcollab --config set team-name "labteam"
 zzcollab --config set github-account "jsmith"
 zzcollab --config set profile-name "analysis"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Now joining team projects is simple:
 zzcollab -t labteam -p study --use-team-image
-# Uses your dotfiles automatically!
 ```
 
 ### Example 4: Minimal Build for Speed
@@ -196,8 +183,6 @@ defaults:
   team_name: "jsmith"
   github_account: "jsmith"
   profile_name: "analysis"
-  dotfiles_dir: "~/dotfiles"
-  dotfiles_nodot: false
   auto_github: false
   skip_confirmation: false
 ```
@@ -319,11 +304,7 @@ zzcollab --config set team-name "yourname"
 - **Don't**: Different names per project
 - **Do**: One name for all your projects
 
-### 3. Set dotfiles-dir if you have dotfiles
-
-Saves typing `-d ~/dotfiles` every time
-
-### 4. Choose profile-name based on your needs
+### 3. Choose profile-name based on your needs
 
 - **minimal** - Lightweight base, add packages with `renv::install()`
 - **analysis** - Includes tidyverse (recommended for most research)
@@ -332,13 +313,13 @@ Saves typing `-d ~/dotfiles` every time
 - **geospatial** - Spatial data analysis packages
 - **publishing** - Full publishing suite with LaTeX
 
-### 5. Don't set auto-github to true unless you want repos for EVERYTHING
+### 4. Don't set auto-github to true unless you want repos for EVERYTHING
 
 Better: Use `-G` flag when you want GitHub repo
 
-### 6. Keep ~/.zzcollab/config.yaml backed up
+### 5. Keep ~/.zzcollab/config.yaml backed up
 
-Simple: Store in dotfiles repo
+Simple: Store in version control
 
 ---
 
@@ -451,7 +432,6 @@ zzcollab --config init                         # Create config file
 zzcollab --config set team-name "name"         # Set your name
 zzcollab --config set profile-name "analysis"  # Set Docker profile
 zzcollab --config set r-version "4.4.0"        # Set default R version
-zzcollab --config set dotfiles-dir "~/dotfiles" # Set dotfiles location
 zzcollab --config list                         # See all settings
 zzcollab --config get team-name                # Get one setting
 ```
@@ -474,6 +454,5 @@ zzcollab --config get team-name                # Get one setting
 ## See Also
 
 - [Docker Guide](docker.md) - Understanding Docker profiles and variants
-- [Dotfiles Guide](dotfiles.md) - Setting up personal dotfiles configuration
 - [Workflow Guide](workflow.md) - Daily development workflow
 - [Troubleshooting Guide](troubleshooting.md) - Fix configuration issues

@@ -201,7 +201,6 @@ cd zzcollab && ./install.sh
 zzcollab --config init
 zzcollab --config set paradigm "package"        # Default to package paradigm
 zzcollab --config set build-mode "standard"     # Balanced development tools
-zzcollab --config set dotfiles-dir "~/dotfiles" # Optional: your dotfiles
 
 # Optional: Docker Hub configuration (only needed for sharing images)
 # zzcollab --config set team-name "myname"      # Uncomment if sharing images
