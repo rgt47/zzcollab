@@ -1175,7 +1175,7 @@ validate_package_environment() {
                 log_error "Failed to add packages: ${failed_packages[*]}"
                 echo ""
                 echo "These packages may not be on CRAN. Add them manually:"
-                echo "  make docker-zsh"
+                echo "  make r"
                 local pkg_vector=$(format_r_package_vector "${failed_packages[@]}")
                 echo "  R> renv::install($pkg_vector)"
                 echo "  R> quit()"
@@ -1187,7 +1187,7 @@ validate_package_environment() {
             echo "  bash modules/validation.sh --fix"
             echo ""
             echo "Or manually in container:"
-            echo "  make docker-zsh"
+            echo "  make r"
             echo "  R> renv::install($pkg_vector)"
             echo "  R> quit()"
             return 1

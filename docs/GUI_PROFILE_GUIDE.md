@@ -116,7 +116,7 @@ This will create a Docker image with all GUI libraries and applications pre-inst
 xhost +localhost
 
 # Launch container with GUI support
-make docker-zsh-gui
+make r
 ```
 
 #### Linux
@@ -125,7 +125,7 @@ make docker-zsh-gui
 xhost +local:docker
 
 # Launch container with GUI support
-make docker-zsh-gui
+make r
 ```
 
 #### Windows
@@ -281,7 +281,7 @@ echo "✅ X11 forwarding enabled"
 Source before using GUI containers:
 ```bash
 source ~/.docker_gui
-make docker-zsh-gui
+make r
 ```
 
 ## Troubleshooting
@@ -422,7 +422,7 @@ make docker-zsh-gui
 xhost +localhost
 
 # 2. Enter GUI-enabled container
-make docker-zsh-gui
+make r
 
 # 3. Work with interactive graphics
 R
@@ -452,7 +452,7 @@ git add . && git commit -m "Add GUI-enabled environment" && git push
 git clone https://github.com/myteam/viz-project.git
 cd viz-project
 zzcollab -u
-make docker-zsh-gui
+make r
 ```
 
 ### CI/CD Integration

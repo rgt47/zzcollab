@@ -179,7 +179,7 @@ Only issue is line 141 using `--config` (already noted above)
 
 **Current code**:
 ```bash
-make docker-zsh
+make r
 ```
 
 **Status**: ✅ **ACCURATE** - Correct command
@@ -317,7 +317,7 @@ gh repo edit --add-collaborator username
 git clone https://github.com/genomicslab/study.git
 cd study
 zzcollab --use-team-image
-make docker-zsh
+make r
 ```
 
 **Status**: ✅ **ACCURATE**

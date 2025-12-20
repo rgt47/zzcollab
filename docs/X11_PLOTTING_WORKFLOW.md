@@ -134,14 +134,14 @@ make docker-build
 
 ```bash
 # macOS (automatic XQuartz setup)
-make docker-zsh-gui
+make r
 
 # Linux (uses existing DISPLAY)
-make docker-zsh-gui
+make r
 
 # Windows (set DISPLAY manually)
 export DISPLAY=localhost:0.0
-make docker-zsh-gui
+make r
 ```
 
 **Automatic setup** (macOS):
@@ -226,7 +226,7 @@ make docker-build
 #==============================================================================
 
 # 1. Launch container with X11 forwarding
-make docker-zsh-gui
+make r
 
 # Inside container:
 
@@ -282,7 +282,7 @@ make docker-push-team
 git clone https://github.com/myteam/data-viz-analysis.git
 cd data-viz-analysis
 zzcollab --use-team-image
-make docker-zsh-gui    # Instant startup, all packages pre-installed
+make r    # Instant startup, all packages pre-installed
 ```
 
 ---
@@ -518,7 +518,7 @@ killall XQuartz
 open -a XQuartz
 
 # Try again
-make docker-zsh-gui
+make r
 ```
 
 **Fix (Linux)**:
@@ -530,7 +530,7 @@ exit
 xhost +local:docker
 
 # Try again
-make docker-zsh-gui
+make r
 ```
 
 ### Issue 2: XQuartz Not Found
@@ -552,7 +552,7 @@ brew install --cask xquartz
 ls -la /Applications/Utilities/XQuartz.app
 
 # Try again
-make docker-zsh-gui
+make r
 ```
 
 ### Issue 3: Black/Empty Plot Window
@@ -659,7 +659,7 @@ touch ~/.Xauthority
 xauth generate :0 . trusted
 
 # Try again
-make docker-zsh-gui
+make r
 ```
 
 ### Issue 7: Multiple Plot Windows Not Working
@@ -751,7 +751,7 @@ Host your-server.com
     ForwardX11Trusted yes
 
 # Run container with forwarded display
-make docker-zsh-gui
+make r
 # Graphics display on your local machine!
 ```
 
@@ -901,7 +901,7 @@ The `ubuntu_x11_minimal` profile provides **instant R graphics capability in Doc
 - **Team sharing**: Pre-built images for collaboration
 
 **Recommended workflow**:
-1. Use `make docker-zsh-gui` for interactive development
+1. Use `make r` for interactive development
 2. Use `make docker-test` for automated testing (headless)
 3. Save publication-quality plots to `analysis/figures/`
 4. Share pre-built images with `make docker-push-team`

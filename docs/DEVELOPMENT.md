@@ -53,11 +53,9 @@ docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck
 
 ### Development Shells
 ```bash
-make docker-sh             # Shell (recommended)
+make r                     # Interactive shell (recommended)
 make docker-rstudio        # RStudio Server at localhost:8787
-make docker-verse          # Verse environment with LaTeX (publishing)
 make docker-r              # R console only
-make docker-bash           # Bash shell
 ```
 
 **Auto-Snapshot & Auto-Restore Architecture** (October-November 2025):
@@ -178,7 +176,7 @@ cd PROJECT
 zzcollab --use-team-image
 
 # 3. Start development
-make docker-sh             # Enter container with team environment
+make r             # Enter container with team environment
 ```
 
 ### Solo Developer - Build Personal Image
@@ -227,7 +225,7 @@ cd PROJECT
 zzcollab --use-team-image
 
 # Step 3: Start development environment
-make docker-sh             # Enter container (command-line)
+make r             # Enter container (command-line)
 # OR
 make docker-rstudio        # Start RStudio Server at localhost:8787
 
@@ -247,7 +245,7 @@ make docker-push-team
 
 # Team members update their images:
 docker pull TEAM/PROJECTcore:latest
-make docker-sh             # Automatically uses updated image
+make r             # Automatically uses updated image
 ```
 
 ### Error Handling
@@ -339,7 +337,7 @@ git add . && git commit -m "Initial setup" && git push
 # Team Members:
 git clone https://github.com/team/project.git && cd project
 zzcollab --use-team-image
-make docker-sh
+make r
 # Add packages as needed with install.packages()
 ```
 

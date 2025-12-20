@@ -323,7 +323,7 @@ fi
 **Test Case**:
 ```bash
 chmod 444 renv.lock
-make docker-zsh
+make r
 # Should warn about readonly file
 ```
 

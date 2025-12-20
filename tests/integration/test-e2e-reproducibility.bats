@@ -538,7 +538,7 @@ This project uses ZZCOLLAB to ensure complete reproducibility through:
 
 ```bash
 # Enter Docker container
-make docker-sh
+make r
 
 # Run analysis
 Rscript analysis/scripts/main-analysis.R

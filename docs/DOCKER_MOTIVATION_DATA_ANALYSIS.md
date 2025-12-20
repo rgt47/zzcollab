@@ -564,7 +564,7 @@ docker run myteam/analysis-project:latest
 #### Integrated Development Workflows
 ```bash
 # Enter consistent development environment
-make docker-zsh                    # Full shell access
+make r                    # Full shell access
 make docker-rstudio                # RStudio Server at localhost:8787
 make docker-r                      # R console
 

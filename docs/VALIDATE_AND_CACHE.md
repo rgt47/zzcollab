@@ -114,7 +114,7 @@ make check-renv
 
 **What happens:**
 ```bash
-make docker-zsh
+make r
 
 # When container starts, R automatically runs:
 renv::restore()
@@ -170,7 +170,7 @@ renv::restore()
 ┌─────────────────▼───────────────────────────────┐
 │ 3. Enter container (Docker, has R)             │
 │                                                  │
-│    make docker-zsh                              │
+│    make r                              │
 └─────────────────┬───────────────────────────────┘
                   │
 ┌─────────────────▼───────────────────────────────┐
@@ -259,7 +259,7 @@ make check-renv
 **Full R environment:**
 ```bash
 # Inside container: Full R + all packages
-make docker-zsh
+make r
 
 R
 > library(dplyr)
@@ -395,7 +395,7 @@ git push
 #### Step 6: Enter Container (Container Environment)
 
 ```bash
-make docker-zsh
+make r
 ```
 
 **Container startup output:**
@@ -637,7 +637,7 @@ make check-renv
 # Requires: curl, jq, awk (standard shell tools)
 
 # 2. Install packages (in container)
-make docker-zsh
+make r
 # Container runs renv::restore() on startup
 # Time: 10-30 seconds (first time)
 # Requires: Docker (R isolated in container)
@@ -675,7 +675,7 @@ renv::restore()
 
 # Or restart container (runs renv::restore() automatically)
 exit
-make docker-zsh
+make r
 ```
 
 ### Issue: "make check-renv says packages missing but they work in R"
@@ -715,7 +715,7 @@ R
 # [1] '1.1.2'
 
 # Container
-make docker-zsh
+make r
 R
 > packageVersion("dplyr")
 # [1] '1.1.4'
@@ -729,7 +729,7 @@ R
 ```bash
 # Don't use host R for analysis
 # Always work in container
-make docker-zsh
+make r
 # Container uses exact versions from renv.lock
 ```
 
@@ -748,7 +748,7 @@ git add DESCRIPTION renv.lock
 git commit -m "Add analysis dependencies"
 
 # Then enter container (packages auto-install)
-make docker-zsh
+make r
 ```
 
 **Why:** Ensures container has all dependencies on startup
@@ -777,13 +777,13 @@ git commit -m "Implement data cleaning pipeline"
 Rscript -e 'install.packages("dplyr")'
 
 # BAD: Then work in container
-make docker-zsh
+make r
 ```
 
 **Better:**
 ```bash
 # Work exclusively in container
-make docker-zsh
+make r
 # Install packages in container
 # Auto-snapshot captures them on exit
 ```
@@ -847,7 +847,7 @@ jobs:
    # 3. Commit manifests
    git add DESCRIPTION renv.lock && git commit
    # 4. Enter container (installs packages)
-   make docker-zsh
+   make r
    ```
 
 This separation is fundamental to zzcollab's design philosophy: **manifest management on host (fast, no R), package installation in container (isolated, reproducible)**.

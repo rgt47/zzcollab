@@ -468,7 +468,7 @@ exit
 
 ```bash
 # Start container
-make docker-zsh
+make r
 
 # Install packages as needed
 R> renv::install("tidyverse")
@@ -539,7 +539,7 @@ Add to README.md:
 ```markdown
 ## Adding Dependencies
 
-1. Start development container: `make docker-zsh`
+1. Start development container: `make r`
 2. Install package: `renv::install("packagename")`
 3. Exit container (auto-snapshot updates renv.lock)
 4. Validation runs automatically
@@ -675,7 +675,7 @@ bash modules/validation.sh
 **Missing package in renv.lock:**
 ```r
 # Enter container
-make docker-zsh
+make r
 
 # Install missing package
 renv::install("packagename")
@@ -728,7 +728,7 @@ check_description_lock_consistency() {
         printf '  - %s\n' "${missing[@]}"
         echo ""
         echo "Fix with:"
-        echo "  make docker-zsh"
+        echo "  make r"
         echo "  R> renv::install(c($(IFS=,; echo "${missing[*]}" | sed 's/,/", "/g' | sed 's/^/"/' | sed 's/$/"/'))"
         echo "  R> quit()"
         return 1

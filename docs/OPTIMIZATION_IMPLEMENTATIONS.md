@@ -435,7 +435,7 @@ After each optimization:
 4. **Integration Test**
    ```bash
    # Full workflow test
-   make docker-sh
+   make r
    # Verify it works normally
    ```
 

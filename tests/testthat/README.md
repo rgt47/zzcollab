@@ -64,7 +64,7 @@ cd testthat
 zzcollab -u
 
 # Start development environment
-make docker-zsh
+make r
 ```
 
 ---
@@ -98,7 +98,7 @@ testthat/
 
 ```bash
 # 1. Enter development container
-make docker-zsh
+make r
 
 # 2. Work in R (packages auto-captured on exit)
 library(tidyverse)
@@ -117,7 +117,7 @@ git push
 #### Common Tasks
 
 ```bash
-make docker-zsh          # Start interactive R session
+make r          # Start interactive R session
 make docker-rstudio      # Start RStudio Server (localhost:8787)
 make docker-test         # Run all tests
 make docker-build        # Build Docker image

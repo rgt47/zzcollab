@@ -576,13 +576,13 @@ git push
 git clone https://github.com/mylab/study.git
 cd study
 make docker-build    # 3-4 minutes (fast RSPM binaries!)
-make docker-run      # Start working immediately
+make r      # Start working immediately
 ```
 
 **Daily Development**:
 
 ```bash
-make docker-run
+make r
 # Inside container:
 devtools::load_all()                    # Load R package
 source("analysis/scripts/01_clean.R")   # Run analysis

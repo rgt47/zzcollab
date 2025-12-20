@@ -587,7 +587,7 @@ The renv.lock file freezes exact R package versions. For a blog post with no R c
 The Makefile provides convenient build targets:
 
 ```makefile
-.PHONY: help docker-build docker-sh docker-rstudio docker-post-render \
+.PHONY: help docker-build r docker-rstudio docker-post-render \
          docker-post-preview post-render clean check-renv test
 
 # Variables
@@ -601,7 +601,7 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  docker-build          Build Docker image"
-	@echo "  docker-sh             Start container with shell access"
+	@echo "  r             Start container with shell access"
 	@echo "  docker-rstudio        Start RStudio Server (localhost:8787)"
 	@echo "  docker-post-render    Build image, render blog post in container"
 	@echo "  docker-post-preview   Start interactive preview (localhost:8080)"
@@ -618,7 +618,7 @@ docker-build:
 	@echo "Docker image built: $(DOCKER_IMAGE)"
 
 # Interactive shell in container
-docker-sh: docker-build
+r: docker-build
 	docker run --rm -it \
 		-v "$(PROJECT_DIR):/project" \
 		-w /project \
@@ -675,7 +675,7 @@ clean:
 
 **Key Make targets**:
 - `docker-build` - Build reproducible environment
-- `docker-sh` - Develop inside container
+- `r` - Develop inside container
 - `docker-post-render` - Full pipeline in container
 - `docker-post-preview` - Live preview at localhost:8080
 - `post-render` - Local rendering (needs Quarto)
@@ -1041,7 +1041,7 @@ Users can now:
 1. make docker-build      - Build reproducible environment
 2. make docker-post-render - Render blog post in container
 3. make docker-post-preview - Start live preview
-4. make docker-sh         - Interactive shell for development"
+4. make r         - Interactive shell for development"
 ```
 
 ### Step 8.4: Verify Initial Commit

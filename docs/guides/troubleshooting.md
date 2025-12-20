@@ -238,7 +238,7 @@ localhost refused to connect
 2. **Is it RStudio container?**
    ```bash
    make docker-rstudio
-   # NOT: make docker-zsh or make docker-r
+   # NOT: make r or make docker-r
    ```
 
 3. **Check container status**:

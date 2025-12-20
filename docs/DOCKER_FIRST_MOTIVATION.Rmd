@@ -2462,7 +2462,7 @@ Docker onboarding:
 # Day 1, Hour 1:
 git clone https://github.com/mylab/spatial-project.git
 cd spatial-project
-make docker-run  # Pulls lab environment, starts RStudio
+make r  # Pulls lab environment, starts container
 
 # Hour 2: Running analyses, contributing code
 ```

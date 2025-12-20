@@ -125,7 +125,7 @@ grep -r "variant" vignettes/*.Rmd docs/*.md templates/ZZCOLLAB_USER_GUIDE.md | \
 
 To verify documentation accuracy:
 
-1. **Test mount paths**: `make docker-zsh` and `touch test.txt` should create file on host
+1. **Test mount paths**: `make r` and `touch test.txt` should create file on host
 2. **Test workflow**: Follow quickstart.Rmd exactly and verify all steps work
 3. **Check terminology**: Search for "variant" in user-facing docs, should be "profile"
 4. **Check references**: No references to `.zshrc_docker` should exist

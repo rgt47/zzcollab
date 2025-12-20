@@ -9,7 +9,7 @@ This report identifies ALL sections in CLAUDE.md that reference the old `-i` and
 3. **--use-team-image flag ADDED** - For team members to use pre-built team images
 4. **Dockerfile presence determines role** - If exists → team member mode, if not → team lead mode
 5. **Team Lead workflow**: `zzcollab -t team -p project` → `make docker-build` → `make docker-push-team`
-6. **Team Member workflow**: `git clone` → `zzcollab --use-team-image` → `make docker-zsh`
+6. **Team Member workflow**: `git clone` → `zzcollab --use-team-image` → `make r`
 
 ---
 
@@ -49,7 +49,7 @@ make docker-push-team    # Push to Docker Hub
 git clone https://github.com/mylab/study.git
 cd study
 zzcollab --use-team-image -d ~/dotfiles
-make docker-zsh         # Start development environment
+make r         # Start development environment
 
 # Solo Developer - With build mode selection
 zzcollab --comprehensive -d ~/dotfiles  # 51 packages - complete toolkit
@@ -101,7 +101,7 @@ zzcollab -i -p team-project    # Creates base config.yaml
 **Team Member Joining**:
 # 2. Join with appropriate interface
 zzcollab -t team -p team-project -I analysis    # Uses team's analysis profile
-make docker-zsh                                 # Start development environment
+make r                                 # Start development environment
 ```
 
 ### Proposed Update:
@@ -139,7 +139,7 @@ cd team-project
 
 # 2. Join using team image
 zzcollab --use-team-image -d ~/dotfiles         # Uses pre-built team image
-make docker-zsh                                 # Start development environment
+make r                                 # Start development environment
 
 **Advanced Custom Variants**:
 # 1. Copy and modify existing profile
@@ -212,7 +212,7 @@ cd myproject
 zzcollab --use-team-image -d ~/dotfiles
 
 # 3. Start development
-make docker-zsh                      # Enter container with team environment
+make r                      # Enter container with team environment
 
 **Solo Developer Workflow**:
 # Configuration-based (recommended)
@@ -254,7 +254,7 @@ zzcollab -i -p penguin-analysis
 git clone https://github.com/yourname/penguin-analysis.git
 cd penguin-analysis
 zzcollab -t yourname -p penguin-analysis -I analysis
-make docker-zsh    # Same environment, instant collaboration
+make r    # Same environment, instant collaboration
 ```
 
 ### Proposed Update:
@@ -281,7 +281,7 @@ make docker-push-team
 git clone https://github.com/yourname/penguin-analysis.git
 cd penguin-analysis
 zzcollab --use-team-image -d ~/dotfiles
-make docker-zsh    # Same environment, instant collaboration
+make r    # Same environment, instant collaboration
 ```
 
 **Changes Required**:
@@ -405,7 +405,7 @@ cd PROJECT
 zzcollab --use-team-image -d ~/dotfiles
 
 # 3. Start development
-make docker-zsh            # Enter container with team environment
+make r            # Enter container with team environment
 ```
 
 **Solo Developer - Build Personal Image**:
@@ -504,7 +504,7 @@ cd PROJECT
 zzcollab --use-team-image -d ~/dotfiles
 
 # Step 3: Start development environment
-make docker-zsh            # Enter container (command-line)
+make r            # Enter container (command-line)
 # OR
 make docker-rstudio        # Start RStudio Server at localhost:8787
 
@@ -524,7 +524,7 @@ make docker-push-team
 
 # Team members update their images:
 docker pull TEAM/PROJECTcore:latest
-make docker-zsh            # Automatically uses updated image
+make r            # Automatically uses updated image
 ```
 
 **Error Handling**:
@@ -631,7 +631,7 @@ make docker-push-team
 git clone https://github.com/mylab/study.git
 cd study
 zzcollab --use-team-image -d ~/dotfiles
-make docker-zsh
+make r
 ```
 
 **Changes Required**:
@@ -732,7 +732,7 @@ make docker-push-team
 git clone https://github.com/team/project.git
 cd project
 zzcollab --use-team-image -d ~/dotfiles
-make docker-zsh
+make r
 ```
 
 **Key Benefits**:
@@ -845,7 +845,7 @@ set_config("team_name", "TEAM")
 join_project(project_name = "PROJECT", use_team_image = TRUE)
 
 # Start development
-system("make docker-zsh")     # Command-line
+system("make r")     # Command-line
 # OR
 system("make docker-rstudio") # RStudio Server
 
@@ -905,7 +905,7 @@ make docker-push-team
 git clone https://github.com/mylab/study.git
 cd study
 zzcollab --use-team-image -d ~/dotfiles
-make docker-zsh
+make r
 ```
 
 **Benefits**:
@@ -965,7 +965,7 @@ zzcollab -t mylab -p study -I rstudio -d ~/dotfiles
 git clone https://github.com/mylab/study.git
 cd study
 zzcollab --use-team-image -d ~/dotfiles
-make docker-zsh    # or make docker-rstudio
+make r    # or make docker-rstudio
 ```
 
 **Changes Required**:
@@ -1066,7 +1066,7 @@ start_rstudio()                                             # Identical environm
 
 ### Workflow Updates:
 1. **Team Lead**: Add `make docker-build` + `make docker-push-team` (15+ locations)
-2. **Team Member**: Add `git clone` → `zzcollab --use-team-image` → `make docker-zsh` (10+ locations)
+2. **Team Member**: Add `git clone` → `zzcollab --use-team-image` → `make r` (10+ locations)
 3. **Dockerfile customization**: Replace config.yaml profile examples (8+ locations)
 4. **Bundle system**: Add bundles.yaml documentation (3+ locations)
 

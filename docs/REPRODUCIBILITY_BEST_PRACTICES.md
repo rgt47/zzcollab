@@ -193,7 +193,7 @@ all packages.
 
 ```bash
 # Alice adds geospatial packages
-make docker-zsh
+make r
 # Inside container:
 renv::install("sf")
 renv::snapshot()
@@ -209,7 +209,7 @@ git push
 
 # Bob adds machine learning packages
 git pull  # Gets Alice's changes
-make docker-zsh
+make r
 # Inside container:
 renv::install("tidymodels")
 renv::snapshot()  # renv.lock now has sf + tidymodels

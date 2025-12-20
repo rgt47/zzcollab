@@ -560,7 +560,7 @@ zzcollab --use-team-image
 
 # Team's Docker profile automatically used
 # Start development environment
-make docker-zsh
+make r
 ```
 
 ### Organization Administrator Workflow

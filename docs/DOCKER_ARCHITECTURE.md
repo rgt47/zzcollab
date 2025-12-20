@@ -107,7 +107,7 @@ FROM rgt47/verse-arm64:latest
 
 # Build and use
 make docker-build
-make docker-zsh
+make r
 ```
 
 ## Key Insights

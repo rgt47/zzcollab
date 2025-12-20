@@ -17,7 +17,7 @@ Users do **NOT** need to understand or interact with renv directly. They can use
 
 ```r
 # Enter container
-make docker-zsh
+make r
 
 # Add packages (standard R)
 install.packages("ggplot2")
@@ -210,7 +210,7 @@ Package versions are automatically captured when you exit the container.
 ## Adding Packages
 
 ```r
-make docker-zsh
+make r
 install.packages("ggplot2")
 exit
 ```

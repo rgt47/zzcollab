@@ -44,7 +44,7 @@ zzcollab --config set profile-name "rstudio"  # Docker profile
 zzcollab --config list
 
 # Dynamic package management (CORRECT)
-make docker-zsh
+make r
 renv::install("tidyverse")
 renv::snapshot()
 ```
@@ -269,7 +269,7 @@ zzcollab --config set build-mode "minimal"
 ```bash
 # ✅ CURRENT
 zzcollab --config set profile-name "minimal"
-make docker-zsh
+make r
 renv::install("tidyverse")  # Dynamic installation
 renv::snapshot()
 ```

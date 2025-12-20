@@ -150,7 +150,7 @@ Don't worry - zzcollab handles most Docker commands for you! You mainly use make
 
 ```bash
 make docker-rstudio    # Start RStudio container
-make docker-zsh        # Start command-line container
+make r        # Start command-line container
 # Ctrl+C               # Stop container (in terminal)
 ```
 
@@ -602,7 +602,7 @@ If a package fails to install:
 
 ```bash
 # Enter container shell
-make docker-zsh
+make r
 
 # Check system libraries
 dpkg -l | grep gdal
@@ -689,7 +689,7 @@ zzcollab --profile-name alpine_minimal --r-version 4.4.0
 make docker-build
 
 # Enter container
-make docker-zsh
+make r
 ```
 
 ### Troubleshooting Alpine

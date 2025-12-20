@@ -95,7 +95,7 @@ cp data.csv analysis/data/raw_data/
 **✅ Start/stop containers**:
 ```bash
 make docker-rstudio
-make docker-zsh
+make r
 Ctrl+C  # to stop
 ```
 
@@ -547,7 +547,7 @@ renv::snapshot()  # Don't forget this!
 ### Use command-line instead of RStudio
 
 ```bash
-make docker-zsh
+make r
 # Interactive shell in container
 # Run R scripts: Rscript analysis.R
 # exit when done

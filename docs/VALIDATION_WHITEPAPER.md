@@ -124,7 +124,7 @@ This pipeline integrates with the developer workflow:
 
 ```bash
 # Developer workflow (completely automatic)
-make docker-zsh                    # 1. Enter container
+make r                    # 1. Enter container
 renv::install("ggplot2")           # 2. Add packages as needed
 exit                               # 3. Exit container
 
@@ -331,7 +331,7 @@ CMD ["/bin/zsh"]
 **How it works**:
 
 ```bash
-# make docker-zsh executes:
+# make r executes:
 docker run --entrypoint=/usr/local/bin/zzcollab-entrypoint.sh IMAGE /bin/zsh
 
 # Execution flow:
@@ -1022,7 +1022,7 @@ Imports:
 
 **Option 2: Container workflow**
 ```bash
-make docker-zsh
+make r
 # Inside container:
 renv::install("ggplot2")
 renv::install("readr")

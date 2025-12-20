@@ -143,7 +143,7 @@ All documentation follows a structured approach for reproducible research:
 - [ ] **Enter Docker container for data analysis**
   ```bash
   # NOW enter container - data files are automatically mounted and available
-  make docker-zsh     # or make docker-rstudio for RStudio interface
+  make r     # or make docker-rstudio for RStudio interface
   ```
 
 - [ ] **Initial data inspection (CONTAINER)**
@@ -183,7 +183,7 @@ All documentation follows a structured approach for reproducible research:
 - [ ] **Enter container if not already inside**
   ```bash
   # On host system
-  make docker-zsh     # or make docker-rstudio
+  make r     # or make docker-rstudio
   ```
 
 - [ ] **Run basic data validation (CONTAINER)**
@@ -238,7 +238,7 @@ All documentation follows a structured approach for reproducible research:
   vim data/README.md    # Add quality assessment results
   
   # Re-enter container to continue analysis
-  make docker-zsh
+  make r
   ```
   - [ ] **Update `data/README.md` with quality assessment results** → Data Quality Assessment section
   - [ ] **Note any data cleaning needs identified** → Processing Notes section
@@ -589,7 +589,7 @@ All documentation follows a structured approach for reproducible research:
   vim data/README.md
   
   # Re-enter container if needed for more testing
-  make docker-zsh
+  make r
   ```
   - [ ] **Complete `data/README.md` with final processing details** → Processing Summary section
   - [ ] **Document all derived variables and their creation** → Derived Data Dictionary section
@@ -620,7 +620,7 @@ All documentation follows a structured approach for reproducible research:
   make docker-test
   
   # Check test coverage inside container
-  make docker-zsh
+  make r
   R -e "covr::package_coverage()"
   exit
   ```
@@ -631,7 +631,7 @@ All documentation follows a structured approach for reproducible research:
   rm data/derived_data/*
   
   # Enter container to recreate data
-  make docker-zsh
+  make r
   source("scripts/01_data_preparation.R")
   exit
   
@@ -642,7 +642,7 @@ All documentation follows a structured approach for reproducible research:
 - [ ] **Generate final data quality report (CONTAINER)**
   ```bash
   # Enter container for final reporting
-  make docker-zsh
+  make r
   ```
   ```r
   # Inside container
@@ -698,7 +698,7 @@ All documentation follows a structured approach for reproducible research:
 ### For New Data Receipt (HOST SYSTEM):
 1. [ ] **HOST**: Place raw data in `data/raw_data/`
 2. [ ] **HOST**: Update `data/README.md` with source info
-3. [ ] **CONTAINER**: Enter container (`make docker-zsh`)
+3. [ ] **CONTAINER**: Enter container (`make r`)
 4. [ ] **CONTAINER**: Run initial inspection (`str()`, `summary()`)
 5. [ ] **HOST**: Document quality issues in README
 
@@ -730,7 +730,7 @@ All documentation follows a structured approach for reproducible research:
 ### Host System Commands
 ```bash
 # Enter/exit Docker containers
-make docker-zsh      # Enter shell container
+make r      # Enter shell container
 make docker-rstudio  # Enter RStudio container (localhost:8787)
 exit                 # Exit any container
 
