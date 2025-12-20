@@ -207,7 +207,7 @@ zzcollab -t morphology-lab -p penguin-bill-morphology -I verse
 
 ```bash
 # Establish analysis framework and data management
-make docker-zsh
+make r
 
 # Set up team data standards
 vim analysis/reproduce/01_data_preparation.R
@@ -334,7 +334,7 @@ git push origin main
 
 ```bash
 # Develop statistical analysis functions for team use
-make docker-zsh
+make r
 
 git pull origin main  # Get latest team standards
 
@@ -635,7 +635,7 @@ git push origin main
 
 ```bash
 # Set up manuscript structure and writing framework
-make docker-zsh
+make r
 
 git pull origin main  # Get latest team functions
 
@@ -1017,7 +1017,7 @@ print(sessionInfo())
 
 ```bash
 # Coordinate final manuscript review and submission
-make docker-zsh
+make r
 
 # Render complete manuscript in all formats
 R

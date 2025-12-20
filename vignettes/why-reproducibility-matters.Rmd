@@ -227,7 +227,7 @@ A critical insight: with RSPM (RStudio Package Manager) binary packages, Docker 
 git clone https://github.com/lab/study.git
 cd study
 make docker-build    # 3-4 minutes
-make docker-run      # Start working
+make r      # Start working
 ```
 
 No Docker Hub required—team members build from the Dockerfile in the repository, ensuring perfect reproducibility with minimal wait time.
@@ -237,7 +237,7 @@ No Docker Hub required—team members build from the Dockerfile in the repositor
 ZZCOLLAB implements an automatic snapshot-on-exit architecture that eliminates manual `renv::snapshot()` commands:
 
 ```bash
-make docker-run
+make r
 # Inside container:
 renv::install("ggplot2")  # Add packages as needed
 exit                      # Automatically snapshots renv.lock
@@ -328,14 +328,14 @@ zzcollab -r analysis
 make docker-build
 
 # Start working
-make docker-run
+make r
 ```
 
 ## Daily Workflow
 
 ```bash
 # Enter reproducible environment
-make docker-run
+make r
 
 # Inside container:
 devtools::load_all()                    # Load your R package
@@ -355,7 +355,7 @@ git push
 git clone https://github.com/you/project.git
 cd project
 make docker-build    # 3-4 minutes
-make docker-run      # Identical environment
+make r      # Identical environment
 ```
 
 ## For More Information

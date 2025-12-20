@@ -257,7 +257,7 @@ zzcollab -t mylab -p customer-analysis --profile-name analysis
 zzcollab -t mylab -p customer-analysis --use-team-image
 
 # Development workflow with built-in validation
-make docker-zsh                    # Enter reproducible environment
+make r                    # Enter reproducible environment
 # ... develop analysis code ...
 make docker-test                   # Run automated tests
 make docker-check-renv            # Validate dependencies

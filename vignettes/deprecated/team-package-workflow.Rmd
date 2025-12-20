@@ -171,7 +171,7 @@ zzcollab -t statmethods-team -p morphometric-analysis -I r-ver
 
 ```bash
 # Establish package architecture and development standards
-make docker-zsh
+make r
 
 # Create package structure and core API design
 vim R/core-functions.R
@@ -647,7 +647,7 @@ test_that("complete workflow integration works", {
 
 ```bash
 # Develop utility functions and package infrastructure
-make docker-zsh
+make r
 
 git pull origin main  # Get latest team changes
 
@@ -920,7 +920,7 @@ create_morphometric_summary <- function(data, variables, grouping = NULL,
 
 ```bash
 # Develop visualization functions for morphometric analysis
-make docker-zsh
+make r
 
 git pull origin main
 
@@ -1185,7 +1185,7 @@ plot_morphometric_comparison <- function(data, variables, grouping,
 
 ```bash
 # Create comprehensive package documentation
-make docker-zsh
+make r
 
 git pull origin main
 
@@ -1410,7 +1410,7 @@ For more advanced usage, see:
 
 ```bash
 # Set up comprehensive CI/CD pipeline for team package
-make docker-zsh
+make r
 
 # Create team release workflow
 vim .github/workflows/R-CMD-check.yml
@@ -1565,7 +1565,7 @@ git push origin v1.0.0
 
 ```bash
 # Each team member validates complete package functionality
-make docker-zsh
+make r
 
 # Run complete test suite
 R

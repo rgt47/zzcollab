@@ -171,7 +171,7 @@ Create analysis scripts in `analysis/scripts/`:
 Run complete analysis:
 
 ```bash
-make docker-sh
+make r
 
 Rscript analysis/scripts/01_prepare_data.R
 Rscript analysis/scripts/02_exploratory_analysis.R
@@ -181,7 +181,7 @@ Rscript analysis/scripts/04_generate_figures.R
 exit
 ```
 
-**Tip**: Use `make r` if you prefer to work directly in R. Use `make docker-sh` for shell access when running batch scripts.
+**Tip**: Use `make r` if you prefer to work directly in R. Use `make r` for shell access when running batch scripts.
 
 ## Step 3: Create Manuscript Structure
 
@@ -531,7 +531,7 @@ Create `analysis/paper/references.bib`:
 ### Download Citation Style
 
 ```bash
-make docker-sh
+make r
 
 # Download citation style (Ecology Letters example)
 wget https://raw.githubusercontent.com/citation-style-language/styles/master/ecology-letters.csl \
@@ -545,7 +545,7 @@ exit
 ### Render to PDF (LaTeX)
 
 ```bash
-make docker-sh
+make r
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "pdf_document")
@@ -561,7 +561,7 @@ Output: `analysis/paper/paper.pdf`
 Useful for collaborators who prefer Microsoft Word:
 
 ```bash
-make docker-sh
+make r
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "word_document")
@@ -577,7 +577,7 @@ Output: `analysis/paper/paper.docx`
 Great for web sharing and interactive code:
 
 ```bash
-make docker-sh
+make r
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "html_document")
@@ -591,7 +591,7 @@ Output: `analysis/paper/paper.html`
 ### Render to All Formats
 
 ```bash
-make docker-sh
+make r
 
 R
 > rmarkdown::render("analysis/paper/paper.Rmd", output_format = "all")
@@ -904,7 +904,7 @@ Many journals provide R Markdown templates [@xie2018].
 ### Using rticles Package
 
 ```bash
-make docker-sh
+make r
 
 R
 > install.packages("rticles")
@@ -941,7 +941,7 @@ Quarto (https://quarto.org) is the successor to R Markdown [@xie2018].
 
 ```bash
 # In publishing Docker profile, Quarto is pre-installed
-make docker-sh
+make r
 
 quarto --version
 
@@ -990,7 +990,7 @@ ggplot(penguins, aes(x = body_mass_g, y = bill_length_mm, color = species)) +
 ### Render Quarto Document
 
 ```bash
-make docker-sh
+make r
 
 quarto render analysis/paper/paper.qmd --to all
 
@@ -1129,7 +1129,7 @@ my-project/
 ### Week 6-8: Iterative Writing
 ```
 # Daily workflow:
-make docker-sh
+make r
 # Edit paper.Rmd
 # Update analysis if needed
 exit  # Auto-snapshot!

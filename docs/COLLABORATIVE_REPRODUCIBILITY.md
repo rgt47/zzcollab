@@ -497,7 +497,7 @@ git push origin alice-spatial-analysis
 git checkout main
 git pull                                # Get latest (does NOT include Alice's changes yet)
 git checkout -b bob-ml-pipeline
-make docker-zsh                        # Enter container
+make r                        # Enter container
 
 # Inside container:
 renv::install("tidymodels")            # Add ML packages

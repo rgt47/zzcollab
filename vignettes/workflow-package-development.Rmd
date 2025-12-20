@@ -136,7 +136,7 @@ Following test-driven development [@wickham2011], write tests first, then implem
 ### Initialize Testing
 
 ```bash
-make docker-sh
+make r
 
 R
 > usethis::use_testthat()
@@ -322,7 +322,7 @@ Each function in `R/` needs roxygen2 documentation:
 ### Generate Documentation
 
 ```bash
-make docker-sh
+make r
 
 R
 > devtools::document()  # Generates man/*.Rd files from roxygen2 comments
@@ -348,7 +348,7 @@ Vignettes provide long-form documentation for package workflows [@wickham2015].
 ### Create Tutorial Vignette
 
 ```bash
-make docker-sh
+make r
 
 R
 > usethis::use_vignette("penguin-analysis-tutorial")
@@ -410,7 +410,7 @@ plot_bill_dimensions(clean_data)
 ### Build Vignettes
 
 ```bash
-make docker-sh
+make r
 
 R
 > devtools::build_vignettes()
@@ -455,7 +455,7 @@ BugReports: https://github.com/yourusername/penguintools/issues
 ### Add LICENSE File
 
 ```bash
-make docker-sh
+make r
 
 R
 > usethis::use_mit_license("Your Name")
@@ -508,7 +508,7 @@ Achieve >95% test coverage following best practices [@wickham2011].
 ### Test Coverage Report
 
 ```bash
-make docker-sh
+make r
 
 R
 > library(covr)
@@ -689,7 +689,7 @@ Final steps for CRAN submission [@wickham2015].
 # 1. Update version number in DESCRIPTION
 # 2. Update NEWS.md with changes
 # 3. Run comprehensive checks
-make docker-sh
+make r
 
 R
 > # Check on multiple R versions
@@ -718,7 +718,7 @@ exit
 ### Submit to CRAN
 
 ```bash
-make docker-sh
+make r
 
 R
 > # Final check
@@ -754,7 +754,7 @@ Create professional package documentation website [@wickham2015].
 ### Setup pkgdown
 
 ```bash
-make docker-sh
+make r
 
 R
 > usethis::use_pkgdown()
@@ -821,7 +821,7 @@ Website will be available at: `https://yourusername.github.io/penguintools/`
 Include example datasets in your package:
 
 ```bash
-make docker-sh
+make r
 
 R
 > # Create data object
@@ -889,7 +889,7 @@ print.penguin_model <- function(x, ...) {
 For performance-critical functions, integrate C++:
 
 ```bash
-make docker-sh
+make r
 
 R
 > usethis::use_rcpp()

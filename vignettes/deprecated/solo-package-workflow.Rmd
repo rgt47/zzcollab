@@ -285,7 +285,7 @@ my-analysis-package/
 cd my-analysis-package
 
 # Launch development environment (choose interface)
-make docker-zsh         # Command-line interface (recommended)
+make r         # Command-line interface (recommended)
 make docker-rstudio     # RStudio Server at localhost:8787
 make docker-r           # R console only
 ```
@@ -394,7 +394,7 @@ zzcollab -p statanalysis -P package --github
 cd statanalysis
 
 # Start development environment
-make docker-zsh
+make r
 ```
 
 **Inside container - Initialize package development:**
@@ -1290,7 +1290,7 @@ make docker-coverage         # Check test coverage
 make docker-pkgdown          # Build documentation website
 
 # CRAN submission preparation
-make docker-zsh
+make r
 R
 devtools::check_win_devel()   # Check on Windows development version
 devtools::check_mac_release() # Check on macOS release version

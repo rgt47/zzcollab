@@ -202,7 +202,7 @@ Both approaches:
 
 Before release, verify:
 
-- [ ] `make docker-zsh` → `install.packages()` → `exit` works
+- [ ] `make r` → `install.packages()` → `exit` works
 - [ ] Auto-snapshot captures packages
 - [ ] validation.sh runs after exit
 - [ ] CI/CD workflow runs successfully

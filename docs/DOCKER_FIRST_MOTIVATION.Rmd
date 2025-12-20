@@ -506,7 +506,7 @@ git clone https://github.com/lab/connectivity-analysis.git
 cd connectivity-analysis
 
 # Step 2: Start development environment (daily)
-make docker-zsh
+make r
 
 # Inside container - identical for everyone
 R

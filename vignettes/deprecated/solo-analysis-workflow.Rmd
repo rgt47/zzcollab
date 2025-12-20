@@ -276,7 +276,7 @@ penguin-analysis/
 cd penguin-analysis
 
 # Launch development environment (choose your interface)
-make docker-zsh         # Command-line interface (most flexible)
+make r         # Command-line interface (most flexible)
 make docker-rstudio     # RStudio Server at localhost:8787
 make docker-r           # R console only
 ```
@@ -358,7 +358,7 @@ zzcollab -p penguin-analysis -P analysis --github
 cd penguin-analysis
 
 # Start development environment
-make docker-zsh
+make r
 ```
 
 **Inside container - Set up data:**
@@ -2037,7 +2037,7 @@ cd your-project
 zzcollab -t your-team -p your-project -I rstudio
 
 # Equivalent development environment
-make docker-zsh
+make r
 ```
 
 The zzcollab framework enables solo projects to operate without Docker Hub configuration while maintaining compatibility for team collaboration when required.
@@ -2069,7 +2069,7 @@ zzcollab -i -p penguin-analysis -P analysis --github
 
 # Start development environment
 cd penguin-analysis
-make docker-zsh
+make r
 ```
 
 **Inside the container - Create initial analysis script:**
@@ -2262,7 +2262,7 @@ After the first push, continue with enhanced analysis:
 
 ```bash
 # Start development environment again
-make docker-zsh
+make r
 
 # Update the analysis script
 vim scripts/01_penguin_exploration.R

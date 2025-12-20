@@ -174,7 +174,7 @@ mkdir test-cleanup-phase4 && cd test-cleanup-phase4
 zzcollab -d ~/dotfiles
 
 # 3. Docker development
-make docker-zsh
+make r
 # Inside container: touch test.txt && exit
 
 # 4. Verify file sync
@@ -235,7 +235,7 @@ git add . && git commit -m "Initial setup" && git push
 # Team Member:
 git clone https://github.com/mylab/study.git && cd study
 zzcollab --use-team-image -d ~/dotfiles
-make docker-zsh
+make r
 ```
 
 **Section 6: Core Image Building (Lines 946-1025)**
@@ -264,7 +264,7 @@ git add . && git commit -m "Initial project" && git push -u origin main
 # Team Member:
 git clone https://github.com/myteam/myproject.git && cd myproject
 zzcollab --use-team-image -d ~/dotfiles  # Download team image
-make docker-zsh                          # Start development
+make r                          # Start development
 ```
 
 **Sections 8-9: Remove Completely Obsolete Content**

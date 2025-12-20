@@ -459,7 +459,7 @@ Both Dr. Chen and Dr. Rodriguez pull the latest changes:
 git pull origin main
 
 # Update package dependencies if needed
-make docker-zsh
+make r
 Rscript -e "renv::status(); renv::snapshot()"
 ```
 

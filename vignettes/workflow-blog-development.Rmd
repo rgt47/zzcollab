@@ -376,7 +376,7 @@ cat("Figures saved to analysis/figures/\n")
 make docker-build
 
 # Enter container
-make docker-sh
+make r
 
 # Install required packages
 R
@@ -643,7 +643,7 @@ Write simple, intuitive paths:
 
 ```bash
 make docker-build         # Build environment
-make docker-sh            # Interactive development
+make r            # Interactive development
 make docker-post-render   # Full pipeline + render
 ```
 

@@ -160,7 +160,7 @@ Team members work on different aspects simultaneously:
 
 ```bash
 # Monitor team progress and manage integrations
-make docker-zsh
+make r
 
 # Inside container - coordinate team workflow
 R
@@ -191,7 +191,7 @@ git push origin main
 
 ```bash
 # Develop shared analysis functions
-make docker-zsh
+make r
 
 # Create advanced modeling functions
 vim R/modeling_functions.R
@@ -356,7 +356,7 @@ git push origin main
 
 ```bash
 # Work on statistical modeling script
-make docker-zsh
+make r
 
 # Pull latest team changes
 git pull origin main
@@ -497,7 +497,7 @@ git push origin main
 
 ```bash
 # Focus on exploratory analysis and visualization
-make docker-zsh
+make r
 
 # Pull latest team contributions
 git pull origin main
@@ -774,7 +774,7 @@ git push origin main
 
 ```bash
 # Generate team progress summary
-make docker-zsh
+make r
 R
 # Create automated team status report
 rmarkdown::render("scripts/05_automated_report.Rmd",

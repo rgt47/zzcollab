@@ -337,7 +337,7 @@ cat("\nModel results saved to analysis/data/derived_data/model_coefficients.csv\
 
 ```bash
 # Enter container shell
-make docker-sh
+make r
 
 # Run complete analysis pipeline
 Rscript analysis/scripts/01_prepare_data.R
@@ -348,7 +348,7 @@ Rscript analysis/scripts/03_statistical_analysis.R
 exit
 ```
 
-**Tip**: Use `make r` if you prefer to work directly in R. Use `make docker-sh` if you need shell access for running multiple scripts.
+**Tip**: Use `make r` if you prefer to work directly in R. Use `make r` if you need shell access for running multiple scripts.
 
 ## Step 4: Extract Reusable Functions (Progressive Disclosure)
 
@@ -612,7 +612,7 @@ make r
 > q()
 
 # Or use shell for batch execution
-make docker-sh
+make r
 Rscript analysis/scripts/01_prepare_data.R
 Rscript analysis/scripts/02_explore_data.R
 Rscript analysis/scripts/03_statistical_analysis.R

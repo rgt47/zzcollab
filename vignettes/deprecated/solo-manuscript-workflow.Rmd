@@ -98,7 +98,7 @@ penguin-morphology/
 ```bash
 # Enter the reproducible container environment
 cd penguin-morphology
-make docker-zsh
+make r
 ```
 
 # Manuscript Development Workflow
@@ -270,7 +270,7 @@ saveRDS(results, here("analysis", "results", "morphology_analysis.rds"))
 cd penguin-morphology
 
 # Enter identical containerized environment every time
-make docker-zsh
+make r
 
 # Inside container: renv ensures identical package versions
 R
@@ -317,7 +317,7 @@ exit
 docker system prune -f  # Remove all cached images
 
 # Start completely fresh
-make docker-zsh  # Rebuilds environment from scratch
+make r  # Rebuilds environment from scratch
 source("analysis/reproduce/run_all.R")  # Should work identically
 
 # If this succeeds, your manuscript is truly reproducible
@@ -401,14 +401,14 @@ make document
 
 ```bash
 # Render main paper (with locked package versions)
-make docker-zsh
+make r
 Rscript -e "rmarkdown::render('manuscript/paper.Rmd')"
 
 # Render supplementary materials
 Rscript -e "rmarkdown::render('manuscript/supplementary.Rmd')"
 
 # Render manuscript files using Docker
-make docker-zsh
+make r
 Rscript -e "rmarkdown::render('manuscript/paper.Rmd')"
 Rscript -e "rmarkdown::render('manuscript/supplementary.Rmd')"
 ```
@@ -417,7 +417,7 @@ Rscript -e "rmarkdown::render('manuscript/supplementary.Rmd')"
 
 ```bash
 # Validate package consistency
-make docker-zsh
+make r
 Rscript -e "renv::status()"  # Should show no issues
 
 # Run full reproduction pipeline (in clean container)
@@ -494,7 +494,7 @@ ZZCOLLAB's manuscript paradigm leverages Docker containers to ensure perfect rep
 
 ```bash
 # Your manuscript environment is completely isolated
-make docker-zsh  # Enters containerized R environment
+make r  # Enters containerized R environment
 # All package versions, R version, system dependencies identical across users
 ```
 
@@ -633,7 +633,7 @@ This example demonstrates the full workflow from project creation to manuscript 
 ```bash
 zzcollab -i -p penguin-morphology -P manuscript
 cd penguin-morphology
-make docker-zsh
+make r
 ```
 
 ## Analysis Development

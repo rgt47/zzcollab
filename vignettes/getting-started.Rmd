@@ -618,7 +618,7 @@ Navigate to the project directory and enter the container:
 cd ~/projects/penguin-analysis
 
 # Enter container with Zsh shell
-make docker-zsh
+make r
 ```
 
 This command performs the following operations:
@@ -633,7 +633,7 @@ Multiple interfaces are available for container interaction:
 
 ```bash
 # Zsh shell (recommended for development)
-make docker-zsh
+make r
 
 # RStudio Server web interface
 make docker-rstudio
@@ -642,9 +642,6 @@ make docker-rstudio
 
 # R console only
 make docker-r
-
-# Bash shell
-make docker-bash
 ```
 
 ## Environment Verification
@@ -1014,7 +1011,7 @@ Container exit behavior:
 1. Container process terminates
 2. All files persist on host filesystem (mounted volumes)
 3. Git commits remain accessible on host
-4. Container can be restarted with make docker-zsh
+4. Container can be restarted with make r
 
 ## Verification of Persistence
 
@@ -1152,7 +1149,7 @@ Run the analysis within the container environment:
 
 ```bash
 # Enter container
-make docker-zsh
+make r
 
 # Execute analysis script
 Rscript scripts/01_penguin_bill_analysis.R
@@ -1282,7 +1279,7 @@ cp ~/Downloads/data.csv ~/projects/penguin-analysis/analysis/data/raw_data/
 
 # Container entry
 cd ~/projects/penguin-analysis
-make docker-zsh
+make r
 
 # Development workflow (within container)
 R                              # Start R session
@@ -1421,7 +1418,7 @@ cd test-clone
 zzcollab --use-team-image
 
 # Enter container and run analysis
-make docker-zsh
+make r
 # Inside container:
 Rscript scripts/01_penguin_bill_analysis.R
 # Should produce identical results
@@ -1493,7 +1490,7 @@ cd penguin-analysis
 zzcollab --use-team-image
 
 # Enter container environment
-make docker-zsh
+make r
 
 # Execute analysis
 Rscript scripts/01_penguin_bill_analysis.R

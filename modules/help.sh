@@ -40,7 +40,7 @@ Common workflows:
   start a new project (solo developer)
     zzcollab -p myproject                     # Initialize new project
     cd myproject && make docker-build         # Build Docker environment
-    make docker-zsh                           # Start development
+    make r                           # Start development
 
   start a new project (team lead)
     zzcollab -t mylab -p study -r analysis    # Initialize team project
@@ -50,10 +50,10 @@ Common workflows:
   join an existing project (team member)
     git clone https://github.com/team/project.git
     cd project && zzcollab -u                 # Pull team Docker image
-    make docker-zsh                           # Start development
+    make r                           # Start development
 
   development workflow
-    make docker-zsh        # Enter container
+    make r        # Enter container
     # ... work in R ...
     q()                    # Exit (auto-snapshots packages)
     make docker-test       # Run tests
@@ -213,7 +213,7 @@ Solo Developer Workflow:
    make docker-build
 
 3. Start development:
-   make docker-zsh
+   make r
    # Now you're in R inside Docker container
 
 4. Work in R:
@@ -249,7 +249,7 @@ show_help_workflow() {
 DAILY DEVELOPMENT WORKFLOW
 
 Basic Cycle:
-   make docker-zsh          # Enter development container
+   make r          # Enter development container
    # ... work in R ...
    q()                      # Exit (auto-snapshots packages)
    make docker-test         # Run tests
@@ -262,7 +262,7 @@ Common Tasks:
    make docker-push-team    # Share team Docker image
 
 Adding Packages:
-   make docker-zsh
+   make r
    install.packages("tidyverse")
    q()                      # Automatically captured in renv.lock
 
@@ -312,7 +312,7 @@ Team Member Join:
       zzcollab -u
 
    3. Start development:
-      make docker-zsh
+      make r
 
 Workflow:
    - Team members work independently in containers
@@ -445,7 +445,7 @@ Two-Layer System:
 
 Common Commands:
   make docker-build        Build Docker image
-  make docker-zsh          Interactive R session
+  make r          Interactive R session
   make docker-rstudio      RStudio Server (localhost:8787)
   make docker-test         Run tests in container
   make docker-push-team    Share team image
@@ -475,7 +475,7 @@ show_help_renv() {
 PACKAGE MANAGEMENT (renv)
 
 Auto-Snapshot Workflow:
-  make docker-zsh
+  make r
   install.packages("tidyverse")
   q()                       # Automatic snapshot on exit
 
@@ -613,7 +613,7 @@ show_development_workflows() {
    make docker-build          # Build the Docker image
    make docker-rstudio        # → http://localhost:8787 (user: analyst, pass: analyst)
    make docker-r              # R console in container
-   make docker-zsh            # Interactive shell in container
+   make r            # Interactive shell in container
    
 📝 ANALYSIS WORKFLOW:
    1. Place raw data in data/raw_data/
@@ -800,7 +800,7 @@ EXAMPLES:
     Team Members - Join Existing Project:
     git clone https://github.com/mylab/study.git && cd study
     zzcollab -u                                 # Pull and use team image (mylab/study:latest)
-    make docker-zsh                             # Start development (auto-pulls latest image)
+    make r                             # Start development (auto-pulls latest image)
 
     Output Control:
     zzcollab -t team -p project                 # Default: concise output (~8 lines)
@@ -1252,7 +1252,7 @@ Team members - Join existing project:
     git clone https://github.com/labteam/study.git
     cd study
     zzcollab --use-team-image               # Pull team image from Docker Hub
-    make docker-zsh                         # Start development
+    make r                         # Start development
 
 Scenario 2: Solo Researcher, Personal Accounts
 ──────────────────────────────────────────────────────────────────────────
@@ -1498,7 +1498,7 @@ make docker-rstudio          # Start RStudio
 Common Tasks:
 ──────────────────────────────────────────────────────────────────────────
 make docker-rstudio          # RStudio interface
-make docker-zsh              # Command-line interface
+make r              # Command-line interface
 make docker-test             # Run tests
 make help                    # See all available commands
 
@@ -1592,7 +1592,7 @@ Share with professor/TA:
   3. They can reproduce your exact environment!
 
 Try different interfaces:
-  make docker-zsh           # Command-line for advanced users
+  make r           # Command-line for advanced users
   make docker-r             # Just R console
 
 Learn more about:

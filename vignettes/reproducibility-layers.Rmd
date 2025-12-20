@@ -292,7 +292,7 @@ zzcollab --profile-name minimal
 
 ```bash
 # Start development environment
-make docker-zsh
+make r
 
 # Now inside container (identical Linux environment)
 R
@@ -310,7 +310,7 @@ exit
 
 # Collaborator gets identical environment
 git clone project
-make docker-zsh  # Builds identical container
+make r  # Builds identical container
 ```
 
 ## Pros
@@ -390,7 +390,7 @@ zzcollab -t mylab -p climate-study --profile-name geospatial
 git clone https://github.com/mylab/climate-study
 cd climate-study
 zzcollab --use-team-image  # Gets team's Docker image
-make docker-zsh
+make r
 
 # Inside container - everyone has same environment
 R --version  # Same R version for all
@@ -474,7 +474,7 @@ my-project/
 zzcollab --profile-name analysis
 
 # Add testthat infrastructure
-make docker-zsh
+make r
 R
 > usethis::use_testthat()
 > quit()
@@ -485,7 +485,7 @@ exit
 
 ```bash
 # Start development environment
-make docker-zsh
+make r
 
 # Inside container: Test-Driven Development cycle
 R
@@ -898,7 +898,7 @@ Adding tests to existing Docker project:
 
 ```bash
 # Start development container
-make docker-zsh
+make r
 
 # Inside container
 R
@@ -987,7 +987,7 @@ zzcollab --profile-name analysis --create-github-repo
 
 ```bash
 # Develop locally
-make docker-zsh
+make r
 # ... work in container ...
 exit  # Auto-snapshot runs on exit!
 
@@ -1091,7 +1091,7 @@ zzcollab -t mylab -p paper2024 --profile-name analysis --create-github-repo
 # Automatically created GitHub repo with Actions enabled
 
 # Day 5: Add analysis code
-make docker-zsh
+make r
 # ... develop code ...
 # ... write tests in tests/testthat/ ...
 exit  # Auto-snapshot runs automatically!
@@ -1296,7 +1296,7 @@ complex system dependencies.
 zzcollab -t climate-team -p precipitation --profile-name geospatial
 
 # Add testing infrastructure
-make docker-zsh
+make r
 R
 > usethis::use_testthat()
 > # Write tests for spatial interpolation algorithms
@@ -1308,7 +1308,7 @@ exit
 git clone https://github.com/climate-team/precipitation
 cd precipitation
 zzcollab --use-team-image
-make docker-zsh  # Identical environment on all platforms
+make r  # Identical environment on all platforms
 
 # Inside container - everyone has same GDAL, GEOS versions
 # Tests validate spatial algorithms work correctly
@@ -1361,7 +1361,7 @@ reports. CI/CD (Level 5) optional if code changes infrequently.
 zzcollab --profile-name minimal
 
 # Add tests for report calculations
-make docker-zsh
+make r
 R
 > usethis::use_testthat()
 > # Write tests for:
@@ -1463,7 +1463,7 @@ git commit
 
 # ZZCOLLAB Docker auto-snapshot (October 2025):
 # With ZZCOLLAB Docker containers, snapshot happens automatically on exit!
-make docker-zsh
+make r
 renv::install("new-package")
 exit  # Auto-snapshot runs automatically - no manual command needed!
 git add renv.lock && git commit
@@ -1497,11 +1497,11 @@ rm output.csv  # Permission denied!
 
 ```bash
 # Wrong
-make docker-zsh
+make r
 git commit  # Runs inside container
 
 # Right
-make docker-zsh
+make r
 # ... work ...
 exit  # Exit container first
 git commit  # Run on host

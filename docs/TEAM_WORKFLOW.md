@@ -40,7 +40,7 @@ git clone https://github.com/myteam/study.git && cd study
 zzcollab -t myteam -p study --use-team-image
 
 # 3. Start development
-make docker-sh
+make r
 ```
 
 ---
@@ -154,7 +154,7 @@ zzcollab -t myteam -p study --use-team-image
 
 # Option 2: Pull manually
 docker pull myteam/study:latest
-make docker-sh
+make r
 ```
 
 **What `--use-team-image` does:**
@@ -167,7 +167,7 @@ make docker-sh
 
 ```bash
 # Enter Docker environment
-make docker-sh
+make r
 
 # Inside container:
 # - All team packages available
