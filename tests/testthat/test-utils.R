@@ -257,12 +257,6 @@ test_that("join_project validates required parameters", {
 test_that("setup_project validates parameters", {
   skip_if_not(file.exists("zzcollab.sh"), "zzcollab.sh not found")
 
-  # Should handle invalid dotfiles_nodots parameter
-  expect_error(
-    setup_project(dotfiles_nodots = "yes"),
-    "dotfiles_nodots must be TRUE or FALSE"
-  )
-
   # Should handle invalid base_image format
   expect_error(
     setup_project(base_image = "invalid_image"),

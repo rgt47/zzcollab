@@ -97,37 +97,6 @@ test_that("project functions construct correct commands", {
   })
 })
 
-test_that("dotfiles parameters are handled correctly", {
-  # Test with dotfiles_path
-  result <- tryCatch({
-    init_project(
-      team_name = "test",
-      project_name = "test",
-      dotfiles_path = "~/dotfiles"
-    )
-  }, error = function(e) {
-    # Should include dotfiles in command
-    expect_true(TRUE)
-    FALSE
-  })
-
-  expect_type(result, "logical")
-
-  # Test with dotfiles_nodots flag
-  result <- tryCatch({
-    init_project(
-      team_name = "test",
-      project_name = "test",
-      dotfiles_path = "~/dotfiles",
-      dotfiles_nodots = TRUE
-    )
-  }, error = function(e) {
-    expect_true(TRUE)
-    FALSE
-  })
-
-  expect_type(result, "logical")
-})
 
 test_that("join_project no longer accepts interface parameter", {
   # Verify interface parameter was removed (breaking change)

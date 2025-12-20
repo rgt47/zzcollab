@@ -197,23 +197,7 @@ RUN --mount=type=secret,id=password \
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}/project
 
-# Copy dotfiles (optional - wildcards allow missing files)
-COPY --chown=${USERNAME}:${USERNAME} \
-    .vimrc* \
-    .gitconfig* \
-    .tmux.conf* \
-    .zshrc* \
-    .bashrc* \
-    .bash_profile* \
-    .profile* \
-    .emacs* \
-    .emacs.d* \
-    /home/${USERNAME}/
-
-# Install vim plugins
-RUN timeout 300 vim +PlugInstall +qall 2>&1 | tee /tmp/vim-install.log || true
-
-# Copy project files (last - most frequent changes)
+# Copy project files
 COPY --chown=${USERNAME}:${USERNAME} . .
 
 # Install research compendium

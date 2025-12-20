@@ -3,7 +3,7 @@
 test_that("zzcollab_help accepts valid topics", {
   valid_topics <- c(
     "init", "github", "quickstart", "workflow",
-    "troubleshooting", "config", "dotfiles", "renv",
+    "troubleshooting", "config", "renv",
     "docker", "cicd", "next-steps"
   )
 

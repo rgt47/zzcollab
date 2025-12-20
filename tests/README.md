@@ -309,7 +309,7 @@ timeout-minutes: 30
 2. **Integration Tests**: End-to-end workflow validation
 3. **Test Fixtures**: Reusable test data and mocks
 4. **Performance Tests**: Benchmark critical operations
-5. **Security Tests**: Validate dotfiles handling, permissions
+5. **Security Tests**: Validate file handling, permissions
 6. **Coverage Reporting**: Automated coverage badges
 
 ## References

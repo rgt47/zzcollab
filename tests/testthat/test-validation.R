@@ -70,7 +70,7 @@ test_that("validate_docker_name rejects invalid names", {
 
 test_that("validate_path handles NULL values", {
   # NULL should return NULL
-  expect_null(validate_path(NULL, "dotfiles_path"))
+  expect_null(validate_path(NULL, "some_path"))
 })
 
 test_that("validate_path normalizes valid paths", {
@@ -186,8 +186,8 @@ test_that("validation functions provide helpful error messages", {
 
   # validate_path should mention parameter name
   expect_error(
-    validate_path(c("a", "b"), "dotfiles_path"),
-    "dotfiles_path must be a single character string"
+    validate_path(c("a", "b"), "some_path"),
+    "some_path must be a single character string"
   )
 
   expect_error(
