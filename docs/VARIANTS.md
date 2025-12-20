@@ -446,8 +446,6 @@ Layer 2: System Dependencies (apt packages)
 Layer 3: R Package Installation (install2.r)
     ↓
 Layer 4: Development Tools (vim, git, etc.)
-    ↓
-Layer 5: User Configuration (dotfiles)
 ```
 
 ### Build Process

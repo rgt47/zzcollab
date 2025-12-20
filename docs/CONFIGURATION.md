@@ -34,8 +34,6 @@ ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All 
 | `-a`  | `--tag`            | Docker image tag                  | `zzcollab -a v2.1`               |
 | `-b`  | `--base-image`     | Custom Docker base                | `zzcollab -b rocker/r-ver`       |
 | `-c`  | `--config`         | Configuration management          | `zzcollab -c init`               |
-| `-d`  | `--dotfiles`       | Copy dotfiles (with dots)         | `zzcollab`         |
-| `-D`  | `--dotfiles-nodot` | Copy dotfiles (no dots)           | `zzcollab -D ~/dotfiles`         |
 | `-f`  | `--dockerfile`     | Custom Dockerfile path            | `zzcollab -f custom.df`          |
 | `-g`  | `--github-account` | GitHub account name               | `zzcollab -g myaccount`          |
 | `-G`  | `--github`         | Create GitHub repo                | `zzcollab -G`                    |
@@ -57,13 +55,13 @@ ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All 
 ### Short Flag Philosophy
 
 **Lowercase by default**: Standard flags use lowercase letters (`-p`, `-t`, `-d`)
-**Uppercase for variants**: Uppercase indicates semantic variants (`-D` for dotfiles without dots vs `-d` with dots)
+**Uppercase for variants**: Uppercase indicates semantic variants
 
 ### Usage Examples
 
 **Verbose form**:
 ```bash
-zzcollab --team mylab --project-name study --profile-name analysis --dotfiles ~/dotfiles
+zzcollab --team mylab --project-name study --profile-name analysis
 ```
 
 **Concise form** (equivalent):
@@ -165,10 +163,6 @@ defaults:
 
   # R version (for Docker builds)
   r_version: "4.4.0"                # Default R version for all projects
-
-  # Development environment
-  dotfiles_dir: "~/dotfiles"
-  dotfiles_nodot: false
 
   # Automation preferences
   auto_github: false                # Automatically create GitHub repos
@@ -338,7 +332,6 @@ ZZCOLLAB_CONFIG_USER=~/custom/config.yaml zzcollab --config init
 zzcollab --config set team-name "mylab"
 zzcollab --config set github-account "myusername"
 zzcollab --config set profile-name "bioinformatics"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # Set boolean values
 zzcollab --config set auto-github true
@@ -444,20 +437,6 @@ zzcollab --config precedence
 - **Description**: R package bundle
 - **Example**: `"modeling"`
 
-**dotfiles_dir**
-
-- **Type**: Path
-- **Description**: Path to dotfiles directory
-- **Default**: None
-- **Example**: `"~/dotfiles"`
-
-**dotfiles_nodot**
-
-- **Type**: Boolean
-- **Description**: Whether dotfiles lack leading dots
-- **Default**: `false`
-- **Example**: `true`
-
 **auto_github**
 
 - **Type**: Boolean
@@ -525,7 +504,6 @@ zzcollab --config init
 # 2. Set personal defaults
 zzcollab --config set team-name "myusername"
 zzcollab --config set profile-name "analysis"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 
 # 3. Verify configuration
 zzcollab --config list
@@ -615,7 +593,6 @@ init_config()
 # Set configuration values
 set_config("team_name", "mylab")
 set_config("profile_name", "analysis")
-set_config("dotfiles_dir", "~/dotfiles")
 
 # Get configuration values
 team <- get_config("team_name")
@@ -672,8 +649,7 @@ Configuration validation checks:
 1. **Required fields**: team_name, project_name present when needed
 2. **Value types**: Correct types for all parameters
 3. **Profile names**: Valid profile from bundles.yaml
-4. **File paths**: Dotfiles directories exist
-5. **YAML structure**: Proper nesting and formatting
+4. **YAML structure**: Proper nesting and formatting
 
 ### Common Validation Errors
 

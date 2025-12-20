@@ -28,7 +28,7 @@ Think of it like this:
 
 **What**: Recipe for creating a container
 **Like**: Blueprint for an apartment
-**Contains**: Operating system, R, packages, your dotfiles
+**Contains**: Operating system, R, packages, your configuration
 **Created once**: When you run zzcollab command
 **Stored on**: Your computer (or Docker Hub for teams)
 
@@ -71,7 +71,7 @@ Changes in either location appear in both!
 
 **What**: Text file with instructions to build image
 **Like**: Recipe for setting up an apartment
-**Contains**: Install R, add packages, copy dotfiles
+**Contains**: Install R, add packages
 **You rarely edit**: zzcollab generates this for you
 
 ---
@@ -89,8 +89,7 @@ zzcollab -p myproject
 1. Generate Dockerfile
 2. Download base R image
 3. Install packages
-4. Copy dotfiles
-5. Create image: `myname/myprojectcore-rstudio:latest`
+4. Create image: `myname/myprojectcore-rstudio:latest`
 
 This takes time (~5-10 minutes), but only happens once!
 
@@ -497,10 +496,7 @@ When zzcollab builds a Docker image:
 **Step 3**: `RUN install2.r ...`
 - Install R packages
 
-**Step 4**: `COPY dotfiles ...`
-- Add your personal configuration
-
-**Step 5**: `USER analyst`
+**Step 4**: `USER analyst`
 - Set up non-root user
 
 This creates an image ready for your research!

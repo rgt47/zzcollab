@@ -19,7 +19,6 @@ The following guides are being migrated from `modules/help_guides.sh` to markdow
 
 - **troubleshooting.md** - Common issues and solutions
 - **config.md** - Configuration system guide
-- **dotfiles.md** - Dotfiles setup and customization
 - **renv.md** - Package management with renv
 - **docker.md** - Docker essentials
 - **cicd.md** - CI/CD workflows and automation

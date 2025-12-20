@@ -220,7 +220,7 @@ git commit -m "Add forecast package"
 - Files in `/home/analyst/` (not in /project)
 - System packages installed with apt-get
 - Changes to container system files
-- RStudio preferences (use dotfiles for this!)
+- RStudio preferences
 
 **💡 SOLUTION**: Always work in `/home/analyst/project`
 RStudio starts there automatically - you're safe!

@@ -53,7 +53,7 @@ docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck
 
 ### Development Shells
 ```bash
-make docker-sh             # Shell with dotfiles (recommended)
+make docker-sh             # Shell (recommended)
 make docker-rstudio        # RStudio Server at localhost:8787
 make docker-verse          # Verse environment with LaTeX (publishing)
 make docker-r              # R console only

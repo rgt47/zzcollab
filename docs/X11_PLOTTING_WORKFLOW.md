@@ -100,20 +100,18 @@ choco install vcxsrv
 
 ```bash
 # Solo developer
-zzcollab --profile-name ubuntu_x11_minimal --dotfiles ~/dotfiles
+zzcollab --profile-name ubuntu_x11_minimal
 
 # Team project
 zzcollab --team myteam \
          --project-name analysis \
-         --profile-name ubuntu_x11_minimal \
-         --dotfiles ~/dotfiles
+         --profile-name ubuntu_x11_minimal
 ```
 
 **What this does**:
 - Creates project structure with research compendium layout
 - Generates `Dockerfile.ubuntu_x11_minimal` with X11 support
 - Configures auto-snapshot entrypoint
-- Copies your dotfiles (zsh, vim, tmux, etc.)
 
 ### 2. Build Docker Image
 
@@ -212,7 +210,7 @@ brew install --cask xquartz
 
 # 2. Create project with X11 profile
 mkdir ~/projects/data-viz-analysis && cd ~/projects/data-viz-analysis
-zzcollab --profile-name ubuntu_x11_minimal --dotfiles ~/dotfiles
+zzcollab --profile-name ubuntu_x11_minimal
 
 # 3. Initialize git repository
 git init
@@ -283,7 +281,7 @@ make docker-push-team
 # Team members: Use pre-built image
 git clone https://github.com/myteam/data-viz-analysis.git
 cd data-viz-analysis
-zzcollab --use-team-image --dotfiles ~/dotfiles
+zzcollab --use-team-image
 make docker-zsh-gui    # Instant startup, all packages pre-installed
 ```
 

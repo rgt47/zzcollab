@@ -129,7 +129,7 @@ validate_repro()
 library(zzcollab)
 
 # Setup project in current directory
-setup_project(dotfiles_path = "~/dotfiles")
+setup_project()
 
 # Run analysis
 run_script("scripts/analysis.R")

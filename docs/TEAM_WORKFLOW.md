@@ -58,7 +58,6 @@ The team lead establishes the computational foundation that all team members wil
 zzcollab --config init
 zzcollab --config set team-name "myteam"
 zzcollab --config set github-account "myteam"
-zzcollab --config set dotfiles-dir "~/dotfiles"
 ```
 
 #### Step 2: Create Project
@@ -335,9 +334,6 @@ make r  # Auto-restore installs new packages on R startup
 # Minimal
 zzcollab -t TEAM -p PROJECT
 
-# With dotfiles
-zzcollab -t TEAM -p PROJECT
-
 # With custom profile
 zzcollab -t TEAM -p PROJECT --profile-name bioinformatics
 
@@ -349,9 +345,6 @@ zzcollab -t TEAM -p PROJECT -b rocker/geospatial
 
 ```bash
 # Standard (pulls team image)
-zzcollab -t TEAM -p PROJECT --use-team-image
-
-# With dotfiles
 zzcollab -t TEAM -p PROJECT --use-team-image
 
 # Build locally (not recommended)
