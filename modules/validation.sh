@@ -229,6 +229,45 @@ create_renv_lock() {
         log_success "Created renv.lock (R $r_ver)"
 }
 
+remove_unused_packages_from_renv_lock() {
+    local strict_mode="${1:-false}"
+    local renv_lock="renv.lock"
+    [[ -f "$renv_lock" ]] || { log_error "renv.lock not found"; return 1; }
+    command -v jq &>/dev/null || { log_error "jq required"; return 1; }
+
+    local dirs=("${STANDARD_DIRS[@]}")
+    [[ "$strict_mode" == "true" ]] && dirs=("${STRICT_DIRS[@]}")
+
+    local code_packages_raw; mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
+    local code_packages; mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
+    local renv_packages; mapfile -t renv_packages < <(parse_renv_lock)
+
+    local code_str=" ${code_packages[*]} "
+    local unused=()
+    for pkg in "${renv_packages[@]}"; do
+        [[ -z "$pkg" || "$pkg" == "renv" ]] && continue
+        [[ "$code_str" != *" $pkg "* ]] && unused+=("$pkg")
+    done
+
+    [[ ${#unused[@]} -eq 0 ]] && return 0
+
+    log_info "Removing ${#unused[@]} unused packages from renv.lock"
+
+    local tmp; tmp=$(mktemp)
+    local jq_filter='.'
+    for p in "${unused[@]}"; do
+        jq_filter="$jq_filter | del(.Packages[\"$p\"])"
+    done
+
+    if jq "$jq_filter" "$renv_lock" > "$tmp" && mv "$tmp" "$renv_lock"; then
+        log_success "Removed ${#unused[@]} unused packages from renv.lock"
+    else
+        rm -f "$tmp"
+        log_error "Failed to update renv.lock"
+        return 1
+    fi
+}
+
 #==============================================================================
 # CODE SCANNING
 #==============================================================================
@@ -427,11 +466,97 @@ validate_package_environment() {
     log_success "All packages properly declared"
 }
 
+sync_packages_to_code() {
+    local strict="${1:-true}" verbose="${2:-false}"
+    log_info "Syncing DESCRIPTION and renv.lock to code (code is source of truth)..."
+
+    local dirs=("${STANDARD_DIRS[@]}")
+    [[ "$strict" == "true" ]] && dirs=("${STRICT_DIRS[@]}")
+
+    local code_packages_raw; mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
+    local code_packages; mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
+    local desc_imports; mapfile -t desc_imports < <(parse_description_imports)
+    local renv_packages; mapfile -t renv_packages < <(parse_renv_lock)
+
+    log_info "Found ${#code_packages[@]} packages in code"
+    [[ "$verbose" == "true" ]] && { echo "  Code packages:"; printf '    %s\n' "${code_packages[@]}"; echo ""; }
+
+    local code_str=" ${code_packages[*]} "
+    local desc_str=" ${desc_imports[*]} "
+
+    local to_add_desc=() to_remove_desc=() to_add_lock=() to_remove_lock=()
+
+    for pkg in "${code_packages[@]}"; do
+        [[ -z "$pkg" ]] && continue
+        [[ "$desc_str" != *" $pkg "* ]] && to_add_desc+=("$pkg")
+    done
+
+    for pkg in "${desc_imports[@]}"; do
+        [[ -z "$pkg" || "$pkg" == "renv" ]] && continue
+        [[ "$code_str" != *" $pkg "* ]] && to_remove_desc+=("$pkg")
+    done
+
+    for pkg in "${code_packages[@]}"; do
+        [[ -z "$pkg" ]] && continue
+        local found=false
+        for rp in "${renv_packages[@]}"; do [[ "$pkg" == "$rp" ]] && { found=true; break; }; done
+        [[ "$found" == false ]] && to_add_lock+=("$pkg")
+    done
+
+    for pkg in "${renv_packages[@]}"; do
+        [[ -z "$pkg" || "$pkg" == "renv" ]] && continue
+        [[ "$code_str" != *" $pkg "* ]] && to_remove_lock+=("$pkg")
+    done
+
+    [[ ${#to_add_desc[@]} -gt 0 ]] && log_info "Adding ${#to_add_desc[@]} packages to DESCRIPTION"
+    for pkg in "${to_add_desc[@]}"; do add_package_to_description "$pkg"; done
+
+    [[ ${#to_remove_desc[@]} -gt 0 ]] && log_info "Removing ${#to_remove_desc[@]} packages from DESCRIPTION"
+    if [[ ${#to_remove_desc[@]} -gt 0 ]]; then
+        local pattern=""
+        for p in "${to_remove_desc[@]}"; do
+            [[ -z "$pattern" ]] && pattern="$p" || pattern="$pattern|$p"
+        done
+        local tmp; tmp=$(mktemp)
+        awk -v pattern="^[[:space:]]*(${pattern})[[:space:],]*\$" '
+        /^Imports:/ { in_imports=1; print; next }
+        in_imports { if (/^[A-Z]/) { in_imports=0; print; next }; if ($0 !~ pattern) print; next }
+        { print }
+        ' DESCRIPTION > "$tmp" && mv "$tmp" DESCRIPTION
+        log_success "Removed ${#to_remove_desc[@]} unused packages from DESCRIPTION"
+    fi
+
+    [[ ${#to_add_lock[@]} -gt 0 ]] && log_info "Adding ${#to_add_lock[@]} packages to renv.lock"
+    for pkg in "${to_add_lock[@]}"; do add_package_to_renv_lock "$pkg" 2>/dev/null || log_warn "Could not add $pkg to renv.lock (not on CRAN?)"; done
+
+    [[ ${#to_remove_lock[@]} -gt 0 ]] && log_info "Removing ${#to_remove_lock[@]} packages from renv.lock"
+    if [[ ${#to_remove_lock[@]} -gt 0 ]]; then
+        local tmp; tmp=$(mktemp)
+        local jq_filter='.'
+        for p in "${to_remove_lock[@]}"; do
+            jq_filter="$jq_filter | del(.Packages[\"$p\"])"
+        done
+        if jq "$jq_filter" renv.lock > "$tmp" && mv "$tmp" renv.lock; then
+            log_success "Removed ${#to_remove_lock[@]} unused packages from renv.lock"
+        else
+            rm -f "$tmp"
+            log_error "Failed to update renv.lock"
+        fi
+    fi
+
+    log_success "Sync complete: DESCRIPTION and renv.lock now match code"
+}
+
 validate_and_report() {
     local strict="${1:-true}" auto_fix="${2:-true}" verbose="${3:-false}" cleanup="${4:-false}"
+
+    if [[ "$cleanup" == "true" ]]; then
+        sync_packages_to_code "$strict" "$verbose"
+        return $?
+    fi
+
     if validate_package_environment "$strict" "$auto_fix" "$verbose"; then
         log_success "Validation passed"
-        [[ "$cleanup" == "true" ]] && remove_unused_packages_from_description "$strict"
         return 0
     fi
     log_error "Validation failed"; return 1
@@ -499,7 +624,8 @@ OPTIONS:
     --no-strict        Scan only R/scripts/analysis
     --fix              Auto-add missing packages [default]
     --no-fix           Report only
-    --cleanup-unused   Remove unused from DESCRIPTION
+    --cleanup-unused   Sync DESCRIPTION and renv.lock to code (code is source
+                       of truth). Adds missing packages, removes unused ones.
     --system-deps      Check Dockerfile for system deps
     --verbose, -v      Show package lists
     --help, -h         Show help
@@ -507,6 +633,7 @@ OPTIONS:
 EXAMPLES:
     validation.sh                  # Full validation with auto-fix
     validation.sh --no-fix -v      # Report only, verbose
+    validation.sh --cleanup-unused # Sync to code, remove unused packages
     validation.sh --system-deps    # Check system dependencies
 EOF
                 exit 0;;
