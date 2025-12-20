@@ -371,14 +371,6 @@ team_images <- function() {
 #'   If NULL, uses config default or falls back to \code{team_name}.
 #'   Used with GitHub CLI to create private repositories.
 #'   
-#' @param dotfiles_path Character string specifying path to dotfiles directory.
-#'   These files (.vimrc, .zshrc, etc.) are copied into Docker images for
-#'   personalized development environments. If NULL, uses config default.
-#'   
-#' @param dotfiles_nodots Logical indicating whether dotfiles need leading dots added.
-#'   Set to TRUE if your dotfiles are named without leading dots (e.g., "vimrc"
-#'   instead of ".vimrc"). If NULL, uses config default.
-#'
 #' @return Logical value indicating success (TRUE) or failure (FALSE) of the
 #'   initialization process. The function creates multiple components, so
 #'   partial failures may occur.
@@ -417,16 +409,13 @@ team_images <- function() {
 #' success <- init_project(
 #'   team_name = "datascience",
 #'   project_name = "market-analysis",
-#'   github_account = "myuniversity",
-#'   dotfiles_path = "~/dotfiles",
-#'   dotfiles_nodots = FALSE
+#'   github_account = "myuniversity"
 #' )
 #'
 #' # Using configuration defaults (recommended workflow)
 #' # First, set up your defaults
 #' set_config("team_name", "mylab")
-#' set_config("dotfiles_dir", "~/dotfiles")
-#' 
+#'
 #' # Then initialize projects easily
 #' init_project(project_name = "new-study")
 #' }
@@ -438,9 +427,7 @@ team_images <- function() {
 #'
 #' @export
 init_project <- function(team_name = NULL, project_name = NULL,
-                         github_account = NULL,
-                         dotfiles_path = NULL,
-                         dotfiles_nodots = NULL) {
+                         github_account = NULL) {
 
   # Validate ALL explicitly-provided parameters FIRST (before getting config defaults)
   # This allows tests to validate error messages without needing zzcollab script
@@ -460,8 +447,6 @@ init_project <- function(team_name = NULL, project_name = NULL,
   # Now apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
   github_account <- github_account %||% get_config_default("github_account") %||% team_name
-  dotfiles_path <- dotfiles_path %||% get_config_default("dotfiles_dir")
-  dotfiles_nodots <- dotfiles_nodots %||% (get_config_default("dotfiles_nodot", "false") == "true")
 
   # Validate team_name is set (either passed or from config)
   if (is.null(team_name)) {
@@ -469,30 +454,14 @@ init_project <- function(team_name = NULL, project_name = NULL,
          call. = FALSE)
   }
 
-  # Validate and normalize paths
-  dotfiles_path <- validate_path(dotfiles_path, "dotfiles_path", must_exist = FALSE)
-
-  # Validate logical parameters
-  if (!is.null(dotfiles_nodots) && !is.logical(dotfiles_nodots)) {
-    stop("dotfiles_nodots must be TRUE or FALSE", call. = FALSE)
-  }
-  
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
   # Build command with team and project flags
   cmd <- paste(zzcollab_path, "-t", team_name, "-p", project_name)
-  
+
   if (!is.null(github_account)) {
     cmd <- paste(cmd, "--github-account", github_account)
-  }
-  
-  if (!is.null(dotfiles_path)) {
-    if (dotfiles_nodots) {
-      cmd <- paste(cmd, "--dotfiles-nodot", shQuote(dotfiles_path))
-    } else {
-      cmd <- paste(cmd, "--dotfiles", shQuote(dotfiles_path))
-    }
   }
 
   message("Running: ", cmd)

@@ -148,9 +148,24 @@ docker-rstudio:
 
 # Terminal: Interactive bash for vim editing
 r: check-renv
-	@PROFILE=$$(head -20 Dockerfile | grep 'Profile:' | head -1 | sed 's/.*Profile: \([a-z0-9_]*\).*/\1/'); \
+	@if [ ! -f Dockerfile ]; then \
+		echo ""; \
+		echo "❌ No Dockerfile found - workspace not initialized"; \
+		echo ""; \
+		echo "Run zzcollab to create a Docker environment:"; \
+		echo ""; \
+		echo "  zzcollab -d ~/dotfiles                    # default profile"; \
+		echo "  zzcollab -r analysis -d ~/dotfiles        # tidyverse"; \
+		echo "  zzcollab -r publishing -d ~/dotfiles      # with LaTeX"; \
+		echo ""; \
+		echo "See: zzcollab --help for all options"; \
+		echo ""; \
+		exit 1; \
+	fi; \
+	PROFILE=$$(head -20 Dockerfile 2>/dev/null | grep 'Profile:' | head -1 | sed 's/.*Profile: \([a-z0-9_]*\).*/\1/'); \
 	if [ -z "$$PROFILE" ]; then \
 		echo "❌ Could not detect profile from Dockerfile"; \
+		echo "   Dockerfile exists but missing 'Profile:' comment"; \
 		exit 1; \
 	fi; \
 	BASE_IMAGE=$$(grep '^FROM' Dockerfile | head -1 | awk '{print $$2}' | sed 's/--platform[^[:space:]]*[[:space:]]//'); \
