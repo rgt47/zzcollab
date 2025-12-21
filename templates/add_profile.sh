@@ -112,8 +112,6 @@ show_variant_menu() {
             echo ""
             case "$category" in
                 "standard") printf "${CYAN}📦 STANDARD RESEARCH ENVIRONMENTS${NC}\\n" ;;
-                "specialized") printf "${PURPLE}🔬 SPECIALIZED DOMAINS${NC}\\n" ;;
-                "alpine") printf "${GREEN}🏔️  LIGHTWEIGHT ALPINE VARIANTS${NC}\\n" ;;
                 "rhub") printf "${YELLOW}🧪 R-HUB TESTING ENVIRONMENTS${NC}\\n" ;;
                 *) printf "${BLUE}🔧 OTHER VARIANTS${NC}\\n" ;;
             esac

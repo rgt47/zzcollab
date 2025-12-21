@@ -378,15 +378,6 @@ Standard Research:
   shiny            Interactive applications
   shiny_verse      Shiny + tidyverse
 
-Specialized:
-  bioinformatics   Genomics and bioinformatics
-  geospatial       Spatial data analysis (sf, terra)
-
-Lightweight Alpine:
-  alpine_minimal   Minimal Alpine Linux (~200MB)
-  alpine_analysis  Alpine + tidyverse (~800MB)
-  hpc_alpine       HPC-optimized Alpine
-
 Usage:
   zzcollab -r analysis              Select profile
   zzcollab --list-profiles          List all profiles
@@ -456,10 +447,10 @@ Logs:
 
 Platform Compatibility:
   ARM64: r-ver, rstudio profiles
-  AMD64: verse, tidyverse, geospatial, shiny
+  AMD64: verse, tidyverse, shiny
 
 Custom Images:
-  zzcollab -b rocker/r-ver -l geospatial -k tidyverse
+  zzcollab -b rocker/verse -l publishing -k tidyverse
 
 See also:
   zzcollab help profiles     Profile selection
@@ -709,12 +700,12 @@ OPTIONS:
 
     Profile system (three usage patterns):
     -r, --profile-name NAME      Use complete predefined profile (base-image + libs + pkgs)
-                                 Examples: bioinformatics, geospatial, alpine_minimal
+                                 Examples: minimal, analysis, publishing
     -k, --pkgs BUNDLE            Override package selection (can combine with --profile-name)
                                  If used alone, applies minimal profile as base
-                                 Bundles: minimal, tidyverse, modeling, bioinfo, geospatial, publishing, shiny
+                                 Bundles: minimal, tidyverse, modeling, publishing, shiny
     -l, --libs BUNDLE            System dependency bundle (for custom composition with -b)
-                                 Bundles: minimal, geospatial, bioinfo, modeling, publishing, alpine
+                                 Bundles: minimal, modeling, publishing, gui
     -b, --base-image NAME        Custom Docker base image (for manual composition)
     -a, --tag TAG                Docker image tag for selecting team image variants
     --list-profiles              List all available predefined profiles
@@ -760,13 +751,13 @@ EXAMPLES:
     Solo Developer - Three Profile Usage Patterns:
 
     Pattern 1: Complete Profile (no overrides)
-    zzcollab -r bioinformatics -G               # Uses: bioconductor base + bioinfo libs + bioinfo pkgs
-    zzcollab -r geospatial                      # Uses: rocker/r-ver + geospatial libs + geospatial pkgs
-    zzcollab -r alpine_minimal                  # Uses: alpine-r + alpine libs + minimal pkgs
+    zzcollab -r analysis -G                     # Uses: rocker/tidyverse + minimal libs + tidyverse pkgs
+    zzcollab -r publishing                      # Uses: rocker/verse + publishing libs + publishing pkgs
+    zzcollab -r minimal                         # Uses: rocker/r-ver + minimal libs + minimal pkgs
 
     Pattern 2: Profile with Package Override
-    zzcollab -r bioinformatics -k minimal       # Uses: bioconductor base + bioinfo libs + minimal pkgs (OVERRIDE)
-    zzcollab -r geospatial -k tidyverse         # Uses: rocker/r-ver + geospatial libs + tidyverse pkgs (OVERRIDE)
+    zzcollab -r publishing -k minimal           # Uses: rocker/verse + publishing libs + minimal pkgs (OVERRIDE)
+    zzcollab -r analysis -k modeling            # Uses: rocker/tidyverse + minimal libs + modeling pkgs (OVERRIDE)
 
     Pattern 3: Package-Only (uses minimal profile as base)
     zzcollab -k modeling                        # Uses: rocker/r-ver + minimal libs + modeling pkgs
@@ -778,11 +769,11 @@ EXAMPLES:
     zzcollab --list-pkgs                        # See all package bundles
 
     Solo Developer - Manual Composition (advanced):
-    zzcollab -b rocker/r-ver -l geospatial -k geospatial            # Full manual control
-    zzcollab -b bioconductor/bioconductor_docker -l bioinfo -k bioinfo
+    zzcollab -b rocker/verse -l publishing -k tidyverse             # Full manual control
+    zzcollab -b rocker/tidyverse -l modeling -k modeling
 
     Team Lead - Create Foundation and Push:
-    zzcollab -t mylab -p study -r bioinformatics -G  # Initialize with profile
+    zzcollab -t mylab -p study -r analysis -G   # Initialize with profile
     make docker-build                           # Build team Docker image
     make docker-push-team                       # Push to Docker Hub (mylab/study:latest)
     git add .

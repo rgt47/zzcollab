@@ -5,7 +5,7 @@
 #=============================================================================
 # SYSTEM LIBRARY BUNDLES (--libs)
 #=============================================================================
-# These are sets of system dependencies installed via apt-get or apk
+# These are sets of system dependencies installed via apt-get
 
 library_bundles:
   none:
@@ -22,34 +22,8 @@ library_bundles:
       - curl
       - wget
     package_manager: "apt-get"
-    compatible_bases: ["rocker/*", "bioconductor/*"]
+    compatible_bases: ["rocker/*"]
     note: "Dev headers (libcurl4-openssl-dev, libssl-dev, libxml2-dev) in common section"
-
-  geospatial:
-    description: "Geospatial analysis libraries (GDAL, PROJ, GEOS)"
-    deps:
-      - gdal-bin
-      - proj-bin
-      - libgeos-dev
-      - libproj-dev
-      - libgdal-dev
-      - libudunits2-dev
-      - netcdf-bin
-    package_manager: "apt-get"
-    compatible_bases: ["rocker/geospatial", "rocker/r-ver", "rocker/rstudio"]
-    required_for_pkgs: ["geospatial"]
-    note: "libxml2-dev in common section"
-
-  bioinfo:
-    description: "Bioinformatics libraries for genomics packages"
-    deps:
-      - zlib1g-dev
-      - libbz2-dev
-      - liblzma-dev
-    package_manager: "apt-get"
-    compatible_bases: ["bioconductor/*", "rocker/*"]
-    required_for_pkgs: ["bioinfo"]
-    note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev in common section"
 
   modeling:
     description: "Statistical modeling and ML libraries"
@@ -103,53 +77,10 @@ library_bundles:
     compatible_bases: ["rocker/*"]
     note: "Requires X11 forwarding from host (XQuartz on macOS, X11 on Linux)"
 
-  alpine:
-    description: "Alpine Linux libraries (apk package manager)"
-    deps:
-      - git
-      - make
-      - gcc
-      - "g++"
-      - musl-dev
-      - linux-headers
-      - curl-dev
-      - openssl-dev
-      - libxml2-dev
-    package_manager: "apk"
-    compatible_bases: ["rhub/r-minimal"]
-    incompatible_bases: ["rocker/*", "bioconductor/*"]
-
-  alpine_gui:
-    description: "Alpine Linux with minimal X11 for graphics (apk package manager)"
-    deps:
-      - git
-      - make
-      - gcc
-      - "g++"
-      - musl-dev
-      - linux-headers
-      - curl-dev
-      - openssl-dev
-      - libxml2-dev
-      # X11 minimal support
-      - xorg-server
-      - xauth
-      - libx11
-      - libx11-dev
-      - cairo
-      - cairo-dev
-      - mesa-dri-gallium
-      - font-misc-misc
-      - ttf-dejavu
-    package_manager: "apk"
-    compatible_bases: ["rhub/r-minimal"]
-    incompatible_bases: ["rocker/*", "bioconductor/*"]
-    note: "Minimal X11 support for graphics viewing. Requires X forwarding."
-
 #=============================================================================
 # R PACKAGE BUNDLES (--pkgs)
 #=============================================================================
-# These are sets of R packages installed via install.packages() or BiocManager
+# These are sets of R packages installed via install.packages()
 
 package_bundles:
   minimal:
@@ -160,7 +91,7 @@ package_bundles:
       - usethis
       - testthat
       - roxygen2
-    requires_libs: ["minimal", "alpine"]
+    requires_libs: ["minimal"]
 
   tidyverse:
     description: "Tidyverse ecosystem for data analysis"
@@ -172,7 +103,7 @@ package_bundles:
       - janitor
       - scales
       - patchwork
-    requires_libs: ["minimal", "alpine"]
+    requires_libs: ["minimal"]
 
   modeling:
     description: "Machine learning and statistical modeling"
@@ -186,32 +117,6 @@ package_bundles:
       - glmnet
       - caret
     requires_libs: ["minimal", "modeling"]
-
-  bioinfo:
-    description: "Bioinformatics and genomics packages"
-    packages:
-      - renv
-      - devtools
-      - BiocManager
-      - DESeq2
-      - edgeR
-      - limma
-      - GenomicRanges
-      - Biostrings
-    requires_libs: ["bioinfo"]
-    bioconductor: true
-
-  geospatial:
-    description: "Geospatial analysis and mapping"
-    packages:
-      - renv
-      - devtools
-      - sf
-      - terra
-      - leaflet
-      - mapview
-      - tmap
-    requires_libs: ["geospatial"]
 
   publishing:
     description: "Document publishing and visualization"
@@ -295,48 +200,12 @@ profiles:
     pkgs: modeling
     size: "~1.48GB"
 
-  bioinformatics:
-    description: "Bioinformatics with Bioconductor"
-    base_image: "bioconductor/bioconductor_docker"
-    libs: bioinfo
-    pkgs: bioinfo
-    size: "~1.98GB"
-
-  geospatial:
-    description: "Geospatial analysis environment"
-    base_image: "rocker/geospatial"
-    libs: geospatial
-    pkgs: geospatial
-    size: "~2.48GB"
-
   publishing:
     description: "Document publishing with LaTeX"
     base_image: "rocker/verse"
     libs: publishing
     pkgs: publishing
     size: "~3GB"
-
-  alpine_minimal:
-    description: "Ultra-lightweight Alpine Linux"
-    base_image: "rhub/r-minimal"
-    libs: alpine
-    pkgs: minimal
-    size: "~200MB"
-
-  alpine_analysis:
-    description: "Lightweight data analysis"
-    base_image: "rhub/r-minimal"
-    libs: alpine
-    pkgs: tidyverse
-    size: "~400MB"
-
-  alpine_gui:
-    description: "Lightweight Alpine with X11 graphics"
-    base_image: "rhub/r-minimal"
-    libs: alpine_gui
-    pkgs: tidyverse
-    size: "~500MB"
-    note: "Alpine (~500MB) with minimal X11 vs gui_analysis (~2.5GB). Requires X forwarding."
 
   gui:
     description: "GUI applications with X11 forwarding"
@@ -442,61 +311,3 @@ profiles:
     pkgs: gui
     size: "~2.2GB"
     note: "Includes languageserver for R LSP integration (editor runs on host)."
-
-  alpine_standard_minimal:
-    description: "Ultra-lightweight Alpine Linux with R for CI/CD"
-    base_image: "rhub/r-minimal"
-    libs: alpine
-    pkgs: minimal
-    size: "~200MB"
-    note: "~200MB vs ~800MB for Ubuntu (4x smaller)"
-
-  alpine_standard_analysis:
-    description: "Lightweight Alpine with core data analysis packages"
-    base_image: "rhub/r-minimal"
-    libs: alpine
-    pkgs: tidyverse
-    size: "~400MB"
-    note: "~400MB vs ~1.5GB for Ubuntu (3.5x smaller)"
-
-  alpine_x11_minimal:
-    description: "Lightweight Alpine with minimal X11 for base R graphics"
-    base_image: "rhub/r-minimal"
-    libs: alpine_gui
-    pkgs: minimal
-    size: "~300MB"
-    note: "Base R plotting with X11. ~5x smaller than ubuntu_x11_minimal"
-
-  alpine_x11_analysis:
-    description: "Lightweight Alpine with X11 support for graphics viewing"
-    base_image: "rhub/r-minimal"
-    libs: alpine_gui
-    pkgs: tidyverse
-    size: "~500MB"
-    note: "Alpine (~500MB) with minimal X11 vs ubuntu_x11_analysis (~2.5GB). Requires X forwarding."
-
-#=============================================================================
-# COMPATIBILITY RULES
-#=============================================================================
-# Used for validation
-
-compatibility_rules:
-  alpine_requires_alpine_libs:
-    condition: "base_image contains 'alpine'"
-    requires_libs: ["alpine"]
-    error: "Alpine base images require --libs alpine (different package manager)"
-
-  bioconductor_requires_bioinfo_libs:
-    condition: "base_image contains 'bioconductor'"
-    requires_libs: ["bioinfo"]
-    error: "Bioconductor images require --libs bioinfo (specific dependencies)"
-
-  geospatial_pkgs_require_libs:
-    condition: "pkgs == 'geospatial'"
-    requires_libs: ["geospatial"]
-    error: "Geospatial packages require --libs geospatial (GDAL/PROJ libraries)"
-
-  bioinfo_pkgs_require_libs:
-    condition: "pkgs == 'bioinfo'"
-    requires_libs: ["bioinfo"]
-    error: "Bioinformatics packages require --libs bioinfo (genomics dependencies)"

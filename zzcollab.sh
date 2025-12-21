@@ -381,14 +381,12 @@ cmd_list() {
             echo "  verse        rocker/verse        Tidyverse + publishing tools"
             echo "  rstudio      rocker/rstudio      RStudio Server"
             echo "  shiny        rocker/shiny        Shiny Server"
-            echo "  geospatial   rocker/geospatial   Geospatial libraries"
             echo ""
             echo "Usage: zzcollab docker --profile <name>"
             ;;
         libs)
             echo "System library bundles (auto-derived from R packages):"
             echo ""
-            echo "  geospatial   libgdal-dev libproj-dev libgeos-dev"
             echo "  graphics     libcairo2-dev libfreetype6-dev libpng-dev"
             echo "  database     libpq-dev libmariadb-dev libsqlite3-dev"
             echo "  network      libcurl4-openssl-dev libssl-dev libssh2-1-dev"

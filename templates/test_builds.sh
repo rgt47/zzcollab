@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test build all 11 static Dockerfiles
+# Test build all 7 static Dockerfiles
 
 set -e
 
@@ -11,14 +11,10 @@ PROFILES=(
     "ubuntu_shiny_analysis"
     "ubuntu_x11_minimal"
     "ubuntu_x11_analysis"
-    "alpine_standard_minimal"
-    "alpine_standard_analysis"
-    "alpine_x11_minimal"
-    "alpine_x11_analysis"
 )
 
 echo "=========================================="
-echo "Testing builds for 11 static Dockerfiles"
+echo "Testing builds for 7 static Dockerfiles"
 echo "=========================================="
 echo ""
 
@@ -29,7 +25,7 @@ for profile in "${PROFILES[@]}"; do
     echo "----------------------------------------"
     echo "Testing: $profile"
     echo "----------------------------------------"
-    
+
     if DOCKER_BUILDKIT=1 docker build \
         -f Dockerfile.$profile \
         -t zzcollab-test:$profile \
@@ -48,14 +44,14 @@ done
 echo "=========================================="
 echo "BUILD SUMMARY"
 echo "=========================================="
-echo "Successful: ${#SUCCESS[@]}/11"
+echo "Successful: ${#SUCCESS[@]}/7"
 for p in "${SUCCESS[@]}"; do
     echo "  ✓ $p"
 done
 
 if [ ${#FAILED[@]} -gt 0 ]; then
     echo ""
-    echo "Failed: ${#FAILED[@]}/11"
+    echo "Failed: ${#FAILED[@]}/7"
     for p in "${FAILED[@]}"; do
         echo "  ✗ $p"
         echo "    Log: /tmp/build_${p}.log"

@@ -24,11 +24,8 @@ get_profile_base_image() {
         minimal|standard|ubuntu_standard_minimal)  echo "rocker/r-ver" ;;
         tidyverse|analysis|ubuntu_standard_analysis|ubuntu_standard_analysis_vim)  echo "rocker/tidyverse" ;;
         verse|publishing|ubuntu_standard_publishing)  echo "rocker/verse" ;;
-        rstudio)             echo "rocker/rstudio" ;;
-        shiny)               echo "rocker/shiny" ;;
-        geospatial)          echo "rocker/geospatial" ;;
-        bioconductor)        echo "bioconductor/bioconductor_docker" ;;
-        alpine|alpine_minimal) echo "rhub/r-minimal" ;;
+        rstudio)  echo "rocker/rstudio" ;;
+        shiny)    echo "rocker/shiny" ;;
         *)
             log_warn "Unknown profile '$profile', using rocker/r-ver"
             echo "rocker/r-ver"
@@ -51,7 +48,7 @@ get_base_image_tools() {
             has_pandoc="true"
             has_tinytex="true"
             ;;
-        *tidyverse*|*rstudio*|*geospatial*|*shiny*)
+        *tidyverse*|*rstudio*|*shiny*)
             has_pandoc="true"
             has_tinytex="false"
             ;;
@@ -156,9 +153,14 @@ prompt_new_workspace_setup() {
     cran_version=$(get_cran_r_version)
     local project_name
     project_name=$(basename "$(pwd)")
-    local step=1
     local selected_profile selected_version base_image
     local github_account dockerhub_account
+
+    # Collect pre-configured values
+    selected_profile="${PROFILE_NAME:-${CONFIG_PROFILE_NAME:-}}"
+    selected_version="${R_VERSION:-${CONFIG_R_VERSION:-}}"
+    github_account="${GITHUB_ACCOUNT:-${CONFIG_GITHUB_ACCOUNT:-}}"
+    dockerhub_account="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
 
     # All prompts to STDERR so STDOUT only contains the version
     echo "" >&2
@@ -166,153 +168,134 @@ prompt_new_workspace_setup() {
     echo "  New zzcollab workspace: $project_name" >&2
     echo "═══════════════════════════════════════════════════════════" >&2
 
-    # Step 1: Profile selection (skip if configured or on CLI)
-    if [[ -n "${PROFILE_NAME:-}" ]]; then
-        selected_profile="$PROFILE_NAME"
+    # Check if all required values are pre-configured
+    if [[ -n "$selected_profile" && -n "$selected_version" ]]; then
         base_image=$(get_profile_base_image "$selected_profile")
         echo "" >&2
-        echo "  Profile: $selected_profile (from command line)" >&2
-    elif [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
-        selected_profile="$CONFIG_PROFILE_NAME"
-        base_image=$(get_profile_base_image "$selected_profile")
-        echo "" >&2
-        echo "  Profile: $selected_profile (from config)" >&2
-    else
-        echo "" >&2
-        echo "Step $step: Select a Docker profile" >&2
-        ((step++))
-        echo "" >&2
-        echo "  [1] minimal     - Base R only (~300MB)" >&2
-        echo "  [2] analysis    - tidyverse packages (~1.5GB)" >&2
-        echo "  [3] publishing  - LaTeX + pandoc for documents (~3GB)" >&2
-        echo "  [4] geospatial  - GIS tools (sf, terra) (~2.5GB)" >&2
-        echo "  [5] bioconductor - Bioconductor base (~2GB)" >&2
+        echo "  Profile:    $selected_profile ($base_image)" >&2
+        echo "  R version:  $selected_version" >&2
+        [[ -n "$github_account" ]] && echo "  GitHub:     $github_account/$project_name" >&2
+        [[ -n "$dockerhub_account" ]] && echo "  DockerHub:  $dockerhub_account/$project_name" >&2
         echo "" >&2
 
-        local profile_choice
-        read -r -p "Profile [2]: " profile_choice
-        profile_choice="${profile_choice:-2}"
-
-        case "$profile_choice" in
-            1) selected_profile="minimal" ;;
-            2) selected_profile="analysis" ;;
-            3) selected_profile="publishing" ;;
-            4) selected_profile="geospatial" ;;
-            5) selected_profile="bioconductor" ;;
-            *)
-                log_error "Invalid choice" >&2
-                return 1
-                ;;
-        esac
-
-        base_image=$(get_profile_base_image "$selected_profile")
-        echo "  Selected: $selected_profile ($base_image)" >&2
+        local change_settings
+        read -r -p "Change settings? [y/N]: " change_settings
+        if [[ ! "$change_settings" =~ ^[Yy]$ ]]; then
+            # Use existing settings, proceed to build
+            create_renv_lock_minimal "$selected_version" >&2
+            R_VERSION="$selected_version"
+            BASE_IMAGE="$base_image"
+            GITHUB_ACCOUNT="$github_account"
+            DOCKERHUB_ACCOUNT="$dockerhub_account"
+            ZZCOLLAB_BUILD_AFTER_SETUP="true"
+            export R_VERSION BASE_IMAGE GITHUB_ACCOUNT DOCKERHUB_ACCOUNT ZZCOLLAB_BUILD_AFTER_SETUP
+            echo "$selected_version"
+            return 0
+        fi
+        echo "" >&2
     fi
 
-    # Step 2: R version selection (skip if configured or on CLI)
-    if [[ -n "${R_VERSION:-}" ]]; then
-        selected_version="$R_VERSION"
-        echo "  R version: $selected_version (from command line)" >&2
-    elif [[ -n "${CONFIG_R_VERSION:-}" ]]; then
-        selected_version="$CONFIG_R_VERSION"
-        echo "  R version: $selected_version (from config)" >&2
-    else
-        echo "" >&2
-        echo "Step $step: Select R version" >&2
-        ((step++))
-        echo "" >&2
-        echo "  Current version on CRAN: $cran_version" >&2
-        echo "" >&2
-        echo "  [1] Use R $cran_version (current)" >&2
-        echo "  [2] Specify a different version" >&2
-        echo "" >&2
+    # Interactive setup (either no config or user wants to change)
+    local step=1
 
-        local version_choice
-        read -r -p "R version [1]: " version_choice
-        version_choice="${version_choice:-1}"
-
-        case "$version_choice" in
-            1)
-                selected_version="$cran_version"
-                ;;
-            2)
-                read -r -p "Enter R version (e.g., 4.3.2): " selected_version
-                if [[ ! "$selected_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                    log_error "Invalid version format. Expected: X.Y.Z" >&2
-                    return 1
-                fi
-                ;;
-            *)
-                log_error "Invalid choice" >&2
-                return 1
-                ;;
-        esac
-    fi
-
-    # Step 3: GitHub setup (skip if configured or on CLI)
-    if [[ -n "${GITHUB_ACCOUNT:-}" ]]; then
-        github_account="$GITHUB_ACCOUNT"
-        echo "  GitHub: $github_account (from command line)" >&2
-    elif [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]]; then
-        github_account="$CONFIG_GITHUB_ACCOUNT"
-        echo "  GitHub: $github_account (from config)" >&2
-    else
-        # Try to detect from gh CLI
-        local gh_user=""
-        if command -v gh &>/dev/null; then
-            gh_user=$(gh api user --jq '.login' 2>/dev/null) || gh_user=""
-        fi
-
-        echo "" >&2
-        echo "Step $step: GitHub repository (optional)" >&2
-        ((step++))
-        echo "" >&2
-        if [[ -n "$gh_user" ]]; then
-            read -r -p "GitHub username [$gh_user]: " github_account
-            github_account="${github_account:-$gh_user}"
-        else
-            read -r -p "GitHub username (blank to skip): " github_account
-        fi
-        if [[ -n "$github_account" ]]; then
-            echo "  Will create: github.com/$github_account/$project_name" >&2
-        fi
-    fi
-
-    # Step 4: DockerHub setup (skip if configured or on CLI)
-    if [[ -n "${DOCKERHUB_ACCOUNT:-}" ]]; then
-        dockerhub_account="$DOCKERHUB_ACCOUNT"
-        echo "  DockerHub: $dockerhub_account (from command line)" >&2
-    elif [[ -n "${CONFIG_DOCKERHUB_ACCOUNT:-}" ]]; then
-        dockerhub_account="$CONFIG_DOCKERHUB_ACCOUNT"
-        echo "  DockerHub: $dockerhub_account (from config)" >&2
-    else
-        echo "" >&2
-        echo "Step $step: DockerHub (optional)" >&2
-        ((step++))
-        echo "" >&2
-        # Default to GitHub username if set
-        if [[ -n "$github_account" ]]; then
-            read -r -p "DockerHub username [$github_account]: " dockerhub_account
-            dockerhub_account="${dockerhub_account:-$github_account}"
-        else
-            read -r -p "DockerHub username (blank to skip): " dockerhub_account
-        fi
-        if [[ -n "$dockerhub_account" ]]; then
-            echo "  Team images: $dockerhub_account/$project_name" >&2
-        fi
-    fi
-
-    # Summary and save
+    # Step 1: Profile selection
+    echo "Step $step: Select a Docker profile" >&2
+    ((step++))
     echo "" >&2
-    echo "───────────────────────────────────────────────────────────" >&2
-    echo "  Summary" >&2
-    echo "───────────────────────────────────────────────────────────" >&2
-    echo "  Profile:    $selected_profile ($base_image)" >&2
-    echo "  R version:  $selected_version" >&2
-    [[ -n "$github_account" ]] && echo "  GitHub:     $github_account/$project_name" >&2
-    [[ -n "$dockerhub_account" ]] && echo "  DockerHub:  $dockerhub_account/$project_name" >&2
+    echo "  [1] minimal     - Base R only (~300MB)" >&2
+    echo "  [2] analysis    - tidyverse packages (~1.5GB)" >&2
+    echo "  [3] publishing  - LaTeX + pandoc for documents (~3GB)" >&2
     echo "" >&2
 
+    local default_profile_num=2
+    [[ "$selected_profile" == "minimal" ]] && default_profile_num=1
+    [[ "$selected_profile" == "publishing" ]] && default_profile_num=3
+
+    local profile_choice
+    read -r -p "Profile [$default_profile_num]: " profile_choice
+    profile_choice="${profile_choice:-$default_profile_num}"
+
+    case "$profile_choice" in
+        1) selected_profile="minimal" ;;
+        2) selected_profile="analysis" ;;
+        3) selected_profile="publishing" ;;
+        *)
+            log_error "Invalid choice" >&2
+            return 1
+            ;;
+    esac
+
+    base_image=$(get_profile_base_image "$selected_profile")
+    echo "  Selected: $selected_profile ($base_image)" >&2
+
+    # Step 2: R version selection
+    echo "" >&2
+    echo "Step $step: Select R version" >&2
+    ((step++))
+    echo "" >&2
+    echo "  Current version on CRAN: $cran_version" >&2
+    echo "" >&2
+    echo "  [1] Use R $cran_version (current)" >&2
+    echo "  [2] Specify a different version" >&2
+    echo "" >&2
+
+    local version_choice
+    read -r -p "R version [1]: " version_choice
+    version_choice="${version_choice:-1}"
+
+    case "$version_choice" in
+        1)
+            selected_version="$cran_version"
+            ;;
+        2)
+            local default_ver="${selected_version:-$cran_version}"
+            read -r -p "Enter R version [$default_ver]: " selected_version
+            selected_version="${selected_version:-$default_ver}"
+            if [[ ! "$selected_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                log_error "Invalid version format. Expected: X.Y.Z" >&2
+                return 1
+            fi
+            ;;
+        *)
+            log_error "Invalid choice" >&2
+            return 1
+            ;;
+    esac
+
+    # Step 3: GitHub setup (optional)
+    # Try to detect from gh CLI if not already set
+    local gh_user=""
+    if command -v gh &>/dev/null; then
+        gh_user=$(gh api user --jq '.login' 2>/dev/null) || gh_user=""
+    fi
+    local default_gh="${github_account:-$gh_user}"
+
+    echo "" >&2
+    echo "Step $step: GitHub repository (optional)" >&2
+    ((step++))
+    echo "" >&2
+    if [[ -n "$default_gh" ]]; then
+        read -r -p "GitHub username [$default_gh]: " github_account
+        github_account="${github_account:-$default_gh}"
+    else
+        read -r -p "GitHub username (blank to skip): " github_account
+    fi
+
+    # Step 4: DockerHub setup (optional)
+    local default_docker="${dockerhub_account:-$github_account}"
+    echo "" >&2
+    echo "Step $step: DockerHub (optional)" >&2
+    ((step++))
+    echo "" >&2
+    if [[ -n "$default_docker" ]]; then
+        read -r -p "DockerHub username [$default_docker]: " dockerhub_account
+        dockerhub_account="${dockerhub_account:-$default_docker}"
+    else
+        read -r -p "DockerHub username (blank to skip): " dockerhub_account
+    fi
+
+    # Save to config
+    echo "" >&2
     read -r -p "Save as defaults? [Y/n]: " save_config
     if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
         config_set "profile-name" "$selected_profile" >&2
@@ -430,20 +413,13 @@ derive_system_deps() {
 
 generate_system_deps_install() {
     local deps="$1"
-    local base_image="${2:-rocker/r-ver}"
 
     if [[ -z "$deps" ]]; then
         echo "# No additional system dependencies required"
         return 0
     fi
 
-    if [[ "$base_image" == *"alpine"* ]] || [[ "$base_image" == *"r-minimal"* ]]; then
-        cat << EOF
-RUN apk add --no-cache \\
-    $deps
-EOF
-    else
-        cat << EOF
+    cat << EOF
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \\
     set -ex && \\
@@ -454,7 +430,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\
         $deps && \\
     rm -rf /var/lib/apt/lists/*
 EOF
-    fi
 }
 
 #=============================================================================
@@ -645,7 +620,7 @@ build_docker_image() {
         local base_image
         base_image=$(grep "^FROM" Dockerfile | head -1 | awk '{print $2}' | cut -d: -f1)
         case "$base_image" in
-            *verse*|*tidyverse*|*geospatial*|*shiny*)
+            *verse*|*tidyverse*|*shiny*)
                 platform_args="--platform linux/amd64"
                 log_info "Using AMD64 emulation for $base_image"
                 ;;

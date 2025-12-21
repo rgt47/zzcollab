@@ -241,7 +241,7 @@ WITH_EXAMPLES=false      # Include example files and templates in workspace
 ADD_EXAMPLES=false       # Add examples to existing project
 
 # Profile bundle variables (system libraries and R packages)
-LIBS_BUNDLE=""    # System library bundle (e.g., alpine, bioinfo, geospatial)
+LIBS_BUNDLE=""    # System library bundle (e.g., minimal, modeling, publishing, gui)
 PKGS_BUNDLE=""    # R package bundle (e.g., tidyverse, shiny, modeling)
 
 # Track whether user explicitly provided these flags (for team member validation)
@@ -507,7 +507,7 @@ get_template() {
 # Generate DESCRIPTION file content based on Docker profile
 # Reads profiles.yaml to extract packages for the specified profile
 # Arguments:
-#   $1 - Profile name (minimal, analysis, alpine_minimal, etc.)
+#   $1 - Profile name (minimal, analysis, publishing, etc.)
 # Returns:
 #   DESCRIPTION file content with appropriate dependencies
 # Dependencies:
