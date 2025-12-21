@@ -103,6 +103,105 @@ RUN R -e \"install.packages('languageserver')\"
 # R VERSION DETECTION
 #=============================================================================
 
+get_cran_r_version() {
+    local version major_dir
+
+    # Find highest major version directory (R-4, R-5, etc.)
+    major_dir=$(curl -s --max-time 10 https://cran.r-project.org/src/base/ 2>/dev/null | \
+        grep -oE 'R-[0-9]+' | sort -V | tail -1)
+
+    if [[ -n "$major_dir" ]]; then
+        version=$(curl -s --max-time 10 "https://cran.r-project.org/src/base/${major_dir}/" 2>/dev/null | \
+            grep -oE 'R-[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1 | sed 's/R-//')
+    fi
+
+    if [[ -z "$version" ]]; then
+        version="4.4.2"
+        log_warn "Could not query CRAN, using fallback: $version"
+    fi
+    echo "$version"
+}
+
+create_renv_lock_minimal() {
+    local r_ver="$1"
+    local cran="${2:-https://cloud.r-project.org}"
+
+    if ! command -v jq &>/dev/null; then
+        cat > renv.lock << EOF
+{
+  "R": {
+    "Version": "$r_ver",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "$cran"
+      }
+    ]
+  },
+  "Packages": {}
+}
+EOF
+    else
+        jq -n --arg r "$r_ver" --arg c "$cran" \
+            '{R:{Version:$r,Repositories:[{Name:"CRAN",URL:$c}]},Packages:{}}' > renv.lock
+    fi
+    log_success "Created renv.lock (R $r_ver)"
+}
+
+prompt_r_version_selection() {
+    local cran_version
+    cran_version=$(get_cran_r_version)
+
+    echo ""
+    echo "No renv.lock found and no R version specified."
+    echo ""
+    echo "Current R version on CRAN: $cran_version"
+    echo ""
+    echo "Would you like to:"
+    echo "  [1] Use R $cran_version (current)"
+    echo "  [2] Specify a different version"
+    echo "  [3] Cancel"
+    echo ""
+
+    local choice
+    read -r -p "> " choice
+
+    local selected_version=""
+    case "$choice" in
+        1)
+            selected_version="$cran_version"
+            ;;
+        2)
+            read -r -p "Enter R version (e.g., 4.3.2): " selected_version
+            if [[ ! "$selected_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                log_error "Invalid version format. Expected: X.Y.Z"
+                return 1
+            fi
+            ;;
+        3|"")
+            log_info "Cancelled"
+            return 1
+            ;;
+        *)
+            log_error "Invalid choice"
+            return 1
+            ;;
+    esac
+
+    echo ""
+    read -r -p "Save R $selected_version as default? (zzcollab config set r-version) [Y/n]: " save_config
+    if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
+        require_module "config"
+        config_set "r-version" "$selected_version"
+    fi
+
+    create_renv_lock_minimal "$selected_version"
+
+    R_VERSION="$selected_version"
+    export R_VERSION
+    echo "$selected_version"
+}
+
 extract_r_version() {
     if [[ -n "${R_VERSION:-}" ]]; then
         echo "$R_VERSION"
@@ -110,9 +209,15 @@ extract_r_version() {
     fi
 
     if [[ ! -f "renv.lock" ]]; then
-        log_error "R version not specified and renv.lock not found"
-        log_error "Use: zzcollab --r-version 4.4.0 or create renv.lock with R -e 'renv::init()'"
-        return 1
+        if [[ -t 0 ]]; then
+            prompt_r_version_selection
+            return $?
+        else
+            log_error "R version not specified and renv.lock not found"
+            log_error "Use: zzcollab docker --r-version 4.4.0"
+            log_error "Or:  zzcollab config set r-version 4.4.0"
+            return 1
+        fi
     fi
 
     local r_version
