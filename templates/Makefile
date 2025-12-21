@@ -154,13 +154,26 @@ r: check-renv
 		echo ""; \
 		echo "Run zzcollab to create a Docker environment:"; \
 		echo ""; \
-		echo "  zzcollab                                   # default profile"; \
-		echo "  zzcollab -r analysis                      # tidyverse"; \
-		echo "  zzcollab -r publishing                    # with LaTeX"; \
+		echo "  zzcollab docker                            # default profile"; \
+		echo "  zzcollab docker --profile analysis         # tidyverse"; \
+		echo "  zzcollab docker --profile publishing       # with LaTeX"; \
 		echo ""; \
-		echo "See: zzcollab --help for all options"; \
+		echo "See: zzcollab docker --help for all options"; \
 		echo ""; \
 		exit 1; \
+	fi; \
+	echo "🔍 Checking system dependencies..."; \
+	if ! zzcollab validate --system-deps 2>/dev/null; then \
+		echo ""; \
+		read -p "Missing system deps. Add to Dockerfile and rebuild? [Y/n]: " choice; \
+		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
+			zzcollab validate --system-deps-fix && \
+			echo "" && \
+			echo "🔨 Rebuilding Docker image..." && \
+			$(MAKE) docker-build || exit 1; \
+		else \
+			echo "⚠️  Continuing without system deps (some packages may fail to install)"; \
+		fi; \
 	fi; \
 	PROFILE=$$(head -20 Dockerfile 2>/dev/null | grep 'Profile:' | head -1 | sed 's/.*Profile: \([a-z0-9_]*\).*/\1/'); \
 	if [ -z "$$PROFILE" ]; then \
@@ -169,7 +182,7 @@ r: check-renv
 		exit 1; \
 	fi; \
 	BASE_IMAGE=$$(grep '^FROM' Dockerfile | head -1 | awk '{print $$2}' | sed 's/--platform[^[:space:]]*[[:space:]]//'); \
-	if echo "$$BASE_IMAGE" | grep -qE '(rocker/verse|rocker/tidyverse|rocker/rstudio|rocker/geospatial)'; then \
+	if echo "$$BASE_IMAGE" | grep -qE '(rocker/verse|rocker/tidyverse|rocker/rstudio)'; then \
 		HOME_DIR="/home/rstudio"; \
 	else \
 		HOME_DIR="/home/analyst"; \

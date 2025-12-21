@@ -569,6 +569,7 @@ validate_and_report() {
 
 detect_missing_system_deps() {
     local dockerfile="${1:-./Dockerfile}"
+    local auto_fix="${2:-false}"
     source "${SCRIPT_DIR}/system_deps_map.sh" 2>/dev/null || { log_warn "system_deps_map.sh not found"; return 0; }
     [[ -f "$dockerfile" ]] || { log_warn "Dockerfile not found"; return 0; }
 
@@ -589,12 +590,101 @@ detect_missing_system_deps() {
 
     [[ ${#pkgs_missing[@]} -eq 0 ]] && { log_success "All system deps present"; return 0; }
 
+    # Deduplicate missing deps
+    local unique_build; unique_build=$(printf '%s\n' "${missing_build[@]}" | sort -u | tr '\n' ' ')
+
     log_warn "Missing system dependencies:"
     for p in "${pkgs_missing[@]}"; do
-        echo "  $p: build=$(get_package_build_deps "$p") runtime=$(get_package_runtime_deps "$p")"
+        echo "  $p: $(get_package_build_deps "$p")"
     done
     echo ""
-    echo "Add to Dockerfile and rebuild: make docker-build"
+
+    if [[ "$auto_fix" == "true" ]]; then
+        add_system_deps_to_dockerfile "$dockerfile" "$unique_build"
+        return $?
+    fi
+
+    echo "Run: zzcollab validate --system-deps-fix"
+    return 1
+}
+
+add_system_deps_to_dockerfile() {
+    local dockerfile="$1"
+    local deps="$2"
+
+    [[ -z "$deps" ]] && return 0
+
+    # Check if Dockerfile has a system deps section we can append to
+    if grep -q "apt-get install" "$dockerfile"; then
+        # Find the last apt-get install line and add deps there
+        # Create backup
+        cp "$dockerfile" "${dockerfile}.bak"
+
+        # Strategy: Add deps to existing apt-get install block
+        # Look for pattern: apt-get install -y ... && \
+        # or: apt-get install -y ...
+
+        # Simple approach: add a new RUN layer for additional deps
+        # Find the line after the last RUN apt-get install block
+
+        local tmp_file; tmp_file=$(mktemp)
+        local added=false
+        local in_apt_block=false
+        local last_apt_line=0
+        local line_num=0
+
+        # Find the last apt-get install line number
+        while IFS= read -r line; do
+            ((line_num++))
+            if [[ "$line" =~ apt-get.*install ]]; then
+                last_apt_line=$line_num
+            fi
+        done < "$dockerfile"
+
+        if [[ $last_apt_line -gt 0 ]]; then
+            # Insert new RUN after the apt-get block (find next non-continuation line)
+            line_num=0
+            local insert_after=0
+            local in_block=false
+            while IFS= read -r line; do
+                ((line_num++))
+                if [[ $line_num -eq $last_apt_line ]]; then
+                    in_block=true
+                fi
+                if [[ $in_block == true ]]; then
+                    if [[ ! "$line" =~ \\$ ]] && [[ ! "$line" =~ ^[[:space:]]*$ ]]; then
+                        insert_after=$line_num
+                        break
+                    fi
+                fi
+            done < "$dockerfile"
+
+            # Insert after the block
+            line_num=0
+            while IFS= read -r line; do
+                ((line_num++))
+                echo "$line"
+                if [[ $line_num -eq $insert_after ]] && [[ $added == false ]]; then
+                    echo ""
+                    echo "# Additional system dependencies (auto-added by zzcollab)"
+                    echo "RUN apt-get update && apt-get install -y --no-install-recommends \\"
+                    for d in $deps; do
+                        echo "        $d \\"
+                    done
+                    echo "    && rm -rf /var/lib/apt/lists/*"
+                    added=true
+                fi
+            done < "$dockerfile" > "$tmp_file"
+
+            mv "$tmp_file" "$dockerfile"
+            log_success "Added system deps to Dockerfile: $deps"
+            log_info "Backup saved: ${dockerfile}.bak"
+            return 0
+        fi
+    fi
+
+    log_warn "Could not auto-add deps to Dockerfile"
+    echo "Manually add these packages: $deps"
     return 1
 }
 
@@ -613,7 +703,8 @@ main() {
             --no-fix) auto_fix=false; shift;;
             --verbose|-v) verbose=true; shift;;
             --cleanup-unused) cleanup=true; shift;;
-            --system-deps) detect_missing_system_deps "${2:-.}/Dockerfile"; shift 2;;
+            --system-deps) detect_missing_system_deps "./Dockerfile" "false"; exit $?;;
+            --system-deps-fix) detect_missing_system_deps "./Dockerfile" "true"; exit $?;;
             --help|-h)
                 cat <<'EOF'
 Usage: validation.sh [OPTIONS]
@@ -627,7 +718,8 @@ OPTIONS:
     --no-fix           Report only
     --cleanup-unused   Sync DESCRIPTION and renv.lock to code (code is source
                        of truth). Adds missing packages, removes unused ones.
-    --system-deps      Check Dockerfile for system deps
+    --system-deps      Check Dockerfile for missing system deps
+    --system-deps-fix  Auto-add missing system deps to Dockerfile
     --verbose, -v      Show package lists
     --help, -h         Show help
 
@@ -636,6 +728,7 @@ EXAMPLES:
     validation.sh --no-fix -v      # Report only, verbose
     validation.sh --cleanup-unused # Sync to code, remove unused packages
     validation.sh --system-deps    # Check system dependencies
+    validation.sh --system-deps-fix # Auto-add missing deps to Dockerfile
 EOF
                 exit 0;;
             *) log_error "Unknown: $1"; exit 1;;
