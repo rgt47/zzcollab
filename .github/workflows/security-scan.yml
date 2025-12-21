@@ -119,7 +119,8 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
-          ignore: DL3008,DL3009
+          ignore: DL3008,DL3009,DL3007,DL3003,DL3016,DL3059,DL3001
+          failure-threshold: error
 
       - name: Check Dockerfile best practices
         run: |

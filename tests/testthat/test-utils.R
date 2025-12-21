@@ -45,18 +45,18 @@ test_that("function parameters are properly validated", {
 })
 
 test_that("Docker status function works", {
-  # Test status function (this will work even without zzcollab containers)
+  skip_if_not(nzchar(Sys.which("docker")), "Docker not available")
+
   result <- status()
   expect_type(result, "character")
-  # Length can be 0 if no containers running
   expect_gte(length(result), 0)
 })
 
 test_that("team_images function works", {
-  # Test team_images function
+  skip_if_not(nzchar(Sys.which("docker")), "Docker not available")
+
   result <- team_images()
   expect_true(is.data.frame(result))
-  # Can be empty if no team images
   expect_gte(nrow(result), 0)
 })
 

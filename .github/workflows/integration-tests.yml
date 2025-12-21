@@ -252,9 +252,9 @@ jobs:
 
     - name: Initialize config
       run: |
-        zzcollab --config init
-        zzcollab --config set team-name testteam
-        zzcollab --config set project-name testproject
+        zzcollab config init
+        zzcollab config set team-name testteam
+        zzcollab config set project-name testproject
 
     - name: Create test project
       run: |

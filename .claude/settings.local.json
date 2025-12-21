@@ -12,7 +12,8 @@
       "Bash(sed:*)",
       "Bash(tee:*)",
       "Bash(bash -n:*)",
-      "Bash(wc -l echo \"Uses of process substitution (efficient)\")"
+      "Bash(wc -l echo \"Uses of process substitution (efficient)\")",
+      "Bash(gh run view:*)"
     ],
     "deny": [],
     "ask": []
