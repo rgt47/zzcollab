@@ -21,9 +21,9 @@ require_module "core" "profiles"
 get_profile_base_image() {
     local profile="${1:-minimal}"
     case "$profile" in
-        minimal|standard)    echo "rocker/r-ver" ;;
-        tidyverse|analysis)  echo "rocker/tidyverse" ;;
-        verse|publishing)    echo "rocker/verse" ;;
+        minimal|standard|ubuntu_standard_minimal)  echo "rocker/r-ver" ;;
+        tidyverse|analysis|ubuntu_standard_analysis|ubuntu_standard_analysis_vim)  echo "rocker/tidyverse" ;;
+        verse|publishing|ubuntu_standard_publishing)  echo "rocker/verse" ;;
         rstudio)             echo "rocker/rstudio" ;;
         shiny)               echo "rocker/shiny" ;;
         geospatial)          echo "rocker/geospatial" ;;
@@ -257,11 +257,22 @@ prompt_new_workspace_setup() {
         github_account="$CONFIG_GITHUB_ACCOUNT"
         echo "  GitHub: $github_account (from config)" >&2
     else
+        # Try to detect from gh CLI
+        local gh_user=""
+        if command -v gh &>/dev/null; then
+            gh_user=$(gh api user --jq '.login' 2>/dev/null) || gh_user=""
+        fi
+
         echo "" >&2
         echo "Step $step: GitHub repository (optional)" >&2
         ((step++))
         echo "" >&2
-        read -r -p "GitHub username (blank to skip): " github_account
+        if [[ -n "$gh_user" ]]; then
+            read -r -p "GitHub username [$gh_user]: " github_account
+            github_account="${github_account:-$gh_user}"
+        else
+            read -r -p "GitHub username (blank to skip): " github_account
+        fi
         if [[ -n "$github_account" ]]; then
             echo "  Will create: github.com/$github_account/$project_name" >&2
         fi
@@ -279,7 +290,13 @@ prompt_new_workspace_setup() {
         echo "Step $step: DockerHub (optional)" >&2
         ((step++))
         echo "" >&2
-        read -r -p "DockerHub username (blank to skip): " dockerhub_account
+        # Default to GitHub username if set
+        if [[ -n "$github_account" ]]; then
+            read -r -p "DockerHub username [$github_account]: " dockerhub_account
+            dockerhub_account="${dockerhub_account:-$github_account}"
+        else
+            read -r -p "DockerHub username (blank to skip): " dockerhub_account
+        fi
         if [[ -n "$dockerhub_account" ]]; then
             echo "  Team images: $dockerhub_account/$project_name" >&2
         fi
@@ -486,6 +503,7 @@ generate_dockerfile() {
         log_warn "Template not found: $template"
         log_info "Using inline template"
         generate_dockerfile_inline "$base_image" "$r_version" "$system_deps_install" "$tools_install" "$deps_comment"
+        prompt_docker_build "$project_name" "$r_version"
         return $?
     fi
 
@@ -509,11 +527,16 @@ generate_dockerfile() {
     rm -f "$tmpfile.bak"
 
     log_success "Generated Dockerfile"
+    prompt_docker_build "$project_name" "$r_version"
+}
 
-    # If coming from new workspace setup, offer to build
+prompt_docker_build() {
+    local project_name="$1" r_version="$2"
+
+    # Only prompt if coming from new workspace setup and in interactive terminal
     if [[ "${ZZCOLLAB_BUILD_AFTER_SETUP:-}" == "true" ]] && [[ -t 0 ]]; then
         echo ""
-        echo "Step 4: Build Docker image"
+        echo "Step: Build Docker image"
         echo ""
         read -r -p "Build now? [Y/n]: " build_now
         if [[ ! "$build_now" =~ ^[Nn]$ ]]; then
