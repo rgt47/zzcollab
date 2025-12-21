@@ -31,31 +31,44 @@ jobs:
           # First build (cold cache)
           echo "Cold build (no cache):" >> benchmark-results/docker-benchmarks.txt
           START=$(date +%s)
-          docker build --no-cache -t zzcollab:benchmark . > /dev/null 2>&1
-          END=$(date +%s)
-          COLD_TIME=$((END - START))
-          echo "  Duration: ${COLD_TIME}s" >> benchmark-results/docker-benchmarks.txt
+          if docker build --no-cache -t zzcollab:benchmark . > /tmp/docker-build.log 2>&1; then
+            END=$(date +%s)
+            COLD_TIME=$((END - START))
+            echo "  Duration: ${COLD_TIME}s" >> benchmark-results/docker-benchmarks.txt
+            BUILD_SUCCESS=true
+          else
+            echo "  Status: Build failed (see logs)" >> benchmark-results/docker-benchmarks.txt
+            COLD_TIME=0
+            BUILD_SUCCESS=false
+          fi
 
-          # Second build (with cache)
-          echo "" >> benchmark-results/docker-benchmarks.txt
-          echo "Cached build:" >> benchmark-results/docker-benchmarks.txt
-          START=$(date +%s)
-          docker build -t zzcollab:benchmark . > /dev/null 2>&1
-          END=$(date +%s)
-          CACHED_TIME=$((END - START))
-          echo "  Duration: ${CACHED_TIME}s" >> benchmark-results/docker-benchmarks.txt
+          # Second build (with cache) - only if first build succeeded
+          if [ "$BUILD_SUCCESS" = "true" ]; then
+            echo "" >> benchmark-results/docker-benchmarks.txt
+            echo "Cached build:" >> benchmark-results/docker-benchmarks.txt
+            START=$(date +%s)
+            docker build -t zzcollab:benchmark . > /dev/null 2>&1 || true
+            END=$(date +%s)
+            CACHED_TIME=$((END - START))
+            echo "  Duration: ${CACHED_TIME}s" >> benchmark-results/docker-benchmarks.txt
 
-          # Image size
-          echo "" >> benchmark-results/docker-benchmarks.txt
-          echo "### Image Size" >> benchmark-results/docker-benchmarks.txt
-          IMAGE_SIZE=$(docker images --format "{{.Size}}" zzcollab:benchmark | head -1)
-          echo "  Size: $IMAGE_SIZE" >> benchmark-results/docker-benchmarks.txt
+            # Image size
+            echo "" >> benchmark-results/docker-benchmarks.txt
+            echo "### Image Size" >> benchmark-results/docker-benchmarks.txt
+            IMAGE_SIZE=$(docker images --format "{{.Size}}" zzcollab:benchmark | head -1)
+            echo "  Size: $IMAGE_SIZE" >> benchmark-results/docker-benchmarks.txt
 
-          # Performance improvement
-          echo "" >> benchmark-results/docker-benchmarks.txt
-          echo "### Cache Performance" >> benchmark-results/docker-benchmarks.txt
-          IMPROVEMENT=$((COLD_TIME - CACHED_TIME))
-          echo "  Speedup with cache: ${IMPROVEMENT}s ($(awk "BEGIN {printf \"%.0f%%\", ($IMPROVEMENT/$COLD_TIME)*100}"))" >> benchmark-results/docker-benchmarks.txt
+            # Performance improvement
+            echo "" >> benchmark-results/docker-benchmarks.txt
+            echo "### Cache Performance" >> benchmark-results/docker-benchmarks.txt
+            if [ "$COLD_TIME" -gt 0 ]; then
+              IMPROVEMENT=$((COLD_TIME - CACHED_TIME))
+              echo "  Speedup with cache: ${IMPROVEMENT}s ($(awk "BEGIN {printf \"%.0f%%\", ($IMPROVEMENT/$COLD_TIME)*100}"))" >> benchmark-results/docker-benchmarks.txt
+            fi
+          else
+            echo "" >> benchmark-results/docker-benchmarks.txt
+            echo "Skipping cached build and metrics (initial build failed)" >> benchmark-results/docker-benchmarks.txt
+          fi
 
           cat benchmark-results/docker-benchmarks.txt
 
@@ -151,11 +164,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install BATS
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bats
-
       - name: Benchmark test execution time
         run: |
           mkdir -p benchmark-results
@@ -167,17 +175,17 @@ jobs:
           echo "" >> benchmark-results/test-benchmarks.txt
 
           # Run shell tests and measure timing
-          for test_file in tests/shell/test-*.bats; do
+          for test_file in tests/shell/test-*.sh; do
             if [ -f "$test_file" ]; then
               test_name=$(basename "$test_file")
               echo "Running: $test_name" >> benchmark-results/test-benchmarks.txt
 
               START=$(date +%s%N)
-              bats "$test_file" > /tmp/test-output.txt 2>&1 || true
+              bash "$test_file" > /tmp/test-output.txt 2>&1 || true
               END=$(date +%s%N)
 
               DURATION=$(( (END - START) / 1000000000 ))
-              TEST_COUNT=$(grep -c "^ok" /tmp/test-output.txt || echo "0")
+              TEST_COUNT=$(grep -c "PASS" /tmp/test-output.txt || echo "0")
 
               echo "  Tests: $TEST_COUNT" >> benchmark-results/test-benchmarks.txt
               echo "  Duration: ${DURATION}s" >> benchmark-results/test-benchmarks.txt
