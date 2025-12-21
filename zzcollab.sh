@@ -186,12 +186,202 @@ cmd_docker() {
     [[ -n "$base_image" ]] && export BASE_IMAGE="$base_image"
     [[ -n "$profile" ]] && BASE_IMAGE=$(get_profile_base_image "$profile")
 
-    # Generate Dockerfile
+    # Generate Dockerfile + renv.lock (wizard handles new workspaces)
     generate_dockerfile || exit 1
 
     # Build if requested
     if [[ "$build_image" == "true" ]]; then
         build_docker_image || exit 1
+    fi
+}
+
+cmd_renv() {
+    require_module "config" "docker"
+
+    local r_version=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --r-version) r_version="$2"; shift 2 ;;
+            --help|-h)
+                cat << 'EOF'
+RENV SETUP (without Docker)
+
+Sets up renv for reproducible R environments without Docker.
+
+USAGE:
+    zzcollab renv [OPTIONS]
+
+OPTIONS:
+    --r-version VERSION    Specify R version (default: query CRAN)
+    --help, -h             Show this help
+
+CREATES:
+    renv.lock              Package lockfile with R version
+    .Rprofile              renv activation + critical R options
+    renv/                  renv directory structure
+
+EXAMPLES:
+    zzcollab renv                    # Interactive setup
+    zzcollab renv --r-version 4.4.2  # Specify version
+
+NEXT STEPS:
+    R -e "renv::restore()"           # Install packages from lockfile
+EOF
+                exit 0
+                ;;
+            *) log_error "Unknown option: $1"; exit 1 ;;
+        esac
+    done
+
+    local project_name
+    project_name=$(basename "$(pwd)")
+
+    echo ""
+    echo "═══════════════════════════════════════════════════════════"
+    echo "  renv setup: $project_name"
+    echo "═══════════════════════════════════════════════════════════"
+
+    # Get R version from config, CLI, or prompt
+    if [[ -z "$r_version" ]]; then
+        load_config 2>/dev/null || true
+        r_version="${CONFIG_R_VERSION:-}"
+    fi
+
+    if [[ -z "$r_version" ]]; then
+        local cran_version
+        cran_version=$(get_cran_r_version)
+        echo ""
+        echo "  Current R version on CRAN: $cran_version"
+        echo ""
+        echo "  [1] Use R $cran_version (current)"
+        echo "  [2] Specify a different version"
+        echo ""
+
+        local version_choice
+        read -r -p "R version [1]: " version_choice
+        version_choice="${version_choice:-1}"
+
+        case "$version_choice" in
+            1) r_version="$cran_version" ;;
+            2)
+                read -r -p "Enter R version (e.g., 4.3.2): " r_version
+                if [[ ! "$r_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                    log_error "Invalid version format. Expected: X.Y.Z"
+                    return 1
+                fi
+                ;;
+            *)
+                log_error "Invalid choice"
+                return 1
+                ;;
+        esac
+    else
+        echo ""
+        echo "  R version: $r_version"
+    fi
+
+    # Create renv.lock
+    create_renv_lock_minimal "$r_version"
+
+    # Create .Rprofile with renv activation and critical options
+    if [[ -f ".Rprofile" ]]; then
+        log_warn ".Rprofile exists, checking for renv activation..."
+        if ! grep -q "renv/activate.R" .Rprofile 2>/dev/null; then
+            echo "" >> .Rprofile
+            echo "# renv activation" >> .Rprofile
+            echo 'source("renv/activate.R")' >> .Rprofile
+            log_success "Added renv activation to .Rprofile"
+        else
+            log_info ".Rprofile already has renv activation"
+        fi
+    else
+        cat > .Rprofile << 'EOF'
+# renv activation
+source("renv/activate.R")
+
+# Critical reproducibility options
+options(
+    stringsAsFactors = FALSE,
+    digits = 7,
+    OutDec = ".",
+    na.action = "na.omit",
+    contrasts = c("contr.treatment", "contr.poly")
+)
+
+# Auto-restore on startup if packages missing
+.First <- function() {
+    if (file.exists("renv.lock") && requireNamespace("renv", quietly = TRUE)) {
+        status <- tryCatch(renv::status(project = getwd()), error = function(e) NULL)
+        if (!is.null(status) && !isTRUE(status$synchronized)) {
+            message("Restoring packages from renv.lock...")
+            renv::restore(prompt = FALSE)
+        }
+    }
+}
+
+# Auto-snapshot on exit
+.Last <- function() {
+    if (interactive() && file.exists("renv.lock") && requireNamespace("renv", quietly = TRUE)) {
+        tryCatch({
+            renv::snapshot(prompt = FALSE)
+            message("renv.lock updated")
+        }, error = function(e) NULL)
+    }
+}
+EOF
+        log_success "Created .Rprofile"
+    fi
+
+    # Create renv directory structure
+    mkdir -p renv
+    if [[ ! -f "renv/activate.R" ]]; then
+        # Create minimal activate.R that will bootstrap renv
+        cat > renv/activate.R << 'EOF'
+# Minimal renv activation - will bootstrap full renv on first use
+local({
+    if (!requireNamespace("renv", quietly = TRUE)) {
+        message("Installing renv...")
+        install.packages("renv", repos = "https://cloud.r-project.org")
+    }
+    renv::load()
+})
+EOF
+        log_success "Created renv/activate.R"
+    fi
+
+    # Create .gitignore for renv
+    if [[ ! -f "renv/.gitignore" ]]; then
+        cat > renv/.gitignore << 'EOF'
+library/
+local/
+cellar/
+lock/
+python/
+sandbox/
+staging/
+EOF
+        log_success "Created renv/.gitignore"
+    fi
+
+    echo ""
+    echo "───────────────────────────────────────────────────────────"
+    echo "  Setup complete"
+    echo "───────────────────────────────────────────────────────────"
+    echo "  R version:  $r_version"
+    echo "  renv.lock:  created"
+    echo "  .Rprofile:  renv activation + critical options"
+    echo ""
+    echo "Next steps:"
+    echo "  R                              # Start R (auto-restores packages)"
+    echo "  install.packages('tidyverse')  # Add packages as needed"
+    echo "  # renv.lock auto-updates on exit"
+    echo ""
+
+    # Offer to save R version to config
+    read -r -p "Save R version to config? [Y/n]: " save_config
+    if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
+        config_set "r-version" "$r_version"
     fi
 }
 
@@ -510,6 +700,7 @@ main() {
     case "$command" in
         init)      cmd_init "$@" ;;
         docker)    cmd_docker "$@" ;;
+        renv)      cmd_renv "$@" ;;
         validate)  cmd_validate "$@" ;;
         nav)       cmd_nav "$@" ;;
         uninstall) cmd_uninstall "$@" ;;

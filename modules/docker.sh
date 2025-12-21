@@ -386,7 +386,7 @@ extract_r_packages() {
         done < <(jq -r '.Packages | keys[]' renv.lock 2>/dev/null)
     fi
 
-    printf '%s\n' "${packages[@]}" | sort -u
+    [[ ${#packages[@]} -gt 0 ]] && printf '%s\n' "${packages[@]}" | sort -u
 }
 
 #=============================================================================
@@ -394,6 +394,8 @@ extract_r_packages() {
 #=============================================================================
 
 derive_system_deps() {
+    [[ $# -eq 0 ]] && { echo ""; return 0; }
+
     local packages=("$@")
     local all_deps=()
 
@@ -456,8 +458,10 @@ generate_dockerfile() {
     done < <(extract_r_packages)
     log_info "  Found ${#r_packages[@]} R packages"
 
-    local system_deps
-    system_deps=$(derive_system_deps "${r_packages[@]}")
+    local system_deps=""
+    if [[ ${#r_packages[@]} -gt 0 ]]; then
+        system_deps=$(derive_system_deps "${r_packages[@]}")
+    fi
     if [[ -n "$system_deps" ]]; then
         log_info "  System deps: $system_deps"
     else
@@ -471,8 +475,12 @@ generate_dockerfile() {
     tools_install=$(generate_tools_install "$base_image")
     log_info "  Tools: pandoc, tinytex, languageserver (as needed)"
 
-    local deps_comment="Packages: ${r_packages[*]:0:5}..."
-    [[ ${#r_packages[@]} -le 5 ]] && deps_comment="Packages: ${r_packages[*]}"
+    local deps_comment="Packages: (none)"
+    if [[ ${#r_packages[@]} -gt 5 ]]; then
+        deps_comment="Packages: ${r_packages[*]:0:5}..."
+    elif [[ ${#r_packages[@]} -gt 0 ]]; then
+        deps_comment="Packages: ${r_packages[*]}"
+    fi
 
     if [[ ! -f "$template" ]]; then
         log_warn "Template not found: $template"
