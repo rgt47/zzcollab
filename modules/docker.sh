@@ -148,59 +148,178 @@ EOF
     log_success "Created renv.lock (R $r_ver)"
 }
 
-prompt_r_version_selection() {
+prompt_new_workspace_setup() {
+    require_module "config"
+    load_config 2>/dev/null || true
+
     local cran_version
     cran_version=$(get_cran_r_version)
+    local project_name
+    project_name=$(basename "$(pwd)")
+    local step=1
+    local selected_profile selected_version base_image
+    local github_account dockerhub_account
 
     # All prompts to STDERR so STDOUT only contains the version
     echo "" >&2
-    echo "This is a new zzcollab workspace. Set the R version to use for computation." >&2
-    echo "" >&2
-    echo "Current R version on CRAN: $cran_version" >&2
-    echo "" >&2
-    echo "Would you like to:" >&2
-    echo "  [1] Use R $cran_version (current)" >&2
-    echo "  [2] Specify a different version" >&2
-    echo "  [3] Cancel" >&2
-    echo "" >&2
+    echo "═══════════════════════════════════════════════════════════" >&2
+    echo "  New zzcollab workspace: $project_name" >&2
+    echo "═══════════════════════════════════════════════════════════" >&2
 
-    local choice
-    read -r -p "> " choice
+    # Step 1: Profile selection (skip if configured or on CLI)
+    if [[ -n "${PROFILE_NAME:-}" ]]; then
+        selected_profile="$PROFILE_NAME"
+        base_image=$(get_profile_base_image "$selected_profile")
+        echo "" >&2
+        echo "  Profile: $selected_profile (from command line)" >&2
+    elif [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
+        selected_profile="$CONFIG_PROFILE_NAME"
+        base_image=$(get_profile_base_image "$selected_profile")
+        echo "" >&2
+        echo "  Profile: $selected_profile (from config)" >&2
+    else
+        echo "" >&2
+        echo "Step $step: Select a Docker profile" >&2
+        ((step++))
+        echo "" >&2
+        echo "  [1] minimal     - Base R only (~300MB)" >&2
+        echo "  [2] analysis    - tidyverse packages (~1.5GB)" >&2
+        echo "  [3] publishing  - LaTeX + pandoc for documents (~3GB)" >&2
+        echo "  [4] geospatial  - GIS tools (sf, terra) (~2.5GB)" >&2
+        echo "  [5] bioconductor - Bioconductor base (~2GB)" >&2
+        echo "" >&2
 
-    local selected_version=""
-    case "$choice" in
-        1)
-            selected_version="$cran_version"
-            ;;
-        2)
-            read -r -p "Enter R version (e.g., 4.3.2): " selected_version
-            if [[ ! "$selected_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                log_error "Invalid version format. Expected: X.Y.Z"
+        local profile_choice
+        read -r -p "Profile [2]: " profile_choice
+        profile_choice="${profile_choice:-2}"
+
+        case "$profile_choice" in
+            1) selected_profile="minimal" ;;
+            2) selected_profile="analysis" ;;
+            3) selected_profile="publishing" ;;
+            4) selected_profile="geospatial" ;;
+            5) selected_profile="bioconductor" ;;
+            *)
+                log_error "Invalid choice" >&2
                 return 1
-            fi
-            ;;
-        3|"")
-            log_info "Cancelled"
-            return 1
-            ;;
-        *)
-            log_error "Invalid choice"
-            return 1
-            ;;
-    esac
+                ;;
+        esac
 
+        base_image=$(get_profile_base_image "$selected_profile")
+        echo "  Selected: $selected_profile ($base_image)" >&2
+    fi
+
+    # Step 2: R version selection (skip if configured or on CLI)
+    if [[ -n "${R_VERSION:-}" ]]; then
+        selected_version="$R_VERSION"
+        echo "  R version: $selected_version (from command line)" >&2
+    elif [[ -n "${CONFIG_R_VERSION:-}" ]]; then
+        selected_version="$CONFIG_R_VERSION"
+        echo "  R version: $selected_version (from config)" >&2
+    else
+        echo "" >&2
+        echo "Step $step: Select R version" >&2
+        ((step++))
+        echo "" >&2
+        echo "  Current version on CRAN: $cran_version" >&2
+        echo "" >&2
+        echo "  [1] Use R $cran_version (current)" >&2
+        echo "  [2] Specify a different version" >&2
+        echo "" >&2
+
+        local version_choice
+        read -r -p "R version [1]: " version_choice
+        version_choice="${version_choice:-1}"
+
+        case "$version_choice" in
+            1)
+                selected_version="$cran_version"
+                ;;
+            2)
+                read -r -p "Enter R version (e.g., 4.3.2): " selected_version
+                if [[ ! "$selected_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                    log_error "Invalid version format. Expected: X.Y.Z" >&2
+                    return 1
+                fi
+                ;;
+            *)
+                log_error "Invalid choice" >&2
+                return 1
+                ;;
+        esac
+    fi
+
+    # Step 3: GitHub setup (skip if configured or on CLI)
+    if [[ -n "${GITHUB_ACCOUNT:-}" ]]; then
+        github_account="$GITHUB_ACCOUNT"
+        echo "  GitHub: $github_account (from command line)" >&2
+    elif [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]]; then
+        github_account="$CONFIG_GITHUB_ACCOUNT"
+        echo "  GitHub: $github_account (from config)" >&2
+    else
+        echo "" >&2
+        echo "Step $step: GitHub repository (optional)" >&2
+        ((step++))
+        echo "" >&2
+        read -r -p "GitHub username (blank to skip): " github_account
+        if [[ -n "$github_account" ]]; then
+            echo "  Will create: github.com/$github_account/$project_name" >&2
+        fi
+    fi
+
+    # Step 4: DockerHub setup (skip if configured or on CLI)
+    if [[ -n "${DOCKERHUB_ACCOUNT:-}" ]]; then
+        dockerhub_account="$DOCKERHUB_ACCOUNT"
+        echo "  DockerHub: $dockerhub_account (from command line)" >&2
+    elif [[ -n "${CONFIG_DOCKERHUB_ACCOUNT:-}" ]]; then
+        dockerhub_account="$CONFIG_DOCKERHUB_ACCOUNT"
+        echo "  DockerHub: $dockerhub_account (from config)" >&2
+    else
+        echo "" >&2
+        echo "Step $step: DockerHub (optional)" >&2
+        ((step++))
+        echo "" >&2
+        read -r -p "DockerHub username (blank to skip): " dockerhub_account
+        if [[ -n "$dockerhub_account" ]]; then
+            echo "  Team images: $dockerhub_account/$project_name" >&2
+        fi
+    fi
+
+    # Summary and save
     echo "" >&2
-    read -r -p "Save R $selected_version as default? (zzcollab config set r-version) [Y/n]: " save_config
+    echo "───────────────────────────────────────────────────────────" >&2
+    echo "  Summary" >&2
+    echo "───────────────────────────────────────────────────────────" >&2
+    echo "  Profile:    $selected_profile ($base_image)" >&2
+    echo "  R version:  $selected_version" >&2
+    [[ -n "$github_account" ]] && echo "  GitHub:     $github_account/$project_name" >&2
+    [[ -n "$dockerhub_account" ]] && echo "  DockerHub:  $dockerhub_account/$project_name" >&2
+    echo "" >&2
+
+    read -r -p "Save as defaults? [Y/n]: " save_config
     if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
-        require_module "config"
+        config_set "profile-name" "$selected_profile" >&2
         config_set "r-version" "$selected_version" >&2
+        [[ -n "$github_account" ]] && config_set "github-account" "$github_account" >&2
+        [[ -n "$dockerhub_account" ]] && config_set "dockerhub-account" "$dockerhub_account" >&2
     fi
 
     create_renv_lock_minimal "$selected_version" >&2
 
+    # Export for Dockerfile generation
     R_VERSION="$selected_version"
-    export R_VERSION
+    BASE_IMAGE="$base_image"
+    GITHUB_ACCOUNT="$github_account"
+    DOCKERHUB_ACCOUNT="$dockerhub_account"
+    ZZCOLLAB_BUILD_AFTER_SETUP="true"
+    export R_VERSION BASE_IMAGE GITHUB_ACCOUNT DOCKERHUB_ACCOUNT ZZCOLLAB_BUILD_AFTER_SETUP
+
     echo "$selected_version"
+}
+
+# Wrapper for backward compatibility
+prompt_r_version_selection() {
+    prompt_new_workspace_setup
 }
 
 extract_r_version() {
@@ -390,7 +509,40 @@ generate_dockerfile() {
     rm -f "$tmpfile.bak"
 
     log_success "Generated Dockerfile"
-    log_info "  Build with: docker build -t $project_name ."
+
+    # If coming from new workspace setup, offer to build
+    if [[ "${ZZCOLLAB_BUILD_AFTER_SETUP:-}" == "true" ]] && [[ -t 0 ]]; then
+        echo ""
+        echo "Step 4: Build Docker image"
+        echo ""
+        read -r -p "Build now? [Y/n]: " build_now
+        if [[ ! "$build_now" =~ ^[Nn]$ ]]; then
+            echo ""
+            log_info "Building Docker image: $project_name"
+            log_info "This may take several minutes on first build..."
+            echo ""
+            if DOCKER_BUILDKIT=1 docker build --platform linux/amd64 \
+                --build-arg R_VERSION="$r_version" \
+                -t "$project_name" . ; then
+                echo ""
+                log_success "Docker image built: $project_name"
+                echo ""
+                echo "Start container with:"
+                echo "  make r          # Interactive R session"
+                echo "  make rstudio    # RStudio at localhost:8787"
+            else
+                log_error "Docker build failed"
+                echo "Check the output above for errors."
+                echo "Retry with: make docker-build"
+            fi
+        else
+            echo ""
+            echo "Build later with: make docker-build"
+        fi
+        unset ZZCOLLAB_BUILD_AFTER_SETUP
+    else
+        log_info "  Build with: docker build -t $project_name ."
+    fi
 }
 
 generate_dockerfile_inline() {
