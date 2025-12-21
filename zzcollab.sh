@@ -101,6 +101,69 @@ fi
 require_module "constants" "core" "templates"
 
 #=============================================================================
+# WORKSPACE INITIALIZATION HELPER
+#=============================================================================
+
+# Check if rrtools workspace is initialized (DESCRIPTION exists)
+# Returns 0 if initialized, 1 if not
+is_workspace_initialized() {
+    [[ -f "DESCRIPTION" ]]
+}
+
+# Ensure rrtools workspace exists, prompt to create if not
+# Returns 0 on success, 1 on failure/cancel
+ensure_workspace_initialized() {
+    local context="${1:-operation}"
+
+    if is_workspace_initialized; then
+        return 0
+    fi
+
+    echo "" >&2
+    echo "═══════════════════════════════════════════════════════════" >&2
+    echo "  No rrtools workspace detected" >&2
+    echo "═══════════════════════════════════════════════════════════" >&2
+    echo "" >&2
+    echo "  The '$context' command requires an initialized workspace." >&2
+    echo "  This creates the rrtools research compendium structure:" >&2
+    echo "" >&2
+    echo "    DESCRIPTION    R package metadata" >&2
+    echo "    R/             Reusable functions" >&2
+    echo "    analysis/      Data, scripts, reports" >&2
+    echo "    tests/         Unit tests" >&2
+    echo "" >&2
+
+    if [[ ! -t 0 ]]; then
+        log_error "Non-interactive mode: run 'zzcollab init' first"
+        return 1
+    fi
+
+    read -r -p "Initialize workspace now? [Y/n]: " init_choice
+    if [[ "$init_choice" =~ ^[Nn]$ ]]; then
+        log_info "Cancelled. Run 'zzcollab init' when ready."
+        return 1
+    fi
+
+    # Load required modules for project setup
+    require_module "cli" "config" "project"
+
+    # Get package name from directory
+    PKG_NAME=$(basename "$(pwd)")
+    PKG_NAME=$(echo "$PKG_NAME" | tr '-' '.' | tr '[:upper:]' '[:lower:]')
+    export PKG_NAME
+
+    log_info "Initializing workspace: $PKG_NAME"
+    setup_project || {
+        log_error "Workspace initialization failed"
+        return 1
+    }
+
+    log_success "Workspace initialized"
+    echo "" >&2
+    return 0
+}
+
+#=============================================================================
 # SUBCOMMAND ROUTING
 #=============================================================================
 
@@ -169,27 +232,40 @@ cmd_docker() {
     local r_version=""
     local base_image=""
     local profile=""
+    local profile_changed=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --build|-b) build_image=true; shift ;;
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
-            --profile) profile="$2"; shift 2 ;;
+            --profile|-r) profile="$2"; profile_changed=true; shift 2 ;;
             --help|-h) require_module "help"; show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
     done
 
+    # Ensure rrtools workspace is initialized
+    ensure_workspace_initialized "docker" || exit 1
+
     # Set environment for docker module
     [[ -n "$r_version" ]] && export R_VERSION="$r_version"
     [[ -n "$base_image" ]] && export BASE_IMAGE="$base_image"
-    [[ -n "$profile" ]] && BASE_IMAGE=$(get_profile_base_image "$profile")
+    if [[ -n "$profile" ]]; then
+        BASE_IMAGE=$(get_profile_base_image "$profile")
+        export BASE_IMAGE
+        # Save profile to config
+        require_module "config"
+        config_set "profile-name" "$profile" 2>/dev/null || true
+    fi
+
+    # Trigger build prompt if profile changed
+    [[ "$profile_changed" == "true" ]] && ZZCOLLAB_BUILD_AFTER_SETUP="true"
 
     # Generate Dockerfile + renv.lock (wizard handles new workspaces)
     generate_dockerfile || exit 1
 
-    # Build if requested
+    # Build if requested explicitly or profile changed
     if [[ "$build_image" == "true" ]]; then
         build_docker_image || exit 1
     fi

@@ -439,16 +439,30 @@ EOF
 #=============================================================================
 
 generate_dockerfile() {
-    local base_image="${BASE_IMAGE:-rocker/r-ver}"
+    local base_image="${BASE_IMAGE:-}"
     local r_version="${R_VERSION:-}"
     local project_name="${PROJECT_NAME:-$(basename "$(pwd)")}"
     local template="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/Dockerfile.template"
+    local triggered_wizard=false
 
     log_info "Generating Dockerfile..."
 
     if [[ -z "$r_version" ]]; then
+        # Check if we'll trigger the wizard (no renv.lock and interactive)
+        if [[ ! -f "renv.lock" ]] && [[ -t 0 ]]; then
+            triggered_wizard=true
+        fi
         r_version=$(extract_r_version) || return 1
+        # Wizard exports don't persist from subshell - reload config
+        if [[ "$triggered_wizard" == "true" ]]; then
+            ZZCOLLAB_BUILD_AFTER_SETUP="true"
+            load_config 2>/dev/null || true
+            base_image=$(get_profile_base_image "${CONFIG_PROFILE_NAME:-minimal}")
+        fi
     fi
+
+    # Default base image if still not set
+    [[ -z "$base_image" ]] && base_image="rocker/r-ver"
 
     log_info "  Base image: ${base_image}:${r_version}"
 

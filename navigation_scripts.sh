@@ -20,11 +20,12 @@ NAVIGATION_FUNCTIONS='
 # ZZCOLLAB Navigation Functions (added by navigation_scripts.sh)
 # These allow one-letter navigation from anywhere in your project
 
-# Find project root (looks for DESCRIPTION file)
+# Find project root (looks for DESCRIPTION, Dockerfile, or renv.lock)
 _zzcollab_root() {
     local dir="$PWD"
     while [[ "$dir" != "/" ]]; do
-        if [[ -f "$dir/DESCRIPTION" ]] || [[ -f "$dir/.zzcollab_project" ]]; then
+        if [[ -f "$dir/DESCRIPTION" ]] || [[ -f "$dir/.zzcollab_project" ]] || \
+           [[ -f "$dir/Dockerfile" ]] || [[ -f "$dir/renv.lock" ]]; then
             echo "$dir"
             return 0
         fi
