@@ -40,6 +40,7 @@ USAGE:
     $0 [OPTIONS]
 
 OPTIONS:
+    --dev               Development mode: symlink to source (changes apply immediately)
     --bin-dir DIR       Create symlink in DIR (default: ~/bin)
     --no-symlink        Don't create symlink
     --force             Overwrite existing installation
@@ -47,10 +48,15 @@ OPTIONS:
     --help, -h          Show this help
 
 EXAMPLES:
-    $0                          # Install to ~/.zzcollab, symlink in ~/bin
+    $0                          # Install to ~/.zzcollab (copies files)
+    $0 --dev                    # Development: symlinks to source directory
     $0 --bin-dir /usr/local/bin # Install, symlink in /usr/local/bin
     $0 --no-symlink             # Install only, no symlink
     $0 --uninstall              # Remove installation
+
+INSTALL MODES:
+    Production (default):  Copies files to ~/.zzcollab (stable, versioned)
+    Development (--dev):   Symlinks to source (changes apply immediately)
 
 INSTALLATION STRUCTURE:
     ~/.zzcollab/
@@ -69,10 +75,16 @@ BIN_DIR="$HOME/bin"
 CREATE_SYMLINK=true
 FORCE=false
 UNINSTALL=false
+DEV_MODE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --dev)
+            DEV_MODE=true
+            FORCE=true
+            shift
+            ;;
         --bin-dir)
             BIN_DIR="$2"
             shift 2
@@ -163,41 +175,70 @@ fi
 # INSTALLATION
 #=============================================================================
 
-log_info "Installing zzcollab v${VERSION} to $ZZCOLLAB_HOME"
+if [[ "$DEV_MODE" == "true" ]]; then
+    log_info "Installing zzcollab v${VERSION} to $ZZCOLLAB_HOME (DEVELOPMENT MODE)"
+    log_info "Source: $SCRIPT_DIR"
+else
+    log_info "Installing zzcollab v${VERSION} to $ZZCOLLAB_HOME"
+fi
 
 # Create installation directory
 mkdir -p "$ZZCOLLAB_HOME"
 
-# Copy directories
-log_info "Copying lib/..."
-cp -r "$SCRIPT_DIR/lib" "$ZZCOLLAB_HOME/"
+if [[ "$DEV_MODE" == "true" ]]; then
+    # Development mode: create symlinks to source directories
+    log_info "Symlinking lib/..."
+    ln -sf "$SCRIPT_DIR/lib" "$ZZCOLLAB_HOME/lib"
 
-log_info "Copying modules/..."
-cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_HOME/"
+    log_info "Symlinking modules/..."
+    ln -sf "$SCRIPT_DIR/modules" "$ZZCOLLAB_HOME/modules"
 
-log_info "Copying templates/..."
-cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_HOME/"
+    log_info "Symlinking templates/..."
+    ln -sf "$SCRIPT_DIR/templates" "$ZZCOLLAB_HOME/templates"
 
-# Copy main entry point
-log_info "Copying zzcollab.sh..."
-cp "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/"
-chmod +x "$ZZCOLLAB_HOME/zzcollab.sh"
+    log_info "Symlinking zzcollab.sh..."
+    ln -sf "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/zzcollab.sh"
 
-# Copy navigation scripts (user utility for shell navigation functions)
-if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
-    log_info "Copying navigation_scripts.sh..."
-    cp "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/"
-    chmod +x "$ZZCOLLAB_HOME/navigation_scripts.sh"
+    if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
+        log_info "Symlinking navigation_scripts.sh..."
+        ln -sf "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/navigation_scripts.sh"
+    fi
+
+    # Save source directory for reference
+    echo "$SCRIPT_DIR" > "$ZZCOLLAB_HOME/.source_dir"
+
+    log_success "Installed to $ZZCOLLAB_HOME (symlinked to source)"
+    log_info "Changes to $SCRIPT_DIR will apply immediately"
+else
+    # Production mode: copy files
+    log_info "Copying lib/..."
+    cp -r "$SCRIPT_DIR/lib" "$ZZCOLLAB_HOME/"
+
+    log_info "Copying modules/..."
+    cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_HOME/"
+
+    log_info "Copying templates/..."
+    cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_HOME/"
+
+    log_info "Copying zzcollab.sh..."
+    cp "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/"
+    chmod +x "$ZZCOLLAB_HOME/zzcollab.sh"
+
+    if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
+        log_info "Copying navigation_scripts.sh..."
+        cp "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/"
+        chmod +x "$ZZCOLLAB_HOME/navigation_scripts.sh"
+    fi
+
+    # Update version in constants
+    if [[ -f "$ZZCOLLAB_HOME/lib/constants.sh" ]]; then
+        sed -i.bak "s/ZZCOLLAB_VERSION=.*/ZZCOLLAB_VERSION=\"$VERSION\"/" \
+            "$ZZCOLLAB_HOME/lib/constants.sh" 2>/dev/null || true
+        rm -f "$ZZCOLLAB_HOME/lib/constants.sh.bak"
+    fi
+
+    log_success "Installed to $ZZCOLLAB_HOME"
 fi
-
-# Update version in constants
-if [[ -f "$ZZCOLLAB_HOME/lib/constants.sh" ]]; then
-    sed -i.bak "s/ZZCOLLAB_VERSION=.*/ZZCOLLAB_VERSION=\"$VERSION\"/" \
-        "$ZZCOLLAB_HOME/lib/constants.sh" 2>/dev/null || true
-    rm -f "$ZZCOLLAB_HOME/lib/constants.sh.bak"
-fi
-
-log_success "Installed to $ZZCOLLAB_HOME"
 
 #=============================================================================
 # SYMLINK
@@ -251,17 +292,30 @@ else
     exit 1
 fi
 
-# Count files
-lib_count=$(find "$ZZCOLLAB_HOME/lib" -name "*.sh" | wc -l | tr -d ' ')
-mod_count=$(find "$ZZCOLLAB_HOME/modules" -name "*.sh" | wc -l | tr -d ' ')
-tmpl_count=$(find "$ZZCOLLAB_HOME/templates" -type f | wc -l | tr -d ' ')
-
 log_success "Installation complete!"
 echo ""
-echo "Installed:"
-echo "  - $lib_count library files"
-echo "  - $mod_count module files"
-echo "  - $tmpl_count template files"
+
+if [[ "$DEV_MODE" == "true" ]]; then
+    echo "Development mode: symlinks to source"
+    echo "  Source: $SCRIPT_DIR"
+    echo ""
+    echo "Symlinks created:"
+    echo "  ~/.zzcollab/lib       → $SCRIPT_DIR/lib"
+    echo "  ~/.zzcollab/modules   → $SCRIPT_DIR/modules"
+    echo "  ~/.zzcollab/templates → $SCRIPT_DIR/templates"
+    echo ""
+    echo "Changes to source apply immediately - no reinstall needed."
+else
+    # Count files
+    lib_count=$(find "$ZZCOLLAB_HOME/lib" -name "*.sh" | wc -l | tr -d ' ')
+    mod_count=$(find "$ZZCOLLAB_HOME/modules" -name "*.sh" | wc -l | tr -d ' ')
+    tmpl_count=$(find "$ZZCOLLAB_HOME/templates" -type f | wc -l | tr -d ' ')
+
+    echo "Installed:"
+    echo "  - $lib_count library files"
+    echo "  - $mod_count module files"
+    echo "  - $tmpl_count template files"
+fi
 echo ""
 
 if [[ "$CREATE_SYMLINK" == "true" ]] && [[ -L "$BIN_DIR/zzcollab" ]]; then

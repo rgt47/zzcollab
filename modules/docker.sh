@@ -338,8 +338,10 @@ generate_dockerfile() {
 
     log_info "  Base image: ${base_image}:${r_version}"
 
-    local r_packages
-    mapfile -t r_packages < <(extract_r_packages)
+    local r_packages=()
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && r_packages+=("$pkg")
+    done < <(extract_r_packages)
     log_info "  Found ${#r_packages[@]} R packages"
 
     local system_deps
