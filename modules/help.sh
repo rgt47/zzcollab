@@ -430,13 +430,20 @@ show_help_docker() {
     cat << 'EOF'
 DOCKER ARCHITECTURE
 
+Usage:
+  zzcollab docker                    # Generate Dockerfile (interactive)
+  zzcollab docker --build            # Generate and build image
+  zzcollab docker --profile analysis # Use specific profile
+
+Note: Automatically creates rrtools workspace if DESCRIPTION not found.
+
 Two-Layer System:
   1. Docker Image (base environment, shared by team)
   2. renv.lock (R packages, personal additions)
 
 Common Commands:
   make docker-build        Build Docker image
-  make r          Interactive R session
+  make r                   Interactive R session
   make docker-rstudio      RStudio Server (localhost:8787)
   make docker-test         Run tests in container
   make docker-push-team    Share team image
@@ -450,7 +457,7 @@ Platform Compatibility:
   AMD64: verse, tidyverse, shiny
 
 Custom Images:
-  zzcollab -b rocker/verse -l publishing -k tidyverse
+  zzcollab docker --base-image rocker/verse
 
 See also:
   zzcollab help profiles     Profile selection
@@ -465,10 +472,22 @@ show_help_renv() {
     cat << 'EOF'
 PACKAGE MANAGEMENT (renv)
 
-Auto-Snapshot Workflow:
+Usage:
+  zzcollab renv                      # Set up renv without Docker
+  zzcollab renv --r-version 4.4.2    # Specify R version
+
+Note: Automatically creates rrtools workspace if DESCRIPTION not found.
+
+Auto-Snapshot Workflow (with Docker):
   make r
   install.packages("tidyverse")
   q()                       # Automatic snapshot on exit
+
+Standalone renv (without Docker):
+  zzcollab renv             # Creates renv.lock, .Rprofile, renv/
+  R                         # Start R (auto-restores packages)
+  install.packages("pkg")   # Add packages
+  q()                       # Auto-snapshot on exit
 
 Validation:
   make check-renv           # Validate + auto-fix
@@ -485,11 +504,6 @@ Files:
   renv.lock                 Package versions (source of truth)
   DESCRIPTION               Package metadata
   .Rprofile                 R session configuration
-
-GitHub Packages:
-  install.packages("remotes")
-  remotes::install_github("user/package")
-  q()                       # Auto-captured
 
 See also:
   zzcollab help workflow     Development workflow

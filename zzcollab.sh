@@ -125,7 +125,7 @@ ensure_workspace_initialized() {
     echo "═══════════════════════════════════════════════════════════" >&2
     echo "" >&2
     echo "  The '$context' command requires an initialized workspace." >&2
-    echo "  This creates the rrtools research compendium structure:" >&2
+    echo "  This creates an rrtools type research compendium structure:" >&2
     echo "" >&2
     echo "    DESCRIPTION    R package metadata" >&2
     echo "    R/             Reusable functions" >&2
@@ -172,8 +172,9 @@ show_usage() {
 Usage: zzcollab <command> [options]
 
 Commands:
-  init       Create a new research compendium project
-  docker     Generate Dockerfile and/or build image
+  init       Create rrtools research compendium (DESCRIPTION, R/, analysis/)
+  docker     Generate Dockerfile and build image (auto-runs init if needed)
+  renv       Set up renv without Docker (auto-runs init if needed)
   validate   Validate project structure and dependencies
   nav        Shell navigation shortcuts (install/uninstall)
   uninstall  Remove zzcollab files from project
@@ -187,11 +188,12 @@ Options (global):
   --version        Show version
 
 Examples:
-  zzcollab init                      # Interactive project setup
+  zzcollab init                      # Create rrtools workspace
+  zzcollab docker                    # Generate Dockerfile (runs init if needed)
   zzcollab docker --build            # Generate and build Docker image
+  zzcollab renv                      # Set up renv without Docker
   zzcollab validate                  # Check project structure
   zzcollab nav install               # Add navigation shortcuts to shell
-  zzcollab uninstall --dry-run       # Preview what would be removed
   zzcollab help docker               # Help on Docker commands
 
 Legacy mode (backwards compatible):
@@ -309,6 +311,9 @@ EOF
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
     done
+
+    # Ensure rrtools workspace is initialized
+    ensure_workspace_initialized "renv" || exit 1
 
     local project_name
     project_name=$(basename "$(pwd)")
