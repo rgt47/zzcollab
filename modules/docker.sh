@@ -152,16 +152,17 @@ prompt_r_version_selection() {
     local cran_version
     cran_version=$(get_cran_r_version)
 
-    echo ""
-    echo "No renv.lock found and no R version specified."
-    echo ""
-    echo "Current R version on CRAN: $cran_version"
-    echo ""
-    echo "Would you like to:"
-    echo "  [1] Use R $cran_version (current)"
-    echo "  [2] Specify a different version"
-    echo "  [3] Cancel"
-    echo ""
+    # All prompts to STDERR so STDOUT only contains the version
+    echo "" >&2
+    echo "This is a new zzcollab workspace. Set the R version to use for computation." >&2
+    echo "" >&2
+    echo "Current R version on CRAN: $cran_version" >&2
+    echo "" >&2
+    echo "Would you like to:" >&2
+    echo "  [1] Use R $cran_version (current)" >&2
+    echo "  [2] Specify a different version" >&2
+    echo "  [3] Cancel" >&2
+    echo "" >&2
 
     local choice
     read -r -p "> " choice
@@ -188,14 +189,14 @@ prompt_r_version_selection() {
             ;;
     esac
 
-    echo ""
+    echo "" >&2
     read -r -p "Save R $selected_version as default? (zzcollab config set r-version) [Y/n]: " save_config
     if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
         require_module "config"
-        config_set "r-version" "$selected_version"
+        config_set "r-version" "$selected_version" >&2
     fi
 
-    create_renv_lock_minimal "$selected_version"
+    create_renv_lock_minimal "$selected_version" >&2
 
     R_VERSION="$selected_version"
     export R_VERSION
@@ -381,9 +382,9 @@ generate_dockerfile() {
         -e "s|\${SYSTEM_DEPS_COMMENT}|${deps_comment}|g" \
         "$tmpfile"
 
-    # Multi-line substitutions using awk
-    awk -v deps="$system_deps_install" '{gsub(/\${SYSTEM_DEPS_INSTALL}/, deps)}1' "$tmpfile" > "$tmpfile.tmp" && mv "$tmpfile.tmp" "$tmpfile"
-    awk -v tools="$tools_install" '{gsub(/\${TOOLS_INSTALL}/, tools)}1' "$tmpfile" > "$tmpfile.tmp" && mv "$tmpfile.tmp" "$tmpfile"
+    # Multi-line substitutions using perl (handles newlines correctly)
+    DEPS_CONTENT="$system_deps_install" perl -i -pe 's/\$\{SYSTEM_DEPS_INSTALL\}/$ENV{DEPS_CONTENT}/g' "$tmpfile"
+    TOOLS_CONTENT="$tools_install" perl -i -pe 's/\$\{TOOLS_INSTALL\}/$ENV{TOOLS_CONTENT}/g' "$tmpfile"
 
     mv "$tmpfile" Dockerfile
     rm -f "$tmpfile.bak"
