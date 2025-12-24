@@ -170,7 +170,10 @@ get_all_package_deps() {
         else
             deps=$(get_package_runtime_deps "$pkg")
         fi
-        [[ -n "$deps" ]] && all_deps+=($deps)
+        if [[ -n "$deps" ]]; then
+            # shellcheck disable=SC2206
+            all_deps+=($deps)
+        fi
     done
 
     [[ ${#all_deps[@]} -gt 0 ]] && printf '%s\n' "${all_deps[@]}" | sort -u | paste -sd' ' -
