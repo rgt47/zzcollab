@@ -532,6 +532,7 @@ generate_dockerfile() {
 
     log_success "Generated Dockerfile"
     prompt_docker_build "$project_name" "$r_version"
+    return 0
 }
 
 prompt_docker_build() {
@@ -570,6 +571,7 @@ prompt_docker_build() {
     else
         log_info "  Build with: docker build -t $project_name ."
     fi
+    return 0
 }
 
 generate_dockerfile_inline() {
