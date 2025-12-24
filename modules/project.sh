@@ -231,7 +231,8 @@ create_github_workflows() {
         install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" "R package workflow"
     fi
 
-    log_success "GitHub workflows created"
+    log_success "GitHub Actions workflows created"
+    return 0
 }
 
 #=============================================================================
@@ -250,6 +251,7 @@ setup_project() {
     create_github_workflows || return 1
 
     log_success "Project setup complete"
+    return 0
 }
 
 #=============================================================================
