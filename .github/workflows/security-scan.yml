@@ -20,8 +20,15 @@ jobs:
 
       - name: Build Docker image for scanning
         run: |
-          # Build the Docker image from Dockerfile
-          docker build -t zzcollab:security-scan .
+          # Create a minimal Dockerfile for security scanning using public base
+          cat > Dockerfile.security-test << 'EOF'
+          FROM rocker/r-ver:4.4.0
+          LABEL maintainer="zzcollab"
+          RUN apt-get update && apt-get install -y --no-install-recommends \
+              git curl && \
+              rm -rf /var/lib/apt/lists/*
+          EOF
+          docker build -f Dockerfile.security-test -t zzcollab:security-scan .
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -33,7 +40,7 @@ jobs:
           scan-type: 'image'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
