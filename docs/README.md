@@ -17,25 +17,26 @@ docs/
 
 ## Quick Start
 
-- **New Users**: Start with [guides/workflow.md](guides/workflow.md) and the
-  [motivation/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md](motivation/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md)
-- **Configuration**: See [CONFIGURATION.md](CONFIGURATION.md)
-- **Docker Profiles**: See [VARIANTS.md](VARIANTS.md)
-- **Testing**: See [TESTING_GUIDE.md](TESTING_GUIDE.md)
+- **New Users**: Start with [guides/workflow.md](guides/workflow.md)
+- **Configuration**: See [configuration.md](configuration.md)
+- **Docker Profiles**: See [variants.md](variants.md)
+- **Testing**: See [testing-guide.md](testing-guide.md)
 
 ## Core Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
-| [CONFIGURATION.md](CONFIGURATION.md) | Multi-layer configuration system |
-| [DEVELOPMENT.md](DEVELOPMENT.md) | Developer commands and workflows |
-| [DOCKER_ARCHITECTURE.md](DOCKER_ARCHITECTURE.md) | Docker technical details |
-| [TESTING_GUIDE.md](TESTING_GUIDE.md) | Testing framework and best practices |
-| [VARIANTS.md](VARIANTS.md) | Docker profile system (14+ profiles) |
-| [TEAM_WORKFLOW.md](TEAM_WORKFLOW.md) | Team collaboration patterns |
-| [COLLABORATIVE_REPRODUCIBILITY.md](COLLABORATIVE_REPRODUCIBILITY.md) | Five Pillars model |
-| [VALIDATION_QUICK_REFERENCE.md](VALIDATION_QUICK_REFERENCE.md) | Package validation reference |
+| [configuration.md](configuration.md) | Multi-layer configuration system (includes verbosity) |
+| [development.md](development.md) | Developer commands and workflows |
+| [docker-architecture.md](docker-architecture.md) | Docker technical details |
+| [testing-guide.md](testing-guide.md) | Testing framework and best practices |
+| [variants.md](variants.md) | Docker profile system (14+ profiles) |
+| [team-workflow.md](team-workflow.md) | Team collaboration patterns |
+| [collaborative-reproducibility.md](collaborative-reproducibility.md) | Five Pillars model |
+| [validation-quick-reference.md](validation-quick-reference.md) | Package validation reference |
+| [x11-graphics-guide.md](x11-graphics-guide.md) | X11/GUI graphics in Docker |
+| [error-handling-guide.md](error-handling-guide.md) | Error handling patterns |
 
 ## Subdirectories
 
@@ -61,24 +62,22 @@ Practical how-to guides for common tasks:
 
 Documents explaining why certain practices matter:
 
-- [REPRODUCIBILITY_WORKFLOW_TUTORIAL.md](motivation/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md) - Hands-on tutorial
-- [REPRODUCIBILITY_BEST_PRACTICES.md](motivation/REPRODUCIBILITY_BEST_PRACTICES.md) - Best practices guide
-- [UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md](motivation/UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md) - Testing rationale
-- [CICD_MOTIVATION_DATA_ANALYSIS.md](motivation/CICD_MOTIVATION_DATA_ANALYSIS.md) - CI/CD rationale
-- [DOCKER_MOTIVATION_DATA_ANALYSIS.md](motivation/DOCKER_MOTIVATION_DATA_ANALYSIS.md) - Docker rationale
-- [RENV_MOTIVATION_DATA_ANALYSIS.md](motivation/RENV_MOTIVATION_DATA_ANALYSIS.md) - renv rationale
-- [WHY_DOCKER_AND_RENV.md](motivation/WHY_DOCKER_AND_RENV.md) - Combined approach
-- [VALIDATION_WHITEPAPER.md](motivation/VALIDATION_WHITEPAPER.md) - Validation system design
+- [reproducibility-workflow-tutorial.md](motivation/reproducibility-workflow-tutorial.md) - Hands-on tutorial
+- [reproducibility-best-practices.md](motivation/reproducibility-best-practices.md) - Best practices guide
+- [unit-testing-motivation-data-analysis.md](motivation/unit-testing-motivation-data-analysis.md) - Testing rationale
+- [cicd-motivation-data-analysis.md](motivation/cicd-motivation-data-analysis.md) - CI/CD rationale
+- [docker-motivation-data-analysis.md](motivation/docker-motivation-data-analysis.md) - Docker rationale
+- [renv-motivation-data-analysis.md](motivation/renv-motivation-data-analysis.md) - renv rationale
+- [why-docker-and-renv.md](motivation/why-docker-and-renv.md) - Combined approach
+- [validation-whitepaper.md](motivation/validation-whitepaper.md) - Validation system design
 
 ### [standards/](standards/) - Development Standards
 
 Coding standards and development guidelines:
 
-- [BASH_STANDARDS.md](standards/BASH_STANDARDS.md) - Bash coding standards
-- [BASH_IMPROVEMENTS_SUMMARY.md](standards/BASH_IMPROVEMENTS_SUMMARY.md) - Quality achievements
-- [CODING_STANDARDS.md](standards/CODING_STANDARDS.md) - General coding guidelines
-- [ERROR_MESSAGE_DEVELOPER_GUIDE.md](standards/ERROR_MESSAGE_DEVELOPER_GUIDE.md) - Error message patterns
-- [MODULE_DEPENDENCIES.md](standards/MODULE_DEPENDENCIES.md) - Module architecture
+- [bash-standards.md](standards/bash-standards.md) - Bash coding standards
+- [coding-standards.md](standards/coding-standards.md) - General coding guidelines
+- [module-dependencies.md](standards/module-dependencies.md) - Module architecture
 
 ### [archive/](archive/) - Historical Documents
 
@@ -89,14 +88,11 @@ for historical reference but are not actively maintained.
 
 | Document | Purpose |
 |----------|---------|
-| [DOCUMENTATION_STRATEGY.md](DOCUMENTATION_STRATEGY.md) | Three-tier documentation system |
-| [ERROR_HANDLING_GUIDE.md](ERROR_HANDLING_GUIDE.md) | Error handling patterns |
-| [GUI_PROFILE_GUIDE.md](GUI_PROFILE_GUIDE.md) | X11/GUI profile setup |
-| [SHELL_TESTING_SETUP.md](SHELL_TESTING_SETUP.md) | Shell test infrastructure |
-| [TESTING_LESSONS_LEARNED.md](TESTING_LESSONS_LEARNED.md) | Testing discoveries |
-| [UNIFIED_PARADIGM_GUIDE.md](UNIFIED_PARADIGM_GUIDE.md) | Research compendium design |
-| [VERBOSITY_LEVELS.md](VERBOSITY_LEVELS.md) | Logging verbosity system |
-| [X11_PLOTTING_WORKFLOW.md](X11_PLOTTING_WORKFLOW.md) | Graphics workflows |
+| [documentation-strategy.md](documentation-strategy.md) | Three-tier documentation system |
+| [shell-testing-setup.md](shell-testing-setup.md) | Shell test infrastructure |
+| [testing-lessons-learned.md](testing-lessons-learned.md) | Testing discoveries |
+| [unified-paradigm-guide.md](unified-paradigm-guide.md) | Research compendium design |
+| [workflow-type-system.md](workflow-type-system.md) | CI/CD workflow types |
 | [zzcollab_python.md](zzcollab_python.md) | Multi-language considerations |
 
 ## Related Documentation

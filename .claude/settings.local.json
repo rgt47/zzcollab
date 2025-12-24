@@ -13,7 +13,8 @@
       "Bash(tee:*)",
       "Bash(bash -n:*)",
       "Bash(wc -l echo \"Uses of process substitution (efficient)\")",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": [],
     "ask": []
