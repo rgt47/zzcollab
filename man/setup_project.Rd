@@ -4,13 +4,9 @@
 \alias{setup_project}
 \title{Setup zzcollab project (standard setup, non-init mode)}
 \usage{
-setup_project(dotfiles_path = NULL, dotfiles_nodots = NULL, base_image = NULL)
+setup_project(base_image = NULL)
 }
 \arguments{
-\item{dotfiles_path}{Path to dotfiles directory (uses config default if NULL)}
-
-\item{dotfiles_nodots}{Logical, if TRUE dotfiles need dots added (uses config default)}
-
 \item{base_image}{Base Docker image to use (optional)}
 }
 \value{

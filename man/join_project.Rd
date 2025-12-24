@@ -4,12 +4,7 @@
 \alias{join_project}
 \title{Join an existing zzcollab team project}
 \usage{
-join_project(
-  team_name = NULL,
-  project_name = NULL,
-  dotfiles_path = NULL,
-  dotfiles_nodots = NULL
-)
+join_project(team_name = NULL, project_name = NULL)
 }
 \arguments{
 \item{team_name}{Character string specifying the Docker Hub team/organization name.
@@ -19,15 +14,6 @@ If NULL, uses value from configuration file via \code{get_config("team_name")}.}
 \item{project_name}{Character string specifying the project name.
 Must match the project name used during initialization.
 Used to identify the correct team Docker images and repository.}
-
-\item{dotfiles_path}{Character string specifying path to personal dotfiles.
-These configuration files (.vimrc, .zshrc, etc.) personalize your
-development environment within the team's standardized setup.
-If NULL, uses config default.}
-
-\item{dotfiles_nodots}{Logical indicating whether dotfiles need leading dots added.
-Set to TRUE if your dotfiles are stored without leading dots.
-If NULL, uses config default.}
 }
 \value{
 Logical value indicating success (TRUE) or failure (FALSE).
@@ -72,16 +58,8 @@ success <- join_project(
   project_name = "covid-study"
 )
 
-# Join with personal dotfiles
-join_project(
-  team_name = "datascience",
-  project_name = "market-analysis",
-  dotfiles_path = "~/dotfiles"
-)
-
 # Using configuration defaults (recommended)
 set_config("team_name", "mylab")
-set_config("dotfiles_dir", "~/dotfiles")
 
 # Then join projects easily
 join_project(project_name = "new-study")

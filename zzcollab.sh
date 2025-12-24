@@ -215,11 +215,21 @@ cmd_init() {
 
     log_info "Creating project: $PKG_NAME"
 
+    # If a profile was specified, derive the base image from it
+    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] && [[ -n "${PROFILE_NAME:-}" ]]; then
+        BASE_IMAGE=$(get_profile_base_image "$PROFILE_NAME")
+        export BASE_IMAGE
+        log_info "Using profile '$PROFILE_NAME' with base image: $BASE_IMAGE"
+    fi
+
     # Run project setup
     setup_project || exit 1
 
-    # Generate Dockerfile if not in --no-docker mode
-    if [[ "${BUILD_DOCKER:-true}" != "false" ]]; then
+    # Generate Dockerfile if:
+    # - A profile was specified (-r/--profile-name), OR
+    # - Not in --no-docker mode (BUILD_DOCKER not explicitly set to false via -n)
+    # Note: When profile is specified, user clearly wants Docker functionality
+    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] || [[ "${BUILD_DOCKER:-true}" != "false" ]]; then
         generate_dockerfile || log_warn "Dockerfile generation failed"
     fi
 
@@ -491,6 +501,9 @@ cmd_config() {
     shift || true
 
     case "$subcommand" in
+        init)
+            config_init
+            ;;
         list)
             config_list
             ;;
@@ -504,7 +517,7 @@ cmd_config() {
             ;;
         *)
             log_error "Unknown config subcommand: $subcommand"
-            log_info "Valid subcommands: list, get, set"
+            log_info "Valid subcommands: init, list, get, set"
             exit 1
             ;;
     esac
@@ -738,7 +751,7 @@ is_legacy_mode() {
     # Check if any legacy flags are present
     for arg in "$@"; do
         case "$arg" in
-            -t|--team-name|-p|--project-name|--profile-name|--base-image)
+            -t|--team-name|-p|--project-name|-r|--profile-name|-b|--base-image)
                 return 0
                 ;;
         esac
@@ -769,32 +782,27 @@ main() {
             ;;
     esac
 
-    # Legacy mode detection (backwards compatibility)
+    # Subcommand routing (check known commands BEFORE legacy mode)
+    local command="$1"
+
+    case "$command" in
+        init|docker|renv|validate|nav|uninstall|list|config|help)
+            shift
+            "cmd_${command}" "$@"
+            exit $?
+            ;;
+    esac
+
+    # Legacy mode detection (backwards compatibility for direct flags)
     if is_legacy_mode "$@"; then
         cmd_init "$@"
         exit $?
     fi
 
-    # Subcommand routing
-    local command="$1"
-    shift
-
-    case "$command" in
-        init)      cmd_init "$@" ;;
-        docker)    cmd_docker "$@" ;;
-        renv)      cmd_renv "$@" ;;
-        validate)  cmd_validate "$@" ;;
-        nav)       cmd_nav "$@" ;;
-        uninstall) cmd_uninstall "$@" ;;
-        list)      cmd_list "$@" ;;
-        config)    cmd_config "$@" ;;
-        help)      cmd_help "$@" ;;
-        *)
-            log_error "Unknown command: $command"
-            show_usage
-            exit 1
-            ;;
-    esac
+    # Unknown command
+    log_error "Unknown command: $command"
+    show_usage
+    exit 1
 }
 
 # Only run main if script is executed directly

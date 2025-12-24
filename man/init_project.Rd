@@ -4,13 +4,7 @@
 \alias{init_project}
 \title{Initialize a new zzcollab team project}
 \usage{
-init_project(
-  team_name = NULL,
-  project_name = NULL,
-  github_account = NULL,
-  dotfiles_path = NULL,
-  dotfiles_nodots = NULL
-)
+init_project(team_name = NULL, project_name = NULL, github_account = NULL)
 }
 \arguments{
 \item{team_name}{Character string specifying the Docker Hub team/organization name.
@@ -24,14 +18,6 @@ Must be a valid Docker repository name (lowercase, no spaces).}
 \item{github_account}{Character string specifying GitHub account for repository creation.
 If NULL, uses config default or falls back to \code{team_name}.
 Used with GitHub CLI to create private repositories.}
-
-\item{dotfiles_path}{Character string specifying path to dotfiles directory.
-These files (.vimrc, .zshrc, etc.) are copied into Docker images for
-personalized development environments. If NULL, uses config default.}
-
-\item{dotfiles_nodots}{Logical indicating whether dotfiles need leading dots added.
-Set to TRUE if your dotfiles are named without leading dots (e.g., "vimrc"
-instead of ".vimrc"). If NULL, uses config default.}
 }
 \value{
 Logical value indicating success (TRUE) or failure (FALSE) of the
@@ -83,15 +69,12 @@ success <- init_project(
 success <- init_project(
   team_name = "datascience",
   project_name = "market-analysis",
-  github_account = "myuniversity",
-  dotfiles_path = "~/dotfiles",
-  dotfiles_nodots = FALSE
+  github_account = "myuniversity"
 )
 
 # Using configuration defaults (recommended workflow)
 # First, set up your defaults
 set_config("team_name", "mylab")
-set_config("dotfiles_dir", "~/dotfiles")
 
 # Then initialize projects easily
 init_project(project_name = "new-study")

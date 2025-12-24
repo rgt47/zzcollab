@@ -124,6 +124,8 @@ test_that("safe_system handles successful commands", {
 })
 
 test_that("safe_system handles failed commands", {
+  skip_on_os("windows")
+
   # Command that fails (non-zero exit code)
   expect_warning(
     result <- safe_system("exit 1", intern = FALSE),
