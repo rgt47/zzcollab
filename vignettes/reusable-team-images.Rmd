@@ -286,7 +286,7 @@ git push -u origin main
 cd ..
 
 # The bioinformatics profile includes Bioconductor base image and packages
-# Additional packages can be added via renv::install() as needed
+# Additional packages can be added via install.packages() as needed
 ```
 
 **Team Members (joining existing projects):**

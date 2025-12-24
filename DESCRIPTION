@@ -1,10 +1,9 @@
 Package: zzcollab
 Title: Docker-based Research Collaboration Framework
 Version: 0.0.0.9000
-Author: Ronald G. Thomas <rgthomas@ucsd.edu>
-Maintainer: Ronald G. Thomas <rgthomas@ucsd.edu>
-Authors@R: 
-    person("Ronald G. Thomas", email = "rgthomas@ucsd.edu", role = c("aut", "cre"))
+Authors@R:
+    person("Ronald (Ryy) G", "Thomas", , "rgthomas@ucsd.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-1686-4965"))
 Description: A comprehensive framework for reproducible research collaboration using Docker containers. 
     Provides R interfaces to create, manage, and collaborate on research projects with standardized 
     Docker environments, automated CI/CD workflows, and team collaboration tools.

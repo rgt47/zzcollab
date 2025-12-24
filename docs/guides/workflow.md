@@ -44,7 +44,7 @@ make docker-rstudio
 - Create visualizations
 - Knit R Markdown documents
 - Install packages: `install.packages("packagename")`
-- Update dependencies: `renv::snapshot()`
+- Dependencies auto-captured when you exit (no manual snapshot needed)
 
 **💻 HOST (Your Computer)**:
 - Files automatically sync!
@@ -112,10 +112,10 @@ Ctrl+C  # to stop
 
 **✅ Package management**:
 ```r
-install.packages("tidyverse")
-renv::snapshot()
-renv::restore()
+install.packages("tidyverse")  # Auto-captured on container exit
+renv::restore()                # Restore packages from renv.lock
 ```
+Note: `renv::snapshot()` runs automatically when you exit the container.
 
 **✅ R Markdown**:
 - Create .Rmd files
@@ -192,12 +192,12 @@ git push
 ```r
 # In RStudio (container):
 install.packages("forecast")  # Install new package
-renv::snapshot()              # Record in renv.lock
+# No need to run renv::snapshot() - it runs automatically on exit!
 ```
 
 Then on host:
 ```bash
-# Close container, Ctrl+C
+# Close container (Ctrl+C) - renv.lock is auto-updated
 git add renv.lock
 git commit -m "Add forecast package"
 ```

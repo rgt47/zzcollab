@@ -170,18 +170,18 @@ zzcollab --profile-name minimal  # Minimal profile includes renv
 
 ```r
 # Install packages (now project-specific)
-renv::install("dplyr")
-renv::install("ggplot2")
+# Both methods work - install.packages() is simpler in ZZCOLLAB Docker containers
+install.packages("dplyr")
+install.packages("ggplot2")
+# Or use renv::install() for GitHub packages: renv::install("user/package")
 
 # Work normally
 library(dplyr)
 library(ggplot2)
 
-# Save dependency state (manual or automatic)
-renv::snapshot()  # Updates renv.lock
-
-# Note: In ZZCOLLAB Docker containers, snapshot happens automatically on exit!
-# See Level 3 for auto-snapshot workflow
+# Save dependency state
+# In ZZCOLLAB Docker containers: snapshot happens automatically on exit!
+# Outside Docker: run renv::snapshot() manually
 
 # Collaborator restores exact versions
 renv::restore()   # Installs from renv.lock
@@ -195,7 +195,7 @@ renv::restore()   # Installs from renv.lock
 - **Explicit dependencies**: renv.lock documents all required packages
 - **Time resilience**: Project works months/years later with same packages
 - **Safe updates**: Test updates in isolation before committing
-- **Minimal learning curve**: Familiar R workflow with `renv::install()`
+- **Minimal learning curve**: Familiar R workflow with `install.packages()`
 
 ## Cons
 
@@ -296,14 +296,14 @@ make r
 
 # Now inside container (identical Linux environment)
 R
-> renv::install("tidyverse")
+> install.packages("tidyverse")  # Standard R command works!
 > # ... work normally ...
 > quit()
 
 # Exit container - AUTO-SNAPSHOT HAPPENS AUTOMATICALLY!
 exit
 
-# NEW: Auto-snapshot architecture (October 2025)
+# Auto-snapshot architecture (October 2025)
 # - renv::snapshot() runs automatically on container exit
 # - No manual snapshot command required!
 # - renv.lock automatically updated and validated (pure shell)
@@ -1464,20 +1464,28 @@ git commit
 # ZZCOLLAB Docker auto-snapshot (October 2025):
 # With ZZCOLLAB Docker containers, snapshot happens automatically on exit!
 make r
-renv::install("new-package")
+install.packages("new-package")  # Standard R command works in Docker
 exit  # Auto-snapshot runs automatically - no manual command needed!
 git add renv.lock && git commit
 ```
 
-**Installing packages globally by accident**:
+**Package installation methods** (both work in ZZCOLLAB Docker containers):
 
 ```r
-# Wrong: Bypasses renv
-install.packages("dplyr")  # Goes to global library
+# Standard R command (recommended in ZZCOLLAB Docker containers)
+install.packages("dplyr")  # Auto-captured in renv.lock on exit
 
-# Right: Uses project library
-renv::install("dplyr")     # Goes to renv/library/
+# Alternative: renv command (works for CRAN and GitHub packages)
+renv::install("dplyr")     # Also captured in renv.lock
+
+# For GitHub packages
+renv::install("user/package")
 ```
+
+**Note**: In ZZCOLLAB Docker containers, `install.packages()` works correctly
+because packages are automatically captured in renv.lock when you exit the
+container. Outside of Docker, use `renv::install()` to ensure packages go
+to the project library.
 
 ## Level 3 Pitfalls (Docker)
 

@@ -54,7 +54,7 @@ ZZCOLLAB provides a flexible Docker profile system with two approaches:
 predefined profiles for common use cases, or custom composition using
 bundle-based configuration. The profile determines which R packages are
 pre-installed in the Docker image (Layer 1), while additional packages
-can be added dynamically via `renv::install()` inside containers (Layer 2).
+can be added dynamically via `install.packages()` inside containers (Layer 2).
 
 ## Predefined Docker Profiles
 

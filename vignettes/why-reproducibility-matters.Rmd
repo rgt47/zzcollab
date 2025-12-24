@@ -239,8 +239,8 @@ ZZCOLLAB implements an automatic snapshot-on-exit architecture that eliminates m
 ```bash
 make r
 # Inside container:
-renv::install("ggplot2")  # Add packages as needed
-exit                      # Automatically snapshots renv.lock
+install.packages("ggplot2")  # Add packages as needed
+exit                         # Automatically snapshots renv.lock
 ```
 
 This addresses @ram2013's finding that manual processes create reproducibility failures.
@@ -340,7 +340,7 @@ make r
 # Inside container:
 devtools::load_all()                    # Load your R package
 source("analysis/scripts/01_clean.R")   # Run analysis
-renv::install("tidymodels")             # Add new packages
+install.packages("tidymodels")          # Add new packages
 exit                                    # Auto-snapshot on exit
 
 # Commit and share
