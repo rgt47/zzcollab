@@ -901,6 +901,87 @@ zzcollab --config export > config-export.yaml
 zzcollab --config import < config-export.yaml
 ```
 
+## Verbosity System
+
+ZZCOLLAB supports 4 verbosity levels to control output detail:
+
+| Level | Flag | Output Lines | Use Case |
+|-------|------|--------------|----------|
+| 0 | `--quiet` / `-q` | ~0 (errors only) | CI/CD, scripts |
+| 1 | (default) | ~8-10 | Daily usage |
+| 2 | `-v` / `--verbose` | ~25-30 | Troubleshooting |
+| 3 | `-vv` / `--debug` | ~400+ | Development, debugging |
+
+### Verbosity Examples
+
+**Level 0: Quiet Mode** (`--quiet` / `-q`)
+```bash
+zzcollab -t team -p project --quiet
+# (no output on success, errors only)
+```
+
+**Level 1: Default** (no flag)
+```bash
+zzcollab -t team -p project
+Creating project 'project'...
+✅ Structure (16 dirs, 40 files)
+✅ R package
+✅ Docker environment
+Done! Next: make docker-build
+```
+
+**Level 2: Verbose** (`-v` / `--verbose`)
+```bash
+zzcollab -t team -p project -v
+# Shows progress messages and created structure
+```
+
+**Level 3: Debug** (`-vv` / `--debug`)
+```bash
+zzcollab -t team -p project -vv
+# Full detail (~400 lines), creates .zzcollab.log
+```
+
+### Log File Support
+
+Debug mode automatically writes to `.zzcollab.log`:
+
+```
+[2025-10-20 08:45:12] DEBUG: Loading core module...
+[2025-10-20 08:45:13] SUCCESS: Structure (16 dirs, 40 files)
+```
+
+Enable log file without debug output:
+```bash
+export ENABLE_LOG_FILE=true
+zzcollab -t team -p project
+```
+
+### Verbosity Environment Variables
+
+```bash
+# Set verbosity level (0-3)
+export VERBOSITY_LEVEL=2
+
+# Enable log file
+export ENABLE_LOG_FILE=true
+
+# Custom log file location
+export LOG_FILE="setup.log"
+```
+
+### Log Function Hierarchy
+
+```bash
+log_error()   # Always shown (even in --quiet)
+log_warn()    # Shown at level >= 1 (default)
+log_success() # Shown at level >= 1 (default)
+log_info()    # Shown at level >= 2 (-v)
+log_debug()   # Shown at level >= 3 (-vv)
+```
+
+---
+
 ## References
 
 ### Documentation
