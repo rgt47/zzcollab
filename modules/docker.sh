@@ -44,11 +44,15 @@ get_base_image_tools() {
     local has_tinytex="false"
 
     case "$base_image" in
+        *tidyverse*)
+            has_pandoc="true"
+            has_tinytex="false"
+            ;;
         *verse*)
             has_pandoc="true"
             has_tinytex="true"
             ;;
-        *tidyverse*|*rstudio*|*shiny*)
+        *rstudio*|*shiny*)
             has_pandoc="true"
             has_tinytex="false"
             ;;
@@ -402,7 +406,10 @@ derive_system_deps() {
     for pkg in "${packages[@]}"; do
         local deps
         deps=$(get_package_build_deps "$pkg" 2>/dev/null) || continue
-        [[ -n "$deps" ]] && all_deps+=($deps)
+        if [[ -n "$deps" ]]; then
+            # shellcheck disable=SC2206
+            all_deps+=($deps)
+        fi
     done
 
     if [[ ${#all_deps[@]} -eq 0 ]]; then
@@ -620,6 +627,7 @@ EOF
 # DOCKER BUILD
 #=============================================================================
 
+# shellcheck disable=SC2120
 build_docker_image() {
     local project_name="${1:-$(basename "$(pwd)")}"
 
@@ -642,7 +650,7 @@ build_docker_image() {
         local base_image
         base_image=$(grep "^FROM" Dockerfile | head -1 | awk '{print $2}' | cut -d: -f1)
         case "$base_image" in
-            *verse*|*tidyverse*|*shiny*)
+            *tidyverse*|*shiny*|*verse*)
                 platform_args="--platform linux/amd64"
                 log_info "Using AMD64 emulation for $base_image"
                 ;;
