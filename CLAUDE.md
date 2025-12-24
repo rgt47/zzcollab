@@ -1147,16 +1147,16 @@ ZZCOLLAB provides comprehensive documentation at multiple levels:
 - **DEVELOPMENT.md** (10K): Developer commands and workflows
 - **DOCKER_ARCHITECTURE.md** (8K): Docker technical details and custom images
 
-**Research Motivation Documents**:
+**Research Motivation Documents** (docs/motivation/):
 - **UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md** (39K): Scientific justification for testing
 - **CICD_MOTIVATION_DATA_ANALYSIS.md** (21K): Evidence-based CI/CD rationale
 - **RENV_MOTIVATION_DATA_ANALYSIS.md** (23K): Dependency management motivation
 - **DOCKER_MOTIVATION_DATA_ANALYSIS.md** (33K): Container-based research rationale
 
-**Architecture Documentation**:
-- **IMPROVEMENTS_SUMMARY.md** (8.2K): Code quality improvements
+**Development Standards** (docs/standards/):
+- **BASH_STANDARDS.md**: Bash coding standards and documentation format
 - **MODULE_DEPENDENCIES.md** (3K): Module dependency mapping
-- **R_PACKAGE_INTEGRATION_SUMMARY.md** (6.4K): R package integration details
+- **CODING_STANDARDS.md**: General coding guidelines
 
 **Version History**:
 - **CHANGELOG.md**: Complete version history and all enhancements

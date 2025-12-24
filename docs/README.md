@@ -1,239 +1,111 @@
-# ZZCOLLAB Documentation Directory
+# ZZCOLLAB Documentation
 
-This directory contains comprehensive documentation for the ZZCOLLAB framework's development, architecture, and best practices implementation. Each document serves specific purposes for developers, contributors, and users of the framework.
+This directory contains comprehensive documentation for the ZZCOLLAB framework.
+Documentation is organized into subdirectories by purpose.
 
-## Documents Overview
+## Directory Structure
 
-### 🎓 Tutorials & Practical Guides
+```
+docs/
+├── adr/           # Architecture Decision Records
+├── archive/       # Historical documents (completed plans, analyses)
+├── guides/        # User guides and how-tos
+├── motivation/    # Research motivation documents
+├── standards/     # Coding and development standards
+└── *.md           # Core reference documentation
+```
 
-#### [REPRODUCIBILITY_WORKFLOW_TUTORIAL.md](REPRODUCIBILITY_WORKFLOW_TUTORIAL.md)
-**Purpose**: Complete hands-on tutorial demonstrating ZZCOLLAB's reproducibility and validation systems
-**Scope**: 30-45 minute practical workflow using Palmer Penguins dataset
-**ZZCOLLAB Relevance**:
-- Demonstrates complete workflow from project creation through team collaboration
-- Exercises auto-snapshot, validation, Docker, and CI/CD features
-- Provides concrete examples of reproducibility in practice
-- Serves as onboarding tutorial for new users and team members
+## Quick Start
 
-**Tutorial Sections**:
-- **Part 1**: Solo developer workflow with package management
-- **Part 2**: Team collaboration and environment sharing
-- **Part 3**: Testing reproducibility with clean slate rebuilds
-- **Part 4**: Advanced validation and navigation features
+- **New Users**: Start with [guides/workflow.md](guides/workflow.md) and the
+  [motivation/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md](motivation/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md)
+- **Configuration**: See [CONFIGURATION.md](CONFIGURATION.md)
+- **Docker Profiles**: See [VARIANTS.md](VARIANTS.md)
+- **Testing**: See [TESTING_GUIDE.md](TESTING_GUIDE.md)
 
-**Key Features Demonstrated**:
-- Docker-first development environment
-- Auto-snapshot on container exit (no manual `renv::snapshot()`)
-- Shell-based validation without host R
-- One-letter navigation shortcuts
-- Team image building and distribution
+## Core Documentation
 
-#### [VALIDATION_QUICK_REFERENCE.md](VALIDATION_QUICK_REFERENCE.md)
-**Purpose**: Fast reference guide for ZZCOLLAB's package validation system
-**Scope**: Quick lookup for common validation scenarios and troubleshooting
-**ZZCOLLAB Relevance**:
-- Essential reference for daily development workflow
-- Explains validation commands and output interpretation
-- Provides decision trees for common issues
-- Documents pure shell validation architecture
+| Document | Purpose |
+|----------|---------|
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
+| [CONFIGURATION.md](CONFIGURATION.md) | Multi-layer configuration system |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Developer commands and workflows |
+| [DOCKER_ARCHITECTURE.md](DOCKER_ARCHITECTURE.md) | Docker technical details |
+| [TESTING_GUIDE.md](TESTING_GUIDE.md) | Testing framework and best practices |
+| [VARIANTS.md](VARIANTS.md) | Docker profile system (14+ profiles) |
+| [TEAM_WORKFLOW.md](TEAM_WORKFLOW.md) | Team collaboration patterns |
+| [COLLABORATIVE_REPRODUCIBILITY.md](COLLABORATIVE_REPRODUCIBILITY.md) | Five Pillars model |
+| [VALIDATION_QUICK_REFERENCE.md](VALIDATION_QUICK_REFERENCE.md) | Package validation reference |
 
-**Quick Reference Sections**:
-- Validation commands (`make check-renv`, `make check-renv-strict`)
-- Common scenarios with solutions
-- Validation output explanation
-- Integration with auto-snapshot
-- Troubleshooting guide
+## Subdirectories
 
-**Key Concepts**:
-- Three sources of truth: Code → DESCRIPTION → renv.lock
-- Standard vs strict validation modes
-- No host R required (pure shell: grep, sed, awk, jq)
-- CI/CD integration
+### [adr/](adr/) - Architecture Decision Records
 
-### 📊 Data Science Research & Motivation
+Formal records of significant architectural decisions:
 
-#### [UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md](UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md)
-**Purpose**: Comprehensive motivation for implementing unit testing in data analysis projects
-**Scope**: 15-page document with real-world failure examples and R community perspectives
-**ZZCOLLAB Relevance**:
-- Provides scientific justification for the testing frameworks built into ZZCOLLAB's unified research compendium architecture
-- Explains why ZZCOLLAB includes automated testing templates and CI/CD workflows by default
-- References R-bloggers community content and testthat package best practices
-- Supports the framework's emphasis on reproducible, tested research workflows
+- [0000-TEMPLATE.md](adr/0000-TEMPLATE.md) - ADR template
+- [0001-r-version-detection-and-mismatch-handling.md](adr/0001-r-version-detection-and-mismatch-handling.md)
 
-**Key Sections**:
-- Real-world data science failures (Netflix, clinical trials, financial models)
-- Academic research on reproducibility crisis (73% failure rates)
-- R community perspectives from R-bloggers on testthat
-- Implementation frameworks for testing data analysis pipelines
+### [guides/](guides/) - User Guides
 
-#### [CICD_MOTIVATION_DATA_ANALYSIS.md](CICD_MOTIVATION_DATA_ANALYSIS.md)
-**Purpose**: Evidence-based argument for CI/CD practices in data science
-**Scope**: 15-page document analyzing production failures and deployment challenges
-**ZZCOLLAB Relevance**:
-- Justifies ZZCOLLAB's Docker-based CI/CD architecture and automated workflows
-- Explains why the framework includes GitHub Actions templates for all research workflows
-- Demonstrates the value of ZZCOLLAB's environment reproducibility and validation systems
-- Provides context for the framework's emphasis on systematic deployment practices
+Practical how-to guides for common tasks:
 
-**Key Sections**:
-- Industry failure statistics (85% project failure rate, 80% models never deployed)
-- Real-world case studies (Zillow's $881M loss, Amazon's discriminatory AI)
-- Technical challenges unique to data science CI/CD
-- Implementation roadmap and best practices
+- [workflow.md](guides/workflow.md) - Daily development workflow
+- [config.md](guides/config.md) - Configuration management
+- [docker.md](guides/docker.md) - Docker operations
+- [renv.md](guides/renv.md) - Package management with renv
+- [cicd.md](guides/cicd.md) - CI/CD pipeline setup
+- [troubleshooting.md](guides/troubleshooting.md) - Common issues and solutions
 
-#### [RRTOOLS_COMPATIBILITY_ANALYSIS.md](RRTOOLS_COMPATIBILITY_ANALYSIS.md)
-**Purpose**: Comprehensive analysis comparing ZZCOLLAB's unified research compendium with the rrtools framework
-**Scope**: 5-page structural compatibility assessment
-**ZZCOLLAB Relevance**:
-- Validates that ZZCOLLAB's unified research compendium architecture is consistent with established reproducible research standards (Marwick et al. 2018)
-- Demonstrates ZZCOLLAB as an "enhanced rrtools" that builds upon proven foundations
-- Provides migration guidance for existing rrtools users
-- Establishes ZZCOLLAB's position within the broader reproducible research ecosystem
+### [motivation/](motivation/) - Research Motivation
 
-**Key Findings**:
-- **High compatibility** with rrtools structure through unified research compendium approach
-- **Enhanced functionality** while maintaining structural consistency
-- **Strategic positioning** as complementary rather than competing framework
+Documents explaining why certain practices matter:
 
-### 🏗️ Architecture & Code Quality
+- [REPRODUCIBILITY_WORKFLOW_TUTORIAL.md](motivation/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md) - Hands-on tutorial
+- [REPRODUCIBILITY_BEST_PRACTICES.md](motivation/REPRODUCIBILITY_BEST_PRACTICES.md) - Best practices guide
+- [UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md](motivation/UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md) - Testing rationale
+- [CICD_MOTIVATION_DATA_ANALYSIS.md](motivation/CICD_MOTIVATION_DATA_ANALYSIS.md) - CI/CD rationale
+- [DOCKER_MOTIVATION_DATA_ANALYSIS.md](motivation/DOCKER_MOTIVATION_DATA_ANALYSIS.md) - Docker rationale
+- [RENV_MOTIVATION_DATA_ANALYSIS.md](motivation/RENV_MOTIVATION_DATA_ANALYSIS.md) - renv rationale
+- [WHY_DOCKER_AND_RENV.md](motivation/WHY_DOCKER_AND_RENV.md) - Combined approach
+- [VALIDATION_WHITEPAPER.md](motivation/VALIDATION_WHITEPAPER.md) - Validation system design
 
-#### [IMPROVEMENTS_SUMMARY.md](IMPROVEMENTS_SUMMARY.md)
-**Purpose**: Comprehensive summary of major codebase improvements and refactoring
-**Scope**: Documentation of 8 major improvement initiatives
-**ZZCOLLAB Relevance**:
-- Documents the evolution from monolithic to modular architecture (15 specialized modules)
-- Explains the breakdown of 7 oversized functions (963 lines) into 30 focused functions
-- Demonstrates commitment to professional software engineering practices
-- Provides context for current clean, maintainable codebase architecture
+### [standards/](standards/) - Development Standards
 
-**Major Achievements**:
-- **Function decomposition**: All functions now follow single responsibility principle (<60 lines)
-- **Module validation system**: Unified dependency management across 15 modules
-- **Performance optimization**: Cached expensive operations and eliminated redundancy
-- **Quality assurance tools**: Scripts to prevent code quality regression
+Coding standards and development guidelines:
 
-#### [MODULE_DEPENDENCIES.md](MODULE_DEPENDENCIES.md)
-**Purpose**: Technical mapping of module dependencies and loading order
-**Scope**: Architecture documentation for developers and contributors
-**ZZCOLLAB Relevance**:
-- Essential for developers working on the modular shell script architecture
-- Ensures proper module loading order and dependency management
-- Facilitates safe modifications and feature additions
-- Prevents circular dependencies and loading errors
+- [BASH_STANDARDS.md](standards/BASH_STANDARDS.md) - Bash coding standards
+- [BASH_IMPROVEMENTS_SUMMARY.md](standards/BASH_IMPROVEMENTS_SUMMARY.md) - Quality achievements
+- [CODING_STANDARDS.md](standards/CODING_STANDARDS.md) - General coding guidelines
+- [ERROR_MESSAGE_DEVELOPER_GUIDE.md](standards/ERROR_MESSAGE_DEVELOPER_GUIDE.md) - Error message patterns
+- [MODULE_DEPENDENCIES.md](standards/MODULE_DEPENDENCIES.md) - Module architecture
 
-**Technical Details**:
-- **15-module dependency graph** with clear loading hierarchy
-- **Validation system** using `require_module()` for fail-fast error detection
-- **Extension guidance** for adding new modules safely
+### [archive/](archive/) - Historical Documents
 
-#### [BASH_IMPROVEMENTS_SUMMARY.md](BASH_IMPROVEMENTS_SUMMARY.md)
-**Purpose**: Documentation of bash scripting best practices implementation
-**Scope**: Comprehensive quality improvements achieving A+ grade
-**ZZCOLLAB Relevance**:
-- Demonstrates ZZCOLLAB's commitment to production-quality shell scripting
-- Documents security analysis results (no HIGH RISK vulnerabilities)
-- Explains ShellCheck integration and CI/CD quality assurance
-- Provides foundation for reliable, maintainable bash codebase
+Completed plans, one-time analyses, and deprecated documents. These are kept
+for historical reference but are not actively maintained.
 
-**Quality Achievements**:
-- **100% compliance** with modern bash best practices (2024-2025)
-- **ShellCheck integration** with automated CI/CD validation
-- **Security excellence** with comprehensive input validation and error handling
-- **Documentation standardization** with consistent function documentation format
+## Additional Reference
 
-#### [BASH_STANDARDS.md](BASH_STANDARDS.md)
-**Purpose**: Coding standards and documentation format for bash scripts
-**Scope**: Development guidelines for contributors
-**ZZCOLLAB Relevance**:
-- Ensures consistent code quality across all shell scripts
-- Provides templates for new function development
-- Maintains professional development standards
-- Facilitates code reviews and contributions
+| Document | Purpose |
+|----------|---------|
+| [DOCUMENTATION_STRATEGY.md](DOCUMENTATION_STRATEGY.md) | Three-tier documentation system |
+| [ERROR_HANDLING_GUIDE.md](ERROR_HANDLING_GUIDE.md) | Error handling patterns |
+| [GUI_PROFILE_GUIDE.md](GUI_PROFILE_GUIDE.md) | X11/GUI profile setup |
+| [SHELL_TESTING_SETUP.md](SHELL_TESTING_SETUP.md) | Shell test infrastructure |
+| [TESTING_LESSONS_LEARNED.md](TESTING_LESSONS_LEARNED.md) | Testing discoveries |
+| [UNIFIED_PARADIGM_GUIDE.md](UNIFIED_PARADIGM_GUIDE.md) | Research compendium design |
+| [VERBOSITY_LEVELS.md](VERBOSITY_LEVELS.md) | Logging verbosity system |
+| [X11_PLOTTING_WORKFLOW.md](X11_PLOTTING_WORKFLOW.md) | Graphics workflows |
+| [zzcollab_python.md](zzcollab_python.md) | Multi-language considerations |
 
-**Standards Covered**:
-- **Function documentation format** with comprehensive examples
-- **Code style guidelines** for variables, functions, and error handling
-- **Best practices** including strict mode, quoting, and validation
+## Related Documentation
 
-### R Package Integration
-
-#### [R_PACKAGE_INTEGRATION_SUMMARY.md](R_PACKAGE_INTEGRATION_SUMMARY.md)
-**Purpose**: Documentation of complete R package functionality
-**Scope**: 25 R functions providing full CLI integration
-**ZZCOLLAB Relevance**:
-- Makes ZZCOLLAB accessible to R users who prefer working within the R ecosystem
-- Provides effective integration between R workflows and Docker-based reproducibility
-- Extends ZZCOLLAB's reach to the broader R community
-- Demonstrates professional R package development practices
-
-**R Package Features**:
-- **25 comprehensive functions** covering all ZZCOLLAB functionality
-- **Docker profile support** for 14+ specialized environments (minimal, analysis, geospatial, etc.)
-- **Dynamic package management** via renv with auto-snapshot architecture
-- **Team collaboration** functions for multi-developer projects
-- **Complete documentation** with roxygen2, vignettes, and test suites
-
-## Document Categories
-
-### For New Users (Start Here!)
-- **REPRODUCIBILITY_WORKFLOW_TUTORIAL.md**: Hands-on tutorial with real data analysis
-- **VALIDATION_QUICK_REFERENCE.md**: Essential validation commands and troubleshooting
-
-### For Decision Makers & Research Leaders
-- **UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md**: Scientific justification for testing frameworks
-- **CICD_MOTIVATION_DATA_ANALYSIS.md**: Business case for CI/CD in data science
-- **RRTOOLS_COMPATIBILITY_ANALYSIS.md**: Framework positioning and migration strategy
-
-### For Developers & Contributors
-- **IMPROVEMENTS_SUMMARY.md**: Codebase evolution and current architecture
-- **MODULE_DEPENDENCIES.md**: Technical architecture for safe development
-- **BASH_IMPROVEMENTS_SUMMARY.md**: Quality standards and security analysis
-- **BASH_STANDARDS.md**: Coding guidelines and development standards
-
-### For R Users & Data Scientists
-- **REPRODUCIBILITY_WORKFLOW_TUTORIAL.md**: Complete workflow with Palmer Penguins example
-- **VALIDATION_QUICK_REFERENCE.md**: Package validation system reference
-- **R_PACKAGE_INTEGRATION_SUMMARY.md**: R interface capabilities and usage
-- **UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md**: Testing best practices for data analysis
-- **CICD_MOTIVATION_DATA_ANALYSIS.md**: Production deployment guidance
-
-## Relevance to ZZCOLLAB Framework
-
-These documents collectively demonstrate ZZCOLLAB's:
-
-### **Scientific Foundation**
-- Evidence-based approach to reproducible research practices
-- Alignment with established frameworks (rrtools) while providing enhancements
-- Integration of community best practices from R-bloggers and academic research
-
-### **Technical Excellence**
-- Professional software engineering practices with modular architecture
-- Security-focused development with comprehensive validation
-- Performance optimization and code quality maintenance
-
-### **User Accessibility**
-- Multiple interfaces (CLI, R package) for different user preferences
-- Comprehensive documentation for various user types and skill levels
-- Real-world examples and practical implementation guidance
-
-### **Production Readiness**
-- CI/CD integration with automated testing and validation
-- Docker-based reproducibility ensuring consistent environments
-- Team collaboration features with proper version control and deployment practices
-
-## Document Maintenance
-
-All documents are actively maintained and updated to reflect:
-- Current framework capabilities and enhancements
-- Latest best practices in reproducible research
-- Community feedback and real-world usage patterns
-- Security updates and quality improvements
-
-For the most current information, refer to the framework's main documentation in `vignettes/` and the comprehensive user guide in `CLAUDE.md`.
+- **Root README.md**: Project overview and quick start
+- **CLAUDE.md**: Comprehensive architecture reference (AI/developer context)
+- **vignettes/**: R package vignettes with detailed tutorials
+- **templates/ZZCOLLAB_USER_GUIDE.md**: End-user documentation
 
 ---
 
-**Last Updated**: November 11, 2025
-**Framework Version**: ZZCOLLAB 2025
-**Total Documents**: 10 comprehensive documents covering all aspects of framework development and usage
+**Last Updated**: December 2025
