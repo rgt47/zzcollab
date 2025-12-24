@@ -218,6 +218,7 @@ if (Sys.getenv("ZZCOLLAB_CONTAINER") == "true") {
     create_file_if_missing ".Rprofile" "$rprofile_content" ".Rprofile"
 
     log_info "Run 'R -e \"renv::init()\"' to initialize renv"
+    return 0
 }
 
 #=============================================================================

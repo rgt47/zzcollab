@@ -225,6 +225,7 @@ cmd_init() {
 
     log_success "Project created: $PKG_NAME"
     log_info "Next: cd $PKG_NAME && make docker-build"
+    return 0
 }
 
 cmd_docker() {
