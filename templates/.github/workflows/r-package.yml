@@ -1,0 +1,128 @@
+name: R Package Check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # ===========================================
+  # Core: Always runs for R packages
+  # ===========================================
+  check:
+    runs-on: ubuntu-latest
+    container: rocker/r-ver:latest
+
+    outputs:
+      has_report: ${{ steps.detect.outputs.has_report }}
+      has_data: ${{ steps.detect.outputs.has_data }}
+      has_blog: ${{ steps.detect.outputs.has_blog }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect project features
+        id: detect
+        run: |
+          echo "has_report=$(test -f analysis/report/report.Rmd && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "has_data=$(test -d analysis/data && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "has_blog=$(test -f index.qmd && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y \
+            jq \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            pandoc
+
+      - name: Validate DESCRIPTION exists
+        run: |
+          test -f DESCRIPTION || { echo "Missing DESCRIPTION"; exit 1; }
+
+      - name: Cache renv packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/R/renv
+          key: renv-${{ hashFiles('renv.lock') }}
+          restore-keys: renv-
+
+      - name: Install renv and restore packages
+        run: |
+          Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+          Rscript -e "if (file.exists('renv.lock')) renv::restore() else renv::init()"
+          Rscript -e "install.packages(c('rcmdcheck', 'testthat', 'knitr', 'rmarkdown'), repos = 'https://cloud.r-project.org')"
+
+      - name: Run R CMD check
+        run: |
+          Rscript -e "rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'warning')"
+
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          Rscript -e "testthat::test_local()"
+
+  # ===========================================
+  # Render report.Rmd if it exists
+  # ===========================================
+  render-report:
+    needs: check
+    if: needs.check.outputs.has_report == 'true'
+    runs-on: ubuntu-latest
+    container: rocker/verse:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache renv packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/R/renv
+          key: renv-${{ hashFiles('renv.lock') }}
+          restore-keys: renv-
+
+      - name: Install renv and restore packages
+        run: |
+          Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+          Rscript -e "if (file.exists('renv.lock')) renv::restore() else renv::init()"
+
+      - name: Render report
+        run: |
+          Rscript -e "rmarkdown::render('analysis/report/report.Rmd')"
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: report
+          path: |
+            analysis/report/report.html
+            analysis/report/report.pdf
+
+  # ===========================================
+  # Data validation if data/ exists
+  # ===========================================
+  validate-data:
+    needs: check
+    if: needs.check.outputs.has_data == 'true'
+    runs-on: ubuntu-latest
+    container: rocker/r-ver:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate data structure
+        run: |
+          echo "Checking data directory structure..."
+          test -d analysis/data/raw_data || echo "⚠️  No raw_data directory"
+          test -d analysis/data/derived_data || echo "⚠️  No derived_data directory"
+          test -f analysis/data/README.md || echo "⚠️  No data README"
+          echo "✅ Data structure check complete"
+
+      - name: Check for data documentation
+        run: |
+          if [ -f analysis/data/README.md ]; then
+            echo "Data documentation found:"
+            head -20 analysis/data/README.md
+          fi
