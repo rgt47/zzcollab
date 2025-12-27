@@ -926,52 +926,26 @@ test_that("model includes species interaction", {
 Create a team project and share the Docker image:
 
 ```bash
-# Create team project structure with profile
+# Create team project with Docker + GitHub in one command
 mkdir study && cd study
-zzcollab -t genomicslab -p study -r bioinformatics
+zzc docker analysis github
 
-# Customize Dockerfile if needed (optional)
-vim Dockerfile
+# Or with a specialized profile
+mkdir genomics && cd genomics
+zzc docker shiny github --public
 
-# Build team Docker image
+# Build and push to DockerHub
 make docker-build
-
-# Push team image to Docker Hub
-make docker-push-team
-
-# Commit and push project structure to GitHub
-git add .
-git commit -m "Initial project setup with bioinformatics profile"
-git push -u origin main
+zzc dockerhub                    # Push to DockerHub
 
 # Share with collaborators
 gh repo edit --add-collaborator username
 ```
 
-**Alternative workflows:**
-
-```bash
-# Option 2: Custom composition with base image and bundles
-mkdir study && cd study
-zzcollab -t genomicslab -p study -b bioconductor/bioconductor_docker -l bioinfo -k bioinfo
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Initial project setup with custom bioinfo composition"
-git push -u origin main
-```
-
 **Team Lead Responsibilities:**
-1. Creates complete project structure with chosen Docker profile
-2. Builds team Docker image with all necessary dependencies
-3. Pushes team image to Docker Hub for team members to access
-4. Commits and pushes project structure to GitHub
-5. Adds collaborators to GitHub repository
-
-**Profile Selection for Teams:**
-- Team lead chooses Docker profile with `-r` flag (bioinformatics, geospatial, etc.)
-- All team members get identical Docker environment via team image
-- Team members add packages dynamically using `install.packages()` as needed
+1. Creates project with `zzc docker <profile> github`
+2. Builds and pushes Docker image with `zzc dockerhub`
+3. Adds collaborators to GitHub repository
 
 ### Team Member Workflow
 
@@ -982,43 +956,21 @@ Clone and join the team project:
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Pull and use team Docker image
-zzcollab --use-team-image
-
-# Enter development environment
+# Pull team Docker image and enter development environment
+docker pull genomicslab/study:latest
 make r
 ```
 
 **What happens for team members:**
-1. `--use-team-image` flag pulls team image from Docker Hub (e.g., `genomicslab/study:latest`)
-2. Team image has the Docker profile chosen by team lead (e.g., bioinformatics)
-3. Uses the exact same Docker environment as team lead
-4. Add packages as needed using `install.packages()` inside the container
-5. Exit container - packages automatically captured in renv.lock
+1. Clone gets Dockerfile + renv.lock (reproducibility pillars)
+2. Pull team image for identical Docker environment
+3. Add packages as needed using `install.packages()`
+4. Exit container - packages automatically captured in renv.lock
 
 **Environment Consistency:**
-- **Docker environment**: Identical for all team members (from team image via `--use-team-image`)
-- **Package management**: Add packages dynamically with `install.packages()` as needed
+- **Docker environment**: Identical for all team members
+- **Package management**: Add packages dynamically with `install.packages()`
 - **Automatic capture**: Packages tracked automatically when you exit containers
-
-### Adding Packages to Team Environment
-
-Team members can add additional R packages to their personal Docker layer:
-
-```bash
-# Add modeling packages on top of team image
-zzcollab -t genomicslab -p study -k modeling
-
-# This installs modeling packages in your personal Docker layer
-# Team image remains unchanged
-```
-
-**Team member restrictions:**
-- ✗ Cannot change Docker profile (use `-r`)
-- ✗ Cannot change base image (use `-b`)
-- ✗ Cannot add system libraries (use `-l`)
-- ✓ Can add R packages to Docker (use `-k`)
-- ✓ Can add packages to renv.lock (use `install.packages()` in container, auto-captured on exit)
 
 ## Publish Results
 
@@ -1085,78 +1037,52 @@ make docker-test
 
 ```bash
 # List all predefined profiles
-zzcollab --list-profiles
+zzc list profiles
 
 # List available library bundles (system dependencies)
-zzcollab --list-libs
+zzc list libs
 
 # List available package bundles (R packages)
-zzcollab --list-pkgs
+zzc list pkgs
 ```
 
-**14+ Available Profiles:**
-- **Standard Research (6)**: minimal, analysis, modeling, publishing, shiny, shiny_verse
-- **Specialized Domains (2)**: bioinformatics, geospatial
-- **Lightweight Alpine (3)**: alpine_minimal, alpine_analysis, hpc_alpine
-- **R-Hub Testing (3)**: rhub_ubuntu, rhub_fedora, rhub_windows
+**Available Profiles:**
+- `minimal` - Base R only (~300MB)
+- `analysis` / `tidyverse` - Tidyverse packages (~1.5GB)
+- `publishing` / `verse` - LaTeX + pandoc (~3GB)
+- `rstudio` - RStudio Server
+- `shiny` - Shiny Server
 
 ## Using Profiles
 
 ```bash
-# Method 1: Use -r flag for profile selection (most common)
+# Profile names work as standalone commands or after docker
 mkdir my-project && cd my-project
-zzcollab -r bioinformatics
-make docker-build
+zzc docker analysis              # Docker with analysis profile
 
-# Method 2: Use -r flag for different profile
-mkdir spatial-analysis && cd spatial-analysis
-zzcollab -r geospatial
-make docker-build
+# Change profile on existing project
+zzc publishing                   # Switch to publishing profile
 
-# Method 3: Compose custom profile with bundles
-mkdir custom-project && cd custom-project
-zzcollab -b rocker/r-ver -l geospatial -k geospatial
-make docker-build
+# Full setup in one command
+mkdir new-project && cd new-project
+zzc docker shiny github          # Docker + shiny + GitHub
 
-# Method 4: Mix and match components
-mkdir bioinfo-project && cd bioinfo-project
-zzcollab -b bioconductor/bioconductor_docker -l bioinfo -k modeling
+# Build after setup
 make docker-build
 ```
 
-## Profile System Components
+## Profile System
 
-The profile system has two independent layers:
-
-### Docker Environment Layer (Team/Shared)
-
-**Profiles** (`-r` flag):
-- Complete Docker environment shortcuts (14+ predefined)
-- Combines base image + system libraries + R packages
-- Examples: `bioinformatics`, `geospatial`, `alpine_minimal`
-- Shared across all team members
-- Specify via: `zzcollab -r bioinformatics`
-
-**Library Bundles** (`-l` flag):
-- System dependencies (apt-get/apk packages)
-- Examples: `minimal`, `geospatial`, `bioinfo`, `modeling`, `publishing`, `alpine`
-- Required for R packages needing system libraries (GDAL, PROJ, etc.)
-- Specify via: `zzcollab -l geospatial`
-
-**Package Bundles** (`-k` flag):
-- Pre-installed R packages in Docker image
-- Examples: `essential`, `tidyverse`, `modeling`, `bioinfo`, `geospatial`, `publishing`, `shiny`
-- Baked into Docker image for fast container startup
-- Specify via: `zzcollab -k modeling`
+**Profiles** (standalone or after `docker`):
+- Complete Docker environment shortcuts
+- Examples: `minimal`, `analysis`, `publishing`, `shiny`
+- Usage: `zzc docker analysis` or `zzc analysis` (to change existing)
 
 **Package Management:**
-- Packages are added dynamically using standard `install.packages()` inside containers
-- For GitHub packages: `install.packages("remotes")` then `remotes::install_github("user/package")`
-- **Auto-restore**: Missing packages installed automatically when R starts (no manual restore needed)
-- **Auto-snapshot**: Packages captured in renv.lock when container exits (no manual snapshot needed)
-- No pre-configured modes - just install what you need when you need it
+- Packages are added dynamically using `install.packages()` inside containers
+- **Auto-restore**: Missing packages installed automatically when R starts
+- **Auto-snapshot**: Packages captured in renv.lock when container exits
 - The renv.lock file accumulates packages from all team members automatically
-- This provides maximum flexibility while maintaining reproducibility
 
 # Summary
 
@@ -1172,126 +1098,47 @@ This is the gold standard for reproducible computational research. All 5 levels
 working together ensure your analysis is not only reproducible, but also
 correct and maintainable.
 
-## Understanding the Two-Layer Architecture
+## Understanding the Architecture
 
-ZZCOLLAB uses a two-layer package management system for maximum flexibility:
+ZZCOLLAB uses a two-layer package management system:
 
 ### Layer 1: Docker Environment (Team/Shared)
-- **Controlled by**: `-r` (profile), `-b` (base image), `-l` (libs), `-k` (pkgs)
+- **Controlled by**: Profile selection (e.g., `zzc docker analysis`)
 - **Purpose**: Pre-installed packages in Docker image
 - **Shared**: All team members get identical Docker environment
-- **Examples**: Bioinformatics profile, geospatial libraries, tidyverse packages
-- **When to use**: For packages everyone on team needs
 
 ### Layer 2: Dynamic Package Installation (Personal)
 - **Controlled by**: `install.packages()` inside containers (auto-captured on exit)
 - **Purpose**: Add packages as needed for specific analyses
-- **Flexible**: Each team member can add packages independently
-- **Collaborative**: renv.lock accumulates packages from all contributors automatically
-- **When to use**: Whenever you need a package for your analysis
+- **Collaborative**: renv.lock accumulates packages from all contributors
 
 ### Practical Example
 
-Team lead sets up bioinformatics environment:
+Team lead sets up project:
 ```bash
 mkdir study && cd study
-zzcollab -t genomicslab -p study -r bioinformatics
+zzc docker analysis github       # Create project + Docker + GitHub
 make docker-build
-make docker-push-team
-git add .
-git commit -m "Initial project setup"
-git push -u origin main
+zzc dockerhub                    # Push to DockerHub
 ```
 
-Team members join and add packages as needed:
+Team members join and add packages:
 ```bash
-# Clone repository
 git clone https://github.com/genomicslab/study.git
 cd study
-
-# Pull team image
-zzcollab --use-team-image
-
-# Enter container and add packages
-make r
-# Auto-restore runs if any packages missing
-
-# Inside container - Alice adds modeling packages
-install.packages("tidymodels")  # Standard R command
-exit  # Auto-snapshot captures tidymodels in renv.lock!
-
-# Bob adds geospatial packages (in his container)
-make r  # Auto-restore installs tidymodels (from Alice)
-install.packages("sf")  # Standard R command
-exit  # Auto-snapshot captures both tidymodels + sf!
-```
-
-**Result**:
-- Both get identical Bioconductor Docker environment (Layer 1) via team image
-- Each adds packages dynamically as needed (Layer 2)
-- Final renv.lock contains packages from both Alice and Bob
-
-### What Happens to Final renv.lock?
-
-**Important**: When multiple team members work together, the final `renv.lock` file contains packages from ALL contributors:
-
-```bash
-# Alice adds modeling packages
+docker pull genomicslab/study:latest
 make r
 
-# Inside container:
+# Inside container - add packages as needed
 install.packages("tidymodels")
-# Exit container (auto-snapshot happens here!)
-exit
+exit  # Auto-snapshot captures in renv.lock!
 
-# Validation runs automatically after container exit
-# Then timestamp is restored for accurate git history
-
-# STEP 2: Run tests to ensure nothing broke
-make docker-test
-
-# STEP 3: Commit if validation passed
-git add renv.lock DESCRIPTION
-git commit -m "Add tidymodels for modeling workflow"
+# Commit changes
+git add renv.lock
+git commit -m "Add tidymodels"
 git push
-
-# Bob adds geospatial packages
-git pull  # Gets Alice's changes
-make r
-
-# Inside container:
-install.packages("sf")
-# Exit container (auto-snapshot, renv.lock now has tidymodels + sf)
-exit
-
-# Validation runs automatically after container exit
-
-# STEP 2: Test functionality
-make docker-test
-
-# STEP 3: Commit
-git add renv.lock DESCRIPTION
-git commit -m "Add sf for geospatial analysis"
-git push
-
-# Final renv.lock contains BOTH Alice's and Bob's packages
 ```
 
-**For reproducibility, renv.lock is the source of truth, NOT the Docker image.**
+**Key Insight**: The Docker image provides the foundation, but `renv.lock` ensures complete reproducibility by specifying exact versions of ALL packages.
 
-When someone reproduces the analysis:
-```bash
-# Pulls repository with complete renv.lock
-git clone https://github.com/genomicslab/study.git
-cd study
-
-# Uses team Docker image (has base bioinformatics packages)
-zzcollab --use-team-image
-make r
-# Auto-restore runs automatically on R startup!
-# Installs tidymodels + sf + ALL dependencies (no manual restore needed)
-```
-
-**Key Insight**: The Docker image provides the foundation (system dependencies, R version, base packages for performance), but `renv.lock` ensures complete reproducibility by specifying exact versions of ALL packages needed for the analysis.
-
-For more details on each level, see `vignette("reproducibility-layers")`.
+For more details, see `vignette("reproducibility-layers")`.

@@ -49,9 +49,10 @@ cd zzcollab
 ./install.sh
 ```
 
-Verify installation:
+Verify installation (both commands work identically):
 
 ```bash
+zzc --help
 zzcollab --help
 ```
 
@@ -60,19 +61,27 @@ zzcollab --help
 Set your personal defaults to avoid repeating common options:
 
 ```bash
-zzcollab -c init
-zzcollab -c set team-name "myteam"
-zzcollab -c set github-account "your-github-username"
+zzc config init
+zzc config set github-account "your-github-username"
+zzc config set dockerhub-account "your-dockerhub-username"
 ```
 
 ### 1.3 Create Project Workspace
 
-Create a new directory and initialize the zzcollab project:
+Create a new directory and initialize with Docker and analysis profile:
 
 ```bash
 mkdir mtcars-analysis
 cd mtcars-analysis
-zzcollab -t myteam -p mtcars-analysis -r analysis
+zzc docker analysis
+```
+
+Or create with GitHub in one command:
+
+```bash
+mkdir mtcars-analysis
+cd mtcars-analysis
+zzc docker analysis github
 ```
 
 This creates the research compendium structure:
@@ -121,27 +130,24 @@ make r
 
 ### 2.2 Prepare and Save Raw Data
 
-Inside R, extract the first 50% of mtcars and save to the proper location:
+Inside R, save the complete mtcars dataset as CSV to the raw_data directory:
 
 ```r
-# Extract first half of mtcars (16 observations)
-n_rows <- nrow(mtcars)
-mtcars_subset <- mtcars[1:(n_rows %/% 2), ]
+# Save complete mtcars as CSV (raw data - read-only after this point)
+write.csv(mtcars, "analysis/data/raw_data/mtcars.csv", row.names = TRUE)
 
-# Verify the subset
-dim(mtcars_subset)
-# [1] 16 11
-
-# Save to raw_data directory (read-only after this point)
-saveRDS(mtcars_subset, "analysis/data/raw_data/mtcars_subset.rds")
+# Verify the data
+dim(mtcars)
+# [1] 32 11
 
 # Document the data source
 writeLines(
   c(
-    "# mtcars_subset.rds",
+    "# mtcars.csv",
     "",
     "## Source",
-    "First 50% (16 observations) of the base R mtcars dataset.",
+    "Motor Trend Car Road Tests from the 1974 Motor Trend US magazine.",
+    "Complete dataset with 32 observations of 11 variables.",
     "",
     "## Variables",
     paste("-", names(mtcars), collapse = "\n"),
@@ -149,9 +155,9 @@ writeLines(
     "## Creation Date",
     as.character(Sys.Date()),
     "",
-    "## Notes",
-    "This subset is used for demonstration purposes.",
-    "Original dataset: Henderson and Velleman (1981)."
+    "## Citation",
+    "Henderson and Velleman (1981). Building multiple regression models",
+    "interactively. Biometrics, 37, 391-411."
   ),
   "analysis/data/raw_data/README.md"
 )
@@ -159,7 +165,7 @@ writeLines(
 
 ### 2.3 Create Data Processing Script
 
-Create the data processing script:
+Create a script that reads the raw CSV and extracts the first half for analysis.
 
 ```bash
 # Exit R first with q(), then create the script file on host
@@ -169,15 +175,17 @@ Create `analysis/scripts/01_prepare_data.R`:
 
 ```r
 # 01_prepare_data.R
-# Purpose: Load and prepare mtcars subset for analysis
+# Purpose: Extract first half of mtcars and add derived variables
 
 library(dplyr)
 
 prepare_mtcars_data <- function(input_path, output_path) {
-  raw_data <- readRDS(input_path)
+  raw_data <- read.csv(input_path, row.names = 1)
 
+  n_rows <- nrow(raw_data)
+  subset_data <- raw_data[1:(n_rows %/% 2), ]
 
-  processed_data <- raw_data |>
+  processed_data <- subset_data |>
     mutate(
       efficiency_class = case_when(
         mpg >= 20 ~ "high",
@@ -194,7 +202,7 @@ prepare_mtcars_data <- function(input_path, output_path) {
 
 if (sys.nframe() == 0) {
   prepare_mtcars_data(
-    input_path = "analysis/data/raw_data/mtcars_subset.rds",
+    input_path = "analysis/data/raw_data/mtcars.csv",
     output_path = "analysis/data/derived_data/mtcars_processed.rds"
   )
 }
@@ -270,23 +278,23 @@ Create `tests/testthat/test-data-validation.R`:
 # Tests for data integrity and validation functions
 
 test_that("raw data file exists and is readable", {
-  raw_data_path <- "analysis/data/raw_data/mtcars_subset.rds"
+  raw_data_path <- "analysis/data/raw_data/mtcars.csv"
 
   expect_true(file.exists(raw_data_path))
 
-  data <- readRDS(raw_data_path)
+  data <- read.csv(raw_data_path, row.names = 1)
   expect_s3_class(data, "data.frame")
 })
 
 test_that("raw data has expected dimensions", {
-  data <- readRDS("analysis/data/raw_data/mtcars_subset.rds")
+  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
 
-  expect_equal(nrow(data), 16)
+  expect_equal(nrow(data), 32)
   expect_equal(ncol(data), 11)
 })
 
 test_that("raw data contains required columns", {
-  data <- readRDS("analysis/data/raw_data/mtcars_subset.rds")
+  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
 
   required_cols <- c("mpg", "cyl", "disp", "hp", "drat", "wt",
                      "qsec", "vs", "am", "gear", "carb")
@@ -295,12 +303,20 @@ test_that("raw data contains required columns", {
 })
 
 test_that("raw data values are within expected ranges", {
-  data <- readRDS("analysis/data/raw_data/mtcars_subset.rds")
+  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
 
   expect_true(all(data$mpg > 0 & data$mpg < 50))
   expect_true(all(data$cyl %in% c(4, 6, 8)))
   expect_true(all(data$hp > 0 & data$hp < 500))
   expect_true(all(data$wt > 0))
+})
+
+test_that("derived data has correct subset size", {
+  skip_if_not(file.exists("analysis/data/derived_data/mtcars_processed.rds"))
+
+  data <- readRDS("analysis/data/derived_data/mtcars_processed.rds")
+
+  expect_equal(nrow(data), 16)
 })
 ```
 
@@ -540,7 +556,16 @@ This pure-shell validation ensures DESCRIPTION and renv.lock are synchronized.
 
 ## Part 5: Push to GitHub (Developer 1)
 
-### 5.1 Initialize Git Repository
+### 5.1 Initialize Git and Create GitHub Repository
+
+If you didn't use `zzc docker analysis github` earlier, initialize now:
+
+```bash
+zzc git                          # Initialize git + .gitignore
+zzc github --private             # Create private GitHub repo
+```
+
+Or manually:
 
 ```bash
 git init
@@ -555,27 +580,15 @@ git commit -m "Initial project setup with mtcars analysis
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
-```
 
-### 5.2 Create GitHub Repository
-
-```bash
 gh repo create myteam/mtcars-analysis --private --source=. --push
 ```
 
-Or manually:
-
-```bash
-git remote add origin git@github.com:myteam/mtcars-analysis.git
-git branch -M main
-git push -u origin main
-```
-
-### 5.3 Build and Push Team Docker Image
+### 5.2 Build and Push Team Docker Image
 
 ```bash
 make docker-build
-make docker-push-team
+zzc dockerhub                    # Push to DockerHub
 ```
 
 This makes the Docker image available for Developer 2.
@@ -584,15 +597,13 @@ This makes the Docker image available for Developer 2.
 
 ### 6.1 Clone the Repository
 
-Developer 2 clones the project and sets up the environment:
+Developer 2 clones the project and pulls the team Docker image:
 
 ```bash
 git clone git@github.com:myteam/mtcars-analysis.git
 cd mtcars-analysis
-zzcollab -u
+docker pull myteam/mtcars-analysis:latest
 ```
-
-The `-u` flag pulls the team's Docker image.
 
 ### 6.2 Enter Container and Verify Setup
 
@@ -901,12 +912,15 @@ The final repository contains:
 
 | Task | Command |
 |------|---------|
+| Create project | `zzc docker analysis github` |
 | Enter container | `make r` |
 | Run tests | `devtools::test()` inside R |
 | Validate packages | `make check-renv` |
 | Build Docker image | `make docker-build` |
-| Push team image | `make docker-push-team` |
-| Use team image | `zzcollab -u` |
+| Push to DockerHub | `zzc dockerhub` |
+| Push with tag | `zzc dockerhub --tag v1.0` |
+| Change profile | `zzc publishing` |
+| List profiles | `zzc list profiles` |
 | Render report | `make docker-render` |
 
 ## Next Steps
