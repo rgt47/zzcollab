@@ -793,24 +793,295 @@ cmd_help() {
 }
 
 #=============================================================================
-# LEGACY MODE DETECTION
+# GIT COMMANDS
 #=============================================================================
 
-is_legacy_mode() {
-    # Check if any legacy flags are present
-    for arg in "$@"; do
-        case "$arg" in
-            -t|--team-name|-p|--project-name|-r|--profile-name|-b|--base-image)
-                return 0
-                ;;
-        esac
-    done
-    return 1
+cmd_git() {
+    if [[ -d ".git" ]]; then
+        log_info "Git already initialized"
+        return 0
+    fi
+
+    log_info "Initializing git repository..."
+    git init || { log_error "git init failed"; return 1; }
+
+    # Create .gitignore if it doesn't exist
+    if [[ ! -f ".gitignore" ]]; then
+        cat > .gitignore << 'EOF'
+# R artifacts
+.Rhistory
+.Rdata
+.RDataTmp
+.Ruserdata
+*.Rproj.user/
+
+# renv
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/sandbox/
+renv/staging/
+
+# Data (customize as needed)
+# analysis/data/raw_data/
+# analysis/data/derived_data/
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# zzcollab user files
+.zzcollab/
+EOF
+        log_success "Created .gitignore"
+    fi
+
+    log_success "Git initialized"
+    return 0
+}
+
+cmd_github() {
+    # Ensure git is initialized first
+    cmd_git || return 1
+
+    # Check if gh CLI is available
+    if ! command -v gh &>/dev/null; then
+        log_error "GitHub CLI (gh) not installed"
+        log_info "Install: https://cli.github.com/"
+        return 1
+    fi
+
+    # Check if already has remote
+    if git remote get-url origin &>/dev/null; then
+        log_info "GitHub remote already configured"
+        git remote get-url origin
+        return 0
+    fi
+
+    local project_name
+    project_name=$(basename "$(pwd)")
+
+    # Check auth status
+    if ! gh auth status &>/dev/null; then
+        log_error "Not authenticated with GitHub"
+        log_info "Run: gh auth login"
+        return 1
+    fi
+
+    local visibility="${GITHUB_VISIBILITY:-private}"
+    log_info "Creating GitHub repository: $project_name ($visibility)"
+
+    if gh repo create "$project_name" --source=. "--${visibility}" --push; then
+        log_success "GitHub repository created and pushed"
+        gh repo view --web 2>/dev/null || true
+    else
+        log_error "Failed to create GitHub repository"
+        return 1
+    fi
+
+    return 0
+}
+
+cmd_profile() {
+    local profile="${1:-}"
+
+    if [[ -z "$profile" ]]; then
+        log_error "Usage: zzcollab profile <name>"
+        log_info "Available: minimal, analysis, publishing, rstudio, shiny"
+        return 1
+    fi
+
+    require_module "config" "docker"
+
+    # Validate profile
+    local base_image
+    base_image=$(get_profile_base_image "$profile")
+
+    log_info "Setting profile: $profile ($base_image)"
+
+    # Save to config
+    config_set "profile-name" "$profile" 2>/dev/null || true
+
+    # Regenerate Dockerfile if it exists
+    if [[ -f "Dockerfile" ]]; then
+        log_info "Regenerating Dockerfile..."
+        export BASE_IMAGE="$base_image"
+        generate_dockerfile || return 1
+    else
+        log_info "No Dockerfile yet. Run 'zzcollab docker' to generate."
+    fi
+
+    log_success "Profile set to: $profile"
+    return 0
 }
 
 #=============================================================================
-# MAIN
+# REMOVE COMMANDS
 #=============================================================================
+
+cmd_rm() {
+    local feature="${1:-}"
+
+    case "$feature" in
+        docker)
+            cmd_rm_docker
+            ;;
+        renv)
+            cmd_rm_renv
+            ;;
+        git)
+            cmd_rm_git
+            ;;
+        github)
+            cmd_rm_github
+            ;;
+        cicd)
+            cmd_rm_cicd
+            ;;
+        "")
+            log_error "Usage: zzcollab rm <feature>"
+            log_info "Features: docker, renv, git, github, cicd"
+            return 1
+            ;;
+        *)
+            log_error "Unknown feature: $feature"
+            log_info "Features: docker, renv, git, github, cicd"
+            return 1
+            ;;
+    esac
+}
+
+cmd_rm_docker() {
+    local files=("Dockerfile" ".dockerignore")
+    local removed=0
+
+    for f in "${files[@]}"; do
+        if [[ -f "$f" ]]; then
+            rm "$f"
+            log_info "Removed $f"
+            ((removed++))
+        fi
+    done
+
+    if [[ $removed -eq 0 ]]; then
+        log_info "No Docker files to remove"
+    else
+        log_success "Docker configuration removed"
+    fi
+}
+
+cmd_rm_renv() {
+    echo ""
+    log_warn "This will remove renv.lock and renv/ directory"
+    read -r -p "Continue? [y/N]: " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        log_info "Cancelled"
+        return 0
+    fi
+
+    [[ -f "renv.lock" ]] && rm "renv.lock" && log_info "Removed renv.lock"
+    [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
+
+    # Remove renv activation from .Rprofile if present
+    if [[ -f ".Rprofile" ]] && grep -q "renv/activate.R" .Rprofile; then
+        sed -i.bak '/renv\/activate.R/d' .Rprofile
+        rm -f .Rprofile.bak
+        log_info "Removed renv activation from .Rprofile"
+    fi
+
+    log_success "renv configuration removed"
+}
+
+cmd_rm_git() {
+    if [[ ! -d ".git" ]]; then
+        log_info "No git repository to remove"
+        return 0
+    fi
+
+    echo ""
+    log_warn "This will DELETE the .git directory and all git history!"
+    read -r -p "Type 'yes' to confirm: " confirm
+    if [[ "$confirm" != "yes" ]]; then
+        log_info "Cancelled"
+        return 0
+    fi
+
+    rm -rf .git
+    log_success "Git repository removed"
+}
+
+cmd_rm_github() {
+    if ! git remote get-url origin &>/dev/null; then
+        log_info "No GitHub remote to remove"
+        return 0
+    fi
+
+    git remote remove origin
+    log_success "GitHub remote removed (local repo preserved)"
+    log_info "Note: Remote repository still exists on GitHub"
+}
+
+cmd_rm_cicd() {
+    if [[ ! -d ".github/workflows" ]]; then
+        log_info "No CI/CD workflows to remove"
+        return 0
+    fi
+
+    rm -rf .github/workflows
+    # Remove .github if empty
+    rmdir .github 2>/dev/null || true
+    log_success "CI/CD workflows removed"
+}
+
+#=============================================================================
+# MAIN - Multi-command parsing
+#=============================================================================
+
+show_usage() {
+    cat << 'EOF'
+Usage: zzcollab <commands...> [options]
+
+Commands (can be combined):
+  init       Create rrtools structure (DESCRIPTION, R/, analysis/)
+  renv       Add renv package tracking (renv.lock)
+  docker     Add Docker containerization (Dockerfile)
+  git        Initialize git repository
+  github     Initialize git + create GitHub repo
+  profile    Set/change Docker profile
+
+  rm <feature>   Remove a feature (docker, renv, git, github, cicd)
+  validate       Validate project structure
+  config         Configuration management
+  list           List profiles, libs, packages
+  nav            Shell navigation shortcuts
+  help           Show help
+
+Options:
+  -r, --profile <name>   Set Docker profile (minimal, analysis, publishing)
+  -b, --build            Build Docker image after generating
+  --private              Create private GitHub repo (default)
+  --public               Create public GitHub repo
+  -v, --verbose          Increase verbosity
+  -q, --quiet            Errors only
+  -h, --help             Show help
+  --version              Show version
+
+Examples:
+  zzcollab init                    # Create rrtools structure
+  zzcollab docker                  # Add Docker (auto-adds renv, init)
+  zzcollab docker github           # Add Docker + GitHub
+  zzcollab init docker -r shiny    # Init + Docker with shiny profile
+  zzcollab profile publishing      # Change profile
+  zzcollab rm docker               # Remove Docker files
+  zzcollab git                     # Just init git
+  zzcollab github                  # Init git + create GitHub repo
+EOF
+}
 
 main() {
     # No arguments → show usage
@@ -819,39 +1090,182 @@ main() {
         exit 0
     fi
 
-    # Check for global flags first
-    case "$1" in
-        --version)
-            echo "zzcollab ${ZZCOLLAB_VERSION:-1.0.0}"
-            exit 0
-            ;;
-        --help|-h)
-            show_usage
-            exit 0
-            ;;
-    esac
+    # Track if any command was executed
+    local commands_run=0
 
-    # Subcommand routing (check known commands BEFORE legacy mode)
-    local command="$1"
+    # Process arguments in order
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            # Global flags
+            --version)
+                echo "zzcollab ${ZZCOLLAB_VERSION:-2.0.0}"
+                exit 0
+                ;;
+            --help|-h)
+                show_usage
+                exit 0
+                ;;
+            -v|--verbose)
+                export VERBOSITY_LEVEL=2
+                shift
+                ;;
+            -q|--quiet)
+                export VERBOSITY_LEVEL=0
+                shift
+                ;;
 
-    case "$command" in
-        init|docker|renv|validate|nav|uninstall|list|config|help)
-            shift
-            "cmd_${command}" "$@"
-            exit $?
-            ;;
-    esac
+            # Commands that take no arguments
+            init)
+                cmd_init
+                ((commands_run++))
+                shift
+                ;;
+            renv)
+                cmd_renv
+                ((commands_run++))
+                shift
+                ;;
+            docker)
+                # Collect docker-specific flags
+                shift
+                local docker_args=()
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        -r|--profile)
+                            docker_args+=("--profile" "$2")
+                            shift 2
+                            ;;
+                        -b|--build)
+                            docker_args+=("--build")
+                            shift
+                            ;;
+                        --r-version|--base-image)
+                            docker_args+=("$1" "$2")
+                            shift 2
+                            ;;
+                        -*)
+                            # Unknown flag, might be for next command
+                            break
+                            ;;
+                        *)
+                            # Not a flag, might be next command
+                            break
+                            ;;
+                    esac
+                done
+                cmd_docker "${docker_args[@]}"
+                ((commands_run++))
+                ;;
+            git)
+                cmd_git
+                ((commands_run++))
+                shift
+                ;;
+            github)
+                # Check for visibility flags
+                shift
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        --private)
+                            export GITHUB_VISIBILITY="private"
+                            shift
+                            ;;
+                        --public)
+                            export GITHUB_VISIBILITY="public"
+                            shift
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                cmd_github
+                ((commands_run++))
+                ;;
+            profile)
+                shift
+                if [[ $# -eq 0 || "$1" == -* ]]; then
+                    log_error "profile requires a name"
+                    exit 1
+                fi
+                cmd_profile "$1"
+                ((commands_run++))
+                shift
+                ;;
 
-    # Legacy mode detection (backwards compatibility for direct flags)
-    if is_legacy_mode "$@"; then
-        cmd_init "$@"
-        exit $?
+            # Standalone profile flag
+            -r|--profile)
+                shift
+                if [[ $# -eq 0 ]]; then
+                    log_error "-r/--profile requires a name"
+                    exit 1
+                fi
+                cmd_profile "$1"
+                ((commands_run++))
+                shift
+                ;;
+
+            # Remove command
+            rm)
+                shift
+                if [[ $# -eq 0 ]]; then
+                    log_error "rm requires a feature name"
+                    log_info "Features: docker, renv, git, github, cicd"
+                    exit 1
+                fi
+                cmd_rm "$1"
+                ((commands_run++))
+                shift
+                ;;
+
+            # Other commands that pass through
+            validate)
+                shift
+                cmd_validate "$@"
+                exit $?
+                ;;
+            config)
+                shift
+                cmd_config "$@"
+                exit $?
+                ;;
+            list)
+                shift
+                cmd_list "$@"
+                exit $?
+                ;;
+            nav)
+                shift
+                cmd_nav "$@"
+                exit $?
+                ;;
+            uninstall)
+                shift
+                cmd_uninstall "$@"
+                exit $?
+                ;;
+            help)
+                shift
+                cmd_help "$@"
+                exit $?
+                ;;
+
+            # Unknown
+            *)
+                log_error "Unknown command: $1"
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
+
+    # If no commands were run, show usage
+    if [[ $commands_run -eq 0 ]]; then
+        show_usage
+        exit 0
     fi
 
-    # Unknown command
-    log_error "Unknown command: $command"
-    show_usage
-    exit 1
+    exit 0
 }
 
 # Only run main if script is executed directly
