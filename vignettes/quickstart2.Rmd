@@ -463,8 +463,8 @@ knitr::opts_chunk$set(
 ## Introduction
 
 This analysis examines fuel efficiency patterns in a subset of the Motor
-Trend Car Road Tests dataset. The analysis uses the first 16 observations
-from the original 32-car dataset.
+Trend Car Road Tests dataset. The raw data contains all 32 observations;
+the derived dataset extracts the first 16 observations for analysis.
 
 ## Data Loading
 
@@ -572,8 +572,8 @@ git init
 git add .
 git commit -m "Initial project setup with mtcars analysis
 
-- Add raw data (first 50% of mtcars)
-- Create data processing functions
+- Add raw data (complete mtcars CSV)
+- Create data processing script (extracts first half)
 - Add data validation and function tests
 - Create initial report structure
 
@@ -926,6 +926,6 @@ The final repository contains:
 ## Next Steps
 
 - Add CI/CD with GitHub Actions for automated testing
-- Implement additional analyses on the remaining 50% of mtcars
+- Implement additional analyses on the second half of mtcars
 - Create a package vignette documenting the analysis methodology
 - Add code coverage reporting with covr
