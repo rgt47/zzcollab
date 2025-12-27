@@ -17,9 +17,9 @@ These are installed automatically by zzcollab:
 
 ### render-paper.yml
 **Purpose:** Renders research manuscripts to PDF
-**Triggers:** Changes to analysis/paper, R code, or manual
+**Triggers:** Changes to analysis/report, R code, or manual
 **Key Features:**
-- Auto-detects manuscript file (paper.Rmd, manuscript.Rmd, main.Rmd, or largest .Rmd)
+- Auto-detects manuscript file (report.Rmd, manuscript.Rmd, main.Rmd, or largest .Rmd)
 - Renders supplementary documents optionally
 - Uploads PDFs as artifacts
 - **Improvement:** No longer requires hardcoded filename
@@ -108,7 +108,7 @@ SCRIPTS=$(ls -1 [0-9][0-9]_*.R 2>/dev/null | sort)
 - **Result:** Development-friendly, won't block CI unnecessarily
 
 **render-paper.yml:**
-- ❌ Was: Hardcoded `paper.Rmd` - failed if file named differently
+- ❌ Was: Hardcoded `report.Rmd` - failed if file named differently
 - ✅ Now: Auto-detects manuscript (tries common names, then finds largest .Rmd)
 - **Result:** Works with any manuscript filename
 
@@ -146,7 +146,7 @@ SCRIPTS=$(ls -1 [0-9][0-9]_*.R 2>/dev/null | sort)
 - Review logs for specific R CMD check errors
 
 **Manuscript not found:**
-- Verify .Rmd file exists in `analysis/paper/`
+- Verify .Rmd file exists in `analysis/report/`
 - Check detection logic in render-paper.yml
 - Try manual trigger with workflow_dispatch
 

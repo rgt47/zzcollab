@@ -393,7 +393,7 @@ git commit -m "Add statistical analysis"
 
 **🐳 CONTAINER (RStudio)**:
 
-Create `analysis/paper/analysis_report.Rmd`:
+Create `analysis/report/analysis_report.Rmd`:
 ```r
 ---
 title: "Palmer Penguins Analysis"
@@ -423,7 +423,7 @@ Knit to HTML in RStudio.
 
 **💻 HOST**:
 ```bash
-git add analysis/paper/
+git add analysis/report/
 git commit -m "Add final report"
 git push
 ```

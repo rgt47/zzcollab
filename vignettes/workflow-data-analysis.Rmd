@@ -56,7 +56,7 @@ analysis/                analysis/                    analysis/
 ├── data/               ├── data/                    ├── data/
 └── scripts/            ├── scripts/                 ├── scripts/
                         └── paper/                   └── paper/
-                            └── paper.Rmd            R/
+                            └── report.Rmd            R/
                                                      tests/
                                                      vignettes/
 ```
@@ -744,7 +744,7 @@ jobs:
 
 ## Adding a Manuscript (Week 2+)
 
-When ready to write up results, simply add `analysis/paper/paper.Rmd`:
+When ready to write up results, simply add `analysis/report/report.Rmd`:
 
 ```bash
 # Still in same project - no migration needed!
@@ -764,7 +764,7 @@ modules/setup_symlinks.sh
 # See vignette: "Blog Post Development with ZZCOLLAB"
 ```
 
-The setup script creates a dual-symlink structure that lets Quarto find your `index.qmd` while you work in the familiar `analysis/paper/` directory.
+The setup script creates a dual-symlink structure that lets Quarto find your `index.qmd` while you work in the familiar `analysis/report/` directory.
 
 ## Converting to R Package (Month 3+)
 

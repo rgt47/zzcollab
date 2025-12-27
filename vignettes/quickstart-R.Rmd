@@ -163,12 +163,12 @@ Run scripts and render reports from R:
 run_script("analysis/scripts/01_data_prep.R")
 
 # Render R Markdown report
-render_report("analysis/paper/paper.Rmd")
+render_report("analysis/report/report.Rmd")
 
 # Check results
-if (file.exists("analysis/paper/paper.html")) {
+if (file.exists("analysis/report/paper.html")) {
   message("Report rendered successfully")
-  browseURL("analysis/paper/paper.html")
+  browseURL("analysis/report/paper.html")
 }
 ```
 
@@ -513,7 +513,7 @@ rebuild("docker-check-renv")
 ### RMarkdown Integration
 
 ```{r}
-# In analysis/paper/paper.Rmd header:
+# In analysis/report/report.Rmd header:
 # ---
 # title: "My Analysis"
 # output: html_document

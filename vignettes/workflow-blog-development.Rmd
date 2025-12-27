@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 
 This vignette demonstrates how to create **reproducible blog posts** using ZZCOLLAB, following the unified research compendium framework [@marwick2018]. Each blog post becomes a self-contained reproducible project that readers can clone and execute independently.
 
-**Key Philosophy**: Blog posts containing data analysis should be **as reproducible as academic papers**. Each post directory is a complete ZZCOLLAB project with Docker, renv, and the five pillars of reproducibility. The blog post itself lives in `analysis/paper/`, consistent with the manuscript workflow.
+**Key Philosophy**: Blog posts containing data analysis should be **as reproducible as academic papers**. Each post directory is a complete ZZCOLLAB project with Docker, renv, and the five pillars of reproducibility. The blog post itself lives in `analysis/report/`, consistent with the manuscript workflow.
 
 ## What You Will Learn
 
@@ -50,7 +50,7 @@ Each blog post follows the unified compendium structure with a dual-symlink syst
 
 ```
 posts/palmer_penguins_part1/
-├── index.qmd → analysis/paper/index.qmd     # Symlink for Quarto
+├── index.qmd → analysis/report/index.qmd     # Symlink for Quarto
 ├── figures/ → analysis/figures/              # Symlink for HTML resolution
 ├── media/ → analysis/media/                  # Symlink for HTML resolution
 ├── data/ → analysis/data/                    # Symlink for HTML resolution
@@ -100,17 +100,17 @@ posts/palmer_penguins_part1/
 
 ## Why Dual Symlinks?
 
-Quarto blogs expect `posts/*/index.qmd` at the post root, but ZZCOLLAB places documents in `analysis/paper/`. The dual-symlink system addresses this:
+Quarto blogs expect `posts/*/index.qmd` at the post root, but ZZCOLLAB places documents in `analysis/report/`. The dual-symlink system addresses this:
 
 **At post root** (for Quarto and HTML resolution):
 ```
-index.qmd → analysis/paper/index.qmd
+index.qmd → analysis/report/index.qmd
 figures/  → analysis/figures/
 media/    → analysis/media/
 data/     → analysis/data/
 ```
 
-**In analysis/paper/** (for intuitive editing):
+**In analysis/report/** (for intuitive editing):
 ```
 figures/ → ../figures/
 media/   → ../media/
@@ -122,7 +122,7 @@ data/    → ../data/
 1. **Quarto compatibility**: Finds `index.qmd` at expected location
 2. **Intuitive paths**: Write `![Plot](figures/plot.png)` in your `.qmd`
 3. **Correct HTML**: Rendered paths resolve via root symlinks
-4. **rrtools consistency**: Actual content lives in `analysis/paper/`
+4. **rrtools consistency**: Actual content lives in `analysis/report/`
 
 ## Directory Purposes
 
@@ -161,9 +161,9 @@ modules/setup_symlinks.sh
 This single command:
 
 1. Creates media directories (`analysis/media/{images,audio,video}/`)
-2. Copies the `index.qmd` template to `analysis/paper/`
+2. Copies the `index.qmd` template to `analysis/report/`
 3. Creates root-level symlinks for Quarto compatibility
-4. Creates `analysis/paper/` symlinks for intuitive editing
+4. Creates `analysis/report/` symlinks for intuitive editing
 
 **Verify the structure:**
 
@@ -171,8 +171,8 @@ This single command:
 # Check root-level symlinks
 ls -la
 
-# Check analysis/paper/ symlinks
-ls -la analysis/paper/
+# Check analysis/report/ symlinks
+ls -la analysis/report/
 
 # Check status anytime
 modules/setup_symlinks.sh --status
@@ -211,7 +211,7 @@ EOF
 
 ## Step 4: Edit Blog Post
 
-The `setup_symlinks.sh` script created a template at `analysis/paper/index.qmd`.
+The `setup_symlinks.sh` script created a template at `analysis/report/index.qmd`.
 Edit it to customize your post:
 
 ````markdown
@@ -284,7 +284,7 @@ sessionInfo()
 ```
 ````
 
-**Note**: All paths are simple (`figures/`, `media/`, `data/`) because symlinks in `analysis/paper/` resolve them to actual directories.
+**Note**: All paths are simple (`figures/`, `media/`, `data/`) because symlinks in `analysis/report/` resolve them to actual directories.
 
 ## Step 5: Create Analysis Scripts
 
@@ -547,7 +547,7 @@ Git tracks symlinks as files containing the target path. Commit them:
 
 ```bash
 git add index.qmd figures media data
-git add analysis/paper/figures analysis/paper/media analysis/paper/data
+git add analysis/report/figures analysis/report/media analysis/report/data
 git commit -m "Add symlink structure for blog post"
 ```
 
@@ -558,7 +558,7 @@ git add .
 git commit -m "Add Palmer Penguins Part 1: Reproducible blog post
 
 Structure:
-- analysis/paper/index.qmd: Blog post content
+- analysis/report/index.qmd: Blog post content
 - analysis/scripts/: Analysis pipeline (3 scripts)
 - analysis/figures/: Generated plots
 - analysis/media/: Static images, audio, video
@@ -595,7 +595,7 @@ open index.html
 ## Structure
 
 ```
-├── index.qmd              # Symlink to analysis/paper/index.qmd
+├── index.qmd              # Symlink to analysis/report/index.qmd
 ├── figures/               # Symlink to analysis/figures/
 ├── media/                 # Symlink to analysis/media/
 ├── analysis/
@@ -618,7 +618,7 @@ Run the pipeline: `make post-analysis`
 
 ## Structure
 
-- **Blog post in `analysis/paper/index.qmd`** - Consistent with rrtools
+- **Blog post in `analysis/report/index.qmd`** - Consistent with rrtools
 - **Dual symlinks** - Root level for Quarto, paper level for editing
 - **Numbered scripts** - Clear execution order
 - **Separate figures from media** - Generated vs static
@@ -711,12 +711,12 @@ Before publishing your blog post, verify:
 
 ```
 posts/my_analysis/
-├── index.qmd → analysis/paper/index.qmd       # Symlink
+├── index.qmd → analysis/report/index.qmd       # Symlink
 ├── figures/ → analysis/figures/                # Symlink
 ├── media/ → analysis/media/                    # Symlink
 ├── data/ → analysis/data/                      # Symlink
 │
-├── analysis/paper/
+├── analysis/report/
 │   ├── index.qmd                               # Actual blog post file
 │   ├── figures/ → ../figures/                  # Symlink
 │   ├── media/ → ../media/                      # Symlink
@@ -739,7 +739,7 @@ posts/my_analysis/
 └── README.md
 ```
 
-In `analysis/paper/index.qmd`:
+In `analysis/report/index.qmd`:
 
 ```markdown
 ---
@@ -767,7 +767,7 @@ cp -r /path/to/zzcollab/template_post posts/my_new_post
 
 # Just customize the content
 cd posts/my_new_post
-$EDITOR analysis/paper/index.qmd
+$EDITOR analysis/report/index.qmd
 ```
 
 # References

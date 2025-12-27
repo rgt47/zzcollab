@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 
 This vignette demonstrates the recommended workflow for scholarly manuscript development using ZZCOLLAB, following the unified research compendium framework [@marwick2018] and best practices for reproducible computational manuscripts [@gentleman2007; @knuth1984].
 
-**Key Philosophy**: Use the **same structure** for manuscript writing as data analysis. No separate "manuscript paradigm"—simply add `analysis/paper/paper.Rmd` when ready to write [@marwick2018].
+**Key Philosophy**: Use the **same structure** for manuscript writing as data analysis. No separate "manuscript paradigm"—simply add `analysis/report/report.Rmd` when ready to write [@marwick2018].
 
 ## What You Will Learn
 
@@ -50,7 +50,7 @@ This vignette demonstrates the recommended workflow for scholarly manuscript dev
 
 Traditional approach: Create separate "manuscript project" from "analysis project."
 
-**ZZCOLLAB approach** [@marwick2018; @gentleman2007]: **Same project, just add paper.Rmd**.
+**ZZCOLLAB approach** [@marwick2018; @gentleman2007]: **Same project, just add report.Rmd**.
 
 ```
 Week 1 (Analysis Only):      Week 4 (Add Manuscript):        Month 2 (Publish):
@@ -59,7 +59,7 @@ analysis/                    analysis/                       analysis/
 ├── scripts/                ├── scripts/                    ├── scripts/
 └── figures/                ├── figures/                    ├── figures/
                             └── paper/                      └── paper/
-                                ├── paper.Rmd (ADD!)            ├── paper.Rmd
+                                ├── report.Rmd (ADD!)            ├── report.Rmd
                                 └── references.bib              ├── paper.pdf
                                                                 └── supplementary.pdf
 R/                          R/                              R/
@@ -78,14 +78,14 @@ Two valid approaches [@marwick2018]:
 **Best for**: Exploratory research, novel methods, uncertain direction
 
 1. **Week 1-8**: Analyze data, develop methods, create functions
-2. **Week 9+**: Add `analysis/paper/paper.Rmd` to write up results
+2. **Week 9+**: Add `analysis/report/report.Rmd` to write up results
 
 **Advantage**: Clear understanding of findings before writing.
 
 ### Approach 2: Write as You Go (Literate Programming)
 **Best for**: Hypothesis-driven research, established methods [@knuth1984]
 
-1. **Day 1**: Create `analysis/paper/paper.Rmd` with introduction
+1. **Day 1**: Create `analysis/report/report.Rmd` with introduction
 2. **Daily**: Add analysis code + narrative as you work
 3. **Final week**: Polish, render final document
 
@@ -141,7 +141,7 @@ penguin-morphology-paper/
 └── Makefile                       # Convenient commands
 ```
 
-**Key insight**: This is **exactly the same structure** as data analysis. The only difference is you'll add content to `analysis/paper/` [@marwick2018].
+**Key insight**: This is **exactly the same structure** as data analysis. The only difference is you'll add content to `analysis/report/` [@marwick2018].
 
 ## Step 2: Develop Analysis (Standard Workflow)
 
@@ -187,9 +187,9 @@ exit
 
 When analysis is complete (or as you go), add manuscript structure.
 
-### Create paper.Rmd
+### Create report.Rmd
 
-Create `analysis/paper/paper.Rmd`:
+Create `analysis/report/report.Rmd`:
 
 ````markdown
 ---
@@ -452,7 +452,7 @@ All data and code are available at: https://github.com/yourusername/penguin-morp
 Raw data: `analysis/data/raw_data/penguins.csv`
 Processed data: `analysis/data/derived_data/penguins_clean.csv`
 Analysis code: `analysis/scripts/`
-Manuscript source: `analysis/paper/paper.Rmd`
+Manuscript source: `analysis/report/report.Rmd`
 
 # Supplementary Materials
 
@@ -464,7 +464,7 @@ Information.
 
 ### Create Bibliography
 
-Create `analysis/paper/references.bib`:
+Create `analysis/report/references.bib`:
 
 ```bibtex
 @article{marwick_packaging_2018,
@@ -535,7 +535,7 @@ make r
 
 # Download citation style (Ecology Letters example)
 wget https://raw.githubusercontent.com/citation-style-language/styles/master/ecology-letters.csl \
-  -O analysis/paper/ecology-letters.csl
+  -O analysis/report/ecology-letters.csl
 
 exit
 ```
@@ -548,13 +548,13 @@ exit
 make r
 
 R
-> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "pdf_document")
+> rmarkdown::render("analysis/report/report.Rmd", output_format = "pdf_document")
 > quit()
 
 exit
 ```
 
-Output: `analysis/paper/paper.pdf`
+Output: `analysis/report/paper.pdf`
 
 ### Render to Word
 
@@ -564,13 +564,13 @@ Useful for collaborators who prefer Microsoft Word:
 make r
 
 R
-> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "word_document")
+> rmarkdown::render("analysis/report/report.Rmd", output_format = "word_document")
 > quit()
 
 exit
 ```
 
-Output: `analysis/paper/paper.docx`
+Output: `analysis/report/paper.docx`
 
 ### Render to HTML
 
@@ -580,13 +580,13 @@ Great for web sharing and interactive code:
 make r
 
 R
-> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "html_document")
+> rmarkdown::render("analysis/report/report.Rmd", output_format = "html_document")
 > quit()
 
 exit
 ```
 
-Output: `analysis/paper/paper.html`
+Output: `analysis/report/paper.html`
 
 ### Render to All Formats
 
@@ -594,7 +594,7 @@ Output: `analysis/paper/paper.html`
 make r
 
 R
-> rmarkdown::render("analysis/paper/paper.Rmd", output_format = "all")
+> rmarkdown::render("analysis/report/report.Rmd", output_format = "all")
 > quit()
 
 exit
@@ -606,7 +606,7 @@ Many journals require supplementary materials [@marwick2018].
 
 ### Create supplementary.Rmd
 
-Create `analysis/paper/supplementary.Rmd`:
+Create `analysis/report/supplementary.Rmd`:
 
 ````markdown
 ---
@@ -698,17 +698,17 @@ manuscript: manuscript-all
 manuscript-pdf:
 	@echo "Rendering manuscript to PDF..."
 	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
-		Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'pdf_document')"
+		Rscript -e "rmarkdown::render('analysis/report/report.Rmd', output_format = 'pdf_document')"
 
 manuscript-word:
 	@echo "Rendering manuscript to Word..."
 	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
-		Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'word_document')"
+		Rscript -e "rmarkdown::render('analysis/report/report.Rmd', output_format = 'word_document')"
 
 manuscript-html:
 	@echo "Rendering manuscript to HTML..."
 	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
-		Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'html_document')"
+		Rscript -e "rmarkdown::render('analysis/report/report.Rmd', output_format = 'html_document')"
 
 manuscript-all: manuscript-pdf manuscript-word manuscript-html supplementary
 	@echo "All manuscript formats rendered successfully"
@@ -716,7 +716,7 @@ manuscript-all: manuscript-pdf manuscript-word manuscript-html supplementary
 supplementary:
 	@echo "Rendering supplementary materials..."
 	docker run --rm -v "$(PWD):/project" -w /project $(DOCKER_IMAGE) \
-		Rscript -e "rmarkdown::render('analysis/paper/supplementary.Rmd', output_format = 'all')"
+		Rscript -e "rmarkdown::render('analysis/report/supplementary.Rmd', output_format = 'all')"
 ```
 
 ### Usage
@@ -739,10 +739,10 @@ Manuscripts benefit enormously from version control [@ram2013; @bryan2018].
 
 ```bash
 # Add manuscript files
-git add analysis/paper/paper.Rmd
-git add analysis/paper/supplementary.Rmd
-git add analysis/paper/references.bib
-git add analysis/paper/*.csl
+git add analysis/report/report.Rmd
+git add analysis/report/supplementary.Rmd
+git add analysis/report/references.bib
+git add analysis/report/*.csl
 
 # Commit
 git commit -m "Add manuscript draft
@@ -764,11 +764,11 @@ git push
 # Co-author creates branch
 git checkout -b coauthor-edits
 
-# Make changes to paper.Rmd
+# Make changes to report.Rmd
 # ...
 
 # Commit changes
-git add analysis/paper/paper.Rmd
+git add analysis/report/report.Rmd
 git commit -m "Revise introduction and discussion"
 
 # Push and create pull request
@@ -786,7 +786,7 @@ git pull
 # ...
 
 # Commit with descriptive message
-git add analysis/paper/paper.Rmd
+git add analysis/report/report.Rmd
 git commit -m "Add sensitivity analysis section
 
 - Test robustness to outlier removal
@@ -829,7 +829,7 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'analysis/paper/**'
+      - 'analysis/report/**'
       - 'analysis/scripts/**'
       - 'analysis/data/**'
       - 'R/**'
@@ -864,29 +864,29 @@ jobs:
 
       - name: Render manuscript to PDF
         run: |
-          Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'pdf_document')"
+          Rscript -e "rmarkdown::render('analysis/report/report.Rmd', output_format = 'pdf_document')"
 
       - name: Render supplementary materials
         run: |
-          Rscript -e "rmarkdown::render('analysis/paper/supplementary.Rmd', output_format = 'pdf_document')"
+          Rscript -e "rmarkdown::render('analysis/report/supplementary.Rmd', output_format = 'pdf_document')"
 
       - name: Upload PDF artifacts
         uses: actions/upload-artifact@v3
         with:
           name: manuscript-pdf
           path: |
-            analysis/paper/paper.pdf
-            analysis/paper/supplementary.pdf
+            analysis/report/paper.pdf
+            analysis/report/supplementary.pdf
 
       - name: Render manuscript to Word
         run: |
-          Rscript -e "rmarkdown::render('analysis/paper/paper.Rmd', output_format = 'word_document')"
+          Rscript -e "rmarkdown::render('analysis/report/report.Rmd', output_format = 'word_document')"
 
       - name: Upload Word artifact
         uses: actions/upload-artifact@v3
         with:
           name: manuscript-word
-          path: analysis/paper/paper.docx
+          path: analysis/report/paper.docx
 ```
 
 **Benefits**:
@@ -914,7 +914,7 @@ R
 >
 > # Create journal-specific manuscript
 > rmarkdown::draft(
->   "analysis/paper/plos_one.Rmd",
+>   "analysis/report/plos_one.Rmd",
 >   template = "plos_article",
 >   package = "rticles"
 > )
@@ -950,7 +950,7 @@ exit
 
 ### Create Quarto Manuscript
 
-Create `analysis/paper/paper.qmd`:
+Create `analysis/report/paper.qmd`:
 
 ````markdown
 ---
@@ -968,7 +968,7 @@ bibliography: references.bib
 
 ## Introduction
 
-(Same content as paper.Rmd, but with enhanced features)
+(Same content as report.Rmd, but with enhanced features)
 
 ```{r}
 #| label: fig-allometry
@@ -992,7 +992,7 @@ ggplot(penguins, aes(x = body_mass_g, y = bill_length_mm, color = species)) +
 ```bash
 make r
 
-quarto render analysis/paper/paper.qmd --to all
+quarto render analysis/report/paper.qmd --to all
 
 exit
 ```
@@ -1047,7 +1047,7 @@ git commit -m "Track large PDFs with Git LFS"
 
 ### Figure Caching
 
-In `paper.Rmd`:
+In `report.Rmd`:
 
 ````markdown
 ```{r caching-setup}
@@ -1062,7 +1062,7 @@ Figures are cached - only regenerate when code changes.
 Following reproducible manuscript development best practices [@marwick2018; @gentleman2007; @knuth1984]:
 
 ## Manuscript Organization
-✅ **Source in version control** - paper.Rmd tracked with git
+✅ **Source in version control** - report.Rmd tracked with git
 ✅ **Literate programming** - Code + narrative integrated [@knuth1984]
 ✅ **Reproducible from source** - `rmarkdown::render()` rebuilds manuscript
 ✅ **Multiple output formats** - PDF, Word, HTML from same source
@@ -1118,7 +1118,7 @@ my-project/
 │   ├── scripts/
 │   ├── figures/
 │   └── paper/                  # ADD: Manuscript directory
-│       ├── paper.Rmd           # ADD: Manuscript source
+│       ├── report.Rmd           # ADD: Manuscript source
 │       └── references.bib      # ADD: Bibliography
 └── R/
     └── functions.R
@@ -1130,7 +1130,7 @@ my-project/
 ```
 # Daily workflow:
 make r
-# Edit paper.Rmd
+# Edit report.Rmd
 # Update analysis if needed
 exit  # Auto-snapshot!
 
@@ -1148,7 +1148,7 @@ my-project/
 │   ├── scripts/
 │   ├── figures/
 │   └── paper/
-│       ├── paper.Rmd
+│       ├── report.Rmd
 │       ├── paper.pdf          # Final manuscript
 │       ├── supplementary.Rmd
 │       ├── supplementary.pdf  # Supplementary materials

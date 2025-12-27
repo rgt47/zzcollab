@@ -312,10 +312,10 @@ shinyApp(ui, server)
 
 ```bash
 # Generate HTML report
-R -e "rmarkdown::render('analysis/paper/paper.Rmd')"
+R -e "rmarkdown::render('analysis/report/report.Rmd')"
 
 # View in Firefox (gui profile)
-firefox analysis/paper/paper.html &
+firefox analysis/report/paper.html &
 ```
 
 ---

@@ -1,0 +1,67 @@
+---
+title: "Palmer Penguins Bill Dimensions Analysis"
+author: "Reproducible Research Team"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Introduction
+
+Analysis of bill length and bill depth measurements across three penguin species
+from the Palmer Station Antarctica LTER.
+
+This report demonstrates the complete data workflow:
+- Raw data → Processing → Analysis → Visualization
+
+## Data Processing
+
+```{r data-processing}
+# Load data processing functions
+source("../../R/data_utils.R")
+source("../../R/bill_analysis.R")
+
+library(dplyr)
+library(ggplot2)
+
+# Load the processed data
+penguins <- load_penguin_data()
+
+# Preview data
+head(penguins)
+```
+
+## Summary Statistics
+
+```{r summary-stats}
+# Calculate summary by species
+summary_stats <- summarize_by_species(penguins)
+knitr::kable(summary_stats, digits = 2, caption = "Bill dimensions by species")
+```
+
+## Visualization
+
+### Bill Dimensions by Species
+
+```{r bill-plot, fig.width=8, fig.height=6}
+# Generate plot using function from R/
+plot <- create_bill_plot(penguins)
+print(plot)
+
+# Save plot
+dir.create("../figures", showWarnings = FALSE, recursive = TRUE)
+ggplot2::ggsave("../figures/bill_scatter.png", plot, width = 8, height = 6)
+```
+
+## Summary
+
+The analysis reveals distinct bill dimension patterns across penguin species:
+- Data processed from raw measurements (Step 4)
+- Functions in R/ provide reusable analysis components
+- Unit tests ensure correctness

@@ -82,12 +82,12 @@ zzcollab creates these automatic workflows:
 
 **Time**: ~2-3 minutes
 
-### 3. Render Paper (render-paper.yml) [if using analysis/paper/]
+### 3. Render Paper (render-paper.yml) [if using analysis/report/]
 
 **When**: Every push to GitHub
 
 **What it does**:
-- Renders `analysis/paper/paper.Rmd`
+- Renders `analysis/report/report.Rmd`
 - Generates HTML/PDF output
 - Uploads as artifact
 

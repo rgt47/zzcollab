@@ -74,7 +74,7 @@ my_project/
 │   │   ├── derived_data/   # Processed data (generated)
 │   │   └── README.md
 │   ├── paper/
-│   │   ├── paper.Rmd       # Manuscript
+│   │   ├── report.Rmd       # Manuscript
 │   │   └── references.bib
 │   ├── figures/            # Generated visualizations
 │   └── scripts/            # Analysis scripts (EMPTY - you create)
@@ -99,12 +99,12 @@ my_project/
 - Reference [zzcollab examples](https://github.com/rgt47/zzcollab/tree/main/examples) for patterns
 
 #### 3. Minimal CI/CD
-- One workflow: render paper.Rmd
+- One workflow: render report.Rmd
 - Comprehensive README.md explaining customization
 - Easy to extend or disable
 
 #### 4. No Separate `tables/` Directory
-- Tables are inline in paper.Rmd (rendered on the fly) or
+- Tables are inline in report.Rmd (rendered on the fly) or
 - Data files in `derived_data/` or
 - Images in `figures/`
 
@@ -291,13 +291,13 @@ write_csv(clean_data, here("analysis", "data", "derived_data", "cleaned_data.csv
 
 ```bash
 # Edit manuscript
-vim analysis/paper/paper.Rmd
+vim analysis/report/report.Rmd
 
 # Render locally
-Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
+Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 
 # Commit
-git add analysis/paper/
+git add analysis/report/
 git commit -m "Draft introduction and methods"
 ```
 
@@ -341,7 +341,7 @@ test_that("clean_experiment_data removes NAs", {
 Rscript -e 'devtools::test()'
 
 # Update manuscript to use function
-# In paper.Rmd:
+# In report.Rmd:
 # clean_data <- clean_experiment_data(raw_data)
 ```
 
@@ -353,7 +353,7 @@ docker build -t my-project-env .
 
 # Render paper in container (matches CI)
 docker run --rm -v $(pwd):/home/analyst/project -w /home/analyst/project \
-  my-project-env Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
+  my-project-env Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 
 # Run tests in container
 docker run --rm -v $(pwd):/home/analyst/project -w /home/analyst/project \
@@ -444,7 +444,7 @@ analysis/figures/
 cp -r my_project my_project.backup
 
 # Create new structure
-mkdir -p analysis/data analysis/scripts analysis/figures analysis/paper
+mkdir -p analysis/data analysis/scripts analysis/figures analysis/report
 mv data/raw analysis/data/raw_data
 mv data/processed analysis/data/derived_data
 mv scripts/* analysis/scripts/
@@ -453,15 +453,15 @@ mv scripts/* analysis/scripts/
 # Change: read.csv("data/raw/data.csv")
 # To: read.csv(here("analysis", "data", "raw_data", "data.csv"))
 
-# Add minimal paper.Rmd
-cp /path/to/zzcollab/templates/unified/analysis/paper/paper.Rmd analysis/paper/
+# Add minimal report.Rmd
+cp /path/to/zzcollab/templates/unified/analysis/report/report.Rmd analysis/report/
 ```
 
 ### For Existing Manuscript Paradigm Projects
 
 **Old structure**:
 ```
-manuscript/paper.Rmd
+manuscript/report.Rmd
 analysis/reproduce/
 R/
 tests/
@@ -469,7 +469,7 @@ tests/
 
 **Migration to unified**:
 ```
-analysis/paper/paper.Rmd
+analysis/report/report.Rmd
 analysis/scripts/  # reproduction scripts here
 R/                 # already compatible!
 tests/             # already compatible!
@@ -478,8 +478,8 @@ tests/             # already compatible!
 **Steps**:
 ```bash
 # Already mostly compatible!
-mkdir -p analysis/paper analysis/data analysis/figures
-mv manuscript/* analysis/paper/
+mkdir -p analysis/report analysis/data analysis/figures
+mv manuscript/* analysis/report/
 mv analysis/reproduce/* analysis/scripts/ 2>/dev/null || true
 
 # R/ and tests/ do not need to move
@@ -499,7 +499,7 @@ Optional: Add `analysis/` for manuscript if writing paper about the package.
 
 Same directory structure:
 - `analysis/data/raw_data/` and `derived_data/`
-- `analysis/paper/`
+- `analysis/report/`
 - `analysis/figures/`
 - R package foundation (DESCRIPTION, R/, tests/)
 
@@ -540,7 +540,7 @@ Same workflow:
 
 ### Q: Can I still do data analysis without writing a paper?
 
-**A**: Yes! Just use `analysis/scripts/` and ignore `analysis/paper/`. The structure is flexible - use what you need.
+**A**: Yes! Just use `analysis/scripts/` and ignore `analysis/report/`. The structure is flexible - use what you need.
 
 ### Q: Can I still develop R packages?
 
@@ -548,7 +548,7 @@ Same workflow:
 
 ### Q: Can I still write manuscripts?
 
-**A**: Yes! Use `analysis/paper/paper.Rmd`. The structure is specifically designed for this (Marwick's original purpose).
+**A**: Yes! Use `analysis/report/report.Rmd`. The structure is specifically designed for this (Marwick's original purpose).
 
 ### Q: Do I have to use Docker?
 

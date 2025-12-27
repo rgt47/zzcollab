@@ -453,7 +453,7 @@ For this tutorial, we use the default profile and save plots to files (works in 
 
 Create the report that uses our data workflow (raw data → processing → functions → visualization).
 
-Create `analysis/paper/paper.Rmd`:
+Create `analysis/report/report.Rmd`:
 
 ````
 ---
@@ -529,7 +529,7 @@ The analysis reveals distinct bill dimension patterns across penguin species:
 
 ```bash
 # Render the report
-Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
+Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 
 # Exit container (auto-snapshot runs here!)
 exit
@@ -579,7 +579,7 @@ Data Workflow (5 Pillars):
 - Derived data: analysis/data/derived_data/penguins_clean.csv (Pillar 5)
 - Functions: R/data_utils.R, R/bill_analysis.R (Pillar 4)
 - Unit tests: tests/testthat/test-data_utils.R (Pillar 4)
-- Analysis report: analysis/paper/paper.Rmd (Pillar 4)
+- Analysis report: analysis/report/report.Rmd (Pillar 4)
 
 Reproducibility:
 - Pillar 1: Dockerfile (computational environment)
@@ -619,24 +619,24 @@ GitHub Actions will automatically:
 
 ## Step 8: Verify Report Rendering CI/CD (Optional)
 
-GitHub Actions is already configured to automatically render your paper on every
-push. The default workflow renders `analysis/paper/paper.Rmd`.
+GitHub Actions is already configured to automatically render your report on every
+push. The default workflow renders `analysis/report/report.Rmd`.
 
 Verify the configuration:
 
 ```bash
-# Check the render-paper workflow (should already be correct)
-cat .github/workflows/render-paper.yml | grep "rmarkdown::render"
+# Check the render-report workflow (should already be correct)
+cat .github/workflows/render-report.yml | grep "rmarkdown::render"
 
 # Expected output:
-# compendium-env Rscript -e 'rmarkdown::render("analysis/paper/paper.Rmd")'
+# compendium-env Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 ```
 
 If you used a different filename, update the workflow:
 ```bash
-vim .github/workflows/render-paper.yml
-# Change the render command to match your paper filename
-git add .github/workflows/render-paper.yml
+vim .github/workflows/render-report.yml
+# Change the render command to match your report filename
+git add .github/workflows/render-report.yml
 git commit -m "Update CI/CD render path"
 git push
 ```
@@ -727,7 +727,7 @@ source("renv/activate.R")
 ### 4. Analysis Source Code - Computational Logic
 - **Analysis scripts**: `analysis/scripts/01_analysis.R`
 - **Reusable functions**: `R/bill_analysis.R`
-- **Reports**: `analysis/paper/paper.Rmd`
+- **Reports**: `analysis/report/report.Rmd`
 - **Tests**: `tests/testthat/test-bill_analysis.R`
 - **Random seeds**: Set explicitly in code for stochastic analyses
 
@@ -800,7 +800,7 @@ renv::restore()
 
 # 3. Source code runs the analysis
 source("analysis/scripts/01_analysis.R")
-rmarkdown::render("analysis/paper/paper.Rmd")
+rmarkdown::render("analysis/report/report.Rmd")
 
 # Result: Identical output to your original analysis
 ```
@@ -861,9 +861,9 @@ penguin-bills/
 │   │   ├── raw_data/            # Original, unmodified data
 │   │   ├── derived_data/        # Processed analysis-ready data
 │   │   └── README.md            # Data dictionary and documentation
-│   ├── paper/
-│   │   ├── paper.Rmd            # Analysis report (reproducible)
-│   │   └── paper.html           # Rendered output
+│   ├── report/
+│   │   ├── report.Rmd           # Analysis report (reproducible)
+│   │   └── report.html          # Rendered output
 │   ├── figures/
 │   │   └── bill_scatter.png     # Generated plot
 │   └── tables/                  # Generated tables
@@ -976,11 +976,11 @@ make r
 
 ```bash
 # Create manuscript
-mkdir -p analysis/paper
-# Add paper.Rmd with analysis
+mkdir -p analysis/report
+# Add report.Rmd with analysis
 
-# Render paper automatically via CI/CD
-# (already configured in .github/workflows/render-paper.yml)
+# Render report automatically via CI/CD
+# (already configured in .github/workflows/render-report.yml)
 ```
 
 # Troubleshooting

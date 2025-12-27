@@ -576,15 +576,15 @@ Add manuscript rendering validation when ready:
 
 test_that("manuscript renders successfully", {
   # Test manuscript compilation
-  rmarkdown::render("analysis/paper/paper.Rmd", quiet = TRUE)
-  expect_true(file.exists("analysis/paper/paper.pdf"))
+  rmarkdown::render("analysis/report/report.Rmd", quiet = TRUE)
+  expect_true(file.exists("analysis/report/paper.pdf"))
 
   # Test references are resolved
-  pdf_text <- pdftools::pdf_text("analysis/paper/paper.pdf")
+  pdf_text <- pdftools::pdf_text("analysis/report/paper.pdf")
   expect_true(any(grepl("References", pdf_text)))
 
   # Test figures are embedded
-  pdf_info <- pdftools::pdf_info("analysis/paper/paper.pdf")
+  pdf_info <- pdftools::pdf_info("analysis/report/paper.pdf")
   expect_gt(pdf_info$pages, 1)
 })
 ```

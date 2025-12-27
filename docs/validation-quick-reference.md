@@ -238,7 +238,7 @@ Violations = validation failure
 **Scans**:
 - `R/*.R`
 - `analysis/scripts/*.R`
-- `analysis/paper/*.Rmd`
+- `analysis/report/*.Rmd`
 
 **Use Case**: Daily development, package changes
 

@@ -144,7 +144,7 @@ Save as: `R/bill_analysis.R`
 
 ### 4.2 Create Analysis Report
 
-In RStudio, create file `analysis/paper/paper.Rmd`:
+In RStudio, create file `analysis/report/report.Rmd`:
 
 **File → New File → R Markdown...**
 
@@ -201,7 +201,7 @@ The analysis reveals distinct bill dimension patterns across penguin species.
 ```
 ````
 
-Save as: `analysis/paper/paper.Rmd`
+Save as: `analysis/report/report.Rmd`
 
 ### 4.3 Install Packages in RStudio
 
@@ -232,14 +232,14 @@ remotes::install_github("user/package")
 
 Render the analysis report:
 
-**Method 1 - Click "Knit" button** in `paper.Rmd`
+**Method 1 - Click "Knit" button** in `report.Rmd`
 
 **Method 2 - Console command:**
 ```r
-rmarkdown::render("analysis/paper/paper.Rmd")
+rmarkdown::render("analysis/report/report.Rmd")
 ```
 
-Your HTML report appears in `analysis/paper/paper.html`!
+Your HTML report appears in `analysis/report/paper.html`!
 
 ## Step 5: Add Unit Tests in RStudio (2 minutes)
 

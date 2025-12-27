@@ -127,8 +127,8 @@ jobs:
           fi
 
           # Check for reports
-          if [ -d "analysis/paper" ]; then
-            REPORT_COUNT=$(find analysis/paper -name "*.pdf" -o -name "*.html" | wc -l)
+          if [ -d "analysis/report" ]; then
+            REPORT_COUNT=$(find analysis/report -name "*.pdf" -o -name "*.html" | wc -l)
             echo "📄 Generated $REPORT_COUNT reports"
           fi
 
@@ -154,8 +154,8 @@ jobs:
             analysis/data/derived_data/*.rds
             analysis/figures/*.pdf
             analysis/figures/*.png
-            analysis/paper/*.pdf
-            analysis/paper/*.html
+            analysis/report/*.pdf
+            analysis/report/*.html
           retention-days: 90
           if-no-files-found: warn
 
@@ -185,8 +185,8 @@ jobs:
             echo "- **Figures**: $FIG_COUNT" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ -d "analysis/paper" ]; then
-            REPORT_COUNT=$(find analysis/paper -name "*.pdf" -o -name "*.html" | wc -l)
+          if [ -d "analysis/report" ]; then
+            REPORT_COUNT=$(find analysis/report -name "*.pdf" -o -name "*.html" | wc -l)
             echo "- **Reports**: $REPORT_COUNT" >> $GITHUB_STEP_SUMMARY
           fi
 
