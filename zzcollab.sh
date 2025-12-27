@@ -225,16 +225,49 @@ cmd_init() {
     # Run project setup
     setup_project || exit 1
 
-    # Generate Dockerfile if:
-    # - A profile was specified (-r/--profile-name), OR
-    # - Not in --no-docker mode (BUILD_DOCKER not explicitly set to false via -n)
-    # Note: When profile is specified, user clearly wants Docker functionality
-    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] || [[ "${BUILD_DOCKER:-true}" != "false" ]]; then
-        generate_dockerfile || log_warn "Dockerfile generation failed"
+    log_success "Project setup complete"
+
+    # If legacy mode with profile specified, skip prompt and go straight to docker
+    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]]; then
+        cmd_docker --profile "$PROFILE_NAME"
+        return $?
     fi
 
-    log_success "Project created: $PKG_NAME"
-    log_info "Next: cd $PKG_NAME && make docker-build"
+    # Prompt for reproducibility setup
+    echo ""
+    echo "───────────────────────────────────────────────────────────"
+    echo "  Reproducibility Setup"
+    echo "───────────────────────────────────────────────────────────"
+    echo ""
+    echo "  Your rrtools workspace is ready for host R development."
+    echo "  For reproducible research, add package tracking and/or Docker."
+    echo ""
+    echo "  [r] renv only      - Package lockfile for reproducibility"
+    echo "  [d] renv + Docker  - Full containerized environment (recommended)"
+    echo "  [n] None           - Just rrtools structure, configure later"
+    echo ""
+
+    local repro_choice
+    read -r -p "Add reproducibility? [r/d/N]: " repro_choice
+
+    case "$repro_choice" in
+        r|R)
+            cmd_renv
+            ;;
+        d|D)
+            cmd_docker
+            ;;
+        n|N|"")
+            echo ""
+            log_info "Skipping reproducibility setup"
+            log_info "Run 'zzcollab renv' or 'zzcollab docker' later"
+            ;;
+        *)
+            log_warn "Invalid choice, skipping reproducibility setup"
+            log_info "Run 'zzcollab renv' or 'zzcollab docker' later"
+            ;;
+    esac
+
     return 0
 }
 
@@ -260,6 +293,22 @@ cmd_docker() {
 
     # Ensure rrtools workspace is initialized
     ensure_workspace_initialized "docker" || exit 1
+
+    # Ensure renv.lock exists (required by Dockerfile)
+    if [[ ! -f "renv.lock" ]]; then
+        log_info "No renv.lock found, creating minimal lockfile..."
+
+        # Determine R version: CLI arg > config > query CRAN
+        if [[ -z "$r_version" ]]; then
+            load_config 2>/dev/null || true
+            r_version="${CONFIG_R_VERSION:-}"
+        fi
+        if [[ -z "$r_version" ]]; then
+            r_version=$(get_cran_r_version)
+        fi
+
+        create_renv_lock_minimal "$r_version"
+    fi
 
     # Set environment for docker module
     [[ -n "$r_version" ]] && export R_VERSION="$r_version"
