@@ -1143,6 +1143,11 @@ main() {
                             docker_args+=("$1" "$2")
                             shift 2
                             ;;
+                        # Profile names as implicit --profile
+                        minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
+                            docker_args+=("--profile" "$1")
+                            shift
+                            ;;
                         -*)
                             # Unknown flag, might be for next command
                             break
@@ -1214,6 +1219,13 @@ main() {
                     exit 1
                 fi
                 cmd_rm "$1"
+                ((commands_run++))
+                shift
+                ;;
+
+            # Profile names as standalone commands
+            minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
+                cmd_profile "$1"
                 ((commands_run++))
                 shift
                 ;;
