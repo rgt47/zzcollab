@@ -47,39 +47,25 @@ Set your defaults once to eliminate repetitive typing for ALL future projects:
 
 ```bash
 # Initialize configuration
-zzcollab config init
-
-# Set team name (typically your GitHub username for solo projects)
-zzcollab config set team-name "rgt47"
+zzc config init
 
 # Set GitHub account
-zzcollab config set github-account "rgt47"
+zzc config set github-account "rgt47"
 
-# Set Docker Hub account (defaults to team-name if not set)
-zzcollab config set dockerhub-account "rgt47"
-
-# Set default Docker profile (optional - leave empty for minimal)
-zzcollab config set profile-name ""
+# Set Docker Hub account
+zzc config set dockerhub-account "rgt47"
 ```
 
+**Note:** Both `zzc` (short) and `zzcollab` (full) commands work identically.
+
 **What this accomplishes:**
-- All future `zzcollab` commands use these defaults
-- No need to specify `-t` flag repeatedly
-- Change defaults anytime with `zzcollab config set`
-
-**Configuration Options Explained:**
-
-- **profile-name**: Controls Docker environment (team/shared)
-  - 14+ predefined profiles available
-  - Typically specified with `-r` flag when creating projects
-  - Leave empty for minimal profile (default)
-  - Can also compose custom environments with `-b`, `-l`, `-k` flags
+- All future `zzc` commands use these defaults
+- Change defaults anytime with `zzc config set`
 
 **Note on Package Management:**
-- Packages are added via standard `install.packages()` inside the container as needed
-- **Auto-snapshot**: Packages automatically captured in renv.lock when you exit the container
+- Packages are added via standard `install.packages()` inside the container
+- **Auto-snapshot**: Packages automatically captured in renv.lock when you exit
 - **Auto-restore**: Missing packages automatically installed when you start R
-- No need to pre-configure a "mode" - just install packages when you need them
 - The renv.lock accumulates packages from all team members
 
 ## Step 2: Create Project
@@ -87,75 +73,53 @@ zzcollab config set profile-name ""
 Create your reproducible analysis project:
 
 ```bash
-# Create project directory and initialize
+# Create project directory and initialize with Docker + GitHub
 mkdir penguin-bills && cd penguin-bills
-zzcollab
+zzc docker analysis github
 
-# Flags come from config (set in Step 1):
-# -t rgt47: from team-name config
+# Or step by step:
+# zzc init                    # Create rrtools structure
+# zzc docker analysis         # Add Docker with analysis profile
+# zzc github --private        # Create private GitHub repo
 
-# Build Docker image (required step)
+# Build Docker image
 make docker-build
 ```
 
-**What this does:**
-1. `zzcollab`: Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
-2. `zzcollab`: Sets up CI/CD workflows for automated testing
-3. `zzcollab`: Initializes renv for dependency tracking
-4. `make docker-build`: Builds Docker image with R + essential packages
-
-**Solo Developer Simplification:**
-
-Since you are working solo (not creating a team image), zzcollab creates a
-streamlined development environment optimized for individual work.
+**What `zzc docker analysis github` does:**
+1. Creates rrtools structure (DESCRIPTION, R/, analysis/, tests/)
+2. Generates renv.lock for package tracking
+3. Generates Dockerfile with analysis profile (tidyverse)
+4. Initializes git repository
+5. Creates private GitHub repository and pushes
 
 **Using Different Docker Profiles:**
 
-ZZCOLLAB provides 14+ predefined profiles for specialized environments. Use the `-r` flag to specify a profile:
+Profile names can be used directly as commands:
 
 ```bash
-# Option 1: Use -r flag for profile selection (most common)
+# Profiles work standalone or after docker command
 mkdir genomics-study && cd genomics-study
-zzcollab -r bioinformatics
-make docker-build
+zzc docker shiny github        # Docker + shiny + GitHub in one command
 
-# Option 2: Use -r flag for geospatial work
 mkdir spatial-analysis && cd spatial-analysis
-zzcollab -r geospatial
-make docker-build
+zzc docker publishing          # Docker with publishing profile (LaTeX)
 
-# Option 3: Custom composition with base image and bundles
-mkdir custom-project && cd custom-project
-zzcollab -b rocker/r-ver -l geospatial -k modeling
-make docker-build
+# Change profile on existing project
+zzc minimal                    # Switch to minimal profile
 
-# Browse all available profiles
-zzcollab --list-profiles  # Show all 14+ predefined profiles
-zzcollab --list-libs      # System library bundles
-zzcollab --list-pkgs      # R package bundles
+# List available profiles
+zzc list profiles              # Show all profiles
+zzc list libs                  # System library bundles
+zzc list pkgs                  # R package bundles
 ```
 
-**How Docker Profiles Work:**
-
-- **Docker Profile** (`-r` flag): Controls the base Docker image and pre-installed packages
-  - Shared across team members
-  - 14+ predefined profiles: minimal, analysis, modeling, bioinformatics, geospatial, and more
-  - Specify per project with `-r` flag (e.g., `zzcollab -r bioinformatics`)
-
-- **Package Management**: Packages are added dynamically as needed
-  - Use standard `install.packages("package-name")` inside the container
-  - **Auto-snapshot**: Packages captured in renv.lock when you exit container
-  - **Auto-restore**: Missing packages installed automatically when you start R
-  - The renv.lock file accumulates packages from all team members
-  - No need to pre-configure a "mode" - just install what you need
-
-## Step 3: Set Repository to Private
-
-```bash
-# Already in penguin-bills/ directory from Step 2
-# Make repository private using GitHub CLI
-gh repo edit --visibility private
-```
+**Available Profiles:**
+- `minimal` - Base R only (~300MB)
+- `analysis` / `tidyverse` - Tidyverse packages (~1.5GB)
+- `publishing` / `verse` - LaTeX + pandoc (~3GB)
+- `rstudio` - RStudio Server
+- `shiny` - Shiny Server
 
 ## Step 4: Add Research Data and Processing Pipeline
 

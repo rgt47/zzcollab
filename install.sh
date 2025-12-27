@@ -66,6 +66,7 @@ INSTALLATION STRUCTURE:
     └── zzcollab.sh      Main entry point
 
     ~/bin/zzcollab       Symlink to ~/.zzcollab/zzcollab.sh
+    ~/bin/zzc            Short alias symlink
 EOF
 }
 
@@ -130,8 +131,8 @@ do_uninstall() {
         log_info "No installation found at $ZZCOLLAB_HOME"
     fi
 
-    # Remove symlinks from common locations
-    for bin_path in "$HOME/bin/zzcollab" "/usr/local/bin/zzcollab"; do
+    # Remove symlinks from common locations (both zzcollab and zzc)
+    for bin_path in "$HOME/bin/zzcollab" "$HOME/bin/zzc" "/usr/local/bin/zzcollab" "/usr/local/bin/zzc"; do
         if [[ -L "$bin_path" ]]; then
             rm -f "$bin_path"
             log_success "Removed symlink $bin_path"
@@ -251,21 +252,24 @@ if [[ "$CREATE_SYMLINK" == "true" ]]; then
         mkdir -p "$BIN_DIR"
     fi
 
-    # Remove existing symlink or file
-    if [[ -e "$BIN_DIR/zzcollab" ]]; then
-        if [[ "$FORCE" == "true" ]]; then
-            rm -f "$BIN_DIR/zzcollab"
-        else
-            log_warn "$BIN_DIR/zzcollab already exists"
-            log_warn "Use --force to overwrite"
+    # Create both zzcollab and zzc symlinks
+    for cmd_name in "zzcollab" "zzc"; do
+        # Remove existing symlink or file
+        if [[ -e "$BIN_DIR/$cmd_name" ]]; then
+            if [[ "$FORCE" == "true" ]]; then
+                rm -f "$BIN_DIR/$cmd_name"
+            else
+                log_warn "$BIN_DIR/$cmd_name already exists"
+                log_warn "Use --force to overwrite"
+            fi
         fi
-    fi
 
-    # Create symlink
-    if [[ ! -e "$BIN_DIR/zzcollab" ]]; then
-        ln -s "$ZZCOLLAB_HOME/zzcollab.sh" "$BIN_DIR/zzcollab"
-        log_success "Created symlink: $BIN_DIR/zzcollab"
-    fi
+        # Create symlink
+        if [[ ! -e "$BIN_DIR/$cmd_name" ]]; then
+            ln -s "$ZZCOLLAB_HOME/zzcollab.sh" "$BIN_DIR/$cmd_name"
+            log_success "Created symlink: $BIN_DIR/$cmd_name"
+        fi
+    done
 
     # Check PATH
     if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
@@ -319,7 +323,9 @@ fi
 echo ""
 
 if [[ "$CREATE_SYMLINK" == "true" ]] && [[ -L "$BIN_DIR/zzcollab" ]]; then
-    echo "Run: zzcollab --help"
+    echo "Commands available:"
+    echo "  zzcollab --help    # Full command"
+    echo "  zzc --help         # Short alias"
 else
     echo "Run: $ZZCOLLAB_HOME/zzcollab.sh --help"
 fi

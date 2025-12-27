@@ -887,6 +887,63 @@ cmd_github() {
     return 0
 }
 
+cmd_dockerhub() {
+    local tag="${1:-latest}"
+    local project_name
+    project_name=$(basename "$(pwd)")
+
+    # Check Docker is available
+    if ! command -v docker &>/dev/null; then
+        log_error "Docker not installed"
+        return 1
+    fi
+
+    # Check if image exists locally
+    if ! docker image inspect "$project_name" &>/dev/null; then
+        log_error "Docker image '$project_name' not found"
+        log_info "Build first: zzcollab docker -b"
+        return 1
+    fi
+
+    # Get DockerHub username from config or environment
+    require_module "config"
+    load_config 2>/dev/null || true
+    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
+
+    if [[ -z "$dockerhub_user" ]]; then
+        # Try to get from docker info
+        dockerhub_user=$(docker info 2>/dev/null | grep -i username | awk '{print $2}')
+    fi
+
+    if [[ -z "$dockerhub_user" ]]; then
+        log_error "DockerHub username not configured"
+        log_info "Set with: zzcollab config set dockerhub-account <username>"
+        log_info "Or login: docker login"
+        return 1
+    fi
+
+    local remote_image="${dockerhub_user}/${project_name}:${tag}"
+
+    log_info "Tagging: $project_name → $remote_image"
+    docker tag "$project_name" "$remote_image" || {
+        log_error "Failed to tag image"
+        return 1
+    }
+
+    log_info "Pushing to DockerHub: $remote_image"
+    if docker push "$remote_image"; then
+        log_success "Pushed: $remote_image"
+        echo ""
+        echo "Pull with:"
+        echo "  docker pull $remote_image"
+    else
+        log_error "Push failed. Check: docker login"
+        return 1
+    fi
+
+    return 0
+}
+
 cmd_profile() {
     local profile="${1:-}"
 
@@ -1052,6 +1109,7 @@ Commands (can be combined):
   docker     Add Docker containerization (Dockerfile)
   git        Initialize git repository
   github     Initialize git + create GitHub repo
+  dockerhub  Push Docker image to DockerHub
 
 Profiles (standalone or after docker):
   minimal      Base R only (~300MB)
@@ -1070,6 +1128,7 @@ Management:
 
 Options:
   -b, --build      Build Docker image after generating
+  --tag <tag>      DockerHub image tag (default: latest)
   --private        Create private GitHub repo (default)
   --public         Create public GitHub repo
   -v, --verbose    More output
@@ -1080,6 +1139,8 @@ Examples:
   zzcollab docker                  # Add Docker (auto-adds renv, init)
   zzcollab docker analysis         # Docker with analysis profile
   zzcollab docker shiny github     # Docker + shiny + GitHub
+  zzcollab docker -b dockerhub     # Build + push to DockerHub
+  zzcollab dockerhub --tag v1.0    # Push with version tag
   zzcollab publishing              # Change to publishing profile
   zzcollab rm docker               # Remove Docker files
 EOF
@@ -1187,6 +1248,23 @@ main() {
                     esac
                 done
                 cmd_github
+                ((commands_run++))
+                ;;
+            dockerhub)
+                shift
+                local dockerhub_tag="latest"
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        --tag|-t)
+                            dockerhub_tag="$2"
+                            shift 2
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                cmd_dockerhub "$dockerhub_tag"
                 ((commands_run++))
                 ;;
             profile)
