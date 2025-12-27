@@ -1052,34 +1052,36 @@ Commands (can be combined):
   docker     Add Docker containerization (Dockerfile)
   git        Initialize git repository
   github     Initialize git + create GitHub repo
-  profile    Set/change Docker profile
 
-  rm <feature>   Remove a feature (docker, renv, git, github, cicd)
-  validate       Validate project structure
+Profiles (standalone or after docker):
+  minimal      Base R only (~300MB)
+  analysis     Tidyverse packages (~1.5GB)
+  publishing   LaTeX + pandoc (~3GB)
+  rstudio      RStudio Server
+  shiny        Shiny Server
+
+Management:
+  rm <feature>   Remove: docker, renv, git, github, cicd
+  validate       Check project structure
   config         Configuration management
   list           List profiles, libs, packages
-  nav            Shell navigation shortcuts
+  nav            Navigation shortcuts
   help           Show help
 
 Options:
-  -r, --profile <name>   Set Docker profile (minimal, analysis, publishing)
-  -b, --build            Build Docker image after generating
-  --private              Create private GitHub repo (default)
-  --public               Create public GitHub repo
-  -v, --verbose          Increase verbosity
-  -q, --quiet            Errors only
-  -h, --help             Show help
-  --version              Show version
+  -b, --build      Build Docker image after generating
+  --private        Create private GitHub repo (default)
+  --public         Create public GitHub repo
+  -v, --verbose    More output
+  -q, --quiet      Errors only
 
 Examples:
   zzcollab init                    # Create rrtools structure
   zzcollab docker                  # Add Docker (auto-adds renv, init)
-  zzcollab docker github           # Add Docker + GitHub
-  zzcollab init docker -r shiny    # Init + Docker with shiny profile
-  zzcollab profile publishing      # Change profile
+  zzcollab docker analysis         # Docker with analysis profile
+  zzcollab docker shiny github     # Docker + shiny + GitHub
+  zzcollab publishing              # Change to publishing profile
   zzcollab rm docker               # Remove Docker files
-  zzcollab git                     # Just init git
-  zzcollab github                  # Init git + create GitHub repo
 EOF
 }
 
