@@ -1121,14 +1121,17 @@ cmd_rm() {
         cicd)
             cmd_rm_cicd
             ;;
+        all)
+            cmd_rm_all
+            ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
-            log_info "Features: docker, renv, git, github, cicd"
+            log_info "Features: docker, renv, git, github, cicd, all"
             return 1
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, git, github, cicd"
+            log_info "Features: docker, renv, git, github, cicd, all"
             return 1
             ;;
     esac
@@ -1214,6 +1217,51 @@ cmd_rm_cicd() {
     # Remove .github if empty
     rmdir .github 2>/dev/null || true
     log_success "CI/CD workflows removed"
+}
+
+cmd_rm_all() {
+    echo ""
+    log_warn "This will remove ALL zzcollab-generated files:"
+    echo ""
+    echo "  Directories: R/, analysis/, tests/, man/, vignettes/, docs/, .github/"
+    echo "  Files:       Dockerfile, Makefile, DESCRIPTION, NAMESPACE, LICENSE,"
+    echo "               renv.lock, .Rprofile, .Rbuildignore, .gitignore, *.Rproj"
+    echo "  Metadata:    .zzcollab/"
+    echo ""
+    echo "  Note: .git/ will NOT be removed (use 'zzc rm git' separately)"
+    echo ""
+    read -r -p "Type 'yes' to confirm: " confirm
+    if [[ "$confirm" != "yes" ]]; then
+        log_info "Cancelled"
+        return 0
+    fi
+
+    # Directories
+    local dirs=(R analysis tests man vignettes docs .github .zzcollab)
+    for d in "${dirs[@]}"; do
+        [[ -d "$d" ]] && rm -rf "$d" && log_info "Removed $d/"
+    done
+
+    # Files
+    local files=(
+        Dockerfile .dockerignore Makefile
+        DESCRIPTION NAMESPACE LICENSE
+        renv.lock .Rprofile .Rbuildignore .gitignore
+    )
+    for f in "${files[@]}"; do
+        [[ -f "$f" ]] && rm "$f" && log_info "Removed $f"
+    done
+
+    # Rproj files
+    for f in *.Rproj; do
+        [[ -f "$f" ]] && rm "$f" && log_info "Removed $f"
+    done
+
+    # renv directory
+    [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
+
+    log_success "All zzcollab files removed"
+    log_info "Directory now contains only your original files"
 }
 
 #=============================================================================
