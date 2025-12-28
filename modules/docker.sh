@@ -371,23 +371,33 @@ extract_r_version() {
 
 extract_r_packages() {
     local packages=()
+    local base_pkgs=" base utils stats graphics grDevices methods datasets tools grid parallel "
+    local skip_pkgs=" package pkg mypackage myproject yourpackage project data result output input test example sample demo template local any all none foo bar baz renv "
 
-    # 1. Scan code files (validation.sh functions)
-    local code_raw=()
-    mapfile -t code_raw < <(extract_code_packages "." "R" "scripts" "analysis")
+    # Helper: filter a package
+    _is_valid_pkg() {
+        local p="$1"
+        [[ -z "$p" || ${#p} -lt 3 ]] && return 1
+        [[ "$base_pkgs" == *" $p "* ]] && return 1
+        [[ "$skip_pkgs" == *" $p "* ]] && return 1
+        [[ "$p" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]] && return 0
+        return 1
+    }
+
+    # 1. Scan code files
     while IFS= read -r pkg; do
-        [[ -n "$pkg" ]] && packages+=("$pkg")
-    done < <(clean_packages "${code_raw[@]}")
+        _is_valid_pkg "$pkg" && packages+=("$pkg")
+    done < <(extract_code_packages "." "R" "scripts" "analysis" 2>/dev/null)
 
     # 2. Add packages from DESCRIPTION
     while IFS= read -r pkg; do
-        [[ -n "$pkg" ]] && packages+=("$pkg")
-    done < <(parse_description_imports)
+        _is_valid_pkg "$pkg" && packages+=("$pkg")
+    done < <(parse_description_imports 2>/dev/null)
 
     # 3. Add packages from renv.lock
     while IFS= read -r pkg; do
-        [[ -n "$pkg" ]] && packages+=("$pkg")
-    done < <(parse_renv_lock)
+        _is_valid_pkg "$pkg" && packages+=("$pkg")
+    done < <(parse_renv_lock 2>/dev/null)
 
     # Deduplicate and sort
     [[ ${#packages[@]} -gt 0 ]] && printf '%s\n' "${packages[@]}" | sort -u
