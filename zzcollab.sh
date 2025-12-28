@@ -836,6 +836,19 @@ cmd_github() {
     # Ensure git is initialized first
     cmd_git || return 1
 
+    # Ensure there's at least one commit (required for --push)
+    if ! git rev-parse HEAD &>/dev/null; then
+        log_info "Creating initial commit..."
+        git add .
+        git commit -m "Initial project setup
+
+Generated with zzcollab" || {
+            log_error "Failed to create initial commit"
+            return 1
+        }
+        log_success "Initial commit created"
+    fi
+
     # Check if gh CLI is available
     if ! command -v gh &>/dev/null; then
         log_error "GitHub CLI (gh) not installed"
