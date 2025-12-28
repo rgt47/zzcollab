@@ -9,10 +9,10 @@ set -euo pipefail
 #          - System deps auto-derived from R packages
 #          - Simple profile presets (base image shortcuts)
 #
-# DEPENDENCIES: core.sh (logging), profiles.sh (system deps mapping)
+# DEPENDENCIES: core.sh (logging), profiles.sh (system deps), validation.sh (package scanning)
 ##############################################################################
 
-require_module "core" "profiles"
+require_module "core" "profiles" "validation"
 
 #=============================================================================
 # PROFILE PRESETS (base image shortcuts)
@@ -363,33 +363,33 @@ extract_r_version() {
 #=============================================================================
 # R PACKAGE EXTRACTION
 #=============================================================================
+# Uses validation.sh functions for comprehensive package detection:
+#   - extract_code_packages(): scans .R/.Rmd/.qmd/.Rnw for library/require/pkg::/@import
+#   - clean_packages(): filters base packages, placeholders, false positives
+#   - parse_description_imports(): reads DESCRIPTION Imports
+#   - parse_renv_lock(): reads renv.lock packages
 
 extract_r_packages() {
     local packages=()
 
-    if [[ -f "DESCRIPTION" ]]; then
-        while IFS= read -r pkg; do
-            [[ -n "$pkg" ]] && packages+=("$pkg")
-        done < <(awk '
-            BEGIN { in_imports=0; in_suggests=0 }
-            /^Imports:/ { in_imports=1; next }
-            /^Suggests:/ { in_suggests=1; next }
-            (in_imports || in_suggests) && /^[A-Z]/ { in_imports=0; in_suggests=0 }
-            (in_imports || in_suggests) {
-                gsub(/[[:space:]]/, "")
-                gsub(/\([^)]*\)/, "")
-                split($0, arr, ",")
-                for (i in arr) if (arr[i] != "") print arr[i]
-            }
-        ' DESCRIPTION)
-    fi
+    # 1. Scan code files (validation.sh functions)
+    local code_raw=()
+    mapfile -t code_raw < <(extract_code_packages "." "R" "scripts" "analysis")
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && packages+=("$pkg")
+    done < <(clean_packages "${code_raw[@]}")
 
-    if [[ -f "renv.lock" ]] && command -v jq >/dev/null 2>&1; then
-        while IFS= read -r pkg; do
-            [[ -n "$pkg" ]] && packages+=("$pkg")
-        done < <(jq -r '.Packages | keys[]' renv.lock 2>/dev/null)
-    fi
+    # 2. Add packages from DESCRIPTION
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && packages+=("$pkg")
+    done < <(parse_description_imports)
 
+    # 3. Add packages from renv.lock
+    while IFS= read -r pkg; do
+        [[ -n "$pkg" ]] && packages+=("$pkg")
+    done < <(parse_renv_lock)
+
+    # Deduplicate and sort
     [[ ${#packages[@]} -gt 0 ]] && printf '%s\n' "${packages[@]}" | sort -u
 }
 
@@ -476,7 +476,7 @@ generate_dockerfile() {
     while IFS= read -r pkg; do
         [[ -n "$pkg" ]] && r_packages+=("$pkg")
     done < <(extract_r_packages)
-    log_info "  Found ${#r_packages[@]} R packages"
+    log_info "  Found ${#r_packages[@]} R packages (from code + DESCRIPTION + renv.lock)"
 
     local system_deps=""
     if [[ ${#r_packages[@]} -gt 0 ]]; then
