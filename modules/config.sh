@@ -696,10 +696,16 @@ config_interactive_setup() {
     print_section "5/8  Docker Preferences"
     echo "Default Docker configuration for reproducible environments."
     echo ""
-    echo "Available profiles: minimal, analysis, modeling, publishing, geospatial"
+    echo "Available profiles:"
+    echo "  minimal      - Essential R development (~650MB)"
+    echo "  rstudio      - RStudio Server IDE (~980MB)"
+    echo "  analysis     - Data analysis with tidyverse (~1.2GB) [RECOMMENDED]"
+    echo "  modeling     - Machine learning with tidymodels (~1.5GB)"
+    echo "  publishing   - LaTeX/Quarto for manuscripts (~3GB)"
+    echo "  shiny        - Shiny web applications (~1.8GB)"
     echo ""
 
-    prompt_select "Default profile" "minimal,analysis,modeling,publishing,geospatial" "${CONFIG_DOCKER_DEFAULT_PROFILE:-analysis}" val || { _save_and_exit; return 0; }
+    prompt_select "Default profile" "minimal,rstudio,analysis,modeling,publishing,shiny" "${CONFIG_DOCKER_DEFAULT_PROFILE:-analysis}" val || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "docker.default_profile" "$val"
 
     prompt_select "Docker registry" "docker.io,ghcr.io" "${CONFIG_DOCKER_REGISTRY:-docker.io}" val || { _save_and_exit; return 0; }

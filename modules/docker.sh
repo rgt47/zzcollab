@@ -449,7 +449,6 @@ generate_dockerfile() {
     local base_image="${BASE_IMAGE:-}"
     local r_version="${R_VERSION:-}"
     local project_name="${PROJECT_NAME:-$(basename "$(pwd)")}"
-    local template="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/Dockerfile.template"
     local triggered_wizard=false
 
     log_info "Generating Dockerfile..."
@@ -503,36 +502,9 @@ generate_dockerfile() {
         deps_comment="Packages: ${r_packages[*]}"
     fi
 
-    if [[ ! -f "$template" ]]; then
-        log_warn "Template not found: $template"
-        log_info "Using inline template"
-        generate_dockerfile_inline "$base_image" "$r_version" "$system_deps_install" "$tools_install" "$deps_comment"
-        prompt_docker_build "$project_name" "$r_version"
-        return $?
-    fi
-
-    # Create temp file for multi-line substitution
-    local tmpfile
-    tmpfile=$(mktemp)
-    cp "$template" "$tmpfile"
-
-    # Simple substitutions
-    sed -i.bak -e "s|\${BASE_IMAGE}|${base_image}|g" \
-        -e "s|\${R_VERSION}|${r_version}|g" \
-        -e "s|\${PROJECT_NAME}|${project_name}|g" \
-        -e "s|\${SYSTEM_DEPS_COMMENT}|${deps_comment}|g" \
-        "$tmpfile"
-
-    # Multi-line substitutions using perl (handles newlines correctly)
-    DEPS_CONTENT="$system_deps_install" perl -i -pe 's/\$\{SYSTEM_DEPS_INSTALL\}/$ENV{DEPS_CONTENT}/g' "$tmpfile"
-    TOOLS_CONTENT="$tools_install" perl -i -pe 's/\$\{TOOLS_INSTALL\}/$ENV{TOOLS_CONTENT}/g' "$tmpfile"
-
-    mv "$tmpfile" Dockerfile
-    rm -f "$tmpfile.bak"
-
-    log_success "Generated Dockerfile"
+    generate_dockerfile_inline "$base_image" "$r_version" "$system_deps_install" "$tools_install" "$deps_comment"
     prompt_docker_build "$project_name" "$r_version"
-    return 0
+    return $?
 }
 
 prompt_docker_build() {
