@@ -167,40 +167,7 @@ ensure_workspace_initialized() {
 # SUBCOMMAND ROUTING
 #=============================================================================
 
-show_usage() {
-    cat << 'EOF'
-Usage: zzcollab <command> [options]
-
-Commands:
-  init       Create rrtools research compendium (DESCRIPTION, R/, analysis/)
-  docker     Generate Dockerfile and build image (auto-runs init if needed)
-  renv       Set up renv without Docker (auto-runs init if needed)
-  validate   Validate project structure and dependencies
-  nav        Shell navigation shortcuts (install/uninstall)
-  uninstall  Remove zzcollab files from project
-  list       List profiles, libs, or packages
-  config     Configuration management (list, get, set)
-  help       Show help for a topic
-
-Options (global):
-  -v, --verbose    Increase verbosity
-  -q, --quiet      Suppress non-error output
-  --version        Show version
-
-Examples:
-  zzcollab init                      # Create rrtools workspace
-  zzcollab docker                    # Generate Dockerfile (runs init if needed)
-  zzcollab docker --build            # Generate and build Docker image
-  zzcollab renv                      # Set up renv without Docker
-  zzcollab validate                  # Check project structure
-  zzcollab nav install               # Add navigation shortcuts to shell
-  zzcollab help docker               # Help on Docker commands
-
-Legacy mode (backwards compatible):
-  zzcollab -t TEAM -p PROJECT        # Team setup
-  zzcollab --profile-name NAME       # Use predefined profile
-EOF
-}
+# Note: main show_usage() defined later in file
 
 cmd_init() {
     require_module "cli" "config" "project" "docker" "github"
@@ -944,36 +911,113 @@ cmd_dockerhub() {
     return 0
 }
 
-cmd_profile() {
-    local profile="${1:-}"
+##############################################################################
+# FUNCTION: cmd_quickstart
+# PURPOSE:  Smart profile command - quickstart for new, switch for existing
+# USAGE:    zzcollab analysis
+#           zzcollab minimal
+# ARGS:     $1 - profile name (analysis, minimal, publishing, etc.)
+##############################################################################
+cmd_quickstart() {
+    local profile="${1:-analysis}"
 
-    if [[ -z "$profile" ]]; then
-        log_error "Usage: zzcollab profile <name>"
-        log_info "Available: minimal, analysis, publishing, rstudio, shiny"
-        return 1
-    fi
+    require_module "cli" "config" "project" "profiles" "docker"
 
-    require_module "config" "docker"
-
-    # Validate profile
+    # Validate profile exists
     local base_image
-    base_image=$(get_profile_base_image "$profile")
+    base_image=$(get_profile_base_image "$profile") || {
+        log_error "Unknown profile: $profile"
+        log_info "Available: minimal, analysis, publishing, rstudio, shiny, verse, tidyverse"
+        return 1
+    }
 
-    log_info "Setting profile: $profile ($base_image)"
+    # Existing project → just switch profile
+    if is_workspace_initialized; then
+        log_info "Switching to profile: $profile ($base_image)"
+        config_set "profile-name" "$profile" 2>/dev/null || true
 
-    # Save to config
-    config_set "profile-name" "$profile" 2>/dev/null || true
-
-    # Regenerate Dockerfile if it exists
-    if [[ -f "Dockerfile" ]]; then
-        log_info "Regenerating Dockerfile..."
-        export BASE_IMAGE="$base_image"
-        generate_dockerfile || return 1
-    else
-        log_info "No Dockerfile yet. Run 'zzcollab docker' to generate."
+        if [[ -f "Dockerfile" ]]; then
+            export BASE_IMAGE="$base_image"
+            generate_dockerfile || return 1
+            log_success "Dockerfile regenerated with $profile profile"
+        else
+            log_info "No Dockerfile yet. Run 'zzcollab docker' to generate."
+        fi
+        return 0
     fi
 
-    log_success "Profile set to: $profile"
+    # New project → full quickstart
+    local project_name
+    project_name=$(basename "$(pwd)")
+
+    echo ""
+    echo "═══════════════════════════════════════════════════════════"
+    echo "  zzcollab quickstart: $project_name"
+    echo "═══════════════════════════════════════════════════════════"
+    echo ""
+    echo "  Profile:    $profile"
+    echo "  Base image: $base_image"
+    echo ""
+    echo "  This will create:"
+    echo "    - rrtools research compendium structure"
+    echo "    - renv.lock for package reproducibility"
+    echo "    - Dockerfile for containerized environment"
+    echo ""
+
+    read -r -p "Continue? [Y/n]: " confirm
+    if [[ "$confirm" =~ ^[Nn]$ ]]; then
+        log_info "Cancelled"
+        return 0
+    fi
+
+    # Step 1: Initialize project structure
+    echo ""
+    log_info "Step 1/3: Creating project structure..."
+    PKG_NAME=$(validate_package_name)
+    export PKG_NAME
+    setup_project || return 1
+    log_success "Project structure created"
+
+    # Step 2: Set up renv
+    echo ""
+    log_info "Step 2/3: Setting up renv..."
+    local r_version
+    r_version=$(get_cran_r_version)
+    create_renv_lock_minimal "$r_version"
+    log_success "renv.lock created (R $r_version)"
+
+    # Step 3: Generate Dockerfile with profile
+    echo ""
+    log_info "Step 3/3: Generating Dockerfile..."
+    export BASE_IMAGE="$base_image"
+    config_set "profile-name" "$profile" 2>/dev/null || true
+    generate_dockerfile || return 1
+    log_success "Dockerfile created ($profile profile)"
+
+    # Summary and build prompt
+    echo ""
+    echo "═══════════════════════════════════════════════════════════"
+    echo "  Setup complete!"
+    echo "═══════════════════════════════════════════════════════════"
+    echo ""
+    echo "  Created:"
+    echo "    DESCRIPTION, R/, analysis/, tests/"
+    echo "    renv.lock (R $r_version)"
+    echo "    Dockerfile ($profile)"
+    echo ""
+
+    read -r -p "Build Docker image now? [y/N]: " build_choice
+    if [[ "$build_choice" =~ ^[Yy]$ ]]; then
+        echo ""
+        build_docker_image || return 1
+        echo ""
+        log_success "Ready! Run 'make r' to start development"
+    else
+        echo ""
+        log_info "To build later: make docker-build"
+        log_info "To start development: make r"
+    fi
+
     return 0
 }
 
@@ -1111,9 +1155,9 @@ Commands (can be combined):
   github     Initialize git + create GitHub repo
   dockerhub  Push Docker image to DockerHub
 
-Profiles (standalone or after docker):
+Profiles (new project: init+renv+docker, existing: switch profile):
+  analysis     Tidyverse packages (~1.5GB) - recommended
   minimal      Base R only (~300MB)
-  analysis     Tidyverse packages (~1.5GB)
   publishing   LaTeX + pandoc (~3GB)
   rstudio      RStudio Server
   shiny        Shiny Server
@@ -1135,14 +1179,13 @@ Options:
   -q, --quiet      Errors only
 
 Examples:
-  zzcollab init                    # Create rrtools structure
+  zzcollab analysis                # Quickstart: init + renv + docker (recommended)
+  zzcollab minimal                 # Quickstart with minimal profile
+  zzcollab init                    # Create rrtools structure only
   zzcollab docker                  # Add Docker (auto-adds renv, init)
-  zzcollab docker analysis         # Docker with analysis profile
-  zzcollab docker shiny github     # Docker + shiny + GitHub
-  zzcollab docker -b dockerhub     # Build + push to DockerHub
-  zzcollab dockerhub --tag v1.0    # Push with version tag
-  zzcollab publishing              # Change to publishing profile
+  zzcollab docker -b github        # Build image + create GitHub repo
   zzcollab rm docker               # Remove Docker files
+  zzcollab publishing              # Switch to publishing profile (existing project)
 EOF
 }
 
@@ -1267,25 +1310,14 @@ main() {
                 cmd_dockerhub "$dockerhub_tag"
                 ((commands_run++))
                 ;;
-            profile)
-                shift
-                if [[ $# -eq 0 || "$1" == -* ]]; then
-                    log_error "profile requires a name"
-                    exit 1
-                fi
-                cmd_profile "$1"
-                ((commands_run++))
-                shift
-                ;;
-
-            # Standalone profile flag
+            # Standalone profile flag (same as profile name command)
             -r|--profile)
                 shift
                 if [[ $# -eq 0 ]]; then
                     log_error "-r/--profile requires a name"
                     exit 1
                 fi
-                cmd_profile "$1"
+                cmd_quickstart "$1"
                 ((commands_run++))
                 shift
                 ;;
@@ -1303,9 +1335,9 @@ main() {
                 shift
                 ;;
 
-            # Profile names as standalone commands
+            # Profile names as standalone commands → full quickstart
             minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
-                cmd_profile "$1"
+                cmd_quickstart "$1"
                 ((commands_run++))
                 shift
                 ;;

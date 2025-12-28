@@ -118,6 +118,9 @@ show_help() {
         docker)
             show_help_docker
             ;;
+        github)
+            show_github_help
+            ;;
         renv)
             show_help_renv
             ;;
@@ -172,28 +175,25 @@ show_help_topics_list() {
 zzcollab help topics:
 
 Guides:
-  quickstart      Quick start guide for solo developers
-  workflow        Daily development workflow and common tasks
-  team            Team collaboration setup and workflows
+  quickstart      Quick start guide (recommended starting point)
+  workflow        Daily development workflow
+  profiles        Docker profiles and switching
+
+Commands:
+  github          GitHub repository integration
+  docker          Docker architecture and usage
+  renv            Package management with renv
 
 Configuration:
-  config          Configuration system (config files, defaults)
-  profiles        Docker profile selection and customization
-  examples        Example files and templates (--with-examples)
-
-Technical:
-  docker          Docker architecture and container usage
-  renv            Package management with renv
-  cicd            CI/CD automation with GitHub Actions
+  config          Configuration system
+  examples        Example files (--with-examples)
 
 Other:
-  options         Complete list of all command-line options
   troubleshoot    Common issues and solutions
 
 Usage:
   zzcollab help <topic>       Show help for specific topic
   zzcollab help --all         Show this list
-  zzcollab --help             Show complete options (legacy format)
 EOF
 }
 
@@ -203,42 +203,36 @@ show_help_quickstart() {
     cat << 'EOF'
 ZZCOLLAB QUICK START
 
-Solo Developer Workflow:
+New Project (recommended):
+   mkdir myproject && cd myproject
+   zzcollab analysis          # Creates init + renv + docker, prompts to build
 
-1. Initialize project:
-   zzcollab -p myproject
-   cd myproject
+   # This sets up:
+   #   - rrtools structure (DESCRIPTION, R/, analysis/, tests/)
+   #   - renv.lock for package reproducibility
+   #   - Dockerfile with analysis profile (tidyverse)
 
-2. Build Docker environment:
-   make docker-build
+Available Profiles:
+   zzcollab analysis          # Tidyverse (~1.5GB) - recommended
+   zzcollab minimal           # Base R only (~300MB)
+   zzcollab publishing        # LaTeX + pandoc (~3GB)
 
-3. Start development:
-   make r
-   # Now you're in R inside Docker container
+After Setup:
+   make r                     # Enter container, start R
+   install.packages("pkg")    # Add packages as needed
+   q()                        # Exit R (auto-snapshots to renv.lock)
 
-4. Work in R:
-   library(tidyverse)
-   # ... your analysis ...
-   # Packages auto-captured when you exit
+Switch Profile (existing project):
+   zzcollab publishing        # Regenerates Dockerfile with new profile
 
-5. Exit and test:
-   q()                    # Exit R (auto-snapshots packages)
-   make docker-test       # Run tests
-
-6. Commit and share:
-   git add .
-   git commit -m "Add analysis"
-   git push
-
-Configuration (one-time setup):
-   zzcollab -c init
-   zzcollab -c set team-name "myname"
-   zzcollab -c set profile-name "analysis"
+Add GitHub:
+   zzcollab github            # Initialize git + create private GitHub repo
+   zzcollab github --public   # Create public repo
 
 See also:
-  zzcollab help workflow      Daily development patterns
-  zzcollab help config        Configuration system
-  zzcollab help docker        Docker details
+   zzcollab help workflow     Daily development patterns
+   zzcollab help profiles     Available Docker profiles
+   zzcollab help docker       Docker details
 EOF
 }
 
@@ -368,25 +362,26 @@ show_help_profiles() {
     cat << 'EOF'
 DOCKER PROFILES
 
-14+ Specialized Environments:
+Profile commands are smart:
+  - New project:      Creates init + renv + docker, prompts to build
+  - Existing project: Switches profile, regenerates Dockerfile
 
 Standard Research:
-  minimal          Lightweight R environment (~500MB)
-  analysis         Data analysis (tidyverse, ~1.5GB)
+  minimal          Lightweight R environment (~300MB)
+  analysis         Data analysis (tidyverse, ~1.5GB) - recommended
   modeling         Statistical modeling (~2GB)
-  publishing       LaTeX + knitr for papers (~3.5GB)
+  publishing       LaTeX + knitr for papers (~3GB)
   shiny            Interactive applications
   shiny_verse      Shiny + tidyverse
+  rstudio          RStudio Server
 
 Usage:
-  zzcollab -r analysis              Select profile
-  zzcollab --list-profiles          List all profiles
-
-Configuration:
-  zzcollab -c set profile-name "analysis"
+  zzcollab analysis               # New project: full setup
+  zzcollab analysis               # Existing: switch to analysis profile
+  zzcollab list profiles          # List all available profiles
 
 See also:
-  zzcollab help config       Configuration
+  zzcollab help quickstart   Quick start guide
   zzcollab help docker       Docker details
 EOF
 }
@@ -901,26 +896,30 @@ show_github_help() {
 # Purpose: GitHub help content
 show_github_help_content() {
     cat << 'EOF'
-🐙 GITHUB INTEGRATION HELP
+GITHUB INTEGRATION
 
 ═══════════════════════════════════════════════════════════════════════════
-OVERVIEW
+USAGE
 ═══════════════════════════════════════════════════════════════════════════
 
-zzcollab can automatically create GitHub repositories and push your project,
-streamlining the workflow from local development to remote collaboration.
+zzcollab github              # Initialize git + create private GitHub repo
+zzcollab github --public     # Create public repository
+zzcollab github --private    # Create private repository (default)
 
-Key Features:
-• Automatic private repository creation
-• Git initialization and initial commit
-• Remote setup and push
-• Collaboration-ready project structure
+Works independently - no need to run init, renv, or docker first.
+Can be used in any directory, with or without zzcollab structure.
+
+What it does:
+  1. Initializes git repository (if not already)
+  2. Creates .gitignore (if not already)
+  3. Creates GitHub repository via gh CLI
+  4. Pushes current directory to GitHub
 
 ═══════════════════════════════════════════════════════════════════════════
 REQUIREMENTS
 ═══════════════════════════════════════════════════════════════════════════
 
-Before using GitHub integration (-G flag), ensure:
+Before using github command, ensure:
 
 1. GitHub CLI Installed:
    macOS:    brew install gh
@@ -941,375 +940,54 @@ Before using GitHub integration (-G flag), ensure:
    ✓ Logged in to github.com as YOUR_USERNAME
 
 ═══════════════════════════════════════════════════════════════════════════
-FLAGS AND OPTIONS
+OPTIONS
 ═══════════════════════════════════════════════════════════════════════════
 
--G, --github
-    Automatically create private GitHub repository and push project
-
-    Example:
-    zzcollab -t myteam -p myproject -G
-
--g, --github-account NAME
-    Specify GitHub account for repository creation
-    Default: Uses team name (-t) if not specified
-
-    Example:
-    zzcollab -t dockerteam -g githubuser -p project -G
-
--x, --with-examples
-    Include example files in workspace (report.Rmd, analysis scripts, etc.)
-    By default, zzcollab creates a clean workspace without examples.
-    Use this flag to include example files for learning/reference.
-
-    Examples:
-    zzcollab -x                      # Include examples
-    zzcollab -c set with-examples true   # Set as default
-
-    Example files included:
-    - analysis/report/report.Rmd     (academic manuscript template)
-    - analysis/report/references.bib (bibliography file)
-    - analysis/scripts/*.R           (data validation, parallel computing, etc.)
-    - analysis/templates/*.R         (analysis and figure templates)
-
---add-examples
-    Add example files to an existing project after initialization.
-    Run this command from the root of an initialized zzcollab project.
-
-    Use case: You initially created a project without examples (default),
-    but now want to add them for reference.
-
-    Examples:
-    cd myproject
-    zzcollab --add-examples
-
-    Behavior:
-    - Checks you're in a zzcollab project (looks for DESCRIPTION file)
-    - Adds example files that don't already exist
-    - Skips files that already exist (won't overwrite your work)
-    - Provides summary of files added vs. skipped
-═══════════════════════════════════════════════════════════════════════════
-TEAM NAME vs GITHUB ACCOUNT (CRITICAL CONCEPT)
-═══════════════════════════════════════════════════════════════════════════
-
-zzcollab separates Docker Hub namespace from GitHub account:
-
-TEAM NAME (-t):
-• Used for Docker Hub image namespace
-• Creates images like: myteam/projectcore-rstudio:latest
-• Can be organization or personal Docker Hub account
-
-GITHUB ACCOUNT (-g):
-• Used for GitHub repository creation
-• Creates repos like: https://github.com/username/project
-• Can be different from team name
-• Defaults to team name if not specified
+--private       Create private repository (default)
+--public        Create public repository
 
 ═══════════════════════════════════════════════════════════════════════════
-USAGE EXAMPLES
+EXAMPLES
 ═══════════════════════════════════════════════════════════════════════════
 
-Example 1: Same name for Docker Hub and GitHub (simplest)
+Example 1: New project with GitHub
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t myname -p study --profile-name modeling -Gmake docker-build
-make docker-push-team
-git add .
-git commit -m "Initial project setup"
-git push -u origin main
+mkdir myproject && cd myproject
+zzcollab analysis            # Create project structure
+zzcollab github              # Create private GitHub repo + push
 
-Creates:
-  Docker:  myname/study:latest
-  GitHub:  https://github.com/myname/study
-  (both use "myname")
-
-Example 2: Different Docker Hub and GitHub accounts
+Example 2: Any directory
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t labteam -g johndoe -p analysis --profile-name modeling -Gmake docker-build
-make docker-push-team
-git add .
-git commit -m "Initial team analysis setup"
-git push -u origin main
+cd existing-code
+zzcollab github --public     # Works without zzcollab structure
 
-Creates:
-  Docker:  labteam/analysis:latest (team Docker images)
-  GitHub:  https://github.com/johndoe/analysis (personal GitHub)
-
-Example 3: Personal Docker Hub, Organization GitHub
+Example 3: Full workflow
 ──────────────────────────────────────────────────────────────────────────
-zzcollab -t myname -g mycompany -p project --profile-name modeling -Gmake docker-build
-make docker-push-team
-git add .
-git commit -m "Initial organization project setup"
-git push -u origin main
-
-Creates:
-  Docker:  myname/project:latest (personal Docker Hub)
-  GitHub:  https://github.com/mycompany/project (company GitHub)
-
-Example 4: Using configuration (recommended for solo developers)
-──────────────────────────────────────────────────────────────────────────
-# One-time setup:
-zzcollab config set team-name "myname"
-zzcollab config set github-account "myname"
-zzcollab config set auto-github true
-
-# Then simply:
-zzcollab -p newproject
-Creates GitHub repo automatically using configured settings
-
-═══════════════════════════════════════════════════════════════════════════
-CONFIGURATION OPTIONS
-═══════════════════════════════════════════════════════════════════════════
-
-Set defaults to avoid typing them repeatedly:
-
-github-account:
-    zzcollab config set github-account "yourusername"
-    Sets default GitHub account for all projects
-
-auto-github:
-    zzcollab config set auto-github true
-    Automatically creates GitHub repo without needing -G flag
-
-    zzcollab config set auto-github false
-    Disables automatic GitHub repo creation (default)
-
-with-examples:
-    zzcollab config set with-examples true
-    Include example files by default (report.Rmd, analysis scripts, etc.)
-
-    zzcollab config set with-examples false
-    Create clean workspace without examples (default)
-
-View current settings:
-    zzcollab config list
-
-Example workflow with configuration:
-    # Setup once:
-    zzcollab config set team-name "rgt47"
-    zzcollab config set github-account "rgt47"
-    zzcollab config set auto-github true
-    zzcollab config set profile-name "analysis"
-
-    # Then all new projects are simple:
-    zzcollab -p myproject    # GitHub repo created automatically!
-
-═══════════════════════════════════════════════════════════════════════════
-PUBLIC vs PRIVATE REPOSITORIES
-═══════════════════════════════════════════════════════════════════════════
-
-Current Behavior:
-• All repositories created with -G flag are PRIVATE by default
-• This is the recommended setting for research projects
-
-To Make a Repository Public:
-After creation, change visibility manually:
-    gh repo edit USERNAME/PROJECTNAME --visibility public
-
-Or create without -G and use gh directly:
-    zzcollab -t myteam -p project    # No -G flag
-    gh repo create USERNAME/PROJECTNAME --public --source=. --push
-
-Future Enhancement:
-A --public flag may be added in future versions for direct public repo creation.
-
-═══════════════════════════════════════════════════════════════════════════
-WHEN TO USE DIFFERENT NAMES
-═══════════════════════════════════════════════════════════════════════════
-
-Use different team name and GitHub account when:
-
-1. Personal/Professional Split:
-   • Docker Hub: Professional organization account
-   • GitHub: Personal account
-
-2. Open Source Collaboration:
-   • Docker Hub: Project team shared images
-   • GitHub: Your fork or personal contribution repo
-
-3. Multi-Organization Work:
-   • Docker Hub: Lab/team shared computational environments
-   • GitHub: University or institutional account
-
-4. Docker Hub Pricing Workaround:
-   • Docker Hub: Paid organization (unlimited private images)
-   • GitHub: Free account (unlimited private repos)
-
-═══════════════════════════════════════════════════════════════════════════
-WHAT HAPPENS DURING GITHUB INTEGRATION
-═══════════════════════════════════════════════════════════════════════════
-
-When you use the -G flag, zzcollab performs these steps:
-
-1. Validates GitHub CLI prerequisites
-   • Checks gh is installed
-   • Verifies authentication status
-
-2. Checks for repository conflicts
-   • Ensures repository doesn't already exist
-   • Prevents accidental overwrites
-
-3. Initializes local git repository
-   • Creates .git directory
-   • Stages all project files
-   • Creates initial commit
-
-4. Creates GitHub repository
-   • Creates private repository on GitHub
-   • Sets description: "Research compendium for PROJECT project"
-
-5. Pushes to GitHub
-   • Adds GitHub as remote origin
-   • Sets main branch
-   • Pushes initial commit
+mkdir study && cd study
+zzcollab analysis            # Init + renv + docker
+zzcollab github              # Create GitHub repo
+make docker-build            # Build image
+make r                       # Start development
 
 ═══════════════════════════════════════════════════════════════════════════
 TROUBLESHOOTING
 ═══════════════════════════════════════════════════════════════════════════
 
 Issue: "gh: command not found"
-────────────────────────────────────────────────────────────────────────
-Problem: GitHub CLI not installed
-Solution:
+  Solution: Install GitHub CLI
     macOS:    brew install gh
     Ubuntu:   sudo apt install gh
-    Windows:  winget install GitHub.cli
 
 Issue: "authentication required"
-────────────────────────────────────────────────────────────────────────
-Problem: Not logged in to GitHub CLI
-Solution:
-    gh auth login
-    # Follow prompts to authenticate
-
-Verify with:
-    gh auth status
+  Solution: gh auth login
 
 Issue: "repository already exists"
-────────────────────────────────────────────────────────────────────────
-Problem: Repository with same name already exists on GitHub
-Solutions:
-    Option 1: Delete existing repository
-    gh repo delete USERNAME/PROJECTNAME --confirm
+  Solution: Use different name or delete existing:
+    gh repo delete USERNAME/REPO --confirm
 
-    Option 2: Use different project name
-    zzcollab -t team -p different-name -G
-    Option 3: Skip GitHub creation, push manually
-    zzcollab -t team -p project  # No -G
-    git remote add origin https://github.com/USERNAME/PROJECTNAME.git
-    git push -u origin main
-
-Issue: "GitHub account not specified"
-────────────────────────────────────────────────────────────────────────
-Problem: No team name or GitHub account provided
-Solution:
-    Specify team name (used as GitHub account by default):
-    zzcollab -t USERNAME -p project -G
-    Or specify GitHub account explicitly:
-    zzcollab -t dockerteam -g githubuser -p project -G
-    Or set in configuration:
-    zzcollab config set github-account "yourusername"
-
-Issue: Permission denied (publickey)
-────────────────────────────────────────────────────────────────────────
-Problem: SSH key not configured for GitHub
-Solution:
-    GitHub CLI uses HTTPS by default, not SSH
-    If you encounter this:
-
-    1. Check authentication:
-       gh auth status
-
-    2. Re-authenticate if needed:
-       gh auth login
-
-    3. Select HTTPS (not SSH) when prompted
-
-Issue: Rate limit exceeded
-────────────────────────────────────────────────────────────────────────
-Problem: Too many API requests to GitHub
-Solution:
-    Wait 1 hour for rate limit reset
-    Or authenticate to increase limit:
-    gh auth login
-
-═══════════════════════════════════════════════════════════════════════════
-TEAM COLLABORATION WORKFLOWS
-═══════════════════════════════════════════════════════════════════════════
-
-Scenario 1: Team Lead Creates Shared Project
-──────────────────────────────────────────────────────────────────────────
-Team lead - Step 1: Create foundation and GitHub repo
-    zzcollab -t labteam -p study --profile-name modeling -G
-Team lead - Step 2: Build and push team image
-    make docker-build                       # Build labteam/study:latest
-    make docker-push-team                   # Push to Docker Hub
-    git add .
-    git commit -m "Initial team project setup"
-    git push -u origin main
-
-    Creates:
-    • Docker: labteam/study:latest (pushed to Docker Hub)
-    • GitHub: https://github.com/labteam/study (private repo)
-    • Dockerfile: Locked foundation (team members cannot change)
-
-Team members - Join existing project:
-    git clone https://github.com/labteam/study.git
-    cd study
-    zzcollab --use-team-image               # Pull team image from Docker Hub
-    make r                         # Start development
-
-Scenario 2: Solo Researcher, Personal Accounts
-──────────────────────────────────────────────────────────────────────────
-# Setup once:
-zzcollab config set team-name "myname"
-zzcollab config set github-account "myname"
-
-# Each new project:
-zzcollab -p analysis1 -Gzzcollab -p analysis2 -Gzzcollab -p paper3 -G
-Each creates private GitHub repo automatically
-
-Scenario 3: Personal Docker, Organization GitHub
-──────────────────────────────────────────────────────────────────────────
-Contribute to organization but maintain personal Docker images:
-
-zzcollab -t myname -g myorg -p project --profile-name modeling -Gmake docker-build
-make docker-push-team
-git add .
-git commit -m "Initial organization project setup"
-git push -u origin main
-
-Creates:
-• Docker: myname/project:latest (your Docker Hub)
-• GitHub: https://github.com/myorg/project (org GitHub)
-
-═══════════════════════════════════════════════════════════════════════════
-ADDITIONAL RESOURCES
-═══════════════════════════════════════════════════════════════════════════
-
-zzcollab Documentation:
-    zzcollab --help              # Main help
-    zzcollab --help init         # Team initialization help
-    zzcollab --help docker       # Docker help
-    zzcollab --next-steps        # Development workflow guidance
-
-GitHub CLI Documentation:
-    gh --help                    # GitHub CLI help
-    gh repo --help               # Repository commands
-    gh auth --help               # Authentication commands
-
-Project Resources:
-    Website: https://github.com/rgt47/zzcollab
-    Examples: https://github.com/rgt47/zzcollab/tree/main/examples
-
-Configuration Guide:
-    Run: zzcollab config list
-    See: ~/.zzcollab/config.yaml for your configuration file
-
-═══════════════════════════════════════════════════════════════════════════
-
-For general zzcollab help: zzcollab --help
-For more information: https://github.com/rgt47/zzcollab
+Issue: Remote already configured
+  Solution: Already set up - nothing to do
+    git remote -v    # View current remotes
 EOF
 }
 
