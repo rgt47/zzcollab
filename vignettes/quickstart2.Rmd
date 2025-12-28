@@ -962,12 +962,16 @@ make docker-build
 make r
 ```
 
-**Why use DockerHub?** Efficiency for larger teams:
+**Why use DockerHub?** Pre-installed packages save time:
 
-| Approach | Build Time | Best For |
-|----------|-----------|----------|
-| Build from Dockerfile | 5-15 min | Solo, small teams, CI/CD |
-| Pull from DockerHub | 1-3 min | Teams 3+, frequent onboarding |
+When the team lead builds the image, all packages from `renv.lock` are
+installed into the image. Team members who pull this image get those
+packages immediately - no installation wait.
+
+| Approach | What Happens | Time |
+|----------|-------------|------|
+| Build from Dockerfile | Downloads base + installs all packages | 5-15 min |
+| Pull from DockerHub | Downloads pre-built image with packages | 1-3 min |
 
 ```bash
 # Option B: Pull pre-built image (faster, requires DockerHub setup)
@@ -990,15 +994,35 @@ docker login
 # Enter DockerHub username and password/token
 ```
 
-**Push team image:**
+**Build before pushing (important):**
+
+The Docker build process installs all R packages from `renv.lock` into the
+image. This is what makes pulling faster for team members - packages are
+pre-installed rather than installed on first run.
 
 ```bash
-# Build and push
+# 1. Build image (installs packages from renv.lock)
 make docker-build
+
+# 2. Push the built image to DockerHub
 zzc dockerhub                    # Pushes to dockerhub-account/project:latest
 
 # Or with version tag
 zzc dockerhub --tag v1.0
+```
+
+**When to rebuild and push:**
+
+- After adding packages (renv.lock changed)
+- After modifying Dockerfile
+- Before onboarding new team members (ensure they get latest)
+
+```bash
+# Check if renv.lock changed since last push
+git log --oneline -3 -- renv.lock
+
+# If changed, rebuild and push
+make docker-build && zzc dockerhub
 ```
 
 ### 8.4 Private DockerHub Repositories

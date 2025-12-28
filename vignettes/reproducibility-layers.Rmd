@@ -163,7 +163,8 @@ install.packages("renv")  # One-time global install
 renv::init()
 
 # Or create new project with ZZCOLLAB
-zzcollab --profile-name minimal  # Minimal profile includes renv
+mkdir my-project && cd my-project
+zzc minimal                      # Minimal profile includes renv
 ```
 
 ## Typical Workflow
@@ -282,7 +283,8 @@ my-project/
 
 ```bash
 # Create project with Docker environment
-zzcollab --profile-name minimal
+mkdir my-project && cd my-project
+zzc minimal                      # Full setup (init + renv + docker)
 
 # Or add Docker to existing renv project
 # (requires manual Dockerfile creation)

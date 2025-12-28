@@ -83,15 +83,14 @@ dependencies including tidyverse ecosystem:
 ```bash
 # Navigate to project workspace
 cd ~/projects
+mkdir penguin-analysis && cd penguin-analysis
 
 # Initialize with analysis profile (recommended)
-zzcollab --profile-name analysis
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo (optional)
 
-# Alternative: Specify explicit project name
-zzcollab --profile-name analysis -p penguin-analysis
-
-# Include team namespace for collaborative work
-zzcollab -t myname -p penguin-analysis --profile-name analysis
+# View available profiles
+zzc help profiles
 ```
 
 ## Custom Profile Composition
@@ -1272,7 +1271,9 @@ This ensures reproducibility is maintained throughout the project lifecycle.
 
 ```bash
 # Project initialization
-zzcollab --profile-name analysis
+mkdir penguin-analysis && cd penguin-analysis
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo (optional)
 
 # Raw data placement (host environment)
 cp ~/Downloads/data.csv ~/projects/penguin-analysis/analysis/data/raw_data/
@@ -1461,17 +1462,17 @@ The team lead creates the project and shares the team image:
 cd ~/projects
 mkdir penguin-analysis && cd penguin-analysis
 
-# Initialize project with team namespace
-zzcollab --profile-name analysis -t myname -p penguin-analysis
-vim Dockerfile
+# Initialize project with analysis profile
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
 
-# Build team Docker image
+# Build team Docker image (installs packages from renv.lock)
 make docker-build
 
-# Push team image to Docker Hub
+# Push team image to Docker Hub (optional but efficient for team)
 make docker-push-team
 
-# Commit and push project structure to GitHub
+# Commit and push project structure
 git add .
 git commit -m "Initial project setup with Palmer Penguins analysis"
 git push -u origin main
@@ -1486,8 +1487,11 @@ Colleagues can reproduce this analysis using the following procedure:
 git clone https://github.com/yourname/penguin-analysis.git
 cd penguin-analysis
 
-# Pull and use team Docker image
+# Option A: Pull team Docker image (fast: 1-3 min, requires DockerHub setup)
 zzcollab --use-team-image
+
+# Option B: Build from Dockerfile (always works: 5-15 min)
+make docker-build
 
 # Enter container environment
 make r
@@ -1496,9 +1500,8 @@ make r
 Rscript scripts/01_penguin_bill_analysis.R
 ```
 
-The `--use-team-image` flag automatically pulls the team's Docker image from
-Docker Hub, ensuring all team members work in identical computational
-environments.
+**Note**: DockerHub is optional but efficient for teams. If team image is not
+available, building from the Dockerfile produces an identical environment.
 
 # References
 

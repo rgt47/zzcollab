@@ -259,6 +259,17 @@ zzcollab --use-team-image  # Pull team's Docker image
 
 ### Team and Project Identity
 
+**Recommended approach** (new):
+
+```bash
+# Create project with profile, then add GitHub
+mkdir study1 && cd study1
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+```
+
+**Legacy flags** (still supported for team image naming):
+
 ```bash
 # -t, --team-name NAME
 # Docker Hub namespace for team images
@@ -267,15 +278,11 @@ zzcollab -t myteam -p study1
 # -p, --project-name NAME
 # Project name (used for Docker image naming)
 zzcollab -t myteam -p cancer-analysis
-
-# Combined usage
-zzcollab -t genomicslab -p study1
-# Creates: genomicslab/study1:latest
 ```
 
 **Image Naming Convention**:
-- Team lead: `genomicslab/study1:latest` (team image)
-- Personal: `username/study1-personal:latest` (if customized)
+- Default: `username/projectname:latest`
+- With team flag: `teamname/projectname:latest`
 
 ### Docker Profile Selection
 
@@ -659,11 +666,13 @@ ZZCOLLAB uses a two-layer system for maximum flexibility and reproducibility.
 
 ```bash
 # Team lead creates base environment
-zzcollab -t genomicslab -p study --profile-name bioinformatics
+mkdir study && cd study
+zzc analysis                     # Or: zzc bioinformatics for specialized profile
+zzc github
 make docker-build
-make docker-push-team
+zzc dockerhub                    # Push for team members
 
-# All team members get identical Bioconductor environment
+# All team members get identical environment
 ```
 
 **Layer 1 packages are in the Docker image**:
@@ -710,16 +719,18 @@ git push
 **Team Lead Setup (Layer 1)**:
 ```bash
 # Create bioinformatics base with common packages
-zzcollab -t genomicslab -p baseenv --profile-name bioinformatics
+mkdir baseenv && cd baseenv
+zzc analysis                     # Or specialized profile
+zzc github
 make docker-build
-make docker-push-team
+zzc dockerhub                    # Push for team members
 ```
 
 **Team Member Alice (Layer 2 - RNA-seq)**:
 ```bash
 git clone https://github.com/genomicslab/rnaseq-study.git
 cd rnaseq-study
-zzcollab --use-team-image
+make docker-build                # Or: docker pull genomicslab/rnaseq-study:latest
 make r
 
 # Add RNA-seq specific packages
@@ -839,7 +850,8 @@ zzcollab config set github-account "psychlab"
 
 # Create shared project
 mkdir attention-study && cd attention-study
-zzcollab -p attention-study --profile-name analysis
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
 
 # Customize for team
 cat > zzcollab.yaml << 'EOF'
@@ -900,15 +912,18 @@ collaboration:
 ```bash
 # Base images for different workflows
 mkdir biocore-rnaseq && cd biocore-rnaseq
-zzcollab -t biocore -p rnaseq-base --profile-name bioinformatics
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
 make docker-build && make docker-push-team
 
-mkdir biocore-chipseq && cd ../biocore-chipseq
-zzcollab -t biocore -p chipseq-base --profile-name bioinformatics
+cd .. && mkdir biocore-chipseq && cd biocore-chipseq
+zzc bioinformatics
+zzc github
 make docker-build && make docker-push-team
 
-mkdir biocore-singlecell && cd ../biocore-singlecell
-zzcollab -t biocore -p singlecell-base --profile-name bioinformatics
+cd .. && mkdir biocore-singlecell && cd biocore-singlecell
+zzc bioinformatics
+zzc github
 make docker-build && make docker-push-team
 ```
 
@@ -934,7 +949,8 @@ q()  # Exit R - snapshot happens automatically
 ```bash
 # Quarterly standardized environment
 mkdir q1-2025-base && cd q1-2025-base
-zzcollab -t datasci-firm -p q1-2025-base --profile-name modeling
+zzc modeling                     # Full setup with modeling profile
+zzc github
 
 # Document package versions
 cat > ENVIRONMENT.md << 'EOF'
@@ -961,7 +977,8 @@ git add . && git commit -m "Q1 2025 base environment" && git push
 ```bash
 # Create client project using quarterly base
 mkdir client-churn-prediction && cd client-churn-prediction
-zzcollab -t datasci-firm -p client-churn --profile-name modeling
+zzc modeling                     # Full setup with modeling profile
+zzc github
 
 # Team base image provides foundation
 make r
@@ -1312,7 +1329,7 @@ profiles:
 
 3. **Test with dry-run**
    ```bash
-   zzcollab --dry-run -t myteam -p test
+   zzcollab --dry-run analysis
    ```
 
 4. **Check Docker status**
@@ -1323,7 +1340,7 @@ profiles:
 
 5. **Verbose output**
    ```bash
-   zzcollab -v -t myteam -p test --profile-name analysis
+   zzcollab -v analysis
    ```
 
 # Summary
@@ -1349,7 +1366,9 @@ zzcollab config set profile-name "analysis"
 
 **Create project**:
 ```bash
-zzcollab -t myteam -p study --profile-name analysis
+mkdir study && cd study
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
 ```
 
 **Team collaboration**:
@@ -1358,6 +1377,7 @@ zzcollab -t myteam -p study --profile-name analysis
 make docker-build && make docker-push-team
 
 # Team member:
+git clone https://github.com/myteam/study.git && cd study
 zzcollab --use-team-image
 ```
 

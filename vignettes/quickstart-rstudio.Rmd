@@ -75,7 +75,8 @@ Create your reproducible analysis project:
 ```bash
 # Create project directory and initialize
 mkdir penguin-bills && cd penguin-bills
-zzcollab  # Uses rstudio profile from config
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo (optional)
 
 # Build Docker image with RStudio Server
 make docker-build
@@ -481,17 +482,18 @@ RStudio is great for development, but some tasks need terminal:
 ## Team Lead Setup
 
 ```bash
-# Set RStudio as team profile
+# Set defaults
 zzcollab config set team-name "genomicslab"
-zzcollab config set profile-name "rstudio"
+zzcollab config set profile-name "analysis"
 
 # Create team project
 mkdir study && cd study
-zzcollab -t genomicslab -p study --profile-name rstudio
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
 
-# Build and share team image
+# Build and share team image (installs packages from renv.lock)
 make docker-build
-make docker-push-team
+make docker-push-team            # Optional but efficient for team
 
 # Commit project structure
 git add .
@@ -506,8 +508,11 @@ git push -u origin main
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Pull and use team RStudio image
+# Option A: Pull team Docker image (fast: 1-3 min, requires DockerHub setup)
 zzcollab --use-team-image
+
+# Option B: Build from Dockerfile (always works: 5-15 min)
+make docker-build
 
 # Start RStudio Server
 make docker-rstudio
@@ -515,6 +520,9 @@ make docker-rstudio
 # Access http://localhost:8787
 # Work in identical RStudio environment as team
 ```
+
+**Note**: DockerHub is optional but efficient. Building from Dockerfile produces
+an identical environment if team image is not available.
 
 **Team Benefits:**
 - Everyone gets identical RStudio version
@@ -626,10 +634,11 @@ test_that("model includes species interaction", {
 ```bash
 # Team lead: Build and push
 make docker-build
-make docker-push-team
+make docker-push-team            # Optional but efficient
 
-# Team member: Pull and use
-zzcollab --use-team-image
+# Team member: Clone and run
+git clone https://github.com/yourteam/project.git && cd project
+zzcollab --use-team-image        # Or: make docker-build
 make docker-rstudio
 ```
 

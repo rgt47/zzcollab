@@ -928,23 +928,28 @@ mkdir study && cd study
 zzc analysis                     # Full setup, prompts to build
 zzc github                       # Create private GitHub repo
 
-# Or with a specialized profile
-mkdir genomics && cd genomics
-zzc shiny                        # Full setup with shiny profile
-zzc github --public              # Create public GitHub repo
+# Build image (installs packages from renv.lock into image)
+make docker-build
 
-# Push Docker image to DockerHub
-zzc dockerhub                    # Push to DockerHub
+# Optional: Push to DockerHub for faster team onboarding
+zzc dockerhub                    # Team members can pull instead of build
 
-# Share with collaborators
+# Add collaborators
 gh repo edit --add-collaborator username
 ```
 
+**Why build before push?** The build process installs all R packages from
+`renv.lock` into the image. Team members who pull this image get packages
+pre-installed (1-3 min) instead of building from scratch (5-15 min).
+
 **Team Lead Responsibilities:**
+
 1. Creates project with `zzc <profile>` (e.g., `zzc analysis`)
 2. Adds GitHub with `zzc github`
-3. Builds and pushes Docker image with `zzc dockerhub`
-4. Adds collaborators to GitHub repository
+3. Builds image with `make docker-build` (installs packages)
+4. Optionally pushes to DockerHub with `zzc dockerhub`
+5. Adds collaborators to GitHub repository
+6. Rebuilds and pushes when renv.lock changes
 
 ### Team Member Workflow
 
