@@ -582,8 +582,8 @@ detect_missing_system_deps() {
 
     [[ -f "$dockerfile" ]] || { log_warn "Dockerfile not found"; return 0; }
 
-    local all_pkgs; all_pkgs=$(extract_code_packages | sort -u)
-    [[ -z "$all_pkgs" ]] && return 0
+    local all_pkgs; all_pkgs=$(extract_code_packages "." "R" "scripts" "analysis" 2>/dev/null | sort -u)
+    [[ -z "$all_pkgs" ]] && { log_success "All system deps present"; return 0; }
 
     local missing_build=() missing_runtime=() pkgs_missing=()
     while IFS= read -r pkg; do
