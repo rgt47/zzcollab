@@ -37,21 +37,24 @@ This approach is particularly valuable for:
 ```bash
 # Project 1: Build from rocker/rstudio (15-20 minutes)
 mkdir study1 && cd study1
-zzcollab -t mylab -p study1 --profile-name analysis
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
 make docker-build
 make docker-push-team
 cd ..
 
 # Project 2: Build from rocker/rstudio again (15-20 minutes)
 mkdir study2 && cd study2
-zzcollab -t mylab -p study2 --profile-name analysis
+zzc analysis
+zzc github
 make docker-build
 make docker-push-team
 cd ..
 
 # Project 3: Build from rocker/rstudio again (15-20 minutes)
 mkdir study3 && cd study3
-zzcollab -t mylab -p study3 --profile-name analysis
+zzc analysis
+zzc github
 make docker-build
 make docker-push-team
 
@@ -63,22 +66,28 @@ make docker-push-team
 ```bash
 # One-time: Build analysis team base image (15-20 minutes)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name analysis
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Create private GitHub repo
 make docker-build
-make docker-push-team
+make docker-push-team            # Push to Docker Hub for team access
 git add .
 git commit -m "Create team base image with comprehensive packages"
-git push -u origin main
+git push
 cd ..
 
 # Project 1: Use team image as base (~30 seconds)
-zzcollab -t mylab -p study1 
+mkdir study1 && cd study1
+zzcollab --use-team-image        # Fast: pulls pre-built team image
+cd ..
 
 # Project 2: Use team image as base (~30 seconds)
-zzcollab -t mylab -p study2 
+mkdir study2 && cd study2
+zzcollab --use-team-image
+cd ..
 
 # Project 3: Use team image as base (~30 seconds)
-zzcollab -t mylab -p study3 
+mkdir study3 && cd study3
+zzcollab --use-team-image
 
 # Total time for 3 projects: ~16 minutes (73% time savings)
 ```
@@ -119,12 +128,13 @@ The team lead creates a one-time base image with all preferred packages.
 # Create analysis team base image
 # This takes 15-20 minutes but only needs to be done once
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name analysis
-make docker-build
-make docker-push-team
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Create private GitHub repo
+make docker-build                # Installs packages from renv.lock
+make docker-push-team            # Push to Docker Hub for team
 git add .
 git commit -m "Create comprehensive team base image"
-git push -u origin main
+git push
 cd ..
 ```
 
@@ -139,55 +149,45 @@ cd ..
 ```bash
 # Analysis profile (recommended for general team bases)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name analysis
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create analysis team base image"
-git push -u origin main
+zzc analysis                     # Full setup
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create analysis team base image" && git push
 cd ..
 
 # Modeling profile (machine learning focused)
-mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name modeling
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create modeling team base image"
-git push -u origin main
+mkdir modeling-base && cd modeling-base
+zzc modeling                     # Full setup with modeling profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create modeling team base image" && git push
 cd ..
 
 # Minimal profile (lightweight)
-mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name minimal
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create minimal team base image"
-git push -u origin main
+mkdir minimal-base && cd minimal-base
+zzc minimal                      # Full setup with minimal profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create minimal team base image" && git push
 cd ..
 ```
 
 **Specialized domain profiles:**
 ```bash
 # Bioinformatics (Bioconductor genomics)
-mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name bioinformatics
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create bioinformatics team base image"
-git push -u origin main
+mkdir bio-base && cd bio-base
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create bioinformatics team base image" && git push
 cd ..
 
 # Geospatial (GIS and spatial analysis)
-mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name geospatial
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create geospatial team base image"
-git push -u origin main
+mkdir geo-base && cd geo-base
+zzc geospatial                   # Full setup with geospatial profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create geospatial team base image" && git push
 cd ..
 ```
 
@@ -208,30 +208,31 @@ docker manifest inspect mylab/baseimage:latest
 
 ### Step 3: Use Team Base Image for New Projects
 
-Now any team member can create new projects instantly:
+Now any team member can create new projects using the team base image:
 
 ```bash
-# Create project directory
-mkdir study1 && cd study1
+# Clone an existing project repository
+git clone https://github.com/mylab/study1.git
+cd study1
 
-# Initialize project using team base image
-zzcollab -t mylab -p study1 
+# Pull and use the team's pre-built Docker image
+zzcollab --use-team-image        # Fast: 1-3 min (pulls from Docker Hub)
+
+# Alternative: Build from Dockerfile (always works: 5-15 min)
+make docker-build
+
+# Start development
+make r
 ```
 
 **What this does:**
-- Pulls `mylab/baseimage:latest` from Docker Hub (if available and not cached)
-- Creates project structure (DESCRIPTION, Makefile, renv, etc.)
+- Pulls `mylab/study1:latest` from Docker Hub (if available)
+- Creates project structure if needed
 - Uses the team base image as foundation
-- Takes ~30 seconds instead of 15-20 minutes
+- Takes ~1-3 minutes instead of 15-20 minutes
 
-**Important**: When creating a new project with `-t TEAM -p PROJECT`, zzcollab automatically detects and uses any existing team base image (e.g., `mylab/baseimage:latest`) as the foundation. This is much faster than building from scratch.
-
-**Note**: This is different from joining an existing project. For joining existing projects where a team member has already created and pushed an image, use:
-```bash
-git clone https://github.com/mylab/study1.git
-cd study1
-zzcollab --use-team-image
-```
+**Note**: DockerHub is optional but efficient. If the team image is not available,
+building from the Dockerfile produces an identical environment.
 
 ## Practical Examples
 
@@ -242,29 +243,31 @@ Dr. Smith works on various analyses and wants consistent environments.
 ```bash
 # One-time setup: Create personal base image (Sunday afternoon)
 mkdir mybase && cd mybase
-zzcollab -t drsmith -p mybase --profile-name analysis
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create personal base image with comprehensive packages"
-git push -u origin main
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Create private GitHub repo
+make docker-build                # Installs packages from renv.lock
+make docker-push-team            # Push to Docker Hub for reuse
+git add . && git commit -m "Create personal base image" && git push
 cd ..
 # Takes 15-20 minutes, grab coffee
 
 # Monday: Start microbiome analysis
 mkdir microbiome-study && cd microbiome-study
-zzcollab -t drsmith -p microbiome-study 
-# Ready in 30 seconds (uses drsmith/mybase:latest as base)
+zzc analysis                     # Full setup
+zzc github
+# Ready in seconds (framework files created)
 
 # Wednesday: Start climate modeling project
 mkdir climate-model && cd climate-model
-zzcollab -t drsmith -p climate-model 
-# Ready in 30 seconds (uses drsmith/mybase:latest as base)
+zzc analysis
+zzc github
+# Ready in seconds
 
 # Friday: Start survey analysis
 mkdir survey-analysis && cd survey-analysis
-zzcollab -t drsmith -p survey-analysis 
-# Ready in 30 seconds (uses drsmith/mybase:latest as base)
+zzc analysis
+zzc github
+# Ready in seconds
 
 # Total time: ~16 minutes vs 45-60 minutes (traditional approach)
 ```
@@ -277,12 +280,11 @@ A genomics lab with 5 researchers and multiple ongoing studies.
 ```bash
 # Create lab base image with bioinformatics tools
 mkdir labbase && cd labbase
-zzcollab -t genomicslab -p labbase --profile-name bioinformatics
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create lab base image with bioinformatics tools"
-git push -u origin main
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github                       # Create private GitHub repo
+make docker-build                # Installs packages from renv.lock
+make docker-push-team            # Push to Docker Hub for team
+git add . && git commit -m "Create lab base image" && git push
 cd ..
 
 # The bioinformatics profile includes Bioconductor base image and packages
@@ -294,8 +296,9 @@ cd ..
 # Researcher 1: Join existing cancer genomics project
 git clone https://github.com/genomicslab/cancer-study.git
 cd cancer-study
-zzcollab --use-team-image
-make docker-rstudio  # Start RStudio at localhost:8787
+zzcollab --use-team-image        # Fast: pulls pre-built team image
+# Or: make docker-build          # Always works (5-15 min)
+make docker-rstudio              # Start RStudio at localhost:8787
 
 # Researcher 2: Join existing RNA-seq analysis
 git clone https://github.com/genomicslab/rnaseq-analysis.git
@@ -305,8 +308,9 @@ make docker-rstudio
 
 # Researcher 3: Create new variant calling project
 mkdir variant-calling && cd variant-calling
-zzcollab -t genomicslab -p variant-calling 
-# Uses genomicslab/labbase:latest as base automatically
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
+make docker-build && make docker-push-team
 make docker-rstudio
 
 # All 3 researchers ready in ~90 seconds total
@@ -321,12 +325,10 @@ A data science consulting firm requires consistent package versions across all c
 ```bash
 # Q1 2025: Create standardized base image
 mkdir q1-2025-base && cd q1-2025-base
-zzcollab -t datasci-firm -p q1-2025-base --profile-name analysis
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create Q1 2025 standardized base image"
-git push -u origin main
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create Q1 2025 standardized base image" && git push
 cd ..
 
 # Push to private Docker registry (optional)
@@ -339,18 +341,21 @@ docker push registry.company.com/datasci-firm/q1-2025-base:latest
 ```bash
 # Client A: Retail analytics
 mkdir client-a-retail && cd client-a-retail
-zzcollab -t datasci-firm -p client-a-retail 
-# Uses datasci-firm/q1-2025-base:latest as base automatically
+zzc analysis                     # Full setup
+zzc github
+make docker-build && make docker-push-team
 
 # Client B: Financial modeling
 mkdir client-b-finance && cd client-b-finance
-zzcollab -t datasci-firm -p client-b-finance 
-# Uses datasci-firm/q1-2025-base:latest as base automatically
+zzc analysis
+zzc github
+make docker-build && make docker-push-team
 
 # Client C: Healthcare dashboards
 mkdir client-c-health && cd client-c-health
-zzcollab -t datasci-firm -p client-c-health 
-# Uses datasci-firm/q1-2025-base:latest as base automatically
+zzc analysis
+zzc github
+make docker-build && make docker-push-team
 
 # All projects use identical Q1 2025 package versions
 # No "works on my machine" issues
@@ -365,45 +370,37 @@ Create different base images for different research domains:
 ```bash
 # Bioinformatics base (Bioconductor packages)
 mkdir bio-base && cd bio-base
-zzcollab -t mylab -p bio-base --profile-name bioinformatics
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create bioinformatics base image"
-git push -u origin main
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create bioinformatics base image" && git push
 cd ..
 # Use for: genomics, transcriptomics, proteomics projects
 
 # Geospatial base (sf, terra, raster)
 mkdir geo-base && cd geo-base
-zzcollab -t mylab -p geo-base --profile-name geospatial
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create geospatial base image"
-git push -u origin main
+zzc geospatial                   # Full setup with geospatial profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create geospatial base image" && git push
 cd ..
 # Use for: climate modeling, ecology, urban planning projects
 
 # Machine learning base (modeling packages)
 mkdir ml-base && cd ml-base
-zzcollab -t mylab -p ml-base --profile-name modeling
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create machine learning base image"
-git push -u origin main
+zzc modeling                     # Full setup with modeling profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create machine learning base image" && git push
 cd ..
 # Use for: predictive modeling, classification, regression projects
 
 # Publishing base (LaTeX, Quarto, rmarkdown)
 mkdir pub-base && cd pub-base
-zzcollab -t mylab -p pub-base --profile-name publishing
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create publishing base image"
-git push -u origin main
+zzc publishing                   # Full setup with publishing profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create publishing base image" && git push
 cd ..
 # Use for: manuscripts, reports, reproducible documents
 ```
@@ -415,12 +412,10 @@ Maintain version history for reproducibility:
 ```bash
 # Create dated base image
 mkdir base-2025-01 && cd base-2025-01
-zzcollab -t mylab -p base-2025-01 --profile-name analysis
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create January 2025 versioned base image"
-git push -u origin main
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create January 2025 versioned base image" && git push
 cd ..
 
 # Tag with semantic version
@@ -470,12 +465,10 @@ make docker-push-team
 ```bash
 # Use public repositories (no cost)
 mkdir baseimage && cd baseimage
-zzcollab -t mylab -p baseimage --profile-name analysis
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create public team base image"
-git push -u origin main
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create public team base image" && git push
 # Pushes to public mylab/baseimage:latest
 # No storage costs, unlimited team access
 ```
@@ -693,17 +686,15 @@ mylab/baseimage:v1.0.1
 ```bash
 # Build test base image
 mkdir baseimage-test && cd baseimage-test
-zzcollab -t mylab -p baseimage-test --profile-name analysis
-make docker-build
-make docker-push-team
-git add .
-git commit -m "Create test base image for validation"
-git push -u origin main
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create test base image for validation" && git push
 cd ..
 
 # Test with sample project
 mkdir test-project && cd test-project
-zzcollab -t mylab -p test-project 
+zzc analysis
 make docker-rstudio
 
 # Verify all key packages load
@@ -736,8 +727,9 @@ Keep a centralized list of available base images:
 
 ## Usage
 # For bioinformatics projects:
-zzcollab -t mylab -p <project-name> 
-# (Uses mylab/bio-base automatically)
+mkdir <project-name> && cd <project-name>
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github                       # Create private GitHub repo
 ```
 
 ## Decision Framework

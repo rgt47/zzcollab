@@ -381,17 +381,24 @@ this gap.
 
 ```bash
 # Team lead creates environment with geospatial profile
-zzcollab -t mylab -p climate-study --profile-name geospatial
+mkdir climate-study && cd climate-study
+zzc geospatial                   # Full setup with geospatial profile
+zzc github                       # Create private GitHub repo
 
 # Profile provides:
 # - R version: latest stable
 # - System libraries: gdal, geos, proj
 # - Base packages: tidyverse, sf, terra, raster
 
+# Build and share team image (installs packages from renv.lock)
+make docker-build
+make docker-push-team            # Optional but efficient for team
+
 # Team member joins
 git clone https://github.com/mylab/climate-study
 cd climate-study
-zzcollab --use-team-image  # Gets team's Docker image
+zzcollab --use-team-image        # Gets team's Docker image (fast)
+# Or: make docker-build          # Build from Dockerfile (always works)
 make r
 
 # Inside container - everyone has same environment
@@ -405,22 +412,22 @@ ZZCOLLAB provides 14+ predefined Docker profiles to balance image size and capab
 
 ```bash
 # Minimal: Essential R development (~780MB)
-zzcollab --profile-name minimal
+zzc minimal
 
 # Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
-zzcollab --profile-name analysis
+zzc analysis
 
 # Geospatial: GIS and spatial analysis (~1.5GB)
-zzcollab --profile-name geospatial
+zzc geospatial
 
 # Bioinformatics: Genomics and proteomics (~1.98GB)
-zzcollab --profile-name bioinformatics
+zzc bioinformatics
 
 # Alpine Minimal: Lightweight (~200MB)
-zzcollab --profile-name alpine_minimal
+zzc alpine_minimal
 
 # List all available profiles
-zzcollab --list-profiles
+zzc help profiles
 ```
 
 # Level 4: renv + Docker + Unit Testing (Computational Correctness)
@@ -473,7 +480,9 @@ my-project/
 
 ```bash
 # Create project with Docker environment (analysis profile recommended)
-zzcollab --profile-name analysis
+mkdir my-project && cd my-project
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo (optional)
 
 # Add testthat infrastructure
 make r
@@ -980,7 +989,9 @@ my-project/
 
 ```bash
 # Create project with CI/CD workflows
-zzcollab --profile-name analysis --create-github-repo
+mkdir my-project && cd my-project
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo with CI/CD
 
 # GitHub Actions workflows automatically created
 ```
@@ -1088,7 +1099,9 @@ ZZCOLLAB creates two standard workflows:
 
 ```bash
 # Day 1: Setup with CI/CD
-zzcollab -t mylab -p paper2024 --profile-name analysis --create-github-repo
+mkdir paper2024 && cd paper2024
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo with CI/CD
 
 # Automatically created GitHub repo with Actions enabled
 
@@ -1214,8 +1227,8 @@ Level 1 → Level 2:
   renv::init()  # 5 minutes
 
 Level 2 → Level 3:
-  zzcollab --profile-name minimal  # Quick minimal setup
-  zzcollab --profile-name analysis # Or full analysis environment
+  zzc minimal                    # Quick minimal setup
+  zzc analysis                   # Or full analysis environment
 
 Level 3 → Level 4:
   # Inside Docker container
@@ -1224,7 +1237,7 @@ Level 3 → Level 4:
   # 1-2 days for comprehensive test suite
 
 Level 4 → Level 5:
-  zzcollab --create-github-repo   # Adds GitHub workflows (or already done)
+  zzc github                     # Adds GitHub workflows (or already done)
 ```
 
 No need to commit to Level 5 immediately - start at Level 2, add Docker when
@@ -1295,7 +1308,13 @@ complex system dependencies.
 
 ```bash
 # Team lead setup with geospatial profile
-zzcollab -t climate-team -p precipitation --profile-name geospatial
+mkdir precipitation && cd precipitation
+zzc geospatial                   # Full setup with geospatial profile
+zzc github                       # Create private GitHub repo
+
+# Build and share team image (installs packages from renv.lock)
+make docker-build
+make docker-push-team            # Optional but efficient for team
 
 # Add testing infrastructure
 make r
@@ -1309,7 +1328,8 @@ exit
 # Team members (any platform)
 git clone https://github.com/climate-team/precipitation
 cd precipitation
-zzcollab --use-team-image
+zzcollab --use-team-image        # Gets team's Docker image (fast)
+# Or: make docker-build          # Build from Dockerfile (always works)
 make r  # Identical environment on all platforms
 
 # Inside container - everyone has same GDAL, GEOS versions
@@ -1331,7 +1351,9 @@ passes checks before merge.
 
 ```bash
 # Package maintainer setup
-zzcollab -t myname -p mypackage --profile-name analysis --create-github-repo
+mkdir mypackage && cd mypackage
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo with CI/CD
 
 # Testing and CI/CD included automatically
 # Every contributor push triggers:
@@ -1360,7 +1382,8 @@ reports. CI/CD (Level 5) optional if code changes infrequently.
 
 ```bash
 # Setup with Docker for production (minimal profile sufficient for reporting)
-zzcollab --profile-name minimal
+mkdir weekly-report && cd weekly-report
+zzc minimal                      # Full setup with minimal profile
 
 # Add tests for report calculations
 make r
@@ -1378,6 +1401,7 @@ docker build -t weekly-report .
 docker run -v /data:/data weekly-report Rscript generate_report.R
 
 # Optional: Add CI/CD (Level 5) if code complexity grows or team expands
+zzc github                       # Creates GitHub repo with CI/CD workflows
 ```
 
 # Technical Details

@@ -20,15 +20,16 @@
 # 1. Create project directory
 mkdir study-project && cd study-project
 
-# 2. Initialize with team configuration
-zzcollab -t myteam -p study
+# 2. Initialize with full setup (init + renv + docker)
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Create private GitHub repo
 
-# 3. Build and push Docker image
+# 3. Build and push Docker image (installs packages from renv.lock)
 make docker-build
-make docker-push-team
+make docker-push-team            # Optional but efficient for team
 
 # 4. Commit and push to GitHub
-git add . && git commit -m "Initial team project setup" && git push -u origin main
+git add . && git commit -m "Initial team project setup" && git push
 ```
 
 ### Team Member (Joining Project)
@@ -36,8 +37,11 @@ git add . && git commit -m "Initial team project setup" && git push -u origin ma
 # 1. Clone the repository
 git clone https://github.com/myteam/study.git && cd study
 
-# 2. Pull team's Docker image
-zzcollab -t myteam -p study --use-team-image
+# 2. Pull team's Docker image (fast: 1-3 min)
+zzcollab --use-team-image
+
+# Alternative: Build from Dockerfile (always works: 5-15 min)
+# make docker-build
 
 # 3. Start development
 make r
@@ -68,10 +72,11 @@ cd ~/projects
 
 # Create and initialize project
 mkdir study-project && cd study-project
-zzcollab -t myteam -p study
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
 
-# Or with explicit options
-zzcollab -t myteam -p study --profile-name analysis
+# View available profiles
+zzc help profiles
 ```
 
 **What this creates:**
@@ -149,19 +154,20 @@ cd study
 #### Step 2: Pull Team Docker Image
 
 ```bash
-# Option 1: Pull team image automatically
-zzcollab -t myteam -p study --use-team-image
+# Option A: Pull team image (fast: 1-3 min)
+zzcollab --use-team-image
 
-# Option 2: Pull manually
-docker pull myteam/study:latest
-make r
+# Option B: Build from Dockerfile (always works: 5-15 min)
+make docker-build
 ```
 
 **What `--use-team-image` does:**
-- Configures Makefile to pull from Docker Hub
+- Pulls from Docker Hub (faster than building)
+- Uses team's pre-built image with packages installed
 - Skips local Docker build
-- Uses team's pre-built image
-- Much faster than building locally
+
+**Note**: DockerHub is optional but efficient. Building from Dockerfile
+produces an identical environment if team image is not available.
 
 #### Step 3: Start Development
 
@@ -328,37 +334,38 @@ make r  # Auto-restore installs new packages on R startup
 
 ## Configuration Flags
 
-### Team Lead Flags
+### Team Lead Commands
 
 ```bash
-# Minimal
-zzcollab -t TEAM -p PROJECT
+# Standard project setup (recommended)
+mkdir PROJECT && cd PROJECT
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
 
 # With custom profile
-zzcollab -t TEAM -p PROJECT --profile-name bioinformatics
-
-# With custom base image
-zzcollab -t TEAM -p PROJECT -b rocker/geospatial
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc geospatial                   # Full setup with geospatial profile
 ```
 
-### Team Member Flags
+### Team Member Commands
 
 ```bash
-# Standard (pulls team image)
-zzcollab -t TEAM -p PROJECT --use-team-image
+# Clone and use team image (fast: 1-3 min)
+git clone https://github.com/TEAM/PROJECT.git && cd PROJECT
+zzcollab --use-team-image
 
-# Build locally (not recommended)
-zzcollab -t TEAM -p PROJECT  # omit --use-team-image
+# Build locally (always works: 5-15 min)
+make docker-build
 ```
 
 ### Automation Flags
 
 ```bash
 # For CI/CD pipelines (skip file conflict prompts)
-zzcollab -t TEAM -p PROJECT --force
+zzcollab --force analysis
 
 # Combine with other flags
-zzcollab -t TEAM -p PROJECT --use-team-image --force
+zzcollab --use-team-image --force
 ```
 
 **When to use `--force`**:
@@ -373,15 +380,14 @@ zzcollab -t TEAM -p PROJECT --use-team-image --force
 
 ## Troubleshooting
 
-### "Cannot use --profile-name: Dockerfile already exists"
+### "Dockerfile already exists"
 
-**Problem**: Trying to change foundation after it's set
+**Problem**: Trying to change profile after project is initialized
 
 **Solution**:
 ```bash
-# Only team lead can change foundation:
-rm Dockerfile
-zzcollab -t TEAM -p PROJECT --profile-name NEW_PROFILE
+# In existing project, switch profile:
+zzc NEW_PROFILE                  # Smart detection: regenerates Dockerfile
 make docker-build && make docker-push-team
 ```
 
