@@ -873,6 +873,50 @@ Generated with zzcollab" || {
         return 1
     fi
 
+    # Get GitHub username
+    local gh_user
+    gh_user=$(gh api user --jq '.login' 2>/dev/null) || {
+        log_error "Could not get GitHub username"
+        return 1
+    }
+
+    # Check if repo already exists
+    if gh repo view "${gh_user}/${project_name}" &>/dev/null; then
+        log_warn "Repository ${gh_user}/${project_name} already exists"
+        echo ""
+        echo "Options:"
+        echo "  1) Connect to existing repo (add remote and push)"
+        echo "  2) Delete and recreate"
+        echo "  3) Cancel"
+        echo ""
+        read -r -p "Choice [1]: " choice
+        choice="${choice:-1}"
+
+        case "$choice" in
+            1)
+                log_info "Connecting to existing repository..."
+                git remote add origin "https://github.com/${gh_user}/${project_name}.git" 2>/dev/null || \
+                    git remote set-url origin "https://github.com/${gh_user}/${project_name}.git"
+                git branch -M main
+                git push -u origin main --force
+                log_success "Connected and pushed to existing repository"
+                return 0
+                ;;
+            2)
+                log_warn "Deleting existing repository..."
+                gh repo delete "${gh_user}/${project_name}" --yes || {
+                    log_error "Failed to delete repository"
+                    return 1
+                }
+                log_success "Deleted ${gh_user}/${project_name}"
+                ;;
+            *)
+                log_info "Cancelled"
+                return 0
+                ;;
+        esac
+    fi
+
     local visibility="${GITHUB_VISIBILITY:-private}"
     log_info "Creating GitHub repository: $project_name ($visibility)"
 
