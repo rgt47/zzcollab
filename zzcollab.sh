@@ -764,6 +764,13 @@ cmd_help() {
 #=============================================================================
 
 cmd_git() {
+    # Check git is available
+    if ! command -v git &>/dev/null; then
+        log_error "git not installed"
+        log_info "Install: xcode-select --install (macOS) or apt install git (Linux)"
+        return 1
+    fi
+
     if [[ -d ".git" ]]; then
         log_info "Git already initialized"
         return 0

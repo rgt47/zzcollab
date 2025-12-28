@@ -148,6 +148,75 @@ if [[ "$UNINSTALL" == "true" ]]; then
 fi
 
 #=============================================================================
+# PREREQUISITE CHECKS
+#=============================================================================
+
+check_prerequisites() {
+    local missing_required=()
+    local missing_recommended=()
+    local missing_optional=()
+
+    # Required tools
+    command -v git >/dev/null 2>&1 || missing_required+=("git")
+
+    # Recommended tools
+    command -v docker >/dev/null 2>&1 || missing_recommended+=("docker")
+    command -v make >/dev/null 2>&1 || missing_recommended+=("make")
+
+    # Optional tools
+    command -v gh >/dev/null 2>&1 || missing_optional+=("gh")
+    command -v jq >/dev/null 2>&1 || missing_optional+=("jq")
+    command -v curl >/dev/null 2>&1 || missing_optional+=("curl")
+
+    # Report findings
+    if [[ ${#missing_required[@]} -gt 0 ]]; then
+        echo ""
+        log_warn "Required tools not found: ${missing_required[*]}"
+        log_warn "Some zzcollab features will not work without these."
+        echo "  Install with:"
+        for tool in "${missing_required[@]}"; do
+            case "$tool" in
+                git) echo "    macOS: xcode-select --install" ;;
+            esac
+        done
+    fi
+
+    if [[ ${#missing_recommended[@]} -gt 0 ]]; then
+        echo ""
+        log_info "Recommended tools not found: ${missing_recommended[*]}"
+        echo "  Install with:"
+        for tool in "${missing_recommended[@]}"; do
+            case "$tool" in
+                docker) echo "    https://docs.docker.com/get-docker/" ;;
+                make)   echo "    macOS: xcode-select --install" ;;
+            esac
+        done
+    fi
+
+    if [[ ${#missing_optional[@]} -gt 0 ]]; then
+        echo ""
+        log_info "Optional tools not found: ${missing_optional[*]}"
+        echo "  These enable additional features:"
+        for tool in "${missing_optional[@]}"; do
+            case "$tool" in
+                gh)   echo "    gh   - GitHub integration (brew install gh)" ;;
+                jq)   echo "    jq   - JSON processing (brew install jq)" ;;
+                curl) echo "    curl - API queries (usually pre-installed)" ;;
+            esac
+        done
+    fi
+
+    # Summary
+    if [[ ${#missing_required[@]} -gt 0 || ${#missing_recommended[@]} -gt 0 ]]; then
+        echo ""
+        log_info "Installation will continue. Install missing tools for full functionality."
+        echo ""
+    fi
+}
+
+check_prerequisites
+
+#=============================================================================
 # VALIDATION
 #=============================================================================
 

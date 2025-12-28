@@ -73,51 +73,48 @@ zzc config set dockerhub-account "rgt47"
 Create your reproducible analysis project:
 
 ```bash
-# Create project directory and initialize with Docker + GitHub
+# Create project directory and initialize
 mkdir penguin-bills && cd penguin-bills
-zzc docker analysis github
 
-# Or step by step:
-# zzc init                    # Create rrtools structure
-# zzc docker analysis         # Add Docker with analysis profile
-# zzc github --private        # Create private GitHub repo
+# Recommended: Use profile command for complete setup
+zzc analysis                   # Creates init + renv + docker, prompts to build
 
-# Build Docker image
-make docker-build
+# Add GitHub repository (works independently)
+zzc github                     # Create private GitHub repo
 ```
 
-**What `zzc docker analysis github` does:**
+**What `zzc analysis` does (new project):**
 1. Creates rrtools structure (DESCRIPTION, R/, analysis/, tests/)
 2. Generates renv.lock for package tracking
 3. Generates Dockerfile with analysis profile (tidyverse)
-4. Initializes git repository
-5. Creates private GitHub repository and pushes
+4. Prompts: "Build Docker image now? [y/N]"
+
+**Profile commands are smart:**
+- **New project**: Full setup (init + renv + docker + build prompt)
+- **Existing project**: Just switches profile and regenerates Dockerfile
 
 **Using Different Docker Profiles:**
 
-Profile names can be used directly as commands:
-
 ```bash
-# Profiles work standalone or after docker command
+# Create new project with specific profile
 mkdir genomics-study && cd genomics-study
-zzc docker shiny github        # Docker + shiny + GitHub in one command
+zzc shiny                      # Full setup with shiny profile
+zzc github                     # Add GitHub (independent command)
 
 mkdir spatial-analysis && cd spatial-analysis
-zzc docker publishing          # Docker with publishing profile (LaTeX)
+zzc publishing                 # Full setup with publishing profile (LaTeX)
 
-# Change profile on existing project
-zzc minimal                    # Switch to minimal profile
+# Switch profile on existing project (smart detection)
+zzc minimal                    # Regenerates Dockerfile with minimal profile
 
 # List available profiles
 zzc list profiles              # Show all profiles
-zzc list libs                  # System library bundles
-zzc list pkgs                  # R package bundles
 ```
 
 **Available Profiles:**
 - `minimal` - Base R only (~300MB)
-- `analysis` / `tidyverse` - Tidyverse packages (~1.5GB)
-- `publishing` / `verse` - LaTeX + pandoc (~3GB)
+- `analysis` - Tidyverse packages (~1.5GB) - recommended
+- `publishing` - LaTeX + pandoc (~3GB)
 - `rstudio` - RStudio Server
 - `shiny` - Shiny Server
 
@@ -926,16 +923,17 @@ test_that("model includes species interaction", {
 Create a team project and share the Docker image:
 
 ```bash
-# Create team project with Docker + GitHub in one command
+# Create team project
 mkdir study && cd study
-zzc docker analysis github
+zzc analysis                     # Full setup, prompts to build
+zzc github                       # Create private GitHub repo
 
 # Or with a specialized profile
 mkdir genomics && cd genomics
-zzc docker shiny github --public
+zzc shiny                        # Full setup with shiny profile
+zzc github --public              # Create public GitHub repo
 
-# Build and push to DockerHub
-make docker-build
+# Push Docker image to DockerHub
 zzc dockerhub                    # Push to DockerHub
 
 # Share with collaborators
@@ -943,9 +941,10 @@ gh repo edit --add-collaborator username
 ```
 
 **Team Lead Responsibilities:**
-1. Creates project with `zzc docker <profile> github`
-2. Builds and pushes Docker image with `zzc dockerhub`
-3. Adds collaborators to GitHub repository
+1. Creates project with `zzc <profile>` (e.g., `zzc analysis`)
+2. Adds GitHub with `zzc github`
+3. Builds and pushes Docker image with `zzc dockerhub`
+4. Adds collaborators to GitHub repository
 
 ### Team Member Workflow
 
@@ -956,19 +955,29 @@ Clone and join the team project:
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Pull team Docker image and enter development environment
-docker pull genomicslab/study:latest
+# Option A: Build from Dockerfile (always works)
+make docker-build                # 5-15 minutes, verifies reproducibility
+make r
+
+# Option B: Pull pre-built image (faster, if team uses DockerHub)
+docker pull genomicslab/study:latest   # 1-3 minutes
 make r
 ```
 
+**DockerHub is optional.** Building from the Dockerfile always works and
+verifies full reproducibility. Pulling from DockerHub is faster for teams
+with frequent onboarding but requires the team lead to push images.
+
 **What happens for team members:**
+
 1. Clone gets Dockerfile + renv.lock (reproducibility pillars)
-2. Pull team image for identical Docker environment
+2. Build or pull Docker image for identical environment
 3. Add packages as needed using `install.packages()`
 4. Exit container - packages automatically captured in renv.lock
 
 **Environment Consistency:**
-- **Docker environment**: Identical for all team members
+
+- **Docker environment**: Identical for all team members (build or pull)
 - **Package management**: Add packages dynamically with `install.packages()`
 - **Automatic capture**: Packages tracked automatically when you exit containers
 
@@ -1056,27 +1065,29 @@ zzc list pkgs
 ## Using Profiles
 
 ```bash
-# Profile names work as standalone commands or after docker
+# Profile commands are smart:
+# - New project: full setup (init + renv + docker + build prompt)
+# - Existing project: switch profile (regenerate Dockerfile)
+
 mkdir my-project && cd my-project
-zzc docker analysis              # Docker with analysis profile
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Add GitHub (independent)
 
 # Change profile on existing project
 zzc publishing                   # Switch to publishing profile
 
-# Full setup in one command
+# Create with different profile
 mkdir new-project && cd new-project
-zzc docker shiny github          # Docker + shiny + GitHub
-
-# Build after setup
-make docker-build
+zzc shiny                        # Full setup with shiny profile
+zzc github --public              # Create public GitHub repo
 ```
 
 ## Profile System
 
-**Profiles** (standalone or after `docker`):
-- Complete Docker environment shortcuts
-- Examples: `minimal`, `analysis`, `publishing`, `shiny`
-- Usage: `zzc docker analysis` or `zzc analysis` (to change existing)
+**Profile commands** (e.g., `zzc analysis`, `zzc minimal`):
+- New project: Complete setup (init + renv + docker) with build prompt
+- Existing project: Switch profile and regenerate Dockerfile
+- Examples: `minimal`, `analysis`, `publishing`, `shiny`, `rstudio`
 
 **Package Management:**
 - Packages are added dynamically using `install.packages()` inside containers
@@ -1103,7 +1114,7 @@ correct and maintainable.
 ZZCOLLAB uses a two-layer package management system:
 
 ### Layer 1: Docker Environment (Team/Shared)
-- **Controlled by**: Profile selection (e.g., `zzc docker analysis`)
+- **Controlled by**: Profile selection (e.g., `zzc analysis`)
 - **Purpose**: Pre-installed packages in Docker image
 - **Shared**: All team members get identical Docker environment
 
@@ -1117,16 +1128,20 @@ ZZCOLLAB uses a two-layer package management system:
 Team lead sets up project:
 ```bash
 mkdir study && cd study
-zzc docker analysis github       # Create project + Docker + GitHub
-make docker-build
-zzc dockerhub                    # Push to DockerHub
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+zzc dockerhub                    # Optional: push to DockerHub for faster onboarding
 ```
 
 Team members join and add packages:
 ```bash
 git clone https://github.com/genomicslab/study.git
 cd study
-docker pull genomicslab/study:latest
+
+# Either build (always works) or pull (if team uses DockerHub)
+make docker-build                # Option A: build from Dockerfile
+# docker pull genomicslab/study:latest  # Option B: pull pre-built image
+
 make r
 
 # Inside container - add packages as needed
