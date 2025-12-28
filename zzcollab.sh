@@ -513,12 +513,24 @@ cmd_config() {
 
     init_config_system
 
-    local subcommand="${1:-list}"
+    local subcommand="${1:-}"
     shift || true
+
+    # No subcommand = interactive setup
+    if [[ -z "$subcommand" ]]; then
+        # Ensure config file exists
+        if [[ ! -f "$CONFIG_USER" ]]; then
+            config_init "false"
+        fi
+        config_interactive_setup
+        return
+    fi
 
     case "$subcommand" in
         init)
-            config_init
+            local interactive="false"
+            [[ "${1:-}" == "--interactive" || "${1:-}" == "-i" ]] && interactive="true"
+            config_init "$interactive"
             ;;
         list)
             config_list
@@ -534,6 +546,7 @@ cmd_config() {
         *)
             log_error "Unknown config subcommand: $subcommand"
             log_info "Valid subcommands: init, list, get, set"
+            log_info "Or run 'zzc config' with no args for interactive setup"
             exit 1
             ;;
     esac
