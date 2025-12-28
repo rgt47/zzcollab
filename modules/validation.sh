@@ -570,7 +570,16 @@ validate_and_report() {
 detect_missing_system_deps() {
     local dockerfile="${1:-./Dockerfile}"
     local auto_fix="${2:-false}"
-    source "${SCRIPT_DIR}/system_deps_map.sh" 2>/dev/null || { log_warn "system_deps_map.sh not found"; return 0; }
+
+    # Source profiles.sh for get_package_build_deps and get_package_runtime_deps
+    local profiles_script="${ZZCOLLAB_MODULES_DIR:-${SCRIPT_DIR}}/profiles.sh"
+    if [[ -f "$profiles_script" ]]; then
+        source "$profiles_script" 2>/dev/null || true
+    else
+        log_warn "profiles.sh not found - cannot check system deps"
+        return 0
+    fi
+
     [[ -f "$dockerfile" ]] || { log_warn "Dockerfile not found"; return 0; }
 
     local all_pkgs; all_pkgs=$(extract_code_packages | sort -u)
