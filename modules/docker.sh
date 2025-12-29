@@ -127,8 +127,7 @@ create_renv_lock_minimal() {
     local r_ver="$1"
     local cran="${2:-https://cloud.r-project.org}"
 
-    if ! command -v jq &>/dev/null; then
-        cat > renv.lock << EOF
+    cat > renv.lock << EOF
 {
   "R": {
     "Version": "$r_ver",
@@ -139,13 +138,22 @@ create_renv_lock_minimal() {
       }
     ]
   },
-  "Packages": {}
+  "Packages": {
+    "renv": {
+      "Package": "renv",
+      "Version": "1.1.5",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "testthat": {
+      "Package": "testthat",
+      "Version": "3.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    }
+  }
 }
 EOF
-    else
-        jq -n --arg r "$r_ver" --arg c "$cran" \
-            '{R:{Version:$r,Repositories:[{Name:"CRAN",URL:$c}]},Packages:{}}' > renv.lock
-    fi
     log_success "Created renv.lock (R $r_ver)"
 }
 
