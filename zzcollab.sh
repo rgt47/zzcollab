@@ -1038,6 +1038,15 @@ cmd_quickstart() {
             export BASE_IMAGE="$base_image"
             generate_dockerfile || return 1
             log_success "Dockerfile regenerated with $profile profile"
+
+            # Prompt to build
+            echo ""
+            read -r -p "Build Docker image now? [Y/n]: " build_choice
+            if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+                build_docker_image || return 1
+            else
+                log_info "Build later with: make docker-build"
+            fi
         else
             log_info "No Dockerfile yet. Run 'zzcollab docker' to generate."
         fi
@@ -1104,16 +1113,15 @@ cmd_quickstart() {
     echo "    Dockerfile ($profile)"
     echo ""
 
-    read -r -p "Build Docker image now? [y/N]: " build_choice
-    if [[ "$build_choice" =~ ^[Yy]$ ]]; then
+    read -r -p "Build Docker image now? [Y/n]: " build_choice
+    if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
         echo ""
         build_docker_image || return 1
         echo ""
         log_success "Ready! Run 'make r' to start development"
     else
         echo ""
-        log_info "To build later: make docker-build"
-        log_info "To start development: make r"
+        log_info "Build later with: make docker-build"
     fi
 
     return 0
