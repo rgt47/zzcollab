@@ -1389,7 +1389,7 @@ main() {
                             ;;
                     esac
                 done
-                cmd_docker "${docker_args[@]}"
+                cmd_docker ${docker_args[@]+"${docker_args[@]}"}
                 ((commands_run++))
                 ;;
             git)
