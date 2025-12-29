@@ -116,34 +116,34 @@ docker-push-team:
 	@echo "   Team members should update .zzcollab_team_setup to reference this tag"
 
 docker-document:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::document()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::document()"
 
 docker-build-pkg:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
 
 docker-check: docker-document
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::test()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::test()"
 
 docker-vignettes: docker-document
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('analysis/report/report.Rmd')"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('analysis/report/report.Rmd')"
 
 docker-check-renv:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::status()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::status()"
 
 docker-check-renv-fix:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::snapshot()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::snapshot()"
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: rstudio, Password: rstudio"
 	@echo "Terminal available for code editing with vim"
-	docker run --platform linux/amd64 --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
+	docker run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
 # Terminal: Interactive bash for vim editing
 r: check-renv
@@ -179,7 +179,7 @@ r: check-renv
 	echo "📝 Use vim, R, or any terminal tools"; \
 	echo ""; \
 	mkdir -p .cache/R/renv 2>/dev/null || true; \
-	docker run --platform linux/amd64 --rm -it \
+	docker run --rm -it \
 		-v $$(pwd):$$HOME_DIR/project \
 		-w $$HOME_DIR/project \
 		$(PACKAGE_NAME) bash; \
