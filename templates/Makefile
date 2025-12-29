@@ -175,14 +175,13 @@ r: check-renv
 	else \
 		HOME_DIR="/home/analyst"; \
 	fi; \
-	echo "🐳 Starting bash terminal ($$PROFILE)..."; \
-	echo "📝 Use vim, R, or any terminal tools"; \
+	echo "🐳 Starting R ($$PROFILE)..."; \
 	echo ""; \
 	mkdir -p .cache/R/renv 2>/dev/null || true; \
 	docker run --rm -it \
 		-v $$(pwd):$$HOME_DIR/project \
 		-w $$HOME_DIR/project \
-		$(PACKAGE_NAME) bash; \
+		$(PACKAGE_NAME) R; \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
 	zzcollab validate --fix --strict --verbose || echo "⚠️  Package validation failed"
