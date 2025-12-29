@@ -829,6 +829,44 @@ docker run -d \
 - **Collaboration effectiveness**: Measure cross-team project success
 - **Technical debt reduction**: Track environment-related technical debt
 
+## Testing: The Validation Layer for Docker Environments
+
+While Docker provides identical environments, **testing validates that analyses produce correct results within those environments**. A reproducible wrong answer is still wrong.
+
+### Why Testing Complements Docker
+
+1. **Environment Verification**: Tests confirm the Docker environment contains all required dependencies
+2. **Cross-Platform Validation**: Tests run in CI/CD across different Docker images verify consistency
+3. **Regression Prevention**: Tests catch when Docker image updates break existing functionality
+4. **Integration Validation**: Tests verify that containerized services communicate correctly
+
+### ZZCOLLAB Docker Testing Integration
+
+```bash
+# Tests run automatically in Docker during CI/CD
+make docker-test
+
+# Example: Verify Docker environment is correctly configured
+test_that("required system libraries are available", {
+  # Test that sf can load (requires GDAL, GEOS, PROJ)
+  expect_true(requireNamespace("sf", quietly = TRUE))
+
+  # Verify library versions
+  versions <- sf::sf_extSoftVersion()
+  expect_true(numeric_version(versions["GDAL"]) >= "3.0")
+})
+
+# Example: Verify containerized analysis produces expected outputs
+test_that("analysis produces expected results in container", {
+  result <- run_analysis_pipeline()
+
+  expect_true(file.exists("analysis/figures/figure1.png"))
+  expect_true(nrow(result$summary) > 0)
+})
+```
+
+**Key Insight**: Docker ensures identical environments; testing ensures those environments produce correct results. Both are required for production-quality reproducibility.
+
 ## Conclusion: Docker as Essential Infrastructure
 
 The evidence overwhelmingly demonstrates that **Docker containerization is not optional but essential** for reliable data analysis and production deployment. Organizations that continue to rely on traditional, inconsistent development environments face:

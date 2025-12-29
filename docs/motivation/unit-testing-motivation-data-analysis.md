@@ -1,5 +1,7 @@
 # The Critical Importance of Unit Testing in Data Analysis: Learning from Spectacular Failures
 
+> **This Document in Context**: This is the foundational motivation document for the ZZCOLLAB framework. Testing is not a separate practice from reproducibility—**testing IS the validation mechanism that ensures reproducibility**. The other motivation documents (Docker, renv, CI/CD, Docker+renv Synergy) describe infrastructure for reproducibility; this document explains why testing is the essential verification layer that makes all other infrastructure meaningful.
+
 **Date:** September 30, 2025
 **Author:** ZZCOLLAB Framework Analysis
 **Document Type:** Technical Motivation and Best Practices Guide
