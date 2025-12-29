@@ -994,6 +994,18 @@ cmd_quickstart() {
         log_info "Switching to profile: $profile ($base_image)"
         config_set "profile-name" "$profile" 2>/dev/null || true
 
+        # Always update .Rprofile to latest template
+        if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
+            cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
+            log_success "Updated .Rprofile from template"
+        fi
+
+        # Always update Makefile to latest template
+        if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/Makefile" ]]; then
+            cp "$ZZCOLLAB_TEMPLATES_DIR/Makefile" Makefile
+            log_success "Updated Makefile from template"
+        fi
+
         if [[ -f "Dockerfile" ]]; then
             export BASE_IMAGE="$base_image"
             generate_dockerfile || return 1
