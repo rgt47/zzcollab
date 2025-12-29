@@ -226,17 +226,15 @@ zzcollab -t myteam -p study --profile-name geospatial
 After the Docker profile is set, team members add packages as needed:
 
 ```bash
-# Enter container
+# Enter container (starts R directly)
 make r
 
-# Inside container - add packages using standard R
-R
+# Inside R - add packages using standard R
 > install.packages("tidymodels")
 > install.packages("here")
-> quit()
+> q()  # Exit R → returns to host (auto-snapshot runs on exit)
 
-# Exit container (packages automatically captured in renv.lock)
-exit
+# renv.lock automatically updated and validated!
 
 # Commit the updated renv.lock
 git add renv.lock
@@ -649,7 +647,7 @@ docker info
 1. Check the [User Guide](templates/ZZCOLLAB_USER_GUIDE.md) for detailed
    workflows
 2. Use built-in help: `zzcollab --help`
-3. Validate your environment: `make docker-check-renv`
+3. Validate your environment: `make check-renv`
 4. Clean and rebuild: `make docker-clean && make docker-build`
 5. Open an issue on GitHub with system details and error messages
 

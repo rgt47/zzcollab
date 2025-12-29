@@ -196,7 +196,6 @@ ZZCOLLAB follows strict Unix CLI conventions with comprehensive short flag suppo
 | `-G`  | `--github`         | Create GitHub repo         | `zzcollab -G`           |
 | `-h`  | `--help`           | Show help                  | `zzcollab -h`           |
 | `-k`  | `--pkgs`           | Package bundle             | `zzcollab -k tidyverse` |
-| `-l`  | `--libs`           | Library bundle             | `zzcollab -l geospatial` |
 | `-n`  | `--no-docker`      | Skip Docker build          | `zzcollab -n`           |
 | `-p`  | `--project-name`   | Project name               | `zzcollab -p study`     |
 | `-P`  | `--prepare-dockerfile` | Prepare without build  | `zzcollab -P`           |
@@ -225,10 +224,10 @@ zzcollab -t mylab -p study -r analysis -u
 **Custom composition**:
 ```bash
 # Verbose
-zzcollab --base-image rocker/r-ver --libs geospatial --pkgs tidyverse
+zzcollab --base-image rocker/r-ver --pkgs tidyverse
 
 # Concise
-zzcollab -b rocker/r-ver -l geospatial -k tidyverse
+zzcollab -b rocker/r-ver -k tidyverse
 ```
 
 **With examples**:

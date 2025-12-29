@@ -99,11 +99,13 @@ For specialized needs, compose custom profiles using bundles:
 
 ```bash
 # Custom: bioinformatics base with modeling packages
-zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs modeling
+zzcollab -b bioconductor/bioconductor_docker --pkgs modeling
 
-# Custom: minimal base with geospatial packages
-zzcollab -b rocker/r-ver --libs geospatial --pkgs tidyverse
+# Custom: minimal base with tidyverse packages
+zzcollab -b rocker/r-ver --pkgs tidyverse
 ```
+
+System library dependencies are automatically detected via `make check-system-deps`.
 
 ## Initialization Process
 

@@ -33,7 +33,7 @@
 ZZCOLLAB uses a **two-layer reproducibility architecture**:
 
 #### Layer 1: Docker Profile (Team/Shared)
-- **Controlled by**: Team lead via `--profile-name`, `-b`, `--libs`, `--pkgs` flags
+- **Controlled by**: Team lead via `--profile-name`, `-b`, `--pkgs` flags
 - **Purpose**: Defines foundational Docker environment
 - **Components**: Base R version, system dependencies, pre-installed packages
 - **Fixed**: Once selected, shared by all team members
@@ -114,7 +114,7 @@ zzcollab --profile-name geospatial
 make docker-build
 
 # List all available profiles
-zzcollab --list-profiles
+zzcollab -h  # See available profiles in help output
 ```
 
 ### 2. Custom Composition (Bundles)
@@ -122,23 +122,14 @@ zzcollab --list-profiles
 **Build custom environments** by combining components:
 
 ```bash
-# Custom composition: bioconductor base + geospatial libraries + modeling packages
+# Custom composition: bioconductor base + modeling packages
 mkdir custom-project && cd custom-project
-zzcollab -b bioconductor/bioconductor_docker --libs geospatial --pkgs modeling
+zzcollab -b bioconductor/bioconductor_docker --pkgs modeling
 make docker-build
 ```
 
-**Available bundles:**
+**Available R Package Bundles** (`--pkgs`):
 
-System Library Bundles (`--libs`):
-- `minimal`: Essential development libraries
-- `geospatial`: GDAL, PROJ, GEOS for spatial analysis
-- `bioinfo`: Genomics libraries (zlib, libbz2, liblzma)
-- `modeling`: Statistical modeling libraries (libgsl)
-- `publishing`: LaTeX, pandoc for manuscripts
-- `alpine`: Alpine Linux libraries (different package manager)
-
-R Package Bundles (`--pkgs`):
 - `minimal`: renv, devtools, usethis, testthat
 - `tidyverse`: tidyverse ecosystem + data tools
 - `modeling`: tidymodels, xgboost, randomForest
@@ -149,9 +140,11 @@ R Package Bundles (`--pkgs`):
 
 ```bash
 # View all available bundles
-zzcollab --list-libs   # System library bundles
 zzcollab --list-pkgs   # R package bundles
 ```
+
+**Note**: System library dependencies are automatically detected from R packages
+in your code via `make check-system-deps`. Manual specification is rarely needed.
 
 ### 3. Custom Base Images
 
@@ -160,7 +153,7 @@ zzcollab --list-pkgs   # R package bundles
 ```bash
 # Use custom or alternative base image
 mkdir project && cd project
-zzcollab -b "my-organization/custom-r:latest" --libs minimal --pkgs tidyverse
+zzcollab -b "my-organization/custom-r:latest" --pkgs tidyverse
 make docker-build
 ```
 
@@ -238,7 +231,7 @@ USER analyst
 #### Example: Custom Composition
 
 ```bash
-# Command: zzcollab -b rocker/r-ver --libs geospatial --pkgs modeling
+# Command: zzcollab -b rocker/r-ver --pkgs modeling
 ```
 
 Generated Dockerfile:
@@ -250,44 +243,30 @@ ENV LANG=en_US.UTF-8 \
     TZ=UTC \
     OMP_NUM_THREADS=1
 
-# Install system dependencies (from geospatial libs bundle)
-RUN apt-get update && apt-get install -y \
-    gdal-bin \
-    proj-bin \
-    libgeos-dev \
-    libproj-dev \
-    libgdal-dev \
-    libudunits2-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 # Install R packages (from modeling pkgs bundle)
 RUN R -e "install.packages(c('renv', 'devtools', 'tidyverse', 'tidymodels', 'xgboost', 'randomForest', 'glmnet', 'caret'))"
 
 # ... rest of Dockerfile
 ```
 
-### Validation and Compatibility
+### Automatic System Dependency Detection
 
-ZZCOLLAB validates profile/bundle combinations:
+ZZCOLLAB automatically detects system library requirements from R packages:
 
-```yaml
-# From bundles.yaml compatibility_rules:
-compatibility_rules:
-  geospatial_pkgs_require_libs:
-    condition: "pkgs == 'geospatial'"
-    requires_libs: ["geospatial"]
-    error: "Geospatial packages require --libs geospatial (GDAL/PROJ libraries)"
-```
-
-**Example validation:**
 ```bash
-# This will fail validation:
-zzcollab -b rocker/r-ver --pkgs geospatial
-# Error: Geospatial packages require --libs geospatial
+# Validate system dependencies for your code
+make check-system-deps
 
-# Correct usage:
-zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
+# Example output:
+# ⚠ Missing system dependencies detected!
+#   Package: sf
+#     Build-time: libgdal-dev libproj-dev libgeos-dev
+#     Runtime:    libgdal30 libproj25 libgeos-c1v5
+#
+# To fix: Edit Dockerfile and add to CUSTOM_SYSTEM_DEPS sections
 ```
+
+This eliminates manual library specification for most workflows.
 
 ## Team Lead Workflow
 
@@ -315,7 +294,7 @@ zzcollab -t mylab -p genomics-study
 
 # Option B: Using custom composition
 zzcollab -t mylab -p genomics-study -b bioconductor/bioconductor_docker \
-  --libs bioinfo --pkgs bioinfo
+  --pkgs bioinfo
 ```
 
 **What happens:**
@@ -363,12 +342,12 @@ git push -u origin main
 # Enter Docker environment
 make r
 
-# Inside container: add packages as needed
-renv::install("ComplexHeatmap")
-renv::install("clusterProfiler")
+# Inside R: add packages as needed using standard R
+install.packages("ComplexHeatmap")
+install.packages("clusterProfiler")
 
-# Exit (auto-snapshot + validation happen automatically!)
-exit
+# Exit R (auto-snapshot + validation happen automatically!)
+q()
 
 # Run tests
 make docker-test
@@ -418,14 +397,14 @@ zzcollab --use-team-image
 # Enter identical Docker environment as team lead
 make r
 
-# Inside container: work on analysis
-renv::restore()  # Install all team packages from renv.lock
+# Inside R: work on analysis
+# (renv::restore() runs automatically on R startup if packages missing)
 
-# Add your own packages as needed
-renv::install("pheatmap")
+# Add your own packages as needed using standard R
+install.packages("pheatmap")
 
-# Exit container (auto-snapshot + validation happen automatically!)
-exit
+# Exit R (auto-snapshot + validation happen automatically!)
+q()
 
 # Run tests (optional)
 make docker-test
@@ -486,10 +465,10 @@ zzcollab
 make docker-build
 
 # Daily development
-make r
-# ... work inside container ...
+make r  # Starts R directly
+# ... work inside R ...
 # Install packages: install.packages("package")
-exit  # Auto-snapshot + validation happen automatically!
+q()  # Exit R → auto-snapshot + validation happen automatically!
 
 # Test and commit
 make docker-test
@@ -554,10 +533,10 @@ zzcollab --profile-name bioinformatics
 
 **Example:**
 ```bash
-# Inside container:
+# Inside R (via make r):
 install.packages("ComplexHeatmap")  # Alice adds heatmap package
 install.packages("clusterProfiler")  # Bob adds pathway analysis
-exit  # Auto-snapshot on exit!
+q()  # Auto-snapshot on exit!
 ```
 
 **Key principle:** renv.lock is the source of truth, NOT the Docker image.
@@ -579,16 +558,12 @@ renv::install("user/package")    # GitHub
 #### Adding Packages
 
 ```bash
-# Enter container
+# Enter R (starts R directly)
 make r
 
-# Inside container - add packages using standard R
-R
+# Inside R - add packages using standard R
 > install.packages("tidymodels")
-> quit()
-
-# Exit container (auto-snapshot + validation happen automatically!)
-exit
+> q()  # Exit R → auto-snapshot + validation happen automatically!
 
 # Optional: Manually validate (pure shell, no R required)
 make check-renv
@@ -604,12 +579,10 @@ git push
 
 **For GitHub packages:**
 ```bash
-# Inside container
-R
+# Inside R (via make r)
 > install.packages("remotes")
 > remotes::install_github("tidyverse/dplyr")
-> quit()
-exit
+> q()  # Exit R → auto-snapshot runs
 ```
 
 **What happens automatically on exit:**
@@ -621,19 +594,19 @@ exit
 #### Package Accumulation (Team Collaboration)
 
 ```bash
-# Alice adds packages
-install.packages("tidymodels")
-exit  # Auto-snapshot: renv.lock now has [tidymodels]
+# Alice adds packages (inside R via make r)
+> install.packages("tidymodels")
+> q()  # Auto-snapshot: renv.lock now has [tidymodels]
 
-# Bob adds packages
+# Bob adds packages (inside R via make r)
 git pull  # Gets Alice's changes
-install.packages("sf")
-exit  # Auto-snapshot: renv.lock now has [tidymodels, sf]
+> install.packages("sf")
+> q()  # Auto-snapshot: renv.lock now has [tidymodels, sf]
 
 # Charlie reproduces
 git pull
-# Next docker build automatically runs renv::restore()
-# Installs both tidymodels AND sf
+make r  # Auto-restore runs on R startup
+# Both tidymodels AND sf are installed automatically
 ```
 
 **Final renv.lock contains packages from ALL contributors.**
@@ -657,7 +630,7 @@ Don't update team image for:
 | Environment | Command | Use Case | Access |
 |-------------|---------|----------|--------|
 | **Shell** | `make r` | Interactive R development | Terminal |
-| **RStudio Server** | `make docker-rstudio` | GUI-based development | http://localhost:8787 |
+| **RStudio Server** | `make rstudio` | GUI-based development | http://localhost:8787 |
 | **Paper Rendering** | `make docker-render` | Generate manuscript | Automated |
 | **Package Testing** | `make docker-test` | Run unit tests | Automated |
 
@@ -668,25 +641,21 @@ Don't update team image for:
 git pull
 docker pull mylab/project:latest  # If using team image
 
-# Enter development environment
-make r
-
-# Work inside container
+# Edit code on host (files are mounted into container)
 vim R/my_function.R
 vim analysis/report/report.Rmd
 
-# Test as you go
-R
-devtools::load_all()
-devtools::test()
-quit()
+# Enter R environment (starts R directly)
+make r
 
-# Exit container
-exit
+# Test inside R
+> devtools::load_all()
+> devtools::test()
+> q()  # Exit R → returns to host (auto-snapshot runs)
 
 # Validate before committing
 make docker-test
-make check-renv-ci
+make check-renv
 
 # Commit and push
 git add .
@@ -724,7 +693,7 @@ plot(1:10, 1:10)  # Graphics window appears
 make docker-build              # Build Docker image
 make docker-push-team          # Push team image to Docker Hub
 make r                         # Interactive shell in container
-make docker-rstudio            # Start RStudio Server
+make rstudio                   # Start RStudio Server
 make docker-render             # Render paper in container
 make docker-test               # Run tests in container
 make docker-check              # R CMD check in container
@@ -736,8 +705,9 @@ make docker-clean              # Remove Docker images/volumes
 **NEW: Pure shell validation**
 
 ```bash
-make check-renv                # Validate dependencies (pure shell, fast!)
-make check-renv-strict         # Strict mode (scan tests/, vignettes/)
+make check-renv                # Validate + auto-fix (default: strict mode)
+make check-renv-no-fix         # Validation only, no auto-add
+make check-renv-no-strict      # Skip tests/ and vignettes/
 ```
 
 **Note:** All `docker-*` targets now automatically validate packages after container exit!
@@ -897,7 +867,7 @@ Solution: Check package name, try renv::install("xyz")
 
 # Dependency conflicts
 Error: Dependencies not synchronized
-Solution: make docker-check-renv-fix
+Solution: make check-renv
 
 # renv cache issues
 Error: renv cache corrupted
@@ -948,13 +918,9 @@ Solution:
 ### Profile/Bundle Issues
 
 ```bash
-# Incompatible combination
-Error: Geospatial packages require --libs geospatial
-Solution: zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
-
-# Alpine/Debian mismatch
-Error: Alpine base images require --libs alpine
-Solution: zzcollab -b velaco/alpine-r --libs alpine --pkgs minimal
+# Missing system dependencies
+Error: Package 'sf' requires system libraries not in Dockerfile
+Solution: make check-system-deps  # Shows required libraries
 
 # Profile not found
 Error: Unknown profile 'xyz'
@@ -998,7 +964,7 @@ zzcollab --profile-name geospatial  # Uses AMD64 emulation
 ```bash
 # Create custom publishing environment for ARM64
 mkdir project && cd project
-zzcollab -b rocker/r-ver --libs publishing --pkgs publishing
+zzcollab -b rocker/r-ver --pkgs publishing
 make docker-build  # Native ARM64 build
 ```
 

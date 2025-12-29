@@ -314,13 +314,6 @@ zzcollab -b rocker/r-ver:latest
 zzcollab -b rocker/rstudio:4.3.0
 zzcollab -b bioconductor/bioconductor_docker:latest
 
-# --libs BUNDLE[,BUNDLE,...]
-# System library bundles (apt-get packages)
-zzcollab -b rocker/r-ver --libs minimal       # Basic system deps
-zzcollab -b rocker/r-ver --libs geospatial    # GDAL, PROJ, GEOS
-zzcollab -b rocker/r-ver --libs bioinfo       # Bioinformatics libs
-zzcollab -b rocker/r-ver --libs modeling      # ML system deps
-
 # --pkgs BUNDLE[,BUNDLE,...]
 # R package bundles (pre-installed in Docker)
 zzcollab -b rocker/r-ver --pkgs essential     # renv, devtools, usethis
@@ -329,17 +322,15 @@ zzcollab -b rocker/r-ver --pkgs modeling      # tidymodels packages
 zzcollab -b rocker/r-ver --pkgs bioinfo       # Bioconductor packages
 
 # Combined custom composition
-zzcollab -b bioconductor/bioconductor_docker --libs bioinfo --pkgs modeling
-# Creates: Bioconductor base + genomics libs + ML packages
+zzcollab -b bioconductor/bioconductor_docker --pkgs modeling
+# Creates: Bioconductor base + ML packages
 
 # List available bundles
-zzcollab --list-libs   # System library bundles
 zzcollab --list-pkgs   # R package bundles
 ```
 
-**Bundle System**:
-- **libs**: System dependencies (compiled libraries, command-line tools)
-- **pkgs**: R packages (pre-installed in Docker image for fast startup)
+**Note**: System library dependencies are automatically detected from R packages
+via `make check-system-deps`. Manual specification is rarely needed.
 
 
 ## Team Collaboration Flags
@@ -614,9 +605,8 @@ When predefined profiles don't fit, compose custom environments:
 ### Example: Bayesian Statistics Environment
 
 ```bash
-# Start with R base, add statistical libraries and modeling packages
+# Start with R base and modeling packages
 zzcollab -b rocker/r-ver:latest \
-  --libs modeling \
   --pkgs modeling \
   -t myteam -p bayes-study
 
@@ -628,9 +618,8 @@ zzcollab -b rocker/r-ver:latest \
 ### Example: Web Scraping + NLP Environment
 
 ```bash
-# Base image with web tools and text analysis
+# Base image with tidyverse for text analysis
 zzcollab -b rocker/rstudio:latest \
-  --libs minimal \
   --pkgs tidyverse \
   -t myteam -p nlp-scraper
 
@@ -642,9 +631,8 @@ zzcollab -b rocker/rstudio:latest \
 ### Example: Lightweight Reporting
 
 ```bash
-# Alpine base for minimal footprint, add publishing tools
+# Alpine base for minimal footprint
 zzcollab -b rocker/r-alpine:latest \
-  --libs alpine \
   --pkgs essential \
   -t myteam -p reports
 
