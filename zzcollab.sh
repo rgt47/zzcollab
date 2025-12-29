@@ -241,15 +241,20 @@ cmd_init() {
 cmd_docker() {
     require_module "cli" "config" "profiles" "docker"
 
-    local build_image=false
+    local build_image=""
     local r_version=""
     local base_image=""
     local profile=""
     local profile_changed=false
+    local auto_yes=false
+    local auto_no=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --build|-b) build_image=true; shift ;;
+            --no-build) build_image=false; shift ;;
+            -y|--yes) auto_yes=true; shift ;;
+            -n|--no) auto_no=true; shift ;;
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; profile_changed=true; shift 2 ;;
@@ -288,15 +293,31 @@ cmd_docker() {
         config_set "profile-name" "$profile" 2>/dev/null || true
     fi
 
-    # Trigger build prompt if profile changed
-    [[ "$profile_changed" == "true" ]] && ZZCOLLAB_BUILD_AFTER_SETUP="true"
-
     # Generate Dockerfile + renv.lock (wizard handles new workspaces)
     generate_dockerfile || exit 1
 
-    # Build if requested explicitly or profile changed
+    # Determine whether to build
     if [[ "$build_image" == "true" ]]; then
+        # Explicitly requested
         build_docker_image || exit 1
+    elif [[ "$build_image" == "false" ]] || [[ "$auto_no" == "true" ]]; then
+        # Explicitly declined
+        log_info "Build with: make docker-build"
+    elif [[ "$auto_yes" == "true" ]]; then
+        # Auto-yes
+        build_docker_image || exit 1
+    elif [[ -t 0 ]]; then
+        # Interactive - prompt
+        echo ""
+        read -r -p "Build Docker image now? [Y/n]: " build_choice
+        if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+            build_docker_image || exit 1
+        else
+            log_info "Build later with: make docker-build"
+        fi
+    else
+        # Non-interactive, no explicit choice
+        log_info "Build with: make docker-build"
     fi
 }
 
