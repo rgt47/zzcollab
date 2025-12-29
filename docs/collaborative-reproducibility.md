@@ -409,26 +409,29 @@ zzcollab -i -t genomicslab -p study --profile-name minimal
 
 **Scenario 2: Team Members Add Diverse Packages**
 ```r
-# Alice (geospatial analysis)
-renv::install(c("sf", "terra", "leaflet"))
-renv::snapshot()
-# VALIDATE before committing
-Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()  # Ensure nothing broke
+# Alice (geospatial analysis) - inside container
+install.packages(c("sf", "terra", "leaflet"))
+q()  # Exit R - auto-snapshot captures packages
 
-# Bob (machine learning)
-renv::install(c("tidymodels", "xgboost", "ranger"))
-renv::snapshot()
-# VALIDATE before committing
-Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()
+# On host:
+make check-renv  # Validate before committing
+git add renv.lock DESCRIPTION && git commit -m "Add spatial packages"
 
-# Carol (visualization)
-renv::install(c("patchwork", "gganimate", "plotly"))
-renv::snapshot()
-# VALIDATE before committing
-Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()
+# Bob (machine learning) - inside container
+install.packages(c("tidymodels", "xgboost", "ranger"))
+q()  # Exit R - auto-snapshot captures packages
+
+# On host:
+make check-renv
+git add renv.lock DESCRIPTION && git commit -m "Add ML packages"
+
+# Carol (visualization) - inside container
+install.packages(c("patchwork", "gganimate", "plotly"))
+q()  # Exit R - auto-snapshot captures packages
+
+# On host:
+make check-renv
+git add renv.lock DESCRIPTION && git commit -m "Add visualization packages"
 ```
 
 **Result**: The final `renv.lock` contains packages from Alice + Bob + Carol (~30 packages), while the Docker image still contains only the minimal profile (~3 packages). Any team member can reproduce any analysis by running `renv::restore()`, which installs the additional packages specified in `renv.lock`.
@@ -480,14 +483,15 @@ The union model operates through standard Git collaborative workflows:
 ```bash
 # Alice develops geospatial analysis
 git checkout -b alice-spatial-analysis
-renv::install("sf")                    # Add spatial packages
-source("scripts/spatial_analysis.R")   # Develop analysis
-renv::snapshot()                       # Update renv.lock (now contains sf)
+make r                                 # Enter container
 
-# VALIDATE before committing
-Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()                       # Ensure tests pass
-exit                                   # Exit container
+# Inside container:
+install.packages("sf")                 # Add spatial packages
+source("scripts/spatial_analysis.R")   # Develop analysis
+q()                                    # Exit R - auto-snapshot updates renv.lock
+
+# On host:
+make check-renv                        # Validate dependencies
 
 git add renv.lock scripts/spatial_analysis.R DESCRIPTION
 git commit -m "Add spatial analysis"
@@ -497,17 +501,15 @@ git push origin alice-spatial-analysis
 git checkout main
 git pull                                # Get latest (does NOT include Alice's changes yet)
 git checkout -b bob-ml-pipeline
-make r                        # Enter container
+make r                                  # Enter container
 
 # Inside container:
-renv::install("tidymodels")            # Add ML packages
-source("scripts/ml_pipeline.R")         # Develop pipeline
-renv::snapshot()                       # Update renv.lock (now contains tidymodels)
+install.packages("tidymodels")         # Add ML packages
+source("scripts/ml_pipeline.R")        # Develop pipeline
+q()                                    # Exit R - auto-snapshot updates renv.lock
 
-# VALIDATE before committing
-Rscript validate_package_environment.R --fix --fail-on-issues
-devtools::test()                       # Ensure tests pass
-exit                                   # Exit container
+# On host:
+make check-renv                        # Validate dependencies
 
 git add renv.lock scripts/ml_pipeline.R DESCRIPTION
 git commit -m "Add ML pipeline"
@@ -561,25 +563,25 @@ The pull request is blocked, and the team lead rejects the merge until the issue
 
 ZZCOLLAB employs distributed validation through pre-commit checks and continuous integration to ensure reproducibility synchronization.
 
-### Pre-Commit Validation: validate_package_environment.R
+### Pre-Commit Validation: make check-renv
 
 **Purpose**: Local developer tool that ensures synchronization between code, DESCRIPTION, and renv.lock BEFORE committing changes.
 
-**Key insight**: This script is NOT a repository updater. It is a local safety check that helps developers identify missing dependencies before pushing code.
+**Key insight**: This is a pure shell validation (no R required on host). It helps developers identify missing dependencies before pushing code.
 
 **Operational workflow**:
 
 ```bash
 # Developer workflow
 vim R/spatial_functions.R           # Add code using sf package
-Rscript validate_package_environment.R --fix --fail-on-issues
+make check-renv                      # Validate + auto-fix
 
-# Script performs these operations:
+# The validation performs these operations:
 # 1. Scans ALL code files (R/, scripts/, analysis/, tests/, vignettes/)
 # 2. Extracts package dependencies (library(), require(), pkg::fun())
-# 3. Validates against CRAN, Bioconductor, GitHub
-# 4. Updates DESCRIPTION with missing packages
-# 5. Runs renv::snapshot() to update renv.lock
+# 3. Validates against CRAN API
+# 4. Updates DESCRIPTION with missing packages (pure shell)
+# 5. Updates renv.lock with missing packages (pure shell + jq)
 # 6. Exits with code 1 if critical issues found
 
 git add R/spatial_functions.R DESCRIPTION renv.lock
@@ -592,11 +594,12 @@ git push origin feature-branch
 - Does NOT push to remote repository
 - Does NOT update the shared team environment
 - Does NOT require team lead approval
+- Does NOT require R installed on host
 
 **What it DOES do**:
 - Validates local environment consistency
-- Updates local DESCRIPTION file
-- Updates local renv.lock file
+- Updates local DESCRIPTION file (pure awk)
+- Updates local renv.lock file (curl + jq)
 - Provides actionable error messages
 - Prevents committing code with missing dependencies
 
@@ -625,7 +628,7 @@ jobs:
           R -e "devtools::test()"
       - name: Validate dependencies
         run: |
-          Rscript validate_package_environment.R --quiet --fail-on-issues
+          make check-renv
 ```
 
 **Critical insight**: CI/CD validation runs in a clean environment, ensuring that analyses do not depend on developer-specific configurations or accidentally uncommitted files.
@@ -711,8 +714,8 @@ ZZCOLLAB's collaborative model defines clear roles and responsibilities:
 
 **NOT responsible for**:
 - Approving individual package additions (handled by automated validation)
-- Managing renv.lock directly (handled by union model + renv::snapshot)
-- Reviewing package licenses (handled by validate_package_environment.R)
+- Managing renv.lock directly (handled by union model + auto-snapshot)
+- Reviewing package licenses (handled by make check-renv)
 
 **Critical insight**: The team lead focuses on science, not infrastructure. The automated validation systems handle dependency management, allowing the team lead to concentrate on research quality.
 

@@ -364,14 +364,14 @@ renv::snapshot()                # Record
 ```bash
 zzcollab --config set profile-name "minimal"
 # Minimal pre-installed packages
-# Add more packages dynamically with renv::install()
+# Add more packages dynamically with install.packages()
 ```
 
 **Or: Analysis profile** (recommended):
 ```bash
 zzcollab --config set profile-name "analysis"
 # Includes tidyverse and common analysis packages
-# Install additional packages as needed with renv::install()
+# Install additional packages as needed with install.packages()
 ```
 
 **Reuse team base image**:

@@ -306,7 +306,7 @@ zzcollab --config set team-name "yourname"
 
 ### 3. Choose profile-name based on your needs
 
-- **minimal** - Lightweight base, add packages with `renv::install()`
+- **minimal** - Lightweight base, add packages with `install.packages()`
 - **analysis** - Includes tidyverse (recommended for most research)
 - **modeling** - Statistical modeling packages
 - **bioinformatics** - Bioconductor and bioinfo tools

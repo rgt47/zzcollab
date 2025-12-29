@@ -203,14 +203,17 @@ Computational environment specification:
 #### `renv.lock`
 Exact R package versions:
 ```bash
-# Initialize renv
-Rscript -e 'renv::init()'
+# Enter container
+make r
 
-# Add packages
-Rscript -e 'renv::install("tidyverse")'
+# Add packages (inside R)
+install.packages("tidyverse")
 
-# Snapshot current state
-Rscript -e 'renv::snapshot()'
+# Exit R - auto-snapshot on exit
+q()
+
+# Validate on host (no R required)
+make check-renv
 ```
 
 ### Documentation Files
@@ -243,18 +246,20 @@ CI/CD documentation:
 
 ```bash
 # Initialize new research compendium
-zzcollab init my-project
-cd my-project
+mkdir my-project && cd my-project
+zzcollab
 
-# Initialize renv for package management
-Rscript -e 'renv::init()'
+# Build Docker environment
+make docker-build
 
-# Install required packages
-Rscript -e 'renv::install(c("tidyverse", "here", "rmarkdown"))'
-Rscript -e 'renv::snapshot()'
+# Enter container and add packages
+make r
+# Inside R:
+install.packages(c("tidyverse", "here", "rmarkdown"))
+q()  # Exit - auto-snapshot on exit
 
-# Test Docker environment
-docker build -t my-project-env .
+# Validate on host
+make check-renv
 ```
 
 ### Daily Development Workflow

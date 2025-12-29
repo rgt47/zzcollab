@@ -506,10 +506,10 @@ See [Variants Guide](../VARIANTS.md) for all 14+ profiles.
 Packages are added dynamically inside containers:
 
 ```bash
-make r                    # Enter container
-renv::install("tidymodels")        # Add packages as needed
-renv::install("targets")
-exit                               # Auto-snapshot on exit!
+make r                             # Enter container → starts R
+install.packages("tidymodels")     # Add packages as needed
+install.packages("targets")
+q()                                # Exit R - auto-snapshot on exit!
 # renv.lock automatically updated
 ```
 

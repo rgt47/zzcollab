@@ -665,7 +665,7 @@ Solution: zzcollab --config set team-name "myteam"
 ```
 Error: profile_name 'ultra-fast' not recognized
 Valid profiles: minimal, rstudio, analysis, modeling, bioinformatics, geospatial, publishing
-Solution: zzcollab --list-profiles  # See all available profiles
+Solution: zzc list profiles  # See all available profiles
 ```
 
 **Incompatible Bundle Combination**:
@@ -814,7 +814,7 @@ build:
 View all available profiles:
 
 ```bash
-zzcollab --list-profiles
+zzc list profiles
 ```
 
 **Output**:
