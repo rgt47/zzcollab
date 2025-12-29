@@ -87,7 +87,7 @@ zzc github                     # Create private GitHub repo
 1. Creates rrtools structure (DESCRIPTION, R/, analysis/, tests/)
 2. Generates renv.lock for package tracking
 3. Generates Dockerfile with analysis profile (tidyverse)
-4. Prompts: "Build Docker image now? [y/N]"
+4. Prompts: "Build Docker image now? [Y/n]"
 
 **Profile commands are smart:**
 - **New project**: Full setup (init + renv + docker + build prompt)
