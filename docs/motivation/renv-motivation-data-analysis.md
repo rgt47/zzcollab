@@ -1,6 +1,6 @@
 # The Critical Importance of renv in Data Analysis: Preventing Dependency Hell and Reproducibility Failures
 
-> **Current Implementation Note**: ZZCOLLAB implements renv with **auto-snapshot architecture** (automatic renv::snapshot() on container exit) and **dynamic package management** (add packages as needed via renv::install()). Historical references to "build modes" now replaced with Docker profiles + dynamic workflow. See [guides/renv.md](guides/renv.md).
+> **Current Implementation Note**: ZZCOLLAB implements renv with **auto-snapshot architecture** (automatic renv::snapshot() on container exit) and **dynamic package management** (add packages via standard `install.packages()`). Docker profiles (14+) replace historical "build modes". Validation uses pure shell (`make check-renv`) requiring no host R installation. See [guides/renv.md](guides/renv.md).
 
 **Document Version:** 1.0
 **Date:** September 30, 2025
@@ -282,29 +282,31 @@ Organizations report substantial costs from dependency management failures:
 renv supports sophisticated use cases beyond basic package management:
 
 #### Development vs. Production Environments
-```r
-# Development environment with latest packages
-renv::init()
-renv::install("tidyverse@latest")
+```bash
+# Enter container and add packages dynamically
+make r
+install.packages("tidyverse")
+q()  # Auto-snapshot on exit
 
-# Production environment with specific versions
-renv::init()
-renv::install("tidyverse@1.3.1")
-renv::snapshot()
+# Validate on host (no R required)
+make check-renv
 ```
 
 #### Collaborative Workflows with Shared Lockfiles
-```r
-# Team lead creates initial environment
-renv::init()
-renv::install(c("tidyverse", "sf", "plotly"))
-renv::snapshot()
-# Commits renv.lock to version control
+```bash
+# Team lead creates project with Docker profile
+mkdir my-project && cd my-project
+zzcollab                      # Initialize project
+make docker-build             # Build Docker image
+make r                        # Enter container
+install.packages(c("tidyverse", "sf", "plotly"))
+q()                           # Auto-snapshot on exit
+git add renv.lock DESCRIPTION && git commit -m "Add packages"
 
 # Team members restore identical environment
-git clone project-repo
-renv::restore()
-# Identical package versions automatically installed
+git clone project-repo && cd project-repo
+make docker-build             # Build same Docker image
+make r                        # Enter container - auto-restore installs packages
 ```
 
 ### Integration with Docker and CI/CD
@@ -446,50 +448,39 @@ The ZZCOLLAB framework provides sophisticated renv integration addressing common
 #### Automated Environment Management
 ```bash
 # ZZCOLLAB automatically initializes renv
-zzcollab -i -t myteam -p analysis-project
+mkdir my-project && cd my-project
+zzcollab -t myteam -p analysis-project -r analysis
 
 # Creates project with:
-# - renv.lock with packages based on build mode (fast/standard/comprehensive)
-# - .Rprofile configured for team collaboration
+# - renv.lock (minimal, grows dynamically as you add packages)
+# - .Rprofile configured with auto-snapshot and auto-restore
 # - Docker integration for cross-platform consistency
 # - CI/CD workflows with dependency validation
+# - Pure shell validation (make check-renv) requiring no host R
 ```
 
-#### Build Mode Package Sets
-ZZCOLLAB provides curated package sets for different build modes:
+#### Docker Profiles Replace Build Modes
+ZZCOLLAB provides 14+ specialized Docker profiles:
 
-**Fast Mode** (9 packages - essential workflow):
-```r
-# Automatically includes in renv.lock:
-c("renv", "here", "usethis", "devtools", "testthat",
-  "knitr", "rmarkdown", "targets")
-```
+**Lightweight Profiles**:
+- `minimal` - Base R only, add packages dynamically
+- `analysis` - Includes tidyverse (recommended for most research)
+- `alpine_minimal` - Ultra-light (~200MB)
 
-**Standard Mode** (17 packages - balanced for most research):
-```r
-# Automatically includes in renv.lock:
-c("renv", "here", "usethis", "devtools", "testthat",
-  "knitr", "rmarkdown", "targets", "dplyr", "ggplot2",
-  "tidyr", "palmerpenguins", "broom", "janitor", "DT", "conflicted")
-```
+**Specialized Profiles**:
+- `geospatial` - sf, terra, and spatial dependencies
+- `bioinformatics` - Bioconductor integration
+- `publishing` - Full LaTeX + Quarto for manuscripts
 
-**Comprehensive Mode** (51 packages - complete research lifecycle):
-```r
-# Automatically includes in renv.lock:
-# All standard packages plus:
-# - Data analysis: tidymodels, shiny, plotly, quarto, flexdashboard
-# - Manuscript: bookdown, papaja, RefManageR, citr
-# - Package dev: roxygen2, pkgdown, covr, lintr, goodpractice
-# - And more...
-```
+**Key Design Principle**: Docker profiles provide the **foundation** (system dependencies, R version), while renv.lock captures exact package versions. Packages are added dynamically with `install.packages()` and auto-captured on container exit.
 
 #### Dependency Validation Integration
 ```bash
-# Built-in dependency checking
-make docker-check-renv
-# Validates renv.lock consistency with actual usage
-# Identifies missing packages before CI/CD failures
-# Provides actionable error messages
+# Built-in dependency checking (pure shell, no R required on host)
+make check-renv
+# Scans code for library()/require()/pkg::function() usage
+# Auto-adds missing packages to DESCRIPTION and renv.lock
+# Validates consistency before committing
 ```
 
 ### Docker-renv Hybrid Approach

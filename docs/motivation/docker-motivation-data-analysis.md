@@ -537,13 +537,15 @@ The ZZCOLLAB framework provides **sophisticated Docker integration** that addres
 #### Automated Container Management
 ```bash
 # ZZCOLLAB automatically creates Docker environments
-zzcollab -i -t myteam -p analysis-project -B rstudio -S
+mkdir analysis-project && cd analysis-project
+zzcollab -t myteam -p analysis-project -r analysis
 
 # Creates:
-# - Base team image with standardized R/Python environments
-# - Development containers with RStudio Server
-# - Production-ready containers for deployment
-# - Automated CI/CD with container validation
+# - Dockerfile based on selected profile (14+ options)
+# - Minimal renv.lock (grows dynamically)
+# - .Rprofile with auto-snapshot on exit
+# - Makefile for container management
+# - CI/CD workflows for validation
 ```
 
 #### Multi-Platform Consistency
@@ -564,14 +566,16 @@ docker run myteam/analysis-project:latest
 #### Integrated Development Workflows
 ```bash
 # Enter consistent development environment
-make r                    # Full shell access
-make docker-rstudio                # RStudio Server at localhost:8787
-make docker-r                      # R console
+make r                             # Enter container (launches R directly)
+make rstudio                       # RStudio Server at localhost:8787
 
-# Run analysis in controlled environment
+# Package management inside container
+install.packages("tidyverse")      # Standard R command
+q()                                # Exit R - auto-snapshot on exit
+
+# Validation on host (no R required)
+make check-renv                    # Validate dependencies (pure shell)
 make docker-test                   # Automated testing
-make docker-check-renv             # Dependency validation
-make docker-render                 # Report generation
 ```
 
 ### Hybrid Docker-renv Environment Management
@@ -628,16 +632,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build containers
-        run: |
-          docker build -t test-env .
-          docker run test-env Rscript validate_package_environment.R
-          docker run test-env R CMD check .
-          docker run test-env make test
+        run: docker build -t test-env .
+      - name: Validate dependencies
+        run: make check-renv  # Pure shell, no R required
+      - name: Run package check
+        run: docker run test-env R CMD check .
+      - name: Run tests
+        run: docker run test-env Rscript -e "devtools::test()"
 ```
 
 **Automated Validation**:
 - **Environment consistency checks** on every commit
-- **Cross-platform testing** with multiple container variants
+- **Pure shell dependency validation** (no R required on CI runner)
 - **Dependency validation** ensuring renv.lock accuracy
 - **Integration testing** with complete pipeline validation
 

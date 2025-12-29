@@ -1,6 +1,6 @@
 # The Synergy of Docker and renv: Achieving Complete Computational Reproducibility
 
-> **Current Implementation Note**: This document describes Docker + renv synergy principles. The current ZZCOLLAB framework implements these principles through **14+ Docker profiles** (instead of build modes) with **dynamic package management** and **auto-snapshot architecture**. See [Development Guide](DEVELOPMENT.md) for current workflow.
+> **Current Implementation Note**: This document describes Docker + renv synergy principles. The current ZZCOLLAB framework implements these principles through **14+ Docker profiles** with **dynamic package management** (standard `install.packages()`) and **auto-snapshot architecture** (automatic on container exit). Validation uses pure shell (`make check-renv`) requiring no host R installation. See [Development Guide](DEVELOPMENT.md) for current workflow.
 
 **Document Version:** 1.0
 **Date:** September 30, 2025
@@ -569,15 +569,21 @@ rmarkdown::render("report.Rmd",
 ZZCOLLAB provides sophisticated automation for Docker+renv integration:
 
 ```bash
-# Single command creates complete environment
-zzcollab -i -t myteam -p climate-analysis -P analysis -B rstudio -S
+# Create project with Docker profile
+mkdir climate-analysis && cd climate-analysis
+zzcollab -t myteam -p climate-analysis -r analysis
 
 # Automatically generates:
-# 1. Dockerfile with rocker/rstudio:4.3.1 base
-# 2. renv.lock with packages based on build mode (fast/standard/comprehensive)
-# 3. Multi-stage build for development/production
+# 1. Dockerfile based on selected profile (14+ options)
+# 2. Minimal renv.lock (grows dynamically as you add packages)
+# 3. .Rprofile with auto-snapshot on exit and auto-restore on start
 # 4. GitHub Actions for environment validation
 # 5. Makefile targets for container management
+# 6. Pure shell validation (make check-renv) requiring no host R
+
+# Build and enter container
+make docker-build
+make r
 ```
 
 #### Generated Dockerfile Structure:
@@ -606,49 +612,45 @@ WORKDIR /home/analyst
 EXPOSE 8787
 ```
 
-#### Generated renv.lock (Analysis Paradigm):
-```json
-{
-  "R": {
-    "Version": "4.3.1",
-    "Repositories": [
-      {
-        "Name": "CRAN",
-        "URL": "https://cran.rstudio.com"
-      }
-    ]
-  },
-  "Packages": {
-    "tidyverse": {"Version": "2.0.0"},
-    "sf": {"Version": "1.0-12"},
-    "terra": {"Version": "1.7-29"},
-    "targets": {"Version": "1.1.2"},
-    "renv": {"Version": "1.0.0"}
-  }
-}
+#### Dynamic Package Management
+
+Unlike static lockfiles, ZZCOLLAB uses dynamic package management:
+
+```bash
+# Start with minimal renv.lock (just renv and testthat)
+# Add packages as needed inside container
+make r
+install.packages(c("tidyverse", "sf", "terra"))
+q()  # Exit R - auto-snapshot captures packages
+
+# renv.lock now contains exact versions
+# Validate on host (no R required)
+make check-renv
 ```
 
 ### Development Workflow Integration
 
 ```bash
 # ZZCOLLAB development commands
-make docker-rstudio         # Start RStudio Server with Docker+renv
+make r                      # Enter container (launches R directly)
+make rstudio                # Start RStudio Server at localhost:8787
 make docker-test            # Run tests in standardized environment
-make docker-check-renv      # Validate renv.lock consistency
-make docker-render          # Generate reports in controlled environment
+make check-renv             # Validate renv.lock consistency (pure shell)
 ```
 
 #### Validation Integration:
 ```bash
-# Automated environment validation
-make docker-validate-environment
+# Automated environment validation (no R required on host)
+make check-renv
 
-# Checks:
-# ✓ Docker base image version
-# ✓ System library versions
-# ✓ R version consistency
-# ✓ renv.lock package versions
-# ✓ Cross-platform compatibility
+# Scans code for:
+# ✓ library() and require() calls
+# ✓ Namespace references (pkg::function)
+# ✓ roxygen2 imports (@import, @importFrom)
+#
+# Auto-fixes:
+# ✓ Adds missing packages to DESCRIPTION
+# ✓ Adds missing packages to renv.lock (via CRAN API)
 ```
 
 ### Production Deployment Pipeline

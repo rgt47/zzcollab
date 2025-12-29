@@ -251,22 +251,27 @@ The ZZCOLLAB framework addresses many common CI/CD challenges through integrated
 
 ```bash
 # Team lead creates reproducible project environment
-zzcollab -t mylab -p customer-analysis --profile-name analysis
+mkdir customer-analysis && cd customer-analysis
+zzcollab -t mylab -p customer-analysis -r analysis
+make docker-build && make docker-push-team
+git add . && git commit -m "Initial project setup" && git push
 
 # Team members join with identical environment
-zzcollab -t mylab -p customer-analysis --use-team-image
+git clone https://github.com/mylab/customer-analysis.git && cd customer-analysis
+zzcollab -u                        # Pull team Docker image
 
 # Development workflow with built-in validation
-make r                    # Enter reproducible environment
+make r                             # Enter container (launches R directly)
 # ... develop analysis code ...
+q()                                # Exit R - auto-snapshot on exit
+make check-renv                    # Validate dependencies (pure shell)
 make docker-test                   # Run automated tests
-make docker-check-renv            # Validate dependencies
 git add . && git commit -m "Add analysis" && git push
 
 # CI/CD pipeline validates changes
-# - Dependency consistency checks
-# - Automated test execution
-# - Documentation generation
+# - Dependency consistency checks (make check-renv)
+# - Automated test execution (devtools::test())
+# - Package check (R CMD check)
 # - Multi-platform compatibility testing
 ```
 
