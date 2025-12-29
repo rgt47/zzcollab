@@ -413,53 +413,13 @@ EOF
     # Create renv.lock
     create_renv_lock_minimal "$r_version"
 
-    # Create .Rprofile with renv activation and critical options
-    if [[ -f ".Rprofile" ]]; then
-        log_warn ".Rprofile exists, checking for renv activation..."
-        if ! grep -q "renv/activate.R" .Rprofile 2>/dev/null; then
-            echo "" >> .Rprofile
-            echo "# renv activation" >> .Rprofile
-            echo 'source("renv/activate.R")' >> .Rprofile
-            log_success "Added renv activation to .Rprofile"
-        else
-            log_info ".Rprofile already has renv activation"
-        fi
+    # Create .Rprofile from template (always overwrite to ensure latest version)
+    if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
+        cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
+        log_success "Created .Rprofile from template"
     else
-        cat > .Rprofile << 'EOF'
-# renv activation
-source("renv/activate.R")
-
-# Critical reproducibility options
-options(
-    stringsAsFactors = FALSE,
-    digits = 7,
-    OutDec = ".",
-    na.action = "na.omit",
-    contrasts = c("contr.treatment", "contr.poly")
-)
-
-# Auto-restore on startup if packages missing
-.First <- function() {
-    if (file.exists("renv.lock") && requireNamespace("renv", quietly = TRUE)) {
-        status <- tryCatch(renv::status(project = getwd()), error = function(e) NULL)
-        if (!is.null(status) && !isTRUE(status$synchronized)) {
-            message("Restoring packages from renv.lock...")
-            renv::restore(prompt = FALSE)
-        }
-    }
-}
-
-# Auto-snapshot on exit
-.Last <- function() {
-    if (interactive() && file.exists("renv.lock") && requireNamespace("renv", quietly = TRUE)) {
-        tryCatch({
-            renv::snapshot(prompt = FALSE)
-            message("renv.lock updated")
-        }, error = function(e) NULL)
-    }
-}
-EOF
-        log_success "Created .Rprofile"
+        log_error "Template .Rprofile not found at $ZZCOLLAB_TEMPLATES_DIR/.Rprofile"
+        return 1
     fi
 
     # Create renv directory structure
