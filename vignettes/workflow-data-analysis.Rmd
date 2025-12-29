@@ -698,7 +698,7 @@ zzcollab --profile-name geospatial
 zzcollab --profile-name bioinformatics
 
 # Custom composition
-zzcollab -b rocker/r-ver --libs geospatial --pkgs modeling
+zzcollab -b rocker/r-ver --pkgs modeling
 ```
 
 ## Parallel Processing

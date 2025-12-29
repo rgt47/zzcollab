@@ -39,7 +39,6 @@ ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All 
 | `-G`  | `--github`         | Create GitHub repo                | `zzcollab -G`                    |
 | `-h`  | `--help`           | Show help                         | `zzcollab -h`                    |
 | `-k`  | `--pkgs`           | Package bundle                    | `zzcollab -k tidyverse`          |
-| `-l`  | `--libs`           | Library bundle                    | `zzcollab -l geospatial`         |
 | `-n`  | `--no-docker`      | Skip Docker build                 | `zzcollab -n`                    |
 | `-p`  | `--project-name`   | Project name                      | `zzcollab -p study`              |
 | `-P`  | `--prepare-dockerfile` | Prepare without build         | `zzcollab -P`                    |
@@ -72,10 +71,10 @@ zzcollab -t mylab -p study -r analysis
 **Custom composition**:
 ```bash
 # Verbose
-zzcollab --base-image rocker/verse --libs publishing --pkgs tidyverse
+zzcollab --base-image rocker/verse --pkgs tidyverse
 
 # Concise
-zzcollab -b rocker/verse -l publishing -k tidyverse
+zzcollab -b rocker/verse -k tidyverse
 ```
 
 ## Configuration Hierarchy
@@ -85,7 +84,7 @@ zzcollab -b rocker/verse -l publishing -k tidyverse
 Configuration values are resolved through a hierarchical precedence system:
 
 ```
-Priority 1: Command-line flags (--profile-name, -t, -p, -b, --libs, --pkgs)
+Priority 1: Command-line flags (--profile-name, -t, -p, -b, --pkgs)
     ↓ (overrides)
 Priority 2: Environment variables (ZZCOLLAB_PROFILE_NAME, etc.)
     ↓ (overrides)
@@ -129,7 +128,7 @@ make docker-build
 ```bash
 # Override profile with custom bundle composition
 mkdir research && cd research
-zzcollab -p research -b rocker/r-ver --libs geospatial --pkgs modeling
+zzcollab -p research -b rocker/r-ver --pkgs modeling
 make docker-build
 ```
 
@@ -524,7 +523,7 @@ make docker-build
 
 # Custom composition
 mkdir spatial && cd spatial
-zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
+zzcollab -b rocker/r-ver --pkgs geospatial
 make docker-build
 ```
 
@@ -668,11 +667,11 @@ Valid profiles: minimal, rstudio, analysis, modeling, bioinformatics, geospatial
 Solution: zzc list profiles  # See all available profiles
 ```
 
-**Incompatible Bundle Combination**:
+**Missing System Dependencies**:
 
 ```
-Error: Geospatial packages require --libs geospatial (GDAL/PROJ libraries)
-Solution: zzcollab -b rocker/r-ver --libs geospatial --pkgs geospatial
+Error: Package 'sf' requires system libraries not in Dockerfile
+Solution: Run 'make check-system-deps' to see required libraries
 ```
 
 ## Troubleshooting
