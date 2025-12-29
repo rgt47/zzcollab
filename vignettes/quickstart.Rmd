@@ -1040,8 +1040,8 @@ covr::package_coverage()
 # View workflow logs
 gh run view --log
 
-# Validate locally first
-Rscript validate_package_environment.R --quiet --fail-on-issues
+# Validate locally first (pure shell, no R required!)
+make check-renv
 make docker-test
 ```
 

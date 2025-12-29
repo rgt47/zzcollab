@@ -298,7 +298,7 @@ zzcollab --profile-name publishing      # ~3GB, LaTeX/Quarto
 zzcollab --profile-name alpine_minimal  # ~200MB, ultra-lightweight
 
 # List all available profiles
-zzcollab --list-profiles
+zzc list profiles
 ```
 
 **Profile Details**: See "Docker Profile System" section below.
@@ -1090,7 +1090,7 @@ zzcollab --platform linux/amd64 --profile-name geospatial -t myteam -p study
 
 **Solution 3**: Check profile compatibility
 ```bash
-zzcollab --list-profiles
+zzc list profiles
 # Output shows platform compatibility:
 # analysis      ARM64 ✓  AMD64 ✓
 # geospatial    ARM64 ✗  AMD64 ✓  (AMD64 only)

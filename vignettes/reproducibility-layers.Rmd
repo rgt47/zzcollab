@@ -174,7 +174,7 @@ zzc minimal                      # Minimal profile includes renv
 # Both methods work - install.packages() is simpler in ZZCOLLAB Docker containers
 install.packages("dplyr")
 install.packages("ggplot2")
-# Or use renv::install() for GitHub packages: renv::install("user/package")
+# For GitHub packages: remotes::install_github("user/package")
 
 # Work normally
 library(dplyr)
@@ -238,11 +238,11 @@ Still insufficient for:
 ```r
 # Day 1: Start project
 renv::init()
-renv::install("tidyverse")
+install.packages("tidyverse")
 renv::snapshot()
 
 # Day 30: Add new analysis
-renv::install("lme4")
+install.packages("lme4")
 # ... write code ...
 renv::snapshot()  # Remember to snapshot!
 
@@ -1280,8 +1280,8 @@ packages might update during analysis.
 ```r
 # Initialize renv
 renv::init()
-renv::install("tidyverse")
-renv::install("lme4")
+install.packages("tidyverse")
+install.packages("lme4")
 
 # Analysis code...
 
@@ -1473,7 +1473,7 @@ jobs:
 
 ```r
 # Wrong workflow (manual renv without Docker)
-renv::install("new-package")
+install.packages("new-package")
 # ... use package in code ...
 git commit  # renv.lock not updated!
 
@@ -1482,7 +1482,7 @@ renv::restore()  # Doesn't get new-package
 # Code fails with "package not found"
 
 # Correct workflow (manual renv)
-renv::install("new-package")
+install.packages("new-package")
 renv::snapshot()  # Update renv.lock
 git add renv.lock
 git commit
@@ -1501,17 +1501,14 @@ git add renv.lock && git commit
 # Standard R command (recommended in ZZCOLLAB Docker containers)
 install.packages("dplyr")  # Auto-captured in renv.lock on exit
 
-# Alternative: renv command (works for CRAN and GitHub packages)
-renv::install("dplyr")     # Also captured in renv.lock
-
 # For GitHub packages
-renv::install("user/package")
+install.packages("remotes")
+remotes::install_github("user/package")
 ```
 
 **Note**: In ZZCOLLAB Docker containers, `install.packages()` works correctly
 because packages are automatically captured in renv.lock when you exit the
-container. Outside of Docker, use `renv::install()` to ensure packages go
-to the project library.
+container.
 
 ## Level 3 Pitfalls (Docker)
 

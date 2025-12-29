@@ -699,7 +699,7 @@ cmd_list() {
             echo "  tables       gt, flextable, kableExtra"
             echo ""
             echo "Note: Packages are managed via renv.lock. Add packages with"
-            echo "renv::install() inside the container."
+            echo "install.packages() inside the container."
             ;;
         all|"")
             cmd_list profiles
