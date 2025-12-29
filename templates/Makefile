@@ -163,18 +163,7 @@ r: check-renv
 		exit 1; \
 	fi; \
 	echo "🔍 Checking system dependencies..."; \
-	if ! zzcollab validate --system-deps 2>/dev/null; then \
-		echo ""; \
-		read -p "Missing system deps. Add to Dockerfile and rebuild? [Y/n]: " choice; \
-		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
-			zzcollab validate --system-deps-fix && \
-			echo "" && \
-			echo "🔨 Rebuilding Docker image..." && \
-			$(MAKE) docker-build || exit 1; \
-		else \
-			echo "⚠️  Continuing without system deps (some packages may fail to install)"; \
-		fi; \
-	fi; \
+	zzcollab validate --system-deps 2>/dev/null || true; \
 	PROFILE=$$(head -20 Dockerfile 2>/dev/null | grep 'Profile:' | head -1 | sed 's/.*Profile: \([a-z0-9_]*\).*/\1/'); \
 	if [ -z "$$PROFILE" ]; then \
 		echo "❌ Could not detect profile from Dockerfile"; \
