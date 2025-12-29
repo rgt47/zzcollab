@@ -1,11 +1,10 @@
-# Makefile for ${PKG_NAME} research compendium
+# Makefile for zzcollab research compendium
 # Docker-first workflow for reproducible research
 
-PACKAGE_NAME = ${PKG_NAME}
-R_VERSION = ${R_VERSION}
-TEAM_NAME = ${TEAM_NAME}
-PROJECT_NAME = ${PROJECT_NAME}
-DOCKERHUB_ACCOUNT = ${DOCKERHUB_ACCOUNT}
+# Auto-detect from project (no manual configuration needed)
+PACKAGE_NAME := $(shell basename $(CURDIR))
+PROJECT_NAME := $(PACKAGE_NAME)
+R_VERSION := $(shell grep 'R_VERSION=' Dockerfile 2>/dev/null | head -1 | sed 's/.*=//' || echo "4.4.0")
 
 # Git-based versioning for reproducibility (use git SHA or date)
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo "$(shell date +%Y%m%d)")
