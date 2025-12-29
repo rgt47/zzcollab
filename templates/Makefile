@@ -178,7 +178,11 @@ r: check-renv
 	echo "🐳 Starting bash terminal ($$PROFILE)..."; \
 	echo "📝 Use vim, R, or any terminal tools"; \
 	echo ""; \
-	docker run --platform linux/amd64 --rm -it -v $$(pwd):$$HOME_DIR/project -v $$(pwd)/.cache/R/renv:$$HOME_DIR/.cache/R/renv $(PACKAGE_NAME); \
+	mkdir -p .cache/R/renv 2>/dev/null || true; \
+	docker run --platform linux/amd64 --rm -it \
+		-v $$(pwd):$$HOME_DIR/project \
+		-w $$HOME_DIR/project \
+		$(PACKAGE_NAME) bash; \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
 	zzcollab validate --fix --strict --verbose || echo "⚠️  Package validation failed"
