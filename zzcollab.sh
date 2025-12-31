@@ -1303,6 +1303,7 @@ Options:
   --public         Create public GitHub repo
   -v, --verbose    More output
   -q, --quiet      Errors only
+  -y, --yes        Skip confirmations
 
 Examples:
   zzcollab analysis                # Quickstart: init + renv + docker (recommended)
