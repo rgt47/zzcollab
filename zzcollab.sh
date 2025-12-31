@@ -1011,13 +1011,17 @@ cmd_quickstart() {
             generate_dockerfile || return 1
             log_success "Dockerfile regenerated with $profile profile"
 
-            # Prompt to build
-            echo ""
-            read -r -p "Build Docker image now? [Y/n]: " build_choice
-            if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+            # Prompt to build (skip if -y flag)
+            if [[ "${ZZCOLLAB_AUTO_YES:-false}" == "true" ]]; then
                 build_docker_image || return 1
             else
-                log_info "Build later with: make docker-build"
+                echo ""
+                read -r -p "Build Docker image now? [Y/n]: " build_choice
+                if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+                    build_docker_image || return 1
+                else
+                    log_info "Build later with: make docker-build"
+                fi
             fi
         else
             log_info "No Dockerfile yet. Run 'zzcollab docker' to generate."
@@ -1043,10 +1047,13 @@ cmd_quickstart() {
     echo "    - Dockerfile for containerized environment"
     echo ""
 
-    read -r -p "Continue? [Y/n]: " confirm
-    if [[ "$confirm" =~ ^[Nn]$ ]]; then
-        log_info "Cancelled"
-        return 0
+    # Skip confirmation if -y flag
+    if [[ "${ZZCOLLAB_AUTO_YES:-false}" != "true" ]]; then
+        read -r -p "Continue? [Y/n]: " confirm
+        if [[ "$confirm" =~ ^[Nn]$ ]]; then
+            log_info "Cancelled"
+            return 0
+        fi
     fi
 
     # Step 1: Initialize project structure
@@ -1085,15 +1092,23 @@ cmd_quickstart() {
     echo "    Dockerfile ($profile)"
     echo ""
 
-    read -r -p "Build Docker image now? [Y/n]: " build_choice
-    if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+    # Build prompt (skip if -y flag)
+    if [[ "${ZZCOLLAB_AUTO_YES:-false}" == "true" ]]; then
         echo ""
         build_docker_image || return 1
         echo ""
         log_success "Ready! Run 'make r' to start development"
     else
-        echo ""
-        log_info "Build later with: make docker-build"
+        read -r -p "Build Docker image now? [Y/n]: " build_choice
+        if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+            echo ""
+            build_docker_image || return 1
+            echo ""
+            log_success "Ready! Run 'make r' to start development"
+        else
+            echo ""
+            log_info "Build later with: make docker-build"
+        fi
     fi
 
     return 0
@@ -1344,6 +1359,10 @@ main() {
                 ;;
             -q|--quiet)
                 export VERBOSITY_LEVEL=0
+                shift
+                ;;
+            -y|--yes)
+                export ZZCOLLAB_AUTO_YES=true
                 shift
                 ;;
 
