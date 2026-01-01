@@ -1011,8 +1011,10 @@ cmd_quickstart() {
             generate_dockerfile || return 1
             log_success "Dockerfile regenerated with $profile profile"
 
-            # Prompt to build (skip if -y flag)
-            if [[ "${ZZCOLLAB_AUTO_YES:-false}" == "true" ]]; then
+            # Prompt to build: -Y auto-builds, -y prompts, --no-build skips
+            if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
+                log_info "Build later with: make docker-build"
+            elif [[ "${ZZCOLLAB_AUTO_BUILD:-false}" == "true" ]]; then
                 build_docker_image || return 1
             else
                 echo ""
@@ -1092,8 +1094,11 @@ cmd_quickstart() {
     echo "    Dockerfile ($profile)"
     echo ""
 
-    # Build prompt (skip if -y flag)
-    if [[ "${ZZCOLLAB_AUTO_YES:-false}" == "true" ]]; then
+    # Build prompt: -Y auto-builds, -y prompts, --no-build skips
+    if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
+        echo ""
+        log_info "Build later with: make docker-build"
+    elif [[ "${ZZCOLLAB_AUTO_BUILD:-false}" == "true" ]]; then
         echo ""
         build_docker_image || return 1
         echo ""
@@ -1313,12 +1318,14 @@ Management:
 
 Options:
   -b, --build      Build Docker image after generating
+  --no-build       Skip Docker build prompt
   --tag <tag>      DockerHub image tag (default: latest)
   --private        Create private GitHub repo (default)
   --public         Create public GitHub repo
   -v, --verbose    More output
   -q, --quiet      Errors only
-  -y, --yes        Skip confirmations
+  -y, --yes        Skip initial confirmation (prompt for build)
+  -Y, --yes-all    Skip all confirmations (auto-build)
 
 Examples:
   zzcollab analysis                # Quickstart: init + renv + docker (recommended)
@@ -1363,6 +1370,15 @@ main() {
                 ;;
             -y|--yes)
                 export ZZCOLLAB_AUTO_YES=true
+                shift
+                ;;
+            -Y|--yes-all)
+                export ZZCOLLAB_AUTO_YES=true
+                export ZZCOLLAB_AUTO_BUILD=true
+                shift
+                ;;
+            --no-build)
+                export ZZCOLLAB_NO_BUILD=true
                 shift
                 ;;
 
@@ -1466,14 +1482,22 @@ main() {
                 local profile_name="$1"
                 shift
                 # Consume trailing flags for this command
+                # -y: skip initial confirmation, prompt for build
+                # -Y: skip both confirmations (auto-build)
+                # --no-build: skip build even with -y/-Y
                 while [[ $# -gt 0 ]]; do
                     case "$1" in
                         -y|--yes)
                             export ZZCOLLAB_AUTO_YES=true
                             shift
                             ;;
-                        -n|--no)
-                            export ZZCOLLAB_AUTO_NO=true
+                        -Y|--yes-all)
+                            export ZZCOLLAB_AUTO_YES=true
+                            export ZZCOLLAB_AUTO_BUILD=true
+                            shift
+                            ;;
+                        --no-build)
+                            export ZZCOLLAB_NO_BUILD=true
                             shift
                             ;;
                         -*)
@@ -1506,14 +1530,22 @@ main() {
                 local profile_name="$1"
                 shift
                 # Consume trailing flags for this command
+                # -y: skip initial confirmation, prompt for build
+                # -Y: skip both confirmations (auto-build)
+                # --no-build: skip build even with -y/-Y
                 while [[ $# -gt 0 ]]; do
                     case "$1" in
                         -y|--yes)
                             export ZZCOLLAB_AUTO_YES=true
                             shift
                             ;;
-                        -n|--no)
-                            export ZZCOLLAB_AUTO_NO=true
+                        -Y|--yes-all)
+                            export ZZCOLLAB_AUTO_YES=true
+                            export ZZCOLLAB_AUTO_BUILD=true
+                            shift
+                            ;;
+                        --no-build)
+                            export ZZCOLLAB_NO_BUILD=true
                             shift
                             ;;
                         -*)
