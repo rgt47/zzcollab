@@ -1463,9 +1463,29 @@ main() {
                     log_error "-r/--profile requires a name"
                     exit 1
                 fi
-                cmd_quickstart "$1"
-                ((commands_run++))
+                local profile_name="$1"
                 shift
+                # Consume trailing flags for this command
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        -y|--yes)
+                            export ZZCOLLAB_AUTO_YES=true
+                            shift
+                            ;;
+                        -n|--no)
+                            export ZZCOLLAB_AUTO_NO=true
+                            shift
+                            ;;
+                        -*)
+                            break
+                            ;;
+                        *)
+                            break
+                            ;;
+                    esac
+                done
+                cmd_quickstart "$profile_name"
+                ((commands_run++))
                 ;;
 
             # Remove command
@@ -1483,9 +1503,31 @@ main() {
 
             # Profile names as standalone commands → full quickstart
             minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
-                cmd_quickstart "$1"
-                ((commands_run++))
+                local profile_name="$1"
                 shift
+                # Consume trailing flags for this command
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        -y|--yes)
+                            export ZZCOLLAB_AUTO_YES=true
+                            shift
+                            ;;
+                        -n|--no)
+                            export ZZCOLLAB_AUTO_NO=true
+                            shift
+                            ;;
+                        -*)
+                            # Unknown flag, might be for next command
+                            break
+                            ;;
+                        *)
+                            # Not a flag, might be next command
+                            break
+                            ;;
+                    esac
+                done
+                cmd_quickstart "$profile_name"
+                ((commands_run++))
                 ;;
 
             # Other commands that pass through
