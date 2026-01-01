@@ -152,6 +152,7 @@ create_file_if_missing() {
         return 1
     fi
 
+    track_file "$file_path"
     log_info "Created $description"
 }
 
