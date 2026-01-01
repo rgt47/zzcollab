@@ -25,8 +25,11 @@ create_directory_structure() {
     local dirs=(
         "R"
         "man"
+        "tests"
         "tests/testthat"
         "vignettes"
+        "analysis"
+        "analysis/data"
         "analysis/data/raw_data"
         "analysis/data/derived_data"
         "analysis/report"
@@ -34,6 +37,7 @@ create_directory_structure() {
         "analysis/tables"
         "analysis/scripts"
         "docs"
+        ".github"
         ".github/workflows"
     )
 

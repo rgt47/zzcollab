@@ -1284,13 +1284,23 @@ cmd_rm_cicd() {
 }
 
 cmd_rm_all() {
+    # If manifest exists, use manifest-based uninstall (preferred)
+    if [[ -f ".zzcollab/manifest.json" ]] || [[ -f ".zzcollab/manifest.txt" ]]; then
+        echo ""
+        log_info "Found zzcollab manifest - using manifest-based removal"
+        echo "  Note: .git/ will NOT be removed (use 'zzc rm git' separately)"
+        echo ""
+        cmd_uninstall "$@"
+        return $?
+    fi
+
+    # Fallback for legacy projects without manifest
     echo ""
-    log_warn "This will remove ALL zzcollab-generated files:"
+    log_warn "No manifest found - using legacy removal (hardcoded file list)"
     echo ""
     echo "  Directories: R/, analysis/, tests/, man/, vignettes/, docs/, .github/"
     echo "  Files:       Dockerfile, Makefile, DESCRIPTION, NAMESPACE, LICENSE,"
     echo "               renv.lock, .Rprofile, .Rbuildignore, .gitignore, *.Rproj"
-    echo "  Metadata:    .zzcollab/"
     echo ""
     echo "  Note: .git/ will NOT be removed (use 'zzc rm git' separately)"
     echo ""
