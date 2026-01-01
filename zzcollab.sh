@@ -1168,6 +1168,7 @@ cmd_quickstart() {
 
 cmd_rm() {
     local feature="${1:-}"
+    shift || true  # Remove feature from args, keep remaining flags
 
     case "$feature" in
         docker)
@@ -1186,7 +1187,7 @@ cmd_rm() {
             cmd_rm_cicd
             ;;
         all)
-            cmd_rm_all
+            cmd_rm_all "$@"  # Pass through flags like -f, --force
             ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
@@ -1571,12 +1572,18 @@ main() {
                 shift
                 if [[ $# -eq 0 ]]; then
                     log_error "rm requires a feature name"
-                    log_info "Features: docker, renv, git, github, cicd"
+                    log_info "Features: docker, renv, git, github, cicd, all"
                     exit 1
                 fi
-                cmd_rm "$1"
-                ((commands_run++))
+                local rm_feature="$1"
                 shift
+                # Pass remaining args (e.g., -f, --force) to cmd_rm
+                cmd_rm "$rm_feature" "$@"
+                ((commands_run++))
+                # Consume any flags that were passed
+                while [[ $# -gt 0 ]] && [[ "$1" == -* ]]; do
+                    shift
+                done
                 ;;
 
             # Profile names as standalone commands → full quickstart
