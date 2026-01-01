@@ -196,6 +196,61 @@ safe_mkdir() {
 # UNIFIED TRACKING SYSTEM
 #=============================================================================
 
+# Manifest file paths (exported for use by track_item)
+export MANIFEST_FILE=""
+export MANIFEST_TXT=""
+
+##############################################################################
+# FUNCTION: init_manifest
+# PURPOSE:  Initialize the .zzcollab directory and manifest file for tracking
+#           created files. Must be called before any track_* functions.
+# USAGE:    init_manifest
+# RETURNS:  0 on success, 1 on failure
+##############################################################################
+init_manifest() {
+    local manifest_dir=".zzcollab"
+
+    if [[ -d "$manifest_dir" ]]; then
+        log_debug "Manifest directory already exists: $manifest_dir"
+    else
+        if ! mkdir -p "$manifest_dir"; then
+            log_error "Failed to create manifest directory: $manifest_dir"
+            return 1
+        fi
+        log_debug "Created manifest directory: $manifest_dir"
+    fi
+
+    if [[ "$JQ_AVAILABLE" == "true" ]]; then
+        MANIFEST_FILE="$manifest_dir/manifest.json"
+        export MANIFEST_FILE
+        if [[ ! -f "$MANIFEST_FILE" ]]; then
+            cat > "$MANIFEST_FILE" << 'EOF'
+{
+  "version": "1.0",
+  "created": "",
+  "directories": [],
+  "files": [],
+  "template_files": [],
+  "symlinks": [],
+  "docker_image": null
+}
+EOF
+            jq --arg date "$(date -Iseconds)" '.created = $date' "$MANIFEST_FILE" > "$MANIFEST_FILE.tmp" \
+                && mv "$MANIFEST_FILE.tmp" "$MANIFEST_FILE"
+            log_debug "Created JSON manifest: $MANIFEST_FILE"
+        fi
+    else
+        MANIFEST_TXT="$manifest_dir/manifest.txt"
+        export MANIFEST_TXT
+        if [[ ! -f "$MANIFEST_TXT" ]]; then
+            echo "# zzcollab manifest - $(date -Iseconds)" > "$MANIFEST_TXT"
+            log_debug "Created text manifest: $MANIFEST_TXT"
+        fi
+    fi
+
+    return 0
+}
+
 # Function: track_item
 # Purpose: Universal tracking function for all manifest items
 # Arguments: $1 - type (directory, file, template, symlink, docker_image)

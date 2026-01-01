@@ -243,6 +243,9 @@ create_github_workflows() {
 setup_project() {
     log_info "Setting up project structure..."
 
+    # Initialize manifest tracking before creating any files
+    init_manifest || return 1
+
     create_directory_structure || return 1
     create_r_package_files || return 1
     create_test_infrastructure || return 1

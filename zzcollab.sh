@@ -635,13 +635,13 @@ EOF
     if [[ "$dry_run" == "true" ]]; then
         log_info "Dry run - would remove:"
         if [[ "$manifest" == *.json ]] && command -v jq >/dev/null 2>&1; then
-            jq -r '.files[]?, .directories[]?, .template_files[]?' "$manifest" 2>/dev/null | while read -r item; do
-                [[ -e "$item" ]] && echo "  $item"
-            done
+            jq -r '.files[]?, .directories[]?, (.template_files[]? | .destination)?' "$manifest" 2>/dev/null | while read -r item; do
+                [[ -n "$item" ]] && [[ -e "$item" ]] && echo "  $item"
+            done || true
         else
             grep -E '^(file|dir|template):' "$manifest" 2>/dev/null | cut -d: -f2- | while read -r item; do
-                [[ -e "$item" ]] && echo "  $item"
-            done
+                [[ -n "$item" ]] && [[ -e "$item" ]] && echo "  $item"
+            done || true
         fi
         return 0
     fi
@@ -657,8 +657,51 @@ EOF
     fi
 
     log_info "Removing zzcollab files..."
-    # Actual removal logic would go here
-    # For now, just remove manifest
+
+    # Remove tracked files
+    if [[ "$manifest" == *.json ]] && command -v jq >/dev/null 2>&1; then
+        # Remove files first
+        jq -r '.files[]? // empty' "$manifest" 2>/dev/null | while read -r item; do
+            if [[ -f "$item" ]]; then
+                rm -f "$item" && log_info "Removed file: $item"
+            fi
+        done
+
+        # Remove template destinations
+        jq -r '.template_files[]? | .destination // empty' "$manifest" 2>/dev/null | while read -r item; do
+            if [[ -f "$item" ]]; then
+                rm -f "$item" && log_info "Removed file: $item"
+            fi
+        done
+
+        # Remove directories (in reverse order to handle nested dirs)
+        jq -r '.directories[]? // empty' "$manifest" 2>/dev/null | tac | while read -r item; do
+            if [[ -d "$item" ]] && [[ -z "$(ls -A "$item" 2>/dev/null)" ]]; then
+                rmdir "$item" && log_info "Removed directory: $item"
+            fi
+        done
+    else
+        # Text manifest fallback
+        grep -E '^file:' "$manifest" 2>/dev/null | cut -d: -f2- | while read -r item; do
+            if [[ -f "$item" ]]; then
+                rm -f "$item" && log_info "Removed file: $item"
+            fi
+        done
+
+        grep -E '^template:' "$manifest" 2>/dev/null | cut -d: -f3- | while read -r item; do
+            if [[ -f "$item" ]]; then
+                rm -f "$item" && log_info "Removed file: $item"
+            fi
+        done
+
+        grep -E '^directory:' "$manifest" 2>/dev/null | cut -d: -f2- | tac | while read -r item; do
+            if [[ -d "$item" ]] && [[ -z "$(ls -A "$item" 2>/dev/null)" ]]; then
+                rmdir "$item" && log_info "Removed directory: $item"
+            fi
+        done
+    fi
+
+    # Remove manifest directory
     rm -rf .zzcollab
     log_success "Uninstall complete"
 }
@@ -1310,6 +1353,7 @@ Profiles (new project: init+renv+docker, existing: switch profile):
 
 Management:
   rm <feature>   Remove: docker, renv, git, github, cicd
+  uninstall      Remove all zzcollab files (uses manifest)
   validate       Check project structure
   config         Configuration management
   list           List profiles, libs, packages
