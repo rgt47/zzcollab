@@ -143,7 +143,7 @@ for use.
 
 Create `analysis/report/report.Rmd` immediately:
 
-````markdown
+```yaml
 ---
 title: "Allometric Scaling in Palmer Penguins"
 author:
@@ -160,8 +160,12 @@ abstract: |
   We investigate allometric scaling relationships between bill morphology
   and body mass in three penguin species. [To be completed]
 ---
+```
 
-```{r setup, include=FALSE}
+Then add a setup chunk and your content:
+
+```r
+# In setup chunk (include=FALSE):
 knitr::opts_chunk$set(
   echo = FALSE,
   warning = FALSE,
@@ -172,25 +176,8 @@ library(tidyverse)
 library(palmerpenguins)
 ```
 
-# Introduction
-
-Allometric scaling relationships provide insights into ecological and
-evolutionary processes [@schmidt-nielsen1984]. Penguin bill morphology
-varies across species, suggesting differential selection pressures
-[@gorman2014].
-
-**Research question**: How do bill dimensions scale with body mass across
-penguin species?
-
-# Methods
-
-## Data
-
-We analyzed morphological measurements from `r nrow(penguins)` penguins
-of three species collected at Palmer Station, Antarctica [@horst2020].
-
-```{r data-exploration}
-# Initial exploration - inline for now
+```r
+# In data-exploration chunk:
 penguins |>
   filter(!is.na(body_mass_g)) |>
   group_by(species) |>
@@ -202,13 +189,8 @@ penguins |>
   knitr::kable(caption = "Sample sizes and body mass by species")
 ```
 
-## Statistical Analysis
-
-We fit linear models relating log-transformed bill dimensions to
-log-transformed body mass, with species as a covariate.
-
-```{r models}
-# Inline for now - will extract if reused
+```r
+# In models chunk:
 penguins_clean <- penguins |>
   filter(!is.na(body_mass_g), !is.na(bill_length_mm))
 
@@ -217,21 +199,9 @@ model_length <- lm(
   data = penguins_clean
 )
 
-# Quick look at results
 broom::tidy(model_length) |>
   knitr::kable(digits = 3)
 ```
-
-# Results
-
-[To be written as analysis progresses]
-
-# Discussion
-
-[To be written]
-
-# References
-````
 
 Create `analysis/report/references.bib`:
 
@@ -286,16 +256,10 @@ You now have a working manuscript draft with embedded analysis.
 
 Continue writing in `report.Rmd`, adding code as needed:
 
-````markdown
-# Results
-
-## Allometric Scaling Patterns
-
-```{r scaling-analysis}
-# Extract slopes for each species
+```r
+# In scaling-analysis chunk:
 library(broom)
 
-# Fit species-specific models
 slopes <- penguins_clean |>
   group_by(species) |>
   do(model = lm(log(bill_length_mm) ~ log(body_mass_g), data = .)) |>
@@ -307,15 +271,10 @@ slopes <- penguins_clean |>
   select(-model)
 
 slopes |>
-  knitr::kable(
-    digits = 3,
-    caption = "Allometric slopes by species"
-  )
+  knitr::kable(digits = 3, caption = "Allometric slopes by species")
 ```
 
-Bill length showed near-isometric scaling with body mass
-(slope = `r round(mean(slopes$slope), 2)`; Table 2).
-````
+Use inline R code to reference results in the text.
 
 At this stage, all code lives in `report.Rmd`. This is appropriate for
 exploratory work.
@@ -398,13 +357,11 @@ test_isometry <- function(slope, se, alpha = 0.05) {
 
 **Update report.Rmd to use the function**:
 
-````markdown
-```{r setup, include=FALSE}
-# ... existing setup ...
+```r
+# In setup chunk, add:
 source("../../R/scaling_functions.R")
-```
 
-```{r scaling-analysis}
+# Then in your analysis chunk:
 slopes <- extract_allometric_slopes(
   penguins,
   bill_length_mm,
@@ -415,7 +372,6 @@ slopes <- extract_allometric_slopes(
 slopes |>
   knitr::kable(digits = 3, caption = "Allometric slopes by species")
 ```
-````
 
 ## Step 6: Add Tests (When Functions Are Stable)
 
@@ -534,18 +490,15 @@ cat("Results saved to analysis/data/derived_data/allometric_results.rds\n")
 
 **Update report.Rmd to load cached results**:
 
-````markdown
-```{r load-results}
-# Load pre-computed results (run 01_fit_models.R first)
+```r
+# In load-results chunk:
 results <- readRDS("../data/derived_data/allometric_results.rds")
-```
 
-```{r results-table}
+# In results-table chunk:
 results |>
   select(trait, species, slope, slope_se, scaling_type, p_value) |>
   knitr::kable(digits = 3, caption = "Allometric scaling results")
 ```
-````
 
 **Workflow**:
 

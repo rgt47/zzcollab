@@ -91,7 +91,7 @@ simulation-study/
 
 Create `analysis/report/report.Rmd` on day one:
 
-````markdown
+```yaml
 ---
 title: "Comparing Methods for Longitudinal Binary Outcomes: A Simulation Study"
 author:
@@ -106,59 +106,17 @@ output:
 bibliography: references.bib
 abstract: |
   **Background**: Longitudinal studies with binary outcomes require methods
-  that account for within-subject correlation. Several approaches exist,
-  including GEE, GLMM, and conditional logistic regression.
-
-  **Methods**: We conducted a simulation study comparing five methods across
-  18 scenarios varying sample size, effect magnitude, and heterogeneity.
-
-  **Results**: [To be completed after simulation]
-
-  **Conclusions**: [To be completed]
+  that account for within-subject correlation.
+  **Methods**: We conducted a simulation study comparing five methods.
+  **Results**: [To be completed]
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = FALSE,
-  warning = FALSE,
-  message = FALSE,
-  fig.path = "../figures/"
-)
-library(tidyverse)
 ```
 
-# Introduction
+Then add your setup chunk and content. Document your simulation parameters
+in a table:
 
-Longitudinal studies with binary outcomes are common in clinical research.
-Several analytic approaches exist, each with different assumptions:
-
-1. **GEE** - Population-averaged effects [@liang1986]
-2. **GLMM** - Subject-specific effects [@breslow1993]
-3. **Conditional logistic** - Within-subject comparisons [@chamberlain1980]
-
-This simulation addresses three questions:
-
-1. How do these methods compare in estimating treatment effects?
-2. How sensitive are they to correlation structure misspecification?
-3. What sample sizes achieve 80% power?
-
-# Methods
-
-## Aims
-
-[Write your specific aims here before implementing anything]
-
-## Data-Generating Mechanism
-
-We simulate data from a logistic-normal model:
-
-$$\text{logit}(P(Y_{ij} = 1)) = \beta_0 + \beta_1 T_i + \beta_2 t_j +
-\beta_3 T_i \times t_j + b_i$$
-
-where $b_i \sim N(0, \sigma^2_b)$.
-
-```{r dgm-parameters}
-# Document your parameters FIRST, before writing simulation code
+```r
+# In dgm-parameters chunk:
 params <- data.frame(
   Parameter = c("n_subjects", "beta_interaction", "sigma_b", "n_sims"),
   Values = c("50, 100, 200", "0, 0.3, 0.5", "0.5, 1.0", "1000"),
@@ -172,36 +130,6 @@ params <- data.frame(
 knitr::kable(params, caption = "Simulation parameters")
 ```
 
-## Estimand
-
-The target is $\beta_3$, the treatment-by-time interaction.
-
-## Methods Compared
-
-1. GEE with exchangeable correlation
-2. GEE with AR(1) correlation
-3. GEE with independence correlation
-4. GLMM with random intercepts
-5. Conditional logistic regression
-
-## Performance Measures
-
-- Bias: $\bar{\hat{\beta}} - \beta$
-- Coverage: Proportion of 95% CIs containing true value
-- Power: Proportion rejecting null hypothesis
-- SE calibration: Model SE / Empirical SE
-
-# Results
-
-[Results will be added as simulation progresses]
-
-# Discussion
-
-[To be written after results are complete]
-
-# References
-````
-
 Writing the Methods section first forces you to think through the simulation
 design before writing any code.
 
@@ -209,11 +137,8 @@ design before writing any code.
 
 Add data generation code directly in the manuscript to develop and test it:
 
-````markdown
-## Verifying the Data-Generating Mechanism
-
-```{r simulate-inline, echo=TRUE}
-# Inline implementation - will extract to R/ once working
+```r
+# In simulate-inline chunk (echo=TRUE):
 simulate_longitudinal_binary <- function(n_subjects,
                                          n_timepoints = 4,
                                          beta = c(-1, 0, 0.2, 0.3),
@@ -245,30 +170,22 @@ simulate_longitudinal_binary <- function(n_subjects,
 
 # Test it immediately
 test_data <- simulate_longitudinal_binary(n_subjects = 100, seed = 42)
-
-# Verify structure
 cat("Rows:", nrow(test_data), "\n")
 cat("Subjects:", length(unique(test_data$subject_id)), "\n")
 cat("Outcome rate:", mean(test_data$y), "\n")
 ```
 
-The data generation produces `r nrow(test_data)` observations from
-`r length(unique(test_data$subject_id))` subjects with an overall
-outcome rate of `r round(mean(test_data$y), 2)`.
-````
+Use inline R to report results in the prose.
 
 # Step 3: Implement Model Fitting Inline
 
 Add model fitting to the manuscript:
 
-````markdown
-## Testing Model Fitting
-
-```{r fit-inline, echo=TRUE}
+```r
+# In fit-inline chunk (echo=TRUE):
 library(geepack)
 library(lme4)
 
-# Inline - will extract once working
 fit_gee <- function(data, corstr = "exchangeable") {
   tryCatch({
     model <- geeglm(
@@ -312,7 +229,7 @@ fit_glmm <- function(data) {
   })
 }
 
-# Test on our simulated data
+# Test on simulated data
 result_gee <- fit_gee(test_data)
 result_glmm <- fit_glmm(test_data)
 
@@ -320,19 +237,13 @@ cat("GEE estimate:", round(result_gee$estimate, 3), "\n")
 cat("GLMM estimate:", round(result_glmm$estimate, 3), "\n")
 cat("True value: 0.3\n")
 ```
-````
 
 # Step 4: Run Small-Scale Simulation in Manuscript
 
 Test the full workflow with a small simulation:
 
-````markdown
-## Small-Scale Validation
-
-Before running the full simulation, we validate with 50 replications:
-
-```{r small-sim, echo=TRUE}
-# Small simulation - runs in manuscript for validation
+```r
+# In small-sim chunk (echo=TRUE):
 n_sims <- 50
 results <- vector("list", n_sims)
 
@@ -353,15 +264,11 @@ for (i in 1:n_sims) {
 
 small_results <- bind_rows(results)
 
-# Quick performance check
 cat("GEE bias:", round(mean(small_results$gee_est, na.rm = TRUE) - 0.3, 3), "\n")
 cat("GLMM bias:", round(mean(small_results$glmm_est, na.rm = TRUE) - 0.3, 3), "\n")
 ```
 
-Both methods show minimal bias in this small validation
-(GEE: `r round(mean(small_results$gee_est, na.rm=TRUE) - 0.3, 3)`,
-GLMM: `r round(mean(small_results$glmm_est, na.rm=TRUE) - 0.3, 3)`).
-````
+Use inline R to report bias values in the prose.
 
 # Step 5: Extract Functions to R/
 
@@ -686,16 +593,11 @@ cat("Saved to analysis/data/derived_data/simulation_results.rds\n")
 
 Update `report.Rmd` to use cached results:
 
-````markdown
-# Results
-
-```{r load-results}
-# Load pre-computed results
+```r
+# In load-results chunk:
 source("../../R/performance_metrics.R")
-
 results <- readRDS("../data/derived_data/simulation_results.rds")
 
-# Get scenario parameters
 scenarios <- results |>
   select(scenario_id) |>
   distinct() |>
@@ -704,10 +606,8 @@ scenarios <- results |>
       select(scenario_id, n_subjects, beta_interaction, sigma_b) |>
       distinct()
   )
-```
 
-```{r compute-performance}
-# Calculate performance by scenario and method
+# In compute-performance chunk:
 performance <- results |>
   left_join(scenarios) |>
   group_by(scenario_id, n_subjects, beta_interaction, sigma_b, method) |>
@@ -716,35 +616,15 @@ performance <- results |>
     .groups = "drop"
   ) |>
   unnest_wider(perf)
-```
 
-## Bias
-
-```{r table-bias}
+# In table-bias chunk:
 performance |>
   filter(beta_interaction == 0.3) |>
   select(n_subjects, sigma_b, method, bias) |>
   pivot_wider(names_from = method, values_from = bias) |>
   knitr::kable(digits = 3, caption = "Bias by sample size and method")
-```
 
-All methods showed minimal bias across scenarios (Table 2).
-
-## Coverage
-
-```{r table-coverage}
-performance |>
-  filter(beta_interaction == 0.3) |>
-  select(n_subjects, sigma_b, method, coverage) |>
-  pivot_wider(names_from = method, values_from = coverage) |>
-  knitr::kable(digits = 3, caption = "Coverage probability")
-```
-
-GEE with exchangeable correlation and GLMM maintained nominal coverage.
-
-## Power
-
-```{r fig-power, fig.width=8, fig.height=4}
+# In fig-power chunk:
 performance |>
   filter(beta_interaction != 0) |>
   mutate(effect = paste("OR =", round(exp(beta_interaction), 2))) |>
@@ -754,18 +634,9 @@ performance |>
   geom_point() +
   facet_wrap(~effect) +
   scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
-  labs(
-    x = "Sample Size",
-    y = "Power",
-    color = "Method",
-    linetype = "sigma"
-  ) +
+  labs(x = "Sample Size", y = "Power", color = "Method", linetype = "sigma") +
   theme_minimal()
 ```
-
-Sample sizes of n = 100 achieved approximately 80% power for moderate
-effects with all methods (Figure 1).
-````
 
 # Summary: Write as You Go for Simulations
 
