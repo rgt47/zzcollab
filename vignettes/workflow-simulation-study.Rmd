@@ -23,40 +23,33 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-Simulation studies are fundamental to statistical methodology research. They
-allow investigators to evaluate analytic methods under controlled conditions
-where the true data-generating process is known. This vignette demonstrates
-a complete simulation study workflow comparing methods for analyzing
-longitudinal binary outcomes.
+This vignette demonstrates a simulation study workflow using the Write as You
+Go approach. The key insight is that **the manuscript organizes the simulation
+from the beginning**---you start with your research question and methods
+section, then build the simulation infrastructure to answer it.
 
-## The Methodological Question
+## The Write as You Go Approach for Simulations
 
-Longitudinal studies with binary outcomes are common in clinical research,
-epidemiology, and the social sciences. Several analytic approaches exist:
+Traditional simulation workflow:
 
-1. **Generalized Estimating Equations (GEE)** - Population-averaged effects
-2. **Generalized Linear Mixed Models (GLMM)** - Subject-specific effects
-3. **Conditional Logistic Regression** - Within-subject comparisons
+1. Write simulation code
+2. Run all scenarios
+3. Analyze results
+4. Start manuscript
+5. Describe what you did
 
-Each method makes different assumptions and targets different estimands. A
-simulation study can reveal how these methods perform under realistic
-conditions including:
+**Write as You Go simulation workflow**:
 
-- Varying correlation structures
-- Missing data patterns
-- Model misspecification
-- Small sample sizes
+1. Create `report.Rmd` with your research question
+2. Write the Methods section describing the ADEMP framework
+3. Implement data generation inline, test with small examples
+4. Extract to `R/simulate_data.R` when working
+5. Add model fitting inline, extract to `R/fit_models.R`
+6. Run small-scale simulations in the manuscript
+7. Move full simulation to `analysis/scripts/` for production runs
+8. Load cached results back into manuscript
 
-## What You Will Learn
-
-- Designing simulation studies with clear aims
-- Generating correlated longitudinal binary data
-- Implementing multiple analytic methods
-- Evaluating performance metrics (bias, coverage, power)
-- Organizing reproducible simulation code
-- Parallel computing for efficiency
-
-# Simulation Study Design
+The manuscript drives the simulation design, not the reverse.
 
 ## The ADEMP Framework
 
@@ -68,216 +61,540 @@ Following Morris et al. (2019), simulation studies should specify:
 - **M**ethods: Which analytic approaches are compared?
 - **P**erformance measures: How do we evaluate success?
 
-## Study Aims
+## The Compendium Structure for Simulations
+
+```
+simulation-study/
+├── analysis/
+│   ├── data/
+│   │   └── derived_data/         # Cached simulation results
+│   ├── figures/                  # Performance plots
+│   ├── scripts/
+│   │   ├── 02_run_simulation.R   # Full simulation (run separately)
+│   │   ├── 03_analyze_results.R  # Post-processing
+│   │   └── 04_generate_figures.R # Publication figures
+│   └── report/
+│       ├── report.Rmd            # THE MANUSCRIPT (start here!)
+│       └── references.bib
+├── R/
+│   ├── simulate_data.R           # Data generation (extract when ready)
+│   ├── fit_models.R              # Model fitting (extract when ready)
+│   └── performance_metrics.R     # Evaluation (extract when ready)
+├── tests/
+│   └── testthat/                 # Tests for each R/ file
+├── DESCRIPTION
+├── Dockerfile
+└── renv.lock
+```
+
+# Step 1: Start with the Manuscript
+
+Create `analysis/report/report.Rmd` on day one:
+
+````markdown
+---
+title: "Comparing Methods for Longitudinal Binary Outcomes: A Simulation Study"
+author:
+  - name: Your Name
+    affiliation: Department of Biostatistics
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    number_sections: true
+  html_document:
+    toc: true
+bibliography: references.bib
+abstract: |
+  **Background**: Longitudinal studies with binary outcomes require methods
+  that account for within-subject correlation. Several approaches exist,
+  including GEE, GLMM, and conditional logistic regression.
+
+  **Methods**: We conducted a simulation study comparing five methods across
+  18 scenarios varying sample size, effect magnitude, and heterogeneity.
+
+  **Results**: [To be completed after simulation]
+
+  **Conclusions**: [To be completed]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.path = "../figures/"
+)
+library(tidyverse)
+```
+
+# Introduction
+
+Longitudinal studies with binary outcomes are common in clinical research.
+Several analytic approaches exist, each with different assumptions:
+
+1. **GEE** - Population-averaged effects [@liang1986]
+2. **GLMM** - Subject-specific effects [@breslow1993]
+3. **Conditional logistic** - Within-subject comparisons [@chamberlain1980]
 
 This simulation addresses three questions:
 
-1. How do GEE, GLMM, and conditional logistic regression compare in
-   estimating treatment effects for longitudinal binary data?
+1. How do these methods compare in estimating treatment effects?
+2. How sensitive are they to correlation structure misspecification?
+3. What sample sizes achieve 80% power?
 
-2. How sensitive are these methods to misspecification of the correlation
-   structure?
+# Methods
 
-3. What sample sizes are required to achieve adequate power (80%) for
-   detecting clinically meaningful effects?
+## Aims
+
+[Write your specific aims here before implementing anything]
 
 ## Data-Generating Mechanism
 
-We simulate data from a longitudinal study where:
+We simulate data from a logistic-normal model:
 
-- Subjects are randomized to treatment (1) or control (0)
-- Binary outcome measured at baseline and 3 follow-up visits
-- Treatment effect emerges at visit 2 and persists
-- Within-subject correlation follows an exchangeable structure
+$$\text{logit}(P(Y_{ij} = 1)) = \beta_0 + \beta_1 T_i + \beta_2 t_j +
+\beta_3 T_i \times t_j + b_i$$
 
-The true model is:
+where $b_i \sim N(0, \sigma^2_b)$.
 
-$$\text{logit}(P(Y_{ij} = 1)) = \beta_0 + \beta_1 \cdot \text{treatment}_i +
-\beta_2 \cdot \text{time}_j + \beta_3 \cdot \text{treatment}_i \times
-\text{time}_j + b_i$$
-
-where $b_i \sim N(0, \sigma^2_b)$ is a subject-specific random intercept.
+```{r dgm-parameters}
+# Document your parameters FIRST, before writing simulation code
+params <- data.frame(
+  Parameter = c("n_subjects", "beta_interaction", "sigma_b", "n_sims"),
+  Values = c("50, 100, 200", "0, 0.3, 0.5", "0.5, 1.0", "1000"),
+  Rationale = c(
+    "Common clinical trial sizes",
+    "Null, small (OR=1.35), moderate (OR=1.65)",
+    "Low to moderate heterogeneity",
+    "Standard for methodology papers"
+  )
+)
+knitr::kable(params, caption = "Simulation parameters")
+```
 
 ## Estimand
 
-The target estimand is $\beta_3$, the treatment-by-time interaction on the
-log-odds scale. This represents the differential change in log-odds of the
-outcome for treated versus control subjects per unit time.
+The target is $\beta_3$, the treatment-by-time interaction.
 
-## Simulation Parameters
+## Methods Compared
 
-| Parameter | Values | Rationale |
-|-----------|--------|-----------|
-| Sample size (n) | 50, 100, 200 | Common clinical trial sizes |
-| Time points | 4 (baseline + 3 visits) | Typical follow-up schedule |
-| $\beta_0$ (intercept) | -1.0 | ~27% baseline probability |
-| $\beta_1$ (treatment) | 0.0 | No baseline difference |
-| $\beta_2$ (time) | 0.2 | Gradual improvement in control |
-| $\beta_3$ (interaction) | 0.0, 0.3, 0.5 | Null, small, moderate effects |
-| $\sigma_b$ (random effect SD) | 0.5, 1.0 | Low, moderate heterogeneity |
-| Correlation structure | Exchangeable, AR(1) | Common structures |
-| Number of simulations | 1000 | Standard for methodology papers |
+1. GEE with exchangeable correlation
+2. GEE with AR(1) correlation
+3. GEE with independence correlation
+4. GLMM with random intercepts
+5. Conditional logistic regression
 
-# Project Setup
+## Performance Measures
 
-## Initialize Project
+- Bias: $\bar{\hat{\beta}} - \beta$
+- Coverage: Proportion of 95% CIs containing true value
+- Power: Proportion rejecting null hypothesis
+- SE calibration: Model SE / Empirical SE
 
-```bash
-mkdir longitudinal-binary-sim && cd longitudinal-binary-sim
+# Results
 
-zzcollab
+[Results will be added as simulation progresses]
 
-make docker-build
+# Discussion
+
+[To be written after results are complete]
+
+# References
+````
+
+Writing the Methods section first forces you to think through the simulation
+design before writing any code.
+
+# Step 2: Implement Data Generation Inline
+
+Add data generation code directly in the manuscript to develop and test it:
+
+````markdown
+## Verifying the Data-Generating Mechanism
+
+```{r simulate-inline, echo=TRUE}
+# Inline implementation - will extract to R/ once working
+simulate_longitudinal_binary <- function(n_subjects,
+                                         n_timepoints = 4,
+                                         beta = c(-1, 0, 0.2, 0.3),
+                                         sigma_b = 0.5,
+                                         seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+
+  subject_id <- rep(1:n_subjects, each = n_timepoints)
+  time <- rep(0:(n_timepoints - 1), times = n_subjects)
+  treatment <- rep(sample(c(0, 1), n_subjects, replace = TRUE),
+                   each = n_timepoints)
+
+  random_intercept <- rep(rnorm(n_subjects, 0, sigma_b),
+                          each = n_timepoints)
+
+  linear_predictor <- beta[1] + beta[2] * treatment +
+                      beta[3] * time + beta[4] * treatment * time +
+                      random_intercept
+
+  y <- rbinom(length(linear_predictor), 1, plogis(linear_predictor))
+
+  data.frame(
+    subject_id = subject_id,
+    time = time,
+    treatment = factor(treatment, labels = c("control", "treatment")),
+    y = y
+  )
+}
+
+# Test it immediately
+test_data <- simulate_longitudinal_binary(n_subjects = 100, seed = 42)
+
+# Verify structure
+cat("Rows:", nrow(test_data), "\n")
+cat("Subjects:", length(unique(test_data$subject_id)), "\n")
+cat("Outcome rate:", mean(test_data$y), "\n")
 ```
 
-## Install Required Packages
+The data generation produces `r nrow(test_data)` observations from
+`r length(unique(test_data$subject_id))` subjects with an overall
+outcome rate of `r round(mean(test_data$y), 2)`.
+````
 
-```bash
-make r
+# Step 3: Implement Model Fitting Inline
 
-> install.packages(c("lme4", "geepack", "survival", "broom", "broom.mixed",
-+                    "furrr", "progressr", "tictoc"))
-> q()
+Add model fitting to the manuscript:
+
+````markdown
+## Testing Model Fitting
+
+```{r fit-inline, echo=TRUE}
+library(geepack)
+library(lme4)
+
+# Inline - will extract once working
+fit_gee <- function(data, corstr = "exchangeable") {
+  tryCatch({
+    model <- geeglm(
+      y ~ treatment * time,
+      family = binomial,
+      data = data,
+      id = subject_id,
+      corstr = corstr
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std.err"],
+      converged = TRUE
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE)
+  })
+}
+
+fit_glmm <- function(data) {
+  tryCatch({
+    model <- glmer(
+      y ~ treatment * time + (1 | subject_id),
+      family = binomial,
+      data = data,
+      control = glmerControl(optimizer = "bobyqa")
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std. Error"],
+      converged = !isSingular(model)
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE)
+  })
+}
+
+# Test on our simulated data
+result_gee <- fit_gee(test_data)
+result_glmm <- fit_glmm(test_data)
+
+cat("GEE estimate:", round(result_gee$estimate, 3), "\n")
+cat("GLMM estimate:", round(result_glmm$estimate, 3), "\n")
+cat("True value: 0.3\n")
+```
+````
+
+# Step 4: Run Small-Scale Simulation in Manuscript
+
+Test the full workflow with a small simulation:
+
+````markdown
+## Small-Scale Validation
+
+Before running the full simulation, we validate with 50 replications:
+
+```{r small-sim, echo=TRUE}
+# Small simulation - runs in manuscript for validation
+n_sims <- 50
+results <- vector("list", n_sims)
+
+for (i in 1:n_sims) {
+  data <- simulate_longitudinal_binary(
+    n_subjects = 100,
+    beta = c(-1, 0, 0.2, 0.3),
+    sigma_b = 0.5,
+    seed = i
+  )
+
+  results[[i]] <- data.frame(
+    sim = i,
+    gee_est = fit_gee(data)$estimate,
+    glmm_est = fit_glmm(data)$estimate
+  )
+}
+
+small_results <- bind_rows(results)
+
+# Quick performance check
+cat("GEE bias:", round(mean(small_results$gee_est, na.rm = TRUE) - 0.3, 3), "\n")
+cat("GLMM bias:", round(mean(small_results$glmm_est, na.rm = TRUE) - 0.3, 3), "\n")
 ```
 
-## Project Structure
+Both methods show minimal bias in this small validation
+(GEE: `r round(mean(small_results$gee_est, na.rm=TRUE) - 0.3, 3)`,
+GLMM: `r round(mean(small_results$glmm_est, na.rm=TRUE) - 0.3, 3)`).
+````
 
-```
-longitudinal-binary-sim/
-├── analysis/
-│   ├── data/
-│   │   └── derived_data/        # Simulation results
-│   ├── figures/                 # Performance plots
-│   ├── report/
-│   │   ├── report.Rmd           # Manuscript
-│   │   └── references.bib       # Bibliography
-│   └── scripts/
-│       ├── 01_setup_simulation.R
-│       ├── 02_run_simulation.R
-│       ├── 03_analyze_results.R
-│       └── 04_generate_figures.R
-├── R/
-│   ├── simulate_data.R          # Data generation functions
-│   ├── fit_models.R             # Model fitting functions
-│   └── performance_metrics.R    # Evaluation functions
-├── tests/
-│   └── testthat/
-│       ├── test-simulate_data.R
-│       ├── test-fit_models.R
-│       └── test-performance_metrics.R
-└── ...
-```
+# Step 5: Extract Functions to R/
 
-# Phase 1: Data Generation Functions
+Once code is working, extract to `R/` files.
 
-## The Simulation Engine
-
-Create `R/simulate_data.R`:
+**Create `R/simulate_data.R`**:
 
 ```r
 #' Generate correlated longitudinal binary data
 #'
-#' Simulates longitudinal binary outcomes with subject-specific random
-#' effects following a logistic-normal model.
-#'
 #' @param n_subjects Number of subjects
 #' @param n_timepoints Number of measurement occasions
-#' @param beta Fixed effect coefficients (intercept, treatment, time,
-#'   treatment:time)
-#' @param sigma_b Standard deviation of random intercept
-#' @param seed Random seed for reproducibility
+#' @param beta Fixed effects: c(intercept, treatment, time, interaction)
+#' @param sigma_b Random intercept SD
+#' @param seed Random seed
 #'
-#' @return Data frame with columns: subject_id, time, treatment, y
+#' @return Data frame with subject_id, time, treatment, y
 #' @export
 simulate_longitudinal_binary <- function(n_subjects,
                                          n_timepoints = 4,
                                          beta = c(-1, 0, 0.2, 0.3),
                                          sigma_b = 0.5,
                                          seed = NULL) {
- if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) set.seed(seed)
 
- if (length(beta) != 4) {
-   stop("beta must have 4 elements: intercept, treatment, time, interaction")
- }
+  if (length(beta) != 4) {
+    stop("beta must have 4 elements")
+  }
 
- subject_id <- rep(1:n_subjects, each = n_timepoints)
- time <- rep(0:(n_timepoints - 1), times = n_subjects)
+  subject_id <- rep(1:n_subjects, each = n_timepoints)
+  time <- rep(0:(n_timepoints - 1), times = n_subjects)
+  treatment <- rep(sample(c(0, 1), n_subjects, replace = TRUE),
+                   each = n_timepoints)
 
- treatment <- rep(
-   sample(c(0, 1), n_subjects, replace = TRUE),
-   each = n_timepoints
- )
+  random_intercept <- rep(rnorm(n_subjects, 0, sigma_b),
+                          each = n_timepoints)
 
- random_intercept <- rep(
-   rnorm(n_subjects, mean = 0, sd = sigma_b),
-   each = n_timepoints
- )
+  linear_predictor <- beta[1] + beta[2] * treatment +
+                      beta[3] * time + beta[4] * treatment * time +
+                      random_intercept
 
- linear_predictor <- beta[1] +
-   beta[2] * treatment +
-   beta[3] * time +
-   beta[4] * treatment * time +
-   random_intercept
+  y <- rbinom(length(linear_predictor), 1, plogis(linear_predictor))
 
- prob <- plogis(linear_predictor)
-
- y <- rbinom(length(prob), size = 1, prob = prob)
-
- data.frame(
-   subject_id = subject_id,
-   time = time,
-   treatment = factor(treatment, levels = c(0, 1),
-                      labels = c("control", "treatment")),
-   y = y
- )
+  data.frame(
+    subject_id = subject_id,
+    time = time,
+    treatment = factor(treatment, labels = c("control", "treatment")),
+    y = y
+  )
 }
 
 
-#' Generate simulation scenarios
-#'
-#' Creates a data frame of all parameter combinations for the simulation.
+#' Create simulation grid
 #'
 #' @param n_subjects Vector of sample sizes
-#' @param beta_interaction Vector of treatment-by-time interaction effects
-#' @param sigma_b Vector of random effect standard deviations
+#' @param beta_interaction Vector of interaction effects
+#' @param sigma_b Vector of random effect SDs
 #' @param n_sims Number of simulations per scenario
 #'
-#' @return Data frame with one row per simulation replicate
+#' @return Data frame with one row per simulation
 #' @export
 create_simulation_grid <- function(n_subjects = c(50, 100, 200),
                                    beta_interaction = c(0, 0.3, 0.5),
                                    sigma_b = c(0.5, 1.0),
                                    n_sims = 1000) {
- scenarios <- expand.grid(
-   n_subjects = n_subjects,
-   beta_interaction = beta_interaction,
-   sigma_b = sigma_b,
-   stringsAsFactors = FALSE
- )
+  scenarios <- expand.grid(
+    n_subjects = n_subjects,
+    beta_interaction = beta_interaction,
+    sigma_b = sigma_b,
+    stringsAsFactors = FALSE
+  )
+  scenarios$scenario_id <- seq_len(nrow(scenarios))
 
- scenarios$scenario_id <- seq_len(nrow(scenarios))
+  sim_grid <- scenarios[rep(seq_len(nrow(scenarios)), each = n_sims), ]
+  sim_grid$sim_id <- rep(seq_len(n_sims), times = nrow(scenarios))
+  sim_grid$seed <- seq_len(nrow(sim_grid))
+  rownames(sim_grid) <- NULL
 
- sim_grid <- scenarios[rep(seq_len(nrow(scenarios)), each = n_sims), ]
- sim_grid$sim_id <- rep(seq_len(n_sims), times = nrow(scenarios))
- sim_grid$seed <- seq_len(nrow(sim_grid))
-
- rownames(sim_grid) <- NULL
-
- sim_grid
+  sim_grid
 }
 ```
 
-## Testing Data Generation
+**Create `R/fit_models.R`**:
 
-Create `tests/testthat/test-simulate_data.R`:
+```r
+#' Fit GEE model
+#'
+#' @param data Data from simulate_longitudinal_binary
+#' @param corstr Correlation structure
+#'
+#' @return List with estimate, se, converged
+#' @export
+fit_gee <- function(data, corstr = "exchangeable") {
+  if (!requireNamespace("geepack", quietly = TRUE)) {
+    stop("Package 'geepack' required")
+  }
+
+  tryCatch({
+    model <- geepack::geeglm(
+      y ~ treatment * time,
+      family = binomial,
+      data = data,
+      id = subject_id,
+      corstr = corstr
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std.err"],
+      converged = TRUE,
+      method = paste0("gee_", substr(corstr, 1, 4))
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE,
+         method = paste0("gee_", substr(corstr, 1, 4)))
+  })
+}
+
+
+#' Fit GLMM
+#'
+#' @param data Data from simulate_longitudinal_binary
+#'
+#' @return List with estimate, se, converged
+#' @export
+fit_glmm <- function(data) {
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("Package 'lme4' required")
+  }
+
+  tryCatch({
+    model <- lme4::glmer(
+      y ~ treatment * time + (1 | subject_id),
+      family = binomial,
+      data = data,
+      control = lme4::glmerControl(optimizer = "bobyqa")
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std. Error"],
+      converged = !lme4::isSingular(model),
+      method = "glmm"
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE, method = "glmm")
+  })
+}
+
+
+#' Fit all models
+#'
+#' @param data Data from simulate_longitudinal_binary
+#'
+#' @return Data frame with results from all methods
+#' @export
+fit_all_models <- function(data) {
+  results <- list(
+    gee_exch = fit_gee(data, "exchangeable"),
+    gee_ar1 = fit_gee(data, "ar1"),
+    gee_ind = fit_gee(data, "independence"),
+    glmm = fit_glmm(data)
+  )
+
+  do.call(rbind, lapply(names(results), function(name) {
+    r <- results[[name]]
+    data.frame(
+      method = name,
+      estimate = r$estimate,
+      se = r$se,
+      converged = r$converged
+    )
+  }))
+}
+```
+
+**Create `R/performance_metrics.R`**:
+
+```r
+#' Calculate performance metrics
+#'
+#' @param estimates Vector of estimates
+#' @param ses Vector of standard errors
+#' @param true_value True parameter value
+#' @param alpha Significance level
+#'
+#' @return Named vector of metrics
+#' @export
+calculate_performance <- function(estimates, ses, true_value, alpha = 0.05) {
+  valid <- !is.na(estimates) & !is.na(ses)
+  estimates <- estimates[valid]
+  ses <- ses[valid]
+
+  if (length(estimates) < 10) {
+    return(c(n_valid = length(estimates), bias = NA, coverage = NA, power = NA))
+  }
+
+  z <- qnorm(1 - alpha / 2)
+
+  bias <- mean(estimates) - true_value
+  empirical_se <- sd(estimates)
+  avg_se <- mean(ses)
+  se_ratio <- avg_se / empirical_se
+
+  lower <- estimates - z * ses
+  upper <- estimates + z * ses
+  coverage <- mean(lower <= true_value & upper >= true_value)
+
+  power <- mean(abs(estimates / ses) > z)
+
+  c(
+    n_valid = length(estimates),
+    bias = bias,
+    empirical_se = empirical_se,
+    avg_se = avg_se,
+    se_ratio = se_ratio,
+    coverage = coverage,
+    power = power
+  )
+}
+```
+
+# Step 6: Add Tests
+
+**Create `tests/testthat/test-simulate_data.R`**:
 
 ```r
 test_that("simulate_longitudinal_binary returns correct structure", {
-  data <- simulate_longitudinal_binary(
-    n_subjects = 10,
-    n_timepoints = 4,
-    seed = 42
-  )
+  data <- simulate_longitudinal_binary(n_subjects = 10, seed = 42)
 
   expect_s3_class(data, "data.frame")
   expect_equal(nrow(data), 40)
@@ -291,20 +608,10 @@ test_that("simulate_longitudinal_binary respects seed", {
   expect_identical(data1, data2)
 })
 
-test_that("simulate_longitudinal_binary produces valid binary outcomes", {
+test_that("simulate_longitudinal_binary produces valid outcomes", {
   data <- simulate_longitudinal_binary(n_subjects = 100, seed = 42)
 
   expect_true(all(data$y %in% c(0, 1)))
-})
-
-test_that("simulate_longitudinal_binary balances treatment assignment", {
-  data <- simulate_longitudinal_binary(n_subjects = 1000, seed = 42)
-
-  subject_treatment <- unique(data[, c("subject_id", "treatment")])
-  prop_treated <- mean(subject_treatment$treatment == "treatment")
-
-  expect_gt(prop_treated, 0.45)
-  expect_lt(prop_treated, 0.55)
 })
 
 test_that("create_simulation_grid produces correct dimensions", {
@@ -316,445 +623,26 @@ test_that("create_simulation_grid produces correct dimensions", {
   )
 
   expect_equal(nrow(grid), 2 * 2 * 1 * 10)
-  expect_true("scenario_id" %in% names(grid))
-  expect_true("sim_id" %in% names(grid))
-  expect_true("seed" %in% names(grid))
 })
 ```
 
-# Phase 2: Model Fitting Functions
+# Step 7: Move Full Simulation to Scripts
 
-## Analytic Methods
-
-Create `R/fit_models.R`:
-
-```r
-#' Fit GEE model for longitudinal binary data
-#'
-#' Fits a generalized estimating equations model with specified correlation
-#' structure.
-#'
-#' @param data Data frame from simulate_longitudinal_binary
-#' @param corstr Correlation structure ("exchangeable", "ar1", "independence")
-#'
-#' @return List with estimates, standard errors, and convergence status
-#' @export
-fit_gee <- function(data, corstr = "exchangeable") {
-  if (!requireNamespace("geepack", quietly = TRUE)) {
-    stop("Package 'geepack' required for GEE models")
-  }
-
-  tryCatch({
-    model <- geepack::geeglm(
-      y ~ treatment * time,
-      family = binomial(link = "logit"),
-      data = data,
-      id = subject_id,
-      corstr = corstr
-    )
-
-    coefs <- summary(model)$coefficients
-    interaction_row <- grep("treatment.*:time|time:treatment.*",
-                           rownames(coefs))
-
-    list(
-      estimate = coefs[interaction_row, "Estimate"],
-      se = coefs[interaction_row, "Std.err"],
-      converged = TRUE,
-      method = "GEE",
-      corstr = corstr
-    )
-  }, error = function(e) {
-    list(
-      estimate = NA_real_,
-      se = NA_real_,
-      converged = FALSE,
-      method = "GEE",
-      corstr = corstr,
-      error = conditionMessage(e)
-    )
-  })
-}
-
-
-#' Fit GLMM for longitudinal binary data
-#'
-#' Fits a generalized linear mixed model with random intercepts.
-#'
-#' @param data Data frame from simulate_longitudinal_binary
-#'
-#' @return List with estimates, standard errors, and convergence status
-#' @export
-fit_glmm <- function(data) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("Package 'lme4' required for GLMM models")
-  }
-
-  tryCatch({
-    model <- lme4::glmer(
-      y ~ treatment * time + (1 | subject_id),
-      family = binomial(link = "logit"),
-      data = data,
-      control = lme4::glmerControl(optimizer = "bobyqa")
-    )
-
-    coefs <- summary(model)$coefficients
-    interaction_row <- grep("treatment.*:time|time:treatment.*",
-                           rownames(coefs))
-
-    list(
-      estimate = coefs[interaction_row, "Estimate"],
-      se = coefs[interaction_row, "Std. Error"],
-      converged = !lme4::isSingular(model),
-      method = "GLMM"
-    )
-  }, error = function(e) {
-    list(
-      estimate = NA_real_,
-      se = NA_real_,
-      converged = FALSE,
-      method = "GLMM",
-      error = conditionMessage(e)
-    )
-  })
-}
-
-
-#' Fit conditional logistic regression
-#'
-#' Fits a conditional logistic regression model stratified by subject.
-#'
-#' @param data Data frame from simulate_longitudinal_binary
-#'
-#' @return List with estimates, standard errors, and convergence status
-#' @export
-fit_conditional <- function(data) {
-  if (!requireNamespace("survival", quietly = TRUE)) {
-    stop("Package 'survival' required for conditional logistic regression")
-  }
-
-  tryCatch({
-    data$treatment_numeric <- as.numeric(data$treatment == "treatment")
-
-    model <- survival::clogit(
-      y ~ treatment_numeric:time + time + strata(subject_id),
-      data = data
-    )
-
-    coefs <- summary(model)$coefficients
-    interaction_row <- grep("treatment_numeric:time", rownames(coefs))
-
-    list(
-      estimate = coefs[interaction_row, "coef"],
-      se = coefs[interaction_row, "se(coef)"],
-      converged = model$info$convergence == 0,
-      method = "Conditional"
-    )
-  }, error = function(e) {
-    list(
-      estimate = NA_real_,
-      se = NA_real_,
-      converged = FALSE,
-      method = "Conditional",
-      error = conditionMessage(e)
-    )
-  })
-}
-
-
-#' Fit all models to a dataset
-#'
-#' Convenience function to fit all methods and return combined results.
-#'
-#' @param data Data frame from simulate_longitudinal_binary
-#'
-#' @return Data frame with results from all methods
-#' @export
-fit_all_models <- function(data) {
-  results <- list(
-    gee_exch = fit_gee(data, corstr = "exchangeable"),
-    gee_ar1 = fit_gee(data, corstr = "ar1"),
-    gee_ind = fit_gee(data, corstr = "independence"),
-    glmm = fit_glmm(data),
-    conditional = fit_conditional(data)
-  )
-
-  do.call(rbind, lapply(names(results), function(name) {
-    r <- results[[name]]
-    data.frame(
-      method = name,
-      estimate = r$estimate,
-      se = r$se,
-      converged = r$converged,
-      stringsAsFactors = FALSE
-    )
-  }))
-}
-```
-
-## Testing Model Fitting
-
-Create `tests/testthat/test-fit_models.R`:
-
-```r
-test_that("fit_gee returns expected structure", {
-  data <- simulate_longitudinal_binary(n_subjects = 50, seed = 42)
-  result <- fit_gee(data)
-
-  expect_type(result, "list")
-  expect_true("estimate" %in% names(result))
-  expect_true("se" %in% names(result))
-  expect_true("converged" %in% names(result))
-  expect_equal(result$method, "GEE")
-})
-
-test_that("fit_glmm returns expected structure", {
-  data <- simulate_longitudinal_binary(n_subjects = 50, seed = 42)
-  result <- fit_glmm(data)
-
-  expect_type(result, "list")
-  expect_true("estimate" %in% names(result))
-  expect_true("se" %in% names(result))
-  expect_equal(result$method, "GLMM")
-})
-
-test_that("fit_conditional returns expected structure", {
-  data <- simulate_longitudinal_binary(n_subjects = 50, seed = 42)
-  result <- fit_conditional(data)
-
-  expect_type(result, "list")
-  expect_true("estimate" %in% names(result))
-  expect_true("se" %in% names(result))
-  expect_equal(result$method, "Conditional")
-})
-
-test_that("fit_all_models returns results for all methods", {
-  data <- simulate_longitudinal_binary(n_subjects = 50, seed = 42)
-  results <- fit_all_models(data)
-
-  expect_s3_class(results, "data.frame")
-  expect_equal(nrow(results), 5)
-  expect_true(all(c("gee_exch", "gee_ar1", "gee_ind", "glmm", "conditional")
-                  %in% results$method))
-})
-
-test_that("models handle edge cases gracefully", {
-  data <- simulate_longitudinal_binary(n_subjects = 10, seed = 42)
-  data$y <- 0
-
-  result_gee <- fit_gee(data)
-  result_glmm <- fit_glmm(data)
-
-  expect_false(is.null(result_gee$converged))
-  expect_false(is.null(result_glmm$converged))
-})
-```
-
-# Phase 3: Performance Metrics
-
-## Evaluation Functions
-
-Create `R/performance_metrics.R`:
-
-```r
-#' Calculate performance metrics for simulation results
-#'
-#' Computes bias, empirical SE, average model SE, coverage, and power.
-#'
-#' @param estimates Vector of point estimates across simulations
-#' @param ses Vector of standard errors across simulations
-#' @param true_value True parameter value
-#' @param alpha Significance level for coverage and power
-#'
-#' @return Named vector of performance metrics
-#' @export
-calculate_performance <- function(estimates, ses, true_value, alpha = 0.05) {
-  valid <- !is.na(estimates) & !is.na(ses)
-  estimates <- estimates[valid]
-  ses <- ses[valid]
-
-  if (length(estimates) < 10) {
-    return(c(
-      n_valid = length(estimates),
-      bias = NA_real_,
-      relative_bias = NA_real_,
-      empirical_se = NA_real_,
-      average_model_se = NA_real_,
-      se_ratio = NA_real_,
-      mse = NA_real_,
-      coverage = NA_real_,
-      power = NA_real_
-    ))
-  }
-
-  z_crit <- qnorm(1 - alpha / 2)
-
-  bias <- mean(estimates) - true_value
-
-  if (true_value != 0) {
-    relative_bias <- bias / true_value * 100
-  } else {
-    relative_bias <- NA_real_
-  }
-
-  empirical_se <- sd(estimates)
-  average_model_se <- mean(ses)
-  se_ratio <- average_model_se / empirical_se
-
-  mse <- mean((estimates - true_value)^2)
-
-  lower <- estimates - z_crit * ses
-  upper <- estimates + z_crit * ses
-  coverage <- mean(lower <= true_value & upper >= true_value)
-
-  if (true_value == 0) {
-    power <- mean(abs(estimates / ses) > z_crit)
-  } else {
-    power <- mean((estimates / ses) > z_crit |
-                  (estimates / ses) < -z_crit)
-  }
-
-  c(
-    n_valid = length(estimates),
-    bias = bias,
-    relative_bias = relative_bias,
-    empirical_se = empirical_se,
-    average_model_se = average_model_se,
-    se_ratio = se_ratio,
-    mse = mse,
-    coverage = coverage,
-    power = power
-  )
-}
-
-
-#' Summarize simulation results by scenario and method
-#'
-#' @param results Data frame of simulation results
-#' @param true_values Data frame mapping scenario_id to true parameter values
-#'
-#' @return Data frame with performance metrics per scenario and method
-#' @export
-summarize_simulation <- function(results, true_values) {
-  results <- merge(results, true_values, by = "scenario_id")
-
-  scenarios <- unique(results[, c("scenario_id", "n_subjects",
-                                  "beta_interaction", "sigma_b")])
-
-  methods <- unique(results$method)
-
-  output <- do.call(rbind, lapply(seq_len(nrow(scenarios)), function(i) {
-    scenario <- scenarios[i, ]
-
-    do.call(rbind, lapply(methods, function(m) {
-      subset_data <- results[results$scenario_id == scenario$scenario_id &
-                             results$method == m, ]
-
-      perf <- calculate_performance(
-        estimates = subset_data$estimate,
-        ses = subset_data$se,
-        true_value = scenario$beta_interaction
-      )
-
-      data.frame(
-        scenario_id = scenario$scenario_id,
-        n_subjects = scenario$n_subjects,
-        beta_interaction = scenario$beta_interaction,
-        sigma_b = scenario$sigma_b,
-        method = m,
-        t(perf),
-        stringsAsFactors = FALSE
-      )
-    }))
-  }))
-
-  rownames(output) <- NULL
-  output
-}
-```
-
-## Testing Performance Metrics
-
-Create `tests/testthat/test-performance_metrics.R`:
-
-```r
-test_that("calculate_performance returns correct metrics", {
-  set.seed(42)
-  true_value <- 0.5
-  estimates <- rnorm(1000, mean = true_value, sd = 0.1)
-  ses <- rep(0.1, 1000)
-
-  perf <- calculate_performance(estimates, ses, true_value)
-
-  expect_true(abs(perf["bias"]) < 0.02)
-  expect_true(abs(perf["empirical_se"] - 0.1) < 0.01)
-  expect_true(abs(perf["se_ratio"] - 1) < 0.1)
-  expect_true(perf["coverage"] > 0.90 & perf["coverage"] < 0.99)
-})
-
-test_that("calculate_performance handles null effect correctly", {
-  set.seed(42)
-  estimates <- rnorm(1000, mean = 0, sd = 0.1)
-  ses <- rep(0.1, 1000)
-
-  perf <- calculate_performance(estimates, ses, true_value = 0)
-
-  expect_true(perf["power"] < 0.10)
-  expect_true(is.na(perf["relative_bias"]))
-})
-
-test_that("calculate_performance detects power for true effect", {
-  set.seed(42)
-  true_value <- 0.5
-  estimates <- rnorm(1000, mean = true_value, sd = 0.1)
-  ses <- rep(0.1, 1000)
-
-  perf <- calculate_performance(estimates, ses, true_value)
-
-  expect_true(perf["power"] > 0.99)
-})
-
-test_that("calculate_performance handles missing values", {
-  estimates <- c(0.5, 0.4, NA, 0.6, NA)
-  ses <- c(0.1, 0.1, 0.1, NA, 0.1)
-
-  perf <- calculate_performance(estimates, ses, true_value = 0.5)
-
-  expect_equal(perf["n_valid"], 2)
-})
-
-test_that("calculate_performance returns NA for insufficient data", {
-  estimates <- c(0.5, 0.4, 0.6)
-  ses <- c(0.1, 0.1, 0.1)
-
-  perf <- calculate_performance(estimates, ses, true_value = 0.5)
-
-  expect_true(is.na(perf["bias"]))
-})
-```
-
-# Phase 4: Running the Simulation
-
-## Main Simulation Script
-
-Create `analysis/scripts/02_run_simulation.R`:
+**Create `analysis/scripts/02_run_simulation.R`**:
 
 ```r
 # 02_run_simulation.R
-# Run the complete simulation study
+# Run full simulation - execute separately from manuscript
+# Usage: Rscript analysis/scripts/02_run_simulation.R
 
 library(furrr)
 library(progressr)
-library(tictoc)
 
 source("R/simulate_data.R")
 source("R/fit_models.R")
-source("R/performance_metrics.R")
 
-# Configure parallel processing
 plan(multisession, workers = parallel::detectCores() - 1)
 
-# Create simulation grid
 sim_grid <- create_simulation_grid(
   n_subjects = c(50, 100, 200),
   beta_interaction = c(0, 0.3, 0.5),
@@ -762,424 +650,154 @@ sim_grid <- create_simulation_grid(
   n_sims = 1000
 )
 
-cat("Total simulations:", nrow(sim_grid), "\n")
-cat("Scenarios:", length(unique(sim_grid$scenario_id)), "\n")
+cat("Running", nrow(sim_grid), "simulations\n")
 
-# Define single simulation function
-run_single_simulation <- function(row) {
-  beta <- c(-1, 0, 0.2, row$beta_interaction)
-
+run_one <- function(row) {
   data <- simulate_longitudinal_binary(
     n_subjects = row$n_subjects,
-    n_timepoints = 4,
-    beta = beta,
+    beta = c(-1, 0, 0.2, row$beta_interaction),
     sigma_b = row$sigma_b,
     seed = row$seed
   )
 
   results <- fit_all_models(data)
-
   results$scenario_id <- row$scenario_id
   results$sim_id <- row$sim_id
-  results$n_subjects <- row$n_subjects
-  results$beta_interaction <- row$beta_interaction
-  results$sigma_b <- row$sigma_b
-
   results
 }
 
-# Run simulation with progress
-tic("Full simulation")
-
 handlers(global = TRUE)
-handlers("progress")
 
 with_progress({
-  p <- progressor(steps = nrow(sim_grid))
-
+  p <- progressor(nrow(sim_grid))
   results_list <- future_map(
     seq_len(nrow(sim_grid)),
-    function(i) {
-      p()
-      run_single_simulation(sim_grid[i, ])
-    },
+    function(i) { p(); run_one(sim_grid[i, ]) },
     .options = furrr_options(seed = TRUE)
   )
 })
 
-toc()
-
-# Combine results
-results <- do.call(rbind, results_list)
-
-# Save raw results
-saveRDS(results, "analysis/data/derived_data/simulation_results_raw.rds")
-
-cat("Results saved to analysis/data/derived_data/simulation_results_raw.rds\n")
-cat("Total rows:", nrow(results), "\n")
+results <- bind_rows(results_list)
+saveRDS(results, "analysis/data/derived_data/simulation_results.rds")
+cat("Saved to analysis/data/derived_data/simulation_results.rds\n")
 ```
 
-## Parallel Computing Considerations
+# Step 8: Load Results into Manuscript
 
-For large simulations:
-
-```r
-# Check available cores
-parallel::detectCores()
-
-# Conservative allocation (leave 1 core for system)
-plan(multisession, workers = parallel::detectCores() - 1)
-
-# For memory-intensive simulations, reduce workers
-plan(multisession, workers = 4)
-
-# For cluster computing
-plan(cluster, workers = c("node1", "node2", "node3"))
-```
-
-# Phase 5: Analyzing Results
-
-## Results Analysis Script
-
-Create `analysis/scripts/03_analyze_results.R`:
-
-```r
-# 03_analyze_results.R
-# Analyze simulation results and generate performance summaries
-
-library(tidyverse)
-
-source("R/performance_metrics.R")
-
-# Load results
-results <- readRDS("analysis/data/derived_data/simulation_results_raw.rds")
-
-# Create true values mapping
-true_values <- results |>
-  select(scenario_id, n_subjects, beta_interaction, sigma_b) |>
-  distinct()
-
-# Calculate performance metrics
-performance <- summarize_simulation(results, true_values)
-
-# Display summary
-cat("\n=== Performance Summary ===\n\n")
-
-performance |>
-  filter(beta_interaction == 0.3) |>
-  select(n_subjects, sigma_b, method, bias, coverage, power) |>
-  arrange(n_subjects, sigma_b, method) |>
-  print(n = 50)
-
-# Identify best methods
-cat("\n=== Best Coverage by Scenario ===\n\n")
-
-performance |>
-  filter(beta_interaction != 0) |>
-  group_by(scenario_id) |>
-  slice_min(abs(coverage - 0.95), n = 1) |>
-  select(n_subjects, beta_interaction, sigma_b, method, coverage) |>
-  print()
-
-# Power analysis
-cat("\n=== Power Analysis (80% threshold) ===\n\n")
-
-performance |>
-  filter(beta_interaction != 0) |>
-  select(n_subjects, beta_interaction, sigma_b, method, power) |>
-  pivot_wider(names_from = method, values_from = power) |>
-  print()
-
-# Save performance summary
-saveRDS(performance,
-        "analysis/data/derived_data/simulation_performance.rds")
-write_csv(performance,
-          "analysis/data/derived_data/simulation_performance.csv")
-
-cat("\nPerformance summary saved.\n")
-```
-
-# Phase 6: Visualization
-
-## Generate Figures
-
-Create `analysis/scripts/04_generate_figures.R`:
-
-```r
-# 04_generate_figures.R
-# Generate publication-quality figures for simulation results
-
-library(tidyverse)
-library(patchwork)
-
-performance <- readRDS("analysis/data/derived_data/simulation_performance.rds")
-
-# Clean method names for display
-performance <- performance |>
-  mutate(
-    method_label = case_when(
-      method == "gee_exch" ~ "GEE (Exchangeable)",
-      method == "gee_ar1" ~ "GEE (AR1)",
-      method == "gee_ind" ~ "GEE (Independence)",
-      method == "glmm" ~ "GLMM",
-      method == "conditional" ~ "Conditional Logistic"
-    ),
-    effect_label = case_when(
-      beta_interaction == 0 ~ "Null (OR = 1.0)",
-      beta_interaction == 0.3 ~ "Small (OR = 1.35)",
-      beta_interaction == 0.5 ~ "Moderate (OR = 1.65)"
-    )
-  )
-
-# Figure 1: Bias by method and sample size
-fig_bias <- performance |>
-  filter(beta_interaction != 0) |>
-  ggplot(aes(x = factor(n_subjects), y = bias, color = method_label)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-  geom_point(position = position_dodge(width = 0.5), size = 3) +
-  geom_errorbar(
-    aes(ymin = bias - 1.96 * empirical_se / sqrt(n_valid),
-        ymax = bias + 1.96 * empirical_se / sqrt(n_valid)),
-    position = position_dodge(width = 0.5),
-    width = 0.2
-  ) +
-  facet_grid(effect_label ~ sigma_b,
-             labeller = labeller(sigma_b = function(x)
-               paste0("σ = ", x))) +
-  labs(
-    x = "Sample Size (n)",
-    y = "Bias",
-    color = "Method",
-    title = "Bias in Treatment Effect Estimation"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
-
-ggsave("analysis/figures/fig1_bias.png", fig_bias,
-       width = 10, height = 8, dpi = 300)
-
-# Figure 2: Coverage probability
-fig_coverage <- performance |>
-  filter(beta_interaction != 0) |>
-  ggplot(aes(x = factor(n_subjects), y = coverage, color = method_label)) +
-  geom_hline(yintercept = 0.95, linetype = "dashed", color = "gray50") +
-  geom_hline(yintercept = c(0.925, 0.975), linetype = "dotted",
-             color = "gray70") +
-  geom_point(position = position_dodge(width = 0.5), size = 3) +
-  facet_grid(effect_label ~ sigma_b,
-             labeller = labeller(sigma_b = function(x)
-               paste0("σ = ", x))) +
-  scale_y_continuous(limits = c(0.85, 1.0)) +
-  labs(
-    x = "Sample Size (n)",
-    y = "Coverage Probability",
-    color = "Method",
-    title = "95% Confidence Interval Coverage"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
-
-ggsave("analysis/figures/fig2_coverage.png", fig_coverage,
-       width = 10, height = 8, dpi = 300)
-
-# Figure 3: Power curves
-fig_power <- performance |>
-  filter(beta_interaction != 0) |>
-  ggplot(aes(x = n_subjects, y = power, color = method_label,
-             linetype = factor(sigma_b))) +
-  geom_hline(yintercept = 0.80, linetype = "dashed", color = "gray50") +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  facet_wrap(~ effect_label) +
-  scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
-  scale_linetype_manual(values = c("solid", "dashed"),
-                        labels = c("σ = 0.5", "σ = 1.0")) +
-  labs(
-    x = "Sample Size (n)",
-    y = "Power",
-    color = "Method",
-    linetype = "Random Effect SD",
-    title = "Statistical Power by Effect Size"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
-
-ggsave("analysis/figures/fig3_power.png", fig_power,
-       width = 12, height = 5, dpi = 300)
-
-# Figure 4: SE ratio (model SE / empirical SE)
-fig_se_ratio <- performance |>
-  filter(beta_interaction != 0) |>
-  ggplot(aes(x = factor(n_subjects), y = se_ratio, fill = method_label)) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "gray50") +
-  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
-  facet_grid(effect_label ~ sigma_b,
-             labeller = labeller(sigma_b = function(x)
-               paste0("σ = ", x))) +
-  scale_y_continuous(limits = c(0, 1.5)) +
-  labs(
-    x = "Sample Size (n)",
-    y = "SE Ratio (Model SE / Empirical SE)",
-    fill = "Method",
-    title = "Standard Error Calibration"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
-
-ggsave("analysis/figures/fig4_se_ratio.png", fig_se_ratio,
-       width = 10, height = 8, dpi = 300)
-
-cat("All figures saved to analysis/figures/\n")
-```
-
-# Phase 7: Writing the Manuscript
-
-## Manuscript Structure
-
-Create `analysis/report/report.Rmd`:
+Update `report.Rmd` to use cached results:
 
 ````markdown
----
-title: "Comparing Methods for Longitudinal Binary Outcomes: A Simulation Study"
-author:
-  - name: Your Name
-    affiliation: Department of Biostatistics
-output:
-  pdf_document:
-    number_sections: true
-bibliography: references.bib
----
+# Results
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
-library(tidyverse)
-library(knitr)
-library(kableExtra)
+```{r load-results}
+# Load pre-computed results
+source("../../R/performance_metrics.R")
 
-performance <- readRDS("../data/derived_data/simulation_performance.rds")
+results <- readRDS("../data/derived_data/simulation_results.rds")
+
+# Get scenario parameters
+scenarios <- results |>
+  select(scenario_id) |>
+  distinct() |>
+  left_join(
+    create_simulation_grid(n_sims = 1) |>
+      select(scenario_id, n_subjects, beta_interaction, sigma_b) |>
+      distinct()
+  )
 ```
 
-# Introduction
-
-Longitudinal studies with binary outcomes require specialized analytic methods
-that account for within-subject correlation. Three common approaches include
-generalized estimating equations (GEE), generalized linear mixed models (GLMM),
-and conditional logistic regression [@liang1986; @breslow1993; @agresti2013].
-
-While theoretical differences among these methods are well understood, their
-comparative finite-sample performance under realistic conditions remains
-incompletely characterized. We conducted a simulation study to evaluate these
-methods across varying sample sizes, effect magnitudes, and correlation
-structures.
-
-# Methods
-
-## Simulation Design
-
-We generated longitudinal binary data following a logistic-normal model with
-subject-specific random intercepts [@hedeker2006]. Each simulated dataset
-included subjects measured at four time points with a treatment-by-time
-interaction representing the primary estimand.
-
-## Analytic Methods
-
-We compared five analytic approaches:
-
-1. GEE with exchangeable correlation
-2. GEE with AR(1) correlation
-3. GEE with independence working correlation
-4. GLMM with random intercepts
-5. Conditional logistic regression stratified by subject
-
-## Performance Metrics
-
-Performance was assessed via bias, 95% confidence interval coverage,
-statistical power, and standard error calibration [@morris2019].
-
-# Results
+```{r compute-performance}
+# Calculate performance by scenario and method
+performance <- results |>
+  left_join(scenarios) |>
+  group_by(scenario_id, n_subjects, beta_interaction, sigma_b, method) |>
+  summarise(
+    perf = list(calculate_performance(estimate, se, first(beta_interaction))),
+    .groups = "drop"
+  ) |>
+  unnest_wider(perf)
+```
 
 ## Bias
 
-All methods showed minimal bias across scenarios (Table 1). The largest
-biases occurred with small samples (n = 50) and high heterogeneity (σ = 1.0).
-
 ```{r table-bias}
 performance |>
-  filter(beta_interaction == 0.3, sigma_b == 0.5) |>
-  select(n_subjects, method, bias, empirical_se) |>
-  pivot_wider(names_from = n_subjects,
-              values_from = c(bias, empirical_se)) |>
-  kable(digits = 3, caption = "Bias and empirical SE by sample size") |>
-  kable_styling()
+  filter(beta_interaction == 0.3) |>
+  select(n_subjects, sigma_b, method, bias) |>
+  pivot_wider(names_from = method, values_from = bias) |>
+  knitr::kable(digits = 3, caption = "Bias by sample size and method")
 ```
+
+All methods showed minimal bias across scenarios (Table 2).
 
 ## Coverage
 
-GEE with exchangeable correlation and GLMM maintained nominal coverage
-across most scenarios (Figure 2). Conditional logistic regression showed
-modest undercoverage with small samples.
+```{r table-coverage}
+performance |>
+  filter(beta_interaction == 0.3) |>
+  select(n_subjects, sigma_b, method, coverage) |>
+  pivot_wider(names_from = method, values_from = coverage) |>
+  knitr::kable(digits = 3, caption = "Coverage probability")
+```
+
+GEE with exchangeable correlation and GLMM maintained nominal coverage.
 
 ## Power
 
-Sample sizes of n = 100 provided approximately 80% power to detect a
-moderate effect (OR = 1.65) with all methods (Figure 3).
+```{r fig-power, fig.width=8, fig.height=4}
+performance |>
+  filter(beta_interaction != 0) |>
+  mutate(effect = paste("OR =", round(exp(beta_interaction), 2))) |>
+  ggplot(aes(n_subjects, power, color = method, linetype = factor(sigma_b))) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray") +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~effect) +
+  scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
+  labs(
+    x = "Sample Size",
+    y = "Power",
+    color = "Method",
+    linetype = "sigma"
+  ) +
+  theme_minimal()
+```
 
-# Discussion
-
-Our simulation confirms that GEE and GLMM provide valid inference for
-longitudinal binary outcomes across a range of realistic scenarios.
-Conditional logistic regression, while theoretically appealing for its
-robustness to random effect distribution, showed slight undercoverage
-in small samples.
-
-For researchers designing longitudinal studies with binary outcomes,
-we recommend:
-
-1. Sample sizes of at least n = 100 per group
-2. GEE with exchangeable correlation for population-averaged effects
-3. GLMM for subject-specific interpretations
-
-# References
+Sample sizes of n = 100 achieved approximately 80% power for moderate
+effects with all methods (Figure 1).
 ````
 
-# Best Practices for Simulation Studies
+# Summary: Write as You Go for Simulations
 
-## Reproducibility
+1. **Start with the manuscript**: Write your research question and ADEMP
+   framework before any code.
 
-1. **Set seeds explicitly**: Every random operation needs a traceable seed
-2. **Version control everything**: Code, parameters, results
-3. **Document the computing environment**: Docker + renv.lock
-4. **Save intermediate results**: Enable restart from checkpoints
+2. **Develop inline**: Implement data generation and model fitting directly
+   in `report.Rmd` first. Test immediately with small examples.
 
-## Efficiency
+3. **Extract when working**: Move tested code to `R/` files once it's
+   reliable. Add unit tests for critical functions.
 
-1. **Profile before parallelizing**: Identify bottlenecks first
-2. **Use appropriate data structures**: Pre-allocate results vectors
-3. **Cache expensive computations**: Save model fits for post-hoc analysis
-4. **Consider cluster computing**: For >10,000 simulations
+4. **Run small in manuscript**: Keep small-scale validation simulations
+   in the manuscript so reviewers can see the code.
 
-## Reporting
+5. **Cache full results**: Move production simulations to `analysis/scripts/`
+   and save results to `analysis/data/derived_data/`.
 
-1. **Follow ADEMP framework**: Aims, Data-generating mechanisms, Estimands,
-   Methods, Performance measures
-2. **Report convergence rates**: Methods that fail should be documented
-3. **Show Monte Carlo error**: Performance metrics have uncertainty
-4. **Provide code**: Enable independent verification
+6. **Load and report**: The manuscript loads cached results and presents
+   them. Changes to presentation don't require re-running simulations.
 
-# Summary
+# Companion Files
 
-This vignette demonstrated a complete simulation study workflow for comparing
-methods analyzing longitudinal binary data. Key components included:
+Working implementations are available in
+`vignettes/workflow-simulation-study/`:
 
-1. **Modular design**: Separate functions for data generation, model fitting,
-   and performance evaluation
-2. **Comprehensive testing**: Unit tests ensure each component works correctly
-3. **Parallel computing**: Efficient execution of thousands of simulations
-4. **Reproducible reporting**: Manuscript integrates results directly from
-   saved objects
-
-The companion files in `vignettes/workflow-simulation-study/` provide
-working implementations of all functions and scripts described here.
+- `R/simulate_data.R` - Data generation
+- `R/fit_models.R` - Model fitting
+- `R/performance_metrics.R` - Evaluation
+- `tests/testthat/` - Unit tests for each module
+- `analysis/scripts/02_run_simulation.R` - Full simulation runner
+- `analysis/report/report.Rmd` - Manuscript template
 
 # References
 
@@ -1194,23 +812,6 @@ Breslow, N. E., & Clayton, D. G. (1993). Approximate inference in generalized
 linear mixed models. *Journal of the American Statistical Association*,
 88(421), 9-25.
 
-Agresti, A. (2013). *Categorical Data Analysis* (3rd ed.). Wiley.
+Chamberlain, G. (1980). Analysis of covariance with qualitative data.
+*Review of Economic Studies*, 47(1), 225-238.
 
-Hedeker, D., & Gibbons, R. D. (2006). *Longitudinal Data Analysis*. Wiley.
-
-# Companion Files
-
-The following files are extracted from this vignette and available in
-`vignettes/workflow-simulation-study/`:
-
-- `R/simulate_data.R` - Data generation functions
-- `R/fit_models.R` - Model fitting functions
-- `R/performance_metrics.R` - Performance evaluation functions
-- `tests/testthat/test-simulate_data.R` - Tests for data generation
-- `tests/testthat/test-fit_models.R` - Tests for model fitting
-- `tests/testthat/test-performance_metrics.R` - Tests for performance metrics
-- `analysis/scripts/02_run_simulation.R` - Main simulation runner
-- `analysis/scripts/03_analyze_results.R` - Results analysis
-- `analysis/scripts/04_generate_figures.R` - Figure generation
-- `report.Rmd` - Manuscript template
-- `references.bib` - Bibliography
