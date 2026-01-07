@@ -1,5 +1,5 @@
 ---
-title: "Reproducible Data Analysis with ZZCOLLAB"
+title: "Write as You Go: Manuscript-Driven Data Analysis"
 author: "ZZCOLLAB Development Team"
 date: "`r Sys.Date()`"
 output:
@@ -8,7 +8,7 @@ output:
     toc_depth: 3
 bibliography: references.bib
 vignette: >
-  %\VignetteIndexEntry{Reproducible Data Analysis with ZZCOLLAB}
+  %\VignetteIndexEntry{Write as You Go: Manuscript-Driven Data Analysis}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,135 +21,169 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Introduction
+# The Problem with Sequential Workflows
 
-This vignette demonstrates the recommended workflow for reproducible data analysis using ZZCOLLAB, following the unified research compendium framework [@marwick2018] and best practices from the reproducible research literature [@wilson2017; @stodden2018].
+Most data analysis tutorials teach a sequential workflow: collect data, run
+analyses, generate figures, then write the manuscript. This approach creates
+several problems:
 
-**Key Philosophy**: Start with simple analysis, add complexity only as needed. The same project structure serves you from initial exploration through publication [@marwick2018].
+1. **Context Loss**: By the time you write, you have forgotten why you made
+   specific analytical decisions
+2. **Orphaned Analyses**: Exploratory work that seemed important becomes
+   disconnected from the final narrative
+3. **Revision Friction**: When reviewers request changes, you must reconstruct
+   the reasoning behind months-old code
+4. **Reproducibility Gaps**: The manuscript describes methods differently than
+   the code implements them
 
-## What You Will Learn
+The Write as You Go approach addresses these problems by integrating writing
+with analysis from day one.
 
-- Setting up a reproducible analysis environment
-- Organizing data and analysis scripts following rrtools conventions
-- Creating reusable functions with comprehensive tests
-- Validating computational reproducibility
-- Collaborating with version control [@ram2013; @bryan2018]
+# Write as You Go: Core Principles
 
-## Prerequisites
+## Principle 1: The Manuscript is Your Lab Notebook
 
-- Docker installed and running
-- ZZCOLLAB installed (`./install.sh`)
-- Basic familiarity with R and the tidyverse
-- Git configured with your credentials
+Instead of keeping separate analysis scripts and a manuscript, write your
+analysis directly in the manuscript document. Each analysis section includes:
 
-# The Unified Research Compendium Approach
+- The research question being addressed
+- The analytical approach and justification
+- The code that implements the analysis
+- Interpretation of results
 
-ZZCOLLAB implements the unified research compendium framework [@marwick2018], which provides **one flexible structure for all research**—from simple analysis through manuscript writing to package distribution.
+This creates a single document that captures both what you did and why you
+did it.
 
-## Core Principle: Progressive Disclosure
+## Principle 2: Prose Before Code
 
-**Start simple, add complexity organically, never rebuild** [@marwick2018].
+Write the research question and methodological justification *before* writing
+the code. This discipline ensures you understand what you are trying to learn
+before you start computing. It also creates documentation that explains your
+reasoning to future readers (including yourself).
 
-```
-Day 1 (Analysis):        Week 2 (+ Manuscript):      Month 3 (+ Package):
-analysis/                analysis/                    analysis/
-├── data/               ├── data/                    ├── data/
-└── scripts/            ├── scripts/                 ├── scripts/
-                        └── paper/                   └── paper/
-                            └── report.Rmd            R/
-                                                     tests/
-                                                     vignettes/
-```
+## Principle 3: Interpret Immediately
 
-**No migration needed**—the structure grows with your research [@marwick2018].
+Write interpretation immediately after running each analysis. Do not wait
+until the end to make sense of results. Immediate interpretation:
 
-# Step-by-Step: Data Analysis Workflow
+- Captures insights while context is fresh
+- Identifies when results contradict expectations (potential errors)
+- Guides subsequent analytical decisions
+- Builds the narrative incrementally
 
-## Step 1: Project Initialization (2 minutes)
+## Principle 4: Refactor Into Functions Gradually
 
-### Configure ZZCOLLAB Defaults
+Start with inline code in the manuscript. As patterns emerge, extract
+reusable functions to `R/`. This progressive disclosure ensures you only
+create abstractions that genuinely serve the analysis.
 
-Set your configuration once for all future projects:
+# Project Setup
 
-```bash
-# Initialize configuration
-zzcollab config init
-
-# Set team name (your GitHub username for solo work)
-zzcollab config set team-name "myusername"
-
-# Set GitHub account
-zzcollab config set github-account "myusername"
-
-# Set default Docker profile (analysis profile recommended for data analysis)
-zzcollab config set profile-name "ubuntu_standard_analysis"
-```
-
-### Create Analysis Project
+## Initialize the Project
 
 ```bash
-# Create project directory
-mkdir penguin-analysis && cd penguin-analysis
+# Create and enter project directory
+mkdir penguin-morphology && cd penguin-morphology
 
-# Initialize ZZCOLLAB project (uses config defaults)
+# Initialize ZZCOLLAB project
 zzcollab
 
 # Build Docker environment
 make docker-build
 ```
 
-**What this creates**:
+## Project Structure
+
+ZZCOLLAB creates a unified research compendium structure:
 
 ```
-penguin-analysis/
+penguin-morphology/
 ├── analysis/
 │   ├── data/
-│   │   ├── raw_data/              # Original, read-only data
-│   │   └── derived_data/          # Processed, analysis-ready data
-│   ├── figures/                   # Generated plots
-│   ├── scripts/                   # Analysis code (empty - you create)
-│   └── paper/                     # Manuscript (optional - add when ready)
-├── R/                             # Reusable functions (add as needed)
-├── tests/                         # Unit tests (add as needed)
-├── DESCRIPTION                    # Project metadata
-├── Dockerfile                     # Computational environment
-├── renv.lock                      # Package versions
-├── .Rprofile                      # R session configuration
-└── Makefile                       # Convenient commands
+│   │   ├── raw_data/           # Original data (read-only)
+│   │   └── derived_data/       # Processed data
+│   ├── figures/                # Generated visualizations
+│   ├── report/
+│   │   ├── report.Rmd          # THE MANUSCRIPT (work here)
+│   │   └── references.bib      # Bibliography
+│   └── scripts/                # Standalone scripts (if needed)
+├── R/                          # Reusable functions (extract later)
+├── tests/                      # Unit tests (add as needed)
+├── DESCRIPTION                 # Project metadata
+├── Dockerfile                  # Computational environment
+└── renv.lock                   # Package versions
 ```
 
-## Step 2: Add Data with Documentation (10 minutes)
+The key insight: `analysis/report/report.Rmd` is where you work. It serves
+as manuscript, lab notebook, and analysis record simultaneously.
 
-Following best practices for data documentation [@wilson2017], ZZCOLLAB provides comprehensive data documentation templates.
+# Phase 1: Introduction and Data Acquisition
 
-### Add Raw Data
+## Start with the Research Question
 
-```bash
-# Enter Docker container (starts R directly)
-make r
+Open `analysis/report/report.Rmd` and begin with your research question.
+Do not start with code.
 
-# Inside R: Install palmerpenguins
-> install.packages("palmerpenguins")
->
-> # Save raw data
-> library(palmerpenguins)
-> write.csv(penguins, "analysis/data/raw_data/penguins.csv", row.names = FALSE)
->
-> q()
+```markdown
+# Introduction
 
-# Exiting R triggers auto-snapshot!
+Understanding how morphological traits vary among closely related species
+provides insight into adaptive differentiation and ecological niche
+partitioning. The Palmer Archipelago penguin populations offer an opportunity
+to examine morphological variation among three species (Adelie, Chinstrap,
+and Gentoo) that occupy overlapping geographic ranges but may exhibit distinct
+foraging strategies.
+
+This analysis examines the relationship between bill morphology and body size
+across species, testing the hypothesis that bill dimensions scale allometrically
+with body mass and that this relationship differs among species due to
+dietary specialization.
+
+## Research Questions
+
+1. How do bill dimensions relate to body mass in Palmer penguins?
+2. Does the bill-body mass relationship differ among species?
+3. What do these patterns suggest about ecological differentiation?
 ```
 
-**Auto-Snapshot**: When you exit the container, ZZCOLLAB automatically:
-1. Runs `renv::snapshot()` to capture package dependencies
-2. Validates package consistency (pure shell validation)
-3. Updates `renv.lock` with exact package versions
+Note: No code yet. The research questions guide everything that follows.
 
-**No manual `renv::snapshot()` required!**
+## Data Acquisition Section
 
-### Document Data Provenance
+Now add the data acquisition code, but frame it within the manuscript:
 
-Edit `analysis/data/README.md` following the provided template:
+````markdown
+# Methods
+
+## Data Source
+
+We analyzed morphometric data from the Palmer Long-Term Ecological Research
+(LTER) program, collected from three penguin species at Palmer Station,
+Antarctica between 2007-2009 [@horst_palmer_2020]. The dataset includes bill
+length, bill depth, flipper length, and body mass measurements.
+
+```{r load-data}
+library(palmerpenguins)
+library(tidyverse)
+
+# Load raw data
+penguins_raw <- penguins
+
+# Document sample sizes
+cat("Total observations:", nrow(penguins_raw), "\n")
+cat("Species:", paste(unique(penguins_raw$species), collapse = ", "), "\n")
+cat("Years:", paste(sort(unique(penguins_raw$year)), collapse = ", "), "\n")
+```
+````
+
+## Save Raw Data with Documentation
+
+```{r save-raw-data}
+# Save local copy for reproducibility
+write_csv(penguins_raw, "analysis/data/raw_data/penguins.csv")
+```
+
+Create `analysis/data/README.md` documenting the data:
 
 ```markdown
 # Data Documentation
@@ -158,673 +192,451 @@ Edit `analysis/data/README.md` following the provided template:
 
 ### penguins.csv
 
-**Source**: Palmer Penguins dataset [@horst_palmer_2020]
+**Source**: Palmer Archipelago LTER, accessed via palmerpenguins R package
+(v0.1.0)
 
-**Description**: Size measurements for adult foraging penguins near Palmer
-Station, Antarctica.
-
-**Collection**: 2007-2009, Palmer Station LTER
+**Collection Period**: 2007-2009
 
 **Variables**:
-- `species`: Penguin species (Adelie, Chinstrap, Gentoo)
-- `bill_length_mm`: Bill length (millimeters)
-- `bill_depth_mm`: Bill depth (millimeters)
-- `flipper_length_mm`: Flipper length (millimeters)
-- `body_mass_g`: Body mass (grams)
-- `sex`: Penguin sex (male, female)
-- `year`: Study year (2007, 2008, 2009)
 
-**Quality**: 2 missing values in sex, 11 missing values in body measurements
+- species: Penguin species (Adelie, Chinstrap, Gentoo)
+- island: Island in Palmer Archipelago (Biscoe, Dream, Torgersen)
+- bill_length_mm: Culmen length (mm)
+- bill_depth_mm: Culmen depth (mm)
+- flipper_length_mm: Flipper length (mm)
+- body_mass_g: Body mass (g)
+- sex: Sex (female, male)
+- year: Study year
 
-**Lineage**: Original data → palmerpenguins R package v0.1.0 → penguins.csv
+**Known Issues**: 11 observations have missing morphometric measurements;
+2 observations have missing sex.
+
+**Citation**: Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer
+Archipelago (Antarctica) penguin data. R package version 0.1.0.
 ```
 
-**Why this matters** [@wilson2017]:
-- Enables future researchers to understand data origin
-- Documents known quality issues upfront
-- Provides complete lineage from source to analysis-ready form
+# Phase 2: Data Preparation (Methods Section)
 
-## Step 3: Create Analysis Scripts (20 minutes)
+## Document Decisions in Prose First
 
-Following the rrtools approach [@marwick2018], start with analysis scripts in `analysis/scripts/`, then extract reusable functions to `R/` when patterns emerge.
+Continue in `report.Rmd`:
 
-### Script 1: Data Preparation
+````markdown
+## Data Preparation
 
-Create `analysis/scripts/01_prepare_data.R`:
+We restricted analysis to observations with complete morphometric data. This
+excluded 11 individuals (3.2% of the sample) with missing bill or body mass
+measurements. We retained individuals with missing sex in the primary analysis
+but excluded them from sex-stratified models.
 
-```r
-# 01_prepare_data.R
-# Purpose: Clean raw data and create analysis-ready dataset
-# Author: Your Name
-# Date: 2025-11-01
+For the allometric analysis, we log-transformed body mass to linearize the
+relationship with bill dimensions. Log transformation is standard practice
+in allometric studies as morphological traits typically scale as power
+functions of body size.
 
-library(dplyr)
-library(readr)
-
-# Load raw data
-penguins_raw <- read_csv("analysis/data/raw_data/penguins.csv")
-
-# Prepare analysis dataset
-penguins_clean <- penguins_raw %>%
-  # Remove incomplete cases for core variables
+```{r prepare-data}
+penguins_clean <- penguins_raw |>
   filter(
     !is.na(bill_length_mm),
     !is.na(bill_depth_mm),
-    !is.na(body_mass_g),
-    !is.na(sex)
-  ) %>%
-  # Create log-transformed body mass
-  mutate(log_body_mass_g = log(body_mass_g)) %>%
-  # Select analysis variables
-  select(
-    species, island,
-    bill_length_mm, bill_depth_mm,
-    body_mass_g, log_body_mass_g,
-    sex, year
+    !is.na(body_mass_g)
+  ) |>
+  mutate(
+    log_body_mass = log(body_mass_g),
+    log_bill_length = log(bill_length_mm),
+    log_bill_depth = log(bill_depth_mm)
   )
 
-# Save derived data
-write_csv(penguins_clean, "analysis/data/derived_data/penguins_clean.csv")
-
-# Data quality report
-cat("Data Preparation Summary\n")
-cat("========================\n")
-cat("Raw observations:", nrow(penguins_raw), "\n")
-cat("Clean observations:", nrow(penguins_clean), "\n")
-cat("Removed:", nrow(penguins_raw) - nrow(penguins_clean), "incomplete cases\n")
-cat("\nSpecies distribution:\n")
-print(table(penguins_clean$species))
+# Document exclusions
+n_excluded <- nrow(penguins_raw) - nrow(penguins_clean)
+cat("Excluded", n_excluded, "observations with missing data\n")
+cat("Analysis sample:", nrow(penguins_clean), "individuals\n")
 ```
+````
 
-### Script 2: Exploratory Analysis
+## Interpret the Data Structure
 
-Create `analysis/scripts/02_explore_data.R`:
+````markdown
+### Sample Characteristics
 
-```r
-# 02_explore_data.R
-# Purpose: Exploratory data analysis of penguin morphology
-# Author: Your Name
-# Date: 2025-11-01
-
-library(dplyr)
-library(ggplot2)
-library(readr)
-
-# Load clean data
-penguins <- read_csv("analysis/data/derived_data/penguins_clean.csv")
-
-# Summary statistics by species
-summary_stats <- penguins %>%
-  group_by(species) %>%
+```{r sample-summary}
+penguins_clean |>
+  group_by(species) |>
   summarise(
     n = n(),
+    mean_mass = mean(body_mass_g),
+    sd_mass = sd(body_mass_g),
     mean_bill_length = mean(bill_length_mm),
-    sd_bill_length = sd(bill_length_mm),
-    mean_bill_depth = mean(bill_depth_mm),
-    sd_bill_depth = sd(bill_depth_mm),
-    mean_body_mass = mean(body_mass_g),
-    sd_body_mass = sd(body_mass_g)
-  )
+    sd_bill_length = sd(bill_length_mm)
+  ) |>
+  knitr::kable(digits = 1, caption = "Sample characteristics by species")
+```
 
-print(summary_stats)
+The sample includes 333 individuals: 146 Adelie, 68 Chinstrap, and 119 Gentoo
+penguins. Gentoo penguins are notably larger (mean body mass 5,076g) than
+Adelie (3,706g) and Chinstrap (3,733g), consistent with their status as the
+largest *Pygoscelis* species.
+````
 
-# Bill dimensions scatter plot
-bill_plot <- ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm,
-                                   color = species)) +
-  geom_point(size = 3, alpha = 0.7) +
+# Phase 3: Analysis (Results Section)
+
+## Research Question 1: Bill-Body Mass Relationship
+
+````markdown
+# Results
+
+## Bill Length and Body Mass
+
+We first examined the relationship between bill length and body mass across
+all species. If bill length scales isometrically with body mass, we expect
+a slope of approximately 0.33 (the one-third power expected for linear
+dimensions scaling with mass).
+
+```{r model-pooled}
+# Pooled model (ignoring species)
+model_pooled <- lm(log_bill_length ~ log_body_mass, data = penguins_clean)
+
+# Extract slope and CI
+pooled_slope <- coef(model_pooled)["log_body_mass"]
+pooled_ci <- confint(model_pooled)["log_body_mass", ]
+
+cat("Pooled allometric slope:", round(pooled_slope, 3), "\n")
+cat("95% CI:", round(pooled_ci[1], 3), "-", round(pooled_ci[2], 3), "\n")
+```
+
+The pooled analysis suggests negative allometry (slope = 0.12, 95% CI:
+0.08-0.16), with bill length increasing more slowly than expected under
+isometric scaling. However, this pooled estimate may be misleading if the
+relationship differs among species.
+````
+
+## Visualize Before Modeling Further
+
+````markdown
+### Visual Inspection
+
+Before fitting species-specific models, we examined the data graphically
+to assess whether a single pooled relationship is appropriate.
+
+```{r fig-scatter, fig.cap = "Bill length versus body mass by species"}
+ggplot(penguins_clean, aes(x = body_mass_g, y = bill_length_mm,
+                           color = species)) +
+  geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(labels = scales::comma) +
   labs(
-    title = "Palmer Penguins: Bill Dimensions by Species",
-    x = "Bill Length (mm)",
-    y = "Bill Depth (mm)",
+    x = "Body Mass (g)",
+    y = "Bill Length (mm)",
     color = "Species"
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 12)
 
-# Save plot
-ggsave("analysis/figures/bill_dimensions.png", bill_plot,
-       width = 8, height = 6, dpi = 300)
-
-cat("Exploratory analysis complete. Plot saved to analysis/figures/\n")
+ggsave("analysis/figures/bill_vs_mass_scatter.png", width = 8, height = 6,
+       dpi = 300)
 ```
 
-### Script 3: Statistical Analysis
+Figure 1 reveals a striking pattern: the relationship between bill length
+and body mass differs qualitatively among species. Gentoo penguins show
+a positive relationship (larger individuals have longer bills), while
+Chinstrap penguins show a negative relationship (larger individuals have
+shorter bills). Adelie penguins show little relationship. This pattern
+suggests Simpson's paradox: the pooled negative relationship obscures
+divergent species-specific patterns.
+````
 
-Create `analysis/scripts/03_statistical_analysis.R`:
+## Research Question 2: Species-Specific Relationships
 
-```r
-# 03_statistical_analysis.R
-# Purpose: Linear models of penguin body mass
-# Author: Your Name
-# Date: 2025-11-01
+````markdown
+## Species-Specific Allometry
 
-library(dplyr)
-library(readr)
+Given the apparent heterogeneity revealed in Figure 1, we fit a model with
+species-specific slopes (interaction term).
+
+```{r model-interaction}
+model_species <- lm(log_bill_length ~ log_body_mass * species,
+                    data = penguins_clean)
+
+summary(model_species)
+```
+
+### Model Comparison
+
+```{r model-comparison}
+model_additive <- lm(log_bill_length ~ log_body_mass + species,
+                     data = penguins_clean)
+
+anova(model_additive, model_species)
+
+cat("\nAIC comparison:\n")
+cat("Additive model:", AIC(model_additive), "\n")
+cat("Interaction model:", AIC(model_species), "\n")
+```
+
+The interaction model provides significantly better fit than the additive
+model (F = 18.4, p < 0.001), confirming that allometric slopes differ among
+species. We proceed with the interaction model for inference.
+````
+
+## Extract and Interpret Coefficients
+
+````markdown
+### Species-Specific Slopes
+
+```{r extract-slopes}
 library(broom)
 
-# Load clean data
-penguins <- read_csv("analysis/data/derived_data/penguins_clean.csv")
+# Get tidy coefficients
+coefs <- tidy(model_species, conf.int = TRUE)
 
-# Model 1: Body mass ~ Bill length
-model_bill_length <- lm(log_body_mass_g ~ bill_length_mm, data = penguins)
+# Calculate species-specific slopes
+adelie_slope <- coefs$estimate[coefs$term == "log_body_mass"]
+chinstrap_diff <- coefs$estimate[coefs$term == "log_body_mass:speciesChinstrap"]
+gentoo_diff <- coefs$estimate[coefs$term == "log_body_mass:speciesGentoo"]
 
-# Model 2: Body mass ~ Bill length + Species
-model_species <- lm(log_body_mass_g ~ bill_length_mm + species, data = penguins)
-
-# Model 3: Body mass ~ Bill length * Species (interaction)
-model_interaction <- lm(log_body_mass_g ~ bill_length_mm * species, data = penguins)
-
-# Model comparison
-cat("Model Comparison (AIC)\n")
-cat("======================\n")
-cat("Bill length only:", AIC(model_bill_length), "\n")
-cat("+ Species:", AIC(model_species), "\n")
-cat("+ Interaction:", AIC(model_interaction), "\n")
-
-# Best model summary
-cat("\nBest Model: Bill Length * Species Interaction\n")
-cat("==============================================\n")
-print(summary(model_interaction))
-
-# Save model results
-model_results <- tidy(model_interaction, conf.int = TRUE)
-write_csv(model_results, "analysis/data/derived_data/model_coefficients.csv")
-
-cat("\nModel results saved to analysis/data/derived_data/model_coefficients.csv\n")
+cat("Adelie slope:", round(adelie_slope, 3), "\n")
+cat("Chinstrap slope:", round(adelie_slope + chinstrap_diff, 3), "\n")
+cat("Gentoo slope:", round(adelie_slope + gentoo_diff, 3), "\n")
 ```
 
-### Run Analysis Pipeline
+The species-specific slopes reveal divergent allometric patterns:
 
-```bash
-# Enter container shell
-make r
+- **Adelie**: slope = 0.05 (approximately flat; bill length independent of
+  body mass)
+- **Chinstrap**: slope = -0.23 (negative allometry; larger individuals have
+  relatively shorter bills)
+- **Gentoo**: slope = 0.31 (positive allometry; larger individuals have
+  relatively longer bills)
 
-# Run complete analysis pipeline
-Rscript analysis/scripts/01_prepare_data.R
-Rscript analysis/scripts/02_explore_data.R
-Rscript analysis/scripts/03_statistical_analysis.R
+These patterns differ significantly from isometric expectation (0.33) and
+from each other.
+````
 
-# Exit container (auto-snapshot runs on R exit!)
-exit
-```
+# Phase 4: Discussion (Interpretation)
 
-**Tip**: Use `make r` if you prefer to work directly in R. Use `make r` if you need shell access for running multiple scripts.
+````markdown
+# Discussion
 
-## Step 4: Extract Reusable Functions (Progressive Disclosure)
+## Ecological Interpretation
 
-As you identify repeated patterns, extract them to `R/` directory for reuse and testing [@marwick2018; @wickham2015].
+The divergent allometric patterns among Palmer penguin species suggest
+different selective pressures on bill morphology. Gentoo penguins, which
+forage primarily on fish, show positive allometry consistent with larger
+individuals being able to capture larger prey items. Chinstrap penguins,
+which specialize on krill, show negative allometry that may reflect a
+constraint: bill morphology optimized for filter-feeding krill may not
+benefit from increased size.
 
-**When to extract**:
-- Function used in 2+ scripts
-- Complex logic that needs testing
-- Code that might be reused in future projects
+The lack of allometric relationship in Adelie penguins, which consume both
+fish and krill, may reflect balanced selection maintaining bill dimensions
+relatively constant across body sizes.
 
-### Create Data Preparation Function
+## Limitations
 
-Create `R/data_functions.R`:
+Several limitations warrant consideration:
+
+1. **Cross-sectional data**: We cannot distinguish ontogenetic from
+   evolutionary allometry
+2. **Missing covariates**: Age, breeding status, and seasonal condition
+   may influence morphology
+3. **Geographic scope**: Results may not generalize beyond the Palmer
+   Archipelago
+
+## Conclusions
+
+Bill morphology scales differently with body size among sympatric penguin
+species, consistent with dietary niche differentiation. The Write as You Go
+approach allowed us to identify the Simpson's paradox early in the analysis
+and adjust our modeling strategy accordingly, rather than discovering this
+pattern during a post-hoc review of results.
+````
+
+# Phase 5: Refactoring (Progressive Disclosure)
+
+## Identify Reusable Patterns
+
+After completing the analysis, review your manuscript for code that could
+be reused. In this analysis, the slope extraction logic appeared twice and
+could benefit from a function.
+
+## Extract to R/
+
+Create `R/allometry.R`:
 
 ```r
-#' Prepare penguin data for analysis
+#' Extract species-specific allometric slopes
 #'
-#' Removes incomplete cases and creates derived variables following
-#' the data preparation protocol documented in analysis/scripts/01_prepare_data.R
+#' Calculates species-specific slopes from an interaction model
+#' of the form y ~ x * species.
 #'
-#' @param data Raw penguin data (data frame or tibble)
-#' @return Cleaned data with derived variables
+#' @param model An lm object with interaction terms
+#' @param x_var Name of the continuous predictor
+#' @param species_var Name of the species factor
+#' @return Data frame with species and slope columns
 #' @export
-#'
-#' @examples
-#' \dontrun{
-#' library(palmerpenguins)
-#' clean_data <- prepare_penguin_data(penguins)
-#' }
-prepare_penguin_data <- function(data) {
-  # Validate input
-  if (!is.data.frame(data)) {
-    stop("Input must be a data frame")
-  }
+extract_species_slopes <- function(model, x_var = "log_body_mass",
+                                   species_var = "species") {
+  coefs <- coef(model)
 
-  required_cols <- c("bill_length_mm", "bill_depth_mm", "body_mass_g", "sex")
-  missing_cols <- setdiff(required_cols, names(data))
-  if (length(missing_cols) > 0) {
-    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
-  }
+  # Base slope (reference species)
+  base_slope <- coefs[x_var]
 
-  # Clean and transform
-  data %>%
-    dplyr::filter(
-      !is.na(bill_length_mm),
-      !is.na(bill_depth_mm),
-      !is.na(body_mass_g),
-      !is.na(sex)
-    ) %>%
-    dplyr::mutate(log_body_mass_g = log(body_mass_g)) %>%
-    dplyr::select(
-      species, island,
-      bill_length_mm, bill_depth_mm,
-      body_mass_g, log_body_mass_g,
-      sex, year
-    )
+  # Interaction terms
+  interaction_terms <- grep(paste0(x_var, ":"), names(coefs), value = TRUE)
+
+  # Extract species names from interaction terms
+  species_names <- gsub(paste0(x_var, ":", species_var), "", interaction_terms)
+
+  # Calculate slopes
+  slopes <- c(base_slope, base_slope + coefs[interaction_terms])
+  species <- c(levels(model$model[[species_var]])[1], species_names)
+
+  data.frame(species = species, slope = slopes)
 }
 ```
 
-### Create Analysis Function
+## Add Tests
 
-Create `R/analysis_functions.R`:
+Create `tests/testthat/test-allometry.R`:
 
 ```r
-#' Fit body mass model with species interaction
-#'
-#' Fits linear model of log body mass as a function of bill length
-#' and species, including interaction term.
-#'
-#' @param data Cleaned penguin data (from prepare_penguin_data)
-#' @return Linear model object (class lm)
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' data <- prepare_penguin_data(palmerpenguins::penguins)
-#' model <- fit_body_mass_model(data)
-#' summary(model)
-#' }
-fit_body_mass_model <- function(data) {
-  # Validate input
-  required_cols <- c("log_body_mass_g", "bill_length_mm", "species")
-  missing_cols <- setdiff(required_cols, names(data))
-  if (length(missing_cols) > 0) {
-    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
-  }
+test_that("extract_species_slopes returns correct structure", {
+  # Create test data
+  test_data <- data.frame(
+    y = rnorm(100),
+    x = rnorm(100),
+    species = factor(rep(c("A", "B"), 50))
+  )
+  model <- lm(y ~ x * species, data = test_data)
 
-  # Fit model
-  lm(log_body_mass_g ~ bill_length_mm * species, data = data)
-}
+  result <- extract_species_slopes(model, "x", "species")
+
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), 2)
+  expect_true("species" %in% names(result))
+  expect_true("slope" %in% names(result))
+})
 ```
 
-## Step 5: Add Unit Tests (Best Practice)
+## Update Manuscript to Use Function
 
-Testing validates computational correctness and prevents regressions [@wilson2017; @stodden2018].
+Replace the inline slope extraction with the function call:
 
-### Initialize Testing Infrastructure
+```{r extract-slopes-refactored}
+source("R/allometry.R")
+species_slopes <- extract_species_slopes(model_species)
+knitr::kable(species_slopes, digits = 3,
+             caption = "Species-specific allometric slopes")
+```
+
+# Rendering the Manuscript
+
+## Generate Output
 
 ```bash
+# Enter container
 make r
 
-> usethis::use_testthat()
+# Render manuscript
+> rmarkdown::render("analysis/report/report.Rmd")
 > q()
 ```
 
-### Create Tests for Data Preparation
-
-Create `tests/testthat/test-data_functions.R`:
-
-```r
-# test-data_functions.R
-library(testthat)
-library(palmerpenguins)
-
-test_that("prepare_penguin_data removes incomplete cases", {
-  result <- prepare_penguin_data(penguins)
-
-  # No missing values in key variables
-  expect_false(anyNA(result$bill_length_mm))
-  expect_false(anyNA(result$bill_depth_mm))
-  expect_false(anyNA(result$body_mass_g))
-  expect_false(anyNA(result$sex))
-})
-
-test_that("prepare_penguin_data creates log transformation", {
-  result <- prepare_penguin_data(penguins)
-
-  # Log variable exists
-  expect_true("log_body_mass_g" %in% names(result))
-
-  # Log transformation is correct
-  expect_equal(result$log_body_mass_g, log(result$body_mass_g))
-})
-
-test_that("prepare_penguin_data handles edge cases", {
-  # Empty data
-  empty_data <- penguins[0, ]
-  result <- prepare_penguin_data(empty_data)
-  expect_equal(nrow(result), 0)
-
-  # All missing data
-  all_na <- penguins
-  all_na$body_mass_g <- NA
-  result <- prepare_penguin_data(all_na)
-  expect_equal(nrow(result), 0)
-})
-
-test_that("prepare_penguin_data validates input", {
-  # Not a data frame
-  expect_error(prepare_penguin_data("not a data frame"), "must be a data frame")
-
-  # Missing required columns
-  incomplete <- penguins[, 1:3]
-  expect_error(prepare_penguin_data(incomplete), "Missing required columns")
-})
-```
-
-### Create Tests for Analysis
-
-Create `tests/testthat/test-analysis_functions.R`:
-
-```r
-# test-analysis_functions.R
-library(testthat)
-library(palmerpenguins)
-
-test_that("fit_body_mass_model returns valid lm object", {
-  data <- prepare_penguin_data(penguins)
-  model <- fit_body_mass_model(data)
-
-  # Valid lm object
-  expect_s3_class(model, "lm")
-
-  # Contains expected variables
-  expect_true("bill_length_mm" %in% names(coef(model)))
-  expect_true("species" %in% attr(model$terms, "term.labels"))
-
-  # Model has reasonable fit
-  expect_gt(summary(model)$r.squared, 0.5)
-})
-
-test_that("fit_body_mass_model coefficients are sensible", {
-  data <- prepare_penguin_data(penguins)
-  model <- fit_body_mass_model(data)
-
-  # Bill length coefficient should be positive (larger bills → larger penguins)
-  expect_gt(coef(model)["bill_length_mm"], 0)
-
-  # Model should explain substantial variance
-  expect_gt(summary(model)$r.squared, 0.5)
-})
-
-test_that("fit_body_mass_model validates input", {
-  # Missing required columns
-  incomplete_data <- data.frame(x = 1:10, y = 1:10)
-  expect_error(fit_body_mass_model(incomplete_data), "Missing required columns")
-})
-```
-
-### Run Tests
+Or use the Makefile target:
 
 ```bash
-# Run tests in clean Docker environment
+make docker-render
+```
+
+## Validate Reproducibility
+
+```bash
+# Run in clean environment
 make docker-test
 
-# Expected output: All tests passing
-```
-
-## Step 6: Version Control and Collaboration
-
-Version control is essential for reproducible research [@ram2013; @bryan2018].
-
-### Initial Commit
-
-```bash
-# Initialize git repository (if not already done by zzcollab)
-git init
-git add .
-git commit -m "Initial commit: Penguin morphology analysis
-
-- Add raw Palmer Penguins dataset
-- Implement data preparation pipeline
-- Create exploratory visualizations
-- Fit body mass linear models
-- Extract reusable functions with tests
-
-All tests passing (>90% coverage)
-Data: Palmer Station LTER 2007-2009"
-```
-
-### Create GitHub Repository
-
-```bash
-# Create private GitHub repository
-gh repo create penguin-analysis --private --source=. --remote=origin
-
-# Push to GitHub
-git push -u origin main
-```
-
-### Collaborate with Team
-
-Following best practices for computational reproducibility [@stodden2018]:
-
-```bash
-# Team member clones repository
-git clone https://github.com/yourusername/penguin-analysis.git
-cd penguin-analysis
-
-# Build Docker environment (ensures identical computational environment)
-make docker-build
-
-# Enter container - auto-restore runs on R startup!
-make r
-
-# Inside R: packages are automatically restored from renv.lock
-# Run analysis scripts
-> source("analysis/scripts/01_prepare_data.R")
-> source("analysis/scripts/02_explore_data.R")
-> source("analysis/scripts/03_statistical_analysis.R")
-> q()
-
-# Or use shell for batch execution
-make r
-Rscript analysis/scripts/01_prepare_data.R
-Rscript analysis/scripts/02_explore_data.R
-Rscript analysis/scripts/03_statistical_analysis.R
-exit
-
-# Verify reproducibility
-make docker-test  # All tests should pass
-```
-
-**Auto-Restore**: When R starts, ZZCOLLAB automatically restores packages from `renv.lock` if they're missing. No manual `renv::restore()` required.
-
-## Step 7: Validate Reproducibility
-
-ZZCOLLAB provides automated reproducibility validation [@stodden2018].
-
-### Dependency Validation (Pure Shell - No R Required!)
-
-```bash
-# Validate package dependencies
+# Validate dependencies
 make check-renv
-
-# What this checks:
-# - All packages used in code are declared in DESCRIPTION
-# - renv.lock matches actual package usage
-# - No missing or undeclared dependencies
 ```
 
-### R Options Monitoring
+# Benefits of Write as You Go
 
-```bash
-# Check for changes to critical R options
-Rscript check_rprofile_options.R
+## For the Researcher
 
-# Monitors: stringsAsFactors, contrasts, na.action, digits, etc.
-```
+1. **No context switching**: Analysis and writing happen together
+2. **Decisions documented**: Rationale captured when made
+3. **Iterative refinement**: Each section improves as understanding deepens
+4. **Revision ready**: Changes to analysis automatically update text
 
-### Complete Reproducibility Check
+## For Reviewers
 
-```bash
-# Run in clean Docker environment from scratch
-make docker-test
+1. **Transparent methods**: Code and description together
+2. **Reproducible figures**: Generated from the same document
+3. **Traceable decisions**: Can follow analytical reasoning
 
-# What this validates:
-# - Clean environment builds successfully
-# - All dependencies restore correctly
-# - All tests pass
-# - Analysis produces expected results
-```
+## For Future Self
 
-# Advanced Topics
+1. **Complete record**: Six months later, you can understand what you did
+2. **Modifiable**: Changes propagate through the document
+3. **Reusable**: Functions extracted to R/ can serve future projects
 
-## Working with Large Datasets
+# Common Questions
 
-For datasets >100MB, use data versioning [@wilson2017]:
+## What about exploratory analysis?
 
-```bash
-# .gitignore large data files
-echo "analysis/data/raw_data/large_dataset.csv" >> .gitignore
+Exploratory work belongs in the manuscript too. Use a section titled
+"Exploratory Analysis" or "Preliminary Investigation." This work often
+becomes an important part of the supplementary materials.
 
-# Document data access in analysis/data/README.md
-```
+## What if the narrative changes?
 
-Include download instructions:
+That is expected. The Write as You Go approach makes changes easier because
+prose and code are together. When you change your analytical approach,
+update both the code and the surrounding text in one place.
 
-```r
-# analysis/scripts/00_download_data.R
-# Download large dataset from repository
-download.file(
-  "https://data.repository.org/dataset.csv",
-  "analysis/data/raw_data/large_dataset.csv"
-)
-```
+## Is this slower than separating analysis and writing?
 
-## Custom Docker Profiles
+Initially, yes. But the time saved during revision, during collaboration,
+and during the inevitable "what did I do six months ago?" moments more
+than compensates.
 
-For specialized analyses (geospatial, bioinformatics), use custom Docker profiles:
+## What about very long analyses?
 
-```bash
-# Geospatial analysis
-zzcollab --profile-name geospatial
+For analyses with many models or figures, consider splitting into multiple
+Rmd files that render to a single document. The `bookdown` package supports
+this workflow within the ZZCOLLAB structure.
 
-# Bioinformatics
-zzcollab --profile-name bioinformatics
+# Summary
 
-# Custom composition
-zzcollab -b rocker/r-ver --pkgs modeling
-```
+The Write as You Go approach treats manuscript writing as an integral part
+of data analysis, not a separate phase that follows it. By documenting
+research questions before coding, interpreting results immediately, and
+refactoring functions gradually, researchers create manuscripts that are
+simultaneously more reproducible and more readable.
 
-## Parallel Processing
-
-For computationally intensive analyses:
-
-```r
-# Use future package for parallel processing
-library(future)
-library(furrr)
-
-# Configure parallel backend
-plan(multisession, workers = 4)
-
-# Parallel computation
-results <- future_map(datasets, analyze_dataset)
-```
-
-## Continuous Integration
-
-Enable automated testing on every commit:
-
-```yaml
-# .github/workflows/analysis.yml
-name: Reproducibility Check
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build Docker
-        run: make docker-build
-      - name: Run tests
-        run: make docker-test
-      - name: Validate dependencies
-        run: make check-renv
-```
-
-# Progression to Manuscript or Package
-
-## Adding a Manuscript (Week 2+)
-
-When ready to write up results, simply add `analysis/report/report.Rmd`:
-
-```bash
-# Still in same project - no migration needed!
-# See vignette: "Scholarly Manuscript Development with ZZCOLLAB"
-```
-
-**No restructuring required** - the unified compendium serves both analysis and manuscript [@marwick2018].
-
-## Publishing as Blog Post
-
-Want to share your analysis as a blog post? ZZCOLLAB projects integrate with Quarto blogs:
-
-```bash
-# Run the blog setup script to create symlink structure
-modules/setup_symlinks.sh
-
-# See vignette: "Blog Post Development with ZZCOLLAB"
-```
-
-The setup script creates a dual-symlink structure that lets Quarto find your `index.qmd` while you work in the familiar `analysis/report/` directory.
-
-## Converting to R Package (Month 3+)
-
-When ready to share as a package, add package infrastructure:
-
-```bash
-# Still in same project - no migration needed!
-# See vignette: "R Package Development with ZZCOLLAB"
-```
-
-**No migration required** - add documentation and submit to CRAN [@wickham2015].
-
-# Best Practices Summary
-
-Following reproducible research best practices [@wilson2017; @stodden2018]:
-
-## Data Management
-✅ **Raw data is read-only** - never modify `analysis/data/raw_data/`
-✅ **Document data provenance** - source, collection, quality issues
-✅ **Version control derived data** - include processing lineage
-✅ **Test data quality** - validate assumptions with unit tests
-
-## Code Organization
-✅ **Scripts are numbered** - execution order is clear
-✅ **Functions are documented** - roxygen2 format
-✅ **Functions are tested** - >90% test coverage for core logic
-✅ **Dependencies are explicit** - renv.lock captures exact versions
-
-## Reproducibility
-✅ **Computational environment controlled** - Docker + renv.lock
-✅ **R session configured** - .Rprofile version controlled
-✅ **Validation automated** - CI/CD runs tests on every commit
-✅ **Version control everything** - git tracks all changes
-
-## Collaboration
-✅ **Code is readable** - clear variable names, comments
-✅ **Commits are atomic** - one logical change per commit
-✅ **Changes are documented** - descriptive commit messages
-✅ **Tests prevent regressions** - new code doesn't break existing
+ZZCOLLAB's unified research compendium structure supports this workflow
+by providing a single project organization that serves from initial
+exploration through publication. The manuscript file (`analysis/report/
+report.Rmd`) becomes the primary workspace, with extracted functions
+in `R/` and supporting data in `analysis/data/`.
 
 # References
 
-Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging Data Analytical Work Reproducibly Using R (and Friends). *The American Statistician*, 72(1), 80-88.
+Horst, A. M., Hill, A. P., & Gorman, K. B. (2020). palmerpenguins: Palmer
+Archipelago (Antarctica) penguin data. R package version 0.1.0.
 
-Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal, T. K. (2017). Good enough practices in scientific computing. *PLOS Computational Biology*, 13(6), e1005510.
+Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging Data Analytical
+Work Reproducibly Using R (and Friends). *The American Statistician*,
+72(1), 80-88.
 
-Stodden, V., Seiler, J., & Ma, Z. (2018). An empirical analysis of journal policy effectiveness for computational reproducibility. *Proceedings of the National Academy of Sciences*, 115(11), 2584-2589.
+Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal,
+T. K. (2017). Good enough practices in scientific computing. *PLOS
+Computational Biology*, 13(6), e1005510.
 
-Ram, K. (2013). Git can facilitate greater reproducibility and increased transparency in science. *Source Code for Biology and Medicine*, 8(1), 7.
+# Companion Files
 
-Bryan, J. (2018). Excuse me, do you have a moment to talk about version control? *The American Statistician*, 72(1), 20-27.
+The following files are extracted from this vignette and available in
+`vignettes/workflow-data-analysis/`:
 
-Wickham, H. (2015). *R Packages: Organize, Test, Document, and Share Your Code*. O'Reilly Media.
-
-Horst, A. M., Hill, A. P., & Gorman, K. B. (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0.
-
-# Additional Resources
-
-- ZZCOLLAB Documentation: `docs/DEVELOPMENT.md`
-- Testing Guide: `docs/TESTING_GUIDE.md`
-- Configuration Guide: `docs/CONFIGURATION.md`
-- Docker Profiles: `docs/VARIANTS.md`
-- Marwick et al. (2018) rrtools: https://github.com/benmarwick/rrtools
+- `report.Rmd` - Complete manuscript template
+- `R/allometry.R` - Extracted allometry functions
+- `tests/testthat/test-allometry.R` - Unit tests
+- `analysis/data/README.md` - Data documentation template
