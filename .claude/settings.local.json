@@ -15,7 +15,10 @@
       "Bash(wc -l echo \"Uses of process substitution (efficient)\")",
       "Bash(gh run view:*)",
       "Bash(gh run list:*)",
-      "Bash(/Users/zenn/bin/check-ci-status.sh:*)"
+      "Bash(/Users/zenn/bin/check-ci-status.sh:*)",
+      "Bash(source:*)",
+      "Bash(load_config)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

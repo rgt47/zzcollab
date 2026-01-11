@@ -86,8 +86,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 
     # TinyTeX installation (if missing)
     if [[ "$has_tinytex" == "false" ]]; then
-        cmds+="# Install tinytex for PDF output (wget required by tinytex installer)
-RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/* \\
+        cmds+="# Install tinytex for PDF output (wget + perl modules required by TexLive installer)
+RUN apt-get update && apt-get install -y --no-install-recommends wget perl && rm -rf /var/lib/apt/lists/* \\
     && R -e \"install.packages('tinytex')\" && R -e \"tinytex::install_tinytex()\"
 
 "
@@ -472,6 +472,9 @@ generate_dockerfile() {
 
     log_info "Generating Dockerfile..."
 
+    # Load config to get profile settings
+    load_config 2>/dev/null || true
+
     if [[ -z "$r_version" ]]; then
         # Check if we'll trigger the wizard (no renv.lock and interactive)
         if [[ ! -f "renv.lock" ]] && [[ -t 0 ]]; then
@@ -482,12 +485,13 @@ generate_dockerfile() {
         if [[ "$triggered_wizard" == "true" ]]; then
             ZZCOLLAB_BUILD_AFTER_SETUP="true"
             load_config 2>/dev/null || true
-            base_image=$(get_profile_base_image "${CONFIG_PROFILE_NAME:-minimal}")
         fi
     fi
 
-    # Default base image if still not set
-    [[ -z "$base_image" ]] && base_image="rocker/r-ver"
+    # Use profile from config if base_image not explicitly set
+    if [[ -z "$base_image" ]]; then
+        base_image=$(get_profile_base_image "${CONFIG_PROFILE_NAME:-minimal}")
+    fi
 
     log_info "  Base image: ${base_image}:${r_version}"
 
