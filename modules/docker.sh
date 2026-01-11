@@ -86,8 +86,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 
     # TinyTeX installation (if missing)
     if [[ "$has_tinytex" == "false" ]]; then
-        cmds+="# Install tinytex for PDF output
-RUN R -e \"install.packages('tinytex')\" && R -e \"tinytex::install_tinytex()\"
+        cmds+="# Install tinytex for PDF output (wget required by tinytex installer)
+RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/* \\
+    && R -e \"install.packages('tinytex')\" && R -e \"tinytex::install_tinytex()\"
 
 "
     fi
