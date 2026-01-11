@@ -133,6 +133,56 @@ yaml_set_array() {
 }
 
 #=============================================================================
+# INPUT VALIDATION HELPERS
+#=============================================================================
+
+# Validate email format
+validate_email() {
+    local email="$1"
+    [[ -z "$email" ]] && return 0  # Empty is OK (optional)
+    [[ "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]
+}
+
+# Validate ORCID format (0000-0000-0000-0000)
+validate_orcid() {
+    local orcid="$1"
+    [[ -z "$orcid" ]] && return 0  # Empty is OK (optional)
+    [[ "$orcid" =~ ^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$ ]]
+}
+
+# Validate R version format (X.Y.Z)
+validate_r_version() {
+    local version="$1"
+    [[ -z "$version" ]] && return 0  # Empty is OK
+    [[ "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
+}
+
+# Validate positive integer
+validate_positive_int() {
+    local num="$1"
+    [[ -z "$num" ]] && return 0  # Empty is OK
+    [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -gt 0 ]]
+}
+
+# Validate percentage (0-100)
+validate_percentage() {
+    local num="$1"
+    [[ -z "$num" ]] && return 0  # Empty is OK
+    [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 0 ]] && [[ "$num" -le 100 ]]
+}
+
+# Validate GitHub account exists (requires gh CLI)
+validate_github_account() {
+    local account="$1"
+    [[ -z "$account" ]] && return 0  # Empty is OK (optional)
+    if command -v gh &>/dev/null; then
+        gh api "users/$account" &>/dev/null
+        return $?
+    fi
+    return 0  # Skip validation if gh not available
+}
+
+#=============================================================================
 # INTERACTIVE INPUT HELPERS
 #=============================================================================
 
@@ -175,6 +225,96 @@ prompt_input() {
     return 0
 }
 
+# Prompt for validated input with retry
+# Usage: prompt_validated "Prompt" "default" result_var validator_func "error_message"
+prompt_validated() {
+    local prompt="$1"
+    local default="$2"
+    local -n result_ref="$3"
+    local validator="$4"
+    local error_msg="${5:-Invalid input}"
+    local input
+
+    while true; do
+        if [[ -n "$default" ]]; then
+            printf "%s [%s]: " "$prompt" "$default"
+        else
+            printf "%s: " "$prompt"
+        fi
+
+        read -r input || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
+
+        if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+            INTERACTIVE_CANCELLED=true
+            return 1
+        fi
+
+        input="${input:-$default}"
+
+        # Run validator function
+        if $validator "$input"; then
+            result_ref="$input"
+            return 0
+        else
+            echo "  $error_msg"
+        fi
+    done
+}
+
+# Prompt for GitHub account with existence check
+prompt_github_account() {
+    local prompt="$1"
+    local default="$2"
+    local -n result_ref="$3"
+    local input
+
+    while true; do
+        if [[ -n "$default" ]]; then
+            printf "%s [%s]: " "$prompt" "$default"
+        else
+            printf "%s: " "$prompt"
+        fi
+
+        read -r input || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
+
+        if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+            INTERACTIVE_CANCELLED=true
+            return 1
+        fi
+
+        input="${input:-$default}"
+
+        # Empty is OK
+        if [[ -z "$input" ]]; then
+            result_ref=""
+            return 0
+        fi
+
+        # Check if account exists
+        if command -v gh &>/dev/null; then
+            printf "  Checking GitHub account..."
+            if gh api "users/$input" &>/dev/null; then
+                echo " OK"
+                result_ref="$input"
+                return 0
+            else
+                echo " not found"
+                echo "  Account '$input' not found on GitHub. Please check the username."
+            fi
+        else
+            # gh not available, accept without validation
+            result_ref="$input"
+            return 0
+        fi
+    done
+}
+
 # Prompt for yes/no with default
 # Usage: prompt_yesno "Question" "y" result_var
 prompt_yesno() {
@@ -213,20 +353,29 @@ prompt_select() {
     local -n result_ref="$4"
     local input
 
-    printf "%s (%s) [%s]: " "$prompt" "$options" "$default"
+    while true; do
+        printf "%s (%s) [%s]: " "$prompt" "$options" "$default"
 
-    read -r input || {
-        INTERACTIVE_CANCELLED=true
-        return 1
-    }
+        read -r input || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
 
-    if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-        INTERACTIVE_CANCELLED=true
-        return 1
-    fi
+        if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+            INTERACTIVE_CANCELLED=true
+            return 1
+        fi
 
-    result_ref="${input:-$default}"
-    return 0
+        input="${input:-$default}"
+
+        # Validate input is one of the options
+        if [[ ",$options," == *",$input,"* ]]; then
+            result_ref="$input"
+            return 0
+        else
+            echo "  Invalid choice. Please select from: $options"
+        fi
+    done
 }
 
 # Print section header
@@ -628,10 +777,12 @@ config_interactive_setup() {
     prompt_input "Full name" "${CONFIG_AUTHOR_NAME:-}" val || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.name" "$val"
 
-    prompt_input "Email address" "${CONFIG_AUTHOR_EMAIL:-}" val || { _save_and_exit; return 0; }
+    prompt_validated "Email address" "${CONFIG_AUTHOR_EMAIL:-}" val validate_email \
+        "Invalid email format. Example: user@example.com" || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.email" "$val"
 
-    prompt_input "ORCID (optional, e.g., 0000-0002-1234-5678)" "${CONFIG_AUTHOR_ORCID:-}" val || { _save_and_exit; return 0; }
+    prompt_validated "ORCID (optional, e.g., 0000-0002-1234-5678)" "${CONFIG_AUTHOR_ORCID:-}" val validate_orcid \
+        "Invalid ORCID format. Expected: 0000-0000-0000-0000" || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.orcid" "$val"
 
     prompt_input "Affiliation (short)" "${CONFIG_AUTHOR_AFFILIATION:-}" val || { _save_and_exit; return 0; }
