@@ -810,12 +810,14 @@ config_set() {
         fi
     fi
 
-    # Handle dotted keys (e.g., author.name)
+    # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
+    key="${key//-/_}"
+
+    # Handle dotted keys (e.g., author.name) vs simple keys (e.g., profile_name)
     if [[ "$key" == *"."* ]]; then
         yaml_set "$file" "$key" "$value" && log_success "Set $key = $value"
     else
-        # Legacy: put in defaults section
-        key="${key//-/_}"
+        # Simple keys go in defaults section
         yaml_set "$file" "defaults.$key" "$value" && log_success "Set defaults.$key = $value"
     fi
 }
@@ -823,11 +825,13 @@ config_set() {
 config_get() {
     local key="$1" local_only="${2:-false}"
 
+    # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
+    key="${key//-/_}"
+
     if [[ "$local_only" == "true" ]]; then
         if [[ "$key" == *"."* ]]; then
             yaml_get "$CONFIG_PROJECT" "$key"
         else
-            key="${key//-/_}"
             yaml_get "$CONFIG_PROJECT" "defaults.$key"
         fi
     else
