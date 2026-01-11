@@ -474,7 +474,6 @@ generate_dockerfile() {
 
     # Load config to get profile settings
     load_config 2>/dev/null || true
-    log_info "DEBUG: CONFIG_PROFILE_NAME=[$CONFIG_PROFILE_NAME]"
 
     if [[ -z "$r_version" ]]; then
         # Check if we'll trigger the wizard (no renv.lock and interactive)
@@ -490,12 +489,8 @@ generate_dockerfile() {
     fi
 
     # Use profile from config if base_image not explicitly set
-    log_info "DEBUG: base_image before check=[$base_image]"
     if [[ -z "$base_image" ]]; then
         base_image=$(get_profile_base_image "${CONFIG_PROFILE_NAME:-minimal}")
-        log_info "DEBUG: base_image after get_profile=[$base_image]"
-    else
-        log_info "DEBUG: base_image was already set, skipping profile lookup"
     fi
 
     log_info "  Base image: ${base_image}:${r_version}"

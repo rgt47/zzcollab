@@ -816,7 +816,8 @@ config_interactive_setup() {
     echo "Technical defaults for the DESCRIPTION file."
     echo ""
 
-    prompt_input "Minimum R version required" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val || { _save_and_exit; return 0; }
+    prompt_validated "Minimum R version required" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val validate_r_version \
+        "Invalid R version format. Expected: X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)" || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "r_package.min_r_version" "$val"
 
     prompt_select "testthat edition" "2,3" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-3}" val || { _save_and_exit; return 0; }
@@ -832,7 +833,8 @@ config_interactive_setup() {
     echo "These preferences guide code generation and linting."
     echo ""
 
-    prompt_input "Line length for wrapping" "${CONFIG_STYLE_LINE_LENGTH:-78}" val || { _save_and_exit; return 0; }
+    prompt_validated "Line length for wrapping" "${CONFIG_STYLE_LINE_LENGTH:-78}" val validate_positive_int \
+        "Invalid value. Must be a positive integer (e.g., 78, 80, 120)" || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "style.line_length" "$val"
 
     prompt_yesno "Use native pipe |> (requires R >= 4.1)" "${CONFIG_STYLE_USE_NATIVE_PIPE:-true}" val || { _save_and_exit; return 0; }
@@ -869,7 +871,7 @@ config_interactive_setup() {
     echo "Settings for GitHub repository creation."
     echo ""
 
-    prompt_input "GitHub username" "${CONFIG_GITHUB_ACCOUNT:-}" val || { _save_and_exit; return 0; }
+    prompt_github_account "GitHub username" "${CONFIG_GITHUB_ACCOUNT:-}" val || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && {
         yaml_set "$CONFIG_USER" "github.account" "$val"
         yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
@@ -899,7 +901,8 @@ config_interactive_setup() {
         yaml_set "$CONFIG_USER" "cicd.run_coverage" "$val"
 
         if [[ "$val" == "true" ]]; then
-            prompt_input "Coverage threshold (%)" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}" val || { _save_and_exit; return 0; }
+            prompt_validated "Coverage threshold (%)" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}" val validate_percentage \
+                "Invalid value. Must be 0-100" || { _save_and_exit; return 0; }
             yaml_set "$CONFIG_USER" "cicd.coverage_threshold" "$val"
         fi
     fi
