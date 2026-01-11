@@ -595,7 +595,7 @@ mr test                    # make test from anywhere
 r                          # Jump to project root
 s                          # Jump to analysis/scripts/
 p                          # Jump to analysis/report/
-d                          # Jump to analysis/data/
+t                          # Jump to analysis/data/
 w                          # Jump to analysis/data/raw_data/
 y                          # Jump to analysis/data/derived_data/
 nav                        # List all shortcuts

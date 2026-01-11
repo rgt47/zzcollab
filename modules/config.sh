@@ -202,7 +202,7 @@ _interactive_cleanup() {
 prompt_input() {
     local prompt="$1"
     local default="$2"
-    local -n result_ref="$3"
+    local result_var="$3"
     local input
 
     if [[ -n "$default" ]]; then
@@ -221,7 +221,7 @@ prompt_input() {
         return 1
     fi
 
-    result_ref="${input:-$default}"
+    eval "$result_var=\"\${input:-\$default}\""
     return 0
 }
 
@@ -230,7 +230,7 @@ prompt_input() {
 prompt_validated() {
     local prompt="$1"
     local default="$2"
-    local -n result_ref="$3"
+    local result_var="$3"
     local validator="$4"
     local error_msg="${5:-Invalid input}"
     local input
@@ -256,7 +256,7 @@ prompt_validated() {
 
         # Run validator function
         if $validator "$input"; then
-            result_ref="$input"
+            eval "$result_var=\"\$input\""
             return 0
         else
             echo "  $error_msg"
@@ -268,7 +268,7 @@ prompt_validated() {
 prompt_github_account() {
     local prompt="$1"
     local default="$2"
-    local -n result_ref="$3"
+    local result_var="$3"
     local input
 
     while true; do
@@ -292,7 +292,7 @@ prompt_github_account() {
 
         # Empty is OK
         if [[ -z "$input" ]]; then
-            result_ref=""
+            eval "$result_var=\"\""
             return 0
         fi
 
@@ -301,7 +301,7 @@ prompt_github_account() {
             printf "  Checking GitHub account..."
             if gh api "users/$input" &>/dev/null; then
                 echo " OK"
-                result_ref="$input"
+                eval "$result_var=\"\$input\""
                 return 0
             else
                 echo " not found"
@@ -309,7 +309,7 @@ prompt_github_account() {
             fi
         else
             # gh not available, accept without validation
-            result_ref="$input"
+            eval "$result_var=\"\$input\""
             return 0
         fi
     done
@@ -320,7 +320,7 @@ prompt_github_account() {
 prompt_yesno() {
     local prompt="$1"
     local default="$2"
-    local -n result_ref="$3"
+    local result_var="$3"
     local input
     local hint="y/n"
 
@@ -340,7 +340,11 @@ prompt_yesno() {
     fi
 
     input="${input:-$default}"
-    [[ "$input" =~ ^[Yy] ]] && result_ref="true" || result_ref="false"
+    if [[ "$input" =~ ^[Yy] ]]; then
+        eval "$result_var=\"true\""
+    else
+        eval "$result_var=\"false\""
+    fi
     return 0
 }
 
@@ -350,7 +354,7 @@ prompt_select() {
     local prompt="$1"
     local options="$2"
     local default="$3"
-    local -n result_ref="$4"
+    local result_var="$4"
     local input
 
     while true; do
@@ -370,7 +374,7 @@ prompt_select() {
 
         # Validate input is one of the options
         if [[ ",$options," == *",$input,"* ]]; then
-            result_ref="$input"
+            eval "$result_var=\"\$input\""
             return 0
         else
             echo "  Invalid choice. Please select from: $options"

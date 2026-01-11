@@ -36,12 +36,11 @@ _zzcollab_root() {
 
 # Navigation functions
 a() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || echo "Not in ZZCOLLAB project"; }
-d() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/data" || echo "Not in ZZCOLLAB project"; }
+t() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/data" || echo "Not in ZZCOLLAB project"; }
 w() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/data/raw_data" || echo "Not in ZZCOLLAB project"; }
 y() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/data/derived_data" || echo "Not in ZZCOLLAB project"; }
 n() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis" || echo "Not in ZZCOLLAB project"; }
 f() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/figures" || echo "Not in ZZCOLLAB project"; }
-t() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/tables" || echo "Not in ZZCOLLAB project"; }
 s() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/scripts" || echo "Not in ZZCOLLAB project"; }
 p() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root/analysis/report" || echo "Not in ZZCOLLAB project"; }
 r() { local root=$(_zzcollab_root); [[ -n "$root" ]] && cd "$root" || echo "Not in ZZCOLLAB project"; }
@@ -69,13 +68,12 @@ nav() {
     echo "ZZCOLLAB Navigation Shortcuts:"
     echo "  r → project root"
     echo "  a/n → analysis/"
-    echo "  d → analysis/data/"
+    echo "  t → analysis/data/"
     echo "  w → analysis/data/raw_data/"
     echo "  y → analysis/data/derived_data/"
     echo "  s → analysis/scripts/"
     echo "  p → analysis/report/"
     echo "  f → analysis/figures/"
-    echo "  t → analysis/tables/"
     echo "  m → man/"
     echo "  e → tests/"
     echo "  o → docs/"
@@ -153,7 +151,7 @@ case "$1" in
         echo ""
         echo "After installation, you can use:"
         echo "  r   → Jump to project root"
-        echo "  d   → Jump to analysis/data/"
+        echo "  t   → Jump to analysis/data/"
         echo "  w   → Jump to analysis/data/raw_data/"
         echo "  y   → Jump to analysis/data/derived_data/"
         echo "  s   → Jump to analysis/scripts/"
