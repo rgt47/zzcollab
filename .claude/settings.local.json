@@ -18,7 +18,8 @@
       "Bash(/Users/zenn/bin/check-ci-status.sh:*)",
       "Bash(source:*)",
       "Bash(load_config)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(bash -c:*)"
     ],
     "deny": [],
     "ask": []

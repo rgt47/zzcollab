@@ -291,6 +291,13 @@ cmd_docker() {
         # Save profile to config
         require_module "config"
         config_set "profile-name" "$profile" 2>/dev/null || true
+    else
+        # No profile specified via CLI - use config default
+        load_config 2>/dev/null || true
+        if [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
+            BASE_IMAGE=$(get_profile_base_image "$CONFIG_PROFILE_NAME")
+            export BASE_IMAGE
+        fi
     fi
 
     # Generate Dockerfile + renv.lock (wizard handles new workspaces)
