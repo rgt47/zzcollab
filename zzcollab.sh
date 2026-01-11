@@ -180,9 +180,49 @@ cmd_init() {
     readonly PKG_NAME
     export PKG_NAME
 
-    log_info "Creating project: $PKG_NAME"
+    # Load config and show defaults
+    load_config 2>/dev/null || true
+    local profile_name="${CONFIG_PROFILE_NAME:-minimal}"
+    local base_image
+    base_image=$(get_profile_base_image "$profile_name")
+    local r_version="${CONFIG_R_VERSION:-$(get_cran_r_version 2>/dev/null || echo "4.5.2")}"
+    local github_account="${CONFIG_GITHUB_ACCOUNT:-<not set>}"
 
-    # If a profile was specified, derive the base image from it
+    echo ""
+    echo "═══════════════════════════════════════════════════════════"
+    echo "  Initializing: $PKG_NAME"
+    echo "═══════════════════════════════════════════════════════════"
+    echo ""
+    echo "  Current defaults (from ~/.zzcollab/config.yaml):"
+    echo "    Profile:    $profile_name ($base_image)"
+    echo "    R version:  $r_version"
+    echo "    GitHub:     $github_account"
+    echo ""
+
+    if [[ -t 0 ]]; then
+        local change_settings
+        read -r -p "  Change settings? [y/N]: " change_settings
+        if [[ "$change_settings" =~ ^[Yy]$ ]]; then
+            echo ""
+            echo "  Run: zzc config set <key> <value>"
+            echo ""
+            echo "  Common keys:"
+            echo "    profile-name       Docker profile (minimal, analysis, publishing)"
+            echo "    r-version          R version (e.g., 4.5.2)"
+            echo "    github-account     GitHub username"
+            echo "    author.name        Your name (for DESCRIPTION)"
+            echo "    author.email       Your email"
+            echo "    license.type       License (GPL-3, MIT, Apache-2.0)"
+            echo ""
+            echo "  Run 'zzc config list' to see all settings"
+            echo ""
+            return 0
+        fi
+    fi
+
+    echo ""
+
+    # If a profile was specified via CLI, derive the base image from it
     if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] && [[ -n "${PROFILE_NAME:-}" ]]; then
         BASE_IMAGE=$(get_profile_base_image "$PROFILE_NAME")
         export BASE_IMAGE
