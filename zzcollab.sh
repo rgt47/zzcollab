@@ -180,43 +180,53 @@ cmd_init() {
     readonly PKG_NAME
     export PKG_NAME
 
-    # Load config and show defaults
+    # Load config and show all defaults
     load_config 2>/dev/null || true
     local profile_name="${CONFIG_PROFILE_NAME:-minimal}"
     local base_image
     base_image=$(get_profile_base_image "$profile_name")
     local r_version="${CONFIG_R_VERSION:-$(get_cran_r_version 2>/dev/null || echo "4.5.2")}"
-    local github_account="${CONFIG_GITHUB_ACCOUNT:-<not set>}"
 
     echo ""
     echo "═══════════════════════════════════════════════════════════"
     echo "  Initializing: $PKG_NAME"
     echo "═══════════════════════════════════════════════════════════"
     echo ""
-    echo "  Current defaults (from ~/.zzcollab/config.yaml):"
-    echo "    Profile:    $profile_name ($base_image)"
-    echo "    R version:  $r_version"
-    echo "    GitHub:     $github_account"
+    echo "  Current settings (from ~/.zzcollab/config.yaml):"
+    echo ""
+    echo "  Docker:"
+    printf "    %-20s %s\n" "profile-name:" "$profile_name ($base_image)"
+    printf "    %-20s %s\n" "r-version:" "$r_version"
+    echo ""
+    echo "  Author:"
+    printf "    %-20s %s\n" "author-name:" "${CONFIG_AUTHOR_NAME:-<not set>}"
+    printf "    %-20s %s\n" "author-email:" "${CONFIG_AUTHOR_EMAIL:-<not set>}"
+    printf "    %-20s %s\n" "author-orcid:" "${CONFIG_AUTHOR_ORCID:-<not set>}"
+    printf "    %-20s %s\n" "author-affiliation:" "${CONFIG_AUTHOR_AFFILIATION:-<not set>}"
+    echo ""
+    echo "  License:"
+    printf "    %-20s %s\n" "license-type:" "${CONFIG_LICENSE_TYPE:-GPL-3}"
+    printf "    %-20s %s\n" "license-year:" "${CONFIG_LICENSE_YEAR:-$(date +%Y)}"
+    echo ""
+    echo "  GitHub:"
+    printf "    %-20s %s\n" "github-account:" "${CONFIG_GITHUB_ACCOUNT:-<not set>}"
+    echo ""
+    echo "  ─────────────────────────────────────────────────────────"
+    echo "  To manually change settings:"
+    echo "    zzc config set KEY VALUE         Save to ~/.zzcollab/config.yaml (user default)"
+    echo "    zzc config set-local KEY VALUE   Save to ./zzcollab.yaml (this project only)"
     echo ""
 
     if [[ -t 0 ]]; then
         local change_settings
-        read -r -p "  Change settings? [y/N]: " change_settings
+        read -r -p "  Change settings now? [y/N]: " change_settings
         if [[ "$change_settings" =~ ^[Yy]$ ]]; then
             echo ""
-            echo "  Run: zzc config set <key> <value>"
-            echo ""
-            echo "  Common keys:"
-            echo "    profile-name       Docker profile (minimal, analysis, publishing)"
-            echo "    r-version          R version (e.g., 4.5.2)"
-            echo "    github-account     GitHub username"
-            echo "    author-name        Your name (for DESCRIPTION)"
-            echo "    author-email       Your email"
-            echo "    license-type       License (GPL-3, MIT, Apache-2.0)"
-            echo ""
-            echo "  Run 'zzc config list' to see all settings"
-            echo ""
-            return 0
+            config_interactive_setup
+            # Reload config after interactive setup
+            load_config 2>/dev/null || true
+            profile_name="${CONFIG_PROFILE_NAME:-minimal}"
+            base_image=$(get_profile_base_image "$profile_name")
         fi
     fi
 
