@@ -596,18 +596,21 @@ config_init() {
     mkdir -p "$CONFIG_USER_DIR"
 
     if [[ -f "$CONFIG_USER" ]]; then
-        log_warn "Config exists: $CONFIG_USER"
-        read -p "Overwrite? [y/N] " -n 1 -r; echo
-        [[ $REPLY =~ ^[Yy]$ ]] || {
-            if [[ "$interactive" == "true" ]]; then
-                log_info "Loading existing configuration for review..."
-                load_config
-            else
-                return 0
-            fi
-        }
+        if [[ "$interactive" == "true" ]]; then
+            # Interactive mode: edit existing config, don't overwrite
+            log_info "Editing existing configuration: $CONFIG_USER"
+            load_config
+            config_interactive_setup
+            return 0
+        else
+            # Non-interactive: ask before overwriting
+            log_warn "Config exists: $CONFIG_USER"
+            read -p "Overwrite? [y/N] " -n 1 -r; echo
+            [[ $REPLY =~ ^[Yy]$ ]] || return 0
+        fi
     fi
 
+    # Create new config (only reached if file doesn't exist or user chose to overwrite)
     _create_default_config
 
     if [[ "$interactive" == "true" ]]; then
@@ -730,7 +733,7 @@ defaults:
   team_name: ""
   github_account: ""
   dockerhub_account: ""
-  profile_name: "ubuntu_standard_minimal"
+  profile_name: "analysis"
   libs_bundle: "minimal"
   pkgs_bundle: "minimal"
   r_version: ""
@@ -752,174 +755,45 @@ config_interactive_setup() {
     # Set up trap for Ctrl+C
     trap '_interactive_cleanup; return 0' INT
 
-    clear
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════════════════════╗"
-    echo "║                    ZZCOLLAB Configuration Setup                          ║"
-    echo "╠══════════════════════════════════════════════════════════════════════════╣"
-    echo "║  This wizard will configure your R package development environment.     ║"
-    echo "║                                                                          ║"
-    echo "║  Press Enter to accept defaults shown in [brackets].                     ║"
-    echo "║  Type 'q' or press Ctrl+C at any time to exit and save progress.        ║"
-    echo "╚══════════════════════════════════════════════════════════════════════════╝"
-    echo ""
-
     local val
     local current_year
+    local choice
     current_year=$(date +%Y)
 
     # Load existing values for defaults
     load_config
 
-    #-------------------------------------------------------------------------
-    # SECTION 1: Author Information
-    #-------------------------------------------------------------------------
-    print_section "1/8  Author Information"
-    echo "This information appears in DESCRIPTION, reports, and git commits."
+    clear
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════════════════╗"
+    echo "║                    ZZCOLLAB Configuration Setup                          ║"
+    echo "╠══════════════════════════════════════════════════════════════════════════╣"
+    echo "║  Press Enter to accept defaults shown in [brackets].                     ║"
+    echo "║  Type 'q' or press Ctrl-D at any time to exit and save progress.        ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════╝"
     echo ""
 
-    prompt_input "Full name" "${CONFIG_AUTHOR_NAME:-}" val || { _save_and_exit; return 0; }
-    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.name" "$val"
-
-    prompt_validated "Email address" "${CONFIG_AUTHOR_EMAIL:-}" val validate_email \
-        "Invalid email format. Example: user@example.com" || { _save_and_exit; return 0; }
-    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.email" "$val"
-
-    prompt_validated "ORCID (optional, e.g., 0000-0002-1234-5678)" "${CONFIG_AUTHOR_ORCID:-}" val validate_orcid \
-        "Invalid ORCID format. Expected: 0000-0000-0000-0000" || { _save_and_exit; return 0; }
-    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.orcid" "$val"
-
-    prompt_input "Affiliation (short)" "${CONFIG_AUTHOR_AFFILIATION:-}" val || { _save_and_exit; return 0; }
-    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation" "$val"
-
-    prompt_input "Affiliation (full, for papers)" "${CONFIG_AUTHOR_AFFILIATION_FULL:-$val}" val || { _save_and_exit; return 0; }
-    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation_full" "$val"
-
-    #-------------------------------------------------------------------------
-    # SECTION 2: License
-    #-------------------------------------------------------------------------
-    print_section "2/8  License Preferences"
-    echo "Choose a default license for new R packages."
+    # Show menu
+    echo "  What would you like to do?"
     echo ""
-    echo "  GPL-3      - Copyleft, derivatives must be open source"
-    echo "  MIT        - Permissive, minimal restrictions"
-    echo "  Apache-2.0 - Permissive with patent protection"
-    echo "  CC-BY-4.0  - For data and documentation"
+    echo "    1) Complete missing values (recommended for first-time setup)"
+    echo "    2) Change existing values"
+    echo "    3) Edit advanced settings (R Package, Code Style, CI/CD)"
+    echo "    4) Full setup (all sections)"
+    echo "    q) Exit"
     echo ""
+    printf "  Choice [1]: "
+    read -r choice || { _save_and_exit; return 0; }
+    choice="${choice:-1}"
 
-    prompt_select "Default license" "GPL-3,MIT,Apache-2.0,CC-BY-4.0" "${CONFIG_LICENSE_TYPE:-GPL-3}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "license.type" "$val"
-
-    prompt_input "Copyright year" "${CONFIG_LICENSE_YEAR:-$current_year}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "license.year" "$val"
-
-    #-------------------------------------------------------------------------
-    # SECTION 3: R Package Defaults
-    #-------------------------------------------------------------------------
-    print_section "3/8  R Package Defaults"
-    echo "Technical defaults for the DESCRIPTION file."
-    echo ""
-
-    prompt_validated "Minimum R version required" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val validate_r_version \
-        "Invalid R version format. Expected: X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)" || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "r_package.min_r_version" "$val"
-
-    prompt_select "testthat edition" "2,3" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-3}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "r_package.testthat_edition" "$val"
-
-    prompt_select "Vignette builder" "knitr,quarto" "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "r_package.vignette_builder" "$val"
-
-    #-------------------------------------------------------------------------
-    # SECTION 4: Code Style
-    #-------------------------------------------------------------------------
-    print_section "4/8  Code Style Preferences"
-    echo "These preferences guide code generation and linting."
-    echo ""
-
-    prompt_validated "Line length for wrapping" "${CONFIG_STYLE_LINE_LENGTH:-78}" val validate_positive_int \
-        "Invalid value. Must be a positive integer (e.g., 78, 80, 120)" || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "style.line_length" "$val"
-
-    prompt_yesno "Use native pipe |> (requires R >= 4.1)" "${CONFIG_STYLE_USE_NATIVE_PIPE:-true}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "style.use_native_pipe" "$val"
-
-    prompt_select "Assignment operator" "arrow,equals" "${CONFIG_STYLE_ASSIGNMENT:-arrow}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "style.assignment" "$val"
-
-    #-------------------------------------------------------------------------
-    # SECTION 5: Docker
-    #-------------------------------------------------------------------------
-    print_section "5/8  Docker Preferences"
-    echo "Default Docker configuration for reproducible environments."
-    echo ""
-    echo "Available profiles:"
-    echo "  minimal      - Essential R development (~650MB)"
-    echo "  rstudio      - RStudio Server IDE (~980MB)"
-    echo "  analysis     - Data analysis with tidyverse (~1.2GB) [RECOMMENDED]"
-    echo "  modeling     - Machine learning with tidymodels (~1.5GB)"
-    echo "  publishing   - LaTeX/Quarto for manuscripts (~3GB)"
-    echo "  shiny        - Shiny web applications (~1.8GB)"
-    echo ""
-
-    prompt_select "Default profile" "minimal,rstudio,analysis,modeling,publishing,shiny" "${CONFIG_DOCKER_DEFAULT_PROFILE:-analysis}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "docker.default_profile" "$val"
-
-    prompt_select "Docker registry" "docker.io,ghcr.io" "${CONFIG_DOCKER_REGISTRY:-docker.io}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "docker.registry" "$val"
-
-    #-------------------------------------------------------------------------
-    # SECTION 6: GitHub
-    #-------------------------------------------------------------------------
-    print_section "6/8  GitHub Preferences"
-    echo "Settings for GitHub repository creation."
-    echo ""
-
-    prompt_github_account "GitHub username" "${CONFIG_GITHUB_ACCOUNT:-}" val || { _save_and_exit; return 0; }
-    [[ -n "$val" ]] && {
-        yaml_set "$CONFIG_USER" "github.account" "$val"
-        yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
-    }
-
-    prompt_select "Default repository visibility" "private,public" "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-private}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "github.default_visibility" "$val"
-
-    prompt_select "Default branch name" "main,master" "${CONFIG_GITHUB_DEFAULT_BRANCH:-main}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "github.default_branch" "$val"
-
-    #-------------------------------------------------------------------------
-    # SECTION 7: CI/CD
-    #-------------------------------------------------------------------------
-    print_section "7/8  CI/CD Preferences"
-    echo "Continuous integration settings for GitHub Actions."
-    echo ""
-
-    prompt_yesno "Enable GitHub Actions" "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-true}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "cicd.enable_github_actions" "$val"
-
-    if [[ "$val" == "true" ]]; then
-        prompt_input "R versions to test (comma-separated)" "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}" val || { _save_and_exit; return 0; }
-        yaml_set "$CONFIG_USER" "cicd.r_versions" "$val"
-
-        prompt_yesno "Run code coverage" "${CONFIG_CICD_RUN_COVERAGE:-true}" val || { _save_and_exit; return 0; }
-        yaml_set "$CONFIG_USER" "cicd.run_coverage" "$val"
-
-        if [[ "$val" == "true" ]]; then
-            prompt_validated "Coverage threshold (%)" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}" val validate_percentage \
-                "Invalid value. Must be 0-100" || { _save_and_exit; return 0; }
-            yaml_set "$CONFIG_USER" "cicd.coverage_threshold" "$val"
-        fi
-    fi
-
-    #-------------------------------------------------------------------------
-    # SECTION 8: Team Defaults
-    #-------------------------------------------------------------------------
-    print_section "8/8  Team Defaults"
-    echo "Settings for team collaboration."
-    echo ""
-
-    prompt_input "Default team name" "${CONFIG_TEAM_NAME:-}" val || { _save_and_exit; return 0; }
-    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "defaults.team_name" "$val"
+    case "$choice" in
+        1) _setup_missing_values ;;
+        2) _setup_change_existing ;;
+        3) _setup_advanced ;;
+        4) _setup_full ;;
+        q|Q) return 0 ;;
+        *) echo "Invalid choice"; return 1 ;;
+    esac
 
     # Reset trap
     trap - INT
@@ -939,6 +813,215 @@ config_interactive_setup() {
     echo "  zzcollab -c set KEY VALUE     # Change a setting"
     echo "  zzcollab -c get KEY           # Get a setting value"
     echo ""
+}
+
+# Setup only missing (empty) values - essential fields only
+_setup_missing_values() {
+    local val
+    local current_year
+    current_year=$(date +%Y)
+    local has_missing=false
+
+    print_section "Complete Missing Values"
+    echo "Only prompting for essential fields that are not yet set."
+    echo ""
+
+    # Author - essential fields
+    if [[ -z "${CONFIG_AUTHOR_NAME:-}" ]]; then
+        has_missing=true
+        prompt_input "Full name" "" val || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.name" "$val"
+    fi
+
+    if [[ -z "${CONFIG_AUTHOR_EMAIL:-}" ]]; then
+        has_missing=true
+        prompt_validated "Email address" "" val validate_email \
+            "Invalid email format. Example: user@example.com" || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.email" "$val"
+    fi
+
+    if [[ -z "${CONFIG_AUTHOR_AFFILIATION:-}" ]]; then
+        has_missing=true
+        prompt_input "Affiliation (short)" "" val || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation" "$val"
+    fi
+
+    # GitHub account
+    if [[ -z "${CONFIG_GITHUB_ACCOUNT:-}" ]]; then
+        has_missing=true
+        prompt_github_account "GitHub username" "" val || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && {
+            yaml_set "$CONFIG_USER" "github.account" "$val"
+            yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+        }
+    fi
+
+    if [[ "$has_missing" == "false" ]]; then
+        echo "  All essential fields are already set!"
+        echo ""
+        echo "  Use option 2 to change existing values, or"
+        echo "  option 3 to edit advanced settings."
+    fi
+}
+
+# Change existing values - essential fields
+_setup_change_existing() {
+    local val
+    local current_year
+    current_year=$(date +%Y)
+
+    #-------------------------------------------------------------------------
+    # Author Information
+    #-------------------------------------------------------------------------
+    print_section "Author Information"
+    echo "This information appears in DESCRIPTION, reports, and git commits."
+    echo ""
+
+    prompt_input "Full name" "${CONFIG_AUTHOR_NAME:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.name" "$val"
+
+    prompt_validated "Email address" "${CONFIG_AUTHOR_EMAIL:-}" val validate_email \
+        "Invalid email format. Example: user@example.com" || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.email" "$val"
+
+    prompt_validated "ORCID (optional)" "${CONFIG_AUTHOR_ORCID:-}" val validate_orcid \
+        "Invalid ORCID format. Expected: 0000-0000-0000-0000" || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.orcid" "$val"
+
+    prompt_input "Affiliation (short)" "${CONFIG_AUTHOR_AFFILIATION:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation" "$val"
+
+    prompt_input "Affiliation (full, for papers)" "${CONFIG_AUTHOR_AFFILIATION_FULL:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation_full" "$val"
+
+    #-------------------------------------------------------------------------
+    # License
+    #-------------------------------------------------------------------------
+    print_section "License Preferences"
+    echo "  GPL-3      - Copyleft, derivatives must be open source"
+    echo "  MIT        - Permissive, minimal restrictions"
+    echo "  Apache-2.0 - Permissive with patent protection"
+    echo "  CC-BY-4.0  - For data and documentation"
+    echo ""
+
+    prompt_select "Default license" "GPL-3,MIT,Apache-2.0,CC-BY-4.0" "${CONFIG_LICENSE_TYPE:-GPL-3}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "license.type" "$val"
+
+    prompt_input "Copyright year" "${CONFIG_LICENSE_YEAR:-$current_year}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "license.year" "$val"
+
+    #-------------------------------------------------------------------------
+    # Docker
+    #-------------------------------------------------------------------------
+    print_section "Docker Preferences"
+    echo "  minimal      - Essential R development (~650MB)"
+    echo "  rstudio      - RStudio Server IDE (~980MB)"
+    echo "  analysis     - Data analysis with tidyverse (~1.2GB) [RECOMMENDED]"
+    echo "  modeling     - Machine learning with tidymodels (~1.5GB)"
+    echo "  publishing   - LaTeX/Quarto for manuscripts (~3GB)"
+    echo "  shiny        - Shiny web applications (~1.8GB)"
+    echo ""
+
+    prompt_select "Default profile" "minimal,rstudio,analysis,modeling,publishing,shiny" "${CONFIG_PROFILE_NAME:-analysis}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "defaults.profile_name" "$val"
+    yaml_set "$CONFIG_USER" "docker.default_profile" "$val"
+
+    prompt_select "Docker registry" "docker.io,ghcr.io" "${CONFIG_DOCKER_REGISTRY:-docker.io}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "docker.registry" "$val"
+
+    #-------------------------------------------------------------------------
+    # GitHub
+    #-------------------------------------------------------------------------
+    print_section "GitHub Preferences"
+
+    prompt_github_account "GitHub username" "${CONFIG_GITHUB_ACCOUNT:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && {
+        yaml_set "$CONFIG_USER" "github.account" "$val"
+        yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+    }
+
+    prompt_select "Default repository visibility" "private,public" "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-private}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "github.default_visibility" "$val"
+
+    prompt_select "Default branch name" "main,master" "${CONFIG_GITHUB_DEFAULT_BRANCH:-main}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "github.default_branch" "$val"
+
+    #-------------------------------------------------------------------------
+    # Team
+    #-------------------------------------------------------------------------
+    print_section "Team Defaults"
+
+    prompt_input "Default team name" "${CONFIG_TEAM_NAME:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "defaults.team_name" "$val"
+}
+
+# Advanced settings only
+_setup_advanced() {
+    local val
+
+    #-------------------------------------------------------------------------
+    # R Package Defaults
+    #-------------------------------------------------------------------------
+    print_section "R Package Defaults (Advanced)"
+    echo "Technical defaults for the DESCRIPTION file."
+    echo ""
+
+    prompt_validated "Minimum R version required" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val validate_r_version \
+        "Invalid R version format. Expected: X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)" || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "r_package.min_r_version" "$val"
+
+    prompt_select "testthat edition" "2,3" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-3}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "r_package.testthat_edition" "$val"
+
+    prompt_select "Vignette builder" "knitr,quarto" "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "r_package.vignette_builder" "$val"
+
+    #-------------------------------------------------------------------------
+    # Code Style
+    #-------------------------------------------------------------------------
+    print_section "Code Style Preferences (Advanced)"
+    echo "These preferences guide code generation and linting."
+    echo ""
+
+    prompt_validated "Line length for wrapping" "${CONFIG_STYLE_LINE_LENGTH:-78}" val validate_positive_int \
+        "Invalid value. Must be a positive integer (e.g., 78, 80, 120)" || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "style.line_length" "$val"
+
+    prompt_yesno "Use native pipe |> (requires R >= 4.1)" "${CONFIG_STYLE_USE_NATIVE_PIPE:-true}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "style.use_native_pipe" "$val"
+
+    prompt_select "Assignment operator" "arrow,equals" "${CONFIG_STYLE_ASSIGNMENT:-arrow}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "style.assignment" "$val"
+
+    #-------------------------------------------------------------------------
+    # CI/CD
+    #-------------------------------------------------------------------------
+    print_section "CI/CD Preferences (Advanced)"
+    echo "Continuous integration settings for GitHub Actions."
+    echo ""
+
+    prompt_yesno "Enable GitHub Actions" "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-true}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "cicd.enable_github_actions" "$val"
+
+    if [[ "$val" == "true" ]]; then
+        prompt_input "R versions to test (comma-separated)" "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}" val || { _save_and_exit; return 0; }
+        yaml_set "$CONFIG_USER" "cicd.r_versions" "$val"
+
+        prompt_yesno "Run code coverage" "${CONFIG_CICD_RUN_COVERAGE:-true}" val || { _save_and_exit; return 0; }
+        yaml_set "$CONFIG_USER" "cicd.run_coverage" "$val"
+
+        if [[ "$val" == "true" ]]; then
+            prompt_validated "Coverage threshold (%)" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}" val validate_percentage \
+                "Invalid value. Must be 0-100" || { _save_and_exit; return 0; }
+            yaml_set "$CONFIG_USER" "cicd.coverage_threshold" "$val"
+        fi
+    fi
+}
+
+# Full setup - all sections
+_setup_full() {
+    _setup_change_existing
+    _setup_advanced
 }
 
 _save_and_exit() {
