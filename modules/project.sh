@@ -79,22 +79,6 @@ exportPattern("^[[:alpha:]]+")'
 COPYRIGHT HOLDER: ${AUTHOR_NAME:-Author}"
     create_file_if_missing "LICENSE" "$license_content" "LICENSE file"
 
-    # .Rproj file
-    local rproj_content='Version: 1.0
-RestoreWorkspace: No
-SaveWorkspace: No
-AlwaysSaveHistory: No
-EnableCodeIndexing: Yes
-UseSpacesForTab: Yes
-NumSpacesForTab: 2
-Encoding: UTF-8
-RnwWeave: knitr
-LaTeX: pdfLaTeX
-BuildType: Package
-PackageUseDevtools: Yes
-PackageInstallArgs: --no-multiarch --with-keep.source'
-    create_file_if_missing "${pkg_name}.Rproj" "$rproj_content" "R project file"
-
     log_success "R package files created"
 }
 

@@ -1377,7 +1377,7 @@ cmd_rm_all() {
     echo ""
     echo "  Directories: R/, analysis/, tests/, man/, vignettes/, docs/, .github/"
     echo "  Files:       Dockerfile, Makefile, DESCRIPTION, NAMESPACE, LICENSE,"
-    echo "               renv.lock, .Rprofile, .Rbuildignore, .gitignore, *.Rproj"
+    echo "               renv.lock, .Rprofile, .Rbuildignore, .gitignore"
     echo ""
     echo "  Note: .git/ will NOT be removed (use 'zzc rm git' separately)"
     echo ""

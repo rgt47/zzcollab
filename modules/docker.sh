@@ -626,7 +626,7 @@ WORKDIR /home/\${USERNAME}/project
 CMD ["R", "--quiet"]
 EOF
 
-    log_success "Generated Dockerfile (inline)"
+    log_success "Generated Dockerfile"
 }
 
 #=============================================================================
