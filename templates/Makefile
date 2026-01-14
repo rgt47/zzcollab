@@ -163,8 +163,8 @@ r: check-renv
 	fi; \
 	echo "🔍 Checking system dependencies..."; \
 	zzcollab validate --system-deps 2>/dev/null || true; \
-	BASE_IMAGE=$$(grep '^FROM' Dockerfile | head -1 | awk '{print $$2}' | sed 's/--platform[^[:space:]]*[[:space:]]//'); \
-	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|:.*||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
+	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
+	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
 	if echo "$$BASE_IMAGE" | grep -qE '(rocker/verse|rocker/tidyverse|rocker/rstudio)'; then \
 		HOME_DIR="/home/rstudio"; \
 	else \

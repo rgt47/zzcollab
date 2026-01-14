@@ -195,17 +195,13 @@ create_renv_setup() {
         return 0
     fi
 
-    # .Rprofile for renv
-    local rprofile_content='# renv activation
-source("renv/activate.R")
-
-# ZZCOLLAB container detection
-if (Sys.getenv("ZZCOLLAB_CONTAINER") == "true") {
-  options(renv.config.repos.override = Sys.getenv("RENV_CONFIG_REPOS_OVERRIDE"))
-}'
-    create_file_if_missing ".Rprofile" "$rprofile_content" ".Rprofile"
-
-    log_info "Run 'R -e \"renv::init()\"' to initialize renv"
+    # .Rprofile from template (contains renv activation, auto-restore, auto-snapshot)
+    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/.Rprofile" ]]; then
+        cp "${ZZCOLLAB_TEMPLATES_DIR}/.Rprofile" .Rprofile
+        log_debug "Created .Rprofile from template"
+    else
+        log_warn "Template .Rprofile not found at ${ZZCOLLAB_TEMPLATES_DIR:-}/.Rprofile"
+    fi
     return 0
 }
 
