@@ -1045,7 +1045,7 @@ cmd_dockerhub() {
     # Check if image exists locally
     if ! docker image inspect "$project_name" &>/dev/null; then
         log_error "Docker image '$project_name' not found"
-        log_info "Build first: zzcollab docker -b"
+        echo "  Build first: zzc docker" >&2
         return 1
     fi
 
@@ -1056,13 +1056,13 @@ cmd_dockerhub() {
 
     if [[ -z "$dockerhub_user" ]]; then
         # Try to get from docker info
-        dockerhub_user=$(docker info 2>/dev/null | grep -i username | awk '{print $2}')
+        dockerhub_user=$(docker info 2>/dev/null | grep -i username | awk '{print $2}' || true)
     fi
 
     if [[ -z "$dockerhub_user" ]]; then
         log_error "DockerHub username not configured"
-        log_info "Set with: zzcollab config set dockerhub-account <username>"
-        log_info "Or login: docker login"
+        echo "  Set with: zzc config set dockerhub-account <username>" >&2
+        echo "  Or login: docker login" >&2
         return 1
     fi
 
