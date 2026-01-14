@@ -84,11 +84,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 "
     fi
 
-    # TinyTeX installation (if missing)
+    # TinyTeX installation (if missing) - use binary installer for speed
+    # Skip R package - binary is sufficient for PDF rendering
     if [[ "$has_tinytex" == "false" ]]; then
-        cmds+="# Install tinytex for PDF output (wget + perl modules required by TexLive installer)
+        cmds+="# Install TinyTeX binary for PDF output
+# See: https://github.com/rstudio/tinytex-releases
 RUN apt-get update && apt-get install -y --no-install-recommends wget perl && rm -rf /var/lib/apt/lists/* \\
-    && R -e \"install.packages('tinytex')\" && R -e \"tinytex::install_tinytex()\"
+    && wget -qO- \"https://yihui.org/tinytex/install-bin-unix.sh\" | sh \\
+    && /root/.TinyTeX/bin/*/tlmgr path add
+ENV PATH=\"\${PATH}:/root/.TinyTeX/bin/x86_64-linux\"
 
 "
     fi
