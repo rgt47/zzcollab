@@ -630,8 +630,43 @@ EOF
 }
 
 #=============================================================================
-# DOCKER BUILD
+# DOCKER BUILD WITH CONTENT-ADDRESSABLE CACHING
 #=============================================================================
+# Images are labeled with a hash of Dockerfile + renv.lock content.
+# Before building, we check if an identical image already exists locally.
+# If found, we simply tag the existing image with the new project name.
+# This avoids redundant builds when multiple projects use identical configs.
+
+# Compute SHA256 hash of Dockerfile and renv.lock combined
+compute_dockerfile_hash() {
+    local hash=""
+    if [[ -f "Dockerfile" ]] && [[ -f "renv.lock" ]]; then
+        # Combine Dockerfile and renv.lock content for hash
+        hash=$(cat Dockerfile renv.lock | shasum -a 256 | cut -d' ' -f1)
+    elif [[ -f "Dockerfile" ]]; then
+        hash=$(shasum -a 256 Dockerfile | cut -d' ' -f1)
+    fi
+    echo "$hash"
+}
+
+# Find existing image with matching Dockerfile hash
+find_cached_image() {
+    local target_hash="$1"
+    [[ -z "$target_hash" ]] && return 1
+
+    # Search all local images for matching zzcollab.dockerfile.hash label
+    local image_id
+    image_id=$(docker images --format '{{.ID}}' | while read -r id; do
+        local label
+        label=$(docker inspect --format '{{index .Config.Labels "zzcollab.dockerfile.hash"}}' "$id" 2>/dev/null || true)
+        if [[ "$label" == "$target_hash" ]]; then
+            echo "$id"
+            break
+        fi
+    done)
+
+    [[ -n "$image_id" ]] && echo "$image_id"
+}
 
 # shellcheck disable=SC2120
 build_docker_image() {
@@ -649,6 +684,25 @@ build_docker_image() {
 
     [[ ! -f "Dockerfile" ]] && { log_error "Dockerfile not found. Run generate_dockerfile first."; return 1; }
 
+    # Compute hash of current Dockerfile + renv.lock
+    local dockerfile_hash
+    dockerfile_hash=$(compute_dockerfile_hash)
+
+    # Check for existing image with same hash
+    if [[ -n "$dockerfile_hash" ]]; then
+        local cached_image
+        cached_image=$(find_cached_image "$dockerfile_hash")
+
+        if [[ -n "$cached_image" ]]; then
+            # Found cached image - just tag it
+            log_success "Found cached image with identical configuration"
+            docker tag "$cached_image" "$project_name:latest"
+            log_success "Tagged as: $project_name:latest"
+            log_info "Run: docker run -it --rm -v \$(pwd):/home/analyst/project $project_name"
+            return 0
+        fi
+    fi
+
     log_info "Building Docker image: $project_name"
 
     local platform_args=""
@@ -663,7 +717,13 @@ build_docker_image() {
         esac
     fi
 
-    if DOCKER_BUILDKIT=1 docker build $platform_args -t "$project_name" .; then
+    # Build with hash label for future cache lookups
+    local label_args=""
+    if [[ -n "$dockerfile_hash" ]]; then
+        label_args="--label zzcollab.dockerfile.hash=$dockerfile_hash"
+    fi
+
+    if DOCKER_BUILDKIT=1 docker build $platform_args $label_args -t "$project_name" .; then
         log_success "Docker image '$project_name' built successfully"
         log_info "Run: docker run -it --rm -v \$(pwd):/home/analyst/project $project_name"
     else
