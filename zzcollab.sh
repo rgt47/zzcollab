@@ -1055,14 +1055,8 @@ cmd_dockerhub() {
     local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
 
     if [[ -z "$dockerhub_user" ]]; then
-        # Try to get from docker info
-        dockerhub_user=$(docker info 2>/dev/null | grep -i username | awk '{print $2}' || true)
-    fi
-
-    if [[ -z "$dockerhub_user" ]]; then
         log_error "DockerHub username not configured"
         echo "  Set with: zzc config set dockerhub-account <username>" >&2
-        echo "  Or login: docker login" >&2
         return 1
     fi
 
@@ -1108,9 +1102,31 @@ cmd_quickstart() {
         return 1
     }
 
-    # Existing project → just switch profile
+    # Existing project → check if anything needs to be done
     if is_workspace_initialized; then
-        log_info "Switching to profile: $profile ($base_image)"
+        local current_profile
+        current_profile=$(config_get "profile-name" 2>/dev/null || echo "")
+        local project_name
+        project_name=$(basename "$(pwd)")
+        local image_exists=false
+        docker image inspect "$project_name" &>/dev/null && image_exists=true
+
+        # Check if everything is already set up correctly
+        if [[ "$current_profile" == "$profile" ]] && [[ -f "Dockerfile" ]] && [[ "$image_exists" == "true" ]]; then
+            log_success "Project already configured with '$profile' profile"
+            echo "  Docker image '$project_name' exists" >&2
+            echo "" >&2
+            echo "  To rebuild:  zzc docker" >&2
+            echo "  To develop:  make r" >&2
+            return 0
+        fi
+
+        # Profile change or missing components
+        if [[ "$current_profile" != "$profile" ]]; then
+            log_info "Switching profile: ${current_profile:-<none>} → $profile"
+        else
+            log_info "Updating project with profile: $profile"
+        fi
         config_set "profile-name" "$profile" 2>/dev/null || true
 
         # Always update .Rprofile to latest template
@@ -1132,7 +1148,7 @@ cmd_quickstart() {
 
             # Prompt to build: -Y auto-builds, -y prompts, --no-build skips
             if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
-                log_info "Build later with: make docker-build"
+                log_info "Build later with: zzc docker"
             elif [[ "${ZZCOLLAB_AUTO_BUILD:-false}" == "true" ]]; then
                 build_docker_image || return 1
             else
@@ -1141,11 +1157,11 @@ cmd_quickstart() {
                 if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
                     build_docker_image || return 1
                 else
-                    log_info "Build later with: make docker-build"
+                    log_info "Build later with: zzc docker"
                 fi
             fi
         else
-            log_info "No Dockerfile yet. Run 'zzcollab docker' to generate."
+            log_info "No Dockerfile yet. Run 'zzc docker' to generate."
         fi
         return 0
     fi
