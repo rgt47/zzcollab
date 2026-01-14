@@ -1,5 +1,5 @@
-# Source functions
-source('../../R/data_utils.R')
+# Tests for data utility functions
+# Note: devtools::test() automatically loads functions from R/ via load_all()
 
 test_that("load_penguin_data loads valid data", {
   # This test assumes processing script has been run

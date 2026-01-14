@@ -10,6 +10,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load package functions from R/ directory
+devtools::load_all(here::here())
 ```
 
 ## Introduction
@@ -23,14 +26,10 @@ This report demonstrates the complete data workflow:
 ## Data Processing
 
 ```{r data-processing}
-# Load data processing functions
-source("../../R/data_utils.R")
-source("../../R/bill_analysis.R")
-
 library(dplyr)
 library(ggplot2)
 
-# Load the processed data
+# Load the processed data (function from R/data_utils.R)
 penguins <- load_penguin_data()
 
 # Preview data
@@ -40,7 +39,7 @@ head(penguins)
 ## Summary Statistics
 
 ```{r summary-stats}
-# Calculate summary by species
+# Calculate summary by species (function from R/data_utils.R)
 summary_stats <- summarize_by_species(penguins)
 knitr::kable(summary_stats, digits = 2, caption = "Bill dimensions by species")
 ```
@@ -50,18 +49,19 @@ knitr::kable(summary_stats, digits = 2, caption = "Bill dimensions by species")
 ### Bill Dimensions by Species
 
 ```{r bill-plot, fig.width=8, fig.height=6}
-# Generate plot using function from R/
-plot <- create_bill_plot(penguins)
-print(plot)
+# Generate plot using function from R/bill_analysis.R
+bill_plot <- create_bill_plot(penguins)
+print(bill_plot)
 
 # Save plot
-dir.create("../figures", showWarnings = FALSE, recursive = TRUE)
-ggplot2::ggsave("../figures/bill_scatter.png", plot, width = 8, height = 6)
+dir.create(here::here("analysis/figures"), showWarnings = FALSE, recursive = TRUE)
+ggplot2::ggsave(here::here("analysis/figures/bill_scatter.png"),
+                bill_plot, width = 8, height = 6)
 ```
 
 ## Summary
 
 The analysis reveals distinct bill dimension patterns across penguin species:
-- Data processed from raw measurements (Step 4)
+- Data processed from raw measurements (Step 3)
 - Functions in R/ provide reusable analysis components
 - Unit tests ensure correctness

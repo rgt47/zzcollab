@@ -18,6 +18,9 @@ knitr::opts_chunk$set(
   fig.width = 8,
   fig.height = 5
 )
+
+# Load package functions from R/ directory
+devtools::load_all(here::here())
 ```
 
 ## Introduction
@@ -77,9 +80,7 @@ ggplot(data, aes(x = mpg, fill = efficiency_class)) +
 ### Power vs Weight Analysis
 
 ```{r power-weight-plot}
-source(here::here("R/plot_functions.R"))
-source(here::here("R/data_functions.R"))
-
+# Functions loaded via devtools::load_all() in setup chunk
 plot_power_weight(data, show_labels = TRUE)
 ```
 

@@ -118,7 +118,7 @@ zzc list profiles              # Show all profiles
 - `rstudio` - RStudio Server
 - `shiny` - Shiny Server
 
-## Step 4: Add Research Data and Processing Pipeline
+## Step 3: Add Research Data and Processing Pipeline
 
 This step demonstrates the complete data workflow following the Five Pillars of Reproducibility:
 - **Pillar 5**: Raw data in `analysis/data/raw_data/`
@@ -301,7 +301,7 @@ Install required packages:
 
 ```bash
 # Packages will be captured in renv.lock when you exit the container
-Rscript -e 'install.packages("dplyr")'
+Rscript -e 'install.packages(c("dplyr", "here"))'
 ```
 
 ### Create Unit Tests
@@ -311,8 +311,8 @@ Add tests for the data processing functions.
 Create `tests/testthat/test-data_utils.R`:
 
 ```r
-# Source functions
-source('../../R/data_utils.R')
+# Tests for data utility functions
+# Note: devtools::test() automatically loads functions from R/ via load_all()
 
 test_that("load_penguin_data loads valid data", {
   # This test assumes processing script has been run
@@ -387,9 +387,9 @@ Rscript -e 'devtools::test()'
 
 This establishes the complete data workflow that ensures reproducibility from raw data through to analysis.
 
-## Step 5: Create Analysis Report
+## Step 4: Create Analysis Report
 
-Now create a report that uses the processed data and functions we created in Step 4.
+Now create a report that uses the processed data and functions we created in Step 3.
 
 ### Create Visualization Function
 
@@ -465,6 +465,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load package functions from R/ directory
+devtools::load_all(here::here())
 ```
 
 ## Introduction
@@ -478,14 +481,10 @@ This report demonstrates the complete data workflow:
 ## Data Processing
 
 ```{r data-processing}
-# Load data processing functions
-source("../../R/data_utils.R")
-source("../../R/bill_analysis.R")
-
 library(dplyr)
 library(ggplot2)
 
-# Load the processed data
+# Load the processed data (function from R/data_utils.R)
 penguins <- load_penguin_data()
 
 # Preview data
@@ -495,7 +494,7 @@ head(penguins)
 ## Summary Statistics
 
 ```{r summary-stats}
-# Calculate summary by species
+# Calculate summary by species (function from R/data_utils.R)
 summary_stats <- summarize_by_species(penguins)
 knitr::kable(summary_stats, digits = 2, caption = "Bill dimensions by species")
 ```
@@ -505,19 +504,20 @@ knitr::kable(summary_stats, digits = 2, caption = "Bill dimensions by species")
 ### Bill Dimensions by Species
 
 ```{r bill-plot, fig.width=8, fig.height=6}
-# Generate plot using function from R/
-plot <- create_bill_plot(penguins)
-print(plot)
+# Generate plot using function from R/bill_analysis.R
+bill_plot <- create_bill_plot(penguins)
+print(bill_plot)
 
 # Save plot
-dir.create("../figures", showWarnings = FALSE, recursive = TRUE)
-ggplot2::ggsave("../figures/bill_scatter.png", plot, width = 8, height = 6)
+dir.create(here::here("analysis/figures"), showWarnings = FALSE, recursive = TRUE)
+ggplot2::ggsave(here::here("analysis/figures/bill_scatter.png"),
+                bill_plot, width = 8, height = 6)
 ```
 
 ## Summary
 
 The analysis reveals distinct bill dimension patterns across penguin species:
-- Data processed from raw measurements (Step 4)
+- Data processed from raw measurements (Step 3)
 - Functions in R/ provide reusable analysis components
 - Unit tests ensure correctness
 ````
@@ -547,12 +547,12 @@ When you **start R**, ZZCOLLAB automatically:
 
 **You no longer need to manually run `renv::snapshot()` or `renv::restore()`!** Just work, exit, and restart.
 
-## Step 6: Validate and Commit
+## Step 5: Validate and Commit
 
 Validate everything works in a clean environment:
 
 ```bash
-# Exit the Docker container (if still inside from Step 5)
+# Exit the Docker container (if still inside from Step 4)
 # This automatically runs renv::snapshot() and validates packages!
 exit
 
@@ -594,7 +594,7 @@ EOF
 git push
 ```
 
-## Step 7: Verify CI/CD
+## Step 6: Verify CI/CD
 
 Check that automated validation runs:
 
@@ -614,7 +614,7 @@ GitHub Actions will automatically:
 
 **Note**: CI/CD now uses pure shell validation (`make check-renv`) which doesn't require R on the host!
 
-## Step 8: Verify Report Rendering CI/CD (Optional)
+## Step 7: Verify Report Rendering CI/CD (Optional)
 
 GitHub Actions is already configured to automatically render your report on every
 push. The default workflow renders `analysis/report/report.Rmd`.
@@ -722,10 +722,10 @@ source("renv/activate.R")
 **Important**: ZZCOLLAB monitors critical `.Rprofile` options that affect analysis behavior. The `check_rprofile_options.R` script runs in CI/CD to catch changes that could alter results.
 
 ### 4. Analysis Source Code - Computational Logic
-- **Analysis scripts**: `analysis/scripts/01_analysis.R`
-- **Reusable functions**: `R/bill_analysis.R`
+- **Processing scripts**: `analysis/scripts/01_process_data.R`
+- **Reusable functions**: `R/data_utils.R`, `R/bill_analysis.R`
 - **Reports**: `analysis/report/report.Rmd`
-- **Tests**: `tests/testthat/test-bill_analysis.R`
+- **Tests**: `tests/testthat/test-data_utils.R`
 - **Random seeds**: Set explicitly in code for stochastic analyses
 
 ```r
@@ -796,7 +796,7 @@ docker run -it -v $(pwd):/project penguin-env
 renv::restore()
 
 # 3. Source code runs the analysis
-source("analysis/scripts/01_analysis.R")
+source("analysis/scripts/01_process_data.R")
 rmarkdown::render("analysis/report/report.Rmd")
 
 # Result: Identical output to your original analysis
@@ -852,7 +852,8 @@ penguin-bills/
 │   └── workflows/
 │       └── r-package.yml        # Automated CI/CD validation
 ├── R/
-│   └── bill_analysis.R          # Tested function
+│   ├── data_utils.R             # Data loading functions
+│   └── bill_analysis.R          # Visualization functions
 ├── analysis/
 │   ├── data/
 │   │   ├── raw_data/            # Original, unmodified data
@@ -868,7 +869,7 @@ penguin-bills/
 ├── scripts/                     # Working scripts and exploration
 ├── tests/
 │   └── testthat/
-│       └── test-bill_analysis.R # Unit tests
+│       └── test-data_utils.R    # Unit tests
 ├── man/                         # Generated function documentation
 ├── vignettes/                   # Package tutorials
 ├── docs/                        # Project documentation
