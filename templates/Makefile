@@ -163,13 +163,8 @@ r: check-renv
 	fi; \
 	echo "🔍 Checking system dependencies..."; \
 	zzcollab validate --system-deps 2>/dev/null || true; \
-	PROFILE=$$(head -20 Dockerfile 2>/dev/null | grep 'Profile:' | head -1 | sed 's/.*Profile: \([a-z0-9_]*\).*/\1/'); \
-	if [ -z "$$PROFILE" ]; then \
-		echo "❌ Could not detect profile from Dockerfile"; \
-		echo "   Dockerfile exists but missing 'Profile:' comment"; \
-		exit 1; \
-	fi; \
 	BASE_IMAGE=$$(grep '^FROM' Dockerfile | head -1 | awk '{print $$2}' | sed 's/--platform[^[:space:]]*[[:space:]]//'); \
+	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|:.*||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
 	if echo "$$BASE_IMAGE" | grep -qE '(rocker/verse|rocker/tidyverse|rocker/rstudio)'; then \
 		HOME_DIR="/home/rstudio"; \
 	else \

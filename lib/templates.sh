@@ -94,7 +94,8 @@ substitute_variables() {
     fi
     export AUTHOR_NAME
     export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
-    export R_VERSION="${R_VERSION:-latest}"
+    # Don't default R_VERSION to 'latest' - let generate_dockerfile read from renv.lock
+    [[ -n "${R_VERSION:-}" ]] && export R_VERSION
     export USERNAME="${USERNAME:-analyst}"
 
     export PACKAGE_NAME="$PKG_NAME"
