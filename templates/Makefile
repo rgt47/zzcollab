@@ -176,6 +176,11 @@ r: check-renv
 	docker run --rm -it \
 		-v $$(pwd):$$HOME_DIR/project \
 		-w $$HOME_DIR/project \
+		-e KITTY_WINDOW_ID="$${KITTY_WINDOW_ID:-}" \
+		-e ITERM_SESSION_ID="$${ITERM_SESSION_ID:-}" \
+		-e TERM_PROGRAM="$${TERM_PROGRAM:-}" \
+		-e GHOSTTY_RESOURCES_DIR="$${GHOSTTY_RESOURCES_DIR:-}" \
+		-e WEZTERM_EXECUTABLE="$${WEZTERM_EXECUTABLE:-}" \
 		$(PACKAGE_NAME) R; \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
