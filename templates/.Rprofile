@@ -72,7 +72,8 @@ if (!in_container) {
       bare = TRUE,
       settings = list(snapshot.type = "implicit"),
       force = TRUE,
-      restart = FALSE
+      restart = FALSE,
+      load = FALSE
     )
 
     message("✅ renv initialized")
