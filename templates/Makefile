@@ -165,11 +165,9 @@ r: check-renv
 	zzcollab validate --system-deps 2>/dev/null || true; \
 	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
 	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
-	if echo "$$BASE_IMAGE" | grep -qE '(rocker/verse|rocker/tidyverse|rocker/rstudio)'; then \
-		HOME_DIR="/home/rstudio"; \
-	else \
-		HOME_DIR="/home/analyst"; \
-	fi; \
+	USERNAME=$$(grep '^ARG USERNAME=' Dockerfile | head -1 | cut -d= -f2); \
+	USERNAME=$${USERNAME:-analyst}; \
+	HOME_DIR="/home/$$USERNAME"; \
 	echo "🐳 Starting R ($$PROFILE)..."; \
 	echo ""; \
 	mkdir -p .cache/R/renv 2>/dev/null || true; \
