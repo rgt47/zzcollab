@@ -97,6 +97,22 @@ if (!in_container) {
     }
   } else {
     # ==========================================
+    # Recover renv infrastructure if missing
+    # ==========================================
+    # This handles: renv.lock exists but renv/ doesn't (e.g., git clone)
+    if (!file.exists("renv/activate.R")) {
+      message("\n🔧 ZZCOLLAB: renv.lock found but renv/ missing - recovering...")
+      tryCatch({
+        renv_init_quiet()
+        if (file.exists("renv/activate.R")) {
+          source("renv/activate.R")
+        }
+      }, error = function(e) {
+        warning("⚠️  renv recovery failed: ", conditionMessage(e), call. = FALSE)
+      })
+    }
+
+    # ==========================================
     # Auto-Restore Missing Packages
     # ==========================================
     auto_restore <- Sys.getenv("ZZCOLLAB_AUTO_RESTORE", "true")
