@@ -14,103 +14,47 @@ When working with the user on this codebase, prioritize technical accuracy and c
 - **Acknowledge good ideas**: When the user's approach is sound, say so and explain why it is effective
 - **Ask clarifying questions**: When requirements are unclear or seem problematic, probe deeper before implementing
 
-This codebase values correctness and maintainability over politeness. Prioritize helping the user build robust software through honest technical assessment.
+This codebase values correctness and maintainability over politeness.
 
 ## Architecture Overview
 
-ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments. The system consists of:
+ZZCOLLAB is a research collaboration framework that creates Docker-based reproducible research environments.
 
 ### Core Components
-- **Main executable**: `zzcollab.sh` - Primary framework script (439 lines, 64% reduction from original)
-- **Modular shell system**: `modules/` directory contains core functionality
+
+- **Main executable**: `zzcollab.sh` - Primary framework script
+- **Modular shell system**: `modules/` (cli.sh, docker.sh, validation.sh, etc.) and `lib/` (core.sh, constants.sh)
 - **Docker-first workflow**: All development happens in containers
 - **R package structure**: Standard R package with testthat for testing
 - **Template system**: `templates/` for project scaffolding
-- **Profile system**: Single source of truth with 14+ Docker profiles
-- **Configuration system**: Centralized constants and user configuration management
+- **Profile system**: 14+ Docker profiles in `bundles.yaml`
 
 ### Documentation Structure
-- **Root README.md**: Quick start and overview for framework users
-- **Root CLAUDE.md**: Developer/AI assistant context (this file)
-- **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user documentation (symlinked from templates/)
-- **docs/**: Technical documentation and definitive guides
-  - **TESTING_GUIDE.md**: Complete testing framework and best practices
-  - **CONFIGURATION.md**: Multi-layered configuration system guide
+
+- **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user documentation
+- **docs/**: Technical guides
+  - **TESTING_GUIDE.md**: Testing framework and best practices
+  - **CONFIGURATION.md**: Multi-layered configuration system
   - **VARIANTS.md**: Docker profile system and customization
   - **DEVELOPMENT.md**: Developer commands and workflows
-  - **DOCKER_ARCHITECTURE.md**: Docker technical details and custom images
-  - **README.md**: Documentation directory index
-  - Additional technical documents (improvements, architecture, motivations)
-
-### Key Architecture Patterns
-- **Modular design**: Shell scripts in `modules/` (core.sh, cli.sh, docker.sh, structure.sh, etc.)
-- **Docker inheritance**: Team base images → personal development images
-- **Automated CI/CD**: GitHub Actions for R package validation and image builds
-- **Test-driven development**: Unit tests in `tests/testthat/`, integration tests expected
-- **Environment monitoring**: Critical R options tracking with `check_rprofile_options.R`
-- **Dynamic package management**: Packages added via `install.packages()` as needed, auto-captured on exit
-- **Unified systems**: Single tracking, validation, and logging systems across all modules
-- **Single source of truth**: Profile definitions in `bundles.yaml` eliminate duplication
-- **14+ Docker profiles**: From lightweight Alpine (~200MB) to full-featured environments (~3.5GB)
-- **Two-layer architecture**: Docker profiles (shared/team) + dynamic renv packages (personal/independent)
+  - **DOCKER_ARCHITECTURE.md**: Docker technical details
+  - **COLLABORATIVE_REPRODUCIBILITY.md**: Five Pillars model details
+  - **DOCUMENTATION_STRATEGY.md**: Three-tier documentation system
+- **CHANGELOG.md**: Complete version history
 
 ### Five Pillars of Reproducibility
 
-ZZCOLLAB ensures complete reproducibility through five version-controlled components that represent the necessary and sufficient elements for independent reproduction:
+ZZCOLLAB ensures reproducibility through five version-controlled components:
 
-1. **Dockerfile** - Computational environment foundation
-   - R version (e.g., 4.4.0)
-   - System dependencies (GDAL, PROJ, libcurl, etc.)
-   - Base image specification (rocker/verse, bioconductor, etc.)
-   - **Environment variables** (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
-     - Locale settings affect string sorting, number formatting, factor ordering
-     - Timezone eliminates daylight saving complications
-     - Thread control ensures deterministic parallel execution
-     - Silent effects require explicit specification
-
+1. **Dockerfile** - R version, system dependencies, environment variables (LANG, TZ, OMP_NUM_THREADS)
 2. **renv.lock** - Exact R package versions (source of truth)
-   - Every package with exact version
-   - Complete dependency tree
-   - CRAN/Bioconductor/GitHub sources
-   - Contains packages from ALL team members (union model)
+3. **.Rprofile** - Critical R options (`stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`)
+4. **Source Code** - Analysis scripts, functions, reports, tests
+5. **Research Data** - Raw data (read-only) and derived data with documentation
 
-3. **.Rprofile** - R session configuration (version controlled)
-   - Critical R options (`stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`)
-   - Automatically monitored with `check_rprofile_options.R`
-   - Copied into Docker image to ensure consistent R session settings
-   - Changes tracked in CI/CD to prevent unintended behavior modifications
+All five are required. See `docs/COLLABORATIVE_REPRODUCIBILITY.md` for details.
 
-4. **Source Code** - Computational logic
-   - Analysis scripts (`analysis/scripts/`)
-   - Reusable functions (`R/`)
-   - Reports (`analysis/report/`)
-   - Tests (`tests/testthat/`)
-   - Explicit random seeds (`set.seed()`) for stochastic analyses
-
-5. **Research Data** - Empirical foundation
-   - Raw data (`analysis/data/raw_data/`) - original, unmodified, read-only
-   - Derived data (`analysis/data/derived_data/`) - processed, analysis-ready
-   - Data documentation (`data/README.md`) - data dictionary, provenance, processing lineage
-   - Quality assurance - validation checks, known issues, outlier documentation
-
-**Necessity and Sufficiency**: All five pillars are required for complete reproducibility:
-- **Dockerfile** alone is insufficient (which packages? which code? which data?)
-- **renv.lock** alone is insufficient (which R version? which data? which analysis?)
-- **Source code** alone is insufficient (which packages? which environment? which data?)
-- **Data** alone is insufficient (which processing? which environment? which packages?)
-- **.Rprofile** alone is insufficient (provides session config but no analysis)
-
-Only the complete set enables independent reproduction. Given these five components, any researcher can execute identical analyses and produce identical results.
-
-**Key Design Principle**: Docker images provide foundation and performance (pre-installed base packages), but `renv.lock` is the source of truth for R package reproducibility. `.Rprofile` ensures consistent R session behavior. Environment variables prevent silent locale/timezone differences. Data provides the empirical observations. Anyone can reproduce analysis from ANY compatible Docker base by running `renv::restore()` with the committed `renv.lock` file.
-
-**For comprehensive reproducibility documentation**, see `docs/COLLABORATIVE_REPRODUCIBILITY.md` which provides detailed explanation of the five-pillar model, environment variable impacts, union-based dependency management, and validation mechanisms.
-
-## Unified Research Compendium Structure
-
-ZZCOLLAB follows the unified research compendium framework proposed by Marwick, Boettiger, and Mullen (2018), providing a single flexible structure that supports the entire research lifecycle from data collection through analysis, manuscript writing, and package publication.
-
-### Directory Structure
+## Directory Structure
 
 ```
 project/
@@ -118,42 +62,26 @@ project/
 │   ├── data/
 │   │   ├── raw_data/         # Original, unmodified data (read-only)
 │   │   └── derived_data/     # Processed, analysis-ready data
-│   ├── report/
-│   │   ├── report.Rmd        # Manuscript
-│   │   └── references.bib    # Bibliography
+│   ├── report/               # Manuscript (report.Rmd, references.bib)
 │   ├── figures/              # Generated visualizations
-│   └── scripts/              # Analysis code (empty - user creates)
-├── R/                        # Reusable functions (add as needed)
-├── tests/                    # Unit tests (add as needed)
+│   └── scripts/              # Analysis code
+├── R/                        # Reusable functions
+├── tests/                    # Unit tests
 ├── .github/workflows/        # CI/CD automation
 ├── DESCRIPTION               # Project metadata
 ├── Dockerfile                # Computational environment
 └── renv.lock                 # Package versions
 ```
 
-### Progressive Disclosure Philosophy
+## Quick Start Examples
 
-**Start Simple, Add Complexity As Needed**:
-1. **Data Analysis** (Day 1): Place raw data, create scripts, generate figures
-2. **Manuscript Writing** (Week 2): Add `analysis/report/report.Rmd`
-3. **Function Extraction** (Month 1): Move reusable code to `R/` directory
-4. **Package Distribution** (Month 3): Add documentation and vignettes
-
-**Key Principle**: Research evolves organically. No upfront paradigm choice. No migration friction.
-
-### Quick Start Examples
-
-**Command Line**:
 ```bash
 # Solo Developer
-zzcollab
-
-# Solo Developer with profile
 zzcollab -r analysis
 
 # Team Lead
 zzcollab -t mylab -p study -r analysis
-make docker-build && make docker-push-team && git add . && git commit -m "Initial project setup" && git push -u origin main
+make docker-build && make docker-push-team
 
 # Team Member
 git clone https://github.com/mylab/study.git && cd study
@@ -161,1087 +89,130 @@ zzcollab -u
 make r
 ```
 
-**R Interface**:
-```r
-library(zzcollab)
+## CLI Reference
 
-# Solo Developer
-init_project("my-research")
+Run `zzcollab --help` for complete flag documentation. Key flags:
 
-# Team Lead
-init_project(team_name = "mylab", project_name = "study")
-
-# Team Member
-join_project(team_name = "mylab", project_name = "study")
-```
-
-## CLI Flags and Conventions
-
-ZZCOLLAB follows strict Unix CLI conventions with comprehensive short flag support for improved ergonomics.
-
-### Short Flag Philosophy
-
-**Lowercase by default**: All short flags use lowercase letters following Unix conventions
-**Uppercase for variants**: Uppercase flags (`-D`, `-G`, `-P`) indicate semantic variants of their lowercase counterparts
-
-### Complete Short Flag Reference
-
-| Short | Long Flag          | Purpose                    | Usage Example           |
-|-------|--------------------|----------------------------|-------------------------|
-| `-a`  | `--tag`            | Docker image tag           | `zzcollab -a v2.1`      |
-| `-b`  | `--base-image`     | Custom Docker base         | `zzcollab -b rocker/r-ver` |
-| `-c`  | `--config`         | Configuration management   | `zzcollab -c init`      |
-| `-f`  | `--dockerfile`     | Custom Dockerfile path     | `zzcollab -f custom.df` |
-| `-g`  | `--github-account` | GitHub account name        | `zzcollab -g myaccount` |
-| `-G`  | `--github`         | Create GitHub repo         | `zzcollab -G`           |
-| `-h`  | `--help`           | Show help                  | `zzcollab -h`           |
-| `-k`  | `--pkgs`           | Package bundle             | `zzcollab -k tidyverse` |
-| `-n`  | `--no-docker`      | Skip Docker build          | `zzcollab -n`           |
-| `-p`  | `--project-name`   | Project name               | `zzcollab -p study`     |
-| `-P`  | `--prepare-dockerfile` | Prepare without build  | `zzcollab -P`           |
-| `-q`  | `--quiet`          | Quiet mode (errors only)   | `zzcollab -q`           |
-| `-r`  | `--profile-name`   | Docker profile selection   | `zzcollab -r analysis`  |
-| `-t`  | `--team`           | Team name                  | `zzcollab -t mylab`     |
-| `-u`  | `--use-team-image` | Pull team Docker image     | `zzcollab -u`           |
-| `-v`  | `--verbose`        | Verbose output             | `zzcollab -v`           |
-| `-vv` | `--debug`          | Debug output + log file    | `zzcollab -vv`          |
-| `-w`  | `--log-file`       | Enable log file            | `zzcollab -w`           |
-| `-x`  | `--with-examples`  | Include example files      | `zzcollab -x`           |
-| `-y`  | `--yes`            | Skip confirmations         | `zzcollab -y`           |
-
-### Usage Comparison
-
-**Before (verbose)**:
-```bash
-zzcollab --team mylab --project-name study --profile-name analysis --use-team-image
-```
-
-**After (concise)**:
-```bash
-zzcollab -t mylab -p study -r analysis -u
-```
-
-**Custom composition**:
-```bash
-# Verbose
-zzcollab --base-image rocker/r-ver --pkgs tidyverse
-
-# Concise
-zzcollab -b rocker/r-ver -k tidyverse
-```
-
-**With examples**:
-```bash
-# Clean workspace (default)
-zzcollab -p myproject
-
-# Include example files for learning
-zzcollab -p myproject -x
-
-# Add examples to existing project later
-cd myproject
-zzcollab --add-examples
-
-# Set as default preference
-zzcollab -c set with-examples true
-```
+| Flag | Purpose |
+|------|---------|
+| `-t` | Team name |
+| `-p` | Project name |
+| `-r` | Docker profile (analysis, publishing, bioinformatics, etc.) |
+| `-u` | Use team's Docker image |
+| `-c` | Configuration management (`-c init`, `-c set key value`) |
+| `-x` | Include example files |
 
 ## Configuration System
 
-ZZCOLLAB features a powerful multi-layered configuration system. *For comprehensive details, see [Configuration Guide](docs/CONFIGURATION.md)*
+Multi-level hierarchy (highest priority first):
+1. Project config (`./zzcollab.yaml`)
+2. User config (`~/.zzcollab/config.yaml`)
+3. System config (`/etc/zzcollab/config.yaml`)
+4. Built-in defaults
 
-### Quick Configuration Reference
-
-**Multi-Level Hierarchy** (highest priority first):
-1. **Project config** (`./zzcollab.yaml`) - Team-specific settings
-2. **User config** (`~/.zzcollab/config.yaml`) - Personal defaults
-3. **System config** (`/etc/zzcollab/config.yaml`) - Organization-wide defaults
-4. **Built-in defaults** - Fallback values
-
-**Essential Commands**:
 ```bash
-zzcollab -c init                      # Create config file
-zzcollab -c set team-name "myteam"    # Set values
-zzcollab -c get team-name             # Get values
-zzcollab -c list                      # List all configuration
+zzcollab -c init                      # Create config
+zzcollab -c set team-name "myteam"    # Set value
+zzcollab -c list                      # List all
 ```
 
-**Key Configuration Domains**:
-- **Docker Profile Management**: 14+ specialized environments (*see [Variants Guide](docs/VARIANTS.md)*)
-- **Package Management**: Dynamic via `install.packages()`, auto-captured on container exit
-- **Development Settings**: Team collaboration, GitHub integration
+See `docs/CONFIGURATION.md` for details.
 
 ## Docker Profile System
 
-ZZCOLLAB supports **14+ specialized Docker profiles** with single source of truth architecture. *For comprehensive details, see [Variants Guide](docs/VARIANTS.md)*
+14+ profiles available. See `docs/VARIANTS.md` for complete list.
 
-**Profile Categories**:
-- **Standard Research** (6): minimal, analysis, modeling, publishing, shiny, shiny_verse
-- **Specialized Domains** (2): bioinformatics, geospatial
-- **Lightweight Alpine** (3): alpine_minimal, alpine_analysis, hpc_alpine
-- **R-Hub Testing** (3): rhub_ubuntu, rhub_fedora, rhub_windows
-
-**Interactive Management**:
-```bash
-./add_profile.sh          # Browse and add profiles
-vim config.yaml           # Edit team profiles
-zzcollab -t TEAM -p PROJECT -r PROFILE
-```
-
-## File Format Support
-
-ZZCOLLAB supports multiple R document formats. All code is scanned for package dependencies regardless of file type (.R, .Rmd, .Rnw, .qmd).
-
-### File Format Requirements
-
-| Format | Description | System Requirements | Recommended Profile |
-|--------|-------------|-------------------|-------------------|
-| **.R** | Plain R scripts | None | Any profile (minimal sufficient) |
-| **.Rmd** | R Markdown documents | Markdown processor (built-in) | Any profile with renv |
-| **.Rnw** | R noweb (Sweave) - LaTeX + R | LaTeX (texlive-full) | **publishing** (~3GB) |
-| **.qmd** | Quarto markdown - modern publishing format | Quarto CLI + LaTeX | **publishing** (~3GB) |
-
-### Design Principle: Dockerfile is Source of Truth
-
-**All system dependencies are version-controlled in the Dockerfile, not installed at runtime:**
-
-- If you need .Rnw support: Use `publishing` profile (includes texlive-full)
-- If you need .qmd support: Use `publishing` profile (includes Quarto CLI v1.6.33+)
-- If you need additional system tools: Modify the Dockerfile and rebuild
-- **Do NOT** install system packages manually inside containers
-
-This ensures reproducibility - anyone can rebuild the image and get identical results.
-
-### Package Detection
-
-The validation system (`modules/validation.sh`) scans all four file formats for R package usage:
-- `library()` and `require()` calls
-- Namespace calls: `pkg::function()`
-- roxygen2 imports: `@import`, `@importFrom`
-
-Example: A `.qmd` file using `library(dplyr)` will be detected and added to renv.lock automatically via `make check-renv`.
+**Categories**:
+- **Standard**: minimal, analysis, modeling, publishing, shiny
+- **Specialized**: bioinformatics, geospatial
+- **Lightweight**: alpine_minimal, alpine_analysis, hpc_alpine
+- **Testing**: rhub_ubuntu, rhub_fedora, rhub_windows
 
 ## Package Management
 
-ZZCOLLAB uses dynamic package management with **automatic snapshot-on-exit** architecture.
+**Auto-snapshot/restore architecture** - no manual renv commands needed:
 
-**Auto-Snapshot Architecture**:
-- **No manual `renv::snapshot()` required**: Automatically runs on R exit via .Last() function
-- **.Rprofile integration**: `.Last()` function in .Rprofile handles snapshot on R exit
-- **RSPM timestamp optimization**: Temporarily adjusts renv.lock timestamp to "7 days ago" for binary package availability
-  - Docker builds use binaries (10-20x faster) instead of compiling from source
-  - Timestamp restored to "now" after validation (accurate git history)
-- **Host validation without R**: Pure shell validation via `modules/validation.sh`
-
-**Auto-Restore Architecture** (NEW):
-- **Automatic dependency installation**: `renv::restore()` runs automatically when R starts if packages are missing
-- **Zero-friction workflow**: Validation script adds packages to renv.lock → R auto-installs on next session
-- **Team synchronization**: Pull updated renv.lock from git → packages auto-install on R startup
-- **Full dependency trees**: Restores not just direct dependencies but all recursive dependencies (e.g., testthat + its 17 dependencies)
-- **Configurable**: Disable with `ZZCOLLAB_AUTO_RESTORE=false` environment variable
-- **Smart detection**: Uses `renv::status()` to check if restore is needed (non-invasive)
-
-**Workflow** (Simplified):
 ```bash
-make r                            # 1. Enter container → starts R directly
-                                  #    Auto-restore runs if packages missing
-install.packages("tidyverse")    # 2. Add packages (standard R command)
-# For GitHub: install.packages("remotes") then remotes::install_github("user/package")
-q()                               # 3. Exit R → .Last() runs auto-snapshot + validation
-# renv.lock automatically updated and validated!
-git add renv.lock && git commit -m "Add tidyverse" && git push
+make r                           # Enter container, auto-restore if needed
+install.packages("tidyverse")    # Standard R command
+q()                              # Exit → auto-snapshot → auto-validate
 ```
 
-**Alternative Workflow** (Host-based validation):
+**Host-based validation** (no R required):
 ```bash
-# Edit code on host (no R required)
-vim analysis/scripts/my_analysis.R    # Add library(dplyr), library(ggplot2)
-make check-renv                        # Validate + auto-add to DESCRIPTION & renv.lock
-                                       # Uses pure shell: grep, awk, curl, jq
-make r                                 # Enter container → starts R
-                                       # Auto-restore installs dplyr, ggplot2 + dependencies
-# Start coding with packages already installed!
+make check-renv                  # Validate + auto-fix
+make check-renv-no-fix           # Validation only
+make check-system-deps           # Check system dependencies
 ```
 
-**How It Works**:
-- **Standard R commands**: Use familiar `install.packages()` - no renv commands needed for users
-- **Docker profiles**: Control base Docker environment and pre-installed packages (team/shared)
-- **Dynamic addition**: Team members add packages independently inside containers
-- **Automatic snapshot**: Container exit hook runs `renv::snapshot()` (users don't need to call it)
-- **Host validation**: Pure shell script validates DESCRIPTION ↔ renv.lock consistency
-- **Auto-fix**: Automatically adds missing packages to DESCRIPTION and renv.lock (pure shell, no R!)
-- **No host R required**: Entire workflow works without R installed on host machine
+Auto-fix pipeline: Code → DESCRIPTION → renv.lock (pure shell: curl + jq + awk)
 
-**Validation & Auto-Fix** (NEW):
+## System Dependencies
+
+Module `modules/system_deps_map.sh` maps 30+ R packages to system libraries.
+
 ```bash
-make check-renv              # Validate + auto-fix (default: strict mode)
-make check-renv-no-fix       # Validation only, no auto-add
-make check-renv-no-strict    # Skip tests/ and vignettes/
+make check-system-deps           # Detect missing system deps
 ```
 
-**Complete Auto-Fix Pipeline**:
-1. **Code → DESCRIPTION**: Detects `library()`, `require()`, `pkg::function()` usage
-2. **DESCRIPTION → renv.lock**: Queries CRAN API for package metadata
-3. **Pure shell tools**: curl (CRAN API) + jq (JSON) + awk (DESCRIPTION) + grep (extraction)
-4. **Smart filtering**: Excludes placeholders, comments, documentation files (19 filters)
-5. **Works on macOS/Linux**: BSD grep compatible (no Perl regex)
-
-**Example Auto-Fix**:
-```bash
-# Add tibble::tibble() to your code
-# Run validation
-make check-renv
-
-# Output:
-# ✅ Added tibble to DESCRIPTION Imports
-# ✅ Added tibble (3.3.0) to renv.lock
-# ✅ All missing packages added
-
-# Commit changes
-git add DESCRIPTION renv.lock && git commit -m "Add tibble package"
-```
-
-**Configuration**:
-```bash
-# Disable auto-snapshot if needed
-docker run -e ZZCOLLAB_AUTO_SNAPSHOT=false ...
-
-# Disable RSPM timestamp adjustment
-docker run -e ZZCOLLAB_SNAPSHOT_TIMESTAMP_ADJUST=false ...
-```
-
-## System Dependencies Management
-
-ZZCOLLAB provides automated detection and management of system-level dependencies required by R packages.
-
-**Problem**: When users add R packages that require system libraries (e.g., `sf` → `libgdal-dev`, `proj`), Docker rebuilds fail or require manual library installation.
-
-**Solution**: Two-part architecture separates system dependencies from R packages for efficient rebuilds.
-
-### System Dependency Architecture
-
-**Module**: `modules/system_deps_map.sh`
-- Maps 30+ R packages to required system libraries (build and runtime versions)
-- Functions:
-  - `get_package_build_deps(package)` → build-time libraries (`libgdal-dev`, etc.)
-  - `get_package_runtime_deps(package)` → runtime libraries (`libgdal30`, etc.)
-  - `get_all_package_deps(type, packages...)` → batch lookups with deduplication
-  - `package_has_system_deps(package)` → boolean check
-
-**Covered Packages**:
-- **Geospatial**: sf, terra, sp, rgdal, raster, stars (GDAL, PROJ, GEOS)
-- **Graphics**: gdtools, ragg, systemfonts, magick (Cairo, Freetype, ImageMagick)
-- **Databases**: RPostgres, RMySQL, RSQLite (libpq, MySQL, SQLite)
-- **Scientific**: gsl, nlme, Matrix, Biostrings, GenomicRanges (GSL, LAPACK, BLAS, zlib)
-- **Text**: stringi, xml2 (ICU, libxml2)
-
-### Dockerfile Optimization
-
-**Custom Dependency Layers** (`templates/Dockerfile.base.template`):
-```dockerfile
-# Builder Stage - Add project-specific build dependencies
-# CUSTOM_SYSTEM_DEPS_BUILD_START
-# RUN apt-get install -y libgdal-dev libproj-dev libgeos-dev
-# CUSTOM_SYSTEM_DEPS_BUILD_END
-
-# Runtime Stage - Add project-specific runtime dependencies
-# CUSTOM_SYSTEM_DEPS_RUNTIME_START
-# RUN apt-get install -y libgdal30 libproj25 libgeos-c1v5
-# CUSTOM_SYSTEM_DEPS_RUNTIME_END
-```
-
-**Cache Optimization**:
-- Bundle-based dependencies → preinstalled in base Docker image (team/shared)
-- Custom project dependencies → separate layer in Dockerfile (fast rebuild: ~1 min vs 15-20 min)
-- When admin adds system dep to CUSTOM_SYSTEM_DEPS section, only that layer rebuilds
-- renv layer cache remains valid (no recompilation of R packages)
-
-### Detection and Auto-Fix
-
-**Validation Command**:
-```bash
-make check-system-deps
-```
-
-**Workflow**:
-1. Scans codebase for R packages
-2. Looks up required system dependencies via `system_deps_map.sh`
-3. Checks if dependencies are in Dockerfile
-4. Reports missing libraries with exact installation instructions
-5. Suggests where to add CUSTOM_SYSTEM_DEPS sections
-
-**Example Output**:
-```
-⚠ Missing system dependencies detected!
-
-  Package: sf
-    Build-time: libgdal-dev libproj-dev libgeos-dev
-    Runtime:    libgdal30 libproj25 libgeos-c1v5
-
-  Package: RPostgres
-    Build-time: postgresql-client libpq-dev
-    Runtime:    postgresql-client libpq5
-
-To fix: Edit Dockerfile and add to CUSTOM_SYSTEM_DEPS sections
-```
-
-**Integration with Validation**:
-- Part of `modules/validation.sh` - same pure shell approach as package validation
-- Requires no R installation on host
-- Runs independently or as part of larger validation workflow
-
-## Companion Projects
-
-### zzvim-R
-
-`zzvim-R` is a vim plugin for R development with terminal graphics support for kitty and iTerm2.
-
-**Project**: https://github.com/rgt47/zzvim-R
-
-**Features**:
-- Auto-display plots in kitty/iTerm2 terminals (`zzplot()`, `zzggplot()`)
-- Plot history navigation (`plot_prev()`, `plot_next()`)
-- Configuration: sizing, alignment, relative sizing
-- Split pane viewing (`plot_split()`)
-- Multi-terminal R session management
-- Code chunk navigation for R Markdown
-
-**Relationship to zzcollab**:
-- Provides terminal graphics when using vim + Docker workflows
-- `.Rprofile.local` template integrates with zzcollab's `.Rprofile`
-- Documented in `vignettes/workflow-zzvim-r-plots.Rmd`
-
-**When to Use**:
-- Vim/neovim users developing R in kitty or iTerm2
-- Docker development with `make r` workflow
-- Users who want auto-display instead of manual `kitty +kitten icat`
-
-### zzrenvcheck
-
-`zzrenvcheck` is a companion R package that provides an alternative interface to package dependency validation.
-
-**Project**: https://github.com/rgt47/zzrenvcheck
-
-**Features**:
-- R package interface (for R users, cross-platform including Windows)
-- Standalone shell script (for CI/CD, no R required)
-- More granular control and detailed reporting
-- Full testthat test coverage
-
-**Relationship to zzcollab**:
-- **zzcollab validation.sh**: Package validation + system dependency detection (Docker-focused)
-- **zzrenvcheck**: R package validation only (cross-platform R interface)
-- Both use same extraction logic (19 filters, same package patterns)
-- No duplicate work: system_deps_map.sh is Docker-specific (not applicable to zzrenvcheck)
-
-**When to Use**:
-- **zzcollab validation.sh**: Docker projects, system dependency concerns, pure shell preference
-- **zzrenvcheck R package**: Windows users, RStudio integration, programmatic access
-- **zzrenvcheck shell script**: CI/CD pipelines, no R installation available
-
-## Data Documentation System
-
-ZZCOLLAB includes automated data documentation templates following research best practices.
-
-**Automated Templates**:
-- `data/README.md`: Comprehensive template with Palmer Penguins example
-- `DATA_WORKFLOW_GUIDE.md`: 6-phase data management workflow
-
-**Key Benefits**:
-- Standardized documentation with 13 structured sections
-- Traceability between raw data, scripts, and derived datasets
-- >90% test coverage requirements
-- Docker workflow integration
+Covered packages: sf, terra, RPostgres, magick, xml2, and more. See module for full list.
 
 ## Development Workflows
 
-*For comprehensive development commands, see [Development Guide](docs/DEVELOPMENT.md)*
-
-### Quick Development Reference
-
-**Package Validation (NO HOST R REQUIRED!)**:
-```bash
-make check-renv             # Full validation + auto-fix (strict mode, default)
-make check-renv-no-fix      # Validation only, no auto-add
-make check-renv-no-strict   # Standard mode (skip tests/, vignettes/)
-make check-system-deps      # Check for missing system dependencies in Dockerfile
-```
-**Auto-fixes**: Code → DESCRIPTION → renv.lock (pure shell: curl + jq + awk + grep)
-**System Dependencies**: Detects R packages needing system libraries, suggests Dockerfile additions
-
-**R Package Development**:
+**Package Development**:
 ```bash
 make test                    # Run R package tests
 make docker-test            # Run tests in container
 make check                  # R CMD check validation
 ```
 
-**Docker Environments (Auto-snapshot on Exit)**:
+**Docker Environments**:
 ```bash
-make r                     # Interactive shell (recommended)
+make r                     # Interactive R (recommended)
 make rstudio               # RStudio Server at localhost:8787
-# All targets automatically:
-#   1. Snapshot renv.lock on container exit
-#   2. Validate packages on host (pure shell)
 ```
 
 **Navigation Shortcuts** (install via `./modules/navigation_scripts.sh --install`):
 ```bash
-# Run make targets from any subdirectory
-mr                         # make r (start container) from anywhere
+mr                         # make r from anywhere in project
 mr test                    # make test from anywhere
-
-# One-letter directory navigation
 r                          # Jump to project root
 s                          # Jump to analysis/scripts/
-p                          # Jump to analysis/report/
-t                          # Jump to analysis/data/
-w                          # Jump to analysis/data/raw_data/
-y                          # Jump to analysis/data/derived_data/
-nav                        # List all shortcuts
 ```
 
-**Team Collaboration**:
-```bash
-# Team Lead
-make docker-build          # Build team image
-make docker-push-team      # Push to Docker Hub
-git add . && git commit -m "Initial project setup" && git push
+See `docs/DEVELOPMENT.md` for complete commands.
 
-# Team Member
-zzcollab --use-team-image  # Download team's Docker image
-make r             # Start development
-```
+## Companion Projects
 
-## Docker Architecture
-
-*For comprehensive Docker details, see [Docker Architecture Guide](docs/DOCKER_ARCHITECTURE.md)*
-
-### Platform Compatibility Quick Reference
-
-**ARM64 Compatible**: rocker/r-ver, rocker/rstudio
-**AMD64 Only**: rocker/verse, rocker/tidyverse, rocker/geospatial, rocker/shiny
-
-**ARM64 Solutions**:
-```bash
-# Use compatible base images
-FROM rocker/rstudio:latest    # ARM64 compatible
-
-# Or build custom ARM64 verse equivalent (see DOCKER_ARCHITECTURE.md)
-```
-
-## Solo Developer Workflow
-
-ZZCOLLAB provides streamlined workflow for solo developers with professional-grade reproducibility.
-
-### Quick Start
-```bash
-# 1. One-time setup
-git clone https://github.com/rgt47/zzcollab.git && cd zzcollab && ./install.sh
-zzcollab -c init
-zzcollab -c set team-name "myteam"
-
-# 2. Create project
-mkdir penguin-analysis && cd penguin-analysis
-zzcollab
-
-# 3. Daily development
-make r              # Enter container
-# ... work inside container ...
-exit                # Exit container
-make docker-test && git add . && git commit -m "Add analysis" && git push
-```
-
-### Transition to Team
-```bash
-# Convert solo project to team collaboration
-zzcollab -t yourname -p penguin-analysis -r analysis
-make docker-build && make docker-push-team
-git add . && git commit -m "Convert to team collaboration" && git push
-```
+- **zzvim-R** (https://github.com/rgt47/zzvim-R): Vim plugin for R with terminal graphics
+- **zzrenvcheck** (https://github.com/rgt47/zzrenvcheck): R package for dependency validation
 
 ## R Package Integration
 
-Complete R interface with 25 functions:
+25 functions available. Key ones:
 
-**Configuration**: init_config(), set_config(), get_config(), list_config()
-**Projects**: init_project(), join_project(), setup_project()
-**Docker**: status(), rebuild(), team_images()
-**Packages**: add_package(), sync_env()
-**Analysis**: run_script(), render_report(), validate_repro()
-**Git**: git_status(), git_commit(), git_push(), create_pr(), create_branch()
-
-**Help System**:
 ```r
-zzcollab_help()                    # Main help
-zzcollab_help("quickstart")        # Quick start
-zzcollab_help("workflow")          # Daily workflow
-zzcollab_help("config")            # Configuration guide
+init_project("my-research")                    # Solo project
+init_project(team_name = "lab", project_name = "study")  # Team project
+zzcollab_help()                                # Help system
 ```
 
 ## Version History
 
-*For complete version history and changelog, see [CHANGELOG.md](CHANGELOG.md)*
+See `CHANGELOG.md` for complete version history.
 
 **Current Version**: 2.0 (Unified Paradigm Release, 2025)
 
-**Recent Major Changes**:
-
-### December 19, 2025 - Test Infrastructure Simplification and Module Refactoring
-
-**Simplified shell test infrastructure** - Replaced complex BATS tests with simpler bash test scripts:
-
-**Shell Test Changes**:
-- Removed 12 BATS test files that referenced non-existent or renamed functions
-- Created 3 new bash test scripts with 52 total tests:
-  - `tests/shell/test-core.sh` (16 tests) - validate_package_name, command_exists, logging, safe_mkdir, require_module
-  - `tests/shell/test-cli.sh` (22 tests) - require_arg, validate_team_name, validate_project_name, validate_base_image
-  - `tests/shell/test-validation.sh` (14 tests) - verify_description_file, format_r_package_vector, add_package_to_description
-- Created `tests/shell/test_helpers.sh` - test utilities, assertions, module loading
-- Created `tests/shell/run_all_tests.sh` - unified test runner
-
-**CI Workflow Updates**:
-- Simplified `.github/workflows/shell-tests.yml` from 692 lines to 58 lines
-- Removed references to non-existent BATS test files
-- Updated `tests/run-all-tests.sh` to run bash test scripts (BATS now optional)
-
-**R Package Fixes**:
-- Fixed test assertion in `test-r-functions.R:150` (incorrect NULL check)
-- Moved mock project files from `tests/testthat/` to `tests/testthat/fixtures/`
-- Updated `.Rbuildignore` to exclude test artifacts and non-standard files
-- Package now builds with 0 errors, 0 warnings, 0 notes
-
-**Module Structure** (lib/ vs modules/):
-- `lib/` contains foundation modules: core.sh, constants.sh, templates.sh
-- `modules/` contains feature modules: cli.sh, config.sh, docker.sh, github.sh, help.sh, profiles.sh, project.sh, validation.sh
-
-**Files Modified**:
-- `tests/shell/test_helpers.sh` - New test helper utilities
-- `tests/shell/test-core.sh` - New core module tests
-- `tests/shell/test-cli.sh` - New CLI module tests
-- `tests/shell/test-validation.sh` - New validation module tests
-- `tests/shell/run_all_tests.sh` - New test runner
-- `.github/workflows/shell-tests.yml` - Simplified CI workflow
-- `tests/run-all-tests.sh` - Updated to run bash tests
-- `tests/testthat/test-r-functions.R` - Fixed test assertion
-- `.Rbuildignore` - Added exclusions for test artifacts
-
-### December 18, 2025 - Kitty Terminal Graphics and LSP-Ready Docker Profiles
-
-**New Docker profiles for vim/neovim users** - Added languageserver support without X11 overhead:
-
-- **Created `ubuntu_standard_analysis_vim` profile** (new default):
-  - Based on rocker/tidyverse with languageserver for R LSP integration
-  - No X11 libraries - uses kitty's native graphics protocol or httpgd
-  - ~1.8GB image size (lighter than X11 profiles)
-  - Dockerfile: `templates/Dockerfile.ubuntu_standard_analysis_vim`
-
-- **Created `ubuntu_x11_analysis_vim` profile**:
-  - Same as above but includes X11 support for users not using kitty
-  - ~2.2GB image size
-  - Dockerfile: `templates/Dockerfile.ubuntu_x11_analysis_vim`
-
-- **Changed default profile**: `ubuntu_standard_minimal` → `ubuntu_standard_analysis_vim`
-  - Updated in `modules/constants.sh`
-  - Better out-of-box experience for vim users with LSP
-
-**New vignettes for kitty graphics workflows**:
-
-- **`vignettes/workflow-kitty-graphics.Rmd`**: Manual kitty graphics workflow
-  - Basic `kitty +kitten icat` usage
-  - Docker-aware `kp()` helper function for mounted volumes
-  - httpgd for interactive graphics
-  - Vim + Docker workflow with terminal splits
-  - Comparison with X11 approach
-
-- **`vignettes/workflow-zzvim-r-plots.Rmd`**: zzvim-R terminal graphics integration
-  - Auto-display with `zzplot()` and `zzggplot()`
-  - Plot history navigation (`plot_prev()`, `plot_next()`)
-  - Configuration: `set_plot_size()`, `set_plot_align()`, `set_plot_size_relative()`
-  - Split pane viewing with `plot_split()`
-  - Full function reference and troubleshooting
-
-**Files Modified**:
-- `templates/Dockerfile.ubuntu_standard_analysis_vim` - New profile
-- `templates/Dockerfile.ubuntu_x11_analysis_vim` - New profile
-- `templates/bundles.yaml` - Added both profiles
-- `modules/constants.sh` - Changed default profile
-- `vignettes/workflow-kitty-graphics.Rmd` - New vignette
-- `vignettes/workflow-zzvim-r-plots.Rmd` - New vignette
-
-### December 12, 2025 - Documentation Reorganization for Wider Project Sharing
-
-**User-focused README restructuring** - Separated end-user and developer documentation:
-
-- **Updated `templates/README.md`**: Split into two clear sections
-  - "Quick Start: Run the Analysis" - For end users who just want reproducible results
-    - Only requires Docker + Git (no zzcollab knowledge needed)
-    - 3 simple commands: clone, build, run
-    - Includes Rmarkdown rendering example: `make r < 'rmarkdown::render("analysis/report/report.Rmd")'`
-    - Clear output expectations (figures, data, reports)
-  - "For Developers: Using zzcollab" - For project contributors
-    - Full zzcollab framework setup and team collaboration
-    - Development workflows and helper shortcuts
-    - All technical details for active development
-
-- **Updated `pznblastanalysis` README**: Applied same structure to demonstrate pattern
-  - Quick Start section for reproducibility without framework learning curve
-  - Developer section for zzcollab users and contributors
-  - Both sections now live in template, reused by all new projects
-
-- **Updated `.gitignore`**: Added `.zzcollab/` directory exclusion
-  - User-specific configuration (`.zzcollab/manifest.json`, `uninstall.sh`) no longer committed
-  - Framework files (Dockerfile, Makefile, renv.lock, .Rprofile) remain committed
-  - Prevents merge conflicts from per-user metadata
-  - Applied to both active project and template for consistency
-
-**Impact**:
-- zzcollab projects can now be shared widely with non-technical end users
-- Researchers can reproduce analyses without learning the framework
-- Developers still have full access to collaborative tools
-- All future projects automatically have proper documentation split
-- Reduced friction for GitHub sharing (no user-specific files, clear instructions)
-
-**Files Modified**:
-- `templates/README.md` - Complete restructure (85 lines changed)
-- `templates/.gitignore` - Added `.zzcollab/` (2 lines)
-- `pznblastanalysis/README.md` - Same restructure as template
-- `pznblastanalysis/.gitignore` - Same .zzcollab/ exclusion
-
-### December 6, 2025 - Comprehensive Test Suite Implementation
-
-**Complete test infrastructure overhaul** - 4-phase implementation achieving 68% shell module coverage with 385+ new tests:
-
-**Phase 1: Critical Blockers (244+ tests)**
-- Enabled CLI tests in CI/CD pipeline with coverage reporting
-- Added code coverage enforcement (80% minimum threshold for both shell and R packages)
-- Created validation.sh test suite (35 BATS tests) - package extraction, CRAN API, renv.lock, DESCRIPTION operations
-- Created profile_validation.sh test suite (44 BATS tests) - profile selection, architecture compatibility, system requirements
-- Created end-to-end reproducibility tests (30 BATS tests) - Five Pillars validation across Dockerfile, renv.lock, .Rprofile, source code, data
-
-**Phase 2: Shell Module Tests (101 tests)**
-- Phase 2.1: dockerfile_generator.sh (41 BATS tests) - syntax validation, multi-architecture builds, template substitution, layer optimization
-- Phase 2.2: Six additional modules (60 BATS tests)
-  - help.sh: 10 tests for help system functionality
-  - rpackage.sh: 15 tests for R package structure creation
-  - github.sh: 10 tests for GitHub repository management
-  - cicd.sh: 12 tests for GitHub Actions workflow generation
-  - structure.sh: 8 tests for project directory structure
-  - devtools.sh: 5 tests for Makefile and .Rprofile configuration
-
-**Phase 3: R Package Tests (25 tests)**
-- Created test-r-functions.R with 25 testthat tests covering:
-  - Validation functions (docker names, paths, types)
-  - Package management (add_package, sync_env, validate_repro)
-  - Script execution and reporting (run_script, render_report)
-  - Git workflow (commit, push, create branches, pull requests)
-  - Project initialization (init_project, join_project)
-  - Configuration management (get_config, set_config, list_config)
-
-**Phase 4: GitHub Workflow Enhancements**
-- Phase 4.1: R version matrix expansion
-  - Updated r-package.yml with multi-platform testing matrix
-  - 4 R versions (4.2, 4.3, 4.4, 4.5) × 3 OS (Ubuntu, macOS, Windows)
-  - Total 12 parallel job combinations (1200% increase from single configuration)
-  - fail-fast: false ensures all combinations complete even if one fails
-
-- Phase 4.2: Security scanning workflow
-  - Created security-scan.yml with Trivy container vulnerability detection
-  - Hadolint Dockerfile best practices validation
-  - Dependency vulnerability checks for R packages
-  - SARIF format results uploaded to GitHub Security tab
-  - Weekly scheduled scans (Monday 2 AM UTC)
-
-- Phase 4.3: Performance benchmarking workflow
-  - Created benchmarks.yml tracking Docker build performance (cold vs cached)
-  - R package installation performance metrics
-  - Test suite execution time measurement
-  - 90-day artifact retention for historical analysis
-  - Performance regression detection capabilities
-
-- Phase 4.4: Docker validation in integration tests
-  - 5 new validation tests in test-e2e-reproducibility.bats
-  - Version pinning validation (no :latest tags)
-  - Layer optimization checks (RUN command consolidation)
-  - Working directory security validation
-  - .Rprofile critical options enforcement
-  - Session configuration consistency
-
-**Test Infrastructure Summary**
-- Total new tests: 385+ (320+ shell, 25 R, 35+ integration)
-- Test files: 14 total (11 new, 3 enhanced)
-- Shell module coverage: 68% (13 of 19 modules, up from 10.5%)
-- GitHub workflows: 5 workflows (2 new, 1 expanded, 2 new)
-- Quality gates: Code coverage enforcement, security scanning, performance tracking
-- CI/CD jobs: 15+ parallel (12 R checks + security + benchmarks)
-- Production readiness: ~85/100 (up from 35/100)
-
-**Files Modified**
-- New test files: 11 BATS/testthat files, 222+ lines per file on average
-- Updated workflows: r-package.yml (matrix), shell-tests.yml (13 module sections)
-- New workflows: security-scan.yml (95 lines), benchmarks.yml (200 lines)
-- Enhanced integration tests: test-e2e-reproducibility.bats (+96 lines)
-
-**Key Achievements**
-- Multi-platform validation: 12 R version × OS combinations tested in parallel
-- Automated security scanning: Trivy + Hadolint + dependency checks with weekly runs
-- Performance monitoring: Docker build, R package, and test execution benchmarks
-- Docker reproducibility: Version pinning, layer optimization, critical options validation
-- Code quality gates: 80% coverage enforcement, automated test pass rate validation
-
-### December 1, 2025 - Multi-Language Reproducibility Documentation
-
-**New documentation** - Analysis of ZZCOLLAB's reproducibility limitations with multi-language documents:
-
-- **Created `docs/zzcollab_python.md`**: Comprehensive analysis of multi-language reproducibility gaps
-  - Documents ZZCOLLAB's R-centric Five Pillars design
-  - Explains why Python (via reticulate) and Observable JS break reproducibility guarantees
-  - renv.lock tracks R packages only; Python packages and JS libraries are untracked
-  - Provides risk matrix: Pure R (Low) → R+Python+OJS (Very High)
-  - Documents concrete failure scenarios (version drift over time)
-  - Four potential solutions: extend ZZCOLLAB, Docker-first, separate environments, language-agnostic tools (pixi, conda-lock, nix)
-  - Recommendations for strict reproducibility vs educational content
-
-- **Key technical points documented**:
-  - `reticulate` package is tracked, but Python environment is NOT
-  - Observable JS loads from CDN with floating/unpinned versions by default
-  - Version pinning syntax for OJS: `Plot = require("@observablehq/plot@0.6.11")`
-  - Manual `requirements.txt` or `environment.yml` needed for Python reproducibility
-
-- **Scope clarification**: ZZCOLLAB provides complete R reproducibility; multi-language reproducibility is user responsibility
-
-### November 30, 2025 - Documentation Tone Standardization
-
-**Scholarly tone enforcement** - Systematic removal of promotional language from all documentation:
-
-- **Vignettes updated (7 files)**:
-  - Removed promotional terms: "seamless/seamlessly", "effortless/effortlessly", "powerful", "elegant/elegantly", "dramatically", "beautiful", "next-generation"
-  - Replaced with neutral alternatives: "integrate" instead of "integrate seamlessly", "reduce time" instead of "dramatically speed up"
-  - Removed decorative emojis (✨, 🚀, 🎉) used for emphasis
-  - Files: `configuration.Rmd`, `quickstart-R.Rmd`, `reusable-team-images.Rmd`, `workflow-blog-development.Rmd`, `workflow-data-analysis.Rmd`, `workflow-package-development.Rmd`, `workflow-scholarly-manuscript.Rmd`, `reproducibility-layers.Rmd`, `getting-started.Rmd`, `quickstart.Rmd`
-
-- **Technical documentation updated (13 files)**:
-  - `docs/DOCKER_MOTIVATION_DATA_ANALYSIS.md`: "Seamless" removed from headers
-  - `docs/WHY_DOCKER_AND_RENV.md`: "The Silent Killer" → "A Hidden Issue"
-  - `docs/RENV_MOTIVATION_DATA_ANALYSIS.md`: "Seamless collaboration" → "Consistent collaboration"
-  - `docs/TECHNICAL_EVALUATION.md`: "elegantly" → "effectively"
-  - `docs/VALIDATION_WHITEPAPER.md`: "seamlessly" and "dramatically" removed
-  - `docs/DOCKER_RENV_SYNERGY_MOTIVATION.md`: "powerful tools" → "effective tools"
-  - `docs/REPRODUCIBILITY_BEST_PRACTICES.md`: "effortless" → "straightforward"
-  - `docs/R_PACKAGE_INTEGRATION_SUMMARY.md`: "Seamless integration" → "Integration"
-  - `docs/validation_as_standalone.md`: "Beautiful output" → "Formatted output"
-  - `docs/DEVELOPMENT.md`, `docs/VERBOSITY_LEVELS.md`, `docs/REPRODUCIBILITY_WORKFLOW_TUTORIAL.md`: Emoji removals
-
-- **Preserved appropriate uses**:
-  - Factual reporting (e.g., Zillow's failure description)
-  - Code comments describing test behavior
-  - Deprecated files (not active documentation)
-
-- **Documentation style guidelines**:
-  - Use neutral, factual language throughout
-  - Avoid superlatives and promotional adjectives
-  - Replace "seamless/effortless" with specific descriptions of what the feature does
-  - Reserve emojis for status indicators (✅, ❌) not emphasis
-
-### November 27, 2025 - Navigation Shortcuts Enhancement
-
-**New `mr()` function** - Run make targets from any subdirectory in a zzcollab project:
-
-- **Added `mr()` to navigation_scripts.sh**: Runs make targets from anywhere in project
-  - Uses `_zzcollab_root()` to find project root (looks for DESCRIPTION or .zzcollab_project)
-  - Defaults to `make r` (start container) when called without arguments
-  - Supports any make target: `mr test`, `mr r`, `mr check-renv`
-  - Files: `templates/modules/navigation_scripts.sh`
-
-- **Updated documentation**:
-  - `nav()` function now documents `mr` command
-  - Install/help text updated with `mr` examples
-  - CLAUDE.md Development Workflows section updated
-
-- **Usage**:
-  ```bash
-  cd analysis/scripts
-  mr              # Runs 'make r' from project root
-  mr test         # Runs 'make test' from project root
-  ```
-
-### November 17, 2025 - Documentation Consistency Update
-
-**Comprehensive documentation alignment** - Systematic update of vignettes and technical documentation to reflect latest architecture:
-
-- **Vignettes updated (3 files)**:
-  - `quickstart.Rmd`: Updated package installation instructions, auto-restore documentation, profile counts (11→14+)
-  - `quickstart-R.Rmd`: Emphasized standard `install.packages()`, documented auto-snapshot/auto-restore architecture
-  - `quickstart-rstudio.Rmd`: Complete rewrite of package installation section (lines 215-233), removed incorrect `renv::install()` patterns
-
-- **Technical documentation updated (4 files)**:
-  - `docs/CONFIGURATION.md`: Changed package management description to emphasize `install.packages()` with auto-snapshot/auto-restore
-  - `docs/DEVELOPMENT.md`: Added comprehensive auto-restore documentation (lines 63-100), updated all workflow examples
-  - `docs/X11_PLOTTING_WORKFLOW.md`: Changed all `renv::install()` to `install.packages()` (3 occurrences)
-  - `docs/TEAM_WORKFLOW.md`: Updated team collaboration workflows with auto-snapshot/auto-restore patterns
-
-- **Key corrections**:
-  - Replaced `renv::install()` → `install.packages()` throughout user-facing documentation
-  - Added auto-restore documentation (missing from several docs)
-  - Updated profile count from "11 profiles" to "14+ profiles"
-  - Emphasized pure shell validation (no R required on host)
-  - Aligned all documentation with CLAUDE.md authoritative source
-
-- **Consistency achieved**:
-  - All vignettes now correctly recommend `install.packages()` not `renv::install()`
-  - All docs explain auto-snapshot on container exit and auto-restore on R startup
-  - Profile counts consistent across all documentation (14+)
-  - Workflow examples consistent with current architecture
-
-### November 15, 2025 - Dead Code Cleanup
-
-**Code Quality Improvement**: Systematic removal of unused functions to improve maintainability
-
-- **15 unused functions deleted**: Removed ~600-700 lines of dead code (9.7% reduction)
-  - **Validation structure functions (6)**: validate_analysis_structure, validate_cicd_structure, validate_devtools_structure, validate_directory_structure, validate_r_package_structure, validate_with_callback
-  - **CLI parsing functions (5)**: parse_base_image_list, parse_profile_list, validate_enum, check_team_image_availability, show_cli_debug
-  - **Utility functions (4)**: safe_copy, create_development_scripts, parse_description_suggests (2 instances)
-  - Functions were scaffolding that was never integrated into the workflow
-  - All deletions verified with no broken references
-
-- **Citation verification**: Fixed hallucinated reference in DOCKER_FIRST_MOTIVATION.Rmd
-  - Removed non-existent @ram2019building citation
-  - Corrected @nust2020practical metadata (Volume 111, 2021)
-  - All 17 citations now verified against scholarly sources
-
-- **Code reduced**: From 186 functions to 171 active functions
-  - Improved code clarity and reduced maintenance burden
-  - No functionality impacted - all deleted code was unused
-
-### November 2, 2025 - Complete Auto-Fix Pipeline & Package Filtering
-
-**Major Feature Addition**: Full automation of dependency management with intelligent filtering
-
-- **Complete auto-fix pipeline**: Code → DESCRIPTION → renv.lock
-  - Detects packages used in code via `library()`, `require()`, `pkg::function()`
-  - Automatically adds to DESCRIPTION Imports (pure awk)
-  - Automatically adds to renv.lock via CRAN API (curl + jq)
-  - Single `make check-renv` command fixes entire dependency chain
-  - Files: `modules/validation.sh` (lines 103-243, 871-923)
-
-- **Pure shell DESCRIPTION editing**: NO R required!
-  - add_package_to_description() uses awk to modify DESCRIPTION
-  - add_package_to_renv_lock() queries crandb.r-pkg.org API
-  - Creates proper JSON entries with jq
-  - All operations atomic with temp file backups
-
-- **macOS BSD grep compatibility** (CRITICAL FIX)
-  - Problem: grep -P (Perl regex) not available on macOS
-  - Solution: Replaced with grep -E (extended regex) + BSD patterns
-  - Now works on macOS, Linux, CI/CD, all BSD systems
-  - Files: `modules/validation.sh` (lines 283-333)
-
-- **Comprehensive package filtering** (19 filters applied)
-  - **Blocklist**: "package", "myproject", "local", "any", "zzcollab"
-  - **Pattern-based**: Pronouns (my, your), generic nouns (file, path)
-  - **Skip comments**: grep -v '^[[:space:]]*#' before extraction
-  - **Skip documentation**: README.Rmd, examples/, CLAUDE.md
-  - **Length filter**: Minimum 3 characters (removes "my", "an", "if")
-  - Result: 84 → 65 packages (19 false positives removed)
-  - Files: `modules/validation.sh` (lines 30-51, 302-333, 371-431)
-
-- **Default strict + auto-fix behavior**
-  - Changed defaults: strict_mode=true, auto_fix=true
-  - Scans all directories including tests/, vignettes/
-  - Auto-adds missing packages by default
-  - Opt-out flags: --no-strict, --no-fix
-  - Files: `modules/validation.sh` (lines 860-927)
-
-**Updated Makefile targets**:
-```bash
-make check-renv            # Full validation + auto-fix (default)
-make check-renv-no-fix     # Validation only
-make check-renv-no-strict  # Skip tests/ and vignettes/
-```
-
-### November 5, 2025 - .Rprofile-Based Auto-Snapshot & Critical Options
-
-**Major Architectural Simplification**: Replaced Docker entrypoint with R-native .Last() function
-
-- **Auto-snapshot on R exit**: `.Last()` function in .Rprofile
-  - Automatically runs `renv::snapshot()` when exiting R session
-  - No manual snapshot commands required
-  - R-native, reliable mechanism (no shell trap issues)
-  - Applies when exiting R in any container
-  - Configurable via environment variable (`ZZCOLLAB_AUTO_SNAPSHOT`)
-  - Files: `templates/.Rprofile`
-
-- **Critical reproducibility options**: Five options enforced in .Rprofile
-  - `stringsAsFactors = FALSE`: Character vectors stay as characters
-  - `contrasts = c("contr.treatment", "contr.poly")`: Statistical contrasts for models
-  - `na.action = "na.omit"`: Missing data handling
-  - `digits = 7`: Numeric precision
-  - `OutDec = "."`: Decimal separator consistency
-  - Monitored by `check_rprofile_options.R` (Pillar 3 of reproducibility)
-
-- **Removed Docker entrypoint**: Deleted `zzcollab-entrypoint.sh`
-  - Entrypoint trap approach was broken (`exec` replaces process)
-  - .Last() is R-native and actually works
-  - Containers now start R directly (CMD ["R"])
-  - Navigation shortcuts remain on host (`navigation_scripts.sh`)
-
-### October 27, 2025 - Docker-First Validation
-
-**Major Architectural Improvement**: Complete elimination of host R dependency for development workflow
-
-- **Pure shell validation** (`modules/validation.sh`): NO HOST R REQUIRED!
-  - Package extraction from code: pure shell (grep, sed, awk)
-  - DESCRIPTION parsing: pure shell (awk)
-  - renv.lock parsing: jq (JSON)
-  - Validates DESCRIPTION ↔ renv.lock consistency without R
-  - New Makefile targets: `make check-renv`, `make check-renv-strict`
-  - Runs automatically after all `docker-*` targets exit
-  - Files: `modules/validation.sh`, `templates/Makefile`
-
-- **Developer workflow transformation**:
-  - **Before**: Developers needed R on host to run `Rscript validate_package_environment.R`
-  - **After**: Entire development cycle works without host R installation
-  - Workflow: `make r` → work in R → `q()` → auto-snapshot → auto-validate
-
-**Earlier improvements** (same day):
-- **Static template matching**: `select_dockerfile_strategy()` now checks resolved values against static templates
-  - Prevents unnecessary custom generation when combination matches a static template
-  - Works regardless of whether flags were explicitly provided or defaulted
-  - Example: `zzcollab -b rocker/r-ver` now correctly uses static `Dockerfile.minimal`
-- **RSPM binary packages**: Fixed source compilation issue in Docker builds
-  - Problem: renv.lock modification date was too recent for RSPM snapshot availability
-  - Solution: Adjusted timestamp to ensure binary packages available (10-20x faster builds)
-  - Integrated into auto-snapshot entrypoint for automatic timestamp management
-  - Files: `modules/dockerfile_generator.sh`, `templates/Dockerfile.base.template`, `templates/Dockerfile.personal.team`, `modules/devtools.sh`, `templates/Makefile`
-
-### Earlier October 2025
-- Simplified user documentation - recommend `install.packages()` instead of `renv::install()`
-- Dynamic package management with auto-snapshot on container exit
-- Unified paradigm consolidation
-- Docker profile system refactoring (September 2025)
-- Five-level reproducibility framework
-- CRAN compliance achievement
-- Complete CI/CD pipeline resolution (August 2025)
-- Major refactoring and simplification (2024)
-
-## Documentation Resources
-
-ZZCOLLAB provides comprehensive documentation at multiple levels:
-
-### User Documentation
-
-- **ZZCOLLAB_USER_GUIDE.md**: Comprehensive user guide (v3.1)
-  - Architecture overview and core components
-  - Unified research compendium documentation
-  - Configuration system with examples
-  - Docker profile system and customization
-  - Solo and team collaboration workflows
-
-### Technical Guides (docs/)
-
-**Definitive System Guides**:
-- **TESTING_GUIDE.md** (26K): Testing framework and best practices
-- **CONFIGURATION.md** (22K): Multi-layered configuration system
-- **VARIANTS.md** (20K): Docker profile system guide
-- **DEVELOPMENT.md** (10K): Developer commands and workflows
-- **DOCKER_ARCHITECTURE.md** (8K): Docker technical details and custom images
-
-**Research Motivation Documents** (docs/motivation/):
-- **UNIT_TESTING_MOTIVATION_DATA_ANALYSIS.md** (39K): Scientific justification for testing
-- **CICD_MOTIVATION_DATA_ANALYSIS.md** (21K): Evidence-based CI/CD rationale
-- **RENV_MOTIVATION_DATA_ANALYSIS.md** (23K): Dependency management motivation
-- **DOCKER_MOTIVATION_DATA_ANALYSIS.md** (33K): Container-based research rationale
-
-**Development Standards** (docs/standards/):
-- **BASH_STANDARDS.md**: Bash coding standards and documentation format
-- **MODULE_DEPENDENCIES.md** (3K): Module dependency mapping
-- **CODING_STANDARDS.md**: General coding guidelines
-
-**Version History**:
-- **CHANGELOG.md**: Complete version history and all enhancements
-
-### Documentation Cross-References
-
-When working on zzcollab, refer users to:
-- Package management → Use `install.packages()` in containers (auto-captured on exit), see Package Management section above
-- Testing implementation → `docs/TESTING_GUIDE.md`
-- Configuration setup → `docs/CONFIGURATION.md`
-- Profile customization → `docs/VARIANTS.md`
-- Developer commands → `docs/DEVELOPMENT.md`
-- Docker architecture → `docs/DOCKER_ARCHITECTURE.md`
-- Version history → `CHANGELOG.md`
-- General usage → `ZZCOLLAB_USER_GUIDE.md`
-- Architecture details → `CLAUDE.md` (this file)
-
-## Problem/Solution Documentation Strategy
-
-ZZCOLLAB uses a **three-tier documentation system** for capturing problems and solutions discovered during development and testing. See `docs/DOCUMENTATION_STRATEGY.md` for comprehensive guidance.
-
-### The Three Tiers
-
-**Tier 1: Lessons Learned** (`docs/TESTING_LESSONS_LEARNED.md`)
-- **Purpose**: Capture tactical discoveries - problems found and solutions that worked
-- **When to use**: Same day as discovering a solution
-- **Format**: Narrative + code examples + generalizable lessons
-- **Audience**: All developers on zzcollab projects
-- **Example**: Section 11 - R Version Mismatches in Multi-Environment Development
-
-**Tier 2: Architecture Decision Records** (`docs/adr/`)
-- **Purpose**: Record strategic decisions affecting system design
-- **When to use**: Before/during implementation of major architectural changes
-- **Format**: Formal structure with options analysis, consequences, implementation details
-- **Audience**: Maintainers and future developers making similar decisions
-- **Files**:
-  - `0000-TEMPLATE.md` - ADR template for new decisions
-  - `0001-r-version-detection-and-mismatch-handling.md` - Example ADR
-
-**Tier 3: GitHub Issues** (`.github/ISSUE_TEMPLATE/`)
-- **Purpose**: Track work and discuss problems with team
-- **When to use**: Immediately when issue is discovered
-- **Format**: Structured templates
-- **Types**: Bug reports, feature requests, investigations
-- **Templates**:
-  - `bug_report.md` - For bugs and unexpected behavior
-  - `feature_request.md` - For feature ideas and improvements
-  - `investigation.md` - For problems discovered during development
-  - `config.yml` - Issue template configuration
-
-### Quick Decision Guide
-
-| Situation | Use | Why |
-|-----------|-----|-----|
-| Found solution to a problem | **Lessons Learned** | Captures practical knowledge for reuse |
-| Making major architectural decision | **ADR** | Preserves decision rationale for future |
-| Bug that needs fixing | **GitHub Issue** | Tracks work and enables team discussion |
-| Discovery during development | **Investigation Issue** | Documents problem/solution process |
-| Need guidance on documentation | **DOCUMENTATION_STRATEGY.md** | Comprehensive reference |
-
-### Workflow
-
-1. **Discover a problem** → Create GitHub Issue (Investigation type)
-2. **Find and test a solution** → Add to Lessons Learned (same day)
-3. **Major decision involved** → Create ADR (before/during implementation)
-4. **Link everything** → Reference ADRs in Lessons, link Issues to solutions
-
-### Key Principles
-
-- **Document immediately**: Rough documentation same day is better than perfect documentation never
-- **Link everything**: Lessons → ADRs, ADRs → Issues, Issues → Solutions
-- **Keep Lessons focused**: Document specific discoveries in *this* project
-- **Make ADRs about decisions**: Not explanations, but decision rationale with tradeoff analysis
-- **Use Issues for discussion**: Problems tracked as issues, solutions in Lessons/ADRs
-
-## Troubleshooting Memories
+**Recent highlights**:
+- December 2025: Test infrastructure simplification, LSP-ready Docker profiles
+- November 2025: Auto-fix pipeline, .Rprofile-based auto-snapshot, documentation standardization
+- October 2025: Docker-first validation (no host R required)
+
+## Troubleshooting
 
 ### renv Initialization Errors
-- **Memory**: Bootstrapping renv 1.1.4 showed installation issues
-  - Download of renv was successful
-  - Package installation completed
-  - Encountered error with script configuration
-  - Error message: `Error in if (script_config) { : the condition has length > 1`
-  - Execution halted with exit code 1
-- **Potential Solutions**:
-  - Check renv lockfile for consistency
-  - Verify script configuration parameters
-  - Use `renv::status()` to diagnose specific package installation issues
-  - Potentially use `renv::restore()` to rebuild environment
+
+If you see `Error in if (script_config) { : the condition has length > 1`:
+- Check renv.lock for consistency
+- Run `renv::status()` to diagnose
+- Try `renv::restore()` to rebuild environment
