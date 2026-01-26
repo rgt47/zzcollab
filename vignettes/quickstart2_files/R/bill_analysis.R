@@ -8,10 +8,10 @@ create_bill_plot <- function(data) {
                                       color = species)) +
     ggplot2::geom_point(size = 3, alpha = 0.7) +
     ggplot2::labs(
-      title = 'Palmer Penguins: Bill Dimensions',
-      x = 'Bill Length (mm)',
-      y = 'Bill Depth (mm)',
-      color = 'Species'
+      title = "Palmer Penguins: Bill Dimensions",
+      x = "Bill Length (mm)",
+      y = "Bill Depth (mm)",
+      color = "Species"
     ) +
     ggplot2::theme_minimal()
 }

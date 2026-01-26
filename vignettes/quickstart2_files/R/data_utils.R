@@ -27,8 +27,8 @@ load_penguin_data <- function(path = "analysis/data/derived_data/penguins_clean.
 #' @return data.frame of summary statistics
 #' @export
 summarize_by_species <- function(data) {
-  data %>%
-    dplyr::group_by(species) %>%
+  data |>
+    dplyr::group_by(species) |>
     dplyr::summarize(
       n = dplyr::n(),
       mean_bill_length = mean(bill_length_mm, na.rm = TRUE),
