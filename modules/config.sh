@@ -465,7 +465,10 @@ _load_file() {
     val=$(yaml_get "$file" "defaults.team_name") && [[ -n "$val" ]] && CONFIG_TEAM_NAME="$val"
     val=$(yaml_get "$file" "defaults.github_account") && [[ -n "$val" ]] && CONFIG_GITHUB_ACCOUNT="$val"
     val=$(yaml_get "$file" "defaults.dockerhub_account") && [[ -n "$val" ]] && CONFIG_DOCKERHUB_ACCOUNT="$val"
+    # Note: defaults.profile_name is deprecated, use docker.default_profile instead
+    # Load legacy value first, then override with docker.default_profile if set
     val=$(yaml_get "$file" "defaults.profile_name") && [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
+    val=$(yaml_get "$file" "docker.default_profile") && [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
     val=$(yaml_get "$file" "defaults.libs_bundle") && [[ -n "$val" ]] && CONFIG_LIBS_BUNDLE="$val"
     val=$(yaml_get "$file" "defaults.pkgs_bundle") && [[ -n "$val" ]] && CONFIG_PKGS_BUNDLE="$val"
     val=$(yaml_get "$file" "defaults.r_version") && [[ -n "$val" ]] && CONFIG_R_VERSION="$val"
@@ -1077,7 +1080,7 @@ config_set() {
         github_default_branch) yaml_path="github.default_branch" ;;
         # Docker fields
         docker_account) yaml_path="docker.account" ;;
-        docker_default_profile) yaml_path="docker.default_profile" ;;
+        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
         docker_registry) yaml_path="docker.registry" ;;
         # Dotted keys pass through as-is
         *"."*) yaml_path="$key" ;;
@@ -1184,7 +1187,6 @@ config_list() {
         echo ""
         echo "Team Defaults:"
         printf "  %-25s %s\n" "team_name:" "${CONFIG_TEAM_NAME:-<not set>}"
-        printf "  %-25s %s\n" "profile_name:" "${CONFIG_PROFILE_NAME:-<not set>}"
         printf "  %-25s %s\n" "with_examples:" "$CONFIG_WITH_EXAMPLES"
     fi
 
