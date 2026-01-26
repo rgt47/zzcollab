@@ -1054,13 +1054,35 @@ config_set() {
     # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
     key="${key//-/_}"
 
-    # Handle dotted keys (e.g., author.name) vs simple keys (e.g., profile_name)
-    if [[ "$key" == *"."* ]]; then
-        yaml_set "$file" "$key" "$value" && log_success "Set $key = $value"
-    else
-        # Simple keys go in defaults section
-        yaml_set "$file" "defaults.$key" "$value" && log_success "Set defaults.$key = $value"
-    fi
+    # Map simple keys to their proper dotted paths
+    local yaml_path
+    case "$key" in
+        # Author fields
+        author_name) yaml_path="author.name" ;;
+        author_email) yaml_path="author.email" ;;
+        author_orcid) yaml_path="author.orcid" ;;
+        author_affiliation) yaml_path="author.affiliation" ;;
+        author_affiliation_full) yaml_path="author.affiliation_full" ;;
+        author_roles) yaml_path="author.roles" ;;
+        # License fields
+        license_type) yaml_path="license.type" ;;
+        license_year) yaml_path="license.year" ;;
+        license_holder) yaml_path="license.holder" ;;
+        license_include_file) yaml_path="license.include_file" ;;
+        # GitHub fields
+        github_account) yaml_path="github.account" ;;
+        github_default_visibility) yaml_path="github.default_visibility" ;;
+        github_default_branch) yaml_path="github.default_branch" ;;
+        # Docker fields
+        docker_default_profile) yaml_path="docker.default_profile" ;;
+        docker_registry) yaml_path="docker.registry" ;;
+        # Dotted keys pass through as-is
+        *"."*) yaml_path="$key" ;;
+        # Everything else goes to defaults section
+        *) yaml_path="defaults.$key" ;;
+    esac
+
+    yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
 }
 
 config_get() {
