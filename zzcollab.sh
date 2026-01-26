@@ -164,6 +164,57 @@ ensure_workspace_initialized() {
 }
 
 #=============================================================================
+# DOCKER IMAGE HELPER
+#=============================================================================
+
+# Ensure Docker image exists, prompt to build if not
+# Usage: ensure_docker_image_built [project_name]
+# Returns 0 on success, 1 on failure/cancel
+ensure_docker_image_built() {
+    local project_name="${1:-$(basename "$(pwd)")}"
+
+    # Already exists
+    if docker image inspect "$project_name" &>/dev/null; then
+        return 0
+    fi
+
+    # Check if Dockerfile exists
+    if [[ ! -f "Dockerfile" ]]; then
+        log_warn "No Dockerfile found"
+
+        if [[ ! -t 0 ]]; then
+            log_error "Non-interactive mode: run 'zzc docker' first"
+            return 1
+        fi
+
+        read -p "Generate Dockerfile now? [Y/n] " -n 1 -r; echo
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            log_info "Generate later with: zzc docker"
+            return 1
+        fi
+
+        cmd_docker --build || return 1
+        return 0  # cmd_docker already built the image
+    fi
+
+    log_warn "Docker image '$project_name' not found"
+
+    # Non-interactive mode
+    if [[ ! -t 0 ]]; then
+        log_error "Non-interactive mode: build first with 'zzc docker --build'"
+        return 1
+    fi
+
+    read -p "Build it now? [Y/n] " -n 1 -r; echo
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        log_info "Build later with: zzc docker --build"
+        return 1
+    fi
+
+    build_docker_image "$project_name"
+}
+
+#=============================================================================
 # SUBCOMMAND ROUTING
 #=============================================================================
 
@@ -1042,12 +1093,8 @@ cmd_dockerhub() {
         return 1
     fi
 
-    # Check if image exists locally
-    if ! docker image inspect "$project_name" &>/dev/null; then
-        log_error "Docker image '$project_name' not found"
-        echo "  Build first: zzc docker" >&2
-        return 1
-    fi
+    # Ensure image exists (prompts to build if not)
+    ensure_docker_image_built "$project_name" || return 1
 
     # Get DockerHub username from config or environment
     require_module "config"
