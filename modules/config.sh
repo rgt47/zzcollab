@@ -68,6 +68,7 @@ CONFIG_STYLE_ASSIGNMENT=""
 CONFIG_STYLE_NAMING_CONVENTION=""
 
 # Extended configuration state - Docker
+CONFIG_DOCKER_ACCOUNT=""
 CONFIG_DOCKER_DEFAULT_PROFILE=""
 CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
 CONFIG_DOCKER_REGISTRY=""
@@ -193,7 +194,7 @@ _interactive_cleanup() {
     echo ""
     log_warn "Configuration cancelled by user"
     echo "Partial configuration may have been saved."
-    echo "Run 'zzcollab -c init --interactive' to continue setup."
+    echo "Run 'zzcollab config init --interactive' to continue setup."
     return 0
 }
 
@@ -502,6 +503,7 @@ _load_file() {
     val=$(yaml_get "$file" "style.naming_convention") && [[ -n "$val" ]] && CONFIG_STYLE_NAMING_CONVENTION="$val"
 
     # Docker section
+    val=$(yaml_get "$file" "docker.account") && [[ -n "$val" ]] && CONFIG_DOCKER_ACCOUNT="$val"
     val=$(yaml_get "$file" "docker.default_profile") && [[ -n "$val" ]] && CONFIG_DOCKER_DEFAULT_PROFILE="$val"
     val=$(yaml_get "$file" "docker.default_base_image") && [[ -n "$val" ]] && CONFIG_DOCKER_DEFAULT_BASE_IMAGE="$val"
     val=$(yaml_get "$file" "docker.registry") && [[ -n "$val" ]] && CONFIG_DOCKER_REGISTRY="$val"
@@ -617,7 +619,7 @@ config_init() {
         config_interactive_setup
     else
         log_success "Created: $CONFIG_USER"
-        log_info "Run 'zzcollab -c init --interactive' for guided setup"
+        log_info "Run 'zzcollab config init --interactive' for guided setup"
     fi
 }
 
@@ -632,7 +634,7 @@ _create_default_config() {
 # This file stores your personal defaults for R package development.
 # Values here are used unless overridden by CLI flags or project config.
 #
-# Run 'zzcollab -c init --interactive' for guided setup.
+# Run 'zzcollab config init --interactive' for guided setup.
 
 #=============================================================================
 # AUTHOR INFORMATION
@@ -776,7 +778,7 @@ config_interactive_setup() {
     # Show menu
     echo "  What would you like to do?"
     echo ""
-    echo "    1) Complete missing values (recommended for first-time setup)"
+    echo "    1) Review basic configuration values interactively"
     echo "    2) Change existing values"
     echo "    3) Edit advanced settings (R Package, Code Style, CI/CD)"
     echo "    4) Full setup (all sections)"
@@ -809,9 +811,9 @@ config_interactive_setup() {
     log_success "Configuration saved to: $CONFIG_USER"
     echo ""
     echo "Quick commands:"
-    echo "  zzcollab -c list              # View all settings"
-    echo "  zzcollab -c set KEY VALUE     # Change a setting"
-    echo "  zzcollab -c get KEY           # Get a setting value"
+    echo "  zzcollab config list              # View all settings"
+    echo "  zzcollab config set KEY VALUE     # Change a setting"
+    echo "  zzcollab config get KEY           # Get a setting value"
     echo ""
 }
 
@@ -1030,7 +1032,7 @@ _save_and_exit() {
     echo ""
     log_warn "Configuration cancelled"
     log_info "Progress saved to: $CONFIG_USER"
-    log_info "Run 'zzcollab -c init --interactive' to continue"
+    log_info "Run 'zzcollab config init --interactive' to continue"
 }
 
 #=============================================================================
@@ -1074,6 +1076,7 @@ config_set() {
         github_default_visibility) yaml_path="github.default_visibility" ;;
         github_default_branch) yaml_path="github.default_branch" ;;
         # Docker fields
+        docker_account) yaml_path="docker.account" ;;
         docker_default_profile) yaml_path="docker.default_profile" ;;
         docker_registry) yaml_path="docker.registry" ;;
         # Dotted keys pass through as-is
@@ -1155,6 +1158,7 @@ config_list() {
     if [[ "$show_section" == "all" || "$show_section" == "docker" ]]; then
         echo ""
         echo "Docker:"
+        printf "  %-25s %s\n" "account:" "${CONFIG_DOCKER_ACCOUNT:-<not set>}"
         printf "  %-25s %s\n" "default_profile:" "${CONFIG_DOCKER_DEFAULT_PROFILE:-<not set>}"
         printf "  %-25s %s\n" "registry:" "${CONFIG_DOCKER_REGISTRY:-<not set>}"
     fi
