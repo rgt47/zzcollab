@@ -839,37 +839,15 @@ cmd_list() {
     case "$list_type" in
         profiles)
             require_module "profiles"
-            echo "Available profiles (base images):"
-            echo ""
-            echo "  minimal      rocker/r-ver        Minimal R environment"
-            echo "  tidyverse    rocker/tidyverse    Tidyverse packages included"
-            echo "  verse        rocker/verse        Tidyverse + publishing tools"
-            echo "  rstudio      rocker/rstudio      RStudio Server"
-            echo "  shiny        rocker/shiny        Shiny Server"
-            echo ""
-            echo "Usage: zzcollab docker --profile <name>"
+            list_profiles
             ;;
         libs)
-            echo "System library bundles (auto-derived from R packages):"
-            echo ""
-            echo "  graphics     libcairo2-dev libfreetype6-dev libpng-dev"
-            echo "  database     libpq-dev libmariadb-dev libsqlite3-dev"
-            echo "  network      libcurl4-openssl-dev libssl-dev libssh2-1-dev"
-            echo "  text         libxml2-dev libicu-dev"
-            echo ""
-            echo "Note: System deps are now auto-derived from R packages in"
-            echo "DESCRIPTION/renv.lock. Manual --libs flag rarely needed."
+            require_module "profiles"
+            list_library_bundles
             ;;
         pkgs)
-            echo "R package bundles:"
-            echo ""
-            echo "  tidyverse    dplyr, tidyr, ggplot2, readr, purrr, etc."
-            echo "  modeling     lme4, brms, rstanarm, broom"
-            echo "  reporting    rmarkdown, knitr, bookdown, xaringan"
-            echo "  tables       gt, flextable, kableExtra"
-            echo ""
-            echo "Note: Packages are managed via renv.lock. Add packages with"
-            echo "install.packages() inside the container."
+            require_module "profiles"
+            list_package_bundles
             ;;
         all|"")
             cmd_list profiles

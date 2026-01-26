@@ -380,3 +380,115 @@ get_profile_pkgs() {
         in_target && /pkgs:/ { gsub(/.*pkgs: */, ""); print; exit }
     ' "$bundles_file"
 }
+
+#=============================================================================
+# LIST FUNCTIONS (for cmd_list)
+#=============================================================================
+
+list_profiles() {
+    local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
+
+    if [[ ! -f "$bundles_file" ]]; then
+        log_error "bundles.yaml not found at $bundles_file"
+        return 1
+    fi
+
+    echo "Available profiles:"
+    echo ""
+
+    awk '
+        /^profiles:/ { in_profiles=1; next }
+        in_profiles && /^[a-z]/ && !/^  / { exit }
+        in_profiles && /^  [a-z_-]+:$/ {
+            gsub(/^  |:$/, "")
+            profile = $0
+            next
+        }
+        in_profiles && profile && /description:/ {
+            gsub(/.*description: *"?|"?$/, "")
+            desc = $0
+            next
+        }
+        in_profiles && profile && /base_image:/ {
+            gsub(/.*base_image: *"?|"?$/, "")
+            base = $0
+            next
+        }
+        in_profiles && profile && /size:/ {
+            gsub(/.*size: *"?|"?$/, "")
+            size = $0
+            printf "  %-12s %-20s %s (%s)\n", profile, base, desc, size
+            profile = ""
+            base = ""
+            desc = ""
+            size = ""
+        }
+    ' "$bundles_file"
+
+    echo ""
+    echo "Usage: zzcollab init -r <profile>"
+}
+
+list_library_bundles() {
+    local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
+
+    if [[ ! -f "$bundles_file" ]]; then
+        log_error "bundles.yaml not found at $bundles_file"
+        return 1
+    fi
+
+    echo "System library bundles (for use with: zzcollab init --libs <bundle>):"
+    echo ""
+
+    awk '
+        /^library_bundles:/ { in_libs=1; next }
+        in_libs && /^[a-z]/ && !/^  / { exit }
+        in_libs && /^  [a-z_-]+:$/ {
+            gsub(/^  |:$/, "")
+            bundle = $0
+            next
+        }
+        in_libs && bundle && /description:/ {
+            gsub(/.*description: *"?|"?$/, "")
+            printf "  %-12s %s\n", bundle, $0
+            bundle = ""
+        }
+    ' "$bundles_file"
+
+    echo ""
+    echo "Note: System deps are auto-derived from R packages in renv.lock."
+    echo "Manual --libs flag rarely needed."
+}
+
+list_package_bundles() {
+    local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
+
+    if [[ ! -f "$bundles_file" ]]; then
+        log_error "bundles.yaml not found at $bundles_file"
+        return 1
+    fi
+
+    echo "R package bundles (for use with: zzcollab init --pkgs <bundle>):"
+    echo ""
+
+    awk '
+        /^package_bundles:/ { in_pkgs=1; next }
+        in_pkgs && /^[a-z]/ && !/^  / { exit }
+        in_pkgs && /^  [a-z_-]+:$/ {
+            gsub(/^  |:$/, "")
+            bundle = $0
+            next
+        }
+        in_pkgs && bundle && /description:/ {
+            gsub(/.*description: *"?|"?$/, "")
+            printf "  %-12s %s\n", bundle, $0
+            bundle = ""
+        }
+    ' "$bundles_file"
+
+    echo ""
+    echo "Note: Packages are managed via renv.lock. Add packages with"
+    echo "install.packages() inside the container."
+}
+
+export -f list_profiles list_library_bundles list_package_bundles
