@@ -1097,13 +1097,14 @@ cmd_dockerhub() {
     ensure_docker_image_built "$project_name" || return 1
 
     # Get DockerHub username from config or environment
+    # Priority: DOCKERHUB_ACCOUNT env > docker.account > defaults.dockerhub_account
     require_module "config"
     load_config 2>/dev/null || true
-    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
+    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKER_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}}"
 
     if [[ -z "$dockerhub_user" ]]; then
         log_error "DockerHub username not configured"
-        echo "  Set with: zzc config set dockerhub-account <username>" >&2
+        echo "  Set with: zzc config set docker-account <username>" >&2
         return 1
     fi
 

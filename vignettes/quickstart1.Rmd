@@ -52,8 +52,8 @@ zzc config init
 # Set GitHub account
 zzc config set github-account "rgt47"
 
-# Set Docker Hub account
-zzc config set dockerhub-account "rgt47"
+# Set Docker account (for DockerHub)
+zzc config set docker-account "rgt47"
 ```
 
 **Note:** Both `zzc` (short) and `zzcollab` (full) commands work identically.
@@ -534,14 +534,12 @@ exit
 
 **Auto-Snapshot & Auto-Restore Architecture**
 
-When you **exit the container**, ZZCOLLAB automatically:
+When you **exit R** (inside the container), ZZCOLLAB automatically:
 1. Runs `renv::snapshot()` to capture package dependencies in renv.lock
-2. Adjusts timestamp for RSPM binary package availability (10-20x faster Docker builds)
-3. Validates package consistency (pure shell, no host R required!)
-4. Restores timestamp to current time for accurate git history
+2. Reports success and reminds you to commit changes
 
-When you **start R**, ZZCOLLAB automatically:
-1. Checks if packages are missing via `renv::status()`
+When you **start R** (inside the container), ZZCOLLAB automatically:
+1. Activates renv and checks package status
 2. Runs `renv::restore()` to install missing packages and all dependencies
 3. Ensures you always have a working environment without manual intervention
 
