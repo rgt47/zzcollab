@@ -25,6 +25,7 @@ knitr::opts_chunk$set(
 This guide demonstrates how to use ZZCOLLAB entirely through R functions, without touching the command line. All functionality available via the `zzcollab` shell script is also accessible through the R package interface.
 
 **What you will learn:**
+
 - Configure ZZCOLLAB from R/RStudio
 - Create reproducible projects using R functions
 - Manage Docker environments through R
@@ -32,6 +33,7 @@ This guide demonstrates how to use ZZCOLLAB entirely through R functions, withou
 - Integrate into R-based workflows
 
 **Prerequisites:**
+
 - ZZCOLLAB installed (`./install.sh`)
 - Docker installed and running
 - R and RStudio (optional but recommended)
@@ -65,6 +67,7 @@ validate_config()
 ```
 
 **What this accomplishes:**
+
 - Creates `~/.zzcollab/config.yaml` with your defaults
 - Eliminates repetitive typing for future projects
 - Provides same functionality as `zzcollab config` commands
@@ -310,6 +313,7 @@ zzcollab_next_steps()
 ```
 
 **Available help topics:**
+
 - `"general"` - Main help with all options
 - `"init"` - Team initialization
 - `"quickstart"` - Quick start guide
@@ -444,7 +448,9 @@ rebuild("docker-check-renv")
 ```
 
 **Auto-Snapshot & Auto-Restore Architecture**:
-- **Auto-snapshot**: Packages captured in renv.lock when you exit containers (no manual `renv::snapshot()` needed)
+
+- **Auto-snapshot**: Packages captured in renv.lock when you exit containers (no
+  manual `renv::snapshot()` needed)
 - **Auto-restore**: Missing packages installed automatically when you start R (no manual `renv::restore()` needed)
 - Both `add_package()` (R function) and `install.packages()` (standard R) work identically
 
@@ -646,6 +652,7 @@ if (preflight_check()) {
 ZZCOLLAB provides comprehensive R interface with 25+ functions:
 
 **Configuration**:
+
 - `init_config()` - Initialize configuration
 - `set_config(key, value)` - Set values
 - `get_config(key)` - Get values
@@ -653,25 +660,30 @@ ZZCOLLAB provides comprehensive R interface with 25+ functions:
 - `validate_config()` - Validate configuration files
 
 **Projects**:
+
 - `init_project(...)` - Team lead initialization
 - `join_project(...)` - Team member joining
 - `setup_project(...)` - Solo developer setup
 
 **Docker**:
+
 - `status()` - Check containers
 - `rebuild(target)` - Rebuild images
 - `team_images()` - List team images
 
 **Packages**:
+
 - `add_package(packages)` - Add packages
 - `sync_env()` - Sync from renv.lock
 
 **Analysis**:
+
 - `run_script(path)` - Execute scripts
 - `render_report(path)` - Render reports
 - `validate_repro()` - Check reproducibility
 
 **Git**:
+
 - `git_status()` - Check status
 - `git_commit(message)` - Create commits
 - `git_push(branch)` - Push changes
@@ -679,24 +691,28 @@ ZZCOLLAB provides comprehensive R interface with 25+ functions:
 - `create_pr(title, body)` - Create PRs
 
 **Help**:
+
 - `zzcollab_help(topic)` - Get help
 - `zzcollab_next_steps()` - Show next steps
 
 ## Benefits of R Interface
 
 **R Environment Integration**:
+
 - Work entirely within R/RStudio
 - Reduced context switching to terminal
 - Scriptable workflows
 - Integration with RMarkdown
 
 **Programmatic Control**:
+
 - Automate project setup
 - Batch operations across projects
 - Conditional logic for workflows
 - Custom helper functions
 
 **R-Native Experience**:
+
 - Familiar R function syntax
 - RStudio autocomplete
 - R help system integration

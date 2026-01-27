@@ -26,7 +26,6 @@ version control practices.
 
 1. Developer 1 sets up workspace, prepares data, writes initial analysis
 2. Developer 1 pushes to GitHub
-
 3. Developer 2 clones, adds visualization, pushes changes
 4. Developer 1 pulls changes and finalizes the report
 

@@ -25,12 +25,14 @@ knitr::opts_chunk$set(
 This quick start guide demonstrates how to use **RStudio Server** inside a Docker container for reproducible analysis. You'll work in a familiar RStudio interface while maintaining complete reproducibility through Docker and renv.
 
 **What you will build:**
+
 - RStudio Server environment accessible via browser
 - Scatter plot: bill length vs bill depth (Palmer Penguins)
 - Complete reproducibility: renv + Docker + Unit Testing + CI/CD
 - Private GitHub repository with automated validation
 
 **Why RStudio Profile:**
+
 - Familiar RStudio IDE interface in browser
 - No local R installation needed
 - Point-and-click package installation
@@ -38,6 +40,7 @@ This quick start guide demonstrates how to use **RStudio Server** inside a Docke
 - Works on any machine with Docker and a browser
 
 **Prerequisites:**
+
 - Docker installed and running
 - Web browser
 - GitHub account (example: rgt47)
@@ -64,6 +67,7 @@ zzcollab config set profile-name "rstudio"
 ```
 
 **What this accomplishes:**
+
 - RStudio Server will be available in all future projects
 - Includes R, RStudio Server, essential packages
 - ~980MB Docker image (more than minimal, less than full analysis)
@@ -83,6 +87,7 @@ make docker-build
 ```
 
 **What this does:**
+
 1. Creates complete project structure (R/, analysis/, tests/, .github/, etc.)
 2. Sets up CI/CD workflows for automated testing
 3. Initializes renv for dependency tracking
@@ -103,6 +108,7 @@ Username: rstudio, Password: rstudio
 ```
 
 **Access RStudio:**
+
 1. Open browser to **http://localhost:8787**
 2. Login with:
    - Username: `rstudio`
@@ -223,6 +229,7 @@ remotes::install_github("user/package")
 ```
 
 **RStudio Advantage:** You can also use the Packages pane:
+
 1. Click "Packages" tab (bottom-right)
 2. Click "Install"
 3. Type package name
@@ -360,6 +367,7 @@ gh repo view --web
 ## Point-and-Click Development
 
 **Visual Interface Benefits:**
+
 - File browser for easy navigation
 - Environment pane shows all objects
 - Plots pane displays visualizations
@@ -385,6 +393,7 @@ ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
 ## Debugging Support
 
 **Visual Debugging:**
+
 1. Set breakpoints (click left of line number)
 2. Click "Source" to run with debugging
 3. Inspect variables in Environment pane
@@ -393,6 +402,7 @@ ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
 ## RMarkdown Integration
 
 **Document Authoring:**
+
 - Visual markdown editor (RStudio 1.4+)
 - Live preview as you type
 - Insert code chunks with shortcuts
@@ -432,7 +442,9 @@ docker-rstudio:
 ## Persistent Sessions
 
 RStudio session is temporary - work is saved but R workspace isn't:
-- **Saved:** All file edits, created files, installed packages (auto-captured in renv.lock on exit)
+
+- **Saved:** All file edits, created files, installed packages (auto-captured in
+  renv.lock on exit)
 - **Not saved:** R workspace (.RData), unless you explicitly save
 
 **Best Practice:** Save work via files, not R workspace:
@@ -452,6 +464,7 @@ saveRDS(my_data, "data/my_data.rds")  # Portable, reproducible
 RStudio is great for development, but some tasks need terminal:
 
 **Use Terminal for:**
+
 - Running tests: `make docker-test`
 - Validation: `make check-renv` (pure shell - NO R required!)
 - Git operations: `git commit`, `git push`
@@ -459,6 +472,7 @@ RStudio is great for development, but some tasks need terminal:
 - Note: Auto-snapshot and auto-restore run automatically
 
 **Use RStudio for:**
+
 - Writing analysis code
 - Creating visualizations
 - Authoring reports
@@ -468,6 +482,7 @@ RStudio is great for development, but some tasks need terminal:
 ## Hybrid Workflow
 
 **Typical workflow:**
+
 1. **RStudio:** Write and test code interactively
 2. **RStudio:** Install packages with standard `install.packages()`
 3. **RStudio:** Author report and render locally
@@ -525,6 +540,7 @@ make docker-rstudio
 an identical environment if team image is not available.
 
 **Team Benefits:**
+
 - Everyone gets identical RStudio version
 - Same R version across team
 - Consistent package versions (via renv)
@@ -570,6 +586,7 @@ renv::status()
 ## Files Not Appearing
 
 RStudio mounts `/project` directory:
+
 - Your project root is at `/project`
 - All files saved in RStudio appear in host
 - Refresh Files pane if needed (click refresh icon)
@@ -589,19 +606,20 @@ All your file changes are preserved!
 
 You created a fully reproducible analysis using RStudio Server:
 
-- ✅ **Familiar IDE:** RStudio interface in browser
-- ✅ **No Local R:** Everything runs in Docker
-- ✅ **Interactive Development:** Point-and-click + code
-- ✅ **Reproducible:** Docker + renv ensure consistency
-- ✅ **Auto-Snapshot:** Packages captured automatically on container exit
-- ✅ **Auto-Restore:** Missing packages installed automatically on R startup
-- ✅ **Testable:** Unit tests validate logic
-- ✅ **Automated:** CI/CD runs on every commit
-- ✅ **Collaborative:** Team members get identical environment
+- **Familiar IDE:** RStudio interface in browser
+- **No Local R:** Everything runs in Docker
+- **Interactive Development:** Point-and-click + code
+- **Reproducible:** Docker + renv ensure consistency
+- **Auto-Snapshot:** Packages captured automatically on container exit
+- **Auto-Restore:** Missing packages installed automatically on R startup
+- **Testable:** Unit tests validate logic
+- **Automated:** CI/CD runs on every commit
+- **Collaborative:** Team members get identical environment
 
 ## RStudio Profile Contents
 
 **What's included (~980MB):**
+
 - R (latest or specified version)
 - RStudio Server
 - Essential packages: renv, here, usethis, devtools

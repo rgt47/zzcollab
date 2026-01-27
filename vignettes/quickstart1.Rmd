@@ -28,12 +28,14 @@ from raw data through processing, analysis, testing, and reporting using Palmer
 Penguins bill measurements.
 
 **What you will build:**
+
 - Complete data workflow: raw data → processing → analysis → visualization
 - All 5 pillars: Dockerfile + renv + .Rprofile + Source Code + Research Data
 - Functions, tests, and documentation following best practices
 - Private GitHub repository with automated CI/CD validation
 
 **Prerequisites:**
+
 - Docker installed and running
 - GitHub account (example: rgt47)
 - Personal access token for GitHub (with repo permissions)
@@ -59,10 +61,12 @@ zzc config set docker-account "rgt47"
 **Note:** Both `zzc` (short) and `zzcollab` (full) commands work identically.
 
 **What this accomplishes:**
+
 - All future `zzc` commands use these defaults
 - Change defaults anytime with `zzc config set`
 
 **Note on Package Management:**
+
 - Packages are added via standard `install.packages()` inside the container
 - **Auto-snapshot**: Packages automatically captured in renv.lock when you exit
 - **Auto-restore**: Missing packages automatically installed when you start R
@@ -84,12 +88,14 @@ zzc github                     # Create private GitHub repo
 ```
 
 **What `zzc analysis` does (new project):**
+
 1. Creates rrtools structure (DESCRIPTION, R/, analysis/, tests/)
 2. Generates renv.lock for package tracking
 3. Generates Dockerfile with analysis profile (tidyverse)
 4. Prompts: "Build Docker image now? [Y/n]"
 
 **Profile commands are smart:**
+
 - **New project**: Full setup (init + renv + docker + build prompt)
 - **Existing project**: Just switches profile and regenerates Dockerfile
 
@@ -112,6 +118,7 @@ zzc list profiles              # Show all profiles
 ```
 
 **Available Profiles:**
+
 - `minimal` - Base R only (~300MB)
 - `analysis` - Tidyverse packages (~1.5GB) - recommended
 - `publishing` - LaTeX + pandoc (~3GB)
@@ -121,6 +128,7 @@ zzc list profiles              # Show all profiles
 ## Step 3: Add Research Data and Processing Pipeline
 
 This step demonstrates the complete data workflow following the Five Pillars of Reproducibility:
+
 - **Pillar 5**: Raw data in `analysis/data/raw_data/`
 - **Pillar 4**: Processing scripts in `analysis/scripts/`
 - **Pillar 4**: Reusable functions in `R/`
@@ -378,12 +386,12 @@ Rscript -e 'devtools::test()'
 
 **What this accomplishes:**
 
-1. ✅ **Raw Data** (Pillar 5): Original measurements in `analysis/data/raw_data/`
-2. ✅ **Processing Pipeline**: Script in `analysis/scripts/01_process_data.R`
-3. ✅ **Derived Data**: Cleaned data in `analysis/data/derived_data/`
-4. ✅ **Reusable Functions**: Data utilities in `R/data_utils.R`
-5. ✅ **Unit Tests**: Tests in `tests/testthat/test-data_utils.R`
-6. ✅ **Documentation**: README files documenting data provenance and processing
+1. Raw Data (Pillar 5): Original measurements in `analysis/data/raw_data/`
+2. Processing Pipeline: Script in `analysis/scripts/01_process_data.R`
+3. Derived Data: Cleaned data in `analysis/data/derived_data/`
+4. Reusable Functions: Data utilities in `R/data_utils.R`
+5. Unit Tests: Tests in `tests/testthat/test-data_utils.R`
+6. Documentation: README files documenting data provenance and processing
 
 This establishes the complete data workflow that ensures reproducibility from raw data through to analysis.
 
@@ -425,9 +433,11 @@ Rscript -e 'install.packages("ggplot2")'
 
 ### About GUI Support (Automatic)
 
-**The `make r` command auto-detects your profile and configures GUI support automatically:**
+The `make r` command auto-detects your profile and configures GUI support
+automatically:
 
-- **X11 profiles** (e.g., `x11_minimal`): Automatically enables DISPLAY for interactive graphics
+- **X11 profiles** (e.g., `x11_minimal`): Automatically enables DISPLAY for
+  interactive graphics
 - **RStudio profiles** (e.g., `analysis`, `publishing`): Launches RStudio Server at http://localhost:8787
 - **Shiny profiles**: Launches Shiny Server at http://localhost:3838
 - **Standard profiles**: Opens interactive shell
@@ -535,10 +545,12 @@ exit
 **Auto-Snapshot & Auto-Restore Architecture**
 
 When you **exit R** (inside the container), ZZCOLLAB automatically:
+
 1. Runs `renv::snapshot()` to capture package dependencies in renv.lock
 2. Reports success and reminds you to commit changes
 
 When you **start R** (inside the container), ZZCOLLAB automatically:
+
 1. Activates renv and checks package status
 2. Runs `renv::restore()` to install missing packages and all dependencies
 3. Ensures you always have a working environment without manual intervention
@@ -605,6 +617,7 @@ gh repo view --web
 ```
 
 GitHub Actions will automatically:
+
 1. Build Docker container from scratch
 2. Validate package dependencies (uses shell-based validation)
 3. Run unit tests
@@ -637,6 +650,7 @@ git push
 ```
 
 **What this enables:**
+
 - Automatic report rendering on every push to main
 - Fresh computational environment for each render
 - Downloadable PDF/HTML artifacts
@@ -649,19 +663,23 @@ git push
 **Level 1**: Basic R Project ✗ (skipped for reproducibility)
 
 **Level 2**: renv ✓
+
 - `renv.lock` records exact package versions
 - `renv::snapshot()` captured dependencies
 
 **Level 3**: Docker ✓
+
 - Dockerfile specifies complete environment
 - Anyone can reproduce with `make r` (launches image for current Dockerfile)
 
 **Level 4**: Unit Testing ✓
+
 - Tests validate plot creation
 - Tests verify missing data handling
 - Tests confirm species included
 
 **Level 5**: CI/CD ✓
+
 - GitHub Actions runs on every push
 - Automated test suite execution
 - Dependency validation
@@ -671,6 +689,7 @@ git push
 Your analysis is now fully reproducible thanks to five essential components that represent the necessary and sufficient elements for complete reproducibility:
 
 ### 1. Dockerfile - Computational Environment
+
 - **R version**: Specifies exact R version (4.4.0)
 - **System dependencies**: All system libraries (libcurl, libssl, etc.)
 - **Base image**: Foundation for consistent environment
@@ -687,6 +706,7 @@ RUN apt-get update && apt-get install -y libcurl4-openssl-dev
 ```
 
 ### 2. renv.lock - Exact Package Versions
+
 - **Every R package**: Exact version for all packages used
 - **Complete dependency tree**: All package dependencies
 - **Source repositories**: CRAN, Bioconductor, GitHub
@@ -701,6 +721,7 @@ RUN apt-get update && apt-get install -y libcurl4-openssl-dev
 ```
 
 ### 3. .Rprofile - R Session Configuration
+
 - **Critical R options**: Version controlled and copied into Docker
 - **Monitored settings**: `stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`
 - **Automatic checking**: `check_rprofile_options.R` alerts on changes
@@ -720,6 +741,7 @@ source("renv/activate.R")
 **Important**: ZZCOLLAB monitors critical `.Rprofile` options that affect analysis behavior. The `check_rprofile_options.R` script runs in CI/CD to catch changes that could alter results.
 
 ### 4. Analysis Source Code - Computational Logic
+
 - **Processing scripts**: `analysis/scripts/01_process_data.R`
 - **Reusable functions**: `R/data_utils.R`, `R/bill_analysis.R`
 - **Reports**: `analysis/report/report.Rmd`
@@ -733,6 +755,7 @@ model <- randomForest(species ~ ., data = penguins)
 ```
 
 ### 5. Research Data - Empirical Foundation
+
 - **Raw data**: `analysis/data/raw_data/` (original, unmodified files)
 - **Derived data**: `analysis/data/derived_data/` (processed, analysis-ready)
 - **Data documentation**: `data/README.md` (data dictionary, provenance, processing lineage)
@@ -755,16 +778,20 @@ analysis/data/
 Environment variables affect computational results silently and are critical for reproducibility:
 
 **Locale settings** (`LANG`, `LC_ALL`):
-- Control string sorting order (e.g., "Åland" sorts differently in US vs Swedish locales)
+
+- Control string sorting order (e.g., "Åland" sorts differently in US vs Swedish
+  locales)
 - Affect number parsing (comma vs period as decimal separator)
 - Impact factor level ordering in statistical models
 
 **Timezone** (`TZ`):
+
 - Affects date-time arithmetic and aggregation
 - Eliminates daylight saving time complications
 - Ensures consistent temporal analyses across team members
 
 **Parallel processing** (`OMP_NUM_THREADS`):
+
 - Controls thread count for deterministic computation
 - Single-threaded (`=1`) ensures reproducible results
 - Multi-threaded can produce different results each run due to floating-point order
@@ -801,7 +828,9 @@ rmarkdown::render("analysis/report/report.Rmd")
 ```
 
 **Key Insight**:
-- **Dockerfile** = Environment foundation (R version, system libraries, environment variables)
+
+- **Dockerfile** = Environment foundation (R version, system libraries,
+  environment variables)
 - **renv.lock** = Exact packages (source of truth for R dependencies)
 - **.Rprofile** = R session settings (critical options that affect behavior)
 - **Source Code** = Analytical logic (what actually runs, including random seeds)
@@ -817,30 +846,35 @@ For comprehensive best practices, troubleshooting, and team collaboration
 patterns, see **docs/REPRODUCIBILITY_BEST_PRACTICES.md**.
 
 **Pillar 1 - Dockerfile**:
-- ✅ R version explicitly specified
-- ✅ System dependencies documented
-- ✅ Environment variables set (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+
+- R version explicitly specified
+- System dependencies documented
+- Environment variables set (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
 
 **Pillar 2 - renv.lock**:
-- ✅ All packages from all contributors included
-- ✅ Exact versions with repository sources
-- ✅ Committed to version control
+
+- All packages from all contributors included
+- Exact versions with repository sources
+- Committed to version control
 
 **Pillar 3 - .Rprofile**:
-- ✅ Critical options version controlled
-- ✅ Monitored by check_rprofile_options.R in CI/CD
-- ✅ Copied into Docker container
+
+- Critical options version controlled
+- Monitored by check_rprofile_options.R in CI/CD
+- Copied into Docker container
 
 **Pillar 4 - Source Code**:
-- ✅ Random seeds explicit for all stochastic operations
-- ✅ Analysis scripts, functions, tests all committed
-- ✅ Clear computational workflow documented
+
+- Random seeds explicit for all stochastic operations
+- Analysis scripts, functions, tests all committed
+- Clear computational workflow documented
 
 **Pillar 5 - Research Data**:
-- ✅ Raw data preserved (read-only, original files)
-- ✅ Data documentation complete (data dictionary, provenance)
-- ✅ Processing scripts link raw to derived data
-- ✅ Data quality notes documented
+
+- Raw data preserved (read-only, original files)
+- Data documentation complete (data dictionary, provenance)
+- Processing scripts link raw to derived data
+- Data quality notes documented
 
 ## Project Structure
 
@@ -885,13 +919,13 @@ penguin-bills/
 
 ## Verification Checklist
 
-- ✓ Docker image built locally
-- ✓ GitHub repository created (private)
-- ✓ Analysis produces scatter plot
-- ✓ Unit tests pass locally
-- ✓ Dependencies captured in renv.lock
-- ✓ CI/CD validates on every push
-- ✓ Complete reproducibility achieved
+- Docker image built locally
+- GitHub repository created (private)
+- Analysis produces scatter plot
+- Unit tests pass locally
+- Dependencies captured in renv.lock
+- CI/CD validates on every push
+- Complete reproducibility achieved
 
 # Next Steps
 
@@ -1060,6 +1094,7 @@ zzc list pkgs
 ```
 
 **Available Profiles:**
+
 - `minimal` - Base R only (~300MB)
 - `analysis` / `tidyverse` - Tidyverse packages (~1.5GB)
 - `publishing` / `verse` - LaTeX + pandoc (~3GB)
@@ -1089,11 +1124,13 @@ zzc github --public              # Create public GitHub repo
 ## Profile System
 
 **Profile commands** (e.g., `zzc analysis`, `zzc minimal`):
+
 - New project: Complete setup (init + renv + docker) with build prompt
 - Existing project: Switch profile and regenerate Dockerfile
 - Examples: `minimal`, `analysis`, `publishing`, `shiny`, `rstudio`
 
 **Package Management:**
+
 - Packages are added dynamically using `install.packages()` inside containers
 - **Auto-restore**: Missing packages installed automatically when R starts
 - **Auto-snapshot**: Packages captured in renv.lock when container exits
@@ -1103,7 +1140,8 @@ zzc github --public              # Create public GitHub repo
 
 You created a fully reproducible analysis with:
 
-- **Environment consistency**: Docker ensures identical R, packages, system libraries
+- **Environment consistency**: Docker ensures identical R, packages, system
+  libraries
 - **Computational correctness**: Unit tests validate analytical logic
 - **Automated verification**: CI/CD catches errors on every commit
 - **Private collaboration**: GitHub private repo ready for team members
@@ -1118,12 +1156,15 @@ correct and maintainable.
 ZZCOLLAB uses a two-layer package management system:
 
 ### Layer 1: Docker Environment (Team/Shared)
+
 - **Controlled by**: Profile selection (e.g., `zzc analysis`)
 - **Purpose**: Pre-installed packages in Docker image
 - **Shared**: All team members get identical Docker environment
 
 ### Layer 2: Dynamic Package Installation (Personal)
-- **Controlled by**: `install.packages()` inside containers (auto-captured on exit)
+
+- **Controlled by**: `install.packages()` inside containers (auto-captured on
+  exit)
 - **Purpose**: Add packages as needed for specific analyses
 - **Collaborative**: renv.lock accumulates packages from all contributors
 
