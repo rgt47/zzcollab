@@ -288,6 +288,322 @@ export DOCKER_BUILDKIT=1
 docker build .
 ```
 
+## Docker Manifest Cache and Platform Resolution
+
+This section addresses a persistent issue that affects users on Apple Silicon
+Macs when building Docker images with rocker base images. Understanding this
+problem requires knowledge of several interconnected components: CPU
+architectures, Docker's manifest system, the rocker project's image publishing
+practices, and R's release cycle.
+
+### Background: The Multi-Architecture Problem
+
+#### CPU Architectures in the R Ecosystem
+
+Two CPU architectures dominate modern computing:
+
+- **AMD64 (x86_64)**: Intel and AMD processors, traditional Macs, most Linux
+  servers, CI/CD systems (GitHub Actions, GitLab CI)
+- **ARM64 (aarch64)**: Apple Silicon (M1/M2/M3/M4), Raspberry Pi, AWS Graviton,
+  some cloud instances
+
+Docker containers are architecture-specific. A container built for AMD64 cannot
+run natively on ARM64 and vice versa. Docker Desktop on Apple Silicon provides
+**emulation** via Rosetta 2, allowing AMD64 containers to run on ARM64 hardware,
+but this requires explicit platform specification.
+
+#### The Rocker Project and R Versions
+
+The [Rocker Project](https://rocker-project.org/) maintains official Docker
+images for R. These images follow R's release cycle:
+
+- **R releases annually** in April (x.y.0), with patch releases as needed
+- **Rocker builds images** for each R version, but not all images support all
+  architectures
+- **Architecture support varies by image**:
+
+```
+Image             AMD64    ARM64    Notes
+─────────────────────────────────────────────────────────────────────
+rocker/r-ver       ✓        ✓      Base R only
+rocker/rstudio     ✓        ✓      RStudio Server included
+rocker/tidyverse   ✓        ✗      Tidyverse packages (AMD64 only)
+rocker/verse       ✓        ✗      Publishing tools (AMD64 only)
+rocker/shiny       ✓        ✗      Shiny Server (AMD64 only)
+rocker/geospatial  ✓        ✗      Spatial packages (AMD64 only)
+```
+
+The limitation exists because RStudio Server and Shiny Server binaries are only
+available for AMD64. The rocker team cannot build ARM64 versions of images that
+depend on these binaries.
+
+#### Docker Manifests and Multi-Platform Images
+
+Docker uses a **manifest** system to support multiple architectures under a
+single image tag. When you pull `rocker/tidyverse:4.4.3`, Docker:
+
+1. Fetches the manifest list from Docker Hub
+2. Identifies your platform (e.g., `linux/arm64`)
+3. Pulls the appropriate architecture-specific image
+
+For multi-platform images, the manifest contains entries for each supported
+architecture. For single-platform images (like `rocker/tidyverse`), the manifest
+contains only AMD64.
+
+### The Manifest Cache Problem
+
+#### What Happens
+
+Docker Desktop maintains a local cache of image manifests to speed up builds.
+This cache can become **stale** or **corrupted**, causing builds to fail even
+when the image exists on Docker Hub.
+
+**Typical error message**:
+
+```
+ERROR: failed to resolve source metadata for
+docker.io/rocker/tidyverse:4.4.3: no match for platform in manifest: not found
+```
+
+This error is misleading. The image exists, and it does support AMD64. The
+problem is that Docker's local manifest cache is out of sync with Docker Hub.
+
+#### Why This Happens
+
+Several factors contribute to manifest cache staleness:
+
+1. **New R versions**: When R 4.5.0 releases, rocker publishes new images. Your
+   local cache may have stale metadata from when those tags did not exist.
+
+2. **Rocker republishes images**: The rocker team sometimes updates images
+   (security patches, base image updates) without changing the tag. Your cache
+   may reference an old digest.
+
+3. **Docker Desktop updates**: Version changes can invalidate or corrupt the
+   manifest cache.
+
+4. **Network interruptions**: Partial manifest fetches can leave the cache in an
+   inconsistent state.
+
+5. **BuildKit caching**: Docker BuildKit (enabled by default) maintains its own
+   metadata cache separate from the Docker daemon's cache.
+
+#### The Apple Silicon Dimension
+
+This problem disproportionately affects Apple Silicon users because:
+
+1. **Explicit platform required**: When building AMD64 images on ARM64,
+   you must specify `--platform linux/amd64`. This triggers a different code
+   path in Docker's manifest resolution.
+
+2. **Emulation layer**: The Rosetta 2 emulation adds complexity to the
+   container runtime, and manifest resolution must account for this.
+
+3. **Cache key differences**: The manifest cache key includes platform
+   information. A cache entry for `rocker/tidyverse:4.4.3` on native ARM64
+   differs from the cache entry for the same image with explicit AMD64 platform.
+
+4. **Default platform confusion**: Docker Desktop's default platform setting
+   can conflict with explicit `--platform` flags in Dockerfiles or build
+   commands.
+
+### Solutions
+
+#### Immediate Fix: Manual Pre-Pull
+
+When a build fails with manifest errors, manually pull the image:
+
+```bash
+docker pull --platform linux/amd64 rocker/tidyverse:4.4.3
+make docker-build
+```
+
+This forces Docker to fetch fresh metadata from Docker Hub and update the local
+cache. The subsequent build will find the cached image.
+
+#### Automatic Fix: ZZCOLLAB Makefile
+
+The ZZCOLLAB Makefile template includes automatic pre-pull for `docker-build`
+and `docker-rebuild` targets:
+
+```makefile
+BASE_IMAGE := $(shell grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2)
+
+docker-build:
+    @docker pull --platform linux/amd64 $(BASE_IMAGE):$(R_VERSION) || true
+    DOCKER_BUILDKIT=1 docker build --platform linux/amd64 ...
+```
+
+The `|| true` ensures the build continues even if the pull fails (e.g., offline
+mode with cached images). This approach:
+
+- Refreshes the manifest cache before every build
+- Adds minimal overhead (manifest checks are fast for cached images)
+- Works transparently without user intervention
+
+#### Cache Cleanup
+
+For persistent issues, clear Docker's caches:
+
+```bash
+# Clear BuildKit build cache (most common fix)
+docker builder prune -f
+
+# Clear all unused Docker data (more aggressive)
+docker system prune -f
+
+# Nuclear option: reset Docker Desktop completely
+# Docker Desktop → Troubleshoot → Reset to factory defaults
+```
+
+#### Verify Image Availability
+
+Before assuming a cache problem, verify the image exists:
+
+```bash
+# Check manifest directly from Docker Hub
+docker manifest inspect rocker/tidyverse:4.4.3
+
+# Expected output shows platform support:
+# {
+#   "manifests": [
+#     {
+#       "platform": {
+#         "architecture": "amd64",
+#         "os": "linux"
+#       }
+#     }
+#   ]
+# }
+```
+
+If `manifest inspect` succeeds but `docker build` fails, the problem is
+definitely a local cache issue.
+
+### Timing and R Release Cycles
+
+Understanding when manifest problems are most likely helps with planning:
+
+#### High-Risk Periods
+
+1. **April each year**: R x.y.0 releases. Rocker images for new R versions
+   appear over the following days/weeks. Early adopters may encounter missing
+   images or incomplete manifests.
+
+2. **Days after patch releases**: R x.y.z patch releases (typically 2-3 per
+   year) trigger new rocker builds. There may be a lag between R release and
+   rocker image availability.
+
+3. **After Docker Desktop updates**: Major Docker Desktop releases can affect
+   manifest caching behavior.
+
+#### Safe Practices
+
+1. **Use stable R versions**: Prefer R x.y.2 or x.y.3 over x.y.0. These have
+   been available longer and have more stable rocker images.
+
+2. **Pin specific versions**: Use `rocker/tidyverse:4.4.3` rather than
+   `rocker/tidyverse:latest`. This makes builds reproducible and avoids
+   surprises when new versions publish.
+
+3. **Test before team rollout**: When updating R versions for a team project,
+   one team member should verify the build works before updating the shared
+   Dockerfile.
+
+### Diagnostic Commands
+
+When troubleshooting manifest issues, these commands provide useful information:
+
+```bash
+# Check what Docker thinks your platform is
+docker version --format '{{.Server.Os}}/{{.Server.Arch}}'
+
+# List local images and their platforms
+docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}"
+
+# Inspect a specific image's platform
+docker inspect rocker/tidyverse:4.4.3 --format '{{.Os}}/{{.Architecture}}'
+
+# Check Docker Desktop settings (macOS)
+cat ~/Library/Group\ Containers/group.com.docker/settings.json | \
+  grep -E "(defaultPlatform|useVirtualizationFramework)"
+
+# View BuildKit cache entries
+docker buildx du
+
+# Check if Rosetta is being used (macOS)
+sysctl sysctl.proc_translated
+```
+
+### Platform-Specific Configuration
+
+#### Docker Desktop Settings (macOS)
+
+For Apple Silicon Macs, these Docker Desktop settings affect manifest handling:
+
+1. **Use Rosetta for x86_64/amd64 emulation** (recommended: ON)
+   - Settings → General → Use Rosetta for x86/amd64 emulation
+   - Improves AMD64 container performance significantly
+
+2. **Use containerd for pulling and storing images** (recommended: ON for new
+   installs)
+   - Settings → General → Use containerd for pulling and storing images
+   - Different manifest caching behavior than legacy storage
+
+3. **Virtual Machine options**
+   - Settings → Resources → Advanced
+   - More memory improves build performance for large images
+
+#### Environment Variables
+
+These environment variables affect Docker build behavior:
+
+```bash
+# Force BuildKit (usually default, but explicit is safer)
+export DOCKER_BUILDKIT=1
+
+# Set default platform for builds
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
+# Disable BuildKit inline cache (can help with cache issues)
+export BUILDKIT_INLINE_CACHE=0
+```
+
+### CI/CD Considerations
+
+GitHub Actions and other CI/CD platforms typically run on AMD64 Linux, so
+manifest issues are rare in CI. However, developers may encounter issues locally
+that do not reproduce in CI:
+
+```yaml
+# .github/workflows/docker.yml
+jobs:
+  build:
+    runs-on: ubuntu-latest  # AMD64, no manifest issues
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: make docker-build
+```
+
+If CI builds succeed but local builds fail, the problem is almost certainly a
+local manifest cache issue. Use the solutions described above.
+
+### Summary
+
+The Docker manifest cache problem on Apple Silicon stems from the interaction
+of:
+
+- **Architecture emulation**: Running AMD64 containers on ARM64 hardware
+- **Manifest caching**: Docker's local cache of image metadata
+- **Rocker's publishing**: Limited ARM64 support for R images
+- **R's release cycle**: New versions create new images that may not be cached
+
+The ZZCOLLAB Makefile mitigates this automatically with pre-pull steps. For
+manual intervention, `docker pull --platform linux/amd64 <image>` before
+building resolves most issues. Understanding the underlying causes helps
+diagnose edge cases and plan for R version upgrades.
+
 ## Related Documentation
 
 - **Development Commands**: [Development Guide](DEVELOPMENT.md)
