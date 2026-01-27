@@ -96,10 +96,18 @@ check-system-deps:
 #   2. Install packages (renv::install("pkg"))
 #   3. Exit container (auto-snapshot on exit)
 #   4. Build new image (make docker-build)
+
+# Extract base image from Dockerfile for pre-pull
+BASE_IMAGE := $(shell grep '^ARG BASE_IMAGE=' Dockerfile 2>/dev/null | head -1 | cut -d= -f2 || echo "rocker/tidyverse")
+
 docker-build:
+	@echo "Pre-pulling base image to refresh manifest cache..."
+	@docker pull --platform linux/amd64 $(BASE_IMAGE):$(R_VERSION) || true
 	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 docker-rebuild:
+	@echo "Pre-pulling base image to refresh manifest cache..."
+	@docker pull --platform linux/amd64 $(BASE_IMAGE):$(R_VERSION) || true
 	DOCKER_BUILDKIT=1 docker build --no-cache --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
 
 docker-build-log:
