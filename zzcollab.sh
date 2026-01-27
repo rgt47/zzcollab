@@ -408,9 +408,9 @@ cmd_docker() {
     if [[ -n "$profile" ]]; then
         BASE_IMAGE=$(get_profile_base_image "$profile")
         export BASE_IMAGE
-        # Save profile to config
+        # Save profile to project config
         require_module "config"
-        config_set "profile-name" "$profile" 2>/dev/null || true
+        config_set "profile-name" "$profile" true 2>/dev/null || true
     else
         # No profile specified via CLI - use config default
         load_config 2>/dev/null || true
@@ -641,19 +641,37 @@ cmd_config() {
             config_init "$interactive"
             ;;
         list)
-            config_list
+            config_list false "${1:-all}"
+            ;;
+        list-local)
+            config_list true "${1:-all}"
             ;;
         get)
             [[ $# -lt 1 ]] && { log_error "Usage: zzcollab config get KEY"; exit 1; }
             config_get "$1"
             ;;
+        get-local)
+            [[ $# -lt 1 ]] && { log_error "Usage: zzcollab config get-local KEY"; exit 1; }
+            config_get "$1" true
+            ;;
         set)
             [[ $# -lt 2 ]] && { log_error "Usage: zzcollab config set KEY VALUE"; exit 1; }
             config_set "$1" "$2"
             ;;
+        set-local)
+            [[ $# -lt 2 ]] && { log_error "Usage: zzcollab config set-local KEY VALUE"; exit 1; }
+            config_set "$1" "$2" true
+            ;;
+        path)
+            echo "User:    $CONFIG_USER"
+            echo "Project: $CONFIG_PROJECT"
+            ;;
+        validate)
+            config_validate
+            ;;
         *)
             log_error "Unknown config subcommand: $subcommand"
-            log_info "Valid subcommands: init, list, get, set"
+            log_info "Valid subcommands: init, list, get, set, set-local, get-local, list-local, path, validate"
             log_info "Or run 'zzc config' with no args for interactive setup"
             exit 1
             ;;
@@ -1131,48 +1149,48 @@ cmd_quickstart() {
     # Existing project → check if anything needs to be done
     if is_workspace_initialized; then
         local current_profile
-        current_profile=$(config_get "profile-name" 2>/dev/null || echo "")
+        current_profile=$(config_get "profile-name" true 2>/dev/null || echo "")
         local project_name
         project_name=$(basename "$(pwd)")
         local image_exists=false
         docker image inspect "$project_name" &>/dev/null && image_exists=true
 
-        # Check if everything is already set up correctly
-        if [[ "$current_profile" == "$profile" ]] && [[ -f "Dockerfile" ]] && [[ "$image_exists" == "true" ]]; then
+        # Check if profile matches and files exist (don't require Docker image)
+        if [[ "$current_profile" == "$profile" ]] && [[ -f "Dockerfile" ]]; then
             log_success "Project already configured with '$profile' profile"
-            echo "  Docker image '$project_name' exists" >&2
-            echo "" >&2
-            echo "  To rebuild:  zzc docker" >&2
-            echo "  To develop:  make r" >&2
+            if [[ "$image_exists" == "true" ]]; then
+                echo "  Docker image '$project_name' exists" >&2
+                echo "  To develop:  make r" >&2
+            else
+                echo "  To build:    zzc docker" >&2
+            fi
+            echo "  To rebuild:  zzc docker --force" >&2
             return 0
         fi
 
-        # Profile change or missing components
+        # Profile change requested
         if [[ "$current_profile" != "$profile" ]]; then
             log_info "Switching profile: ${current_profile:-<none>} → $profile"
-        else
-            log_info "Updating project with profile: $profile"
-        fi
-        config_set "profile-name" "$profile" 2>/dev/null || true
+            config_set "profile-name" "$profile" true 2>/dev/null || true
 
-        # Always update .Rprofile to latest template
-        if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
-            cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
-            log_success "Updated .Rprofile from template"
-        fi
+            # Update .Rprofile from template
+            if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
+                cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
+                log_success "Updated .Rprofile from template"
+            fi
 
-        # Always update Makefile to latest template
-        if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/Makefile" ]]; then
-            cp "$ZZCOLLAB_TEMPLATES_DIR/Makefile" Makefile
-            log_success "Updated Makefile from template"
-        fi
+            # Update Makefile from template
+            if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/Makefile" ]]; then
+                cp "$ZZCOLLAB_TEMPLATES_DIR/Makefile" Makefile
+                log_success "Updated Makefile from template"
+            fi
 
-        if [[ -f "Dockerfile" ]]; then
+            # Regenerate Dockerfile with new profile
             export BASE_IMAGE="$base_image"
             generate_dockerfile || return 1
             log_success "Dockerfile regenerated with $profile profile"
 
-            # Prompt to build: -Y auto-builds, -y prompts, --no-build skips
+            # Prompt to build
             if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
                 log_info "Build later with: zzc docker"
             elif [[ "${ZZCOLLAB_AUTO_BUILD:-false}" == "true" ]]; then
@@ -1187,7 +1205,11 @@ cmd_quickstart() {
                 fi
             fi
         else
-            log_info "No Dockerfile yet. Run 'zzc docker' to generate."
+            # Same profile, missing Dockerfile
+            log_info "Generating missing Dockerfile for profile: $profile"
+            export BASE_IMAGE="$base_image"
+            generate_dockerfile || return 1
+            log_success "Dockerfile generated with $profile profile"
         fi
         return 0
     fi
@@ -1239,7 +1261,7 @@ cmd_quickstart() {
     echo ""
     log_info "Step 3/3: Generating Dockerfile..."
     export BASE_IMAGE="$base_image"
-    config_set "profile-name" "$profile" 2>/dev/null || true
+    config_set "profile-name" "$profile" true 2>/dev/null || true
     generate_dockerfile || return 1
     log_success "Dockerfile created ($profile profile)"
 

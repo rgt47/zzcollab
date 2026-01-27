@@ -1050,7 +1050,15 @@ config_set() {
 
     if [[ ! -f "$file" ]]; then
         if [[ "$file" == "$CONFIG_PROJECT" ]]; then
-            [[ -f "$CONFIG_USER" ]] && cp "$CONFIG_USER" "$file" || config_init
+            # Create minimal project config
+            cat > "$file" << 'EOF'
+# Project-specific zzcollab configuration
+# Overrides user config (~/.zzcollab/config.yaml)
+
+docker:
+  default_profile: ""
+EOF
+            log_debug "Created project config: $file"
         else
             config_init
         fi
