@@ -641,37 +641,19 @@ cmd_config() {
             config_init "$interactive"
             ;;
         list)
-            config_list false "${1:-all}"
-            ;;
-        list-local)
-            config_list true "${1:-all}"
+            config_list
             ;;
         get)
             [[ $# -lt 1 ]] && { log_error "Usage: zzcollab config get KEY"; exit 1; }
             config_get "$1"
             ;;
-        get-local)
-            [[ $# -lt 1 ]] && { log_error "Usage: zzcollab config get-local KEY"; exit 1; }
-            config_get "$1" true
-            ;;
         set)
             [[ $# -lt 2 ]] && { log_error "Usage: zzcollab config set KEY VALUE"; exit 1; }
             config_set "$1" "$2"
             ;;
-        set-local)
-            [[ $# -lt 2 ]] && { log_error "Usage: zzcollab config set-local KEY VALUE"; exit 1; }
-            config_set "$1" "$2" true
-            ;;
-        path)
-            echo "User:    $CONFIG_USER"
-            echo "Project: $CONFIG_PROJECT"
-            ;;
-        validate)
-            config_validate
-            ;;
         *)
             log_error "Unknown config subcommand: $subcommand"
-            log_info "Valid subcommands: init, list, get, set, set-local, get-local, list-local, path, validate"
+            log_info "Valid subcommands: init, list, get, set"
             log_info "Or run 'zzc config' with no args for interactive setup"
             exit 1
             ;;

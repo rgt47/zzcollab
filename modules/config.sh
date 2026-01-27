@@ -1105,12 +1105,31 @@ config_get() {
     # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
     key="${key//-/_}"
 
+    # Map simple keys to their proper dotted paths (same mapping as config_set)
+    local yaml_path
+    case "$key" in
+        author_name) yaml_path="author.name" ;;
+        author_email) yaml_path="author.email" ;;
+        author_orcid) yaml_path="author.orcid" ;;
+        author_affiliation) yaml_path="author.affiliation" ;;
+        author_affiliation_full) yaml_path="author.affiliation_full" ;;
+        author_roles) yaml_path="author.roles" ;;
+        license_type) yaml_path="license.type" ;;
+        license_year) yaml_path="license.year" ;;
+        license_holder) yaml_path="license.holder" ;;
+        license_include_file) yaml_path="license.include_file" ;;
+        github_account) yaml_path="github.account" ;;
+        github_default_visibility) yaml_path="github.default_visibility" ;;
+        github_default_branch) yaml_path="github.default_branch" ;;
+        docker_account) yaml_path="docker.account" ;;
+        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
+        docker_registry) yaml_path="docker.registry" ;;
+        *"."*) yaml_path="$key" ;;
+        *) yaml_path="defaults.$key" ;;
+    esac
+
     if [[ "$local_only" == "true" ]]; then
-        if [[ "$key" == *"."* ]]; then
-            yaml_get "$CONFIG_PROJECT" "$key"
-        else
-            yaml_get "$CONFIG_PROJECT" "defaults.$key"
-        fi
+        yaml_get "$CONFIG_PROJECT" "$yaml_path"
     else
         load_config
         _get_config_value "$key"

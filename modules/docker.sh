@@ -549,17 +549,9 @@ prompt_docker_build() {
     # Only prompt if coming from new workspace setup and in interactive terminal
     if [[ "${ZZCOLLAB_BUILD_AFTER_SETUP:-}" == "true" ]] && [[ -t 0 ]]; then
         echo ""
-        echo "Step: Build Docker image"
-        echo ""
-        read -r -p "Build now? [Y/n]: " build_now
+        read -r -p "Build Docker image now? [Y/n]: " build_now
         if [[ ! "$build_now" =~ ^[Nn]$ ]]; then
-            echo ""
-            log_info "Building Docker image: $project_name"
-            log_info "This may take several minutes on first build..."
-            echo ""
-            if DOCKER_BUILDKIT=1 docker build --platform linux/amd64 \
-                --build-arg R_VERSION="$r_version" \
-                -t "$project_name" . ; then
+            if make docker-build; then
                 echo ""
                 log_success "Docker image built: $project_name"
                 echo ""
@@ -577,7 +569,7 @@ prompt_docker_build() {
         fi
         unset ZZCOLLAB_BUILD_AFTER_SETUP
     else
-        log_info "  Build with: docker build -t $project_name ."
+        log_info "  Build with: make docker-build"
     fi
     return 0
 }
