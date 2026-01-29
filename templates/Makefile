@@ -181,6 +181,7 @@ r: check-renv
 	mkdir -p .cache/R/renv 2>/dev/null || true; \
 	docker run --rm -it \
 		-v $$(pwd):$$HOME_DIR/project \
+		-v $$(pwd)/.cache/R/renv:$$HOME_DIR/.cache/R/renv \
 		-w $$HOME_DIR/project \
 		-e KITTY_WINDOW_ID="$${KITTY_WINDOW_ID:-}" \
 		-e ITERM_SESSION_ID="$${ITERM_SESSION_ID:-}" \
