@@ -19,7 +19,8 @@
       "Bash(source:*)",
       "Bash(load_config)",
       "Bash(echo:*)",
-      "Bash(bash -c:*)"
+      "Bash(bash -c:*)",
+      "Bash(kitty @:*)"
     ],
     "deny": [],
     "ask": []
