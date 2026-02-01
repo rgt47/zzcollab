@@ -97,9 +97,9 @@ ENV PATH=\"\${PATH}:/root/.TinyTeX/bin/x86_64-linux\"
 "
     fi
 
-    # Always install languageserver for IDE support
-    cmds+="# Install languageserver for IDE support
-RUN R -e \"install.packages('languageserver')\"
+    # Always install languageserver for IDE support and yaml for R Markdown
+    cmds+="# Install languageserver for IDE support and yaml for R Markdown dependencies
+RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
 "
 
     echo "$cmds"
@@ -520,7 +520,7 @@ generate_dockerfile() {
 
     local tools_install
     tools_install=$(generate_tools_install "$base_image")
-    log_info "  Tools: pandoc, tinytex, languageserver (as needed)"
+    log_info "  Tools: pandoc, tinytex, languageserver, yaml (as needed)"
 
     local deps_comment="Packages: (none)"
     if [[ ${#r_packages[@]} -gt 5 ]]; then
