@@ -141,6 +141,9 @@ docker-vignettes: docker-document
 docker-render:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('analysis/report/report.Rmd')"
 
+docker-render-qmd:
+	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
+
 docker-check-renv:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::status()"
 
