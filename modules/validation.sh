@@ -207,6 +207,54 @@ add_package_to_renv_lock() {
     }
 }
 
+add_github_package_to_renv_lock() {
+    local pkg="$1" remote="$2" renv_lock="renv.lock"
+    [[ -f "$renv_lock" ]] || { log_error "renv.lock not found"; return 1; }
+
+    local username repo ref="main"
+    if [[ "$remote" =~ @ ]]; then
+        ref="${remote#*@}"
+        remote="${remote%@*}"
+    fi
+    username="${remote%/*}"
+    repo="${remote#*/}"
+
+    local version="0.0.0"
+    local desc_url="https://raw.githubusercontent.com/${username}/${repo}/${ref}/DESCRIPTION"
+    local desc_content; desc_content=$(curl -sf "$desc_url" 2>/dev/null)
+    if [[ -n "$desc_content" ]]; then
+        version=$(echo "$desc_content" | grep -E "^Version:" | sed 's/^Version:[[:space:]]*//' | tr -d '\r')
+    fi
+
+    local entry; entry=$(jq -n \
+        --arg p "$pkg" \
+        --arg v "$version" \
+        --arg u "$username" \
+        --arg r "$repo" \
+        --arg ref "$ref" \
+        '{Package:$p, Version:$v, Source:"GitHub", RemoteType:"github", RemoteHost:"api.github.com", RemoteUsername:$u, RemoteRepo:$r, RemoteRef:$ref}')
+
+    local tmp; tmp=$(mktemp)
+    jq --argjson e "$entry" --arg p "$pkg" '.Packages[$p] = $e' "$renv_lock" > "$tmp" && \
+        mv "$tmp" "$renv_lock" && log_success "Added $pkg ($version) from GitHub $username/$repo to renv.lock" || {
+        rm -f "$tmp"; log_error "Failed to update renv.lock"; return 1
+    }
+}
+
+prompt_github_remote() {
+    local pkg="$1"
+    local remote=""
+
+    if [[ -t 0 ]]; then
+        echo "" >&2
+        echo "Package '$pkg' not found on CRAN or Bioconductor." >&2
+        echo -n "Enter GitHub remote (e.g., owner/repo or owner/repo@branch), or press Enter to skip: " >&2
+        read -r remote
+    fi
+
+    echo "$remote"
+}
+
 update_renv_version_from_docker() {
     local base_image="$1" renv_lock="renv.lock"
     [[ -z "$base_image" ]] && { log_error "Docker image not specified"; return 1; }
@@ -432,10 +480,29 @@ report_and_fix_missing_lock() {
     fi
 
     [[ ${#non_installable[@]} -gt 0 ]] && {
-        echo ""; echo "Non-installable packages need manual installation:"
-        echo "  GitHub: remotes::install_github('owner/repo')"
-        echo "  Bioc: BiocManager::install('pkg')"
-        echo "  Then: renv::snapshot()"
+        if [[ "$auto_fix" == "true" ]] && [[ -t 0 ]]; then
+            echo ""
+            echo "The following packages are not on CRAN/Bioconductor:"
+            printf '  - %s\n' "${non_installable[@]}"
+            echo ""
+            local github_added=0
+            for pkg in "${non_installable[@]}"; do
+                local remote; remote=$(prompt_github_remote "$pkg")
+                if [[ -n "$remote" ]]; then
+                    if validate_package_on_github "$remote"; then
+                        add_github_package_to_renv_lock "$pkg" "$remote" && ((github_added++))
+                    else
+                        log_warn "Could not validate GitHub remote: $remote"
+                    fi
+                fi
+            done
+            [[ $github_added -gt 0 ]] && log_success "Added $github_added GitHub package(s) to renv.lock"
+        else
+            echo ""; echo "Non-installable packages need manual installation:"
+            echo "  GitHub: remotes::install_github('owner/repo')"
+            echo "  Bioc: BiocManager::install('pkg')"
+            echo "  Then: renv::snapshot()"
+        fi
     }
 
     [[ ${#installable[@]} -eq 0 ]] && return 0
