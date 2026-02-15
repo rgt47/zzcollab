@@ -591,7 +591,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # RENV_CONFIG_REPOS_OVERRIDE forces renv to use Posit PPM binaries
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
-    RENV_PATHS_CACHE=/renv/cache \\
+    RENV_PATHS_CACHE=/home/\${USERNAME}/.cache/R/renv \\
     RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \\
     ZZCOLLAB_CONTAINER=true
 
@@ -605,7 +605,7 @@ RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux
 
 # Install renv and restore packages from lockfile (using PPM binaries)
 RUN R -e "install.packages('renv')"
-RUN mkdir -p /renv/cache && chmod 777 /renv/cache
+RUN mkdir -p /home/\${USERNAME}/.cache/R/renv && chmod 777 /home/\${USERNAME}/.cache/R/renv
 COPY renv.lock renv.lock
 RUN R -e "renv::restore()"
 
