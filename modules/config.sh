@@ -151,11 +151,10 @@ validate_orcid() {
     [[ "$orcid" =~ ^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$ ]]
 }
 
-# Validate R version format (X.Y.Z)
-validate_r_version() {
-    local version="$1"
-    [[ -z "$version" ]] && return 0  # Empty is OK
-    [[ "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
+# validate_r_version() is defined in lib/core.sh.
+# Config module uses lenient mode (X.Y or X.Y.Z).
+validate_r_version_lenient() {
+    validate_r_version --lenient "$@"
 }
 
 # Validate positive integer
@@ -455,81 +454,75 @@ load_config() {
     _load_file "$CONFIG_PROJECT"
 }
 
+# Table mapping YAML paths to CONFIG_* variable names.
+# Format: "yaml.path CONFIG_VAR_NAME" (space-separated, one per line).
+# To add a new config field: add one line here and declare the variable above.
+_CONFIG_MAP="
+defaults.team_name              CONFIG_TEAM_NAME
+defaults.github_account         CONFIG_GITHUB_ACCOUNT
+defaults.dockerhub_account      CONFIG_DOCKERHUB_ACCOUNT
+defaults.profile_name           CONFIG_PROFILE_NAME
+defaults.libs_bundle            CONFIG_LIBS_BUNDLE
+defaults.pkgs_bundle            CONFIG_PKGS_BUNDLE
+defaults.r_version              CONFIG_R_VERSION
+defaults.auto_github            CONFIG_AUTO_GITHUB
+defaults.skip_confirmation      CONFIG_SKIP_CONFIRMATION
+defaults.with_examples          CONFIG_WITH_EXAMPLES
+author.name                     CONFIG_AUTHOR_NAME
+author.email                    CONFIG_AUTHOR_EMAIL
+author.orcid                    CONFIG_AUTHOR_ORCID
+author.affiliation              CONFIG_AUTHOR_AFFILIATION
+author.affiliation_full         CONFIG_AUTHOR_AFFILIATION_FULL
+author.roles                    CONFIG_AUTHOR_ROLES
+license.type                    CONFIG_LICENSE_TYPE
+license.year                    CONFIG_LICENSE_YEAR
+license.holder                  CONFIG_LICENSE_HOLDER
+license.include_file            CONFIG_LICENSE_INCLUDE_FILE
+r_package.min_r_version         CONFIG_RPACKAGE_MIN_R_VERSION
+r_package.roxygen_version       CONFIG_RPACKAGE_ROXYGEN_VERSION
+r_package.testthat_edition      CONFIG_RPACKAGE_TESTTHAT_EDITION
+r_package.encoding              CONFIG_RPACKAGE_ENCODING
+r_package.language              CONFIG_RPACKAGE_LANGUAGE
+r_package.vignette_builder      CONFIG_RPACKAGE_VIGNETTE_BUILDER
+style.line_length               CONFIG_STYLE_LINE_LENGTH
+style.indent_size               CONFIG_STYLE_INDENT_SIZE
+style.use_native_pipe           CONFIG_STYLE_USE_NATIVE_PIPE
+style.assignment                CONFIG_STYLE_ASSIGNMENT
+style.naming_convention         CONFIG_STYLE_NAMING_CONVENTION
+docker.account                  CONFIG_DOCKER_ACCOUNT
+docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
+docker.default_base_image       CONFIG_DOCKER_DEFAULT_BASE_IMAGE
+docker.registry                 CONFIG_DOCKER_REGISTRY
+docker.platform                 CONFIG_DOCKER_PLATFORM
+github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
+github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
+github.create_issues            CONFIG_GITHUB_CREATE_ISSUES
+github.create_wiki              CONFIG_GITHUB_CREATE_WIKI
+cicd.enable_github_actions      CONFIG_CICD_ENABLE_GITHUB_ACTIONS
+cicd.r_versions                 CONFIG_CICD_R_VERSIONS
+cicd.os_matrix                  CONFIG_CICD_OS_MATRIX
+cicd.run_coverage               CONFIG_CICD_RUN_COVERAGE
+cicd.coverage_threshold         CONFIG_CICD_COVERAGE_THRESHOLD
+documentation.use_pkgdown       CONFIG_DOCS_USE_PKGDOWN
+documentation.use_readme        CONFIG_DOCS_USE_README
+documentation.use_news          CONFIG_DOCS_USE_NEWS
+documentation.citation_style    CONFIG_DOCS_CITATION_STYLE
+"
+
 _load_file() {
     local file="$1"
     [[ -f "$file" ]] || return 0
 
-    local val
+    local yaml_path var_name val
+    while read -r yaml_path var_name; do
+        [[ -z "$yaml_path" ]] && continue
+        val=$(yaml_get "$file" "$yaml_path") && [[ -n "$val" ]] && \
+            eval "$var_name=\"\$val\""
+    done <<< "$_CONFIG_MAP"
 
-    # Original defaults section
-    val=$(yaml_get "$file" "defaults.team_name") && [[ -n "$val" ]] && CONFIG_TEAM_NAME="$val"
-    val=$(yaml_get "$file" "defaults.github_account") && [[ -n "$val" ]] && CONFIG_GITHUB_ACCOUNT="$val"
-    val=$(yaml_get "$file" "defaults.dockerhub_account") && [[ -n "$val" ]] && CONFIG_DOCKERHUB_ACCOUNT="$val"
-    # Note: defaults.profile_name is deprecated, use docker.default_profile instead
-    # Load legacy value first, then override with docker.default_profile if set
-    val=$(yaml_get "$file" "defaults.profile_name") && [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
-    val=$(yaml_get "$file" "docker.default_profile") && [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
-    val=$(yaml_get "$file" "defaults.libs_bundle") && [[ -n "$val" ]] && CONFIG_LIBS_BUNDLE="$val"
-    val=$(yaml_get "$file" "defaults.pkgs_bundle") && [[ -n "$val" ]] && CONFIG_PKGS_BUNDLE="$val"
-    val=$(yaml_get "$file" "defaults.r_version") && [[ -n "$val" ]] && CONFIG_R_VERSION="$val"
-    val=$(yaml_get "$file" "defaults.auto_github") && [[ -n "$val" ]] && CONFIG_AUTO_GITHUB="$val"
-    val=$(yaml_get "$file" "defaults.skip_confirmation") && [[ -n "$val" ]] && CONFIG_SKIP_CONFIRMATION="$val"
-    val=$(yaml_get "$file" "defaults.with_examples") && [[ -n "$val" ]] && CONFIG_WITH_EXAMPLES="$val"
-
-    # Author section
-    val=$(yaml_get "$file" "author.name") && [[ -n "$val" ]] && CONFIG_AUTHOR_NAME="$val"
-    val=$(yaml_get "$file" "author.email") && [[ -n "$val" ]] && CONFIG_AUTHOR_EMAIL="$val"
-    val=$(yaml_get "$file" "author.orcid") && [[ -n "$val" ]] && CONFIG_AUTHOR_ORCID="$val"
-    val=$(yaml_get "$file" "author.affiliation") && [[ -n "$val" ]] && CONFIG_AUTHOR_AFFILIATION="$val"
-    val=$(yaml_get "$file" "author.affiliation_full") && [[ -n "$val" ]] && CONFIG_AUTHOR_AFFILIATION_FULL="$val"
-    val=$(yaml_get "$file" "author.roles") && [[ -n "$val" ]] && CONFIG_AUTHOR_ROLES="$val"
-
-    # License section
-    val=$(yaml_get "$file" "license.type") && [[ -n "$val" ]] && CONFIG_LICENSE_TYPE="$val"
-    val=$(yaml_get "$file" "license.year") && [[ -n "$val" ]] && CONFIG_LICENSE_YEAR="$val"
-    val=$(yaml_get "$file" "license.holder") && [[ -n "$val" ]] && CONFIG_LICENSE_HOLDER="$val"
-    val=$(yaml_get "$file" "license.include_file") && [[ -n "$val" ]] && CONFIG_LICENSE_INCLUDE_FILE="$val"
-
-    # R Package section
-    val=$(yaml_get "$file" "r_package.min_r_version") && [[ -n "$val" ]] && CONFIG_RPACKAGE_MIN_R_VERSION="$val"
-    val=$(yaml_get "$file" "r_package.roxygen_version") && [[ -n "$val" ]] && CONFIG_RPACKAGE_ROXYGEN_VERSION="$val"
-    val=$(yaml_get "$file" "r_package.testthat_edition") && [[ -n "$val" ]] && CONFIG_RPACKAGE_TESTTHAT_EDITION="$val"
-    val=$(yaml_get "$file" "r_package.encoding") && [[ -n "$val" ]] && CONFIG_RPACKAGE_ENCODING="$val"
-    val=$(yaml_get "$file" "r_package.language") && [[ -n "$val" ]] && CONFIG_RPACKAGE_LANGUAGE="$val"
-    val=$(yaml_get "$file" "r_package.vignette_builder") && [[ -n "$val" ]] && CONFIG_RPACKAGE_VIGNETTE_BUILDER="$val"
-
-    # Style section
-    val=$(yaml_get "$file" "style.line_length") && [[ -n "$val" ]] && CONFIG_STYLE_LINE_LENGTH="$val"
-    val=$(yaml_get "$file" "style.indent_size") && [[ -n "$val" ]] && CONFIG_STYLE_INDENT_SIZE="$val"
-    val=$(yaml_get "$file" "style.use_native_pipe") && [[ -n "$val" ]] && CONFIG_STYLE_USE_NATIVE_PIPE="$val"
-    val=$(yaml_get "$file" "style.assignment") && [[ -n "$val" ]] && CONFIG_STYLE_ASSIGNMENT="$val"
-    val=$(yaml_get "$file" "style.naming_convention") && [[ -n "$val" ]] && CONFIG_STYLE_NAMING_CONVENTION="$val"
-
-    # Docker section
-    val=$(yaml_get "$file" "docker.account") && [[ -n "$val" ]] && CONFIG_DOCKER_ACCOUNT="$val"
-    val=$(yaml_get "$file" "docker.default_profile") && [[ -n "$val" ]] && CONFIG_DOCKER_DEFAULT_PROFILE="$val"
-    val=$(yaml_get "$file" "docker.default_base_image") && [[ -n "$val" ]] && CONFIG_DOCKER_DEFAULT_BASE_IMAGE="$val"
-    val=$(yaml_get "$file" "docker.registry") && [[ -n "$val" ]] && CONFIG_DOCKER_REGISTRY="$val"
-    val=$(yaml_get "$file" "docker.platform") && [[ -n "$val" ]] && CONFIG_DOCKER_PLATFORM="$val"
-
-    # GitHub section
-    val=$(yaml_get "$file" "github.default_visibility") && [[ -n "$val" ]] && CONFIG_GITHUB_DEFAULT_VISIBILITY="$val"
-    val=$(yaml_get "$file" "github.default_branch") && [[ -n "$val" ]] && CONFIG_GITHUB_DEFAULT_BRANCH="$val"
-    val=$(yaml_get "$file" "github.create_issues") && [[ -n "$val" ]] && CONFIG_GITHUB_CREATE_ISSUES="$val"
-    val=$(yaml_get "$file" "github.create_wiki") && [[ -n "$val" ]] && CONFIG_GITHUB_CREATE_WIKI="$val"
-
-    # CI/CD section
-    val=$(yaml_get "$file" "cicd.enable_github_actions") && [[ -n "$val" ]] && CONFIG_CICD_ENABLE_GITHUB_ACTIONS="$val"
-    val=$(yaml_get "$file" "cicd.r_versions") && [[ -n "$val" ]] && CONFIG_CICD_R_VERSIONS="$val"
-    val=$(yaml_get "$file" "cicd.os_matrix") && [[ -n "$val" ]] && CONFIG_CICD_OS_MATRIX="$val"
-    val=$(yaml_get "$file" "cicd.run_coverage") && [[ -n "$val" ]] && CONFIG_CICD_RUN_COVERAGE="$val"
-    val=$(yaml_get "$file" "cicd.coverage_threshold") && [[ -n "$val" ]] && CONFIG_CICD_COVERAGE_THRESHOLD="$val"
-
-    # Documentation section
-    val=$(yaml_get "$file" "documentation.use_pkgdown") && [[ -n "$val" ]] && CONFIG_DOCS_USE_PKGDOWN="$val"
-    val=$(yaml_get "$file" "documentation.use_readme") && [[ -n "$val" ]] && CONFIG_DOCS_USE_README="$val"
-    val=$(yaml_get "$file" "documentation.use_news") && [[ -n "$val" ]] && CONFIG_DOCS_USE_NEWS="$val"
-    val=$(yaml_get "$file" "documentation.citation_style") && [[ -n "$val" ]] && CONFIG_DOCS_CITATION_STYLE="$val"
+    # docker.default_profile also overrides CONFIG_PROFILE_NAME (legacy compat)
+    val=$(yaml_get "$file" "docker.default_profile") && \
+        [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
 
     return 0
 }
@@ -971,7 +964,7 @@ _setup_advanced() {
     echo "Technical defaults for the DESCRIPTION file."
     echo ""
 
-    prompt_validated "Minimum R version required" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val validate_r_version \
+    prompt_validated "Minimum R version required" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val validate_r_version_lenient \
         "Invalid R version format. Expected: X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)" || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "r_package.min_r_version" "$val"
 

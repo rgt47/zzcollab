@@ -149,7 +149,7 @@ Auto-fix pipeline: Code → DESCRIPTION → renv.lock (pure shell: curl + jq + a
 
 ## System Dependencies
 
-Module `modules/system_deps_map.sh` maps 30+ R packages to system libraries.
+Module `modules/profiles.sh` maps 80+ R packages to system libraries.
 
 ```bash
 make check-system-deps           # Detect missing system deps

@@ -2,7 +2,7 @@
 #'
 #' @param data Penguin data with bill measurements
 #' @return ggplot object
-#' @export
+#' @noRd
 create_bill_plot <- function(data) {
   ggplot2::ggplot(data, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
                                       color = species)) +

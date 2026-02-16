@@ -2,7 +2,7 @@
 #'
 #' @param path Path to clean data file
 #' @return data.frame of processed penguin data
-#' @export
+#' @noRd
 load_penguin_data <- function(path = "analysis/data/derived_data/penguins_clean.csv") {
   if (!file.exists(path)) {
     stop("Clean data file not found. Run analysis/scripts/01_process_data.R first.")
@@ -25,7 +25,7 @@ load_penguin_data <- function(path = "analysis/data/derived_data/penguins_clean.
 #'
 #' @param data Penguin data
 #' @return data.frame of summary statistics
-#' @export
+#' @noRd
 summarize_by_species <- function(data) {
   data |>
     dplyr::group_by(species) |>

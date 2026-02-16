@@ -517,6 +517,47 @@ confirm() {
 # CORE LIBRARY VALIDATION
 #=============================================================================
 
+#=============================================================================
+# SHARED VALIDATION FUNCTIONS
+#=============================================================================
+
+# Validate R version format.
+#   --strict (default): requires X.Y.Z (e.g., 4.4.2)
+#   --lenient: allows X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)
+# Empty input returns 1 in strict mode, 0 in lenient mode.
+validate_r_version() {
+    local strict=true
+    if [[ "${1:-}" == "--lenient" ]]; then
+        strict=false
+        shift
+    fi
+
+    local version="$1"
+
+    if [[ -z "$version" ]]; then
+        if [[ "$strict" == "true" ]]; then
+            log_error "R version cannot be empty"
+            return 1
+        fi
+        return 0
+    fi
+
+    if [[ "$strict" == "true" ]]; then
+        if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            log_error "Invalid R version: '$version'"
+            log_error "Expected format: X.Y.Z (e.g., '4.3.1')"
+            return 1
+        fi
+    else
+        if ! [[ "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            log_error "Invalid R version: '$version'"
+            log_error "Expected format: X.Y or X.Y.Z (e.g., '4.1' or '4.3.1')"
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # Validate that this library is being sourced correctly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "❌ Error: core.sh should be sourced, not executed directly" >&2

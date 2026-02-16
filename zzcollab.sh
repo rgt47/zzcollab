@@ -48,25 +48,17 @@ log_debug() { :; }
 # MODULE SYSTEM
 #=============================================================================
 
-# Track loaded modules (Bash 3.2 compatible)
-LOADED_MODULES=""
+# Module loading uses ZZCOLLAB_*_LOADED flags set inside each module.
+# This works even if modules are sourced directly (bypassing require_module).
 
 require_module() {
     local module
     for module in "$@"; do
-        # Skip if already loaded (check both tracking methods)
-        case " $LOADED_MODULES " in
-            *" $module "*) continue ;;
-        esac
-
-        # Also check ZZCOLLAB_*_LOADED flags
+        # Skip if already loaded (each module sets readonly ZZCOLLAB_<NAME>_LOADED=true)
         local module_upper
         module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
         local module_var="ZZCOLLAB_${module_upper}_LOADED"
-        if [[ "${!module_var:-}" == "true" ]]; then
-            LOADED_MODULES="$LOADED_MODULES $module"
-            continue
-        fi
+        [[ "${!module_var:-}" == "true" ]] && continue
 
         local module_path=""
         if [[ -f "$ZZCOLLAB_LIB_DIR/${module}.sh" ]]; then
@@ -80,7 +72,6 @@ require_module() {
 
         # shellcheck source=/dev/null
         source "$module_path"
-        LOADED_MODULES="$LOADED_MODULES $module"
     done
 }
 

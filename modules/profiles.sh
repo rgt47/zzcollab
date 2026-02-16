@@ -341,14 +341,21 @@ get_profile_base_image() {
 
     [[ ! -f "$bundles_file" ]] && { echo "rocker/r-ver"; return 0; }
 
-    # Extract base_image for profile from YAML
-    awk -v profile="$profile" '
+    local result
+    result=$(awk -v profile="$profile" '
         /^profiles:/ { in_profiles=1; next }
         in_profiles && /^[a-z]/ && !/^  / { in_profiles=0 }
         in_profiles && $0 ~ "^  "profile":" { in_target=1; next }
         in_target && /^  [a-z_-]+:/ { in_target=0 }
         in_target && /base_image:/ { gsub(/.*base_image: *"?|"?$/, ""); print; exit }
-    ' "$bundles_file"
+    ' "$bundles_file")
+
+    if [[ -n "$result" ]]; then
+        echo "$result"
+    else
+        log_warn "Unknown profile '$profile', using rocker/r-ver"
+        echo "rocker/r-ver"
+    fi
 }
 
 get_profile_libs() {

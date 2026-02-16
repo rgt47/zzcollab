@@ -158,29 +158,8 @@ validate_base_image() {
     return 0
 }
 
-##############################################################################
-# FUNCTION: validate_r_version
-# PURPOSE:  Validate R version format (X.Y.Z)
-# ARGS:     $1 - R version to validate
-# RETURNS:  0 if valid, 1 if invalid
-##############################################################################
-validate_r_version() {
-    local version="$1"
-
-    if [[ -z "$version" ]]; then
-        log_error "R version cannot be empty"
-        return 1
-    fi
-
-    # Format: X.Y.Z (e.g., 4.3.1)
-    if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        log_error "Invalid R version: '$version'"
-        log_error "Expected format: X.Y.Z (e.g., '4.3.1')"
-        return 1
-    fi
-
-    return 0
-}
+# validate_r_version() is defined in lib/core.sh (shared, supports
+# --strict and --lenient modes). CLI uses strict mode (X.Y.Z required).
 
 ##############################################################################
 # FUNCTION: validate_bundle_name
@@ -250,7 +229,7 @@ USER_PROVIDED_LIBS=false
 USER_PROVIDED_PKGS=false
 USER_PROVIDED_PROFILE=false
 USER_PROVIDED_R_VERSION=false
-USE_TEAM_IMAGE=false    # Team member flag to pull and use team image
+USE_TEAM_IMAGE=false    # Deprecated: retained for backward compatibility
 
 # Show flags (processed after modules are loaded)
 SHOW_HELP=false
@@ -403,7 +382,9 @@ parse_cli_arguments() {
                 shift
                 ;;
             --use-team-image|-u)
+                # Deprecated: accepted for backward compatibility but has no effect
                 USE_TEAM_IMAGE=true
+                log_warn "--use-team-image is deprecated (no-op)"
                 shift
                 ;;
             --github|-G)

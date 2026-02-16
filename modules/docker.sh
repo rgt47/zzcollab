@@ -15,27 +15,10 @@ set -euo pipefail
 require_module "core" "profiles" "validation" "config"
 
 #=============================================================================
-# PROFILE PRESETS (base image shortcuts)
-#=============================================================================
-
-get_profile_base_image() {
-    local profile="${1:-minimal}"
-    case "$profile" in
-        minimal|standard|ubuntu_standard_minimal)  echo "rocker/r-ver" ;;
-        tidyverse|analysis|ubuntu_standard_analysis|ubuntu_standard_analysis_vim)  echo "rocker/tidyverse" ;;
-        verse|publishing|ubuntu_standard_publishing)  echo "rocker/verse" ;;
-        rstudio)  echo "rocker/rstudio" ;;
-        shiny)    echo "rocker/shiny" ;;
-        *)
-            log_warn "Unknown profile '$profile', using rocker/r-ver"
-            echo "rocker/r-ver"
-            ;;
-    esac
-}
-
-#=============================================================================
 # BASE IMAGE TOOL DETECTION
 #=============================================================================
+# get_profile_base_image() is defined in profiles.sh (data-driven from
+# bundles.yaml). Do not redefine here.
 
 # Determine what tools are already in the base image
 get_base_image_tools() {
@@ -516,7 +499,7 @@ generate_dockerfile() {
     fi
 
     local system_deps_install
-    system_deps_install=$(generate_system_deps_install "$system_deps" "$base_image")
+    system_deps_install=$(generate_system_deps_install "$system_deps")
 
     local tools_install
     tools_install=$(generate_tools_install "$base_image")
