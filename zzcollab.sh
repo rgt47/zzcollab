@@ -45,6 +45,14 @@ log_error() { printf "❌ %s\n" "$*" >&2; }
 log_debug() { :; }
 
 #=============================================================================
+# PORTABILITY HELPERS
+#=============================================================================
+
+_reverse_lines() {
+    awk '{a[NR]=$0} END{for(i=NR;i>=1;i--)print a[i]}'
+}
+
+#=============================================================================
 # MODULE SYSTEM
 #=============================================================================
 
@@ -209,6 +217,7 @@ ensure_docker_image_built() {
 
 # Note: main show_usage() defined later in file
 
+# shellcheck disable=SC2120
 cmd_init() {
     require_module "cli" "config" "project" "docker" "github"
 
@@ -436,6 +445,7 @@ cmd_docker() {
     fi
 }
 
+# shellcheck disable=SC2120
 cmd_renv() {
     require_module "config" "docker"
 
@@ -790,7 +800,7 @@ EOF
         done
 
         # Remove directories (in reverse order to handle nested dirs)
-        jq -r '.directories[]? // empty' "$manifest" 2>/dev/null | tac | while read -r item; do
+        jq -r '.directories[]? // empty' "$manifest" 2>/dev/null | _reverse_lines | while read -r item; do
             if [[ -d "$item" ]] && [[ -z "$(ls -A "$item" 2>/dev/null)" ]]; then
                 rmdir "$item" && log_info "Removed directory: $item"
             fi
@@ -809,7 +819,7 @@ EOF
             fi
         done
 
-        grep -E '^directory:' "$manifest" 2>/dev/null | cut -d: -f2- | tac | while read -r item; do
+        grep -E '^directory:' "$manifest" 2>/dev/null | cut -d: -f2- | _reverse_lines | while read -r item; do
             if [[ -d "$item" ]] && [[ -z "$(ls -A "$item" 2>/dev/null)" ]]; then
                 rmdir "$item" && log_info "Removed directory: $item"
             fi

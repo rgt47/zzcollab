@@ -641,6 +641,7 @@ detect_missing_system_deps() {
     # Source profiles.sh for get_package_build_deps and get_package_runtime_deps
     local profiles_script="${ZZCOLLAB_MODULES_DIR:-${SCRIPT_DIR}}/profiles.sh"
     if [[ -f "$profiles_script" ]]; then
+        # shellcheck source=profiles.sh
         source "$profiles_script" 2>/dev/null || true
     else
         log_warn "profiles.sh not found - cannot check system deps"
