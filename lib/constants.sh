@@ -75,6 +75,7 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="/etc/zzcollab/config.yaml"
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_INIT_BASE_IMAGE="r-ver"
 readonly ZZCOLLAB_DEFAULT_PROFILE_NAME="ubuntu_standard_analysis_vim"
+readonly ZZCOLLAB_DEFAULT_R_VERSION="4.5.2"
 
 # Author information (should be set via environment variables or config file)
 readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"

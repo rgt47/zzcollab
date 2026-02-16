@@ -93,9 +93,14 @@ RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
 #=============================================================================
 
 get_cran_r_version() {
-    local version major_dir
+    # Return cached result if available
+    if [[ -n "${_CACHED_CRAN_R_VERSION:-}" ]]; then
+        echo "$_CACHED_CRAN_R_VERSION"
+        return 0
+    fi
 
-    # Find highest major version directory (R-4, R-5, etc.)
+    local version="" major_dir
+
     major_dir=$(curl -s --max-time 10 https://cran.r-project.org/src/base/ 2>/dev/null | \
         grep -oE 'R-[0-9]+' | sort -V | tail -1)
 
@@ -105,9 +110,11 @@ get_cran_r_version() {
     fi
 
     if [[ -z "$version" ]]; then
-        version="4.4.2"
+        version="$ZZCOLLAB_DEFAULT_R_VERSION"
         log_warn "Could not query CRAN, using fallback: $version"
     fi
+
+    _CACHED_CRAN_R_VERSION="$version"
     echo "$version"
 }
 
@@ -632,16 +639,9 @@ find_cached_image() {
     local target_hash="$1"
     [[ -z "$target_hash" ]] && return 1
 
-    # Search all local images for matching zzcollab.dockerfile.hash label
     local image_id
-    image_id=$(docker images --format '{{.ID}}' | while read -r id; do
-        local label
-        label=$(docker inspect --format '{{index .Config.Labels "zzcollab.dockerfile.hash"}}' "$id" 2>/dev/null || true)
-        if [[ "$label" == "$target_hash" ]]; then
-            echo "$id"
-            break
-        fi
-    done)
+    image_id=$(docker images --filter "label=zzcollab.dockerfile.hash=$target_hash" \
+        --format '{{.ID}}' | head -1)
 
     [[ -n "$image_id" ]] && echo "$image_id"
 }

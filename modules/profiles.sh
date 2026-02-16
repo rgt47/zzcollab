@@ -176,8 +176,6 @@ get_package_build_deps() {
             echo "libicu-dev" ;;
         hunspell)
             echo "libhunspell-dev" ;;
-        pdftools)
-            echo "libpoppler-cpp-dev" ;;
         tesseract)
             echo "libtesseract-dev libleptonica-dev" ;;
         antiword)
@@ -326,9 +324,6 @@ get_all_package_deps() {
 
     [[ ${#all_deps[@]} -gt 0 ]] && printf '%s\n' "${all_deps[@]}" | sort -u | paste -sd' ' -
 }
-
-# Export functions for use by other modules
-export -f get_package_build_deps get_package_runtime_deps package_has_system_deps get_all_package_deps
 
 #=============================================================================
 # PROFILE CONFIGURATION
@@ -497,5 +492,3 @@ list_package_bundles() {
     echo "Note: Packages are managed via renv.lock. Add packages with"
     echo "install.packages() inside the container."
 }
-
-export -f list_profiles list_library_bundles list_package_bundles

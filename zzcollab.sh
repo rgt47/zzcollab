@@ -75,8 +75,6 @@ require_module() {
     done
 }
 
-export -f require_module
-
 #=============================================================================
 # LOAD FOUNDATION LIBRARIES
 #=============================================================================
@@ -219,7 +217,6 @@ cmd_init() {
 
     # Validate package name
     PKG_NAME=$(validate_package_name)
-    readonly PKG_NAME
     export PKG_NAME
 
     # Load config and show all defaults
@@ -227,7 +224,7 @@ cmd_init() {
     local profile_name="${CONFIG_PROFILE_NAME:-minimal}"
     local base_image
     base_image=$(get_profile_base_image "$profile_name")
-    local r_version="${CONFIG_R_VERSION:-$(get_cran_r_version 2>/dev/null || echo "4.5.2")}"
+    local r_version="${CONFIG_R_VERSION:-$(get_cran_r_version 2>/dev/null || echo "$ZZCOLLAB_DEFAULT_R_VERSION")}"
 
     echo ""
     echo "═══════════════════════════════════════════════════════════"
@@ -1323,7 +1320,7 @@ cmd_rm_docker() {
         if [[ -f "$f" ]]; then
             rm "$f"
             log_info "Removed $f"
-            ((removed++))
+            removed=$((removed + 1))
         fi
     done
 
@@ -1553,12 +1550,12 @@ main() {
             # Commands that take no arguments
             init)
                 cmd_init
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 shift
                 ;;
             renv)
                 cmd_renv
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 shift
                 ;;
             docker)
@@ -1595,11 +1592,11 @@ main() {
                     esac
                 done
                 cmd_docker ${docker_args[@]+"${docker_args[@]}"}
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 ;;
             git)
                 cmd_git
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 shift
                 ;;
             github)
@@ -1621,7 +1618,7 @@ main() {
                     esac
                 done
                 cmd_github
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 ;;
             dockerhub)
                 shift
@@ -1638,7 +1635,7 @@ main() {
                     esac
                 done
                 cmd_dockerhub "$dockerhub_tag"
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 ;;
             # Standalone profile flag (same as profile name command)
             -r|--profile)
@@ -1677,7 +1674,7 @@ main() {
                     esac
                 done
                 cmd_quickstart "$profile_name"
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 ;;
 
             # Remove command
@@ -1692,7 +1689,7 @@ main() {
                 shift
                 # Pass remaining args (e.g., -f, --force) to cmd_rm
                 cmd_rm "$rm_feature" "$@"
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 # Consume any flags that were passed
                 while [[ $# -gt 0 ]] && [[ "$1" == -* ]]; do
                     shift
@@ -1733,7 +1730,7 @@ main() {
                     esac
                 done
                 cmd_quickstart "$profile_name"
-                ((commands_run++))
+                commands_run=$((commands_run + 1))
                 ;;
 
             # Other commands that pass through

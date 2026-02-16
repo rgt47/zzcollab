@@ -271,7 +271,7 @@ update_renv_version_from_docker() {
 
 # shellcheck disable=SC2120
 create_renv_lock() {
-    local r_ver="${1:-4.5.1}" cran="${2:-https://cloud.r-project.org}"
+    local r_ver="${1:-$ZZCOLLAB_DEFAULT_R_VERSION}" cran="${2:-https://cloud.r-project.org}"
     command -v jq &>/dev/null || { log_error "jq required"; return 1; }
     jq -n --arg r "$r_ver" --arg c "$cran" \
         '{R:{Version:$r,Repositories:[{Name:"CRAN",URL:$c}]},Packages:{}}' > renv.lock && \

@@ -116,12 +116,13 @@ yaml_set() {
     local file="$1" path="$2" value="$3"
     [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
     _require_yq || return 1
-    yq eval ".$path = \"$value\"" "$file" -i
+    _YQ_VAL="$value" yq eval ".$path = strenv(_YQ_VAL)" "$file" -i
 }
 
 yaml_set_bool() {
     local file="$1" path="$2" value="$3"
     [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
+    [[ "$value" == "true" || "$value" == "false" ]] || { log_error "Boolean expected: $value"; return 1; }
     _require_yq || return 1
     yq eval ".$path = $value" "$file" -i
 }
@@ -221,7 +222,7 @@ prompt_input() {
         return 1
     fi
 
-    eval "$result_var=\"\${input:-\$default}\""
+    printf -v "$result_var" '%s' "${input:-$default}"
     return 0
 }
 
@@ -256,7 +257,7 @@ prompt_validated() {
 
         # Run validator function
         if $validator "$input"; then
-            eval "$result_var=\"\$input\""
+            printf -v "$result_var" '%s' "$input"
             return 0
         else
             echo "  $error_msg"
@@ -292,7 +293,7 @@ prompt_github_account() {
 
         # Empty is OK
         if [[ -z "$input" ]]; then
-            eval "$result_var=\"\""
+            printf -v "$result_var" '%s' ""
             return 0
         fi
 
@@ -301,7 +302,7 @@ prompt_github_account() {
             printf "  Checking GitHub account..."
             if gh api "users/$input" &>/dev/null; then
                 echo " OK"
-                eval "$result_var=\"\$input\""
+                printf -v "$result_var" '%s' "$input"
                 return 0
             else
                 echo " not found"
@@ -309,7 +310,7 @@ prompt_github_account() {
             fi
         else
             # gh not available, accept without validation
-            eval "$result_var=\"\$input\""
+            printf -v "$result_var" '%s' "$input"
             return 0
         fi
     done
@@ -341,9 +342,9 @@ prompt_yesno() {
 
     input="${input:-$default}"
     if [[ "$input" =~ ^[Yy] ]]; then
-        eval "$result_var=\"true\""
+        printf -v "$result_var" '%s' "true"
     else
-        eval "$result_var=\"false\""
+        printf -v "$result_var" '%s' "false"
     fi
     return 0
 }
@@ -374,7 +375,7 @@ prompt_select() {
 
         # Validate input is one of the options
         if [[ ",$options," == *",$input,"* ]]; then
-            eval "$result_var=\"\$input\""
+            printf -v "$result_var" '%s' "$input"
             return 0
         else
             echo "  Invalid choice. Please select from: $options"
@@ -517,7 +518,7 @@ _load_file() {
     while read -r yaml_path var_name; do
         [[ -z "$yaml_path" ]] && continue
         val=$(yaml_get "$file" "$yaml_path") && [[ -n "$val" ]] && \
-            eval "$var_name=\"\$val\""
+            printf -v "$var_name" '%s' "$val"
     done <<< "$_CONFIG_MAP"
 
     # docker.default_profile also overrides CONFIG_PROFILE_NAME (legacy compat)
@@ -536,7 +537,7 @@ apply_config_defaults() {
     [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
 
     if [[ -z "${R_VERSION:-}" ]]; then
-        R_VERSION="${CONFIG_R_VERSION:-4.5.1}"
+        R_VERSION="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
         USER_PROVIDED_R_VERSION="false"
     fi
 
