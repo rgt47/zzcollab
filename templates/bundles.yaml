@@ -100,9 +100,6 @@ package_bundles:
       - devtools
       - tidyverse
       - here
-      - janitor
-      - scales
-      - patchwork
     requires_libs: ["minimal"]
 
   modeling:
