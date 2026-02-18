@@ -643,5 +643,5 @@ Wickham, H. and Bryan, J. (2023). R Packages (2nd ed.). O'Reilly
 Media. https://r-pkgs.org
 
 ---
-*Generated on 2026-02-16.*
+*Rendered on 2026-02-18 at 07:23 PST.*
 *Source: /Users/zenn/prj/sfw/07-zzcollab/zzcollab/docs/ci-workflows-whitepaper.md*
