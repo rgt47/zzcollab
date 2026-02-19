@@ -191,26 +191,131 @@ Design properties of this advisory:
   false positives. Only files that have an explicit older version trigger
   the warning.
 
-## What the Template Version Does Not Do
+## Prior Art: zzvim-R's `.Rprofile.local` Versioning
 
-The template version is a detection mechanism, not a migration system.
-It identifies *that* a workspace is behind, but it does not
-automatically update files. This is intentional:
+The template staleness problem is not unique to zzcollab. The zzvim-R
+plugin encountered an identical challenge with its `.Rprofile.local`
+file---a template that provides the unified graphics system (plot and
+table display in kitty terminal panes). The file is copied into each
+workspace at plugin setup time and subsequently lives outside the
+plugin's control. When the graphics system evolves (e.g., the v7-to-v8
+transition from dual-PNG to PDF-master architecture, or the v8-to-v9
+addition of table support), workspace copies silently fall behind.
 
-- Generated files are commonly customized by users. A Makefile might
-  have project-specific targets appended. An .Rprofile might contain
-  local configuration. Automatic overwriting would destroy these
-  customizations.
-- The nature of template changes varies. Some changes are trivial
-  additions; others restructure existing content. A generic merge
-  strategy cannot safely handle all cases.
-- The user should make a conscious decision about when and how to
-  update. The stamp provides the information needed to make that
-  decision.
+zzvim-R solved this with a system that goes beyond detection into
+**interactive update with backup**:
 
-A future `zzc update-templates` command could offer interactive or
-selective regeneration, but that is outside the scope of the current
-implementation.
+1. **Integer version stamp.** The template header carries a simple
+   integer version: `# zzvim-R template version: 9`. The plugin stores
+   the expected version in a script-local variable
+   (`let s:template_version = 8`).
+
+2. **Check on terminal start.** Every time an R terminal opens
+   (`s:ConfigureTerminal()`), the function `s:CheckTemplateVersion()`
+   runs. It reads the first 20 lines of the workspace's
+   `.Rprofile.local`, extracts the version integer via regex, and
+   compares it against the plugin's expected version.
+
+3. **Interactive prompt.** If the local copy is behind, the user is
+   prompted:
+   ```
+   .Rprofile.local is version 8, plugin has version 9. Update? (y/n):
+   ```
+
+4. **Backup and replace.** On confirmation, the old file is backed up
+   to `.Rprofile.local.bak` and the plugin's template is copied in. A
+   manual `:RUpdateTemplate` command is also available.
+
+This design works because `.Rprofile.local` has a specific property:
+**it contains no user customizations**. The file is entirely
+framework-controlled R code (graphics functions, terminal detection,
+history management). Users do not edit it. Therefore, wholesale
+replacement is safe.
+
+## The Customization Boundary Problem
+
+zzcollab's generated files do not all share this property. Each file
+falls on a different point of the customization spectrum:
+
+### `.Rprofile`: safe to regenerate
+
+The zzcollab `.Rprofile` template already delegates user customizations
+to `.Rprofile.local` (sourced at line 202 of the template). The
+framework-controlled `.Rprofile` handles renv activation, auto-snapshot,
+container detection, and reproducibility options. Users who need
+project-specific R configuration place it in `.Rprofile.local`.
+
+Because the customization boundary is explicit and enforced by the
+sourcing mechanism, `.Rprofile` is architecturally safe to regenerate.
+An `update-templates` command could overwrite it without data loss,
+exactly as zzvim-R does with its `.Rprofile.local`.
+
+### Dockerfile: safe to regenerate
+
+The Dockerfile is generated entirely by `generate_dockerfile_inline()`
+from profile parameters and system dependency lists. Users are not
+expected to hand-edit it; customization occurs through zzcollab's
+profile system, custom dependency bundles, and `CUSTOM_SYSTEM_DEPS`
+sections that are themselves generated. Regeneration from the current
+profile would produce a correct, up-to-date file.
+
+### Makefile: not safe to regenerate
+
+The Makefile is the problematic case. Users routinely append
+project-specific targets (custom render commands, data download
+scripts, deployment targets). There is no `Makefile.local` or
+`-include` mechanism to separate framework targets from user targets.
+Overwriting the Makefile would destroy these additions.
+
+## Toward Safe Regeneration
+
+The `.Rprofile.local` pattern from zzvim-R and the `.Rprofile` /
+`.Rprofile.local` split in zzcollab point toward a general principle:
+**files that can be regenerated are files where user customizations
+live elsewhere**.
+
+Applying this principle to the Makefile would require introducing a
+separation mechanism. The most natural approach in Make is:
+
+```makefile
+# zzcollab Makefile v2.1.0
+# Framework-generated targets (do not edit)
+
+# ... all zzcollab-generated targets ...
+
+# Project-specific targets
+-include Makefile.local
+```
+
+With this structure, `zzc update-templates` could safely overwrite
+`Makefile` while preserving user targets in `Makefile.local`. The
+`-include` directive (with leading hyphen) silently ignores the missing
+file in workspaces that have no custom targets.
+
+This refactoring is not yet implemented. It would require:
+
+- Adding `-include Makefile.local` to the Makefile template
+- Migrating existing user-added targets in active workspaces
+- Documenting the convention
+
+Once all three generated files have clean customization boundaries,
+a `zzc update-templates` command becomes viable---modeled directly on
+zzvim-R's `s:CheckTemplateVersion()` pattern: detect, prompt, backup,
+replace.
+
+## Current Scope: Detection Only
+
+The current implementation is deliberately limited to detection and
+advisory. It identifies *that* a workspace is behind but does not
+automatically update files. The reasoning:
+
+- The Makefile does not yet have a customization boundary, so
+  overwriting it would destroy user work in existing workspaces.
+- The advisory system provides the information needed for manual
+  updates while the regeneration infrastructure matures.
+- The version stamps are forward-compatible: once `Makefile.local`
+  separation is in place, the same stamps will drive the automated
+  update command.
 
 ## Summary of Touched Files
 
@@ -226,5 +331,5 @@ implementation.
 | `modules/help.sh` | Help topic for `check-updates` command |
 
 ---
-*Rendered on 2026-02-19 at 15:19 PST.*
+*Rendered on 2026-02-19 at 15:24 PST.*
 *Source: /Users/zenn/prj/sfw/07-zzcollab/zzcollab/docs/versioning-design.md*
