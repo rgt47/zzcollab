@@ -49,9 +49,9 @@ if (!in_container) {
 
   # renv Cache Path Configuration
   # If RENV_PATHS_CACHE already set (e.g., via docker -e), use it
-  # Otherwise use project-local cache
+  # Otherwise use ~/.cache/R/renv (shared across projects)
   if (Sys.getenv("RENV_PATHS_CACHE") == "") {
-    Sys.setenv(RENV_PATHS_CACHE = file.path(getwd(), ".cache/R/renv"))
+    Sys.setenv(RENV_PATHS_CACHE = file.path(Sys.getenv("HOME"), ".cache/R/renv"))
   }
 
   # Activate renv (set project-local library paths)
