@@ -76,6 +76,9 @@ See 'zzcollab help <topic>' for detailed information:
     renv          Package management
     cicd          CI/CD automation
 
+  Maintenance
+    check-updates Detect outdated template files in workspaces
+
   Other
     options       Complete list of all command-line options
     troubleshoot  Common issues and solutions
@@ -183,6 +186,7 @@ Commands:
   github          GitHub repository integration
   docker          Docker architecture and usage
   renv            Package management with renv
+  check-updates   Detect outdated template files
 
 Configuration:
   config          Configuration system

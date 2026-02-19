@@ -614,6 +614,15 @@ cmd_validate() {
     bash "$validation_script" "$@"
 }
 
+cmd_check_updates() {
+    local script="$ZZCOLLAB_MODULES_DIR/check-updates.sh"
+    if [[ ! -f "$script" ]]; then
+        log_error "check-updates module not found: $script"
+        return 1
+    fi
+    bash "$script" "$@"
+}
+
 cmd_config() {
     require_module "config"
 
@@ -1747,6 +1756,11 @@ main() {
             validate)
                 shift
                 cmd_validate "$@"
+                exit $?
+                ;;
+            check-updates)
+                shift
+                cmd_check_updates "$@"
                 exit $?
                 ;;
             config)
