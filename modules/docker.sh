@@ -569,6 +569,7 @@ generate_dockerfile_inline() {
 
     cat > Dockerfile << EOF
 # syntax=docker/dockerfile:1.4
+# zzcollab Dockerfile v${ZZCOLLAB_TEMPLATE_VERSION}
 
 ARG BASE_IMAGE=${base_image}
 ARG R_VERSION=${r_version}
