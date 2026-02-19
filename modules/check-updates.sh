@@ -34,13 +34,15 @@ readonly COL_YELLOW='\033[1;33m'
 readonly COL_RED='\033[0;31m'
 readonly COL_CYAN='\033[0;36m'
 
-# Extract version stamp from a file
+# Extract zzcollab version stamp from a file
+# Usage: extract_version <file> <label>
+#   where label is "Makefile", ".Rprofile", or "Dockerfile"
 # Returns the version string (e.g., "2.1.0") or empty string
 extract_version() {
     local file="$1"
-    local pattern="$2"
+    local label="$2"
     if [[ -f "$file" ]]; then
-        grep -oP "${pattern}" "$file" 2>/dev/null | head -1 || true
+        sed -n "s/^# zzcollab ${label} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1
     fi
 }
 
@@ -56,20 +58,17 @@ check_workspace() {
 
     # Makefile
     local makefile_ver
-    makefile_ver=$(extract_version "$dir/Makefile" \
-        '(?<=# zzcollab Makefile v)[0-9]+\.[0-9]+\.[0-9]+')
+    makefile_ver=$(extract_version "$dir/Makefile" "Makefile")
     print_file_status "Makefile" "$makefile_ver" || any_outdated=1
 
     # .Rprofile
     local rprofile_ver
-    rprofile_ver=$(extract_version "$dir/.Rprofile" \
-        '(?<=# zzcollab .Rprofile v)[0-9]+\.[0-9]+\.[0-9]+')
+    rprofile_ver=$(extract_version "$dir/.Rprofile" ".Rprofile")
     print_file_status ".Rprofile" "$rprofile_ver" || any_outdated=1
 
     # Dockerfile
     local dockerfile_ver
-    dockerfile_ver=$(extract_version "$dir/Dockerfile" \
-        '(?<=# zzcollab Dockerfile v)[0-9]+\.[0-9]+\.[0-9]+')
+    dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
     print_file_status "Dockerfile" "$dockerfile_ver" || any_outdated=1
 
     echo ""

@@ -134,6 +134,9 @@ show_help() {
             # Show full options list (original help)
             show_help_full
             ;;
+        check-updates)
+            show_help_check_updates
+            ;;
         troubleshoot|troubleshooting)
             show_help_troubleshooting
             ;;
@@ -582,6 +585,50 @@ Get Help:
 See also:
   zzcollab help workflow     Common workflows
   zzcollab help docker       Docker troubleshooting
+EOF
+}
+
+#=============================================================================
+# CHECK-UPDATES HELP
+#=============================================================================
+
+# Function: show_help_check_updates
+# Purpose: Help for the check-updates command
+show_help_check_updates() {
+    cat << 'EOF'
+CHECK-UPDATES - Detect Outdated Template Files
+
+Usage:
+  zzc check-updates                  # Check current directory
+  zzc check-updates DIR [DIR ...]    # Check specific workspaces
+  zzc check-updates --scan DIR       # Recursively find and check all
+                                     #   zzcollab workspaces under DIR
+
+What it does:
+  Reads version stamps embedded in Makefile, .Rprofile, and Dockerfile
+  by zzcollab during workspace creation. Compares each stamp against
+  the current template version and reports status.
+
+Output:
+  Checking: ~/prj/res/08-project/
+    Makefile      v2.0.0 -> v2.1.0  (outdated)
+    .Rprofile     v2.0.0 -> v2.1.0  (outdated)
+    Dockerfile    v2.1.0             (current)
+
+  Files created before version stamping show (no stamp).
+
+Exit codes:
+  0   All checked files are current
+  1   One or more files are outdated or unstamped
+
+Examples:
+  zzc check-updates                  # Check workspace in current dir
+  zzc check-updates ~/prj/res/study  # Check a specific workspace
+  zzc check-updates --scan ~/prj/res # Scan all workspaces under ~/prj/res
+
+See also:
+  zzcollab help workflow     Daily development workflow
+  zzcollab help docker       Docker architecture
 EOF
 }
 

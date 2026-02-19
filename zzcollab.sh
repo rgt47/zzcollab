@@ -623,6 +623,26 @@ cmd_check_updates() {
     bash "$script" "$@"
 }
 
+# Silent advisory: warn once if any workspace template is outdated
+warn_if_templates_outdated() {
+    local cur="${ZZCOLLAB_TEMPLATE_VERSION:-}"
+    [[ -z "$cur" ]] && return 0
+
+    local file ver outdated=""
+    for file in Makefile .Rprofile Dockerfile; do
+        [[ -f "$file" ]] || continue
+        ver=$(sed -n "s/^# zzcollab ${file} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1)
+        if [[ -n "$ver" && "$ver" != "$cur" ]]; then
+            outdated="${outdated:+$outdated, }${file} (v${ver})"
+        fi
+    done
+
+    if [[ -n "$outdated" ]]; then
+        printf '\033[1;33m⚠  Outdated templates: %s → v%s. Run: zzc check-updates\033[0m\n' \
+            "$outdated" "$cur" >&2
+    fi
+}
+
 cmd_config() {
     require_module "config"
 
@@ -1528,6 +1548,9 @@ main() {
         show_usage
         exit 0
     fi
+
+    # Advisory: one-line warning if workspace templates are behind
+    warn_if_templates_outdated
 
     # Track if any command was executed
     local commands_run=0
