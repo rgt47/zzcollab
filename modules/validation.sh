@@ -475,6 +475,7 @@ report_and_fix_missing_lock() {
         for p in "${installable[@]}"; do add_package_to_renv_lock "$p" || failed+=("$p"); done
         [[ ${#failed[@]} -eq 0 ]] && { log_success "All installable packages added to renv.lock"; } || \
             { log_error "Failed: ${failed[*]}"; }
+        log_warn "renv.lock does not include transitive dependencies; run 'make r' then renv::restore() + renv::snapshot() to complete the lock file"
     elif [[ ${#installable[@]} -gt 0 ]]; then
         echo "Fix: zzcollab validate --fix"
     fi
@@ -595,7 +596,9 @@ sync_packages_to_code() {
     fi
 
     [[ ${#to_add_lock[@]} -gt 0 ]] && log_info "Adding ${#to_add_lock[@]} packages to renv.lock"
-    for pkg in "${to_add_lock[@]}"; do add_package_to_renv_lock "$pkg" 2>/dev/null || log_warn "Could not add $pkg to renv.lock (not on CRAN?)"; done
+    local lock_added=0
+    for pkg in "${to_add_lock[@]}"; do add_package_to_renv_lock "$pkg" 2>/dev/null && ((lock_added++)) || log_warn "Could not add $pkg to renv.lock (not on CRAN?)"; done
+    [[ $lock_added -gt 0 ]] && log_warn "renv.lock does not include transitive dependencies; run 'make r' then renv::restore() + renv::snapshot() to complete the lock file"
 
     [[ ${#to_remove_lock[@]} -gt 0 ]] && log_info "Removing ${#to_remove_lock[@]} packages from renv.lock"
     if [[ ${#to_remove_lock[@]} -gt 0 ]]; then
