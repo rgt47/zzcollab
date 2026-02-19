@@ -1,5 +1,5 @@
 # ==========================================
-# ZZCOLLAB .Rprofile - Three-Part Structure
+# zzcollab .Rprofile v$ZZCOLLAB_TEMPLATE_VERSION
 # ==========================================
 # Part 1: User Personal Settings (from ~/.Rprofile)
 # Part 2: renv Activation + Reproducibility Options
