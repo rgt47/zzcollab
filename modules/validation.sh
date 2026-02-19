@@ -519,10 +519,10 @@ validate_package_environment() {
 
     local code_packages_raw; mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
     local code_packages; mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
-    local desc_imports; mapfile -t desc_imports < <(parse_description_imports)
+    local desc_imports; mapfile -t desc_imports < <({ parse_description_imports; parse_description_suggests; } | sort -u)
     local renv_packages; mapfile -t renv_packages < <(parse_renv_lock)
 
-    log_info "Found ${#code_packages[@]} in code, ${#desc_imports[@]} in DESCRIPTION, ${#renv_packages[@]} in renv.lock"
+    log_info "Found ${#code_packages[@]} in code, ${#desc_imports[@]} in DESCRIPTION (Imports+Suggests), ${#renv_packages[@]} in renv.lock"
 
     local all_packages; mapfile -t all_packages < <(compute_union_packages)
     local missing_from_desc; mapfile -t missing_from_desc < <(find_missing_from_description all_packages desc_imports)
@@ -543,7 +543,7 @@ sync_packages_to_code() {
 
     local code_packages_raw; mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
     local code_packages; mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
-    local desc_imports; mapfile -t desc_imports < <(parse_description_imports)
+    local desc_imports; mapfile -t desc_imports < <({ parse_description_imports; parse_description_suggests; } | sort -u)
     local renv_packages; mapfile -t renv_packages < <(parse_renv_lock)
 
     log_info "Found ${#code_packages[@]} packages in code"
