@@ -142,7 +142,7 @@ show_help() {
             ;;
         *)
             echo "Unknown help topic: $topic"
-            echo "See 'zzcollab help --all' for list of all topics"
+            echo "See 'zzc help --all' for list of all topics"
             return 1
             ;;
     esac
@@ -183,6 +183,7 @@ zzcollab help topics:
 Guides:
   quickstart      Quick start guide (recommended starting point)
   workflow        Daily development workflow
+  team            Team collaboration setup
   profiles        Docker profiles and switching
 
 Commands:
@@ -193,14 +194,15 @@ Commands:
 
 Configuration:
   config          Configuration system
-  examples        Example files (--with-examples)
+  examples        Example files and templates
 
 Other:
+  options         Complete list of all command-line options
   troubleshoot    Common issues and solutions
 
 Usage:
-  zzcollab help <topic>       Show help for specific topic
-  zzcollab help --all         Show this list
+  zzc help <topic>       Show help for specific topic
+  zzc help --all         Show this list
 EOF
 }
 
@@ -268,7 +270,7 @@ Adding Packages:
    q()                      # Automatically captured in renv.lock
 
 Navigation Shortcuts (optional):
-   ./navigation_scripts.sh --install
+   zzc nav install
    r → project root
    a → analysis/
    s → analysis/scripts/
@@ -276,12 +278,11 @@ Navigation Shortcuts (optional):
 
 Troubleshooting:
    make docker-build 2>&1 | tee build.log
-   cat .zzcollab.log        # Debug log (if using -vv)
 
 See also:
-  zzcollab help quickstart    Getting started
-  zzcollab help renv          Package management
-  zzcollab help docker        Docker usage
+  zzc help quickstart    Getting started
+  zzc help renv          Package management
+  zzc help docker        Docker usage
 EOF
 }
 
@@ -410,17 +411,10 @@ show_help_examples_topic() {
     cat << 'EOF'
 EXAMPLE FILES
 
-By default, zzcollab creates a clean workspace.
-Use --with-examples to include example files.
+By default, zzcollab creates a clean workspace without example files.
 
-During Initialization:
-  zzcollab -p myproject -x
-  # or
-  zzcollab -p myproject --with-examples
-
-After Initialization:
-  cd myproject
-  zzcollab --add-examples
+The example templates are available in the zzcollab source at:
+  templates/examples/
 
 Example Files Include:
   analysis/report/report.Rmd        Academic manuscript template
@@ -428,12 +422,13 @@ Example Files Include:
   analysis/scripts/*.R              Data validation, parallel computing
   analysis/templates/*.R            Analysis and figure templates
 
-Configuration:
-  zzcollab -c set with-examples true    # Always include examples
+Note: The --with-examples and --add-examples flags from the old CLI
+are not currently wired into the subcommand router. To add example
+files, copy them from the templates directory above.
 
 See also:
-  zzcollab help workflow     Development workflow
-  zzcollab help config       Configuration
+  zzc help workflow     Development workflow
+  zzc help config       Configuration
 EOF
 }
 
@@ -459,23 +454,22 @@ Common Commands:
   make r                   Interactive R session
   make docker-rstudio      RStudio Server (localhost:8787)
   make docker-test         Run tests in container
-  make docker-push-team    Share team image
+  zzc dockerhub            Push image to Docker Hub
 
 Logs:
   docker-build.log         Build output
-  .zzcollab.log            Framework log (with -vv)
 
 Platform Compatibility:
   ARM64: r-ver, rstudio profiles
   AMD64: verse, tidyverse, shiny
 
 Custom Images:
-  zzcollab docker --base-image rocker/verse
+  zzc docker --base-image rocker/verse
 
 See also:
-  zzcollab help profiles     Profile selection
-  zzcollab help renv         Package management
-  zzcollab help team         Team collaboration
+  zzc help profiles     Profile selection
+  zzc help renv         Package management
+  zzc help team         Team collaboration
 EOF
 }
 
@@ -571,31 +565,29 @@ Common Issues:
 
 2. Package validation fails:
    make check-renv          # Auto-fixes most issues
-   cat .zzcollab.log        # If using -vv flag
 
 3. Tests fail:
    make docker-test
    # Check test output for specific failures
 
 4. Navigation shortcuts don't work:
-   ./navigation_scripts.sh --install
+   zzc nav install
    source ~/.zshrc          # or ~/.bashrc
 
 5. Team image not found:
    # Team lead must push first:
-   make docker-build && make docker-push-team
+   make docker-build && zzc dockerhub
 
 Debug Mode:
-   zzcollab -vv ...         # Creates .zzcollab.log
-   cat .zzcollab.log        # Review detailed logs
+   zzc -v ...               # Verbose output
 
 Get Help:
-   zzcollab help --all      # List all topics
+   zzc help --all           # List all topics
    GitHub Issues            # Report bugs
 
 See also:
-  zzcollab help workflow     Common workflows
-  zzcollab help docker       Docker troubleshooting
+  zzc help workflow     Common workflows
+  zzc help docker       Docker troubleshooting
 EOF
 }
 
