@@ -135,6 +135,7 @@ ensure_workspace_initialized() {
         return 1
     fi
 
+    local init_choice
     zzc_read -r -p "Initialize workspace now? [Y/n]: " init_choice
     if [[ "$init_choice" =~ ^[Nn]$ ]]; then
         log_info "Cancelled. Run 'zzcollab init' when ready."
@@ -425,6 +426,7 @@ cmd_docker() {
         log_info "Build with: make docker-build"
     elif [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         echo ""
+        local build_choice
         zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
         if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
             build_docker_image || exit 1
@@ -627,6 +629,7 @@ EOF
     echo ""
 
     # Offer to save R version to config
+    local save_config
     zzc_read -r -p "Save R version to config? [Y/n]: " save_config
     if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
         config_set "r-version" "$r_version"
@@ -1235,6 +1238,7 @@ cmd_quickstart() {
                 log_info "Build later with: zzc docker"
             else
                 echo ""
+                local build_choice
                 zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
                 if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
                     build_docker_image || return 1
@@ -1316,6 +1320,7 @@ cmd_quickstart() {
         echo ""
         log_info "Build later with: make docker-build"
     else
+        local build_choice
         zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
         if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
             echo ""
