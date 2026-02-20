@@ -46,6 +46,15 @@ extract_version() {
     fi
 }
 
+# Extract zzvim-R version stamp from .Rprofile.local
+# Matches: # zzvim-R .Rprofile.local vX.Y.Z
+extract_zzvimr_version() {
+    local file="$1"
+    if [[ -f "$file" ]]; then
+        sed -n 's/^# zzvim-R \.Rprofile\.local v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' "$file" | head -1
+    fi
+}
+
 # Check a single workspace directory
 # Returns 0 if all current, 1 if any outdated/unstamped
 check_workspace() {
@@ -71,6 +80,13 @@ check_workspace() {
     dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
     print_file_status "Dockerfile" "$dockerfile_ver" || any_outdated=1
 
+    # .Rprofile.local (owned by zzvim-R, informational only)
+    if [[ -f "$dir/.Rprofile.local" ]]; then
+        local rprofile_local_ver
+        rprofile_local_ver=$(extract_zzvimr_version "$dir/.Rprofile.local")
+        print_info_status ".Rprofile.local" "$rprofile_local_ver" "zzvim-R"
+    fi
+
     echo ""
     return $any_outdated
 }
@@ -93,6 +109,22 @@ print_file_status() {
         printf "  %-14s ${COL_RED}v%-7s -> v%-19s${COL_RESET} ${COL_RED}(outdated)${COL_RESET}\n" \
             "$filename" "$found_ver" "$CURRENT_VERSION"
         return 1
+    fi
+}
+
+# Print informational status for files owned by other tools
+# Does not affect exit code (zzcollab cannot judge currency)
+print_info_status() {
+    local filename="$1"
+    local found_ver="$2"
+    local owner="$3"
+
+    if [[ -z "$found_ver" ]]; then
+        printf "  %-14s %-30s ${COL_YELLOW}(no stamp)${COL_RESET} [%s]\n" \
+            "$filename" "" "$owner"
+    else
+        printf "  %-14s v%-29s ${COL_CYAN}(%s)${COL_RESET}\n" \
+            "$filename" "$found_ver" "$owner"
     fi
 }
 
