@@ -199,7 +199,7 @@ Design properties of this advisory:
   false positives. Only files that have an explicit older version trigger
   the warning.
 
-## Prior Art: zzvim-R's `.Rprofile.local` Versioning
+## Unified Stamp Format Across the zz* Ecosystem
 
 The template staleness problem is not unique to zzcollab. The zzvim-R
 plugin encountered an identical challenge with its `.Rprofile.local`
@@ -210,24 +210,51 @@ plugin's control. When the graphics system evolves (e.g., the v7-to-v8
 transition from dual-PNG to PDF-master architecture, or the v8-to-v9
 addition of table support), workspace copies silently fall behind.
 
-zzvim-R solved this with a system that goes beyond detection into
-**interactive update with backup**:
+zzvim-R originally solved this with its own versioning system using
+bare integers (`# zzvim-R template version: 9`). That system has now
+been migrated to the same stamp format used by zzcollab, establishing
+a shared convention across the zz* ecosystem:
 
-1. **Integer version stamp.** The template header carries a simple
-   integer version: `# zzvim-R template version: 9`. The plugin stores
-   the expected version in a script-local variable
-   (`let s:template_version = 8`).
+```
+# <tool> <filename> v<major>.<minor>.<patch>
+```
 
-2. **Check on terminal start.** Every time an R terminal opens
+Concrete examples:
+
+```
+# zzcollab Makefile v2.1.0
+# zzcollab .Rprofile v2.1.0
+# zzcollab Dockerfile v2.1.0
+# zzvim-R .Rprofile.local v1.9.0
+```
+
+Each tool owns its own version number. The format is shared; the
+authority is not. `ZZCOLLAB_TEMPLATE_VERSION` governs the three
+zzcollab files. `s:template_version` in `plugin/zzvim-R.vim` governs
+`.Rprofile.local`. Neither tool needs to know the other's current
+version. The shared format simply ensures that a human or script
+reading any zz* generated file encounters the same pattern.
+
+### zzvim-R's update mechanism
+
+zzvim-R goes beyond detection into **interactive update with backup**:
+
+1. **Check on terminal start.** Every time an R terminal opens
    (`s:ConfigureTerminal()`), the function `s:CheckTemplateVersion()`
    runs. It reads the first 20 lines of the workspace's
-   `.Rprofile.local`, extracts the version integer via regex, and
-   compares it against the plugin's expected version.
+   `.Rprofile.local`, extracts the semver string via regex, and
+   compares it against the plugin's expected version using
+   `s:CompareSemver()`.
+
+2. **Legacy compatibility.** The parser also recognizes the old
+   integer format (`# zzvim-R template version: N`) and maps it to
+   `0.0.N`, so workspaces predating the format migration still
+   trigger an update prompt.
 
 3. **Interactive prompt.** If the local copy is behind, the user is
    prompted:
    ```
-   .Rprofile.local is version 8, plugin has version 9. Update? (y/n):
+   .Rprofile.local is v0.0.8, plugin has v1.9.0. Update? (y/n):
    ```
 
 4. **Backup and replace.** On confirmation, the old file is backed up
@@ -239,6 +266,19 @@ This design works because `.Rprofile.local` has a specific property:
 framework-controlled R code (graphics functions, terminal detection,
 history management). Users do not edit it. Therefore, wholesale
 replacement is safe.
+
+### Cross-tool visibility
+
+When `zzc check-updates` runs in a workspace, it reports
+`.Rprofile.local` as an informational line:
+
+```
+  .Rprofile.local v1.9.0            (zzvim-R)
+```
+
+This line does not affect the exit code. zzcollab reports what it
+finds but defers the currency judgment to zzvim-R, which performs the
+actual comparison at R terminal start.
 
 ## The Customization Boundary Problem
 
@@ -339,5 +379,5 @@ automatically update files. The reasoning:
 | `modules/help.sh` | Help topic for `check-updates` command |
 
 ---
-*Rendered on 2026-02-19 at 15:24 PST.*
+*Rendered on 2026-02-19 at 16:47 PST.*
 *Source: /Users/zenn/prj/sfw/07-zzcollab/zzcollab/docs/versioning-design.md*
