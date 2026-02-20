@@ -186,7 +186,7 @@ prompt_new_workspace_setup() {
         echo "" >&2
 
         local change_settings
-        read -r -p "Change settings? [y/N]: " change_settings
+        zzc_read -r -p "Change settings? [y/N]: " change_settings
         if [[ ! "$change_settings" =~ ^[Yy]$ ]]; then
             # Use existing settings, proceed to build
             create_renv_lock_minimal "$selected_version" >&2
@@ -219,7 +219,7 @@ prompt_new_workspace_setup() {
     [[ "$selected_profile" == "publishing" ]] && default_profile_num=3
 
     local profile_choice
-    read -r -p "Profile [$default_profile_num]: " profile_choice
+    zzc_read -r -p "Profile [$default_profile_num]: " profile_choice
     profile_choice="${profile_choice:-$default_profile_num}"
 
     case "$profile_choice" in
@@ -247,7 +247,7 @@ prompt_new_workspace_setup() {
     echo "" >&2
 
     local version_choice
-    read -r -p "R version [1]: " version_choice
+    zzc_read -r -p "R version [1]: " version_choice
     version_choice="${version_choice:-1}"
 
     case "$version_choice" in
@@ -256,7 +256,7 @@ prompt_new_workspace_setup() {
             ;;
         2)
             local default_ver="${selected_version:-$cran_version}"
-            read -r -p "Enter R version [$default_ver]: " selected_version
+            zzc_read -r -p "Enter R version [$default_ver]: " selected_version
             selected_version="${selected_version:-$default_ver}"
             if [[ ! "$selected_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                 log_error "Invalid version format. Expected: X.Y.Z" >&2
@@ -282,10 +282,10 @@ prompt_new_workspace_setup() {
     ((step++))
     echo "" >&2
     if [[ -n "$default_gh" ]]; then
-        read -r -p "GitHub username [$default_gh]: " github_account
+        zzc_read -r -p "GitHub username [$default_gh]: " github_account
         github_account="${github_account:-$default_gh}"
     else
-        read -r -p "GitHub username (blank to skip): " github_account
+        zzc_read -r -p "GitHub username (blank to skip): " github_account
     fi
 
     # Step 4: DockerHub setup (optional)
@@ -295,15 +295,15 @@ prompt_new_workspace_setup() {
     ((step++))
     echo "" >&2
     if [[ -n "$default_docker" ]]; then
-        read -r -p "DockerHub username [$default_docker]: " dockerhub_account
+        zzc_read -r -p "DockerHub username [$default_docker]: " dockerhub_account
         dockerhub_account="${dockerhub_account:-$default_docker}"
     else
-        read -r -p "DockerHub username (blank to skip): " dockerhub_account
+        zzc_read -r -p "DockerHub username (blank to skip): " dockerhub_account
     fi
 
     # Save to config
     echo "" >&2
-    read -r -p "Save as defaults? [Y/n]: " save_config
+    zzc_read -r -p "Save as defaults? [Y/n]: " save_config
     if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
         config_set "profile-name" "$selected_profile" >&2
         config_set "r-version" "$selected_version" >&2
@@ -336,7 +336,7 @@ extract_r_version() {
     fi
 
     if [[ ! -f "renv.lock" ]]; then
-        if [[ -t 0 ]]; then
+        if [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
             prompt_r_version_selection
             return $?
         else
@@ -539,7 +539,7 @@ prompt_docker_build() {
     # Only prompt if coming from new workspace setup and in interactive terminal
     if [[ "${ZZCOLLAB_BUILD_AFTER_SETUP:-}" == "true" ]] && [[ -t 0 ]]; then
         echo ""
-        read -r -p "Build Docker image now? [Y/n]: " build_now
+        zzc_read -r -p "Build Docker image now? [Y/n]: " build_now
         if [[ ! "$build_now" =~ ^[Nn]$ ]]; then
             if make docker-build; then
                 echo ""

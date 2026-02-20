@@ -212,7 +212,7 @@ prompt_input() {
         printf "%s: " "$prompt"
     fi
 
-    read -r input || {
+    zzc_read -r input || {
         INTERACTIVE_CANCELLED=true
         return 1
     }
@@ -243,7 +243,7 @@ prompt_validated() {
             printf "%s: " "$prompt"
         fi
 
-        read -r input || {
+        zzc_read -r input || {
             INTERACTIVE_CANCELLED=true
             return 1
         }
@@ -279,7 +279,7 @@ prompt_github_account() {
             printf "%s: " "$prompt"
         fi
 
-        read -r input || {
+        zzc_read -r input || {
             INTERACTIVE_CANCELLED=true
             return 1
         }
@@ -330,7 +330,7 @@ prompt_yesno() {
 
     printf "%s (%s): " "$prompt" "$hint"
 
-    read -r input || {
+    zzc_read -r input || {
         INTERACTIVE_CANCELLED=true
         return 1
     }
@@ -361,7 +361,7 @@ prompt_select() {
     while true; do
         printf "%s (%s) [%s]: " "$prompt" "$options" "$default"
 
-        read -r input || {
+        zzc_read -r input || {
             INTERACTIVE_CANCELLED=true
             return 1
         }
@@ -604,7 +604,7 @@ config_init() {
         else
             # Non-interactive: ask before overwriting
             log_warn "Config exists: $CONFIG_USER"
-            read -p "Overwrite? [y/N] " -n 1 -r; echo
+            zzc_read -p "Overwrite? [y/N] " -n 1 -r; echo
             [[ $REPLY =~ ^[Yy]$ ]] || return 0
         fi
     fi
@@ -782,7 +782,7 @@ config_interactive_setup() {
     echo "    q) Exit"
     echo ""
     printf "  Choice [1]: "
-    read -r choice || { _save_and_exit; return 0; }
+    zzc_read -r choice || { _save_and_exit; return 0; }
     choice="${choice:-1}"
 
     case "$choice" in

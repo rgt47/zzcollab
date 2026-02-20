@@ -502,13 +502,35 @@ if ! declare -f require_module >/dev/null 2>&1; then
     }
 fi
 
+# Function: zzc_read
+# Purpose: Wrapper around `read` that skips the prompt when
+#          ZZCOLLAB_ACCEPT_DEFAULTS=true, leaving variables empty
+#          so that existing default-handling logic takes effect.
+# Usage:   zzc_read -r -p "Prompt: " variable
+zzc_read() {
+    if [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
+        REPLY=""
+        local _args=("$@") _i=0
+        while (( _i < ${#_args[@]} )); do
+            case "${_args[_i]}" in
+                -[pndtaiu]) ((_i+=2)) ;;
+                -*)         ((_i+=1)) ;;
+                *)          printf -v "${_args[_i]}" '%s' ""
+                            ((_i+=1)) ;;
+            esac
+        done
+        return 0
+    fi
+    read "$@"
+}
+
 # Function: confirm
 # Purpose: Interactive confirmation prompt
 # Arguments: $1 - prompt message (optional)
 # Returns: 0 if user confirms (y/Y), 1 otherwise
 confirm() {
     local prompt="${1:-Continue?}"
-    read -p "$prompt [y/N] " -n 1 -r
+    zzc_read -p "$prompt [y/N] " -n 1 -r
     echo
     [[ $REPLY =~ ^[Yy]$ ]]
 }

@@ -130,12 +130,12 @@ ensure_workspace_initialized() {
     echo "    tests/         Unit tests" >&2
     echo "" >&2
 
-    if [[ ! -t 0 ]]; then
+    if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
         log_error "Non-interactive mode: run 'zzcollab init' first"
         return 1
     fi
 
-    read -r -p "Initialize workspace now? [Y/n]: " init_choice
+    zzc_read -r -p "Initialize workspace now? [Y/n]: " init_choice
     if [[ "$init_choice" =~ ^[Nn]$ ]]; then
         log_info "Cancelled. Run 'zzcollab init' when ready."
         return 1
@@ -179,12 +179,12 @@ ensure_docker_image_built() {
     if [[ ! -f "Dockerfile" ]]; then
         log_warn "No Dockerfile found"
 
-        if [[ ! -t 0 ]]; then
+        if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
             log_error "Non-interactive mode: run 'zzc docker' first"
             return 1
         fi
 
-        read -p "Generate Dockerfile now? [Y/n] " -n 1 -r; echo
+        zzc_read -p "Generate Dockerfile now? [Y/n] " -n 1 -r; echo
         if [[ $REPLY =~ ^[Nn]$ ]]; then
             log_info "Generate later with: zzc docker"
             return 1
@@ -196,13 +196,12 @@ ensure_docker_image_built() {
 
     log_warn "Docker image '$project_name' not found"
 
-    # Non-interactive mode
-    if [[ ! -t 0 ]]; then
+    if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
         log_error "Non-interactive mode: build first with 'zzc docker --build'"
         return 1
     fi
 
-    read -p "Build it now? [Y/n] " -n 1 -r; echo
+    zzc_read -p "Build it now? [Y/n] " -n 1 -r; echo
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         log_info "Build later with: zzc docker --build"
         return 1
@@ -286,7 +285,7 @@ cmd_init() {
 
     if [[ -t 0 ]]; then
         local change_settings
-        read -r -p "  Change settings now? [y/N]: " change_settings
+        zzc_read -r -p "  Change settings now? [y/N]: " change_settings
         if [[ "$change_settings" =~ ^[Yy]$ ]]; then
             echo ""
             config_interactive_setup
@@ -332,7 +331,7 @@ cmd_init() {
     echo ""
 
     local repro_choice
-    read -r -p "Add reproducibility? [r/d/N]: " repro_choice
+    zzc_read -r -p "Add reproducibility? [r/d/N]: " repro_choice
 
     case "$repro_choice" in
         r|R)
@@ -363,14 +362,13 @@ cmd_docker() {
     local base_image=""
     local profile=""
     local profile_changed=false
-    local auto_yes=false
     local auto_no=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --build|-b) build_image=true; shift ;;
             --no-build) build_image=false; shift ;;
-            -y|--yes) auto_yes=true; shift ;;
+            -y|--yes|-Y|--yes-all) export ZZCOLLAB_ACCEPT_DEFAULTS=true; shift ;;
             -n|--no) auto_no=true; shift ;;
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
@@ -420,27 +418,19 @@ cmd_docker() {
     # Generate Dockerfile + renv.lock (wizard handles new workspaces)
     generate_dockerfile || exit 1
 
-    # Determine whether to build
     if [[ "$build_image" == "true" ]]; then
-        # Explicitly requested
         build_docker_image || exit 1
     elif [[ "$build_image" == "false" ]] || [[ "$auto_no" == "true" ]]; then
-        # Explicitly declined
         log_info "Build with: make docker-build"
-    elif [[ "$auto_yes" == "true" ]]; then
-        # Auto-yes
-        build_docker_image || exit 1
-    elif [[ -t 0 ]]; then
-        # Interactive - prompt
+    elif [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         echo ""
-        read -r -p "Build Docker image now? [Y/n]: " build_choice
+        zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
         if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
             build_docker_image || exit 1
         else
             log_info "Build later with: make docker-build"
         fi
     else
-        # Non-interactive, no explicit choice
         log_info "Build with: make docker-build"
     fi
 }
@@ -513,13 +503,13 @@ EOF
         echo ""
 
         local version_choice
-        read -r -p "R version [1]: " version_choice
+        zzc_read -r -p "R version [1]: " version_choice
         version_choice="${version_choice:-1}"
 
         case "$version_choice" in
             1) r_version="$cran_version" ;;
             2)
-                read -r -p "Enter R version (e.g., 4.3.2): " r_version
+                zzc_read -r -p "Enter R version (e.g., 4.3.2): " r_version
                 if [[ ! "$r_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                     log_error "Invalid version format. Expected: X.Y.Z"
                     return 1
@@ -593,7 +583,7 @@ EOF
     echo ""
 
     # Offer to save R version to config
-    read -r -p "Save R version to config? [Y/n]: " save_config
+    zzc_read -r -p "Save R version to config? [Y/n]: " save_config
     if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
         config_set "r-version" "$r_version"
     fi
@@ -802,7 +792,7 @@ EOF
 
     if [[ "$force" != "true" ]]; then
         log_warn "This will remove zzcollab files from the current project"
-        read -p "Continue? [y/N] " -n 1 -r
+        zzc_read -p "Continue? [y/N] " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             log_info "Cancelled"
@@ -1045,7 +1035,7 @@ Generated with zzcollab" || {
         echo "  2) Delete and recreate"
         echo "  3) Cancel"
         echo ""
-        read -r -p "Choice [1]: " choice
+        zzc_read -r -p "Choice [1]: " choice
         choice="${choice:-1}"
 
         case "$choice" in
@@ -1202,11 +1192,9 @@ cmd_quickstart() {
             # Prompt to build
             if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
                 log_info "Build later with: zzc docker"
-            elif [[ "${ZZCOLLAB_AUTO_BUILD:-false}" == "true" ]]; then
-                build_docker_image || return 1
             else
                 echo ""
-                read -r -p "Build Docker image now? [Y/n]: " build_choice
+                zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
                 if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
                     build_docker_image || return 1
                 else
@@ -1241,13 +1229,10 @@ cmd_quickstart() {
     echo "    - Dockerfile for containerized environment"
     echo ""
 
-    # Skip confirmation if -y flag
-    if [[ "${ZZCOLLAB_AUTO_YES:-false}" != "true" ]]; then
-        read -r -p "Continue? [Y/n]: " confirm
-        if [[ "$confirm" =~ ^[Nn]$ ]]; then
-            log_info "Cancelled"
-            return 0
-        fi
+    zzc_read -r -p "Continue? [Y/n]: " confirm
+    if [[ "$confirm" =~ ^[Nn]$ ]]; then
+        log_info "Cancelled"
+        return 0
     fi
 
     # Step 1: Initialize project structure
@@ -1286,17 +1271,11 @@ cmd_quickstart() {
     echo "    Dockerfile ($profile)"
     echo ""
 
-    # Build prompt: -Y auto-builds, -y prompts, --no-build skips
     if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
         echo ""
         log_info "Build later with: make docker-build"
-    elif [[ "${ZZCOLLAB_AUTO_BUILD:-false}" == "true" ]]; then
-        echo ""
-        build_docker_image || return 1
-        echo ""
-        log_success "Ready! Run 'make r' to start development"
     else
-        read -r -p "Build Docker image now? [Y/n]: " build_choice
+        zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
         if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
             echo ""
             build_docker_image || return 1
@@ -1373,7 +1352,7 @@ cmd_rm_docker() {
 cmd_rm_renv() {
     echo ""
     log_warn "This will remove renv.lock and renv/ directory"
-    read -r -p "Continue? [y/N]: " confirm
+    zzc_read -r -p "Continue? [y/N]: " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         log_info "Cancelled"
         return 0
@@ -1528,8 +1507,8 @@ Options:
   --public         Create public GitHub repo
   -v, --verbose    More output
   -q, --quiet      Errors only
-  -y, --yes        Skip initial confirmation (prompt for build)
-  -Y, --yes-all    Skip all confirmations (auto-build)
+  -y, --yes        Accept defaults (non-interactive)
+  -Y, --yes-all    Same as -y
 
 Examples:
   zzcollab analysis                # Quickstart: init + renv + docker (recommended)
@@ -1576,12 +1555,11 @@ main() {
                 shift
                 ;;
             -y|--yes)
-                export ZZCOLLAB_AUTO_YES=true
+                export ZZCOLLAB_ACCEPT_DEFAULTS=true
                 shift
                 ;;
             -Y|--yes-all)
-                export ZZCOLLAB_AUTO_YES=true
-                export ZZCOLLAB_AUTO_BUILD=true
+                export ZZCOLLAB_ACCEPT_DEFAULTS=true
                 shift
                 ;;
             --no-build)
@@ -1689,18 +1667,10 @@ main() {
                 local profile_name="$1"
                 shift
                 # Consume trailing flags for this command
-                # -y: skip initial confirmation, prompt for build
-                # -Y: skip both confirmations (auto-build)
-                # --no-build: skip build even with -y/-Y
                 while [[ $# -gt 0 ]]; do
                     case "$1" in
-                        -y|--yes)
-                            export ZZCOLLAB_AUTO_YES=true
-                            shift
-                            ;;
-                        -Y|--yes-all)
-                            export ZZCOLLAB_AUTO_YES=true
-                            export ZZCOLLAB_AUTO_BUILD=true
+                        -y|--yes|-Y|--yes-all)
+                            export ZZCOLLAB_ACCEPT_DEFAULTS=true
                             shift
                             ;;
                         --no-build)
@@ -1742,19 +1712,10 @@ main() {
             minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
                 local profile_name="$1"
                 shift
-                # Consume trailing flags for this command
-                # -y: skip initial confirmation, prompt for build
-                # -Y: skip both confirmations (auto-build)
-                # --no-build: skip build even with -y/-Y
                 while [[ $# -gt 0 ]]; do
                     case "$1" in
-                        -y|--yes)
-                            export ZZCOLLAB_AUTO_YES=true
-                            shift
-                            ;;
-                        -Y|--yes-all)
-                            export ZZCOLLAB_AUTO_YES=true
-                            export ZZCOLLAB_AUTO_BUILD=true
+                        -y|--yes|-Y|--yes-all)
+                            export ZZCOLLAB_ACCEPT_DEFAULTS=true
                             shift
                             ;;
                         --no-build)
@@ -1762,11 +1723,9 @@ main() {
                             shift
                             ;;
                         -*)
-                            # Unknown flag, might be for next command
                             break
                             ;;
                         *)
-                            # Not a flag, might be next command
                             break
                             ;;
                     esac
