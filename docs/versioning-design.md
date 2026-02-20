@@ -129,14 +129,22 @@ zzc check-updates [DIR ...]
 
 Checks one or more named directories (defaulting to the current
 directory). For each workspace, it reports the status of all three
-template files:
+zzcollab template files and, if present, the zzvim-R `.Rprofile.local`:
 
 ```
 Checking: ~/prj/res/08-mmrmrobust/
-  Makefile      v2.0.0 -> v2.1.0  (outdated)
-  .Rprofile     v2.0.0 -> v2.1.0  (outdated)
-  Dockerfile    v2.1.0             (current)
+  Makefile       v2.0.0 -> v2.1.0  (outdated)
+  .Rprofile      v2.0.0 -> v2.1.0  (outdated)
+  Dockerfile     v2.1.0             (current)
+  .Rprofile.local v1.9.0            (zzvim-R)
 ```
+
+The `.Rprofile.local` line is informational: it reports the version
+found and attributes ownership to zzvim-R, but does not contribute to
+the exit code. zzcollab cannot judge whether a zzvim-R template is
+current because it does not know zzvim-R's expected version. The
+actual currency check for `.Rprofile.local` occurs inside Vim when an
+R terminal starts (see below).
 
 ### Batch scan mode
 
