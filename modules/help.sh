@@ -28,8 +28,8 @@ require_module "core"
 # Purpose: Show brief overview (git-like) with common workflows and topics
 show_help_brief() {
     cat << 'EOF'
-usage: zzcollab [OPTIONS]
-   or: zzcollab help <topic>
+usage: zzc <command> [options]
+   or: zzc help <topic>
 
 zzcollab - Complete Research Compendium Setup
 Creates reproducible research projects with R package structure,
@@ -38,28 +38,30 @@ Docker integration, and collaborative workflows.
 Common workflows:
 
   start a new project (solo developer)
-    zzcollab -p myproject                     # Initialize new project
-    cd myproject && make docker-build         # Build Docker environment
-    make r                           # Start development
+    mkdir myproject && cd myproject
+    zzc analysis                              # Full setup with tidyverse
+    make docker-build && make r               # Build and start dev
 
   start a new project (team lead)
-    zzcollab -t mylab -p study -r analysis    # Initialize team project
-    make docker-build && make docker-push-team # Build and share image
-    git add . && git commit -m "init" && git push
+    zzc config set dockerhub-account mylab    # One-time config
+    mkdir study && cd study
+    zzc analysis                              # Full setup
+    zzc dockerhub                             # Push image to Docker Hub
+    zzc github                                # Create GitHub repo + push
 
   join an existing project (team member)
-    git clone https://github.com/team/project.git
-    cd project && zzcollab -u                 # Pull team Docker image
-    make r                           # Start development
+    git clone https://github.com/mylab/study.git
+    cd study && make docker-build             # Build from Dockerfile
+    make r                                    # Start development
 
   development workflow
-    make r        # Enter container
+    make r                                    # Enter container
     # ... work in R ...
-    q()                    # Exit (auto-snapshots packages)
-    make docker-test       # Run tests
+    q()                                       # Exit (auto-snapshots)
+    make docker-test                          # Run tests
     git add . && git commit -m "..." && git push
 
-See 'zzcollab help <topic>' for detailed information:
+See 'zzc help <topic>' for detailed information:
 
   Guides
     quickstart    Quick start for solo developers
@@ -69,7 +71,6 @@ See 'zzcollab help <topic>' for detailed information:
   Configuration
     config        Configuration system
     profiles      Docker profile selection
-    examples      Example files and templates
 
   Technical
     docker        Docker architecture
@@ -83,8 +84,7 @@ See 'zzcollab help <topic>' for detailed information:
     options       Complete list of all command-line options
     troubleshoot  Common issues and solutions
 
-'zzcollab help --all' lists all help topics
-'zzcollab --help' shows complete options (old format)
+'zzc help --all' lists all help topics
 EOF
 }
 
@@ -292,39 +292,39 @@ show_help_team() {
 TEAM COLLABORATION
 
 Team Lead Setup:
-   1. Initialize project:
-      zzcollab -t mylab -p study -r analysis
+   1. One-time configuration:
+      zzc config set dockerhub-account mylab
+      zzc config set github-account mylab
 
-   2. Build and share Docker image:
-      make docker-build
-      make docker-push-team
+   2. Create the project:
+      mkdir study && cd study
+      zzc analysis                     # Full setup with tidyverse
 
-   3. Push to GitHub:
-      git add .
-      git commit -m "Initial project setup"
-      git push -u origin main
+   3. Share Docker image:
+      zzc dockerhub                    # Push to Docker Hub (mylab/study)
+
+   4. Create GitHub repository:
+      zzc github                       # Create repo + push
 
 Team Member Join:
-   1. Clone repository:
+   1. Clone and build locally:
       git clone https://github.com/mylab/study.git
       cd study
+      make docker-build                # Build image from Dockerfile
 
-   2. Pull team Docker image:
-      zzcollab -u
-
-   3. Start development:
+   2. Start development:
       make r
 
 Workflow:
    - Team members work independently in containers
    - Packages added by anyone appear in shared renv.lock
-   - Docker image rebuilt/pushed by team lead when needed
-   - Everyone pulls updated image: zzcollab -u
+   - Members build their image locally from the Dockerfile
+   - Team lead can push updated images via: zzc dockerhub
 
 See also:
-  zzcollab help workflow      Daily development
-  zzcollab help docker        Docker architecture
-  zzcollab help config        Team configuration
+  zzc help workflow      Daily development
+  zzc help docker        Docker architecture
+  zzc help config        Team configuration
 EOF
 }
 
@@ -335,31 +335,42 @@ show_help_config_topic() {
 CONFIGURATION SYSTEM
 
 Configuration Files (priority order):
-  1. ./zzcollab.yaml          Project-specific
-  2. ~/.zzcollab/config.yaml  User defaults
+  1. ./zzcollab.yaml          Project-specific (local)
+  2. ~/.zzcollab/config.yaml  User defaults (global)
   3. Built-in defaults
 
-Commands:
-  zzcollab -c init                 Create config file
-  zzcollab -c set KEY VALUE        Set configuration
-  zzcollab -c get KEY              Get configuration
-  zzcollab -c list                 List all config
+Global Commands:
+  zzc config init              Create global config file
+  zzc config set KEY VALUE     Set global configuration
+  zzc config get KEY           Get global configuration
+  zzc config list              List global config
+  zzc config path              Show config file paths
+  zzc config validate          Validate config file
 
-Common Settings:
-  team-name          Your Docker Hub organization
-  github-account     Your GitHub account
-  profile-name       Default Docker profile
-  with-examples      Include example files (true/false)
+Local Commands (project-specific):
+  zzc config set-local KEY VALUE   Set project config
+  zzc config get-local KEY         Get project config
+  zzc config list-local            List project config
+
+Config Keys (kebab-case):
+  dockerhub-account    Docker Hub organization/account
+  github-account       GitHub account
+  profile-name         Default Docker profile
+  author-name          Author name for DESCRIPTION
+  author-email         Author email
+  author-orcid         Author ORCID
+  r-version            R version for Docker builds
+  license-type         License type (e.g., MIT)
 
 Example:
-  zzcollab -c init
-  zzcollab -c set team-name "mylab"
-  zzcollab -c set profile-name "analysis"
-  zzcollab -c set with-examples true
+  zzc config init
+  zzc config set dockerhub-account "mylab"
+  zzc config set profile-name "analysis"
+  zzc config set github-account "mylab"
 
 See also:
-  zzcollab help profiles     Docker profiles
-  zzcollab help examples     Example files
+  zzc help profiles     Docker profiles
+  zzc help team         Team collaboration
 EOF
 }
 
@@ -741,184 +752,172 @@ show_next_steps() {
 # Function: show_help_header
 # Purpose: Display main usage and options section
 show_help_header() {
-    cat << EOF
-zzcollab - Complete Research Compendium Setup (Modular Implementation)
+    cat << 'EOF'
+zzcollab - Complete Research Compendium Setup
 
-Creates a comprehensive research compendium with R package structure, Docker integration,
-analysis templates, and reproducible workflows.
+Creates a comprehensive research compendium with R package structure,
+Docker integration, analysis templates, and reproducible workflows.
 
 USAGE:
-    zzcollab [OPTIONS]
+    zzc <command> [options]
 
-OPTIONS:
-    Team and project setup:
-    -t, --team NAME              Team name (Docker Hub namespace for images)
-    -p, --project-name NAME      Project name (directory and package name)
-    -g, --github-account NAME    GitHub account (default: same as team)
-    -u, --use-team-image         Pull and use existing team Docker image from Docker Hub
-                                 (for team members joining existing projects)
+COMMANDS:
+    Profile shortcuts (create or switch project profile):
+      minimal              Lightweight R environment (~300MB)
+      analysis             Data analysis / tidyverse (~1.5GB)
+      publishing           LaTeX + pandoc (~3GB)
+      shiny                Interactive applications
+      rstudio              RStudio Server
 
-    Profile system (three usage patterns):
-    -r, --profile-name NAME      Use complete predefined profile (base-image + libs + pkgs)
-                                 Examples: minimal, analysis, publishing
-    -k, --pkgs BUNDLE            Override package selection (can combine with --profile-name)
-                                 If used alone, applies minimal profile as base
-                                 Bundles: minimal, tidyverse, modeling, publishing, shiny
-    -l, --libs BUNDLE            System dependency bundle (for custom composition with -b)
-                                 Bundles: minimal, modeling, publishing, gui
-    -b, --base-image NAME        Custom Docker base image (for manual composition)
-    -a, --tag TAG                Docker image tag for selecting team image variants
-    --list-profiles              List all available predefined profiles
-    --list-libs                  List all available library bundles
-    --list-pkgs                  List all available package bundles
+    Setup commands:
+      init                 Create rrtools workspace only
+      renv                 Set up renv without Docker
+      docker [opts]        Generate Dockerfile (--build to also build)
 
-    Common options:
+    Sharing:
+      github [--public]    Create GitHub repo and push
+      dockerhub [--tag T]  Push Docker image to Docker Hub
 
-    Advanced options:
-    -b, --base-image NAME        Use custom Docker base image (for composition with --libs and --pkgs)
-        --r-version VERSION      Specify R version for Docker build (e.g., 4.4.0)
-                                 Required if renv.lock is missing; overrides renv.lock if present
-        --build-docker           Build Docker image automatically during setup
-    -n, --no-docker              Skip Docker image build (default; build manually with 'make docker-build')
-    -G, --github                 Automatically create private GitHub repository and push
-    -x, --with-examples          Include example files (report.Rmd, analysis scripts, vignettes)
-                                 Default: skip examples (create clean workspace)
-                                 Can also set via: zzcollab -c set with-examples true
-        --add-examples           Add example files to existing project (run from project root)
-                                 Use this after initialization if you initially skipped examples
-        --force                  Skip file conflict confirmation prompts (for CI/CD and automation)
-        --next-steps             Show development workflow and next steps
+    Maintenance:
+      config <sub> ...     Configuration (init|set|get|list|...)
+      validate             Check project structure and dependencies
+      check-updates        Detect outdated template files
+      nav <sub>            Navigation shortcuts (install|uninstall)
+      rm <feature> [-f]    Remove a feature (docker|renv|git|...)
+      uninstall            Remove all zzcollab artifacts
+      list profiles        List available Docker profiles
 
-    Output control:
-    -q, --quiet                  Quiet mode (errors only, ~0 lines)
-    -v, --verbose                Verbose mode (show progress, ~25 lines)
-    -vv, --debug                 Debug mode (show everything, ~400 lines + log file)
-    -w, --log-file               Enable detailed logging to .zzcollab.log
+    Help:
+      help [topic]         Show help (see topics below)
 
-    Utilities:
-    -h, --help [TOPIC]           Show help (general or specific topic)
-                                 Topics: init, github, quickstart, workflow, troubleshooting,
-                                         config, renv, docker, cicd
+GLOBAL OPTIONS:
+    -v, --verbose          Verbose output
+    -q, --quiet            Errors only
+    -y, --yes              Accept default prompts
+    -Y, --yes-all          Accept all prompts
+    --no-build             Skip Docker build prompt
+    --version              Show version
+    -h, --help             Show brief usage
+
+PER-COMMAND OPTIONS:
+    docker:
+      -r, --profile NAME   Docker profile
+      -b, --build          Build image after generating Dockerfile
+      --r-version VER      R version for Docker build
+      --base-image IMG     Custom base image
+
+    github:
+      --public             Create public repository (default: private)
+      --private            Create private repository
+
+    dockerhub:
+      --tag, -t TAG        Image tag (default: latest)
 EOF
 }
 
 # Function: show_help_examples  
 # Purpose: Display usage examples section
 show_help_examples() {
-    cat << EOF
-    
+    cat << 'EOF'
+
 EXAMPLES:
-    Solo Developer - Three Profile Usage Patterns:
+    Solo Developer:
+      mkdir myproject && cd myproject
+      zzc analysis                        # Full setup with tidyverse profile
+      make docker-build && make r         # Build image and start R
 
-    Pattern 1: Complete Profile (no overrides)
-    zzcollab -r analysis -G                     # Uses: rocker/tidyverse + minimal libs + tidyverse pkgs
-    zzcollab -r publishing                      # Uses: rocker/verse + publishing libs + publishing pkgs
-    zzcollab -r minimal                         # Uses: rocker/r-ver + minimal libs + minimal pkgs
+      zzc publishing                      # Switch to publishing profile
+      zzc minimal                         # Switch to minimal profile
 
-    Pattern 2: Profile with Package Override
-    zzcollab -r publishing -k minimal           # Uses: rocker/verse + publishing libs + minimal pkgs (OVERRIDE)
-    zzcollab -r analysis -k modeling            # Uses: rocker/tidyverse + minimal libs + modeling pkgs (OVERRIDE)
+    Modular Setup (step by step):
+      mkdir myproject && cd myproject
+      zzc init                            # Create rrtools workspace
+      zzc renv                            # Set up renv
+      zzc docker --profile analysis       # Generate Dockerfile
+      make docker-build                   # Build image
 
-    Pattern 3: Package-Only (uses minimal profile as base)
-    zzcollab -k modeling                        # Uses: rocker/r-ver + minimal libs + modeling pkgs
-    zzcollab -k tidyverse                       # Uses: rocker/r-ver + minimal libs + tidyverse pkgs
+    Team Lead:
+      zzc config set dockerhub-account mylab
+      mkdir study && cd study
+      zzc analysis                        # Full setup
+      zzc dockerhub                       # Push image to Docker Hub
+      zzc github                          # Create GitHub repo + push
 
-    Discovery Commands:
-    zzcollab --list-profiles                    # See all available profiles with descriptions
-    zzcollab --list-libs                        # See all library bundles
-    zzcollab --list-pkgs                        # See all package bundles
+    Team Member:
+      git clone https://github.com/mylab/study.git && cd study
+      make docker-build                   # Build from Dockerfile
+      make r                              # Start development
 
-    Solo Developer - Manual Composition (advanced):
-    zzcollab -b rocker/verse -l publishing -k tidyverse             # Full manual control
-    zzcollab -b rocker/tidyverse -l modeling -k modeling
+    Configuration:
+      zzc config set profile-name analysis
+      zzc config set github-account mylab
+      zzc config list                     # Show all settings
 
-    Team Lead - Create Foundation and Push:
-    zzcollab -t mylab -p study -r analysis -G   # Initialize with profile
-    make docker-build                           # Build team Docker image
-    make docker-push-team                       # Push to Docker Hub (mylab/study:latest)
-    git add .
-    git commit -m "Initial team project setup"
-    git push -u origin main
+    Discovery:
+      zzc list profiles                   # Available Docker profiles
+      zzc help --all                      # All help topics
 
-    Team Lead - Custom Composition:
-    zzcollab -t mylab -p study -b rocker/r-ver -l modeling -k modeling
-    make docker-build
-    make docker-push-team
-    git add .
-    git commit -m "Initial team setup with custom composition"
-    git push -u origin main
-
-    Team Members - Join Existing Project:
-    git clone https://github.com/mylab/study.git && cd study
-    zzcollab -u                                 # Pull and use team image (mylab/study:latest)
-    make r                             # Start development (auto-pulls latest image)
-
-    Output Control:
-    zzcollab -t team -p project                 # Default: concise output (~8 lines)
-    zzcollab -t team -p project -q              # Quiet: errors only (for CI/CD)
-    zzcollab -t team -p project -v              # Verbose: show progress (~25 lines)
-    zzcollab -t team -p project -vv             # Debug: everything + log file (~400 lines)
-    zzcollab -t team -p project -w              # Enable log file without debug verbosity
-
-    Note: Foundation flags (-r/--profile-name, -b, -l/--libs, -k/--pkgs) are
-          automatically blocked when Dockerfile exists. To change: rm Dockerfile first.
+    Removal:
+      zzc rm docker                       # Remove Docker artifacts
+      zzc rm renv                         # Remove renv artifacts
+      zzc uninstall                       # Remove everything
 EOF
 }
 
 # Function: show_help_config
 # Purpose: Display configuration system section  
 show_help_config() {
-    cat << EOF
-    
+    cat << 'EOF'
+
 CONFIGURATION SYSTEM:
     zzcollab supports configuration files for common settings.
 
-    zzcollab -c get team-name                            # Get current team name
-    zzcollab -c set team-name mylab                      # Set default team name
-    zzcollab -c set profile-name analysis                # Set default Docker profile
-    zzcollab -c list                                     # Show all current settings
-    zzcollab -c reset                                    # Reset to defaults
+    zzc config get dockerhub-account             # Get current account
+    zzc config set dockerhub-account mylab       # Set Docker Hub account
+    zzc config set profile-name analysis         # Set default profile
+    zzc config list                              # Show all settings
 
     Configuration files:
-    - User-level: ~/.config/zzcollab/config.yaml
-    - Team-level: .zzcollab/config.yaml (if present)
+    - Global:  ~/.zzcollab/config.yaml
+    - Local:   ./zzcollab.yaml (project-specific)
 
-    Settings: team-name, github-account, profile-name,
-              auto-github, skip-confirmation
+    Settings: dockerhub-account, github-account, profile-name,
+              author-name, author-email, author-orcid,
+              r-version, license-type
 EOF
 }
 
 # Function: show_help_footer
 # Purpose: Display footer with additional resources
 show_help_footer() {
-    cat << EOF
+    cat << 'EOF'
 
 SPECIALIZED HELP PAGES:
 
 Getting Started:
-  zzcollab --help quickstart      Individual researcher quick start guide
-  zzcollab --help workflow        Daily development workflow
+  zzc help quickstart      Individual researcher quick start guide
+  zzc help workflow        Daily development workflow
 
 Configuration:
-  zzcollab --help config          Configuration system guide
-  zzcollab --help renv            Package management with renv
+  zzc help config          Configuration system guide
+  zzc help renv            Package management with renv
 
 Technical Details:
-  zzcollab --help init            Team initialization process
-  zzcollab --help docker          Docker essentials for researchers
-  zzcollab --help cicd            CI/CD and GitHub Actions
+  zzc help docker          Docker essentials for researchers
+  zzc help cicd            CI/CD and GitHub Actions
 
 Integration:
-  zzcollab --help github          GitHub integration and automation
-  zzcollab --help troubleshooting Common issues and solutions
+  zzc help github          GitHub integration and automation
+  zzc help team            Team collaboration setup
 
-Development:
-  zzcollab --next-steps           Development workflow guidance
+Other:
+  zzc help troubleshoot    Common issues and solutions
+  zzc help check-updates   Detect outdated template files
 
-📋 RESEARCH COMPENDIUM GUIDE:
+RESEARCH COMPENDIUM GUIDE:
 After project creation, see README.md for comprehensive information about:
 - Unified research compendium structure (based on Marwick et al. 2018)
-- Complete research lifecycle support (data → analysis → paper → package)
+- Complete research lifecycle support (data -> analysis -> paper -> package)
 - Tutorial examples: https://github.com/rgt47/zzcollab/tree/main/examples
 - Unified paradigm documentation: docs/UNIFIED_PARADIGM_GUIDE.md
 
@@ -1042,341 +1041,6 @@ Issue: Remote already configured
 EOF
 }
 
-#=============================================================================
-# QUICK START GUIDES
-#=============================================================================
-
-# Function: show_quickstart_help
-# Purpose: Quick start guide for individual researchers
-show_quickstart_help() {
-    if [[ ! -t 1 ]] || [[ -n "${PAGER:-}" && "$PAGER" == "cat" ]]; then
-        show_quickstart_help_content
-    else
-        show_quickstart_help_content | "${PAGER:-less}" -R
-    fi
-}
-
-show_quickstart_help_content() {
-    cat << 'EOF'
-🚀 QUICK START GUIDE - INDIVIDUAL RESEARCHERS
-
-═══════════════════════════════════════════════════════════════════════════
-YOU'RE NOT ON A TEAM - SIMPLIFIED WORKFLOW
-═══════════════════════════════════════════════════════════════════════════
-
-This guide is for individual researchers who want to:
-• Work on personal research projects
-• Create reproducible analysis environments
-• Get started quickly without team collaboration setup
-
-Key Point: You don't need a "team" - just use your name as the team name!
-
-═══════════════════════════════════════════════════════════════════════════
-SIMPLEST POSSIBLE SETUP (5 MINUTES)
-═══════════════════════════════════════════════════════════════════════════
-
-Step 1: One-Time Configuration
-──────────────────────────────────────────────────────────────────────────
-Set your defaults so you never have to type them again:
-
-    zzcollab config set team-name "yourname"
-    zzcollab config set profile-name "analysis"
-
-Replace "yourname" with your actual name or username (e.g., "jsmith")
-This becomes your Docker Hub namespace (like jsmith/project-rstudio:latest)
-
-Step 2: Create Your First Project
-──────────────────────────────────────────────────────────────────────────
-    cd ~/projects  # Or wherever you keep your work
-    mkdir analysis1 && cd analysis1
-    zzcollab -p analysis1
-
-That's it! Your project is ready.
-
-Step 3: Start Working
-──────────────────────────────────────────────────────────────────────────
-    make docker-rstudio
-
-Opens RStudio at http://localhost:8787
-Login: analyst / analyst
-
-You're now working in a reproducible environment!
-
-═══════════════════════════════════════════════════════════════════════════
-COMPLETE FIRST PROJECT WALKTHROUGH
-═══════════════════════════════════════════════════════════════════════════
-
-Scenario: You need to complete a data analysis analysis assignment
-
-1. Set up configuration (one time ever):
-   ──────────────────────────────────────────────────────────────────────
-   zzcollab config set team-name "jsmith"
-   zzcollab config set profile-name "analysis"
-
-2. Create project directory:
-   ──────────────────────────────────────────────────────────────────────
-   mkdir ~/stat545-hw1 && cd ~/stat545-hw1
-
-3. Initialize zzcollab project:
-   ──────────────────────────────────────────────────────────────────────
-   zzcollab -p stat545-hw1
-
-   This takes 4-6 minutes (downloads R packages)
-   Grab coffee, this only happens once!
-
-4. Start RStudio:
-   ──────────────────────────────────────────────────────────────────────
-   make docker-rstudio
-
-   Opens at http://localhost:8787
-   Username: analyst
-   Password: analyst
-
-5. Do your analysis:
-   ──────────────────────────────────────────────────────────────────────
-   In RStudio:
-   • Create new R Markdown: File → New → R Markdown
-   • Save as: analysis/scripts/analysis1.Rmd
-   • Put data in: analysis/data/raw_data/
-   • Write your analysis
-   • Knit to HTML
-
-6. When finished:
-   ──────────────────────────────────────────────────────────────────────
-   Close browser tab (RStudio)
-   In terminal: Ctrl+C to stop container
-
-7. Next time:
-   ──────────────────────────────────────────────────────────────────────
-   cd ~/stat545-hw1
-   make docker-rstudio
-
-   Everything exactly as you left it!
-
-═══════════════════════════════════════════════════════════════════════════
-INDIVIDUAL RESEARCHER FAQS
-═══════════════════════════════════════════════════════════════════════════
-
-Q: "Why does it ask for a team name if I'm working alone?"
-A: Think of it as YOUR namespace. Use your name. It keeps your Docker
-   images organized (like folders on your computer).
-
-Q: "Do I need to know Docker?"
-A: No! Just run 'make docker-rstudio' and use RStudio normally.
-   Docker runs in the background.
-
-Q: "Can I use my regular R instead?"
-A: Yes, but you lose reproducibility. The whole point is that your
-   analysis will work exactly the same way 3 years from now.
-
-Q: "What if I need to install a package?"
-A: In RStudio console:
-     install.packages("packagename")
-   Exit container - packages automatically captured!
-   (Auto-snapshot runs when you close RStudio or terminal)
-
-Q: "Where do I put my analysis files?"
-A: Follow this structure:
-   • Data: analysis/data/raw_data/
-   • Scripts: analysis/scripts/
-   • Output: analysis/figures/
-
-Q: "Can I switch from solo to team later?"
-A: Yes! Your project structure is already team-ready. Just share the
-   GitHub repo and collaborators can join.
-
-Q: "Do I need a GitHub account?"
-A: Not required for solo work. But recommended for:
-   • Backing up your analysis
-   • Showing work to professors
-   • Building your portfolio
-
-Q: "Which Docker profile should I choose?"
-A: Use 'analysis' profile - has tidyverse, ggplot2, dplyr in Docker image.
-   Additional packages are added dynamically as needed with install.packages().
-   That's perfect for most coursework.
-
-Q: "My laptop is slow - can I use a lighter profile?"
-A: Yes! Use minimal profile:
-     zzcollab config set profile-name "minimal"
-   Lightweight base, add packages as you need them.
-
-Q: "How do I add packages I need?"
-A: Inside RStudio/container:
-     install.packages("package_name")
-   Exit container (close RStudio or terminal)
-   Packages automatically tracked in renv.lock and shared with team!
-   For GitHub packages: install.packages("remotes"), then remotes::install_github("user/package")
-
-═══════════════════════════════════════════════════════════════════════════
-INDIVIDUAL RESEARCHER COMPLETE COMMAND REFERENCE
-═══════════════════════════════════════════════════════════════════════════
-
-One-Time Setup:
-──────────────────────────────────────────────────────────────────────────
-zzcollab config set team-name "yourname"
-zzcollab config set profile-name "analysis"
-
-Per-Project (First Time):
-──────────────────────────────────────────────────────────────────────────
-mkdir projectname && cd projectname
-zzcollab -p projectname
-
-Daily Work:
-──────────────────────────────────────────────────────────────────────────
-cd projectname
-make docker-rstudio          # Start RStudio
-# Do your work in browser
-# Ctrl+C in terminal when done
-
-Common Tasks:
-──────────────────────────────────────────────────────────────────────────
-make docker-rstudio          # RStudio interface
-make r              # Command-line interface
-make docker-test             # Run tests
-make help                    # See all available commands
-
-═══════════════════════════════════════════════════════════════════════════
-AVOIDING COMMON INDIVIDUAL RESEARCHER MISTAKES
-═══════════════════════════════════════════════════════════════════════════
-
-❌ DON'T: Create projects in your home directory
-   cd ~ && zzcollab -p analysis  # BAD!
-
-✅ DO: Create a projects folder
-   mkdir ~/projects && cd ~/projects
-   mkdir analysis && cd analysis
-   zzcollab -p analysis
-
-❌ DON'T: Use different team names for each project
-   zzcollab -t proj1 -p analysis1
-   zzcollab -t proj2 -p analysis2  # Confusing!
-
-✅ DO: Use one team name (yours) for everything
-   zzcollab config set team-name "yourname"
-   Then just: zzcollab -p analysis1, zzcollab -p analysis2
-
-❌ DON'T: Forget to save your work in the right place
-   Files outside /project won't persist!
-
-✅ DO: Always work in the mounted directory
-   RStudio starts in /home/analyst/project (correct location)
-
-❌ DON'T: Run zzcollab multiple times in same directory
-   mkdir proj && cd proj
-   zzcollab -p proj
-   zzcollab -p proj  # Don't do this again!
-
-✅ DO: Only run zzcollab once per project
-   It sets everything up the first time
-
-═══════════════════════════════════════════════════════════════════════════
-EXAMPLE: TYPICAL SEMESTER WORKFLOW
-═══════════════════════════════════════════════════════════════════════════
-
-Week 1: Setup
-──────────────────────────────────────────────────────────────────────────
-zzcollab config set team-name "jsmith"
-zzcollab config set profile-name "analysis"
-
-Week 2-3: Analysis 1
-──────────────────────────────────────────────────────────────────────────
-mkdir ~/stat545/hw1 && cd ~/stat545/hw1
-zzcollab -p hw1
-make docker-rstudio
-# Complete analysis in RStudio
-# Close browser, Ctrl+C in terminal
-
-Week 4-5: Analysis 2
-──────────────────────────────────────────────────────────────────────────
-mkdir ~/stat545/hw2 && cd ~/stat545/hw2
-zzcollab -p hw2  # Uses your saved config!
-make docker-rstudio
-# Complete analysis
-
-Week 6-10: Final Project
-──────────────────────────────────────────────────────────────────────────
-mkdir ~/stat545/final-project && cd ~/stat545/final-project
-zzcollab -p final-project
-make docker-rstudio
-
-# Work on project multiple times:
-cd ~/stat545/final-project
-make docker-rstudio  # Day 1
-# Close when done
-
-cd ~/stat545/final-project
-make docker-rstudio  # Day 2
-# Close when done
-
-# All your work is saved between sessions!
-
-═══════════════════════════════════════════════════════════════════════════
-WHEN YOU'RE READY FOR MORE
-═══════════════════════════════════════════════════════════════════════════
-
-Once comfortable with basics, explore:
-
-Add version control:
-  zzcollab -p project -G    # Automatically creates GitHub repo
-
-Share with professor/TA:
-  1. Use -G flag to create GitHub repo
-  2. Share GitHub link
-  3. They can reproduce your exact environment!
-
-Try different interfaces:
-  make r           # Command-line for advanced users
-  make docker-r             # Just R console
-
-Learn more about:
-  zzcollab --help-workflow        # Daily development patterns
-  zzcollab --help-renv            # Package management
-  zzcollab --help-troubleshooting # Fix common issues
-
-═══════════════════════════════════════════════════════════════════════════
-QUICK REFERENCE CARD (PRINT THIS!)
-═══════════════════════════════════════════════════════════════════════════
-
-ONE-TIME SETUP:
-  zzcollab config set team-name "yourname"
-  zzcollab config set profile-name "analysis"
-
-NEW PROJECT:
-  mkdir ~/projects/projectname && cd ~/projects/projectname
-  zzcollab -p projectname
-  make docker-rstudio
-
-DAILY WORK:
-  cd ~/projects/projectname
-  make docker-rstudio
-  # Work in browser at localhost:8787
-  # Login: analyst / analyst
-  # When done: close browser, Ctrl+C in terminal
-
-FILE LOCATIONS:
-  Data:    analysis/data/raw_data/
-  Scripts: analysis/scripts/
-  Figures: analysis/figures/
-
-INSTALL PACKAGE:
-  In RStudio console:
-    install.packages("packagename")
-  Exit container - automatically captured!
-  (For GitHub: install.packages("remotes") then remotes::install_github("user/package"))
-
-HELP:
-  zzcollab --help-workflow
-  zzcollab --help-troubleshooting
-  zzcollab --help-renv
-
-═══════════════════════════════════════════════════════════════════════════
-
-For complete documentation: zzcollab --help
-For troubleshooting: zzcollab --help-troubleshooting
-For daily workflow: zzcollab --help-workflow
-EOF
-}
 
 #=============================================================================
 # MODULE LOADED

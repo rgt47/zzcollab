@@ -894,28 +894,13 @@ EOF
 
 cmd_help() {
     require_module "help"
-
     local topic="${1:-}"
-
-    if [[ -z "$topic" ]]; then
-        show_help
-    else
-        case "$topic" in
-            init|quickstart) show_help_quickstart ;;
-            docker) show_help_docker ;;
-            validate) log_info "Validate: Check project structure and dependencies" ;;
-            nav|navigation) cmd_nav --help ;;
-            uninstall) cmd_uninstall --help ;;
-            config) show_help_config ;;
-            github) show_github_help ;;
-            workflow) show_help_workflow ;;
-            renv) show_help_renv ;;
-            profiles) show_help_profiles ;;
-            cicd) show_help_cicd ;;
-            troubleshooting) show_help_troubleshooting ;;
-            *) log_error "Unknown help topic: $topic"; show_help_topics_list ;;
-        esac
-    fi
+    case "$topic" in
+        nav|navigation) cmd_nav --help ;;
+        validate) cmd_validate --help 2>/dev/null || true ;;
+        uninstall) cmd_uninstall --help ;;
+        *) show_help "$topic" ;;
+    esac
 }
 
 #=============================================================================
@@ -1531,13 +1516,25 @@ main() {
     # Advisory: one-line warning if workspace templates are behind
     warn_if_templates_outdated
 
+    # Pre-scan: extract global flags regardless of position
+    local _filtered=()
+    for _arg in "$@"; do
+        case "$_arg" in
+            -v|--verbose)          export VERBOSITY_LEVEL=2 ;;
+            -q|--quiet)            export VERBOSITY_LEVEL=0 ;;
+            -y|--yes|-Y|--yes-all) export ZZCOLLAB_ACCEPT_DEFAULTS=true ;;
+            --no-build)            export ZZCOLLAB_NO_BUILD=true ;;
+            *)                     _filtered+=("$_arg") ;;
+        esac
+    done
+    set -- ${_filtered[@]+"${_filtered[@]}"}
+
     # Track if any command was executed
     local commands_run=0
 
-    # Process arguments in order
+    # Process commands
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            # Global flags
             --version)
                 echo "zzcollab ${ZZCOLLAB_VERSION:-2.0.0}"
                 exit 0
@@ -1546,28 +1543,7 @@ main() {
                 show_usage
                 exit 0
                 ;;
-            -v|--verbose)
-                export VERBOSITY_LEVEL=2
-                shift
-                ;;
-            -q|--quiet)
-                export VERBOSITY_LEVEL=0
-                shift
-                ;;
-            -y|--yes)
-                export ZZCOLLAB_ACCEPT_DEFAULTS=true
-                shift
-                ;;
-            -Y|--yes-all)
-                export ZZCOLLAB_ACCEPT_DEFAULTS=true
-                shift
-                ;;
-            --no-build)
-                export ZZCOLLAB_NO_BUILD=true
-                shift
-                ;;
 
-            # Commands that take no arguments
             init)
                 cmd_init
                 commands_run=$((commands_run + 1))
@@ -1666,25 +1642,6 @@ main() {
                 fi
                 local profile_name="$1"
                 shift
-                # Consume trailing flags for this command
-                while [[ $# -gt 0 ]]; do
-                    case "$1" in
-                        -y|--yes|-Y|--yes-all)
-                            export ZZCOLLAB_ACCEPT_DEFAULTS=true
-                            shift
-                            ;;
-                        --no-build)
-                            export ZZCOLLAB_NO_BUILD=true
-                            shift
-                            ;;
-                        -*)
-                            break
-                            ;;
-                        *)
-                            break
-                            ;;
-                    esac
-                done
                 cmd_quickstart "$profile_name"
                 commands_run=$((commands_run + 1))
                 ;;
@@ -1712,24 +1669,6 @@ main() {
             minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
                 local profile_name="$1"
                 shift
-                while [[ $# -gt 0 ]]; do
-                    case "$1" in
-                        -y|--yes|-Y|--yes-all)
-                            export ZZCOLLAB_ACCEPT_DEFAULTS=true
-                            shift
-                            ;;
-                        --no-build)
-                            export ZZCOLLAB_NO_BUILD=true
-                            shift
-                            ;;
-                        -*)
-                            break
-                            ;;
-                        *)
-                            break
-                            ;;
-                    esac
-                done
                 cmd_quickstart "$profile_name"
                 commands_run=$((commands_run + 1))
                 ;;
