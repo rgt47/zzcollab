@@ -187,6 +187,7 @@ Guides:
   profiles        Docker profiles and switching
 
 Commands:
+  build           Build Docker image (cached)
   github          GitHub repository integration
   docker          Docker architecture and usage
   renv            Package management with renv
@@ -771,6 +772,7 @@ COMMANDS:
       dockerhub [--tag T]  Push Docker image to Docker Hub
 
     Maintenance:
+      build [opts]         Build Docker image (content-addressable cache)
       config <sub> ...     Configuration (init|set|get|list|...)
       validate             Check project structure and dependencies
       check-updates        Detect outdated template files
@@ -792,6 +794,10 @@ GLOBAL OPTIONS:
     -h, --help             Show brief usage
 
 PER-COMMAND OPTIONS:
+    build:
+      --no-cache           Skip cache; force full rebuild
+      --log                Save build output to docker-build.log
+
     docker:
       -r, --profile NAME   Docker profile
       -b, --build          Build image after generating Dockerfile

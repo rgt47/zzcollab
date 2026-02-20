@@ -207,6 +207,7 @@ ensure_docker_image_built() {
         return 1
     fi
 
+    require_module "config" "profiles" "docker"
     build_docker_image "$project_name"
 }
 
@@ -432,6 +433,49 @@ cmd_docker() {
         fi
     else
         log_info "Build with: make docker-build"
+    fi
+}
+
+cmd_build() {
+    require_module "docker"
+
+    local no_cache="false"
+    local log_file=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --no-cache) no_cache="true"; shift ;;
+            --log)      log_file="docker-build.log"; shift ;;
+            --help|-h)
+                cat << 'HELPEOF'
+BUILD DOCKER IMAGE
+
+Builds the Docker image using the content-addressable cache.
+If an image with the same Dockerfile+renv.lock hash exists,
+it is retagged instead of rebuilt.
+
+USAGE:
+    zzcollab build [OPTIONS]
+
+OPTIONS:
+    --no-cache     Skip cache check; force full rebuild
+    --log          Save build output to docker-build.log
+    --help, -h     Show this help
+HELPEOF
+                exit 0
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    if [[ -n "$log_file" ]]; then
+        build_docker_image "$(basename "$(pwd)")" "$no_cache" \
+            2>&1 | tee "$log_file"
+    else
+        build_docker_image "$(basename "$(pwd)")" "$no_cache"
     fi
 }
 
@@ -1083,9 +1127,21 @@ cmd_dockerhub() {
     local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKER_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}}"
 
     if [[ -z "$dockerhub_user" ]]; then
-        log_error "DockerHub username not configured"
-        echo "  Set with: zzc config set docker-account <username>" >&2
-        return 1
+        if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+            log_error "DockerHub username not configured"
+            echo "  Set with: zzc config set docker-account <username>" >&2
+            return 1
+        fi
+        zzc_read -r -p "DockerHub username: " dockerhub_user
+        if [[ -z "$dockerhub_user" ]]; then
+            log_error "DockerHub username required"
+            return 1
+        fi
+        local _save
+        zzc_read -r -p "Save to config? [Y/n]: " _save
+        if [[ ! "$_save" =~ ^[Nn]$ ]]; then
+            config_set "docker-account" "$dockerhub_user"
+        fi
     fi
 
     local remote_image="${dockerhub_user}/${project_name}:${tag}"
@@ -1476,6 +1532,7 @@ Profiles (new project: init+renv+docker, existing: switch profile):
   shiny        Shiny Server
 
 Management:
+  build          Build Docker image (uses content-addressable cache)
   rm <feature>   Remove: docker, renv, git, github, cicd
   uninstall      Remove all zzcollab files (uses manifest)
   validate       Check project structure
@@ -1674,6 +1731,11 @@ main() {
                 ;;
 
             # Other commands that pass through
+            build)
+                shift
+                cmd_build "$@"
+                exit $?
+                ;;
             validate)
                 shift
                 cmd_validate "$@"

@@ -510,15 +510,25 @@ fi
 zzc_read() {
     if [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         REPLY=""
-        local _args=("$@") _i=0
+        local _args=("$@") _i=0 _prompt="" _newline=true
         while (( _i < ${#_args[@]} )); do
             case "${_args[_i]}" in
-                -[pndtaiu]) ((_i+=2)) ;;
+                -p)         _prompt="${_args[_i+1]:-}"
+                            ((_i+=2)) ;;
+                -n)         _newline=false
+                            ((_i+=2)) ;;
+                -[dtaiu])   ((_i+=2)) ;;
                 -*)         ((_i+=1)) ;;
                 *)          printf -v "${_args[_i]}" '%s' ""
                             ((_i+=1)) ;;
             esac
         done
+        if [[ -n "$_prompt" ]]; then
+            printf '%s(default)' "$_prompt" >&2
+        else
+            printf '(default)' >&2
+        fi
+        [[ "$_newline" == "true" ]] && printf '\n' >&2
         return 0
     fi
     read "$@"

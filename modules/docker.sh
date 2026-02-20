@@ -24,58 +24,30 @@ require_module "core" "profiles" "validation" "config"
 get_base_image_tools() {
     local base_image="$1"
     local has_pandoc="false"
-    local has_tinytex="false"
 
     case "$base_image" in
-        *tidyverse*)
+        *tidyverse*|*verse*|*rstudio*|*shiny*)
             has_pandoc="true"
-            has_tinytex="false"
-            ;;
-        *verse*)
-            has_pandoc="true"
-            has_tinytex="true"
-            ;;
-        *rstudio*|*shiny*)
-            has_pandoc="true"
-            has_tinytex="false"
-            ;;
-        *)
-            has_pandoc="false"
-            has_tinytex="false"
             ;;
     esac
 
-    echo "${has_pandoc}:${has_tinytex}"
+    echo "$has_pandoc"
 }
 
 # Generate install commands for missing tools
+# TinyTeX is deliberately excluded from all profiles. The project
+# directory is bind-mounted from the host, so LaTeX rendering runs
+# on the host where a TeX distribution persists across projects.
 generate_tools_install() {
     local base_image="$1"
-    local tools
-    tools=$(get_base_image_tools "$base_image")
-
-    local has_pandoc="${tools%%:*}"
-    local has_tinytex="${tools##*:}"
+    local has_pandoc
+    has_pandoc=$(get_base_image_tools "$base_image")
 
     local cmds=""
 
-    # Pandoc installation (if missing)
     if [[ "$has_pandoc" == "false" ]]; then
         cmds+="# Install pandoc for document rendering
 RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -rf /var/lib/apt/lists/*
-
-"
-    fi
-
-    # TinyTeX installation (if missing) - use binary installer for speed
-    # Skip R package - binary is sufficient for PDF rendering
-    if [[ "$has_tinytex" == "false" ]]; then
-        cmds+="# Install TinyTeX binary for PDF output
-# See: https://github.com/rstudio/tinytex-releases
-RUN apt-get update && apt-get install -y --no-install-recommends wget perl && rm -rf /var/lib/apt/lists/* \\
-    && wget -qO- \"https://yihui.org/tinytex/install-bin-unix.sh\" | sh \\
-    && /root/.TinyTeX/bin/*/tlmgr path add
-ENV PATH=\"\${PATH}:/root/.TinyTeX/bin/x86_64-linux\"
 
 "
     fi
@@ -510,7 +482,7 @@ generate_dockerfile() {
 
     local tools_install
     tools_install=$(generate_tools_install "$base_image")
-    log_info "  Tools: pandoc, tinytex, languageserver, yaml (as needed)"
+    log_info "  Tools: pandoc, languageserver, yaml (as needed)"
 
     local deps_comment="Packages: (none)"
     if [[ ${#r_packages[@]} -gt 5 ]]; then
@@ -650,6 +622,7 @@ find_cached_image() {
 # shellcheck disable=SC2120
 build_docker_image() {
     local project_name="${1:-$(basename "$(pwd)")}"
+    local no_cache="${2:-false}"
 
     if ! command -v docker >/dev/null 2>&1; then
         log_error "Docker not installed"
@@ -667,13 +640,12 @@ build_docker_image() {
     local dockerfile_hash
     dockerfile_hash=$(compute_dockerfile_hash)
 
-    # Check for existing image with same hash
-    if [[ -n "$dockerfile_hash" ]]; then
+    # Skip cache check when --no-cache
+    if [[ "$no_cache" == "false" ]] && [[ -n "$dockerfile_hash" ]]; then
         local cached_image
         cached_image=$(find_cached_image "$dockerfile_hash")
 
         if [[ -n "$cached_image" ]]; then
-            # Found cached image - just tag it
             log_success "Found cached image with identical configuration"
             docker tag "$cached_image" "$project_name:latest"
             log_success "Tagged as: $project_name:latest"
@@ -702,7 +674,10 @@ build_docker_image() {
         label_args="--label zzcollab.dockerfile.hash=$dockerfile_hash"
     fi
 
-    if DOCKER_BUILDKIT=1 docker build $platform_args $label_args -t "$project_name" .; then
+    local cache_args=""
+    [[ "$no_cache" == "true" ]] && cache_args="--no-cache"
+
+    if DOCKER_BUILDKIT=1 docker build $platform_args $label_args $cache_args -t "$project_name" .; then
         log_success "Docker image '$project_name' built successfully"
         log_info "Run: docker run -it --rm -v \$(pwd):/home/analyst/project $project_name"
     else
