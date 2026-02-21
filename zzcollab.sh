@@ -1170,6 +1170,33 @@ cmd_dockerhub() {
 }
 
 ##############################################################################
+# FUNCTION: install_zzvimr_graphics_template
+# PURPOSE:  Copy zzvim-R .Rprofile.local for terminal graphics support
+# RETURNS:  0 if copied, 1 if not found (non-fatal)
+##############################################################################
+install_zzvimr_graphics_template() {
+    local template_locations=(
+        "$HOME/.vim/pack/plugins/start/zzvim-R/templates/.Rprofile.local"
+        "$HOME/.vim/bundle/zzvim-R/templates/.Rprofile.local"
+        "$HOME/.local/share/nvim/site/pack/plugins/start/zzvim-R/templates/.Rprofile.local"
+        "$HOME/vimplugins/zzvim-R/templates/.Rprofile.local"
+        "$HOME/prj/sfw/04-zzvim-r/zzvim-R/templates/.Rprofile.local"
+    )
+
+    for loc in "${template_locations[@]}"; do
+        if [[ -f "$loc" ]]; then
+            cp "$loc" .Rprofile.local
+            log_success "Installed .Rprofile.local (zzvim-R graphics)"
+            return 0
+        fi
+    done
+
+    log_warning "zzvim-R not found; skipping .Rprofile.local"
+    log_info "Install zzvim-R for terminal graphics: https://github.com/rgt47/zzvim-R"
+    return 1
+}
+
+##############################################################################
 # FUNCTION: cmd_quickstart
 # PURPOSE:  Smart profile command - quickstart for new, switch for existing
 # USAGE:    zzcollab analysis
@@ -1220,6 +1247,11 @@ cmd_quickstart() {
             if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
                 cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
                 log_success "Updated .Rprofile from template"
+            fi
+
+            # Install zzvim-R graphics for analysis profiles (if not already present)
+            if [[ "$profile" == "analysis" || "$profile" == "analysis_pdf" ]] && [[ ! -f ".Rprofile.local" ]]; then
+                install_zzvimr_graphics_template || true
             fi
 
             # Update Makefile from template
@@ -1287,6 +1319,11 @@ cmd_quickstart() {
     export PKG_NAME
     setup_project || return 1
     log_success "Project structure created"
+
+    # Install zzvim-R graphics template for analysis profiles
+    if [[ "$profile" == "analysis" || "$profile" == "analysis_pdf" ]]; then
+        install_zzvimr_graphics_template || true
+    fi
 
     # Step 2: Set up renv
     echo ""
