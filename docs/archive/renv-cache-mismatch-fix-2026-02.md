@@ -300,5 +300,46 @@ This forces a fresh cache build with consistent repository identifiers.
 
 ---
 
+## Related Bug: Makefile Variable Corruption
+
+During investigation, a second bug was discovered in `lib/templates.sh`.
+
+### Symptom
+
+Container showed `/home/nalyst/project` instead of `/home/analyst/project`.
+
+### Root Cause
+
+The `envsubst` command in `substitute_variables()` included `$USERNAME` and
+`$BASE_IMAGE` in its substitution list:
+
+```bash
+envsubst '... $BASE_IMAGE ... $USERNAME ...' < "$file" > "$file.tmp"
+```
+
+In the Makefile template, `$$USERNAME` is meant to be an escaped shell variable
+for Make. But envsubst processed it as:
+
+1. First `$` is literal
+2. `$USERNAME` matches substitution list → replaced with `analyst`
+3. Result: `$analyst` (Make interprets as `$a` + `nalyst` = `nalyst`)
+
+### Fix
+
+Removed `$USERNAME` and `$BASE_IMAGE` from the envsubst variable list in
+`lib/templates.sh:121`. These are runtime shell variables in the Makefile,
+not template placeholders.
+
+```bash
+# Before (buggy):
+envsubst '... $BASE_IMAGE ... $USERNAME ...'
+
+# After (fixed):
+# Note: $USERNAME and $BASE_IMAGE are intentionally excluded
+envsubst '... $R_VERSION ...'
+```
+
+---
+
 *Document created: 2026-02-21*
-*Source: `/Users/zenn/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh`*
+*Source: `/Users/zenn/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh`, `/Users/zenn/prj/sfw/07-zzcollab/zzcollab/lib/templates.sh`*

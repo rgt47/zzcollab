@@ -118,7 +118,9 @@ substitute_variables() {
     fi
     export ZZCOLLAB_TEMPLATE_VERSION
 
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $BASE_IMAGE $R_VERSION $USERNAME $PACKAGE_NAME $AUTHOR_LAST $AUTHOR_ORCID $MANUSCRIPT_TITLE $DATE $GITHUB_ACCOUNT $TEAM_NAME $PROJECT_NAME $DOCKERHUB_ACCOUNT $R_PACKAGES_INSTALL_CMD $SYSTEM_DEPS_INSTALL_CMD $LIBS_BUNDLE $PKGS_BUNDLE $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    # Note: $USERNAME and $BASE_IMAGE are intentionally excluded - they are runtime
+    # shell variables in Makefile ($$USERNAME, $$BASE_IMAGE), not template placeholders
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHOR_LAST $AUTHOR_ORCID $MANUSCRIPT_TITLE $DATE $GITHUB_ACCOUNT $TEAM_NAME $PROJECT_NAME $DOCKERHUB_ACCOUNT $R_PACKAGES_INSTALL_CMD $SYSTEM_DEPS_INSTALL_CMD $LIBS_BUNDLE $PKGS_BUNDLE $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1
