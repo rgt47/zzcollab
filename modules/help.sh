@@ -389,6 +389,7 @@ Profile commands are smart:
 Standard Research:
   minimal          Lightweight R environment (~300MB)
   analysis         Data analysis (tidyverse, ~1.5GB) - recommended
+  analysis_pdf     Data analysis + tinytex for PDF (~1.5GB)
   modeling         Statistical modeling (~2GB)
   publishing       LaTeX + knitr for papers (~3GB)
   shiny            Interactive applications
@@ -758,6 +759,7 @@ COMMANDS:
     Profile shortcuts (create or switch project profile):
       minimal              Lightweight R environment (~300MB)
       analysis             Data analysis / tidyverse (~1.5GB)
+      analysis_pdf         Data analysis + PDF (tinytex, ~1.5GB)
       publishing           LaTeX + pandoc (~3GB)
       shiny                Interactive applications
       rstudio              RStudio Server

@@ -182,6 +182,17 @@ profiles:
     pkgs: tidyverse
     size: "~1.2GB"
 
+  analysis_pdf:
+    description: "Data analysis with PDF rendering (tinytex + pandoc)"
+    base_image: "rocker/tidyverse"
+    libs: minimal
+    pkgs: tidyverse
+    extras:
+      - tinytex
+      - pandoc
+    size: "~1.5GB"
+    note: "Lighter than publishing profile; uses tinytex instead of texlive-full"
+
   modeling:
     description: "Machine learning environment"
     base_image: "rocker/r-ver"

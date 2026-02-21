@@ -35,11 +35,12 @@ get_base_image_tools() {
 }
 
 # Generate install commands for missing tools
-# TinyTeX is deliberately excluded from all profiles. The project
-# directory is bind-mounted from the host, so LaTeX rendering runs
-# on the host where a TeX distribution persists across projects.
+# TinyTeX is excluded by default. The project directory is bind-mounted
+# from the host, so LaTeX rendering typically runs on the host.
+# Exception: analysis_pdf profile includes tinytex for self-contained PDF rendering.
 generate_tools_install() {
     local base_image="$1"
+    local profile_name="${2:-}"
     local has_pandoc
     has_pandoc=$(get_base_image_tools "$base_image")
 
@@ -48,6 +49,16 @@ generate_tools_install() {
     if [[ "$has_pandoc" == "false" ]]; then
         cmds+="# Install pandoc for document rendering
 RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -rf /var/lib/apt/lists/*
+
+"
+    fi
+
+    # Install TinyTeX for analysis_pdf profile
+    if [[ "$profile_name" == "analysis_pdf" ]]; then
+        cmds+="# Install TinyTeX for PDF rendering
+RUN R -e \"install.packages('tinytex')\" && \\
+    R -e \"tinytex::install_tinytex()\" && \\
+    /root/.TinyTeX/bin/*/tlmgr path add
 
 "
     fi
@@ -480,10 +491,6 @@ generate_dockerfile() {
     local system_deps_install
     system_deps_install=$(generate_system_deps_install "$system_deps")
 
-    local tools_install
-    tools_install=$(generate_tools_install "$base_image")
-    log_info "  Tools: pandoc, languageserver, yaml (as needed)"
-
     local deps_comment="Packages: (none)"
     if [[ ${#r_packages[@]} -gt 5 ]]; then
         deps_comment="Packages: ${r_packages[*]:0:5}..."
@@ -492,13 +499,20 @@ generate_dockerfile() {
     fi
 
     # Derive profile name from base image for Makefile compatibility
-    local profile_name="minimal"
-    case "$base_image" in
-        *tidyverse*) profile_name="analysis" ;;
-        *verse*) profile_name="publishing" ;;
-        *rstudio*) profile_name="rstudio" ;;
-        *shiny*) profile_name="shiny" ;;
-    esac
+    # Use PROFILE_NAME if set (from CLI), otherwise infer from base image
+    local profile_name="${PROFILE_NAME:-minimal}"
+    if [[ "$profile_name" == "minimal" ]]; then
+        case "$base_image" in
+            *tidyverse*) profile_name="analysis" ;;
+            *verse*) profile_name="publishing" ;;
+            *rstudio*) profile_name="rstudio" ;;
+            *shiny*) profile_name="shiny" ;;
+        esac
+    fi
+
+    local tools_install
+    tools_install=$(generate_tools_install "$base_image" "$profile_name")
+    log_info "  Tools: pandoc, languageserver, yaml (as needed)"
 
     generate_dockerfile_inline "$base_image" "$r_version" "$system_deps_install" "$tools_install" "$deps_comment" "$profile_name"
     prompt_docker_build "$project_name" "$r_version"
