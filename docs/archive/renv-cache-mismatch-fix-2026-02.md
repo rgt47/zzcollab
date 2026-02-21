@@ -1,65 +1,36 @@
-# renv Cache Mismatch: Diagnosis and Resolution
+# renv Cache and Makefile Variable Bugs: Diagnosis and Resolution
 
 **Date:** February 2026
-**Affected Component:** `modules/docker.sh` - `create_renv_lock_minimal()`
-**Impact:** Package downloads repeated across projects instead of using shared cache
+**Affected Components:**
+- `modules/docker.sh` - `create_renv_lock_minimal()`
+- `lib/templates.sh` - `substitute_variables()`
 
-## Problem Statement
+**Impact:** Package downloads repeated across projects; container mounted to wrong path
+
+## Summary
+
+Two related bugs prevented the renv package cache from working correctly:
+
+1. **Repository mismatch**: Initial renv.lock specified `"Repository": "CRAN"` but
+   cached packages used `"RSPM"`, causing cache key mismatches
+2. **Variable corruption**: The `envsubst` command corrupted Makefile shell
+   variables, causing mounts to `/home/nalyst/` instead of `/home/analyst/`
+
+## Bug 1: Repository Mismatch in renv.lock
+
+### Symptom
 
 When creating multiple zzcollab projects with identical configurations, renv
-downloaded packages fresh for each project instead of utilizing the shared
-cache. This resulted in:
-
-- Redundant network traffic (~12 MB per project for testthat dependencies)
-- Slower project initialization (~26 seconds download time per project)
-- Wasted disk space from duplicate package storage
-
-### Expected Behavior
-
-After running `make r` in the first project, subsequent projects with the same
-R version and package requirements should restore packages from the shared
-cache in under 1 second.
-
-### Observed Behavior
-
-Each project downloaded all 23 packages (testthat + dependencies) from the
-network, ignoring the populated cache.
-
-## Technical Background
-
-### renv Cache Architecture
-
-renv maintains a global package cache to avoid redundant downloads and
-installations. The cache structure follows this hierarchy:
+downloaded all packages fresh for each project (~12 MB, ~27 seconds) instead
+of using the shared cache.
 
 ```
-~/.cache/R/renv/v5/
-└── {os}/
-    └── R-{major}.{minor}/
-        └── {platform}/
-            └── {package}/
-                └── {version}/
-                    └── {hash}/
-                        └── {package}/
+# Downloading packages -------------------------------------------------------
+- Downloading testthat from CRAN ...            OK [2 Mb in 1.2s]
+- Downloading brio from https://packagemanager.posit.co/... OK
 ```
 
-The critical component is the **hash**, computed from package metadata
-including:
-
-- Package name and version
-- Source type (Repository, GitHub, etc.)
-- **Repository identifier** (CRAN, RSPM, Bioconductor, etc.)
-- Repository URL
-
-### Cache Key Computation
-
-When renv needs a package, it computes a hash from the renv.lock entry and
-checks if that exact hash exists in the cache. If the hash matches, renv
-copies or symlinks from cache. If not, it downloads fresh.
-
-## Root Cause Analysis
-
-### The Mismatch
+### Root Cause
 
 The `create_renv_lock_minimal()` function in `modules/docker.sh` generated
 renv.lock files with repository settings that differed from cached packages:
@@ -69,277 +40,169 @@ renv.lock files with repository settings that differed from cached packages:
 | Repository URL | `https://cloud.r-project.org` | `https://packagemanager.posit.co/cran/__linux__/noble/latest` |
 | Repository Field | `"CRAN"` | `"RSPM"` |
 
-### Why This Matters
+renv's cache key includes the repository identifier, so packages with
+`"Repository": "CRAN"` could not match cache entries with `"Repository": "RSPM"`.
 
-Even though both URLs serve the same packages, renv treats them as distinct
-sources. The repository identifier (`CRAN` vs `RSPM`) is incorporated into
-the cache hash, causing a mismatch.
+### Fix
 
-### Original Code
-
-```bash
-create_renv_lock_minimal() {
-    local r_ver="$1"
-    local cran="${2:-https://cloud.r-project.org}"  # <-- Wrong default
-
-    cat > renv.lock << EOF
-{
-  "R": {
-    "Version": "$r_ver",
-    "Repositories": [
-      {
-        "Name": "CRAN",
-        "URL": "$cran"
-      }
-    ]
-  },
-  "Packages": {
-    "renv": {
-      "Package": "renv",
-      "Version": "1.1.5",
-      "Source": "Repository",
-      "Repository": "CRAN"           # <-- Should be RSPM
-    },
-    "testthat": {
-      "Package": "testthat",
-      "Version": "3.3.1",
-      "Source": "Repository",
-      "Repository": "CRAN"           # <-- Should be RSPM
-    }
-  }
-}
-EOF
-}
-```
-
-### Configuration Consistency
-
-The zzcollab framework configures multiple components to use Posit Package
-Manager:
-
-| Component | Repository Setting |
-|-----------|-------------------|
-| Dockerfile ENV | `RENV_CONFIG_REPOS_OVERRIDE=https://packagemanager.posit.co/...` |
-| .Rprofile | `options(repos = c(CRAN = "https://packagemanager.posit.co/..."))` |
-| .Rprofile | `options(renv.repos.cran = "https://packagemanager.posit.co/...")` |
-| renv.lock (initial) | `https://cloud.r-project.org` with `"Repository": "CRAN"` |
-
-The renv.lock was the outlier, breaking cache compatibility.
-
-## Diagnostic Process
-
-### Step 1: Verify Cache Mount
-
-Confirmed the host cache directory is correctly mounted into containers:
+Updated `create_renv_lock_minimal()` to use Posit Package Manager:
 
 ```bash
-docker run --rm -it \
-  -v $HOME/.cache/R/renv:/home/analyst/.cache/R/renv \
-  test2:latest bash -c 'echo "RENV_PATHS_CACHE=$RENV_PATHS_CACHE"'
-# Output: RENV_PATHS_CACHE=/home/analyst/.cache/R/renv
+# Before (buggy)
+local cran="${2:-https://cloud.r-project.org}"
+...
+"Repository": "CRAN"
+
+# After (fixed)
+local repo_url="${2:-https://packagemanager.posit.co/cran/__linux__/noble/latest}"
+...
+"Repository": "RSPM"
 ```
 
-### Step 2: Verify Cache Contents
+## Bug 2: Makefile Variable Corruption
 
-Confirmed packages exist in the cache:
+### Symptom
+
+Container showed `/home/nalyst/project` instead of `/home/analyst/project`:
+
+```r
+> getwd()
+[1] "/home/nalyst/project"
+```
+
+This caused the renv cache mount to fail silently (mounted to wrong path).
+
+### Root Cause
+
+The `substitute_variables()` function in `lib/templates.sh` included
+`$USERNAME` and `$BASE_IMAGE` in its envsubst variable list:
 
 ```bash
-ls ~/.cache/R/renv/v5/linux-ubuntu-noble/R-4.5/aarch64-unknown-linux-gnu/
-# Output: brio callr cli crayon desc ...
+envsubst '... $BASE_IMAGE ... $USERNAME ...' < "$file" > "$file.tmp"
 ```
 
-### Step 3: Verify Container Access
+In the Makefile template, `$$USERNAME` is meant to be an escaped shell
+variable for Make runtime. But envsubst processed it as:
 
-Confirmed container can read cached packages:
+1. First `$` treated as literal
+2. `$USERNAME` matches substitution list → replaced with env var value `analyst`
+3. Result: `$analyst`
+
+In Make, `$analyst` expands to `$a` (undefined, empty) + `nalyst` = `nalyst`.
+
+**Template (correct):**
+```make
+HOME_DIR="/home/$$USERNAME"
+```
+
+**Generated Makefile (corrupted):**
+```make
+HOME_DIR="/home/$analyst"
+```
+
+### Fix
+
+Removed `$USERNAME` and `$BASE_IMAGE` from the envsubst variable list:
 
 ```bash
-docker run --rm -it \
-  -v $HOME/.cache/R/renv:/home/analyst/.cache/R/renv \
-  test2:latest bash -c 'ls /home/analyst/.cache/R/renv/v5/...'
-# Output: brio callr cli crayon desc ...
+# Before (buggy)
+envsubst '... $BASE_IMAGE $R_VERSION $USERNAME ...'
+
+# After (fixed)
+# Note: $USERNAME and $BASE_IMAGE are intentionally excluded - they are runtime
+# shell variables in Makefile ($$USERNAME, $$BASE_IMAGE), not template placeholders
+envsubst '... $R_VERSION ...'
 ```
-
-### Step 4: Identify Hash Mismatch
-
-Examined the download output and noticed packages were being downloaded
-rather than copied:
-
-```
-- Downloading testthat from CRAN ...            OK [2 Mb in 1.2s]
-- Downloading brio from https://packagemanager.posit.co/... OK
-```
-
-The key insight: testthat came "from CRAN" while dependencies came from
-"packagemanager.posit.co". This indicated the initial renv.lock specified
-CRAN as the source.
-
-### Step 5: Trace renv.lock Generation
-
-Located the source in `modules/docker.sh:93-123` where the initial renv.lock
-hardcoded `"Repository": "CRAN"` and defaulted to `cloud.r-project.org`.
-
-## Solution
-
-### Code Change
-
-Updated `create_renv_lock_minimal()` to use Posit Package Manager URL and
-RSPM repository identifier:
-
-```bash
-create_renv_lock_minimal() {
-    local r_ver="$1"
-    local repo_url="${2:-https://packagemanager.posit.co/cran/__linux__/noble/latest}"
-
-    cat > renv.lock << EOF
-{
-  "R": {
-    "Version": "$r_ver",
-    "Repositories": [
-      {
-        "Name": "CRAN",
-        "URL": "$repo_url"
-      }
-    ]
-  },
-  "Packages": {
-    "renv": {
-      "Package": "renv",
-      "Version": "1.1.5",
-      "Source": "Repository",
-      "Repository": "RSPM"
-    },
-    "testthat": {
-      "Package": "testthat",
-      "Version": "3.3.1",
-      "Source": "Repository",
-      "Repository": "RSPM"
-    }
-  }
-}
-EOF
-}
-```
-
-### Why RSPM?
-
-- **RSPM** (RStudio Package Manager, now Posit Package Manager) is the
-  repository identifier that renv assigns to packages from
-  `packagemanager.posit.co`
-- Using RSPM ensures cache compatibility with packages installed during
-  container sessions
-- Pre-compiled Linux binaries from Posit PM install faster than source
-  packages from CRAN
 
 ## Verification
 
-After applying the fix, test with:
+After applying both fixes:
 
 ```bash
-# Clean previous test projects
-rm -rf ~/Dropbox/sbx/test ~/Dropbox/sbx/test2
-
 # Create first project (populates cache)
-mkdir ~/Dropbox/sbx/test && cd ~/Dropbox/sbx/test
+mkdir ~/Dropbox/sbx/test5 && cd ~/Dropbox/sbx/test5
 zzc analysis -y
+zzc build --no-cache  # Force rebuild with correct USERNAME
 make r
-# Exit R session
+# Downloads packages, populates cache
+q()
 
-# Create second project (should use cache)
-mkdir ~/Dropbox/sbx/test2 && cd ~/Dropbox/sbx/test2
+# Create second project (uses cache)
+mkdir ~/Dropbox/sbx/test6 && cd ~/Dropbox/sbx/test6
 zzc analysis -y
 make r
 ```
 
 **Success indicators:**
 
-- Output shows "Copying" or "Linking" instead of "Downloading"
-- Package restoration completes in under 2 seconds
-- No network activity during restore
-
-**Failure indicators:**
-
-- Output shows "Downloading" for packages
-- 20+ second restoration time
-- Network traffic to packagemanager.posit.co
-
-## Related Configuration
-
-Ensure these components remain synchronized:
-
-1. **Dockerfile** (`RENV_CONFIG_REPOS_OVERRIDE`): Posit PM URL
-2. **.Rprofile** (`options(repos = ...)`): Posit PM URL
-3. **.Rprofile** (`options(renv.repos.cran = ...)`): Posit PM URL
-4. **Initial renv.lock**: Posit PM URL with `"Repository": "RSPM"`
-
-## Future Considerations
-
-### Platform-Specific URLs
-
-The current fix hardcodes `__linux__/noble` in the URL. If zzcollab needs to
-support other Linux distributions, consider:
-
-- Making the distribution configurable
-- Detecting the distribution from the base image
-- Using a more generic Posit PM endpoint
-
-### renv Version Updates
-
-When updating the bundled renv version (currently 1.1.5), verify that the
-cache hash computation hasn't changed in ways that would affect compatibility.
-
-### Cache Invalidation
-
-If users experience persistent cache misses after this fix, they may need to
-clear their existing cache:
-
-```bash
-rm -rf ~/.cache/R/renv/v5
+```
+- Project '~/project' loaded. [renv 1.1.5]
+- The library is already synchronized with the lockfile.
 ```
 
-This forces a fresh cache build with consistent repository identifiers.
+- Path shows `~/project` (correct, expands to `/home/analyst/project`)
+- Message says "already synchronized" (packages restored from cache)
+- No "Downloading" messages
 
----
+## Technical Details
 
-## Related Bug: Makefile Variable Corruption
+### renv Cache Architecture
 
-During investigation, a second bug was discovered in `lib/templates.sh`.
+renv maintains a global package cache at `~/.cache/R/renv/v5/` with structure:
 
-### Symptom
-
-Container showed `/home/nalyst/project` instead of `/home/analyst/project`.
-
-### Root Cause
-
-The `envsubst` command in `substitute_variables()` included `$USERNAME` and
-`$BASE_IMAGE` in its substitution list:
-
-```bash
-envsubst '... $BASE_IMAGE ... $USERNAME ...' < "$file" > "$file.tmp"
+```
+{os}/{R-version}/{platform}/{package}/{version}/{hash}/{package}/
 ```
 
-In the Makefile template, `$$USERNAME` is meant to be an escaped shell variable
-for Make. But envsubst processed it as:
+The hash incorporates package metadata including the repository identifier.
+Packages from `"CRAN"` and `"RSPM"` have different hashes even for identical
+versions.
 
-1. First `$` is literal
-2. `$USERNAME` matches substitution list → replaced with `analyst`
-3. Result: `$analyst` (Make interprets as `$a` + `nalyst` = `nalyst`)
+### Configuration Consistency
 
-### Fix
+All zzcollab components must use consistent repository settings:
 
-Removed `$USERNAME` and `$BASE_IMAGE` from the envsubst variable list in
-`lib/templates.sh:121`. These are runtime shell variables in the Makefile,
-not template placeholders.
+| Component | Setting | Value |
+|-----------|---------|-------|
+| Dockerfile ENV | `RENV_CONFIG_REPOS_OVERRIDE` | `https://packagemanager.posit.co/...` |
+| .Rprofile | `options(repos = ...)` | `https://packagemanager.posit.co/...` |
+| .Rprofile | `options(renv.repos.cran = ...)` | `https://packagemanager.posit.co/...` |
+| renv.lock | `Repositories.URL` | `https://packagemanager.posit.co/...` |
+| renv.lock | `Packages.*.Repository` | `"RSPM"` |
 
-```bash
-# Before (buggy):
-envsubst '... $BASE_IMAGE ... $USERNAME ...'
+### Make Variable Escaping
 
-# After (fixed):
-# Note: $USERNAME and $BASE_IMAGE are intentionally excluded
-envsubst '... $R_VERSION ...'
-```
+In Makefiles, shell variables require double-dollar escaping:
+
+| Makefile syntax | Shell receives | Meaning |
+|-----------------|----------------|---------|
+| `$$USERNAME` | `$USERNAME` | Shell variable expansion at runtime |
+| `$USERNAME` | Value of Make variable `USERNAME` | Make variable (usually empty) |
+| `$analyst` | `$a` + `nalyst` | Make expands `$a`, leaves rest literal |
+
+## Files Changed
+
+1. **`modules/docker.sh`** - `create_renv_lock_minimal()`
+   - Changed default repository URL to Posit PM
+   - Changed `"Repository": "CRAN"` to `"Repository": "RSPM"`
+
+2. **`lib/templates.sh`** - `substitute_variables()`
+   - Removed `$USERNAME` and `$BASE_IMAGE` from envsubst variable list
+   - Added comment explaining why they're excluded
+
+## Lessons Learned
+
+1. **Test cache behavior explicitly**: Add integration tests that verify cache
+   hits across multiple project creations
+
+2. **Be careful with envsubst**: When templates contain shell variable syntax
+   (`$$VAR`), ensure those variables aren't in the envsubst substitution list
+
+3. **Consistency matters for caching**: All components that influence package
+   installation must use identical repository identifiers
 
 ---
 
 *Document created: 2026-02-21*
-*Source: `/Users/zenn/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh`, `/Users/zenn/prj/sfw/07-zzcollab/zzcollab/lib/templates.sh`*
+*Verified working: 2026-02-21*
+*Files: `modules/docker.sh`, `lib/templates.sh`*
