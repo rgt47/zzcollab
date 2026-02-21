@@ -1249,8 +1249,8 @@ cmd_quickstart() {
                 log_success "Updated .Rprofile from template"
             fi
 
-            # Install zzvim-R graphics for analysis profiles (if not already present)
-            if [[ "$profile" == "analysis" || "$profile" == "analysis_pdf" ]] && [[ ! -f ".Rprofile.local" ]]; then
+            # Install zzvim-R graphics for analysis/publishing profiles (if not already present)
+            if [[ "$profile" =~ ^(analysis|analysis_pdf|publishing)$ ]] && [[ ! -f ".Rprofile.local" ]]; then
                 install_zzvimr_graphics_template || true
             fi
 
@@ -1320,8 +1320,8 @@ cmd_quickstart() {
     setup_project || return 1
     log_success "Project structure created"
 
-    # Install zzvim-R graphics template for analysis profiles
-    if [[ "$profile" == "analysis" || "$profile" == "analysis_pdf" ]]; then
+    # Install zzvim-R graphics template for analysis/publishing profiles
+    if [[ "$profile" =~ ^(analysis|analysis_pdf|publishing)$ ]]; then
         install_zzvimr_graphics_template || true
     fi
 
