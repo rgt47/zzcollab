@@ -1530,9 +1530,10 @@ Commands (can be combined):
   dockerhub  Push Docker image to DockerHub
 
 Profiles (new project: init+renv+docker, existing: switch profile):
-  analysis     Tidyverse packages (~1.5GB) - recommended
-  minimal      Base R only (~300MB)
-  publishing   LaTeX + pandoc (~3GB)
+  analysis      Tidyverse packages (~1.5GB) - recommended
+  analysis_pdf  Tidyverse + tinytex for PDF (~1.5GB)
+  minimal       Base R only (~300MB)
+  publishing    LaTeX + pandoc (~3GB)
   rstudio      RStudio Server
   shiny        Shiny Server
 
@@ -1728,7 +1729,7 @@ main() {
                 ;;
 
             # Profile names as standalone commands → full quickstart
-            minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
+            minimal|analysis|analysis_pdf|publishing|rstudio|shiny|verse|tidyverse)
                 local profile_name="$1"
                 shift
                 cmd_quickstart "$profile_name"
