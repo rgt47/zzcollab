@@ -106,3 +106,4 @@ temp
 # Example/test projects (should be in separate repos)
 png1/
 CLAUDE.md
+.Rprofile.local
