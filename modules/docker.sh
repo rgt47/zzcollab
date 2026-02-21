@@ -92,7 +92,7 @@ get_cran_r_version() {
 
 create_renv_lock_minimal() {
     local r_ver="$1"
-    local cran="${2:-https://cloud.r-project.org}"
+    local repo_url="${2:-https://packagemanager.posit.co/cran/__linux__/noble/latest}"
 
     cat > renv.lock << EOF
 {
@@ -101,7 +101,7 @@ create_renv_lock_minimal() {
     "Repositories": [
       {
         "Name": "CRAN",
-        "URL": "$cran"
+        "URL": "$repo_url"
       }
     ]
   },
@@ -110,13 +110,13 @@ create_renv_lock_minimal() {
       "Package": "renv",
       "Version": "1.1.5",
       "Source": "Repository",
-      "Repository": "CRAN"
+      "Repository": "RSPM"
     },
     "testthat": {
       "Package": "testthat",
       "Version": "3.3.1",
       "Source": "Repository",
-      "Repository": "CRAN"
+      "Repository": "RSPM"
     }
   }
 }
