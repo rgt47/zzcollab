@@ -79,10 +79,11 @@ RUN NERD_FONT_VERSION=v3.3.0 && \
 # Install Claude CLI (Anthropic's AI assistant)
 RUN npm install -g @anthropic-ai/claude
 
-# Install TinyTeX
+# Install TinyTeX and pdfcrop (required by zztab2fig)
 RUN R -e "install.packages('tinytex')" && \
     R -e "tinytex::install_tinytex()" && \
-    /root/.TinyTeX/bin/*/tlmgr path add
+    /root/.TinyTeX/bin/*/tlmgr path add && \
+    tlmgr install pdfcrop
 
 # Create non-root user with zsh as default shell
 ARG USERNAME=analyst
