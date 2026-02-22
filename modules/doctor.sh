@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 ##############################################################################
-# ZZCOLLAB CHECK-UPDATES MODULE
+# ZZCOLLAB DOCTOR MODULE
 ##############################################################################
 #
 # PURPOSE: Detect outdated zzcollab template files in workspaces
@@ -11,8 +11,8 @@ set -euo pipefail
 #          - Supports batch scanning with --scan
 #
 # USAGE:
-#   bash check-updates.sh [DIR ...]
-#   bash check-updates.sh --scan <parent-dir>
+#   bash doctor.sh [DIR ...]
+#   bash doctor.sh --scan <parent-dir>
 #
 # EXIT CODES:
 #   0 - All checked files are current
@@ -179,8 +179,8 @@ main() {
                 shift
                 ;;
             --help|-h)
-                echo "Usage: zzc check-updates [DIR ...]"
-                echo "       zzc check-updates --scan <parent-dir>"
+                echo "Usage: zzc doctor [DIR ...]"
+                echo "       zzc doctor --scan <parent-dir>"
                 echo ""
                 echo "Check zzcollab template files for version freshness."
                 echo ""

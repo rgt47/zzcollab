@@ -651,10 +651,10 @@ cmd_validate() {
     bash "$validation_script" "$@"
 }
 
-cmd_check_updates() {
-    local script="$ZZCOLLAB_MODULES_DIR/check-updates.sh"
+cmd_doctor() {
+    local script="$ZZCOLLAB_MODULES_DIR/doctor.sh"
     if [[ ! -f "$script" ]]; then
-        log_error "check-updates module not found: $script"
+        log_error "doctor module not found: $script"
         return 1
     fi
     bash "$script" "$@"
@@ -675,7 +675,7 @@ warn_if_templates_outdated() {
     done
 
     if [[ -n "$outdated" ]]; then
-        printf '\033[1;33m⚠  Outdated templates: %s → v%s. Run: zzc check-updates\033[0m\n' \
+        printf '\033[1;33m⚠  Outdated templates: %s → v%s. Run: zzc doctor\033[0m\n' \
             "$outdated" "$cur" >&2
     fi
 }
@@ -1784,9 +1784,9 @@ main() {
                 cmd_validate "$@"
                 exit $?
                 ;;
-            check-updates)
+            doctor)
                 shift
-                cmd_check_updates "$@"
+                cmd_doctor "$@"
                 exit $?
                 ;;
             config)

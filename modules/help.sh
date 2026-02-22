@@ -78,7 +78,7 @@ See 'zzc help <topic>' for detailed information:
     cicd          CI/CD automation
 
   Maintenance
-    check-updates Detect outdated template files in workspaces
+    doctor Detect outdated template files in workspaces
 
   Other
     options       Complete list of all command-line options
@@ -134,11 +134,14 @@ show_help() {
             # Show full options list (original help)
             show_help_full
             ;;
-        check-updates)
-            show_help_check_updates
+        doctor)
+            show_help_doctor
             ;;
         troubleshoot|troubleshooting)
             show_help_troubleshooting
+            ;;
+        rm|remove)
+            show_help_rm
             ;;
         *)
             echo "Unknown help topic: $topic"
@@ -191,7 +194,8 @@ Commands:
   github          GitHub repository integration
   docker          Docker architecture and usage
   renv            Package management with renv
-  check-updates   Detect outdated template files
+  rm              Remove zzcollab features or artifacts
+  doctor   Detect outdated template files
 
 Configuration:
   config          Configuration system
@@ -597,16 +601,16 @@ EOF
 # CHECK-UPDATES HELP
 #=============================================================================
 
-# Function: show_help_check_updates
-# Purpose: Help for the check-updates command
-show_help_check_updates() {
+# Function: show_help_doctor
+# Purpose: Help for the doctor command
+show_help_doctor() {
     cat << 'EOF'
 CHECK-UPDATES - Detect Outdated Template Files
 
 Usage:
-  zzc check-updates                  # Check current directory
-  zzc check-updates DIR [DIR ...]    # Check specific workspaces
-  zzc check-updates --scan DIR       # Recursively find and check all
+  zzc doctor                  # Check current directory
+  zzc doctor DIR [DIR ...]    # Check specific workspaces
+  zzc doctor --scan DIR       # Recursively find and check all
                                      #   zzcollab workspaces under DIR
 
 What it does:
@@ -627,13 +631,65 @@ Exit codes:
   1   One or more files are outdated or unstamped
 
 Examples:
-  zzc check-updates                  # Check workspace in current dir
-  zzc check-updates ~/prj/res/study  # Check a specific workspace
-  zzc check-updates --scan ~/prj/res # Scan all workspaces under ~/prj/res
+  zzc doctor                  # Check workspace in current dir
+  zzc doctor ~/prj/res/study  # Check a specific workspace
+  zzc doctor --scan ~/prj/res # Scan all workspaces under ~/prj/res
 
 See also:
   zzcollab help workflow     Daily development workflow
   zzcollab help docker       Docker architecture
+EOF
+}
+
+# Function: show_help_rm
+# Purpose: Help for the rm (remove) command
+show_help_rm() {
+    cat << 'EOF'
+RM - Remove zzcollab Features or Artifacts
+
+Usage:
+  zzc rm <feature> [-f|--force]
+
+Features:
+  docker    Remove Dockerfile and .dockerignore
+  renv      Remove renv.lock and renv/ directory
+  git       Remove .git/ directory (deletes all history)
+  github    Remove GitHub remote origin
+  cicd      Remove .github/workflows/ directory
+  all       Remove all zzcollab artifacts (calls uninstall)
+
+Options:
+  -f, --force    Skip confirmation prompts
+
+What 'rm all' preserves:
+  - .git/ directory (use 'zzc rm git' separately)
+  - Data files and directories not created by zzcollab
+  - Files you added that aren't in the manifest
+  - Non-empty directories (manifest-based removal only)
+
+Removal modes:
+  Manifest-based (preferred):
+    Projects with .zzcollab/manifest.json use precise tracking.
+    Only files recorded during setup are removed.
+
+  Legacy fallback:
+    Projects without a manifest use a hardcoded file list:
+    Dirs:  R/, analysis/, tests/, man/, vignettes/, docs/, .github/, renv/
+    Files: Dockerfile, Makefile, DESCRIPTION, NAMESPACE, LICENSE,
+           renv.lock, .Rprofile, .Rbuildignore, .gitignore, *.Rproj
+
+Examples:
+  zzc rm docker              # Remove Docker files only
+  zzc rm renv -f             # Remove renv without confirmation
+  zzc rm all                 # Remove all zzcollab artifacts
+  zzc rm git                 # Remove git repository
+
+Preview removal:
+  zzc uninstall --dry-run    # See what 'rm all' would remove
+
+See also:
+  zzc help uninstall         # Detailed uninstall options
+  zzc help doctor     # Detect outdated templates
 EOF
 }
 
@@ -777,7 +833,7 @@ COMMANDS:
       build [opts]         Build Docker image (content-addressable cache)
       config <sub> ...     Configuration (init|set|get|list|...)
       validate             Check project structure and dependencies
-      check-updates        Detect outdated template files
+      doctor        Detect outdated template files
       nav <sub>            Navigation shortcuts (install|uninstall)
       rm <feature> [-f]    Remove a feature (docker|renv|git|...)
       uninstall            Remove all zzcollab artifacts
@@ -912,7 +968,7 @@ Integration:
 
 Other:
   zzc help troubleshoot    Common issues and solutions
-  zzc help check-updates   Detect outdated template files
+  zzc help doctor   Detect outdated template files
 
 RESEARCH COMPENDIUM GUIDE:
 After project creation, see README.md for comprehensive information about:
