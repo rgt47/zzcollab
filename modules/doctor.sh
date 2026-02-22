@@ -4,10 +4,10 @@ set -euo pipefail
 # ZZCOLLAB DOCTOR MODULE
 ##############################################################################
 #
-# PURPOSE: Detect outdated zzcollab template files in workspaces
-#          - Reads version stamps from Makefile, .Rprofile, Dockerfile
-#          - Compares against current ZZCOLLAB_TEMPLATE_VERSION
-#          - Reports outdated, current, or unstamped files
+# PURPOSE: Comprehensive workspace health checks
+#          - Version stamps: Check Makefile, .Rprofile, Dockerfile versions
+#          - Required files: Verify core files exist
+#          - Directory structure: Check standard layout
 #          - Supports batch scanning with --scan
 #
 # USAGE:
@@ -15,8 +15,10 @@ set -euo pipefail
 #   bash doctor.sh --scan <parent-dir>
 #
 # EXIT CODES:
-#   0 - All checked files are current
-#   1 - One or more files are outdated or unstamped
+#   0 - All checks passed
+#   1 - One or more issues found
+#
+# REFERENCE: docs/workspace-structure.md
 ##############################################################################
 
 # Source constants if not already loaded
@@ -33,6 +35,39 @@ readonly COL_GREEN='\033[0;32m'
 readonly COL_YELLOW='\033[1;33m'
 readonly COL_RED='\033[0;31m'
 readonly COL_CYAN='\033[0;36m'
+readonly COL_DIM='\033[2m'
+
+#=============================================================================
+# REQUIRED FILES AND DIRECTORIES
+# Reference: docs/workspace-structure.md
+#=============================================================================
+
+# Required files (must exist for a valid workspace)
+REQUIRED_FILES=(
+    "DESCRIPTION"
+    "renv.lock"
+    ".Rprofile"
+    "Makefile"
+    "Dockerfile"
+    ".gitignore"
+)
+
+# Required directories (must exist for a valid workspace)
+REQUIRED_DIRS=(
+    "R"
+    "analysis"
+)
+
+# Optional but expected directories
+OPTIONAL_DIRS=(
+    "tests/testthat"
+    "man"
+    ".zzcollab"
+)
+
+#=============================================================================
+# VERSION EXTRACTION
+#=============================================================================
 
 # Extract zzcollab version stamp from a file
 # Usage: extract_version <file> <label>
@@ -55,30 +90,82 @@ extract_zzvimr_version() {
     fi
 }
 
-# Check a single workspace directory
-# Returns 0 if all current, 1 if any outdated/unstamped
-check_workspace() {
-    local dir="$1"
-    local any_outdated=0
+#=============================================================================
+# CHECK FUNCTIONS
+#=============================================================================
 
-    # Collapse home directory for display
-    local display_dir="${dir/#$HOME/~}"
-    printf "${COL_CYAN}Checking: %s${COL_RESET}\n" "$display_dir"
+# Check required files exist
+# Returns number of missing files
+check_required_files() {
+    local dir="$1"
+    local missing=0
+
+    echo "  Required files:"
+    for file in "${REQUIRED_FILES[@]}"; do
+        if [[ -f "$dir/$file" ]]; then
+            printf "    %-20s ${COL_GREEN}✓${COL_RESET}\n" "$file"
+        else
+            printf "    %-20s ${COL_RED}✗ missing${COL_RESET}\n" "$file"
+            missing=$((missing + 1))
+        fi
+    done
+
+    return $missing
+}
+
+# Check required directories exist
+# Returns number of missing directories
+check_required_dirs() {
+    local dir="$1"
+    local missing=0
+
+    echo "  Required directories:"
+    for d in "${REQUIRED_DIRS[@]}"; do
+        if [[ -d "$dir/$d" ]]; then
+            printf "    %-20s ${COL_GREEN}✓${COL_RESET}\n" "$d/"
+        else
+            printf "    %-20s ${COL_RED}✗ missing${COL_RESET}\n" "$d/"
+            missing=$((missing + 1))
+        fi
+    done
+
+    # Optional directories (warnings only, don't affect exit code)
+    local has_optional=false
+    for d in "${OPTIONAL_DIRS[@]}"; do
+        if [[ ! -d "$dir/$d" ]]; then
+            if [[ "$has_optional" == false ]]; then
+                echo "  Optional directories:"
+                has_optional=true
+            fi
+            printf "    %-20s ${COL_YELLOW}○ not found${COL_RESET}\n" "$d/"
+        fi
+    done
+
+    return $missing
+}
+
+# Check version stamps in template files
+# Returns number of outdated/unstamped files
+check_version_stamps() {
+    local dir="$1"
+    local issues=0
+
+    echo "  Version stamps:"
 
     # Makefile
     local makefile_ver
     makefile_ver=$(extract_version "$dir/Makefile" "Makefile")
-    print_file_status "Makefile" "$makefile_ver" || any_outdated=1
+    print_version_status "Makefile" "$makefile_ver" || issues=$((issues + 1))
 
     # .Rprofile
     local rprofile_ver
     rprofile_ver=$(extract_version "$dir/.Rprofile" ".Rprofile")
-    print_file_status ".Rprofile" "$rprofile_ver" || any_outdated=1
+    print_version_status ".Rprofile" "$rprofile_ver" || issues=$((issues + 1))
 
     # Dockerfile
     local dockerfile_ver
     dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
-    print_file_status "Dockerfile" "$dockerfile_ver" || any_outdated=1
+    print_version_status "Dockerfile" "$dockerfile_ver" || issues=$((issues + 1))
 
     # .Rprofile.local (owned by zzvim-R, informational only)
     if [[ -f "$dir/.Rprofile.local" ]]; then
@@ -87,26 +174,59 @@ check_workspace() {
         print_info_status ".Rprofile.local" "$rprofile_local_ver" "zzvim-R"
     fi
 
-    echo ""
-    return $any_outdated
+    return $issues
 }
 
-# Print status line for a single file
+# Check a single workspace directory
+# Returns 0 if all checks pass, 1 if any issues found
+check_workspace() {
+    local dir="$1"
+    local total_issues=0
+
+    # Collapse home directory for display
+    local display_dir="${dir/#$HOME/~}"
+    printf "${COL_CYAN}Checking: %s${COL_RESET}\n\n" "$display_dir"
+
+    # Check required files
+    check_required_files "$dir"
+    total_issues=$((total_issues + $?))
+    echo ""
+
+    # Check required directories
+    check_required_dirs "$dir"
+    total_issues=$((total_issues + $?))
+    echo ""
+
+    # Check version stamps
+    check_version_stamps "$dir"
+    total_issues=$((total_issues + $?))
+    echo ""
+
+    # Summary
+    if [[ $total_issues -eq 0 ]]; then
+        printf "  ${COL_GREEN}All checks passed${COL_RESET}\n"
+    else
+        printf "  ${COL_RED}%d issue(s) found${COL_RESET}\n" "$total_issues"
+    fi
+    echo ""
+
+    [[ $total_issues -eq 0 ]]
+}
+
+# Print version status line for a single file
 # Returns 0 if current, 1 if outdated or no stamp
-print_file_status() {
+print_version_status() {
     local filename="$1"
     local found_ver="$2"
 
     if [[ -z "$found_ver" ]]; then
-        printf "  %-14s %-30s ${COL_YELLOW}(no stamp)${COL_RESET}\n" \
-            "$filename" ""
+        printf "    %-18s ${COL_YELLOW}(no stamp)${COL_RESET}\n" "$filename"
         return 1
     elif [[ "$found_ver" == "$CURRENT_VERSION" ]]; then
-        printf "  %-14s v%-29s ${COL_GREEN}(current)${COL_RESET}\n" \
-            "$filename" "$found_ver"
+        printf "    %-18s v%-10s ${COL_GREEN}(current)${COL_RESET}\n" "$filename" "$found_ver"
         return 0
     else
-        printf "  %-14s ${COL_RED}v%-7s -> v%-19s${COL_RESET} ${COL_RED}(outdated)${COL_RESET}\n" \
+        printf "    %-18s ${COL_RED}v%-6s -> v%-6s (outdated)${COL_RESET}\n" \
             "$filename" "$found_ver" "$CURRENT_VERSION"
         return 1
     fi
@@ -120,10 +240,10 @@ print_info_status() {
     local owner="$3"
 
     if [[ -z "$found_ver" ]]; then
-        printf "  %-14s %-30s ${COL_YELLOW}(no stamp)${COL_RESET} [%s]\n" \
-            "$filename" "" "$owner"
+        printf "    %-18s ${COL_YELLOW}(no stamp)${COL_RESET} ${COL_DIM}[%s]${COL_RESET}\n" \
+            "$filename" "$owner"
     else
-        printf "  %-14s v%-29s ${COL_CYAN}(%s)${COL_RESET}\n" \
+        printf "    %-18s v%-10s ${COL_DIM}(%s)${COL_RESET}\n" \
             "$filename" "$found_ver" "$owner"
     fi
 }
@@ -178,16 +298,21 @@ main() {
                 dirs+=("$1")
                 shift
                 ;;
-            --help|-h)
+            help|--help|-h)
                 echo "Usage: zzc doctor [DIR ...]"
                 echo "       zzc doctor --scan <parent-dir>"
                 echo ""
-                echo "Check zzcollab template files for version freshness."
+                echo "Workspace health checks:"
+                echo "  - Required files    DESCRIPTION, renv.lock, Makefile, etc."
+                echo "  - Directory layout  R/, analysis/"
+                echo "  - Version stamps    Makefile, .Rprofile, Dockerfile"
                 echo ""
                 echo "Options:"
                 echo "  DIR            One or more workspace directories (default: .)"
-                echo "  --scan DIR     Recursively find and check all zzcollab workspaces"
-                echo "  --help         Show this help"
+                echo "  --scan DIR     Recursively find all zzcollab workspaces"
+                echo "  help           Show this help"
+                echo ""
+                echo "Reference: docs/workspace-structure.md"
                 exit 0
                 ;;
             *)

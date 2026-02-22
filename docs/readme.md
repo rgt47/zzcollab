@@ -35,6 +35,7 @@ docs/
 | [team-workflow.md](team-workflow.md) | Team collaboration patterns |
 | [collaborative-reproducibility.md](collaborative-reproducibility.md) | Five Pillars model |
 | [validation-quick-reference.md](validation-quick-reference.md) | Package validation reference |
+| [workspace-structure.md](workspace-structure.md) | Standard workspace layout and doctor checks |
 | [x11-graphics-guide.md](x11-graphics-guide.md) | X11/GUI graphics in Docker |
 | [error-handling-guide.md](error-handling-guide.md) | Error handling patterns |
 

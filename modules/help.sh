@@ -605,39 +605,46 @@ EOF
 # Purpose: Help for the doctor command
 show_help_doctor() {
     cat << 'EOF'
-DOCTOR - Detect Outdated Template Files
+DOCTOR - Workspace Health Checks
 
 Usage:
   zzc doctor                  # Check current directory
   zzc doctor DIR [DIR ...]    # Check specific workspaces
-  zzc doctor --scan DIR       # Recursively find and check all
-                                     #   zzcollab workspaces under DIR
+  zzc doctor --scan DIR       # Recursively find all zzcollab workspaces
 
-What it does:
-  Reads version stamps embedded in Makefile, .Rprofile, and Dockerfile
-  by zzcollab during workspace creation. Compares each stamp against
-  the current template version and reports status.
+Checks performed:
+  1. Required files   Verify DESCRIPTION, renv.lock, Makefile, etc.
+  2. Directory layout Check R/, analysis/ exist
+  3. Version stamps   Compare Makefile, .Rprofile, Dockerfile versions
 
 Output:
   Checking: ~/prj/res/08-project/
-    Makefile      v2.0.0 -> v2.1.0  (outdated)
-    .Rprofile     v2.0.0 -> v2.1.0  (outdated)
-    Dockerfile    v2.1.0             (current)
+    Makefile      v2.0.0 -> v2.2.0  (outdated)
+    .Rprofile     v2.0.0 -> v2.2.0  (outdated)
+    Dockerfile    v2.2.0             (current)
+    .Rprofile.local v1.9.0           (zzvim-R)
 
-  Files created before version stamping show (no stamp).
+Status indicators:
+  (current)    Version matches current template
+  (outdated)   Version is older than current
+  (no stamp)   File exists but has no version stamp
 
 Exit codes:
-  0   All checked files are current
-  1   One or more files are outdated or unstamped
+  0   All checks passed
+  1   One or more issues found
 
 Examples:
   zzc doctor                  # Check workspace in current dir
   zzc doctor ~/prj/res/study  # Check a specific workspace
   zzc doctor --scan ~/prj/res # Scan all workspaces under ~/prj/res
 
+Reference:
+  docs/workspace-structure.md   Standard workspace layout
+  docs/versioning-design.md     Version stamp architecture
+
 See also:
-  zzcollab help workflow     Daily development workflow
-  zzcollab help docker       Docker architecture
+  zzc help docker    Update templates via docker command
+  zzc help workflow  Daily development workflow
 EOF
 }
 

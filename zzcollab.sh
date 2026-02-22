@@ -451,7 +451,7 @@ cmd_build() {
         case "$1" in
             --no-cache) no_cache="true"; shift ;;
             --log)      log_file="docker-build.log"; shift ;;
-            --help|-h)
+            help|--help|-h)
                 cat << 'HELPEOF'
 BUILD DOCKER IMAGE
 
@@ -493,7 +493,7 @@ cmd_renv() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --r-version) r_version="$2"; shift 2 ;;
-            --help|-h)
+            help|--help|-h)
                 cat << 'EOF'
 RENV SETUP (without Docker)
 
@@ -841,7 +841,7 @@ Install: zzcollab nav install
 Remove:  zzcollab nav uninstall
 EOF
             ;;
-        --help|-h)
+        help|--help|-h)
             cat << 'EOF'
 Usage: zzcollab nav <action>
 
@@ -870,7 +870,7 @@ cmd_uninstall() {
         case "$1" in
             --dry-run|-n) dry_run=true; shift ;;
             --force|-f) force=true; shift ;;
-            --help|-h)
+            help|--help|-h)
                 cat << 'EOF'
 Usage: zzcollab uninstall [options]
 
@@ -998,7 +998,7 @@ cmd_list() {
             echo ""
             cmd_list pkgs
             ;;
-        --help|-h)
+        help|--help|-h)
             cat << 'EOF'
 Usage: zzcollab list <type>
 
