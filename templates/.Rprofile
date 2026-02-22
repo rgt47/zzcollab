@@ -47,6 +47,9 @@ if (!in_container) {
   # Container R: Full renv workflow
   # ==========================================
 
+  # CI detection (GitHub Actions sets CI=true)
+  in_ci <- nzchar(Sys.getenv("CI"))
+
   # renv Cache Path Configuration
   # If RENV_PATHS_CACHE already set (e.g., via docker -e), use it
   # Otherwise use ~/.cache/R/renv (shared across projects)

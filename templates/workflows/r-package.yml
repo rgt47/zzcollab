@@ -1,3 +1,4 @@
+# zzcollab r-package.yml v$ZZCOLLAB_TEMPLATE_VERSION
 name: R Package Check (Container)
 
 on:

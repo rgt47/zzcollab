@@ -362,6 +362,35 @@ check_version_stamps() {
         fi
     fi
 
+    # .github/workflows/r-package.yml
+    local workflow_file="$dir/.github/workflows/r-package.yml"
+    if [[ -f "$workflow_file" ]]; then
+        local workflow_ver
+        workflow_ver=$(extract_version "$workflow_file" "r-package.yml")
+        print_version_status "r-package.yml" "$workflow_ver" || issues=$((issues + 1))
+    elif [[ -d "$dir/.github/workflows" ]]; then
+        printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "r-package.yml"
+        issues=$((issues + 1))
+
+        local template_workflow="${ZZCOLLAB_TEMPLATES_DIR}/workflows/r-package.yml"
+        if [[ -t 0 ]] && [[ -f "$template_workflow" ]]; then
+            local copy_choice
+            read -r -p "    Copy from template? [Y/n]: " copy_choice
+            if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
+                if cp "$template_workflow" "$workflow_file" && \
+                   sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
+                       "$workflow_file" && \
+                   rm -f "$workflow_file.bak"; then
+                    printf "    ${COL_GREEN}✓ Copied r-package.yml (v%s)${COL_RESET}\n" \
+                        "$CURRENT_VERSION"
+                    issues=$((issues - 1))
+                else
+                    printf "    ${COL_RED}✗ Failed to copy${COL_RESET}\n"
+                fi
+            fi
+        fi
+    fi
+
     # .Rprofile.local (owned by zzvim-R, informational only)
     if [[ -f "$dir/.Rprofile.local" ]]; then
         local rprofile_local_ver
