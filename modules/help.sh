@@ -605,7 +605,7 @@ EOF
 # Purpose: Help for the doctor command
 show_help_doctor() {
     cat << 'EOF'
-CHECK-UPDATES - Detect Outdated Template Files
+DOCTOR - Detect Outdated Template Files
 
 Usage:
   zzc doctor                  # Check current directory

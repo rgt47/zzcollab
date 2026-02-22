@@ -102,9 +102,9 @@ heredoc (`cat > Dockerfile << EOF`). Because this heredoc uses unquoted
 resolves to the current value of the constant at generation time, with
 no additional machinery required.
 
-## Detection: `zzc check-updates`
+## Detection: `zzc doctor`
 
-The `check-updates` module (`modules/check-updates.sh`) reads version
+The `doctor` module (`modules/doctor.sh`) reads version
 stamps from workspace files and compares them against the current
 `ZZCOLLAB_TEMPLATE_VERSION`. The extraction uses portable `sed` rather
 than Perl-compatible regex (`grep -oP`), since macOS ships with BSD grep
@@ -124,7 +124,7 @@ to its own type.
 ### Single-workspace mode
 
 ```
-zzc check-updates [DIR ...]
+zzc doctor [DIR ...]
 ```
 
 Checks one or more named directories (defaulting to the current
@@ -149,7 +149,7 @@ R terminal starts (see below).
 ### Batch scan mode
 
 ```
-zzc check-updates --scan <parent-dir>
+zzc doctor --scan <parent-dir>
 ```
 
 Recursively searches up to three directory levels for Makefiles
@@ -164,12 +164,12 @@ file is outdated or unstamped. This makes the command usable in scripts
 and CI pipelines:
 
 ```bash
-zzc check-updates --scan ~/prj/res || echo "Some workspaces need updating"
+zzc doctor --scan ~/prj/res || echo "Some workspaces need updating"
 ```
 
 ## Passive Advisory on Every Invocation
 
-In addition to the explicit `check-updates` command, a passive advisory
+In addition to the explicit `doctor` command, a passive advisory
 runs at the top of every `zzc` invocation. The function
 `warn_if_templates_outdated()` in `zzcollab.sh` performs the same
 `sed`-based extraction on Makefile, .Rprofile, and Dockerfile in the
@@ -178,7 +178,7 @@ match `ZZCOLLAB_TEMPLATE_VERSION`, a single warning line is emitted to
 stderr:
 
 ```
-⚠  Outdated templates: Makefile (v2.0.0), .Rprofile (v2.0.0) → v2.1.0. Run: zzc check-updates
+⚠  Outdated templates: Makefile (v2.0.0), .Rprofile (v2.0.0) → v2.1.0. Run: zzc doctor
 ```
 
 Design properties of this advisory:
@@ -269,7 +269,7 @@ replacement is safe.
 
 ### Cross-tool visibility
 
-When `zzc check-updates` runs in a workspace, it reports
+When `zzc doctor` runs in a workspace, it reports
 `.Rprofile.local` as an informational line:
 
 ```
@@ -374,9 +374,9 @@ automatically update files. The reasoning:
 | `templates/Makefile` | Contains `$ZZCOLLAB_TEMPLATE_VERSION` placeholder |
 | `templates/.Rprofile` | Contains `$ZZCOLLAB_TEMPLATE_VERSION` placeholder |
 | `modules/docker.sh` | Interpolates version into generated Dockerfile heredoc |
-| `modules/check-updates.sh` | Standalone detection module |
+| `modules/doctor.sh` | Standalone detection module |
 | `zzcollab.sh` | CLI dispatch + `warn_if_templates_outdated()` advisory |
-| `modules/help.sh` | Help topic for `check-updates` command |
+| `modules/help.sh` | Help topic for `doctor` command |
 
 ---
 *Rendered on 2026-02-19 at 16:47 PST.*

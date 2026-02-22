@@ -375,13 +375,16 @@ cmd_docker() {
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; profile_changed=true; shift 2 ;;
-            --help|-h) require_module "help"; show_help_docker; exit 0 ;;
+            help|--help|-h) require_module "help"; show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
     done
 
     # Ensure rrtools workspace is initialized
     ensure_workspace_initialized "docker" || exit 1
+
+    # Check for outdated templates and prompt to update
+    check_and_prompt_outdated_templates
 
     # Ensure renv.lock exists (required by Dockerfile)
     if [[ ! -f "renv.lock" ]]; then
@@ -678,6 +681,81 @@ warn_if_templates_outdated() {
         printf '\033[1;33m⚠  Outdated templates: %s → v%s. Run: zzc doctor\033[0m\n' \
             "$outdated" "$cur" >&2
     fi
+}
+
+# Interactive prompt to update outdated templates before docker operations
+# Returns 0 if no updates needed or user declined, 1 if updates were made
+check_and_prompt_outdated_templates() {
+    local cur="${ZZCOLLAB_TEMPLATE_VERSION:-}"
+    [[ -z "$cur" ]] && return 0
+
+    local file ver
+    local outdated_files=()
+    local unstamped_files=()
+
+    for file in Makefile .Rprofile; do
+        [[ -f "$file" ]] || continue
+        ver=$(sed -n "s/^# zzcollab ${file} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1)
+        if [[ -z "$ver" ]]; then
+            unstamped_files+=("$file")
+        elif [[ "$ver" != "$cur" ]]; then
+            outdated_files+=("$file (v${ver})")
+        fi
+    done
+
+    # Nothing to update
+    if [[ ${#outdated_files[@]} -eq 0 && ${#unstamped_files[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    # Build message
+    echo ""
+    log_warn "Template files need updating:"
+    if [[ ${#outdated_files[@]} -gt 0 ]]; then
+        for item in "${outdated_files[@]}"; do
+            printf "  • %s → v%s\n" "$item" "$cur"
+        done
+    fi
+    if [[ ${#unstamped_files[@]} -gt 0 ]]; then
+        for item in "${unstamped_files[@]}"; do
+            printf "  • %s (no version stamp)\n" "$item"
+        done
+    fi
+    echo ""
+
+    # Non-interactive: skip prompt
+    if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+        log_info "Run 'zzc doctor' for details"
+        return 0
+    fi
+
+    local update_choice
+    zzc_read -r -p "Update templates to v${cur}? [Y/n]: " update_choice
+    if [[ "$update_choice" =~ ^[Nn]$ ]]; then
+        log_info "Skipping template update"
+        return 0
+    fi
+
+    # Regenerate outdated/unstamped files
+    require_module "templates"
+    local all_files=()
+    for item in "${outdated_files[@]}"; do
+        all_files+=("${item%% (*}")  # Strip version info
+    done
+    for item in "${unstamped_files[@]}"; do
+        all_files+=("$item")
+    done
+
+    for file in "${all_files[@]}"; do
+        if regenerate_template_file "$file" "$file" "$file"; then
+            : # Success logged by function
+        else
+            log_error "Failed to regenerate $file"
+        fi
+    done
+
+    echo ""
+    return 0
 }
 
 cmd_config() {

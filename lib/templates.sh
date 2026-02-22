@@ -75,6 +75,49 @@ copy_template_file() {
     return 0
 }
 
+# Function: regenerate_template_file
+# Purpose: Copy a template file and substitute variables, overwriting if exists
+# USAGE:    regenerate_template_file "Makefile" "Makefile" ["Makefile"] [templates_dir]
+# ARGS:
+#   $1 - template: Template filename (relative to templates directory)
+#   $2 - dest: Destination path for the copied file
+#   $3 - description: Optional description for logging (defaults to destination path)
+#   $4 - templates_dir: Optional templates directory (defaults to ZZCOLLAB_TEMPLATES_DIR)
+# RETURNS:
+#   0 - File regenerated and variables substituted successfully
+#   1 - Failed (template not found, copy failed, substitution failed)
+regenerate_template_file() {
+    local template="$1"
+    local dest="$2"
+    local description="${3:-$dest}"
+    local templates_dir="${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}"
+
+    [[ $# -ge 2 ]] || { log_error "regenerate_template_file: need template and destination"; return 1; }
+
+    if [[ -z "$templates_dir" ]]; then
+        log_error "regenerate_template_file: templates directory not specified"
+        return 1
+    fi
+
+    if [[ ! -f "$templates_dir/$template" ]]; then
+        log_error "Template not found: $templates_dir/$template"
+        return 1
+    fi
+
+    if ! cp "$templates_dir/$template" "$dest"; then
+        log_error "Failed to copy template: $template"
+        return 1
+    fi
+
+    if ! substitute_variables "$dest"; then
+        log_error "Failed to substitute variables in: $dest"
+        return 1
+    fi
+
+    log_success "Regenerated $description"
+    return 0
+}
+
 # Function: substitute_variables
 # Purpose: Replace template placeholders (${VAR_NAME}) with actual variable values
 # USAGE:    substitute_variables "path/to/file" [pkg_name] [author_name]
