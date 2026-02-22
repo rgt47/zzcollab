@@ -261,7 +261,7 @@ check_ignore_files() {
     # Check .Rbuildignore
     if [[ -f "$dir/.Rbuildignore" ]]; then
         for entry in "${REQUIRED_RBUILDIGNORE[@]}"; do
-            if ! grep -q "$entry" "$dir/.Rbuildignore" 2>/dev/null; then
+            if ! grep -qF "$entry" "$dir/.Rbuildignore" 2>/dev/null; then
                 missing_rbuildignore+=("$entry")
             fi
         done
