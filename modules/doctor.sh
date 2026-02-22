@@ -65,6 +65,25 @@ OPTIONAL_DIRS=(
     ".zzcollab"
 )
 
+# Required .gitignore entries
+REQUIRED_GITIGNORE=(
+    ".Rproj.user"
+    ".Rhistory"
+    ".RData"
+    "renv/library/"
+    "renv/staging/"
+)
+
+# Required .Rbuildignore entries (regex patterns)
+REQUIRED_RBUILDIGNORE=(
+    "^analysis"
+    "^docs"
+    "^\\.github"
+    "^renv"
+    "^Makefile"
+    "^Dockerfile"
+)
+
 #=============================================================================
 # VERSION EXTRACTION
 #=============================================================================
@@ -78,6 +97,16 @@ extract_version() {
     local label="$2"
     if [[ -f "$file" ]]; then
         sed -n "s/^# zzcollab ${label} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1
+    fi
+}
+
+# Extract zzcollab version stamp from markdown files (HTML comment format)
+# Matches: <!-- zzcollab FILENAME.md vX.Y.Z -->
+extract_md_version() {
+    local file="$1"
+    local label="$2"
+    if [[ -f "$file" ]]; then
+        sed -n "s/^<!-- zzcollab ${label} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1
     fi
 }
 
@@ -144,6 +173,144 @@ check_required_dirs() {
     return $missing
 }
 
+# Check for misplaced files and directories
+# Returns number of misplaced items
+check_misplaced_files() {
+    local dir="$1"
+    local issues=0
+    local has_header=false
+
+    print_misplaced_header() {
+        if [[ "$has_header" == false ]]; then
+            echo "  Misplaced items:"
+            has_header=true
+        fi
+    }
+
+    # ZZCOLLAB_USER_GUIDE.md in root instead of docs/
+    if [[ -f "$dir/ZZCOLLAB_USER_GUIDE.md" ]] && [[ ! -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md" ]]; then
+        print_misplaced_header
+        printf "    %-20s ${COL_YELLOW}should be in docs/${COL_RESET}\n" "USER_GUIDE.md"
+        issues=$((issues + 1))
+
+        # Offer to move if interactive
+        if [[ -t 0 ]]; then
+            local move_choice
+            read -r -p "    Move to docs/ZZCOLLAB_USER_GUIDE.md? [Y/n]: " move_choice
+            if [[ ! "$move_choice" =~ ^[Nn]$ ]]; then
+                mkdir -p "$dir/docs"
+                if mv "$dir/ZZCOLLAB_USER_GUIDE.md" "$dir/docs/ZZCOLLAB_USER_GUIDE.md"; then
+                    printf "    ${COL_GREEN}✓ Moved to docs/${COL_RESET}\n"
+                    issues=$((issues - 1))
+                else
+                    printf "    ${COL_RED}✗ Failed to move${COL_RESET}\n"
+                fi
+            fi
+        fi
+    fi
+
+    # archive/ should be one level up, not inside workspace
+    if [[ -d "$dir/archive" ]]; then
+        print_misplaced_header
+        printf "    %-20s ${COL_YELLOW}should be at ../archive/${COL_RESET}\n" "archive/"
+        issues=$((issues + 1))
+
+        # Offer to move if interactive
+        if [[ -t 0 ]]; then
+            local parent_dir
+            parent_dir="$(dirname "$dir")"
+            local move_choice
+            read -r -p "    Move to $parent_dir/archive/? [Y/n]: " move_choice
+            if [[ ! "$move_choice" =~ ^[Nn]$ ]]; then
+                if [[ -d "$parent_dir/archive" ]]; then
+                    printf "    ${COL_RED}✗ ../archive/ already exists${COL_RESET}\n"
+                elif mv "$dir/archive" "$parent_dir/archive"; then
+                    printf "    ${COL_GREEN}✓ Moved to ../archive/${COL_RESET}\n"
+                    issues=$((issues - 1))
+                else
+                    printf "    ${COL_RED}✗ Failed to move${COL_RESET}\n"
+                fi
+            fi
+        fi
+    fi
+
+    if [[ "$has_header" == true ]]; then
+        echo ""
+    fi
+
+    return $issues
+}
+
+# Check .gitignore and .Rbuildignore contain required entries
+# Returns number of missing entries
+check_ignore_files() {
+    local dir="$1"
+    local issues=0
+    local missing_gitignore=()
+    local missing_rbuildignore=()
+
+    # Check .gitignore
+    if [[ -f "$dir/.gitignore" ]]; then
+        for entry in "${REQUIRED_GITIGNORE[@]}"; do
+            if ! grep -qF "$entry" "$dir/.gitignore" 2>/dev/null; then
+                missing_gitignore+=("$entry")
+            fi
+        done
+    fi
+
+    # Check .Rbuildignore
+    if [[ -f "$dir/.Rbuildignore" ]]; then
+        for entry in "${REQUIRED_RBUILDIGNORE[@]}"; do
+            if ! grep -q "$entry" "$dir/.Rbuildignore" 2>/dev/null; then
+                missing_rbuildignore+=("$entry")
+            fi
+        done
+    fi
+
+    # Report missing entries
+    if [[ ${#missing_gitignore[@]} -gt 0 ]] || [[ ${#missing_rbuildignore[@]} -gt 0 ]]; then
+        echo "  Ignore file entries:"
+
+        if [[ ${#missing_gitignore[@]} -gt 0 ]]; then
+            printf "    .gitignore missing:\n"
+            for entry in "${missing_gitignore[@]}"; do
+                printf "      ${COL_YELLOW}- %s${COL_RESET}\n" "$entry"
+                issues=$((issues + 1))
+            done
+        fi
+
+        if [[ ${#missing_rbuildignore[@]} -gt 0 ]]; then
+            printf "    .Rbuildignore missing:\n"
+            for entry in "${missing_rbuildignore[@]}"; do
+                printf "      ${COL_YELLOW}- %s${COL_RESET}\n" "$entry"
+                issues=$((issues + 1))
+            done
+        fi
+
+        # Offer to fix if interactive
+        if [[ -t 0 ]] && [[ $issues -gt 0 ]]; then
+            local fix_choice
+            read -r -p "    Add missing entries? [Y/n]: " fix_choice
+            if [[ ! "$fix_choice" =~ ^[Nn]$ ]]; then
+                local fixed=0
+                for entry in "${missing_gitignore[@]}"; do
+                    echo "$entry" >> "$dir/.gitignore"
+                    fixed=$((fixed + 1))
+                done
+                for entry in "${missing_rbuildignore[@]}"; do
+                    echo "$entry" >> "$dir/.Rbuildignore"
+                    fixed=$((fixed + 1))
+                done
+                printf "    ${COL_GREEN}✓ Added %d entries${COL_RESET}\n" "$fixed"
+                issues=0
+            fi
+        fi
+        echo ""
+    fi
+
+    return $issues
+}
+
 # Check version stamps in template files
 # Returns number of outdated/unstamped files
 check_version_stamps() {
@@ -166,6 +333,13 @@ check_version_stamps() {
     local dockerfile_ver
     dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
     print_version_status "Dockerfile" "$dockerfile_ver" || issues=$((issues + 1))
+
+    # docs/ZZCOLLAB_USER_GUIDE.md (optional, only check if present)
+    if [[ -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md" ]]; then
+        local guide_ver
+        guide_ver=$(extract_md_version "$dir/docs/ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md")
+        print_version_status "docs/USER_GUIDE.md" "$guide_ver" || issues=$((issues + 1))
+    fi
 
     # .Rprofile.local (owned by zzvim-R, informational only)
     if [[ -f "$dir/.Rprofile.local" ]]; then
@@ -196,6 +370,14 @@ check_workspace() {
     check_required_dirs "$dir"
     total_issues=$((total_issues + $?))
     echo ""
+
+    # Check for misplaced files
+    check_misplaced_files "$dir"
+    total_issues=$((total_issues + $?))
+
+    # Check ignore file contents
+    check_ignore_files "$dir"
+    total_issues=$((total_issues + $?))
 
     # Check version stamps
     check_version_stamps "$dir"

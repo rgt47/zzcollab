@@ -28,9 +28,29 @@ project/
 ├── man/                   # roxygen2 documentation (generated)
 ├── vignettes/             # Package vignettes
 ├── docs/                  # Project documentation
+│   └── ZZCOLLAB_USER_GUIDE.md
 └── renv/                  # renv library cache (local)
     └── library/
 ```
+
+### Archive Location
+
+The archive directory is **not** inside the workspace. It lives one level
+up, as a sibling to the project:
+
+```
+parent/
+├── project/               # zzcollab workspace
+│   ├── R/
+│   ├── analysis/
+│   └── ...
+└── archive/               # Archive directory (sibling, not child)
+    └── old-versions/
+```
+
+This keeps archived files separate from the active research compendium
+and prevents them from being included in version control or R package
+builds.
 
 ## Core Files
 
@@ -59,6 +79,13 @@ project/
 |:-----|:--------:|:---------------:|:------|
 | `*.Rproj` | No | No | RStudio |
 | `.Rprofile.local` | No | **v1.9.0** | zzvim-R |
+
+### Documentation (zzc init)
+
+| File | Required | Version Stamped | Description |
+|:-----|:--------:|:---------------:|:------------|
+| `README.md` | No | No | Project readme (user-customized) |
+| `docs/ZZCOLLAB_USER_GUIDE.md` | No | **v2.2.0** | Framework usage guide |
 
 ### Version Control (zzc git, zzc github)
 
@@ -121,7 +148,30 @@ Optional directories (warnings only):
 - `man/` - Documentation
 - `.zzcollab/` - Metadata directory
 
-### 3. Version Stamp Freshness
+### 3. Ignore File Contents
+
+Required `.gitignore` entries:
+
+```
+.Rproj.user
+.Rhistory
+.RData
+renv/library/
+renv/staging/
+```
+
+Required `.Rbuildignore` entries:
+
+```
+^analysis
+^docs
+^\.github
+^renv
+^Makefile
+^Dockerfile
+```
+
+### 4. Version Stamp Freshness
 
 For each stamped file, compare embedded version against current
 `ZZCOLLAB_TEMPLATE_VERSION`:
@@ -132,7 +182,7 @@ For each stamped file, compare embedded version against current
 | `(outdated)` | Version is older than current |
 | `(no stamp)` | File exists but has no version stamp |
 
-### 4. Manifest Integrity (planned)
+### 5. Manifest Integrity (planned)
 
 If `.zzcollab/manifest.json` exists, verify:
 

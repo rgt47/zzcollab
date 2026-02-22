@@ -1,4 +1,5 @@
-# ZZCOLLAB Framework User Guide v4.1
+<!-- zzcollab ZZCOLLAB_USER_GUIDE.md v$ZZCOLLAB_TEMPLATE_VERSION -->
+# ZZCOLLAB Framework User Guide
 
 ## Table of Contents
 1. [What is ZZCOLLAB?](#what-is-zzcollab)

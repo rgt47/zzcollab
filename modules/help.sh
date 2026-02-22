@@ -615,7 +615,9 @@ Usage:
 Checks performed:
   1. Required files   Verify DESCRIPTION, renv.lock, Makefile, etc.
   2. Directory layout Check R/, analysis/ exist
-  3. Version stamps   Compare Makefile, .Rprofile, Dockerfile versions
+  3. Misplaced files  Detect files in wrong location, offer to move
+  4. Ignore files     Verify .gitignore/.Rbuildignore entries
+  5. Version stamps   Compare Makefile, .Rprofile, Dockerfile versions
 
 Output:
   Checking: ~/prj/res/08-project/
@@ -777,7 +779,7 @@ show_help_and_cleanup_info() {
     cat << 'EOF'
 
 📄 DOCUMENTATION:
-   - See ZZCOLLAB_USER_GUIDE.md for comprehensive guide
+   - See docs/ZZCOLLAB_USER_GUIDE.md for comprehensive guide
    - Use make help for all available commands
    - Check .github/workflows/ for CI/CD documentation
 

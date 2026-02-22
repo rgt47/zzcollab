@@ -221,6 +221,22 @@ create_github_workflows() {
 }
 
 #=============================================================================
+# DOCUMENTATION FILES
+#=============================================================================
+
+create_docs_files() {
+    log_debug "Creating documentation files..."
+
+    # ZZCOLLAB_USER_GUIDE.md
+    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/ZZCOLLAB_USER_GUIDE.md" ]]; then
+        install_template "ZZCOLLAB_USER_GUIDE.md" "docs/ZZCOLLAB_USER_GUIDE.md" "user guide"
+    fi
+
+    log_success "Documentation files created"
+    return 0
+}
+
+#=============================================================================
 # MAIN SETUP FUNCTION
 #=============================================================================
 
@@ -237,6 +253,7 @@ setup_project() {
     create_devtools || return 1
     create_renv_setup || return 1
     create_github_workflows || return 1
+    create_docs_files || return 1
 
     log_success "Project setup complete"
     return 0
