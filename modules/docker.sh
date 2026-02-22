@@ -287,6 +287,7 @@ prompt_new_workspace_setup() {
     # Save to config
     echo "" >&2
     zzc_read -r -p "Save as defaults? [Y/n]: " save_config
+    # shellcheck disable=SC2154  # save_config set by zzc_read
     if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
         config_set "profile-name" "$selected_profile" >&2
         config_set "r-version" "$selected_version" >&2
@@ -526,6 +527,7 @@ prompt_docker_build() {
     if [[ "${ZZCOLLAB_BUILD_AFTER_SETUP:-}" == "true" ]] && [[ -t 0 ]]; then
         echo ""
         zzc_read -r -p "Build Docker image now? [Y/n]: " build_now
+        # shellcheck disable=SC2154  # build_now set by zzc_read
         if [[ ! "$build_now" =~ ^[Nn]$ ]]; then
             if make docker-build; then
                 echo ""
