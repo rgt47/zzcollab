@@ -83,7 +83,11 @@ RUN npm install -g @anthropic-ai/claude
 RUN R -e "install.packages('tinytex')" && \
     R -e "tinytex::install_tinytex()" && \
     /root/.TinyTeX/bin/*/tlmgr path add && \
-    tlmgr install pdfcrop
+    tlmgr install pdfcrop && \
+    chmod -R a+rX /root/.TinyTeX
+
+# Add TinyTeX to PATH for all users
+ENV PATH="/root/.TinyTeX/bin/x86_64-linux:${PATH}"
 
 # Create non-root user with zsh as default shell
 ARG USERNAME=analyst
