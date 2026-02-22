@@ -190,6 +190,7 @@ profiles:
     extras:
       - tinytex
       - pandoc
+      - imagemagick
     size: "~1.5GB"
     note: "Lighter than publishing profile; uses tinytex instead of texlive-full"
 
