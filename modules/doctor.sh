@@ -334,11 +334,32 @@ check_version_stamps() {
     dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
     print_version_status "Dockerfile" "$dockerfile_ver" || issues=$((issues + 1))
 
-    # docs/ZZCOLLAB_USER_GUIDE.md (optional, only check if present)
+    # docs/ZZCOLLAB_USER_GUIDE.md
     if [[ -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md" ]]; then
         local guide_ver
         guide_ver=$(extract_md_version "$dir/docs/ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md")
         print_version_status "docs/USER_GUIDE.md" "$guide_ver" || issues=$((issues + 1))
+    elif [[ -d "$dir/docs" ]]; then
+        printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "docs/USER_GUIDE.md"
+        issues=$((issues + 1))
+
+        local template_guide="${ZZCOLLAB_TEMPLATES_DIR}/ZZCOLLAB_USER_GUIDE.md"
+        if [[ -t 0 ]] && [[ -f "$template_guide" ]]; then
+            local copy_choice
+            read -r -p "    Copy from template? [Y/n]: " copy_choice
+            if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
+                if cp "$template_guide" "$dir/docs/ZZCOLLAB_USER_GUIDE.md" && \
+                   sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
+                       "$dir/docs/ZZCOLLAB_USER_GUIDE.md" && \
+                   rm -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md.bak"; then
+                    printf "    ${COL_GREEN}✓ Copied user guide to docs/ (v%s)${COL_RESET}\n" \
+                        "$CURRENT_VERSION"
+                    issues=$((issues - 1))
+                else
+                    printf "    ${COL_RED}✗ Failed to copy${COL_RESET}\n"
+                fi
+            fi
+        fi
     fi
 
     # .Rprofile.local (owned by zzvim-R, informational only)
