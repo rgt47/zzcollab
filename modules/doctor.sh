@@ -401,6 +401,68 @@ check_version_stamps() {
     return $issues
 }
 
+# Check CI workflow status via GitHub CLI
+# Returns number of issues (0 = passing or not applicable, 1 = failing)
+check_ci_status() {
+    local dir="$1"
+    local issues=0
+
+    # Skip if no git repo or no gh CLI
+    if ! command -v gh &>/dev/null; then
+        return 0
+    fi
+    if [[ ! -d "$dir/.git" ]]; then
+        return 0
+    fi
+
+    # Get repo from git remote
+    local remote_url
+    remote_url=$(git -C "$dir" remote get-url origin 2>/dev/null) || return 0
+    local repo
+    repo=$(echo "$remote_url" | sed -E 's|.*github\.com[:/]||; s|\.git$||')
+    [[ -n "$repo" ]] || return 0
+
+    echo "  CI status:"
+
+    # Query latest run on default branch
+    local run_info
+    run_info=$(gh run list --repo "$repo" --limit 1 --json status,conclusion,name,headBranch 2>/dev/null) || {
+        printf "    %-18s ${COL_YELLOW}(gh auth required)${COL_RESET}\n" "GitHub Actions"
+        return 0
+    }
+
+    # No runs at all
+    if [[ "$run_info" == "[]" ]]; then
+        printf "    %-18s ${COL_DIM}(no runs)${COL_RESET}\n" "GitHub Actions"
+        return 0
+    fi
+
+    local conclusion status name branch
+    conclusion=$(echo "$run_info" | sed -n 's/.*"conclusion":"\([^"]*\)".*/\1/p' | head -1)
+    status=$(echo "$run_info" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p' | head -1)
+    name=$(echo "$run_info" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p' | head -1)
+    branch=$(echo "$run_info" | sed -n 's/.*"headBranch":"\([^"]*\)".*/\1/p' | head -1)
+
+    local display_name="${name:-workflow}"
+    [[ ${#display_name} -gt 18 ]] && display_name="${display_name:0:16}.."
+
+    if [[ "$status" == "in_progress" || "$status" == "queued" ]]; then
+        printf "    %-18s ${COL_YELLOW}(running)${COL_RESET} %s\n" "$display_name" "$branch"
+    elif [[ "$conclusion" == "success" ]]; then
+        printf "    %-18s ${COL_GREEN}passing${COL_RESET}  %s\n" "$display_name" "$branch"
+    elif [[ "$conclusion" == "failure" ]]; then
+        printf "    %-18s ${COL_RED}failing${COL_RESET}  %s\n" "$display_name" "$branch"
+        issues=1
+    elif [[ "$conclusion" == "cancelled" ]]; then
+        printf "    %-18s ${COL_YELLOW}cancelled${COL_RESET} %s\n" "$display_name" "$branch"
+    else
+        printf "    %-18s ${COL_DIM}%s${COL_RESET}\n" "$display_name" "${conclusion:-unknown}"
+    fi
+    echo ""
+
+    return $issues
+}
+
 # Check a single workspace directory
 # Returns 0 if all checks pass, 1 if any issues found
 check_workspace() {
@@ -433,6 +495,10 @@ check_workspace() {
     check_version_stamps "$dir"
     total_issues=$((total_issues + $?))
     echo ""
+
+    # Check CI status
+    check_ci_status "$dir"
+    total_issues=$((total_issues + $?))
 
     # Summary
     if [[ $total_issues -eq 0 ]]; then
