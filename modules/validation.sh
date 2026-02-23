@@ -86,7 +86,7 @@ validate_package_on_cran() {
 }
 
 validate_package_on_bioconductor() {
-    curl -sf "https://www.bioconductor.org/packages/json/3.17/$1" >/dev/null 2>&1
+    curl -sf --max-time 15 --connect-timeout 5 "https://www.bioconductor.org/packages/json/3.21/$1" >/dev/null 2>&1
 }
 
 validate_package_on_github() {
