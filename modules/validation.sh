@@ -92,7 +92,7 @@ validate_package_on_bioconductor() {
 validate_package_on_github() {
     [[ "$1" =~ "/" ]] || return 1
     local resp
-    resp=$(curl -sf "https://api.github.com/repos/$1" 2>/dev/null)
+    resp=$(curl -sf --max-time 10 --connect-timeout 5 "https://api.github.com/repos/$1" 2>/dev/null)
     [[ -n "$resp" && ! "$resp" =~ "Not Found" ]]
 }
 
