@@ -221,7 +221,7 @@ add_github_package_to_renv_lock() {
 
     local version="0.0.0"
     local desc_url="https://raw.githubusercontent.com/${username}/${repo}/${ref}/DESCRIPTION"
-    local desc_content; desc_content=$(curl -sf "$desc_url" 2>/dev/null)
+    local desc_content; desc_content=$(curl -sf --max-time 10 --connect-timeout 5 "$desc_url" 2>/dev/null)
     if [[ -n "$desc_content" ]]; then
         version=$(echo "$desc_content" | grep -E "^Version:" | sed 's/^Version:[[:space:]]*//' | tr -d '\r')
     fi
