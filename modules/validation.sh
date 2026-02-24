@@ -78,7 +78,7 @@ format_r_package_vector() {
 #==============================================================================
 
 fetch_cran_package_info() {
-    curl -sf "https://crandb.r-pkg.org/$1" 2>/dev/null
+    curl -sf --max-time 10 --connect-timeout 5 "https://crandb.r-pkg.org/$1" 2>/dev/null
 }
 
 validate_package_on_cran() {
@@ -352,6 +352,10 @@ clean_packages() {
         [[ "$placeholder_str" == *" $pkg "* ]] && continue
         case "$pkg" in my|your|his|her|our|their|the|this|that) continue;; esac
         case "$pkg" in file|dir|path|name|value|object|function|method|class) continue;; esac
+        # Suffix-based filtering for all-lowercase words (real packages use CamelCase)
+        if [[ "$pkg" =~ ^[a-z]+$ ]]; then
+            case "$pkg" in *analysis|*project|*study|*trial) continue;; esac
+        fi
         [[ "$pkg" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ && ! "$pkg" =~ ^\. && ! "$pkg" =~ \.$ ]] && cleaned+=("$pkg")
     done
     printf '%s\n' "${cleaned[@]}" | sort -u
