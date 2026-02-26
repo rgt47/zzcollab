@@ -9,7 +9,7 @@ get_config_default(key, default = NULL)
 \arguments{
 \item{key}{Character string specifying the configuration key to retrieve.
 Should match keys used in the zzcollab configuration system (e.g.,
-\"team_name\", \"profile_name\", \"dotfiles_dir\").}
+\"team_name\", \"profile_name\", \"github_account\").}
 
 \item{default}{Default value to return if the configuration key is not set
 or if \code{get_config()} returns NULL. Can be any type, but typically
@@ -49,7 +49,6 @@ profile_name <- get_config_default(\"profile_name\", \"analysis\")
 team_name <- get_config(\"team_name\") \%||\% \"defaultteam\"
 
 # Common usage with multiple fallbacks
-dotfiles_path <- get_config_default(\"dotfiles_dir\", \"~/dotfiles\")
 github_account <- get_config_default(\"github_account\", team_name)
 }
 

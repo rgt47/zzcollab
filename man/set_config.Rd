@@ -12,9 +12,7 @@ Recommended keys include:
 \itemize{
 \item "team_name": Your Docker Hub team/organization name
 \item "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
-\item "dotfiles_dir": Path to your personal dotfiles directory
 \item "github_account": Your GitHub account for repository creation
-\item "dotfiles_nodot": Whether your dotfiles need leading dots ("true"/"false")
 }}
 
 \item{value}{Character string specifying the configuration value to set.
@@ -54,7 +52,6 @@ for easy editing and cross-platform compatibility.
 # Set up your personal defaults (run once)
 set_config("team_name", "mylab")
 set_config("profile_name", "analysis")
-set_config("dotfiles_dir", "~/dotfiles")
 set_config("github_account", "myuniversity")
 
 # Check if configuration was successful
@@ -63,9 +60,6 @@ if (set_config("team_name", "newteam")) {
 } else {
   cat("Failed to update configuration\n")
 }
-
-# Configure dotfiles preferences
-set_config("dotfiles_nodot", "false")  # Files already have leading dots
 }
 
 }

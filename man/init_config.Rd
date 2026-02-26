@@ -39,9 +39,7 @@ This function creates the complete zzcollab user configuration infrastructure:
 \itemize{
 \item team_name: (empty, to be filled by user)
 \item profile_name: "analysis" (balanced default)
-\item dotfiles_dir: (empty, commonly ~/dotfiles)
 \item github_account: (empty, for repository creation)
-\item dotfiles_nodot: "false" (assumes dotfiles have leading dots)
 }
 
 This function is typically run once per system to establish your personal
@@ -61,7 +59,6 @@ if (init_config()) {
 # Complete setup workflow
 init_config()  # Create template
 set_config("team_name", "mylab")  # Set your values
-set_config("dotfiles_dir", "~/dotfiles")
 validate_config()  # Verify everything is correct
 
 # Check if initialization is needed

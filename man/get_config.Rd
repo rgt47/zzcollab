@@ -12,9 +12,7 @@ Common keys include:
 \itemize{
 \item "team_name": Docker Hub team/organization name
 \item "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
-\item "dotfiles_dir": Path to personal dotfiles directory
 \item "github_account": GitHub account for repository creation
-\item "dotfiles_nodot": Whether dotfiles need leading dots added ("true"/"false")
 }}
 }
 \value{
@@ -53,8 +51,8 @@ if (!is.null(team)) {
 profile <- get_config("profile_name")
 cat("Docker profile:", profile \%||\% "minimal", "\n")
 
-# Get dotfiles directory with fallback
-dotfiles <- get_config("dotfiles_dir") \%||\% "~/dotfiles"
+# Get GitHub account with fallback
+github <- get_config("github_account") \%||\% get_config("team_name")
 }
 
 }

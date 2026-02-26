@@ -35,7 +35,6 @@ the necessary team infrastructure.
 \item \strong{Validation}: Checks that team Docker images exist and are accessible
 \item \strong{Project Setup}: Creates local project structure and configuration
 \item \strong{Environment}: Configures to use team's Docker image via --use-team-image
-\item \strong{Integration}: Configures local tools and personal dotfiles
 }
 
 \strong{Prerequisites:}

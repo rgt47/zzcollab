@@ -16,7 +16,6 @@ Options include:
 \item "workflow": Daily development workflow
 \item "troubleshooting": Top 10 common issues and solutions
 \item "config": Configuration system guide
-\item "dotfiles": Dotfiles setup and management
 \item "renv": Package management with renv
 \item "docker": Docker essentials for researchers
 \item "cicd": CI/CD and GitHub Actions
