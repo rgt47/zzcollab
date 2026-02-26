@@ -348,7 +348,7 @@ check_version_stamps() {
             local copy_choice
             read -r -p "    Copy from template? [Y/n]: " copy_choice
             if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
-                if cp "$template_guide" "$dir/docs/ZZCOLLAB_USER_GUIDE.md" && \
+                if safe_cp "$template_guide" "$dir/docs/ZZCOLLAB_USER_GUIDE.md" && \
                    sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
                        "$dir/docs/ZZCOLLAB_USER_GUIDE.md" && \
                    rm -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md.bak"; then
@@ -377,7 +377,7 @@ check_version_stamps() {
             local copy_choice
             read -r -p "    Copy from template? [Y/n]: " copy_choice
             if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
-                if cp "$template_workflow" "$workflow_file" && \
+                if safe_cp "$template_workflow" "$workflow_file" && \
                    sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
                        "$workflow_file" && \
                    rm -f "$workflow_file.bak"; then

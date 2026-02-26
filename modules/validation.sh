@@ -120,7 +120,7 @@ add_package_to_description() {
     fi
 
     local temp_desc; temp_desc=$(mktemp)
-    cp "$desc_file" "$temp_desc"
+    safe_cp "$desc_file" "$temp_desc"
 
     awk -v pkg="$pkg" '
     BEGIN { in_imports=0; added=0; found=0 }
@@ -702,7 +702,7 @@ add_system_deps_to_dockerfile() {
     if grep -q "apt-get install" "$dockerfile"; then
         # Find the last apt-get install line and add deps there
         # Create backup
-        cp "$dockerfile" "${dockerfile}.bak"
+        safe_cp "$dockerfile" "${dockerfile}.bak"
 
         # Strategy: Add deps to existing apt-get install block
         # Look for pattern: apt-get install -y ... && \

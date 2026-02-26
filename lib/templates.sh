@@ -62,7 +62,7 @@ copy_template_file() {
         fi
     fi
 
-    if ! cp "$templates_dir/$template" "$dest"; then
+    if ! safe_cp "$templates_dir/$template" "$dest"; then
         log_error "Failed to copy template: $template"
         return 1
     fi
@@ -104,7 +104,7 @@ regenerate_template_file() {
         return 1
     fi
 
-    if ! cp "$templates_dir/$template" "$dest"; then
+    if ! safe_cp "$templates_dir/$template" "$dest"; then
         log_error "Failed to copy template: $template"
         return 1
     fi

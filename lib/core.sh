@@ -192,6 +192,17 @@ safe_mkdir() {
     fi
 }
 
+# Function: safe_cp
+# Purpose: Copy file avoiding macOS EDEADLK on cloud-synced filesystems
+#          (Dropbox, iCloud). Dropbox locks existing file inodes, so we
+#          remove the target first, then write a new file.
+# Arguments: $1 - source path, $2 - destination path
+safe_cp() {
+    local src="$1" dest="$2"
+    rm -f "$dest"
+    cat "$src" > "$dest"
+}
+
 #=============================================================================
 # UNIFIED TRACKING SYSTEM
 #=============================================================================

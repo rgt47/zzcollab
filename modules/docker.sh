@@ -555,6 +555,7 @@ prompt_docker_build() {
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3" tools_install="$4" deps_comment="$5" profile_name="${6:-minimal}"
 
+    rm -f Dockerfile
     cat > Dockerfile << EOF
 # syntax=docker/dockerfile:1.4
 # zzcollab Dockerfile v${ZZCOLLAB_TEMPLATE_VERSION}

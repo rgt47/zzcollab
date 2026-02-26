@@ -197,7 +197,7 @@ create_renv_setup() {
 
     # .Rprofile from template (contains renv activation, auto-restore, auto-snapshot)
     if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/.Rprofile" ]]; then
-        cp "${ZZCOLLAB_TEMPLATES_DIR}/.Rprofile" .Rprofile
+        safe_cp "${ZZCOLLAB_TEMPLATES_DIR}/.Rprofile" .Rprofile
         log_debug "Created .Rprofile from template"
     else
         log_warn "Template .Rprofile not found at ${ZZCOLLAB_TEMPLATES_DIR:-}/.Rprofile"

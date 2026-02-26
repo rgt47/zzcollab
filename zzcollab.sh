@@ -579,7 +579,7 @@ EOF
 
     # Create .Rprofile from template (always overwrite to ensure latest version)
     if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
-        cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
+        safe_cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
         log_success "Created .Rprofile from template"
     else
         log_error "Template .Rprofile not found at $ZZCOLLAB_TEMPLATES_DIR/.Rprofile"
@@ -739,14 +739,18 @@ check_and_prompt_outdated_templates() {
     # Regenerate outdated/unstamped files
     require_module "templates"
     local all_files=()
-    for item in "${outdated_files[@]}"; do
-        all_files+=("${item%% (*}")  # Strip version info
-    done
-    for item in "${unstamped_files[@]}"; do
-        all_files+=("$item")
-    done
+    if [[ ${#outdated_files[@]} -gt 0 ]]; then
+        for item in "${outdated_files[@]}"; do
+            all_files+=("${item%% (*}")
+        done
+    fi
+    if [[ ${#unstamped_files[@]} -gt 0 ]]; then
+        for item in "${unstamped_files[@]}"; do
+            all_files+=("$item")
+        done
+    fi
 
-    for file in "${all_files[@]}"; do
+    for file in "${all_files[@]+"${all_files[@]}"}"; do
         if regenerate_template_file "$file" "$file" "$file"; then
             : # Success logged by function
         else
@@ -1263,7 +1267,7 @@ install_zzvimr_graphics_template() {
 
     for loc in "${template_locations[@]}"; do
         if [[ -f "$loc" ]]; then
-            cp "$loc" .Rprofile.local
+            safe_cp "$loc" .Rprofile.local
             log_success "Installed .Rprofile.local (zzvim-R graphics)"
             return 0
         fi
@@ -1323,7 +1327,7 @@ cmd_quickstart() {
 
             # Update .Rprofile from template
             if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
-                cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
+                safe_cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
                 log_success "Updated .Rprofile from template"
             fi
 
@@ -1334,7 +1338,7 @@ cmd_quickstart() {
 
             # Update Makefile from template
             if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/Makefile" ]]; then
-                cp "$ZZCOLLAB_TEMPLATES_DIR/Makefile" Makefile
+                safe_cp "$ZZCOLLAB_TEMPLATES_DIR/Makefile" Makefile
                 log_success "Updated Makefile from template"
             fi
 

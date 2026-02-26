@@ -182,7 +182,7 @@ if [ "$DRY_RUN" = true ]; then
     log_verbose "[DRY RUN] Would copy: $workflow_template → $workflow_output"
     log_success "[DRY RUN] Would install workflow: r-package-${workflow_type}.yml"
 else
-    cp "$workflow_template" "$workflow_output"
+    cat "$workflow_template" > "$workflow_output"
     log_success "Installed workflow: $workflow_output"
     log_verbose "Size: $(du -h "$workflow_output" | cut -f1)"
 fi
