@@ -131,17 +131,17 @@ substitute_variables() {
     if [[ -n "$pkg_name_override" ]]; then
         PKG_NAME="$pkg_name_override" 2>/dev/null || true
     fi
-    export PKG_NAME
+    export PKG_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
     if [[ -n "$author_name_override" ]]; then
         AUTHOR_NAME="$author_name_override" 2>/dev/null || true
     fi
-    export AUTHOR_NAME
+    export AUTHOR_NAME 2>/dev/null || true
     export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     # Don't default R_VERSION to 'latest' - let generate_dockerfile read from renv.lock
     [[ -n "${R_VERSION:-}" ]] && export R_VERSION
     export USERNAME="${USERNAME:-analyst}"
 
-    export PACKAGE_NAME="$PKG_NAME"
+    export PACKAGE_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
     export AUTHOR_LAST="${AUTHOR_LAST:-}"
     export AUTHOR_ORCID="${AUTHOR_ORCID:-}"
     export MANUSCRIPT_TITLE="${MANUSCRIPT_TITLE:-Research Compendium Analysis}"
