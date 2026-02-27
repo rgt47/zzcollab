@@ -305,4 +305,6 @@ DESCRIPTION.
 
 ---
 
+---
+*Rendered on 2026-02-26 at 15:54 PST.*
 *Source: /Users/zenn/prj/sfw/07-zzcollab/zzcollab/docs/white-paper-dependency-triad.md*
