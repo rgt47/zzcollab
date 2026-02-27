@@ -95,6 +95,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Imports:
     renv
+Suggests:
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3"
     create_file_if_missing "DESCRIPTION" "$content" "DESCRIPTION file"
 }

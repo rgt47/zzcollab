@@ -390,7 +390,7 @@ parse_description_suggests() { parse_description_field "Suggests"; }
 
 parse_renv_lock() {
     command -v jq &>/dev/null || { log_warn "jq not found"; return 0; }
-    [[ -f "renv.lock" ]] || { create_renv_lock || return 1; }
+    [[ -f "renv.lock" ]] || return 0
     jq -r '.Packages | keys[]' renv.lock 2>/dev/null | grep -v '^$' | sort -u || true
 }
 
@@ -398,23 +398,6 @@ parse_renv_lock() {
 # VALIDATION LOGIC
 #==============================================================================
 
-compute_union_packages() {
-    local -n code_ref="code_packages" desc_ref="desc_imports" renv_ref="renv_packages"
-    local all=() base_str=" ${BASE_PACKAGES[*]} "
-
-    for p in "${code_ref[@]}"; do [[ -n "$p" ]] && all+=("$p"); done
-    for p in "${desc_ref[@]}"; do
-        [[ -z "$p" ]] && continue
-        local found=false; for e in "${all[@]}"; do [[ "$p" == "$e" ]] && { found=true; break; }; done
-        [[ "$found" == false ]] && all+=("$p")
-    done
-    for p in "${renv_ref[@]}"; do
-        [[ -z "$p" || "$base_str" == *" $p "* ]] && continue
-        local found=false; for e in "${all[@]}"; do [[ "$p" == "$e" ]] && { found=true; break; }; done
-        [[ "$found" == false ]] && all+=("$p")
-    done
-    printf '%s\n' "${all[@]}"
-}
 
 find_missing_from_description() {
     local -n all_ref="$1" desc_ref="$2"
@@ -529,9 +512,11 @@ validate_package_environment() {
 
     log_info "Found ${#code_packages[@]} in code, ${#desc_imports[@]} in DESCRIPTION (Imports+Suggests), ${#renv_packages[@]} in renv.lock"
 
-    local all_packages; mapfile -t all_packages < <(compute_union_packages)
-    local missing_from_desc; mapfile -t missing_from_desc < <(find_missing_from_description all_packages desc_imports)
-    local missing_from_lock; mapfile -t missing_from_lock < <(find_missing_from_lock all_packages renv_packages)
+    # DESCRIPTION tracks direct deps (code is source of truth)
+    local missing_from_desc; mapfile -t missing_from_desc < <(find_missing_from_description code_packages desc_imports)
+    # renv.lock tracks code + DESCRIPTION (superset of direct deps)
+    local code_and_desc; mapfile -t code_and_desc < <(printf '%s\n' "${code_packages[@]}" "${desc_imports[@]}" | sort -u)
+    local missing_from_lock; mapfile -t missing_from_lock < <(find_missing_from_lock code_and_desc renv_packages)
 
     report_and_fix_missing_description missing_from_desc "$verbose" "$auto_fix" || return 1
     report_and_fix_missing_lock missing_from_lock "$verbose" "$auto_fix" || return 1
