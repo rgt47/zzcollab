@@ -10,7 +10,7 @@
 # USAGE:
 # 1. Set `enabled: true` for profiles you want to build
 # 2. Environment definitions are automatically pulled from profiles.yaml
-# 3. Run: zzcollab -i -p myproject (builds enabled profiles automatically)
+# 3. Run: zzcollab -p myproject (builds enabled profiles automatically)
 
 #=============================================================================
 # TEAM METADATA

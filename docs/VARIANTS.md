@@ -334,13 +334,6 @@ zzcollab -t lab -p study
 make docker-build
 make docker-push-team
 
-# Create project with config-defined profiles
-mkdir study && cd study
-zzcollab -t lab -p study --profiles-config config.yaml
-make docker-build
-make docker-push-team
-
-# Note: Use --profiles-config to build multiple specialized environments
 # For team collaboration, push team image to Docker Hub
 ```
 
@@ -351,11 +344,8 @@ make docker-push-team
 cd study
 ./add_profile.sh
 
-# Build specific profile
-zzcollab -V modeling
-
-# Build all enabled profiles
-zzcollab --profiles-config config.yaml
+# Rebuild Docker image after adding profile
+make docker-build
 ```
 
 ## Custom Profile Definition
@@ -632,7 +622,7 @@ git commit -m "Update profile definitions"
 git pull
 
 # Rebuild with updated definitions
-zzcollab --profiles-config config.yaml
+make docker-build
 ```
 
 ### Version Control
@@ -645,7 +635,7 @@ git tag -a profiles-v2.0 -m "Add GPU and spatial profiles"
 
 # Reference specific version
 git checkout profiles-v2.0
-zzcollab --profiles-config config.yaml
+make docker-build
 ```
 
 ### Deprecation

@@ -132,9 +132,6 @@ collaboration:
 ```bash
 # Create user configuration file with interactive prompts
 zzcollab config init
-
-# Create configuration in specific location
-zzcollab config init --config-file ./custom-config.yaml
 ```
 
 ### Set Configuration Values
@@ -354,18 +351,6 @@ zzcollab --check-team-image
 1. Team lead builds and pushes: `make docker-build && make docker-push-team`
 2. Team members pull: `zzcollab --use-team-image`
 3. Everyone has identical Docker environment
-
-### Configuration File Override
-
-```bash
-# --config-file PATH
-# Use custom configuration file location
-zzcollab config-file ./team-config.yaml
-
-# --profiles-config PATH
-# Use custom profile definitions
-zzcollab --profiles-config ./custom-profiles.yaml
-```
 
 ## Output and Behavior Flags
 
