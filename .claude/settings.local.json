@@ -20,7 +20,8 @@
       "Bash(load_config)",
       "Bash(echo:*)",
       "Bash(bash -c:*)",
-      "Bash(kitty @:*)"
+      "Bash(kitty @:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
