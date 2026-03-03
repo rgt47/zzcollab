@@ -81,10 +81,10 @@ for test_file in "${test_files[@]}"; do
         exit_code=$?
 
         # Extract results line
-        results=$(echo "$output" | grep "^Results:" || true)
+        results=$(echo "$output" | grep "Results:" || true)
         if [[ -n "$results" ]]; then
-            pass=$(echo "$results" | sed -E 's/.*([0-9]+) passed.*/\1/')
-            fail=$(echo "$results" | sed -E 's/.*([0-9]+) failed.*/\1/')
+            pass=$(echo "$results" | sed -E 's/.*[^0-9]([0-9]+) passed.*/\1/')
+            fail=$(echo "$results" | sed -E 's/.*[^0-9]([0-9]+) failed.*/\1/')
             total_pass=$((total_pass + pass))
             total_fail=$((total_fail + fail))
             echo "  $results"
