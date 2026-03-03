@@ -152,7 +152,7 @@ git add . && git commit -m "Initial setup" && git push
 **Team Member** (joining project):
 ```bash
 git clone https://github.com/mylab/study.git && cd study
-zzcollab --use-team-image  # Uses team's Docker profile
+make docker-build             # Build Docker image from Dockerfile
 make r
 # Inside container: install.packages("package") as needed
 ```
@@ -423,7 +423,7 @@ OPTIONS:
                            geospatial, etc.)
   --team NAME, -t          Team name for Docker Hub namespace
   --project NAME, -p       Project name
-  --use-team-image         Pull and use existing team Docker image
+  --use-team-image         Deprecated (no-op); use `make docker-build`
   --next-steps             Show development workflow and next steps
   --help, -h               Show help message
 
@@ -453,7 +453,7 @@ EXAMPLES:
 
   # Team collaboration - Member
   git clone https://github.com/myteam/study.git && cd study
-  zzcollab --use-team-image                   # Pull and use team image
+  make docker-build                           # Build from project Dockerfile
   make r                              # Start development
   # Inside container: install.packages("pkg") as needed
 

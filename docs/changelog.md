@@ -49,7 +49,7 @@ This document chronicles all major changes, enhancements, and improvements to ZZ
 - Clear terminology eliminates confusion between renv and Docker
 - Config system supports full profile customization
 - Solo developers can set Docker profile defaults
-- Team members can configure preferred profile variants
+- Team members can configure preferred profiles
 
 ### Minimal Build Mode Fix (October 2025)
 **Complete restoration of -M flag functionality** - fixed validation and package definition issues:

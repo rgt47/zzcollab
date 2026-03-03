@@ -229,8 +229,8 @@ make docker-push-team
 
 # Team members:
 git clone https://github.com/myteam/data-viz.git && cd data-viz
-zzcollab --use-team-image
-make r    # Instant startup, packages pre-installed
+make docker-build
+make r    # Startup with packages from Dockerfile
 ```
 
 ---

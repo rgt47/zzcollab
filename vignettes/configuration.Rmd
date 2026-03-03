@@ -245,7 +245,7 @@ zzcollab config set team-name "genomicslab"
 # Join existing project
 git clone https://github.com/genomicslab/cancer-study.git
 cd cancer-study
-zzcollab --use-team-image  # Pull team's Docker image
+make docker-build  # Build Docker image from project Dockerfile
 
 # Project config (./zzcollab.yaml) provides all team settings
 ```
@@ -332,25 +332,20 @@ via `make check-system-deps`. Manual specification is rarely needed.
 
 ## Team Collaboration Flags
 
-### Using Team Images
+### Team Docker Workflow
 
 ```bash
-# --use-team-image
-# Pull and use existing team Docker image
+# Team member joins existing project
 git clone https://github.com/myteam/study1.git
 cd study1
-zzcollab --use-team-image
-# Pulls: myteam/study1:latest from Docker Hub
-
-# Check for team image
-zzcollab --check-team-image
-# Reports if team image exists and is accessible
+make docker-build  # Build Docker image from project Dockerfile
+make r             # Enter container
 ```
 
 **Team Image Workflow**:
 1. Team lead builds and pushes: `make docker-build && make docker-push-team`
-2. Team members pull: `zzcollab --use-team-image`
-3. Everyone has identical Docker environment
+2. Team members clone and build: `git clone ... && make docker-build`
+3. Everyone has identical Docker environment (same Dockerfile)
 
 ## Output and Behavior Flags
 
@@ -716,7 +711,7 @@ q()  # Exit R - snapshot happens automatically
 ```bash
 git clone https://github.com/genomicslab/chipseq-study.git
 cd chipseq-study
-zzcollab --use-team-image
+make docker-build
 make r
 
 # Add ChIP-seq specific packages
@@ -856,7 +851,7 @@ zzcollab config set team-name "psychlab"
 # Join project
 git clone https://github.com/psychlab/attention-study.git
 cd attention-study
-zzcollab --use-team-image
+make docker-build
 
 # Start working immediately
 make r
@@ -905,7 +900,7 @@ make docker-build && make docker-push-team
 # Join workflow-specific project
 git clone https://github.com/biocore/rnaseq-study.git
 cd rnaseq-study
-zzcollab --use-team-image  # Gets appropriate base image
+make docker-build  # Build from project Dockerfile
 
 # Add analysis-specific packages
 make r
@@ -1351,7 +1346,7 @@ make docker-build && make docker-push-team
 
 # Team member:
 git clone https://github.com/myteam/study.git && cd study
-zzcollab --use-team-image
+make docker-build
 ```
 
 **Package management**:

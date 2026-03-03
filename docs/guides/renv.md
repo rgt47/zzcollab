@@ -102,7 +102,7 @@ git clone https://github.com/team/project.git
 cd project
 
 # Start container
-zzcollab -t team -p project --use-team-image
+make docker-build
 make docker-rstudio
 ```
 
@@ -587,7 +587,7 @@ git add renv.lock && git commit -m "Add forecasting packages" && git push
 ```bash
 git clone https://github.com/acme/sales-forecast.git
 cd sales-forecast
-zzcollab --use-team-image
+make docker-build
 make docker-rstudio
 ```
 
@@ -631,7 +631,7 @@ source("analysis/scripts/seasonal_analysis.R")  # Uses prophet
 ```bash
 git clone https://github.com/acme/sales-forecast.git
 cd sales-forecast
-zzcollab --use-team-image && make docker-rstudio
+make docker-build && make docker-rstudio
 ```
 
 **In RStudio**:

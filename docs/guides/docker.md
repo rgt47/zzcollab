@@ -586,7 +586,7 @@ git push
 ```bash
 git clone https://github.com/yourteam/forest-analysis.git
 cd forest-analysis
-zzcollab --use-team-image  # Downloads pre-built image (faster!)
+make docker-build          # Build Docker image from Dockerfile
 make docker-rstudio
 ```
 
@@ -630,7 +630,7 @@ Rebuild: `make docker-build`
 2. **Image Building**: `make docker-build` creates custom environment
 3. **Container Running**: `make docker-rstudio` starts temporary instance
 4. **File Persistence**: `/home/analyst/project` mounted from host
-5. **Team Sharing**: Pre-built images via `--use-team-image`
+5. **Team Sharing**: Build from shared Dockerfile via `make docker-build`
 
 ### Comparison: With vs Without Docker
 
@@ -644,7 +644,7 @@ Rebuild: `make docker-build`
 **With Docker** (zzcollab):
 1. `zzcollab --profile-name geospatial --r-version 4.4.0`
 2. `make docker-rstudio`
-3. Done! Team member: `zzcollab --use-team-image && make docker-rstudio`
+3. Done! Team member: `make docker-build && make docker-rstudio`
 
 ---
 

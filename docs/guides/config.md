@@ -157,7 +157,8 @@ zzcollab --config set github-account "jsmith"
 zzcollab --config set profile-name "analysis"
 
 # Now joining team projects is simple:
-zzcollab -t labteam -p study --use-team-image
+zzcollab -t labteam -p study
+make docker-build
 ```
 
 ### Example 4: Minimal Build for Speed
@@ -405,7 +406,7 @@ team:
   project: "study"
   description: "Cancer genomics analysis"
 
-variants:
+profiles:
   minimal:
     enabled: true
   analysis:
@@ -453,6 +454,6 @@ zzcollab --config get team-name                # Get one setting
 
 ## See Also
 
-- [Docker Guide](docker.md) - Understanding Docker profiles and variants
+- [Docker Guide](docker.md) - Understanding Docker profiles
 - [Workflow Guide](workflow.md) - Daily development workflow
 - [Troubleshooting Guide](troubleshooting.md) - Fix configuration issues

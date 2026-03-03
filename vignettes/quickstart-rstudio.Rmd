@@ -523,10 +523,7 @@ git push -u origin main
 git clone https://github.com/genomicslab/study.git
 cd study
 
-# Option A: Pull team Docker image (fast: 1-3 min, requires DockerHub setup)
-zzcollab --use-team-image
-
-# Option B: Build from Dockerfile (always works: 5-15 min)
+# Build Docker image from project Dockerfile
 make docker-build
 
 # Start RStudio Server
@@ -656,7 +653,7 @@ make docker-push-team            # Optional but efficient
 
 # Team member: Clone and run
 git clone https://github.com/yourteam/project.git && cd project
-zzcollab --use-team-image        # Or: make docker-build
+make docker-build
 make docker-rstudio
 ```
 

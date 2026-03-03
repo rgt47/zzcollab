@@ -75,21 +75,19 @@ git commit -m "Create team base image with comprehensive packages"
 git push
 cd ..
 
-# Project 1: Use team image as base (~30 seconds)
+# Project 1: Build from shared Dockerfile (~5 minutes first time)
 mkdir study1 && cd study1
-zzcollab --use-team-image        # Fast: pulls pre-built team image
+make docker-build               # Builds from project Dockerfile
 cd ..
 
-# Project 2: Use team image as base (~30 seconds)
+# Project 2: Build from shared Dockerfile (faster with Docker cache)
 mkdir study2 && cd study2
-zzcollab --use-team-image
+make docker-build
 cd ..
 
-# Project 3: Use team image as base (~30 seconds)
+# Project 3: Build from shared Dockerfile (faster with Docker cache)
 mkdir study3 && cd study3
-zzcollab --use-team-image
-
-# Total time for 3 projects: ~16 minutes (73% time savings)
+make docker-build
 ```
 
 ## How Team Images Work
@@ -215,10 +213,7 @@ Now any team member can create new projects using the team base image:
 git clone https://github.com/mylab/study1.git
 cd study1
 
-# Pull and use the team's pre-built Docker image
-zzcollab --use-team-image        # Fast: 1-3 min (pulls from Docker Hub)
-
-# Alternative: Build from Dockerfile (always works: 5-15 min)
+# Build Docker image from project Dockerfile
 make docker-build
 
 # Start development
@@ -296,14 +291,13 @@ cd ..
 # Researcher 1: Join existing cancer genomics project
 git clone https://github.com/genomicslab/cancer-study.git
 cd cancer-study
-zzcollab --use-team-image        # Fast: pulls pre-built team image
-# Or: make docker-build          # Always works (5-15 min)
+make docker-build               # Build from project Dockerfile
 make docker-rstudio              # Start RStudio at localhost:8787
 
 # Researcher 2: Join existing RNA-seq analysis
 git clone https://github.com/genomicslab/rnaseq-analysis.git
 cd rnaseq-analysis
-zzcollab --use-team-image
+make docker-build
 make docker-rstudio
 
 # Researcher 3: Create new variant calling project

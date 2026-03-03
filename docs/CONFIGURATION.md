@@ -45,7 +45,7 @@ ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All 
 | `-q`  | `--quiet`          | Quiet mode (errors only)          | `zzcollab -q`                    |
 | `-r`  | `--profile-name`   | Docker profile selection          | `zzcollab -r analysis`           |
 | `-t`  | `--team`           | Team name                         | `zzcollab -t mylab`              |
-| `-u`  | `--use-team-image` | Pull team Docker image            | `zzcollab -u`                    |
+| `-u`  | `--use-team-image` | Deprecated (no-op); use `make docker-build` | `make docker-build`              |
 | `-v`  | `--verbose`        | Verbose output                    | `zzcollab -v`                    |
 | `-vv` | `--debug`          | Debug output + log file           | `zzcollab -vv`                   |
 | `-w`  | `--log-file`       | Enable log file                   | `zzcollab -w`                    |
@@ -54,7 +54,7 @@ ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All 
 ### Short Flag Philosophy
 
 **Lowercase by default**: Standard flags use lowercase letters (`-p`, `-t`, `-d`)
-**Uppercase for variants**: Uppercase indicates semantic variants
+**Uppercase for modifiers**: Uppercase indicates semantic modifiers
 
 ### Usage Examples
 
@@ -554,10 +554,9 @@ git push
 git clone https://github.com/lab/study.git
 cd study
 
-# 2. Pull team's Docker image
-zzcollab --use-team-image
+# 2. Build Docker image from project's Dockerfile
+make docker-build
 
-# Team's Docker profile automatically used
 # Start development environment
 make r
 ```

@@ -37,11 +37,8 @@ git add . && git commit -m "Initial team project setup" && git push
 # 1. Clone the repository
 git clone https://github.com/myteam/study.git && cd study
 
-# 2. Pull team's Docker image (fast: 1-3 min)
-zzcollab --use-team-image
-
-# Alternative: Build from Dockerfile (always works: 5-15 min)
-# make docker-build
+# 2. Build Docker image from project's Dockerfile (5-15 min)
+make docker-build
 
 # 3. Start development
 make r
@@ -151,23 +148,17 @@ git clone https://github.com/myteam/study.git
 cd study
 ```
 
-#### Step 2: Pull Team Docker Image
+#### Step 2: Build Docker Image
 
 ```bash
-# Option A: Pull team image (fast: 1-3 min)
-zzcollab --use-team-image
-
-# Option B: Build from Dockerfile (always works: 5-15 min)
+# Build from project's Dockerfile
 make docker-build
 ```
 
-**What `--use-team-image` does:**
-- Pulls from Docker Hub (faster than building)
-- Uses team's pre-built image with packages installed
-- Skips local Docker build
-
-**Note**: DockerHub is optional but efficient. Building from Dockerfile
-produces an identical environment if team image is not available.
+**What `make docker-build` does:**
+- Builds the Docker image from the project's Dockerfile
+- Installs all system dependencies and base R packages
+- Creates a consistent environment matching the team lead's specification
 
 #### Step 3: Start Development
 
@@ -350,11 +341,8 @@ zzc geospatial                   # Full setup with geospatial profile
 ### Team Member Commands
 
 ```bash
-# Clone and use team image (fast: 1-3 min)
+# Clone and build Docker image from Dockerfile
 git clone https://github.com/TEAM/PROJECT.git && cd PROJECT
-zzcollab --use-team-image
-
-# Build locally (always works: 5-15 min)
 make docker-build
 ```
 
@@ -365,7 +353,7 @@ make docker-build
 zzcollab --force analysis
 
 # Combine with other flags
-zzcollab --use-team-image --force
+zzcollab --force analysis
 ```
 
 **When to use `--force`**:
@@ -449,7 +437,7 @@ renv::restore()  # Install all packages
 
 1. **Pull Before Push**: Always `git pull` before starting work
 2. **Snapshot Regularly**: Run `renv::snapshot()` after adding packages
-3. **Don't Build Locally**: Use `--use-team-image` for consistency
+3. **Build from Dockerfile**: Run `make docker-build` for consistency
 4. **Test Packages**: Ensure packages work before committing renv.lock
 5. **Communicate**: Mention major package additions in commits
 

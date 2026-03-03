@@ -397,8 +397,7 @@ make docker-push-team            # Optional but efficient for team
 # Team member joins
 git clone https://github.com/mylab/climate-study
 cd climate-study
-zzcollab --use-team-image        # Gets team's Docker image (fast)
-# Or: make docker-build          # Build from Dockerfile (always works)
+make docker-build               # Build from project Dockerfile
 make r
 
 # Inside container - everyone has same environment
@@ -1328,8 +1327,7 @@ exit
 # Team members (any platform)
 git clone https://github.com/climate-team/precipitation
 cd precipitation
-zzcollab --use-team-image        # Gets team's Docker image (fast)
-# Or: make docker-build          # Build from Dockerfile (always works)
+make docker-build               # Build from project Dockerfile
 make r  # Identical environment on all platforms
 
 # Inside container - everyone has same GDAL, GEOS versions

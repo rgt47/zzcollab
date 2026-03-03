@@ -114,8 +114,8 @@ vim Dockerfile             # Edit base image, R packages, system dependencies
 make docker-build          # Build team/project-specific image
 make docker-push-team      # Share with team (for team lead)
 
-# Team members use pre-built image
-zzcollab --use-team-image  # Download and use team's Docker image
+# Team members build from project's Dockerfile
+make docker-build          # Build Docker image from Dockerfile
 ```
 
 ## Dependency Management
@@ -172,8 +172,8 @@ make docker-push-team      # Push to Docker Hub
 git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
 
-# 2. Use team's Docker image
-zzcollab --use-team-image
+# 2. Build Docker image from project's Dockerfile
+make docker-build
 
 # 3. Start development
 make r             # Enter container with team environment
@@ -221,8 +221,8 @@ git push
 git clone https://github.com/TEAM/PROJECT.git
 cd PROJECT
 
-# Step 2: Use team's pre-built Docker image
-zzcollab --use-team-image
+# Step 2: Build Docker image from project's Dockerfile
+make docker-build
 
 # Step 3: Start development environment
 make r             # Enter container (command-line)
@@ -336,7 +336,7 @@ git add . && git commit -m "Initial setup" && git push
 
 # Team Members:
 git clone https://github.com/team/project.git && cd project
-zzcollab --use-team-image
+make docker-build
 make r
 # Add packages as needed with install.packages()
 ```
@@ -347,7 +347,7 @@ make r
 - **Auto-snapshot/restore**: No manual `renv::snapshot()` or `renv::restore()` needed
 - **Docker profiles**: Pre-configured environments for common use cases
 - **Full Docker control**: Customize base image and system dependencies
-- **Easy sharing**: Team members use --use-team-image
+- **Easy sharing**: Team members run `make docker-build` from shared Dockerfile
 - **Collaborative renv.lock**: Accumulates packages from all contributors
 
 ## Related Documentation

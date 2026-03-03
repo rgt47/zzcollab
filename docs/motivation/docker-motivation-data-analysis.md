@@ -551,11 +551,11 @@ zzcollab -t myteam -p analysis-project -r analysis
 #### Multi-Platform Consistency
 ```bash
 # Team member on macOS:
-zzcollab -t myteam -p analysis-project --use-team-image
+make docker-build
 # Identical Ubuntu 20.04 environment in container
 
 # Team member on Windows:
-zzcollab -t myteam -p analysis-project --use-team-image
+make docker-build
 # Same Ubuntu 20.04 environment, same packages
 
 # Production Linux server:
