@@ -87,7 +87,9 @@ create_description_file() {
     local content="Package: ${pkg_name}
 Title: ${pkg_name} Data Analysis
 Version: 0.0.0.9000
-Authors@R: person(\"${AUTHOR_NAME:-Author}\", email = \"${AUTHOR_EMAIL:-author@example.com}\", role = c(\"aut\", \"cre\"))
+Authors@R: person(\"${AUTHOR_NAME:-Author}\",
+    email = \"${AUTHOR_EMAIL:-author@example.com}\",
+    role = c(\"aut\", \"cre\"))
 Description: Data analysis workspace for ${pkg_name}.
 License: GPL-3
 Encoding: UTF-8

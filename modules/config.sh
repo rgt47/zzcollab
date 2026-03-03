@@ -890,7 +890,8 @@ _setup_change_existing() {
     prompt_input "Affiliation (short)" "${CONFIG_AUTHOR_AFFILIATION:-}" val || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation" "$val"
 
-    prompt_input "Affiliation (full, for papers)" "${CONFIG_AUTHOR_AFFILIATION_FULL:-}" val || { _save_and_exit; return 0; }
+    prompt_input "Affiliation (full, for papers)" \
+        "${CONFIG_AUTHOR_AFFILIATION_FULL:-}" val || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation_full" "$val"
 
     #-------------------------------------------------------------------------
@@ -903,7 +904,8 @@ _setup_change_existing() {
     echo "  CC-BY-4.0  - For data and documentation"
     echo ""
 
-    prompt_select "Default license" "GPL-3,MIT,Apache-2.0,CC-BY-4.0" "${CONFIG_LICENSE_TYPE:-GPL-3}" val || { _save_and_exit; return 0; }
+    prompt_select "Default license" "GPL-3,MIT,Apache-2.0,CC-BY-4.0" \
+        "${CONFIG_LICENSE_TYPE:-GPL-3}" val || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "license.type" "$val"
 
     prompt_input "Copyright year" "${CONFIG_LICENSE_YEAR:-$current_year}" val || { _save_and_exit; return 0; }
@@ -921,11 +923,14 @@ _setup_change_existing() {
     echo "  shiny        - Shiny web applications (~1.8GB)"
     echo ""
 
-    prompt_select "Default profile" "minimal,rstudio,analysis,modeling,publishing,shiny" "${CONFIG_PROFILE_NAME:-analysis}" val || { _save_and_exit; return 0; }
+    prompt_select "Default profile" \
+        "minimal,rstudio,analysis,modeling,publishing,shiny" \
+        "${CONFIG_PROFILE_NAME:-analysis}" val || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "defaults.profile_name" "$val"
     yaml_set "$CONFIG_USER" "docker.default_profile" "$val"
 
-    prompt_select "Docker registry" "docker.io,ghcr.io" "${CONFIG_DOCKER_REGISTRY:-docker.io}" val || { _save_and_exit; return 0; }
+    prompt_select "Docker registry" "docker.io,ghcr.io" \
+        "${CONFIG_DOCKER_REGISTRY:-docker.io}" val || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "docker.registry" "$val"
 
     #-------------------------------------------------------------------------
@@ -939,10 +944,14 @@ _setup_change_existing() {
         yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
     }
 
-    prompt_select "Default repository visibility" "private,public" "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-private}" val || { _save_and_exit; return 0; }
+    prompt_select "Default repository visibility" "private,public" \
+        "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-private}" val || \
+        { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "github.default_visibility" "$val"
 
-    prompt_select "Default branch name" "main,master" "${CONFIG_GITHUB_DEFAULT_BRANCH:-main}" val || { _save_and_exit; return 0; }
+    prompt_select "Default branch name" "main,master" \
+        "${CONFIG_GITHUB_DEFAULT_BRANCH:-main}" val || \
+        { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "github.default_branch" "$val"
 
     #-------------------------------------------------------------------------
@@ -965,14 +974,19 @@ _setup_advanced() {
     echo "Technical defaults for the DESCRIPTION file."
     echo ""
 
-    prompt_validated "Minimum R version required" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val validate_r_version_lenient \
-        "Invalid R version format. Expected: X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)" || { _save_and_exit; return 0; }
+    prompt_validated "Minimum R version required" \
+        "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val \
+        validate_r_version_lenient \
+        "Invalid R version format. Expected: X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)" \
+        || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "r_package.min_r_version" "$val"
 
     prompt_select "testthat edition" "2,3" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-3}" val || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "r_package.testthat_edition" "$val"
 
-    prompt_select "Vignette builder" "knitr,quarto" "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}" val || { _save_and_exit; return 0; }
+    prompt_select "Vignette builder" "knitr,quarto" \
+        "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}" val || \
+        { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "r_package.vignette_builder" "$val"
 
     #-------------------------------------------------------------------------
@@ -986,10 +1000,14 @@ _setup_advanced() {
         "Invalid value. Must be a positive integer (e.g., 78, 80, 120)" || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "style.line_length" "$val"
 
-    prompt_yesno "Use native pipe |> (requires R >= 4.1)" "${CONFIG_STYLE_USE_NATIVE_PIPE:-true}" val || { _save_and_exit; return 0; }
+    prompt_yesno "Use native pipe |> (requires R >= 4.1)" \
+        "${CONFIG_STYLE_USE_NATIVE_PIPE:-true}" val || \
+        { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "style.use_native_pipe" "$val"
 
-    prompt_select "Assignment operator" "arrow,equals" "${CONFIG_STYLE_ASSIGNMENT:-arrow}" val || { _save_and_exit; return 0; }
+    prompt_select "Assignment operator" "arrow,equals" \
+        "${CONFIG_STYLE_ASSIGNMENT:-arrow}" val || \
+        { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "style.assignment" "$val"
 
     #-------------------------------------------------------------------------
@@ -999,11 +1017,15 @@ _setup_advanced() {
     echo "Continuous integration settings for GitHub Actions."
     echo ""
 
-    prompt_yesno "Enable GitHub Actions" "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-true}" val || { _save_and_exit; return 0; }
+    prompt_yesno "Enable GitHub Actions" \
+        "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-true}" val || \
+        { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "cicd.enable_github_actions" "$val"
 
     if [[ "$val" == "true" ]]; then
-        prompt_input "R versions to test (comma-separated)" "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}" val || { _save_and_exit; return 0; }
+        prompt_input "R versions to test (comma-separated)" \
+            "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}" val || \
+            { _save_and_exit; return 0; }
         yaml_set "$CONFIG_USER" "cicd.r_versions" "$val"
 
         prompt_yesno "Run code coverage" "${CONFIG_CICD_RUN_COVERAGE:-true}" val || { _save_and_exit; return 0; }

@@ -47,7 +47,8 @@ PLACEHOLDER_PACKAGES=(
     test example sample demo template local any all none NULL foo bar baz qux zzcollab
 )
 
-readonly CURRENT_PACKAGE="${CURRENT_PACKAGE:-$(grep '^Package:' DESCRIPTION 2>/dev/null | sed 's/^Package:[[:space:]]*//' || echo '')}"
+readonly CURRENT_PACKAGE="${CURRENT_PACKAGE:-$(grep '^Package:' \
+    DESCRIPTION 2>/dev/null | sed 's/^Package:[[:space:]]*//' || echo '')}"
 [[ -n "$CURRENT_PACKAGE" ]] && PLACEHOLDER_PACKAGES+=("$CURRENT_PACKAGE")
 
 STANDARD_DIRS=("." "R" "scripts" "analysis")
@@ -232,7 +233,9 @@ add_github_package_to_renv_lock() {
         --arg u "$username" \
         --arg r "$repo" \
         --arg ref "$ref" \
-        '{Package:$p, Version:$v, Source:"GitHub", RemoteType:"github", RemoteHost:"api.github.com", RemoteUsername:$u, RemoteRepo:$r, RemoteRef:$ref}')
+        '{Package:$p, Version:$v, Source:"GitHub",
+          RemoteType:"github", RemoteHost:"api.github.com",
+          RemoteUsername:$u, RemoteRepo:$r, RemoteRef:$ref}')
 
     local tmp; tmp=$(mktemp)
     jq --argjson e "$entry" --arg p "$pkg" '.Packages[$p] = $e' "$renv_lock" > "$tmp" && \
@@ -265,8 +268,10 @@ update_renv_version_from_docker() {
     [[ -z "$ver" ]] && return 0
 
     local tmp; tmp=$(mktemp)
-    jq --arg v "$ver" '.Packages.renv.Version=$v | .Packages.renv.Source="Repository" | .Packages.renv.Repository="CRAN"' \
-        "$renv_lock" > "$tmp" && mv "$tmp" "$renv_lock" && log_success "Updated renv to $ver"
+    jq --arg v "$ver" \
+        '.Packages.renv.Version=$v | .Packages.renv.Source="Repository" | .Packages.renv.Repository="CRAN"' \
+        "$renv_lock" > "$tmp" && mv "$tmp" "$renv_lock" && \
+        log_success "Updated renv to $ver"
 }
 
 # shellcheck disable=SC2120
@@ -332,9 +337,13 @@ extract_code_packages() {
 
     while IFS= read -r file; do
         [[ -f "$file" ]] || continue
-        grep -v '^[[:space:]]*#' "$file" 2>/dev/null | grep -E '(library|require)[[:space:]]*\(' 2>/dev/null | \
-            sed -E 's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' || true
-        grep -v '^[[:space:]]*#' "$file" 2>/dev/null | grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' 2>/dev/null | sed 's/:://' || true
+        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
+            | grep -E '(library|require)[[:space:]]*\(' 2>/dev/null \
+            | sed -E 's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' \
+            || true
+        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
+            | grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' 2>/dev/null \
+            | sed 's/:://' || true
         grep -E "#'[[:space:]]*@importFrom[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
             sed -E 's/.*@importFrom[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
         grep -E "#'[[:space:]]*@import[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
@@ -453,7 +462,10 @@ report_and_fix_missing_lock() {
 
     if [[ "$verbose" == "true" || "$auto_fix" == "true" ]]; then
         [[ ${#installable[@]} -gt 0 ]] && { echo ""; echo "Installable:"; printf '  - %s\n' "${installable[@]}"; }
-        [[ ${#non_installable[@]} -gt 0 ]] && { echo ""; echo "Non-installable:"; printf '  - %s\n' "${non_installable[@]}"; }
+        [[ ${#non_installable[@]} -gt 0 ]] && {
+            echo ""; echo "Non-installable:"
+            printf '  - %s\n' "${non_installable[@]}"
+        }
         echo ""
     fi
 
@@ -462,7 +474,8 @@ report_and_fix_missing_lock() {
         for p in "${installable[@]}"; do add_package_to_renv_lock "$p" || failed+=("$p"); done
         [[ ${#failed[@]} -eq 0 ]] && { log_success "All installable packages added to renv.lock"; } || \
             { log_error "Failed: ${failed[*]}"; }
-        log_warn "renv.lock does not include transitive dependencies; run 'make r' then renv::restore() + renv::snapshot() to complete the lock file"
+        log_warn "renv.lock does not include transitive dependencies;" \
+            "run 'make r' then renv::restore() + renv::snapshot() to complete the lock file"
     elif [[ ${#installable[@]} -gt 0 ]]; then
         echo "Fix: zzcollab validate --fix"
     fi
@@ -507,33 +520,54 @@ validate_package_environment() {
 
     local code_packages_raw; mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
     local code_packages; mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
-    local desc_imports; mapfile -t desc_imports < <({ parse_description_imports; parse_description_suggests; } | sort -u)
+    local desc_imports
+    mapfile -t desc_imports < <(
+        { parse_description_imports; parse_description_suggests; } | sort -u)
     local renv_packages; mapfile -t renv_packages < <(parse_renv_lock)
 
-    log_info "Found ${#code_packages[@]} in code, ${#desc_imports[@]} in DESCRIPTION (Imports+Suggests), ${#renv_packages[@]} in renv.lock"
+    log_info "Found ${#code_packages[@]} in code," \
+        "${#desc_imports[@]} in DESCRIPTION (Imports+Suggests)," \
+        "${#renv_packages[@]} in renv.lock"
 
     # DESCRIPTION tracks direct deps (code is source of truth)
-    local missing_from_desc; mapfile -t missing_from_desc < <(find_missing_from_description code_packages desc_imports)
+    local missing_from_desc
+    mapfile -t missing_from_desc < <(
+        find_missing_from_description code_packages desc_imports)
     # renv.lock tracks code + DESCRIPTION (superset of direct deps)
-    local code_and_desc; mapfile -t code_and_desc < <(printf '%s\n' "${code_packages[@]}" "${desc_imports[@]}" | sort -u)
-    local missing_from_lock; mapfile -t missing_from_lock < <(find_missing_from_lock code_and_desc renv_packages)
+    local code_and_desc
+    mapfile -t code_and_desc < <(
+        printf '%s\n' "${code_packages[@]}" "${desc_imports[@]}" \
+        | sort -u)
+    local missing_from_lock
+    mapfile -t missing_from_lock < <(
+        find_missing_from_lock code_and_desc renv_packages)
 
-    report_and_fix_missing_description missing_from_desc "$verbose" "$auto_fix" || return 1
-    report_and_fix_missing_lock missing_from_lock "$verbose" "$auto_fix" || return 1
+    report_and_fix_missing_description missing_from_desc \
+        "$verbose" "$auto_fix" || return 1
+    report_and_fix_missing_lock missing_from_lock \
+        "$verbose" "$auto_fix" || return 1
 
     log_success "All packages properly declared"
 }
 
 sync_packages_to_code() {
     local strict="${1:-true}" verbose="${2:-false}"
-    log_info "Syncing DESCRIPTION and renv.lock to code (code is source of truth)..."
+    log_info "Syncing DESCRIPTION and renv.lock to code" \
+        "(code is source of truth)..."
 
     local dirs=("${STANDARD_DIRS[@]}")
     [[ "$strict" == "true" ]] && dirs=("${STRICT_DIRS[@]}")
 
-    local code_packages_raw; mapfile -t code_packages_raw < <(extract_code_packages "${dirs[@]}")
-    local code_packages; mapfile -t code_packages < <(clean_packages "${code_packages_raw[@]}")
-    local desc_imports; mapfile -t desc_imports < <({ parse_description_imports; parse_description_suggests; } | sort -u)
+    local code_packages_raw
+    mapfile -t code_packages_raw < <(
+        extract_code_packages "${dirs[@]}")
+    local code_packages
+    mapfile -t code_packages < <(
+        clean_packages "${code_packages_raw[@]}")
+    local desc_imports
+    mapfile -t desc_imports < <(
+        { parse_description_imports; parse_description_suggests; } \
+        | sort -u)
     local renv_packages; mapfile -t renv_packages < <(parse_renv_lock)
 
     log_info "Found ${#code_packages[@]} packages in code"
@@ -586,8 +620,14 @@ sync_packages_to_code() {
 
     [[ ${#to_add_lock[@]} -gt 0 ]] && log_info "Adding ${#to_add_lock[@]} packages to renv.lock"
     local lock_added=0
-    for pkg in "${to_add_lock[@]}"; do add_package_to_renv_lock "$pkg" 2>/dev/null && ((lock_added++)) || log_warn "Could not add $pkg to renv.lock (not on CRAN?)"; done
-    [[ $lock_added -gt 0 ]] && log_warn "renv.lock does not include transitive dependencies; run 'make r' then renv::restore() + renv::snapshot() to complete the lock file"
+    for pkg in "${to_add_lock[@]}"; do
+        add_package_to_renv_lock "$pkg" 2>/dev/null && \
+            ((lock_added++)) || \
+            log_warn "Could not add $pkg to renv.lock (not on CRAN?)"
+    done
+    [[ $lock_added -gt 0 ]] && log_warn "renv.lock does not include" \
+        "transitive dependencies; run 'make r' then" \
+        "renv::restore() + renv::snapshot() to complete the lock file"
 
     [[ ${#to_remove_lock[@]} -gt 0 ]] && log_info "Removing ${#to_remove_lock[@]} packages from renv.lock"
     if [[ ${#to_remove_lock[@]} -gt 0 ]]; then

@@ -359,7 +359,9 @@ extract_r_version() {
 extract_r_packages() {
     local packages=()
     local base_pkgs=" base utils stats graphics grDevices methods datasets tools grid parallel "
-    local skip_pkgs=" package pkg mypackage myproject yourpackage project data result output input test example sample demo template local any all none foo bar baz renv "
+    local skip_pkgs=" package pkg mypackage myproject yourpackage "
+    skip_pkgs+="project data result output input test example sample "
+    skip_pkgs+="demo template local any all none foo bar baz renv "
 
     # Helper: filter a package
     _is_valid_pkg() {
@@ -515,7 +517,9 @@ generate_dockerfile() {
     tools_install=$(generate_tools_install "$base_image" "$profile_name")
     log_info "  Tools: pandoc, languageserver, yaml (as needed)"
 
-    generate_dockerfile_inline "$base_image" "$r_version" "$system_deps_install" "$tools_install" "$deps_comment" "$profile_name"
+    generate_dockerfile_inline "$base_image" "$r_version" \
+        "$system_deps_install" "$tools_install" \
+        "$deps_comment" "$profile_name"
     prompt_docker_build "$project_name" "$r_version"
     return $?
 }
@@ -553,7 +557,9 @@ prompt_docker_build() {
 }
 
 generate_dockerfile_inline() {
-    local base_image="$1" r_version="$2" system_deps_install="$3" tools_install="$4" deps_comment="$5" profile_name="${6:-minimal}"
+    local base_image="$1" r_version="$2" system_deps_install="$3"
+    local tools_install="$4" deps_comment="$5"
+    local profile_name="${6:-minimal}"
 
     rm -f Dockerfile
     cat > Dockerfile << EOF

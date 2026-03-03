@@ -21,7 +21,8 @@
       "Bash(echo:*)",
       "Bash(bash -c:*)",
       "Bash(kitty @:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(do awk:*)"
     ],
     "deny": [],
     "ask": []

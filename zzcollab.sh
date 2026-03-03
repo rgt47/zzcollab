@@ -908,7 +908,8 @@ EOF
     if [[ "$dry_run" == "true" ]]; then
         log_info "Dry run - would remove:"
         if [[ "$manifest" == *.json ]] && command -v jq >/dev/null 2>&1; then
-            jq -r '.files[]?, .directories[]?, (.template_files[]? | .destination)?' "$manifest" 2>/dev/null | while read -r item; do
+            jq -r '.files[]?, .directories[]?, (.template_files[]? | .destination)?' \
+                "$manifest" 2>/dev/null | while read -r item; do
                 [[ -n "$item" ]] && [[ -e "$item" ]] && echo "  $item"
             done || true
         else
