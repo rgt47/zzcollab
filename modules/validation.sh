@@ -339,7 +339,8 @@ extract_code_packages() {
         [[ -f "$file" ]] || continue
         grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
             | grep -E '(library|require)[[:space:]]*\(' 2>/dev/null \
-            | sed -E 's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' \
+            | sed -E \
+          's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' \
             || true
         grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
             | grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' 2>/dev/null \
