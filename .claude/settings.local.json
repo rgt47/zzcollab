@@ -22,7 +22,9 @@
       "Bash(bash -c:*)",
       "Bash(kitty @:*)",
       "Bash(git log:*)",
-      "Bash(do awk:*)"
+      "Bash(do awk:*)",
+      "Bash(chmod +x:*)",
+      "Bash(bash:*)"
     ],
     "deny": [],
     "ask": []
