@@ -1661,6 +1661,7 @@ Management:
   build          Build Docker image (uses content-addressable cache)
   rm <feature>   Remove: docker, renv, git, github, cicd
   uninstall      Remove all zzcollab files (uses manifest)
+  doctor         Workspace health checks (files, versions, CI)
   validate       Check project structure
   config         Configuration management
   list           List profiles, libs, packages
