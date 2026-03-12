@@ -20,7 +20,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          apt-get update && apt-get install -y jq libcurl4-openssl-dev libssl-dev libxml2-dev
+          apt-get update && apt-get install -y jq libcurl4-openssl-dev libssl-dev libxml2-dev cmake
 
       - name: Validate package files exist
         run: |
