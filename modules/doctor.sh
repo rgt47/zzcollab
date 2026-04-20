@@ -28,7 +28,19 @@ if [[ -z "${ZZCOLLAB_CONSTANTS_LOADED:-}" ]]; then
     unset _script_dir
 fi
 
+# Source core for shared helpers (semver_cmp)
+if [[ -z "${ZZCOLLAB_CORE_LOADED:-}" ]] && ! declare -f semver_cmp >/dev/null 2>&1; then
+    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    source "${_script_dir}/../lib/core.sh"
+    unset _script_dir
+fi
+
 CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"
+
+# --fix state (populated by check_version_stamps, applied after check_workspace)
+FIX_MODE=false
+DRY_RUN=false
+declare -a FIX_TARGETS=()
 
 readonly COL_RESET='\033[0m'
 readonly COL_GREEN='\033[0;32m'
@@ -322,22 +334,27 @@ check_version_stamps() {
     # Makefile
     local makefile_ver
     makefile_ver=$(extract_version "$dir/Makefile" "Makefile")
+    _maybe_record_fix "$dir/Makefile" "# zzcollab Makefile" "$makefile_ver"
     print_version_status "Makefile" "$makefile_ver" || issues=$((issues + 1))
 
     # .Rprofile
     local rprofile_ver
     rprofile_ver=$(extract_version "$dir/.Rprofile" ".Rprofile")
+    _maybe_record_fix "$dir/.Rprofile" "# zzcollab .Rprofile" "$rprofile_ver"
     print_version_status ".Rprofile" "$rprofile_ver" || issues=$((issues + 1))
 
     # Dockerfile
     local dockerfile_ver
     dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
+    _maybe_record_fix "$dir/Dockerfile" "# zzcollab Dockerfile" "$dockerfile_ver"
     print_version_status "Dockerfile" "$dockerfile_ver" || issues=$((issues + 1))
 
     # docs/ZZCOLLAB_USER_GUIDE.md
     if [[ -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md" ]]; then
         local guide_ver
         guide_ver=$(extract_md_version "$dir/docs/ZZCOLLAB_USER_GUIDE.md" "ZZCOLLAB_USER_GUIDE.md")
+        _maybe_record_fix "$dir/docs/ZZCOLLAB_USER_GUIDE.md" \
+            "<!-- zzcollab ZZCOLLAB_USER_GUIDE.md" "$guide_ver"
         print_version_status "docs/USER_GUIDE.md" "$guide_ver" || issues=$((issues + 1))
     elif [[ -d "$dir/docs" ]]; then
         printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "docs/USER_GUIDE.md"
@@ -367,6 +384,7 @@ check_version_stamps() {
     if [[ -f "$workflow_file" ]]; then
         local workflow_ver
         workflow_ver=$(extract_version "$workflow_file" "r-package.yml")
+        _maybe_record_fix "$workflow_file" "# zzcollab r-package.yml" "$workflow_ver"
         print_version_status "r-package.yml" "$workflow_ver" || issues=$((issues + 1))
     elif [[ -d "$dir/.github/workflows" ]]; then
         printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "r-package.yml"
@@ -469,6 +487,9 @@ check_workspace() {
     local dir="$1"
     local total_issues=0
 
+    # Reset per-workspace fix state
+    FIX_TARGETS=()
+
     # Collapse home directory for display
     local display_dir="${dir/#$HOME/~}"
     printf "${COL_CYAN}Checking: %s${COL_RESET}\n\n" "$display_dir"
@@ -500,6 +521,9 @@ check_workspace() {
     check_ci_status "$dir"
     total_issues=$((total_issues + $?))
 
+    # Apply --fix stamp bumps if requested
+    [[ "$FIX_MODE" == "true" ]] && apply_fixes
+
     # Summary
     if [[ $total_issues -eq 0 ]]; then
         printf "  ${COL_GREEN}All checks passed${COL_RESET}\n"
@@ -511,8 +535,66 @@ check_workspace() {
     [[ $total_issues -eq 0 ]]
 }
 
+# Record an outdated file so --fix can process it after the scan.
+# Stored as pipe-delimited: filepath|stamp_prefix|new_ver
+_maybe_record_fix() {
+    local filepath="$1" stamp_prefix="$2" found_ver="$3"
+    [[ -z "$found_ver" ]] && return 0
+    [[ "$(semver_cmp "$found_ver" "$CURRENT_VERSION")" == "-1" ]] || return 0
+    FIX_TARGETS+=("${filepath}|${stamp_prefix}|${CURRENT_VERSION}")
+}
+
+# Bump the stamp line of an outdated file in place. Only the stamp line
+# is touched; all other content is preserved so per-workspace customizations
+# (notably Dockerfile) are not clobbered.
+bump_stamp() {
+    local filepath="$1" stamp_prefix="$2" new_ver="$3"
+
+    if [[ ! -f "$filepath" ]]; then
+        printf "    %-40s ${COL_RED}missing${COL_RESET}\n" "${filepath/#$HOME/~}"
+        return 1
+    fi
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        printf "    %-40s ${COL_DIM}would bump stamp -> v%s${COL_RESET}\n" \
+            "${filepath/#$HOME/~}" "$new_ver"
+        return 0
+    fi
+
+    local escaped_prefix
+    escaped_prefix=$(printf '%s' "$stamp_prefix" | sed 's/[&/\\]/\\&/g')
+    sed -i.bak -E \
+        "s/^(${escaped_prefix}) v[0-9]+\\.[0-9]+\\.[0-9]+/\\1 v${new_ver}/" \
+        "$filepath" || {
+        printf "    %-40s ${COL_RED}sed failed${COL_RESET}\n" \
+            "${filepath/#$HOME/~}"
+        return 1
+    }
+    rm -f "${filepath}.bak"
+    printf "    %-40s ${COL_GREEN}bumped -> v%s${COL_RESET}\n" \
+        "${filepath/#$HOME/~}" "$new_ver"
+}
+
+# Apply recorded FIX_TARGETS for the current workspace.
+apply_fixes() {
+    [[ ${#FIX_TARGETS[@]} -eq 0 ]] && return 0
+
+    echo ""
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "  Fix preview (--dry-run):"
+    else
+        echo "  Applying stamp fixes:"
+    fi
+
+    local target filepath prefix new_ver
+    for target in "${FIX_TARGETS[@]}"; do
+        IFS='|' read -r filepath prefix new_ver <<< "$target"
+        bump_stamp "$filepath" "$prefix" "$new_ver"
+    done
+}
+
 # Print version status line for a single file
-# Returns 0 if current, 1 if outdated or no stamp
+# Returns 0 if current or newer than template, 1 if outdated or no stamp
 print_version_status() {
     local filename="$1"
     local found_ver="$2"
@@ -520,14 +602,27 @@ print_version_status() {
     if [[ -z "$found_ver" ]]; then
         printf "    %-18s ${COL_YELLOW}(no stamp)${COL_RESET}\n" "$filename"
         return 1
-    elif [[ "$found_ver" == "$CURRENT_VERSION" ]]; then
-        printf "    %-18s v%-10s ${COL_GREEN}(current)${COL_RESET}\n" "$filename" "$found_ver"
-        return 0
-    else
-        printf "    %-18s ${COL_RED}v%-6s -> v%-6s (outdated)${COL_RESET}\n" \
-            "$filename" "$found_ver" "$CURRENT_VERSION"
-        return 1
     fi
+
+    local cmp
+    cmp=$(semver_cmp "$found_ver" "$CURRENT_VERSION")
+    case "$cmp" in
+        0)
+            printf "    %-18s v%-10s ${COL_GREEN}(current)${COL_RESET}\n" \
+                "$filename" "$found_ver"
+            return 0
+            ;;
+        -1)
+            printf "    %-18s ${COL_RED}v%-6s -> v%-6s (outdated)${COL_RESET}\n" \
+                "$filename" "$found_ver" "$CURRENT_VERSION"
+            return 1
+            ;;
+        1)
+            printf "    %-18s ${COL_YELLOW}v%-6s (newer than template v%s)${COL_RESET}\n" \
+                "$filename" "$found_ver" "$CURRENT_VERSION"
+            return 0
+            ;;
+    esac
 }
 
 # Print informational status for files owned by other tools
@@ -596,18 +691,31 @@ main() {
                 dirs+=("$1")
                 shift
                 ;;
+            --fix)
+                FIX_MODE=true
+                shift
+                ;;
+            --dry-run)
+                FIX_MODE=true
+                DRY_RUN=true
+                shift
+                ;;
             help|--help|-h)
-                echo "Usage: zzc doctor [DIR ...]"
-                echo "       zzc doctor --scan <parent-dir>"
+                echo "Usage: zzc doctor [DIR ...] [--fix|--dry-run]"
+                echo "       zzc doctor --scan <parent-dir> [--fix|--dry-run]"
                 echo ""
                 echo "Workspace health checks:"
                 echo "  - Required files    DESCRIPTION, renv.lock, Makefile, etc."
                 echo "  - Directory layout  R/, analysis/"
-                echo "  - Version stamps    Makefile, .Rprofile, Dockerfile"
+                echo "  - Version stamps    Makefile, .Rprofile, Dockerfile,"
+                echo "                      docs/USER_GUIDE.md, r-package.yml"
                 echo ""
                 echo "Options:"
                 echo "  DIR            One or more workspace directories (default: .)"
                 echo "  --scan DIR     Recursively find all zzcollab workspaces"
+                echo "  --fix          Bump outdated stamp lines in place. Only the"
+                echo "                 stamp line is modified; other content preserved."
+                echo "  --dry-run      Preview --fix actions without writing."
                 echo "  help           Show this help"
                 echo ""
                 echo "Reference: docs/workspace-structure.md"
