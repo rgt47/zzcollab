@@ -45,6 +45,21 @@ navbar:
         - text: Report
           href: articles/report.html
 
+articles:
+  - title: All vignettes
+    navbar: ~
+    contents:
+      - configuration
+      - getting-started
+      - quickstart-R
+      - quickstart-rstudio
+      - quickstart1
+      - quickstart2
+      - report
+      - reproducibility-layers
+      - reusable-team-images
+      - testing
+
 authors:
   Ronald (Ryy) G. Thomas:
     href: https://profiles.ucsd.edu/ronald.thomas
