@@ -1,4 +1,4 @@
-# zzcollab: Docker-based Research Collaboration Framework
+# zzcollab: Docker-based Research Collaboration Framework <a href="https://rgt47.github.io/zzcollab/"><img src="man/figures/logo.png" align="right" height="138" alt="zzcollab hex sticker" /></a>
 
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/zzcollab)](https://CRAN.R-project.org/package=zzcollab)
