@@ -1,0 +1,1175 @@
+# Quickstart: Collaborative Analysis Workflow
+
+## Overview
+
+This guide walks through a complete collaborative analysis workflow
+using zzcollab. Two developers will collaborate on an analysis of the
+`mtcars` dataset, demonstrating proper data management, testing,
+reporting, and version control practices.
+
+**Workflow Summary**:
+
+1.  Developer 1 sets up workspace, prepares data, writes initial
+    analysis
+2.  Developer 1 pushes to GitHub
+3.  Developer 2 clones, adds visualization, pushes changes
+4.  Developer 1 pulls changes and finalizes the report
+
+**Prerequisites**:
+
+- Git installed and configured
+- Docker installed and running
+- GitHub account with SSH keys configured
+- zzcollab repository cloned
+
+## Part 1: Initial Setup (Developer 1)
+
+### 1.1 Install zzcollab
+
+After cloning the zzcollab repository, run the installer:
+
+``` bash
+git clone https://github.com/rgt47/zzcollab.git
+cd zzcollab
+./install.sh
+```
+
+Verify installation (both commands work identically):
+
+``` bash
+zzc --help
+zzcollab --help
+```
+
+### 1.2 Configure User Defaults (One-Time Setup)
+
+Set your personal defaults to avoid repeating common options:
+
+``` bash
+zzc config init
+zzc config set github-account "your-github-username"
+zzc config set dockerhub-account "your-dockerhub-username"
+```
+
+### 1.3 Create Project Workspace
+
+Create a new directory and initialize with the analysis profile:
+
+``` bash
+mkdir mtcars-analysis
+cd mtcars-analysis
+zzc analysis                     # Full setup: init + renv + docker (prompts to build)
+```
+
+Optionally add GitHub:
+
+``` bash
+zzc github                       # Create private GitHub repo (independent command)
+```
+
+Or create with public GitHub:
+
+``` bash
+zzc github --public              # Create public GitHub repo
+```
+
+This creates the research compendium structure:
+
+    mtcars-analysis/
+    ├── analysis/
+    │   ├── data/
+    │   │   ├── raw_data/
+    │   │   └── derived_data/
+    │   ├── figures/
+    │   ├── report/
+    │   │   ├── report.Rmd
+    │   │   └── references.bib
+    │   └── scripts/
+    ├── R/
+    ├── tests/
+    │   └── testthat/
+    ├── DESCRIPTION
+    ├── Dockerfile
+    ├── Makefile
+    ├── renv.lock
+    └── .Rprofile
+
+### 1.4 Build the Docker Image
+
+Build the Docker environment:
+
+``` bash
+make docker-build
+```
+
+This creates a reproducible R environment based on the `analysis`
+profile (rocker/tidyverse with tidyverse packages).
+
+## Part 2: Data Preparation (Developer 1)
+
+### 2.1 Enter the Container
+
+Start an interactive R session inside the Docker container:
+
+``` bash
+make r
+```
+
+### 2.2 Prepare and Save Raw Data
+
+Inside R, save the complete mtcars dataset as CSV to the raw_data
+directory:
+
+``` r
+
+# Save complete mtcars as CSV (raw data - read-only after this point)
+write.csv(mtcars, "analysis/data/raw_data/mtcars.csv", row.names = TRUE)
+
+# Verify the data
+dim(mtcars)
+# [1] 32 11
+
+# Document the data source
+writeLines(
+  c(
+    "# mtcars.csv",
+    "",
+    "## Source",
+    "Motor Trend Car Road Tests from the 1974 Motor Trend US magazine.",
+    "Complete dataset with 32 observations of 11 variables.",
+    "",
+    "## Variables",
+    paste("-", names(mtcars), collapse = "\n"),
+    "",
+    "## Creation Date",
+    as.character(Sys.Date()),
+    "",
+    "## Citation",
+    "Henderson and Velleman (1981). Building multiple regression models",
+    "interactively. Biometrics, 37, 391-411."
+  ),
+  "analysis/data/raw_data/README.md"
+)
+```
+
+### 2.3 Create Data Processing Script
+
+Create a script that reads the raw CSV and extracts the first half for
+analysis.
+
+``` bash
+# Exit R first with q(), then create the script file on host
+```
+
+Create `analysis/scripts/01_prepare_data.R`:
+
+``` r
+
+# 01_prepare_data.R
+# Purpose: Extract first half of mtcars and add derived variables
+
+library(dplyr)
+
+prepare_mtcars_data <- function(input_path, output_path) {
+  raw_data <- read.csv(input_path, row.names = 1)
+
+  n_rows <- nrow(raw_data)
+  subset_data <- raw_data[1:(n_rows %/% 2), ]
+
+  processed_data <- subset_data |>
+    mutate(
+      efficiency_class = case_when(
+        mpg >= 20 ~ "high",
+        mpg >= 15 ~ "medium",
+        TRUE ~ "low"
+      ),
+      weight_kg = wt * 453.592,
+      power_to_weight = hp / wt
+    )
+
+  saveRDS(processed_data, output_path)
+  processed_data
+}
+
+if (sys.nframe() == 0) {
+  prepare_mtcars_data(
+    input_path = "analysis/data/raw_data/mtcars.csv",
+    output_path = "analysis/data/derived_data/mtcars_processed.rds"
+  )
+}
+```
+
+### 2.4 Extract Reusable Functions to R/
+
+Move the core function to the package’s R/ directory for testing and
+reuse.
+
+Create `R/data_functions.R`:
+
+``` r
+
+#' Prepare mtcars data for analysis
+#'
+#' @param data A data frame with mtcars structure
+#' @return A data frame with additional computed columns
+#' @export
+add_derived_variables <- function(data) {
+  if (!all(c("mpg", "wt", "hp") %in% names(data))) {
+    stop("Input must contain mpg, wt, and hp columns")
+  }
+
+  data |>
+    dplyr::mutate(
+      efficiency_class = dplyr::case_when(
+        mpg >= 20 ~ "high",
+        mpg >= 15 ~ "medium",
+        TRUE ~ "low"
+      ),
+      weight_kg = wt * 453.592,
+      power_to_weight = hp / wt
+    )
+}
+
+#' Validate mtcars data structure
+#'
+#' @param data A data frame to validate
+#' @return TRUE if valid, throws error otherwise
+#' @export
+validate_mtcars_data <- function(data) {
+  required_cols <- c("mpg", "cyl", "disp", "hp", "drat", "wt",
+                     "qsec", "vs", "am", "gear", "carb")
+
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  if (nrow(data) == 0) {
+    stop("Data frame is empty")
+  }
+
+  if (any(data$mpg <= 0, na.rm = TRUE)) {
+    stop("mpg must be positive")
+  }
+
+  if (any(data$hp <= 0, na.rm = TRUE)) {
+    stop("hp must be positive")
+  }
+
+  TRUE
+}
+```
+
+## Part 3: Writing Tests (Developer 1)
+
+### 3.1 Create Data Validation Tests
+
+Create `tests/testthat/test-data-validation.R`:
+
+``` r
+
+# test-data-validation.R
+# Tests for data integrity and validation functions
+
+test_that("raw data file exists and is readable", {
+  raw_data_path <- "analysis/data/raw_data/mtcars.csv"
+
+  expect_true(file.exists(raw_data_path))
+
+  data <- read.csv(raw_data_path, row.names = 1)
+  expect_s3_class(data, "data.frame")
+})
+
+test_that("raw data has expected dimensions", {
+  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
+
+  expect_equal(nrow(data), 32)
+  expect_equal(ncol(data), 11)
+})
+
+test_that("raw data contains required columns", {
+  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
+
+  required_cols <- c("mpg", "cyl", "disp", "hp", "drat", "wt",
+                     "qsec", "vs", "am", "gear", "carb")
+
+  expect_true(all(required_cols %in% names(data)))
+})
+
+test_that("raw data values are within expected ranges", {
+  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
+
+  expect_true(all(data$mpg > 0 & data$mpg < 50))
+  expect_true(all(data$cyl %in% c(4, 6, 8)))
+  expect_true(all(data$hp > 0 & data$hp < 500))
+  expect_true(all(data$wt > 0))
+})
+
+test_that("derived data has correct subset size", {
+  skip_if_not(file.exists("analysis/data/derived_data/mtcars_processed.rds"))
+
+  data <- readRDS("analysis/data/derived_data/mtcars_processed.rds")
+
+  expect_equal(nrow(data), 16)
+})
+```
+
+### 3.2 Create Function Tests
+
+Create `tests/testthat/test-data-functions.R`:
+
+``` r
+
+# test-data-functions.R
+# Tests for R/data_functions.R
+
+test_that("validate_mtcars_data accepts valid data", {
+  valid_data <- data.frame(
+    mpg = c(21, 22), cyl = c(6, 4), disp = c(160, 140),
+    hp = c(110, 93), drat = c(3.9, 3.85), wt = c(2.6, 2.3),
+    qsec = c(16.5, 18.6), vs = c(0, 1), am = c(1, 1),
+    gear = c(4, 4), carb = c(4, 2)
+  )
+
+  expect_true(validate_mtcars_data(valid_data))
+})
+
+test_that("validate_mtcars_data rejects missing columns", {
+  incomplete_data <- data.frame(mpg = 21, cyl = 6)
+
+  expect_error(
+    validate_mtcars_data(incomplete_data),
+    "Missing required columns"
+  )
+})
+
+test_that("validate_mtcars_data rejects empty data", {
+  empty_data <- mtcars[0, ]
+
+  expect_error(validate_mtcars_data(empty_data), "empty")
+})
+
+test_that("validate_mtcars_data rejects invalid mpg", {
+  bad_data <- mtcars[1:2, ]
+  bad_data$mpg[1] <- -5
+
+  expect_error(validate_mtcars_data(bad_data), "mpg must be positive")
+})
+
+test_that("add_derived_variables creates expected columns", {
+  test_data <- mtcars[1:5, ]
+  result <- add_derived_variables(test_data)
+
+  expect_true("efficiency_class" %in% names(result))
+  expect_true("weight_kg" %in% names(result))
+  expect_true("power_to_weight" %in% names(result))
+})
+
+test_that("add_derived_variables calculates efficiency_class correctly", {
+  test_data <- data.frame(
+    mpg = c(25, 17, 12),
+    wt = c(2.5, 3.0, 3.5),
+    hp = c(100, 150, 200)
+  )
+
+  result <- add_derived_variables(test_data)
+
+  expect_equal(result$efficiency_class, c("high", "medium", "low"))
+})
+
+test_that("add_derived_variables calculates weight_kg correctly", {
+  test_data <- data.frame(mpg = 20, wt = 1, hp = 100)
+  result <- add_derived_variables(test_data)
+
+  expect_equal(result$weight_kg, 453.592, tolerance = 0.001)
+})
+
+test_that("add_derived_variables requires correct input columns", {
+  bad_data <- data.frame(x = 1, y = 2)
+
+  expect_error(
+    add_derived_variables(bad_data),
+    "must contain mpg, wt, and hp"
+  )
+})
+```
+
+### 3.3 Run Tests
+
+Enter the container and run tests:
+
+``` bash
+make r
+```
+
+``` r
+
+# Inside R
+devtools::test()
+```
+
+Expected output:
+
+    == Testing mtcarsanalysis =====================================================
+    [ FAIL 0 | WARN 0 | SKIP 0 | PASS 11 ]
+
+Exit R when done:
+
+``` r
+
+q()
+```
+
+Packages are automatically captured to renv.lock on exit.
+
+## Part 4: Initial Analysis Report (Developer 1)
+
+### 4.1 Create the Report
+
+Edit `analysis/report/report.Rmd`:
+
+    ---
+    title: "Fuel Efficiency Analysis: mtcars Subset"
+    author: "Developer 1"
+    date: "2026-05-01"
+    output:
+      html_document:
+        toc: true
+        toc_float: true
+        theme: flatly
+    bibliography: references.bib
+    ---
+
+    ```{r report-setup, include=FALSE}
+    knitr::opts_chunk$set(
+      echo = TRUE,
+      message = FALSE,
+      warning = FALSE,
+      fig.width = 8,
+      fig.height = 5
+    )
+
+    # Load package functions from R/ directory
+    devtools::load_all(here::here())
+    ```
+
+    ## Introduction
+
+    This analysis examines fuel efficiency patterns in a subset of the Motor
+    Trend Car Road Tests dataset. The raw data contains all 32 observations;
+    the derived dataset extracts the first 16 observations for analysis.
+
+    ## Data Loading
+
+
+    ``` r
+    library(dplyr)
+    library(ggplot2)
+    library(knitr)
+
+    # Load processed data
+    data <- readRDS(here::here("analysis/data/derived_data/mtcars_processed.rds"))
+
+    # Display summary
+    kable(head(data), caption = "First observations of processed data")
+    ```
+
+    ## Summary Statistics
+
+
+    ``` r
+    summary_stats <- data |>
+      group_by(efficiency_class) |>
+      summarise(
+        n = n(),
+        mean_mpg = mean(mpg),
+        mean_hp = mean(hp),
+        mean_weight_kg = mean(weight_kg),
+        .groups = "drop"
+      )
+
+    kable(summary_stats,
+          digits = 2,
+          caption = "Summary statistics by efficiency class")
+    ```
+
+    ## Analysis Results
+
+    ### Fuel Efficiency Distribution
+
+
+    ``` r
+    ggplot(data, aes(x = mpg, fill = efficiency_class)) +
+      geom_histogram(bins = 8, alpha = 0.7, color = "white") +
+      labs(
+        title = "Distribution of Fuel Efficiency",
+        x = "Miles Per Gallon",
+        y = "Count",
+        fill = "Efficiency Class"
+      ) +
+      theme_minimal()
+    ```
+
+    <!-- Developer 2 will add additional visualizations here -->
+
+    ## Conclusions
+
+    *To be completed after collaborative additions.*
+
+    ## References
+
+### 4.2 Run the Analysis Pipeline
+
+Enter container and run the processing script:
+
+``` bash
+make r
+```
+
+``` r
+
+source("analysis/scripts/01_prepare_data.R")
+```
+
+Verify the derived data was created:
+
+``` r
+
+file.exists("analysis/data/derived_data/mtcars_processed.rds")
+# [1] TRUE
+
+q()
+```
+
+### 4.3 Validate Package Dependencies
+
+After exiting R, validate that all packages are properly tracked:
+
+``` bash
+make check-renv
+```
+
+This pure-shell validation ensures DESCRIPTION and renv.lock are
+synchronized.
+
+## Part 5: Push to GitHub (Developer 1)
+
+### 5.1 Initialize Git and Create GitHub Repository
+
+If you haven’t created the GitHub repo yet, do it now:
+
+``` bash
+zzc github                       # Initialize git + create private GitHub repo
+```
+
+Or for a public repo:
+
+``` bash
+zzc github --public              # Create public GitHub repo
+```
+
+Or manually:
+
+``` bash
+git init
+git add .
+git commit -m "Initial project setup with mtcars analysis
+
+- Add raw data (complete mtcars CSV)
+- Create data processing script (extracts first half)
+- Add data validation and function tests
+- Create initial report structure
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+gh repo create myteam/mtcars-analysis --private --source=. --push
+```
+
+### 5.2 Build and Push Team Docker Image
+
+``` bash
+make docker-build
+zzc dockerhub                    # Push to DockerHub
+```
+
+This makes the Docker image available for Developer 2.
+
+## Part 6: Add Visualization (Developer 2)
+
+### 6.1 Clone the Repository
+
+Developer 2 clones the project and pulls the team Docker image:
+
+``` bash
+git clone git@github.com:myteam/mtcars-analysis.git
+cd mtcars-analysis
+docker pull myteam/mtcars-analysis:latest
+```
+
+### 6.2 Enter Container and Verify Setup
+
+``` bash
+make r
+```
+
+``` r
+
+# Verify data is present
+readRDS("analysis/data/derived_data/mtcars_processed.rds") |> head()
+
+# Run existing tests to ensure environment is correct
+devtools::test()
+
+q()
+```
+
+### 6.3 Add Visualization Function
+
+Developer 2 adds a new plotting function. Create `R/plot_functions.R`:
+
+``` r
+
+#' Create power-to-weight scatter plot
+#'
+#' @param data Processed mtcars data frame
+#' @param show_labels Logical, whether to show car labels
+#' @return A ggplot object
+#' @export
+plot_power_weight <- function(data, show_labels = TRUE) {
+  if (!"power_to_weight" %in% names(data)) {
+    stop("Data must contain power_to_weight column")
+  }
+
+  p <- ggplot2::ggplot(
+    data,
+    ggplot2::aes(x = weight_kg, y = hp, color = efficiency_class)
+  ) +
+    ggplot2::geom_point(size = 3, alpha = 0.8) +
+    ggplot2::labs(
+      title = "Horsepower vs Weight by Efficiency Class",
+      x = "Weight (kg)",
+      y = "Horsepower",
+      color = "Efficiency"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "bottom")
+
+  if (show_labels) {
+    p <- p + ggplot2::geom_text(
+      ggplot2::aes(label = rownames(data)),
+      hjust = -0.1,
+      vjust = 0.5,
+      size = 3
+    )
+  }
+
+  p
+}
+
+#' Create cylinder comparison boxplot
+#'
+#' @param data Processed mtcars data frame
+#' @return A ggplot object
+#' @export
+plot_mpg_by_cylinder <- function(data) {
+  ggplot2::ggplot(data, ggplot2::aes(x = factor(cyl), y = mpg)) +
+    ggplot2::geom_boxplot(fill = "steelblue", alpha = 0.7) +
+    ggplot2::geom_jitter(width = 0.2, alpha = 0.5) +
+    ggplot2::labs(
+      title = "Fuel Efficiency by Number of Cylinders",
+      x = "Number of Cylinders",
+      y = "Miles Per Gallon"
+    ) +
+    ggplot2::theme_minimal()
+}
+```
+
+### 6.4 Add Tests for New Functions
+
+Create `tests/testthat/test-plot-functions.R`:
+
+``` r
+
+# test-plot-functions.R
+# Tests for R/plot_functions.R
+
+test_that("plot_power_weight returns ggplot object", {
+  test_data <- mtcars[1:5, ] |> add_derived_variables()
+
+  result <- plot_power_weight(test_data)
+
+  expect_s3_class(result, "ggplot")
+})
+
+test_that("plot_power_weight requires power_to_weight column", {
+  bad_data <- mtcars[1:5, ]
+
+  expect_error(
+    plot_power_weight(bad_data),
+    "power_to_weight"
+  )
+})
+
+test_that("plot_power_weight respects show_labels parameter", {
+  test_data <- mtcars[1:5, ] |> add_derived_variables()
+
+  with_labels <- plot_power_weight(test_data, show_labels = TRUE)
+  without_labels <- plot_power_weight(test_data, show_labels = FALSE)
+
+  expect_s3_class(with_labels, "ggplot")
+  expect_s3_class(without_labels, "ggplot")
+})
+
+test_that("plot_mpg_by_cylinder returns ggplot object", {
+  test_data <- mtcars[1:5, ]
+
+  result <- plot_mpg_by_cylinder(test_data)
+
+  expect_s3_class(result, "ggplot")
+})
+```
+
+### 6.5 Run All Tests
+
+``` bash
+make r
+```
+
+``` r
+
+devtools::test()
+```
+
+Expected output:
+
+    == Testing mtcarsanalysis =====================================================
+    [ FAIL 0 | WARN 0 | SKIP 0 | PASS 15 ]
+
+Exit R:
+
+``` r
+
+q()
+```
+
+### 6.6 Commit and Push Changes
+
+``` bash
+git add R/plot_functions.R tests/testthat/test-plot-functions.R
+git commit -m "Add visualization functions for power-weight analysis
+
+- Add plot_power_weight() for scatter plots
+- Add plot_mpg_by_cylinder() for boxplots
+- Include tests for both plotting functions
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+git push
+```
+
+## Part 7: Finalize Report (Developer 1)
+
+### 7.1 Pull Changes
+
+Developer 1 pulls Developer 2’s additions:
+
+``` bash
+git pull
+```
+
+### 7.2 Enter Container
+
+``` bash
+make r
+```
+
+Verify new packages are auto-restored:
+
+``` r
+
+devtools::test()
+# All 15 tests should pass
+
+q()
+```
+
+### 7.3 Update the Report
+
+Edit `analysis/report/report.Rmd` to include the new visualizations. Add
+the following sections after the existing histogram:
+
+```` markdown
+### Power vs Weight Analysis
+
+
+``` r
+# Functions loaded via devtools::load_all() in setup chunk
+plot_power_weight(data, show_labels = TRUE)
+```
+
+This scatter plot reveals the relationship between engine power and vehicle
+weight. Higher efficiency vehicles (green) cluster in the lower-left region,
+indicating lower weight and moderate horsepower.
+
+### Cylinder Comparison
+
+
+``` r
+plot_mpg_by_cylinder(data)
+```
+
+The boxplot demonstrates the expected inverse relationship between cylinder
+count and fuel efficiency. Four-cylinder vehicles show the highest MPG values,
+while eight-cylinder vehicles demonstrate lower fuel efficiency.
+````
+
+Update the Conclusions section:
+
+```` markdown
+## Conclusions
+
+This analysis of the mtcars subset reveals several key findings:
+
+1. **Efficiency Classification**: The dataset contains a mix of low, medium,
+   and high efficiency vehicles based on the 15 and 20 MPG thresholds.
+
+2. **Weight-Power Relationship**: There is a clear positive correlation
+   between vehicle weight and horsepower, with efficiency class serving as
+   a useful categorization.
+
+3. **Cylinder Effect**: Vehicles with fewer cylinders consistently achieve
+   better fuel economy, supporting the expected engineering trade-off between
+   power and efficiency.
+
+## Session Information
+
+
+``` r
+sessionInfo()
+```
+````
+
+### 7.4 Render the Report
+
+``` bash
+make r
+```
+
+``` r
+
+rmarkdown::render("analysis/report/report.Rmd")
+q()
+```
+
+### 7.5 Final Validation
+
+Run the complete test suite:
+
+``` bash
+make docker-test
+```
+
+Validate package environment:
+
+``` bash
+make check-renv
+```
+
+### 7.6 Commit Final Version
+
+``` bash
+git add analysis/report/report.Rmd analysis/report/report.html
+git commit -m "Finalize analysis report with collaborative visualizations
+
+- Integrate power-weight scatter plot
+- Add cylinder comparison boxplot
+- Write conclusions section
+- Add session info for reproducibility
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+git push
+```
+
+## Part 8: Team Collaboration Details
+
+This section covers the mechanics of inviting collaborators and sharing
+Docker images. These details were glossed over in the main workflow.
+
+### 8.1 Inviting Collaborators to GitHub
+
+**Adding a single collaborator:**
+
+``` bash
+# Add collaborator with write access (can push commits)
+gh repo edit --add-collaborator username
+
+# Verify collaborators
+gh api repos/:owner/:repo/collaborators --jq '.[].login'
+```
+
+**Adding multiple collaborators:**
+
+``` bash
+# Add several collaborators
+for user in alice bob charlie; do
+  gh repo edit --add-collaborator "$user"
+done
+```
+
+**Permission levels** (from least to most access):
+
+| Level    | Capabilities                              |
+|----------|-------------------------------------------|
+| read     | View code, clone, open issues             |
+| triage   | \+ Manage issues and PRs                  |
+| write    | \+ Push commits, merge PRs                |
+| maintain | \+ Manage repo settings (not destructive) |
+| admin    | Full access including delete              |
+
+``` bash
+# Add with specific permission (default is 'write' for user repos)
+gh api repos/:owner/:repo/collaborators/username -X PUT -f permission=maintain
+```
+
+**What happens after invitation:**
+
+1.  Collaborator receives email notification
+2.  They must accept the invitation (check email or
+    github.com/notifications)
+3.  Once accepted, they can clone and push based on permission level
+
+**Checking pending invitations:**
+
+``` bash
+gh api repos/:owner/:repo/invitations --jq '.[].invitee.login'
+```
+
+### 8.2 DockerHub Image Sharing (Optional but Efficient)
+
+**DockerHub is optional.** Collaborators can always build from the
+Dockerfile:
+
+``` bash
+# Option A: Build from Dockerfile (always works, takes 5-15 minutes)
+git clone https://github.com/myteam/study.git
+cd study
+make docker-build
+make r
+```
+
+**Why use DockerHub?** Pre-installed packages save time:
+
+When the team lead builds the image, all packages from `renv.lock` are
+installed into the image. Team members who pull this image get those
+packages immediately - no installation wait.
+
+| Approach              | What Happens                            | Time     |
+|-----------------------|-----------------------------------------|----------|
+| Build from Dockerfile | Downloads base + installs all packages  | 5-15 min |
+| Pull from DockerHub   | Downloads pre-built image with packages | 1-3 min  |
+
+``` bash
+# Option B: Pull pre-built image (faster, requires DockerHub setup)
+git clone https://github.com/myteam/study.git
+cd study
+docker pull myteam/study:latest
+make r
+```
+
+### 8.3 Setting Up DockerHub (Team Lead)
+
+**One-time DockerHub setup:**
+
+1.  Create account at hub.docker.com
+2.  Create repository (can be public or private)
+3.  Login from terminal:
+
+``` bash
+docker login
+# Enter DockerHub username and password/token
+```
+
+**Build before pushing (important):**
+
+The Docker build process installs all R packages from `renv.lock` into
+the image. This is what makes pulling faster for team members - packages
+are pre-installed rather than installed on first run.
+
+``` bash
+# 1. Build image (installs packages from renv.lock)
+make docker-build
+
+# 2. Push the built image to DockerHub
+zzc dockerhub                    # Pushes to dockerhub-account/project:latest
+
+# Or with version tag
+zzc dockerhub --tag v1.0
+```
+
+**When to rebuild and push:**
+
+- After adding packages (renv.lock changed)
+- After modifying Dockerfile
+- Before onboarding new team members (ensure they get latest)
+
+``` bash
+# Check if renv.lock changed since last push
+git log --oneline -3 -- renv.lock
+
+# If changed, rebuild and push
+make docker-build && zzc dockerhub
+```
+
+### 8.4 Private DockerHub Repositories
+
+For private research, use private DockerHub repos:
+
+**Team lead creates private repo:**
+
+1.  Go to hub.docker.com → Create Repository
+2.  Set visibility to “Private”
+3.  Add collaborators under “Collaborators” tab
+
+**Team members authenticate:**
+
+``` bash
+# Each team member must login once
+docker login
+# Enter their DockerHub credentials
+
+# Then pull works
+docker pull myteam/private-study:latest
+```
+
+**Free tier limitations:**
+
+- Docker Free: 1 private repo, unlimited public
+- Docker Pro: Unlimited private repos
+
+For academic teams, public repos are often sufficient since the code is
+on private GitHub anyway.
+
+### 8.5 When to Rebuild vs Pull
+
+**Pull the team image when:**
+
+- First time joining the project
+- Team lead announces image update
+- Dockerfile hasn’t changed since last pull
+
+**Rebuild from Dockerfile when:**
+
+- Dockerfile has been modified
+- You need to verify reproducibility
+- CI/CD (always builds fresh)
+- Troubleshooting environment issues
+
+**Check if rebuild needed:**
+
+``` bash
+# See if Dockerfile changed since last pull
+git log --oneline -5 -- Dockerfile
+
+# If changes exist, rebuild
+make docker-build
+```
+
+### 8.6 Complete Team Workflow Example
+
+**Team Lead (one-time setup):**
+
+``` bash
+# Create project
+mkdir team-analysis && cd team-analysis
+zzc analysis
+zzc github
+
+# Push Docker image
+docker login                     # One-time authentication
+zzc dockerhub
+
+# Add collaborators
+gh repo edit --add-collaborator alice
+gh repo edit --add-collaborator bob
+```
+
+**Team Member (joining):**
+
+``` bash
+# Clone repository
+git clone https://github.com/leader/team-analysis.git
+cd team-analysis
+
+# Option A: Fast path (pull image)
+docker login                     # If private DockerHub repo
+docker pull leader/team-analysis:latest
+make r
+
+# Option B: Full reproducibility (build from scratch)
+make docker-build                # Takes longer but verifies Dockerfile
+make r
+```
+
+**Daily workflow (all team members):**
+
+``` bash
+git pull                         # Get latest code
+make r                           # Enter container (auto-restores packages)
+# ... work ...
+exit                             # Auto-snapshots packages
+git add . && git commit && git push
+```
+
+## Summary
+
+This workflow demonstrated:
+
+1.  **Project Setup**: Creating a zzcollab workspace with proper
+    structure
+2.  **Data Management**: Storing raw data in `analysis/data/raw_data/`
+    with documentation
+3.  **Code Organization**: Separating reusable functions into `R/`
+    directory
+4.  **Testing**: Writing tests for both data validation and functions
+5.  **Collaboration**: Two developers working on the same codebase
+6.  **Docker**: Using containerized environments for reproducibility
+7.  **Version Control**: Proper commit messages and GitHub workflow
+8.  **Team Onboarding**: Inviting collaborators and sharing Docker
+    images
+
+The final repository contains:
+
+- Reproducible Docker environment
+- Tested and documented R functions
+- Complete analysis report with visualizations
+- Full version history of collaborative work
+
+## Quick Reference
+
+| Task                        | Command                     |
+|-----------------------------|-----------------------------|
+| Create project (full setup) | `zzc analysis`              |
+| Add GitHub repo             | `zzc github`                |
+| Enter container             | `make r`                    |
+| Run tests                   | `devtools::test()` inside R |
+| Validate packages           | `make check-renv`           |
+| Build Docker image          | `make docker-build`         |
+| Push to DockerHub           | `zzc dockerhub`             |
+| Push with tag               | `zzc dockerhub --tag v1.0`  |
+| Switch profile              | `zzc publishing`            |
+| List profiles               | `zzc list profiles`         |
+| Render report               | `make docker-render`        |
+
+## Next Steps
+
+- Add CI/CD with GitHub Actions for automated testing
+- Implement additional analyses on the second half of mtcars
+- Create a package vignette documenting the analysis methodology
+- Add code coverage reporting with covr

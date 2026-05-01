@@ -1,0 +1,1404 @@
+# ZZCOLLAB Configuration System
+
+## Overview
+
+ZZCOLLAB’s configuration system provides flexible control over Docker
+environments, package management, and team collaboration through a
+multi-layered configuration hierarchy and comprehensive CLI flags.
+
+### Key Features
+
+- **Multi-layered configuration**: User, project, system, and built-in
+  defaults
+- **Docker profile system**: 14+ specialized environments from 200MB to
+  3.5GB
+- **Dynamic package management**: Add packages via
+  [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  with automatic snapshot/restore
+- **Two-layer architecture**: Docker profiles (team/shared) + renv
+  packages (personal/flexible)
+- **CLI and R interfaces**: Work via command line or entirely within
+  R/RStudio
+
+### Configuration Philosophy
+
+ZZCOLLAB follows a “configure once, use everywhere” approach: - Set
+defaults once in configuration files - Override per-project when
+needed - Eliminate repetitive flag typing - Share team configurations
+via version control
+
+## Configuration Hierarchy
+
+### Priority Order (Highest to Lowest)
+
+ZZCOLLAB loads configuration from multiple sources:
+
+1.  **Command-line flags** - Explicit flags override all other settings
+2.  **Environment variables** - Shell environment variables (e.g.,
+    `ZZCOLLAB_TEAM_NAME`)
+3.  **Project config** - `./zzcollab.yaml` in current directory
+    (team-specific)
+4.  **User config** - `~/.zzcollab/config.yaml` (personal defaults)
+5.  **System config** - `/etc/zzcollab/config.yaml` (organization-wide)
+6.  **Built-in defaults** - Fallback values ensuring functionality
+
+Higher priority sources override lower priority ones, allowing precise
+control at each level.
+
+### Configuration Locations
+
+#### User Configuration (~/.zzcollab/config.yaml)
+
+Personal defaults across all your projects:
+
+``` yaml
+# ~/.zzcollab/config.yaml
+defaults:
+  team-name: "myteam"
+  github-account: "myusername"
+  dockerhub-account: "myusername"
+  profile-name: "analysis"
+
+# Optional: Custom profile compositions
+profiles:
+  my-custom:
+    base-image: "rocker/r-ver:latest"
+    libs-bundle: "minimal"
+    pkgs-bundle: "tidyverse"
+```
+
+**When to use**: Set your personal preferences once, apply to all future
+projects.
+
+#### Project Configuration (./zzcollab.yaml)
+
+Team-specific settings shared via Git:
+
+``` yaml
+# ./zzcollab.yaml (in project root)
+team:
+  name: "genomicslab"
+  project: "cancer-study"
+  description: "Multi-omics cancer research"
+
+defaults:
+  profile-name: "bioinformatics"
+
+collaboration:
+  github:
+    auto-create-repo: true
+    default-visibility: "private"
+    enable-actions: true
+```
+
+**When to use**: Share team standards, ensure all members use identical
+configurations.
+
+#### System Configuration (/etc/zzcollab/config.yaml)
+
+Organization-wide policies (requires admin):
+
+``` yaml
+# /etc/zzcollab/config.yaml
+organization:
+  name: "University Research Computing"
+  docker-registry: "registry.university.edu"
+
+defaults:
+  profile-name: "analysis"
+
+collaboration:
+  github:
+    default-visibility: "private"  # Enforce private repos
+    enable-actions: true
+```
+
+**When to use**: IT administrators setting organization-wide policies.
+
+## CLI Configuration Commands
+
+### Essential Configuration Commands
+
+#### Initialize Configuration
+
+``` bash
+# Create user configuration file with interactive prompts
+zzcollab config init
+```
+
+#### Set Configuration Values
+
+``` bash
+# Set team name (typically your GitHub username for solo work)
+zzcollab config set team-name "myteam"
+
+# Set GitHub account
+zzcollab config set github-account "myusername"
+
+# Set Docker Hub account (defaults to team-name if not set)
+zzcollab config set dockerhub-account "myusername"
+
+# Set default Docker profile
+zzcollab config set profile-name "analysis"
+```
+
+#### Get Configuration Values
+
+``` bash
+# Get specific value
+zzcollab config get team-name
+# Output: myteam
+
+# Get Docker profile
+zzcollab config get profile-name
+# Output: analysis
+```
+
+#### List All Configuration
+
+``` bash
+# Show all effective configuration
+zzcollab config list
+
+# Show configuration sources (which file provides each value)
+zzcollab config list --verbose
+
+# Output shows:
+# team-name: "myteam" (from ~/.zzcollab/config.yaml)
+# profile-name: "bioinformatics" (from ./zzcollab.yaml) [OVERRIDING user config]
+```
+
+#### Validate Configuration
+
+``` bash
+# Check configuration for errors and inconsistencies
+zzcollab config validate
+
+# Validate with detailed output
+zzcollab config validate --verbose
+```
+
+### Configuration Workflow Examples
+
+#### Solo Researcher Setup
+
+``` bash
+# One-time configuration
+zzcollab config init
+zzcollab config set team-name "myresearch"
+zzcollab config set github-account "myusername"
+zzcollab config set profile-name "analysis"
+
+# Create projects using defaults
+mkdir penguin-study && cd penguin-study
+zzcollab  # Uses all configured defaults
+```
+
+#### Team Lead Setup
+
+``` bash
+# Personal defaults
+zzcollab config set team-name "genomicslab"
+zzcollab config set github-account "genomicslab"
+zzcollab config set profile-name "bioinformatics"
+
+# Create team project with project-specific config
+mkdir cancer-study && cd cancer-study
+zzcollab -p cancer-study
+
+# Customize project config for team
+cat > zzcollab.yaml << 'EOF'
+team:
+  name: "genomicslab"
+  project: "cancer-study"
+
+defaults:
+  profile-name: "bioinformatics"
+
+collaboration:
+  github:
+    auto-create-repo: true
+    default-visibility: "private"
+EOF
+
+# Build and share team image
+make docker-build
+make docker-push-team
+git add . && git commit -m "Initial team setup" && git push
+```
+
+#### Team Member Setup
+
+``` bash
+# Minimal personal config needed
+zzcollab config set team-name "genomicslab"
+
+# Join existing project
+git clone https://github.com/genomicslab/cancer-study.git
+cd cancer-study
+make docker-build  # Build Docker image from project Dockerfile
+
+# Project config (./zzcollab.yaml) provides all team settings
+```
+
+## CLI Flags Reference
+
+### Project Initialization Flags
+
+#### Team and Project Identity
+
+**Recommended approach** (new):
+
+``` bash
+# Create project with profile, then add GitHub
+mkdir study1 && cd study1
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+```
+
+**Legacy flags** (still supported for team image naming):
+
+``` bash
+# -t, --team-name NAME
+# Docker Hub namespace for team images
+zzcollab -t myteam -p study1
+
+# -p, --project-name NAME
+# Project name (used for Docker image naming)
+zzcollab -t myteam -p cancer-analysis
+```
+
+**Image Naming Convention**: - Default: `username/projectname:latest` -
+With team flag: `teamname/projectname:latest`
+
+#### Docker Profile Selection
+
+``` bash
+# --profile-name PROFILE
+# Use predefined Docker profile
+zzcollab --profile-name analysis        # ~1.2GB, tidyverse ecosystem
+zzcollab --profile-name minimal         # ~780MB, essential dev tools
+zzcollab --profile-name bioinformatics  # ~1.98GB, Bioconductor
+zzcollab --profile-name geospatial      # ~1.5GB, GIS tools
+zzcollab --profile-name modeling        # ~1.5GB, tidymodels
+zzcollab --profile-name publishing      # ~3GB, LaTeX/Quarto
+zzcollab --profile-name alpine_minimal  # ~200MB, ultra-lightweight
+
+# List all available profiles
+zzc list profiles
+```
+
+**Profile Details**: See “Docker Profile System” section below.
+
+#### Custom Docker Composition
+
+For specialized needs, compose custom environments using base images and
+bundles:
+
+``` bash
+# -b, --base-image IMAGE
+# Specify custom base Docker image
+zzcollab -b rocker/r-ver:latest
+zzcollab -b rocker/rstudio:4.3.0
+zzcollab -b bioconductor/bioconductor_docker:latest
+
+# --pkgs BUNDLE[,BUNDLE,...]
+# R package bundles (pre-installed in Docker)
+zzcollab -b rocker/r-ver --pkgs essential     # renv, devtools, usethis
+zzcollab -b rocker/r-ver --pkgs tidyverse     # tidyverse ecosystem
+zzcollab -b rocker/r-ver --pkgs modeling      # tidymodels packages
+zzcollab -b rocker/r-ver --pkgs bioinfo       # Bioconductor packages
+
+# Combined custom composition
+zzcollab -b bioconductor/bioconductor_docker --pkgs modeling
+# Creates: Bioconductor base + ML packages
+
+# List available bundles
+zzcollab --list-pkgs   # R package bundles
+```
+
+**Note**: System library dependencies are automatically detected from R
+packages via `make check-system-deps`. Manual specification is rarely
+needed.
+
+### Team Collaboration Flags
+
+#### Team Docker Workflow
+
+``` bash
+# Team member joins existing project
+git clone https://github.com/myteam/study1.git
+cd study1
+make docker-build  # Build Docker image from project Dockerfile
+make r             # Enter container
+```
+
+**Team Image Workflow**: 1. Team lead builds and pushes:
+`make docker-build && make docker-push-team` 2. Team members clone and
+build: `git clone ... && make docker-build` 3. Everyone has identical
+Docker environment (same Dockerfile)
+
+### Output and Behavior Flags
+
+#### Verbosity Control
+
+``` bash
+# -v, --verbose
+# Show detailed output during operations
+zzcollab -v -t myteam -p study1
+
+# -q, --quiet
+# Suppress non-essential output
+zzcollab -q --config list
+
+# --dry-run
+# Show what would be done without executing
+zzcollab --dry-run -t myteam -p study1
+```
+
+#### Confirmation Prompts
+
+``` bash
+# -y, --yes
+# Auto-confirm all prompts (useful for scripts)
+zzcollab -y -t myteam -p study1
+
+# --no-confirm
+# Skip confirmation prompts
+zzcollab --no-confirm --config set team-name "newteam"
+```
+
+### Advanced Flags
+
+#### Docker Build Control
+
+``` bash
+# --no-cache
+# Force rebuild without using Docker layer cache
+zzcollab --no-cache -t myteam -p study1
+
+# --platform PLATFORM
+# Specify platform for Docker build
+zzcollab --platform linux/amd64  # Force AMD64
+zzcollab --platform linux/arm64  # Force ARM64
+
+# --build-arg KEY=VALUE
+# Pass build arguments to Docker
+zzcollab --build-arg R_VERSION=4.3.0
+```
+
+#### Package Management
+
+``` bash
+# --skip-renv
+# Skip renv initialization
+zzcollab --skip-renv -t myteam -p study1
+
+# --renv-version VERSION
+# Use specific renv version
+zzcollab --renv-version 1.0.3
+```
+
+## Docker Profile System
+
+### Understanding Docker Profiles
+
+Docker profiles are pre-configured environments optimized for specific
+research workflows. Each profile combines: - **Base Docker image**
+(e.g., rocker/rstudio, bioconductor) - **System libraries** (e.g., GDAL
+for geospatial, JAGS for Bayesian) - **R packages** (pre-installed for
+fast container startup)
+
+Profiles provide the Docker environment (Layer 1), while additional
+packages are added dynamically via
+[`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+with automatic snapshot/restore on container exit (Layer 2).
+
+### Available Profiles
+
+#### Standard Research Profiles
+
+##### minimal (~780MB)
+
+``` yaml
+base_image: rocker/r-ver:latest
+packages:
+  - renv
+  - devtools
+  - usethis
+  - here
+  - testthat
+
+use_cases:
+  - Lightweight development
+  - CI/CD pipelines
+  - Quick prototyping
+  - Resource-constrained environments
+```
+
+##### analysis (~1.2GB) \[RECOMMENDED\]
+
+``` yaml
+base_image: rocker/rstudio:latest
+packages:
+  - renv, devtools, usethis, here, testthat
+  - tidyverse (dplyr, ggplot2, tidyr, readr, purrr, stringr, forcats, lubridate)
+  - knitr, rmarkdown
+  - palmerpenguins (example data)
+
+use_cases:
+  - General data analysis
+  - Exploratory data analysis
+  - Team development
+  - Teaching and workshops
+```
+
+##### modeling (~1.5GB)
+
+``` yaml
+base_image: rocker/ml:latest
+packages:
+  - analysis packages plus:
+  - tidymodels (parsnip, recipes, workflows, tune, yardstick)
+  - xgboost, ranger, glmnet
+
+use_cases:
+  - Machine learning projects
+  - Predictive modeling
+  - Model evaluation and tuning
+  - Feature engineering
+```
+
+##### publishing (~3GB)
+
+``` yaml
+base_image: rocker/verse:latest
+packages:
+  - analysis packages plus:
+  - LaTeX (full installation)
+  - quarto, bookdown, blogdown
+  - tinytex
+  - kableExtra, gt, flextable
+
+use_cases:
+  - Manuscript writing
+  - Book authoring
+  - Academic publishing
+  - Technical documentation
+```
+
+#### Specialized Domain Profiles
+
+##### bioinformatics (~1.98GB)
+
+``` yaml
+base_image: bioconductor/bioconductor_docker:latest
+packages:
+  - Bioconductor core packages
+  - DESeq2, edgeR, limma
+  - GenomicRanges, Biostrings
+  - SummarizedExperiment
+
+use_cases:
+  - Genomics analysis
+  - RNA-seq workflows
+  - Proteomics studies
+  - Systems biology
+```
+
+##### geospatial (~1.5GB)
+
+``` yaml
+base_image: rocker/geospatial:latest
+system_libs:
+  - GDAL, PROJ, GEOS (pre-compiled)
+packages:
+  - sf, terra, raster
+  - leaflet, mapview, tmap
+  - stars, gstat
+
+use_cases:
+  - GIS analysis
+  - Spatial statistics
+  - Climate modeling
+  - Ecology and conservation
+```
+
+#### Lightweight Alpine Profiles
+
+##### alpine_minimal (~200MB)
+
+``` yaml
+base_image: rocker/r-alpine:latest
+packages:
+  - renv, devtools, testthat
+
+use_cases:
+  - Ultra-fast CI/CD
+  - Minimal resource footprint
+  - Container orchestration
+  - Edge computing
+```
+
+##### alpine_analysis (~400MB)
+
+``` yaml
+base_image: rocker/r-alpine:latest
+packages:
+  - Essential tidyverse packages
+  - Minimal analysis tools
+
+use_cases:
+  - Lightweight analysis
+  - Fast testing
+  - Cloud deployments
+  - Resource-constrained servers
+```
+
+##### hpc_alpine (~600MB)
+
+``` yaml
+base_image: rocker/r-alpine:latest
+packages:
+  - Parallel processing tools
+  - HPC-optimized packages
+
+use_cases:
+  - High-performance computing
+  - Cluster computing
+  - Parallel workflows
+  - Batch processing
+```
+
+### Profile Selection Guide
+
+| Research Domain  | Recommended Profile | Alternative Profiles           |
+|------------------|---------------------|--------------------------------|
+| Data analysis    | analysis            | minimal, alpine_analysis       |
+| Machine learning | modeling            | analysis                       |
+| Genomics         | bioinformatics      | minimal + renv packages        |
+| GIS/spatial      | geospatial          | analysis + spatial packages    |
+| Publishing       | publishing          | analysis + publishing packages |
+| CI/CD testing    | alpine_minimal      | minimal                        |
+| Teaching         | analysis            | minimal, publishing            |
+
+### Custom Profile Composition
+
+When predefined profiles don’t fit, compose custom environments:
+
+#### Example: Bayesian Statistics Environment
+
+``` bash
+# Start with R base and modeling packages
+zzcollab -b rocker/r-ver:latest \
+  --pkgs modeling \
+  -t myteam -p bayes-study
+
+# Inside container, add specialized Bayesian packages:
+# install.packages(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))
+# (Auto-snapshot on exit saves these to renv.lock)
+```
+
+#### Example: Web Scraping + NLP Environment
+
+``` bash
+# Base image with tidyverse for text analysis
+zzcollab -b rocker/rstudio:latest \
+  --pkgs tidyverse \
+  -t myteam -p nlp-scraper
+
+# Add NLP packages dynamically:
+# install.packages(c("rvest", "httr", "xml2", "tidytext", "textrecipes", "spacyr"))
+# (Auto-snapshot on exit saves these to renv.lock)
+```
+
+#### Example: Lightweight Reporting
+
+``` bash
+# Alpine base for minimal footprint
+zzcollab -b rocker/r-alpine:latest \
+  --pkgs essential \
+  -t myteam -p reports
+
+# Add reporting packages:
+# install.packages(c("rmarkdown", "knitr", "gt", "flextable"))
+# (Auto-snapshot on exit saves these to renv.lock)
+```
+
+## Two-Layer Package Management Architecture
+
+ZZCOLLAB uses a two-layer system for maximum flexibility and
+reproducibility.
+
+### Layer 1: Docker Profile (Team/Shared)
+
+**What**: Pre-installed R packages in the Docker image **Control**:
+`--profile-name`, `--pkgs`, or profile configuration **Shared**: All
+team members get identical packages **Purpose**: Fast container startup,
+team consistency
+
+``` bash
+# Team lead creates base environment
+mkdir study && cd study
+zzc analysis                     # Or: zzc bioinformatics for specialized profile
+zzc github
+make docker-build
+zzc dockerhub                    # Push for team members
+
+# All team members get identical environment
+```
+
+**Layer 1 packages are in the Docker image**: - Available immediately
+when container starts - No installation time - Shared across all users
+of the image - Fixed until image is rebuilt
+
+### Layer 2: Dynamic renv (Personal/Flexible)
+
+**What**: Packages added via
+[`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+inside containers with automatic snapshot on exit **Control**: Team
+members install as needed **Flexible**: Each person can add different
+packages **Purpose**: Analysis-specific packages, reproducible
+dependency tracking
+
+``` bash
+# Inside container
+make r
+
+# Install packages as needed (standard R command)
+install.packages("tidymodels")
+install.packages("pins")
+install.packages("vetiver")
+
+# When you exit R, packages are automatically saved to renv.lock (via .Last() in .Rprofile)
+q()
+
+# Back on host - commit the updated renv.lock
+git add renv.lock DESCRIPTION
+git commit -m "Add ML deployment packages"
+git push
+```
+
+**Layer 2 packages via renv**: - Installed on-demand inside containers -
+Added dynamically as analysis needs evolve - Accumulates packages from
+all team members - renv.lock is the source of truth for reproducibility
+
+### How the Layers Work Together
+
+#### Scenario: Genomics Team with Multiple Analyses
+
+**Team Lead Setup (Layer 1)**:
+
+``` bash
+# Create bioinformatics base with common packages
+mkdir baseenv && cd baseenv
+zzc analysis                     # Or specialized profile
+zzc github
+make docker-build
+zzc dockerhub                    # Push for team members
+```
+
+**Team Member Alice (Layer 2 - RNA-seq)**:
+
+``` bash
+git clone https://github.com/genomicslab/rnaseq-study.git
+cd rnaseq-study
+make docker-build                # Or: docker pull genomicslab/rnaseq-study:latest
+make r
+
+# Add RNA-seq specific packages
+install.packages(c("tximport", "DESeq2", "apeglm", "EnhancedVolcano"))
+# Auto-snapshot on exit captures these packages in renv.lock
+q()  # Exit R - snapshot happens automatically
+```
+
+**Team Member Bob (Layer 2 - ChIP-seq)**:
+
+``` bash
+git clone https://github.com/genomicslab/chipseq-study.git
+cd chipseq-study
+make docker-build
+make r
+
+# Add ChIP-seq specific packages
+install.packages(c("ChIPseeker", "ChIPpeakAnno", "DiffBind", "csaw"))
+# Auto-snapshot on exit captures these packages in renv.lock
+q()  # Exit R - snapshot happens automatically
+```
+
+**Result**: - Both use **identical Layer 1** (Bioconductor base via team
+image) - Each has **different Layer 2** (analysis-specific packages in
+renv.lock) - Complete reproducibility via renv.lock (source of truth)
+
+### Key Principle: renv.lock is Source of Truth
+
+Docker images provide foundation and performance, but **renv.lock
+ensures reproducibility**:
+
+``` bash
+# Five years later, reproduce Alice's RNA-seq analysis
+git clone https://github.com/genomicslab/rnaseq-study.git
+cd rnaseq-study
+
+# Can use ANY compatible Docker base image
+zzcollab --profile-name minimal  # or analysis, or bioinformatics
+make r
+
+# renv automatically restores EXACT packages Alice used on R startup
+# Auto-restore installs: tximport, DESeq2, apeglm, EnhancedVolcano at exact versions
+# (No manual renv::restore() call needed - happens automatically)
+
+# Run analysis - identical results
+Rscript analysis/scripts/differential_expression.R
+```
+
+**Why this works**: renv.lock specifies exact package versions from
+CRAN/Bioconductor/GitHub snapshots, independent of Docker image.
+
+### Package Selection Strategy
+
+#### Choose Docker Profile (Layer 1) Based On:
+
+1.  **Research domain**
+    - Bioinformatics → `bioinformatics` profile
+    - GIS/spatial → `geospatial` profile
+    - Machine learning → `modeling` profile
+    - General analysis → `analysis` profile
+2.  **Team consensus**
+    - What does everyone need?
+    - What’s the common foundation?
+3.  **Performance considerations**
+    - Large, stable packages → Docker profile (tidyverse, Bioconductor
+      core)
+    - Team-wide dependencies → Docker profile
+
+#### Add via renv (Layer 2) Based On:
+
+1.  **Analysis-specific needs**
+    - Domain-specific packages (tximport, ChIPseeker)
+    - Specialized statistical methods
+2.  **Experimental packages**
+    - Newly released packages
+    - Development versions from GitHub
+3.  **Version-specific requirements**
+    - Packages requiring exact versions
+    - Packages with breaking changes between versions
+
+## Practical Configuration Scenarios
+
+### Scenario 1: Solo Data Scientist
+
+**Goal**: Quick project setup, standard data analysis tools
+
+**Configuration**:
+
+``` bash
+# One-time setup
+zzcollab config init
+zzcollab config set team-name "datasci"
+zzcollab config set profile-name "analysis"
+
+# Create projects with configured defaults
+mkdir customer-churn && cd customer-churn
+zzcollab  # Uses all configured defaults
+
+mkdir sales-forecast && cd sales-forecast
+zzcollab  # Consistent environment across projects
+```
+
+**Benefits**: - No repetitive flag typing - Consistent environment
+across projects - Professional reproducibility for portfolio
+
+### Scenario 2: Academic Research Lab
+
+**Goal**: Team collaboration, consistent environments, specialized
+workflows
+
+**Team Lead Setup**:
+
+``` bash
+# Personal config
+zzcollab config set team-name "psychlab"
+zzcollab config set github-account "psychlab"
+
+# Create shared project
+mkdir attention-study && cd attention-study
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+
+# Customize for team
+cat > zzcollab.yaml << 'EOF'
+team:
+  name: "psychlab"
+  project: "attention-study"
+
+defaults:
+  profile-name: "analysis"
+
+collaboration:
+  github:
+    auto-create-repo: true
+    default-visibility: "private"
+    enable-actions: true
+EOF
+
+# Build and share
+make docker-build
+make docker-push-team
+git add . && git commit -m "Team setup" && git push
+```
+
+**Team Member Workflow**:
+
+``` bash
+# Minimal personal setup
+zzcollab config set team-name "psychlab"
+
+# Join project
+git clone https://github.com/psychlab/attention-study.git
+cd attention-study
+make docker-build
+
+# Start working immediately
+make r
+```
+
+### Scenario 3: Bioinformatics Core Facility
+
+**Goal**: Multiple specialized environments, organization-wide standards
+
+**System Admin Setup** (`/etc/zzcollab/config.yaml`):
+
+``` yaml
+organization:
+  name: "Bioinformatics Core"
+  docker-registry: "registry.core.university.edu"
+
+defaults:
+  github-account: "bioinformatics-core"
+
+collaboration:
+  github:
+    default-visibility: "private"
+    enable-actions: true
+```
+
+**Core Director Setup**:
+
+``` bash
+# Base images for different workflows
+mkdir biocore-rnaseq && cd biocore-rnaseq
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
+make docker-build && make docker-push-team
+
+cd .. && mkdir biocore-chipseq && cd biocore-chipseq
+zzc bioinformatics
+zzc github
+make docker-build && make docker-push-team
+
+cd .. && mkdir biocore-singlecell && cd biocore-singlecell
+zzc bioinformatics
+zzc github
+make docker-build && make docker-push-team
+```
+
+**Researcher Workflow**:
+
+``` bash
+# Join workflow-specific project
+git clone https://github.com/biocore/rnaseq-study.git
+cd rnaseq-study
+make docker-build  # Build from project Dockerfile
+
+# Add analysis-specific packages
+make r
+install.packages("workflow_specific_package")
+# Auto-snapshot on exit captures the package
+q()  # Exit R - snapshot happens automatically
+```
+
+### Scenario 4: Data Science Consulting Firm
+
+**Goal**: Client projects, quarterly environment updates, reproducible
+deliverables
+
+**DevOps Team Setup**:
+
+``` bash
+# Quarterly standardized environment
+mkdir q1-2025-base && cd q1-2025-base
+zzc modeling                     # Full setup with modeling profile
+zzc github
+
+# Document package versions
+cat > ENVIRONMENT.md << 'EOF'
+# Q1 2025 Standardized Environment
+
+Base: rocker/ml:latest (R 4.4.0)
+Profile: modeling
+
+Key packages:
+- tidyverse 2.0.0
+- tidymodels 1.2.0
+- xgboost 1.7.6
+- shiny 1.8.0
+
+Last updated: 2025-01-15
+EOF
+
+make docker-build
+make docker-push-team
+git add . && git commit -m "Q1 2025 base environment" && git push
+```
+
+**Data Scientist Workflow**:
+
+``` bash
+# Create client project using quarterly base
+mkdir client-churn-prediction && cd client-churn-prediction
+zzc modeling                     # Full setup with modeling profile
+zzc github
+
+# Team base image provides foundation
+make r
+
+# Add client-specific packages
+install.packages(c("probably", "workflowsets", "themis"))
+# Auto-snapshot on exit captures these packages
+q()  # Exit R - snapshot happens automatically
+
+# All projects use same Q1 2025 foundation
+# Client-specific packages in renv.lock
+```
+
+## Configuration Validation and Troubleshooting
+
+### Validation Commands
+
+#### Check Configuration Integrity
+
+``` bash
+# Validate all configuration files
+zzcollab config validate
+
+# Expected output:
+# ✓ User configuration valid: ~/.zzcollab/config.yaml
+# ✓ No project configuration found (not in project directory)
+# ✓ No system configuration found (not installed system-wide)
+# ✓ Configuration hierarchy is consistent
+```
+
+#### View Effective Configuration
+
+``` bash
+# See merged configuration from all sources
+zzcollab config list
+
+# See which file provides each value
+zzcollab config list --verbose
+
+# Output:
+# team-name: "genomicslab"
+#   Source: ~/.zzcollab/config.yaml (user config)
+# profile-name: "bioinformatics"
+#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting "analysis"]
+```
+
+#### Test Configuration
+
+``` bash
+# Dry-run project creation
+zzcollab --dry-run -t myteam -p test-project --profile-name analysis
+
+# Shows what would be created without executing:
+# Would create project: test-project
+# Team namespace: myteam
+# Docker profile: analysis (~1.2GB)
+# Base image: rocker/rstudio:latest
+# Docker image name: myteam/test-project:latest
+```
+
+### Common Issues and Solutions
+
+#### Issue 1: Configuration Hierarchy Confusion
+
+**Problem**: Settings not taking effect as expected
+
+``` bash
+# Symptom: Set profile-name in user config but project uses different profile
+zzcollab config set profile-name "analysis"
+zzcollab config get profile-name
+# Output: bioinformatics  (Expected: analysis)
+```
+
+**Solution**: Check configuration sources
+
+``` bash
+zzcollab config list --verbose
+# Output shows:
+# profile-name: "bioinformatics"
+#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting]
+
+# Project config (./zzcollab.yaml) overrides user config
+# Remove from project config or understand this is intentional
+vim ./zzcollab.yaml  # Remove profile-name to use user default
+```
+
+#### Issue 2: Docker Platform Compatibility
+
+**Problem**: ARM64 Mac cannot build AMD64-only profiles
+
+``` bash
+# Error when building geospatial profile:
+# Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8
+```
+
+**Solution 1**: Use ARM64-compatible profiles
+
+``` bash
+# Instead of geospatial, use:
+zzcollab --profile-name analysis -t myteam -p study
+# Then add spatial packages via install.packages():
+# install.packages(c("sf", "terra", "raster"))
+# (Auto-snapshot on exit saves these to renv.lock)
+```
+
+**Solution 2**: Force AMD64 platform
+
+``` bash
+zzcollab --platform linux/amd64 --profile-name geospatial -t myteam -p study
+# Runs via emulation (slower but compatible)
+```
+
+**Solution 3**: Check profile compatibility
+
+``` bash
+zzc list profiles
+# Output shows platform compatibility:
+# analysis      ARM64 ✓  AMD64 ✓
+# geospatial    ARM64 ✗  AMD64 ✓  (AMD64 only)
+# alpine_*      ARM64 ✓  AMD64 ✓
+```
+
+#### Issue 3: Missing Configuration File
+
+**Problem**: Configuration file not found
+
+``` bash
+# Error: Configuration file not found: ~/.zzcollab/config.yaml
+```
+
+**Solution**: Initialize configuration
+
+``` bash
+zzcollab config init
+# Interactive prompts:
+# Team name: myteam
+# GitHub account: myusername
+# Docker profile (default: analysis):
+
+# Configuration created at: ~/.zzcollab/config.yaml
+```
+
+#### Issue 4: Docker Daemon Not Running
+
+**Problem**: Cannot connect to Docker daemon
+
+``` bash
+# Error: Cannot connect to the Docker daemon at unix:///var/run/docker.sock
+```
+
+**Solution**: Start Docker daemon
+
+``` bash
+# macOS/Windows: Start Docker Desktop app
+
+# Linux: Start Docker service
+sudo systemctl start docker
+sudo systemctl enable docker  # Auto-start on boot
+
+# Verify Docker is running
+docker info
+```
+
+#### Issue 5: Profile Not Found
+
+**Problem**: Custom profile specified but not defined
+
+``` bash
+# Error: Profile 'my-custom' not found in configuration
+```
+
+**Solution**: Define the profile
+
+``` bash
+# Edit user configuration
+vim ~/.zzcollab/config.yaml
+
+# Add custom profile:
+profiles:
+  my-custom:
+    base-image: "rocker/r-ver:latest"
+    libs-bundle: "minimal"
+    pkgs-bundle: "tidyverse"
+    description: "My custom analysis environment"
+```
+
+## R Interface Configuration
+
+ZZCOLLAB provides a complete R interface for configuration management.
+
+### Configuration Functions
+
+``` r
+
+library(zzcollab)
+
+# Initialize configuration
+init_config()
+
+# Set configuration values
+set_config("team_name", "myteam")
+set_config("profile_name", "analysis")
+set_config("github_account", "myusername")
+
+# Get configuration values
+team <- get_config("team_name")
+profile <- get_config("profile_name")
+
+# List all configuration
+all_config <- list_config()
+print(all_config)
+
+# Validate configuration
+valid <- validate_config()
+if (!valid$valid) {
+  message("Configuration errors:")
+  print(valid$errors)
+}
+```
+
+### Configuration-Aware Project Functions
+
+``` r
+
+# Functions use configuration defaults automatically
+
+# Create project with defaults from config
+init_project("my-analysis")
+# Uses: team_name, profile_name from config
+
+# Override specific settings
+init_project(
+  project_name = "special-study",
+  profile_name = "bioinformatics"  # Override default profile
+  # Other settings from config
+)
+
+# Explicit full control
+init_project(
+  team_name = "genomicslab",
+  project_name = "cancer-study",
+  profile_name = "bioinformatics"
+)
+```
+
+### Configuration Inspection
+
+``` r
+
+# Get effective configuration from all sources
+effective <- get_effective_config()
+str(effective)
+
+# Check configuration sources
+sources <- get_config_sources()
+print(sources$team_name)  # Shows which file provides value
+
+# Get default values
+defaults <- get_config_defaults()
+print(defaults)
+```
+
+## Best Practices
+
+### Configuration Strategy by Use Case
+
+#### Solo Researcher
+
+- **Use**: User configuration only (`~/.zzcollab/config.yaml`)
+- **Profiles**: 1-2 profiles (minimal, analysis)
+- **Package management**: Add via renv as needed
+- **Version control**: Commit renv.lock, not user config
+
+#### Small Team (2-5 people)
+
+- **Use**: Project configuration (`./zzcollab.yaml` in Git)
+- **Profiles**: 2-3 profiles for team domains
+- **Package management**: Team discusses additions, uses renv
+- **Version control**: Commit project config, renv.lock
+
+#### Large Organization (10+ people)
+
+- **Use**: System + project configurations
+- **Profiles**: Comprehensive profile library
+- **Package management**: IT manages base images, teams use renv
+- **Version control**: Centralized profile library + project configs
+
+### Security Considerations
+
+#### Private Repository Settings
+
+``` yaml
+# ./zzcollab.yaml
+collaboration:
+  github:
+    default-visibility: "private"  # Always private
+    branch-protection: true         # Require PR reviews
+
+repository:
+  allow-merge-commits: false       # Clean history
+  allow-squash-merging: true      # Allow squash
+  delete-head-branches: true      # Auto-cleanup
+```
+
+#### Container Security
+
+``` yaml
+development:
+  container:
+    default-user: "analyst"        # Never run as root
+    read-only-volumes: true        # Mount shared volumes read-only
+```
+
+#### Sensitive Data
+
+- **Never commit**: API keys, passwords, credentials
+- **Use**: Environment variables for secrets
+- **Store**: Credentials outside Git (e.g., `~/.Renviron`)
+
+### Performance Optimization
+
+#### Build Time Reduction
+
+1.  **Use appropriate profiles**
+    - Development: `minimal` or `analysis`
+    - CI/CD: `alpine_minimal`
+    - Production: `modeling` or domain-specific
+2.  **Layer caching**
+    - Base image changes → full rebuild
+    - Package additions → partial rebuild
+    - Use stable base images
+3.  **Parallel operations**
+    - Enable parallel package installation
+    - Build profiles concurrently when possible
+
+#### Container Size Optimization
+
+``` yaml
+# Prefer lightweight profiles for CI/CD
+profiles:
+  alpine_minimal:    # ~200MB
+    enabled: true
+  analysis:          # ~1.2GB (for development)
+    enabled: true
+  # Avoid enabling unnecessary heavy profiles
+```
+
+### Troubleshooting Strategy
+
+1.  **Check configuration hierarchy**
+
+    ``` bash
+    zzcollab config list --verbose
+    ```
+
+2.  **Validate configuration**
+
+    ``` bash
+    zzcollab config validate
+    ```
+
+3.  **Test with dry-run**
+
+    ``` bash
+    zzcollab --dry-run analysis
+    ```
+
+4.  **Check Docker status**
+
+    ``` bash
+    docker info
+    docker images
+    ```
+
+5.  **Verbose output**
+
+    ``` bash
+    zzcollab -v analysis
+    ```
+
+## Summary
+
+ZZCOLLAB’s configuration system provides control over reproducible
+research environments through multiple layers:
+
+### Key Concepts
+
+1.  **Configuration hierarchy**: Command-line → environment → project →
+    user → system → defaults
+2.  **Docker profiles**: 14+ specialized environments from 200MB to
+    3.5GB
+3.  **Two-layer architecture**: Docker profiles (shared) + renv packages
+    (flexible)
+4.  **CLI flags**: Comprehensive control over all aspects
+5.  **R interface**: Complete configuration management within R
+
+### Quick Reference
+
+**Initialize configuration**:
+
+``` bash
+zzcollab config init
+zzcollab config set team-name "myteam"
+zzcollab config set profile-name "analysis"
+```
+
+**Create project**:
+
+``` bash
+mkdir study && cd study
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+```
+
+**Team collaboration**:
+
+``` bash
+# Team lead:
+make docker-build && make docker-push-team
+
+# Team member:
+git clone https://github.com/myteam/study.git && cd study
+make docker-build
+```
+
+**Package management**:
+
+``` bash
+# Inside container:
+install.packages("package")
+# Auto-snapshot on exit - no manual snapshot needed
+q()  # Exit R - snapshot happens automatically
+```
+
+### Further Reading
+
+- `zzcollab --help` - Complete CLI reference
+- [`help(package = "zzcollab")`](https://rdrr.io/pkg/zzcollab/man) - R
+  package documentation
+- [`vignette("getting-started")`](https://rgt47.github.io/zzcollab/articles/getting-started.md) -
+  Comprehensive tutorial
+- `docs/VARIANTS.md` - Detailed profile documentation
+- `docs/CONFIGURATION.md` - Advanced configuration guide

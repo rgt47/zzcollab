@@ -1,0 +1,1519 @@
+# Getting Started with ZZCOLLAB
+
+## Introduction
+
+This tutorial provides a systematic approach to establishing a
+reproducible research workflow using the ZZCOLLAB framework. The Palmer
+Penguins dataset (Gorman et al., 2014) serves as an illustrative example
+for implementing computational reproducibility practices in data
+analysis.
+
+### Learning Objectives
+
+Upon completion of this tutorial, researchers will be able to:
+
+1.  Initialize a containerized research project with appropriate
+    dependency management
+2.  Implement proper data organization separating immutable raw data
+    from derived datasets
+3.  Develop comprehensive validation tests for data integrity
+4.  Navigate between host and container environments for development
+    workflows
+5.  Integrate personal configuration files into containerized
+    environments
+6.  Document data transformations following research reproducibility
+    standards
+
+### System Requirements
+
+The following software components must be installed and configured:
+
+- Docker Desktop (version 20.10 or later)
+- ZZCOLLAB framework (installed in system PATH)
+- Git version control system (configured with user credentials)
+
+## Docker Profile Selection
+
+ZZCOLLAB provides a flexible Docker profile system with two approaches:
+predefined profiles for common use cases, or custom composition using
+bundle-based configuration. The profile determines which R packages are
+pre-installed in the Docker image (Layer 1), while additional packages
+can be added dynamically via
+[`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+inside containers (Layer 2).
+
+### Predefined Docker Profiles
+
+**minimal**: Lightweight development environment (~780MB) - Base:
+rocker/r-ver - Packages: renv, devtools, usethis (essential development
+tools only)
+
+**analysis**: Balanced environment for typical analyses (~1.2GB,
+recommended) - Base: rocker/rstudio - Packages: minimal + tidyverse,
+here, testthat, knitr, rmarkdown
+
+**bioinformatics**: Genomics and proteomics workflows (~1.98GB) - Base:
+bioconductor/bioconductor_docker - Packages: DESeq2, edgeR, limma,
+GenomicRanges, Biostrings
+
+**geospatial**: Spatial data analysis (~1.5GB) - Base:
+rocker/geospatial - System libs: GDAL, PROJ, GEOS - Packages: sf, terra,
+raster, mapview
+
+### Project Initialization
+
+For this Palmer Penguins analysis, the `analysis` profile provides
+necessary dependencies including tidyverse ecosystem:
+
+``` bash
+# Navigate to project workspace
+cd ~/projects
+mkdir penguin-analysis && cd penguin-analysis
+
+# Initialize with analysis profile (recommended)
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo (optional)
+
+# View available profiles
+zzc help profiles
+```
+
+### Custom Profile Composition
+
+For specialized needs, compose custom profiles using bundles:
+
+``` bash
+# Custom: bioinformatics base with modeling packages
+zzcollab -b bioconductor/bioconductor_docker --pkgs modeling
+
+# Custom: minimal base with tidyverse packages
+zzcollab -b rocker/r-ver --pkgs tidyverse
+```
+
+System library dependencies are automatically detected via
+`make check-system-deps`.
+
+### Initialization Process
+
+The initialization procedure performs the following operations:
+
+1.  Creates R package directory structure (R/, tests/, vignettes/)
+2.  Establishes data organization hierarchy (raw_data/, derived_data/)
+3.  Builds Docker image with specified package dependencies
+4.  Configures testing framework using testthat
+5.  Generates data documentation templates
+6.  Creates GitHub Actions workflow definitions
+7.  Sets reproducibility-critical environment variables in Dockerfile
+
+### Reproducibility-Critical Environment Variables
+
+ZZCOLLAB automatically configures environment variables in the
+Dockerfile that are essential for computational reproducibility. These
+variables prevent silent differences in results across team members
+working in different locales or timezones.
+
+#### Environment Variables Set
+
+``` dockerfile
+# Locale settings - standardize text processing
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# Timezone - eliminate daylight saving complications
+ENV TZ=UTC
+
+# Parallel processing - ensure deterministic execution
+ENV OMP_NUM_THREADS=1
+```
+
+#### Why These Matter
+
+**Locale Settings (LANG, LC_ALL)**:
+
+- **String sorting**: “Åland” sorts differently in US vs Swedish locales
+- **Number parsing**: European format “3,14159” becomes NA in US locale
+- **Factor ordering**: Affects reference categories in statistical
+  models
+
+Without explicit locale settings, two researchers running identical code
+on different systems can produce different statistical results.
+
+**Timezone (TZ)**:
+
+- **Date arithmetic**: Daylight saving time causes missing/duplicate
+  timestamps
+- **Time aggregation**: Different timezones produce different daily
+  summaries
+- **Temporal analyses**: Ensures consistent time-based calculations
+
+**Parallel Processing (OMP_NUM_THREADS)**:
+
+- **Deterministic execution**: Single-threaded execution (=1) ensures
+  identical results
+- **Floating-point order**: Multi-threaded summation can vary due to
+  operation order
+- **Random number generation**: Prevents race conditions in stochastic
+  analyses
+
+#### Verification
+
+These environment variables are automatically verified in continuous
+integration. The Dockerfile template includes these settings by default,
+requiring no user action.
+
+## Data Organization and Provenance
+
+Proper data management requires strict separation between original data
+sources and derived analytical datasets.
+
+### Directory Structure
+
+ZZCOLLAB implements the following data organization hierarchy:
+
+    penguin-analysis/
+    ├── analysis/
+    │   ├── data/
+    │   │   ├── raw_data/           # Immutable original data files
+    │   │   ├── derived_data/       # Processed analysis-ready datasets
+    │   │   ├── metadata/           # Data dictionaries and codebooks
+    │   │   ├── validation/         # Quality assessment reports
+    │   │   ├── README.md           # Data documentation
+    │   │   └── DATA_WORKFLOW_GUIDE.md  # Processing workflow documentation
+
+### Raw Data Acquisition
+
+Navigate to the project directory:
+
+``` bash
+cd ~/projects/penguin-analysis
+```
+
+For this tutorial, we export the Palmer Penguins dataset from the R
+package to demonstrate proper raw data handling:
+
+``` bash
+# Execute from host environment (outside container)
+R -e "library(palmerpenguins); \
+      write.csv(penguins, 'analysis/data/raw_data/penguins_raw.csv', \
+                row.names = FALSE)"
+```
+
+Verify successful data placement:
+
+``` bash
+ls -lh analysis/data/raw_data/
+# Expected output:
+# -rw-r--r--  1 user  staff   14K Oct  2 15:30 penguins_raw.csv
+```
+
+### Data Provenance Documentation
+
+**Critical for Reproducibility**: Data documentation is as essential as
+code documentation. Without comprehensive data provenance and metadata,
+even perfect computational reproducibility cannot enable independent
+verification of research findings.
+
+Complete documentation of data sources enables verification and
+citation:
+
+``` bash
+vim analysis/data/README.md
+```
+
+Add the following metadata to the Data Sources section:
+
+``` markdown
+## Data Sources and Provenance
+
+### penguins_raw.csv
+
+- **Source**: Palmer Archipelago (Antarctica) Long Term Ecological
+  Research (LTER) Program
+- **Collection Period**: 2007-2009
+- **Acquisition Date**: 2025-10-02
+- **Original Location**: palmerpenguins R package (version 0.1.1)
+- **DOI**: https://doi.org/10.1371/journal.pone.0090081
+- **Citation**: Gorman KB, Williams TD, Fraser WR (2014) Ecological
+  Sexual Dimorphism and Environmental Variability within a Community
+  of Antarctic Penguins (Genus Pygoscelis). PLoS ONE 9(3): e90081.
+- **File Size**: 14 KB
+- **MD5 Checksum**: [compute via md5sum analysis/data/raw_data/penguins_raw.csv]
+- **Observations**: 344 individuals
+- **Variables**: 8 measurements
+```
+
+### Data Dictionary Development
+
+Comprehensive variable documentation facilitates proper interpretation:
+
+``` markdown
+## Data Dictionary
+
+### penguins_raw.csv
+
+| Variable          | Type    | Description                   |
+|-------------------|---------|-------------------------------|
+| species           | Factor  | Penguin species               |
+|                   |         | (Adelie, Chinstrap, Gentoo)   |
+| island            | Factor  | Island location               |
+|                   |         | (Biscoe, Dream, Torgersen)    |
+| bill_length_mm    | Numeric | Culmen length                 |
+| bill_depth_mm     | Numeric | Culmen depth                  |
+| flipper_length_mm | Integer | Flipper length                |
+| body_mass_g       | Integer | Body mass                     |
+| sex               | Factor  | Individual sex                |
+|                   |         | (male, female)                |
+| year              | Integer | Study year                    |
+
+| Variable          | Units | Valid Range | Missing Codes |
+|-------------------|-------|-------------|---------------|
+| species           | -     | 3 levels    | NA            |
+| island            | -     | 3 levels    | NA            |
+| bill_length_mm    | mm    | 30-60       | NA            |
+| bill_depth_mm     | mm    | 13-22       | NA            |
+| flipper_length_mm | mm    | 170-235     | NA            |
+| body_mass_g       | g     | 2700-6300   | NA            |
+| sex               | -     | 2 levels    | NA            |
+| year              | year  | 2007-2009   | NA            |
+
+### Missing Data Summary
+
+- bill_length_mm: 2 missing (0.6%)
+- bill_depth_mm: 2 missing (0.6%)
+- flipper_length_mm: 2 missing (0.6%)
+- body_mass_g: 2 missing (0.6%)
+- sex: 11 missing (3.2%)
+- Total observations: 344 penguins
+```
+
+## Data Validation Testing
+
+Automated testing ensures raw data integrity and detects unauthorized
+modifications to immutable source files.
+
+### Testing Rationale
+
+From the data workflow documentation:
+
+> Data validation testing prevents silent errors that compromise
+> research integrity. Tests serve multiple functions: detecting
+> accidental modifications, validating quality assumptions, documenting
+> expected properties, and enabling reproducible research workflows.
+
+### Test Implementation
+
+Create comprehensive validation tests:
+
+``` bash
+# Execute from host environment
+vim tests/testthat/test-raw-data-validation.R
+```
+
+Implement the following test suite:
+
+``` r
+
+# tests/testthat/test-raw-data-validation.R
+library(testthat)
+
+#=======================================================================
+# RAW DATA VALIDATION TESTS
+#=======================================================================
+# Purpose: Ensure raw data maintains unchanging characteristics
+# Rationale: Raw data immutability requires validation against
+#            accidental modifications
+
+test_that("penguins raw data file exists and is accessible", {
+  data_file <- "analysis/data/raw_data/penguins_raw.csv"
+
+  # Verify file existence
+  expect_true(
+    file.exists(data_file),
+    info = "Raw data file must exist at specified location"
+  )
+
+  # Verify file readability
+  expect_no_error({
+    data <- read.csv(data_file)
+  }, info = "Raw data file must be readable without errors")
+})
+
+test_that("penguins raw data has expected structure", {
+  data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
+
+  # Validate observation count (raw data invariant)
+  expect_equal(
+    nrow(data), 344,
+    info = "Raw data must contain exactly 344 observations"
+  )
+
+  # Validate variable count
+  expect_equal(
+    ncol(data), 8,
+    info = "Raw data must contain exactly 8 variables"
+  )
+
+  # Validate column names and ordering
+  expected_cols <- c(
+    "species", "island", "bill_length_mm", "bill_depth_mm",
+    "flipper_length_mm", "body_mass_g", "sex", "year"
+  )
+  expect_equal(
+    names(data), expected_cols,
+    info = "Column names and order must match specification"
+  )
+})
+
+test_that("penguins raw data has expected data types", {
+  data <- read.csv(
+    "analysis/data/raw_data/penguins_raw.csv",
+    stringsAsFactors = TRUE
+  )
+
+  # Validate categorical variables
+  expect_true(
+    is.factor(data$species),
+    info = "Species must be factor type"
+  )
+  expect_true(
+    is.factor(data$island),
+    info = "Island must be factor type"
+  )
+  expect_true(
+    is.factor(data$sex),
+    info = "Sex must be factor type"
+  )
+
+  # Validate numeric variables
+  expect_true(
+    is.numeric(data$bill_length_mm),
+    info = "Bill length must be numeric type"
+  )
+  expect_true(
+    is.numeric(data$bill_depth_mm),
+    info = "Bill depth must be numeric type"
+  )
+
+  # Validate integer variables
+  expect_true(
+    is.integer(data$flipper_length_mm),
+    info = "Flipper length must be integer type"
+  )
+  expect_true(
+    is.integer(data$body_mass_g),
+    info = "Body mass must be integer type"
+  )
+  expect_true(
+    is.integer(data$year),
+    info = "Year must be integer type"
+  )
+})
+
+test_that("penguins raw data has expected factor levels", {
+  data <- read.csv(
+    "analysis/data/raw_data/penguins_raw.csv",
+    stringsAsFactors = TRUE
+  )
+
+  # Validate species levels
+  expect_equal(
+    levels(data$species),
+    c("Adelie", "Chinstrap", "Gentoo"),
+    info = "Species must have three levels in alphabetical order"
+  )
+
+  # Validate island levels
+  expect_equal(
+    levels(data$island),
+    c("Biscoe", "Dream", "Torgersen"),
+    info = "Island must have three levels in alphabetical order"
+  )
+
+  # Validate sex levels
+  expect_equal(
+    levels(data$sex),
+    c("female", "male"),
+    info = "Sex must have two levels in alphabetical order"
+  )
+})
+
+test_that("penguins raw data values within expected ranges", {
+  data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
+
+  # Remove NA values for range validation
+  bill_length <-
+    data$bill_length_mm[!is.na(data$bill_length_mm)]
+  bill_depth <-
+    data$bill_depth_mm[!is.na(data$bill_depth_mm)]
+  flipper <-
+    data$flipper_length_mm[!is.na(data$flipper_length_mm)]
+  body_mass <-
+    data$body_mass_g[!is.na(data$body_mass_g)]
+
+  # Validate bill length (biologically plausible range)
+  expect_true(
+    all(bill_length >= 30 & bill_length <= 60),
+    info = "Bill length must be within 30-60mm range"
+  )
+
+  # Validate bill depth
+  expect_true(
+    all(bill_depth >= 13 & bill_depth <= 22),
+    info = "Bill depth must be within 13-22mm range"
+  )
+
+  # Validate flipper length
+  expect_true(
+    all(flipper >= 170 & flipper <= 235),
+    info = "Flipper length must be within 170-235mm range"
+  )
+
+  # Validate body mass
+  expect_true(
+    all(body_mass >= 2700 & body_mass <= 6300),
+    info = "Body mass must be within 2700-6300g range"
+  )
+
+  # Validate study years
+  expect_true(
+    all(data$year >= 2007 & data$year <= 2009),
+    info = "Study years must be within 2007-2009 period"
+  )
+})
+
+test_that("penguins raw data has expected missing pattern", {
+  data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
+
+  # Quantify missing values per variable
+  missing_counts <- colSums(is.na(data))
+
+  # Validate morphometric measurements (2 missing each)
+  expect_equal(
+    missing_counts["bill_length_mm"], 2,
+    info = "Bill length must have exactly 2 missing values"
+  )
+  expect_equal(
+    missing_counts["bill_depth_mm"], 2,
+    info = "Bill depth must have exactly 2 missing values"
+  )
+  expect_equal(
+    missing_counts["flipper_length_mm"], 2,
+    info = "Flipper length must have exactly 2 missing values"
+  )
+  expect_equal(
+    missing_counts["body_mass_g"], 2,
+    info = "Body mass must have exactly 2 missing values"
+  )
+
+  # Validate sex variable (11 missing)
+  expect_equal(
+    missing_counts["sex"], 11,
+    info = "Sex must have exactly 11 missing values"
+  )
+
+  # Validate complete variables (0 missing)
+  expect_equal(
+    missing_counts["species"], 0,
+    info = "Species must have no missing values"
+  )
+  expect_equal(
+    missing_counts["island"], 0,
+    info = "Island must have no missing values"
+  )
+  expect_equal(
+    missing_counts["year"], 0,
+    info = "Year must have no missing values"
+  )
+})
+
+test_that("penguins raw data sample sizes per group", {
+  data <- read.csv(
+    "analysis/data/raw_data/penguins_raw.csv",
+    stringsAsFactors = TRUE
+  )
+
+  # Validate species distribution
+  species_counts <- table(data$species)
+  expect_equal(
+    as.integer(species_counts["Adelie"]), 152,
+    info = "Adelie must have 152 observations"
+  )
+  expect_equal(
+    as.integer(species_counts["Chinstrap"]), 68,
+    info = "Chinstrap must have 68 observations"
+  )
+  expect_equal(
+    as.integer(species_counts["Gentoo"]), 124,
+    info = "Gentoo must have 124 observations"
+  )
+
+  # Validate island distribution
+  island_counts <- table(data$island)
+  expect_equal(
+    as.integer(island_counts["Biscoe"]), 168,
+    info = "Biscoe must have 168 observations"
+  )
+  expect_equal(
+    as.integer(island_counts["Dream"]), 124,
+    info = "Dream must have 124 observations"
+  )
+  expect_equal(
+    as.integer(island_counts["Torgersen"]), 52,
+    info = "Torgersen must have 52 observations"
+  )
+})
+
+test_that("penguins raw data file integrity verification", {
+  data_file <- "analysis/data/raw_data/penguins_raw.csv"
+
+  # Calculate MD5 checksum for file integrity
+  file_md5 <- tools::md5sum(data_file)
+
+  # Verify checksum format (32 hexadecimal characters)
+  expect_true(
+    nchar(file_md5) == 32,
+    info = "MD5 checksum must be 32 characters"
+  )
+
+  # Document checksum for future validation
+  # In production: expect_equal(file_md5, "known_hash_value")
+  message("Current MD5 checksum: ", file_md5)
+  message("Record this value for ongoing integrity checks")
+})
+```
+
+### Test Execution
+
+Execute validation tests from the host environment:
+
+``` bash
+# Navigate to project directory
+cd ~/projects/penguin-analysis
+
+# Run validation test suite
+Rscript -e "library(testthat); \
+  test_file('tests/testthat/test-raw-data-validation.R')"
+```
+
+## Container Environment Usage
+
+The Docker container provides an isolated, reproducible computational
+environment with all specified dependencies pre-installed.
+
+### Container Initialization
+
+Navigate to the project directory and enter the container:
+
+``` bash
+# Navigate to project location
+cd ~/projects/penguin-analysis
+
+# Enter container with Zsh shell
+make r
+```
+
+This command performs the following operations:
+
+1.  Builds or starts the Docker container with profile packages
+2.  Provides Zsh shell within the container environment
+3.  Mounts project directory at /home/analyst/project
+
+### Alternative Entry Methods
+
+Multiple interfaces are available for container interaction:
+
+``` bash
+# Zsh shell (recommended for development)
+make r
+
+# RStudio Server web interface
+make docker-rstudio
+# Access via web browser: http://localhost:8787
+# Credentials: username=rstudio, password=rstudio
+
+# R console only
+make docker-r
+```
+
+### Environment Verification
+
+Confirm proper container configuration:
+
+``` bash
+# Verify R installation
+R --version
+
+# Verify package availability (analysis profile)
+R -e "library(palmerpenguins); library(tidyverse); sessionInfo()"
+
+# Verify project file accessibility
+ls -la
+# Expected: R/, data/, tests/, vignettes/, etc.
+```
+
+## Data Preparation Workflow
+
+Analysis-ready datasets are created through documented transformations
+of raw data files.
+
+### Preparation Function Development
+
+Create a data preparation function with comprehensive documentation:
+
+``` r
+# Within container environment
+cat > R/prepare_penguin_data.R << 'EOF'
+#' Prepare Palmer Penguins Data for Analysis
+#'
+#' This function processes raw penguin morphometric data to create
+#' analysis-ready datasets through systematic transformations.
+#'
+#' Processing steps include:
+#' \itemize{
+#'   \item Removal of observations with missing values
+#'   \item Addition of derived variables (ratios, transformations)
+#'   \item Proper ordering of factor levels for visualization
+#' }
+#'
+#' @param data_file Character string specifying path to raw data CSV
+#' @param n_records Integer specifying number of records to return
+#'   (NULL returns all complete cases)
+#' @return data.frame containing cleaned, analysis-ready data with
+#'   metadata attributes
+#' @export
+#' @examples
+#' penguins_clean <- prepare_penguin_data()
+#' summary(penguins_clean)
+prepare_penguin_data <- function(
+    data_file = "analysis/data/raw_data/penguins_raw.csv",
+    n_records = NULL) {
+
+  # Input validation
+  if (!file.exists(data_file)) {
+    stop("Data file not found: ", data_file)
+  }
+
+  # Load raw data with factor conversion
+  data <- read.csv(data_file, stringsAsFactors = TRUE)
+
+  # Remove incomplete cases
+  clean_data <- data[complete.cases(data), ]
+
+  # Generate derived variables for analysis
+  clean_data$bill_ratio <-
+    clean_data$bill_length_mm / clean_data$bill_depth_mm
+  clean_data$log_body_mass_g <- log(clean_data$body_mass_g)
+  clean_data$body_mass_kg <- clean_data$body_mass_g / 1000
+
+  # Order species factor by body mass for visualization
+  species_order <- c("Adelie", "Chinstrap", "Gentoo")
+  clean_data$species <-
+    factor(clean_data$species, levels = species_order)
+
+  # Subset to specified record count if requested
+  if (!is.null(n_records)) {
+    if (n_records > nrow(clean_data)) {
+      warning(
+        "Requested ", n_records, " records but only ",
+        nrow(clean_data), " available"
+      )
+    }
+    clean_data <-
+      clean_data[1:min(n_records, nrow(clean_data)), ]
+  }
+
+  # Attach metadata attributes
+  attr(clean_data, "preparation_date") <- Sys.Date()
+  attr(clean_data, "source_file") <- data_file
+  attr(clean_data, "n_removed") <- nrow(data) - nrow(clean_data)
+
+  return(clean_data)
+}
+EOF
+```
+
+### Preparation Execution
+
+Execute the data preparation workflow within the container:
+
+``` r
+
+# Start R session within container
+R
+
+# Load project functions
+devtools::load_all()
+
+# Execute preparation function
+penguins_clean <- prepare_penguin_data()
+
+# Verify transformations
+summary(penguins_clean)
+str(penguins_clean)
+
+# Inspect derived variables
+head(
+  penguins_clean[, c("species", "body_mass_g",
+                     "log_body_mass_g", "body_mass_kg",
+                     "bill_ratio")]
+)
+
+# Verify record removal count
+attr(penguins_clean, "n_removed")  # Expected: 11 records
+
+# Write to derived data directory
+saveRDS(penguins_clean, "analysis/data/derived_data/penguins_clean.rds")
+write.csv(
+  penguins_clean,
+  "analysis/data/derived_data/penguins_clean.csv",
+  row.names = FALSE
+)
+
+# Exit R session
+quit(save = "no")
+```
+
+### Derived Data Documentation
+
+Document the transformation process for reproducibility:
+
+``` bash
+# Within container environment
+cat >> analysis/data/README.md << 'EOF'
+
+## Derived Data Files
+
+### penguins_clean.rds / penguins_clean.csv
+
+**Description**: Analysis-ready Palmer Penguins dataset with
+complete cases and derived analytical variables.
+
+**Source Script**: R/prepare_penguin_data.R
+**Source Data**: analysis/data/raw_data/penguins_raw.csv
+**Creation Date**: 2025-10-02
+
+**Transformations Applied**:
+
+1. Removed 11 observations with missing values (3.2% of dataset)
+2. Calculated bill_ratio = bill_length_mm / bill_depth_mm
+3. Calculated log_body_mass_g = log(body_mass_g) for log-linear
+   models
+4. Calculated body_mass_kg = body_mass_g / 1000 for improved
+   interpretability
+5. Ordered species factor by body mass
+   (Adelie < Chinstrap < Gentoo)
+
+**Final Sample Size**: 333 complete observations
+
+**Quality Assurance**:
+
+- No missing values in any variable
+- All derived variables within expected ranges
+- Species distribution maintained: Adelie=146, Chinstrap=68,
+  Gentoo=119
+
+**Usage Example**:
+
+```r
+# Load prepared data in R
+penguins_clean <- readRDS("analysis/data/derived_data/penguins_clean.rds")
+```
+
+EOF
+
+
+    # Function Testing
+
+    Comprehensive unit tests ensure data preparation functions behave as
+    specified across various input conditions.
+
+    ## Test Suite Development
+
+    Create tests for the preparation function:
+
+    ```bash
+    # Within container environment
+    cat > tests/testthat/test-prepare-penguin-data.R << 'EOF'
+    library(testthat)
+
+    test_that("prepare_penguin_data() loads and cleans correctly", {
+      # Execute preparation function
+      penguins <- prepare_penguin_data()
+
+      # Verify return type
+      expect_s3_class(penguins, "data.frame")
+
+      # Verify completeness
+      expect_false(
+        any(is.na(penguins)),
+        info = "Cleaned data must contain no missing values"
+      )
+
+      # Verify sample size (344 original - 11 incomplete = 333)
+      expect_equal(
+        nrow(penguins), 333,
+        info = "Must contain 333 complete observations"
+      )
+
+      # Verify derived variables present
+      expect_true(
+        all(c("bill_ratio", "log_body_mass_g", "body_mass_kg")
+            %in% names(penguins)),
+        info = "Derived variables must be present"
+      )
+    })
+
+    test_that("prepare_penguin_data() creates valid derivations", {
+      penguins <- prepare_penguin_data()
+
+      # Verify bill ratio validity
+      expect_true(
+        all(penguins$bill_ratio > 0),
+        info = "Bill ratio must be positive"
+      )
+
+      # Verify bill ratio calculation
+      expected_ratio <-
+        penguins$bill_length_mm / penguins$bill_depth_mm
+      expect_equal(
+        penguins$bill_ratio, expected_ratio,
+        info = "Bill ratio calculation must be accurate"
+      )
+
+      # Verify log body mass calculation
+      expected_log <- log(penguins$body_mass_g)
+      expect_equal(
+        penguins$log_body_mass_g, expected_log,
+        info = "Log body mass calculation must be accurate"
+      )
+
+      # Verify body mass conversion
+      expected_kg <- penguins$body_mass_g / 1000
+      expect_equal(
+        penguins$body_mass_kg, expected_kg,
+        info = "Body mass conversion must be accurate"
+      )
+    })
+
+    test_that("prepare_penguin_data() handles n_records parameter", {
+      # Request subset of 50 records
+      penguins_50 <- prepare_penguin_data(n_records = 50)
+
+      expect_equal(
+        nrow(penguins_50), 50,
+        info = "Must return exactly 50 records when requested"
+      )
+
+      # Request excessive records (should warn)
+      expect_warning({
+        penguins_many <- prepare_penguin_data(n_records = 500)
+      }, regexp = "only.*available")
+
+      expect_equal(
+        nrow(penguins_many), 333,
+        info = "Must return all available records when request exceeds"
+      )
+    })
+
+    test_that("prepare_penguin_data() adds metadata attributes", {
+      penguins <- prepare_penguin_data()
+
+      # Verify metadata presence
+      expect_true(
+        !is.null(attr(penguins, "preparation_date")),
+        info = "Must contain preparation_date attribute"
+      )
+      expect_true(
+        !is.null(attr(penguins, "source_file")),
+        info = "Must contain source_file attribute"
+      )
+      expect_true(
+        !is.null(attr(penguins, "n_removed")),
+        info = "Must contain n_removed attribute"
+      )
+
+      # Verify n_removed value
+      expect_equal(
+        attr(penguins, "n_removed"), 11,
+        info = "Must have removed exactly 11 incomplete cases"
+      )
+    })
+
+    test_that("prepare_penguin_data() maintains distribution", {
+      penguins <- prepare_penguin_data()
+
+      # Quantify species distribution
+      species_counts <- table(penguins$species)
+
+      # Verify all species present
+      expect_equal(
+        length(species_counts), 3,
+        info = "Must contain all three species"
+      )
+
+      # Verify adequate sample sizes after missing data removal
+      expect_true(
+        species_counts["Adelie"] > 140,
+        info = "Must retain substantial Adelie sample"
+      )
+      expect_true(
+        species_counts["Gentoo"] > 110,
+        info = "Must retain substantial Gentoo sample"
+      )
+      expect_true(
+        species_counts["Chinstrap"] > 60,
+        info = "Must retain substantial Chinstrap sample"
+      )
+    })
+
+    test_that("prepare_penguin_data() errors on invalid file", {
+      expect_error({
+        prepare_penguin_data(data_file = "nonexistent.csv")
+      }, regexp = "Data file not found")
+    })
+    EOF
+
+### Test Execution
+
+Run the complete test suite:
+
+``` bash
+# Within container environment
+R -e "devtools::test()"
+```
+
+## Container Exit Procedures
+
+Upon completion of development work, exit the container to return to the
+host environment.
+
+### Exit Methods
+
+``` bash
+# Exit container (returns to host)
+exit
+
+# Alternative: Ctrl+D keyboard shortcut
+```
+
+### Data Persistence
+
+Container exit behavior:
+
+1.  Container process terminates
+2.  All files persist on host filesystem (mounted volumes)
+3.  Git commits remain accessible on host
+4.  Container can be restarted with make r
+
+### Verification of Persistence
+
+Confirm work persists after container exit:
+
+``` bash
+# Verify derived data persistence
+ls -lh analysis/data/derived_data/
+# Expected: penguins_clean.rds, penguins_clean.csv
+
+# Verify function code persistence
+cat R/prepare_penguin_data.R
+
+# Verify test persistence
+ls tests/testthat/
+```
+
+## Complete Analysis Example
+
+A comprehensive analysis demonstrates the complete workflow from data
+preparation through statistical modeling and visualization.
+
+### Analysis Script Development
+
+Create a complete analysis script on the host:
+
+``` bash
+# Execute from host environment
+cat > scripts/01_penguin_bill_analysis.R << 'EOF'
+#=======================================================================
+# Palmer Penguins Bill Dimension Analysis
+#=======================================================================
+# Purpose: Examine relationship between bill dimensions and body mass
+#          across penguin species
+# Author: Research Team
+# Date: 2025-10-02
+
+library(tidyverse)
+library(palmerpenguins)
+library(broom)
+
+# Load prepared dataset
+penguins_clean <- readRDS("analysis/data/derived_data/penguins_clean.rds")
+
+#=======================================================================
+# Exploratory Analysis
+#=======================================================================
+
+# Calculate summary statistics by species
+summary_stats <- penguins_clean %>%
+  group_by(species) %>%
+  summarise(
+    n = n(),
+    mean_bill_length = mean(bill_length_mm),
+    sd_bill_length = sd(bill_length_mm),
+    mean_body_mass = mean(body_mass_g),
+    sd_body_mass = sd(body_mass_g),
+    .groups = "drop"
+  )
+
+print("Summary Statistics by Species:")
+print(summary_stats)
+
+#=======================================================================
+# Statistical Modeling
+#=======================================================================
+
+# Fit linear model with interaction terms
+model <- lm(
+  body_mass_g ~ bill_length_mm * species +
+                bill_depth_mm * species,
+  data = penguins_clean
+)
+
+# Extract model coefficients and fit statistics
+model_summary <- tidy(model)
+model_fit <- glance(model)
+
+print("\nModel Coefficients:")
+print(model_summary)
+print(paste("R-squared:", round(model_fit$r.squared, 3)))
+
+#=======================================================================
+# Visualization
+#=======================================================================
+
+# Create scatter plot with species-specific regression lines
+p1 <- ggplot(
+  penguins_clean,
+  aes(x = bill_length_mm, y = body_mass_g, color = species)
+) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "Penguin Body Mass vs Bill Length",
+    subtitle = "Palmer Archipelago Penguins (2007-2009)",
+    x = "Bill Length (mm)",
+    y = "Body Mass (g)",
+    color = "Species"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Write figure to file
+ggsave(
+  "analysis/figures/bill_length_vs_mass.png", p1,
+  width = 10, height = 6, dpi = 300
+)
+
+print("\nAnalysis complete.")
+print("Figure: analysis/figures/bill_length_vs_mass.png")
+
+#=======================================================================
+# Save Results
+#=======================================================================
+
+# Compile results object
+results <- list(
+  summary_stats = summary_stats,
+  model = model,
+  model_summary = model_summary,
+  model_fit = model_fit,
+  plot = p1
+)
+
+# Write results to file
+saveRDS(results, "analysis/data/derived_data/bill_analysis_results.rds")
+print("Results: analysis/data/derived_data/bill_analysis_results.rds")
+EOF
+```
+
+### Analysis Execution
+
+Run the analysis within the container environment:
+
+``` bash
+# Enter container
+make r
+
+# Execute analysis script
+Rscript scripts/01_penguin_bill_analysis.R
+
+# Exit container
+exit
+```
+
+### Results Examination
+
+View results from the host environment:
+
+``` bash
+# View generated figure (macOS)
+open analysis/figures/bill_length_vs_mass.png
+
+# View generated figure (Linux)
+xdg-open analysis/figures/bill_length_vs_mass.png
+
+# Load and inspect results in R
+R
+results <- readRDS("analysis/data/derived_data/bill_analysis_results.rds")
+print(results$summary_stats)
+print(results$model_summary)
+quit(save = "no")
+```
+
+## Version Control Integration
+
+Before committing changes, validate that package dependencies are
+properly synchronized with the code.
+
+### Dependency Validation
+
+ZZCOLLAB provides automated dependency checking to ensure
+reproducibility:
+
+``` bash
+# On HOST (after exiting container) - NO R INSTALLATION REQUIRED!
+# Validate dependencies are synchronized (pure shell validation)
+make check-renv  # Uses grep, awk, jq - NO R required!
+```
+
+**Pure Shell Validation** (October 2025):
+
+This pure shell validation performs comprehensive checks without
+requiring R on the host:
+
+- Verifies all packages used in R/ code are declared in DESCRIPTION
+- Checks that renv.lock matches actual package usage
+- Validates packages across CRAN, Bioconductor, and GitHub
+- Ensures no missing or undeclared dependencies
+- **Works without R installed on host machine!** (uses grep, awk, jq)
+
+**Common validation scenarios:**
+
+``` bash
+# Standard validation (recommended before every commit)
+make check-renv  # Pure shell validation
+
+# Strict mode (also scans tests/, vignettes/)
+make check-renv-strict
+```
+
+**Interpreting validation results:**
+
+    # Success - ready to commit
+    ✓ All dependencies properly declared
+    ✓ renv.lock synchronized with code
+    ✓ No missing packages detected
+
+    # Failure - requires attention
+    ✗ Missing packages in DESCRIPTION: tidymodels, broom
+    ✗ Package used but not in renv.lock: ggrepel
+    → Run with --fix flag to resolve automatically
+
+### Commit Workflow
+
+After successful validation, commit changes to version control:
+
+``` bash
+# Check repository status
+git status
+
+# Stage all modifications
+git add .
+
+# Create descriptive commit
+git commit -m "Implement Palmer Penguins bill dimension analysis
+
+- Add raw data with comprehensive validation tests
+- Develop prepare_penguin_data() function with unit tests
+- Implement bill dimension analysis with linear models
+- Generate publication-quality visualizations
+- Document data provenance and transformations
+
+Tests: All 23 tests passing
+Coverage: Complete coverage of data preparation code
+Dependencies: Validated with pure shell validation (make check-renv)"
+
+# Push to remote repository (if configured)
+git push
+```
+
+### Continuous Integration
+
+The dependency validation script integrates with GitHub Actions for
+automated checking on every commit. The workflow validates:
+
+- Package dependencies properly declared
+- renv.lock synchronized with code
+- All tests passing
+- R CMD check successful
+
+This ensures reproducibility is maintained throughout the project
+lifecycle.
+
+## Workflow Summary
+
+### Command Reference
+
+``` bash
+# Project initialization
+mkdir penguin-analysis && cd penguin-analysis
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo (optional)
+
+# Raw data placement (host environment)
+cp ~/Downloads/data.csv ~/projects/penguin-analysis/analysis/data/raw_data/
+
+# Container entry
+cd ~/projects/penguin-analysis
+make r
+
+# Development workflow (within container)
+R                              # Start R session
+devtools::load_all()           # Load project functions
+devtools::test()               # Execute test suite
+source("scripts/01_analysis.R")  # Run analysis
+exit                           # Exit R
+
+# Container exit
+exit
+
+# Version control (host environment)
+git add .
+git commit -m "Commit message"
+git push
+```
+
+### Docker Profile Comparison
+
+| Profile        | Size    | Application                    | Base Image        |
+|----------------|---------|--------------------------------|-------------------|
+| minimal        | ~780MB  | Lightweight development        | rocker/r-ver      |
+| analysis       | ~1.2GB  | General analyses (recommended) | rocker/rstudio    |
+| bioinformatics | ~1.98GB | Genomics workflows             | bioconductor      |
+| geospatial     | ~1.5GB  | Spatial data analysis          | rocker/geospatial |
+
+### Data Directory Functions
+
+| Directory                   | Function                | Modification |
+|-----------------------------|-------------------------|--------------|
+| analysis/data/raw_data/     | Original immutable data | Prohibited   |
+| analysis/data/derived_data/ | Analysis-ready datasets | Permitted    |
+| analysis/data/metadata/     | Documentation files     | Permitted    |
+| analysis/data/validation/   | Quality reports         | Permitted    |
+
+## Reproducibility Verification Checklist
+
+Before sharing your analysis or submitting for publication, verify that
+all five pillars of reproducibility are in place:
+
+### Pillar 1: Computational Environment (Dockerfile)
+
+- ✅ R version explicitly specified in Dockerfile
+- ✅ System dependencies documented (libcurl, libssl, domain-specific
+  libraries)
+- ✅ Environment variables set (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+- ✅ Base image documented (rocker/verse, bioconductor, etc.)
+
+**Verification**:
+
+``` bash
+grep "FROM rocker" Dockerfile
+grep "ENV LANG" Dockerfile
+```
+
+### Pillar 2: Package Dependencies (renv.lock)
+
+- ✅ All R packages committed to version control
+- ✅ Exact versions with repository sources specified
+- ✅ Packages from all contributors included (for team projects)
+- ✅ renv.lock synchronized with code
+
+**Verification** (pure shell - NO R REQUIRED!):
+
+``` bash
+make check-renv  # Pure shell validation (grep, awk, jq)
+git status renv.lock  # Should show "nothing to commit"
+```
+
+### Pillar 3: R Session Configuration (.Rprofile)
+
+- ✅ Critical R options version controlled
+- ✅ Monitored by check_rprofile_options.R in CI/CD
+- ✅ Copied into Docker container
+- ✅ No undocumented option changes
+
+**Verification**:
+
+``` bash
+git ls-files | grep .Rprofile
+Rscript check_rprofile_options.R
+```
+
+### Pillar 4: Computational Logic (Source Code)
+
+- ✅ Analysis scripts committed (analysis/scripts/)
+- ✅ Reusable functions documented (R/)
+- ✅ Comprehensive tests written (tests/testthat/)
+- ✅ Random seeds explicit for stochastic analyses
+
+**Verification**:
+
+``` r
+
+devtools::test()           # All tests should pass
+devtools::check()          # R CMD check should succeed
+```
+
+### Pillar 5: Research Data
+
+- ✅ Raw data preserved in analysis/data/raw_data/ (read-only, original
+  files)
+- ✅ Data provenance documented (source, collection dates, DOI/citation)
+- ✅ Data dictionary complete (variables, types, units, missing codes)
+- ✅ Processing scripts link raw to derived data
+- ✅ Data quality notes documented (validation, known issues)
+
+**Verification**:
+
+``` bash
+ls -lh analysis/data/raw_data/        # Raw data files present
+cat analysis/data/README.md           # Documentation complete
+devtools::test()                      # Data validation tests pass
+```
+
+### Continuous Integration
+
+- ✅ GitHub Actions workflow configured (.github/workflows/)
+- ✅ Automated tests run on every commit
+- ✅ Dependency validation integrated
+- ✅ R CMD check passes in clean environment
+
+**Verification**:
+
+``` bash
+# Check CI status
+git push
+# Visit GitHub Actions tab - all checks should pass
+```
+
+### Collaboration Ready
+
+- ✅ Repository cloneable by colleagues
+- ✅ README.md provides clear setup instructions
+- ✅ Docker image builds successfully
+- ✅ Analysis reproduces identical results
+
+**Verification**:
+
+``` bash
+# Colleague workflow simulation
+git clone <repository-url> test-clone
+cd test-clone
+
+# Build Docker image from project Dockerfile
+make docker-build
+
+# Enter container and run analysis
+make r
+# Inside container:
+Rscript scripts/01_penguin_bill_analysis.R
+# Should produce identical results
+```
+
+## Conclusion
+
+This tutorial has demonstrated a systematic approach to reproducible
+research using the ZZCOLLAB framework. The five pillars of
+reproducibility ensure that analyses are independently verifiable:
+
+1.  **Computational Environment** - Dockerfile with environment
+    variables
+2.  **Package Dependencies** - renv.lock with exact versions
+3.  **R Session Configuration** - .Rprofile with monitored options
+4.  **Computational Logic** - Version-controlled code with explicit
+    random seeds
+5.  **Research Data** - Documented data with provenance and quality
+    assurance
+
+All five pillars are necessary and sufficient for complete
+reproducibility. The checklist above ensures no critical component is
+omitted.
+
+### Additional Resources
+
+For advanced topics, consult the following documentation:
+
+- **docs/REPRODUCIBILITY_BEST_PRACTICES.md**: Practical reproducibility
+  guidance and troubleshooting
+- **docs/COLLABORATIVE_REPRODUCIBILITY.md**: Comprehensive five-pillar
+  reproducibility model
+- **data/DATA_WORKFLOW_GUIDE.md**: Advanced data processing workflows
+- **docs/TESTING_GUIDE.md**: Comprehensive testing guide
+- **ZZCOLLAB_USER_GUIDE.md**: Team collaboration workflows
+- **.github/workflows/**: Continuous integration configuration
+
+### Collaborative Workflow
+
+#### Team Lead Setup
+
+The team lead creates the project and shares the team image:
+
+``` bash
+# Create project structure
+cd ~/projects
+mkdir penguin-analysis && cd penguin-analysis
+
+# Initialize project with analysis profile
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+
+# Build team Docker image (installs packages from renv.lock)
+make docker-build
+
+# Push team image to Docker Hub (optional but efficient for team)
+make docker-push-team
+
+# Commit and push project structure
+git add .
+git commit -m "Initial project setup with Palmer Penguins analysis"
+git push -u origin main
+```
+
+#### Team Members Joining
+
+Colleagues can reproduce this analysis using the following procedure:
+
+``` bash
+# Clone repository
+git clone https://github.com/yourname/penguin-analysis.git
+cd penguin-analysis
+
+# Build Docker image from project Dockerfile
+make docker-build
+
+# Enter container environment
+make r
+
+# Execute analysis
+Rscript scripts/01_penguin_bill_analysis.R
+```
+
+**Note**: DockerHub is optional but efficient for teams. If team image
+is not available, building from the Dockerfile produces an identical
+environment.
+
+## References
+
+Gorman KB, Williams TD, Fraser WR (2014) Ecological Sexual Dimorphism
+and Environmental Variability within a Community of Antarctic Penguins
+(Genus Pygoscelis). PLoS ONE 9(3): e90081.
+<https://doi.org/10.1371/journal.pone.0090081>

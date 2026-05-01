@@ -1,0 +1,496 @@
+# R Graphics in Kitty Terminal
+
+## Overview
+
+This vignette describes how to display R graphics when using the kitty
+terminal emulator with Docker-based R environments. Unlike X11
+forwarding, kitty’s native graphics protocol displays images directly in
+the terminal without requiring XQuartz or X11 libraries.
+
+### Why Kitty Graphics?
+
+| Approach | Pros | Cons |
+|----|----|----|
+| **Kitty native** | No X11 setup, lighter Docker image, works over SSH | Plots are static (save-then-view) |
+| **X11 forwarding** | Interactive R graphics devices | Requires XQuartz, heavier image, latency |
+| **httpgd** | Interactive, works anywhere with browser | Requires port forwarding |
+
+## Prerequisites
+
+- [Kitty terminal](https://sw.kovidgoyal.net/kitty/) installed on your
+  host
+- Docker with a ZZCOLLAB profile (e.g., `ubuntu_standard_analysis_vim`)
+- No X11 or XQuartz required
+
+## Method 1: Save and Display with icat
+
+The simplest approach: save plots to files and display them using
+kitty’s `icat` kitten.
+
+### Basic Workflow
+
+``` r
+
+library(ggplot2)
+
+# Create a plot
+p <- ggplot(mtcars, aes(wt, mpg)) +
+
+geom_point() +
+theme_minimal()
+
+# Save to file
+ggsave("plot.png", p, width = 8, height = 6, dpi = 150)
+```
+
+``` bash
+# Display in kitty (run from terminal, not R)
+kitty +kitten icat plot.png
+```
+
+### Helper Function
+
+Add this to your `.Rprofile` or project’s R scripts to streamline the
+workflow:
+
+``` r
+
+#' Display a plot in kitty terminal
+#'
+#' Saves the plot to a temporary file and displays it using kitty's icat
+#'
+#' @param plot A ggplot2 object or NULL to use last_plot()
+#' @param width Plot width in inches
+#' @param height Plot height in inches
+#' @param dpi Resolution in dots per inch
+#'
+#' @examples
+#' library(ggplot2)
+#' ggplot(mtcars, aes(wt, mpg)) + geom_point()
+#' kitty_plot()
+kitty_plot <- function(plot = NULL, width = 8, height = 6, dpi = 150) {
+if (is.null(plot)) {
+    plot <- ggplot2::last_plot()
+}
+if (is.null(plot)) {
+    stop("No plot to display")
+}
+
+tmp <- tempfile(fileext = ".png")
+ggplot2::ggsave(tmp, plot, width = width, height = height, dpi = dpi)
+
+# Display using kitty icat
+system2("kitty", c("+kitten", "icat", tmp))
+
+invisible(plot)
+}
+```
+
+Usage:
+
+``` r
+
+library(ggplot2)
+
+# Create and display in one step
+ggplot(mtcars, aes(wt, mpg)) +
+geom_point() +
+theme_minimal()
+
+kitty_plot()
+
+# Or with custom dimensions
+kitty_plot(width = 10, height = 8)
+```
+
+### Base R Graphics
+
+For base R plots, save explicitly:
+
+``` r
+
+#' Display base R plot in kitty
+#'
+#' @param expr An expression that creates a plot
+#' @param width Width in inches
+#' @param height Height in inches
+kitty_base <- function(expr, width = 8, height = 6) {
+tmp <- tempfile(fileext = ".png")
+png(tmp, width = width, height = height, units = "in", res = 150)
+eval(substitute(expr))
+dev.off()
+system2("kitty", c("+kitten", "icat", tmp))
+}
+
+# Usage
+kitty_base(plot(mtcars$wt, mtcars$mpg))
+kitty_base(hist(rnorm(1000)))
+```
+
+## Method 2: httpgd for Interactive Graphics
+
+The `httpgd` package provides a web-based graphics device that works
+with any browser. This gives you interactive, zoomable plots.
+
+### Setup
+
+``` r
+
+install.packages("httpgd")
+```
+
+### Usage
+
+``` r
+
+library(httpgd)
+
+# Start the graphics server
+hgd()
+#> httpgd server running at http://127.0.0.1:8888/live
+
+# Now create plots - they appear in your browser
+library(ggplot2)
+ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
+geom_point(size = 3) +
+theme_minimal()
+```
+
+Open the URL in your browser to see interactive plots.
+
+### Docker Port Forwarding
+
+When running R in Docker, forward the httpgd port:
+
+``` bash
+# Start container with port forwarding
+docker run -it -p 8888:8888 -v $(pwd):/home/rstudio/project myproject
+```
+
+``` r
+
+# Inside R
+library(httpgd)
+hgd(host = "0.0.0.0", port = 8888)
+
+# Create plots - view at http://localhost:8888/live
+```
+
+### Makefile Target
+
+Add to your Makefile for convenience:
+
+``` makefile
+# Start R with httpgd port forwarded
+r-httpgd:
+    docker run --platform linux/amd64 --rm -it \
+        -p 8888:8888 \
+        -v $$(pwd):/home/rstudio/project \
+        $(PACKAGE_NAME)
+```
+
+## Method 3: Combining Both Approaches
+
+For maximum flexibility, use httpgd for interactive exploration and
+kitty_plot for quick static views:
+
+``` r
+
+library(ggplot2)
+library(httpgd)
+
+# Start httpgd for interactive work
+hgd()
+
+# Explore interactively
+p <- ggplot(diamonds, aes(carat, price, color = cut)) +
+geom_point(alpha = 0.1) +
+scale_y_log10() +
+theme_minimal()
+p
+
+# Quick static view in terminal
+kitty_plot(p)
+```
+
+## Vim + Docker Workflow
+
+When editing R/Rmd files in vim on the host and running R inside Docker
+via `make r`, plots created in the container must be saved to the
+mounted project directory to be accessible from the host.
+
+### The Challenge
+
+    ┌─────────────────────────────────────────────────┐
+    │ Host (kitty terminal)                           │
+    │   vim, kitty icat                               │
+    │   Project mounted at: ~/projects/myproject      │
+    ├─────────────────────────────────────────────────┤
+    │ Docker Container                                │
+    │   R, ggplot2                                    │
+    │   Project mounted at: /home/rstudio/project     │
+    │   tempfile() → /tmp (not accessible from host!) │
+    └─────────────────────────────────────────────────┘
+
+Files saved to `/tmp` inside the container are not accessible from the
+host. Save plots to the mounted project directory instead.
+
+### Docker-Aware Helper Function
+
+Add this to your project’s `.Rprofile`:
+
+``` r
+
+# Quick plot viewer for Docker + kitty workflow
+# Saves to mounted volume so host can access it
+kp <- function(plot = NULL, name = ".kitty_plot.png", width = 8, height = 6) {
+  if (is.null(plot)) plot <- ggplot2::last_plot()
+  if (is.null(plot)) stop("No plot to display")
+
+  # Save to figures directory (mounted volume, accessible from host)
+  dir.create("analysis/figures", showWarnings = FALSE, recursive = TRUE)
+  path <- file.path("analysis/figures", name)
+  ggplot2::ggsave(path, plot, width = width, height = height, dpi = 150)
+
+  # Print command for user to run on host
+  cat("View with: kitty +kitten icat", path, "\n")
+  invisible(plot)
+}
+```
+
+### Step-by-Step Workflow
+
+**1. Open your Rmd file in vim:**
+
+``` bash
+cd ~/projects/myproject
+vim analysis/report/report.Rmd
+```
+
+**2. Open a terminal split and start R in Docker:**
+
+``` vim
+:below terminal
+make r
+```
+
+**3. Send code from vim to the R terminal:**
+
+Using vim’s built-in terminal, you can yank code and paste it. Or use a
+plugin like vim-slime for more streamlined code sending.
+
+``` r
+
+# In R (inside Docker container)
+library(ggplot2)
+
+p <- ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  labs(title = "Fuel Efficiency vs Weight")
+
+# Save and get the icat command
+kp(p)
+#> View with: kitty +kitten icat analysis/figures/.kitty_plot.png
+```
+
+**4. View the plot from vim:**
+
+``` vim
+" Run icat from vim command mode
+:!kitty +kitten icat analysis/figures/.kitty_plot.png
+```
+
+Or open another terminal split for viewing plots:
+
+``` vim
+:vert terminal
+kitty +kitten icat analysis/figures/.kitty_plot.png
+```
+
+### Vim Keybindings
+
+Add to your `.vimrc` for quick plot viewing:
+
+``` vim
+" View last R plot in kitty (assumes kp() was used)
+nnoremap <leader>pp :!kitty +kitten icat analysis/figures/.kitty_plot.png<CR>
+
+" View a specific plot file
+nnoremap <leader>pf :!kitty +kitten icat analysis/figures/
+
+" Clear kitty graphics
+nnoremap <leader>pc :!kitty +kitten icat --clear<CR>
+```
+
+### Example Session
+
+    ┌─────────────────────────────────────────────────────────────┐
+    │ analysis/report/report.Rmd                                  │
+    │ ─────────────────────────────────────────────────────────── │
+    │ ```{r mpg-plot}                                             │
+    │ p <- ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +    │
+    │   geom_point(size = 3) +                                    │
+    │   theme_minimal()                                           │
+    │ p                                                           │
+    │ ```                                                         │
+    ├─────────────────────────────────────────────────────────────┤
+    │ :terminal (make r)                        │ :terminal       │
+    │ > library(ggplot2)                        │ $ kitty +kitten │
+    │ > p <- ggplot(mtcars, aes(wt, mpg)) +     │   icat analysis/│
+    │ +   geom_point()                          │   figures/      │
+    │ > kp(p)                                   │   .kitty_plot.  │
+    │ View with: kitty +kitten icat analysis/.. │   png          │
+    │ >                                         │ [plot displays] │
+    └─────────────────────────────────────────────────────────────┘
+
+### Alternative: Named Plots
+
+Save plots with descriptive names for later reference:
+
+``` r
+
+# Save with specific name
+kp(p, "mpg_by_weight.png")
+#> View with: kitty +kitten icat analysis/figures/mpg_by_weight.png
+
+# View later
+# :!kitty +kitten icat analysis/figures/mpg_by_weight.png
+```
+
+### Base R Plots in Docker
+
+``` r
+
+# Base R version of kp()
+kp_base <- function(name = ".kitty_plot.png", width = 8, height = 6) {
+  dir.create("analysis/figures", showWarnings = FALSE, recursive = TRUE)
+  path <- file.path("analysis/figures", name)
+  dev.copy(png, path, width = width, height = height, units = "in", res = 150)
+  dev.off()
+  cat("View with: kitty +kitten icat", path, "\n")
+}
+
+# Usage
+plot(mtcars$wt, mtcars$mpg)
+kp_base()
+```
+
+## Complete .Rprofile Setup
+
+Add these functions to your project’s `.Rprofile` for automatic
+availability. The `kp()` function works with Docker (saves to mounted
+volume), while `kitty_plot()` works when R runs directly on the host.
+
+``` r
+
+# Kitty graphics helpers for ZZCOLLAB projects
+# Add to project .Rprofile
+
+# Docker-aware plot viewer (saves to mounted volume)
+# Use this when R runs in Docker via 'make r'
+kp <- function(plot = NULL, name = ".kitty_plot.png", width = 8, height = 6) {
+  if (is.null(plot)) plot <- ggplot2::last_plot()
+  if (is.null(plot)) stop("No plot to display")
+  dir.create("analysis/figures", showWarnings = FALSE, recursive = TRUE)
+  path <- file.path("analysis/figures", name)
+  ggplot2::ggsave(path, plot, width = width, height = height, dpi = 150)
+  cat("View with: kitty +kitten icat", path, "\n")
+  invisible(plot)
+}
+
+# Base R version
+kp_base <- function(name = ".kitty_plot.png", width = 8, height = 6) {
+  dir.create("analysis/figures", showWarnings = FALSE, recursive = TRUE)
+  path <- file.path("analysis/figures", name)
+  dev.copy(png, path, width = width, height = height, units = "in", res = 150)
+  dev.off()
+  cat("View with: kitty +kitten icat", path, "\n")
+}
+
+# Direct display (only works when R runs on host, not in Docker)
+if (Sys.getenv("ZZCOLLAB_CONTAINER") != "true") {
+  kitty_plot <- function(plot = NULL, width = 8, height = 6, dpi = 150) {
+    if (is.null(plot)) plot <- ggplot2::last_plot()
+    if (is.null(plot)) stop("No plot to display")
+    tmp <- tempfile(fileext = ".png")
+    ggplot2::ggsave(tmp, plot, width = width, height = height, dpi = dpi)
+    system2("kitty", c("+kitten", "icat", tmp))
+    invisible(plot)
+  }
+}
+
+if (interactive()) {
+  message("Kitty helpers loaded: kp(), kp_base()")
+}
+```
+
+## Comparison with X11
+
+### When to Use Kitty Native Graphics
+
+- Working over SSH (X11 forwarding is slow)
+- Lighter Docker images preferred
+- Static plots are sufficient
+- macOS without XQuartz installed
+
+### When to Use X11
+
+- Need interactive base R graphics (locator, identify)
+- Real-time plot updates required
+- Using packages that require X11 (some Shiny features)
+- Already have XQuartz configured
+
+### Image Size Comparison
+
+| Profile                        | Size   | Graphics Method |
+|--------------------------------|--------|-----------------|
+| `ubuntu_standard_analysis_vim` | ~1.8GB | kitty/httpgd    |
+| `ubuntu_x11_analysis_vim`      | ~2.2GB | X11 forwarding  |
+
+## Troubleshooting
+
+### icat Command Not Found
+
+Ensure you’re running kitty (not iTerm2, Terminal.app, etc.):
+
+``` bash
+echo $TERM
+# Should output: xterm-kitty
+```
+
+### Plots Not Displaying
+
+Check that kitty is the active terminal:
+
+``` bash
+kitty +kitten icat --detect-support
+```
+
+### httpgd Port Already in Use
+
+``` r
+
+# Use a different port
+hgd(port = 9999)
+```
+
+### Docker Container Cannot Reach Host
+
+For httpgd, bind to all interfaces:
+
+``` r
+
+hgd(host = "0.0.0.0", port = 8888)
+```
+
+## See Also
+
+- [zzvim-R Terminal
+  Graphics](https://rgt47.github.io/zzcollab/articles/workflow-zzvim-r-plots.md) -
+  Auto-display plots with vim integration
+- [Kitty Graphics
+  Protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
+- [httpgd Package](https://nx10.github.io/httpgd/)
+- [ZZCOLLAB X11 Plotting
+  Workflow](https://rgt47.github.io/zzcollab/articles/workflow-x11-plotting.md)

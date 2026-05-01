@@ -1,0 +1,1255 @@
+# Quick Start: Complete Reproducible Data Workflow
+
+## Introduction
+
+This quick start guide demonstrates how to create a fully reproducible
+analysis with all 5 pillars of reproducibility. You will create a
+complete data workflow from raw data through processing, analysis,
+testing, and reporting using Palmer Penguins bill measurements.
+
+**What you will build:**
+
+- Complete data workflow: raw data → processing → analysis →
+  visualization
+- All 5 pillars: Dockerfile + renv + .Rprofile + Source Code + Research
+  Data
+- Functions, tests, and documentation following best practices
+- Private GitHub repository with automated CI/CD validation
+
+**Prerequisites:**
+
+- Docker installed and running
+- GitHub account (example: rgt47)
+- Personal access token for GitHub (with repo permissions)
+- zzcollab installed (`./install.sh`)
+
+## Step-by-Step Instructions
+
+### Step 1: Configure ZZCOLLAB
+
+Set your defaults once to eliminate repetitive typing for ALL future
+projects:
+
+``` bash
+# Initialize configuration
+zzc config init
+
+# Set GitHub account
+zzc config set github-account "rgt47"
+
+# Set Docker account (for DockerHub)
+zzc config set docker-account "rgt47"
+```
+
+**Note:** Both `zzc` (short) and `zzcollab` (full) commands work
+identically.
+
+**What this accomplishes:**
+
+- All future `zzc` commands use these defaults
+- Change defaults anytime with `zzc config set`
+
+**Note on Package Management:**
+
+- Packages are added via standard
+  [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  inside the container
+- **Auto-snapshot**: Packages automatically captured in renv.lock when
+  you exit
+- **Auto-restore**: Missing packages automatically installed when you
+  start R
+- The renv.lock accumulates packages from all team members
+
+### Step 2: Create Project
+
+Create your reproducible analysis project:
+
+``` bash
+# Create project directory and initialize
+mkdir penguin-bills && cd penguin-bills
+
+# Recommended: Use profile command for complete setup
+zzc analysis                   # Creates init + renv + docker, prompts to build
+
+# Add GitHub repository (works independently)
+zzc github                     # Create private GitHub repo
+```
+
+**What `zzc analysis` does (new project):**
+
+1.  Creates rrtools structure (DESCRIPTION, R/, analysis/, tests/)
+2.  Generates renv.lock for package tracking
+3.  Generates Dockerfile with analysis profile (tidyverse)
+4.  Prompts: “Build Docker image now? \[Y/n\]”
+
+**Profile commands are smart:**
+
+- **New project**: Full setup (init + renv + docker + build prompt)
+- **Existing project**: Just switches profile and regenerates Dockerfile
+
+**Using Different Docker Profiles:**
+
+``` bash
+# Create new project with specific profile
+mkdir genomics-study && cd genomics-study
+zzc shiny                      # Full setup with shiny profile
+zzc github                     # Add GitHub (independent command)
+
+mkdir spatial-analysis && cd spatial-analysis
+zzc publishing                 # Full setup with publishing profile (LaTeX)
+
+# Switch profile on existing project (smart detection)
+zzc minimal                    # Regenerates Dockerfile with minimal profile
+
+# List available profiles
+zzc list profiles              # Show all profiles
+```
+
+**Available Profiles:**
+
+- `minimal` - Base R only (~300MB)
+- `analysis` - Tidyverse packages (~1.5GB) - recommended
+- `publishing` - LaTeX + pandoc (~3GB)
+- `rstudio` - RStudio Server
+- `shiny` - Shiny Server
+
+### Step 3: Add Research Data and Processing Pipeline
+
+This step demonstrates the complete data workflow following the Five
+Pillars of Reproducibility:
+
+- **Pillar 5**: Raw data in `analysis/data/raw_data/`
+- **Pillar 4**: Processing scripts in `analysis/scripts/`
+- **Pillar 4**: Reusable functions in `R/`
+- **Pillar 4**: Unit tests in `tests/testthat/`
+
+Start the Docker development environment:
+
+``` bash
+# Enter Docker container
+make r
+```
+
+#### Add Raw Data
+
+Create a raw data file (simulating field-collected penguin
+measurements).
+
+Create `analysis/data/raw_data/penguins_raw.csv`:
+
+``` csv
+species,island,bill_length_mm,bill_depth_mm,flipper_length_mm,body_mass_g,sex,year
+Adelie,Torgersen,39.1,18.7,181,3750,male,2007
+Adelie,Torgersen,39.5,17.4,186,3800,female,2007
+Adelie,Torgersen,40.3,18.0,195,3250,female,2007
+Adelie,Torgersen,NA,NA,NA,NA,NA,2007
+Gentoo,Biscoe,46.1,13.2,211,4500,female,2007
+Gentoo,Biscoe,50.0,16.3,230,5700,male,2007
+Chinstrap,Dream,46.5,17.9,192,3500,female,2007
+Chinstrap,Dream,50.0,19.5,196,3900,male,2007
+```
+
+Create `analysis/data/raw_data/README.md`:
+
+``` markdown
+# Raw Data: Palmer Penguins
+
+## Source
+Simulated penguin measurements from Palmer Station Antarctica LTER.
+
+## Collection Methods
+- Field measurements of adult penguins
+- Three species: Adelie, Gentoo, Chinstrap
+- Three islands: Torgersen, Biscoe, Dream
+
+## Variables
+- species: Penguin species (Adelie, Gentoo, Chinstrap)
+- island: Island where observed
+- bill_length_mm: Bill length in millimeters
+- bill_depth_mm: Bill depth in millimeters
+- flipper_length_mm: Flipper length in millimeters
+- body_mass_g: Body mass in grams
+- sex: Penguin sex (male, female)
+- year: Year of observation
+
+## Known Issues
+- Row 4 contains missing values (equipment failure)
+- All measurements subject to ±0.5mm measurement error
+```
+
+#### Create Data Processing Script
+
+Create a script to clean and process the raw data.
+
+Create `analysis/scripts/01_process_data.R`:
+
+``` r
+
+# Data Processing Script: Clean raw penguin data
+# Input: analysis/data/raw_data/penguins_raw.csv
+# Output: analysis/data/derived_data/penguins_clean.csv
+
+library(dplyr)
+
+# Load raw data
+raw_data <- read.csv("analysis/data/raw_data/penguins_raw.csv")
+
+# Process data
+clean_data <- raw_data %>%
+  # Remove rows with missing values
+  filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+  # Add derived variables
+  mutate(
+    bill_ratio = bill_length_mm / bill_depth_mm,
+    size_category = case_when(
+      body_mass_g < 3500 ~ "small",
+      body_mass_g < 4500 ~ "medium",
+      TRUE ~ "large"
+    )
+  )
+
+# Create output directory if needed
+dir.create("analysis/data/derived_data", showWarnings = FALSE, recursive = TRUE)
+
+# Save processed data
+write.csv(clean_data, "analysis/data/derived_data/penguins_clean.csv", row.names = FALSE)
+
+# Log processing results
+cat("Processed", nrow(clean_data), "valid records from", nrow(raw_data), "raw records\n")
+cat("Removed", nrow(raw_data) - nrow(clean_data), "incomplete records\n")
+```
+
+Create `analysis/data/derived_data/README.md`:
+
+``` markdown
+# Processed Data: Palmer Penguins (Clean)
+
+## Source
+Processed from `analysis/data/raw_data/penguins_raw.csv`
+
+## Processing Steps
+See: `analysis/scripts/01_process_data.R`
+
+1. Loaded raw data
+2. Removed rows with missing bill measurements
+3. Added derived variables:
+   - bill_ratio: bill_length_mm / bill_depth_mm
+   - size_category: small (<3500g), medium (3500-4500g), large (>4500g)
+
+## Quality Checks
+- All rows have complete bill measurements
+- All derived variables computed successfully
+- No outliers detected beyond expected range
+```
+
+Run the processing script:
+
+``` bash
+Rscript analysis/scripts/01_process_data.R
+```
+
+#### Create Reusable Analysis Functions
+
+Create functions in `R/` directory that use the processed data.
+
+Create `R/data_utils.R`:
+
+``` r
+
+#' Load processed penguin data
+#'
+#' @param path Path to clean data file
+#' @return data.frame of processed penguin data
+#' @export
+load_penguin_data <- function(path = "analysis/data/derived_data/penguins_clean.csv") {
+  if (!file.exists(path)) {
+    stop("Clean data file not found. Run analysis/scripts/01_process_data.R first.")
+  }
+
+  data <- read.csv(path, stringsAsFactors = FALSE)
+
+  # Validate expected columns
+  required_cols <- c("species", "bill_length_mm", "bill_depth_mm", "bill_ratio")
+  missing_cols <- setdiff(required_cols, names(data))
+
+  if (length(missing_cols) > 0) {
+    stop("Missing required columns: ", paste(missing_cols, collapse = ", "))
+  }
+
+  data
+}
+
+#' Calculate summary statistics by species
+#'
+#' @param data Penguin data
+#' @return data.frame of summary statistics
+#' @export
+summarize_by_species <- function(data) {
+  data %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarize(
+      n = dplyr::n(),
+      mean_bill_length = mean(bill_length_mm, na.rm = TRUE),
+      mean_bill_depth = mean(bill_depth_mm, na.rm = TRUE),
+      mean_bill_ratio = mean(bill_ratio, na.rm = TRUE),
+      .groups = "drop"
+    )
+}
+```
+
+Install required packages:
+
+``` bash
+# Packages will be captured in renv.lock when you exit the container
+Rscript -e 'install.packages(c("dplyr", "here"))'
+```
+
+#### Create Unit Tests
+
+Add tests for the data processing functions.
+
+Create `tests/testthat/test-data_utils.R`:
+
+``` r
+
+# Tests for data utility functions
+# Note: devtools::test() automatically loads functions from R/ via load_all()
+
+test_that("load_penguin_data loads valid data", {
+  # This test assumes processing script has been run
+  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+
+  data <- load_penguin_data()
+
+  # Check structure
+  expect_true(is.data.frame(data))
+  expect_gt(nrow(data), 0)
+
+  # Check required columns
+  expect_true("species" %in% names(data))
+  expect_true("bill_length_mm" %in% names(data))
+  expect_true("bill_depth_mm" %in% names(data))
+  expect_true("bill_ratio" %in% names(data))
+})
+
+test_that("load_penguin_data fails gracefully with missing file", {
+  expect_error(
+    load_penguin_data("/nonexistent/path.csv"),
+    "Clean data file not found"
+  )
+})
+
+test_that("summarize_by_species produces valid output", {
+  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+
+  data <- load_penguin_data()
+  summary <- summarize_by_species(data)
+
+  # Check structure
+  expect_true(is.data.frame(summary))
+  expect_true("species" %in% names(summary))
+  expect_true("n" %in% names(summary))
+  expect_true("mean_bill_length" %in% names(summary))
+
+  # Check values are numeric
+  expect_type(summary$mean_bill_length, "double")
+  expect_type(summary$mean_bill_depth, "double")
+
+  # Check all means are positive
+  expect_true(all(summary$mean_bill_length > 0))
+  expect_true(all(summary$mean_bill_depth > 0))
+})
+
+test_that("bill_ratio is calculated correctly", {
+  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+
+  data <- load_penguin_data()
+
+  # Verify bill_ratio calculation
+  expected_ratio <- data$bill_length_mm / data$bill_depth_mm
+  expect_equal(data$bill_ratio, expected_ratio)
+})
+```
+
+Run tests:
+
+``` bash
+Rscript -e 'devtools::test()'
+```
+
+**What this accomplishes:**
+
+1.  Raw Data (Pillar 5): Original measurements in
+    `analysis/data/raw_data/`
+2.  Processing Pipeline: Script in `analysis/scripts/01_process_data.R`
+3.  Derived Data: Cleaned data in `analysis/data/derived_data/`
+4.  Reusable Functions: Data utilities in `R/data_utils.R`
+5.  Unit Tests: Tests in `tests/testthat/test-data_utils.R`
+6.  Documentation: README files documenting data provenance and
+    processing
+
+This establishes the complete data workflow that ensures reproducibility
+from raw data through to analysis.
+
+### Step 4: Create Analysis Report
+
+Now create a report that uses the processed data and functions we
+created in Step 3.
+
+#### Create Visualization Function
+
+Add a plotting function.
+
+Create `R/bill_analysis.R`:
+
+``` r
+
+#' Create scatter plot of bill dimensions
+#'
+#' @param data Penguin data with bill measurements
+#' @return ggplot object
+#' @export
+create_bill_plot <- function(data) {
+  ggplot2::ggplot(data, ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
+                                      color = species)) +
+    ggplot2::geom_point(size = 3, alpha = 0.7) +
+    ggplot2::labs(
+      title = 'Palmer Penguins: Bill Dimensions',
+      x = 'Bill Length (mm)',
+      y = 'Bill Depth (mm)',
+      color = 'Species'
+    ) +
+    ggplot2::theme_minimal()
+}
+```
+
+Install ggplot2:
+
+``` bash
+Rscript -e 'install.packages("ggplot2")'
+```
+
+#### About GUI Support (Automatic)
+
+The `make r` command auto-detects your profile and configures GUI
+support automatically:
+
+- **X11 profiles** (e.g., `x11_minimal`): Automatically enables DISPLAY
+  for interactive graphics
+- **RStudio profiles** (e.g., `analysis`, `publishing`): Launches
+  RStudio Server at <http://localhost:8787>
+- **Shiny profiles**: Launches Shiny Server at <http://localhost:3838>
+- **Standard profiles**: Opens interactive shell
+
+**For X11 GUI support** (if using an X11 profile):
+
+One-time XQuartz setup (macOS):
+
+``` bash
+brew install --cask xquartz
+open -a XQuartz
+# In Preferences > Security: Enable "Allow connections from network clients"
+# Restart XQuartz, then:
+export DISPLAY=:0
+/opt/X11/bin/xhost +localhost
+```
+
+For this tutorial, we use the default profile and save plots to files
+(works in all environments including CI/CD).
+
+#### Create Analysis Report
+
+Create the report that uses our data workflow (raw data → processing →
+functions → visualization).
+
+Create `analysis/report/report.Rmd`:
+
+    ---
+    title: "Palmer Penguins Bill Dimensions Analysis"
+    author: "Reproducible Research Team"
+    date: "2026-05-01"
+    output:
+      html_document:
+        toc: true
+        code_folding: show
+    ---
+
+
+
+    ## Introduction
+
+    Analysis of bill length and bill depth measurements across three penguin species
+    from the Palmer Station Antarctica LTER.
+
+    This report demonstrates the complete data workflow:
+    - Raw data → Processing → Analysis → Visualization
+
+    ## Data Processing
+
+
+    ``` r
+    library(dplyr)
+    library(ggplot2)
+
+    # Load the processed data (function from R/data_utils.R)
+    penguins <- load_penguin_data()
+
+    # Preview data
+    head(penguins)
+    ```
+
+    ## Summary Statistics
+
+
+    ``` r
+    # Calculate summary by species (function from R/data_utils.R)
+    summary_stats <- summarize_by_species(penguins)
+    knitr::kable(summary_stats, digits = 2, caption = "Bill dimensions by species")
+    ```
+
+    ## Visualization
+
+    ### Bill Dimensions by Species
+
+
+    ``` r
+    # Generate plot using function from R/bill_analysis.R
+    bill_plot <- create_bill_plot(penguins)
+    print(bill_plot)
+
+    # Save plot
+    dir.create(here::here("analysis/figures"), showWarnings = FALSE, recursive = TRUE)
+    ggplot2::ggsave(here::here("analysis/figures/bill_scatter.png"),
+                    bill_plot, width = 8, height = 6)
+    ```
+
+    ## Summary
+
+    The analysis reveals distinct bill dimension patterns across penguin species:
+    - Data processed from raw measurements (Step 3)
+    - Functions in R/ provide reusable analysis components
+    - Unit tests ensure correctness
+
+#### Render the Report
+
+``` bash
+# Render the report
+Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
+
+# Exit container (auto-snapshot runs here!)
+exit
+```
+
+**Auto-Snapshot & Auto-Restore Architecture**
+
+When you **exit R** (inside the container), ZZCOLLAB automatically:
+
+1.  Runs
+    [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+    to capture package dependencies in renv.lock
+2.  Reports success and reminds you to commit changes
+
+When you **start R** (inside the container), ZZCOLLAB automatically:
+
+1.  Activates renv and checks package status
+2.  Runs
+    [`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)
+    to install missing packages and all dependencies
+3.  Ensures you always have a working environment without manual
+    intervention
+
+**You no longer need to manually run
+[`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+or
+[`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)!**
+Just work, exit, and restart.
+
+### Step 5: Validate and Commit
+
+Validate everything works in a clean environment:
+
+``` bash
+# Exit the Docker container (if still inside from Step 4)
+# This automatically runs renv::snapshot() and validates packages!
+exit
+
+# Run tests in clean environment
+make docker-test
+
+# Optional: Manually validate dependencies (now pure shell, no R required!)
+make check-renv
+```
+
+Now commit your work:
+
+``` bash
+git add .
+git commit -m "$(cat <<'EOF'
+Add complete data workflow: raw data to analysis
+
+Data Workflow (5 Pillars):
+- Raw data: analysis/data/raw_data/penguins_raw.csv (Pillar 5)
+- Processing script: analysis/scripts/01_process_data.R (Pillar 4)
+- Derived data: analysis/data/derived_data/penguins_clean.csv (Pillar 5)
+- Functions: R/data_utils.R, R/bill_analysis.R (Pillar 4)
+- Unit tests: tests/testthat/test-data_utils.R (Pillar 4)
+- Analysis report: analysis/report/report.Rmd (Pillar 4)
+
+Reproducibility:
+- Pillar 1: Dockerfile (computational environment)
+- Pillar 2: renv.lock (dependency tracking)
+- Pillar 3: .Rprofile (R session configuration)
+- Pillar 4: Source code (scripts + functions + tests + reports)
+- Pillar 5: Research data (raw + derived + documentation)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+
+git push
+```
+
+### Step 6: Verify CI/CD
+
+Check that automated validation runs:
+
+``` bash
+# View CI/CD status
+gh run list --limit 3
+
+# Or view in browser
+gh repo view --web
+```
+
+GitHub Actions will automatically:
+
+1.  Build Docker container from scratch
+2.  Validate package dependencies (uses shell-based validation)
+3.  Run unit tests
+4.  Report results
+
+**Note**: CI/CD now uses pure shell validation (`make check-renv`) which
+doesn’t require R on the host!
+
+### Step 7: Verify Report Rendering CI/CD (Optional)
+
+GitHub Actions is already configured to automatically render your report
+on every push. The default workflow renders
+`analysis/report/report.Rmd`.
+
+Verify the configuration:
+
+``` bash
+# Check the render-report workflow (should already be correct)
+cat .github/workflows/render-report.yml | grep "rmarkdown::render"
+
+# Expected output:
+# compendium-env Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
+```
+
+If you used a different filename, update the workflow:
+
+``` bash
+vim .github/workflows/render-report.yml
+# Change the render command to match your report filename
+git add .github/workflows/render-report.yml
+git commit -m "Update CI/CD render path"
+git push
+```
+
+**What this enables:**
+
+- Automatic report rendering on every push to main
+- Fresh computational environment for each render
+- Downloadable PDF/HTML artifacts
+- Verification that analysis is fully reproducible
+
+## What You Built
+
+### All 5 Reproducibility Levels
+
+**Level 1**: Basic R Project ✗ (skipped for reproducibility)
+
+**Level 2**: renv ✓
+
+- `renv.lock` records exact package versions
+- [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+  captured dependencies
+
+**Level 3**: Docker ✓
+
+- Dockerfile specifies complete environment
+- Anyone can reproduce with `make r` (launches image for current
+  Dockerfile)
+
+**Level 4**: Unit Testing ✓
+
+- Tests validate plot creation
+- Tests verify missing data handling
+- Tests confirm species included
+
+**Level 5**: CI/CD ✓
+
+- GitHub Actions runs on every push
+- Automated test suite execution
+- Dependency validation
+
+### The Five Pillars of Reproducibility
+
+Your analysis is now fully reproducible thanks to five essential
+components that represent the necessary and sufficient elements for
+complete reproducibility:
+
+#### 1. Dockerfile - Computational Environment
+
+- **R version**: Specifies exact R version (4.4.0)
+- **System dependencies**: All system libraries (libcurl, libssl, etc.)
+- **Base image**: Foundation for consistent environment
+- **Environment variables**: Locale and system settings
+
+``` dockerfile
+FROM rocker/verse:4.4.0
+
+# Set locale for reproducible sorting/formatting
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+RUN apt-get update && apt-get install -y libcurl4-openssl-dev
+```
+
+#### 2. renv.lock - Exact Package Versions
+
+- **Every R package**: Exact version for all packages used
+- **Complete dependency tree**: All package dependencies
+- **Source repositories**: CRAN, Bioconductor, GitHub
+
+``` json
+{
+  "tidyverse": {
+    "Version": "2.0.0",
+    "Repository": "CRAN"
+  }
+}
+```
+
+#### 3. .Rprofile - R Session Configuration
+
+- **Critical R options**: Version controlled and copied into Docker
+- **Monitored settings**: `stringsAsFactors`, `contrasts`, `na.action`,
+  `digits`, `OutDec`
+- **Automatic checking**: `check_rprofile_options.R` alerts on changes
+
+``` r
+
+# .Rprofile (version controlled)
+options(
+  stringsAsFactors = FALSE,
+  digits = 7,
+  OutDec = "."
+)
+
+# Activate renv for package management
+source("renv/activate.R")
+```
+
+**Important**: ZZCOLLAB monitors critical `.Rprofile` options that
+affect analysis behavior. The `check_rprofile_options.R` script runs in
+CI/CD to catch changes that could alter results.
+
+#### 4. Analysis Source Code - Computational Logic
+
+- **Processing scripts**: `analysis/scripts/01_process_data.R`
+- **Reusable functions**: `R/data_utils.R`, `R/bill_analysis.R`
+- **Reports**: `analysis/report/report.Rmd`
+- **Tests**: `tests/testthat/test-data_utils.R`
+- **Random seeds**: Set explicitly in code for stochastic analyses
+
+``` r
+
+# Example: Set seed for reproducible random processes
+set.seed(42)
+model <- randomForest(species ~ ., data = penguins)
+```
+
+#### 5. Research Data - Empirical Foundation
+
+- **Raw data**: `analysis/data/raw_data/` (original, unmodified files)
+- **Derived data**: `analysis/data/derived_data/` (processed,
+  analysis-ready)
+- **Data documentation**: `data/README.md` (data dictionary, provenance,
+  processing lineage)
+- **Quality assurance**: Validation checks, known issues, outlier
+  documentation
+
+&nbsp;
+
+    analysis/data/
+    ├── raw_data/
+    │   ├── penguins_raw.csv      # Original data (read-only)
+    │   └── README.md             # Data provenance and collection methods
+    └── derived_data/
+        ├── penguins_clean.csv    # Processed data
+        └── README.md             # Processing steps and transformations
+
+**Critical insight**: Without the original research data, perfect
+computational reproducibility is meaningless. The analysis code operates
+on data, and that data must be preserved, documented, and
+version-controlled alongside the computational environment.
+
+#### Why Environment Variables Matter
+
+Environment variables affect computational results silently and are
+critical for reproducibility:
+
+**Locale settings** (`LANG`, `LC_ALL`):
+
+- Control string sorting order (e.g., “Åland” sorts differently in US vs
+  Swedish locales)
+- Affect number parsing (comma vs period as decimal separator)
+- Impact factor level ordering in statistical models
+
+**Timezone** (`TZ`):
+
+- Affects date-time arithmetic and aggregation
+- Eliminates daylight saving time complications
+- Ensures consistent temporal analyses across team members
+
+**Parallel processing** (`OMP_NUM_THREADS`):
+
+- Controls thread count for deterministic computation
+- Single-threaded (`=1`) ensures reproducible results
+- Multi-threaded can produce different results each run due to
+  floating-point order
+
+``` dockerfile
+# Environment variables set in Dockerfile
+ENV LANG=en_US.UTF-8        # Standardize locale
+ENV LC_ALL=en_US.UTF-8      # Override all locale categories
+ENV TZ=UTC                  # No daylight saving time
+ENV OMP_NUM_THREADS=1       # Deterministic single-threaded execution
+```
+
+**Real-world impact**: Two researchers running identical code in
+different locales or timezones can produce different results without
+explicit environment variable specification.
+
+#### How They Work Together:
+
+``` bash
+# Someone reproduces your analysis 5 years from now:
+git clone https://github.com/rgt47/penguin-bills.git
+cd penguin-bills
+
+# 1. Dockerfile builds environment (R version + system deps)
+docker build -t penguin-env .
+docker run -it -v $(pwd):/project penguin-env
+
+# 2. renv.lock installs exact package versions
+renv::restore()
+
+# 3. Source code runs the analysis
+source("analysis/scripts/01_process_data.R")
+rmarkdown::render("analysis/report/report.Rmd")
+
+# Result: Identical output to your original analysis
+```
+
+**Key Insight**:
+
+- **Dockerfile** = Environment foundation (R version, system libraries,
+  environment variables)
+- **renv.lock** = Exact packages (source of truth for R dependencies)
+- **.Rprofile** = R session settings (critical options that affect
+  behavior)
+- **Source Code** = Analytical logic (what actually runs, including
+  random seeds)
+- **Research Data** = Empirical observations (what analyses operate on)
+
+All five pillars are version controlled in Git, representing the
+necessary and sufficient components for complete reproducibility.
+Without any one pillar, independent reproduction of the analysis becomes
+impossible.
+
+#### Reproducibility Checklist
+
+When preparing analysis for publication or sharing, verify all five
+pillars.
+
+For comprehensive best practices, troubleshooting, and team
+collaboration patterns, see **docs/REPRODUCIBILITY_BEST_PRACTICES.md**.
+
+**Pillar 1 - Dockerfile**:
+
+- R version explicitly specified
+- System dependencies documented
+- Environment variables set (LANG, LC_ALL, TZ, OMP_NUM_THREADS)
+
+**Pillar 2 - renv.lock**:
+
+- All packages from all contributors included
+- Exact versions with repository sources
+- Committed to version control
+
+**Pillar 3 - .Rprofile**:
+
+- Critical options version controlled
+- Monitored by check_rprofile_options.R in CI/CD
+- Copied into Docker container
+
+**Pillar 4 - Source Code**:
+
+- Random seeds explicit for all stochastic operations
+- Analysis scripts, functions, tests all committed
+- Clear computational workflow documented
+
+**Pillar 5 - Research Data**:
+
+- Raw data preserved (read-only, original files)
+- Data documentation complete (data dictionary, provenance)
+- Processing scripts link raw to derived data
+- Data quality notes documented
+
+### Project Structure
+
+    penguin-bills/
+    ├── .github/
+    │   └── workflows/
+    │       └── r-package.yml        # Automated CI/CD validation
+    ├── R/
+    │   ├── data_utils.R             # Data loading functions
+    │   └── bill_analysis.R          # Visualization functions
+    ├── analysis/
+    │   ├── data/
+    │   │   ├── raw_data/            # Original, unmodified data
+    │   │   ├── derived_data/        # Processed analysis-ready data
+    │   │   └── README.md            # Data dictionary and documentation
+    │   ├── report/
+    │   │   ├── report.Rmd           # Analysis report (reproducible)
+    │   │   └── report.html          # Rendered output
+    │   ├── figures/
+    │   │   └── bill_scatter.png     # Generated plot
+    │   └── tables/                  # Generated tables
+    ├── data/                        # R package data (optional, for package distribution)
+    ├── scripts/                     # Working scripts and exploration
+    ├── tests/
+    │   └── testthat/
+    │       └── test-data_utils.R    # Unit tests
+    ├── man/                         # Generated function documentation
+    ├── vignettes/                   # Package tutorials
+    ├── docs/                        # Project documentation
+    ├── renv/                        # renv package cache
+    ├── .Rbuildignore                # Files excluded from package build
+    ├── .gitignore                   # Git exclusions
+    ├── DESCRIPTION                  # Project metadata and dependencies
+    ├── NAMESPACE                    # Function exports (managed by roxygen2)
+    ├── LICENSE                      # GPL-3 license
+    ├── Makefile                     # Development workflow automation
+    ├── Dockerfile                   # Environment specification
+    ├── renv.lock                    # Exact package versions
+    └── penguin-bills.Rproj          # RStudio project file
+
+### Verification Checklist
+
+- Docker image built locally
+- GitHub repository created (private)
+- Analysis produces scatter plot
+- Unit tests pass locally
+- Dependencies captured in renv.lock
+- CI/CD validates on every push
+- Complete reproducibility achieved
+
+## Next Steps
+
+### Extend Your Analysis
+
+``` r
+
+# Add more plots
+create_flipper_plot <- function(data = penguins) {
+  # Flipper length vs body mass
+}
+
+# Add statistical analysis
+fit_bill_model <- function(data) {
+  lm(bill_depth_mm ~ bill_length_mm * species, data = data)
+}
+
+# Write more tests
+test_that("model includes species interaction", {
+  model <- fit_bill_model(penguins)
+  expect_true("bill_length_mm:species" %in% names(coef(model)))
+})
+```
+
+### Collaborate
+
+#### Team Lead Workflow
+
+Create a team project and share the Docker image:
+
+``` bash
+# Create team project
+mkdir study && cd study
+zzc analysis                     # Full setup, prompts to build
+zzc github                       # Create private GitHub repo
+
+# Build image (installs packages from renv.lock into image)
+make docker-build
+
+# Optional: Push to DockerHub for faster team onboarding
+zzc dockerhub                    # Team members can pull instead of build
+
+# Add collaborators
+gh repo edit --add-collaborator username
+```
+
+**Why build before push?** The build process installs all R packages
+from `renv.lock` into the image. Team members who pull this image get
+packages pre-installed (1-3 min) instead of building from scratch (5-15
+min).
+
+**Team Lead Responsibilities:**
+
+1.  Creates project with `zzc <profile>` (e.g., `zzc analysis`)
+2.  Adds GitHub with `zzc github`
+3.  Builds image with `make docker-build` (installs packages)
+4.  Optionally pushes to DockerHub with `zzc dockerhub`
+5.  Adds collaborators to GitHub repository
+6.  Rebuilds and pushes when renv.lock changes
+
+#### Team Member Workflow
+
+Clone and join the team project:
+
+``` bash
+# Clone the repository
+git clone https://github.com/genomicslab/study.git
+cd study
+
+# Option A: Build from Dockerfile (always works)
+make docker-build                # 5-15 minutes, verifies reproducibility
+make r
+
+# Option B: Pull pre-built image (faster, if team uses DockerHub)
+docker pull genomicslab/study:latest   # 1-3 minutes
+make r
+```
+
+**DockerHub is optional.** Building from the Dockerfile always works and
+verifies full reproducibility. Pulling from DockerHub is faster for
+teams with frequent onboarding but requires the team lead to push
+images.
+
+**What happens for team members:**
+
+1.  Clone gets Dockerfile + renv.lock (reproducibility pillars)
+2.  Build or pull Docker image for identical environment
+3.  Add packages as needed using
+    [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+4.  Exit container - packages automatically captured in renv.lock
+
+**Environment Consistency:**
+
+- **Docker environment**: Identical for all team members (build or pull)
+- **Package management**: Add packages dynamically with
+  [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+- **Automatic capture**: Packages tracked automatically when you exit
+  containers
+
+### Publish Results
+
+``` bash
+# Create manuscript
+mkdir -p analysis/report
+# Add report.Rmd with analysis
+
+# Render report automatically via CI/CD
+# (already configured in .github/workflows/render-report.yml)
+```
+
+## Troubleshooting
+
+### GitHub Repository Creation Fails
+
+``` bash
+# Create repository manually if needed
+cd penguin-bills
+gh repo create rgt47/penguin-bills --private --source=. --remote=origin --push
+```
+
+### Docker Build Errors
+
+``` bash
+# Check Docker daemon running
+docker info
+
+# Clean rebuild (uses config defaults)
+docker system prune
+rm -rf penguin-bills  # Remove failed directory
+
+# Retry project creation
+mkdir penguin-bills && cd penguin-bills
+zzcollab
+make docker-build
+```
+
+### Test Failures
+
+``` bash
+# Run tests with verbose output
+make r
+devtools::test()  # See detailed failure messages
+
+# Check test coverage
+covr::package_coverage()
+```
+
+### CI/CD Failures
+
+``` bash
+# View workflow logs
+gh run view --log
+
+# Validate locally first (pure shell, no R required!)
+make check-renv
+make docker-test
+```
+
+## Customizing Profiles
+
+### View Available Profiles
+
+``` bash
+# List all predefined profiles
+zzc list profiles
+
+# List available library bundles (system dependencies)
+zzc list libs
+
+# List available package bundles (R packages)
+zzc list pkgs
+```
+
+**Available Profiles:**
+
+- `minimal` - Base R only (~300MB)
+- `analysis` / `tidyverse` - Tidyverse packages (~1.5GB)
+- `publishing` / `verse` - LaTeX + pandoc (~3GB)
+- `rstudio` - RStudio Server
+- `shiny` - Shiny Server
+
+### Using Profiles
+
+``` bash
+# Profile commands are smart:
+# - New project: full setup (init + renv + docker + build prompt)
+# - Existing project: switch profile (regenerate Dockerfile)
+
+mkdir my-project && cd my-project
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Add GitHub (independent)
+
+# Change profile on existing project
+zzc publishing                   # Switch to publishing profile
+
+# Create with different profile
+mkdir new-project && cd new-project
+zzc shiny                        # Full setup with shiny profile
+zzc github --public              # Create public GitHub repo
+```
+
+### Profile System
+
+**Profile commands** (e.g., `zzc analysis`, `zzc minimal`):
+
+- New project: Complete setup (init + renv + docker) with build prompt
+- Existing project: Switch profile and regenerate Dockerfile
+- Examples: `minimal`, `analysis`, `publishing`, `shiny`, `rstudio`
+
+**Package Management:**
+
+- Packages are added dynamically using
+  [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  inside containers
+- **Auto-restore**: Missing packages installed automatically when R
+  starts
+- **Auto-snapshot**: Packages captured in renv.lock when container exits
+- The renv.lock file accumulates packages from all team members
+  automatically
+
+## Summary
+
+You created a fully reproducible analysis with:
+
+- **Environment consistency**: Docker ensures identical R, packages,
+  system libraries
+- **Computational correctness**: Unit tests validate analytical logic
+- **Automated verification**: CI/CD catches errors on every commit
+- **Private collaboration**: GitHub private repo ready for team members
+- **Professional workflow**: Industry-standard practices for research
+  software
+
+This is the gold standard for reproducible computational research. All 5
+levels working together ensure your analysis is not only reproducible,
+but also correct and maintainable.
+
+### Understanding the Architecture
+
+ZZCOLLAB uses a two-layer package management system:
+
+#### Layer 1: Docker Environment (Team/Shared)
+
+- **Controlled by**: Profile selection (e.g., `zzc analysis`)
+- **Purpose**: Pre-installed packages in Docker image
+- **Shared**: All team members get identical Docker environment
+
+#### Layer 2: Dynamic Package Installation (Personal)
+
+- **Controlled by**:
+  [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  inside containers (auto-captured on exit)
+- **Purpose**: Add packages as needed for specific analyses
+- **Collaborative**: renv.lock accumulates packages from all
+  contributors
+
+#### Practical Example
+
+Team lead sets up project:
+
+``` bash
+mkdir study && cd study
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+zzc dockerhub                    # Optional: push to DockerHub for faster onboarding
+```
+
+Team members join and add packages:
+
+``` bash
+git clone https://github.com/genomicslab/study.git
+cd study
+
+# Either build (always works) or pull (if team uses DockerHub)
+make docker-build                # Option A: build from Dockerfile
+# docker pull genomicslab/study:latest  # Option B: pull pre-built image
+
+make r
+
+# Inside container - add packages as needed
+install.packages("tidymodels")
+exit  # Auto-snapshot captures in renv.lock!
+
+# Commit changes
+git add renv.lock
+git commit -m "Add tidymodels"
+git push
+```
+
+**Key Insight**: The Docker image provides the foundation, but
+`renv.lock` ensures complete reproducibility by specifying exact
+versions of ALL packages.
+
+For more details, see
+[`vignette("reproducibility-layers")`](https://rgt47.github.io/zzcollab/articles/reproducibility-layers.md).

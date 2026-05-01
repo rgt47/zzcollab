@@ -1,0 +1,769 @@
+# Quick Start: R Interface for ZZCOLLAB
+
+## Introduction
+
+This guide demonstrates how to use ZZCOLLAB entirely through R
+functions, without touching the command line. All functionality
+available via the `zzcollab` shell script is also accessible through the
+R package interface.
+
+**What you will learn:**
+
+- Configure ZZCOLLAB from R/RStudio
+- Create reproducible projects using R functions
+- Manage Docker environments through R
+- Work with team collaboration via R interface
+- Integrate into R-based workflows
+
+**Prerequisites:**
+
+- ZZCOLLAB installed (`./install.sh`)
+- Docker installed and running
+- R and RStudio (optional but recommended)
+
+## Configuration from R
+
+### Initialize Configuration
+
+Set up your personal ZZCOLLAB configuration without leaving R:
+
+``` r
+
+library(zzcollab)
+
+# Initialize configuration file
+init_config()
+
+# Set your defaults
+set_config("team_name", "myteam")
+set_config("github_account", "myusername")
+set_config("profile_name", "analysis")
+
+# View current configuration
+list_config()
+
+# Get specific values
+team <- get_config("team_name")
+profile <- get_config("profile_name")
+
+# Validate configuration
+validate_config()
+```
+
+**What this accomplishes:**
+
+- Creates `~/.zzcollab/config.yaml` with your defaults
+- Eliminates repetitive typing for future projects
+- Provides same functionality as `zzcollab config` commands
+
+### Configuration Management
+
+``` r
+
+# Check if a value is set
+team <- get_config("team_name")
+if (is.null(team)) {
+  message("Team name not configured")
+  set_config("team_name", "myteam")
+}
+
+# Update existing configuration
+set_config("profile_name", "bioinformatics")
+
+# View all settings
+config <- list_config()
+print(config)
+
+# Validate before important operations
+if (validate_config()) {
+  message("Configuration is valid")
+} else {
+  stop("Configuration has errors")
+}
+```
+
+## Solo Developer Workflow
+
+### Create New Project
+
+Initialize a reproducible research project entirely from R:
+
+``` r
+
+# Method 1: Use configuration defaults
+library(zzcollab)
+
+# Create project directory
+dir.create("~/projects/penguin-analysis")
+setwd("~/projects/penguin-analysis")
+
+# Initialize project (uses config defaults)
+setup_project()
+
+# Method 2: Override specific settings
+setup_project(
+  base_image = "rocker/rstudio"
+)
+```
+
+**After initialization**, build the Docker environment:
+
+``` r
+
+# Build Docker image
+rebuild("docker-build")
+
+# Check if build succeeded
+if (rebuild("docker-build")) {
+  message("Docker image built successfully")
+} else {
+  stop("Docker build failed")
+}
+```
+
+### Development Workflow
+
+``` r
+
+# Check Docker container status
+container_info <- status()
+print(container_info)
+
+# Add R packages to project
+library(zzcollab)
+add_package("ggplot2")
+add_package(c("dplyr", "tidyr", "readr"))
+
+# Sync environment from renv.lock
+sync_env()
+
+# Validate reproducibility
+if (validate_repro()) {
+  message("Environment is reproducible")
+} else {
+  warning("Reproducibility issues detected")
+}
+```
+
+### Execute Analysis
+
+Run scripts and render reports from R:
+
+``` r
+
+# Execute analysis script in container
+run_script("analysis/scripts/01_data_prep.R")
+
+# Render R Markdown report
+render_report("analysis/report/report.Rmd")
+
+# Check results
+if (file.exists("analysis/report/paper.html")) {
+  message("Report rendered successfully")
+  browseURL("analysis/report/paper.html")
+}
+```
+
+### Git Integration
+
+Manage version control without leaving R:
+
+``` r
+
+# Check git status
+changes <- git_status()
+
+# Create commit
+git_commit("Add penguin analysis with unit tests")
+
+# Create feature branch
+create_branch("add-statistical-models")
+
+# Push changes
+git_push()
+
+# Create pull request
+create_pr(
+  title = "Add statistical modeling",
+  body = "Implements linear mixed models for penguin morphology"
+)
+```
+
+## Team Collaboration
+
+### Team Lead: Initialize Team Project
+
+Create a team project with R interface:
+
+``` r
+
+library(zzcollab)
+
+# Set team configuration
+set_config("team_name", "genomicslab")
+set_config("profile_name", "bioinformatics")
+set_config("github_account", "genomicslab")
+
+# Navigate to project directory
+dir.create("~/projects/cancer-study")
+setwd("~/projects/cancer-study")
+
+# Initialize team project
+init_project(
+  team_name = "genomicslab",
+  project_name = "cancer-study",
+  github_account = "genomicslab"
+)
+```
+
+**After initialization**, build and share the team image:
+
+``` r
+
+# Build team Docker image
+rebuild("docker-build")
+
+# Push to Docker Hub (requires docker login)
+rebuild("docker-push-team")
+
+# Check team images
+images <- team_images()
+print(images)
+```
+
+**Commit and push project structure:**
+
+``` r
+
+# Commit initial setup
+git_commit("Initial project setup with bioinformatics profile")
+
+# Push to GitHub
+git_push()
+```
+
+### Team Member: Join Team Project
+
+Join an existing project using R:
+
+``` r
+
+library(zzcollab)
+
+# Clone repository (can use system() or do outside R)
+system("git clone https://github.com/genomicslab/cancer-study.git")
+setwd("cancer-study")
+
+# Join project using team image
+join_project(
+  team_name = "genomicslab",
+  project_name = "cancer-study"
+)
+
+# Verify team images available
+images <- team_images()
+print(images)
+
+# Sync environment
+sync_env()
+```
+
+**Start development:**
+
+``` r
+
+# Check container status
+status()
+
+# Add packages as needed
+add_package("tidymodels")
+
+# Run tests
+rebuild("docker-test")
+
+# Commit changes
+git_commit("Add tidymodels for modeling workflow")
+git_push()
+```
+
+## Help System
+
+### Access Help from R
+
+Get comprehensive help without leaving R:
+
+``` r
+
+# Main help
+zzcollab_help()
+
+# Topic-specific help
+zzcollab_help("quickstart")
+zzcollab_help("config")
+zzcollab_help("workflow")
+zzcollab_help("docker")
+zzcollab_help("troubleshooting")
+
+# Development workflow guidance
+zzcollab_next_steps()
+```
+
+**Available help topics:**
+
+- `"general"` - Main help with all options
+- `"init"` - Team initialization
+- `"quickstart"` - Quick start guide
+- `"workflow"` - Daily development workflow
+- `"config"` - Configuration system
+- `"renv"` - Package management
+- `"docker"` - Docker essentials
+- `"cicd"` - CI/CD and GitHub Actions
+- `"github"` - GitHub integration
+- `"troubleshooting"` - Common issues
+
+## Complete R Workflow Example
+
+### Palmer Penguins Analysis (Entirely in R)
+
+``` r
+
+library(zzcollab)
+
+# 1. SETUP: Configure once
+init_config()
+set_config("team_name", "myname")
+set_config("profile_name", "analysis")
+
+# 2. CREATE PROJECT
+dir.create("~/projects/penguin-bills")
+setwd("~/projects/penguin-bills")
+setup_project()
+
+# 3. BUILD DOCKER ENVIRONMENT
+if (!rebuild("docker-build")) {
+  stop("Docker build failed")
+}
+
+# 4. DEVELOP ANALYSIS (in RStudio)
+# Create analysis files, write code, etc.
+# See vignette("quickstart") for analysis details
+
+# 5. ADD PACKAGES (auto-captured in renv.lock on container exit)
+add_package("palmerpenguins")
+add_package("ggplot2")
+add_package("dplyr")
+
+# 6. RUN TESTS
+rebuild("docker-test")
+
+# 7. VALIDATE REPRODUCIBILITY
+if (!validate_repro()) {
+  stop("Reproducibility checks failed")
+}
+
+# 8. VERSION CONTROL
+git_status()
+git_commit("Add bill dimensions scatter plot analysis")
+git_push()
+
+# 9. CREATE PULL REQUEST
+create_pr(
+  title = "Add penguin analysis",
+  body = "Complete reproducible analysis with tests and CI/CD"
+)
+
+# 10. CHECK CI/CD STATUS
+system("gh run list --limit 3")
+```
+
+## Docker Management
+
+### Check and Manage Containers
+
+``` r
+
+# View running containers
+containers <- status()
+print(containers)
+
+# Rebuild Docker image
+rebuild()
+
+# Rebuild with specific target
+rebuild("docker-build")
+rebuild("docker-test")
+rebuild("docker-check")
+
+# List team images
+images <- team_images()
+if (nrow(images) > 0) {
+  print(images)
+
+  # Filter by team
+  my_images <- images[grepl("myteam", images$repository), ]
+  print(my_images)
+} else {
+  message("No team images found")
+}
+```
+
+## Package Management
+
+### Dynamic Package Installation
+
+**Recommended: Use Standard R Commands**
+
+The simplest approach is to use standard R commands inside containers:
+
+``` r
+
+# Inside container (make r or make docker-rstudio)
+install.packages("tidyverse")
+
+# For GitHub packages:
+install.packages("remotes")
+remotes::install_github("user/package")
+
+# Exit container - packages automatically captured in renv.lock
+# Auto-restore installs them automatically next time you start R
+```
+
+**Alternative: R Function Interface**
+
+You can also use ZZCOLLAB’s R functions:
+
+``` r
+
+# Add single package
+add_package("tidyverse")
+
+# Add multiple packages
+add_package(c("sf", "terra", "mapview"))
+
+# Sync from renv.lock (e.g., after git pull)
+sync_env()
+
+# Validate package consistency (pure shell - NO R required!)
+rebuild("docker-check-renv")
+```
+
+**Auto-Snapshot & Auto-Restore Architecture**:
+
+- **Auto-snapshot**: Packages captured in renv.lock when you exit
+  containers (no manual
+  [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+  needed)
+- **Auto-restore**: Missing packages installed automatically when you
+  start R (no manual
+  [`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)
+  needed)
+- Both
+  [`add_package()`](https://rgt47.github.io/zzcollab/reference/add_package.md)
+  (R function) and
+  [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+  (standard R) work identically
+
+## RStudio Integration
+
+### Working in RStudio
+
+All R functions work in RStudio:
+
+``` r
+
+# In RStudio console:
+library(zzcollab)
+
+# Initialize project
+setup_project()
+
+# Build environment
+rebuild("docker-build")
+
+# Start RStudio Server in container (from terminal)
+# make docker-rstudio
+# Then open http://localhost:8787
+
+# Check status
+status()
+
+# Add packages
+add_package("tidyverse")
+
+# Commit changes
+git_status()
+git_commit("Add data visualization")
+git_push()
+```
+
+## Reproducibility Validation
+
+### Check All Reproducibility Levels
+
+``` r
+
+library(zzcollab)
+
+# Comprehensive reproducibility check
+if (validate_repro()) {
+  message("✅ All reproducibility checks passed")
+  message("✓ renv environment synchronized")
+  message("✓ Validation scripts passed")
+  message("✓ Package consistency verified")
+} else {
+  message("❌ Some reproducibility checks failed")
+  message("Review output above for details")
+}
+
+# Individual validation steps
+system("make check-renv")  # Pure shell - NO R REQUIRED! (grep, awk, curl, jq)
+system("Rscript check_rprofile_options.R")  # R options monitoring
+
+# Check Docker consistency
+rebuild("docker-check-renv")
+```
+
+## Integration Patterns
+
+### Workflow Integration
+
+#### RMarkdown Integration
+
+``` r
+
+# In analysis/report/report.Rmd header:
+# ---
+# title: "My Analysis"
+# output: html_document
+# ---
+
+# In setup chunk:
+library(zzcollab)
+
+# Ensure environment is synchronized
+sync_env()
+
+# Validate before rendering
+if (!validate_repro()) {
+  warning("Reproducibility issues detected")
+}
+
+# Your analysis code follows...
+```
+
+#### Package Development Integration
+
+``` r
+
+# In package development workflow:
+library(zzcollab)
+library(devtools)
+
+# Setup
+setup_project()
+rebuild("docker-build")
+
+# Development cycle
+load_all()
+test()
+check()
+
+# Add dependencies (standard R command)
+# Inside container:
+# install.packages("usethis")
+# Exit container - auto-captured in renv.lock
+
+# Validate and commit
+validate_repro()
+git_commit("Add new feature")
+```
+
+#### CI/CD Integration
+
+``` r
+
+# Check CI/CD status from R
+library(zzcollab)
+
+# After pushing commits
+git_push()
+
+# Check workflow runs (requires gh CLI)
+system("gh run list --limit 5")
+system("gh run view --log")
+
+# Or open in browser
+system("gh repo view --web")
+```
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+``` r
+
+# Issue: Configuration not found
+if (is.null(get_config("team_name"))) {
+  init_config()
+  set_config("team_name", "myteam")
+}
+
+# Issue: Docker build fails
+rebuild("docker-clean")
+rebuild("docker-build")
+
+# Issue: Package sync fails
+# Note: Auto-restore runs on R startup, so manual restore rarely needed
+if (!sync_env()) {
+  message("Sync failed, checking renv status...")
+  renv::status()
+  # Auto-restore should handle this, but can manually restore if needed:
+  # renv::restore()
+}
+
+# Issue: Tests failing
+rebuild("docker-test")  # Run in clean environment
+
+# Issue: Git push rejected
+git_status()
+system("git pull --rebase")
+git_push()
+```
+
+### Validation Helpers
+
+``` r
+
+# Pre-flight checks before important operations
+preflight_check <- function() {
+  checks <- list(
+    config_valid = validate_config(),
+    repro_valid = validate_repro(),
+    git_clean = length(git_status()) == 0
+  )
+
+  all_passed <- all(unlist(checks))
+
+  if (all_passed) {
+    message("✅ All pre-flight checks passed")
+  } else {
+    message("❌ Some checks failed:")
+    print(checks)
+  }
+
+  return(all_passed)
+}
+
+# Use before major operations
+if (preflight_check()) {
+  git_push()
+  create_pr("Add new feature", "Complete implementation with tests")
+}
+```
+
+## Summary
+
+### R Interface Functions
+
+ZZCOLLAB provides comprehensive R interface with 25+ functions:
+
+**Configuration**:
+
+- [`init_config()`](https://rgt47.github.io/zzcollab/reference/init_config.md) -
+  Initialize configuration
+- `set_config(key, value)` - Set values
+- `get_config(key)` - Get values
+- [`list_config()`](https://rgt47.github.io/zzcollab/reference/list_config.md) -
+  List all configuration
+- [`validate_config()`](https://rgt47.github.io/zzcollab/reference/validate_config.md) -
+  Validate configuration files
+
+**Projects**:
+
+- `init_project(...)` - Team lead initialization
+- `join_project(...)` - Team member joining
+- `setup_project(...)` - Solo developer setup
+
+**Docker**:
+
+- [`status()`](https://rgt47.github.io/zzcollab/reference/status.md) -
+  Check containers
+- `rebuild(target)` - Rebuild images
+- [`team_images()`](https://rgt47.github.io/zzcollab/reference/team_images.md) -
+  List team images
+
+**Packages**:
+
+- `add_package(packages)` - Add packages
+- [`sync_env()`](https://rgt47.github.io/zzcollab/reference/sync_env.md) -
+  Sync from renv.lock
+
+**Analysis**:
+
+- `run_script(path)` - Execute scripts
+- `render_report(path)` - Render reports
+- [`validate_repro()`](https://rgt47.github.io/zzcollab/reference/validate_repro.md) -
+  Check reproducibility
+
+**Git**:
+
+- [`git_status()`](https://rgt47.github.io/zzcollab/reference/git_status.md) -
+  Check status
+- `git_commit(message)` - Create commits
+- `git_push(branch)` - Push changes
+- `create_branch(name)` - Create branches
+- `create_pr(title, body)` - Create PRs
+
+**Help**:
+
+- `zzcollab_help(topic)` - Get help
+- [`zzcollab_next_steps()`](https://rgt47.github.io/zzcollab/reference/zzcollab_next_steps.md) -
+  Show next steps
+
+### Benefits of R Interface
+
+**R Environment Integration**:
+
+- Work entirely within R/RStudio
+- Reduced context switching to terminal
+- Scriptable workflows
+- Integration with RMarkdown
+
+**Programmatic Control**:
+
+- Automate project setup
+- Batch operations across projects
+- Conditional logic for workflows
+- Custom helper functions
+
+**R-Native Experience**:
+
+- Familiar R function syntax
+- RStudio autocomplete
+- R help system integration
+- Object-oriented workflows
+
+### Next Steps
+
+- See `vignette("quickstart")` for complete analysis example (shell
+  interface)
+- See
+  [`vignette("configuration")`](https://rgt47.github.io/zzcollab/articles/configuration.md)
+  for advanced configuration
+- See
+  [`vignette("getting-started")`](https://rgt47.github.io/zzcollab/articles/getting-started.md)
+  for detailed tutorial
+- See
+  [`vignette("testing")`](https://rgt47.github.io/zzcollab/articles/testing.md)
+  for testing best practices
+
+For complete documentation of all R functions, use R’s built-in help:
+
+``` r
+
+?init_project
+?join_project
+?setup_project
+?rebuild
+?validate_repro
+```

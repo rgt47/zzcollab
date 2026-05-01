@@ -1,0 +1,635 @@
+# Write as You Go: Manuscript-Driven Data Analysis
+
+## The Problem with Sequential Workflows
+
+Most data analysis tutorials teach a sequential workflow: collect data,
+run analyses, generate figures, then write the manuscript. This approach
+creates several problems:
+
+1.  **Context Loss**: By the time you write, you have forgotten why you
+    made specific analytical decisions
+2.  **Orphaned Analyses**: Exploratory work that seemed important
+    becomes disconnected from the final narrative
+3.  **Revision Friction**: When reviewers request changes, you must
+    reconstruct the reasoning behind months-old code
+4.  **Reproducibility Gaps**: The manuscript describes methods
+    differently than the code implements them
+
+The Write as You Go approach addresses these problems by integrating
+writing with analysis from day one.
+
+## Write as You Go: Core Principles
+
+### Principle 1: The Manuscript is Your Lab Notebook
+
+Instead of keeping separate analysis scripts and a manuscript, write
+your analysis directly in the manuscript document. Each analysis section
+includes:
+
+- The research question being addressed
+- The analytical approach and justification
+- The code that implements the analysis
+- Interpretation of results
+
+This creates a single document that captures both what you did and why
+you did it.
+
+### Principle 2: Prose Before Code
+
+Write the research question and methodological justification *before*
+writing the code. This discipline ensures you understand what you are
+trying to learn before you start computing. It also creates
+documentation that explains your reasoning to future readers (including
+yourself).
+
+### Principle 3: Interpret Immediately
+
+Write interpretation immediately after running each analysis. Do not
+wait until the end to make sense of results. Immediate interpretation:
+
+- Captures insights while context is fresh
+- Identifies when results contradict expectations (potential errors)
+- Guides subsequent analytical decisions
+- Builds the narrative incrementally
+
+### Principle 4: Refactor Into Functions Gradually
+
+Start with inline code in the manuscript. As patterns emerge, extract
+reusable functions to `R/`. This progressive disclosure ensures you only
+create abstractions that genuinely serve the analysis.
+
+## Project Setup
+
+### Initialize the Project
+
+``` bash
+# Create and enter project directory
+mkdir penguin-morphology && cd penguin-morphology
+
+# Initialize ZZCOLLAB project
+zzcollab
+
+# Build Docker environment
+make docker-build
+```
+
+### Project Structure
+
+ZZCOLLAB creates a unified research compendium structure:
+
+    penguin-morphology/
+    ├── analysis/
+    │   ├── data/
+    │   │   ├── raw_data/           # Original data (read-only)
+    │   │   └── derived_data/       # Processed data
+    │   ├── figures/                # Generated visualizations
+    │   ├── report/
+    │   │   ├── report.Rmd          # THE MANUSCRIPT (work here)
+    │   │   └── references.bib      # Bibliography
+    │   └── scripts/                # Standalone scripts (if needed)
+    ├── R/                          # Reusable functions (extract later)
+    ├── tests/                      # Unit tests (add as needed)
+    ├── DESCRIPTION                 # Project metadata
+    ├── Dockerfile                  # Computational environment
+    └── renv.lock                   # Package versions
+
+The key insight: `analysis/report/report.Rmd` is where you work. It
+serves as manuscript, lab notebook, and analysis record simultaneously.
+
+## Phase 1: Introduction and Data Acquisition
+
+### Start with the Research Question
+
+Open `analysis/report/report.Rmd` and begin with your research question.
+Do not start with code.
+
+``` markdown
+# Introduction
+
+Understanding how morphological traits vary among closely related species
+provides insight into adaptive differentiation and ecological niche
+partitioning. The Palmer Archipelago penguin populations offer an opportunity
+to examine morphological variation among three species (Adelie, Chinstrap,
+and Gentoo) that occupy overlapping geographic ranges but may exhibit distinct
+foraging strategies.
+
+This analysis examines the relationship between bill morphology and body size
+across species, testing the hypothesis that bill dimensions scale allometrically
+with body mass and that this relationship differs among species due to
+dietary specialization.
+
+## Research Questions
+
+1. How do bill dimensions relate to body mass in Palmer penguins?
+2. Does the bill-body mass relationship differ among species?
+3. What do these patterns suggest about ecological differentiation?
+```
+
+Note: No code yet. The research questions guide everything that follows.
+
+### Data Acquisition Section
+
+Now add the data acquisition code, but frame it within the manuscript:
+
+```` markdown
+# Methods
+
+## Data Source
+
+We analyzed morphometric data from the Palmer Long-Term Ecological Research
+(LTER) program, collected from three penguin species at Palmer Station,
+Antarctica between 2007-2009 [@horst_palmer_2020]. The dataset includes bill
+length, bill depth, flipper length, and body mass measurements.
+
+
+``` r
+library(palmerpenguins)
+library(tidyverse)
+
+# Load raw data
+penguins_raw <- penguins
+
+# Document sample sizes
+cat("Total observations:", nrow(penguins_raw), "\n")
+cat("Species:", paste(unique(penguins_raw$species), collapse = ", "), "\n")
+cat("Years:", paste(sort(unique(penguins_raw$year)), collapse = ", "), "\n")
+```
+````
+
+### Save Raw Data with Documentation
+
+``` r
+
+# Save local copy for reproducibility
+write_csv(penguins_raw, "analysis/data/raw_data/penguins.csv")
+```
+
+Create `analysis/data/README.md` documenting the data:
+
+``` markdown
+# Data Documentation
+
+## Raw Data
+
+### penguins.csv
+
+**Source**: Palmer Archipelago LTER, accessed via palmerpenguins R package
+(v0.1.0)
+
+**Collection Period**: 2007-2009
+
+**Variables**:
+
+- species: Penguin species (Adelie, Chinstrap, Gentoo)
+- island: Island in Palmer Archipelago (Biscoe, Dream, Torgersen)
+- bill_length_mm: Culmen length (mm)
+- bill_depth_mm: Culmen depth (mm)
+- flipper_length_mm: Flipper length (mm)
+- body_mass_g: Body mass (g)
+- sex: Sex (female, male)
+- year: Study year
+
+**Known Issues**: 11 observations have missing morphometric measurements;
+2 observations have missing sex.
+
+**Citation**: Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer
+Archipelago (Antarctica) penguin data. R package version 0.1.0.
+```
+
+## Phase 2: Data Preparation (Methods Section)
+
+### Document Decisions in Prose First
+
+Continue in `report.Rmd`:
+
+```` markdown
+## Data Preparation
+
+We restricted analysis to observations with complete morphometric data. This
+excluded 11 individuals (3.2% of the sample) with missing bill or body mass
+measurements. We retained individuals with missing sex in the primary analysis
+but excluded them from sex-stratified models.
+
+For the allometric analysis, we log-transformed body mass to linearize the
+relationship with bill dimensions. Log transformation is standard practice
+in allometric studies as morphological traits typically scale as power
+functions of body size.
+
+
+``` r
+penguins_clean <- penguins_raw |>
+  filter(
+    !is.na(bill_length_mm),
+    !is.na(bill_depth_mm),
+    !is.na(body_mass_g)
+  ) |>
+  mutate(
+    log_body_mass = log(body_mass_g),
+    log_bill_length = log(bill_length_mm),
+    log_bill_depth = log(bill_depth_mm)
+  )
+
+# Document exclusions
+n_excluded <- nrow(penguins_raw) - nrow(penguins_clean)
+cat("Excluded", n_excluded, "observations with missing data\n")
+cat("Analysis sample:", nrow(penguins_clean), "individuals\n")
+```
+````
+
+### Interpret the Data Structure
+
+```` markdown
+### Sample Characteristics
+
+
+``` r
+penguins_clean |>
+  group_by(species) |>
+  summarise(
+    n = n(),
+    mean_mass = mean(body_mass_g),
+    sd_mass = sd(body_mass_g),
+    mean_bill_length = mean(bill_length_mm),
+    sd_bill_length = sd(bill_length_mm)
+  ) |>
+  knitr::kable(digits = 1, caption = "Sample characteristics by species")
+```
+
+The sample includes 333 individuals: 146 Adelie, 68 Chinstrap, and 119 Gentoo
+penguins. Gentoo penguins are notably larger (mean body mass 5,076g) than
+Adelie (3,706g) and Chinstrap (3,733g), consistent with their status as the
+largest *Pygoscelis* species.
+````
+
+## Phase 3: Analysis (Results Section)
+
+### Research Question 1: Bill-Body Mass Relationship
+
+```` markdown
+# Results
+
+## Bill Length and Body Mass
+
+We first examined the relationship between bill length and body mass across
+all species. If bill length scales isometrically with body mass, we expect
+a slope of approximately 0.33 (the one-third power expected for linear
+dimensions scaling with mass).
+
+
+``` r
+# Pooled model (ignoring species)
+model_pooled <- lm(log_bill_length ~ log_body_mass, data = penguins_clean)
+
+# Extract slope and CI
+pooled_slope <- coef(model_pooled)["log_body_mass"]
+pooled_ci <- confint(model_pooled)["log_body_mass", ]
+
+cat("Pooled allometric slope:", round(pooled_slope, 3), "\n")
+cat("95% CI:", round(pooled_ci[1], 3), "-", round(pooled_ci[2], 3), "\n")
+```
+
+The pooled analysis suggests negative allometry (slope = 0.12, 95% CI:
+0.08-0.16), with bill length increasing more slowly than expected under
+isometric scaling. However, this pooled estimate may be misleading if the
+relationship differs among species.
+````
+
+### Visualize Before Modeling Further
+
+```` markdown
+### Visual Inspection
+
+Before fitting species-specific models, we examined the data graphically
+to assess whether a single pooled relationship is appropriate.
+
+
+``` r
+ggplot(penguins_clean, aes(x = body_mass_g, y = bill_length_mm,
+                           color = species)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(
+    x = "Body Mass (g)",
+    y = "Bill Length (mm)",
+    color = "Species"
+  ) +
+  theme_minimal(base_size = 12)
+
+ggsave("analysis/figures/bill_vs_mass_scatter.png", width = 8, height = 6,
+       dpi = 300)
+```
+
+Figure 1 reveals a striking pattern: the relationship between bill length
+and body mass differs qualitatively among species. Gentoo penguins show
+a positive relationship (larger individuals have longer bills), while
+Chinstrap penguins show a negative relationship (larger individuals have
+shorter bills). Adelie penguins show little relationship. This pattern
+suggests Simpson's paradox: the pooled negative relationship obscures
+divergent species-specific patterns.
+````
+
+### Research Question 2: Species-Specific Relationships
+
+```` markdown
+## Species-Specific Allometry
+
+Given the apparent heterogeneity revealed in Figure 1, we fit a model with
+species-specific slopes (interaction term).
+
+
+``` r
+model_species <- lm(log_bill_length ~ log_body_mass * species,
+                    data = penguins_clean)
+
+summary(model_species)
+```
+
+### Model Comparison
+
+
+``` r
+model_additive <- lm(log_bill_length ~ log_body_mass + species,
+                     data = penguins_clean)
+
+anova(model_additive, model_species)
+
+cat("\nAIC comparison:\n")
+cat("Additive model:", AIC(model_additive), "\n")
+cat("Interaction model:", AIC(model_species), "\n")
+```
+
+The interaction model provides significantly better fit than the additive
+model (F = 18.4, p < 0.001), confirming that allometric slopes differ among
+species. We proceed with the interaction model for inference.
+````
+
+### Extract and Interpret Coefficients
+
+```` markdown
+### Species-Specific Slopes
+
+
+``` r
+library(broom)
+
+# Get tidy coefficients
+coefs <- tidy(model_species, conf.int = TRUE)
+
+# Calculate species-specific slopes
+adelie_slope <- coefs$estimate[coefs$term == "log_body_mass"]
+chinstrap_diff <- coefs$estimate[coefs$term == "log_body_mass:speciesChinstrap"]
+gentoo_diff <- coefs$estimate[coefs$term == "log_body_mass:speciesGentoo"]
+
+cat("Adelie slope:", round(adelie_slope, 3), "\n")
+cat("Chinstrap slope:", round(adelie_slope + chinstrap_diff, 3), "\n")
+cat("Gentoo slope:", round(adelie_slope + gentoo_diff, 3), "\n")
+```
+
+The species-specific slopes reveal divergent allometric patterns:
+
+- **Adelie**: slope = 0.05 (approximately flat; bill length independent of
+  body mass)
+- **Chinstrap**: slope = -0.23 (negative allometry; larger individuals have
+  relatively shorter bills)
+- **Gentoo**: slope = 0.31 (positive allometry; larger individuals have
+  relatively longer bills)
+
+These patterns differ significantly from isometric expectation (0.33) and
+from each other.
+````
+
+## Phase 4: Discussion (Interpretation)
+
+``` markdown
+# Discussion
+
+## Ecological Interpretation
+
+The divergent allometric patterns among Palmer penguin species suggest
+different selective pressures on bill morphology. Gentoo penguins, which
+forage primarily on fish, show positive allometry consistent with larger
+individuals being able to capture larger prey items. Chinstrap penguins,
+which specialize on krill, show negative allometry that may reflect a
+constraint: bill morphology optimized for filter-feeding krill may not
+benefit from increased size.
+
+The lack of allometric relationship in Adelie penguins, which consume both
+fish and krill, may reflect balanced selection maintaining bill dimensions
+relatively constant across body sizes.
+
+## Limitations
+
+Several limitations warrant consideration:
+
+1. **Cross-sectional data**: We cannot distinguish ontogenetic from
+   evolutionary allometry
+2. **Missing covariates**: Age, breeding status, and seasonal condition
+   may influence morphology
+3. **Geographic scope**: Results may not generalize beyond the Palmer
+   Archipelago
+
+## Conclusions
+
+Bill morphology scales differently with body size among sympatric penguin
+species, consistent with dietary niche differentiation. The Write as You Go
+approach allowed us to identify the Simpson's paradox early in the analysis
+and adjust our modeling strategy accordingly, rather than discovering this
+pattern during a post-hoc review of results.
+```
+
+## Phase 5: Refactoring (Progressive Disclosure)
+
+### Identify Reusable Patterns
+
+After completing the analysis, review your manuscript for code that
+could be reused. In this analysis, the slope extraction logic appeared
+twice and could benefit from a function.
+
+### Extract to R/
+
+Create `R/allometry.R`:
+
+``` r
+
+#' Extract species-specific allometric slopes
+#'
+#' Calculates species-specific slopes from an interaction model
+#' of the form y ~ x * species.
+#'
+#' @param model An lm object with interaction terms
+#' @param x_var Name of the continuous predictor
+#' @param species_var Name of the species factor
+#' @return Data frame with species and slope columns
+#' @export
+extract_species_slopes <- function(model, x_var = "log_body_mass",
+                                   species_var = "species") {
+  coefs <- coef(model)
+
+  # Base slope (reference species)
+  base_slope <- coefs[x_var]
+
+  # Interaction terms
+  interaction_terms <- grep(paste0(x_var, ":"), names(coefs), value = TRUE)
+
+  # Extract species names from interaction terms
+  species_names <- gsub(paste0(x_var, ":", species_var), "", interaction_terms)
+
+  # Calculate slopes
+  slopes <- c(base_slope, base_slope + coefs[interaction_terms])
+  species <- c(levels(model$model[[species_var]])[1], species_names)
+
+  data.frame(species = species, slope = slopes)
+}
+```
+
+### Add Tests
+
+Create `tests/testthat/test-allometry.R`:
+
+``` r
+
+test_that("extract_species_slopes returns correct structure", {
+  # Create test data
+  test_data <- data.frame(
+    y = rnorm(100),
+    x = rnorm(100),
+    species = factor(rep(c("A", "B"), 50))
+  )
+  model <- lm(y ~ x * species, data = test_data)
+
+  result <- extract_species_slopes(model, "x", "species")
+
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), 2)
+  expect_true("species" %in% names(result))
+  expect_true("slope" %in% names(result))
+})
+```
+
+### Update Manuscript to Use Function
+
+Replace the inline slope extraction with the function call:
+
+``` r
+
+source("R/allometry.R")
+species_slopes <- extract_species_slopes(model_species)
+knitr::kable(species_slopes, digits = 3,
+             caption = "Species-specific allometric slopes")
+```
+
+## Rendering the Manuscript
+
+### Generate Output
+
+``` bash
+# Enter container
+make r
+
+# Render manuscript
+> rmarkdown::render("analysis/report/report.Rmd")
+> q()
+```
+
+Or use the Makefile target:
+
+``` bash
+make docker-render
+```
+
+### Validate Reproducibility
+
+``` bash
+# Run in clean environment
+make docker-test
+
+# Validate dependencies
+make check-renv
+```
+
+## Benefits of Write as You Go
+
+### For the Researcher
+
+1.  **No context switching**: Analysis and writing happen together
+2.  **Decisions documented**: Rationale captured when made
+3.  **Iterative refinement**: Each section improves as understanding
+    deepens
+4.  **Revision ready**: Changes to analysis automatically update text
+
+### For Reviewers
+
+1.  **Transparent methods**: Code and description together
+2.  **Reproducible figures**: Generated from the same document
+3.  **Traceable decisions**: Can follow analytical reasoning
+
+### For Future Self
+
+1.  **Complete record**: Six months later, you can understand what you
+    did
+2.  **Modifiable**: Changes propagate through the document
+3.  **Reusable**: Functions extracted to R/ can serve future projects
+
+## Common Questions
+
+### What about exploratory analysis?
+
+Exploratory work belongs in the manuscript too. Use a section titled
+“Exploratory Analysis” or “Preliminary Investigation.” This work often
+becomes an important part of the supplementary materials.
+
+### What if the narrative changes?
+
+That is expected. The Write as You Go approach makes changes easier
+because prose and code are together. When you change your analytical
+approach, update both the code and the surrounding text in one place.
+
+### Is this slower than separating analysis and writing?
+
+Initially, yes. But the time saved during revision, during
+collaboration, and during the inevitable “what did I do six months ago?”
+moments more than compensates.
+
+### What about very long analyses?
+
+For analyses with many models or figures, consider splitting into
+multiple Rmd files that render to a single document. The `bookdown`
+package supports this workflow within the ZZCOLLAB structure.
+
+## Summary
+
+The Write as You Go approach treats manuscript writing as an integral
+part of data analysis, not a separate phase that follows it. By
+documenting research questions before coding, interpreting results
+immediately, and refactoring functions gradually, researchers create
+manuscripts that are simultaneously more reproducible and more readable.
+
+ZZCOLLAB’s unified research compendium structure supports this workflow
+by providing a single project organization that serves from initial
+exploration through publication. The manuscript file
+(`analysis/report/ report.Rmd`) becomes the primary workspace, with
+extracted functions in `R/` and supporting data in `analysis/data/`.
+
+## References
+
+Horst, A. M., Hill, A. P., & Gorman, K. B. (2020). palmerpenguins:
+Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0.
+
+Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging Data
+Analytical Work Reproducibly Using R (and Friends). *The American
+Statistician*, 72(1), 80-88.
+
+Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal,
+T. K. (2017). Good enough practices in scientific computing. *PLOS
+Computational Biology*, 13(6), e1005510.
+
+## Companion Files
+
+The following files are extracted from this vignette and available in
+`vignettes/workflow-data-analysis/`:
+
+- `report.Rmd` - Complete manuscript template
+- `R/allometry.R` - Extracted allometry functions
+- `tests/testthat/test-allometry.R` - Unit tests
+- `analysis/data/README.md` - Data documentation template

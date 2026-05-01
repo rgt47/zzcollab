@@ -1,0 +1,663 @@
+# Quick Start: RStudio Server Workflow
+
+## Introduction
+
+This quick start guide demonstrates how to use **RStudio Server** inside
+a Docker container for reproducible analysis. You’ll work in a familiar
+RStudio interface while maintaining complete reproducibility through
+Docker and renv.
+
+**What you will build:**
+
+- RStudio Server environment accessible via browser
+- Scatter plot: bill length vs bill depth (Palmer Penguins)
+- Complete reproducibility: renv + Docker + Unit Testing + CI/CD
+- Private GitHub repository with automated validation
+
+**Why RStudio Profile:**
+
+- Familiar RStudio IDE interface in browser
+- No local R installation needed
+- Point-and-click package installation
+- Visual debugging and data exploration
+- Works on any machine with Docker and a browser
+
+**Prerequisites:**
+
+- Docker installed and running
+- Web browser
+- GitHub account (example: rgt47)
+- zzcollab installed (`./install.sh`)
+
+## Step-by-Step Instructions
+
+### Step 1: Configure ZZCOLLAB for RStudio (30 seconds)
+
+Set your defaults once, specifying the RStudio profile:
+
+``` bash
+# Initialize configuration
+zzcollab config init
+
+# Set team name (typically your GitHub username for solo projects)
+zzcollab config set team-name "rgt47"
+
+# Set GitHub account
+zzcollab config set github-account "rgt47"
+
+# Set RStudio profile as default
+zzcollab config set profile-name "rstudio"
+```
+
+**What this accomplishes:**
+
+- RStudio Server will be available in all future projects
+- Includes R, RStudio Server, essential packages
+- ~980MB Docker image (more than minimal, less than full analysis)
+
+### Step 2: Create Project with RStudio Profile (3-4 minutes)
+
+Create your reproducible analysis project:
+
+``` bash
+# Create project directory and initialize
+mkdir penguin-bills && cd penguin-bills
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo (optional)
+
+# Build Docker image with RStudio Server
+make docker-build
+```
+
+**What this does:**
+
+1.  Creates complete project structure (R/, analysis/, tests/, .github/,
+    etc.)
+2.  Sets up CI/CD workflows for automated testing
+3.  Initializes renv for dependency tracking
+4.  Builds Docker image with RStudio Server included
+
+### Step 3: Start RStudio Server (10 seconds)
+
+Launch RStudio Server in your browser:
+
+``` bash
+make docker-rstudio
+```
+
+**Expected output:**
+
+    Starting RStudio Server on http://localhost:8787
+    Username: rstudio, Password: rstudio
+
+**Access RStudio:**
+
+1.  Open browser to **<http://localhost:8787>**
+2.  Login with:
+    - Username: `rstudio`
+    - Password: `rstudio`
+3.  You’re now in RStudio running inside Docker!
+
+### Step 4: Create Analysis in RStudio (5 minutes)
+
+Work directly in the RStudio interface:
+
+#### 4.1 Create Analysis Function
+
+In RStudio, create file `R/bill_analysis.R`:
+
+**File → New File → R Script**
+
+``` r
+
+#' Create scatter plot of bill dimensions
+#'
+#' @param data Palmer penguins data
+#' @return ggplot object
+#' @export
+create_bill_plot <- function(data = palmerpenguins::penguins) {
+  data %>%
+    dplyr::filter(!is.na(bill_length_mm), !is.na(bill_depth_mm)) %>%
+    ggplot2::ggplot(ggplot2::aes(x = bill_length_mm, y = bill_depth_mm,
+                                  color = species)) +
+    ggplot2::geom_point(size = 3, alpha = 0.7) +
+    ggplot2::labs(
+      title = 'Palmer Penguins: Bill Dimensions',
+      x = 'Bill Length (mm)',
+      y = 'Bill Depth (mm)',
+      color = 'Species'
+    ) +
+    ggplot2::theme_minimal()
+}
+```
+
+Save as: `R/bill_analysis.R`
+
+#### 4.2 Create Analysis Report
+
+In RStudio, create file `analysis/report/report.Rmd`:
+
+**File → New File → R Markdown…**
+
+    ---
+    title: "Palmer Penguins Bill Dimensions Analysis"
+    author: "Reproducible Research Team"
+    date: "2026-05-01"
+    output:
+      html_document:
+        toc: true
+        code_folding: show
+    ---
+
+
+
+    ## Introduction
+
+    Analysis of bill length and bill depth measurements across three penguin species
+    from the Palmer Station Antarctica LTER.
+
+    ## Data Loading
+
+
+    ``` r
+    library(palmerpenguins)
+    library(ggplot2)
+    library(dplyr)
+
+    # Source analysis functions from R/
+    source("../../R/bill_analysis.R")
+
+    # Preview data
+    head(penguins)
+    ```
+
+    ## Analysis
+
+    ### Bill Dimensions by Species
+
+
+    ``` r
+    # Generate plot using function from R/
+    plot <- create_bill_plot()
+    print(plot)
+
+    # Save plot
+    ggsave("../figures/bill_scatter.png", plot, width = 8, height = 6)
+    ```
+
+    ## Summary
+
+    The analysis reveals distinct bill dimension patterns across penguin species.
+    ```
+
+Save as: `analysis/report/report.Rmd`
+
+#### 4.3 Install Packages in RStudio
+
+Use standard R commands (packages auto-captured when you exit
+container):
+
+``` r
+
+# In RStudio Console:
+install.packages("palmerpenguins")
+install.packages("ggplot2")
+install.packages("dplyr")
+
+# For GitHub packages:
+install.packages("remotes")
+remotes::install_github("user/package")
+
+# When you stop the RStudio container, packages are automatically saved to renv.lock
+# No manual renv::snapshot() needed!
+```
+
+**RStudio Advantage:** You can also use the Packages pane:
+
+1.  Click “Packages” tab (bottom-right)
+2.  Click “Install”
+3.  Type package name
+4.  Click “Install”
+5.  Packages automatically captured when you exit container (no manual
+    snapshot needed)
+
+#### 4.4 Render Report in RStudio
+
+Render the analysis report:
+
+**Method 1 - Click “Knit” button** in `report.Rmd`
+
+**Method 2 - Console command:**
+
+``` r
+
+rmarkdown::render("analysis/report/report.Rmd")
+```
+
+Your HTML report appears in `analysis/report/paper.html`!
+
+### Step 5: Add Unit Tests in RStudio (2 minutes)
+
+Create tests in RStudio:
+
+#### 5.1 Initialize Testing
+
+In RStudio Console:
+
+``` r
+
+usethis::use_testthat()
+```
+
+#### 5.2 Create Test File
+
+**File → New File → R Script**
+
+``` r
+
+# Source function from R/
+source('../../R/bill_analysis.R')
+
+test_that('create_bill_plot produces valid ggplot', {
+  plot <- create_bill_plot()
+
+  # Valid ggplot object
+  expect_s3_class(plot, 'ggplot')
+
+  # Correct title
+  expect_equal(plot$labels$title, 'Palmer Penguins: Bill Dimensions')
+})
+
+test_that('create_bill_plot handles missing data', {
+  # Data with missing values
+  test_data <- palmerpenguins::penguins
+  test_data$bill_length_mm[1:5] <- NA
+
+  plot <- create_bill_plot(test_data)
+
+  # Should still produce plot
+  expect_s3_class(plot, 'ggplot')
+})
+
+test_that('create_bill_plot includes all species', {
+  plot <- create_bill_plot()
+
+  # Should have species in color aesthetic
+  expect_true('species' %in% names(plot$labels))
+})
+```
+
+Save as: `tests/testthat/test-bill_analysis.R`
+
+#### 5.3 Run Tests in RStudio
+
+In RStudio Console:
+
+``` r
+
+devtools::test()
+```
+
+Or use **Build → Test Package** (if package structure)
+
+### Step 6: Exit RStudio and Validate (1 minute)
+
+Close your browser tab, then in terminal:
+
+``` bash
+# Stop RStudio container (Ctrl+C in terminal where docker-rstudio is running)
+# Auto-snapshot runs when container exits - packages saved to renv.lock!
+
+# Run tests in clean environment
+make docker-test
+# Auto-restore runs when R starts - all packages installed automatically!
+
+# Validate dependencies (pure shell - NO R REQUIRED!)
+make check-renv  # Pure shell validation (grep, awk, curl, jq)
+```
+
+### Step 7: Commit and Push (1 minute)
+
+``` bash
+git add .
+git commit -m "$(cat <<'EOF'
+Add bill dimensions scatter plot analysis
+
+Analysis:
+- Scatter plot of bill length vs bill depth by species
+- Palmer Penguins dataset
+- Function-based implementation with unit tests
+- Developed in RStudio Server
+
+Reproducibility:
+- Level 2: renv dependency tracking
+- Level 3: Docker environment isolation (rstudio profile)
+- Level 4: Unit tests for computational correctness
+- Level 5: CI/CD automated validation
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+
+git push
+```
+
+### Step 8: Verify CI/CD (30 seconds)
+
+``` bash
+# View CI/CD status
+gh run list --limit 3
+
+# Or view in browser
+gh repo view --web
+```
+
+## RStudio Workflow Advantages
+
+### Point-and-Click Development
+
+**Visual Interface Benefits:**
+
+- File browser for easy navigation
+- Environment pane shows all objects
+- Plots pane displays visualizations
+- Help pane with integrated documentation
+- Package manager with search
+
+### Interactive Analysis
+
+**Real-time Exploration:**
+
+``` r
+
+# In RStudio Console - explore interactively:
+library(palmerpenguins)
+View(penguins)  # Opens data viewer
+summary(penguins)
+table(penguins$species)
+
+# Test plot interactively
+library(ggplot2)
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point()
+```
+
+### Debugging Support
+
+**Visual Debugging:**
+
+1.  Set breakpoints (click left of line number)
+2.  Click “Source” to run with debugging
+3.  Inspect variables in Environment pane
+4.  Step through code line by line
+
+### RMarkdown Integration
+
+**Document Authoring:**
+
+- Visual markdown editor (RStudio 1.4+)
+- Live preview as you type
+- Insert code chunks with shortcuts
+- Knit to HTML/PDF/Word with one click
+
+## Accessing RStudio Server
+
+### Starting RStudio
+
+``` bash
+# From project directory:
+make docker-rstudio
+```
+
+Opens on: **<http://localhost:8787>**
+
+### Default Credentials
+
+- **Username:** `rstudio`
+- **Password:** `rstudio`
+
+### Customizing Credentials
+
+Edit your project’s Makefile to change:
+
+``` makefile
+docker-rstudio:
+    @echo "Starting RStudio Server on http://localhost:8787"
+    @echo "Username: myuser, Password: mypass"
+    docker run --platform linux/amd64 --rm -p 8787:8787 \
+      -v $$(pwd):/project \
+      -e USER=myuser \
+      -e PASSWORD=mypass \
+      $(PACKAGE_NAME) /init
+```
+
+### Persistent Sessions
+
+RStudio session is temporary - work is saved but R workspace isn’t:
+
+- **Saved:** All file edits, created files, installed packages
+  (auto-captured in renv.lock on exit)
+- **Not saved:** R workspace (.RData), unless you explicitly save
+
+**Best Practice:** Save work via files, not R workspace:
+
+``` r
+
+# Don't rely on:
+save.image()  # Workspace not portable
+
+# Instead use:
+saveRDS(my_data, "data/my_data.rds")  # Portable, reproducible
+# Packages auto-saved when you exit container - no manual renv::snapshot() needed
+```
+
+## Transitioning to Command Line
+
+### When to Use Terminal
+
+RStudio is great for development, but some tasks need terminal:
+
+**Use Terminal for:**
+
+- Running tests: `make docker-test`
+- Validation: `make check-renv` (pure shell - NO R required!)
+- Git operations: `git commit`, `git push`
+- Building images: `make docker-build`
+- Note: Auto-snapshot and auto-restore run automatically
+
+**Use RStudio for:**
+
+- Writing analysis code
+- Creating visualizations
+- Authoring reports
+- Exploratory analysis
+- Package development
+
+### Hybrid Workflow
+
+**Typical workflow:**
+
+1.  **RStudio:** Write and test code interactively
+2.  **RStudio:** Install packages with standard
+    [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+3.  **RStudio:** Author report and render locally
+4.  **Exit RStudio:** Auto-snapshot captures packages in renv.lock
+5.  **Terminal:** Run full test suite (auto-restore installs packages)
+6.  **Terminal:** Validate dependencies (pure shell - no R needed)
+7.  **Terminal:** Commit and push
+8.  **CI/CD:** Automated validation runs
+
+## Team Collaboration with RStudio
+
+### Team Lead Setup
+
+``` bash
+# Set defaults
+zzcollab config set team-name "genomicslab"
+zzcollab config set profile-name "analysis"
+
+# Create team project
+mkdir study && cd study
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+
+# Build and share team image (installs packages from renv.lock)
+make docker-build
+make docker-push-team            # Optional but efficient for team
+
+# Commit project structure
+git add .
+git commit -m "Initial project setup with RStudio Server"
+git push -u origin main
+```
+
+### Team Member Workflow
+
+``` bash
+# Clone repository
+git clone https://github.com/genomicslab/study.git
+cd study
+
+# Build Docker image from project Dockerfile
+make docker-build
+
+# Start RStudio Server
+make docker-rstudio
+
+# Access http://localhost:8787
+# Work in identical RStudio environment as team
+```
+
+**Note**: DockerHub is optional but efficient. Building from Dockerfile
+produces an identical environment if team image is not available.
+
+**Team Benefits:**
+
+- Everyone gets identical RStudio version
+- Same R version across team
+- Consistent package versions (via renv)
+- No “works on my machine” issues
+
+## Troubleshooting
+
+### RStudio Won’t Start
+
+``` bash
+# Check Docker is running
+docker info
+
+# Check port 8787 is free
+lsof -i :8787
+
+# If port busy, use different port:
+docker run --rm -p 8888:8787 -v $(pwd):/project \
+  -e USER=analyst -e PASSWORD=analyst \
+  $(PACKAGE_NAME) /init
+
+# Then access: http://localhost:8888
+```
+
+### Can’t Install Packages
+
+``` r
+
+# In RStudio Console:
+# Use standard install.packages() - auto-captured on container exit
+install.packages("package-name")
+
+# If package source unavailable, try different CRAN mirror:
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+install.packages("package-name")
+
+# Check renv status if issues persist:
+renv::status()
+
+# Auto-restore should handle missing packages, but can manually restore if needed:
+# renv::restore()
+```
+
+### Files Not Appearing
+
+RStudio mounts `/project` directory:
+
+- Your project root is at `/project`
+- All files saved in RStudio appear in host
+- Refresh Files pane if needed (click refresh icon)
+
+### Session Crashes
+
+``` bash
+# Restart RStudio container:
+# 1. Stop current container (Ctrl+C)
+# 2. Restart:
+make docker-rstudio
+```
+
+All your file changes are preserved!
+
+## Summary
+
+You created a fully reproducible analysis using RStudio Server:
+
+- **Familiar IDE:** RStudio interface in browser
+- **No Local R:** Everything runs in Docker
+- **Interactive Development:** Point-and-click + code
+- **Reproducible:** Docker + renv ensure consistency
+- **Auto-Snapshot:** Packages captured automatically on container exit
+- **Auto-Restore:** Missing packages installed automatically on R
+  startup
+- **Testable:** Unit tests validate logic
+- **Automated:** CI/CD runs on every commit
+- **Collaborative:** Team members get identical environment
+
+### RStudio Profile Contents
+
+**What’s included (~980MB):**
+
+- R (latest or specified version)
+- RStudio Server
+- Essential packages: renv, here, usethis, devtools
+- System libraries: git, pandoc, LaTeX (basic)
+- Auto-snapshot on container exit
+- Auto-restore on R startup
+
+### Next Steps
+
+**Extend your analysis:**
+
+``` r
+
+# Add statistical models
+fit_bill_model <- function(data) {
+  lm(bill_depth_mm ~ bill_length_mm * species, data = data)
+}
+
+# Add more visualizations
+create_flipper_plot <- function(data) {
+  # Flipper length vs body mass
+}
+
+# Write more tests
+test_that("model includes species interaction", {
+  model <- fit_bill_model(penguins)
+  expect_true("bill_length_mm:species" %in% names(coef(model)))
+})
+```
+
+**Share with colleagues:**
+
+``` bash
+# Team lead: Build and push
+make docker-build
+make docker-push-team            # Optional but efficient
+
+# Team member: Clone and run
+git clone https://github.com/yourteam/project.git && cd project
+make docker-build
+make docker-rstudio
+```
+
+For comprehensive documentation, see `vignette("quickstart")` for
+command-line workflow or explore other vignettes for advanced topics.
