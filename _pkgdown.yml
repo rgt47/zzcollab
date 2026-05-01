@@ -46,19 +46,33 @@ navbar:
           href: articles/report.html
 
 articles:
-  - title: All vignettes
+  - title: Getting started
     navbar: ~
     contents:
-      - configuration
       - getting-started
       - quickstart-R
       - quickstart-rstudio
       - quickstart1
       - quickstart2
-      - report
+      - configuration
+  - title: Concepts
+    navbar: ~
+    contents:
       - reproducibility-layers
       - reusable-team-images
+      - why-reproducibility-matters
       - testing
+      - report
+  - title: Workflows
+    navbar: ~
+    contents:
+      - workflow-blog-development
+      - workflow-data-analysis
+      - workflow-kitty-graphics
+      - workflow-package-development
+      - workflow-scholarly-manuscript
+      - workflow-simulation-study
+      - workflow-zzvim-r-plots
 
 authors:
   Ronald (Ryy) G. Thomas:
