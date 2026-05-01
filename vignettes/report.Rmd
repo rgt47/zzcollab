@@ -9,7 +9,12 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
+                      eval = FALSE)
+# This vignette is a compendium-report template. Chunks display as
+# illustrative code; they intentionally do not execute, since the
+# referenced data and helper scripts live inside a project scaffold,
+# not in the zzcollab package itself.
 ```
 
 ## Introduction
