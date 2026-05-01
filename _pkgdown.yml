@@ -1,0 +1,53 @@
+url: https://rgt47.github.io/zzcollab/
+destination: pkgdown_site
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: '#0054AD'
+
+home:
+  title: zzcollab
+  description: >
+    Docker-based research collaboration framework. Provides R and
+    bash interfaces to scaffold reproducible research compendia,
+    standardize Docker environments, and coordinate teams.
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [search, github]
+  components:
+    intro:
+      text: Get started
+      href: articles/getting-started.html
+    articles:
+      text: Articles
+      menu:
+        - text: Getting started
+          href: articles/getting-started.html
+        - text: Quick start (R)
+          href: articles/quickstart-R.html
+        - text: Quick start (RStudio)
+          href: articles/quickstart-rstudio.html
+        - text: Quick start - Solo
+          href: articles/quickstart1.html
+        - text: Quick start - Team
+          href: articles/quickstart2.html
+        - text: Configuration
+          href: articles/configuration.html
+        - text: Reproducibility layers
+          href: articles/reproducibility-layers.html
+        - text: Reusable team images
+          href: articles/reusable-team-images.html
+        - text: Testing
+          href: articles/testing.html
+        - text: Report
+          href: articles/report.html
+
+authors:
+  Ronald (Ryy) G. Thomas:
+    href: https://profiles.ucsd.edu/ronald.thomas
+
+development:
+  mode: auto

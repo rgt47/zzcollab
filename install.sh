@@ -1,0 +1,400 @@
+#!/bin/bash
+##############################################################################
+# ZZCOLLAB INSTALLATION SCRIPT
+##############################################################################
+# Installs zzcollab to ~/.zzcollab/ with bin symlink
+#
+# Structure:
+#   ~/.zzcollab/
+#   ├── lib/           Core libraries
+#   ├── modules/       Feature modules
+#   ├── templates/     Project templates
+#   └── zzcollab.sh    Main entry point
+#
+#   ~/bin/zzcollab → ~/.zzcollab/zzcollab.sh (symlink)
+##############################################################################
+
+set -euo pipefail
+
+readonly VERSION="2.0.0"
+
+# Colors
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
+
+log_info()    { printf "${BLUE}ℹ️  %s${NC}\n" "$*"; }
+log_warn()    { printf "${YELLOW}⚠️  %s${NC}\n" "$*"; }
+log_error()   { printf "${RED}❌ %s${NC}\n" "$*"; }
+log_success() { printf "${GREEN}✅ %s${NC}\n" "$*"; }
+
+show_help() {
+    cat << EOF
+${BLUE}ZZCOLLAB Installation Script v${VERSION}${NC}
+
+Installs zzcollab framework to ~/.zzcollab with optional symlink.
+
+USAGE:
+    $0 [OPTIONS]
+
+OPTIONS:
+    --dev               Development mode: symlink to source (changes apply immediately)
+    --bin-dir DIR       Create symlink in DIR (default: ~/bin)
+    --no-symlink        Don't create symlink
+    --force             Overwrite existing installation
+    --uninstall         Remove zzcollab installation
+    --help, -h          Show this help
+
+EXAMPLES:
+    $0                          # Install to ~/.zzcollab (copies files)
+    $0 --dev                    # Development: symlinks to source directory
+    $0 --bin-dir /usr/local/bin # Install, symlink in /usr/local/bin
+    $0 --no-symlink             # Install only, no symlink
+    $0 --uninstall              # Remove installation
+
+INSTALL MODES:
+    Production (default):  Copies files to ~/.zzcollab (stable, versioned)
+    Development (--dev):   Symlinks to source (changes apply immediately)
+
+INSTALLATION STRUCTURE:
+    ~/.zzcollab/
+    ├── lib/             Core libraries (constants, core, templates)
+    ├── modules/         Feature modules (cli, docker, project, etc.)
+    ├── templates/       Project templates
+    └── zzcollab.sh      Main entry point
+
+    ~/bin/zzcollab       Symlink to ~/.zzcollab/zzcollab.sh
+    ~/bin/zzc            Short alias symlink
+EOF
+}
+
+# Configuration
+ZZCOLLAB_HOME="$HOME/.zzcollab"
+BIN_DIR="$HOME/bin"
+CREATE_SYMLINK=true
+FORCE=false
+UNINSTALL=false
+DEV_MODE=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dev)
+            DEV_MODE=true
+            FORCE=true
+            shift
+            ;;
+        --bin-dir)
+            BIN_DIR="$2"
+            shift 2
+            ;;
+        --no-symlink)
+            CREATE_SYMLINK=false
+            shift
+            ;;
+        --force)
+            FORCE=true
+            shift
+            ;;
+        --uninstall)
+            UNINSTALL=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Get source directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+#=============================================================================
+# UNINSTALL
+#=============================================================================
+
+do_uninstall() {
+    log_info "Uninstalling zzcollab..."
+
+    if [[ -d "$ZZCOLLAB_HOME" ]]; then
+        rm -rf "$ZZCOLLAB_HOME"
+        log_success "Removed $ZZCOLLAB_HOME"
+    else
+        log_info "No installation found at $ZZCOLLAB_HOME"
+    fi
+
+    # Remove symlinks from common locations (both zzcollab and zzc)
+    for bin_path in "$HOME/bin/zzcollab" "$HOME/bin/zzc" "/usr/local/bin/zzcollab" "/usr/local/bin/zzc"; do
+        if [[ -L "$bin_path" ]]; then
+            rm -f "$bin_path"
+            log_success "Removed symlink $bin_path"
+        fi
+    done
+
+    log_success "Uninstall complete"
+}
+
+if [[ "$UNINSTALL" == "true" ]]; then
+    do_uninstall
+    exit 0
+fi
+
+#=============================================================================
+# PREREQUISITE CHECKS
+#=============================================================================
+
+check_prerequisites() {
+    local missing_required=()
+    local missing_recommended=()
+    local missing_optional=()
+
+    # Required tools
+    command -v git >/dev/null 2>&1 || missing_required+=("git")
+
+    # Recommended tools
+    command -v docker >/dev/null 2>&1 || missing_recommended+=("docker")
+    command -v make >/dev/null 2>&1 || missing_recommended+=("make")
+
+    # Optional tools
+    command -v gh >/dev/null 2>&1 || missing_optional+=("gh")
+    command -v jq >/dev/null 2>&1 || missing_optional+=("jq")
+    command -v curl >/dev/null 2>&1 || missing_optional+=("curl")
+
+    # Report findings
+    if [[ ${#missing_required[@]} -gt 0 ]]; then
+        echo ""
+        log_warn "Required tools not found: ${missing_required[*]}"
+        log_warn "Some zzcollab features will not work without these."
+        echo "  Install with:"
+        for tool in "${missing_required[@]}"; do
+            case "$tool" in
+                git) echo "    macOS: xcode-select --install" ;;
+            esac
+        done
+    fi
+
+    if [[ ${#missing_recommended[@]} -gt 0 ]]; then
+        echo ""
+        log_info "Recommended tools not found: ${missing_recommended[*]}"
+        echo "  Install with:"
+        for tool in "${missing_recommended[@]}"; do
+            case "$tool" in
+                docker) echo "    https://docs.docker.com/get-docker/" ;;
+                make)   echo "    macOS: xcode-select --install" ;;
+            esac
+        done
+    fi
+
+    if [[ ${#missing_optional[@]} -gt 0 ]]; then
+        echo ""
+        log_info "Optional tools not found: ${missing_optional[*]}"
+        echo "  These enable additional features:"
+        for tool in "${missing_optional[@]}"; do
+            case "$tool" in
+                gh)   echo "    gh   - GitHub integration (brew install gh)" ;;
+                jq)   echo "    jq   - JSON processing (brew install jq)" ;;
+                curl) echo "    curl - API queries (usually pre-installed)" ;;
+            esac
+        done
+    fi
+
+    # Summary
+    if [[ ${#missing_required[@]} -gt 0 || ${#missing_recommended[@]} -gt 0 ]]; then
+        echo ""
+        log_info "Installation will continue. Install missing tools for full functionality."
+        echo ""
+    fi
+}
+
+check_prerequisites
+
+#=============================================================================
+# VALIDATION
+#=============================================================================
+
+# Check source directory has required files
+for required in "zzcollab.sh" "lib" "modules" "templates"; do
+    if [[ ! -e "$SCRIPT_DIR/$required" ]]; then
+        log_error "Required file/directory not found: $SCRIPT_DIR/$required"
+        log_error "Run this script from the zzcollab source directory"
+        exit 1
+    fi
+done
+
+# Check for existing installation
+if [[ -d "$ZZCOLLAB_HOME" ]]; then
+    if [[ "$FORCE" == "true" ]]; then
+        log_warn "Removing existing installation (--force)"
+        rm -rf "$ZZCOLLAB_HOME"
+    else
+        log_error "Installation already exists at $ZZCOLLAB_HOME"
+        log_error "Use --force to overwrite or --uninstall to remove"
+        exit 1
+    fi
+fi
+
+#=============================================================================
+# INSTALLATION
+#=============================================================================
+
+if [[ "$DEV_MODE" == "true" ]]; then
+    log_info "Installing zzcollab v${VERSION} to $ZZCOLLAB_HOME (DEVELOPMENT MODE)"
+    log_info "Source: $SCRIPT_DIR"
+else
+    log_info "Installing zzcollab v${VERSION} to $ZZCOLLAB_HOME"
+fi
+
+# Create installation directory
+mkdir -p "$ZZCOLLAB_HOME"
+
+if [[ "$DEV_MODE" == "true" ]]; then
+    # Development mode: create symlinks to source directories
+    log_info "Symlinking lib/..."
+    ln -sf "$SCRIPT_DIR/lib" "$ZZCOLLAB_HOME/lib"
+
+    log_info "Symlinking modules/..."
+    ln -sf "$SCRIPT_DIR/modules" "$ZZCOLLAB_HOME/modules"
+
+    log_info "Symlinking templates/..."
+    ln -sf "$SCRIPT_DIR/templates" "$ZZCOLLAB_HOME/templates"
+
+    log_info "Symlinking zzcollab.sh..."
+    ln -sf "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/zzcollab.sh"
+
+    if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
+        log_info "Symlinking navigation_scripts.sh..."
+        ln -sf "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/navigation_scripts.sh"
+    fi
+
+    # Save source directory for reference
+    echo "$SCRIPT_DIR" > "$ZZCOLLAB_HOME/.source_dir"
+
+    log_success "Installed to $ZZCOLLAB_HOME (symlinked to source)"
+    log_info "Changes to $SCRIPT_DIR will apply immediately"
+else
+    # Production mode: copy files
+    log_info "Copying lib/..."
+    cp -r "$SCRIPT_DIR/lib" "$ZZCOLLAB_HOME/"
+
+    log_info "Copying modules/..."
+    cp -r "$SCRIPT_DIR/modules" "$ZZCOLLAB_HOME/"
+
+    log_info "Copying templates/..."
+    cp -r "$SCRIPT_DIR/templates" "$ZZCOLLAB_HOME/"
+
+    log_info "Copying zzcollab.sh..."
+    cp "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/"
+    chmod +x "$ZZCOLLAB_HOME/zzcollab.sh"
+
+    if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
+        log_info "Copying navigation_scripts.sh..."
+        cp "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/"
+        chmod +x "$ZZCOLLAB_HOME/navigation_scripts.sh"
+    fi
+
+    # Update version in constants
+    if [[ -f "$ZZCOLLAB_HOME/lib/constants.sh" ]]; then
+        sed -i.bak "s/ZZCOLLAB_VERSION=.*/ZZCOLLAB_VERSION=\"$VERSION\"/" \
+            "$ZZCOLLAB_HOME/lib/constants.sh" 2>/dev/null || true
+        rm -f "$ZZCOLLAB_HOME/lib/constants.sh.bak"
+    fi
+
+    log_success "Installed to $ZZCOLLAB_HOME"
+fi
+
+#=============================================================================
+# SYMLINK
+#=============================================================================
+
+if [[ "$CREATE_SYMLINK" == "true" ]]; then
+    # Create bin directory if needed
+    if [[ ! -d "$BIN_DIR" ]]; then
+        log_info "Creating $BIN_DIR"
+        mkdir -p "$BIN_DIR"
+    fi
+
+    # Create both zzcollab and zzc symlinks
+    for cmd_name in "zzcollab" "zzc"; do
+        # Remove existing symlink or file
+        if [[ -e "$BIN_DIR/$cmd_name" ]]; then
+            if [[ "$FORCE" == "true" ]]; then
+                rm -f "$BIN_DIR/$cmd_name"
+            else
+                log_warn "$BIN_DIR/$cmd_name already exists"
+                log_warn "Use --force to overwrite"
+            fi
+        fi
+
+        # Create symlink
+        if [[ ! -e "$BIN_DIR/$cmd_name" ]]; then
+            ln -s "$ZZCOLLAB_HOME/zzcollab.sh" "$BIN_DIR/$cmd_name"
+            log_success "Created symlink: $BIN_DIR/$cmd_name"
+        fi
+    done
+
+    # Check PATH
+    if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+        echo ""
+        log_warn "$BIN_DIR is not in your PATH"
+        log_warn "Add to your shell config (~/.bashrc or ~/.zshrc):"
+        echo ""
+        echo "    export PATH=\"$BIN_DIR:\$PATH\""
+        echo ""
+    fi
+fi
+
+#=============================================================================
+# VERIFICATION
+#=============================================================================
+
+log_info "Verifying installation..."
+
+# Test that it can be sourced
+if bash -n "$ZZCOLLAB_HOME/zzcollab.sh" 2>/dev/null; then
+    log_success "Syntax check passed"
+else
+    log_error "Syntax errors in zzcollab.sh"
+    exit 1
+fi
+
+log_success "Installation complete!"
+echo ""
+
+if [[ "$DEV_MODE" == "true" ]]; then
+    echo "Development mode: symlinks to source"
+    echo "  Source: $SCRIPT_DIR"
+    echo ""
+    echo "Symlinks created:"
+    echo "  ~/.zzcollab/lib       → $SCRIPT_DIR/lib"
+    echo "  ~/.zzcollab/modules   → $SCRIPT_DIR/modules"
+    echo "  ~/.zzcollab/templates → $SCRIPT_DIR/templates"
+    echo ""
+    echo "Changes to source apply immediately - no reinstall needed."
+else
+    # Count files
+    lib_count=$(find "$ZZCOLLAB_HOME/lib" -name "*.sh" | wc -l | tr -d ' ')
+    mod_count=$(find "$ZZCOLLAB_HOME/modules" -name "*.sh" | wc -l | tr -d ' ')
+    tmpl_count=$(find "$ZZCOLLAB_HOME/templates" -type f | wc -l | tr -d ' ')
+
+    echo "Installed:"
+    echo "  - $lib_count library files"
+    echo "  - $mod_count module files"
+    echo "  - $tmpl_count template files"
+fi
+echo ""
+
+if [[ "$CREATE_SYMLINK" == "true" ]] && [[ -L "$BIN_DIR/zzcollab" ]]; then
+    echo "Commands available:"
+    echo "  zzcollab --help    # Full command"
+    echo "  zzc --help         # Short alias"
+else
+    echo "Run: $ZZCOLLAB_HOME/zzcollab.sh --help"
+fi

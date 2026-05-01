@@ -1,0 +1,23 @@
+```{r include=F, echo=F}
+# clear env: objects and packages
+rm(list = ls())
+options(
+  knitr.kable.NA = "", dplyr.print_max = 1e9, knitr.table.format = "latex"
+)
+library(pacman)
+p_load( naniar, DT, conflicted, ggthemes, datapasta, janitor, kableExtra,
+  tidytuesdayR, tidyverse, knitr, readxl
+)
+dt <- function(x) datatable(head(x, 100), filter = "top")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
+conflict_prefer("summarize", "dplyr")
+theme_set(theme_bw())
+opts_chunk$set(
+  warning = FALSE, message = FALSE, echo = FALSE, fig.width = 3.2,
+  fig.height = 3, results = "asis", dev = "pdf"
+)
+source("~/shr/zz.tools.R")
+options(scipen = 1, digits = 3)
+```
+ ZQ

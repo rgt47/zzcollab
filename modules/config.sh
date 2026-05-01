@@ -1,0 +1,1333 @@
+#!/bin/bash
+set -euo pipefail
+##############################################################################
+# ZZCOLLAB CONFIGURATION MODULE
+##############################################################################
+#
+# Manages YAML configuration files with priority: project > user > defaults
+# Requires: yq (YAML processor)
+#
+# Files:
+#   ./zzcollab.yaml          - Project-specific config
+#   ~/.zzcollab/config.yaml  - User global config
+#
+##############################################################################
+
+require_module "core"
+
+#=============================================================================
+# CONFIGURATION PATHS AND STATE
+#=============================================================================
+
+readonly CONFIG_PROJECT="${ZZCOLLAB_CONFIG_PROJECT:-./zzcollab.yaml}"
+readonly CONFIG_USER_DIR="${ZZCOLLAB_CONFIG_USER_DIR:-$HOME/.zzcollab}"
+readonly CONFIG_USER="${ZZCOLLAB_CONFIG_USER:-$CONFIG_USER_DIR/config.yaml}"
+
+# Interactive mode state
+INTERACTIVE_CANCELLED=false
+
+# Original configuration state (backward compatibility)
+CONFIG_TEAM_NAME=""
+CONFIG_GITHUB_ACCOUNT=""
+CONFIG_DOCKERHUB_ACCOUNT=""
+CONFIG_PROFILE_NAME=""
+CONFIG_LIBS_BUNDLE=""
+CONFIG_PKGS_BUNDLE=""
+CONFIG_R_VERSION=""
+CONFIG_AUTO_GITHUB="false"
+CONFIG_SKIP_CONFIRMATION="false"
+CONFIG_WITH_EXAMPLES="false"
+
+# Extended configuration state - Author
+CONFIG_AUTHOR_NAME=""
+CONFIG_AUTHOR_EMAIL=""
+CONFIG_AUTHOR_ORCID=""
+CONFIG_AUTHOR_AFFILIATION=""
+CONFIG_AUTHOR_AFFILIATION_FULL=""
+CONFIG_AUTHOR_ROLES=""
+
+# Extended configuration state - License
+CONFIG_LICENSE_TYPE=""
+CONFIG_LICENSE_YEAR=""
+CONFIG_LICENSE_HOLDER=""
+CONFIG_LICENSE_INCLUDE_FILE="true"
+
+# Extended configuration state - R Package
+CONFIG_RPACKAGE_MIN_R_VERSION=""
+CONFIG_RPACKAGE_ROXYGEN_VERSION=""
+CONFIG_RPACKAGE_TESTTHAT_EDITION=""
+CONFIG_RPACKAGE_ENCODING=""
+CONFIG_RPACKAGE_LANGUAGE=""
+CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
+
+# Extended configuration state - Code Style
+CONFIG_STYLE_LINE_LENGTH=""
+CONFIG_STYLE_INDENT_SIZE=""
+CONFIG_STYLE_USE_NATIVE_PIPE=""
+CONFIG_STYLE_ASSIGNMENT=""
+CONFIG_STYLE_NAMING_CONVENTION=""
+
+# Extended configuration state - Docker
+CONFIG_DOCKER_ACCOUNT=""
+CONFIG_DOCKER_DEFAULT_PROFILE=""
+CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
+CONFIG_DOCKER_REGISTRY=""
+CONFIG_DOCKER_PLATFORM=""
+
+# Extended configuration state - GitHub
+CONFIG_GITHUB_DEFAULT_VISIBILITY=""
+CONFIG_GITHUB_DEFAULT_BRANCH=""
+CONFIG_GITHUB_CREATE_ISSUES=""
+CONFIG_GITHUB_CREATE_WIKI=""
+
+# Extended configuration state - CI/CD
+CONFIG_CICD_ENABLE_GITHUB_ACTIONS=""
+CONFIG_CICD_R_VERSIONS=""
+CONFIG_CICD_OS_MATRIX=""
+CONFIG_CICD_RUN_COVERAGE=""
+CONFIG_CICD_COVERAGE_THRESHOLD=""
+
+# Extended configuration state - Documentation
+CONFIG_DOCS_USE_PKGDOWN=""
+CONFIG_DOCS_USE_README=""
+CONFIG_DOCS_USE_NEWS=""
+CONFIG_DOCS_CITATION_STYLE=""
+
+#=============================================================================
+# YAML OPERATIONS
+#=============================================================================
+
+_require_yq() {
+    command -v yq >/dev/null 2>&1 || {
+        log_error "yq required but not found"
+        log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
+        return 1
+    }
+}
+
+yaml_get() {
+    local file="$1" path="$2"
+    [[ -f "$file" ]] || return 1
+    _require_yq || return 1
+    yq eval ".$path // \"\"" "$file" 2>/dev/null
+}
+
+yaml_set() {
+    local file="$1" path="$2" value="$3"
+    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
+    _require_yq || return 1
+    _YQ_VAL="$value" yq eval ".$path = strenv(_YQ_VAL)" "$file" -i
+}
+
+yaml_set_bool() {
+    local file="$1" path="$2" value="$3"
+    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
+    [[ "$value" == "true" || "$value" == "false" ]] || { log_error "Boolean expected: $value"; return 1; }
+    _require_yq || return 1
+    yq eval ".$path = $value" "$file" -i
+}
+
+yaml_set_array() {
+    local file="$1" path="$2" value="$3"
+    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
+    _require_yq || return 1
+    yq eval ".$path = [$value]" "$file" -i
+}
+
+#=============================================================================
+# INPUT VALIDATION HELPERS
+#=============================================================================
+
+# Validate email format
+validate_email() {
+    local email="$1"
+    [[ -z "$email" ]] && return 0  # Empty is OK (optional)
+    [[ "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]
+}
+
+# Validate ORCID format (0000-0000-0000-0000)
+validate_orcid() {
+    local orcid="$1"
+    [[ -z "$orcid" ]] && return 0  # Empty is OK (optional)
+    [[ "$orcid" =~ ^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$ ]]
+}
+
+# validate_r_version() is defined in lib/core.sh.
+# Config module uses lenient mode (X.Y or X.Y.Z).
+validate_r_version_lenient() {
+    validate_r_version --lenient "$@"
+}
+
+# Validate positive integer
+validate_positive_int() {
+    local num="$1"
+    [[ -z "$num" ]] && return 0  # Empty is OK
+    [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -gt 0 ]]
+}
+
+# Validate percentage (0-100)
+validate_percentage() {
+    local num="$1"
+    [[ -z "$num" ]] && return 0  # Empty is OK
+    [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 0 ]] && [[ "$num" -le 100 ]]
+}
+
+# Validate GitHub account exists (requires gh CLI)
+validate_github_account() {
+    local account="$1"
+    [[ -z "$account" ]] && return 0  # Empty is OK (optional)
+    if command -v gh &>/dev/null; then
+        gh api "users/$account" &>/dev/null
+        return $?
+    fi
+    return 0  # Skip validation if gh not available
+}
+
+#=============================================================================
+# INTERACTIVE INPUT HELPERS
+#=============================================================================
+
+# Trap handler for clean exit
+_interactive_cleanup() {
+    INTERACTIVE_CANCELLED=true
+    echo ""
+    echo ""
+    log_warn "Configuration cancelled by user"
+    echo "Partial configuration may have been saved."
+    echo "Run 'zzcollab config init --interactive' to continue setup."
+    return 0
+}
+
+# Prompt for input with default value and exit handling
+# Usage: prompt_input "Prompt text" "default_value" result_var
+prompt_input() {
+    local prompt="$1"
+    local default="$2"
+    local result_var="$3"
+    local input
+
+    if [[ -n "$default" ]]; then
+        printf "%s [%s]: " "$prompt" "$default"
+    else
+        printf "%s: " "$prompt"
+    fi
+
+    zzc_read -r input || {
+        INTERACTIVE_CANCELLED=true
+        return 1
+    }
+
+    if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+        INTERACTIVE_CANCELLED=true
+        return 1
+    fi
+
+    printf -v "$result_var" '%s' "${input:-$default}"
+    return 0
+}
+
+# Prompt for validated input with retry
+# Usage: prompt_validated "Prompt" "default" result_var validator_func "error_message"
+prompt_validated() {
+    local prompt="$1"
+    local default="$2"
+    local result_var="$3"
+    local validator="$4"
+    local error_msg="${5:-Invalid input}"
+    local input
+
+    while true; do
+        if [[ -n "$default" ]]; then
+            printf "%s [%s]: " "$prompt" "$default"
+        else
+            printf "%s: " "$prompt"
+        fi
+
+        zzc_read -r input || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
+
+        if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+            INTERACTIVE_CANCELLED=true
+            return 1
+        fi
+
+        input="${input:-$default}"
+
+        # Run validator function
+        if $validator "$input"; then
+            printf -v "$result_var" '%s' "$input"
+            return 0
+        else
+            echo "  $error_msg"
+        fi
+    done
+}
+
+# Prompt for GitHub account with existence check
+prompt_github_account() {
+    local prompt="$1"
+    local default="$2"
+    local result_var="$3"
+    local input
+
+    while true; do
+        if [[ -n "$default" ]]; then
+            printf "%s [%s]: " "$prompt" "$default"
+        else
+            printf "%s: " "$prompt"
+        fi
+
+        zzc_read -r input || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
+
+        if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+            INTERACTIVE_CANCELLED=true
+            return 1
+        fi
+
+        input="${input:-$default}"
+
+        # Empty is OK
+        if [[ -z "$input" ]]; then
+            printf -v "$result_var" '%s' ""
+            return 0
+        fi
+
+        # Check if account exists
+        if command -v gh &>/dev/null; then
+            printf "  Checking GitHub account..."
+            if gh api "users/$input" &>/dev/null; then
+                echo " OK"
+                printf -v "$result_var" '%s' "$input"
+                return 0
+            else
+                echo " not found"
+                echo "  Account '$input' not found on GitHub. Please check the username."
+            fi
+        else
+            # gh not available, accept without validation
+            printf -v "$result_var" '%s' "$input"
+            return 0
+        fi
+    done
+}
+
+# Prompt for yes/no with default
+# Usage: prompt_yesno "Question" "y" result_var
+prompt_yesno() {
+    local prompt="$1"
+    local default="$2"
+    local result_var="$3"
+    local input
+    local hint="y/n"
+
+    [[ "$default" == "y" ]] && hint="Y/n"
+    [[ "$default" == "n" ]] && hint="y/N"
+
+    printf "%s (%s): " "$prompt" "$hint"
+
+    zzc_read -r input || {
+        INTERACTIVE_CANCELLED=true
+        return 1
+    }
+
+    if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+        INTERACTIVE_CANCELLED=true
+        return 1
+    fi
+
+    input="${input:-$default}"
+    if [[ "$input" =~ ^[Yy] ]]; then
+        printf -v "$result_var" '%s' "true"
+    else
+        printf -v "$result_var" '%s' "false"
+    fi
+    return 0
+}
+
+# Prompt for selection from list
+# Usage: prompt_select "Prompt" "opt1,opt2,opt3" "default" result_var
+prompt_select() {
+    local prompt="$1"
+    local options="$2"
+    local default="$3"
+    local result_var="$4"
+    local input
+
+    while true; do
+        printf "%s (%s) [%s]: " "$prompt" "$options" "$default"
+
+        zzc_read -r input || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
+
+        if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
+            INTERACTIVE_CANCELLED=true
+            return 1
+        fi
+
+        input="${input:-$default}"
+
+        # Validate input is one of the options
+        if [[ ",$options," == *",$input,"* ]]; then
+            printf -v "$result_var" '%s' "$input"
+            return 0
+        else
+            echo "  Invalid choice. Please select from: $options"
+        fi
+    done
+}
+
+# Print section header
+print_section() {
+    local title="$1"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  $title"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+}
+
+#=============================================================================
+# CONFIGURATION LOADING
+#=============================================================================
+
+load_config() {
+    # Reset to defaults - original fields
+    CONFIG_TEAM_NAME=""
+    CONFIG_GITHUB_ACCOUNT=""
+    CONFIG_DOCKERHUB_ACCOUNT=""
+    CONFIG_PROFILE_NAME=""
+    CONFIG_LIBS_BUNDLE=""
+    CONFIG_PKGS_BUNDLE=""
+    CONFIG_R_VERSION=""
+    CONFIG_AUTO_GITHUB="false"
+    CONFIG_SKIP_CONFIRMATION="false"
+    CONFIG_WITH_EXAMPLES="false"
+
+    # Reset extended fields
+    CONFIG_AUTHOR_NAME=""
+    CONFIG_AUTHOR_EMAIL=""
+    CONFIG_AUTHOR_ORCID=""
+    CONFIG_AUTHOR_AFFILIATION=""
+    CONFIG_AUTHOR_AFFILIATION_FULL=""
+    CONFIG_AUTHOR_ROLES=""
+    CONFIG_LICENSE_TYPE=""
+    CONFIG_LICENSE_YEAR=""
+    CONFIG_LICENSE_HOLDER=""
+    CONFIG_LICENSE_INCLUDE_FILE="true"
+    CONFIG_RPACKAGE_MIN_R_VERSION=""
+    CONFIG_RPACKAGE_ROXYGEN_VERSION=""
+    CONFIG_RPACKAGE_TESTTHAT_EDITION=""
+    CONFIG_RPACKAGE_ENCODING=""
+    CONFIG_RPACKAGE_LANGUAGE=""
+    CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
+    CONFIG_STYLE_LINE_LENGTH=""
+    CONFIG_STYLE_INDENT_SIZE=""
+    CONFIG_STYLE_USE_NATIVE_PIPE=""
+    CONFIG_STYLE_ASSIGNMENT=""
+    CONFIG_STYLE_NAMING_CONVENTION=""
+    CONFIG_DOCKER_DEFAULT_PROFILE=""
+    CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
+    CONFIG_DOCKER_REGISTRY=""
+    CONFIG_DOCKER_PLATFORM=""
+    CONFIG_GITHUB_DEFAULT_VISIBILITY=""
+    CONFIG_GITHUB_DEFAULT_BRANCH=""
+    CONFIG_GITHUB_CREATE_ISSUES=""
+    CONFIG_GITHUB_CREATE_WIKI=""
+    CONFIG_CICD_ENABLE_GITHUB_ACTIONS=""
+    CONFIG_CICD_R_VERSIONS=""
+    CONFIG_CICD_OS_MATRIX=""
+    CONFIG_CICD_RUN_COVERAGE=""
+    CONFIG_CICD_COVERAGE_THRESHOLD=""
+    CONFIG_DOCS_USE_PKGDOWN=""
+    CONFIG_DOCS_USE_README=""
+    CONFIG_DOCS_USE_NEWS=""
+    CONFIG_DOCS_CITATION_STYLE=""
+
+    # Load in reverse priority (later overrides earlier)
+    _load_file "$CONFIG_USER"
+    _load_file "$CONFIG_PROJECT"
+}
+
+# Table mapping YAML paths to CONFIG_* variable names.
+# Format: "yaml.path CONFIG_VAR_NAME" (space-separated, one per line).
+# To add a new config field: add one line here and declare the variable above.
+_CONFIG_MAP="
+defaults.team_name              CONFIG_TEAM_NAME
+defaults.github_account         CONFIG_GITHUB_ACCOUNT
+defaults.dockerhub_account      CONFIG_DOCKERHUB_ACCOUNT
+defaults.profile_name           CONFIG_PROFILE_NAME
+defaults.libs_bundle            CONFIG_LIBS_BUNDLE
+defaults.pkgs_bundle            CONFIG_PKGS_BUNDLE
+defaults.r_version              CONFIG_R_VERSION
+defaults.auto_github            CONFIG_AUTO_GITHUB
+defaults.skip_confirmation      CONFIG_SKIP_CONFIRMATION
+defaults.with_examples          CONFIG_WITH_EXAMPLES
+author.name                     CONFIG_AUTHOR_NAME
+author.email                    CONFIG_AUTHOR_EMAIL
+author.orcid                    CONFIG_AUTHOR_ORCID
+author.affiliation              CONFIG_AUTHOR_AFFILIATION
+author.affiliation_full         CONFIG_AUTHOR_AFFILIATION_FULL
+author.roles                    CONFIG_AUTHOR_ROLES
+license.type                    CONFIG_LICENSE_TYPE
+license.year                    CONFIG_LICENSE_YEAR
+license.holder                  CONFIG_LICENSE_HOLDER
+license.include_file            CONFIG_LICENSE_INCLUDE_FILE
+r_package.min_r_version         CONFIG_RPACKAGE_MIN_R_VERSION
+r_package.roxygen_version       CONFIG_RPACKAGE_ROXYGEN_VERSION
+r_package.testthat_edition      CONFIG_RPACKAGE_TESTTHAT_EDITION
+r_package.encoding              CONFIG_RPACKAGE_ENCODING
+r_package.language              CONFIG_RPACKAGE_LANGUAGE
+r_package.vignette_builder      CONFIG_RPACKAGE_VIGNETTE_BUILDER
+style.line_length               CONFIG_STYLE_LINE_LENGTH
+style.indent_size               CONFIG_STYLE_INDENT_SIZE
+style.use_native_pipe           CONFIG_STYLE_USE_NATIVE_PIPE
+style.assignment                CONFIG_STYLE_ASSIGNMENT
+style.naming_convention         CONFIG_STYLE_NAMING_CONVENTION
+docker.account                  CONFIG_DOCKER_ACCOUNT
+docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
+docker.default_base_image       CONFIG_DOCKER_DEFAULT_BASE_IMAGE
+docker.registry                 CONFIG_DOCKER_REGISTRY
+docker.platform                 CONFIG_DOCKER_PLATFORM
+github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
+github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
+github.create_issues            CONFIG_GITHUB_CREATE_ISSUES
+github.create_wiki              CONFIG_GITHUB_CREATE_WIKI
+cicd.enable_github_actions      CONFIG_CICD_ENABLE_GITHUB_ACTIONS
+cicd.r_versions                 CONFIG_CICD_R_VERSIONS
+cicd.os_matrix                  CONFIG_CICD_OS_MATRIX
+cicd.run_coverage               CONFIG_CICD_RUN_COVERAGE
+cicd.coverage_threshold         CONFIG_CICD_COVERAGE_THRESHOLD
+documentation.use_pkgdown       CONFIG_DOCS_USE_PKGDOWN
+documentation.use_readme        CONFIG_DOCS_USE_README
+documentation.use_news          CONFIG_DOCS_USE_NEWS
+documentation.citation_style    CONFIG_DOCS_CITATION_STYLE
+"
+
+_load_file() {
+    local file="$1"
+    [[ -f "$file" ]] || return 0
+
+    local yaml_path var_name val
+    while read -r yaml_path var_name; do
+        [[ -z "$yaml_path" ]] && continue
+        val=$(yaml_get "$file" "$yaml_path") && [[ -n "$val" ]] && \
+            printf -v "$var_name" '%s' "$val"
+    done <<< "$_CONFIG_MAP"
+
+    # docker.default_profile also overrides CONFIG_PROFILE_NAME (legacy compat)
+    val=$(yaml_get "$file" "docker.default_profile") && \
+        [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
+
+    return 0
+}
+
+apply_config_defaults() {
+    [[ -z "${TEAM_NAME:-}" && -n "$CONFIG_TEAM_NAME" ]] && TEAM_NAME="$CONFIG_TEAM_NAME"
+    [[ -z "${GITHUB_ACCOUNT:-}" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
+    [[ -z "${DOCKERHUB_ACCOUNT:-}" && -n "$CONFIG_DOCKERHUB_ACCOUNT" ]] && DOCKERHUB_ACCOUNT="$CONFIG_DOCKERHUB_ACCOUNT"
+    [[ -z "${PROFILE_NAME:-}" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
+    [[ -z "${LIBS_BUNDLE:-}" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
+    [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
+
+    if [[ -z "${R_VERSION:-}" ]]; then
+        R_VERSION="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
+        USER_PROVIDED_R_VERSION="false"
+    fi
+
+    [[ "$CONFIG_AUTO_GITHUB" == "true" ]] && CREATE_GITHUB_REPO=true
+    [[ "$CONFIG_SKIP_CONFIRMATION" == "true" ]] && SKIP_CONFIRMATION=true
+    [[ "${WITH_EXAMPLES:-false}" == "false" && "$CONFIG_WITH_EXAMPLES" == "true" ]] && WITH_EXAMPLES=true
+    return 0
+}
+
+_get_config_value() {
+    local key="$1"
+    case "$key" in
+        # Original fields
+        team_name) echo "$CONFIG_TEAM_NAME" ;;
+        github_account) echo "$CONFIG_GITHUB_ACCOUNT" ;;
+        dockerhub_account) echo "$CONFIG_DOCKERHUB_ACCOUNT" ;;
+        profile_name) echo "$CONFIG_PROFILE_NAME" ;;
+        libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
+        pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
+        r_version) echo "$CONFIG_R_VERSION" ;;
+        auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
+        skip_confirmation) echo "$CONFIG_SKIP_CONFIRMATION" ;;
+        with_examples) echo "$CONFIG_WITH_EXAMPLES" ;;
+        # Author fields
+        author.name|author_name) echo "$CONFIG_AUTHOR_NAME" ;;
+        author.email|author_email) echo "$CONFIG_AUTHOR_EMAIL" ;;
+        author.orcid|author_orcid) echo "$CONFIG_AUTHOR_ORCID" ;;
+        author.affiliation|author_affiliation) echo "$CONFIG_AUTHOR_AFFILIATION" ;;
+        author.affiliation_full|author_affiliation_full) echo "$CONFIG_AUTHOR_AFFILIATION_FULL" ;;
+        author.roles|author_roles) echo "$CONFIG_AUTHOR_ROLES" ;;
+        # License fields
+        license.type|license_type) echo "$CONFIG_LICENSE_TYPE" ;;
+        license.year|license_year) echo "$CONFIG_LICENSE_YEAR" ;;
+        license.holder|license_holder) echo "$CONFIG_LICENSE_HOLDER" ;;
+        # R Package fields
+        r_package.min_r_version) echo "$CONFIG_RPACKAGE_MIN_R_VERSION" ;;
+        r_package.testthat_edition) echo "$CONFIG_RPACKAGE_TESTTHAT_EDITION" ;;
+        # Docker fields
+        docker.default_profile) echo "$CONFIG_DOCKER_DEFAULT_PROFILE" ;;
+        docker.registry) echo "$CONFIG_DOCKER_REGISTRY" ;;
+        # GitHub fields
+        github.default_visibility) echo "$CONFIG_GITHUB_DEFAULT_VISIBILITY" ;;
+        github.default_branch) echo "$CONFIG_GITHUB_DEFAULT_BRANCH" ;;
+        *) echo "" ;;
+    esac
+}
+
+#=============================================================================
+# CONFIG COMMANDS
+#=============================================================================
+
+config_init() {
+    local interactive="${1:-false}"
+
+    mkdir -p "$CONFIG_USER_DIR"
+
+    if [[ -f "$CONFIG_USER" ]]; then
+        if [[ "$interactive" == "true" ]]; then
+            # Interactive mode: edit existing config, don't overwrite
+            log_info "Editing existing configuration: $CONFIG_USER"
+            load_config
+            config_interactive_setup
+            return 0
+        else
+            # Non-interactive: ask before overwriting
+            log_warn "Config exists: $CONFIG_USER"
+            zzc_read -p "Overwrite? [y/N] " -n 1 -r; echo
+            [[ $REPLY =~ ^[Yy]$ ]] || return 0
+        fi
+    fi
+
+    # Create new config (only reached if file doesn't exist or user chose to overwrite)
+    _create_default_config
+
+    if [[ "$interactive" == "true" ]]; then
+        config_interactive_setup
+    else
+        log_success "Created: $CONFIG_USER"
+        log_info "Run 'zzcollab config init --interactive' for guided setup"
+    fi
+}
+
+_create_default_config() {
+    local current_year
+    current_year=$(date +%Y)
+
+    cat > "$CONFIG_USER" << EOF
+# ZZCOLLAB Configuration
+# Generated: $(date '+%Y-%m-%d %H:%M:%S')
+#
+# This file stores your personal defaults for R package development.
+# Values here are used unless overridden by CLI flags or project config.
+#
+# Run 'zzcollab config init --interactive' for guided setup.
+
+#=============================================================================
+# AUTHOR INFORMATION
+#=============================================================================
+# Used in DESCRIPTION Authors@R field, reports, and git commits
+
+author:
+  name: ""
+  email: ""
+  orcid: ""                    # e.g., "0000-0002-1234-5678"
+  affiliation: ""              # Short name, e.g., "Stanford"
+  affiliation_full: ""         # Full name for papers
+  roles: "aut, cre"            # aut=author, cre=maintainer, ctb=contributor
+
+#=============================================================================
+# LICENSE PREFERENCES
+#=============================================================================
+# Default license for new R packages
+
+license:
+  type: "GPL-3"                # GPL-3, MIT, Apache-2.0, CC-BY-4.0
+  year: "${current_year}"
+  holder: ""                   # Defaults to author.name if empty
+  include_file: true           # Create LICENSE.md file
+
+#=============================================================================
+# R PACKAGE DEFAULTS
+#=============================================================================
+# Technical defaults for R package DESCRIPTION
+
+r_package:
+  min_r_version: "4.1.0"       # Minimum R version (for native pipe)
+  roxygen_version: "7.3.0"
+  testthat_edition: 3
+  encoding: "UTF-8"
+  language: "en-US"
+  vignette_builder: "knitr"
+
+#=============================================================================
+# CODE STYLE PREFERENCES
+#=============================================================================
+# Enforced by lintr and styler
+
+style:
+  line_length: 78
+  indent_size: 2
+  use_native_pipe: true        # |> instead of %>%
+  assignment: "arrow"          # <- instead of =
+  naming_convention: "snake_case"
+
+#=============================================================================
+# DOCKER PREFERENCES
+#=============================================================================
+
+docker:
+  default_profile: "analysis"
+  default_base_image: "rocker/tidyverse"
+  registry: "docker.io"        # docker.io, ghcr.io
+  platform: "linux/amd64"
+
+#=============================================================================
+# GITHUB PREFERENCES
+#=============================================================================
+
+github:
+  account: ""
+  default_visibility: "private"
+  default_branch: "main"
+  create_issues: true
+  create_wiki: false
+
+#=============================================================================
+# CI/CD PREFERENCES
+#=============================================================================
+
+cicd:
+  enable_github_actions: true
+  r_versions: "4.3, 4.4"
+  os_matrix: "ubuntu-latest"
+  run_coverage: true
+  coverage_threshold: 80
+
+#=============================================================================
+# DOCUMENTATION PREFERENCES
+#=============================================================================
+
+documentation:
+  use_pkgdown: false
+  use_readme: true
+  use_news: true
+  citation_style: "apa"
+
+#=============================================================================
+# LEGACY DEFAULTS (backward compatibility)
+#=============================================================================
+
+defaults:
+  team_name: ""
+  github_account: ""
+  dockerhub_account: ""
+  profile_name: "analysis"
+  libs_bundle: "minimal"
+  pkgs_bundle: "minimal"
+  r_version: ""
+  auto_github: false
+  skip_confirmation: false
+  with_examples: false
+EOF
+
+    log_success "Created: $CONFIG_USER"
+}
+
+#=============================================================================
+# INTERACTIVE SETUP
+#=============================================================================
+
+config_interactive_setup() {
+    INTERACTIVE_CANCELLED=false
+
+    # Set up trap for Ctrl+C
+    trap '_interactive_cleanup; return 0' INT
+
+    local val
+    local current_year
+    local choice
+    current_year=$(date +%Y)
+
+    # Load existing values for defaults
+    load_config
+
+    clear
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════════════════╗"
+    echo "║                    ZZCOLLAB Configuration Setup                          ║"
+    echo "╠══════════════════════════════════════════════════════════════════════════╣"
+    echo "║  Press Enter to accept defaults shown in [brackets].                     ║"
+    echo "║  Type 'q' or press Ctrl-D at any time to exit and save progress.        ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════╝"
+    echo ""
+
+    # Show menu
+    echo "  What would you like to do?"
+    echo ""
+    echo "    1) Review basic configuration values interactively"
+    echo "    2) Change existing values"
+    echo "    3) Edit advanced settings (R Package, Code Style, CI/CD)"
+    echo "    4) Full setup (all sections)"
+    echo "    q) Exit"
+    echo ""
+    printf "  Choice [1]: "
+    zzc_read -r choice || { _save_and_exit; return 0; }
+    choice="${choice:-1}"
+
+    case "$choice" in
+        1) _setup_missing_values ;;
+        2) _setup_change_existing ;;
+        3) _setup_advanced ;;
+        4) _setup_full ;;
+        q|Q) return 0 ;;
+        *) echo "Invalid choice"; return 1 ;;
+    esac
+
+    # Reset trap
+    trap - INT
+
+    #-------------------------------------------------------------------------
+    # COMPLETION
+    #-------------------------------------------------------------------------
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════════════════╗"
+    echo "║                       Configuration Complete                              ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════╝"
+    echo ""
+    log_success "Configuration saved to: $CONFIG_USER"
+    echo ""
+    echo "Quick commands:"
+    echo "  zzcollab config list              # View all settings"
+    echo "  zzcollab config set KEY VALUE     # Change a setting"
+    echo "  zzcollab config get KEY           # Get a setting value"
+    echo ""
+}
+
+# Setup only missing (empty) values - essential fields only
+_setup_missing_values() {
+    local val
+    local current_year
+    current_year=$(date +%Y)
+    local has_missing=false
+
+    print_section "Complete Missing Values"
+    echo "Only prompting for essential fields that are not yet set."
+    echo ""
+
+    # Author - essential fields
+    if [[ -z "${CONFIG_AUTHOR_NAME:-}" ]]; then
+        has_missing=true
+        prompt_input "Full name" "" val || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.name" "$val"
+    fi
+
+    if [[ -z "${CONFIG_AUTHOR_EMAIL:-}" ]]; then
+        has_missing=true
+        prompt_validated "Email address" "" val validate_email \
+            "Invalid email format. Example: user@example.com" || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.email" "$val"
+    fi
+
+    if [[ -z "${CONFIG_AUTHOR_AFFILIATION:-}" ]]; then
+        has_missing=true
+        prompt_input "Affiliation (short)" "" val || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation" "$val"
+    fi
+
+    # GitHub account
+    if [[ -z "${CONFIG_GITHUB_ACCOUNT:-}" ]]; then
+        has_missing=true
+        prompt_github_account "GitHub username" "" val || { _save_and_exit; return 0; }
+        [[ -n "$val" ]] && {
+            yaml_set "$CONFIG_USER" "github.account" "$val"
+            yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+        }
+    fi
+
+    if [[ "$has_missing" == "false" ]]; then
+        echo "  All essential fields are already set!"
+        echo ""
+        echo "  Use option 2 to change existing values, or"
+        echo "  option 3 to edit advanced settings."
+    fi
+}
+
+# Change existing values - essential fields
+_setup_change_existing() {
+    local val
+    local current_year
+    current_year=$(date +%Y)
+
+    #-------------------------------------------------------------------------
+    # Author Information
+    #-------------------------------------------------------------------------
+    print_section "Author Information"
+    echo "This information appears in DESCRIPTION, reports, and git commits."
+    echo ""
+
+    prompt_input "Full name" "${CONFIG_AUTHOR_NAME:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.name" "$val"
+
+    prompt_validated "Email address" "${CONFIG_AUTHOR_EMAIL:-}" val validate_email \
+        "Invalid email format. Example: user@example.com" || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.email" "$val"
+
+    prompt_validated "ORCID (optional)" "${CONFIG_AUTHOR_ORCID:-}" val validate_orcid \
+        "Invalid ORCID format. Expected: 0000-0000-0000-0000" || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.orcid" "$val"
+
+    prompt_input "Affiliation (short)" "${CONFIG_AUTHOR_AFFILIATION:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation" "$val"
+
+    prompt_input "Affiliation (full, for papers)" \
+        "${CONFIG_AUTHOR_AFFILIATION_FULL:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "author.affiliation_full" "$val"
+
+    #-------------------------------------------------------------------------
+    # License
+    #-------------------------------------------------------------------------
+    print_section "License Preferences"
+    echo "  GPL-3      - Copyleft, derivatives must be open source"
+    echo "  MIT        - Permissive, minimal restrictions"
+    echo "  Apache-2.0 - Permissive with patent protection"
+    echo "  CC-BY-4.0  - For data and documentation"
+    echo ""
+
+    prompt_select "Default license" "GPL-3,MIT,Apache-2.0,CC-BY-4.0" \
+        "${CONFIG_LICENSE_TYPE:-GPL-3}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "license.type" "$val"
+
+    prompt_input "Copyright year" "${CONFIG_LICENSE_YEAR:-$current_year}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "license.year" "$val"
+
+    #-------------------------------------------------------------------------
+    # Docker
+    #-------------------------------------------------------------------------
+    print_section "Docker Preferences"
+    echo "  minimal      - Essential R development (~650MB)"
+    echo "  rstudio      - RStudio Server IDE (~980MB)"
+    echo "  analysis     - Data analysis with tidyverse (~1.2GB) [RECOMMENDED]"
+    echo "  modeling     - Machine learning with tidymodels (~1.5GB)"
+    echo "  publishing   - LaTeX/Quarto for manuscripts (~3GB)"
+    echo "  shiny        - Shiny web applications (~1.8GB)"
+    echo ""
+
+    prompt_select "Default profile" \
+        "minimal,rstudio,analysis,modeling,publishing,shiny" \
+        "${CONFIG_PROFILE_NAME:-analysis}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "defaults.profile_name" "$val"
+    yaml_set "$CONFIG_USER" "docker.default_profile" "$val"
+
+    prompt_select "Docker registry" "docker.io,ghcr.io" \
+        "${CONFIG_DOCKER_REGISTRY:-docker.io}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "docker.registry" "$val"
+
+    #-------------------------------------------------------------------------
+    # GitHub
+    #-------------------------------------------------------------------------
+    print_section "GitHub Preferences"
+
+    prompt_github_account "GitHub username" "${CONFIG_GITHUB_ACCOUNT:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && {
+        yaml_set "$CONFIG_USER" "github.account" "$val"
+        yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+    }
+
+    prompt_select "Default repository visibility" "private,public" \
+        "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-private}" val || \
+        { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "github.default_visibility" "$val"
+
+    prompt_select "Default branch name" "main,master" \
+        "${CONFIG_GITHUB_DEFAULT_BRANCH:-main}" val || \
+        { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "github.default_branch" "$val"
+
+    #-------------------------------------------------------------------------
+    # Team
+    #-------------------------------------------------------------------------
+    print_section "Team Defaults"
+
+    prompt_input "Default team name" "${CONFIG_TEAM_NAME:-}" val || { _save_and_exit; return 0; }
+    [[ -n "$val" ]] && yaml_set "$CONFIG_USER" "defaults.team_name" "$val"
+}
+
+# Advanced settings only
+_setup_advanced() {
+    local val
+
+    #-------------------------------------------------------------------------
+    # R Package Defaults
+    #-------------------------------------------------------------------------
+    print_section "R Package Defaults (Advanced)"
+    echo "Technical defaults for the DESCRIPTION file."
+    echo ""
+
+    prompt_validated "Minimum R version required" \
+        "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}" val \
+        validate_r_version_lenient \
+        "Invalid R version format. Expected: X.Y or X.Y.Z (e.g., 4.1 or 4.1.0)" \
+        || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "r_package.min_r_version" "$val"
+
+    prompt_select "testthat edition" "2,3" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-3}" val || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "r_package.testthat_edition" "$val"
+
+    prompt_select "Vignette builder" "knitr,quarto" \
+        "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}" val || \
+        { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "r_package.vignette_builder" "$val"
+
+    #-------------------------------------------------------------------------
+    # Code Style
+    #-------------------------------------------------------------------------
+    print_section "Code Style Preferences (Advanced)"
+    echo "These preferences guide code generation and linting."
+    echo ""
+
+    prompt_validated "Line length for wrapping" "${CONFIG_STYLE_LINE_LENGTH:-78}" val validate_positive_int \
+        "Invalid value. Must be a positive integer (e.g., 78, 80, 120)" || { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "style.line_length" "$val"
+
+    prompt_yesno "Use native pipe |> (requires R >= 4.1)" \
+        "${CONFIG_STYLE_USE_NATIVE_PIPE:-true}" val || \
+        { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "style.use_native_pipe" "$val"
+
+    prompt_select "Assignment operator" "arrow,equals" \
+        "${CONFIG_STYLE_ASSIGNMENT:-arrow}" val || \
+        { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "style.assignment" "$val"
+
+    #-------------------------------------------------------------------------
+    # CI/CD
+    #-------------------------------------------------------------------------
+    print_section "CI/CD Preferences (Advanced)"
+    echo "Continuous integration settings for GitHub Actions."
+    echo ""
+
+    prompt_yesno "Enable GitHub Actions" \
+        "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-true}" val || \
+        { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "cicd.enable_github_actions" "$val"
+
+    if [[ "$val" == "true" ]]; then
+        prompt_input "R versions to test (comma-separated)" \
+            "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}" val || \
+            { _save_and_exit; return 0; }
+        yaml_set "$CONFIG_USER" "cicd.r_versions" "$val"
+
+        prompt_yesno "Run code coverage" "${CONFIG_CICD_RUN_COVERAGE:-true}" val || { _save_and_exit; return 0; }
+        yaml_set "$CONFIG_USER" "cicd.run_coverage" "$val"
+
+        if [[ "$val" == "true" ]]; then
+            prompt_validated "Coverage threshold (%)" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}" val validate_percentage \
+                "Invalid value. Must be 0-100" || { _save_and_exit; return 0; }
+            yaml_set "$CONFIG_USER" "cicd.coverage_threshold" "$val"
+        fi
+    fi
+}
+
+# Full setup - all sections
+_setup_full() {
+    _setup_change_existing
+    _setup_advanced
+}
+
+_save_and_exit() {
+    trap - INT
+    echo ""
+    echo ""
+    log_warn "Configuration cancelled"
+    log_info "Progress saved to: $CONFIG_USER"
+    log_info "Run 'zzcollab config init --interactive' to continue"
+}
+
+#=============================================================================
+# CONFIG SET/GET/LIST COMMANDS
+#=============================================================================
+
+config_set() {
+    local key="$1" value="$2" local_only="${3:-false}"
+    local file="$CONFIG_USER"
+
+    [[ "$local_only" == "true" ]] && file="$CONFIG_PROJECT"
+
+    if [[ ! -f "$file" ]]; then
+        if [[ "$file" == "$CONFIG_PROJECT" ]]; then
+            # Create minimal project config
+            cat > "$file" << 'EOF'
+# Project-specific zzcollab configuration
+# Overrides user config (~/.zzcollab/config.yaml)
+
+docker:
+  default_profile: ""
+EOF
+            log_debug "Created project config: $file"
+        else
+            config_init
+        fi
+    fi
+
+    # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
+    key="${key//-/_}"
+
+    # Map simple keys to their proper dotted paths
+    local yaml_path
+    case "$key" in
+        # Author fields
+        author_name) yaml_path="author.name" ;;
+        author_email) yaml_path="author.email" ;;
+        author_orcid) yaml_path="author.orcid" ;;
+        author_affiliation) yaml_path="author.affiliation" ;;
+        author_affiliation_full) yaml_path="author.affiliation_full" ;;
+        author_roles) yaml_path="author.roles" ;;
+        # License fields
+        license_type) yaml_path="license.type" ;;
+        license_year) yaml_path="license.year" ;;
+        license_holder) yaml_path="license.holder" ;;
+        license_include_file) yaml_path="license.include_file" ;;
+        # GitHub fields
+        github_account) yaml_path="github.account" ;;
+        github_default_visibility) yaml_path="github.default_visibility" ;;
+        github_default_branch) yaml_path="github.default_branch" ;;
+        # Docker fields
+        docker_account) yaml_path="docker.account" ;;
+        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
+        docker_registry) yaml_path="docker.registry" ;;
+        # Dotted keys pass through as-is
+        *"."*) yaml_path="$key" ;;
+        # Everything else goes to defaults section
+        *) yaml_path="defaults.$key" ;;
+    esac
+
+    yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
+}
+
+config_get() {
+    local key="$1" local_only="${2:-false}"
+
+    # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
+    key="${key//-/_}"
+
+    # Map simple keys to their proper dotted paths (same mapping as config_set)
+    local yaml_path
+    case "$key" in
+        author_name) yaml_path="author.name" ;;
+        author_email) yaml_path="author.email" ;;
+        author_orcid) yaml_path="author.orcid" ;;
+        author_affiliation) yaml_path="author.affiliation" ;;
+        author_affiliation_full) yaml_path="author.affiliation_full" ;;
+        author_roles) yaml_path="author.roles" ;;
+        license_type) yaml_path="license.type" ;;
+        license_year) yaml_path="license.year" ;;
+        license_holder) yaml_path="license.holder" ;;
+        license_include_file) yaml_path="license.include_file" ;;
+        github_account) yaml_path="github.account" ;;
+        github_default_visibility) yaml_path="github.default_visibility" ;;
+        github_default_branch) yaml_path="github.default_branch" ;;
+        docker_account) yaml_path="docker.account" ;;
+        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
+        docker_registry) yaml_path="docker.registry" ;;
+        *"."*) yaml_path="$key" ;;
+        *) yaml_path="defaults.$key" ;;
+    esac
+
+    if [[ "$local_only" == "true" ]]; then
+        yaml_get "$CONFIG_PROJECT" "$yaml_path"
+    else
+        load_config
+        _get_config_value "$key"
+    fi
+}
+
+config_list() {
+    local local_only="${1:-false}"
+    local show_section="${2:-all}"
+    local label="Configuration"
+
+    if [[ "$local_only" == "true" ]]; then
+        [[ -f "$CONFIG_PROJECT" ]] || { echo "No project config: $CONFIG_PROJECT"; return 0; }
+        label="Project configuration"
+    fi
+
+    load_config
+
+    echo ""
+    echo "$label"
+    echo "$(printf '=%.0s' {1..60})"
+
+    if [[ "$show_section" == "all" || "$show_section" == "author" ]]; then
+        echo ""
+        echo "Author:"
+        printf "  %-25s %s\n" "name:" "${CONFIG_AUTHOR_NAME:-<not set>}"
+        printf "  %-25s %s\n" "email:" "${CONFIG_AUTHOR_EMAIL:-<not set>}"
+        printf "  %-25s %s\n" "orcid:" "${CONFIG_AUTHOR_ORCID:-<not set>}"
+        printf "  %-25s %s\n" "affiliation:" "${CONFIG_AUTHOR_AFFILIATION:-<not set>}"
+    fi
+
+    if [[ "$show_section" == "all" || "$show_section" == "license" ]]; then
+        echo ""
+        echo "License:"
+        printf "  %-25s %s\n" "type:" "${CONFIG_LICENSE_TYPE:-<not set>}"
+        printf "  %-25s %s\n" "year:" "${CONFIG_LICENSE_YEAR:-<not set>}"
+        printf "  %-25s %s\n" "holder:" "${CONFIG_LICENSE_HOLDER:-<not set>}"
+    fi
+
+    if [[ "$show_section" == "all" || "$show_section" == "r_package" ]]; then
+        echo ""
+        echo "R Package:"
+        printf "  %-25s %s\n" "min_r_version:" "${CONFIG_RPACKAGE_MIN_R_VERSION:-<not set>}"
+        printf "  %-25s %s\n" "testthat_edition:" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-<not set>}"
+        printf "  %-25s %s\n" "vignette_builder:" "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-<not set>}"
+    fi
+
+    if [[ "$show_section" == "all" || "$show_section" == "style" ]]; then
+        echo ""
+        echo "Code Style:"
+        printf "  %-25s %s\n" "line_length:" "${CONFIG_STYLE_LINE_LENGTH:-<not set>}"
+        printf "  %-25s %s\n" "use_native_pipe:" "${CONFIG_STYLE_USE_NATIVE_PIPE:-<not set>}"
+        printf "  %-25s %s\n" "assignment:" "${CONFIG_STYLE_ASSIGNMENT:-<not set>}"
+    fi
+
+    if [[ "$show_section" == "all" || "$show_section" == "docker" ]]; then
+        echo ""
+        echo "Docker:"
+        printf "  %-25s %s\n" "account:" "${CONFIG_DOCKER_ACCOUNT:-<not set>}"
+        printf "  %-25s %s\n" "default_profile:" "${CONFIG_DOCKER_DEFAULT_PROFILE:-<not set>}"
+        printf "  %-25s %s\n" "registry:" "${CONFIG_DOCKER_REGISTRY:-<not set>}"
+    fi
+
+    if [[ "$show_section" == "all" || "$show_section" == "github" ]]; then
+        echo ""
+        echo "GitHub:"
+        printf "  %-25s %s\n" "account:" "${CONFIG_GITHUB_ACCOUNT:-<not set>}"
+        printf "  %-25s %s\n" "default_visibility:" "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-<not set>}"
+        printf "  %-25s %s\n" "default_branch:" "${CONFIG_GITHUB_DEFAULT_BRANCH:-<not set>}"
+    fi
+
+    if [[ "$show_section" == "all" || "$show_section" == "cicd" ]]; then
+        echo ""
+        echo "CI/CD:"
+        printf "  %-25s %s\n" "enable_github_actions:" "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-<not set>}"
+        printf "  %-25s %s\n" "r_versions:" "${CONFIG_CICD_R_VERSIONS:-<not set>}"
+        printf "  %-25s %s\n" "run_coverage:" "${CONFIG_CICD_RUN_COVERAGE:-<not set>}"
+        printf "  %-25s %s\n" "coverage_threshold:" "${CONFIG_CICD_COVERAGE_THRESHOLD:-<not set>}"
+    fi
+
+    if [[ "$show_section" == "all" || "$show_section" == "defaults" ]]; then
+        echo ""
+        echo "Team Defaults:"
+        printf "  %-25s %s\n" "team_name:" "${CONFIG_TEAM_NAME:-<not set>}"
+        printf "  %-25s %s\n" "with_examples:" "$CONFIG_WITH_EXAMPLES"
+    fi
+
+    echo ""
+    echo "Config Files:"
+    [[ -f "$CONFIG_PROJECT" ]] && echo "  [x] $CONFIG_PROJECT" || echo "  [ ] $CONFIG_PROJECT"
+    [[ -f "$CONFIG_USER" ]] && echo "  [x] $CONFIG_USER" || echo "  [ ] $CONFIG_USER"
+    echo ""
+}
+
+config_validate() {
+    local errors=0
+    for file in "$CONFIG_PROJECT" "$CONFIG_USER"; do
+        [[ -f "$file" ]] || continue
+        printf "Checking %s... " "$file"
+        if yq eval '.' "$file" >/dev/null 2>&1; then
+            echo "OK"
+        else
+            echo "INVALID"
+            errors=$((errors + 1))
+        fi
+    done
+    [[ $errors -eq 0 ]]
+}
+
+#=============================================================================
+# COMMAND DISPATCHER
+#=============================================================================
+
+handle_config_command() {
+    local cmd="${1:-list}"
+    shift 2>/dev/null || true
+
+    case "$cmd" in
+        init)
+            if [[ "${1:-}" == "--interactive" || "${1:-}" == "-i" ]]; then
+                config_init true
+            else
+                config_init false
+            fi
+            ;;
+        set)
+            [[ $# -ge 2 ]] || { echo "Usage: config set KEY VALUE"; return 1; }
+            config_set "$1" "$2"
+            ;;
+        get)
+            [[ $# -ge 1 ]] || { echo "Usage: config get KEY"; return 1; }
+            config_get "$1"
+            ;;
+        list)
+            config_list false "${1:-all}"
+            ;;
+        set-local)
+            [[ $# -ge 2 ]] || { echo "Usage: config set-local KEY VALUE"; return 1; }
+            config_set "$1" "$2" true
+            ;;
+        get-local)
+            [[ $# -ge 1 ]] || { echo "Usage: config get-local KEY"; return 1; }
+            config_get "$1" true
+            ;;
+        list-local)
+            config_list true
+            ;;
+        validate)
+            config_validate
+            ;;
+        path)
+            echo "User:    $CONFIG_USER"
+            echo "Project: $CONFIG_PROJECT"
+            ;;
+        *)
+            echo "Unknown: $cmd"
+            echo ""
+            echo "Commands:"
+            echo "  init                    Create default config file"
+            echo "  init --interactive      Guided configuration wizard"
+            echo "  set KEY VALUE           Set a configuration value"
+            echo "  get KEY                 Get a configuration value"
+            echo "  list [section]          List all or section config"
+            echo "  set-local KEY VALUE     Set project-local value"
+            echo "  get-local KEY           Get project-local value"
+            echo "  list-local              List project config"
+            echo "  validate                Validate YAML syntax"
+            echo "  path                    Show config file paths"
+            echo ""
+            echo "Sections: author, license, r_package, style, docker, github, cicd, defaults"
+            return 1
+            ;;
+    esac
+}
+
+#=============================================================================
+# INITIALIZATION
+#=============================================================================
+
+init_config_system() {
+    load_config
+    apply_config_defaults
+}
+
+readonly ZZCOLLAB_CONFIG_LOADED=true

@@ -1,0 +1,785 @@
+---
+title: "Reusable Team Images: Build Once, Use Everywhere"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reusable Team Images: Build Once, Use Everywhere}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+This vignette explains how to create **reusable team Docker images** that reduce project initialization time. Rather than building a new Docker image from rocker base images for each project (15-20 minutes for comprehensive builds), you can:
+
+1. **Build once**: Create a comprehensive team image with all your preferred packages
+2. **Push to Docker Hub**: Store the image in a central repository
+3. **Reuse everywhere**: New projects use your team image as the base (~30 seconds setup)
+
+This approach is particularly valuable for:
+
+- **Research labs** with multiple ongoing projects
+- **Teams** requiring consistent package ecosystems
+- **Solo researchers** working across multiple analyses
+- **Organizations** with standardized R environments
+
+## The Time-Saving Advantage
+
+### Traditional Approach (Per-Project Builds)
+
+```bash
+# Project 1: Build from rocker/rstudio (15-20 minutes)
+mkdir study1 && cd study1
+zzc analysis                     # Full setup (init + renv + docker)
+zzc github                       # Create private GitHub repo
+make docker-build
+make docker-push-team
+cd ..
+
+# Project 2: Build from rocker/rstudio again (15-20 minutes)
+mkdir study2 && cd study2
+zzc analysis
+zzc github
+make docker-build
+make docker-push-team
+cd ..
+
+# Project 3: Build from rocker/rstudio again (15-20 minutes)
+mkdir study3 && cd study3
+zzc analysis
+zzc github
+make docker-build
+make docker-push-team
+
+# Total time for 3 projects: 45-60 minutes
+```
+
+### Reusable Team Image Approach
+
+```bash
+# One-time: Build analysis team base image (15-20 minutes)
+mkdir baseimage && cd baseimage
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Create private GitHub repo
+make docker-build
+make docker-push-team            # Push to Docker Hub for team access
+git add .
+git commit -m "Create team base image with comprehensive packages"
+git push
+cd ..
+
+# Project 1: Build from shared Dockerfile (~5 minutes first time)
+mkdir study1 && cd study1
+make docker-build               # Builds from project Dockerfile
+cd ..
+
+# Project 2: Build from shared Dockerfile (faster with Docker cache)
+mkdir study2 && cd study2
+make docker-build
+cd ..
+
+# Project 3: Build from shared Dockerfile (faster with Docker cache)
+mkdir study3 && cd study3
+make docker-build
+```
+
+## How Team Images Work
+
+### Traditional zzcollab Architecture
+
+```
+New Project → rocker/rstudio:latest → Install 47 packages → Team Image
+              (Docker Hub)              (15-20 minutes)      (mylab/study1core-rstudio:latest)
+```
+
+Each project rebuilds from rocker base images, reinstalling all packages.
+
+### Reusable Team Image Architecture
+
+```
+One-Time Setup:
+  rocker/rstudio:latest → Install 47 packages → Team Base Image
+  (Docker Hub)            (15-20 minutes)       (mylab/baseimageecore-rstudio:latest)
+                                                 ↓ (push to Docker Hub)
+
+Subsequent Projects:
+  mylab/baseimageecore-rstudio:latest → Project-Specific Setup → Project Image
+  (Docker Hub, pre-built)                (~30 seconds)            (mylab/study1core-rstudio:latest)
+```
+
+New projects use the pre-built team image as their base, avoiding package reinstallation.
+
+## Implementation Guide
+
+### Step 1: Create Comprehensive Team Base Image
+
+The team lead creates a one-time base image with all preferred packages.
+
+```bash
+# Create analysis team base image
+# This takes 15-20 minutes but only needs to be done once
+mkdir baseimage && cd baseimage
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Create private GitHub repo
+make docker-build                # Installs packages from renv.lock
+make docker-push-team            # Push to Docker Hub for team
+git add .
+git commit -m "Create comprehensive team base image"
+git push
+cd ..
+```
+
+**What this does:**
+- Creates project structure with DESCRIPTION, Makefile, etc.
+- Builds from `rocker/rstudio:latest`
+- Installs analysis profile packages (tidyverse, here, testthat, knitr, rmarkdown)
+- Creates `mylab/baseimage:latest`
+- Pushes to Docker Hub for team access
+
+**Profile options:**
+```bash
+# Analysis profile (recommended for general team bases)
+mkdir baseimage && cd baseimage
+zzc analysis                     # Full setup
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create analysis team base image" && git push
+cd ..
+
+# Modeling profile (machine learning focused)
+mkdir modeling-base && cd modeling-base
+zzc modeling                     # Full setup with modeling profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create modeling team base image" && git push
+cd ..
+
+# Minimal profile (lightweight)
+mkdir minimal-base && cd minimal-base
+zzc minimal                      # Full setup with minimal profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create minimal team base image" && git push
+cd ..
+```
+
+**Specialized domain profiles:**
+```bash
+# Bioinformatics (Bioconductor genomics)
+mkdir bio-base && cd bio-base
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create bioinformatics team base image" && git push
+cd ..
+
+# Geospatial (GIS and spatial analysis)
+mkdir geo-base && cd geo-base
+zzc geospatial                   # Full setup with geospatial profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create geospatial team base image" && git push
+cd ..
+```
+
+### Step 2: Verify Image on Docker Hub
+
+After the build completes, verify the image is available:
+
+```bash
+# Check image exists locally
+docker images | grep mylab/baseimage
+
+# Verify on Docker Hub (requires login)
+docker manifest inspect mylab/baseimage:latest
+
+# Or visit Docker Hub in browser
+# https://hub.docker.com/r/mylab/baseimage
+```
+
+### Step 3: Use Team Base Image for New Projects
+
+Now any team member can create new projects using the team base image:
+
+```bash
+# Clone an existing project repository
+git clone https://github.com/mylab/study1.git
+cd study1
+
+# Build Docker image from project Dockerfile
+make docker-build
+
+# Start development
+make r
+```
+
+**What this does:**
+- Pulls `mylab/study1:latest` from Docker Hub (if available)
+- Creates project structure if needed
+- Uses the team base image as foundation
+- Takes ~1-3 minutes instead of 15-20 minutes
+
+**Note**: DockerHub is optional but efficient. If the team image is not available,
+building from the Dockerfile produces an identical environment.
+
+## Practical Examples
+
+### Example 1: Solo Researcher with Multiple Projects
+
+Dr. Smith works on various analyses and wants consistent environments.
+
+```bash
+# One-time setup: Create personal base image (Sunday afternoon)
+mkdir mybase && cd mybase
+zzc analysis                     # Full setup with analysis profile
+zzc github                       # Create private GitHub repo
+make docker-build                # Installs packages from renv.lock
+make docker-push-team            # Push to Docker Hub for reuse
+git add . && git commit -m "Create personal base image" && git push
+cd ..
+# Takes 15-20 minutes, grab coffee
+
+# Monday: Start microbiome analysis
+mkdir microbiome-study && cd microbiome-study
+zzc analysis                     # Full setup
+zzc github
+# Ready in seconds (framework files created)
+
+# Wednesday: Start climate modeling project
+mkdir climate-model && cd climate-model
+zzc analysis
+zzc github
+# Ready in seconds
+
+# Friday: Start survey analysis
+mkdir survey-analysis && cd survey-analysis
+zzc analysis
+zzc github
+# Ready in seconds
+
+# Total time: ~16 minutes vs 45-60 minutes (traditional approach)
+```
+
+### Example 2: Research Lab with Team Collaboration
+
+A genomics lab with 5 researchers and multiple ongoing studies.
+
+**Team Lead (one-time setup):**
+```bash
+# Create lab base image with bioinformatics tools
+mkdir labbase && cd labbase
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github                       # Create private GitHub repo
+make docker-build                # Installs packages from renv.lock
+make docker-push-team            # Push to Docker Hub for team
+git add . && git commit -m "Create lab base image" && git push
+cd ..
+
+# The bioinformatics profile includes Bioconductor base image and packages
+# Additional packages can be added via install.packages() as needed
+```
+
+**Team Members (joining existing projects):**
+```bash
+# Researcher 1: Join existing cancer genomics project
+git clone https://github.com/genomicslab/cancer-study.git
+cd cancer-study
+make docker-build               # Build from project Dockerfile
+make docker-rstudio              # Start RStudio at localhost:8787
+
+# Researcher 2: Join existing RNA-seq analysis
+git clone https://github.com/genomicslab/rnaseq-analysis.git
+cd rnaseq-analysis
+make docker-build
+make docker-rstudio
+
+# Researcher 3: Create new variant calling project
+mkdir variant-calling && cd variant-calling
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
+make docker-build && make docker-push-team
+make docker-rstudio
+
+# All 3 researchers ready in ~90 seconds total
+# Traditional approach: 45-60 minutes total
+```
+
+### Example 3: Organization with Standardized Environment
+
+A data science consulting firm requires consistent package versions across all client projects.
+
+**DevOps Team (quarterly base image updates):**
+```bash
+# Q1 2025: Create standardized base image
+mkdir q1-2025-base && cd q1-2025-base
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create Q1 2025 standardized base image" && git push
+cd ..
+
+# Push to private Docker registry (optional)
+docker tag datasci-firm/q1-2025-base:latest \
+  registry.company.com/datasci-firm/q1-2025-base:latest
+docker push registry.company.com/datasci-firm/q1-2025-base:latest
+```
+
+**Data Scientists (creating client projects):**
+```bash
+# Client A: Retail analytics
+mkdir client-a-retail && cd client-a-retail
+zzc analysis                     # Full setup
+zzc github
+make docker-build && make docker-push-team
+
+# Client B: Financial modeling
+mkdir client-b-finance && cd client-b-finance
+zzc analysis
+zzc github
+make docker-build && make docker-push-team
+
+# Client C: Healthcare dashboards
+mkdir client-c-health && cd client-c-health
+zzc analysis
+zzc github
+make docker-build && make docker-push-team
+
+# All projects use identical Q1 2025 package versions
+# No "works on my machine" issues
+```
+
+## Advanced Patterns
+
+### Pattern 1: Multiple Team Base Images
+
+Create different base images for different research domains:
+
+```bash
+# Bioinformatics base (Bioconductor packages)
+mkdir bio-base && cd bio-base
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create bioinformatics base image" && git push
+cd ..
+# Use for: genomics, transcriptomics, proteomics projects
+
+# Geospatial base (sf, terra, raster)
+mkdir geo-base && cd geo-base
+zzc geospatial                   # Full setup with geospatial profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create geospatial base image" && git push
+cd ..
+# Use for: climate modeling, ecology, urban planning projects
+
+# Machine learning base (modeling packages)
+mkdir ml-base && cd ml-base
+zzc modeling                     # Full setup with modeling profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create machine learning base image" && git push
+cd ..
+# Use for: predictive modeling, classification, regression projects
+
+# Publishing base (LaTeX, Quarto, rmarkdown)
+mkdir pub-base && cd pub-base
+zzc publishing                   # Full setup with publishing profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create publishing base image" && git push
+cd ..
+# Use for: manuscripts, reports, reproducible documents
+```
+
+### Pattern 2: Versioned Base Images
+
+Maintain version history for reproducibility:
+
+```bash
+# Create dated base image
+mkdir base-2025-01 && cd base-2025-01
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create January 2025 versioned base image" && git push
+cd ..
+
+# Tag with semantic version
+docker tag mylab/base-2025-01:latest \
+  mylab/base-2025-01:v1.0.0
+docker push mylab/base-2025-01:v1.0.0
+
+# Projects can reference specific versions
+# Modify project Dockerfile to use:
+# FROM mylab/base-2025-01:v1.0.0
+```
+
+### Pattern 3: Incremental Updates to Base Images
+
+Update base images without rebuilding from scratch:
+
+```bash
+# Add new package to existing base image
+docker run --rm -it mylab/baseimage:latest R
+
+# Inside container:
+install.packages("newpackage")
+quit()
+
+# Commit changes to new version
+docker commit <container-id> mylab/baseimage:v1.1.0
+docker push mylab/baseimage:v1.1.0
+
+# Or rebuild base image with updated packages
+cd baseimage
+make docker-build
+make docker-push-team
+# Leverages Docker layer caching for faster rebuilds
+```
+
+## Docker Hub Storage Considerations
+
+### Free Tier Limits (Docker Hub)
+
+- **Public repositories**: Unlimited, free forever
+- **Private repositories**: 1 private repo on free tier
+- **Image pulls**: Rate limits apply (200 pulls per 6 hours for free tier)
+
+### Storage Strategies
+
+**For public research (recommended):**
+```bash
+# Use public repositories (no cost)
+mkdir baseimage && cd baseimage
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create public team base image" && git push
+# Pushes to public mylab/baseimage:latest
+# No storage costs, unlimited team access
+```
+
+**For private/proprietary work:**
+```bash
+# Option 1: Docker Hub paid tier ($7/month for unlimited private repos)
+# Option 2: Self-hosted registry (GitLab, Harbor, etc.)
+# Option 3: Cloud provider registries (AWS ECR, Google GCR, Azure ACR)
+```
+
+### Image Size Optimization
+
+Comprehensive builds create large images (~2-4 GB). Optimize storage:
+
+```bash
+# Check image sizes
+docker images | grep mylab/baseimage
+
+# Remove old versions periodically
+docker rmi mylab/baseimage:v1.0.0
+
+# Use .dockerignore to exclude unnecessary files
+echo "*.Rcheck" >> .dockerignore
+echo "temp_*" >> .dockerignore
+```
+
+## Updating Team Base Images
+
+### When to Update Base Images
+
+- **Quarterly**: Recommended for most teams (balances stability vs currency)
+- **Monthly**: For teams requiring latest package versions
+- **After major releases**: When critical packages update (e.g., tidyverse 2.0)
+- **When adding new team members**: If new domain expertise requires new packages
+
+### Update Process
+
+```bash
+# Rebuild base image with latest packages
+cd baseimage
+make docker-build
+make docker-push-team
+
+# Tag as new version
+docker tag mylab/baseimage:latest \
+  mylab/baseimage:2025-04
+docker push mylab/baseimage:2025-04
+
+# Notify team to pull updated image
+docker pull mylab/baseimage:latest
+
+# Existing projects continue using old versions (reproducible)
+# New projects use updated image
+```
+
+## Troubleshooting
+
+### Issue: "Image not found on Docker Hub"
+
+```bash
+# Check image name matches exactly
+docker images | grep mylab/baseimage
+
+# Verify push succeeded
+docker manifest inspect mylab/baseimage:latest
+
+# Re-push if needed
+cd baseimage
+make docker-push-team
+```
+
+### Issue: "Authentication required"
+
+```bash
+# Login to Docker Hub
+docker login
+# Enter username and password
+
+# For private registries
+docker login registry.company.com
+```
+
+### Issue: "Image pull rate limit exceeded"
+
+Docker Hub free tier limits pulls to 200 per 6 hours.
+
+**Solutions:**
+```bash
+# Option 1: Login to Docker Hub (increases limit to 200 per 6 hours per user)
+docker login
+
+# Option 2: Use cached images (do not pull if local copy exists)
+docker images | grep mylab/baseimage
+# If exists locally, zzcollab uses cached version
+
+# Option 3: Upgrade to Docker Hub paid tier (unlimited pulls)
+```
+
+### Issue: "Build takes longer than expected"
+
+```bash
+# Check Docker layer caching
+docker build --no-cache -f Dockerfile.teamcore -t test-image .
+# Compare with cached build:
+docker build -f Dockerfile.teamcore -t test-image .
+
+# Optimize Dockerfile layer order
+# Put frequently changing commands last
+# Put stable dependencies first (leverages caching)
+```
+
+## Reproducibility Considerations
+
+### Environment Variables in Team Base Images
+
+All zzcollab-generated Docker images automatically include reproducibility-critical
+environment variables. When creating reusable team base images, verify these
+are present:
+
+```dockerfile
+# Reproducibility-critical environment variables (automatically included)
+ENV LANG=en_US.UTF-8        # Standardize locale
+ENV LC_ALL=en_US.UTF-8      # Override all locale categories
+ENV TZ=UTC                  # Eliminate daylight saving complications
+ENV OMP_NUM_THREADS=1       # Deterministic single-threaded execution
+```
+
+**Why This Matters for Team Images**:
+
+When a team uses a shared base image, all team members inherit the same
+environment variable settings. This ensures:
+
+- **Consistent string sorting** across all analyses
+- **Identical date-time calculations** regardless of team member location
+- **Reproducible parallel processing** behavior
+- **No locale-dependent result differences**
+
+**Verification**:
+
+```bash
+# Check environment variables in team base image
+docker run --rm mylab/baseimage:latest env | grep -E "LANG|TZ|OMP"
+
+# Expected output:
+# LANG=en_US.UTF-8
+# LC_ALL=en_US.UTF-8
+# TZ=UTC
+# OMP_NUM_THREADS=1
+```
+
+If you manually modify team base image Dockerfiles, ensure these variables
+remain set. Removing them can cause silent reproducibility failures across
+the team.
+
+## Best Practices
+
+### 1. Name Base Images Descriptively
+
+```bash
+# Good: Indicates purpose and currency
+mylab/bioinformatics-base-2025
+mylab/datascience-comprehensive
+mylab/shiny-apps-standard
+
+# Avoid: Generic names
+mylab/base
+mylab/image1
+mylab/test
+```
+
+### 2. Document Base Image Contents
+
+Create `BASE_IMAGE_README.md` in base image project:
+
+```markdown
+# Lab Base Image: mylab/baseimage
+
+## Purpose
+Data analysis environment for lab projects.
+
+## Docker Profile
+analysis: tidyverse, here, testthat, knitr, rmarkdown
+
+## Key Packages
+- tidyverse: Data manipulation
+- here: Project-relative paths
+- testthat: Unit testing
+- knitr/rmarkdown: Reproducible reports
+
+## Last Updated
+2025-01-15
+
+## Rebuild Command
+cd baseimage
+make docker-build
+make docker-push-team
+```
+
+### 3. Use Semantic Versioning for Critical Bases
+
+```bash
+# Major version: Breaking changes (R version upgrade, package removals)
+mylab/baseimage:v2.0.0
+
+# Minor version: New packages added
+mylab/baseimage:v1.1.0
+
+# Patch version: Package version updates only
+mylab/baseimage:v1.0.1
+```
+
+### 4. Test Base Images Before Team Deployment
+
+```bash
+# Build test base image
+mkdir baseimage-test && cd baseimage-test
+zzc analysis                     # Full setup with analysis profile
+zzc github
+make docker-build && make docker-push-team
+git add . && git commit -m "Create test base image for validation" && git push
+cd ..
+
+# Test with sample project
+mkdir test-project && cd test-project
+zzc analysis
+make docker-rstudio
+
+# Verify all key packages load
+# In RStudio:
+library(tidyverse)
+library(tidymodels)
+library(shiny)
+# etc.
+
+# If tests pass, promote to production
+docker tag mylab/baseimage-test:latest \
+  mylab/baseimage:latest
+docker push mylab/baseimage:latest
+```
+
+### 5. Maintain Team Base Image Registry
+
+Keep a centralized list of available base images:
+
+```bash
+# team-base-images.md
+# Lab Base Images
+
+| Name | Profile | Purpose | Last Updated |
+|------|---------|---------|--------------|
+| mylab/bio-base | bioinformatics | Bioconductor genomics | 2025-01-15 |
+| mylab/geo-base | geospatial | Geospatial analysis | 2025-01-10 |
+| mylab/ml-base | modeling | Machine learning | 2025-01-05 |
+| mylab/pub-base | publishing | LaTeX/Quarto docs | 2024-12-20 |
+
+## Usage
+# For bioinformatics projects:
+mkdir <project-name> && cd <project-name>
+zzc bioinformatics               # Full setup with bioinformatics profile
+zzc github                       # Create private GitHub repo
+```
+
+## Decision Framework
+
+### Should You Create a Reusable Team Base Image?
+
+**Strong Yes if:**
+- You work on 3+ projects with similar package requirements
+- You have a team with consistent development environment needs
+- You frequently start new projects (monthly or more)
+- Build time is a bottleneck in your workflow
+- You need reproducible environments across projects
+
+**Maybe if:**
+- You have 1-2 ongoing projects only
+- Package requirements vary widely between projects
+- You rarely start new projects (quarterly or less)
+- You're experimenting with different package ecosystems
+
+**Probably No if:**
+- Single project, infrequent updates
+- Extremely specialized package requirements per project
+- Storage constraints (Docker Hub free tier, limited disk space)
+- Team members have different R version requirements
+
+### Profile Selection for Base Images
+
+| Use Case | Recommended Profile | Rationale |
+|----------|---------------------|-----------|
+| General purpose team base | analysis | Tidyverse ecosystem for data work |
+| Bioinformatics domain | bioinformatics | Bioconductor genomics packages |
+| Geospatial work | geospatial | GDAL/PROJ spatial tools |
+| Machine learning | modeling | Tidymodels ML framework |
+| Publishing/reports | publishing | LaTeX, Quarto, rmarkdown |
+| Lightweight base | minimal | Essential dev tools only |
+
+## Summary
+
+Reusable team base images provide substantial time savings for teams and solo researchers working across multiple projects:
+
+**Key Benefits:**
+- **73% time savings**: ~30 seconds vs 15-20 minutes per project
+- **Consistency**: Identical package versions across all projects
+- **Collaboration**: Team members share exact environments
+- **Cost-effective**: Free on Docker Hub for public repositories
+
+**Recommended Workflow:**
+1. Create comprehensive team base image (one-time, 15-20 minutes)
+2. Push to Docker Hub for team access
+3. Use base image for all new projects (~30 seconds each)
+4. Update base image quarterly or as needed
+
+**Best For:**
+- Research labs with multiple ongoing projects
+- Solo researchers with diverse analyses
+- Organizations requiring standardized environments
+- Teams needing reproducible collaboration tools
+
+This approach transforms zzcollab from a per-project build system into a reusable infrastructure platform, improving developer productivity while maintaining reproducibility guarantees.

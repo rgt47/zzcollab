@@ -1,0 +1,58 @@
+name: Shell Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  shell-tests:
+    name: Shell Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run core module tests
+      run: |
+        echo "Running core module tests..."
+        bash tests/shell/test-core.sh
+
+    - name: Run CLI module tests
+      run: |
+        echo "Running CLI module tests..."
+        bash tests/shell/test-cli.sh
+
+    - name: Run validation module tests
+      run: |
+        echo "Running validation module tests..."
+        bash tests/shell/test-validation.sh
+
+    - name: Run all tests summary
+      run: |
+        echo "Running complete test suite..."
+        bash tests/shell/run_all_tests.sh
+
+    - name: Generate test report
+      if: always()
+      run: |
+        mkdir -p test-reports
+        {
+          echo "# Shell Tests Report"
+          echo "Generated on: $(date)"
+          echo ""
+          echo "## Test Results"
+          echo ""
+          bash tests/shell/run_all_tests.sh 2>&1 || true
+        } > test-reports/shell-tests-report.md
+
+    - name: Upload test report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: shell-tests-report
+        path: test-reports/shell-tests-report.md
+        retention-days: 30

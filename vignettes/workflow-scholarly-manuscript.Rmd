@@ -1,0 +1,643 @@
+---
+title: "Scholarly Manuscript Development with ZZCOLLAB"
+author: "ZZCOLLAB Development Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{Scholarly Manuscript Development with ZZCOLLAB}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Introduction
+
+This vignette demonstrates manuscript development using the unified research
+compendium framework [@marwick2018]. The key insight is that **the manuscript
+is the organizing principle**---you start writing from day one, and the
+compendium directories (`R/`, `tests/`, `analysis/scripts/`) emerge naturally
+as code matures.
+
+## The Write as You Go Approach
+
+Traditional workflow:
+
+1. Write analysis scripts
+2. Generate results
+3. Start manuscript
+4. Copy-paste results into text
+
+**Unified compendium workflow**:
+
+1. Create `report.Rmd` on day one
+2. Write prose describing your question and approach
+3. Add analysis code inline as you work
+4. Extract reusable code to `R/` when patterns emerge
+5. Add tests to `tests/testthat/` as functions solidify
+6. Move heavy computations to `analysis/scripts/` to speed rendering
+
+The manuscript drives the analysis, not the reverse.
+
+## What You Will Learn
+
+- Starting with a manuscript from project inception
+- Using compendium directories as code matures
+- Progressive extraction: inline code → functions → tested modules
+- When to use `R/`, `tests/`, and `analysis/scripts/`
+- Rendering to multiple output formats
+
+## Prerequisites
+
+- Docker installed and running
+- ZZCOLLAB installed (`./install.sh`)
+- Basic familiarity with R Markdown
+
+# The Compendium Directory Structure
+
+## Overview
+
+```
+my-project/
+├── analysis/
+│   ├── data/
+│   │   ├── raw_data/         # Original data (read-only)
+│   │   └── derived_data/     # Processed data, cached results
+│   ├── figures/              # Generated visualizations
+│   ├── scripts/              # Heavy computations (run separately)
+│   └── report/
+│       ├── report.Rmd        # THE MANUSCRIPT (start here!)
+│       └── references.bib    # Bibliography
+├── R/                        # Reusable functions (extract when ready)
+├── tests/
+│   └── testthat/             # Unit tests (add as functions solidify)
+├── DESCRIPTION               # Project metadata
+├── Dockerfile                # Computational environment
+└── renv.lock                 # Package versions
+```
+
+## When to Use Each Directory
+
+| Directory | Purpose | When to Use |
+|-----------|---------|-------------|
+| `analysis/report/` | Manuscript source | Day 1 - start here |
+| `analysis/data/raw_data/` | Original data | When you have data |
+| `analysis/data/derived_data/` | Processed data, model objects | Cache expensive results |
+| `analysis/figures/` | Publication figures | Store final figures |
+| `analysis/scripts/` | Heavy computations | When rendering is slow |
+| `R/` | Reusable functions | When code is used 2+ times |
+| `tests/testthat/` | Unit tests | When functions are stable |
+
+## The Progressive Extraction Pattern
+
+Code naturally evolves through three stages:
+
+**Stage 1: Inline in report.Rmd** (Day 1-7)
+```r
+# Exploratory, may change frequently
+penguins |>
+  filter(!is.na(body_mass_g)) |>
+  group_by(species) |>
+  summarise(mean_mass = mean(body_mass_g))
+```
+
+**Stage 2: Function in R/** (Week 2+)
+```r
+# Used in multiple places, stable interface
+source("../../R/data_functions.R")
+summarise_by_species(penguins, body_mass_g)
+```
+
+**Stage 3: Tested function** (Week 3+)
+```r
+# Critical for results, needs validation
+# R/data_functions.R has tests in tests/testthat/test-data_functions.R
+```
+
+# Step-by-Step Workflow
+
+## Step 1: Project Setup
+
+```bash
+mkdir penguin-morphology && cd penguin-morphology
+
+zzcollab
+
+make docker-build
+```
+
+This creates the standard compendium structure with empty directories ready
+for use.
+
+## Step 2: Start the Manuscript (Day 1)
+
+Create `analysis/report/report.Rmd` immediately:
+
+```yaml
+---
+title: "Allometric Scaling in Palmer Penguins"
+author:
+  - name: Your Name
+    affiliation: Department of Biology
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    number_sections: true
+  html_document:
+    toc: true
+bibliography: references.bib
+abstract: |
+  We investigate allometric scaling relationships between bill morphology
+  and body mass in three penguin species. [To be completed]
+---
+```
+
+Then add a setup chunk and your content:
+
+```r
+# In setup chunk (include=FALSE):
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.path = "../figures/"
+)
+library(tidyverse)
+library(palmerpenguins)
+```
+
+```r
+# In data-exploration chunk:
+penguins |>
+  filter(!is.na(body_mass_g)) |>
+  group_by(species) |>
+  summarise(
+    n = n(),
+    mean_mass = mean(body_mass_g),
+    sd_mass = sd(body_mass_g)
+  ) |>
+  knitr::kable(caption = "Sample sizes and body mass by species")
+```
+
+```r
+# In models chunk:
+penguins_clean <- penguins |>
+  filter(!is.na(body_mass_g), !is.na(bill_length_mm))
+
+model_length <- lm(
+  log(bill_length_mm) ~ log(body_mass_g) * species,
+  data = penguins_clean
+)
+
+broom::tidy(model_length) |>
+  knitr::kable(digits = 3)
+```
+
+Create `analysis/report/references.bib`:
+
+```bibtex
+@book{schmidt-nielsen1984,
+  title = {Scaling: Why is Animal Size so Important?},
+  author = {Schmidt-Nielsen, Knut},
+  year = {1984},
+  publisher = {Cambridge University Press}
+}
+
+@article{gorman2014,
+  title = {Ecological Sexual Dimorphism and Environmental Variability
+           within a Community of Antarctic Penguins},
+  author = {Gorman, Kristen B and Williams, Tony D and Fraser, William R},
+  journal = {PLOS ONE},
+  volume = {9},
+  pages = {e90081},
+  year = {2014}
+}
+
+@misc{horst2020,
+  title = {palmerpenguins: Palmer Archipelago Penguin Data},
+  author = {Horst, Allison M and Hill, Alison P and Gorman, Kristen B},
+  year = {2020},
+  url = {https://allisonhorst.github.io/palmerpenguins/}
+}
+
+@article{marwick2018,
+  title = {Packaging Data Analytical Work Reproducibly Using {R}},
+  author = {Marwick, Ben and Boettiger, Carl and Mullen, Lincoln},
+  journal = {The American Statistician},
+  volume = {72},
+  pages = {80--88},
+  year = {2018}
+}
+```
+
+## Step 3: Install Packages and Render
+
+```bash
+make r
+
+> install.packages(c("palmerpenguins", "broom", "knitr"))
+> rmarkdown::render("analysis/report/report.Rmd")
+> q()
+```
+
+You now have a working manuscript draft with embedded analysis.
+
+## Step 4: Develop Analysis in the Manuscript
+
+Continue writing in `report.Rmd`, adding code as needed:
+
+```r
+# In scaling-analysis chunk:
+library(broom)
+
+slopes <- penguins_clean |>
+  group_by(species) |>
+  do(model = lm(log(bill_length_mm) ~ log(body_mass_g), data = .)) |>
+  mutate(
+    slope = coef(model)[2],
+    slope_se = summary(model)$coefficients[2, 2],
+    r_squared = summary(model)$r.squared
+  ) |>
+  select(-model)
+
+slopes |>
+  knitr::kable(digits = 3, caption = "Allometric slopes by species")
+```
+
+Use inline R code to reference results in the text.
+
+At this stage, all code lives in `report.Rmd`. This is appropriate for
+exploratory work.
+
+## Step 5: Extract Functions to R/ (When Ready)
+
+When you find yourself copying code or using similar patterns, extract to
+`R/`:
+
+**Create `R/scaling_functions.R`**:
+
+```r
+#' Extract allometric slopes by group
+#'
+#' Fits linear models of log(y) ~ log(x) within each group and extracts
+#' slope estimates with standard errors.
+#'
+#' @param data Data frame
+#' @param y_var Response variable (unquoted)
+#' @param x_var Predictor variable (unquoted)
+#' @param group_var Grouping variable (unquoted)
+#'
+#' @return Data frame with slope, SE, and R-squared per group
+#' @export
+extract_allometric_slopes <- function(data, y_var, x_var, group_var) {
+  y_var <- rlang::enquo(y_var)
+  x_var <- rlang::enquo(x_var)
+  group_var <- rlang::enquo(group_var)
+
+  data |>
+    dplyr::filter(
+      !is.na(!!y_var),
+      !is.na(!!x_var)
+    ) |>
+    dplyr::group_by(!!group_var) |>
+    dplyr::do(
+      model = lm(
+        log(rlang::eval_tidy(y_var, .)) ~
+        log(rlang::eval_tidy(x_var, .))
+      )
+    ) |>
+    dplyr::mutate(
+      slope = coef(model)[2],
+      slope_se = summary(model)$coefficients[2, 2],
+      r_squared = summary(model)$r.squared
+    ) |>
+    dplyr::select(-model) |>
+    dplyr::ungroup()
+}
+
+
+#' Test for isometric scaling
+#'
+#' Tests whether the allometric slope differs significantly from 1.0
+#' (isometry).
+#'
+#' @param slope Estimated slope
+#' @param se Standard error of slope
+#' @param alpha Significance level
+#'
+#' @return List with test statistic, p-value, and conclusion
+#' @export
+test_isometry <- function(slope, se, alpha = 0.05) {
+  t_stat <- (slope - 1) / se
+  p_value <- 2 * pt(abs(t_stat), df = Inf, lower.tail = FALSE)
+
+  scaling_type <- dplyr::case_when(
+    p_value > alpha ~ "isometric",
+    slope < 1 ~ "negative allometry",
+    slope > 1 ~ "positive allometry"
+  )
+
+  list(
+    t_statistic = t_stat,
+    p_value = p_value,
+    scaling_type = scaling_type
+  )
+}
+```
+
+**Update report.Rmd to use the function**:
+
+```r
+# In setup chunk, add:
+source("../../R/scaling_functions.R")
+
+# Then in your analysis chunk:
+slopes <- extract_allometric_slopes(
+  penguins,
+  bill_length_mm,
+  body_mass_g,
+  species
+)
+
+slopes |>
+  knitr::kable(digits = 3, caption = "Allometric slopes by species")
+```
+
+## Step 6: Add Tests (When Functions Are Stable)
+
+Once functions are working and you rely on them for results, add tests.
+
+**Create `tests/testthat/test-scaling_functions.R`**:
+
+```r
+test_that("extract_allometric_slopes returns correct structure", {
+  data <- palmerpenguins::penguins
+
+  result <- extract_allometric_slopes(
+    data,
+    bill_length_mm,
+    body_mass_g,
+    species
+  )
+
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), 3)  # Three species
+  expect_true(all(c("slope", "slope_se", "r_squared") %in% names(result)))
+})
+
+test_that("extract_allometric_slopes handles missing values", {
+  data <- data.frame(
+    x = c(1, 2, NA, 4),
+    y = c(2, 4, 6, NA),
+    group = c("A", "A", "B", "B")
+  )
+
+  result <- extract_allometric_slopes(data, y, x, group)
+
+  expect_equal(nrow(result), 2)
+})
+
+test_that("test_isometry correctly identifies scaling types", {
+  # Isometric (slope = 1)
+  result <- test_isometry(slope = 1.0, se = 0.05)
+  expect_equal(result$scaling_type, "isometric")
+
+  # Negative allometry (slope < 1)
+  result <- test_isometry(slope = 0.7, se = 0.05)
+  expect_equal(result$scaling_type, "negative allometry")
+
+  # Positive allometry (slope > 1)
+  result <- test_isometry(slope = 1.3, se = 0.05)
+  expect_equal(result$scaling_type, "positive allometry")
+})
+
+test_that("test_isometry returns correct p-value for known case", {
+  # slope = 1.0, se = 0.1 -> t = 0 -> p = 1
+  result <- test_isometry(slope = 1.0, se = 0.1)
+  expect_equal(result$t_statistic, 0)
+  expect_equal(result$p_value, 1)
+})
+```
+
+Run tests:
+
+```bash
+make r
+
+> devtools::test()
+> q()
+```
+
+## Step 7: Move Heavy Computations to Scripts
+
+If rendering becomes slow due to expensive computations, move them to
+`analysis/scripts/` and save results.
+
+**Create `analysis/scripts/01_fit_models.R`**:
+
+```r
+# 01_fit_models.R
+# Fit allometric models and save results
+# Run separately: Rscript analysis/scripts/01_fit_models.R
+
+library(tidyverse)
+library(palmerpenguins)
+library(broom)
+
+source("R/scaling_functions.R")
+
+cat("Fitting allometric models...\n")
+
+# Fit models for all trait combinations
+traits <- c("bill_length_mm", "bill_depth_mm", "flipper_length_mm")
+
+results <- map_dfr(traits, function(trait) {
+  extract_allometric_slopes(
+    penguins,
+    !!sym(trait),
+    body_mass_g,
+    species
+  ) |>
+    mutate(trait = trait)
+})
+
+# Add isometry tests
+results <- results |>
+  rowwise() |>
+  mutate(
+    isometry_test = list(test_isometry(slope, slope_se)),
+    scaling_type = isometry_test$scaling_type,
+    p_value = isometry_test$p_value
+  ) |>
+  select(-isometry_test) |>
+  ungroup()
+
+# Save results
+saveRDS(results, "analysis/data/derived_data/allometric_results.rds")
+
+cat("Results saved to analysis/data/derived_data/allometric_results.rds\n")
+```
+
+**Update report.Rmd to load cached results**:
+
+```r
+# In load-results chunk:
+results <- readRDS("../data/derived_data/allometric_results.rds")
+
+# In results-table chunk:
+results |>
+  select(trait, species, slope, slope_se, scaling_type, p_value) |>
+  knitr::kable(digits = 3, caption = "Allometric scaling results")
+```
+
+**Workflow**:
+
+```bash
+make r
+
+# Run heavy computation once
+> source("analysis/scripts/01_fit_models.R")
+
+# Render manuscript (fast - loads cached results)
+> rmarkdown::render("analysis/report/report.Rmd")
+> q()
+```
+
+## Step 8: Final Project Structure
+
+After several weeks of development, your project might look like:
+
+```
+penguin-morphology/
+├── analysis/
+│   ├── data/
+│   │   ├── raw_data/
+│   │   │   └── penguins_raw.csv       # If not using package data
+│   │   └── derived_data/
+│   │       └── allometric_results.rds # Cached model results
+│   ├── figures/
+│   │   ├── fig1_scaling.png
+│   │   └── fig2_species_comparison.png
+│   ├── scripts/
+│   │   └── 01_fit_models.R            # Heavy computations
+│   └── report/
+│       ├── report.Rmd                 # Main manuscript
+│       ├── supplementary.Rmd          # Supplementary materials
+│       └── references.bib
+├── R/
+│   └── scaling_functions.R            # Reusable functions
+├── tests/
+│   └── testthat/
+│       └── test-scaling_functions.R   # Unit tests
+├── DESCRIPTION
+├── Dockerfile
+├── Makefile
+└── renv.lock
+```
+
+# Rendering to Multiple Formats
+
+## PDF (for submission)
+
+```bash
+make r
+
+> rmarkdown::render(
++   "analysis/report/report.Rmd",
++   output_format = "pdf_document"
++ )
+> q()
+```
+
+## Word (for collaborators)
+
+```bash
+make r
+
+> rmarkdown::render(
++   "analysis/report/report.Rmd",
++   output_format = "word_document"
++ )
+> q()
+```
+
+## HTML (for web)
+
+```bash
+make r
+
+> rmarkdown::render(
++   "analysis/report/report.Rmd",
++   output_format = "html_document"
++ )
+> q()
+```
+
+# Version Control for Manuscripts
+
+## Meaningful Commits
+
+```bash
+# After adding results section
+git add analysis/report/report.Rmd R/scaling_functions.R
+git commit -m "Add allometric scaling analysis
+
+- Extract slopes for bill length, depth, flipper length
+- Test isometry hypothesis for each trait
+- Table 2 shows species-specific results"
+
+# After reviewer revisions
+git add analysis/report/report.Rmd
+git commit -m "Address reviewer comments on methods
+
+- Clarify sample size justification
+- Add sensitivity analysis for outliers
+- Expand discussion of limitations"
+```
+
+## Tag Submission Versions
+
+```bash
+git tag -a v1.0-submission -m "Initial submission to Journal X"
+git push origin v1.0-submission
+
+git tag -a v1.1-revision -m "First revision addressing reviewer comments"
+git push origin v1.1-revision
+```
+
+# Summary: The Write as You Go Principles
+
+1. **Start with the manuscript**: Create `report.Rmd` on day one. Write your
+   research question, background, and planned methods before any analysis.
+
+2. **Code inline first**: Keep code in `report.Rmd` while exploring. Move to
+   `R/` only when patterns emerge and code is reused.
+
+3. **Extract functions when ready**: When you copy-paste code or use similar
+   logic in multiple places, create a function in `R/`.
+
+4. **Test critical code**: Add tests in `tests/testthat/` for functions that
+   directly produce results in the manuscript.
+
+5. **Cache expensive computations**: Move slow code to `analysis/scripts/`
+   and save results to `analysis/data/derived_data/`.
+
+6. **The manuscript is the product**: Everything else supports it. The
+   compendium structure emerges from the writing process, not the reverse.
+
+# References
+
+Marwick, B., Boettiger, C., & Mullen, L. (2018). Packaging data analytical
+work reproducibly using R (and friends). *The American Statistician*,
+72(1), 80-88.
+

@@ -1,0 +1,120 @@
+# R specific
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+.Rproj.user/
+
+# renv
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/staging/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Log files
+*.log
+
+# Package caches (auto-generated, platform-specific)
+binary/
+cache/
+source/
+p3m/
+index/
+
+# Test artifacts and development directories
+test-*/
+*test/
+*_test/
+temp_*/
+*_check/
+*.Rcheck/
+
+# Development artifacts
+*.pdf
+*.txt
+workflow-*.md
+test.md
+*-mini.*
+dev-archive/
+
+# Documentation generated files
+docs/*.pdf
+*.backup
+*.bak
+
+# Vignette build artifacts
+vignettes/*.html
+vignettes/*.pdf
+vignettes/*.aux
+vignettes/*.log
+vignettes/*.tex
+vignettes/*.bak
+
+# Archives
+*.tar.gz
+*.zip
+
+# Large data files that shouldn't be in container
+analysis/data/raw_data/*.csv
+analysis/data/derived_data/*.rds
+
+# Generated outputs
+analysis/figures/*.png
+analysis/figures/*.pdf
+analysis/report/*.html
+analysis/report/*.pdf
+analysis/report/*.tex
+analysis/report/*_files/
+
+# Docker
+.dockerignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+ENV/
+
+# Node.js
+node_modules/
+npm-debug.log*
+temp
+
+# Example/test projects (should be in separate repos)
+png1/
+CLAUDE.md
+.Rprofile.local
+
+# pkgdown site output (uses non-default dir to avoid clashing with docs/)
+pkgdown_site/
+
+# Built tarballs and check artifacts at any level
+*.tgz
+*.Rcheck/
+
+# Plot device default output
+Rplots.pdf
+**/Rplots.pdf

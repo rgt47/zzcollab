@@ -1,0 +1,443 @@
+---
+title: "Plot Viewing with zzvim-R Terminal Graphics"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Plot Viewing with zzvim-R Terminal Graphics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+The `zzvim-R` vim plugin provides automatic plot display in kitty and iTerm2
+terminals. Unlike manual save-and-view approaches, zzvim-R intercepts R's
+graphics device and displays plots automatically when they are created.
+
+This vignette covers:
+
+- Installation and setup
+- Auto-display functions (`zzplot`, `zzggplot`)
+- Plot history navigation
+- Configuration options (size, alignment, relative sizing)
+- Split pane viewing
+- Integration with zzcollab Docker workflows
+
+## Prerequisites
+
+- [Kitty terminal](https://sw.kovidgoyal.net/kitty/) or iTerm2 (macOS)
+- [zzvim-R plugin](https://github.com/rgt47/zzvim-R) installed in vim/neovim
+- R project with `.Rprofile` or `DESCRIPTION` file
+
+## Installation
+
+### Install zzvim-R Plugin
+
+**vim-plug:**
+
+```vim
+Plug 'rgt47/zzvim-R'
+```
+
+**Manual:**
+
+```bash
+git clone https://github.com/rgt47/zzvim-R ~/.vim/pack/plugins/start/zzvim-R
+```
+
+### Automatic Setup
+
+When you open vim in a kitty terminal within an R project, zzvim-R automatically:
+
+1. Detects the terminal type (kitty or iTerm2)
+2. Creates `.Rprofile.local` with terminal graphics functions
+3. Adds `.Rprofile.local` to `.gitignore`
+
+No manual configuration required.
+
+### Manual Setup
+
+If automatic setup does not activate, copy the template manually:
+
+```bash
+# From zzvim-R plugin directory
+cp ~/.vim/pack/plugins/start/zzvim-R/templates/.Rprofile.local .
+
+# Or from zzcollab if using Docker
+cp /path/to/zzvim-R/templates/.Rprofile.local .
+```
+
+## Terminal Detection
+
+zzvim-R detects the terminal type automatically:
+
+| Terminal | Detection Method | Features |
+|----------|------------------|----------|
+| **Kitty** | `$KITTY_WINDOW_ID` | Full support + alignment control |
+| **iTerm2** | `$ITERM_SESSION_ID` | Full support (no alignment) |
+| **Other** | - | Disabled |
+
+Check your terminal type in R:
+
+```{r}
+Sys.getenv("KITTY_WINDOW_ID")  # Non-empty if kitty
+Sys.getenv("ITERM_SESSION_ID") # Non-empty if iTerm2
+```
+
+## Basic Usage
+
+### Auto-Display Functions
+
+zzvim-R provides wrapper functions that automatically display plots:
+
+```{r}
+# Base R plots
+zzplot(mtcars$wt, mtcars$mpg, main = "Weight vs MPG")
+
+# ggplot2 plots
+library(ggplot2)
+p <- ggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +
+  geom_point(size = 3) +
+  theme_minimal()
+zzggplot(p)
+```
+Plots appear directly in the terminal without manual `kitty +kitten icat` calls.
+
+### How It Works
+
+zzvim-R overrides `dev.off()` to automatically display plots after rendering:
+
+1. `zzplot()` or `zzggplot()` creates a temporary PNG file
+2. When the device closes, the plot displays via `kitty +kitten icat`
+3. The plot is added to history for later navigation
+
+## Plot History
+
+Navigate through previously displayed plots:
+
+```{r}
+# View plot history
+plot_history()
+#> Plot history: 5 plots
+#> Current: Plot 3
+#>
+#>   [1] /tmp/plot_abc123.png
+#>   [2] /tmp/plot_def456.png
+#> * [3] /tmp/plot_ghi789.png
+#>   [4] /tmp/plot_jkl012.png
+#>   [5] /tmp/plot_mno345.png
+
+# Navigate backward
+plot_prev()
+#> Plot 2 of 5
+
+# Navigate forward
+plot_next()
+#> Plot 3 of 5
+```
+
+## Saving Plots
+
+### Save as PNG
+
+```{r}
+# Create and display a plot
+zzggplot(p)
+
+# Save the current plot
+save_plot("analysis/figures/mpg_by_weight.png")
+#> Plot saved to: analysis/figures/mpg_by_weight.png
+```
+
+### Save as PDF
+
+```{r}
+# Convert current plot to PDF
+plot_to_pdf("analysis/figures/mpg_by_weight.pdf")
+#> PDF saved to: analysis/figures/mpg_by_weight.pdf
+```
+
+## Configuration Options
+
+### Fixed Plot Size
+
+Set specific pixel dimensions:
+
+```{r}
+# Set plot dimensions (width, height, dpi)
+set_plot_size(1200, 800, 150)
+#> Plot size set to 1200x800 @ 150dpi
+
+# Future plots use these dimensions
+zzggplot(p)
+```
+
+### Relative Sizing (Recommended)
+
+Size plots as a percentage of terminal dimensions:
+
+```{r}
+# Default: 75% width, 100% height
+set_plot_size_relative()
+#> Relative sizing enabled: 720x576px
+#> (75% x 100% of terminal)
+#> Plots will auto-resize when terminal is resized
+
+# Custom percentages
+set_plot_size_relative(width_pct = 0.5, height_pct = 0.8)
+#> Relative sizing enabled: 480x460px
+#> (50% x 80% of terminal)
+```
+
+### Plot Alignment (Kitty Only)
+
+Control horizontal alignment of plots in the terminal:
+
+```{r}
+# Align to right side (default)
+set_plot_align("right")
+
+# Center the plot
+set_plot_align("center")
+
+# Align to left side
+set_plot_align("left")
+```
+
+### Redisplay After Resize
+
+If you resize your terminal, redisplay the current plot:
+
+```{r}
+plot_redisplay_if_resized()
+#> Terminal resized from 120x40 to 160x50
+#> Redisplaying current plot...
+```
+
+## Split Pane Viewing
+
+Open the current plot in a separate kitty split pane:
+
+```{r}
+# Create a plot
+zzggplot(p)
+
+# Open in vertical split
+plot_split()
+#> Plot opened in split pane (use Ctrl+Shift+] to focus plot, Ctrl+Shift+[ to return to R)
+```
+
+### Kitty Navigation
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+]` | Focus next pane (plot) |
+| `Ctrl+Shift+[` | Focus previous pane (R) |
+| `Ctrl+Shift+w` | Close current pane |
+
+### Scaled Split View
+
+Open a scaled version of the plot:
+
+```{r}
+# Open at 150% scale
+plot_split(scale = 1.5)
+
+# Open at 50% scale (for high-resolution plots)
+plot_split(scale = 0.5)
+```
+
+## Docker Integration
+
+When using zzcollab Docker containers with kitty, the terminal graphics work
+automatically if `.Rprofile.local` is in the mounted project directory.
+
+### Workflow
+
+```bash
+# 1. Start vim in kitty terminal
+cd ~/projects/myproject
+vim analysis/scripts/analysis.R
+
+# 2. Open terminal split and start Docker R
+:below terminal
+make r
+```
+
+```{r}
+# 3. In R (inside Docker container)
+library(ggplot2)
+
+p <- ggplot(mtcars, aes(wt, mpg)) +
+  geom_point() +
+  theme_minimal()
+
+# Auto-displays in kitty
+zzggplot(p)
+
+# Save for reports
+save_plot("analysis/figures/scatter.png")
+```
+
+### Ensuring .Rprofile.local is Loaded
+
+The zzcollab `.Rprofile` template automatically sources `.Rprofile.local`:
+
+```{r}
+# In .Rprofile (auto-generated by zzcollab)
+if (file.exists(".Rprofile.local")) {
+  source(".Rprofile.local")
+}
+```
+
+If plots are not auto-displaying, verify:
+
+```{r}
+# Check if terminal graphics are loaded
+exists("zzplot")
+#> [1] TRUE
+
+# Check terminal detection
+.terminal
+#> [1] "kitty"
+```
+
+## Function Reference
+
+### Plot Display
+
+| Function | Description |
+|----------|-------------|
+| `zzplot(...)` | Base R plot with auto-display |
+| `zzggplot(p)` | ggplot2 plot with auto-display |
+| `plot_split(scale)` | Open current plot in split pane |
+
+### Plot History
+
+| Function | Description |
+|----------|-------------|
+| `plot_history()` | List all plots in session |
+| `plot_prev()` | Navigate to previous plot |
+| `plot_next()` | Navigate to next plot |
+
+### Saving
+
+| Function | Description |
+|----------|-------------|
+| `save_plot(filename)` | Save current plot as PNG |
+| `plot_to_pdf(filename)` | Save current plot as PDF |
+
+### Configuration
+
+| Function | Description |
+|----------|-------------|
+| `set_plot_size(w, h, dpi)` | Set fixed plot dimensions |
+| `set_plot_size_relative(w_pct, h_pct)` | Set size as % of terminal |
+| `set_plot_align(align)` | Set alignment (kitty only) |
+| `plot_redisplay_if_resized()` | Redisplay after terminal resize |
+
+## Startup Message
+
+When terminal graphics are enabled, R displays:
+
+```
+✓ Terminal graphics enabled (KITTY)
+
+Quick reference:
+  zzplot(...)                : Base R plots with auto-display
+  zzggplot(p)                : ggplot2 plots with auto-display
+  plot_history()             : View plot history
+  plot_prev() / plot_next()  : Navigate history
+  save_plot(file)            : Save current plot as PNG
+  plot_to_pdf(file)          : Save current plot as PDF
+  set_plot_size(w,h,dpi)     : Fixed dimensions
+  set_plot_size_relative()   : Size by % of terminal (default: 75% x 100%)
+  set_plot_align(a)          : Alignment (left/center/right)
+  plot_split()               : Open current plot in split pane
+  plot_redisplay_if_resized(): Redisplay after terminal resize
+```
+
+## Troubleshooting
+
+### Plots Not Displaying
+
+1. **Verify kitty terminal:**
+
+```bash
+echo $KITTY_WINDOW_ID
+# Should output a non-empty value
+```
+
+2. **Check .Rprofile.local exists:**
+
+```bash
+ls -la .Rprofile.local
+```
+
+3. **Verify functions are loaded:**
+
+```{r}
+exists("zzplot")
+exists(".terminal")
+```
+
+4. **Test icat manually:**
+
+```bash
+kitty +kitten icat --help
+```
+
+### Wrong Terminal Detected
+
+Check environment variables:
+
+```{r}
+Sys.getenv("KITTY_WINDOW_ID")
+Sys.getenv("ITERM_SESSION_ID")
+Sys.getenv("TERM_PROGRAM")
+```
+
+### Plots Too Large/Small
+
+Use relative sizing for automatic adjustment:
+
+```{r}
+set_plot_size_relative(width_pct = 0.5, height_pct = 0.75)
+```
+
+### Split Pane Not Opening
+
+Verify kitty remote control is enabled. Add to `~/.config/kitty/kitty.conf`:
+
+```
+allow_remote_control yes
+```
+
+## Comparison with Manual Approach
+
+| Feature | Manual (`kp()`) | zzvim-R |
+|---------|-----------------|---------|
+| **Auto-display** | No | Yes |
+| **Plot history** | No | Yes |
+| **Alignment control** | No | Yes (kitty) |
+| **Relative sizing** | No | Yes |
+| **Split pane** | No | Yes |
+| **Docker compatible** | Yes | Yes |
+| **Setup required** | Function in .Rprofile | Plugin + template |
+
+For simple workflows, the manual `kp()` function (see `vignette("workflow-kitty-graphics")`)
+may be sufficient. For vim-based development with frequent plotting, zzvim-R provides
+a more integrated experience.
+
+## See Also
+
+- [zzvim-R Documentation](https://github.com/rgt47/zzvim-R)
+- [Kitty Graphics Protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
+- [ZZCOLLAB Kitty Graphics Workflow](workflow-kitty-graphics.html)

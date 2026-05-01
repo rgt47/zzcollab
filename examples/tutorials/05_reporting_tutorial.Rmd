@@ -1,0 +1,434 @@
+---
+title: "{{PACKAGE_NAME}} Analysis Report"
+author: "{{AUTHOR_NAME}} {{AUTHOR_LAST}}"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    theme: bootstrap
+    highlight: tango
+    code_folding: hide
+    df_print: paged
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+  word_document:
+    toc: true
+    number_sections: true
+params:
+  data_file: "cleaned_dataset.csv"
+  model_file: "final_model.rds"
+  refresh_analysis: FALSE
+  include_code: FALSE
+---
+
+```{r setup, include=FALSE}
+# Report setup with reproducibility focus
+knitr::opts_chunk$set(
+  echo = params$include_code,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dpi = 300,
+  cache = !params$refresh_analysis
+)
+
+# Load required packages
+library(here)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(DT)
+library(readr)
+library(broom)
+library(corrplot)
+
+# Set reproducible theme
+theme_set(theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title = element_text(size = 11),
+    legend.title = element_text(size = 11)
+  ))
+
+# Report generation log
+report_log <- list(
+  report_title = "{{PACKAGE_NAME}} Analysis Report",
+  generation_time = Sys.time(),
+  r_version = R.version.string,
+  parameters = params,
+  reproducible_seed = 42
+)
+
+set.seed(report_log$reproducible_seed)
+```
+
+```{r data-loading, include=FALSE}
+# Load data and results with error handling
+data_processed <- NULL
+final_model <- NULL
+model_results <- NULL
+eda_results <- NULL
+
+# Load processed data
+data_file_path <- here("data", "processed", params$data_file)
+if (file.exists(data_file_path)) {
+  data_processed <- read_csv(data_file_path, show_col_types = FALSE)
+  report_log$data_loaded <- TRUE
+  report_log$data_rows <- nrow(data_processed)
+  report_log$data_cols <- ncol(data_processed)
+} else {
+  report_log$data_loaded <- FALSE
+  # Create sample data for demonstration
+  set.seed(42)
+  data_processed <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    x3 = sample(c("A", "B", "C"), 200, replace = TRUE),
+    outcome = rnorm(200) * 2 + 10
+  )
+  report_log$data_rows <- nrow(data_processed)
+  report_log$data_cols <- ncol(data_processed)
+  report_log$sample_data_used <- TRUE
+}
+
+# Load model results
+model_file_path <- here("analysis", "modeling", params$model_file)
+if (file.exists(model_file_path)) {
+  final_model <- readRDS(model_file_path)
+  report_log$model_loaded <- TRUE
+} else {
+  report_log$model_loaded <- FALSE
+}
+
+# Load additional results
+results_files <- list(
+  eda_log = here("analysis", "exploratory", "eda_session_log.rds"),
+  model_comparison = here("outputs", "tables", "model_comparison.csv"),
+  validation_report = here("analysis", "validation", "validation_report.rds")
+)
+
+report_log$files_found <- map_lgl(results_files, file.exists)
+```
+
+# Executive Summary {.tabset}
+
+## Key Findings
+
+This automated report provides a comprehensive overview of the {{PACKAGE_NAME}} data analysis project. The report is generated using reproducible methods and includes data exploration, statistical modeling, and validation results.
+
+**Data Overview:**
+- **Observations**: `r format(nrow(data_processed), big.mark = ",")`
+- **Variables**: `r ncol(data_processed)`
+- **Analysis Date**: `r format(Sys.Date(), "%B %d, %Y")`
+- **Reproducible Seed**: `r report_log$reproducible_seed`
+
+**Key Analytical Findings:**
+`r if(report_log$model_loaded) "Statistical models have been fitted and validated. See Model Results section for detailed performance metrics." else "Statistical modeling pipeline has not been completed. This report shows exploratory data analysis results."`
+
+## Reproducibility Information
+
+This report ensures full computational reproducibility through:
+
+- **Version Control**: All analysis code is version controlled
+- **Reproducible Seed**: Set to `r report_log$reproducible_seed` for consistent results
+- **Session Information**: Complete R session details documented
+- **Parameterized Report**: Can be regenerated with different parameters
+- **Automated Pipeline**: Report generated through automated workflow
+
+**Report Parameters:**
+```{r params-table, results='asis'}
+params_df <- data.frame(
+  Parameter = names(params),
+  Value = sapply(params, as.character)
+)
+kable(params_df, caption = "Report Generation Parameters")
+```
+
+**File Availability:**
+```{r file-status, results='asis'}
+file_status <- data.frame(
+  File = c("Data File", "Model File", "EDA Results", "Model Comparison", "Validation Results"),
+  Status = c(
+    ifelse(report_log$data_loaded, "✅ Loaded", "❌ Not Found"),
+    ifelse(report_log$model_loaded, "✅ Loaded", "❌ Not Found"),
+    ifelse(report_log$files_found[1], "✅ Available", "❌ Not Found"),
+    ifelse(report_log$files_found[2], "✅ Available", "❌ Not Found"),
+    ifelse(report_log$files_found[3], "✅ Available", "❌ Not Found")
+  )
+)
+kable(file_status, caption = "Analysis Pipeline Status")
+```
+
+# Data Overview
+
+## Data Structure
+
+```{r data-structure}
+# Data structure summary
+glimpse(data_processed)
+```
+
+## Data Quality Assessment
+
+```{r data-quality}
+# Missing data analysis
+missing_summary <- data_processed %>%
+  summarise_all(~sum(is.na(.))) %>%
+  tidyr::pivot_longer(everything(), names_to = "Variable", values_to = "Missing_Count") %>%
+  mutate(
+    Missing_Percent = round(Missing_Count / nrow(data_processed) * 100, 1),
+    Data_Type = sapply(data_processed[Variable], function(x) class(x)[1])
+  ) %>%
+  arrange(desc(Missing_Count))
+
+datatable(
+  missing_summary,
+  caption = "Data Quality Summary",
+  options = list(pageLength = 10, scrollX = TRUE),
+  rownames = FALSE
+) %>%
+  formatStyle(
+    "Missing_Percent",
+    backgroundColor = styleInterval(c(5, 20), c("white", "yellow", "red"))
+  )
+```
+
+## Descriptive Statistics
+
+```{r descriptive-stats}
+# Descriptive statistics for numeric variables
+numeric_data <- data_processed %>% select_if(is.numeric)
+
+if (ncol(numeric_data) > 0) {
+  desc_stats <- numeric_data %>%
+    summarise_all(list(
+      Count = ~sum(!is.na(.)),
+      Mean = ~round(mean(., na.rm = TRUE), 3),
+      Median = ~round(median(., na.rm = TRUE), 3),
+      SD = ~round(sd(., na.rm = TRUE), 3),
+      Min = ~round(min(., na.rm = TRUE), 3),
+      Max = ~round(max(., na.rm = TRUE), 3)
+    )) %>%
+    tidyr::pivot_longer(everything(), names_to = "Variable_Stat", values_to = "Value") %>%
+    tidyr::separate(Variable_Stat, into = c("Variable", "Statistic"), sep = "_(?=Count|Mean|Median|SD|Min|Max)") %>%
+    tidyr::pivot_wider(names_from = Statistic, values_from = Value)
+
+  datatable(
+    desc_stats,
+    caption = "Descriptive Statistics for Numeric Variables",
+    options = list(pageLength = 10, scrollX = TRUE),
+    rownames = FALSE
+  ) %>%
+    formatRound(columns = c("Mean", "Median", "SD", "Min", "Max"), digits = 3)
+}
+```
+
+# Exploratory Data Analysis
+
+## Distribution Analysis
+
+```{r distributions, fig.height=8}
+# Distribution plots for numeric variables
+numeric_vars <- names(select_if(data_processed, is.numeric))
+
+if (length(numeric_vars) > 0) {
+  # Create distribution plots
+  plot_list <- map(numeric_vars[1:min(6, length(numeric_vars))], function(var) {
+    data_processed %>%
+      ggplot(aes_string(x = var)) +
+      geom_histogram(bins = 30, fill = "steelblue", alpha = 0.7, color = "white") +
+      geom_density(aes(y = after_stat(count)), color = "red", linewidth = 1) +
+      labs(
+        title = paste("Distribution of", var),
+        subtitle = paste("n =", sum(!is.na(data_processed[[var]]))),
+        x = var,
+        y = "Frequency"
+      )
+  })
+
+  # Arrange plots
+  if (length(plot_list) > 1) {
+    gridExtra::grid.arrange(grobs = plot_list, ncol = 2)
+  } else {
+    print(plot_list[[1]])
+  }
+}
+```
+
+## Correlation Analysis
+
+```{r correlation-analysis, fig.height=8}
+# Correlation analysis for numeric variables
+if (ncol(numeric_data) > 1) {
+  cor_matrix <- cor(numeric_data, use = "complete.obs")
+
+  # Correlation heatmap
+  corrplot(cor_matrix,
+    method = "color",
+    type = "upper",
+    order = "hclust",
+    tl.cex = 0.8,
+    tl.col = "black",
+    tl.srt = 45,
+    addCoef.col = "white",
+    number.cex = 0.7,
+    title = "Correlation Matrix of Numeric Variables",
+    mar = c(0, 0, 1, 0)
+  )
+
+  # Correlation table
+  cor_data <- cor_matrix %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column("Variable1") %>%
+    tidyr::pivot_longer(-Variable1, names_to = "Variable2", values_to = "Correlation") %>%
+    filter(Variable1 != Variable2) %>%
+    arrange(desc(abs(Correlation))) %>%
+    slice_head(n = 10)
+
+  kable(cor_data, caption = "Top 10 Variable Correlations", digits = 3)
+}
+```
+
+# Model Results
+
+```{r model-results, eval=report_log$files_found[2]}
+# Load and display model comparison results
+if (file.exists(here("outputs", "tables", "model_comparison.csv"))) {
+  model_comparison <- read_csv(here("outputs", "tables", "model_comparison.csv"), show_col_types = FALSE)
+
+  kable(model_comparison,
+    caption = "Model Performance Comparison",
+    digits = 4
+  )
+
+  # Model performance visualization
+  model_comparison %>%
+    ggplot(aes(x = reorder(model, -rmse), y = rmse)) +
+    geom_col(fill = "steelblue", alpha = 0.7) +
+    geom_text(aes(label = round(rmse, 3)), vjust = -0.5, size = 3) +
+    labs(
+      title = "Model Performance Comparison",
+      subtitle = "Root Mean Square Error (Lower is Better)",
+      x = "Model",
+      y = "RMSE",
+      caption = "All models evaluated on identical test set"
+    ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+```{r feature-importance, eval=file.exists(here("outputs", "tables", "feature_importance.csv"))}
+# Feature importance analysis
+if (file.exists(here("outputs", "tables", "feature_importance.csv"))) {
+  importance_data <- read_csv(here("outputs", "tables", "feature_importance.csv"), show_col_types = FALSE) %>%
+    slice_head(n = 15)
+
+  # Feature importance plot
+  importance_data %>%
+    ggplot(aes(x = reorder(variable, importance), y = importance)) +
+    geom_col(fill = "darkgreen", alpha = 0.7) +
+    coord_flip() +
+    labs(
+      title = "Feature Importance",
+      subtitle = "Top 15 most important variables in final model",
+      x = "Variables",
+      y = "Importance Score",
+      caption = "Importance scores from best performing model"
+    )
+
+  kable(importance_data,
+    caption = "Variable Importance Scores",
+    digits = 4
+  )
+}
+```
+
+# Model Validation
+
+```{r validation-results, eval=report_log$files_found[3]}
+# Load validation results
+if (file.exists(here("analysis", "validation", "validation_report.rds"))) {
+  validation_report <- readRDS(here("analysis", "validation", "validation_report.rds"))
+
+  # Display validation summary
+  validation_summary <- data.frame(
+    Procedure = names(validation_report$validation_procedures),
+    Tests_Performed = unlist(validation_report$validation_procedures)
+  )
+
+  kable(validation_summary, caption = "Validation Procedures Performed")
+
+  # Display key findings if available
+  if ("key_findings" %in% names(validation_report)) {
+    findings_df <- data.frame(
+      Metric = names(validation_report$key_findings),
+      Value = unlist(validation_report$key_findings)
+    )
+    kable(findings_df, caption = "Key Validation Results")
+  }
+}
+```
+
+# Conclusions and Recommendations
+
+## Analytical Summary
+
+Based on the comprehensive analysis performed on the {{PACKAGE_NAME}} dataset:
+
+1. **Data Quality**: `r if(any(missing_summary$Missing_Percent > 10)) "Some variables have substantial missing data (>10%) that should be addressed in future analyses." else "Data quality is generally good with minimal missing values."`
+
+2. **Statistical Models**: `r if(report_log$model_loaded) "Multiple statistical models have been trained and validated. Performance metrics indicate [customize based on your results]." else "Statistical modeling pipeline should be completed to generate predictive insights."`
+
+3. **Reproducibility**: This analysis maintains full computational reproducibility through version control, documented random seeds, and automated workflows.
+
+## Next Steps
+
+### Immediate Actions
+- [ ] Review data quality issues and implement appropriate handling strategies
+- [ ] `r if(!report_log$model_loaded) "Complete statistical modeling pipeline" else "Validate model performance on new data"`
+- [ ] `r if(!report_log$files_found[3]) "Perform comprehensive model validation" else "Implement model in production environment"`
+
+### Long-term Recommendations
+- [ ] Establish automated model monitoring and retraining procedures
+- [ ] Develop model interpretation and explainability tools
+- [ ] Create real-time prediction API endpoints
+- [ ] Implement A/B testing framework for model comparisons
+
+# Technical Documentation
+
+## Session Information
+
+```{r session-info}
+# Complete session information for reproducibility
+sessionInfo()
+```
+
+## Report Generation Log
+
+```{r report-log}
+# Document report generation process
+report_log$generation_duration <- difftime(Sys.time(), report_log$generation_time, units = "mins")
+report_log$final_generation_time <- Sys.time()
+
+# Save report log
+saveRDS(report_log, here("reports", "report_generation_log.rds"))
+
+# Display key information
+cat("Report Generation Summary:\n")
+cat("Generated:", format(report_log$generation_time, "%Y-%m-%d %H:%M:%S"), "\n")
+cat("Duration:", round(as.numeric(report_log$generation_duration), 2), "minutes\n")
+cat("R Version:", report_log$r_version, "\n")
+cat("Data Rows:", format(report_log$data_rows, big.mark = ","), "\n")
+cat("Reproducible Seed:", report_log$reproducible_seed, "\n")
+```
+
+---
+
+**Report automatically generated on `r format(Sys.time(), "%Y-%m-%d at %H:%M:%S")` using reproducible analysis pipeline.**

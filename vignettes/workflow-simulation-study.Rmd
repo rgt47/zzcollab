@@ -1,0 +1,688 @@
+---
+title: "Simulation Studies for Longitudinal Binary Data"
+author: "ZZCOLLAB Development Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{Simulation Studies for Longitudinal Binary Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Introduction
+
+This vignette demonstrates a simulation study workflow using the Write as You
+Go approach. The key insight is that **the manuscript organizes the simulation
+from the beginning**---you start with your research question and methods
+section, then build the simulation infrastructure to answer it.
+
+## The Write as You Go Approach for Simulations
+
+Traditional simulation workflow:
+
+1. Write simulation code
+2. Run all scenarios
+3. Analyze results
+4. Start manuscript
+5. Describe what you did
+
+**Write as You Go simulation workflow**:
+
+1. Create `report.Rmd` with your research question
+2. Write the Methods section describing the ADEMP framework
+3. Implement data generation inline, test with small examples
+4. Extract to `R/simulate_data.R` when working
+5. Add model fitting inline, extract to `R/fit_models.R`
+6. Run small-scale simulations in the manuscript
+7. Move full simulation to `analysis/scripts/` for production runs
+8. Load cached results back into manuscript
+
+The manuscript drives the simulation design, not the reverse.
+
+## The ADEMP Framework
+
+Following Morris et al. (2019), simulation studies should specify:
+
+- **A**ims: What questions does the simulation address?
+- **D**ata-generating mechanisms: How are simulated data created?
+- **E**stimands: What quantities are we trying to estimate?
+- **M**ethods: Which analytic approaches are compared?
+- **P**erformance measures: How do we evaluate success?
+
+## The Compendium Structure for Simulations
+
+```
+simulation-study/
+├── analysis/
+│   ├── data/
+│   │   └── derived_data/         # Cached simulation results
+│   ├── figures/                  # Performance plots
+│   ├── scripts/
+│   │   ├── 02_run_simulation.R   # Full simulation (run separately)
+│   │   ├── 03_analyze_results.R  # Post-processing
+│   │   └── 04_generate_figures.R # Publication figures
+│   └── report/
+│       ├── report.Rmd            # THE MANUSCRIPT (start here!)
+│       └── references.bib
+├── R/
+│   ├── simulate_data.R           # Data generation (extract when ready)
+│   ├── fit_models.R              # Model fitting (extract when ready)
+│   └── performance_metrics.R     # Evaluation (extract when ready)
+├── tests/
+│   └── testthat/                 # Tests for each R/ file
+├── DESCRIPTION
+├── Dockerfile
+└── renv.lock
+```
+
+# Step 1: Start with the Manuscript
+
+Create `analysis/report/report.Rmd` on day one:
+
+```yaml
+---
+title: "Comparing Methods for Longitudinal Binary Outcomes: A Simulation Study"
+author:
+  - name: Your Name
+    affiliation: Department of Biostatistics
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    number_sections: true
+  html_document:
+    toc: true
+bibliography: references.bib
+abstract: |
+  **Background**: Longitudinal studies with binary outcomes require methods
+  that account for within-subject correlation.
+  **Methods**: We conducted a simulation study comparing five methods.
+  **Results**: [To be completed]
+---
+```
+
+Then add your setup chunk and content. Document your simulation parameters
+in a table:
+
+```r
+# In dgm-parameters chunk:
+params <- data.frame(
+  Parameter = c("n_subjects", "beta_interaction", "sigma_b", "n_sims"),
+  Values = c("50, 100, 200", "0, 0.3, 0.5", "0.5, 1.0", "1000"),
+  Rationale = c(
+    "Common clinical trial sizes",
+    "Null, small (OR=1.35), moderate (OR=1.65)",
+    "Low to moderate heterogeneity",
+    "Standard for methodology papers"
+  )
+)
+knitr::kable(params, caption = "Simulation parameters")
+```
+
+Writing the Methods section first forces you to think through the simulation
+design before writing any code.
+
+# Step 2: Implement Data Generation Inline
+
+Add data generation code directly in the manuscript to develop and test it:
+
+```r
+# In simulate-inline chunk (echo=TRUE):
+simulate_longitudinal_binary <- function(n_subjects,
+                                         n_timepoints = 4,
+                                         beta = c(-1, 0, 0.2, 0.3),
+                                         sigma_b = 0.5,
+                                         seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+
+  subject_id <- rep(1:n_subjects, each = n_timepoints)
+  time <- rep(0:(n_timepoints - 1), times = n_subjects)
+  treatment <- rep(sample(c(0, 1), n_subjects, replace = TRUE),
+                   each = n_timepoints)
+
+  random_intercept <- rep(rnorm(n_subjects, 0, sigma_b),
+                          each = n_timepoints)
+
+  linear_predictor <- beta[1] + beta[2] * treatment +
+                      beta[3] * time + beta[4] * treatment * time +
+                      random_intercept
+
+  y <- rbinom(length(linear_predictor), 1, plogis(linear_predictor))
+
+  data.frame(
+    subject_id = subject_id,
+    time = time,
+    treatment = factor(treatment, labels = c("control", "treatment")),
+    y = y
+  )
+}
+
+# Test it immediately
+test_data <- simulate_longitudinal_binary(n_subjects = 100, seed = 42)
+cat("Rows:", nrow(test_data), "\n")
+cat("Subjects:", length(unique(test_data$subject_id)), "\n")
+cat("Outcome rate:", mean(test_data$y), "\n")
+```
+
+Use inline R to report results in the prose.
+
+# Step 3: Implement Model Fitting Inline
+
+Add model fitting to the manuscript:
+
+```r
+# In fit-inline chunk (echo=TRUE):
+library(geepack)
+library(lme4)
+
+fit_gee <- function(data, corstr = "exchangeable") {
+  tryCatch({
+    model <- geeglm(
+      y ~ treatment * time,
+      family = binomial,
+      data = data,
+      id = subject_id,
+      corstr = corstr
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std.err"],
+      converged = TRUE
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE)
+  })
+}
+
+fit_glmm <- function(data) {
+  tryCatch({
+    model <- glmer(
+      y ~ treatment * time + (1 | subject_id),
+      family = binomial,
+      data = data,
+      control = glmerControl(optimizer = "bobyqa")
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std. Error"],
+      converged = !isSingular(model)
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE)
+  })
+}
+
+# Test on simulated data
+result_gee <- fit_gee(test_data)
+result_glmm <- fit_glmm(test_data)
+
+cat("GEE estimate:", round(result_gee$estimate, 3), "\n")
+cat("GLMM estimate:", round(result_glmm$estimate, 3), "\n")
+cat("True value: 0.3\n")
+```
+
+# Step 4: Run Small-Scale Simulation in Manuscript
+
+Test the full workflow with a small simulation:
+
+```r
+# In small-sim chunk (echo=TRUE):
+n_sims <- 50
+results <- vector("list", n_sims)
+
+for (i in 1:n_sims) {
+  data <- simulate_longitudinal_binary(
+    n_subjects = 100,
+    beta = c(-1, 0, 0.2, 0.3),
+    sigma_b = 0.5,
+    seed = i
+  )
+
+  results[[i]] <- data.frame(
+    sim = i,
+    gee_est = fit_gee(data)$estimate,
+    glmm_est = fit_glmm(data)$estimate
+  )
+}
+
+small_results <- bind_rows(results)
+
+cat("GEE bias:", round(mean(small_results$gee_est, na.rm = TRUE) - 0.3, 3), "\n")
+cat("GLMM bias:", round(mean(small_results$glmm_est, na.rm = TRUE) - 0.3, 3), "\n")
+```
+
+Use inline R to report bias values in the prose.
+
+# Step 5: Extract Functions to R/
+
+Once code is working, extract to `R/` files.
+
+**Create `R/simulate_data.R`**:
+
+```r
+#' Generate correlated longitudinal binary data
+#'
+#' @param n_subjects Number of subjects
+#' @param n_timepoints Number of measurement occasions
+#' @param beta Fixed effects: c(intercept, treatment, time, interaction)
+#' @param sigma_b Random intercept SD
+#' @param seed Random seed
+#'
+#' @return Data frame with subject_id, time, treatment, y
+#' @export
+simulate_longitudinal_binary <- function(n_subjects,
+                                         n_timepoints = 4,
+                                         beta = c(-1, 0, 0.2, 0.3),
+                                         sigma_b = 0.5,
+                                         seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+
+  if (length(beta) != 4) {
+    stop("beta must have 4 elements")
+  }
+
+  subject_id <- rep(1:n_subjects, each = n_timepoints)
+  time <- rep(0:(n_timepoints - 1), times = n_subjects)
+  treatment <- rep(sample(c(0, 1), n_subjects, replace = TRUE),
+                   each = n_timepoints)
+
+  random_intercept <- rep(rnorm(n_subjects, 0, sigma_b),
+                          each = n_timepoints)
+
+  linear_predictor <- beta[1] + beta[2] * treatment +
+                      beta[3] * time + beta[4] * treatment * time +
+                      random_intercept
+
+  y <- rbinom(length(linear_predictor), 1, plogis(linear_predictor))
+
+  data.frame(
+    subject_id = subject_id,
+    time = time,
+    treatment = factor(treatment, labels = c("control", "treatment")),
+    y = y
+  )
+}
+
+
+#' Create simulation grid
+#'
+#' @param n_subjects Vector of sample sizes
+#' @param beta_interaction Vector of interaction effects
+#' @param sigma_b Vector of random effect SDs
+#' @param n_sims Number of simulations per scenario
+#'
+#' @return Data frame with one row per simulation
+#' @export
+create_simulation_grid <- function(n_subjects = c(50, 100, 200),
+                                   beta_interaction = c(0, 0.3, 0.5),
+                                   sigma_b = c(0.5, 1.0),
+                                   n_sims = 1000) {
+  scenarios <- expand.grid(
+    n_subjects = n_subjects,
+    beta_interaction = beta_interaction,
+    sigma_b = sigma_b,
+    stringsAsFactors = FALSE
+  )
+  scenarios$scenario_id <- seq_len(nrow(scenarios))
+
+  sim_grid <- scenarios[rep(seq_len(nrow(scenarios)), each = n_sims), ]
+  sim_grid$sim_id <- rep(seq_len(n_sims), times = nrow(scenarios))
+  sim_grid$seed <- seq_len(nrow(sim_grid))
+  rownames(sim_grid) <- NULL
+
+  sim_grid
+}
+```
+
+**Create `R/fit_models.R`**:
+
+```r
+#' Fit GEE model
+#'
+#' @param data Data from simulate_longitudinal_binary
+#' @param corstr Correlation structure
+#'
+#' @return List with estimate, se, converged
+#' @export
+fit_gee <- function(data, corstr = "exchangeable") {
+  if (!requireNamespace("geepack", quietly = TRUE)) {
+    stop("Package 'geepack' required")
+  }
+
+  tryCatch({
+    model <- geepack::geeglm(
+      y ~ treatment * time,
+      family = binomial,
+      data = data,
+      id = subject_id,
+      corstr = corstr
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std.err"],
+      converged = TRUE,
+      method = paste0("gee_", substr(corstr, 1, 4))
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE,
+         method = paste0("gee_", substr(corstr, 1, 4)))
+  })
+}
+
+
+#' Fit GLMM
+#'
+#' @param data Data from simulate_longitudinal_binary
+#'
+#' @return List with estimate, se, converged
+#' @export
+fit_glmm <- function(data) {
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("Package 'lme4' required")
+  }
+
+  tryCatch({
+    model <- lme4::glmer(
+      y ~ treatment * time + (1 | subject_id),
+      family = binomial,
+      data = data,
+      control = lme4::glmerControl(optimizer = "bobyqa")
+    )
+    coefs <- summary(model)$coefficients
+    int_row <- grep("treatment.*:time", rownames(coefs))
+
+    list(
+      estimate = coefs[int_row, "Estimate"],
+      se = coefs[int_row, "Std. Error"],
+      converged = !lme4::isSingular(model),
+      method = "glmm"
+    )
+  }, error = function(e) {
+    list(estimate = NA, se = NA, converged = FALSE, method = "glmm")
+  })
+}
+
+
+#' Fit all models
+#'
+#' @param data Data from simulate_longitudinal_binary
+#'
+#' @return Data frame with results from all methods
+#' @export
+fit_all_models <- function(data) {
+  results <- list(
+    gee_exch = fit_gee(data, "exchangeable"),
+    gee_ar1 = fit_gee(data, "ar1"),
+    gee_ind = fit_gee(data, "independence"),
+    glmm = fit_glmm(data)
+  )
+
+  do.call(rbind, lapply(names(results), function(name) {
+    r <- results[[name]]
+    data.frame(
+      method = name,
+      estimate = r$estimate,
+      se = r$se,
+      converged = r$converged
+    )
+  }))
+}
+```
+
+**Create `R/performance_metrics.R`**:
+
+```r
+#' Calculate performance metrics
+#'
+#' @param estimates Vector of estimates
+#' @param ses Vector of standard errors
+#' @param true_value True parameter value
+#' @param alpha Significance level
+#'
+#' @return Named vector of metrics
+#' @export
+calculate_performance <- function(estimates, ses, true_value, alpha = 0.05) {
+  valid <- !is.na(estimates) & !is.na(ses)
+  estimates <- estimates[valid]
+  ses <- ses[valid]
+
+  if (length(estimates) < 10) {
+    return(c(n_valid = length(estimates), bias = NA, coverage = NA, power = NA))
+  }
+
+  z <- qnorm(1 - alpha / 2)
+
+  bias <- mean(estimates) - true_value
+  empirical_se <- sd(estimates)
+  avg_se <- mean(ses)
+  se_ratio <- avg_se / empirical_se
+
+  lower <- estimates - z * ses
+  upper <- estimates + z * ses
+  coverage <- mean(lower <= true_value & upper >= true_value)
+
+  power <- mean(abs(estimates / ses) > z)
+
+  c(
+    n_valid = length(estimates),
+    bias = bias,
+    empirical_se = empirical_se,
+    avg_se = avg_se,
+    se_ratio = se_ratio,
+    coverage = coverage,
+    power = power
+  )
+}
+```
+
+# Step 6: Add Tests
+
+**Create `tests/testthat/test-simulate_data.R`**:
+
+```r
+test_that("simulate_longitudinal_binary returns correct structure", {
+  data <- simulate_longitudinal_binary(n_subjects = 10, seed = 42)
+
+  expect_s3_class(data, "data.frame")
+  expect_equal(nrow(data), 40)
+  expect_true(all(c("subject_id", "time", "treatment", "y") %in% names(data)))
+})
+
+test_that("simulate_longitudinal_binary respects seed", {
+  data1 <- simulate_longitudinal_binary(n_subjects = 20, seed = 123)
+  data2 <- simulate_longitudinal_binary(n_subjects = 20, seed = 123)
+
+  expect_identical(data1, data2)
+})
+
+test_that("simulate_longitudinal_binary produces valid outcomes", {
+  data <- simulate_longitudinal_binary(n_subjects = 100, seed = 42)
+
+  expect_true(all(data$y %in% c(0, 1)))
+})
+
+test_that("create_simulation_grid produces correct dimensions", {
+  grid <- create_simulation_grid(
+    n_subjects = c(50, 100),
+    beta_interaction = c(0, 0.3),
+    sigma_b = 0.5,
+    n_sims = 10
+  )
+
+  expect_equal(nrow(grid), 2 * 2 * 1 * 10)
+})
+```
+
+# Step 7: Move Full Simulation to Scripts
+
+**Create `analysis/scripts/02_run_simulation.R`**:
+
+```r
+# 02_run_simulation.R
+# Run full simulation - execute separately from manuscript
+# Usage: Rscript analysis/scripts/02_run_simulation.R
+
+library(furrr)
+library(progressr)
+
+source("R/simulate_data.R")
+source("R/fit_models.R")
+
+plan(multisession, workers = parallel::detectCores() - 1)
+
+sim_grid <- create_simulation_grid(
+  n_subjects = c(50, 100, 200),
+  beta_interaction = c(0, 0.3, 0.5),
+  sigma_b = c(0.5, 1.0),
+  n_sims = 1000
+)
+
+cat("Running", nrow(sim_grid), "simulations\n")
+
+run_one <- function(row) {
+  data <- simulate_longitudinal_binary(
+    n_subjects = row$n_subjects,
+    beta = c(-1, 0, 0.2, row$beta_interaction),
+    sigma_b = row$sigma_b,
+    seed = row$seed
+  )
+
+  results <- fit_all_models(data)
+  results$scenario_id <- row$scenario_id
+  results$sim_id <- row$sim_id
+  results
+}
+
+handlers(global = TRUE)
+
+with_progress({
+  p <- progressor(nrow(sim_grid))
+  results_list <- future_map(
+    seq_len(nrow(sim_grid)),
+    function(i) { p(); run_one(sim_grid[i, ]) },
+    .options = furrr_options(seed = TRUE)
+  )
+})
+
+results <- bind_rows(results_list)
+saveRDS(results, "analysis/data/derived_data/simulation_results.rds")
+cat("Saved to analysis/data/derived_data/simulation_results.rds\n")
+```
+
+# Step 8: Load Results into Manuscript
+
+Update `report.Rmd` to use cached results:
+
+```r
+# In load-results chunk:
+source("../../R/performance_metrics.R")
+results <- readRDS("../data/derived_data/simulation_results.rds")
+
+scenarios <- results |>
+  select(scenario_id) |>
+  distinct() |>
+  left_join(
+    create_simulation_grid(n_sims = 1) |>
+      select(scenario_id, n_subjects, beta_interaction, sigma_b) |>
+      distinct()
+  )
+
+# In compute-performance chunk:
+performance <- results |>
+  left_join(scenarios) |>
+  group_by(scenario_id, n_subjects, beta_interaction, sigma_b, method) |>
+  summarise(
+    perf = list(calculate_performance(estimate, se, first(beta_interaction))),
+    .groups = "drop"
+  ) |>
+  unnest_wider(perf)
+
+# In table-bias chunk:
+performance |>
+  filter(beta_interaction == 0.3) |>
+  select(n_subjects, sigma_b, method, bias) |>
+  pivot_wider(names_from = method, values_from = bias) |>
+  knitr::kable(digits = 3, caption = "Bias by sample size and method")
+
+# In fig-power chunk:
+performance |>
+  filter(beta_interaction != 0) |>
+  mutate(effect = paste("OR =", round(exp(beta_interaction), 2))) |>
+  ggplot(aes(n_subjects, power, color = method, linetype = factor(sigma_b))) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray") +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~effect) +
+  scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
+  labs(x = "Sample Size", y = "Power", color = "Method", linetype = "sigma") +
+  theme_minimal()
+```
+
+# Summary: Write as You Go for Simulations
+
+1. **Start with the manuscript**: Write your research question and ADEMP
+   framework before any code.
+
+2. **Develop inline**: Implement data generation and model fitting directly
+   in `report.Rmd` first. Test immediately with small examples.
+
+3. **Extract when working**: Move tested code to `R/` files once it's
+   reliable. Add unit tests for critical functions.
+
+4. **Run small in manuscript**: Keep small-scale validation simulations
+   in the manuscript so reviewers can see the code.
+
+5. **Cache full results**: Move production simulations to `analysis/scripts/`
+   and save results to `analysis/data/derived_data/`.
+
+6. **Load and report**: The manuscript loads cached results and presents
+   them. Changes to presentation don't require re-running simulations.
+
+# Companion Files
+
+Working implementations are available in
+`vignettes/workflow-simulation-study/`:
+
+- `R/simulate_data.R` - Data generation
+- `R/fit_models.R` - Model fitting
+- `R/performance_metrics.R` - Evaluation
+- `tests/testthat/` - Unit tests for each module
+- `analysis/scripts/02_run_simulation.R` - Full simulation runner
+- `analysis/report/report.Rmd` - Manuscript template
+
+# References
+
+Morris, T. P., White, I. R., & Crowther, M. J. (2019). Using simulation
+studies to evaluate statistical methods. *Statistics in Medicine*, 38(11),
+2074-2102.
+
+Liang, K. Y., & Zeger, S. L. (1986). Longitudinal data analysis using
+generalized linear models. *Biometrika*, 73(1), 13-22.
+
+Breslow, N. E., & Clayton, D. G. (1993). Approximate inference in generalized
+linear mixed models. *Journal of the American Statistical Association*,
+88(421), 9-25.
+
+Chamberlain, G. (1980). Analysis of covariance with qualitative data.
+*Review of Economic Studies*, 47(1), 225-238.
+
