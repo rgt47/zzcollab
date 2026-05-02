@@ -380,17 +380,39 @@ check_version_stamps() {
     fi
 
     # .github/workflows/r-package.yml
+    # Workflow files differ from Makefile/.Rprofile/Dockerfile: the body
+    # changes between versions, so a stamp-only bump would lie. Offer a
+    # full replacement from template instead, gated on y/N because it
+    # overwrites any local customizations.
     local workflow_file="$dir/.github/workflows/r-package.yml"
+    local template_workflow="${ZZCOLLAB_TEMPLATES_DIR}/workflows/r-package.yml"
+
     if [[ -f "$workflow_file" ]]; then
         local workflow_ver
         workflow_ver=$(extract_version "$workflow_file" "r-package.yml")
-        _maybe_record_fix "$workflow_file" "# zzcollab r-package.yml" "$workflow_ver"
-        print_version_status "r-package.yml" "$workflow_ver" || issues=$((issues + 1))
+        if ! print_version_status "r-package.yml" "$workflow_ver"; then
+            issues=$((issues + 1))
+            if [[ -t 0 ]] && [[ -f "$template_workflow" ]]; then
+                local replace_choice
+                read -r -p "    Replace with template (overwrites local edits)? [y/N]: " replace_choice
+                if [[ "$replace_choice" =~ ^[Yy]$ ]]; then
+                    if safe_cp "$template_workflow" "$workflow_file" && \
+                       sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
+                           "$workflow_file" && \
+                       rm -f "$workflow_file.bak"; then
+                        printf "    ${COL_GREEN}✓ Replaced r-package.yml (v%s)${COL_RESET}\n" \
+                            "$CURRENT_VERSION"
+                        issues=$((issues - 1))
+                    else
+                        printf "    ${COL_RED}✗ Failed to replace${COL_RESET}\n"
+                    fi
+                fi
+            fi
+        fi
     elif [[ -d "$dir/.github/workflows" ]]; then
         printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "r-package.yml"
         issues=$((issues + 1))
 
-        local template_workflow="${ZZCOLLAB_TEMPLATES_DIR}/workflows/r-package.yml"
         if [[ -t 0 ]] && [[ -f "$template_workflow" ]]; then
             local copy_choice
             read -r -p "    Copy from template? [Y/n]: " copy_choice
