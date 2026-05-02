@@ -142,7 +142,7 @@ In RStudio, create file `analysis/report/report.Rmd`:
     ---
     title: "Palmer Penguins Bill Dimensions Analysis"
     author: "Reproducible Research Team"
-    date: "2026-05-01"
+    date: "2026-05-02"
     output:
       html_document:
         toc: true
