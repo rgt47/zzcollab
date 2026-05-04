@@ -7,16 +7,15 @@
 4. [Installation & Distribution](#installation--distribution)
 5. [Team Collaboration Setup](#team-collaboration-setup)
 6. [Directory Structure](#directory-structure)
-7. [Navigation Shortcuts](#navigation-shortcuts)
-8. [Development Environments](#development-environments)
-9. [Package Management with renv](#package-management-with-renv)
-10. [Docker Environment](#docker-environment)
-11. [Build System with Make](#build-system-with-make)
-12. [GitHub Actions CI/CD](#github-actions-cicd)
-13. [R Interface Functions](#r-interface-functions)
-14. [Team Collaboration Workflows](#team-collaboration-workflows)
-15. [Common Tasks](#common-tasks)
-16. [Troubleshooting](#troubleshooting)
+7. [Development Environments](#development-environments)
+8. [Package Management with renv](#package-management-with-renv)
+9. [Docker Environment](#docker-environment)
+10. [Build System with Make](#build-system-with-make)
+11. [GitHub Actions CI/CD](#github-actions-cicd)
+12. [R Interface Functions](#r-interface-functions)
+13. [Team Collaboration Workflows](#team-collaboration-workflows)
+14. [Common Tasks](#common-tasks)
+15. [Troubleshooting](#troubleshooting)
 
 ## What is ZZCOLLAB?
 
@@ -439,31 +438,6 @@ your-project/
 | **Unit tests** | `tests/testthat/` | Tests for your R functions |
 | **Integration tests** | `tests/integration/` | Tests for analysis scripts |
 | **Tutorials** | `vignettes/` | Package examples and tutorials |
-
-## Navigation Shortcuts
-
-Convenient navigation scripts for quick directory access:
-
-```bash
-# First, generate the navigation scripts (one-time setup)
-./navigation_scripts.sh
-
-# Then use the generated navigation shortcuts
-./a     # → Navigate to ./data              (data files)
-./n     # → Navigate to ./analysis          (analysis files)
-./f     # → Navigate to ./analysis/figures  (figures)
-./t     # → Navigate to ./analysis/tables   (tables)
-./s     # → Navigate to ./scripts           (working R scripts)
-./m     # → Navigate to ./man               (function documentation)
-./e     # → Navigate to ./tests             (tests)
-./o     # → Navigate to ./docs              (documentation)
-./c     # → Navigate to ./archive           (archived files)
-./p     # → Navigate to ./analysis/report   (research paper)
-```
-
-**Setup**: Run `./navigation_scripts.sh` once to create the navigation shortcuts.
-
-**Usage**: `./a` to go to data directory, `./n` to go to analysis, etc. Each command opens a new shell in the target directory.
 
 ## Development Environments
 

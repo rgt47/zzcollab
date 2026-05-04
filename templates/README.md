@@ -126,24 +126,6 @@ make check-renv          # Validate package dependencies
 make help                # Show all available targets
 ```
 
-#### Navigation Shortcuts (Optional)
-
-Install one-letter navigation shortcuts for faster workflow:
-
-```bash
-# Install navigation functions
-./navigation_scripts.sh --install
-
-# Now you can jump to directories from anywhere in the project:
-r     # → project root
-a     # → analysis/
-s     # → analysis/scripts/
-p     # → analysis/report/
-f     # → analysis/figures/
-d     # → data/
-nav   # → list all shortcuts
-```
-
 #### Getting Help
 
 The zzcollab framework has a comprehensive git-like help system:

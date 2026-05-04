@@ -269,11 +269,6 @@ if [[ "$DEV_MODE" == "true" ]]; then
     log_info "Symlinking zzcollab.sh..."
     ln -sf "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/zzcollab.sh"
 
-    if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
-        log_info "Symlinking navigation_scripts.sh..."
-        ln -sf "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/navigation_scripts.sh"
-    fi
-
     # Save source directory for reference
     echo "$SCRIPT_DIR" > "$ZZCOLLAB_HOME/.source_dir"
 
@@ -293,12 +288,6 @@ else
     log_info "Copying zzcollab.sh..."
     cp "$SCRIPT_DIR/zzcollab.sh" "$ZZCOLLAB_HOME/"
     chmod +x "$ZZCOLLAB_HOME/zzcollab.sh"
-
-    if [[ -f "$SCRIPT_DIR/navigation_scripts.sh" ]]; then
-        log_info "Copying navigation_scripts.sh..."
-        cp "$SCRIPT_DIR/navigation_scripts.sh" "$ZZCOLLAB_HOME/"
-        chmod +x "$ZZCOLLAB_HOME/navigation_scripts.sh"
-    fi
 
     # Update version in constants
     if [[ -f "$ZZCOLLAB_HOME/lib/constants.sh" ]]; then

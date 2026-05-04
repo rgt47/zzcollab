@@ -302,7 +302,7 @@ track_item() {
         directory)
             if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg dir "$data1" '.directories += [$dir]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                if jq --arg dir "$data1" '.directories |= (. + [$dir] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
                     if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for directory: $data1"
                         return 1
@@ -312,16 +312,18 @@ track_item() {
                     return 1
                 fi
             elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                echo "directory:$data1" >> "${MANIFEST_TXT:-}" || {
-                    log_error "Failed to append to text manifest for directory: $data1"
-                    return 1
-                }
+                if ! grep -qxF "directory:$data1" "${MANIFEST_TXT:-}" 2>/dev/null; then
+                    echo "directory:$data1" >> "${MANIFEST_TXT:-}" || {
+                        log_error "Failed to append to text manifest for directory: $data1"
+                        return 1
+                    }
+                fi
             fi
             ;;
         file)
             if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg file "$data1" '.files += [$file]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                if jq --arg file "$data1" '.files |= (. + [$file] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
                     if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for file: $data1"
                         return 1
@@ -331,16 +333,18 @@ track_item() {
                     return 1
                 fi
             elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                echo "file:$data1" >> "${MANIFEST_TXT:-}" || {
-                    log_error "Failed to append to text manifest for file: $data1"
-                    return 1
-                }
+                if ! grep -qxF "file:$data1" "${MANIFEST_TXT:-}" 2>/dev/null; then
+                    echo "file:$data1" >> "${MANIFEST_TXT:-}" || {
+                        log_error "Failed to append to text manifest for file: $data1"
+                        return 1
+                    }
+                fi
             fi
             ;;
         template)
             if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg template "$data1" --arg dest "$data2" '.template_files += [{"template": $template, "destination": $dest}]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                if jq --arg template "$data1" --arg dest "$data2" '.template_files |= (. + [{"template": $template, "destination": $dest}] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
                     if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for template: $data1 -> $data2"
                         return 1
@@ -350,16 +354,18 @@ track_item() {
                     return 1
                 fi
             elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                echo "template:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
-                    log_error "Failed to append to text manifest for template: $data1"
-                    return 1
-                }
+                if ! grep -qxF "template:$data1:$data2" "${MANIFEST_TXT:-}" 2>/dev/null; then
+                    echo "template:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
+                        log_error "Failed to append to text manifest for template: $data1"
+                        return 1
+                    }
+                fi
             fi
             ;;
         symlink)
             if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
                 tmp=$(mktemp)
-                if jq --arg link "$data1" --arg target "$data2" '.symlinks += [{"link": $link, "target": $target}]' "${MANIFEST_FILE:-}" > "$tmp"; then
+                if jq --arg link "$data1" --arg target "$data2" '.symlinks |= (. + [{"link": $link, "target": $target}] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
                     if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
                         log_error "Failed to update manifest for symlink: $data1 -> $data2"
                         return 1
@@ -369,10 +375,12 @@ track_item() {
                     return 1
                 fi
             elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                echo "symlink:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
-                    log_error "Failed to append to text manifest for symlink: $data1"
-                    return 1
-                }
+                if ! grep -qxF "symlink:$data1:$data2" "${MANIFEST_TXT:-}" 2>/dev/null; then
+                    echo "symlink:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
+                        log_error "Failed to append to text manifest for symlink: $data1"
+                        return 1
+                    }
+                fi
             fi
             ;;
         docker_image)
@@ -388,6 +396,11 @@ track_item() {
                     return 1
                 fi
             elif [[ -f "${MANIFEST_TXT:-}" ]]; then
+                # Match JSON's overwrite semantics: drop any prior docker_image line.
+                if grep -q "^docker_image:" "${MANIFEST_TXT:-}" 2>/dev/null; then
+                    grep -v "^docker_image:" "${MANIFEST_TXT:-}" > "${MANIFEST_TXT:-}.tmp" \
+                        && mv "${MANIFEST_TXT:-}.tmp" "${MANIFEST_TXT:-}"
+                fi
                 echo "docker_image:$data1" >> "${MANIFEST_TXT:-}" || {
                     log_error "Failed to append to text manifest for docker_image: $data1"
                     return 1

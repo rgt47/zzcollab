@@ -15,7 +15,6 @@
 ^validate_package_environment\.R$
 ^check_rprofile_options\.R$
 ^setup_renv\.R$
-^navigation_scripts\.sh$
 ^zzcollab-uninstall\.sh$
 ^workflow\.md$
 ^ZZCOLLAB_USER_GUIDE\.md$

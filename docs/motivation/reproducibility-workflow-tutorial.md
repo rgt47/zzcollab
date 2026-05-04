@@ -523,53 +523,6 @@ jq '.R.Repositories[0].URL' renv.lock
 # Should show RSPM snapshot date
 ```
 
-### Test Navigation Functions
-
-```bash
-# Enter container
-make r
-```
-
-**Inside Container**:
-```bash
-# Start in project root
-pwd
-# /home/analyst/project
-
-# Jump to analysis directory
-a
-pwd
-# /home/analyst/project/analysis
-
-# Jump to scripts
-s
-pwd
-# /home/analyst/project/analysis/scripts
-
-# Jump to figures
-f
-pwd
-# /home/analyst/project/analysis/figures
-
-# Jump to data
-d
-pwd
-# /home/analyst/project/analysis/data
-
-# Jump back to analysis
-a
-pwd
-# /home/analyst/project/analysis
-
-# Works from any subdirectory!
-cd raw_data
-s  # Jumps to scripts from raw_data
-pwd
-# /home/analyst/project/analysis/scripts
-
-exit
-```
-
 ### Test Validation Without Host R
 
 ```bash

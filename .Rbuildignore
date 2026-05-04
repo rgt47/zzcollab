@@ -28,7 +28,6 @@
 ^\.claude$
 ^docs$
 ^test_dir$
-^navigation_scripts\.sh$
 ^setup_renv\.R$
 ^zzcollab-uninstall\.sh$
 ^temp$

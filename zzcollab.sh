@@ -806,66 +806,6 @@ cmd_config() {
     esac
 }
 
-cmd_nav() {
-    local action="${1:-}"
-    local nav_script="$ZZCOLLAB_HOME/navigation_scripts.sh"
-
-    if [[ ! -f "$nav_script" ]]; then
-        log_error "Navigation script not found: $nav_script"
-        return 1
-    fi
-
-    case "$action" in
-        install)
-            "$nav_script" --install
-            ;;
-        uninstall)
-            "$nav_script" --uninstall
-            ;;
-        show|"")
-            cat << 'EOF'
-Navigation shortcuts (after 'zzcollab nav install'):
-
-  r  - project Root
-  a  - analysis/
-  d  - analysis/data/
-  w  - analysis/data/raw_data/
-  y  - analysis/data/derived_data/
-  f  - analysis/figures/
-  t  - analysis/tables/
-  s  - analysis/scripts/
-  p  - analysis/report/
-  e  - tests/
-  o  - docs/
-  m  - man/
-
-  mr - run 'make r' from anywhere in project
-
-Install: zzcollab nav install
-Remove:  zzcollab nav uninstall
-EOF
-            ;;
-        help|--help|-h)
-            cat << 'EOF'
-Usage: zzcollab nav <action>
-
-Actions:
-  install     Add navigation shortcuts to shell config
-  uninstall   Remove navigation shortcuts
-  show        Display available shortcuts (default)
-
-Navigation shortcuts provide single-letter commands to quickly
-navigate within your project from any subdirectory.
-EOF
-            ;;
-        *)
-            log_error "Unknown action: $action"
-            log_info "Valid actions: install, uninstall, show"
-            return 1
-            ;;
-    esac
-}
-
 cmd_uninstall() {
     local dry_run=false
     local force=false
@@ -1026,7 +966,6 @@ cmd_help() {
     require_module "help"
     local topic="${1:-}"
     case "$topic" in
-        nav|navigation) cmd_nav --help ;;
         validate) cmd_validate --help 2>/dev/null || true ;;
         uninstall) cmd_uninstall --help ;;
         *) show_help "$topic" ;;
@@ -1665,7 +1604,6 @@ Management:
   validate       Check project structure
   config         Configuration management
   list           List profiles, libs, packages
-  nav            Navigation shortcuts
   help           Show help
 
 Options:
@@ -1881,11 +1819,6 @@ main() {
             list)
                 shift
                 cmd_list "$@"
-                exit $?
-                ;;
-            nav)
-                shift
-                cmd_nav "$@"
                 exit $?
                 ;;
             uninstall)

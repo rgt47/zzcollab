@@ -274,13 +274,6 @@ Adding Packages:
    install.packages("tidyverse")
    q()                      # Automatically captured in renv.lock
 
-Navigation Shortcuts (optional):
-   zzc nav install
-   r → project root
-   a → analysis/
-   s → analysis/scripts/
-   p → analysis/report/
-
 Troubleshooting:
    make docker-build 2>&1 | tee build.log
 
@@ -576,11 +569,7 @@ Common Issues:
    make docker-test
    # Check test output for specific failures
 
-4. Navigation shortcuts don't work:
-   zzc nav install
-   source ~/.zshrc          # or ~/.bashrc
-
-5. Team image not found:
+4. Team image not found:
    # Team lead must push first:
    make docker-build && zzc dockerhub
 
@@ -843,7 +832,6 @@ COMMANDS:
       config <sub> ...     Configuration (init|set|get|list|...)
       validate             Check project structure and dependencies
       doctor        Detect outdated template files
-      nav <sub>            Navigation shortcuts (install|uninstall)
       rm <feature> [-f]    Remove a feature (docker|renv|git|...)
       uninstall            Remove all zzcollab artifacts
       list profiles        List available Docker profiles

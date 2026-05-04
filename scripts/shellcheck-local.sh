@@ -144,16 +144,14 @@ run_shellcheck() {
     fi
     
     # Check utility scripts
-    for script in install.sh navigation_scripts.sh; do
-        if [[ -f "$script" ]]; then
-            ((total_files++))
-            if check_file "$script"; then
-                ((passed_files++))
-            else
-                ((failed_files++))
-            fi
+    if [[ -f "install.sh" ]]; then
+        ((total_files++))
+        if check_file "install.sh"; then
+            ((passed_files++))
+        else
+            ((failed_files++))
         fi
-    done
+    fi
     
     # Check template scripts
     if [[ -d "templates" ]]; then

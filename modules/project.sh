@@ -196,6 +196,7 @@ create_renv_setup() {
     # Check if renv.lock already exists
     if [[ -f "renv.lock" ]]; then
         log_info "renv.lock already exists, skipping renv init"
+        track_file "renv.lock"
         return 0
     fi
 
@@ -257,6 +258,10 @@ setup_project() {
     create_renv_setup || return 1
     create_github_workflows || return 1
     create_docs_files || return 1
+
+    # Adopt-mode: Dockerfile is written by the docker module, not here.
+    # Track it on retrofit so `zzc uninstall` can remove it later.
+    [[ -f "Dockerfile" ]] && track_file "Dockerfile"
 
     log_success "Project setup complete"
     return 0
