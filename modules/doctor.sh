@@ -40,6 +40,7 @@ CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"
 # --fix state (populated by check_version_stamps, applied after check_workspace)
 FIX_MODE=false
 DRY_RUN=false
+QUIET_MODE=false
 declare -a FIX_TARGETS=()
 
 readonly COL_RESET='\033[0m'
@@ -505,8 +506,51 @@ check_ci_status() {
 
 # Check a single workspace directory
 # Returns 0 if all checks pass, 1 if any issues found
+# Quiet-mode check: machine-readable per-repo line.
+# Format: <path>\t<errors>\t<warnings>\t<comma_sep_codes>
+# Codes: missing-file:<f>, missing-dir:<d>, no-manifest
+# Returns 1 if any errors, else 0.
+quiet_check_workspace() {
+    local dir="$1"
+    local errors=0 warnings=0
+    local -a codes=()
+
+    local f d
+    for f in "${REQUIRED_FILES[@]}"; do
+        if [[ ! -f "$dir/$f" ]]; then
+            errors=$((errors + 1))
+            codes+=("missing-file:$f")
+        fi
+    done
+    for d in "${REQUIRED_DIRS[@]}"; do
+        if [[ ! -d "$dir/$d" ]]; then
+            errors=$((errors + 1))
+            codes+=("missing-dir:$d")
+        fi
+    done
+    if [[ ! -f "$dir/.zzcollab/manifest.json" ]] \
+       && [[ ! -f "$dir/.zzcollab/manifest.txt" ]]; then
+        warnings=$((warnings + 1))
+        codes+=("no-manifest")
+    fi
+
+    local code_csv=""
+    if [[ ${#codes[@]} -gt 0 ]]; then
+        local IFS=,
+        code_csv="${codes[*]}"
+    fi
+    printf '%s\t%d\t%d\t%s\n' "$dir" "$errors" "$warnings" "$code_csv"
+    [[ $errors -eq 0 ]]
+}
+
 check_workspace() {
     local dir="$1"
+
+    if [[ "$QUIET_MODE" == "true" ]]; then
+        quiet_check_workspace "$dir"
+        return $?
+    fi
+
     local total_issues=0
 
     # Reset per-workspace fix state
@@ -687,12 +731,14 @@ scan_directory() {
     done < <(find "$parent" -maxdepth 3 -name "Makefile" -type f 2>/dev/null)
 
     if [[ $found -eq 0 ]]; then
-        echo "No zzcollab workspaces found under: $parent"
+        [[ "$QUIET_MODE" == "true" ]] || echo "No zzcollab workspaces found under: $parent"
         return 0
     fi
 
-    echo "---"
-    echo "Scanned $found workspace(s), current template version: v${CURRENT_VERSION}"
+    if [[ "$QUIET_MODE" != "true" ]]; then
+        echo "---"
+        echo "Scanned $found workspace(s), current template version: v${CURRENT_VERSION}"
+    fi
     return $any_outdated
 }
 
@@ -722,9 +768,13 @@ main() {
                 DRY_RUN=true
                 shift
                 ;;
+            --porcelain)
+                QUIET_MODE=true
+                shift
+                ;;
             help|--help|-h)
-                echo "Usage: zzc doctor [DIR ...] [--fix|--dry-run]"
-                echo "       zzc doctor --scan <parent-dir> [--fix|--dry-run]"
+                echo "Usage: zzc doctor [DIR ...] [--fix|--dry-run|--porcelain]"
+                echo "       zzc doctor --scan <parent-dir> [--fix|--dry-run|--porcelain]"
                 echo ""
                 echo "Workspace health checks:"
                 echo "  - Required files    DESCRIPTION, renv.lock, Makefile, etc."
@@ -738,6 +788,10 @@ main() {
                 echo "  --fix          Bump outdated stamp lines in place. Only the"
                 echo "                 stamp line is modified; other content preserved."
                 echo "  --dry-run      Preview --fix actions without writing."
+                echo "  --porcelain    Machine-readable output, one line per repo."
+                echo "                 Format: <path>\\t<errors>\\t<warnings>\\t<codes>"
+                echo "                 Codes: missing-file:<f>, missing-dir:<d>,"
+                echo "                        no-manifest"
                 echo "  help           Show this help"
                 echo ""
                 echo "Reference: docs/workspace-structure.md"
@@ -755,8 +809,10 @@ main() {
         dirs=(".")
     fi
 
-    echo "zzcollab template version: v${CURRENT_VERSION}"
-    echo ""
+    if [[ "$QUIET_MODE" != "true" ]]; then
+        echo "zzcollab template version: v${CURRENT_VERSION}"
+        echo ""
+    fi
 
     local exit_code=0
 
