@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc manifest-retrofit-session.md -o manifest-retrofit-session.pdf --pdf-engine=xelatex -V monofont='DejaVu Sans Mono')",
+      "Bash(open *)"
+    ]
+  }
+}

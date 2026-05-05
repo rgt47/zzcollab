@@ -197,6 +197,7 @@ create_renv_setup() {
     if [[ -f "renv.lock" ]]; then
         log_info "renv.lock already exists, skipping renv init"
         track_file "renv.lock"
+        [[ -f ".Rprofile" ]] && track_file ".Rprofile"
         return 0
     fi
 
