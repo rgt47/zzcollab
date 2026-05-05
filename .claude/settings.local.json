@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(pandoc manifest-retrofit-session.md -o manifest-retrofit-session.pdf --pdf-engine=xelatex -V monofont='DejaVu Sans Mono')",
-      "Bash(open *)"
+      "Bash(open *)",
+      "Bash(timeout 120 bash tests/shell/test-integration.sh)"
     ]
   }
 }
