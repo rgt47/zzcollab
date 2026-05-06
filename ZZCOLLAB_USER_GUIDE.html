@@ -177,7 +177,7 @@
 <th>Packages</th>
 <th>Required Libs</th>
 </tr></thead><tbody><tr><td><code>minimal</code></td>
-<td>renv, devtools, usethis, testthat, roxygen2</td>
+<td>renv, devtools, usethis, tinytest, roxygen2</td>
 <td>minimal</td>
 </tr><tr><td><code>tidyverse</code></td>
 <td>renv, devtools, tidyverse, here</td>
@@ -221,8 +221,9 @@
 ├── R/                          # Reusable R functions
 ├── man/                        # Function documentation
 ├── tests/
-│   ├── testthat.R              # Test runner
-│   └── testthat/
+│   └── tinytest.R              # Test runner
+├── inst/
+│   └── tinytest/
 │       └── test-basic.R        # Example test
 ├── analysis/
 │   ├── data/
@@ -479,7 +480,7 @@
 <p><strong>Author:</strong> <code>author-name</code>, <code>author-email</code>, <code>author-orcid</code>, <code>author-affiliation</code>, <code>author-affiliation-full</code>, <code>author-roles</code></p>
 <p><strong>Docker:</strong> <code>dockerhub-account</code>, <code>profile-name</code>, <code>r-version</code>, <code>docker-registry</code> (default: docker.io), <code>docker.platform</code> (default: linux/amd64)</p>
 <p><strong>GitHub:</strong> <code>github-account</code>, <code>github-default-visibility</code> (default: private), <code>github-default-branch</code> (default: main)</p>
-<p><strong>R Package:</strong> <code>min-r-version</code> (default: 4.1.0), <code>testthat-edition</code> (default: 3), <code>vignette-builder</code> (default: knitr)</p>
+<p><strong>R Package:</strong> <code>min-r-version</code> (default: 4.1.0), <code>vignette-builder</code> (default: knitr)</p>
 <p><strong>Code Style:</strong> <code>line-length</code> (default: 78), <code>use-native-pipe</code> (default: true), <code>assignment</code> (default: arrow), <code>naming-convention</code></p>
 <p><strong>License:</strong> <code>license-type</code> (default: GPL-3), <code>license-year</code>, <code>license-holder</code></p>
 <p><strong>CI/CD:</strong> <code>cicd.r-versions</code>, <code>cicd.run-coverage</code> (default: true), <code>cicd.coverage-threshold</code> (default: 80)</p>
