@@ -275,28 +275,239 @@ improves reliability of the current single-job workflow. The tiered
 restructure is the larger change and addresses the underlying category
 error.
 
-## 9. Conclusion
+## 9. Lessons from Implementation
 
-The question this paper addresses is not "how do we make CI pass," but
-"what should CI check, given what zzcollab is for." The framework's
-purpose is research-compendium reproducibility. The conventional
-R-package CI idiom inherited from the broader R ecosystem is a
-reasonable starting point but does not align with that purpose. A
-three-tier model (environment integrity, code correctness, end-to-end
+The recommendations in Section 8 were tested by application to two
+projects: zzobj2fig (a tool package in the zzcollab framework) and mci
+(a research compendium). The implementation surfaced findings not
+anticipated by the original analysis. They are recorded here as
+diagnostic and design lessons rather than completion claims; at the
+time of writing, the new workflows have been authored but their CI
+runs have not yet been observed end-to-end.
+
+### 9.1 The lockfile URL is the silent failure mode
+
+The default lockfile written by `renv::init()` in a zzcollab project
+records a single repository entry:
+
+```json
+{"Name": "CRAN", "URL": "https://packagemanager.posit.co/cran/latest"}
+```
+
+The URL `cran/latest`, without the `__linux__/<distro>/` segment,
+serves source tarballs only. Posit Package Manager only returns
+binaries when the URL contains the OS-specific path. Consequently,
+every `renv::restore()` call source-compiles every package, even
+inside a container whose OS is supported by Posit's binary repository.
+
+Two further issues compound:
+
+1. The base name `latest` is a moving target. On any restore, renv
+   may decide that the lockfile-recorded version is unobtainable and
+   "repair" the dependency by installing whatever CRAN currently
+   serves. In one observed restore, twenty-two packages were silently
+   upgraded relative to the lockfile and three new packages were
+   added. The lockfile failed its core function on a single round trip.
+
+2. The lockfile records a substantial fraction of packages with
+   `Repository: "RSPM"` but does not include an `RSPM` entry in the
+   `Repositories` block. Renv falls back to `getOption('repos')` to
+   resolve those packages, with behavior that varies by renv version.
+
+The fix is to pin `R$Repositories` at init time to a date-stamped
+Posit binary URL with the correct OS segment, and to add a parallel
+`RSPM` entry pointing to the same URL.
+
+### 9.2 The .Rprofile auto-restore races the workflow
+
+The zzcollab `.Rprofile` template fires `renv::restore(prompt = FALSE)`
+on R session start when `ZZCOLLAB_AUTO_RESTORE` is unset or `true`.
+The CI workflow also invokes `renv::restore()` explicitly. Both
+mechanisms can fire, sometimes in inconsistent orders relative to
+other workflow steps. Setting `ZZCOLLAB_AUTO_RESTORE=false` in the
+workflow environment hands restore control to the workflow and
+removes the race.
+
+### 9.3 Misleading symptoms in CI logs
+
+A prominent warning in failed CI logs read
+
+```
+curl does not appear to be installed; downloads will fail.
+```
+
+This warning anchored an early diagnosis that attributed the failure
+to a missing `curl` command-line binary in the rocker container. The
+diagnosis was incorrect. Renv warns about the absence of the curl
+CLI but transparently falls back to R's `utils::download.file()`,
+which uses libcurl (the C library, present via `libcurl4-openssl-dev`)
+and completes downloads successfully. The actual failure was a
+version mismatch: CI attempted to install `Rcpp 1.1.1-1` (a binary
+build identifier) while the lockfile pinned `Rcpp 1.0.14`, with the
+mismatch produced by interaction between the GitHub Actions cache,
+the in-lockfile source URL, and the `.Rprofile` repository override.
+
+The lesson is procedural: when a CI failure log presents multiple
+candidate causes, do not anchor on the most visually prominent one.
+Trace the full call chain. A warning is not a failure unless its
+absence would have prevented the failure.
+
+### 9.4 Tool packages and compendia have different CI needs
+
+zzcollab generates project scaffolding for both tool packages
+(zzobj2fig is one example: a package whose purpose is to expose
+functions for use elsewhere) and research compendia (mci is one
+example: a package whose primary deliverable is a rendered analysis
+report). The framework's default `r-package.yml` workflow treats
+both project types identically.
+
+The two project types have different CI needs. A tool package's CI
+should answer "does the package install, pass `R CMD check`, and run
+its tests?" The community's canonical answer is the
+`r-lib/actions/setup-renv@v2` pattern (Section 10.1) without a
+container. A compendium's CI should answer the same questions plus
+"does the analysis pipeline render to its expected output in a clean
+environment?" The tiered model proposed in Section 5 is appropriate
+for compendia but adds unnecessary complexity for tool packages.
+
+The framework's default workflow produced different real-world
+behaviors in the two cases despite identical configuration. Tool
+package CI was failing for reasons related to renv-in-container
+mechanics; compendium CI was passing despite the same configuration
+because the test surface happened not to expose those failure modes.
+
+### 9.5 Empirical reliability favors simpler workflows
+
+Across the projects audited during this work:
+
+| Workflow | Approach | Pass rate |
+|----------|----------|-----------|
+| v2.2.0 | `rocker/verse:latest`, DESCRIPTION-based, no renv in CI | 3 of 4 (75%) |
+| v2.4.0-A | Pinned `rocker/tidyverse`, renv-restore-in-container | 1 of 5 (20%) |
+
+The newer workflow's narrower scope and increased complexity did not
+buy reliability. The simplest reliable thing observed was the
+`setup-renv@v2` action pattern used in zzobj2fig's separate
+`pkgdown.yaml` and `test-coverage.yaml` workflows, which were never
+failing during the period the main workflow was. That pattern is
+roughly twenty lines of YAML, requires no Docker container, and
+handles caching automatically.
+
+## 10. Updated Implementation Pattern
+
+The recommendations in Section 8 should be revised in light of
+Sections 9.4 and 9.5. The framework should distinguish project type
+at scaffolding time and emit one of two different workflow templates.
+
+### 10.1 Tool packages
+
+For projects whose deliverable is the package itself, the workflow
+should follow the canonical R-package CI pattern:
+
+```yaml
+name: R-CMD-check
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-renv@v2
+      - uses: r-lib/actions/check-r-package@v2
+```
+
+`setup-renv@v2` handles renv installation, lockfile restore, and
+GitHub Actions caching. `use-public-rspm: true` uses the Posit Public
+Package Manager for binary packages on Linux. No Docker container is
+needed in CI; the container remains useful for local development.
+
+Optionally, this can be extended to a matrix across R versions and
+operating systems at no significant additional cost.
+
+### 10.2 Compendia
+
+For projects whose deliverable is a rendered report, the tiered
+model from Section 5 is appropriate, but each tier should be built
+on the same `setup-renv@v2` pattern rather than a Docker container.
+The render tier (Tier 3) adds `setup-pandoc@v2` and
+`setup-tinytex@v2` for documents that require LaTeX, and uploads
+the rendered output as a build artifact:
+
+```yaml
+render:
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: r-lib/actions/setup-pandoc@v2
+    - uses: r-lib/actions/setup-tinytex@v2
+    - uses: r-lib/actions/setup-r@v2
+      with:
+        use-public-rspm: true
+    - uses: r-lib/actions/setup-renv@v2
+    - shell: Rscript {0}
+      run: rmarkdown::render('analysis/report/report.Rmd')
+    - uses: actions/upload-artifact@v4
+      with:
+        name: report
+        path: analysis/report/report.pdf
+```
+
+The validate and check tiers compose the same way, replacing the
+render step with `renv::status()` and `check-r-package@v2`
+respectively.
+
+### 10.3 Detecting project type at scaffolding
+
+`zzc analysis` and `zzc package` are reasonable distinct entry
+points; the framework already exposes paradigm flags for analysis,
+modeling, and other variants. The workflow template emitted should
+follow the paradigm chosen at init, with `analysis` and
+`manuscript` paradigms receiving the tiered compendium template
+and other paradigms receiving the tool-package template. A project
+that switches type later can be re-templated by the existing
+`zzc doctor` upgrade path, which the patches in this work
+restructured to handle full-content workflow replacement rather
+than version-stamp bumping.
+
+## 11. Conclusion
+
+The question this paper addresses is not "how do we make CI pass,"
+but "what should CI check, given what zzcollab is for." The
+framework's purpose is research-compendium reproducibility, but its
+output is sometimes a tool package whose CI needs are conventionally
+different. Recognising this distinction is itself part of the
+contribution.
+
+The conventional R-package CI idiom inherited from the broader R
+ecosystem is a reasonable starting point but did not align with the
+framework's stated purpose for compendium projects. A three-tier
+model (environment integrity, code correctness, end-to-end
 reproduction) addresses the regressions a compendium author actually
-cares about, separates checks by cost and cadence, and produces
-informative failures rather than infrastructure noise.
+cares about. For tool packages, the conventional `setup-renv@v2`
+pattern is the right default; for compendia, the tiered model built
+on the same pattern is the right default.
 
-The recommendation for current zzcollab projects is incremental: fix
-the lockfile URL pinning first, since that improves reliability without
-restructuring; then split the workflow into the three tiers as a
-deliberate framework upgrade; and only then consider the secondary
-question of whether to retain renv inside CI versus relying on
-DESCRIPTION-based dependency installation. The order matters because the
-first change is cheap and reduces noise sufficient to evaluate the
-later, larger changes on their own merits.
+The recommendation for current zzcollab projects is incremental:
+fix the lockfile URL pinning first, since that improves reliability
+without restructuring and addresses a silent reproducibility failure
+mode that affects all projects regardless of CI strategy; then
+distinguish project type and apply the appropriate template; and
+only then consider the secondary question of how aggressively to
+verify outputs against recorded baselines.
+
+Several findings from implementation were not anticipated in the
+original analysis: the lockfile URL is itself the most consequential
+defect, the curl-CLI warning is a misleading symptom rather than a
+root cause, the .Rprofile auto-restore can race the workflow, and
+the framework's single CI default conflates two project types that
+should receive different treatment. These are now part of the
+record.
 
 ---
 
-*Rendered on 2026-05-05 at 17:57 PDT.*<br>
+*Rendered on 2026-05-06 at 07:02 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-strategy-tiered-model.md*
