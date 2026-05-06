@@ -101,13 +101,13 @@ require_module "constants" "core" "templates"
 # WORKSPACE INITIALIZATION HELPER
 #=============================================================================
 
-# Check if rrtools workspace is initialized (DESCRIPTION exists)
+# Check if zzcollab workspace is initialized (DESCRIPTION exists)
 # Returns 0 if initialized, 1 if not
 is_workspace_initialized() {
     [[ -f "DESCRIPTION" ]]
 }
 
-# Ensure rrtools workspace exists, prompt to create if not
+# Ensure zzcollab workspace exists, prompt to create if not
 # Returns 0 on success, 1 on failure/cancel
 ensure_workspace_initialized() {
     local context="${1:-operation}"
@@ -118,11 +118,11 @@ ensure_workspace_initialized() {
 
     echo "" >&2
     echo "═══════════════════════════════════════════════════════════" >&2
-    echo "  No rrtools workspace detected" >&2
+    echo "  No zzcollab workspace detected" >&2
     echo "═══════════════════════════════════════════════════════════" >&2
     echo "" >&2
     echo "  The '$context' command requires an initialized workspace." >&2
-    echo "  This creates an rrtools type research compendium structure:" >&2
+    echo "  This creates a zzcollab research compendium structure:" >&2
     echo "" >&2
     echo "    DESCRIPTION    R package metadata" >&2
     echo "    R/             Reusable functions" >&2
@@ -324,12 +324,12 @@ cmd_init() {
     echo "  Reproducibility Setup"
     echo "───────────────────────────────────────────────────────────"
     echo ""
-    echo "  Your rrtools workspace is ready for host R development."
+    echo "  Your zzcollab workspace is ready for host R development."
     echo "  For reproducible research, add package tracking and/or Docker."
     echo ""
     echo "  [r] renv only      - Package lockfile for reproducibility"
     echo "  [d] renv + Docker  - Full containerized environment (recommended)"
-    echo "  [n] None           - Just rrtools structure, configure later"
+    echo "  [n] None           - Just project structure, configure later"
     echo ""
 
     local repro_choice
@@ -380,7 +380,7 @@ cmd_docker() {
         esac
     done
 
-    # Ensure rrtools workspace is initialized
+    # Ensure zzcollab workspace is initialized
     ensure_workspace_initialized "docker" || exit 1
 
     # Check for outdated templates and prompt to update
@@ -524,7 +524,7 @@ EOF
         esac
     done
 
-    # Ensure rrtools workspace is initialized
+    # Ensure zzcollab workspace is initialized
     ensure_workspace_initialized "renv" || exit 1
 
     local project_name
@@ -1323,7 +1323,7 @@ cmd_quickstart() {
     echo "  Base image: $base_image"
     echo ""
     echo "  This will create:"
-    echo "    - rrtools research compendium structure"
+    echo "    - zzcollab research compendium structure"
     echo "    - renv.lock for package reproducibility"
     echo "    - Dockerfile for containerized environment"
     echo ""
@@ -1581,7 +1581,7 @@ show_usage() {
 Usage: zzcollab <commands...> [options]
 
 Commands (can be combined):
-  init       Create rrtools structure (DESCRIPTION, R/, analysis/)
+  init       Create zzcollab structure (DESCRIPTION, R/, analysis/)
   renv       Add renv package tracking (renv.lock)
   docker     Add Docker containerization (Dockerfile)
   git        Initialize git repository
@@ -1620,7 +1620,7 @@ Options:
 Examples:
   zzcollab analysis                # Quickstart: init + renv + docker (recommended)
   zzcollab minimal                 # Quickstart with minimal profile
-  zzcollab init                    # Create rrtools structure only
+  zzcollab init                    # Create zzcollab structure only
   zzcollab docker                  # Add Docker (auto-adds renv, init)
   zzcollab docker -b github        # Build image + create GitHub repo
   zzcollab rm docker               # Remove Docker files

@@ -222,7 +222,7 @@ New Project (recommended):
    zzcollab analysis          # Creates init + renv + docker, prompts to build
 
    # This sets up:
-   #   - rrtools structure (DESCRIPTION, R/, analysis/, tests/)
+   #   - zzcollab structure (DESCRIPTION, R/, analysis/, tests/)
    #   - renv.lock for package reproducibility
    #   - Dockerfile with analysis profile (tidyverse)
 
@@ -442,7 +442,7 @@ Usage:
   zzcollab docker --build            # Generate and build image
   zzcollab docker --profile analysis # Use specific profile
 
-Note: Automatically creates rrtools workspace if DESCRIPTION not found.
+Note: Automatically creates zzcollab workspace if DESCRIPTION not found.
 
 Two-Layer System:
   1. Docker Image (base environment, shared by team)
@@ -482,7 +482,7 @@ Usage:
   zzcollab renv                      # Set up renv without Docker
   zzcollab renv --r-version 4.4.2    # Specify R version
 
-Note: Automatically creates rrtools workspace if DESCRIPTION not found.
+Note: Automatically creates zzcollab workspace if DESCRIPTION not found.
 
 Auto-Snapshot Workflow (with Docker):
   make r
@@ -819,7 +819,7 @@ COMMANDS:
       rstudio              RStudio Server
 
     Setup commands:
-      init                 Create rrtools workspace only
+      init                 Create zzcollab workspace only
       renv                 Set up renv without Docker
       docker [opts]        Generate Dockerfile (--build to also build)
 
@@ -884,7 +884,7 @@ EXAMPLES:
 
     Modular Setup (step by step):
       mkdir myproject && cd myproject
-      zzc init                            # Create rrtools workspace
+      zzc init                            # Create zzcollab workspace
       zzc renv                            # Set up renv
       zzc docker --profile analysis       # Generate Dockerfile
       make docker-build                   # Build image

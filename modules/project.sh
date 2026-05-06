@@ -5,7 +5,7 @@ set -euo pipefail
 ##############################################################################
 #
 # PURPOSE: Project structure creation and R package setup
-#          - Directory structure (rrtools framework)
+#          - Directory structure (zzcollab framework)
 #          - R package files (DESCRIPTION, NAMESPACE, tests)
 #          - Analysis templates
 #          - Development tools (Makefile, .gitignore)

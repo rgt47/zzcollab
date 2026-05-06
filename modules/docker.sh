@@ -101,6 +101,61 @@ get_cran_r_version() {
     echo "$version"
 }
 
+# Validate that ${base_image}:${r_version} is published on Docker Hub. If
+# not, return the latest published semver (X.Y.Z) tag for that repository.
+# Rationale: CRAN sometimes lists an R release before rocker has published a
+# matching image (e.g., R 4.6.0 on rocker/tidyverse), which causes
+# `docker build` to fail with an unhelpful "manifest not found" error.
+# On network failure or unsupported registry, returns r_version unchanged.
+get_buildable_r_version() {
+    local base_image="$1"
+    local r_version="$2"
+
+    if [[ -z "$base_image" || -z "$r_version" ]]; then
+        echo "$r_version"
+        return 0
+    fi
+
+    # Only Docker Hub is supported for tag introspection here. Other
+    # registries (ghcr.io, private) get the version unchanged.
+    case "$base_image" in
+        */*/*|ghcr.io/*|gcr.io/*|*.azurecr.io/*|quay.io/*)
+            echo "$r_version"
+            return 0
+            ;;
+    esac
+
+    local repo="$base_image"
+    [[ "$repo" != */* ]] && repo="library/$repo"
+
+    local tags_json
+    tags_json=$(curl -fsSL --max-time 10 \
+        "https://hub.docker.com/v2/repositories/${repo}/tags/?page_size=100" 2>/dev/null) || {
+        echo "$r_version"
+        return 0
+    }
+
+    if printf '%s' "$tags_json" | grep -q "\"name\":\"${r_version}\""; then
+        echo "$r_version"
+        return 0
+    fi
+
+    local fallback
+    fallback=$(printf '%s' "$tags_json" \
+        | grep -oE '"name":"[0-9]+\.[0-9]+\.[0-9]+"' \
+        | sed -E 's/"name":"([^"]+)"/\1/' \
+        | sort -V | tail -1)
+
+    if [[ -z "$fallback" ]]; then
+        echo "$r_version"
+        return 0
+    fi
+
+    log_warn "Image ${base_image}:${r_version} not published on Docker Hub"
+    log_warn "Falling back to latest available tag: ${base_image}:${fallback}"
+    echo "$fallback"
+}
+
 create_renv_lock_minimal() {
     local r_ver="$1"
     local repo_url="${2:-https://packagemanager.posit.co/cran/__linux__/noble/latest}"
