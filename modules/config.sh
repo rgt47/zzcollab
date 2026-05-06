@@ -55,7 +55,6 @@ CONFIG_LICENSE_INCLUDE_FILE="true"
 # Extended configuration state - R Package
 CONFIG_RPACKAGE_MIN_R_VERSION=""
 CONFIG_RPACKAGE_ROXYGEN_VERSION=""
-CONFIG_RPACKAGE_TESTTHAT_EDITION=""
 CONFIG_RPACKAGE_ENCODING=""
 CONFIG_RPACKAGE_LANGUAGE=""
 CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
@@ -423,7 +422,6 @@ load_config() {
     CONFIG_LICENSE_INCLUDE_FILE="true"
     CONFIG_RPACKAGE_MIN_R_VERSION=""
     CONFIG_RPACKAGE_ROXYGEN_VERSION=""
-    CONFIG_RPACKAGE_TESTTHAT_EDITION=""
     CONFIG_RPACKAGE_ENCODING=""
     CONFIG_RPACKAGE_LANGUAGE=""
     CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
@@ -481,7 +479,6 @@ license.holder                  CONFIG_LICENSE_HOLDER
 license.include_file            CONFIG_LICENSE_INCLUDE_FILE
 r_package.min_r_version         CONFIG_RPACKAGE_MIN_R_VERSION
 r_package.roxygen_version       CONFIG_RPACKAGE_ROXYGEN_VERSION
-r_package.testthat_edition      CONFIG_RPACKAGE_TESTTHAT_EDITION
 r_package.encoding              CONFIG_RPACKAGE_ENCODING
 r_package.language              CONFIG_RPACKAGE_LANGUAGE
 r_package.vignette_builder      CONFIG_RPACKAGE_VIGNETTE_BUILDER
@@ -574,7 +571,6 @@ _get_config_value() {
         license.holder|license_holder) echo "$CONFIG_LICENSE_HOLDER" ;;
         # R Package fields
         r_package.min_r_version) echo "$CONFIG_RPACKAGE_MIN_R_VERSION" ;;
-        r_package.testthat_edition) echo "$CONFIG_RPACKAGE_TESTTHAT_EDITION" ;;
         # Docker fields
         docker.default_profile) echo "$CONFIG_DOCKER_DEFAULT_PROFILE" ;;
         docker.registry) echo "$CONFIG_DOCKER_REGISTRY" ;;
@@ -665,7 +661,6 @@ license:
 r_package:
   min_r_version: "4.1.0"       # Minimum R version (for native pipe)
   roxygen_version: "7.3.0"
-  testthat_edition: 3
   encoding: "UTF-8"
   language: "en-US"
   vignette_builder: "knitr"
@@ -981,9 +976,6 @@ _setup_advanced() {
         || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "r_package.min_r_version" "$val"
 
-    prompt_select "testthat edition" "2,3" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-3}" val || { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "r_package.testthat_edition" "$val"
-
     prompt_select "Vignette builder" "knitr,quarto" \
         "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}" val || \
         { _save_and_exit; return 0; }
@@ -1189,7 +1181,6 @@ config_list() {
         echo ""
         echo "R Package:"
         printf "  %-25s %s\n" "min_r_version:" "${CONFIG_RPACKAGE_MIN_R_VERSION:-<not set>}"
-        printf "  %-25s %s\n" "testthat_edition:" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-<not set>}"
         printf "  %-25s %s\n" "vignette_builder:" "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-<not set>}"
     fi
 

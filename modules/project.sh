@@ -26,7 +26,8 @@ create_directory_structure() {
         "R"
         "man"
         "tests"
-        "tests/testthat"
+        "inst"
+        "inst/tinytest"
         "vignettes"
         "analysis"
         "analysis/data"
@@ -98,8 +99,7 @@ RoxygenNote: 7.2.0
 Imports:
     renv
 Suggests:
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3"
+    tinytest (>= 1.4.0)"
     create_file_if_missing "DESCRIPTION" "$content" "DESCRIPTION file"
 }
 
@@ -110,17 +110,17 @@ Config/testthat/edition: 3"
 create_test_infrastructure() {
     log_debug "Creating test infrastructure..."
 
-    # testthat.R setup file
-    local testthat_setup='library(testthat)
-library('"${PKG_NAME:-$(basename "$(pwd)")}"')
-test_check("'"${PKG_NAME:-$(basename "$(pwd)")}"'")'
-    create_file_if_missing "tests/testthat.R" "$testthat_setup" "testthat setup"
+    local pkg="${PKG_NAME:-$(basename "$(pwd)")}"
 
-    # Example test file
-    local test_example='test_that("package loads correctly", {
-  expect_true(TRUE)
-})'
-    create_file_if_missing "tests/testthat/test-basic.R" "$test_example" "example test"
+    # tinytest runner: runs inst/tinytest/ tests when the package is checked
+    local tinytest_runner='if (requireNamespace("tinytest", quietly=TRUE)) {
+  tinytest::test_package("'"$pkg"'")
+}'
+    create_file_if_missing "tests/tinytest.R" "$tinytest_runner" "tinytest runner"
+
+    # Example test file (tinytest style: bare expectations, no test_that wrapper)
+    local test_example='expect_true(TRUE)'
+    create_file_if_missing "inst/tinytest/test-basic.R" "$test_example" "example test"
 
     log_success "Test infrastructure created"
 }

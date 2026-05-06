@@ -58,7 +58,7 @@ vignettes: document
 	R --quiet -e "devtools::build_vignettes()"
 
 test:
-	R --quiet -e "devtools::test()"
+	R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
 
 deps:
 	R --quiet -e "devtools::install_deps(dependencies = TRUE)"
@@ -125,7 +125,7 @@ docker-check: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::test()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
 
 docker-vignettes: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"

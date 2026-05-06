@@ -44,7 +44,7 @@ jobs:
       - name: Install CI tools to separate library
         run: |
           mkdir -p $CI_TOOLS_LIB
-          Rscript -e "install.packages(c('rcmdcheck', 'testthat'),
+          Rscript -e "install.packages(c('rcmdcheck', 'tinytest'),
                                        lib = Sys.getenv('CI_TOOLS_LIB'),
                                        repos = 'https://cloud.r-project.org')"
 
@@ -60,10 +60,11 @@ jobs:
         run: |
           Rscript -e "
             .libPaths(c(Sys.getenv('CI_TOOLS_LIB'), .libPaths()))
-            if (dir.exists('tests/testthat')) {
-              testthat::test_local()
+            if (dir.exists('inst/tinytest')) {
+              out <- tinytest::run_test_dir('inst/tinytest')
+              if (any(!as.logical(out))) quit(status = 1)
             } else {
-              message('No tests/testthat directory found, skipping tests')
+              message('No inst/tinytest directory found, skipping tests')
             }
           "
 

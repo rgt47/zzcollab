@@ -89,7 +89,7 @@ package_bundles:
       - renv
       - devtools
       - usethis
-      - testthat
+      - tinytest
       - roxygen2
     requires_libs: ["minimal"]
 

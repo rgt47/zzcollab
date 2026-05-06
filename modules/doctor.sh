@@ -73,7 +73,7 @@ REQUIRED_DIRS=(
 
 # Optional but expected directories
 OPTIONAL_DIRS=(
-    "tests/testthat"
+    "inst/tinytest"
     "man"
     ".zzcollab"
 )

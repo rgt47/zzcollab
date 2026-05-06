@@ -59,7 +59,7 @@ your-manuscript/
 │   ├── analysis.R        # Statistical analysis functions
 │   ├── plotting.R        # Custom plotting functions
 │   └── simulations.R     # Simulation and modeling code
-├── tests/testthat/        # Unit tests for R functions
+├── inst/tinytest/         # Unit tests for R functions
 ├── manuscript/
 │   ├── main.Rmd          # Primary manuscript file
 │   ├── sections/         # Individual manuscript sections
@@ -78,7 +78,7 @@ your-manuscript/
 
 ### Key Features
 - **Optimized for**: Academic writing with integrated R code and testing
-- **Primary Tools**: rmarkdown, bookdown, papaja, devtools, testthat, RefManageR
+- **Primary Tools**: rmarkdown, bookdown, papaja, devtools, tinytest, RefManageR
 - **Workflow**: Analysis → Writing → Testing → Reproduction → Submission
 - **CI/CD Focus**: Manuscript rendering, citation checking, reproduction validation
 
@@ -102,7 +102,7 @@ your-manuscript/
 ```
 your-package/
 ├── R/                     # Package functions (exported to users)
-├── tests/testthat/        # Unit tests
+├── inst/tinytest/         # Unit tests
 ├── man/                   # Documentation (auto-generated)
 ├── vignettes/             # Tutorials and examples
 ├── inst/examples/         # Example datasets and scripts
@@ -113,7 +113,7 @@ your-package/
 
 ### Key Features
 - **Optimized for**: Software development with testing and documentation
-- **Primary Tools**: devtools, roxygen2, testthat, pkgdown, covr, lintr
+- **Primary Tools**: devtools, roxygen2, tinytest, pkgdown, covr, lintr
 - **Workflow**: Code → Document → Test → Check → Release
 - **CI/CD Focus**: R CMD check, test coverage, documentation building, CRAN submission
 

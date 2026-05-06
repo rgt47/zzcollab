@@ -257,7 +257,6 @@ cmd_init() {
     echo ""
     echo "  R Package:"
     printf "    %-20s %s\n" "min-r-version:" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}"
-    printf "    %-20s %s\n" "testthat-edition:" "${CONFIG_RPACKAGE_TESTTHAT_EDITION:-3}"
     printf "    %-20s %s\n" "vignette-builder:" "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}"
     echo ""
     echo "  Code Style:"

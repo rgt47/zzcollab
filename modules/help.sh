@@ -535,7 +535,7 @@ Workflow Triggers:
 
 Validation:
   - R package structure
-  - Tests (testthat)
+  - Tests (tinytest)
   - DESCRIPTION ↔ renv.lock consistency
   - Docker builds
 
@@ -733,7 +733,7 @@ show_development_workflows() {
 
 🔧 PACKAGE DEVELOPMENT:
    make check                 # R CMD check validation
-   make test                  # Run testthat tests
+   make test                  # Run tinytest tests
    make document              # Generate documentation
    ./dev.sh setup             # Quick development setup
 

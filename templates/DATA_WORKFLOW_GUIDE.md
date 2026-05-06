@@ -36,7 +36,7 @@ All documentation follows a structured approach for reproducible research:
 - **`figures/data_quality/`** - Diagnostic plots, quality assessment visualizations
 - **`R/data_prep.R`** - Function documentation (roxygen2 comments)
 - **`scripts/01_data_preparation.R`** - Inline processing comments
-- **`tests/testthat/test-data_prep.R`** - Test documentation and examples
+- **`inst/tinytest/test_data_prep.R`** - Test documentation and examples
 
 ### Documentation Workflow
 1. **Immediate documentation** (during data receipt) → `data/README.md`
@@ -386,131 +386,109 @@ All documentation follows a structured approach for reproducible research:
 
 - [ ] **Create unit tests for data functions (CONTAINER)**
   ```r
-  # Inside container - edit tests/testthat/test-data_prep.R
-  test_that("prepare_penguin_data works with valid Palmer Penguins input", {
-    # Create Palmer Penguins test data
-    test_penguins <- data.frame(
-      species = c("Adelie", "Chinstrap", "Gentoo"),
-      island = c("Torgersen", "Dream", "Biscoe"),
-      bill_length_mm = c(39.1, 48.7, 46.1),
-      bill_depth_mm = c(18.7, 14.1, 13.2),
-      flipper_length_mm = c(181, 196, 211),
-      body_mass_g = c(3750, 3800, 4500),
-      sex = c("male", "female", "male"),
-      year = c(2007, 2008, 2009)
-    )
-    
-    # Test Palmer Penguins function
-    result <- prepare_penguin_data(test_penguins, n_records = 3)
-    
-    # Palmer Penguins specific assertions
-    expect_s3_class(result, "data.frame")
-    expect_equal(nrow(result), 3)
-    expect_true("log_body_mass_g" %in% names(result))
-    expect_true(all(result$species %in% c("Adelie", "Chinstrap", "Gentoo")))
-    expect_true(is.factor(result$species))
-    expect_true(all(result$log_body_mass_g > 0))  # Log values should be positive
-  })
+  # Inside container - edit inst/tinytest/test_data_prep.R
+  # tinytest style: bare expectations at file scope, no test_that() wrapper
+  test_penguins <- data.frame(
+    species           = c("Adelie", "Chinstrap", "Gentoo"),
+    island            = c("Torgersen", "Dream", "Biscoe"),
+    bill_length_mm    = c(39.1, 48.7, 46.1),
+    bill_depth_mm     = c(18.7, 14.1, 13.2),
+    flipper_length_mm = c(181, 196, 211),
+    body_mass_g       = c(3750, 3800, 4500),
+    sex               = c("male", "female", "male"),
+    year              = c(2007, 2008, 2009)
+  )
+
+  result <- prepare_penguin_data(test_penguins, n_records = 3)
+
+  expect_inherits(result, "data.frame")
+  expect_equal(nrow(result), 3)
+  expect_true("log_body_mass_g" %in% names(result))
+  expect_true(all(result$species %in% c("Adelie", "Chinstrap", "Gentoo")))
+  expect_true(is.factor(result$species))
+  expect_true(all(result$log_body_mass_g > 0))
   ```
 
 - [ ] **Test input validation (CONTAINER)**
   ```r
-  test_that("prepare_penguin_data validates inputs correctly", {
-    # Test invalid input types
-    expect_error(
-      prepare_penguin_data("not a dataframe"),
-      "Input must be a data frame"
-    )
-    
-    # Test missing required Palmer Penguins columns
-    incomplete_penguins <- data.frame(species = "Adelie", island = "Torgersen")
-    expect_error(
-      prepare_penguin_data(incomplete_penguins),
-      "Missing required columns"
-    )
-    
-    # Test with missing body_mass_g column specifically
-    no_body_mass <- data.frame(
-      species = "Adelie", island = "Torgersen", bill_length_mm = 39.1,
-      bill_depth_mm = 18.7, flipper_length_mm = 181, sex = "male", year = 2007
-    )
-    expect_error(
-      prepare_penguin_data(no_body_mass),
-      "Missing required columns.*body_mass_g"
-    )
-  })
+  expect_error(
+    prepare_penguin_data("not a dataframe"),
+    pattern = "Input must be a data frame"
+  )
+
+  incomplete_penguins <- data.frame(species = "Adelie", island = "Torgersen")
+  expect_error(
+    prepare_penguin_data(incomplete_penguins),
+    pattern = "Missing required columns"
+  )
+
+  no_body_mass <- data.frame(
+    species = "Adelie", island = "Torgersen", bill_length_mm = 39.1,
+    bill_depth_mm = 18.7, flipper_length_mm = 181, sex = "male", year = 2007
+  )
+  expect_error(
+    prepare_penguin_data(no_body_mass),
+    pattern = "Missing required columns.*body_mass_g"
+  )
   ```
 
 - [ ] **Test edge cases (CONTAINER)**
   ```r
-  test_that("prepare_penguin_data handles edge cases", {
-    # Empty Palmer Penguins data
-    empty_penguins <- data.frame(
-      species = character(0), island = character(0), bill_length_mm = numeric(0),
-      bill_depth_mm = numeric(0), flipper_length_mm = integer(0), 
-      body_mass_g = integer(0), sex = character(0), year = integer(0)
-    )
-    result <- prepare_penguin_data(empty_penguins)
-    expect_equal(nrow(result), 0)
-    expect_true("log_body_mass_g" %in% names(result))
-    
-    # Single penguin
-    single_penguin <- data.frame(
-      species = "Adelie", island = "Torgersen", bill_length_mm = 39.1,
-      bill_depth_mm = 18.7, flipper_length_mm = 181, body_mass_g = 3750,
-      sex = "male", year = 2007
-    )
-    result <- prepare_penguin_data(single_penguin, n_records = 1)
-    expect_equal(nrow(result), 1)
-    expect_equal(result$log_body_mass_g, log(3750))
-    
-    # Penguins with missing body mass (should be filtered out)
-    penguins_with_na <- data.frame(
-      species = c("Adelie", "Chinstrap"), island = c("Torgersen", "Dream"),
-      bill_length_mm = c(39.1, NA), bill_depth_mm = c(18.7, 14.1),
-      flipper_length_mm = c(181, 196), body_mass_g = c(3750, NA),
-      sex = c("male", "female"), year = c(2007, 2008)
-    )
-    result <- prepare_penguin_data(penguins_with_na, n_records = 2)
-    expect_equal(nrow(result), 1)  # Only one penguin with valid body mass
-    expect_equal(result$species, factor("Adelie"))
-  })
+  empty_penguins <- data.frame(
+    species = character(0), island = character(0),
+    bill_length_mm = numeric(0), bill_depth_mm = numeric(0),
+    flipper_length_mm = integer(0), body_mass_g = integer(0),
+    sex = character(0), year = integer(0)
+  )
+  result <- prepare_penguin_data(empty_penguins)
+  expect_equal(nrow(result), 0)
+  expect_true("log_body_mass_g" %in% names(result))
+
+  single_penguin <- data.frame(
+    species = "Adelie", island = "Torgersen", bill_length_mm = 39.1,
+    bill_depth_mm = 18.7, flipper_length_mm = 181, body_mass_g = 3750,
+    sex = "male", year = 2007
+  )
+  result <- prepare_penguin_data(single_penguin, n_records = 1)
+  expect_equal(nrow(result), 1)
+  expect_equal(result$log_body_mass_g, log(3750))
+
+  penguins_with_na <- data.frame(
+    species = c("Adelie", "Chinstrap"), island = c("Torgersen", "Dream"),
+    bill_length_mm = c(39.1, NA), bill_depth_mm = c(18.7, 14.1),
+    flipper_length_mm = c(181, 196), body_mass_g = c(3750, NA),
+    sex = c("male", "female"), year = c(2007, 2008)
+  )
+  result <- prepare_penguin_data(penguins_with_na, n_records = 2)
+  expect_equal(nrow(result), 1)
+  expect_equal(result$species, factor("Adelie"))
   ```
 
 - [ ] **Create data file validation tests (CONTAINER)**
   ```r
-  # Edit tests/testthat/test-data_files.R
-  test_that("Palmer Penguins raw data file has expected structure", {
-    data_file <- here("data", "raw_data", "penguins.csv")
-    skip_if_not(file.exists(data_file), "Palmer Penguins data file not found")
-    
-    penguins_raw <- read.csv(data_file, stringsAsFactors = FALSE)
-    
-    # Test Palmer Penguins structure
-    expect_s3_class(penguins_raw, "data.frame")
-    expect_equal(nrow(penguins_raw), 344)  # Known Palmer Penguins count
-    
-    # Test expected Palmer Penguins columns
-    expected_cols <- c("species", "island", "bill_length_mm", "bill_depth_mm", 
-                       "flipper_length_mm", "body_mass_g", "sex", "year")
-    expect_true(all(expected_cols %in% names(penguins_raw)))
-    
-    # Test species values
-    expect_true(all(penguins_raw$species %in% c("Adelie", "Chinstrap", "Gentoo")))
-    
-    # Test island values
-    expect_true(all(penguins_raw$island %in% c("Torgersen", "Biscoe", "Dream")))
-    
-    # Test year range
-    expect_true(all(penguins_raw$year %in% c(2007, 2008, 2009)))
-  })
+  # Edit inst/tinytest/test_data_files.R
+  data_file <- here("data", "raw_data", "penguins.csv")
+  if (!file.exists(data_file)) exit_file("Palmer Penguins data file not found")
+
+  penguins_raw <- read.csv(data_file, stringsAsFactors = FALSE)
+
+  expect_inherits(penguins_raw, "data.frame")
+  expect_equal(nrow(penguins_raw), 344)
+
+  expected_cols <- c("species", "island", "bill_length_mm", "bill_depth_mm",
+                     "flipper_length_mm", "body_mass_g", "sex", "year")
+  expect_true(all(expected_cols %in% names(penguins_raw)))
+
+  expect_true(all(penguins_raw$species %in% c("Adelie", "Chinstrap", "Gentoo")))
+  expect_true(all(penguins_raw$island %in% c("Torgersen", "Biscoe", "Dream")))
+  expect_true(all(penguins_raw$year %in% c(2007, 2008, 2009)))
   ```
 
 - [ ] **Run unit tests (CONTAINER or HOST)**
   ```bash
   # Option 1: Inside container
   make test
-  R -e "testthat::test_file('tests/testthat/test-data_prep.R')"
+  R -e "tinytest::run_test_file('inst/tinytest/test_data_prep.R')"
   
   # Option 2: From host system (runs in clean container)
   exit  # Exit current container first
@@ -536,48 +514,38 @@ All documentation follows a structured approach for reproducible research:
 - [ ] **Create full pipeline tests (CONTAINER)**
   ```r
   # Inside container - edit tests/integration/test-data_pipeline.R
-  test_that("complete data pipeline runs successfully", {
-    # Load raw data
-    raw_data_file <- here("data", "raw_data", "your_data.csv")
-    skip_if_not(file.exists(raw_data_file), "Raw data not available")
-    
-    raw_data <- read.csv(raw_data_file, stringsAsFactors = FALSE)
-    
-    # Run full pipeline
-    processed_data <- prepare_your_data(raw_data)
-    
-    # Test pipeline results
-    expect_s3_class(processed_data, "data.frame")
-    expect_gt(nrow(processed_data), 0)
-    # Add specific expectations for your transformations
-  })
+  raw_data_file <- here("data", "raw_data", "your_data.csv")
+  if (!file.exists(raw_data_file)) exit_file("Raw data not available")
+
+  raw_data <- read.csv(raw_data_file, stringsAsFactors = FALSE)
+  processed_data <- prepare_your_data(raw_data)
+
+  expect_inherits(processed_data, "data.frame")
+  expect_true(nrow(processed_data) > 0)
+  # Add specific expectations for your transformations
   ```
 
 - [ ] **Test file consistency**
   ```r
-  test_that("derived data file matches pipeline output", {
-    raw_file <- here("data", "raw_data", "your_data.csv")
-    derived_file <- here("data", "derived_data", "processed_data.csv")
-    
-    skip_if_not(file.exists(raw_file) && file.exists(derived_file))
-    
-    # Load both datasets
-    raw_data <- read.csv(raw_file, stringsAsFactors = FALSE)
-    derived_data_file <- read.csv(derived_file, stringsAsFactors = FALSE)
-    
-    # Recreate derived data using pipeline
-    derived_data_pipeline <- prepare_your_data(raw_data)
-    
-    # Compare key characteristics
-    expect_equal(nrow(derived_data_file), nrow(derived_data_pipeline))
-    expect_equal(sort(names(derived_data_file)), sort(names(derived_data_pipeline)))
-  })
+  raw_file <- here("data", "raw_data", "your_data.csv")
+  derived_file <- here("data", "derived_data", "processed_data.csv")
+  if (!file.exists(raw_file) || !file.exists(derived_file)) {
+    exit_file("input or derived file missing")
+  }
+
+  raw_data <- read.csv(raw_file, stringsAsFactors = FALSE)
+  derived_data_file <- read.csv(derived_file, stringsAsFactors = FALSE)
+  derived_data_pipeline <- prepare_your_data(raw_data)
+
+  expect_equal(nrow(derived_data_file), nrow(derived_data_pipeline))
+  expect_equal(sort(names(derived_data_file)),
+               sort(names(derived_data_pipeline)))
   ```
 
 - [ ] **Run integration tests (CONTAINER)**
   ```bash
   # Inside container
-  R -e "testthat::test_file('tests/integration/test-data_pipeline.R')"
+  R -e "tinytest::run_test_file('tests/integration/test-data_pipeline.R')"
   ```
 
 - [ ] **Update documentation (HOST)**
@@ -596,7 +564,7 @@ All documentation follows a structured approach for reproducible research:
   - [ ] **Include data quality assessment results** → Data Quality section
   - [ ] **Add reproduction instructions** → Reproduction section
   - [ ] **Link to processing scripts** → Scripts section (`scripts/01_data_preparation.R`)
-  - [ ] **Reference test files** → Testing section (`tests/testthat/test-data_prep.R`)
+  - [ ] **Reference test files** → Testing section (`inst/tinytest/test_data_prep.R`)
 
 ### Integration Requirements
 
@@ -710,8 +678,8 @@ All documentation follows a structured approach for reproducible research:
 5. [ ] **CONTAINER**: Save processed data to `data/derived_data/`
 
 ### For Testing (CONTAINER + HOST):
-1. [ ] **CONTAINER**: Write unit tests in `tests/testthat/test-data_prep.R`
-2. [ ] **CONTAINER**: Write data validation tests in `tests/testthat/test-data_files.R`
+1. [ ] **CONTAINER**: Write unit tests in `inst/tinytest/test_data_prep.R`
+2. [ ] **CONTAINER**: Write data validation tests in `inst/tinytest/test_data_files.R`
 3. [ ] **CONTAINER**: Write integration tests in `tests/integration/test-data_pipeline.R`
 4. [ ] **HOST**: Run all tests: `make docker-test`
 5. [ ] **CONTAINER**: Achieve >90% test coverage
@@ -757,8 +725,8 @@ devtools::test()     # Run tests
 Rscript scripts/01_data_preparation.R
 
 # Inside container - specific test files
-R -e "testthat::test_file('tests/testthat/test-data_prep.R')"
-R -e "testthat::test_file('tests/integration/test-data_pipeline.R')"
+R -e "tinytest::run_test_file('inst/tinytest/test_data_prep.R')"
+R -e "tinytest::run_test_file('tests/integration/test-data_pipeline.R')"
 
 # Inside container - test coverage
 R -e "covr::package_coverage()"

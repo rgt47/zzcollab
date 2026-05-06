@@ -178,9 +178,9 @@ create_renv_lock_minimal() {
       "Source": "Repository",
       "Repository": "RSPM"
     },
-    "testthat": {
-      "Package": "testthat",
-      "Version": "3.3.1",
+    "tinytest": {
+      "Package": "tinytest",
+      "Version": "1.4.3",
       "Source": "Repository",
       "Repository": "RSPM"
     }

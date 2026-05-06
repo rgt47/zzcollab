@@ -41,4 +41,4 @@ jobs:
 
       - name: Run tests
         continue-on-error: true
-        run: Rscript -e "testthat::test_dir('tests/testthat')"
+        run: Rscript -e "tinytest::run_test_dir('inst/tinytest')"

@@ -486,8 +486,14 @@ handles caching automatically.
 ## 10. Updated Implementation Pattern
 
 The recommendations in Section 8 should be revised in light of
-Sections 9.4 through 9.6. The framework should distinguish project type
-at scaffolding time and emit one of two different workflow templates.
+Sections 9.4 through 9.6. The framework should distinguish project
+type at scaffolding time and emit a workflow template appropriate
+to the type. At least four workspace types have been observed in
+practice (tool package, LaTeX compendium, Quarto compendium, Quarto
+blog post), each with a distinct CI footprint catalogued in
+Section 11. The two examples in this section (tool package and
+compendium) cover the dominant cases; Section 11.1 records the full
+detection logic.
 
 ### 10.1 Tool packages
 
@@ -705,7 +711,7 @@ existing pattern should be the framework default for any compendium,
 including blog posts, and that it should be propagated uniformly
 rather than left to per-project judgment at scaffolding time.
 
-### 11.2 What stays in the framework
+### 11.3 What stays in the framework
 
 Across all workspace types, the framework's contribution is
 unchanged: the Five Pillars (Dockerfile, renv.lock, .Rprofile,
@@ -726,18 +732,22 @@ different downstream CI configurations, all reusing the
 The question this paper addresses is not "how do we make CI pass,"
 but "what should CI check, given what zzcollab is for." The
 framework's purpose is research-compendium reproducibility, but its
-output is sometimes a tool package whose CI needs are conventionally
-different. Recognising this distinction is itself part of the
-contribution.
+output spans at least four workspace categories: tool package,
+LaTeX manuscript compendium, Quarto compendium, and Quarto blog
+post. Each has a distinct CI footprint, and the framework's single
+CI default conflates them. Recognising this distinction is itself
+part of the contribution.
 
 The conventional R-package CI idiom inherited from the broader R
-ecosystem is a reasonable starting point but did not align with the
-framework's stated purpose for compendium projects. A three-tier
-model (environment integrity, code correctness, end-to-end
-reproduction) addresses the regressions a compendium author actually
-cares about. For tool packages, the conventional `setup-renv@v2`
-pattern is the right default; for compendia, the tiered model built
-on the same pattern is the right default.
+ecosystem is a reasonable starting point but did not align with
+the framework's stated purpose for compendium projects, and is
+actively wrong for blog posts where the package skeleton is
+scaffolding rather than the deliverable. A tier model (environment
+integrity, code correctness, end-to-end reproduction) addresses the
+regressions a compendium author actually cares about. For tool
+packages, the conventional `setup-renv@v2` pattern is the right
+default; for compendia, the same pattern with a render tier added;
+for blog posts, the same pattern with the check tier removed.
 
 The recommendation for current zzcollab projects is incremental:
 fix the lockfile URL pinning first, since that improves reliability
@@ -748,14 +758,26 @@ only then consider the secondary question of how aggressively to
 verify outputs against recorded baselines.
 
 Several findings from implementation were not anticipated in the
-original analysis: the lockfile URL is itself the most consequential
-defect, the curl-CLI warning is a misleading symptom rather than a
-root cause, the .Rprofile auto-restore can race the workflow, and
-the framework's single CI default conflates two project types that
-should receive different treatment. These are now part of the
-record.
+original analysis. The lockfile URL is itself the most consequential
+defect, silently producing version drift on every restore. The
+curl-CLI warning is a misleading symptom rather than a root cause.
+The .Rprofile auto-restore can race the workflow's explicit restore
+unless `ZZCOLLAB_AUTO_RESTORE=false` is set in CI environment.
+Report file naming is not standardised in zzcollab compendia
+(`report.Rmd`, `manuscript.Rmd`, custom names, plus `.qmd` analogues
+all observed in the alz and qblog trees), and the canonical
+`render-report.yml` template needed extension to handle `.qmd` in
+addition to its existing multi-name `.Rmd` detection. The
+two-workflow split (always-on validation plus path-filtered render)
+is not a new design but an existing zzcollab pattern, partially
+deployed across the alz tree and inconsistent in version. The
+framework's contribution is not a new pattern but the explicit
+recognition that the existing pattern should be propagated uniformly
+and parameterised on workspace type.
+
+These are now part of the record.
 
 ---
 
-*Rendered on 2026-05-06 at 07:50 PDT.*<br>
+*Rendered on 2026-05-06 at 08:05 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-strategy-tiered-model.md*

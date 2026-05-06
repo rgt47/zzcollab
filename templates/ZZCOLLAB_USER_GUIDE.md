@@ -135,7 +135,7 @@ zzc docker --base-image rocker/r-ver --pkgs modeling
 
 | Bundle | Packages | Required Libs |
 |--------|----------|---------------|
-| `minimal` | renv, devtools, usethis, testthat, roxygen2 | minimal |
+| `minimal` | renv, devtools, usethis, tinytest, roxygen2 | minimal |
 | `tidyverse` | renv, devtools, tidyverse, here | minimal |
 | `modeling` | tidyverse + tidymodels, xgboost, randomForest, glmnet, caret | modeling |
 | `publishing` | quarto, bookdown, blogdown, distill, flexdashboard, DT | publishing |
@@ -177,8 +177,9 @@ myproject/
 ├── R/                          # Reusable R functions
 ├── man/                        # Function documentation
 ├── tests/
-│   ├── testthat.R              # Test runner
-│   └── testthat/
+│   └── tinytest.R              # Test runner
+├── inst/
+│   └── tinytest/
 │       └── test-basic.R        # Example test
 ├── analysis/
 │   ├── data/
@@ -519,7 +520,6 @@ zzc config set author-email "jane@example.edu"
 
 **R Package:**
 `min-r-version` (default: 4.1.0),
-`testthat-edition` (default: 3),
 `vignette-builder` (default: knitr)
 
 **Code Style:**

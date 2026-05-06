@@ -49,7 +49,7 @@ Purpose: Essential R packages for package development and CI/CD
 
 Key Packages:
   - renv, devtools, usethis
-  - testthat, roxygen2, pkgdown
+  - tinytest, roxygen2, pkgdown
   - rcmdcheck
 
 System Dependencies:
@@ -272,7 +272,7 @@ Base: velaco/alpine-r:latest
 Purpose: Ultra-lightweight Alpine Linux for CI/CD
 
 Key Packages:
-  - renv, devtools, testthat
+  - renv, devtools, tinytest
   - remotes
 
 System Dependencies (apk):
