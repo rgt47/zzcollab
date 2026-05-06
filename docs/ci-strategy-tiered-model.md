@@ -376,7 +376,34 @@ package CI was failing for reasons related to renv-in-container
 mechanics; compendium CI was passing despite the same configuration
 because the test surface happened not to expose those failure modes.
 
-### 9.5 Empirical reliability favors simpler workflows
+### 9.5 Blog post sub-repos and Quarto rendering
+
+The `qblog/posts/` tree, a directory of fifty-plus zzcollab-scaffolded
+sub-repos that accompany Quarto blog posts, surfaced a third workspace
+category beyond the tool-package and LaTeX-compendium types discussed
+in 9.4. Inspection of one representative (`penguins1zzcollab`) found a
+hybrid layout: the project has a complete R-package skeleton
+(DESCRIPTION, NAMESPACE, R/, tests/) but its primary deliverable is a
+Quarto document rendered to HTML, not a CRAN-style package or a
+LaTeX-rendered paper. The standard zzcollab compendium location
+`analysis/report/` contained `index.qmd` rather than the `report.Rmd`
+assumed by the v2.2.0 conditional `render-report` job.
+
+This workspace type requires the same tiered model but with a
+different Tier 3 renderer: `quarto render` invoked via
+`quarto-dev/quarto-actions/setup@v2` rather than `rmarkdown::render`
+plus `setup-tinytex@v2`. Tier 1 and Tier 2 are unchanged. The
+implementation in `penguins1zzcollab` differs from `mci` in three
+lines of YAML.
+
+The broader observation is that the existing zzcollab paradigms
+(analysis, manuscript, package, minimal) do not cleanly map to
+"appropriate CI" without a further axis specifying the render
+target. A project whose paradigm is `analysis` can produce either a
+LaTeX-rendered manuscript or an HTML-rendered blog post; the CI
+template needs to detect which.
+
+### 9.6 Empirical reliability favors simpler workflows
 
 Across the projects audited during this work:
 
@@ -396,7 +423,7 @@ handles caching automatically.
 ## 10. Updated Implementation Pattern
 
 The recommendations in Section 8 should be revised in light of
-Sections 9.4 and 9.5. The framework should distinguish project type
+Sections 9.4 through 9.6. The framework should distinguish project type
 at scaffolding time and emit one of two different workflow templates.
 
 ### 10.1 Tool packages
@@ -473,7 +500,82 @@ that switches type later can be re-templated by the existing
 restructured to handle full-content workflow replacement rather
 than version-stamp bumping.
 
-## 11. Conclusion
+## 11. Workspace Types and Their CI Patterns
+
+The three implementations recorded in this work (zzobj2fig, mci,
+penguins1zzcollab) span enough variation to support a small typology
+of zzcollab workspace types. Each type has a distinct CI footprint,
+sharing the same first two tiers and differing only in the render
+tier. The table below maps each observed workspace category to its
+appropriate CI pattern.
+
+| Workspace type | Deliverable | Tier 3 renderer | Setup actions | Example |
+|---|---|---|---|---|
+| Tool package | The package itself | (none) | setup-r, setup-renv | zzobj2fig |
+| LaTeX manuscript | PDF via xelatex | `rmarkdown::render` | setup-r, setup-renv, setup-pandoc, setup-tinytex | mci |
+| Quarto analysis | HTML document | `quarto render` | setup-r, setup-renv, quarto setup | penguins1zzcollab |
+| Quarto manuscript | PDF via Quarto LaTeX engine | `quarto render` | setup-r, setup-renv, quarto setup, setup-tinytex | (anticipated) |
+| Minimal package | The package itself | (none) | setup-r, setup-renv (or `setup-r-dependencies` if no lockfile) | (anticipated) |
+
+Three observations follow.
+
+**Tier 1 and Tier 2 are workspace-invariant.** The validate and check
+jobs are identical across all five rows. They install renv (or
+DESCRIPTION-declared dependencies), run `renv::status()`, and run
+`R CMD check`. Workspace differentiation lives entirely in Tier 3.
+This means the framework's CI template can be parameterised on a
+single render-target axis rather than maintained as multiple
+unrelated templates.
+
+**Tool packages should omit the render tier entirely.** Adding a
+render job to a project with no document to render produces a
+no-op job whose only effect is workflow-cluttering. This was the
+mistake in the first revision applied to zzobj2fig (Section 9.4):
+the tiered template was applied to a tool package, where Tier 3
+had no work to do. The corrected approach for tool packages
+(Section 10.1) drops Tier 3 entirely.
+
+**Hybrid workspaces with both `R/` and `analysis/` directories
+are common in zzcollab output.** `penguins1zzcollab` is one
+example: a tool package skeleton whose primary deliverable is a
+Quarto document. These should use the compendium template; the
+package side is exercised by Tier 2 anyway, so nothing is lost.
+
+### 11.1 Detection at scaffolding time
+
+The framework can choose the appropriate template by inspecting
+files at `zzc analysis` or `zzc doctor` time:
+
+- `analysis/report/report.Rmd` exists, output is `pdf_document`:
+  LaTeX manuscript pattern (mci-style).
+- `analysis/report/index.qmd` or top-level `index.qmd` exists:
+  Quarto analysis pattern (penguins1zzcollab-style).
+- `analysis/report/report.qmd` exists with `format: pdf:`: Quarto
+  manuscript pattern.
+- None of the above, only `R/`, `tests/`, `man/` populated: tool
+  package pattern (zzobj2fig-style).
+
+A `zzc doctor` upgrade can re-detect on existing projects and
+swap the template, using the full-content replacement path
+introduced earlier in this work rather than a stamp-only bump.
+
+### 11.2 What stays in the framework
+
+Across all workspace types, the framework's contribution is
+unchanged: the Five Pillars (Dockerfile, renv.lock, .Rprofile,
+source code, data) jointly support local development reproducibility.
+The Docker container remains useful as a development environment
+even though it is not used in CI. The renv lockfile, with the URL
+fix from Section 9.1, remains the package-pin mechanism. The
+.Rprofile (with `ZZCOLLAB_AUTO_RESTORE=false` honored in CI) remains
+the session bootstrap.
+
+What changes is the CI template emitted by `zzc`, which becomes
+type-aware rather than uniform. The same five pillars support five
+different downstream CI configurations, all reusing the
+`r-lib/actions/setup-renv@v2` foundation.
+
+## 12. Conclusion
 
 The question this paper addresses is not "how do we make CI pass,"
 but "what should CI check, given what zzcollab is for." The
@@ -509,5 +611,5 @@ record.
 
 ---
 
-*Rendered on 2026-05-06 at 07:02 PDT.*<br>
+*Rendered on 2026-05-06 at 07:30 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-strategy-tiered-model.md*
