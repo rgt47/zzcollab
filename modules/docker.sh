@@ -528,6 +528,17 @@ generate_dockerfile() {
         base_image=$(get_profile_base_image "${CONFIG_PROFILE_NAME:-minimal}")
     fi
 
+    # Safety net: validate the requested ${base_image}:${r_version} actually
+    # exists on Docker Hub. Catches stale renv.lock R versions or upstream
+    # publishing lag (e.g., CRAN-fresh 4.6.0 missing from rocker/tidyverse).
+    local resolved_r_version
+    resolved_r_version=$(get_buildable_r_version "$base_image" "$r_version")
+    if [[ "$resolved_r_version" != "$r_version" ]]; then
+        log_warn "renv.lock specifies R $r_version but base image lacks that tag."
+        log_warn "Dockerfile will use R $resolved_r_version; consider regenerating renv.lock."
+        r_version="$resolved_r_version"
+    fi
+
     log_info "  Base image: ${base_image}:${r_version}"
 
     local r_packages=()

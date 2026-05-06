@@ -376,34 +376,97 @@ package CI was failing for reasons related to renv-in-container
 mechanics; compendium CI was passing despite the same configuration
 because the test surface happened not to expose those failure modes.
 
-### 9.5 Blog post sub-repos and Quarto rendering
+### 9.5 Blog post sub-repos and the limits of file-presence detection
 
 The `qblog/posts/` tree, a directory of fifty-plus zzcollab-scaffolded
-sub-repos that accompany Quarto blog posts, surfaced a third workspace
-category beyond the tool-package and LaTeX-compendium types discussed
-in 9.4. Inspection of one representative (`penguins1zzcollab`) found a
-hybrid layout: the project has a complete R-package skeleton
-(DESCRIPTION, NAMESPACE, R/, tests/) but its primary deliverable is a
-Quarto document rendered to HTML, not a CRAN-style package or a
-LaTeX-rendered paper. The standard zzcollab compendium location
-`analysis/report/` contained `index.qmd` rather than the `report.Rmd`
-assumed by the v2.2.0 conditional `render-report` job.
+sub-repos that accompany Quarto blog posts, surfaced a workspace
+category whose CI requirements differ from both the tool-package and
+LaTeX-compendium types discussed in 9.4. Inspection of one
+representative (`penguins1zzcollab`) found that the project has a
+complete R-package skeleton (DESCRIPTION, NAMESPACE, R/, tests/) but
+its primary deliverable is a Quarto document rendered to HTML, not a
+distributable package and not a LaTeX-rendered paper. The repository's
+existing `blog-render.yml` workflow (which had been passing) renders
+the document inside a Dockerfile-built container, on changes to
+`analysis/report/`, `renv.lock`, or the Dockerfile.
 
-This workspace type requires the same tiered model but with a
-different Tier 3 renderer: `quarto render` invoked via
-`quarto-dev/quarto-actions/setup@v2` rather than `rmarkdown::render`
-plus `setup-tinytex@v2`. Tier 1 and Tier 2 are unchanged. The
-implementation in `penguins1zzcollab` differs from `mci` in three
-lines of YAML.
+The first revision of the tiered model applied to this repository
+included Tier 2 (`R CMD check` via `check-r-package@v2`). That job
+failed at the `R CMD build` stage with
 
-The broader observation is that the existing zzcollab paradigms
-(analysis, manuscript, package, minimal) do not cleanly map to
-"appropriate CI" without a further axis specifying the render
-target. A project whose paradigm is `analysis` can produce either a
-LaTeX-rendered manuscript or an HTML-rendered blog post; the CI
-template needs to detect which.
+```
+cp: cannot stat 'penguins1zzcollab/analysis/report/figures':
+No such file or directory
+ERROR
+copying to build directory failed
+```
 
-### 9.6 Empirical reliability favors simpler workflows
+The cause was an empty `analysis/report/figures` directory referenced
+in some build manifest. The deeper cause was the misapplication of
+`R CMD check` to a project that is not actually being shipped as a
+package: the package machinery tries to assemble a build tarball that
+makes sense only for a CRAN-bound artifact, and chokes on the
+compendium-style directories that have no place in a tarball.
+
+The file-presence signals that initially placed this project in the
+"compendium" category (DESCRIPTION + R/ + tests/) underdetermined the
+workspace type. zzcollab scaffolds a uniform R-package skeleton across
+all paradigms, including blog posts, so the presence of these files
+is not a reliable indicator that `R CMD check` is appropriate. A more
+discriminating signal is found in the YAML header of the primary
+document, where `document-type: "blog"` (or equivalent) declares
+intent.
+
+The corrected pattern for a Quarto blog post is **Tier 1 only** for
+the always-on validation, plus the existing `blog-render.yml` for the
+path-filtered render. There is no Tier 2 because nothing is being
+shipped as a package. Section 11 records this as a fourth workspace
+category with its own CI footprint.
+
+### 9.6 Report file naming variety in zzcollab compendia
+
+A survey of eighteen compendium projects in `~/prj/alz/` (a research
+project tree using zzcollab) found multiple naming conventions for the
+primary manuscript file in `analysis/report/`:
+
+| Filename convention | Count | Examples |
+|---|---|---|
+| `report.Rmd` | 6 | mci, mcid-cdr, psp, ptsd-diabetes-mediation |
+| `manuscript.Rmd` | 2 | medications-progression, age |
+| Custom `*_whitepaper.Rmd` | 1 | world-backwards |
+| Non-standard location (`docs/`) | 1 | murray-yeilim |
+| No report file | 5 | scaffolding only, awaiting content |
+
+All eighteen are RMarkdown projects targeting LaTeX/PDF output. Zero
+Quarto (`.qmd`) projects in this tree, in contrast with the qblog
+sub-repo population, where `.qmd` is the standard.
+
+Two relevant observations:
+
+1. **The canonical zzcollab `render-report.yml` template already
+   handles RMarkdown naming variety.** It tries
+   `analysis/report/report.Rmd`, then `manuscript.Rmd`, then
+   `main.Rmd`, then falls back to the largest `.Rmd` in the
+   directory. Naming variety within RMarkdown is not the gap.
+
+2. **The canonical template does not handle `.qmd` files.** The
+   detection step in the canonical recognises `.Rmd` only. Compendia
+   that use Quarto would not be matched and the fallback path returns
+   no manuscript. This is the actual file-detection gap.
+
+3. **Stale variants of `render-report.yml` are in circulation that
+   *do* hardcode `report.Rmd`** (the `c1e956e...` MD5 variant
+   observed in pznblastanalysis and ptsd-diabetes-mediation, which
+   originated in the `templates/.github/` tree deleted earlier in
+   this work). Projects on this stale variant fail silently for any
+   manuscript not literally named `report.Rmd`.
+
+The corrective action is to extend the canonical template's
+detection to include `.qmd` files and to ensure the stale variants
+are upgraded via `zzc doctor` to the current canonical. The first is
+patched in this work; the second is a separate cleanup pass.
+
+### 9.7 Empirical reliability favors simpler workflows
 
 Across the projects audited during this work:
 
@@ -502,62 +565,145 @@ than version-stamp bumping.
 
 ## 11. Workspace Types and Their CI Patterns
 
-The three implementations recorded in this work (zzobj2fig, mci,
+The implementations recorded in this work (zzobj2fig, mci,
 penguins1zzcollab) span enough variation to support a small typology
-of zzcollab workspace types. Each type has a distinct CI footprint,
-sharing the same first two tiers and differing only in the render
-tier. The table below maps each observed workspace category to its
+of zzcollab workspace types. Each type has a distinct CI footprint.
+The table below maps each observed workspace category to its
 appropriate CI pattern.
 
-| Workspace type | Deliverable | Tier 3 renderer | Setup actions | Example |
-|---|---|---|---|---|
-| Tool package | The package itself | (none) | setup-r, setup-renv | zzobj2fig |
-| LaTeX manuscript | PDF via xelatex | `rmarkdown::render` | setup-r, setup-renv, setup-pandoc, setup-tinytex | mci |
-| Quarto analysis | HTML document | `quarto render` | setup-r, setup-renv, quarto setup | penguins1zzcollab |
-| Quarto manuscript | PDF via Quarto LaTeX engine | `quarto render` | setup-r, setup-renv, quarto setup, setup-tinytex | (anticipated) |
-| Minimal package | The package itself | (none) | setup-r, setup-renv (or `setup-r-dependencies` if no lockfile) | (anticipated) |
+| Workspace type | Deliverable | Tier 1 (validate) | Tier 2 (check) | Tier 3 (render) | Example |
+|---|---|---|---|---|---|
+| Tool package | Package | yes | yes | (none) | zzobj2fig |
+| Compendium (LaTeX) | PDF via xelatex | yes | yes | rmarkdown + tinytex | mci |
+| Compendium (Quarto) | HTML or PDF document | yes | yes | quarto render | (anticipated) |
+| **Quarto blog post** | **Rendered HTML** | **yes** | **NO** | **quarto render (path-filtered)** | **penguins1zzcollab** |
+| Minimal package | Package | yes | yes | (none) | (anticipated) |
 
-Three observations follow.
+Four observations follow.
 
-**Tier 1 and Tier 2 are workspace-invariant.** The validate and check
-jobs are identical across all five rows. They install renv (or
-DESCRIPTION-declared dependencies), run `renv::status()`, and run
-`R CMD check`. Workspace differentiation lives entirely in Tier 3.
-This means the framework's CI template can be parameterised on a
-single render-target axis rather than maintained as multiple
-unrelated templates.
+**Tier 1 is workspace-invariant; Tiers 2 and 3 are not.** The validate
+job is identical across all five rows: install renv, run
+`renv::status()`. Tier 2 (`R CMD check`) is appropriate when the
+project is being built or shipped as a package, but is actively
+harmful for blog posts where the package skeleton is scaffolding
+rather than the deliverable. Tier 3 differs by render target.
 
-**Tool packages should omit the render tier entirely.** Adding a
-render job to a project with no document to render produces a
-no-op job whose only effect is workflow-cluttering. This was the
-mistake in the first revision applied to zzobj2fig (Section 9.4):
-the tiered template was applied to a tool package, where Tier 3
-had no work to do. The corrected approach for tool packages
-(Section 10.1) drops Tier 3 entirely.
+**Tool packages should omit the render tier.** Adding a render job
+to a project with no document to render produces a no-op job whose
+only effect is workflow clutter. This was the mistake in the first
+revision applied to zzobj2fig (Section 9.4): the tiered template
+was applied to a tool package, where Tier 3 had no work to do. The
+corrected approach for tool packages (Section 10.1) drops Tier 3
+entirely.
 
-**Hybrid workspaces with both `R/` and `analysis/` directories
-are common in zzcollab output.** `penguins1zzcollab` is one
-example: a tool package skeleton whose primary deliverable is a
-Quarto document. These should use the compendium template; the
-package side is exercised by Tier 2 anyway, so nothing is lost.
+**Quarto blog posts should omit the check tier.** This was the
+mistake in the first revision applied to `penguins1zzcollab`
+(Section 9.5): the tiered template was applied to a project that
+is not a package, and Tier 2 failed at `R CMD build` for reasons
+that have nothing to do with whether the blog post is correct.
+The corrected approach is Tier 1 (lockfile validation) plus a
+path-filtered Tier 3 (render) and no Tier 2 at all.
+
+**Hybrid workspaces are common in zzcollab output and require
+discriminating signals.** Both `penguins1zzcollab` (a blog post)
+and a hypothetical compendium with `R/` populated would have
+identical file presence in DESCRIPTION, NAMESPACE, R/, and tests/.
+File presence alone underdetermines the workspace type. The
+discriminating signal is the YAML header of the primary document,
+discussed in Section 11.1.
 
 ### 11.1 Detection at scaffolding time
 
 The framework can choose the appropriate template by inspecting
-files at `zzc analysis` or `zzc doctor` time:
+files and file headers at `zzc analysis` or `zzc doctor` time. The
+ordering matters: blog-post detection should fire before
+compendium detection because the file-presence overlap is the
+source of misclassification (Section 9.5). File-extension
+detection should accept any `.Rmd` or `.qmd` in `analysis/report/`
+rather than literal filenames, because zzcollab projects in the
+wild use `report.Rmd`, `manuscript.Rmd`, `main.Rmd`, and various
+custom names interchangeably (Section 9.6).
 
-- `analysis/report/report.Rmd` exists, output is `pdf_document`:
-  LaTeX manuscript pattern (mci-style).
-- `analysis/report/index.qmd` or top-level `index.qmd` exists:
-  Quarto analysis pattern (penguins1zzcollab-style).
-- `analysis/report/report.qmd` exists with `format: pdf:`: Quarto
-  manuscript pattern.
-- None of the above, only `R/`, `tests/`, `man/` populated: tool
-  package pattern (zzobj2fig-style).
+1. **Blog post pattern.** `analysis/report/index.qmd` (or top-level
+   `index.qmd`) exists AND the YAML header contains
+   `document-type: "blog"` or the project is part of a Quarto
+   blog tree. Emits `blog-render.yml` (path-filtered render) plus
+   a Tier 1 validation workflow. No `R CMD check`.
+
+2. **LaTeX compendium pattern.** Any `.Rmd` exists in
+   `analysis/report/` and its YAML header contains
+   `output: pdf_document` (or equivalent LaTeX-target output).
+   Tiered model with `rmarkdown::render` and `setup-tinytex@v2`.
+   Examples in alz tree: mci, mcid-cdr, psp, medications-progression
+   (the last using `manuscript.Rmd` rather than `report.Rmd`).
+
+3. **Quarto compendium pattern.** Any `.qmd` exists in
+   `analysis/report/` without a `document-type: "blog"` header,
+   targeting HTML or PDF via Quarto. Tiered model with
+   `quarto render`.
+
+4. **Tool package pattern.** None of the above; only `R/`,
+   `tests/`, `man/` populated. `setup-renv@v2` plus
+   `check-r-package@v2`. No render tier.
 
 A `zzc doctor` upgrade can re-detect on existing projects and
 swap the template, using the full-content replacement path
 introduced earlier in this work rather than a stamp-only bump.
+
+The canonical `render-report.yml` template (after the patch
+applied in this work) already enumerates `report.Rmd`,
+`manuscript.Rmd`, `main.Rmd`, plus `.qmd` analogues, plus a
+fallback to the largest matching file in `analysis/report/`. So
+the file-name signal is robust at the workflow level. The
+discrimination question is one tier higher: which template to
+emit, not which file the template should match.
+
+### 11.2 The two-workflow split is an existing zzcollab pattern
+
+The two-workflow split (one cheap always-on workflow plus one
+expensive path-filtered workflow) is not a new design proposed by
+this work. It is an existing pattern already in zzcollab's template
+set, applied inconsistently across deployed projects.
+
+Two existing zzcollab template files implement the split:
+
+- `templates/workflows/r-package.yml` -- the always-on package
+  check; runs on every push and pull request.
+- `templates/workflows/render-report.yml` -- the path-filtered
+  manuscript render; triggers only on changes under
+  `analysis/**`, `R/**`, `DESCRIPTION`, or itself.
+
+In the alz tree of eighteen compendium projects, three (pznblastanalysis,
+ptsd-diabetes-mediation, pmsimstats-ng) deploy both workflows
+together, three different MD5 variants of `render-report.yml` in
+circulation. The remaining fifteen have only `r-package.yml`,
+even when their `analysis/report/` directory contains a
+manuscript that would benefit from automated render verification.
+
+Two corollaries follow:
+
+1. **The pattern is sound; the deployment is partial.** The two
+   blog-post workflows in `qblog/posts/` (the validation workflow
+   added in this work plus the existing `blog-render.yml`)
+   instantiate the same pattern with a Quarto-rendering Tier 3.
+   The framework's recommended posture is to deploy both workflows
+   for any workspace that has a renderable document, regardless of
+   whether the renderer is `rmarkdown::render` or `quarto render`.
+
+2. **Stale variants need re-templating.** The three variants of
+   `render-report.yml` in circulation reflect the same template-drift
+   problem documented in Section 9 for `r-package.yml`. The same
+   `zzc doctor` full-content replacement path applies. Compendia
+   with stale variants should be re-templated to the canonical
+   `render-report.yml` (which after the patches in this work
+   handles both `.Rmd` and `.qmd` files and accepts naming
+   variety).
+
+The contribution of this work in 11.2 is therefore not the
+introduction of a new pattern but the explicit recognition that the
+existing pattern should be the framework default for any compendium,
+including blog posts, and that it should be propagated uniformly
+rather than left to per-project judgment at scaffolding time.
 
 ### 11.2 What stays in the framework
 
@@ -611,5 +757,5 @@ record.
 
 ---
 
-*Rendered on 2026-05-06 at 07:30 PDT.*<br>
+*Rendered on 2026-05-06 at 07:50 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-strategy-tiered-model.md*

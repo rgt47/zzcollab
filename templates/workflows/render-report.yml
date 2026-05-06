@@ -22,6 +22,9 @@ jobs:
         with:
           r-version: 'release'
 
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -39,30 +42,57 @@ jobs:
       - name: Detect main manuscript
         id: detect
         run: |
-          # Try common manuscript locations and patterns
-          if [ -f "analysis/report/report.Rmd" ]; then
-            echo "manuscript=analysis/report/report.Rmd" >> $GITHUB_OUTPUT
-          elif [ -f "analysis/report/manuscript.Rmd" ]; then
-            echo "manuscript=analysis/report/manuscript.Rmd" >> $GITHUB_OUTPUT
-          elif [ -f "analysis/report/main.Rmd" ]; then
-            echo "manuscript=analysis/report/main.Rmd" >> $GITHUB_OUTPUT
-          else
-            # Find largest Rmd in report directory (likely the main manuscript)
-            MAIN=$(find analysis/report -name "*.Rmd" -type f -exec ls -lS {} + 2>/dev/null | head -1 | awk '{print $NF}')
-            if [ -n "$MAIN" ]; then
-              echo "manuscript=$MAIN" >> $GITHUB_OUTPUT
-            else
-              echo "No manuscript found"
-              exit 1
+          # Try common manuscript locations and patterns. Accepts
+          # .Rmd and .qmd, with .Rmd preferred when both are
+          # present at the same canonical name (legacy precedence).
+          MANUSCRIPT=""
+          for candidate in \
+            analysis/report/report.Rmd \
+            analysis/report/report.qmd \
+            analysis/report/manuscript.Rmd \
+            analysis/report/manuscript.qmd \
+            analysis/report/main.Rmd \
+            analysis/report/main.qmd \
+            analysis/report/index.qmd
+          do
+            if [ -f "$candidate" ]; then
+              MANUSCRIPT="$candidate"
+              break
             fi
-          fi
-          echo "📄 Detected manuscript: $(cat $GITHUB_OUTPUT | grep manuscript | cut -d= -f2)"
+          done
 
-      - name: Render main manuscript
+          if [ -z "$MANUSCRIPT" ]; then
+            # Fallback: largest .Rmd or .qmd in analysis/report/
+            MANUSCRIPT=$(find analysis/report \( -name "*.Rmd" -o -name "*.qmd" \) -type f -exec ls -lS {} + 2>/dev/null | head -1 | awk '{print $NF}')
+          fi
+
+          if [ -z "$MANUSCRIPT" ]; then
+            echo "No manuscript found in analysis/report/"
+            exit 1
+          fi
+
+          ENGINE="rmarkdown"
+          case "$MANUSCRIPT" in
+            *.qmd) ENGINE="quarto" ;;
+          esac
+
+          echo "manuscript=$MANUSCRIPT" >> $GITHUB_OUTPUT
+          echo "engine=$ENGINE" >> $GITHUB_OUTPUT
+          echo "Detected manuscript: $MANUSCRIPT (engine: $ENGINE)"
+
+      - name: Render with rmarkdown
+        if: steps.detect.outputs.engine == 'rmarkdown'
         run: |
           MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
-          echo "Rendering $MANUSCRIPT..."
+          echo "Rendering $MANUSCRIPT via rmarkdown::render..."
           Rscript -e "rmarkdown::render('$MANUSCRIPT')"
+
+      - name: Render with quarto
+        if: steps.detect.outputs.engine == 'quarto'
+        run: |
+          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
+          echo "Rendering $MANUSCRIPT via quarto render..."
+          quarto render "$MANUSCRIPT"
 
       - name: Render supplementary files (optional)
         continue-on-error: true
@@ -76,12 +106,19 @@ jobs:
       - name: Check rendering output
         run: |
           MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
-          PDF_FILE="${MANUSCRIPT%.Rmd}.pdf"
+          # Strip extension regardless of .Rmd or .qmd
+          STEM="${MANUSCRIPT%.*}"
+          # Accept either .pdf or .html as success
+          PDF_FILE="${STEM}.pdf"
+          HTML_FILE="${STEM}.html"
           if [ -f "$PDF_FILE" ]; then
-            echo "✅ Manuscript rendered successfully"
+            echo "Manuscript rendered to PDF"
             ls -lh "$PDF_FILE"
+          elif [ -f "$HTML_FILE" ]; then
+            echo "Manuscript rendered to HTML"
+            ls -lh "$HTML_FILE"
           else
-            echo "❌ PDF not generated"
+            echo "Render output not found at $PDF_FILE or $HTML_FILE"
             exit 1
           fi
 

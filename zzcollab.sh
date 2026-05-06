@@ -386,6 +386,22 @@ cmd_docker() {
     # Check for outdated templates and prompt to update
     check_and_prompt_outdated_templates
 
+    # Resolve base image first so we can validate r_version against published
+    # tags before writing renv.lock (avoids R version / Docker tag mismatch).
+    [[ -n "$base_image" ]] && export BASE_IMAGE="$base_image"
+    if [[ -n "$profile" ]]; then
+        BASE_IMAGE=$(get_profile_base_image "$profile")
+        export BASE_IMAGE
+        require_module "config"
+        config_set "profile-name" "$profile" true 2>/dev/null || true
+    else
+        load_config 2>/dev/null || true
+        if [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
+            BASE_IMAGE=$(get_profile_base_image "$CONFIG_PROFILE_NAME")
+            export BASE_IMAGE
+        fi
+    fi
+
     # Ensure renv.lock exists (required by Dockerfile)
     if [[ ! -f "renv.lock" ]]; then
         log_info "No renv.lock found, creating minimal lockfile..."
@@ -399,26 +415,15 @@ cmd_docker() {
             r_version=$(get_cran_r_version)
         fi
 
+        # Verify the chosen R version exists as a tag for BASE_IMAGE; fall
+        # back to the latest published tag if not (e.g., CRAN has 4.6.0 but
+        # rocker/tidyverse has only 4.5.3).
+        r_version=$(get_buildable_r_version "${BASE_IMAGE:-}" "$r_version")
+
         create_renv_lock_minimal "$r_version"
     fi
 
-    # Set environment for docker module
     [[ -n "$r_version" ]] && export R_VERSION="$r_version"
-    [[ -n "$base_image" ]] && export BASE_IMAGE="$base_image"
-    if [[ -n "$profile" ]]; then
-        BASE_IMAGE=$(get_profile_base_image "$profile")
-        export BASE_IMAGE
-        # Save profile to project config
-        require_module "config"
-        config_set "profile-name" "$profile" true 2>/dev/null || true
-    else
-        # No profile specified via CLI - use config default
-        load_config 2>/dev/null || true
-        if [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
-            BASE_IMAGE=$(get_profile_base_image "$CONFIG_PROFILE_NAME")
-            export BASE_IMAGE
-        fi
-    fi
 
     # Generate Dockerfile + renv.lock (wizard handles new workspaces)
     generate_dockerfile || exit 1
@@ -1352,6 +1357,7 @@ cmd_quickstart() {
     log_info "Step 2/3: Setting up renv..."
     local r_version
     r_version=$(get_cran_r_version)
+    r_version=$(get_buildable_r_version "$base_image" "$r_version")
     create_renv_lock_minimal "$r_version"
     log_success "renv.lock created (R $r_version)"
 
