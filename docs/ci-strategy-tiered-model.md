@@ -143,17 +143,24 @@ framework remains internally consistent.
 
 ```r
 renv::restore(prompt = FALSE)
-renv::status()
+status <- renv::status()
+if (!isTRUE(status$synchronized)) {
+  quit(status = 1)
+}
 zzrenvcheck::check_packages()
 ```
 
 `renv::restore()` confirms the lockfile is restorable. `renv::status()`
 confirms the lockfile, DESCRIPTION, and source code agree on what
-packages are in use. `zzrenvcheck::check_packages()` adds a finer-grained
-audit (orphaned imports, undeclared usage). Expected duration under
-thirty seconds in steady state, with a warm cache. This is the check
-that directly addresses the framework's reproducibility claim and is
-currently the least enforced part of the workflow.
+packages are in use; the explicit `quit(status = 1)` is required
+because `renv::status()` reports findings without raising an error,
+and a tier that does not fail when inconsistency is detected does
+not catch the regression it is meant to catch (see Section 9.7).
+`zzrenvcheck::check_packages()` adds a finer-grained audit (orphaned
+imports, undeclared usage). Expected duration under thirty seconds
+in steady state, with a warm cache. This is the check that directly
+addresses the framework's reproducibility claim and is currently
+the least enforced part of the workflow.
 
 ### Tier 2: Code Correctness
 
@@ -466,7 +473,166 @@ detection to include `.qmd` files and to ensure the stale variants
 are upgraded via `zzc doctor` to the current canonical. The first is
 patched in this work; the second is a separate cleanup pass.
 
-### 9.7 Empirical reliability favors simpler workflows
+### 9.7 Tier 1 "pass" is not "consistent": verification on penguins1zzcollab
+
+After the Tier-1-only workflow was deployed to penguins1zzcollab and
+the run completed, the GitHub Actions UI showed the job in green
+("success", 1m14s). Inspection of the job log revealed that
+`renv::status()` had reported a substantial inconsistency in the
+project state:
+
+```
+The following package(s) are in an inconsistent state:
+ package    installed  recorded  used
+ askpass    y          n         y
+ backports  y          n         y
+ base64enc  y          n         y
+ ... (continues for many more packages)
+```
+
+Translation: dozens of packages were installed in the renv library
+and used by the source code, but were not recorded in `renv.lock`.
+The lockfile pinned twelve packages while the project actually
+depended on roughly ten times that count. This is exactly the
+silent reproducibility failure mode the validate tier is supposed
+to catch.
+
+The reason the workflow nonetheless reported "pass" is that
+`renv::status()` does not raise an error when it finds
+inconsistency. It prints findings and returns a list, and the
+calling shell wrapper exits 0 regardless. A reader scanning only
+the green checkmark in GitHub Actions would conclude the project
+is healthy.
+
+The fix is to capture the return value of `renv::status()` and exit
+explicitly if synchronization fails:
+
+```r
+status <- renv::status()
+if (!isTRUE(status$synchronized)) {
+  cat("\nrenv reports the project is not synchronized.\n",
+      "Run renv::snapshot() locally and commit the updated ",
+      "renv.lock.\n", sep = "")
+  quit(status = 1)
+}
+```
+
+This pattern was added to penguins1zzcollab after the verification
+run and should be the canonical Tier 1 implementation in the
+framework's templates. Section 5's Tier 1 sketch and Section 11's
+patterns should be read as including this synchronization check.
+
+The broader lesson is one of CI hygiene: a tier whose intent is to
+catch a class of regression must be configured to fail when that
+regression is detected, not merely to print evidence of it. The
+visible signal in CI dashboards is the job exit status, not the
+log content. A green dashboard with red findings in logs is
+operationally indistinguishable from an absent CI check.
+
+### 9.8 Multi-repo verification: zero passing, all informative
+
+After the single-repo verification on `penguins1zzcollab` (Section
+9.7), the new-generation pattern was deployed across five additional
+repositories spanning all three observed workspace categories:
+
+| Repo | Workspace type | Workflow change |
+|---|---|---|
+| `res/02-adaptive-alloc-survival` | LaTeX compendium | replace v2.4.0-A with `r-package.yml` (validate+check) + `render-report.yml` (rmarkdown + tinytex) |
+| `alz/15-mcid-cdr` | LaTeX compendium | same |
+| `alz/04-mci` | LaTeX compendium | retroactive `r-version: 'renv'` fix to existing tiered model |
+| `qblog/14-penguins1zzcollab` | Quarto blog post | `r-version: 'renv'` fix |
+| `qblog/13-palmerpenguinsregression` | Quarto blog post | replace v2.4.0-A with Tier-1-only `r-package.yml`; retain existing `blog-render.yml`; delete misapplied `render-report.yml` |
+
+Of these five, **zero passed CI on first run**. Every failure was
+project-side and informative; none were CI-infrastructure noise.
+The failures distributed across three categories, each of which
+adds material to the analysis recorded earlier in this section.
+
+**Failure category 1: R-version mismatch (newly observed).** The
+default `r-version: 'release'` in `setup-r@v2` resolved to R 4.6.0
+at the time of the verification (May 2026). The lockfiles in the
+target repositories all pinned R 4.4.2. Packages compiled for R
+4.4 failed to load against R 4.6's headers, producing errors such
+as `R_NamespaceRegistry was not declared in this scope` and
+`R_ext/PrtUtil.h: No such file or directory`. The fix is to set
+`r-version: 'renv'` on `setup-r@v2`, which reads the R version
+from `renv.lock` and matches the lockfile's pinned version. This
+is a one-line addition per setup-r block:
+
+```yaml
+- uses: r-lib/actions/setup-r@v2
+  with:
+    use-public-rspm: true
+    r-version: 'renv'
+```
+
+The new-generation template should include this line. Without it,
+any zzcollab project whose lockfile pins an R version older than
+the current release will fail in the same way once R 4.7 is
+released, and so on.
+
+**Failure category 2: Posit binary aging-out is a recurring
+pattern.** Two of the five repositories (`res/02` and `alz/04-mci`)
+failed at `S7 0.2.1-1` download. The `-1` suffix is a Posit
+binary build identifier. This is structurally identical to the
+`Rcpp 1.1.1-1` failure documented in Section 9.3: the lockfile
+records a specific binary build; that exact build ages out of
+Posit Package Manager's snapshot retention; subsequent restores
+cannot fetch it. The Rcpp instance was treated in 9.3 as an
+isolated case; the S7 recurrence indicates this is a class of
+failure rather than a one-off. Section 9.1's recommendation to
+pin `R$Repositories.URL` to a date-stamped Posit URL with the
+correct OS segment (`__linux__/noble/<date>`) is reinforced as
+the structural fix; the immediate workaround is `renv::snapshot()`
+locally and a fresh commit so the lockfile records currently-
+available builds.
+
+**Failure category 3: R CMD check WARNINGs surface latent
+package-quality regressions.** `alz/15-mcid-cdr` failed at
+`R CMD check` with
+
+```
+Status: 1 WARNING, 4 NOTEs
+Undocumented code objects:
+  'calculate_weighted_mean_ci' 'ci95'
+Consider adding
+  importFrom("stats", "qt")
+```
+
+`r-lib/actions/check-r-package@v2` errors on WARNINGs by default.
+The previous v2.4.0-A workflow used a hand-rolled `rcmdcheck`
+call with `error_on = 'error'`, which let WARNINGs pass. The
+documentation gaps were therefore present in the package long
+before the migration; the new pattern surfaces them rather than
+masking them. This is empirical evidence for Section 9.7's
+hygiene principle: the visible signal in CI dashboards is the
+job exit status, not the log content, and a workflow whose
+error-on threshold is set permissively cannot serve as a quality
+gate.
+
+**Failure category 4: Tier 1 synchronized check verified at
+scale.** Three of the five failures were the explicit
+`!isTRUE(status$synchronized)` check from Section 9.7 firing
+(`penguins1zzcollab`, `palmerpenguinsregression`,
+`mcid-cdr`'s validate tier). This validates the Section 9.7
+design at scale: the strict synchronized check produces honest
+red signals rather than misleading green checkmarks for projects
+in lockfile-drift state. None of the three projects had been
+detecting their drift under the prior CI; all three are
+detecting it now.
+
+**Empirical assessment.** Zero of five passing is the correct
+result for the current project state. The same five repositories
+under the previous v2.4.0-A workflow were either passing
+(`mci`, `mcid-cdr`, `adaptive-alloc-survival`) or failing for
+opaque infrastructure reasons (`palmerpenguinsregression`,
+`penguins1zzcollab`). The new-generation pattern flips this
+distribution: every failure now points to a real project-side
+regression that the previous CI was masking, and the failure
+messages are actionable. The framework's CI now measures what
+its purpose is supposed to measure.
+
+### 9.9 Empirical reliability favors simpler workflows
 
 Across the projects audited during this work:
 
@@ -779,5 +945,5 @@ These are now part of the record.
 
 ---
 
-*Rendered on 2026-05-06 at 08:05 PDT.*<br>
+*Rendered on 2026-05-06 at 17:52 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-strategy-tiered-model.md*

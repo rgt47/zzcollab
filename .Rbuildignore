@@ -1,6 +1,7 @@
 ^renv$
 ^renv\.lock$
 ^\.Rprofile$
+^\.Rprofile\.local$
 ^\.github$
 ^README\.md$
 ^analysis$
@@ -38,6 +39,17 @@
 ^examples$
 ^vignettes/\.claude$
 ^vignettes/paper\.Rmd$
+^vignettes/.*\.html$
+^vignettes/.*\.pdf$
+^vignettes/.*\.aux$
+^vignettes/.*\.tex$
+^vignettes/.*\.log$
+^vignettes/.*_files$
+^vignettes/report\.Rmd$
+^vignettes/bill_analysis\.R$
+^vignettes/test-bill_analysis\.R$
+^vignettes/workflow-data-analysis$
+^vignettes/workflow-simulation-study$
 ^.*_PLAN\.md$
 ^.*_AUDIT.*\.md$
 ^.*_REPORT\.md$
@@ -50,7 +62,8 @@
 ^CHANGELOG\.md$
 ^CLAUDE\.md\.backup$
 ^VERBOSITY_LEVELS\.md$
-^ACCURATE_REMAINING_ISSUES\.md$^TECHNICAL_EVALUATION\.md$
+^ACCURATE_REMAINING_ISSUES\.md$
+^TECHNICAL_EVALUATION\.md$
 ^TECHNICAL_EVALUATION\.pdf$
 ^lib$
 ^\.build-artifacts$
