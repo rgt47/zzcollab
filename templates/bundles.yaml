@@ -208,6 +208,14 @@ profiles:
     pkgs: publishing
     size: "~3GB"
 
+  manuscript-package:
+    description: "R package with companion Rmd manuscripts (PDF rendering via tinytex)"
+    base_image: "rocker/verse"
+    libs: minimal
+    pkgs: minimal
+    size: "~1.5GB"
+    note: "rocker/verse includes pandoc and tinytex; no Quarto needed for Rmd-only projects"
+
   shiny:
     description: "Shiny web applications"
     base_image: "rocker/shiny"

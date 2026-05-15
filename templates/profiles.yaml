@@ -98,6 +98,21 @@ ubuntu_standard_publishing:
 # UBUNTU SHINY - Shiny Server for web applications
 #=============================================================================
 
+ubuntu_standard_manuscript_package:
+  base_image: "rocker/verse:latest"
+  description: "R package with companion Rmd manuscripts for PDF rendering"
+  workflow_type: "manuscript-package"
+  packages:
+    - "renv"
+    - "devtools"
+    - "roxygen2"
+    - "tinytest"
+  system_deps:
+    - "jq"
+  category: "ubuntu_standard"
+  size: "~1.5GB"
+  notes: "rocker/verse includes pandoc and tinytex. No Quarto or X11 needed. Use PPM binary repo."
+
 ubuntu_shiny_minimal:
   base_image: "rocker/shiny:latest"
   description: "Shiny Server with minimal packages"
