@@ -27,6 +27,9 @@ csl: https://raw.githubusercontent.com/citation-style-language/styles/master/apa
 abstract: |
   Brief summary of research question, methods, and key findings.
 keywords: "reproducible research, data analysis, R"
+header-includes:
+  - \usepackage{setspace}
+  - \setstretch{1.1}
 ---
 
 ```{r setup, include=FALSE}

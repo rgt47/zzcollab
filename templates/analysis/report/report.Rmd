@@ -25,6 +25,9 @@ highlights: |
   • Species-specific allometric relationships identified  
   • Gentoo penguins show largest body size and steepest scaling  
   • Robust statistical framework with 95% confidence intervals
+header-includes:
+  - \usepackage{setspace}
+  - \setstretch{1.1}
 ---
 
 ```{r setup, include=FALSE}
