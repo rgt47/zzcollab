@@ -749,6 +749,11 @@ build_docker_image() {
     if [[ "$(uname -m)" == "arm64" ]]; then
         local base_image
         base_image=$(grep "^FROM" Dockerfile | head -1 | awk '{print $2}' | cut -d: -f1)
+        # When FROM uses ARG substitution (e.g. FROM ${BASE_IMAGE}:...), resolve
+        # the actual image name from the ARG BASE_IMAGE line
+        if [[ "$base_image" == *'${'* ]]; then
+            base_image=$(grep "^ARG BASE_IMAGE=" Dockerfile | head -1 | cut -d= -f2)
+        fi
         case "$base_image" in
             *tidyverse*|*shiny*|*verse*)
                 platform_args="--platform linux/amd64"
