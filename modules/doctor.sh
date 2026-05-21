@@ -366,14 +366,18 @@ check_version_stamps() {
             local copy_choice
             read -r -p "    Copy from template? [Y/n]: " copy_choice
             if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
-                if safe_cp "$template_guide" "$dir/docs/ZZCOLLAB_USER_GUIDE.md" && \
-                   sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
-                       "$dir/docs/ZZCOLLAB_USER_GUIDE.md" && \
-                   rm -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md.bak"; then
+                local _tmp_guide
+                _tmp_guide=$(mktemp)
+                if safe_cp "$template_guide" "$dir/docs/ZZCOLLAB_USER_GUIDE.md" \
+                   && sed "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
+                          "$dir/docs/ZZCOLLAB_USER_GUIDE.md" > "$_tmp_guide" \
+                   && cat "$_tmp_guide" > "$dir/docs/ZZCOLLAB_USER_GUIDE.md"; then
+                    rm -f "$_tmp_guide"
                     printf "    ${COL_GREEN}✓ Copied user guide to docs/ (v%s)${COL_RESET}\n" \
                         "$CURRENT_VERSION"
                     issues=$((issues - 1))
                 else
+                    rm -f "$_tmp_guide"
                     printf "    ${COL_RED}✗ Failed to copy${COL_RESET}\n"
                 fi
             fi
@@ -397,14 +401,18 @@ check_version_stamps() {
                 local replace_choice
                 read -r -p "    Replace with template (overwrites local edits)? [y/N]: " replace_choice
                 if [[ "$replace_choice" =~ ^[Yy]$ ]]; then
-                    if safe_cp "$template_workflow" "$workflow_file" && \
-                       sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
-                           "$workflow_file" && \
-                       rm -f "$workflow_file.bak"; then
+                    local _tmp_wf_r
+                    _tmp_wf_r=$(mktemp)
+                    if safe_cp "$template_workflow" "$workflow_file" \
+                       && sed "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
+                              "$workflow_file" > "$_tmp_wf_r" \
+                       && cat "$_tmp_wf_r" > "$workflow_file"; then
+                        rm -f "$_tmp_wf_r"
                         printf "    ${COL_GREEN}✓ Replaced r-package.yml (v%s)${COL_RESET}\n" \
                             "$CURRENT_VERSION"
                         issues=$((issues - 1))
                     else
+                        rm -f "$_tmp_wf_r"
                         printf "    ${COL_RED}✗ Failed to replace${COL_RESET}\n"
                     fi
                 fi
@@ -418,14 +426,18 @@ check_version_stamps() {
             local copy_choice
             read -r -p "    Copy from template? [Y/n]: " copy_choice
             if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
-                if safe_cp "$template_workflow" "$workflow_file" && \
-                   sed -i.bak "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
-                       "$workflow_file" && \
-                   rm -f "$workflow_file.bak"; then
+                local _tmp_wf_c
+                _tmp_wf_c=$(mktemp)
+                if safe_cp "$template_workflow" "$workflow_file" \
+                   && sed "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
+                          "$workflow_file" > "$_tmp_wf_c" \
+                   && cat "$_tmp_wf_c" > "$workflow_file"; then
+                    rm -f "$_tmp_wf_c"
                     printf "    ${COL_GREEN}✓ Copied r-package.yml (v%s)${COL_RESET}\n" \
                         "$CURRENT_VERSION"
                     issues=$((issues - 1))
                 else
+                    rm -f "$_tmp_wf_c"
                     printf "    ${COL_RED}✗ Failed to copy${COL_RESET}\n"
                 fi
             fi
@@ -581,6 +593,22 @@ check_workspace() {
     # Check version stamps
     check_version_stamps "$dir"
     total_issues=$((total_issues + $?))
+
+    # Offer interactive update for outdated stamps (when not already in --fix mode)
+    if [[ "$FIX_MODE" == "false" ]] && [[ ${#FIX_TARGETS[@]} -gt 0 ]] && [[ -t 0 ]]; then
+        local _n_outdated=${#FIX_TARGETS[@]}
+        local _fix_choice
+        read -r -p "  Update ${_n_outdated} outdated stamp(s)? [Y/n]: " _fix_choice
+        if [[ ! "$_fix_choice" =~ ^[Nn]$ ]]; then
+            echo "  Applying stamp fixes:"
+            local _n_fixed=0 _target _fp _pfx _nv
+            for _target in "${FIX_TARGETS[@]}"; do
+                IFS='|' read -r _fp _pfx _nv <<< "$_target"
+                bump_stamp "$_fp" "$_pfx" "$_nv" && _n_fixed=$((_n_fixed + 1))
+            done
+            total_issues=$((total_issues - _n_fixed))
+        fi
+    fi
     echo ""
 
     # Check CI status
@@ -627,16 +655,20 @@ bump_stamp() {
         return 0
     fi
 
-    local escaped_prefix
+    local escaped_prefix tmp
     escaped_prefix=$(printf '%s' "$stamp_prefix" | sed 's/[&/\\]/\\&/g')
-    sed -i.bak -E \
+    tmp=$(mktemp)
+    if sed -E \
         "s/^(${escaped_prefix}) v[0-9]+\\.[0-9]+\\.[0-9]+/\\1 v${new_ver}/" \
-        "$filepath" || {
+        "$filepath" > "$tmp"; then
+        cat "$tmp" > "$filepath"
+        rm -f "$tmp"
+    else
+        rm -f "$tmp"
         printf "    %-40s ${COL_RED}sed failed${COL_RESET}\n" \
             "${filepath/#$HOME/~}"
         return 1
-    }
-    rm -f "${filepath}.bak"
+    fi
     printf "    %-40s ${COL_GREEN}bumped -> v%s${COL_RESET}\n" \
         "${filepath/#$HOME/~}" "$new_ver"
 }
@@ -742,6 +774,18 @@ scan_directory() {
     return $any_outdated
 }
 
+# Walk up from cwd to find the git repository root.
+# Falls back to cwd if no .git directory is found.
+find_git_root() {
+    local dir
+    dir="$(pwd)"
+    while [[ "$dir" != "/" ]]; do
+        [[ -d "$dir/.git" ]] && { echo "$dir"; return 0; }
+        dir="$(dirname "$dir")"
+    done
+    pwd
+}
+
 # Main entry point
 main() {
     local scan_mode=false
@@ -804,9 +848,9 @@ main() {
         esac
     done
 
-    # Default to current directory
+    # Default to git root (or cwd if not inside a git repo)
     if [[ ${#dirs[@]} -eq 0 ]]; then
-        dirs=(".")
+        dirs=("$(find_git_root)")
     fi
 
     if [[ "$QUIET_MODE" != "true" ]]; then
