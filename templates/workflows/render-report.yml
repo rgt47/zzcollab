@@ -1,152 +1,94 @@
-name: Render Research Report
+# zzcollab render-report.yml v2.6.0
+#
+# Tier 3 (render) for all zzcollab research compendia.
+# Builds the project Docker image, mounts TinyTeX from the host runner
+# at /opt/tinytex (world-accessible and world-writable so TinyTeX can
+# auto-install missing LaTeX packages at render time). Works for both
+# rocker/tidyverse (non-root user) and rocker/verse (root user with
+# built-in TinyTeX) base images.
+# Path-filtered to run only when analysis code or environment changes.
+#
+name: Render Reports
 
 on:
-  workflow_dispatch:  # Manual trigger
   push:
-    branches: [main, master]
+    branches: [ main, master ]
     paths:
-      - 'analysis/report/**'
-      - 'analysis/scripts/**'
+      - 'analysis/**'
       - 'R/**'
       - 'renv.lock'
+      - 'Dockerfile'
+      - '.github/workflows/render-report.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'analysis/**'
+      - 'R/**'
+      - 'renv.lock'
+      - 'Dockerfile'
 
 jobs:
   render:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: 'release'
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
+      - name: Install TinyTeX on host runner
+        uses: r-lib/actions/setup-tinytex@v2
 
-      - name: Install system dependencies
+      - name: Make TinyTeX tree accessible and writable to container
+        run: chmod -R a+rwx $HOME/.TinyTeX
+
+      - name: Build Docker image
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pandoc \
-            texlive-latex-base \
-            texlive-fonts-recommended \
-            texlive-fonts-extra \
-            texlive-latex-extra
+          echo "Building computational environment..."
+          docker build -t compendium-env .
 
-      - name: Restore R packages
+      - name: Restore packages and render all manuscripts
         run: |
-          Rscript -e "renv::restore()"
+          docker run --rm -e CI=true \
+            -v ${{ github.workspace }}:/project \
+            -v $HOME/.TinyTeX:/opt/tinytex \
+            -e PATH="/opt/tinytex/bin/x86_64-linux:$PATH" \
+            -w /project compendium-env \
+            Rscript -e '
+              renv::restore()
+              rmds <- list.files(
+                "analysis", pattern = "^report[.]Rmd$",
+                recursive = TRUE, full.names = TRUE
+              )
+              cat("Found", length(rmds), "manuscripts to render\n\n")
+              failed <- character()
+              for (rmd in rmds) {
+                cat("=== Rendering:", rmd, "===\n")
+                old_wd <- setwd(dirname(rmd))
+                tryCatch(
+                  rmarkdown::render(basename(rmd)),
+                  error = function(e) {
+                    cat("FAILED:", conditionMessage(e), "\n")
+                    failed <<- c(failed, rmd)
+                  }
+                )
+                setwd(old_wd)
+              }
+              cat("\n=== summary ===\n")
+              cat("rendered:", length(rmds) - length(failed), "\n")
+              cat("failed:  ", length(failed), "\n")
+              if (length(failed) > 0) {
+                for (f in failed) cat("  ", f, "\n")
+                quit(status = 1)
+              }
+            '
 
-      - name: Detect main manuscript
-        id: detect
-        run: |
-          # Try common manuscript locations and patterns. Accepts
-          # .Rmd and .qmd, with .Rmd preferred when both are
-          # present at the same canonical name (legacy precedence).
-          MANUSCRIPT=""
-          for candidate in \
-            analysis/report/report.Rmd \
-            analysis/report/report.qmd \
-            analysis/report/manuscript.Rmd \
-            analysis/report/manuscript.qmd \
-            analysis/report/main.Rmd \
-            analysis/report/main.qmd \
-            analysis/report/index.qmd
-          do
-            if [ -f "$candidate" ]; then
-              MANUSCRIPT="$candidate"
-              break
-            fi
-          done
-
-          if [ -z "$MANUSCRIPT" ]; then
-            # Fallback: largest .Rmd or .qmd in analysis/report/
-            MANUSCRIPT=$(find analysis/report \( -name "*.Rmd" -o -name "*.qmd" \) -type f -exec ls -lS {} + 2>/dev/null | head -1 | awk '{print $NF}')
-          fi
-
-          if [ -z "$MANUSCRIPT" ]; then
-            echo "No manuscript found in analysis/report/"
-            exit 1
-          fi
-
-          ENGINE="rmarkdown"
-          case "$MANUSCRIPT" in
-            *.qmd) ENGINE="quarto" ;;
-          esac
-
-          echo "manuscript=$MANUSCRIPT" >> $GITHUB_OUTPUT
-          echo "engine=$ENGINE" >> $GITHUB_OUTPUT
-          echo "Detected manuscript: $MANUSCRIPT (engine: $ENGINE)"
-
-      - name: Render with rmarkdown
-        if: steps.detect.outputs.engine == 'rmarkdown'
-        run: |
-          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
-          echo "Rendering $MANUSCRIPT via rmarkdown::render..."
-          Rscript -e "rmarkdown::render('$MANUSCRIPT')"
-
-      - name: Render with quarto
-        if: steps.detect.outputs.engine == 'quarto'
-        run: |
-          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
-          echo "Rendering $MANUSCRIPT via quarto render..."
-          quarto render "$MANUSCRIPT"
-
-      - name: Render supplementary files (optional)
-        continue-on-error: true
-        run: |
-          # Render other Rmd files in analysis/scripts if they exist
-          find analysis/scripts -name "*.Rmd" -type f 2>/dev/null | while read rmd; do
-            echo "Rendering supplementary: $rmd"
-            Rscript -e "rmarkdown::render('$rmd')" || echo "Failed to render $rmd"
-          done
-
-      - name: Check rendering output
-        run: |
-          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
-          # Strip extension regardless of .Rmd or .qmd
-          STEM="${MANUSCRIPT%.*}"
-          # Accept either .pdf or .html as success
-          PDF_FILE="${STEM}.pdf"
-          HTML_FILE="${STEM}.html"
-          if [ -f "$PDF_FILE" ]; then
-            echo "Manuscript rendered to PDF"
-            ls -lh "$PDF_FILE"
-          elif [ -f "$HTML_FILE" ]; then
-            echo "Manuscript rendered to HTML"
-            ls -lh "$HTML_FILE"
-          else
-            echo "Render output not found at $PDF_FILE or $HTML_FILE"
-            exit 1
-          fi
-
-      - name: Upload rendered documents
+      - name: Upload rendered PDFs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rendered-documents
+          name: rendered-manuscripts
           path: |
-            analysis/report/*.pdf
-            analysis/report/*.html
-            analysis/scripts/*.pdf
-            analysis/figures/*.pdf
-            analysis/figures/*.png
+            analysis/**/*.pdf
           retention-days: 30
           if-no-files-found: warn
-
-      - name: Generate summary
-        if: success()
-        run: |
-          MANUSCRIPT="${{ steps.detect.outputs.manuscript }}"
-          PDF_FILE="${MANUSCRIPT%.Rmd}.pdf"
-
-          echo "## ✅ Documents Rendered Successfully" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Main Manuscript" >> $GITHUB_STEP_SUMMARY
-          echo "- **File**: \`$(basename $MANUSCRIPT)\`" >> $GITHUB_STEP_SUMMARY
-          if [ -f "$PDF_FILE" ]; then
-            echo "- **Size**: $(ls -lh $PDF_FILE | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Download**: Check 'Artifacts' section above" >> $GITHUB_STEP_SUMMARY
