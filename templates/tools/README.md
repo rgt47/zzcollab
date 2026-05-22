@@ -1,38 +1,55 @@
 # tools/
 
 This directory holds the render-stamp helpers that zzcollab
-vendors into every document-rendering compendium. Their single
-purpose is to ensure that any PDF produced from this project
-carries, in a discreet page footer, a record of the document it
-was rendered from and the time it was rendered. We have found
-that an unlabelled PDF circulating among collaborators is a
-recurring source of confusion, and a footer that names its own
-source is the simplest remedy.
+vendors into every document-rendering compendium. They do two
+things on every render. First, they stamp a discreet provenance
+footer onto the PDF, naming the source document, the time of
+rendering, and the git version. Second, they deposit a dated,
+versioned copy of the PDF in the project's `share/` directory,
+with a one-line entry added to a manifest. We have found that an
+unlabelled PDF circulating among collaborators is a recurring
+source of confusion; a footer that names its own source, and a
+`share/` directory that accumulates an unambiguous record of what
+was sent when, are the two halves of the remedy.
 
 ## What is here
 
-- `stamp.tex` defines the footer. It is a small LaTeX preamble,
-  included at render time, that prints two macros, `\stampsource`
-  and `\stamptime`. It carries `\providecommand` defaults so that
-  a document still compiles when the values have not been
-  supplied.
-- `stamp-render.R` is the wrapper for R Markdown. It computes the
-  source path and the render time, writes a short generated file
-  that fills in the two macros, and renders the document with
-  both files appended to the pandoc invocation.
-- `render.sh` is the command-line entry point. It dispatches on
-  the file extension so that one command stamps `.Rmd`, `.qmd`,
-  and `.md` documents alike.
+- `stamp.tex` defines the footer: a small LaTeX preamble,
+  included at render time, that prints three macros,
+  `\stampsource`, `\stamptime`, and `\stampversion`. It carries
+  `\providecommand` defaults so that a document still compiles
+  when the values have not been supplied.
+- `stamp-render.R` does the work. It renders the document,
+  computes the provenance triple, injects the footer, copies the
+  PDF into `share/`, and appends a row to the manifest. It
+  handles `.Rmd`, `.qmd`, and `.md` input, driving rmarkdown,
+  quarto, or pandoc as required.
+- `render.sh` is a thin command-line wrapper over
+  `stamp-render.R`.
+- `README.md` is this file.
 
-## Why a wrapper
+## The provenance triple
 
-The three toolchains, rmarkdown, Quarto, and a bare pandoc call,
-share a common back end: each passes through pandoc and then
-LaTeX. We therefore stamp at the layer they have in common, the
-LaTeX preamble, rather than solving the problem once per engine.
-The source path must be injected at render time because LaTeX
-sees only the intermediate `.tex` file and not the original
-document.
+Both the footer and the staged filename derive from one triple:
+
+- the **source document** (`report.Rmd`, `report.qmd`, ...);
+- the **render time**, local;
+- the **version**, from `git describe --tags --always --dirty`,
+  which names the exact commit and flags an uncommitted tree.
+
+The footer names the source document. The staged filename names
+the artefact, as `<prefix>-<date>-<time>-<version>.pdf`, where
+the prefix is the document's basename, or its parent directory
+when the basename is a generic stub such as `report`. Footer and
+filename therefore record the same commit and time, while each
+names the thing appropriate to it.
+
+## Where staged copies go
+
+The staged copy is written to `analysis/report/share/` when an
+`analysis/report/` tree exists, which is the zzcollab compendium
+case, and to a repository-root `share/` otherwise. Each render
+also appends a row to `share/MANIFEST.md`.
 
 ## Usage
 
@@ -43,26 +60,23 @@ bash tools/render.sh analysis/report/report.Rmd
 ```
 
 For R Markdown, the more convenient arrangement is to let the
-document stamp itself on every render, including from RStudio's
-Knit button. Add the following to the YAML header:
+document stamp itself on every render. Add the following to the
+YAML header; the hook walks up to find `stamp-render.R`, so it
+needs no package:
 
 ```
-knit: (function(input, ...) source(file.path(
-  rprojroot::find_root(rprojroot::has_file('DESCRIPTION')),
-  'tools', 'stamp-render.R'))$value(input))
+knit: (function(input, ...) { d <- dirname(input); while (!file.exists(file.path(d, 'tools', 'stamp-render.R')) && d != dirname(d)) d <- dirname(d); source(file.path(d, 'tools', 'stamp-render.R'))$value(input) })
 ```
 
-For a multi-document Quarto project, declare a `pre-render`
-script in `_quarto.yml` that writes the generated values file,
-and add `stamp.tex` together with that file to the PDF format's
-`include-in-header`. The `render.sh` route remains available for
-single-file Quarto renders.
+For a multi-document Quarto project, the cleaner arrangement is a
+`pre-render` script in `_quarto.yml`; the `render.sh` route
+remains available for single-file Quarto renders.
 
 ## Provenance
 
 These files are vendored from the zzcollab templates so that the
 compendium builds standalone, without reaching outside the
 repository. They are not project-specific; the canonical copies
-live in zzcollab, and `zzc tools` will reinstall them. Project-
-specific scripts should live alongside them here but are written
+live in zzcollab, and `zzc tools` reinstalls them. Project-
+specific scripts may live alongside them here, but are written
 per project and are not managed by zzcollab.
