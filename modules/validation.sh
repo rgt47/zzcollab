@@ -79,7 +79,10 @@ format_r_package_vector() {
 #==============================================================================
 
 fetch_cran_package_info() {
-    curl -sf --max-time 10 --connect-timeout 5 "https://crandb.r-pkg.org/$1" 2>/dev/null
+    # Strip C0 control characters (U+0000-U+001F) that crandb occasionally
+    # embeds in Description/Author fields; they cause jq parse errors.
+    curl -sf --max-time 10 --connect-timeout 5 "https://crandb.r-pkg.org/$1" 2>/dev/null \
+        | tr -d '\000-\031'
 }
 
 validate_package_on_cran() {
@@ -190,23 +193,23 @@ remove_unused_packages_from_description() {
 
 # Compute renv's DESCRIPTION-based hash for a CRAN package.
 #
-# renv hashes a subset of DESCRIPTION fields (Package, Version, Title,
-# Author, Maintainer, Description, Depends, Imports, Suggests, LinkingTo),
-# sorts them alphabetically, formats as "Field: value\n", strips all
-# whitespace, then MD5s the result.  See renv:::renv_hash_record.
+# renv hashes Package, Version, Title, Author, Maintainer, Description,
+# Depends, Imports, Suggests, LinkingTo (alphabetical order), formats as
+# "Field: value\n", strips all whitespace, then MD5s with a trailing
+# newline appended.  See renv:::renv_hash_record and renv:::md5.
 #
-# Arguments: pkg_info (crandb JSON blob)
+# Dep fields (Depends, Imports, Suggests, LinkingTo) are stored in crandb
+# as {"pkg":"constraint"} objects.  We reconstruct "pkg (constraint)"
+# format, preserving insertion order, to match the raw DESCRIPTION values
+# that renv reads via read.dcf().  Version "*" means no constraint.
+#
+# Arguments: pkg_info (crandb JSON blob, control chars already stripped)
 # Prints: 32-character MD5 hex string, or empty string on failure
 _renv_hash_from_crandb() {
     local pkg_info="$1"
-    # Fields renv hashes, in the order renv sorts them (alphabetical)
-    local hash_fields='["Author","Depends","Description","Imports",
-                        "LinkingTo","Maintainer","Package","Suggests",
-                        "Title","Version"]'
+    local hash_fields='["Author","Depends","Description","Imports","LinkingTo","Maintainer","Package","Suggests","Title","Version"]'
 
-    # Build "Field: value" lines for present fields; dep fields are
-    # arrays in crandb JSON -- collapse to comma-separated strings.
-    local lines; lines=$(echo "$pkg_info" | jq -r \
+    local stripped; stripped=$(echo "$pkg_info" | jq -r \
         --argjson fields "$hash_fields" '
         . as $d |
         $fields[] |
@@ -214,19 +217,24 @@ _renv_hash_from_crandb() {
         ($d[$f] // null) |
         if . == null then empty
         elif type == "object" then
-            # crandb stores dep fields as {"pkg":"version",...}
-            ($f + ": " + ([keys[]] | join(", ")))
+            ($f + ": " + (
+                to_entries |
+                map(if .value == "*" then .key
+                    else .key + " (" + .value + ")"
+                    end) |
+                join(", ")
+            ))
         elif type == "array" then
             ($f + ": " + (. | join(", ")))
         else
             ($f + ": " + tostring)
         end
-    ' 2>/dev/null)
+    ' 2>/dev/null | tr -d '[:space:]')
 
-    [[ -z "$lines" ]] && { echo ""; return 1; }
+    [[ -z "$stripped" ]] && { echo ""; return 1; }
 
-    # Strip all whitespace then MD5 -- matches renv's gsub("[[:space:]]","")
-    echo "$lines" | tr -d '[:space:]' | md5sum | cut -c1-32
+    # renv appends a newline byte before MD5 (see renv:::md5)
+    printf '%s\n' "$stripped" | md5sum | cut -c1-32
 }
 
 # Extract Requirements array from crandb JSON.
