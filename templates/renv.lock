@@ -1,10 +1,10 @@
 {
   "R": {
-    "Version": "4.5.1",
+    "Version": "4.6.0",
     "Repositories": [
       {
         "Name": "CRAN",
-        "URL": "https://cloud.r-project.org"
+        "URL": "https://packagemanager.posit.co/cran/__linux__/noble/latest"
       }
     ]
   },
