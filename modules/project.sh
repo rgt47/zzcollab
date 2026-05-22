@@ -242,6 +242,34 @@ create_docs_files() {
 }
 
 #=============================================================================
+# RENDER-STAMP TOOLS
+#=============================================================================
+
+# Function: create_tools_directory
+# Purpose: Install the vendored render-stamp helpers into tools/.
+#          Invoked by cmd_quickstart for document-rendering profiles
+#          and by `zzc tools` for retrofitting an existing project.
+#          copy_template_file skips files that already exist, so a
+#          project carrying its own tools/ is left untouched.
+create_tools_directory() {
+    log_debug "Installing render-stamp tools..."
+
+    install_template "tools/stamp.tex" "tools/stamp.tex" \
+        "stamp preamble"
+    install_template "tools/stamp-render.R" "tools/stamp-render.R" \
+        "render-stamp helper"
+    install_template "tools/render.sh" "tools/render.sh" \
+        "render wrapper"
+    install_template "tools/README.md" "tools/README.md" \
+        "tools README"
+
+    [[ -f tools/render.sh ]] && chmod +x tools/render.sh
+
+    log_success "Render-stamp tools installed in tools/"
+    return 0
+}
+
+#=============================================================================
 # MAIN SETUP FUNCTION
 #=============================================================================
 

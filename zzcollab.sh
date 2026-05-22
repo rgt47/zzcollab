@@ -1346,6 +1346,13 @@ cmd_quickstart() {
     setup_project || return 1
     log_success "Project structure created"
 
+    # Install render-stamp tools for document-rendering profiles
+    case "$profile" in
+        analysis_pdf|publishing|manuscript-package)
+            create_tools_directory || true
+            ;;
+    esac
+
     # Install zzvim-R graphics template for analysis/publishing profiles
     if [[ "$profile" =~ ^(analysis|analysis_pdf|publishing)$ ]]; then
         install_zzvimr_graphics_template || true
@@ -1397,6 +1404,32 @@ cmd_quickstart() {
         fi
     fi
 
+    return 0
+}
+
+#=============================================================================
+# TOOLS COMMAND
+#=============================================================================
+
+# Function: cmd_tools
+# Purpose: Retrofit the render-stamp helpers into an existing
+#          project: tools/stamp.tex, stamp-render.R, render.sh,
+#          and a README. Existing files are left untouched, so the
+#          command is safe to run repeatedly.
+cmd_tools() {
+    require_module "project"
+
+    if ! is_workspace_initialized; then
+        log_error "Not in a zzcollab project"
+        log_info "Run a profile command first, e.g. 'zzc analysis'"
+        return 1
+    fi
+
+    create_tools_directory || return 1
+
+    echo "" >&2
+    log_info "Render a stamped PDF with:"
+    echo "    bash tools/render.sh <document.Rmd|.qmd|.md>" >&2
     return 0
 }
 
@@ -1603,6 +1636,7 @@ Profiles (new project: init+renv+docker, existing: switch profile):
 
 Management:
   build          Build Docker image (uses content-addressable cache)
+  tools          Install render-stamp helpers in tools/ (PDF provenance)
   rm <feature>   Remove: docker, renv, git, github, cicd
   uninstall      Remove all zzcollab files (uses manifest)
   doctor         Workspace health checks (files, versions, CI)
@@ -1678,6 +1712,11 @@ main() {
                 ;;
             renv)
                 cmd_renv
+                commands_run=$((commands_run + 1))
+                shift
+                ;;
+            tools)
+                cmd_tools
                 commands_run=$((commands_run + 1))
                 shift
                 ;;
