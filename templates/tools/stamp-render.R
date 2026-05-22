@@ -109,7 +109,7 @@ stamp_render <- function(input, encoding = 'UTF-8', ...) {
       out <- sub('\\.qmd$', '.pdf', input, ignore.case = TRUE)
       st  <- system2('quarto', c('render', input, '--to', 'pdf',
                                  '--metadata-file', meta))
-      if (!identical(st, 0L) || !file.exists(out)) {
+      if (!isTRUE(st == 0) || !file.exists(out)) {
         stop('stamp-render: quarto render failed for ', input,
              call. = FALSE)
       }
@@ -120,7 +120,7 @@ stamp_render <- function(input, encoding = 'UTF-8', ...) {
       st  <- system2('pandoc', c(
         input, '-o', out, '--pdf-engine=xelatex',
         rbind('--include-in-header', headers)))
-      if (!identical(st, 0L) || !file.exists(out)) {
+      if (!isTRUE(st == 0) || !file.exists(out)) {
         stop('stamp-render: pandoc failed for ', input,
              call. = FALSE)
       }
