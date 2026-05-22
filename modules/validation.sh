@@ -188,6 +188,66 @@ remove_unused_packages_from_description() {
 # RENV.LOCK MODIFICATION
 #==============================================================================
 
+# Compute renv's DESCRIPTION-based hash for a CRAN package.
+#
+# renv hashes a subset of DESCRIPTION fields (Package, Version, Title,
+# Author, Maintainer, Description, Depends, Imports, Suggests, LinkingTo),
+# sorts them alphabetically, formats as "Field: value\n", strips all
+# whitespace, then MD5s the result.  See renv:::renv_hash_record.
+#
+# Arguments: pkg_info (crandb JSON blob)
+# Prints: 32-character MD5 hex string, or empty string on failure
+_renv_hash_from_crandb() {
+    local pkg_info="$1"
+    # Fields renv hashes, in the order renv sorts them (alphabetical)
+    local hash_fields='["Author","Depends","Description","Imports",
+                        "LinkingTo","Maintainer","Package","Suggests",
+                        "Title","Version"]'
+
+    # Build "Field: value" lines for present fields; dep fields are
+    # arrays in crandb JSON -- collapse to comma-separated strings.
+    local lines; lines=$(echo "$pkg_info" | jq -r \
+        --argjson fields "$hash_fields" '
+        . as $d |
+        $fields[] |
+        . as $f |
+        ($d[$f] // null) |
+        if . == null then empty
+        elif type == "object" then
+            # crandb stores dep fields as {"pkg":"version",...}
+            ($f + ": " + ([keys[]] | join(", ")))
+        elif type == "array" then
+            ($f + ": " + (. | join(", ")))
+        else
+            ($f + ": " + tostring)
+        end
+    ' 2>/dev/null)
+
+    [[ -z "$lines" ]] && { echo ""; return 1; }
+
+    # Strip all whitespace then MD5 -- matches renv's gsub("[[:space:]]","")
+    echo "$lines" | tr -d '[:space:]' | md5sum | cut -c1-32
+}
+
+# Extract Requirements array from crandb JSON.
+# renv's Requirements = union of Depends + Imports + LinkingTo names,
+# excluding version constraints and the "R" entry.
+_renv_requirements_from_crandb() {
+    local pkg_info="$1"
+    echo "$pkg_info" | jq -r '
+        [ .Depends, .Imports, .LinkingTo ] |
+        map(
+            if type == "object" then keys[]
+            elif type == "array" then .[]
+            else empty
+            end
+        ) |
+        map(select(. != "R")) |
+        unique |
+        sort[]
+    ' 2>/dev/null
+}
+
 add_package_to_renv_lock() {
     local pkg="$1" renv_lock="renv.lock"
     [[ -f "$renv_lock" ]] || { log_error "renv.lock not found"; return 1; }
@@ -198,8 +258,22 @@ add_package_to_renv_lock() {
     local version; version=$(echo "$pkg_info" | jq -r '.Version // empty' 2>/dev/null)
     [[ -z "$version" ]] && { log_error "Could not get version for $pkg"; return 1; }
 
-    local entry; entry=$(jq -n --arg p "$pkg" --arg v "$version" \
-        '{Package:$p, Version:$v, Source:"Repository", Repository:"CRAN"}')
+    # Compute hash and requirements
+    local hash; hash=$(_renv_hash_from_crandb "$pkg_info")
+    local reqs_json; reqs_json=$(
+        _renv_requirements_from_crandb "$pkg_info" | jq -Rs '
+            split("\n") | map(select(length > 0))
+        ' 2>/dev/null
+    )
+    [[ -z "$reqs_json" ]] && reqs_json='["R"]'
+
+    local entry; entry=$(jq -n \
+        --arg  p    "$pkg" \
+        --arg  v    "$version" \
+        --arg  h    "$hash" \
+        --argjson r "$reqs_json" \
+        '{Package:$p, Version:$v, Source:"Repository",
+          Repository:"CRAN", Requirements:$r, Hash:$h}')
 
     local tmp; tmp=$(mktemp)
     jq --argjson e "$entry" --arg p "$pkg" '.Packages[$p] = $e' "$renv_lock" > "$tmp" && \
