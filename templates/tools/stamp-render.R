@@ -141,13 +141,21 @@ stamp_render <- function(input, encoding = 'UTF-8', ...) {
   }
   dir.create(share, showWarnings = FALSE, recursive = TRUE)
 
-  ## Filename prefix: the document basename, falling back to the
-  ## parent directory name when the basename is a generic stub
-  ## (so that several report.Rmd files do not collide).
+  ## Filename prefix. The document basename is used as is, unless
+  ## its leading stem is a generic stub (report, index, ...), in
+  ## which case the parent directory name is used so that several
+  ## report.Rmd files do not collide. A suffix on the stub, as in
+  ## report_short, is carried over: report_short in directory
+  ## 04-foo yields the prefix 04-foo-short.
   base    <- tools::file_path_sans_ext(basename(input))
   generic <- c('report', 'index', 'paper', 'manuscript', 'main')
-  prefix  <- if (tolower(base) %in% generic) {
-    basename(dirname(input))
+  parts   <- regmatches(base,
+                        regexec('^([^_-]+)[_-]?(.*)$', base))[[1]]
+  stem    <- tolower(parts[2])
+  suffix  <- parts[3]
+  prefix  <- if (stem %in% generic) {
+    dir_name <- basename(dirname(input))
+    if (nzchar(suffix)) paste0(dir_name, '-', suffix) else dir_name
   } else {
     base
   }
