@@ -492,6 +492,7 @@ docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
 docker.default_base_image       CONFIG_DOCKER_DEFAULT_BASE_IMAGE
 docker.registry                 CONFIG_DOCKER_REGISTRY
 docker.platform                 CONFIG_DOCKER_PLATFORM
+github.account                  CONFIG_GITHUB_ACCOUNT
 github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
 github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
 github.create_issues            CONFIG_GITHUB_CREATE_ISSUES
