@@ -16,7 +16,13 @@
       "Bash(ZZCOLLAB_CONFIG_USER=/tmp/zzc_test_user.yaml VERBOSITY_LEVEL=3 ZZCOLLAB_ACCEPT_DEFAULTS=true zzc init)",
       "Bash(git stash *)",
       "Bash(yq eval *)",
-      "Bash(./zzcollab.sh list *)"
+      "Bash(./zzcollab.sh list *)",
+      "Bash(export CLAUDE_CODE_TMPDIR=/tmp)",
+      "Bash(echo \"=== total lines ===\")",
+      "Bash(shellcheck --severity=warning modules/help.sh)",
+      "Bash(echo \"clean\")",
+      "Bash(echo \"=== help ===\")",
+      "Bash(zzc help *)"
     ]
   }
 }
