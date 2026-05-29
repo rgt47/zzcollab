@@ -318,9 +318,39 @@ a known-structure file) and writing `config.sh`. Emit a one-line notice.
 
 ---
 
-## Phase 4 -- Doctor and validation slim-down (~1,600 lines removed)
+## Phase 4 -- Doctor and validation slim-down (~1,800 lines removed)
 
-### 4A. `modules/doctor.sh` -- keep 4 functions, remove 16
+### 4A. Hand `validation.sh` entirely to `zzrenvcheck`
+
+`zzrenvcheck` (sfw/08) is an R package that already implements everything
+`validation.sh` does -- package usage extraction, DESCRIPTION/renv.lock
+comparison, CRAN validation, auto-fix -- using proper R tooling (`desc`,
+`jsonlite`, `httr`) with a test suite. The bash version is a fragile
+reimplementation, including a hand-rolled version of renv's internal hash
+algorithm in awk (`_renv_hash_from_crandb`, line 208) that will silently
+produce wrong results if renv changes its algorithm.
+
+**Remove `modules/validation.sh` entirely (941 lines).**
+
+**Replace `make check-renv` target:**
+```makefile
+check-renv:
+    Rscript -e 'zzrenvcheck::validate()'
+```
+
+**Replace `cmd_validate` in `zzcollab.sh`:**
+```bash
+cmd_validate() {
+    Rscript -e 'zzrenvcheck::validate()' || exit "$EXIT_ERROR"
+}
+```
+
+**Keep only `create_renv_lock()`** (8 lines, currently in `validation.sh` at
+line 360). Move it to `modules/docker.sh` where it is called.
+
+**Estimated saving: 941 lines.**
+
+### 4B. `modules/doctor.sh` -- keep 4 functions, remove 16
 
 **Keep:**
 - `check_required_files()` (line 141, ~18 lines) -- verifies DESCRIPTION,
@@ -404,7 +434,7 @@ a known-structure file) and writing `config.sh`. Emit a one-line notice.
 - `main()` (line 887) -- CLI dispatcher for many flags. Simplify once the
   above functions are removed.
 
-**Estimated saving:** ~540 lines. Target: ~400 lines.
+**Estimated saving (doctor only):** ~650 lines. Target: ~200 lines.
 
 ---
 
@@ -429,7 +459,7 @@ The fallback txt-manifest path in `core.sh` -- the main reason jq was optional
 | `zzcollab.sh` | 1,887 | ~1,000 |
 | `modules/config.sh` | 1,597 | ~150 |
 | `modules/doctor.sh` | 878 | ~200 |
-| `modules/validation.sh` | 941 | ~400 |
+| `modules/validation.sh` | 941 | **deleted** (→ zzrenvcheck) |
 | `modules/help.sh` | 1,108 | ~200 |
 | `modules/docker.sh` | 810 | ~600 |
 | `modules/profiles.sh` | 494 | ~200 |
@@ -439,9 +469,9 @@ The fallback txt-manifest path in `core.sh` -- the main reason jq was optional
 | `modules/cli.sh` | 241 | ~150 |
 | `lib/templates.sh` | 233 | ~200 |
 | `lib/constants.sh` | 124 | ~100 |
-| **Total** | **9,528** | **~4,000** |
+| **Total** | **9,528** | **~3,500** |
 
-**Reduction: ~5,500 lines (58%).**
+**Reduction: ~6,000 lines (63%).**
 
 ---
 
@@ -471,3 +501,10 @@ The fallback txt-manifest path in `core.sh` -- the main reason jq was optional
 7. **Phase 3** (config) -- 4 hrs, medium risk. Requires migration path for
    existing `config.yaml` users. Test: new install, upgrade from YAML, all
    config subcommands, identity gate, project prompt.
+
+**Note on zzrenvcheck dependency:** Phase 4A requires `zzrenvcheck` to be
+installed in the project's Docker image or on the host. Add it to the
+`analysis` and `minimal` profile renv.lock seeds, or install it via
+`install.packages("zzrenvcheck")` inside the container. The `make check-renv`
+target requires R on the host only for the validation step; all other `zzc`
+operations remain shell-only.
