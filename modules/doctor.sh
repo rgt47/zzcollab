@@ -184,74 +184,6 @@ check_required_dirs() {
     return $missing
 }
 
-# Check for misplaced files and directories
-# Returns number of misplaced items
-check_misplaced_files() {
-    local dir="$1"
-    local issues=0
-    local has_header=false
-
-    print_misplaced_header() {
-        if [[ "$has_header" == false ]]; then
-            echo "  Misplaced items:"
-            has_header=true
-        fi
-    }
-
-    # ZZCOLLAB_USER_GUIDE.md in root instead of docs/
-    if [[ -f "$dir/ZZCOLLAB_USER_GUIDE.md" ]] && [[ ! -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md" ]]; then
-        print_misplaced_header
-        printf "    %-20s ${COL_YELLOW}should be in docs/${COL_RESET}\n" "USER_GUIDE.md"
-        issues=$((issues + 1))
-
-        # Offer to move if interactive
-        if [[ -t 0 ]]; then
-            local move_choice
-            read -r -p "    Move to docs/ZZCOLLAB_USER_GUIDE.md? [Y/n]: " move_choice
-            if [[ ! "$move_choice" =~ ^[Nn]$ ]]; then
-                mkdir -p "$dir/docs"
-                if mv "$dir/ZZCOLLAB_USER_GUIDE.md" "$dir/docs/ZZCOLLAB_USER_GUIDE.md"; then
-                    printf "    ${COL_GREEN}✓ Moved to docs/${COL_RESET}\n"
-                    issues=$((issues - 1))
-                else
-                    printf "    ${COL_RED}✗ Failed to move${COL_RESET}\n"
-                fi
-            fi
-        fi
-    fi
-
-    # archive/ should be one level up, not inside workspace
-    if [[ -d "$dir/archive" ]]; then
-        print_misplaced_header
-        printf "    %-20s ${COL_YELLOW}should be at ../archive/${COL_RESET}\n" "archive/"
-        issues=$((issues + 1))
-
-        # Offer to move if interactive
-        if [[ -t 0 ]]; then
-            local parent_dir
-            parent_dir="$(dirname "$dir")"
-            local move_choice
-            read -r -p "    Move to $parent_dir/archive/? [Y/n]: " move_choice
-            if [[ ! "$move_choice" =~ ^[Nn]$ ]]; then
-                if [[ -d "$parent_dir/archive" ]]; then
-                    printf "    ${COL_RED}✗ ../archive/ already exists${COL_RESET}\n"
-                elif mv "$dir/archive" "$parent_dir/archive"; then
-                    printf "    ${COL_GREEN}✓ Moved to ../archive/${COL_RESET}\n"
-                    issues=$((issues - 1))
-                else
-                    printf "    ${COL_RED}✗ Failed to move${COL_RESET}\n"
-                fi
-            fi
-        fi
-    fi
-
-    if [[ "$has_header" == true ]]; then
-        echo ""
-    fi
-
-    return $issues
-}
-
 # Check .gitignore and .Rbuildignore contain required entries
 # Returns number of missing entries
 check_ignore_files() {
@@ -452,115 +384,10 @@ check_version_stamps() {
     return $issues
 }
 
-# Check CI workflow status via GitHub CLI
-# Returns number of issues (0 = passing or not applicable, 1 = failing)
-check_ci_status() {
-    local dir="$1"
-    local issues=0
-
-    # Skip if no git repo or no gh CLI
-    if ! command -v gh &>/dev/null; then
-        return 0
-    fi
-    if [[ ! -d "$dir/.git" ]]; then
-        return 0
-    fi
-
-    # Get repo from git remote
-    local remote_url
-    remote_url=$(git -C "$dir" remote get-url origin 2>/dev/null) || return 0
-    local repo
-    repo=$(echo "$remote_url" | sed -E 's|.*github\.com[:/]||; s|\.git$||')
-    [[ -n "$repo" ]] || return 0
-
-    echo "  CI status:"
-
-    # Query latest run on default branch
-    local run_info
-    run_info=$(gh run list --repo "$repo" --limit 1 --json status,conclusion,name,headBranch 2>/dev/null) || {
-        printf "    %-18s ${COL_YELLOW}(gh auth required)${COL_RESET}\n" "GitHub Actions"
-        return 0
-    }
-
-    # No runs at all
-    if [[ "$run_info" == "[]" ]]; then
-        printf "    %-18s ${COL_DIM}(no runs)${COL_RESET}\n" "GitHub Actions"
-        return 0
-    fi
-
-    local conclusion status name branch
-    conclusion=$(echo "$run_info" | sed -n 's/.*"conclusion":"\([^"]*\)".*/\1/p' | head -1)
-    status=$(echo "$run_info" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p' | head -1)
-    name=$(echo "$run_info" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p' | head -1)
-    branch=$(echo "$run_info" | sed -n 's/.*"headBranch":"\([^"]*\)".*/\1/p' | head -1)
-
-    local display_name="${name:-workflow}"
-    [[ ${#display_name} -gt 18 ]] && display_name="${display_name:0:16}.."
-
-    if [[ "$status" == "in_progress" || "$status" == "queued" ]]; then
-        printf "    %-18s ${COL_YELLOW}(running)${COL_RESET} %s\n" "$display_name" "$branch"
-    elif [[ "$conclusion" == "success" ]]; then
-        printf "    %-18s ${COL_GREEN}passing${COL_RESET}  %s\n" "$display_name" "$branch"
-    elif [[ "$conclusion" == "failure" ]]; then
-        printf "    %-18s ${COL_RED}failing${COL_RESET}  %s\n" "$display_name" "$branch"
-        issues=1
-    elif [[ "$conclusion" == "cancelled" ]]; then
-        printf "    %-18s ${COL_YELLOW}cancelled${COL_RESET} %s\n" "$display_name" "$branch"
-    else
-        printf "    %-18s ${COL_DIM}%s${COL_RESET}\n" "$display_name" "${conclusion:-unknown}"
-    fi
-    echo ""
-
-    return $issues
-}
-
 # Check a single workspace directory
 # Returns 0 if all checks pass, 1 if any issues found
-# Quiet-mode check: machine-readable per-repo line.
-# Format: <path>\t<errors>\t<warnings>\t<comma_sep_codes>
-# Codes: missing-file:<f>, missing-dir:<d>, no-manifest
-# Returns 1 if any errors, else 0.
-quiet_check_workspace() {
-    local dir="$1"
-    local errors=0 warnings=0
-    local -a codes=()
-
-    local f d
-    for f in "${REQUIRED_FILES[@]}"; do
-        if [[ ! -f "$dir/$f" ]]; then
-            errors=$((errors + 1))
-            codes+=("missing-file:$f")
-        fi
-    done
-    for d in "${REQUIRED_DIRS[@]}"; do
-        if [[ ! -d "$dir/$d" ]]; then
-            errors=$((errors + 1))
-            codes+=("missing-dir:$d")
-        fi
-    done
-    if [[ ! -f "$dir/.zzcollab/manifest.json" ]] \
-       && [[ ! -f "$dir/.zzcollab/manifest.txt" ]]; then
-        warnings=$((warnings + 1))
-        codes+=("no-manifest")
-    fi
-
-    local code_csv=""
-    if [[ ${#codes[@]} -gt 0 ]]; then
-        local IFS=,
-        code_csv="${codes[*]}"
-    fi
-    printf '%s\t%d\t%d\t%s\n' "$dir" "$errors" "$warnings" "$code_csv"
-    [[ $errors -eq 0 ]]
-}
-
 check_workspace() {
     local dir="$1"
-
-    if [[ "$QUIET_MODE" == "true" ]]; then
-        quiet_check_workspace "$dir"
-        return $?
-    fi
-
     local total_issues=0
 
     # Reset per-workspace fix state
@@ -579,10 +406,6 @@ check_workspace() {
     check_required_dirs "$dir"
     total_issues=$((total_issues + $?))
     echo ""
-
-    # Check for misplaced files
-    check_misplaced_files "$dir"
-    total_issues=$((total_issues + $?))
 
     # Check ignore file contents
     check_ignore_files "$dir"
@@ -608,10 +431,6 @@ check_workspace() {
         fi
     fi
     echo ""
-
-    # Check CI status
-    check_ci_status "$dir"
-    total_issues=$((total_issues + $?))
 
     # Apply --fix stamp bumps if requested
     [[ "$FIX_MODE" == "true" ]] && apply_fixes
