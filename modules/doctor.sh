@@ -22,6 +22,17 @@ set -euo pipefail
 ##############################################################################
 
 
+# When run as a standalone script (via cmd_doctor: bash doctor.sh "$@"),
+# load the library dependencies directly.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck source=/dev/null
+    source "${_script_dir}/../lib/constants.sh"
+    # shellcheck source=/dev/null
+    source "${_script_dir}/../lib/core.sh"
+    unset _script_dir
+fi
+
 CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"
 
 # --fix state (populated by check_version_stamps, applied after check_workspace)
@@ -862,4 +873,4 @@ main() {
     return $exit_code
 }
 
-main "$@"
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"

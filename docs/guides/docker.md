@@ -652,10 +652,11 @@ Rebuild: `make docker-build`
 
 ZZCOLLAB supports ultra-lightweight Alpine Linux profiles for minimal container sizes (~200MB vs ~3GB for standard profiles).
 
-### Available Alpine Profiles
+### Alpine via custom base image
 
-- **alpine_minimal** - Bare-bones Alpine Linux environment
-- **alpine_analysis** - Alpine with common analysis libraries
+Alpine is not a built-in profile. Use a third-party Alpine R base image with
+the `docker --base-image` flag (the Rocker project provides no official Alpine
+build).
 
 ### Important Limitations
 
@@ -682,8 +683,8 @@ Alpine profiles use `velaco/alpine-r` instead of official Rocker images because:
 ### Usage Example
 
 ```bash
-# Create Alpine-based project
-zzcollab --profile alpine_minimal --r-version 4.4.0
+# Create an Alpine-based project on a third-party Alpine R image
+zzcollab docker --base-image velaco/alpine-r --r-version 4.4.0
 
 # Build image (may take longer due to package compilation)
 make docker-build

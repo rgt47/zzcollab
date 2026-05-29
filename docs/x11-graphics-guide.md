@@ -138,11 +138,12 @@ $env:DISPLAY="host.docker.internal:0"
 # Solo developer
 zzcollab --profile ubuntu_x11_minimal
 
-# Team project
-zzcollab -t myteam -p analysis -r ubuntu_x11_minimal
+# Team project (set the DockerHub account once, then select the profile)
+zzcollab config set dockerhub-account myteam
+zzcollab docker -r ubuntu_x11_minimal
 
 # Full GUI profile
-zzcollab -r gui
+zzcollab docker -r gui
 ```
 
 ### 2. Build Docker Image

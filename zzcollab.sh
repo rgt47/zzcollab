@@ -87,9 +87,8 @@ source "$ZZCOLLAB_MODULES_DIR/github.sh"
 # shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/validation.sh"
 # shellcheck source=/dev/null
-source "$ZZCOLLAB_MODULES_DIR/doctor.sh"
-# shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/help.sh"
+# Note: doctor.sh is executed as a standalone script by cmd_doctor, not sourced.
 
 #=============================================================================
 # WORKSPACE INITIALIZATION HELPER
