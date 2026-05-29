@@ -1534,7 +1534,7 @@ Management:
   tools          Install render-stamp helpers in tools/ (PDF provenance)
   rm <feature>   Remove: docker, renv, git, github, cicd
   uninstall      Remove the zzcollab scaffold from this directory
-  doctor         Workspace health checks (files, versions, CI)
+  doctor         Check workspace files are current with templates
   validate       Check project structure
   config         Configuration management
   list           List profiles, libs, packages

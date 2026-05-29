@@ -4,15 +4,14 @@ set -euo pipefail
 # ZZCOLLAB DOCTOR MODULE
 ##############################################################################
 #
-# PURPOSE: Comprehensive workspace health checks
-#          - Version stamps: Check Makefile, .Rprofile, Dockerfile versions
-#          - Required files: Verify core files exist
-#          - Directory structure: Check standard layout
-#          - Supports batch scanning with --scan
+# PURPOSE: Confirm a workspace is current with the installed zzcollab.
+#          - Version stamps: Makefile, .Rprofile, Dockerfile, workflows
+#          - Required files: verify core files exist
+#          - Directory structure: check standard layout
+#          - Ignore files: verify .gitignore / .Rbuildignore entries
 #
 # USAGE:
-#   bash doctor.sh [DIR ...]
-#   bash doctor.sh --scan <parent-dir>
+#   bash doctor.sh [DIR ...] [--fix|--dry-run]
 #
 # EXIT CODES:
 #   0 - All checks passed
@@ -38,7 +37,6 @@ CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"
 # --fix state (populated by check_version_stamps, applied after check_workspace)
 FIX_MODE=false
 DRY_RUN=false
-QUIET_MODE=false
 declare -a FIX_TARGETS=()
 
 readonly COL_RESET='\033[0m'
@@ -73,7 +71,6 @@ REQUIRED_DIRS=(
 OPTIONAL_DIRS=(
     "inst/tinytest"
     "man"
-    ".zzcollab"
 )
 
 # Required .gitignore entries
@@ -556,70 +553,12 @@ print_info_status() {
     fi
 }
 
-# Scan a parent directory for zzcollab workspaces
-scan_directory() {
-    local parent="$1"
-    local found=0
-    local any_outdated=0
-
-    if [[ ! -d "$parent" ]]; then
-        echo "Error: directory not found: $parent" >&2
-        return 1
-    fi
-
-    # Find directories containing a Makefile with a zzcollab stamp,
-    # OR any Makefile alongside a Dockerfile (likely zzcollab workspace)
-    while IFS= read -r makefile; do
-        local workspace_dir
-        workspace_dir="$(dirname "$makefile")"
-        # Only check if it looks like a zzcollab workspace
-        if grep -q "zzcollab" "$makefile" 2>/dev/null; then
-            found=$((found + 1))
-            check_workspace "$workspace_dir" || any_outdated=1
-        fi
-    done < <(find "$parent" -maxdepth 3 -name "Makefile" -type f 2>/dev/null)
-
-    if [[ $found -eq 0 ]]; then
-        [[ "$QUIET_MODE" == "true" ]] || echo "No zzcollab workspaces found under: $parent"
-        return 0
-    fi
-
-    if [[ "$QUIET_MODE" != "true" ]]; then
-        echo "---"
-        echo "Scanned $found workspace(s), current template version: v${CURRENT_VERSION}"
-    fi
-    return $any_outdated
-}
-
-# Walk up from cwd to find the git repository root.
-# Falls back to cwd if no .git directory is found.
-find_git_root() {
-    local dir
-    dir="$(pwd)"
-    while [[ "$dir" != "/" ]]; do
-        [[ -d "$dir/.git" ]] && { echo "$dir"; return 0; }
-        dir="$(dirname "$dir")"
-    done
-    pwd
-}
-
 # Main entry point
 main() {
-    local scan_mode=false
     local dirs=()
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --scan)
-                scan_mode=true
-                shift
-                if [[ $# -eq 0 ]]; then
-                    echo "Error: --scan requires a directory argument" >&2
-                    exit 1
-                fi
-                dirs+=("$1")
-                shift
-                ;;
             --fix)
                 FIX_MODE=true
                 shift
@@ -629,30 +568,21 @@ main() {
                 DRY_RUN=true
                 shift
                 ;;
-            --porcelain)
-                QUIET_MODE=true
-                shift
-                ;;
             help|--help|-h)
-                echo "Usage: zzc doctor [DIR ...] [--fix|--dry-run|--porcelain]"
-                echo "       zzc doctor --scan <parent-dir> [--fix|--dry-run|--porcelain]"
+                echo "Usage: zzc doctor [DIR ...] [--fix|--dry-run]"
                 echo ""
-                echo "Workspace health checks:"
+                echo "Confirm a workspace is current with the installed zzcollab:"
                 echo "  - Required files    DESCRIPTION, renv.lock, Makefile, etc."
                 echo "  - Directory layout  R/, analysis/"
+                echo "  - Ignore files      .gitignore, .Rbuildignore entries"
                 echo "  - Version stamps    Makefile, .Rprofile, Dockerfile,"
                 echo "                      docs/USER_GUIDE.md, r-package.yml"
                 echo ""
                 echo "Options:"
                 echo "  DIR            One or more workspace directories (default: .)"
-                echo "  --scan DIR     Recursively find all zzcollab workspaces"
                 echo "  --fix          Bump outdated stamp lines in place. Only the"
                 echo "                 stamp line is modified; other content preserved."
                 echo "  --dry-run      Preview --fix actions without writing."
-                echo "  --porcelain    Machine-readable output, one line per repo."
-                echo "                 Format: <path>\\t<errors>\\t<warnings>\\t<codes>"
-                echo "                 Codes: missing-file:<f>, missing-dir:<d>,"
-                echo "                        no-manifest"
                 echo "  help           Show this help"
                 echo ""
                 echo "Reference: docs/workspace-structure.md"
@@ -665,29 +595,18 @@ main() {
         esac
     done
 
-    # Default to git root (or cwd if not inside a git repo)
-    if [[ ${#dirs[@]} -eq 0 ]]; then
-        dirs=("$(find_git_root)")
-    fi
+    # Default to current directory
+    [[ ${#dirs[@]} -eq 0 ]] && dirs=(".")
 
-    if [[ "$QUIET_MODE" != "true" ]]; then
-        echo "zzcollab template version: v${CURRENT_VERSION}"
-        echo ""
-    fi
+    echo "zzcollab template version: v${CURRENT_VERSION}"
+    echo ""
 
     local exit_code=0
-
-    if [[ "$scan_mode" == true ]]; then
-        for dir in "${dirs[@]}"; do
-            scan_directory "$(cd "$dir" && pwd)" || exit_code=1
-        done
-    else
-        for dir in "${dirs[@]}"; do
-            local abs_dir
-            abs_dir="$(cd "$dir" && pwd)"
-            check_workspace "$abs_dir" || exit_code=1
-        done
-    fi
+    for dir in "${dirs[@]}"; do
+        local abs_dir
+        abs_dir="$(cd "$dir" && pwd)"
+        check_workspace "$abs_dir" || exit_code=1
+    done
 
     return $exit_code
 }
