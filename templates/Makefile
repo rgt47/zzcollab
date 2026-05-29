@@ -27,7 +27,8 @@ help:
 	@echo "    document, build, check, install, vignettes, test, deps"
 	@echo ""
 	@echo "  Docker utilities:"
-	@echo "    docker-build          - Build image from current renv.lock"
+	@echo "    docker-build          - Pre-build audit then build image from renv.lock"
+	@echo "    check-binaries        - Audit renv.lock for missing system deps (pre-build)"
 	@echo "    docker-rebuild        - Rebuild image without cache (force fresh build)"
 	@echo "    docker-build-log      - Build with detailed logs (for debugging)"
 	@echo "    docker-push-team, docker-document, docker-build-pkg, docker-check"
@@ -98,7 +99,19 @@ check-renv-no-strict:
 #   3. Exit container (auto-snapshot on exit)
 #   4. Build new image (make docker-build)
 
-docker-build:
+# Pre-build audit: check renv.lock packages against PPM for missing system
+# dependencies and packages that will compile from source.
+# Requires python3 (standard on macOS/Linux). Pass SKIP_AUDIT=1 to bypass.
+check-binaries:
+	@if [ -f tools/check-binaries.py ]; then \
+		python3 tools/check-binaries.py \
+			--renv-lock renv.lock \
+			--dockerfile Dockerfile; \
+	else \
+		echo "  tools/check-binaries.py not found, skipping audit"; \
+	fi
+
+docker-build: check-binaries
 	zzcollab build
 
 docker-rebuild:
@@ -232,4 +245,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
