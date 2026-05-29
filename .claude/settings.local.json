@@ -5,7 +5,9 @@
       "Bash(open *)",
       "Bash(timeout 120 bash tests/shell/test-integration.sh)",
       "Bash(jobs)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(./zzcollab.sh --help quickstart)",
+      "Bash(./zzcollab.sh help *)"
     ]
   }
 }
