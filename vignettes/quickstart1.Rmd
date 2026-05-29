@@ -40,90 +40,134 @@ Penguins bill measurements.
 - GitHub account (example: rgt47)
 - Personal access token for GitHub (with repo permissions)
 - zzcollab installed (`./install.sh`)
+- `gum` installed for styled TUI prompts (optional but recommended):
+  `brew install gum`
 
 # Step-by-Step Instructions
 
-## Step 1: Configure ZZCOLLAB
+## Step 1: One-time Identity Setup
 
-Set your defaults once to eliminate repetitive typing for ALL future projects:
+The first time you run `zzc init`, it detects missing required fields and
+guides you through a short identity prompt. This runs once and is never
+asked again once your user config is populated.
+
+The identity gate captures three fields and saves them to
+`~/.zzcollab/config.yaml`:
+
+- **Full name** -- written into `DESCRIPTION`'s `Authors@R` field
+- **Email address** -- written into `DESCRIPTION`
+- **Personal GitHub username** -- your default account; can be overridden
+  per project in the next step
+
+With `gum` installed the prompts render as a styled TUI with pre-filled
+values and cursor navigation. Without `gum` they fall back to plain readline.
+
+To inspect or change these defaults at any time:
 
 ```bash
-# Initialize configuration
-zzc config init
-
-# Set GitHub account
-zzc config set github-account "rgt47"
-
-# Set Docker account (for DockerHub)
-zzc config set docker-account "rgt47"
+zzc config list                          # show all current settings
+zzc config set author-name "Your Name"   # update a specific field
+zzc config set github-account "youruser"
 ```
 
-**Note:** Both `zzc` (short) and `zzcollab` (full) commands work identically.
-
-**What this accomplishes:**
-
-- All future `zzc` commands use these defaults
-- Change defaults anytime with `zzc config set`
-
-**Note on Package Management:**
-
-- Packages are added via standard `install.packages()` inside the container
-- **Auto-snapshot**: Packages automatically captured in renv.lock when you exit
-- **Auto-restore**: Missing packages automatically installed when you start R
-- The renv.lock accumulates packages from all team members
+**Note:** Both `zzc` and `zzcollab` work identically.
 
 ## Step 2: Create Project
 
-Create your reproducible analysis project:
+Create the project directory and run `zzc init`:
 
 ```bash
-# Create project directory and initialize
 mkdir penguin-bills && cd penguin-bills
-
-# Recommended: Use profile command for complete setup
-zzc analysis                   # Creates init + renv + docker, prompts to build
-
-# Add GitHub repository (works independently)
-zzc github                     # Create private GitHub repo
+zzc init
 ```
 
-**What `zzc analysis` does (new project):**
+`zzc init` runs three phases.
 
-1. Creates rrtools structure (DESCRIPTION, R/, analysis/, tests/)
-2. Generates renv.lock for package tracking
-3. Generates Dockerfile with analysis profile (tidyverse)
-4. Prompts: "Build Docker image now? [Y/n]"
+**Phase 1 -- Identity gate** (first run only)
+
+Fires when `~/.zzcollab/config.yaml` is missing name or email. Captures
+the three identity fields described in Step 1 and saves them to your user
+config. Skipped on subsequent projects.
+
+**Phase 2 -- Project setup**
+
+Four prompts, each pre-filled from your user config. Press Enter to accept
+the default or type to override. Changes are written only to
+`./zzcollab.yaml`; your global config is not touched.
+
+| Prompt | Default | Description |
+|---|---|---|
+| Docker profile | `analysis` | Base image and pre-installed R packages |
+| R version | Current CRAN | Used in Dockerfile and renv.lock |
+| GitHub account | Personal username | Override for org or team repos |
+| Team name | (empty) | Optional project label |
+
+Only fields that differ from your user defaults are written to
+`./zzcollab.yaml`, keeping the file minimal. Commit this file -- it
+documents project-specific decisions and allows collaborators to reproduce
+the same configuration.
+
+Example `./zzcollab.yaml` when only the GitHub account differs:
+
+```yaml
+# Project-specific zzcollab configuration
+# Overrides user config (~/.zzcollab/config.yaml)
+# Commit this file to version control.
+github:
+  account: genomicslab
+```
+
+**Phase 3 -- Reproducibility setup**
+
+Choose one:
+
+- `renv + Docker` -- full containerized environment (recommended)
+- `renv only` -- package lockfile without Docker
+- `None` -- create structure only; add reproducibility later with
+  `zzc renv` or `zzc docker`
+
+After init, create the GitHub repository:
+
+```bash
+zzc github          # creates private repo and pushes
+```
+
+**Quickstart alternative** (uses config defaults, no interactive prompts):
+
+```bash
+mkdir penguin-bills && cd penguin-bills
+zzc analysis        # init + renv + docker in one command
+zzc github
+```
 
 **Profile commands are smart:**
 
 - **New project**: Full setup (init + renv + docker + build prompt)
-- **Existing project**: Just switches profile and regenerates Dockerfile
-
-**Using Different Docker Profiles:**
+- **Existing project**: Switches profile and regenerates Dockerfile only
 
 ```bash
-# Create new project with specific profile
+# Create new projects with specific profiles
 mkdir genomics-study && cd genomics-study
-zzc shiny                      # Full setup with shiny profile
-zzc github                     # Add GitHub (independent command)
+zzc shiny                      # Full setup with Shiny profile
 
 mkdir spatial-analysis && cd spatial-analysis
 zzc publishing                 # Full setup with publishing profile (LaTeX)
 
-# Switch profile on existing project (smart detection)
+# Switch profile on existing project
 zzc minimal                    # Regenerates Dockerfile with minimal profile
 
 # List available profiles
-zzc list profiles              # Show all profiles
+zzc list profiles
 ```
 
 **Available Profiles:**
 
-- `minimal` - Base R only (~300MB)
-- `analysis` - Tidyverse packages (~1.5GB) - recommended
-- `publishing` - LaTeX + pandoc (~3GB)
-- `rstudio` - RStudio Server
-- `shiny` - Shiny Server
+- `minimal` - Base R, command-line only (~650MB)
+- `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
+- `modeling` - Machine learning with tidymodels (~1.5GB)
+- `publishing` - LaTeX + Quarto manuscripts (~3GB)
+- `rstudio` - RStudio Server (~980MB)
+- `shiny` - Shiny Server (~1.8GB)
 
 ## Step 3: Add Research Data and Processing Pipeline
 
@@ -594,10 +638,6 @@ Reproducibility:
 - Pillar 3: .Rprofile (R session configuration)
 - Pillar 4: Source code (scripts + functions + tests + reports)
 - Pillar 5: Research data (raw + derived + documentation)
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 
@@ -1095,11 +1135,12 @@ zzc list pkgs
 
 **Available Profiles:**
 
-- `minimal` - Base R only (~300MB)
-- `analysis` / `tidyverse` - Tidyverse packages (~1.5GB)
-- `publishing` / `verse` - LaTeX + pandoc (~3GB)
-- `rstudio` - RStudio Server
-- `shiny` - Shiny Server
+- `minimal` - Base R, command-line only (~650MB)
+- `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
+- `modeling` - Machine learning with tidymodels (~1.5GB)
+- `publishing` - LaTeX + Quarto manuscripts (~3GB)
+- `rstudio` - RStudio Server (~980MB)
+- `shiny` - Shiny Server (~1.8GB)
 
 ## Using Profiles
 
@@ -1127,7 +1168,7 @@ zzc github --public              # Create public GitHub repo
 
 - New project: Complete setup (init + renv + docker) with build prompt
 - Existing project: Switch profile and regenerate Dockerfile
-- Examples: `minimal`, `analysis`, `publishing`, `shiny`, `rstudio`
+- Examples: `minimal`, `analysis`, `modeling`, `publishing`, `rstudio`, `shiny`
 
 **Package Management:**
 
