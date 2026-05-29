@@ -199,10 +199,11 @@ make docker-build          # Builds personal Docker image
 ### Developer 1 (Team Lead) - Complete Workflow
 ```bash
 # Step 1: Create project structure with team settings
-zzcollab -t TEAM -p PROJECT
+zzcollab config set dockerhub-account TEAM
+mkdir PROJECT && cd PROJECT
+zzcollab analysis
 
 # Step 2: Customize Docker environment (optional)
-cd PROJECT
 vim Dockerfile              # Modify base image: rocker/r-ver, rocker/rstudio, rocker/verse
 vim bundles.yaml            # Adjust R package selection if needed
 

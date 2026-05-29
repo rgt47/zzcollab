@@ -42,9 +42,7 @@ create_directory_structure() {
     )
 
     for dir in "${dirs[@]}"; do
-        if mkdir -p "$dir"; then
-            track_directory "$dir"
-        else
+        if ! mkdir -p "$dir"; then
             log_error "Failed to create directory: $dir"
             return 1
         fi
@@ -195,8 +193,6 @@ create_renv_setup() {
     # Check if renv.lock already exists
     if [[ -f "renv.lock" ]]; then
         log_info "renv.lock already exists, skipping renv init"
-        track_file "renv.lock"
-        [[ -f ".Rprofile" ]] && track_file ".Rprofile"
         return 0
     fi
 
@@ -276,7 +272,6 @@ setup_project() {
     log_info "Setting up project structure..."
 
     # Initialize manifest tracking before creating any files
-    init_manifest || return 1
 
     create_directory_structure || return 1
     create_r_package_files || return 1
@@ -289,7 +284,6 @@ setup_project() {
 
     # Adopt-mode: Dockerfile is written by the docker module, not here.
     # Track it on retrofit so `zzc uninstall` can remove it later.
-    [[ -f "Dockerfile" ]] && track_file "Dockerfile"
 
     log_success "Project setup complete"
     return 0

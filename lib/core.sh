@@ -35,13 +35,11 @@ if [[ "${ZZCOLLAB_CONSTANTS_LOADED:-}" == "true" ]]; then
     AUTHOR_EMAIL="$ZZCOLLAB_AUTHOR_EMAIL"
     readonly AUTHOR_INSTITUTE="$ZZCOLLAB_AUTHOR_INSTITUTE"
     readonly AUTHOR_INSTITUTE_FULL="$ZZCOLLAB_AUTHOR_INSTITUTE_FULL"
-    readonly JQ_AVAILABLE="$ZZCOLLAB_JQ_AVAILABLE"
 else
     AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"
     AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-your.email@example.com}"
     readonly AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-Your Institution}"
     readonly AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-Your Institution Full Name}"
-    readonly JQ_AVAILABLE=$(command -v jq >/dev/null 2>&1 && echo "true" || echo "false")
 fi
 
 #=============================================================================
@@ -202,7 +200,6 @@ safe_mkdir() {
 
     if mkdir -p "$dir" 2>/dev/null; then
         log_info "Created $description: $dir"
-        track_directory "$dir"
         return 0
     else
         log_error "Failed to create $description: $dir"
@@ -221,205 +218,6 @@ safe_cp() {
     cat "$src" > "$dest"
 }
 
-#=============================================================================
-# UNIFIED TRACKING SYSTEM
-#=============================================================================
-
-# Manifest file paths (exported for use by track_item)
-export MANIFEST_FILE=""
-export MANIFEST_TXT=""
-
-##############################################################################
-# FUNCTION: init_manifest
-# PURPOSE:  Initialize the .zzcollab directory and manifest file for tracking
-#           created files. Must be called before any track_* functions.
-# USAGE:    init_manifest
-# RETURNS:  0 on success, 1 on failure
-##############################################################################
-init_manifest() {
-    local manifest_dir=".zzcollab"
-
-    if [[ -d "$manifest_dir" ]]; then
-        log_debug "Manifest directory already exists: $manifest_dir"
-    else
-        if ! mkdir -p "$manifest_dir"; then
-            log_error "Failed to create manifest directory: $manifest_dir"
-            return 1
-        fi
-        log_debug "Created manifest directory: $manifest_dir"
-    fi
-
-    if [[ "$JQ_AVAILABLE" == "true" ]]; then
-        MANIFEST_FILE="$manifest_dir/manifest.json"
-        export MANIFEST_FILE
-        if [[ ! -f "$MANIFEST_FILE" ]]; then
-            cat > "$MANIFEST_FILE" << 'EOF'
-{
-  "version": "1.0",
-  "created": "",
-  "directories": [],
-  "files": [],
-  "template_files": [],
-  "symlinks": [],
-  "docker_image": null
-}
-EOF
-            jq --arg date "$(date -Iseconds)" '.created = $date' "$MANIFEST_FILE" > "$MANIFEST_FILE.tmp" \
-                && mv "$MANIFEST_FILE.tmp" "$MANIFEST_FILE"
-            log_debug "Created JSON manifest: $MANIFEST_FILE"
-        fi
-    else
-        MANIFEST_TXT="$manifest_dir/manifest.txt"
-        export MANIFEST_TXT
-        if [[ ! -f "$MANIFEST_TXT" ]]; then
-            echo "# zzcollab manifest - $(date -Iseconds)" > "$MANIFEST_TXT"
-            log_debug "Created text manifest: $MANIFEST_TXT"
-        fi
-    fi
-
-    return 0
-}
-
-# Function: track_item
-# Purpose: Universal tracking function for all manifest items
-# Arguments: $1 - type (directory, file, template, symlink, docker_image)
-#           $2 - primary data (path, file, template, etc.)
-#           $3 - secondary data (for symlinks: target, templates: dest)
-track_item() {
-    local type="$1"
-    local data1="$2"
-    local data2="${3:-}"
-
-    local tmp=""
-    cleanup_track_tmp() {
-        if [[ -n "${tmp:-}" ]] && [[ -f "${tmp:-}" ]]; then
-            rm -f "$tmp"
-        fi
-    }
-    trap cleanup_track_tmp RETURN
-
-    case "$type" in
-        directory)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
-                tmp=$(mktemp)
-                if jq --arg dir "$data1" '.directories |= (. + [$dir] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
-                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
-                        log_error "Failed to update manifest for directory: $data1"
-                        return 1
-                    fi
-                else
-                    log_error "jq failed to process manifest for directory: $data1"
-                    return 1
-                fi
-            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                if ! grep -qxF "directory:$data1" "${MANIFEST_TXT:-}" 2>/dev/null; then
-                    echo "directory:$data1" >> "${MANIFEST_TXT:-}" || {
-                        log_error "Failed to append to text manifest for directory: $data1"
-                        return 1
-                    }
-                fi
-            fi
-            ;;
-        file)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
-                tmp=$(mktemp)
-                if jq --arg file "$data1" '.files |= (. + [$file] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
-                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
-                        log_error "Failed to update manifest for file: $data1"
-                        return 1
-                    fi
-                else
-                    log_error "jq failed to process manifest for file: $data1"
-                    return 1
-                fi
-            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                if ! grep -qxF "file:$data1" "${MANIFEST_TXT:-}" 2>/dev/null; then
-                    echo "file:$data1" >> "${MANIFEST_TXT:-}" || {
-                        log_error "Failed to append to text manifest for file: $data1"
-                        return 1
-                    }
-                fi
-            fi
-            ;;
-        template)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
-                tmp=$(mktemp)
-                if jq --arg template "$data1" --arg dest "$data2" '.template_files |= (. + [{"template": $template, "destination": $dest}] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
-                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
-                        log_error "Failed to update manifest for template: $data1 -> $data2"
-                        return 1
-                    fi
-                else
-                    log_error "jq failed to process manifest for template: $data1"
-                    return 1
-                fi
-            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                if ! grep -qxF "template:$data1:$data2" "${MANIFEST_TXT:-}" 2>/dev/null; then
-                    echo "template:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
-                        log_error "Failed to append to text manifest for template: $data1"
-                        return 1
-                    }
-                fi
-            fi
-            ;;
-        symlink)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
-                tmp=$(mktemp)
-                if jq --arg link "$data1" --arg target "$data2" '.symlinks |= (. + [{"link": $link, "target": $target}] | unique)' "${MANIFEST_FILE:-}" > "$tmp"; then
-                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
-                        log_error "Failed to update manifest for symlink: $data1 -> $data2"
-                        return 1
-                    fi
-                else
-                    log_error "jq failed to process manifest for symlink: $data1"
-                    return 1
-                fi
-            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                if ! grep -qxF "symlink:$data1:$data2" "${MANIFEST_TXT:-}" 2>/dev/null; then
-                    echo "symlink:$data1:$data2" >> "${MANIFEST_TXT:-}" || {
-                        log_error "Failed to append to text manifest for symlink: $data1"
-                        return 1
-                    }
-                fi
-            fi
-            ;;
-        docker_image)
-            if [[ "$JQ_AVAILABLE" == "true" ]] && [[ -f "${MANIFEST_FILE:-}" ]]; then
-                tmp=$(mktemp)
-                if jq --arg image "$data1" '.docker_image = $image' "${MANIFEST_FILE:-}" > "$tmp"; then
-                    if ! mv "$tmp" "${MANIFEST_FILE:-}"; then
-                        log_error "Failed to update manifest for docker_image: $data1"
-                        return 1
-                    fi
-                else
-                    log_error "jq failed to process manifest for docker_image: $data1"
-                    return 1
-                fi
-            elif [[ -f "${MANIFEST_TXT:-}" ]]; then
-                # Match JSON's overwrite semantics: drop any prior docker_image line.
-                if grep -q "^docker_image:" "${MANIFEST_TXT:-}" 2>/dev/null; then
-                    grep -v "^docker_image:" "${MANIFEST_TXT:-}" > "${MANIFEST_TXT:-}.tmp" \
-                        && mv "${MANIFEST_TXT:-}.tmp" "${MANIFEST_TXT:-}"
-                fi
-                echo "docker_image:$data1" >> "${MANIFEST_TXT:-}" || {
-                    log_error "Failed to append to text manifest for docker_image: $data1"
-                    return 1
-                }
-            fi
-            ;;
-        *)
-            log_error "Unknown tracking type: $type"
-            return 1
-            ;;
-    esac
-}
-
-# Legacy wrapper functions for backward compatibility
-track_directory() { track_item "directory" "$1"; }
-track_file() { track_item "file" "$1"; }
-track_template_file() { track_item "template" "$1" "${2:-}"; }
-track_symlink() { track_item "symlink" "$1" "${2:-}"; }
-track_docker_image() { track_item "docker_image" "$1"; }
 
 #=============================================================================
 # UNIFIED VALIDATION SYSTEM
@@ -515,6 +313,36 @@ validate_commands_exist() {
 #   require_module "core"                    # Single dependency
 #   require_module "core" "templates"        # Multiple dependencies
 #
+
+#=============================================================================
+# DIRECTORY SAFETY GUARD
+#=============================================================================
+
+# Function: assert_safe_init_directory
+# Purpose:  Prevent accidental zzc init in occupied directories (e.g. ~/prj).
+#           Hard-stops when unexpected subdirectories exist; prompts when
+#           many files are present. Bypassed with --force on cmd_init.
+# Returns:  0 if safe to proceed, 1 if user cancels or directory is occupied.
+assert_safe_init_directory() {
+    local subdirs items
+    subdirs=$(find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' | wc -l | tr -d ' ')
+    items=$(find . -maxdepth 1 -mindepth 1 ! -name '.*' | wc -l | tr -d ' ')
+
+    if [[ "$subdirs" -gt 1 ]]; then
+        log_error "This directory has $subdirs existing subdirectories."
+        log_error "zzc init is intended for new, empty project directories."
+        log_error "Create a project subdirectory:  mkdir myproject && cd myproject"
+        log_error "Override with:                  zzc init --force"
+        return 1
+    fi
+
+    if [[ "$items" -gt 3 ]]; then
+        log_warn "This directory has $items existing items."
+        confirm "Run zzc init here?" || return 1
+    fi
+
+    return 0
+}
 
 # Function: zzc_read
 # Purpose: Wrapper around `read` that skips the prompt when

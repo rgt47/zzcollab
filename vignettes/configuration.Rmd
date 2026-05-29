@@ -91,7 +91,7 @@ team:
   description: "Multi-omics cancer research"
 
 defaults:
-  profile-name: "bioinformatics"
+  profile-name: "modeling"
 
 collaboration:
   github:
@@ -174,7 +174,7 @@ zzcollab config list --verbose
 
 # Output shows:
 # team-name: "myteam" (from ~/.zzcollab/config.yaml)
-# profile-name: "bioinformatics" (from ./zzcollab.yaml) [OVERRIDING user config]
+# profile-name: "modeling" (from ./zzcollab.yaml) [OVERRIDING user config]
 ```
 
 ### Validate Configuration
@@ -209,11 +209,11 @@ zzcollab  # Uses all configured defaults
 # Personal defaults
 zzcollab config set team-name "genomicslab"
 zzcollab config set github-account "genomicslab"
-zzcollab config set profile-name "bioinformatics"
+zzcollab config set profile-name "modeling"
 
 # Create team project with project-specific config
 mkdir cancer-study && cd cancer-study
-zzcollab -p cancer-study
+zzcollab modeling
 
 # Customize project config for team
 cat > zzcollab.yaml << 'EOF'
@@ -222,7 +222,7 @@ team:
   project: "cancer-study"
 
 defaults:
-  profile-name: "bioinformatics"
+  profile-name: "modeling"
 
 collaboration:
   github:
@@ -265,69 +265,49 @@ zzc analysis                     # Full setup (init + renv + docker)
 zzc github                       # Create private GitHub repo
 ```
 
-**Legacy flags** (still supported for team image naming):
+**Team image naming**: record the DockerHub account once; the project name
+comes from the working directory.
 
 ```bash
-# -t, --team-name NAME
 # Docker Hub namespace for team images
-zzcollab -t myteam -p study1
-
-# -p, --project-name NAME
-# Project name (used for Docker image naming)
-zzcollab -t myteam -p cancer-analysis
+zzcollab config set dockerhub-account myteam
+# Image name becomes: myteam/<project>:latest
 ```
-
-**Image Naming Convention**:
-- Default: `username/projectname:latest`
-- With team flag: `teamname/projectname:latest`
 
 ### Docker Profile Selection
 
 ```bash
-# --profile-name PROFILE
-# Use predefined Docker profile
-zzcollab --profile-name analysis        # ~1.2GB, tidyverse ecosystem
-zzcollab --profile-name minimal         # ~780MB, essential dev tools
-zzcollab --profile-name bioinformatics  # ~1.98GB, Bioconductor
-zzcollab --profile-name geospatial      # ~1.5GB, GIS tools
-zzcollab --profile-name modeling        # ~1.5GB, tidymodels
-zzcollab --profile-name publishing      # ~3GB, LaTeX/Quarto
-zzcollab --profile-name alpine_minimal  # ~200MB, ultra-lightweight
+# Create the project with a profile (run in the project directory)
+zzcollab analysis         # ~1.2GB, tidyverse ecosystem
+zzcollab minimal          # ~650MB, essential dev tools
+zzcollab modeling         # ~1.5GB, tidymodels / ML
+zzcollab publishing       # ~3GB, LaTeX/Quarto
+zzcollab rstudio          # RStudio Server
+zzcollab shiny            # Shiny apps
+
+# Switch profile on the docker step
+zzcollab docker --profile publishing
 
 # List all available profiles
-zzc list profiles
+zzcollab list
 ```
 
 **Profile Details**: See "Docker Profile System" section below.
 
 ### Custom Docker Composition
 
-For specialized needs, compose custom environments using base images and bundles:
+For specialized needs, build on a custom base image with the `docker` command:
 
 ```bash
-# -b, --base-image IMAGE
-# Specify custom base Docker image
-zzcollab -b rocker/r-ver:latest
-zzcollab -b rocker/rstudio:4.3.0
-zzcollab -b bioconductor/bioconductor_docker:latest
-
-# --pkgs BUNDLE[,BUNDLE,...]
-# R package bundles (pre-installed in Docker)
-zzcollab -b rocker/r-ver --pkgs essential     # renv, devtools, usethis
-zzcollab -b rocker/r-ver --pkgs tidyverse     # tidyverse ecosystem
-zzcollab -b rocker/r-ver --pkgs modeling      # tidymodels packages
-zzcollab -b rocker/r-ver --pkgs bioinfo       # Bioconductor packages
-
-# Combined custom composition
-zzcollab -b bioconductor/bioconductor_docker --pkgs modeling
-# Creates: Bioconductor base + ML packages
-
-# List available bundles
-zzcollab --list-pkgs   # R package bundles
+# Override the base Docker image
+zzcollab docker --base-image rocker/r-ver:latest
+zzcollab docker --base-image rocker/rstudio:4.3.0
+zzcollab docker --base-image bioconductor/bioconductor_docker:latest
 ```
 
-**Note**: System library dependencies are automatically detected from R packages
-via `make check-system-deps`. Manual specification is rarely needed.
+Additional R packages are installed inside the container and captured in
+`renv.lock`; the package set is recorded there rather than selected by a CLI
+flag. System library dependencies are detected automatically.
 
 
 ## Team Collaboration Flags
@@ -349,63 +329,20 @@ make r             # Enter container
 
 ## Output and Behavior Flags
 
-### Verbosity Control
+These global flags work with any command:
 
 ```bash
-# -v, --verbose
-# Show detailed output during operations
-zzcollab -v -t myteam -p study1
+# -v / --verbose : detailed output
+zzcollab -v docker
 
-# -q, --quiet
-# Suppress non-essential output
+# -q / --quiet : errors only
 zzcollab -q config list
 
-# --dry-run
-# Show what would be done without executing
-zzcollab --dry-run -t myteam -p study1
-```
+# -y / --yes (or -Y / --yes-all) : accept defaults (non-interactive)
+zzcollab -y analysis
 
-### Confirmation Prompts
-
-```bash
-# -y, --yes
-# Auto-confirm all prompts (useful for scripts)
-zzcollab -y -t myteam -p study1
-
-# --no-confirm
-# Skip confirmation prompts
-zzcollab --no-confirm config set team-name "newteam"
-```
-
-## Advanced Flags
-
-### Docker Build Control
-
-```bash
-# --no-cache
-# Force rebuild without using Docker layer cache
-zzcollab --no-cache -t myteam -p study1
-
-# --platform PLATFORM
-# Specify platform for Docker build
-zzcollab --platform linux/amd64  # Force AMD64
-zzcollab --platform linux/arm64  # Force ARM64
-
-# --build-arg KEY=VALUE
-# Pass build arguments to Docker
-zzcollab --build-arg R_VERSION=4.3.0
-```
-
-### Package Management
-
-```bash
-# --skip-renv
-# Skip renv initialization
-zzcollab --skip-renv -t myteam -p study1
-
-# --renv-version VERSION
-# Use specific renv version
-zzcollab --renv-version 1.0.3
+# --no-build : skip the Docker build prompt
+zzcollab --no-build docker
 ```
 
 # Docker Profile System
@@ -488,94 +425,58 @@ use_cases:
   - Technical documentation
 ```
 
-### Specialized Domain Profiles
+### Additional Profiles
 
-#### bioinformatics (~1.98GB)
+#### analysis_pdf (~1.5GB)
 ```yaml
-base_image: bioconductor/bioconductor_docker:latest
+base_image: rocker/tidyverse:latest
 packages:
-  - Bioconductor core packages
-  - DESeq2, edgeR, limma
-  - GenomicRanges, Biostrings
-  - SummarizedExperiment
+  - analysis packages plus tinytex, pandoc
 
 use_cases:
-  - Genomics analysis
-  - RNA-seq workflows
-  - Proteomics studies
-  - Systems biology
+  - Data analysis with PDF report rendering
 ```
 
-#### geospatial (~1.5GB)
+#### shiny (~1.8GB)
 ```yaml
-base_image: rocker/geospatial:latest
-system_libs:
-  - GDAL, PROJ, GEOS (pre-compiled)
+base_image: rocker/shiny:latest
 packages:
-  - sf, terra, raster
-  - leaflet, mapview, tmap
-  - stars, gstat
+  - shiny, shinydashboard, DT, plotly, bslib
 
 use_cases:
-  - GIS analysis
-  - Spatial statistics
-  - Climate modeling
-  - Ecology and conservation
+  - Interactive web applications and dashboards
 ```
 
-### Lightweight Alpine Profiles
-
-#### alpine_minimal (~200MB)
+#### manuscript-package (~1.5GB)
 ```yaml
-base_image: rocker/r-alpine:latest
+base_image: rocker/verse:latest
 packages:
-  - renv, devtools, testthat
+  - R package structure with companion Rmd manuscripts (tinytex)
 
 use_cases:
-  - Ultra-fast CI/CD
-  - Minimal resource footprint
-  - Container orchestration
-  - Edge computing
+  - R packages with paper-style reports
 ```
 
-#### alpine_analysis (~400MB)
-```yaml
-base_image: rocker/r-alpine:latest
-packages:
-  - Essential tidyverse packages
-  - Minimal analysis tools
+### Specialized Domains via a Custom Base Image
 
-use_cases:
-  - Lightweight analysis
-  - Fast testing
-  - Cloud deployments
-  - Resource-constrained servers
-```
+For domains without a built-in profile (e.g. genomics or geospatial), build on a
+domain base image with `zzcollab docker --base-image` and add packages via renv:
 
-#### hpc_alpine (~600MB)
-```yaml
-base_image: rocker/r-alpine:latest
-packages:
-  - Parallel processing tools
-  - HPC-optimized packages
-
-use_cases:
-  - High-performance computing
-  - Cluster computing
-  - Parallel workflows
-  - Batch processing
+```bash
+zzcollab docker --base-image bioconductor/bioconductor_docker  # genomics
+zzcollab docker --base-image rocker/geospatial                 # GIS / spatial
 ```
 
 ## Profile Selection Guide
 
-| Research Domain | Recommended Profile | Alternative Profiles |
-|-----------------|---------------------|----------------------|
-| Data analysis | analysis | minimal, alpine_analysis |
+| Research Domain | Recommended Profile | Alternative |
+|-----------------|---------------------|-------------|
+| Data analysis | analysis | minimal |
 | Machine learning | modeling | analysis |
-| Genomics | bioinformatics | minimal + renv packages |
-| GIS/spatial | geospatial | analysis + spatial packages |
-| Publishing | publishing | analysis + publishing packages |
-| CI/CD testing | alpine_minimal | minimal |
+| Genomics | analysis + Bioconductor base image | minimal |
+| GIS/spatial | analysis + rocker/geospatial base image | minimal |
+| Publishing | publishing | manuscript-package |
+| Interactive apps | shiny | rstudio |
 | Teaching | analysis | minimal, publishing |
 
 ## Custom Profile Composition
@@ -585,10 +486,9 @@ When predefined profiles don't fit, compose custom environments:
 ### Example: Bayesian Statistics Environment
 
 ```bash
-# Start with R base and modeling packages
-zzcollab -b rocker/r-ver:latest \
-  --pkgs modeling \
-  -t myteam -p bayes-study
+# Start from the modeling profile
+mkdir bayes-study && cd bayes-study
+zzcollab modeling
 
 # Inside container, add specialized Bayesian packages:
 # install.packages(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))
@@ -598,10 +498,9 @@ zzcollab -b rocker/r-ver:latest \
 ### Example: Web Scraping + NLP Environment
 
 ```bash
-# Base image with tidyverse for text analysis
-zzcollab -b rocker/rstudio:latest \
-  --pkgs tidyverse \
-  -t myteam -p nlp-scraper
+# Start from the analysis profile
+mkdir nlp-scraper && cd nlp-scraper
+zzcollab analysis
 
 # Add NLP packages dynamically:
 # install.packages(c("rvest", "httr", "xml2", "tidytext", "textrecipes", "spacyr"))
@@ -611,10 +510,9 @@ zzcollab -b rocker/rstudio:latest \
 ### Example: Lightweight Reporting
 
 ```bash
-# Alpine base for minimal footprint
-zzcollab -b rocker/r-alpine:latest \
-  --pkgs essential \
-  -t myteam -p reports
+# Minimal base for a small footprint
+mkdir reports && cd reports
+zzcollab minimal
 
 # Add reporting packages:
 # install.packages(c("rmarkdown", "knitr", "gt", "flextable"))
@@ -628,14 +526,14 @@ ZZCOLLAB uses a two-layer system for maximum flexibility and reproducibility.
 ## Layer 1: Docker Profile (Team/Shared)
 
 **What**: Pre-installed R packages in the Docker image
-**Control**: `--profile-name`, `--pkgs`, or profile configuration
+**Control**: the profile (`zzc <profile>` / `docker --profile`) or a custom base image
 **Shared**: All team members get identical packages
 **Purpose**: Fast container startup, team consistency
 
 ```bash
 # Team lead creates base environment
 mkdir study && cd study
-zzc analysis                     # Or: zzc bioinformatics for specialized profile
+zzc analysis                     # Or: zzc modeling for a machine-learning profile
 zzc github
 make docker-build
 zzc dockerhub                    # Push for team members
@@ -880,17 +778,17 @@ collaboration:
 ```bash
 # Base images for different workflows
 mkdir biocore-rnaseq && cd biocore-rnaseq
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzc modeling                     # Full setup; add genomics packages via renv
 zzc github
 make docker-build && make docker-push-team
 
 cd .. && mkdir biocore-chipseq && cd biocore-chipseq
-zzc bioinformatics
+zzc modeling
 zzc github
 make docker-build && make docker-push-team
 
 cd .. && mkdir biocore-singlecell && cd biocore-singlecell
-zzc bioinformatics
+zzc modeling
 zzc github
 make docker-build && make docker-push-team
 ```
@@ -989,7 +887,7 @@ zzcollab config list --verbose
 # Output:
 # team-name: "genomicslab"
 #   Source: ~/.zzcollab/config.yaml (user config)
-# profile-name: "bioinformatics"
+# profile-name: "modeling"
 #   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting "analysis"]
 ```
 
@@ -1024,7 +922,7 @@ zzcollab config get profile-name
 ```bash
 zzcollab config list --verbose
 # Output shows:
-# profile-name: "bioinformatics"
+# profile-name: "modeling"
 #   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting]
 
 # Project config (./zzcollab.yaml) overrides user config
@@ -1034,35 +932,26 @@ vim ./zzcollab.yaml  # Remove profile-name to use user default
 
 ### Issue 2: Docker Platform Compatibility
 
-**Problem**: ARM64 Mac cannot build AMD64-only profiles
+**Problem**: An ARM64 Mac cannot build an AMD64-only base image.
 
 ```bash
-# Error when building geospatial profile:
+# Error when building on the rocker/geospatial base image:
 # Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8
 ```
 
-**Solution 1**: Use ARM64-compatible profiles
+**Solution 1**: Use an ARM64-compatible base and add packages via renv
 ```bash
-# Instead of geospatial, use:
-zzcollab --profile-name analysis -t myteam -p study
-# Then add spatial packages via install.packages():
+zzcollab analysis
+# Then add spatial packages inside the container:
 # install.packages(c("sf", "terra", "raster"))
 # (Auto-snapshot on exit saves these to renv.lock)
 ```
 
-**Solution 2**: Force AMD64 platform
+**Solution 2**: Force the AMD64 platform (runs under emulation)
 ```bash
-zzcollab --platform linux/amd64 --profile-name geospatial -t myteam -p study
-# Runs via emulation (slower but compatible)
-```
-
-**Solution 3**: Check profile compatibility
-```bash
-zzc list profiles
-# Output shows platform compatibility:
-# analysis      ARM64 ✓  AMD64 ✓
-# geospatial    ARM64 ✗  AMD64 ✓  (AMD64 only)
-# alpine_*      ARM64 ✓  AMD64 ✓
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+zzcollab docker --base-image rocker/geospatial
+# Slower under emulation, but compatible
 ```
 
 ### Issue 3: Missing Configuration File
@@ -1171,7 +1060,7 @@ init_project("my-analysis")
 # Override specific settings
 init_project(
   project_name = "special-study",
-  profile_name = "bioinformatics"  # Override default profile
+  profile = "modeling"  # Override default profile
   # Other settings from config
 )
 
@@ -1179,7 +1068,7 @@ init_project(
 init_project(
   team_name = "genomicslab",
   project_name = "cancer-study",
-  profile_name = "bioinformatics"
+  profile = "modeling"
 )
 ```
 

@@ -211,6 +211,15 @@ ensure_docker_image_built() {
 
 # shellcheck disable=SC2120
 cmd_init() {
+    local force=false
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force|-f) force=true; shift ;;
+            *) break ;;
+        esac
+    done
+
+    [[ "$force" == "false" ]] && assert_safe_init_directory || true
 
     # Validate package name
     PKG_NAME=$(validate_package_name)
@@ -773,116 +782,40 @@ cmd_config() {
 }
 
 cmd_uninstall() {
-    local dry_run=false
     local force=false
+    local dry_run=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --dry-run|-n) dry_run=true; shift ;;
-            --force|-f) force=true; shift ;;
+            -f|--force)  force=true;   shift ;;
+            -n|--dry-run) dry_run=true; shift ;;
             help|--help|-h)
-                cat << 'EOF'
-Usage: zzcollab uninstall [options]
-
-Remove zzcollab-generated files from the current project.
-
-Options:
-  -n, --dry-run    Preview what would be removed
-  -f, --force      Skip confirmation prompt
-  -h, --help       Show this help
-
-This removes files tracked in .zzcollab/manifest.json.
-Your data, R code, and analysis files are preserved.
-EOF
-                return 0
-                ;;
+                echo "Usage: zzcollab uninstall [-f|--force] [-n|--dry-run]"
+                echo "Remove the zzcollab scaffold from the current project directory."
+                echo "Data and analysis files are preserved."
+                return 0 ;;
             *) log_error "Unknown option: $1"; return 1 ;;
         esac
     done
 
-    # Check for manifest
-    local manifest=".zzcollab/manifest.json"
-    if [[ ! -f "$manifest" ]]; then
-        manifest=".zzcollab/manifest.txt"
-        if [[ ! -f "$manifest" ]]; then
-            log_error "No zzcollab manifest found in current directory"
-            log_info "Are you in a zzcollab project?"
-            return 1
-        fi
-    fi
+    local known_dirs=(R/ analysis/ tests/ man/ vignettes/ docs/ .github/ renv/ .zzcollab/)
+    local known_files=(DESCRIPTION NAMESPACE LICENSE Makefile Dockerfile
+                       renv.lock .Rprofile .gitignore .Rbuildignore zzcollab.yaml)
 
     if [[ "$dry_run" == "true" ]]; then
-        log_info "Dry run - would remove:"
-        if [[ "$manifest" == *.json ]] && command -v jq >/dev/null 2>&1; then
-            jq -r '.files[]?, .directories[]?, (.template_files[]? | .destination)?' \
-                "$manifest" 2>/dev/null | while read -r item; do
-                [[ -n "$item" ]] && [[ -e "$item" ]] && echo "  $item"
-            done || true
-        else
-            grep -E '^(file|dir|template):' "$manifest" 2>/dev/null | cut -d: -f2- | while read -r item; do
-                [[ -n "$item" ]] && [[ -e "$item" ]] && echo "  $item"
-            done || true
-        fi
+        log_info "Would remove:"
+        for d in "${known_dirs[@]}"; do [[ -e "$d" ]] && echo "  $d"; done
+        for f in "${known_files[@]}"; do [[ -e "$f" ]] && echo "  $f"; done
         return 0
     fi
 
     if [[ "$force" != "true" ]]; then
-        log_warn "This will remove zzcollab files from the current project"
-        zzc_read -p "Continue? [y/N] " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            log_info "Cancelled"
-            return 0
-        fi
+        log_warn "This will remove the zzcollab scaffold from: $(pwd)"
+        confirm "Proceed?" || return 0
     fi
 
-    log_info "Removing zzcollab files..."
-
-    # Remove tracked files
-    if [[ "$manifest" == *.json ]] && command -v jq >/dev/null 2>&1; then
-        # Remove files first
-        jq -r '.files[]? // empty' "$manifest" 2>/dev/null | while read -r item; do
-            if [[ -f "$item" ]]; then
-                rm -f "$item" && log_info "Removed file: $item"
-            fi
-        done
-
-        # Remove template destinations
-        jq -r '.template_files[]? | .destination // empty' "$manifest" 2>/dev/null | while read -r item; do
-            if [[ -f "$item" ]]; then
-                rm -f "$item" && log_info "Removed file: $item"
-            fi
-        done
-
-        # Remove directories (in reverse order to handle nested dirs)
-        jq -r '.directories[]? // empty' "$manifest" 2>/dev/null | _reverse_lines | while read -r item; do
-            if [[ -d "$item" ]] && [[ -z "$(ls -A "$item" 2>/dev/null)" ]]; then
-                rmdir "$item" && log_info "Removed directory: $item"
-            fi
-        done
-    else
-        # Text manifest fallback
-        grep -E '^file:' "$manifest" 2>/dev/null | cut -d: -f2- | while read -r item; do
-            if [[ -f "$item" ]]; then
-                rm -f "$item" && log_info "Removed file: $item"
-            fi
-        done
-
-        grep -E '^template:' "$manifest" 2>/dev/null | cut -d: -f3- | while read -r item; do
-            if [[ -f "$item" ]]; then
-                rm -f "$item" && log_info "Removed file: $item"
-            fi
-        done
-
-        grep -E '^directory:' "$manifest" 2>/dev/null | cut -d: -f2- | _reverse_lines | while read -r item; do
-            if [[ -d "$item" ]] && [[ -z "$(ls -A "$item" 2>/dev/null)" ]]; then
-                rmdir "$item" && log_info "Removed directory: $item"
-            fi
-        done
-    fi
-
-    # Remove manifest directory
-    rm -rf .zzcollab
+    rm -rf "${known_dirs[@]}"
+    rm -f  "${known_files[@]}"
     log_success "Uninstall complete"
 }
 
@@ -1271,6 +1204,7 @@ cmd_quickstart() {
     fi
 
     # New project → full quickstart
+    assert_safe_init_directory || return 1
     local project_name
     project_name=$(basename "$(pwd)")
 
