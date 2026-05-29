@@ -1,6 +1,12 @@
 # Tests for project initialization and management functions
 
 test_that("init_project validates required parameters", {
+  # Ensure no ambient team_name config leaks in and satisfies the requirement
+  local_mocked_bindings(
+    get_config_default = function(...) NULL,
+    .package = "zzcollab"
+  )
+
   # team_name is required (from parameter or config)
   expect_error(
     init_project(project_name = "test"),
@@ -54,6 +60,12 @@ test_that("init_project sets github account when provided", {
 })
 
 test_that("join_project validates required parameters", {
+  # Ensure no ambient team_name config leaks in and satisfies the requirement
+  local_mocked_bindings(
+    get_config_default = function(...) NULL,
+    .package = "zzcollab"
+  )
+
   # team_name is required
   expect_error(
     join_project(project_name = "test"),

@@ -12,7 +12,9 @@
       "Bash(mkdir -p /tmp/zzc_test/proj_b)",
       "Read(//tmp/zzc_test/**)",
       "Bash(ZZCOLLAB_CONFIG_USER=/tmp/zzc_test_user.yaml ZZCOLLAB_ACCEPT_DEFAULTS=true zzc init)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(ZZCOLLAB_CONFIG_USER=/tmp/zzc_test_user.yaml VERBOSITY_LEVEL=3 ZZCOLLAB_ACCEPT_DEFAULTS=true zzc init)",
+      "Bash(git stash *)"
     ]
   }
 }
