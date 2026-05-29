@@ -439,7 +439,7 @@ list_library_bundles() {
         return 1
     fi
 
-    echo "System library bundles (for use with: zzcollab init --libs <bundle>):"
+    echo "System library bundles (components of profiles in bundles.yaml):"
     echo ""
 
     awk '
@@ -459,7 +459,7 @@ list_library_bundles() {
 
     echo ""
     echo "Note: System deps are auto-derived from R packages in renv.lock."
-    echo "Manual --libs flag rarely needed."
+    echo "Libraries are selected by profile (zzc <profile> or --profile)."
 }
 
 list_package_bundles() {
@@ -470,7 +470,7 @@ list_package_bundles() {
         return 1
     fi
 
-    echo "R package bundles (for use with: zzcollab init --pkgs <bundle>):"
+    echo "R package bundles (components of profiles in bundles.yaml):"
     echo ""
 
     awk '

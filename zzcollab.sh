@@ -222,9 +222,6 @@ ensure_docker_image_built() {
 cmd_init() {
     require_module "cli" "config" "project" "docker" "github"
 
-    # Process CLI arguments
-    process_cli "$@" || exit 1
-
     # Validate package name
     PKG_NAME=$(validate_package_name)
     export PKG_NAME
@@ -1669,16 +1666,23 @@ Management:
   list           List profiles, libs, packages
   help           Show help
 
-Options:
-  -b, --build      Build Docker image after generating
-  --no-build       Skip Docker build prompt
-  --tag <tag>      DockerHub image tag (default: latest)
-  --private        Create private GitHub repo (default)
-  --public         Create public GitHub repo
+Global options (any position):
   -v, --verbose    More output
   -q, --quiet      Errors only
   -y, --yes        Accept defaults (non-interactive)
   -Y, --yes-all    Same as -y
+  --no-build       Skip Docker build prompt
+  --version        Print version and exit
+  -h, --help       Show this help
+
+Per-command options (must follow their command):
+  docker:    -b, --build              Build image after generating
+             -r, --profile <name>     Select profile (analysis, minimal, ...)
+             --base-image <img>       Override base image
+             --r-version <ver>        Pin R version
+  dockerhub: -t, --tag <tag>          Image tag (default: latest)
+  github:    --private | --public     Repo visibility (default: private)
+  rm:        -f, --force              Skip confirmation
 
 Examples:
   zzcollab analysis                # Quickstart: init + renv + docker (recommended)
