@@ -584,9 +584,9 @@ git push
 
 **Team Lead Setup (Layer 1)**:
 ```bash
-# Create bioinformatics base with common packages
+# Create a base environment with common packages
 mkdir baseenv && cd baseenv
-zzc analysis                     # Or specialized profile
+zzc analysis                     # Or another profile
 zzc github
 make docker-build
 zzc dockerhub                    # Push for team members
@@ -633,7 +633,7 @@ git clone https://github.com/genomicslab/rnaseq-study.git
 cd rnaseq-study
 
 # Can use ANY compatible Docker base image
-zzcollab --profile-name minimal  # or analysis, or bioinformatics
+zzcollab --profile minimal  # or analysis, or modeling
 make r
 
 # renv automatically restores EXACT packages Alice used on R startup
@@ -651,8 +651,8 @@ Rscript analysis/scripts/differential_expression.R
 ### Choose Docker Profile (Layer 1) Based On:
 
 1. **Research domain**
-   - Bioinformatics → `bioinformatics` profile
-   - GIS/spatial → `geospatial` profile
+   - Genomics → `analysis` + a Bioconductor base image
+   - GIS/spatial → `analysis` + the `rocker/geospatial` base image
    - Machine learning → `modeling` profile
    - General analysis → `analysis` profile
 
@@ -894,15 +894,11 @@ zzcollab config list --verbose
 ### Test Configuration
 
 ```bash
-# Dry-run project creation
-zzcollab --dry-run -t myteam -p test-project --profile-name analysis
+# Validate the effective configuration before creating a project
+zzcollab config validate
 
-# Shows what would be created without executing:
-# Would create project: test-project
-# Team namespace: myteam
-# Docker profile: analysis (~1.2GB)
-# Base image: rocker/rstudio:latest
-# Docker image name: myteam/test-project:latest
+# Review the merged configuration and its sources
+zzcollab config list
 ```
 
 ## Common Issues and Solutions
@@ -915,7 +911,7 @@ zzcollab --dry-run -t myteam -p test-project --profile-name analysis
 # Symptom: Set profile-name in user config but project uses different profile
 zzcollab config set profile-name "analysis"
 zzcollab config get profile-name
-# Output: bioinformatics  (Expected: analysis)
+# Output: modeling  (Expected: analysis)
 ```
 
 **Solution**: Check configuration sources
@@ -1148,7 +1144,7 @@ development:
 
 1. **Use appropriate profiles**
    - Development: `minimal` or `analysis`
-   - CI/CD: `alpine_minimal`
+   - CI/CD: `minimal`
    - Production: `modeling` or domain-specific
 
 2. **Layer caching**
@@ -1165,7 +1161,7 @@ development:
 ```yaml
 # Prefer lightweight profiles for CI/CD
 profiles:
-  alpine_minimal:    # ~200MB
+  minimal:           # ~650MB
     enabled: true
   analysis:          # ~1.2GB (for development)
     enabled: true
@@ -1186,7 +1182,7 @@ profiles:
 
 3. **Test with dry-run**
    ```bash
-   zzcollab --dry-run analysis
+   zzcollab config validate
    ```
 
 4. **Check Docker status**

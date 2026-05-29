@@ -386,13 +386,12 @@ cmd_docker() {
             r_version="${CONFIG_R_VERSION:-}"
         fi
         if [[ -z "$r_version" ]]; then
-            r_version=$(get_cran_r_version)
+            r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
         fi
 
         # Verify the chosen R version exists as a tag for BASE_IMAGE; fall
         # back to the latest published tag if not (e.g., CRAN has 4.6.0 but
         # rocker/tidyverse has only 4.5.3).
-        r_version=$(get_buildable_r_version "${BASE_IMAGE:-}" "$r_version")
 
         create_renv_lock_minimal "$r_version"
     fi
@@ -520,7 +519,7 @@ EOF
 
     if [[ -z "$r_version" ]]; then
         local cran_version
-        cran_version=$(get_cran_r_version)
+        cran_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
         echo ""
         echo "  Current R version on CRAN: $cran_version"
         echo ""
@@ -1252,8 +1251,7 @@ cmd_quickstart() {
     echo ""
     log_info "Step 2/3: Setting up renv..."
     local r_version
-    r_version=$(get_cran_r_version)
-    r_version=$(get_buildable_r_version "$base_image" "$r_version")
+    r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
     create_renv_lock_minimal "$r_version"
     log_success "renv.lock created (R $r_version)"
 

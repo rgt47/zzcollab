@@ -760,8 +760,7 @@ config_project_prompt() {
     local default_team="${CONFIG_TEAM_NAME:-}"
 
     if [[ -z "$default_r_version" ]]; then
-        default_r_version=$(get_cran_r_version 2>/dev/null || \
-            echo "${ZZCOLLAB_DEFAULT_R_VERSION:-4.4.2}")
+        default_r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
     fi
 
     print_section "Project Setup: $pkg_name"

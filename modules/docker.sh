@@ -74,86 +74,7 @@ RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
 # R VERSION DETECTION
 #=============================================================================
 
-get_cran_r_version() {
-    # Return cached result if available
-    if [[ -n "${_CACHED_CRAN_R_VERSION:-}" ]]; then
-        echo "$_CACHED_CRAN_R_VERSION"
-        return 0
-    fi
 
-    local version="" major_dir
-
-    major_dir=$(curl -s --max-time 10 https://cran.r-project.org/src/base/ 2>/dev/null | \
-        grep -oE 'R-[0-9]+' | sort -V | tail -1)
-
-    if [[ -n "$major_dir" ]]; then
-        version=$(curl -s --max-time 10 "https://cran.r-project.org/src/base/${major_dir}/" 2>/dev/null | \
-            grep -oE 'R-[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1 | sed 's/R-//')
-    fi
-
-    if [[ -z "$version" ]]; then
-        version="$ZZCOLLAB_DEFAULT_R_VERSION"
-        log_warn "Could not query CRAN, using fallback: $version"
-    fi
-
-    _CACHED_CRAN_R_VERSION="$version"
-    echo "$version"
-}
-
-# Validate that ${base_image}:${r_version} is published on Docker Hub. If
-# not, return the latest published semver (X.Y.Z) tag for that repository.
-# Rationale: CRAN sometimes lists an R release before rocker has published a
-# matching image (e.g., R 4.6.0 on rocker/tidyverse), which causes
-# `docker build` to fail with an unhelpful "manifest not found" error.
-# On network failure or unsupported registry, returns r_version unchanged.
-get_buildable_r_version() {
-    local base_image="$1"
-    local r_version="$2"
-
-    if [[ -z "$base_image" || -z "$r_version" ]]; then
-        echo "$r_version"
-        return 0
-    fi
-
-    # Only Docker Hub is supported for tag introspection here. Other
-    # registries (ghcr.io, private) get the version unchanged.
-    case "$base_image" in
-        */*/*|ghcr.io/*|gcr.io/*|*.azurecr.io/*|quay.io/*)
-            echo "$r_version"
-            return 0
-            ;;
-    esac
-
-    local repo="$base_image"
-    [[ "$repo" != */* ]] && repo="library/$repo"
-
-    local tags_json
-    tags_json=$(curl -fsSL --max-time 10 \
-        "https://hub.docker.com/v2/repositories/${repo}/tags/?page_size=100" 2>/dev/null) || {
-        echo "$r_version"
-        return 0
-    }
-
-    if printf '%s' "$tags_json" | grep -q "\"name\":\"${r_version}\""; then
-        echo "$r_version"
-        return 0
-    fi
-
-    local fallback
-    fallback=$(printf '%s' "$tags_json" \
-        | grep -oE '"name":"[0-9]+\.[0-9]+\.[0-9]+"' \
-        | sed -E 's/"name":"([^"]+)"/\1/' \
-        | sort -V | tail -1)
-
-    if [[ -z "$fallback" ]]; then
-        echo "$r_version"
-        return 0
-    fi
-
-    log_warn "Image ${base_image}:${r_version} not published on Docker Hub"
-    log_warn "Falling back to latest available tag: ${base_image}:${fallback}"
-    echo "$fallback"
-}
 
 create_renv_lock_minimal() {
     local r_ver="$1"
@@ -193,7 +114,7 @@ prompt_new_workspace_setup() {
     load_config 2>/dev/null || true
 
     local cran_version
-    cran_version=$(get_cran_r_version)
+    cran_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
     local project_name
     project_name=$(basename "$(pwd)")
     local selected_profile selected_version base_image
@@ -526,16 +447,6 @@ generate_dockerfile() {
         base_image=$(get_profile_base_image "${CONFIG_PROFILE_NAME:-minimal}")
     fi
 
-    # Safety net: validate the requested ${base_image}:${r_version} actually
-    # exists on Docker Hub. Catches stale renv.lock R versions or upstream
-    # publishing lag (e.g., CRAN-fresh 4.6.0 missing from rocker/tidyverse).
-    local resolved_r_version
-    resolved_r_version=$(get_buildable_r_version "$base_image" "$r_version")
-    if [[ "$resolved_r_version" != "$r_version" ]]; then
-        log_warn "renv.lock specifies R $r_version but base image lacks that tag."
-        log_warn "Dockerfile will use R $resolved_r_version; consider regenerating renv.lock."
-        r_version="$resolved_r_version"
-    fi
 
     log_info "  Base image: ${base_image}:${r_version}"
 
