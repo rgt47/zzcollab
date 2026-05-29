@@ -314,11 +314,69 @@ extract_r_version() {
 #=============================================================================
 # R PACKAGE EXTRACTION
 #=============================================================================
-# Uses validation.sh functions for comprehensive package detection:
-#   - extract_code_packages(): scans .R/.Rmd/.qmd/.Rnw for library/require/pkg::/@import
-#   - clean_packages(): filters base packages, placeholders, false positives
-#   - parse_description_imports(): reads DESCRIPTION Imports
-#   - parse_renv_lock(): reads renv.lock packages
+# Self-contained package detection for Dockerfile system-dep derivation.
+# (Dependency validation proper is handled by the zzrenvcheck R package.)
+
+# File types scanned and paths skipped when detecting package usage.
+_DOCKER_FILE_EXTENSIONS=("R" "Rmd" "qmd" "Rnw")
+_DOCKER_SKIP_FILES=("*/README.Rmd" "*/README.md" "*/CLAUDE.md" "*/examples/*" "*/renv/*" "*/.git/*")
+
+# Scan code files for library()/require()/pkg::/@importFrom/@import usages.
+extract_code_packages() {
+    local dirs=("$@")
+    local find_pattern="" exclude=""
+    for ext in "${_DOCKER_FILE_EXTENSIONS[@]}"; do
+        [[ -n "$find_pattern" ]] && find_pattern="$find_pattern -o"
+        find_pattern="$find_pattern -name \"*.$ext\""
+    done
+    for skip in "${_DOCKER_SKIP_FILES[@]}"; do exclude="$exclude ! -path '$skip'"; done
+
+    while IFS= read -r file; do
+        [[ -f "$file" ]] || continue
+        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
+            | grep -E '(library|require)[[:space:]]*\(' 2>/dev/null \
+            | sed -E \
+          's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' \
+            || true
+        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
+            | grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' 2>/dev/null \
+            | sed 's/:://' || true
+        grep -E "#'[[:space:]]*@importFrom[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
+            sed -E 's/.*@importFrom[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
+        grep -E "#'[[:space:]]*@import[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
+            sed -E 's/.*@import[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
+    done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) $exclude 2>/dev/null")
+}
+
+# Extract a comma-separated DESCRIPTION field (e.g. Imports), one pkg per line.
+parse_description_field() {
+    local field="$1"
+    [[ -f "DESCRIPTION" ]] || return 0
+    awk -v f="$field" '
+    BEGIN { in_field=0; content="" }
+    $0 ~ "^"f":" { in_field=1; content=$0; next }
+    in_field && /^[[:space:]]/ { content=content " " $0; next }
+    in_field && /^[A-Z]/ { in_field=0 }
+    END {
+        if (content) {
+            gsub("^"f":[[:space:]]*", "", content)
+            gsub(/\([^)]*\)/, "", content)
+            gsub(/[[:space:]]+/, " ", content)
+            gsub(/,/, "\n", content)
+            print content
+        }
+    }
+    ' DESCRIPTION | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u
+}
+
+parse_description_imports() { parse_description_field "Imports"; }
+
+# List package names from renv.lock (requires jq).
+parse_renv_lock() {
+    command -v jq &>/dev/null || { log_warn "jq not found"; return 0; }
+    [[ -f "renv.lock" ]] || return 0
+    jq -r '.Packages | keys[]' renv.lock 2>/dev/null | grep -v '^$' | sort -u || true
+}
 
 extract_r_packages() {
     local packages=()

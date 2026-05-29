@@ -85,8 +85,6 @@ source "$ZZCOLLAB_MODULES_DIR/docker.sh"
 # shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/github.sh"
 # shellcheck source=/dev/null
-source "$ZZCOLLAB_MODULES_DIR/validation.sh"
-# shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/help.sh"
 # Note: doctor.sh is executed as a standalone script by cmd_doctor, not sourced.
 
@@ -616,18 +614,38 @@ EOF
 }
 
 cmd_validate() {
-    # Pass all arguments directly to validation.sh's main function
-    # This supports all validation flags: --fix, --strict, --verbose, --no-fix, --system-deps
+    # Dependency validation is delegated to the zzrenvcheck R package.
+    # Runs on the host if R + zzrenvcheck are installed; otherwise advises
+    # running inside the container (make check-renv).
+    local strict="TRUE" auto_fix="FALSE"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --fix)         auto_fix="TRUE";  shift ;;
+            --no-fix)      auto_fix="FALSE"; shift ;;
+            --strict)      strict="TRUE";    shift ;;
+            --no-strict)   strict="FALSE";   shift ;;
+            --verbose|-v)  shift ;;
+            help|--help|-h)
+                echo "Usage: zzcollab validate [--fix|--no-fix] [--strict|--no-strict]"
+                echo "Validates package dependencies via zzrenvcheck."
+                echo "Inside a container, prefer: make check-renv"
+                return 0 ;;
+            *) shift ;;
+        esac
+    done
 
-    local validation_script="$ZZCOLLAB_MODULES_DIR/validation.sh"
-
-    if [[ ! -f "$validation_script" ]]; then
-        log_error "Validation module not found: $validation_script"
+    if ! command -v Rscript >/dev/null 2>&1; then
+        log_error "Rscript not found on host."
+        log_info "Run validation inside the container: make check-renv"
         return 1
     fi
 
-    # Run validation.sh directly with all passed arguments
-    bash "$validation_script" "$@"
+    Rscript -e "if (!requireNamespace('zzrenvcheck', quietly = TRUE)) {
+        message('zzrenvcheck not installed. Install with: remotes::install_github(\"rgt47/zzrenvcheck\")')
+        message('Or validate inside the container: make check-renv')
+        quit(status = 1)
+    }
+    zzrenvcheck::check_packages(auto_fix = ${auto_fix}, strict = ${strict})"
 }
 
 cmd_doctor() {
