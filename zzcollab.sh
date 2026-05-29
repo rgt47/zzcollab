@@ -11,8 +11,10 @@
 #   zzcollab config [SUBCOMMAND]     Configuration management
 #   zzcollab help [TOPIC]            Show help
 #
-# LEGACY (backwards compatible):
-#   zzcollab -t TEAM -p PROJECT      Team setup (maps to 'init')
+# PROFILES (quickstart: init + renv + docker, or switch profile if existing):
+#   zzcollab analysis                Tidyverse compendium (recommended)
+#   zzcollab minimal | publishing | rstudio | shiny
+#
 #   zzcollab --help                  Show help
 ##############################################################################
 

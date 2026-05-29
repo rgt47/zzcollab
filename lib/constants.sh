@@ -63,10 +63,11 @@ readonly ZZCOLLAB_MANIFEST_JSON=".zzcollab/manifest.json"
 readonly ZZCOLLAB_MANIFEST_TXT=".zzcollab/manifest.txt"
 
 # Configuration file hierarchy (loaded in priority order)
-readonly ZZCOLLAB_CONFIG_PROJECT="./zzcollab.yaml"
-readonly ZZCOLLAB_CONFIG_USER_DIR="$HOME/.zzcollab"
-readonly ZZCOLLAB_CONFIG_USER="$ZZCOLLAB_CONFIG_USER_DIR/config.yaml"
-readonly ZZCOLLAB_CONFIG_SYSTEM="/etc/zzcollab/config.yaml"
+# Use :- so callers can override paths via environment variables (e.g. tests).
+readonly ZZCOLLAB_CONFIG_PROJECT="${ZZCOLLAB_CONFIG_PROJECT:-./zzcollab.yaml}"
+readonly ZZCOLLAB_CONFIG_USER_DIR="${ZZCOLLAB_CONFIG_USER_DIR:-$HOME/.zzcollab}"
+readonly ZZCOLLAB_CONFIG_USER="${ZZCOLLAB_CONFIG_USER:-$ZZCOLLAB_CONFIG_USER_DIR/config.yaml}"
+readonly ZZCOLLAB_CONFIG_SYSTEM="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.yaml}"
 
 #=============================================================================
 # DEFAULT VALUES
