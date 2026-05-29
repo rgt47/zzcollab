@@ -362,14 +362,14 @@ renv::snapshot()                # Record
 
 **Use lighter Docker profile**:
 ```bash
-zzcollab --config set profile-name "minimal"
+zzcollab config set profile-name "minimal"
 # Minimal pre-installed packages
 # Add more packages dynamically with install.packages()
 ```
 
 **Or: Analysis profile** (recommended):
 ```bash
-zzcollab --config set profile-name "analysis"
+zzcollab config set profile-name "analysis"
 # Includes tidyverse and common analysis packages
 # Install additional packages as needed with install.packages()
 ```

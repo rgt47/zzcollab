@@ -33,7 +33,7 @@ ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All 
 |-------|--------------------|-----------------------------------|----------------------------------|
 | `-a`  | `--tag`            | Docker image tag                  | `zzcollab -a v2.1`               |
 | `-b`  | `--base-image`     | Custom Docker base                | `zzcollab -b rocker/r-ver`       |
-| `-c`  | `--config`         | Configuration management          | `zzcollab -c init`               |
+| `-c`  | `config`         | Configuration management          | `zzcollab -c init`               |
 | `-f`  | `--dockerfile`     | Custom Dockerfile path            | `zzcollab -f custom.df`          |
 | `-g`  | `--github-account` | GitHub account name               | `zzcollab -g myaccount`          |
 | `-G`  | `--github`         | Create GitHub repo                | `zzcollab -G`                    |
@@ -318,60 +318,60 @@ security:
 
 ```bash
 # Create user configuration file with defaults
-zzcollab --config init
+zzcollab config init
 
 # Create user configuration in custom location
-ZZCOLLAB_CONFIG_USER=~/custom/config.yaml zzcollab --config init
+ZZCOLLAB_CONFIG_USER=~/custom/config.yaml zzcollab config init
 ```
 
 ### Setting Values
 
 ```bash
 # Set single values
-zzcollab --config set team-name "mylab"
-zzcollab --config set github-account "myusername"
-zzcollab --config set profile-name "bioinformatics"
+zzcollab config set team-name "mylab"
+zzcollab config set github-account "myusername"
+zzcollab config set profile-name "bioinformatics"
 
 # Set boolean values
-zzcollab --config set auto-github true
-zzcollab --config set skip-confirmation false
+zzcollab config set auto-github true
+zzcollab config set skip-confirmation false
 
 # Set Docker platform
-zzcollab --config set docker.platform "auto"
+zzcollab config set docker.platform "auto"
 ```
 
 ### Getting Values
 
 ```bash
 # Get single values
-zzcollab --config get team-name
-zzcollab --config get profile-name
+zzcollab config get team-name
+zzcollab config get profile-name
 
 # Get all configuration
-zzcollab --config list
+zzcollab config list
 ```
 
 ### Validation
 
 ```bash
 # Validate YAML syntax and required fields
-zzcollab --config validate
+zzcollab config validate
 
 # Validate specific config file
-zzcollab --config validate ./zzcollab.yaml
+zzcollab config validate ./zzcollab.yaml
 ```
 
 ### Configuration Inspection
 
 ```bash
 # Show effective configuration (resolved hierarchy)
-zzcollab --config show
+zzcollab config show
 
 # Show configuration sources
-zzcollab --config sources
+zzcollab config sources
 
 # Show configuration precedence
-zzcollab --config precedence
+zzcollab config precedence
 ```
 
 ## Configuration Parameters
@@ -498,14 +498,14 @@ zzcollab --config precedence
 
 ```bash
 # 1. Create user configuration
-zzcollab --config init
+zzcollab config init
 
 # 2. Set personal defaults
-zzcollab --config set team-name "myusername"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "myusername"
+zzcollab config set profile-name "analysis"
 
 # 3. Verify configuration
-zzcollab --config list
+zzcollab config list
 ```
 
 **Project Creation**:
@@ -575,7 +575,7 @@ sudo vim /etc/zzcollab/config.yaml
 # 3. Set organization-wide defaults (profile, platform, etc.)
 
 # 4. Validate configuration
-zzcollab --config validate /etc/zzcollab/config.yaml
+zzcollab config validate /etc/zzcollab/config.yaml
 ```
 
 ## R Interface
@@ -629,10 +629,10 @@ join_project(project_name = "study")
 
 ```bash
 # Validate configuration file syntax
-zzcollab --config validate
+zzcollab config validate
 
 # Validate specific file
-zzcollab --config validate ./zzcollab.yaml
+zzcollab config validate ./zzcollab.yaml
 
 # Output:
 # ✓ Configuration syntax valid
@@ -655,7 +655,7 @@ Configuration validation checks:
 
 ```
 Error: Required field 'team_name' not found in configuration
-Solution: zzcollab --config set team-name "myteam"
+Solution: zzcollab config set team-name "myteam"
 ```
 
 **Invalid Profile Name**:
@@ -683,10 +683,10 @@ Solution: Run 'make check-system-deps' to see required libraries
 
 ```bash
 # Check configuration precedence
-zzcollab --config precedence
+zzcollab config precedence
 
 # Verify configuration loading
-zzcollab --config sources
+zzcollab config sources
 
 # Check for environment variable overrides
 echo $ZZCOLLAB_PROFILE_NAME
@@ -702,7 +702,7 @@ echo $ZZCOLLAB_PROFILE_NAME
 
 ```bash
 # Validate YAML syntax
-zzcollab --config validate
+zzcollab config validate
 
 # Check yq installation
 command -v yq
@@ -735,7 +735,7 @@ ls -la ~/.zzcollab/
 **Solution**: Initialize configuration:
 
 ```bash
-zzcollab --config init
+zzcollab config init
 ```
 
 ### Permission Issues
@@ -883,20 +883,20 @@ When zzcollab introduces new configuration features:
 cp ~/.zzcollab/config.yaml ~/.zzcollab/config.yaml.backup
 
 # Upgrade configuration format
-zzcollab --config upgrade
+zzcollab config upgrade
 
 # Validate upgraded configuration
-zzcollab --config validate
+zzcollab config validate
 ```
 
 ### Migrating Between Systems
 
 ```bash
 # Export configuration
-zzcollab --config export > config-export.yaml
+zzcollab config export > config-export.yaml
 
 # On new system, import configuration
-zzcollab --config import < config-export.yaml
+zzcollab config import < config-export.yaml
 ```
 
 ## Verbosity System

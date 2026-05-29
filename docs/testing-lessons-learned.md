@@ -787,7 +787,7 @@ test_that("my_new_function works with production parameters (SLOW)", {
 # Tell zzcollab to use the version specified in renv.lock
 zzcollab --r-version 4.5.2
 # OR set it in zzcollab config
-zzcollab --config set r-version 4.5.2
+zzcollab config set r-version 4.5.2
 ```
 
 **Option 2: Update renv.lock to match new R version (For ongoing development)**

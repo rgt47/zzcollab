@@ -262,11 +262,11 @@ defaults and reduce parameter specification.
 ### Configuration Commands
 
 ```bash
-zzcollab --config init                    # Create default config file
-zzcollab --config set team-name "myteam"  # Set configuration value
-zzcollab --config get team-name           # Get configuration value
-zzcollab --config list                    # List all configuration
-zzcollab --config validate               # Validate YAML syntax
+zzcollab config init                    # Create default config file
+zzcollab config set team-name "myteam"  # Set configuration value
+zzcollab config get team-name           # Get configuration value
+zzcollab config list                    # List all configuration
+zzcollab config validate               # Validate YAML syntax
 ```
 
 ### Customizable Settings

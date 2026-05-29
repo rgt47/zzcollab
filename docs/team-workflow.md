@@ -56,9 +56,9 @@ The team lead establishes the computational foundation that all team members wil
 
 ```bash
 # Set default team configuration (one-time setup)
-zzcollab --config init
-zzcollab --config set team-name "myteam"
-zzcollab --config set github-account "myteam"
+zzcollab config init
+zzcollab config set team-name "myteam"
+zzcollab config set github-account "myteam"
 ```
 
 #### Step 2: Create Project

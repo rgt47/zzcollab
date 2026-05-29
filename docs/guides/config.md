@@ -16,8 +16,8 @@ zzcollab -t myname -p project3 --profile-name analysis
 
 **WITH CONFIG** (simple):
 ```bash
-zzcollab --config set team-name "myname"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "myname"
+zzcollab config set profile-name "analysis"
 
 # Then just:
 zzcollab -p project1
@@ -32,8 +32,8 @@ zzcollab -p project3
 **One-time setup** (2 commands):
 
 ```bash
-zzcollab --config set team-name "yourname"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "yourname"
+zzcollab config set profile-name "analysis"
 ```
 
 That's it! Now all future projects use these defaults.
@@ -45,37 +45,37 @@ That's it! Now all future projects use these defaults.
 ### Initialize configuration file
 
 ```bash
-zzcollab --config init
+zzcollab config init
 ```
 
 ### Set a value
 
 ```bash
-zzcollab --config set SETTING VALUE
+zzcollab config set SETTING VALUE
 ```
 
 ### Get a value
 
 ```bash
-zzcollab --config get SETTING
+zzcollab config get SETTING
 ```
 
 ### List all settings
 
 ```bash
-zzcollab --config list
+zzcollab config list
 ```
 
 ### Reset to defaults
 
 ```bash
-zzcollab --config reset
+zzcollab config reset
 ```
 
 ### Validate configuration
 
 ```bash
-zzcollab --config validate
+zzcollab config validate
 ```
 
 ---
@@ -135,26 +135,26 @@ zzcollab uses a 4-level hierarchy (highest priority first):
 ### Example 1: Solo Researcher (Minimal Setup)
 
 ```bash
-zzcollab --config set team-name "jsmith"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "jsmith"
+zzcollab config set profile-name "analysis"
 ```
 
 ### Example 2: Solo Researcher (Complete Setup)
 
 ```bash
-zzcollab --config set team-name "jsmith"
-zzcollab --config set github-account "jsmith"
-zzcollab --config set profile-name "analysis"
-zzcollab --config set r-version "4.4.0"
-zzcollab --config set auto-github false
+zzcollab config set team-name "jsmith"
+zzcollab config set github-account "jsmith"
+zzcollab config set profile-name "analysis"
+zzcollab config set r-version "4.4.0"
+zzcollab config set auto-github false
 ```
 
 ### Example 3: Team Member
 
 ```bash
-zzcollab --config set team-name "labteam"
-zzcollab --config set github-account "jsmith"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "labteam"
+zzcollab config set github-account "jsmith"
+zzcollab config set profile-name "analysis"
 
 # Now joining team projects is simple:
 zzcollab -t labteam -p study
@@ -164,8 +164,8 @@ make docker-build
 ### Example 4: Minimal Build for Speed
 
 ```bash
-zzcollab --config set team-name "myname"
-zzcollab --config set profile-name "minimal"
+zzcollab config set team-name "myname"
+zzcollab config set profile-name "minimal"
 
 # Projects build in ~30 seconds
 # Install additional packages as needed
@@ -188,7 +188,7 @@ defaults:
   skip_confirmation: false
 ```
 
-You can edit this file directly or use `zzcollab --config` commands.
+You can edit this file directly or use `zzcollab config` commands.
 
 ---
 
@@ -198,14 +198,14 @@ You can edit this file directly or use `zzcollab --config` commands.
 
 ```bash
 # Initialize config file
-zzcollab --config init
+zzcollab config init
 
 # Set your essentials
-zzcollab --config set team-name "yourname"
-zzcollab --config set profile-name "analysis"
+zzcollab config set team-name "yourname"
+zzcollab config set profile-name "analysis"
 
 # Verify
-zzcollab --config list
+zzcollab config list
 
 # Create first project (uses config!)
 zzcollab -p myproject
@@ -215,18 +215,18 @@ zzcollab -p myproject
 
 ```bash
 # See all settings
-zzcollab --config list
+zzcollab config list
 
 # Check specific setting
-zzcollab --config get team-name
-zzcollab --config get profile-name
+zzcollab config get team-name
+zzcollab config get profile-name
 ```
 
 ### Workflow 3: Change Docker Profile
 
 ```bash
 # Switch to different Docker environment (e.g., analysis, geospatial, bioinformatics)
-zzcollab --config set profile-name "analysis"
+zzcollab config set profile-name "analysis"
 
 # Applies to all NEW projects
 # Existing projects unaffected
@@ -236,7 +236,7 @@ zzcollab --config set profile-name "analysis"
 
 ```bash
 # Set default R version for all projects
-zzcollab --config set r-version "4.4.0"
+zzcollab config set r-version "4.4.0"
 
 # Now all new projects use R 4.4.0 automatically
 cd new-project && zzcollab
@@ -263,10 +263,10 @@ zzcollab --r-version "4.3.1"  # Uses 4.3.1 instead
 
 ```bash
 # Start over with defaults
-zzcollab --config reset
+zzcollab config reset
 
 # Reconfigure
-zzcollab --config set team-name "newname"
+zzcollab config set team-name "newname"
 ```
 
 ---
@@ -297,7 +297,7 @@ zzcollab -t different -p project --profile-name bioinformatics
 ### 1. Set configuration ONCE at the beginning
 
 ```bash
-zzcollab --config set team-name "yourname"
+zzcollab config set team-name "yourname"
 ```
 
 ### 2. Use consistent team-name across projects
@@ -330,7 +330,7 @@ Simple: Store in version control
 
 **Check**:
 ```bash
-zzcollab --config list
+zzcollab config list
 # Shows what's actually set
 ```
 
@@ -341,14 +341,14 @@ cat ~/.zzcollab/config.yaml
 
 **Re-initialize if needed**:
 ```bash
-zzcollab --config init
+zzcollab config init
 ```
 
 ### Issue: "Can't find config file"
 
 **Create it**:
 ```bash
-zzcollab --config init
+zzcollab config init
 ```
 
 **Check permissions**:
@@ -361,13 +361,13 @@ ls -la ~/.zzcollab/
 
 **Validate syntax**:
 ```bash
-zzcollab --config validate
+zzcollab config validate
 ```
 
 **Reset and start over**:
 ```bash
-zzcollab --config reset
-zzcollab --config set team-name "yourname"
+zzcollab config reset
+zzcollab config set team-name "yourname"
 ```
 
 ### Issue: "Settings not persisting"
@@ -429,12 +429,12 @@ This overrides user config for THIS PROJECT ONLY.
 ### Essential commands
 
 ```bash
-zzcollab --config init                         # Create config file
-zzcollab --config set team-name "name"         # Set your name
-zzcollab --config set profile-name "analysis"  # Set Docker profile
-zzcollab --config set r-version "4.4.0"        # Set default R version
-zzcollab --config list                         # See all settings
-zzcollab --config get team-name                # Get one setting
+zzcollab config init                         # Create config file
+zzcollab config set team-name "name"         # Set your name
+zzcollab config set profile-name "analysis"  # Set Docker profile
+zzcollab config set r-version "4.4.0"        # Set default R version
+zzcollab config list                         # See all settings
+zzcollab config get team-name                # Get one setting
 ```
 
 ### Files

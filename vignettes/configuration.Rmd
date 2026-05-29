@@ -358,7 +358,7 @@ zzcollab -v -t myteam -p study1
 
 # -q, --quiet
 # Suppress non-essential output
-zzcollab -q --config list
+zzcollab -q config list
 
 # --dry-run
 # Show what would be done without executing
@@ -374,7 +374,7 @@ zzcollab -y -t myteam -p study1
 
 # --no-confirm
 # Skip confirmation prompts
-zzcollab --no-confirm --config set team-name "newteam"
+zzcollab --no-confirm config set team-name "newteam"
 ```
 
 ## Advanced Flags

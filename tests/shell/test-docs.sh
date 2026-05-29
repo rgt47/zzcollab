@@ -85,6 +85,19 @@ test_no_config_file_flag() {
   fi
 }
 
+test_no_config_flag() {
+  # Configuration is a subcommand ('zzcollab config set ...'), not a flag.
+  # Matches the removed '--config <subcommand>' invocation; the ADR prose
+  # reference ("`--config` command") is followed by a backtick, not a subcommand.
+  local matches
+  matches=$(grep_active_docs "\-\-config [a-z]")
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed --config flag (use the 'config' subcommand) in active docs:" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
 ##############################################################################
 # TEST: No obsolete terminology in active docs
 ##############################################################################
