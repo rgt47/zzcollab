@@ -34,6 +34,10 @@ COPY renv/settings.json renv/settings.json
 # Restore R packages using renv
 RUN R -e "renv::restore()"
 
+# Install zzrenvcheck as a validation tool (system library, outside project renv)
+RUN R -e "install.packages('remotes')" && \
+    R -e "remotes::install_github('rgt47/zzrenvcheck')"
+
 # Copy project files
 COPY . /project
 

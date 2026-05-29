@@ -661,6 +661,10 @@ RUN mkdir -p /home/\${USERNAME}/.cache/R/renv && chmod 777 /home/\${USERNAME}/.c
 COPY renv.lock renv.lock
 RUN R -e "renv::restore()"
 
+# Install zzrenvcheck as a validation tool (system library, outside project renv)
+RUN R -e "install.packages('remotes')" && \\
+    R -e "remotes::install_github('rgt47/zzrenvcheck')"
+
 ${tools_install}
 
 # Create non-root user

@@ -14,11 +14,10 @@ IMAGE_TAG = $(GIT_SHA)
 help:
 	@echo "Available targets:"
 	@echo ""
-	@echo "  Validation (NO HOST R REQUIRED!):"
+	@echo "  Validation (runs inside Docker, no host R required):"
 	@echo "    check-renv             - Full validation: strict + auto-fix (recommended)"
-	@echo "    check-renv-no-fix      - Validation only, no auto-install"
-	@echo "    check-renv-no-strict   - Standard mode (skip tests/, vignettes/)"
-	@echo "    check-system-deps      - Check for missing system dependencies in Dockerfile"
+	@echo "    check-renv-no-fix      - Report only, no modifications"
+	@echo "    check-renv-no-strict   - Skip tests/ and vignettes/"
 	@echo ""
 	@echo "  Main workflow (RECOMMENDED):"
 	@echo "    r                     - Start bash terminal (vim editing, all profiles)"
@@ -63,33 +62,34 @@ test:
 deps:
 	R --quiet -e "devtools::install_deps(dependencies = TRUE)"
 
-# Validate package dependencies (Pure shell, NO HOST R REQUIRED!)
-# Checks that all packages used in code are in DESCRIPTION and renv.lock
-# Full validation with strict mode, auto-fix, and verbose output (DEFAULT behavior)
-# Scans all directories (root, R/, scripts/, analysis/, tests/, vignettes/, inst/)
-# Auto-adds missing packages to DESCRIPTION and renv.lock
-# Run this before `git commit` to catch issues locally (prevents CI failures)
+# Validate package dependencies using zzrenvcheck inside the Docker container.
+# Scans R/, analysis/, scripts/ (and tests/, vignettes/ in strict mode) for
+# library()/require()/:: calls, then checks DESCRIPTION and renv.lock are in sync.
+# Run before `git commit` to catch issues locally and prevent CI failures.
+
+# Full validation: strict mode + auto-fix missing packages
 check-renv:
-	@zzcollab validate --fix --strict --verbose
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
-# Validation only, no auto-fix (report issues without modifying files)
+# Report only: identify gaps without modifying DESCRIPTION or renv.lock
 check-renv-no-fix:
-	@zzcollab validate --no-fix --strict --verbose
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
 
-# Standard mode validation (skip tests/, vignettes/, inst/ directories)
+# Non-strict: skip tests/ and vignettes/ directories
 check-renv-no-strict:
-	@zzcollab validate --fix --verbose
-
-# Legacy: R-based validation (for CI/CD that has R pre-installed)
-# This is the old approach, kept for backward compatibility
-check-renv-ci:
-	@zzcollab validate --fix --strict --verbose
-
-# Check for missing system dependencies in Dockerfile
-# Scans codebase for R packages and detects missing system libraries
-# Suggests where to add missing deps in CUSTOM_SYSTEM_DEPS sections
-check-system-deps:
-	@zzcollab validate --system-deps
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
 
 # Docker targets (work without local R)
 # Docker-first workflow:
@@ -137,10 +137,18 @@ docker-render-qmd:
 	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
 
 docker-check-renv:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::status()"
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
 
 docker-check-renv-fix:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "renv::snapshot()"
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
@@ -164,8 +172,7 @@ r: check-renv
 		echo ""; \
 		exit 1; \
 	fi; \
-	echo "🔍 Checking system dependencies..."; \
-	zzcollab validate --system-deps 2>/dev/null || true; \
+	echo "🔍 Checking workspace..."; \
 	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
 	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
 	USERNAME=$$(grep '^ARG USERNAME=' Dockerfile | head -1 | cut -d= -f2); \
@@ -186,7 +193,12 @@ r: check-renv
 		$(PACKAGE_NAME) R; \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
-	zzcollab validate --fix --strict --verbose || echo "⚠️  Package validation failed"
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)" \
+	|| echo "⚠️  Package validation failed"
 
 # Alias for rstudio
 rstudio: docker-rstudio
