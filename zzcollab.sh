@@ -226,102 +226,64 @@ cmd_init() {
     PKG_NAME=$(validate_package_name)
     export PKG_NAME
 
-    # Load config and show all defaults
+    # Load config: user-level (~/.zzcollab/config.yaml) then project-level
+    # (./zzcollab.yaml). Project values override user values.
     load_config 2>/dev/null || true
-    local profile_name="${CONFIG_PROFILE_NAME:-minimal}"
-    local base_image
-    base_image=$(get_profile_base_image "$profile_name")
-    local r_version="${CONFIG_R_VERSION:-$(get_cran_r_version 2>/dev/null || echo "$ZZCOLLAB_DEFAULT_R_VERSION")}"
 
     echo ""
     echo "═══════════════════════════════════════════════════════════"
     echo "  Initializing: $PKG_NAME"
     echo "═══════════════════════════════════════════════════════════"
     echo ""
-    echo "  Current settings (from ~/.zzcollab/config.yaml):"
-    echo ""
-    echo "  Docker:"
-    printf "    %-20s %s\n" "profile-name:" "$profile_name ($base_image)"
-    printf "    %-20s %s\n" "r-version:" "$r_version"
-    printf "    %-20s %s\n" "registry:" "${CONFIG_DOCKER_REGISTRY:-docker.io}"
-    printf "    %-20s %s\n" "dockerhub-account:" "${CONFIG_DOCKERHUB_ACCOUNT:-<not set>}"
-    echo ""
-    echo "  Team Lead (for DESCRIPTION):"
-    printf "    %-20s %s\n" "author-name:" "${CONFIG_AUTHOR_NAME:-<not set>}"
-    printf "    %-20s %s\n" "author-email:" "${CONFIG_AUTHOR_EMAIL:-<not set>}"
-    printf "    %-20s %s\n" "author-orcid:" "${CONFIG_AUTHOR_ORCID:-<not set>}"
-    printf "    %-20s %s\n" "author-affiliation:" "${CONFIG_AUTHOR_AFFILIATION:-<not set>}"
-    echo ""
-    echo "  R Package:"
-    printf "    %-20s %s\n" "min-r-version:" "${CONFIG_RPACKAGE_MIN_R_VERSION:-4.1.0}"
-    printf "    %-20s %s\n" "vignette-builder:" "${CONFIG_RPACKAGE_VIGNETTE_BUILDER:-knitr}"
-    echo ""
-    echo "  Code Style:"
-    printf "    %-20s %s\n" "line-length:" "${CONFIG_STYLE_LINE_LENGTH:-78}"
-    printf "    %-20s %s\n" "use-native-pipe:" "${CONFIG_STYLE_USE_NATIVE_PIPE:-true}"
-    printf "    %-20s %s\n" "assignment:" "${CONFIG_STYLE_ASSIGNMENT:-arrow}"
-    echo ""
-    echo "  License:"
-    printf "    %-20s %s\n" "license-type:" "${CONFIG_LICENSE_TYPE:-GPL-3}"
-    printf "    %-20s %s\n" "license-year:" "${CONFIG_LICENSE_YEAR:-$(date +%Y)}"
-    echo ""
-    echo "  GitHub:"
-    printf "    %-20s %s\n" "github-account:" "${CONFIG_GITHUB_ACCOUNT:-<not set>}"
-    printf "    %-20s %s\n" "default-visibility:" "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-private}"
-    printf "    %-20s %s\n" "default-branch:" "${CONFIG_GITHUB_DEFAULT_BRANCH:-main}"
-    echo ""
-    echo "  CI/CD:"
-    printf "    %-20s %s\n" "r-versions:" "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}"
-    printf "    %-20s %s\n" "run-coverage:" "${CONFIG_CICD_RUN_COVERAGE:-true}"
-    printf "    %-20s %s\n" "coverage-threshold:" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}"
-    echo ""
-    echo "  ─────────────────────────────────────────────────────────"
-    echo "  To manually change settings:"
-    echo "    zzc config set KEY VALUE         Save to ~/.zzcollab/config.yaml (user default)"
-    echo "    zzc config set-local KEY VALUE   Save to ./zzcollab.yaml (this project only)"
-    echo ""
 
-    if [[ -t 0 ]]; then
-        local do_change=false
-        if has_gum; then
-            gum_confirm "Change settings now?" && do_change=true || true
-        else
-            local change_settings
-            zzc_read -r -p "  Change settings now? [y/N]: " change_settings
-            [[ "$change_settings" =~ ^[Yy]$ ]] && do_change=true
-        fi
-        if [[ "$do_change" == "true" ]]; then
-            echo ""
-            config_interactive_setup
-            # Reload config after interactive setup
-            load_config 2>/dev/null || true
-            profile_name="${CONFIG_PROFILE_NAME:-minimal}"
-            base_image=$(get_profile_base_image "$profile_name")
-        fi
+    # Phase 1: Identity gate (one-time, writes to user config only).
+    # Runs only when required fields (name, email) are absent.
+    if [[ -z "${CONFIG_AUTHOR_NAME:-}" ]] || [[ -z "${CONFIG_AUTHOR_EMAIL:-}" ]]; then
+        config_identity_gate || exit 1
+        load_config 2>/dev/null || true
     fi
 
-    echo ""
+    # Phase 2: Project overrides (per-project, writes to ./zzcollab.yaml only).
+    # Skipped in non-interactive and accept-defaults modes.
+    if [[ -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+        config_project_prompt "$PKG_NAME" || exit 1
+        load_config 2>/dev/null || true
+    fi
 
-    # If a profile was specified via CLI, derive the base image from it
+    # Sync template substitution variables from the final resolved config.
+    # AUTHOR_NAME and AUTHOR_EMAIL are used by envsubst inside setup_project.
+    [[ -n "${CONFIG_AUTHOR_NAME:-}" ]]    && AUTHOR_NAME="$CONFIG_AUTHOR_NAME"
+    [[ -n "${CONFIG_AUTHOR_EMAIL:-}" ]]   && AUTHOR_EMAIL="$CONFIG_AUTHOR_EMAIL"
+    [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
+    [[ -n "${CONFIG_TEAM_NAME:-}" ]]      && TEAM_NAME="$CONFIG_TEAM_NAME"
+    export AUTHOR_NAME AUTHOR_EMAIL GITHUB_ACCOUNT TEAM_NAME
+
+    # Resolve profile and base image. CLI flag takes precedence over config.
+    local profile_name base_image
     if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] && [[ -n "${PROFILE_NAME:-}" ]]; then
-        BASE_IMAGE=$(get_profile_base_image "$PROFILE_NAME")
-        export BASE_IMAGE
-        log_info "Using profile '$PROFILE_NAME' with base image: $BASE_IMAGE"
+        profile_name="$PROFILE_NAME"
+    else
+        profile_name="${CONFIG_PROFILE_NAME:-minimal}"
     fi
+    base_image=$(get_profile_base_image "$profile_name")
+    export BASE_IMAGE="$base_image"
 
     # Run project setup
     setup_project || exit 1
 
     log_success "Project setup complete"
+    echo ""
+    echo "  To change user-level defaults:     zzc config set KEY VALUE"
+    echo "  To change project-level overrides: zzc config set-local KEY VALUE"
+    echo ""
 
-    # If legacy mode with profile specified, skip prompt and go straight to docker
+    # Legacy mode: profile specified via CLI -- go straight to docker
     if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]]; then
         cmd_docker --profile "$PROFILE_NAME"
         return $?
     fi
 
-    # Prompt for reproducibility setup
-    echo ""
+    # Phase 3: Reproducibility setup
     echo "───────────────────────────────────────────────────────────"
     echo "  Reproducibility Setup"
     echo "───────────────────────────────────────────────────────────"
@@ -353,14 +315,9 @@ cmd_init() {
     else
         local repro_choice
         zzc_read -r -p "Add reproducibility? [r/d/N]: " repro_choice
-
         case "$repro_choice" in
-            r|R)
-                cmd_renv
-                ;;
-            d|D)
-                cmd_docker
-                ;;
+            r|R) cmd_renv ;;
+            d|D) cmd_docker ;;
             n|N|"")
                 echo ""
                 log_info "Skipping reproducibility setup"

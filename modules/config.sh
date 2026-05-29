@@ -663,6 +663,176 @@ _get_config_value() {
 }
 
 #=============================================================================
+# INIT FLOW HELPERS
+#=============================================================================
+
+##############################################################################
+# FUNCTION: config_identity_gate
+# PURPOSE:  Ensure required identity fields (name, email) are present in the
+#           user config before project creation. When either is missing, runs
+#           a short interactive prompt and writes to CONFIG_USER.
+#           GitHub account is also captured here as the personal default.
+# RETURNS:  0 on success, 1 if required fields cannot be captured.
+##############################################################################
+config_identity_gate() {
+    local needs_name=false needs_email=false
+
+    [[ -z "${CONFIG_AUTHOR_NAME:-}" ]] && needs_name=true
+    [[ -z "${CONFIG_AUTHOR_EMAIL:-}" ]] && needs_email=true
+
+    if [[ "$needs_name" == "false" && "$needs_email" == "false" ]]; then
+        return 0
+    fi
+
+    if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+        log_error "Required identity fields missing in user config"
+        log_error "Run: zzcollab config init --interactive"
+        return 1
+    fi
+
+    if [[ ! -f "$CONFIG_USER" ]]; then
+        mkdir -p "$CONFIG_USER_DIR"
+        _create_default_config
+    fi
+
+    echo ""
+    print_section "One-time Identity Setup"
+    echo "  These fields go into DESCRIPTION and are saved to ~/.zzcollab/config.yaml."
+    echo "  You will not be asked again once they are set."
+    echo ""
+
+    local val
+    if [[ "$needs_name" == "true" ]]; then
+        prompt_input "Full name" "" val || return 1
+        if [[ -z "$val" ]]; then
+            log_error "Name is required"
+            return 1
+        fi
+        yaml_set "$CONFIG_USER" "author.name" "$val"
+        CONFIG_AUTHOR_NAME="$val"
+    fi
+
+    if [[ "$needs_email" == "true" ]]; then
+        prompt_validated "Email address" "" val \
+            validate_email "Invalid email format. Example: user@example.com" || return 1
+        if [[ -z "$val" ]]; then
+            log_error "Email is required"
+            return 1
+        fi
+        yaml_set "$CONFIG_USER" "author.email" "$val"
+        CONFIG_AUTHOR_EMAIL="$val"
+    fi
+
+    if [[ -z "${CONFIG_GITHUB_ACCOUNT:-}" ]]; then
+        echo ""
+        echo "  Your personal GitHub username (can be overridden per-project in the next step)."
+        prompt_github_account "Personal GitHub username (optional)" "" val || return 1
+        if [[ -n "$val" ]]; then
+            yaml_set "$CONFIG_USER" "github.account" "$val"
+            yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+            CONFIG_GITHUB_ACCOUNT="$val"
+        fi
+    fi
+
+    echo ""
+    log_success "Identity saved to: $CONFIG_USER"
+    return 0
+}
+
+##############################################################################
+# FUNCTION: config_project_prompt
+# PURPOSE:  Capture project-specific overrides during zzc init.
+#           Pre-fills each prompt with the current user-level default.
+#           Writes ONLY changed values to ./zzcollab.yaml so the file
+#           stays minimal and contains only true overrides.
+# USAGE:    config_project_prompt "PackageName"
+# RETURNS:  0 on success, 1 on cancel
+##############################################################################
+config_project_prompt() {
+    local pkg_name="${1:-$(basename "$(pwd)")}"
+    require_module "docker"
+
+    # Derive defaults from user-level config (already loaded)
+    local default_profile="${CONFIG_PROFILE_NAME:-analysis}"
+    local default_r_version="${CONFIG_R_VERSION:-}"
+    local default_github="${CONFIG_GITHUB_ACCOUNT:-}"
+    local default_team="${CONFIG_TEAM_NAME:-}"
+
+    if [[ -z "$default_r_version" ]]; then
+        default_r_version=$(get_cran_r_version 2>/dev/null || \
+            echo "${ZZCOLLAB_DEFAULT_R_VERSION:-4.4.2}")
+    fi
+
+    print_section "Project Setup: $pkg_name"
+    echo "  Pre-filled from your user config. Edit to override for this project only."
+    echo "  Changes are written to ./zzcollab.yaml (not your global config)."
+    echo ""
+
+    local val new_profile new_r_version new_github new_team
+
+    prompt_select "Docker profile" \
+        "minimal,rstudio,analysis,modeling,publishing,shiny" \
+        "$default_profile" val || return 1
+    new_profile="$val"
+
+    prompt_validated "R version" "$default_r_version" val \
+        validate_r_version "Expected format: X.Y.Z (e.g., 4.4.2)" || return 1
+    new_r_version="$val"
+
+    prompt_github_account \
+        "GitHub account for this project (personal or org)" \
+        "$default_github" val || return 1
+    new_github="$val"
+
+    prompt_input "Team name (optional)" "$default_team" val || return 1
+    new_team="$val"
+
+    # Build list of changed values (only overrides go into ./zzcollab.yaml)
+    local -a override_paths=()
+    local -a override_values=()
+
+    [[ "$new_profile" != "$default_profile" ]] && {
+        override_paths+=("docker.default_profile")
+        override_values+=("$new_profile")
+    }
+    [[ -n "$new_r_version" && "$new_r_version" != "$default_r_version" ]] && {
+        override_paths+=("defaults.r_version")
+        override_values+=("$new_r_version")
+    }
+    [[ -n "$new_github" && "$new_github" != "$default_github" ]] && {
+        override_paths+=("github.account")
+        override_values+=("$new_github")
+    }
+    [[ -n "$new_team" && "$new_team" != "$default_team" ]] && {
+        override_paths+=("defaults.team_name")
+        override_values+=("$new_team")
+    }
+
+    if [[ ${#override_paths[@]} -eq 0 ]]; then
+        log_info "No project-level overrides (using user defaults)"
+        return 0
+    fi
+
+    # Create a minimal project config if it does not already exist
+    if [[ ! -f "$CONFIG_PROJECT" ]]; then
+        cat > "$CONFIG_PROJECT" << 'EOF'
+# Project-specific zzcollab configuration
+# Overrides user config (~/.zzcollab/config.yaml)
+# Commit this file to version control.
+EOF
+        log_debug "Created project config: $CONFIG_PROJECT"
+    fi
+
+    local i
+    for i in "${!override_paths[@]}"; do
+        yaml_set "$CONFIG_PROJECT" "${override_paths[$i]}" "${override_values[$i]}"
+    done
+
+    log_success "Project overrides written to: $CONFIG_PROJECT"
+    return 0
+}
+
+#=============================================================================
 # CONFIG COMMANDS
 #=============================================================================
 

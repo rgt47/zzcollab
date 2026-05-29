@@ -31,14 +31,14 @@ set -euo pipefail
 
 # Load centralized constants if available, otherwise use local constants
 if [[ "${ZZCOLLAB_CONSTANTS_LOADED:-}" == "true" ]]; then
-    readonly AUTHOR_NAME="$ZZCOLLAB_AUTHOR_NAME"
-    readonly AUTHOR_EMAIL="$ZZCOLLAB_AUTHOR_EMAIL"
+    AUTHOR_NAME="$ZZCOLLAB_AUTHOR_NAME"
+    AUTHOR_EMAIL="$ZZCOLLAB_AUTHOR_EMAIL"
     readonly AUTHOR_INSTITUTE="$ZZCOLLAB_AUTHOR_INSTITUTE"
     readonly AUTHOR_INSTITUTE_FULL="$ZZCOLLAB_AUTHOR_INSTITUTE_FULL"
     readonly JQ_AVAILABLE="$ZZCOLLAB_JQ_AVAILABLE"
 else
-    readonly AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"
-    readonly AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-your.email@example.com}"
+    AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"
+    AUTHOR_EMAIL="${ZZCOLLAB_AUTHOR_EMAIL:-your.email@example.com}"
     readonly AUTHOR_INSTITUTE="${ZZCOLLAB_INSTITUTE:-Your Institution}"
     readonly AUTHOR_INSTITUTE_FULL="${ZZCOLLAB_INSTITUTE_FULL:-Your Institution Full Name}"
     readonly JQ_AVAILABLE=$(command -v jq >/dev/null 2>&1 && echo "true" || echo "false")
