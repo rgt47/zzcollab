@@ -134,7 +134,7 @@ find_zzcollab_script <- function() {
   zzcollab_path <- Sys.which("zzcollab")
   if (zzcollab_path != "") {
     # Test if this version supports config commands
-    test_result <- safe_system(paste(zzcollab_path, "--config list"),
+    test_result <- safe_system(paste(zzcollab_path, "config list"),
                                ignore.stdout = TRUE, ignore.stderr = TRUE,
                                error_msg = "Failed to test zzcollab config support")
     if (test_result == 0) {
@@ -354,38 +354,41 @@ team_images <- function() {
 
 #' Initialize a new zzcollab team project
 #'
-#' Creates a complete team research collaboration infrastructure including Docker
-#' base images, GitHub repository, and project structure. This function is the
-#' R interface to the \code{zzcollab --init} command and should be used by
-#' team leads to set up new collaborative research projects.
+#' Creates a research compendium in the current working directory and records the
+#' team's DockerHub and GitHub accounts in the zzcollab configuration so that the
+#' \code{dockerhub} and \code{github} commands can publish under them. Intended for
+#' team leads setting up a new collaborative research project.
 #'
 #' @param team_name Character string specifying the Docker Hub team/organization name.
 #'   This becomes part of the Docker image names (e.g., "myteam/projectcore").
 #'   If NULL, uses value from configuration file via \code{get_config("team_name")}.
 #'   
-#' @param project_name Character string specifying the project name.
-#'   Used for Docker image names, GitHub repository, and directory names.
+#' @param project_name Character string specifying the project name. The
+#'   compendium is created in the current working directory (which should be
+#'   named accordingly); the value is validated and used in status messages.
 #'   Must be a valid Docker repository name (lowercase, no spaces).
-#'   
+#'
 #' @param github_account Character string specifying GitHub account for repository creation.
 #'   If NULL, uses config default or falls back to \code{team_name}.
 #'   Used with GitHub CLI to create private repositories.
-#'   
+#'
+#' @param profile Character string naming the Docker profile / quickstart bundle
+#'   to scaffold (e.g. "analysis", "minimal", "publishing"). Defaults to "analysis".
+#'
 #' @return Logical value indicating success (TRUE) or failure (FALSE) of the
-#'   initialization process. The function creates multiple components, so
-#'   partial failures may occur.
+#'   scaffolding step.
 #'
 #' @details
-#' This function orchestrates the complete team project setup process:
-#' 
-#' 1. **Team Docker Images**: Creates and pushes base images to Docker Hub
-#' 2. **Project Structure**: Generates R package structure with analysis templates
-#' 3. **GitHub Repository**: Creates private repository with CI/CD workflows
-#' 4. **Configuration Files**: Sets up Dockerfile, Makefile, and config files
-#' 5. **Documentation**: Generates user guides and README files
-#' 
-#' The function integrates with the zzcollab configuration system, allowing
-#' team leads to set default values once and reuse them across projects.
+#' This function performs two steps using the current zzcollab CLI:
+#'
+#' 1. **Configuration**: Records the DockerHub account (and GitHub account, if
+#'    given) via \code{zzcollab config set} so that later \code{dockerhub} and
+#'    \code{github} commands publish under the correct accounts.
+#' 2. **Scaffolding**: Runs the profile quickstart (\code{zzcollab <profile>}),
+#'    which creates the R package structure, renv.lock, and Dockerfile.
+#'
+#' To publish the team image and repository afterwards, run
+#' \code{zzcollab dockerhub} and \code{zzcollab github} in the project directory.
 #' 
 #' **Prerequisites:**
 #' - Docker installed and running
@@ -427,7 +430,7 @@ team_images <- function() {
 #'
 #' @export
 init_project <- function(team_name = NULL, project_name = NULL,
-                         github_account = NULL) {
+                         github_account = NULL, profile = "analysis") {
 
   # Validate ALL explicitly-provided parameters FIRST (before getting config defaults)
   # This allows tests to validate error messages without needing zzcollab script
@@ -457,14 +460,22 @@ init_project <- function(team_name = NULL, project_name = NULL,
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  # Build command with team and project flags
-  cmd <- paste(zzcollab_path, "-t", team_name, "-p", project_name)
-
+  # Persist team/GitHub accounts so later 'dockerhub' and 'github' commands can
+  # push the team image and create the repository under the correct accounts.
+  safe_system(paste(zzcollab_path, "config set dockerhub-account", team_name),
+              ignore.stdout = TRUE, ignore.stderr = TRUE,
+              error_msg = "Failed to set dockerhub-account")
   if (!is.null(github_account)) {
-    cmd <- paste(cmd, "--github-account", github_account)
+    safe_system(paste(zzcollab_path, "config set github-account", github_account),
+                ignore.stdout = TRUE, ignore.stderr = TRUE,
+                error_msg = "Failed to set github-account")
   }
 
-  message("Running: ", cmd)
+  # Scaffold the research compendium in the current working directory using the
+  # chosen profile (init + renv + docker). The compendium is named after the
+  # directory; project_name is validated and recorded for messaging.
+  cmd <- paste(zzcollab_path, profile)
+  message("Initializing project '", project_name, "' (profile: ", profile, "): ", cmd)
   result <- safe_system(cmd, error_msg = "Failed to initialize project")
   return(result == 0)
 }
@@ -493,9 +504,10 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' the necessary team infrastructure.
 #'
 #' **Setup Process:**
-#' 1. **Validation**: Checks that team Docker images exist and are accessible
-#' 2. **Project Setup**: Creates local project structure and configuration
-#' 3. **Environment**: Configures to use team's Docker image via --use-team-image
+#' 1. **Prerequisite**: The project repository is already cloned and is the
+#'    current working directory.
+#' 2. **Build**: Builds the project's Docker image from the committed Dockerfile
+#'    and renv.lock via \code{make docker-build}.
 #'
 #' **Prerequisites:**
 #' - Team lead has run \code{init_project()} and shared repository access
@@ -561,14 +573,19 @@ join_project <- function(team_name = NULL, project_name = NULL) {
          call. = FALSE)
   }
 
-  # Find zzcollab script
-  zzcollab_path <- find_zzcollab_script()
+  # In the current model a team member joins by cloning the project repository
+  # and building its Docker image from the committed Dockerfile + renv.lock.
+  # Cloning and setwd() happen outside R; this builds the image via the
+  # project Makefile.
+  if (!file.exists("Makefile")) {
+    stop("No Makefile found. Clone the project repository and setwd() into it ",
+         "before calling join_project().", call. = FALSE)
+  }
 
-  # Build command using --use-team-image flag
-  cmd <- paste(zzcollab_path, "-t", team_name, "-p", project_name, "--use-team-image")
-
-  message("Running: ", cmd)
-  result <- safe_system(cmd, error_msg = "Failed to join project")
+  message("Joining project '", project_name, "' (team: ", team_name,
+          "): building Docker image via 'make docker-build'")
+  result <- safe_system("make docker-build",
+                        error_msg = "Failed to build project Docker image")
   return(result == 0)
 }
 
@@ -938,13 +955,13 @@ zzcollab_help <- function(topic = NULL) {
   valid_topics <- c("general", "init", "quickstart", "workflow", "troubleshooting",
                     "config", "renv", "docker", "cicd", "github", "next-steps")
 
-  # Build command with topic argument
+  # Build command with topic argument.
+  # The CLI routes topics via the 'help' subcommand (e.g. 'zzcollab help docker');
+  # 'next-steps' is a help topic, not a flag.
   if (is.null(topic) || topic == "general") {
-    cmd <- paste(zzcollab_path, "--help")
-  } else if (topic == "next-steps") {
-    cmd <- paste(zzcollab_path, "--next-steps")
+    cmd <- paste(zzcollab_path, "help")
   } else if (topic %in% valid_topics) {
-    cmd <- paste(zzcollab_path, "--help", topic)
+    cmd <- paste(zzcollab_path, "help", topic)
   } else {
     stop("Unknown help topic: ", topic, "\n",
          "Valid topics: ", paste(valid_topics, collapse = ", "))
@@ -963,7 +980,7 @@ zzcollab_next_steps <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "--next-steps")
+  cmd <- paste(zzcollab_path, "help next-steps")
   result <- safe_system(cmd, intern = TRUE,
                        error_msg = "Failed to retrieve next steps information")
   return(result)

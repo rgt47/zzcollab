@@ -143,6 +143,12 @@ show_help() {
         rm|remove)
             show_help_rm
             ;;
+        init)
+            show_help_quickstart
+            ;;
+        next-steps|next_steps)
+            show_next_steps
+            ;;
         *)
             echo "Unknown help topic: $topic"
             echo "See 'zzc help --all' for list of all topics"

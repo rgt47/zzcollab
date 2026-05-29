@@ -684,7 +684,10 @@ config_identity_gate() {
         return 0
     fi
 
-    if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+    # Hard-stop when we cannot prompt: non-interactive shell or accept-defaults
+    # mode. Required fields have no meaningful default; the user must run
+    # 'zzcollab config init --interactive' once to populate them.
+    if [[ ! -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         log_error "Required identity fields missing in user config"
         log_error "Run: zzcollab config init --interactive"
         return 1

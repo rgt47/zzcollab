@@ -32,9 +32,10 @@ the necessary team infrastructure.
 
 \strong{Setup Process:}
 \enumerate{
-\item \strong{Validation}: Checks that team Docker images exist and are accessible
-\item \strong{Project Setup}: Creates local project structure and configuration
-\item \strong{Environment}: Configures to use team's Docker image via --use-team-image
+\item \strong{Prerequisite}: The project repository is already cloned and is the
+current working directory.
+\item \strong{Build}: Builds the project's Docker image from the committed Dockerfile
+and renv.lock via \code{make docker-build}.
 }
 
 \strong{Prerequisites:}
