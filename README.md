@@ -147,9 +147,10 @@ renv::install("user/package")            # GitHub
 
 **Team Lead** (one-time setup):
 ```bash
-zzcollab -t mylab -p study --profile-name analysis
-make docker-build
-make docker-push-team
+zzcollab config set dockerhub-account mylab   # one-time
+mkdir study && cd study
+zzcollab analysis                             # init + renv + docker (tidyverse)
+zzcollab dockerhub                            # push team image to Docker Hub
 git add . && git commit -m "Initial setup" && git push
 ```
 
@@ -219,10 +220,10 @@ See [docs/VARIANTS.md](docs/VARIANTS.md) for detailed profile specifications.
 ### Selecting a Profile
 
 ```bash
-# Team lead selects profile during initialization
-zzcollab -t myteam -p study --profile-name analysis
-zzcollab -t myteam -p study --profile-name publishing
-zzcollab -t myteam -p study --profile-name geospatial
+# Select the profile when creating the project (run inside the project directory)
+zzcollab analysis
+zzcollab publishing
+zzcollab modeling
 ```
 
 ### Adding Packages (All Team Members)
@@ -416,54 +417,63 @@ your-project/
 ## Command Line Options
 
 ```bash
-zzcollab [OPTIONS]
-zzcollab config [SUBCOMMAND]
+zzcollab <command> [options]
+zzcollab <profile>            # quickstart: init + renv + docker
+zzcollab config <subcommand>
 
-OPTIONS:
-  --base-image NAME        Use custom Docker base image
-                           (default: rocker/r-ver)
-  --no-docker, -n          Skip Docker image build during setup
-  --profile-name NAME      Select Docker profile (analysis, publishing,
-                           geospatial, etc.)
-  --team NAME, -t          Team name for Docker Hub namespace
-  --project NAME, -p       Project name
-  --use-team-image         Deprecated (no-op); use `make docker-build`
-  --next-steps             Show development workflow and next steps
-  --help, -h               Show help message
+COMMANDS (can be combined):
+  init, renv, docker, git, github, dockerhub
+  build, doctor, validate, config, list, help
+
+PROFILES (quickstart, or switch profile in an existing project):
+  minimal, analysis, analysis_pdf, modeling, publishing, rstudio, shiny
+
+GLOBAL OPTIONS:
+  -v, --verbose            More output
+  -q, --quiet              Errors only
+  -y, --yes  /  -Y         Accept defaults (non-interactive)
+  --no-build               Skip Docker build prompt
+  --version                Print version
+  -h, --help               Show help message
+
+PER-COMMAND OPTIONS:
+  docker:    -b, --build              Build image after generating
+             -r, --profile NAME       Select profile (analysis, minimal, ...)
+             --base-image IMG         Override base image (default: rocker/r-ver)
+             --r-version VER          Pin R version
+  dockerhub: -t, --tag TAG            Image tag (default: latest)
+  github:    --private | --public     Repo visibility (default: private)
 
 CONFIG COMMANDS:
   zzcollab config init                    # Create default config
   zzcollab config set KEY VALUE           # Set configuration value
   zzcollab config get KEY                 # Get configuration value
   zzcollab config list                    # List all configuration
-  zzcollab config validate               # Validate YAML syntax
+  zzcollab config validate                # Validate YAML syntax
 
 EXAMPLES:
-  # Configuration setup
-  zzcollab config init                        # One-time setup
-  zzcollab config set team_name "myteam"      # Set team default
+  # Configuration (one-time)
+  zzcollab config set dockerhub-account myteam   # Docker Hub namespace
+  zzcollab config set github-account myorg       # GitHub namespace
 
   # Solo researcher
-  zzcollab                                    # Basic setup
-  zzcollab --profile-name publishing          # With specific profile
+  mkdir study && cd study
+  zzcollab analysis                           # Full setup (tidyverse)
+  zzcollab publishing                         # With a specific profile
 
   # Team collaboration - Lead
-  zzcollab -t myteam -p study --profile-name analysis
-  make docker-build                           # Build team image
-  make docker-push-team                       # Push to Docker Hub
-  git add .
-  git commit -m "Initial team project setup"
-  git push -u origin main
+  cd study && zzcollab analysis
+  zzcollab dockerhub                          # Push team image to Docker Hub
+  zzcollab github                             # Create repo + push
 
   # Team collaboration - Member
   git clone https://github.com/myteam/study.git && cd study
   make docker-build                           # Build from project Dockerfile
-  make r                              # Start development
+  make r                                      # Start development
   # Inside container: install.packages("pkg") as needed
 
-  # Traditional usage
-  zzcollab --base-image rgt47/r-pluspackages  # Custom base
-  zzcollab --no-docker                        # Setup without build
+  # Custom base image
+  zzcollab docker --base-image rgt47/r-pluspackages
 ```
 
 ## Docker Integration

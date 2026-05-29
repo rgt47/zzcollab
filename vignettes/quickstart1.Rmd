@@ -1243,3 +1243,7 @@ git push
 **Key Insight**: The Docker image provides the foundation, but `renv.lock` ensures complete reproducibility by specifying exact versions of ALL packages.
 
 For more details, see `vignette("reproducibility-layers")`.
+
+---
+*Rendered on 2026-05-29 at 06:45 PDT.*<br>
+*Source: ~/prj/sfw/07-zzcollab/zzcollab/vignettes/quickstart1.Rmd*
