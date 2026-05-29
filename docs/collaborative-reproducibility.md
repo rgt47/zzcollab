@@ -401,8 +401,9 @@ This division of responsibilities enables flexible team workflows:
 
 **Scenario 1: Team Lead Creates Minimal Base Image**
 ```bash
-# Team lead initializes with minimal Docker profile
-zzcollab -t genomicslab -p study --profile minimal
+# Team lead initializes with the minimal Docker profile
+zzcollab config set dockerhub-account genomicslab
+mkdir study && cd study && zzcollab minimal
 
 # Docker image contains only: renv, remotes, here (~800MB)
 ```
@@ -442,8 +443,9 @@ Teams can optimize for different priorities:
 
 **Performance-optimized approach**:
 ```bash
-# Large Docker image with pre-installed packages
-zzcollab -t lab -p project --profile comprehensive
+# Larger Docker image with more pre-installed packages
+zzcollab config set dockerhub-account lab
+mkdir project && cd project && zzcollab modeling
 # Docker image: ~3.5GB with 40+ pre-installed packages
 # Development startup: ~30 seconds (packages already present)
 ```
@@ -451,7 +453,8 @@ zzcollab -t lab -p project --profile comprehensive
 **Storage-optimized approach**:
 ```bash
 # Minimal Docker image, packages installed via renv
-zzcollab -t lab -p project --profile minimal
+zzcollab config set dockerhub-account lab
+mkdir project && cd project && zzcollab minimal
 # Docker image: ~800MB with 3 pre-installed packages
 # Development startup: 3-5 minutes first time (installs from renv.lock)
 # Subsequent startups: ~30 seconds (renv cache)

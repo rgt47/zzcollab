@@ -80,9 +80,9 @@ Changes in either location appear in both!
 
 ### Step 1: Build Image (happens once)
 
-**You run**:
+**You run** (inside the project directory):
 ```bash
-zzcollab -p myproject
+zzcollab docker
 ```
 
 **Behind scenes**:
@@ -301,7 +301,7 @@ docker rmi myteam/projcore-rstudio:latest
 # Deleted image!
 
 # Solution: Rebuild
-zzcollab -p myproject
+zzcollab docker --build
 # Rebuilds image (takes time)
 # Files still safe
 ```
@@ -432,7 +432,7 @@ docker logs <container-id>  # See error message
 **Common causes**:
 - Port conflict
 - Permission issues
-- Corrupted image (rebuild: `zzcollab -p project`)
+- Corrupted image (rebuild: `zzcollab docker --build`)
 
 ### Issue: "Changes not appearing in container"
 
@@ -517,9 +517,9 @@ You're analyzing satellite imagery and need:
 ### Setup
 
 ```bash
-# Create project with geospatial profile
+# Create project on the rocker/geospatial base image
 mkdir ~/projects/forest-analysis && cd ~/projects/forest-analysis
-zzcollab --profile geospatial --project-name forest --r-version 4.4.0
+zzcollab docker --base-image rocker/geospatial --r-version 4.4.0
 ```
 
 **What happens**:
@@ -642,7 +642,7 @@ Rebuild: `make docker-build`
 5. Team member repeats 1-4 (different results!)
 
 **With Docker** (zzcollab):
-1. `zzcollab --profile geospatial --r-version 4.4.0`
+1. `zzcollab docker --base-image rocker/geospatial --r-version 4.4.0`
 2. `make docker-rstudio`
 3. Done! Team member: `make docker-build && make docker-rstudio`
 

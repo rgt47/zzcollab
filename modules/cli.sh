@@ -238,4 +238,3 @@ get_workflow_template() {
 # MODULE LOADED
 #=============================================================================
 
-readonly ZZCOLLAB_CLI_LOADED=true

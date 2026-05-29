@@ -515,34 +515,6 @@ validate_commands_exist() {
 #   require_module "core"                    # Single dependency
 #   require_module "core" "templates"        # Multiple dependencies
 #
-if ! declare -f require_module >/dev/null 2>&1; then
-    require_module() {
-        for module in "$@"; do
-            # Check if already loaded via flag
-            local module_upper
-            module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
-            local module_var="ZZCOLLAB_${module_upper}_LOADED"
-
-            if [[ "${!module_var:-}" == "true" ]]; then
-                continue
-            fi
-
-            # Try to load from lib/ or modules/
-            local module_path=""
-            if [[ -f "${ZZCOLLAB_LIB_DIR}/${module}.sh" ]]; then
-                module_path="${ZZCOLLAB_LIB_DIR}/${module}.sh"
-            elif [[ -f "${ZZCOLLAB_MODULES_DIR}/${module}.sh" ]]; then
-                module_path="${ZZCOLLAB_MODULES_DIR}/${module}.sh"
-            else
-                echo "❌ Module not found: $module" >&2
-                exit 1
-            fi
-
-            # shellcheck source=/dev/null
-            source "$module_path"
-        done
-    }
-fi
 
 # Function: zzc_read
 # Purpose: Wrapper around `read` that skips the prompt when
@@ -683,5 +655,3 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 fi
 
 # Set module loaded flags (core absorbs utils)
-readonly ZZCOLLAB_CORE_LOADED=true
-readonly ZZCOLLAB_UTILS_LOADED=true

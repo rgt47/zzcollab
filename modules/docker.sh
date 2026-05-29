@@ -12,7 +12,6 @@ set -euo pipefail
 # DEPENDENCIES: core.sh (logging), profiles.sh (system deps), validation.sh (package scanning)
 ##############################################################################
 
-require_module "core" "profiles" "validation" "config"
 
 #=============================================================================
 # BASE IMAGE TOOL DETECTION
@@ -191,7 +190,6 @@ EOF
 }
 
 prompt_new_workspace_setup() {
-    require_module "config"
     load_config 2>/dev/null || true
 
     local cran_version
@@ -810,5 +808,3 @@ EOF
 # MODULE LOADED
 #=============================================================================
 
-readonly ZZCOLLAB_DOCKER_LOADED=true
-readonly ZZCOLLAB_DOCKERFILE_GENERATOR_LOADED=true

@@ -13,7 +13,6 @@ set -euo pipefail
 # DEPENDENCIES: core.sh, templates.sh
 ##############################################################################
 
-require_module "core" "templates"
 
 #=============================================================================
 # DIRECTORY STRUCTURE
@@ -300,8 +299,3 @@ setup_project() {
 # MODULE LOADED
 #=============================================================================
 
-readonly ZZCOLLAB_PROJECT_LOADED=true
-readonly ZZCOLLAB_STRUCTURE_LOADED=true
-readonly ZZCOLLAB_ANALYSIS_LOADED=true
-readonly ZZCOLLAB_RPACKAGE_LOADED=true
-readonly ZZCOLLAB_DEVTOOLS_LOADED=true

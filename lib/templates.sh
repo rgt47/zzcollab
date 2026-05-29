@@ -13,7 +13,6 @@ set -euo pipefail
 ##############################################################################
 
 # Validate core library is loaded
-require_module "core"
 
 #=============================================================================
 # TEMPLATE FILE PROCESSING FUNCTIONS
@@ -230,4 +229,3 @@ install_template() {
 #=============================================================================
 
 # Set templates module loaded flag
-readonly ZZCOLLAB_TEMPLATES_LOADED=true

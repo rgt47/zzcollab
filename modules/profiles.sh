@@ -18,7 +18,6 @@ set -euo pipefail
 # DEPENDENCIES: core.sh (logging)
 ##############################################################################
 
-require_module "core"
 
 #=============================================================================
 # R PACKAGE → SYSTEM DEPENDENCY MAPPING

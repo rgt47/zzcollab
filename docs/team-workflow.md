@@ -333,9 +333,9 @@ mkdir PROJECT && cd PROJECT
 zzc analysis                     # Full setup (init + renv + docker)
 zzc github                       # Create private GitHub repo
 
-# With custom profile
-zzc bioinformatics               # Full setup with bioinformatics profile
-zzc geospatial                   # Full setup with geospatial profile
+# With a different profile
+zzc modeling                     # Full setup with the modeling profile
+zzc publishing                   # Full setup with the publishing profile
 ```
 
 ### Team Member Commands
@@ -459,8 +459,8 @@ Converting an existing solo project to team collaboration:
 # 1. Navigate to existing project
 cd my-solo-project
 
-# 2. Re-initialize with team settings
-zzcollab -t myteam -p study
+# 2. Record team settings (project name comes from the directory)
+zzcollab config set dockerhub-account myteam
 
 # 3. Build and push team image
 make docker-build

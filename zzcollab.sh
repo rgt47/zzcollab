@@ -55,38 +55,7 @@ _reverse_lines() {
 }
 
 #=============================================================================
-# MODULE SYSTEM
-#=============================================================================
-
-# Module loading uses ZZCOLLAB_*_LOADED flags set inside each module.
-# This works even if modules are sourced directly (bypassing require_module).
-
-require_module() {
-    local module
-    for module in "$@"; do
-        # Skip if already loaded (each module sets readonly ZZCOLLAB_<NAME>_LOADED=true)
-        local module_upper
-        module_upper=$(echo "$module" | tr '[:lower:]' '[:upper:]')
-        local module_var="ZZCOLLAB_${module_upper}_LOADED"
-        [[ "${!module_var:-}" == "true" ]] && continue
-
-        local module_path=""
-        if [[ -f "$ZZCOLLAB_LIB_DIR/${module}.sh" ]]; then
-            module_path="$ZZCOLLAB_LIB_DIR/${module}.sh"
-        elif [[ -f "$ZZCOLLAB_MODULES_DIR/${module}.sh" ]]; then
-            module_path="$ZZCOLLAB_MODULES_DIR/${module}.sh"
-        else
-            log_error "Module not found: $module"
-            exit 1
-        fi
-
-        # shellcheck source=/dev/null
-        source "$module_path"
-    done
-}
-
-#=============================================================================
-# LOAD FOUNDATION LIBRARIES
+# LOAD FOUNDATION LIBRARIES AND ALL MODULES
 #=============================================================================
 
 # Validate installation
@@ -96,8 +65,31 @@ if [[ ! -d "$ZZCOLLAB_LIB_DIR" ]]; then
     exit 1
 fi
 
-# Load foundation (order matters: constants → core → templates)
-require_module "constants" "core" "templates"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_LIB_DIR/constants.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_LIB_DIR/core.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_LIB_DIR/templates.sh"
+
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/cli.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/config.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/profiles.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/project.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/docker.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/github.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/validation.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/doctor.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/help.sh"
 
 #=============================================================================
 # WORKSPACE INITIALIZATION HELPER
@@ -145,7 +137,6 @@ ensure_workspace_initialized() {
     fi
 
     # Load required modules for project setup
-    require_module "cli" "config" "project"
 
     # Get package name from directory
     PKG_NAME=$(basename "$(pwd)")
@@ -210,7 +201,6 @@ ensure_docker_image_built() {
         return 1
     fi
 
-    require_module "config" "profiles" "docker"
     build_docker_image "$project_name"
 }
 
@@ -222,7 +212,6 @@ ensure_docker_image_built() {
 
 # shellcheck disable=SC2120
 cmd_init() {
-    require_module "cli" "config" "project" "docker" "github"
 
     # Validate package name
     PKG_NAME=$(validate_package_name)
@@ -336,7 +325,6 @@ cmd_init() {
 }
 
 cmd_docker() {
-    require_module "cli" "config" "profiles" "docker"
 
     local build_image=""
     local r_version=""
@@ -354,7 +342,7 @@ cmd_docker() {
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; profile_changed=true; shift 2 ;;
-            help|--help|-h) require_module "help"; show_help_docker; exit 0 ;;
+            help|--help|-h) show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
     done
@@ -371,7 +359,6 @@ cmd_docker() {
     if [[ -n "$profile" ]]; then
         BASE_IMAGE=$(get_profile_base_image "$profile")
         export BASE_IMAGE
-        require_module "config"
         config_set "profile-name" "$profile" true 2>/dev/null || true
     else
         load_config 2>/dev/null || true
@@ -426,7 +413,6 @@ cmd_docker() {
 }
 
 cmd_build() {
-    require_module "docker"
 
     local no_cache="false"
     local log_file=""
@@ -470,7 +456,6 @@ HELPEOF
 
 # shellcheck disable=SC2120
 cmd_renv() {
-    require_module "config" "docker"
 
     local r_version=""
 
@@ -721,7 +706,6 @@ check_and_prompt_outdated_templates() {
     fi
 
     # Regenerate outdated/unstamped files
-    require_module "templates"
     local all_files=()
     if [[ ${#outdated_files[@]} -gt 0 ]]; then
         for item in "${outdated_files[@]}"; do
@@ -747,7 +731,6 @@ check_and_prompt_outdated_templates() {
 }
 
 cmd_config() {
-    require_module "config"
 
     init_config_system
 
@@ -909,15 +892,12 @@ cmd_list() {
 
     case "$list_type" in
         profiles)
-            require_module "profiles"
             list_profiles
             ;;
         libs)
-            require_module "profiles"
             list_library_bundles
             ;;
         pkgs)
-            require_module "profiles"
             list_package_bundles
             ;;
         all|"")
@@ -947,7 +927,6 @@ EOF
 }
 
 cmd_help() {
-    require_module "help"
     local topic="${1:-}"
     case "$topic" in
         validate) cmd_validate --help 2>/dev/null || true ;;
@@ -1131,7 +1110,6 @@ cmd_dockerhub() {
 
     # Get DockerHub username from config or environment
     # Priority: DOCKERHUB_ACCOUNT env > docker.account > defaults.dockerhub_account
-    require_module "config"
     load_config 2>/dev/null || true
     local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKER_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}}"
 
@@ -1212,7 +1190,6 @@ install_zzvimr_graphics_template() {
 cmd_quickstart() {
     local profile="${1:-analysis}"
 
-    require_module "cli" "config" "project" "profiles" "docker"
 
     # Validate profile exists
     local base_image
@@ -1397,7 +1374,6 @@ cmd_quickstart() {
 #          and a README. Existing files are left untouched, so the
 #          command is safe to run repeatedly.
 cmd_tools() {
-    require_module "project"
 
     if ! is_workspace_initialized; then
         log_error "Not in a zzcollab project"

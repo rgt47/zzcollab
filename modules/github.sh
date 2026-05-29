@@ -13,7 +13,6 @@ set -euo pipefail
 # DEPENDENCIES: core.sh, templates.sh
 ##############################################################################
 
-require_module "core" "templates"
 
 #=============================================================================
 # GITHUB PREREQUISITES
@@ -217,5 +216,3 @@ EOF
 # MODULE LOADED FLAG
 #=============================================================================
 
-readonly ZZCOLLAB_GITHUB_LOADED=true
-readonly ZZCOLLAB_CICD_LOADED=true

@@ -150,7 +150,9 @@ export PATH="$HOME/bin:$PATH"   # Add to shell config if needed
 ### Team Lead - Build and Share Team Image
 ```bash
 # 1. Create project with team settings
-zzcollab -t TEAM -p PROJECT
+zzcollab config set dockerhub-account TEAM
+mkdir PROJECT && cd PROJECT
+zzcollab analysis
 
 # 2. Customize Docker environment (optional)
 vim Dockerfile              # Modify base image (r-ver, rstudio, verse)
@@ -182,7 +184,8 @@ make r             # Enter container with team environment
 ### Solo Developer - Build Personal Image
 ```bash
 # 1. Create project (no team)
-zzcollab -p PROJECT
+mkdir PROJECT && cd PROJECT
+zzcollab analysis
 
 # 2. Customize if needed
 vim Dockerfile             # Adjust packages, base image
@@ -298,11 +301,11 @@ zzcollab --profile minimal
 # Analysis profile (tidyverse + common packages)
 zzcollab --profile analysis
 
-# Bioinformatics profile (Bioconductor packages)
-zzcollab --profile bioinformatics
+# Modeling profile (tidymodels, ML packages)
+zzcollab --profile modeling
 
-# Geospatial profile (GDAL, PROJ, sf, terra)
-zzcollab --profile geospatial
+# Publishing profile (LaTeX, Quarto)
+zzcollab --profile publishing
 ```
 
 *For complete profile documentation, see [Variants Guide](VARIANTS.md)*
@@ -330,7 +333,8 @@ RUN ${R_PACKAGES_INSTALL_CMD}
 
 ```bash
 # Team Lead:
-zzcollab -t team -p project --profile analysis
+zzcollab config set dockerhub-account team
+mkdir project && cd project && zzcollab analysis
 make docker-build && make docker-push-team
 git add . && git commit -m "Initial setup" && git push
 

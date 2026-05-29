@@ -563,8 +563,9 @@ This example shows how three team members collaborate on a time-series forecasti
 **Alice (Team Lead)**:
 ```bash
 zzcollab config set dockerhub-account acme
+zzcollab config set r-version 4.4.0
 mkdir ~/projects/sales-forecast && cd ~/projects/sales-forecast
-zzcollab analysis --r-version 4.4.0
+zzcollab analysis
 git init && git add . && git commit -m "Initial setup"
 make docker-rstudio
 ```

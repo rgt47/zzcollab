@@ -21,19 +21,6 @@ set -euo pipefail
 # REFERENCE: docs/workspace-structure.md
 ##############################################################################
 
-# Source constants if not already loaded
-if [[ -z "${ZZCOLLAB_CONSTANTS_LOADED:-}" ]]; then
-    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    source "${_script_dir}/../lib/constants.sh"
-    unset _script_dir
-fi
-
-# Source core for shared helpers (semver_cmp)
-if [[ -z "${ZZCOLLAB_CORE_LOADED:-}" ]] && ! declare -f semver_cmp >/dev/null 2>&1; then
-    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    source "${_script_dir}/../lib/core.sh"
-    unset _script_dir
-fi
 
 CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"
 

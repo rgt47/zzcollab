@@ -16,7 +16,6 @@ set -euo pipefail
 ##############################################################################
 
 # Validate required modules are loaded
-require_module "core"
 
 #=============================================================================
 # MAIN HELP FUNCTION
@@ -1105,4 +1104,3 @@ EOF
 # MODULE LOADED
 #=============================================================================
 
-readonly ZZCOLLAB_HELP_LOADED=true

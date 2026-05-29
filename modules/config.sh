@@ -13,7 +13,6 @@ set -euo pipefail
 #
 ##############################################################################
 
-require_module "core"
 
 #=============================================================================
 # CONFIGURATION PATHS AND STATE
@@ -753,7 +752,6 @@ config_identity_gate() {
 ##############################################################################
 config_project_prompt() {
     local pkg_name="${1:-$(basename "$(pwd)")}"
-    require_module "docker"
 
     # Derive defaults from user-level config (already loaded)
     local default_profile="${CONFIG_PROFILE_NAME:-analysis}"
@@ -1594,4 +1592,3 @@ init_config_system() {
     apply_config_defaults
 }
 
-readonly ZZCOLLAB_CONFIG_LOADED=true
