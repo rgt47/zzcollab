@@ -205,17 +205,16 @@ join_project(
 
 ## Docker Profiles
 
-zzcollab provides 14+ specialized Docker profiles optimized for different research needs. The **team lead** selects the appropriate profile when initializing the project.
+zzcollab provides several Docker profiles optimized for different research needs. The profile is selected when creating the project (or switched later in an existing project).
 
 | Category | Profiles | Base Size | Use Case |
 |----------|----------|-----------|----------|
-| **Standard** | minimal, analysis, modeling | 200MB-1.5GB | General research, data analysis |
-| **Publishing** | publishing, shiny, shiny_verse | 2-3.5GB | Manuscript writing, web apps |
-| **Specialized** | bioinformatics, geospatial | 2-3GB | Domain-specific workflows |
-| **Lightweight** | alpine_minimal, alpine_analysis, hpc_alpine | 200-500MB | HPC clusters, CI/CD |
-| **Testing** | rhub_ubuntu, rhub_fedora, rhub_windows | Varies | Cross-platform package testing |
+| **Command-line** | minimal | ~650MB | Lightweight, CI/CD |
+| **Data analysis** | analysis, analysis_pdf, modeling | 1.2-1.5GB | General research, ML, PDF reports |
+| **Publishing** | publishing, manuscript-package | 1.5-3GB | Manuscripts, LaTeX, Quarto |
+| **Interactive** | rstudio, shiny | 1-1.8GB | RStudio Server, web apps |
 
-See [docs/VARIANTS.md](docs/VARIANTS.md) for detailed profile specifications.
+Run `zzcollab list` for the full set of available profiles and bundles.
 
 ### Selecting a Profile
 
@@ -482,7 +481,7 @@ EXAMPLES:
 
 ```bash
 # Use base image with common R packages pre-installed
-zzcollab --base-image rgt47/r-pluspackages
+zzcollab docker --base-image rgt47/r-pluspackages
 
 # Packages included: tidyverse, DT, conflicted, ggthemes,
 # datapasta, janitor, kableExtra, tidytuesdayR, and more
@@ -498,7 +497,7 @@ docker build -f templates/Dockerfile.pluspackages \
 docker push myorg/r-base:latest
 
 # Use in projects
-zzcollab --base-image myorg/r-base
+zzcollab docker --base-image myorg/r-base
 ```
 
 ## Security Considerations
@@ -595,9 +594,9 @@ projects) as learning resources available for reference.
 ### Getting Help
 
 ```bash
-zzcollab --help          # Command line help
-zzcollab --next-steps     # Show workflow guidance
-make help                 # Show all make targets
+zzcollab --help            # Command line help
+zzcollab help next-steps   # Show workflow guidance
+make help                  # Show all make targets
 ```
 
 ## Requirements

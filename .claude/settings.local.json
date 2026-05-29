@@ -15,7 +15,8 @@
       "Bash(echo \"exit: $?\")",
       "Bash(ZZCOLLAB_CONFIG_USER=/tmp/zzc_test_user.yaml VERBOSITY_LEVEL=3 ZZCOLLAB_ACCEPT_DEFAULTS=true zzc init)",
       "Bash(git stash *)",
-      "Bash(yq eval *)"
+      "Bash(yq eval *)",
+      "Bash(./zzcollab.sh list *)"
     ]
   }
 }

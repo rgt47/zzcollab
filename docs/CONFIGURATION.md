@@ -25,56 +25,45 @@ ZZCOLLAB configuration spans three distinct domains:
 
 ## CLI Flag Reference
 
-ZZCOLLAB provides comprehensive short flag support for improved ergonomics. All long flags have short equivalents.
+Flags are either global (valid in any position) or scoped to a specific command. Project and team identity are no longer flags: the project name is the working directory, and the team/GitHub accounts are stored via `zzcollab config set`.
 
-### Complete Short Flag Table
+### Global flags
 
-| Short | Long Flag          | Purpose                           | Example                          |
-|-------|--------------------|-----------------------------------|----------------------------------|
-| `-a`  | `--tag`            | Docker image tag                  | `zzcollab -a v2.1`               |
-| `-b`  | `--base-image`     | Custom Docker base                | `zzcollab -b rocker/r-ver`       |
-| `-c`  | `config`         | Configuration management          | `zzcollab -c init`               |
-| `-f`  | `--dockerfile`     | Custom Dockerfile path            | `zzcollab -f custom.df`          |
-| `-g`  | `--github-account` | GitHub account name               | `zzcollab -g myaccount`          |
-| `-G`  | `--github`         | Create GitHub repo                | `zzcollab -G`                    |
-| `-h`  | `--help`           | Show help                         | `zzcollab -h`                    |
-| `-k`  | `--pkgs`           | Package bundle                    | `zzcollab -k tidyverse`          |
-| `-n`  | `--no-docker`      | Skip Docker build                 | `zzcollab -n`                    |
-| `-p`  | `--project-name`   | Project name                      | `zzcollab -p study`              |
-| `-P`  | `--prepare-dockerfile` | Prepare without build         | `zzcollab -P`                    |
-| `-q`  | `--quiet`          | Quiet mode (errors only)          | `zzcollab -q`                    |
-| `-r`  | `--profile-name`   | Docker profile selection          | `zzcollab -r analysis`           |
-| `-t`  | `--team`           | Team name                         | `zzcollab -t mylab`              |
-| `-u`  | `--use-team-image` | Deprecated (no-op); use `make docker-build` | `make docker-build`              |
-| `-v`  | `--verbose`        | Verbose output                    | `zzcollab -v`                    |
-| `-vv` | `--debug`          | Debug output + log file           | `zzcollab -vv`                   |
-| `-w`  | `--log-file`       | Enable log file                   | `zzcollab -w`                    |
-| `-y`  | `--yes`            | Skip confirmations                | `zzcollab -y`                    |
+| Short | Long Flag    | Purpose                       | Example            |
+|-------|--------------|-------------------------------|--------------------|
+| `-v`  | `--verbose`  | Verbose output                | `zzcollab -v docker` |
+| `-q`  | `--quiet`    | Quiet mode (errors only)      | `zzcollab -q docker` |
+| `-vv` | `--debug`    | Debug output + log file       | `zzcollab -vv docker` |
+| `-y`  | `--yes`      | Accept defaults (non-interactive) | `zzcollab -y analysis` |
+| `-Y`  | `--yes-all`  | Same as `--yes`               | `zzcollab -Y analysis` |
+|       | `--no-build` | Skip Docker build prompt      | `zzcollab --no-build docker` |
+|       | `--version`  | Print version and exit        | `zzcollab --version` |
+| `-h`  | `--help`     | Show help                     | `zzcollab -h`      |
 
-### Short Flag Philosophy
+### Per-command flags
 
-**Lowercase by default**: Standard flags use lowercase letters (`-p`, `-t`, `-d`)
-**Uppercase for modifiers**: Uppercase indicates semantic modifiers
+| Command     | Short | Long Flag       | Purpose                          | Example                              |
+|-------------|-------|-----------------|----------------------------------|--------------------------------------|
+| `docker`    | `-b`  | `--build`       | Build image after generating     | `zzcollab docker -b`                 |
+| `docker`    | `-r`  | `--profile`     | Select profile                   | `zzcollab docker -r analysis`        |
+| `docker`    |       | `--base-image`  | Override base image              | `zzcollab docker --base-image rocker/verse` |
+| `docker`    |       | `--r-version`   | Pin R version                    | `zzcollab docker --r-version 4.5.2`  |
+| `dockerhub` | `-t`  | `--tag`         | Docker image tag (default: latest) | `zzcollab dockerhub --tag v2.1`    |
+| `github`    |       | `--private` / `--public` | Repository visibility   | `zzcollab github --public`           |
+| `rm`        | `-f`  | `--force`       | Skip confirmation                | `zzcollab rm docker -f`              |
 
 ### Usage Examples
 
-**Verbose form**:
+**Create a project with a profile** (run inside the project directory):
 ```bash
-zzcollab --team mylab --project-name study --profile-name analysis
+mkdir study && cd study
+zzcollab analysis
 ```
 
-**Concise form** (equivalent):
+**Select a different profile or base image**:
 ```bash
-zzcollab -t mylab -p study -r analysis
-```
-
-**Custom composition**:
-```bash
-# Verbose
-zzcollab --base-image rocker/verse --pkgs tidyverse
-
-# Concise
-zzcollab -b rocker/verse -k tidyverse
+zzcollab docker --profile publishing
+zzcollab docker --base-image rocker/verse
 ```
 
 ## Configuration Hierarchy
@@ -84,7 +73,7 @@ zzcollab -b rocker/verse -k tidyverse
 Configuration values are resolved through a hierarchical precedence system:
 
 ```
-Priority 1: Command-line flags (--profile-name, -t, -p, -b, --pkgs)
+Priority 1: Command-line flags (--profile, --base-image, --r-version)
     ↓ (overrides)
 Priority 2: Environment variables (ZZCOLLAB_PROFILE_NAME, etc.)
     ↓ (overrides)
@@ -103,12 +92,11 @@ Priority 6: Built-in defaults (hardcoded fallbacks)
 
 ```bash
 # User config: profile_name: analysis
-# Command-line: --profile-name bioinformatics
-# Result: bioinformatics profile (command-line overrides config)
+# Command-line: --profile modeling
+# Result: modeling profile (command-line overrides config)
 
 mkdir study && cd study
-zzcollab -t lab -p study --profile-name bioinformatics
-make docker-build
+zzcollab docker --profile modeling
 ```
 
 **Scenario 2: Team Name Resolution**
@@ -119,17 +107,15 @@ make docker-build
 # Result: "mylab" (from user config)
 
 mkdir study && cd study
-zzcollab -p study
-make docker-build
+zzcollab analysis
 ```
 
 **Scenario 3: Custom Composition**
 
 ```bash
-# Override profile with custom bundle composition
+# Use the modeling profile (run inside the project directory)
 mkdir research && cd research
-zzcollab -p research -b rocker/r-ver --pkgs modeling
-make docker-build
+zzcollab modeling
 ```
 
 ## Configuration Files
@@ -204,12 +190,12 @@ team:
 
 docker_profile:
   # Option 1: Use predefined profile
-  profile_name: "bioinformatics"
+  profile_name: "modeling"
 
   # Option 2: Custom composition with bundles
-  # base_image: "bioconductor/bioconductor_docker"
-  # libs: "bioinfo"
-  # pkgs: "bioinfo"
+  # base_image: "rocker/r-ver"
+  # libs: "modeling"
+  # pkgs: "modeling"
 
 #=========================================================
 # BUILD CONFIGURATION
@@ -330,7 +316,7 @@ ZZCOLLAB_CONFIG_USER=~/custom/config.yaml zzcollab config init
 # Set single values
 zzcollab config set team-name "mylab"
 zzcollab config set github-account "myusername"
-zzcollab config set profile-name "bioinformatics"
+zzcollab config set profile-name "modeling"
 
 # Set boolean values
 zzcollab config set auto-github true
@@ -411,7 +397,7 @@ zzcollab config precedence
 **profile_name**
 
 - **Type**: String
-- **Values**: `minimal`, `rstudio`, `analysis`, `modeling`, `bioinformatics`, `geospatial`, `publishing`, `alpine_minimal`, `alpine_analysis`
+- **Values**: `minimal`, `rstudio`, `analysis`, `analysis_pdf`, `modeling`, `publishing`, `manuscript-package`, `shiny`
 - **Default**: `minimal`
 - **Description**: Predefined Docker environment profile
 
@@ -425,14 +411,14 @@ zzcollab config precedence
 **libs_bundle** (for custom composition)
 
 - **Type**: String
-- **Values**: `minimal`, `geospatial`, `bioinfo`, `modeling`, `publishing`, `alpine`
+- **Values**: `none`, `minimal`, `modeling`, `publishing`, `terminals`, `gui`
 - **Description**: System library bundle
-- **Example**: `"geospatial"`
+- **Example**: `"modeling"`
 
 **pkgs_bundle** (for custom composition)
 
 - **Type**: String
-- **Values**: `minimal`, `tidyverse`, `modeling`, `bioinfo`, `geospatial`, `publishing`, `shiny`
+- **Values**: `minimal`, `tidyverse`, `modeling`, `publishing`, `shiny`, `gui`
 - **Description**: R package bundle
 - **Example**: `"modeling"`
 
@@ -457,8 +443,8 @@ zzcollab config precedence
 **ZZCOLLAB_PROFILE_NAME**
 
 - **Description**: Override Docker profile
-- **Values**: Profile names (minimal, analysis, bioinformatics, etc.)
-- **Example**: `export ZZCOLLAB_PROFILE_NAME=bioinformatics`
+- **Values**: Profile names (minimal, analysis, modeling, etc.)
+- **Example**: `export ZZCOLLAB_PROFILE_NAME=modeling`
 
 **ZZCOLLAB_TEAM_NAME**
 
@@ -516,15 +502,13 @@ mkdir research-project && cd research-project
 zzcollab
 make docker-build
 
-# Override profile for specific project
+# Override profile for a specific project
 mkdir genomics && cd genomics
-zzcollab --profile-name bioinformatics
-make docker-build
+zzcollab modeling
 
-# Custom composition
+# Custom base image
 mkdir spatial && cd spatial
-zzcollab -b rocker/r-ver --pkgs geospatial
-make docker-build
+zzcollab docker --base-image rocker/r-ver
 ```
 
 ### Team Leader Workflow
@@ -532,18 +516,19 @@ make docker-build
 **Team Configuration Setup**:
 
 ```bash
-# 1. Create project with Docker profile
+# 1. Record the team DockerHub account (one-time)
+zzcollab config set dockerhub-account lab
+
+# 2. Create the project with a Docker profile
 mkdir study && cd study
-zzcollab -t lab -p study --profile-name bioinformatics
-make docker-build
-make docker-push-team
+zzcollab modeling
 
-# 2. Customize team configuration (optional)
-vim zzcollab.yaml
+# 3. Push the team image to Docker Hub
+zzcollab dockerhub
 
-# 3. Commit configuration to repository
+# 4. Commit configuration to the repository
 git add zzcollab.yaml Dockerfile
-git commit -m "Initial setup with bioinformatics profile"
+git commit -m "Initial setup with modeling profile"
 git push
 ```
 
@@ -615,8 +600,8 @@ init_project(project_name = "study")
 # Explicit parameter override
 init_project(
   project_name = "study",
-  team_name = "otherlab",          # Overrides config
-  profile_name = "bioinformatics"  # Overrides config
+  team_name = "otherlab",   # Overrides config
+  profile = "modeling"      # Selects the Docker profile
 )
 
 # Team member joining
@@ -662,7 +647,7 @@ Solution: zzcollab config set team-name "myteam"
 
 ```
 Error: profile_name 'ultra-fast' not recognized
-Valid profiles: minimal, rstudio, analysis, modeling, bioinformatics, geospatial, publishing
+Valid profiles: minimal, rstudio, analysis, analysis_pdf, modeling, publishing, manuscript-package, shiny
 Solution: zzc list profiles  # See all available profiles
 ```
 
@@ -795,9 +780,9 @@ Document configuration decisions:
 ```yaml
 # zzcollab.yaml
 
-# RATIONALE: Using bioinformatics profile for genomics workflows
+# RATIONALE: Using modeling profile for machine-learning workflows
 docker_profile:
-  profile_name: "bioinformatics"  # Includes Bioconductor packages
+  profile_name: "modeling"  # Includes tidymodels and ML packages
 
 # RATIONALE: AMD64 platform for rocker/verse compatibility on ARM64 Macs
 build:
@@ -812,27 +797,21 @@ build:
 View all available profiles:
 
 ```bash
-zzc list profiles
+zzcollab list
 ```
 
-**Output**:
+**Output** (profiles):
 ```
-Available Docker Profiles:
+Available profiles:
 
-Standard Research:
-  minimal          (~780MB)  - Essential development packages
-  rstudio          (~980MB)  - RStudio Server environment
-  analysis         (~1.18GB) - Data analysis with tidyverse
-  modeling         (~1.48GB) - Machine learning environment
-
-Specialized Domains:
-  bioinformatics   (~1.98GB) - Genomics with Bioconductor
-  geospatial       (~2.48GB) - Spatial analysis
-  publishing       (~3GB)    - Document publishing with LaTeX
-
-Lightweight Alpine:
-  alpine_minimal   (~200MB)  - Ultra-lightweight
-  alpine_analysis  (~400MB)  - Lightweight tidyverse
+  minimal            rocker/r-ver       Minimal development environment (~650MB)
+  rstudio            rocker/rstudio     RStudio Server environment (~980MB)
+  analysis           rocker/tidyverse   Data analysis with tidyverse (~1.2GB)
+  analysis_pdf       rocker/tidyverse   Data analysis with PDF rendering (~1.5GB)
+  modeling           rocker/r-ver       Machine learning environment (~1.5GB)
+  publishing         rocker/verse       Document publishing with LaTeX/Quarto (~3GB)
+  manuscript-package rocker/verse       R package with companion Rmd manuscripts (~1.5GB)
+  shiny              rocker/shiny       Shiny web applications (~1.8GB)
 ```
 
 ### Bundle Configuration
@@ -840,11 +819,8 @@ Lightweight Alpine:
 View available bundles:
 
 ```bash
-# System library bundles
-zzcollab --list-libs
-
-# R package bundles
-zzcollab --list-pkgs
+# Lists profiles, system library bundles, and R package bundles
+zzcollab list
 ```
 
 ### Custom Profile Configuration
@@ -854,11 +830,11 @@ Create custom profiles in project `zzcollab.yaml`:
 ```yaml
 docker_profile:
   # Option 1: Predefined profile
-  profile_name: "bioinformatics"
+  profile_name: "modeling"
 
   # Option 2: Custom composition
   base_image: "rocker/r-ver:4.4.0"
-  libs: "geospatial"
+  libs: "modeling"
   pkgs: "modeling"
 
   # Option 3: Fully custom
@@ -914,13 +890,13 @@ ZZCOLLAB supports 4 verbosity levels to control output detail:
 
 **Level 0: Quiet Mode** (`--quiet` / `-q`)
 ```bash
-zzcollab -t team -p project --quiet
+zzcollab analysis --quiet
 # (no output on success, errors only)
 ```
 
 **Level 1: Default** (no flag)
 ```bash
-zzcollab -t team -p project
+zzcollab analysis
 Creating project 'project'...
 ✅ Structure (16 dirs, 40 files)
 ✅ R package
@@ -930,13 +906,13 @@ Done! Next: make docker-build
 
 **Level 2: Verbose** (`-v` / `--verbose`)
 ```bash
-zzcollab -t team -p project -v
+zzcollab analysis -v
 # Shows progress messages and created structure
 ```
 
 **Level 3: Debug** (`-vv` / `--debug`)
 ```bash
-zzcollab -t team -p project -vv
+zzcollab analysis -vv
 # Full detail (~400 lines), creates .zzcollab.log
 ```
 
@@ -952,7 +928,7 @@ Debug mode automatically writes to `.zzcollab.log`:
 Enable log file without debug output:
 ```bash
 export ENABLE_LOG_FILE=true
-zzcollab -t team -p project
+zzcollab analysis
 ```
 
 ### Verbosity Environment Variables
