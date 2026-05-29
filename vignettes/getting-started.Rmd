@@ -63,17 +63,16 @@ can be added dynamically via `install.packages()` inside containers (Layer 2).
 - Packages: renv, devtools, usethis (essential development tools only)
 
 **analysis**: Balanced environment for typical analyses (~1.2GB, recommended)
-- Base: rocker/rstudio
+- Base: rocker/tidyverse
 - Packages: minimal + tidyverse, here, testthat, knitr, rmarkdown
 
-**bioinformatics**: Genomics and proteomics workflows (~1.98GB)
-- Base: bioconductor/bioconductor_docker
-- Packages: DESeq2, edgeR, limma, GenomicRanges, Biostrings
+**modeling**: Machine learning environment (~1.5GB)
+- Base: rocker/r-ver
+- Packages: tidymodels, xgboost, randomForest, glmnet, caret
 
-**geospatial**: Spatial data analysis (~1.5GB)
-- Base: rocker/geospatial
-- System libs: GDAL, PROJ, GEOS
-- Packages: sf, terra, raster, mapview
+**publishing**: Document publishing with LaTeX and Quarto (~3GB)
+- Base: rocker/verse
+- Packages: quarto, bookdown, distill, flexdashboard
 
 ## Project Initialization
 
@@ -93,19 +92,19 @@ zzc github                       # Create private GitHub repo (optional)
 zzc help profiles
 ```
 
-## Custom Profile Composition
+## Custom Base Image
 
-For specialized needs, compose custom profiles using bundles:
+To build on a different base image (for example, an organization image with
+packages pre-installed), pass `--base-image` to the `docker` command:
 
 ```bash
-# Custom: bioinformatics base with modeling packages
-zzcollab -b bioconductor/bioconductor_docker --pkgs modeling
-
-# Custom: minimal base with tidyverse packages
-zzcollab -b rocker/r-ver --pkgs tidyverse
+# Use a custom base image
+zzcollab docker --base-image bioconductor/bioconductor_docker
+zzcollab docker --base-image rocker/r-ver
 ```
 
-System library dependencies are automatically detected via `make check-system-deps`.
+Additional R packages are installed inside the container and captured in
+`renv.lock`; system library dependencies are detected automatically.
 
 ## Initialization Process
 
@@ -1304,10 +1303,10 @@ git push
 
 | Profile        | Size     | Application                   | Base Image         |
 |----------------|----------|-------------------------------|--------------------|
-| minimal        | ~780MB   | Lightweight development       | rocker/r-ver       |
-| analysis       | ~1.2GB   | General analyses (recommended)| rocker/rstudio     |
-| bioinformatics | ~1.98GB  | Genomics workflows            | bioconductor       |
-| geospatial     | ~1.5GB   | Spatial data analysis         | rocker/geospatial  |
+| minimal        | ~650MB   | Lightweight development       | rocker/r-ver       |
+| analysis       | ~1.2GB   | General analyses (recommended)| rocker/tidyverse   |
+| modeling       | ~1.5GB   | Machine learning              | rocker/r-ver       |
+| publishing     | ~3GB     | LaTeX/Quarto publishing       | rocker/verse       |
 
 ## Data Directory Functions
 
