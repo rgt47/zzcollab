@@ -52,16 +52,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 "
     fi
 
-    # Install TinyTeX for analysis_pdf profile
-    if [[ "$profile_name" == "analysis_pdf" ]]; then
-        cmds+="# Install TinyTeX for PDF rendering
-RUN R -e \"install.packages('tinytex')\" && \\
-    R -e \"tinytex::install_tinytex()\" && \\
-    /root/.TinyTeX/bin/*/tlmgr path add
-
-"
-    fi
-
     # Always install languageserver for IDE support and yaml for R Markdown
     cmds+="# Install languageserver for IDE support and yaml for R Markdown dependencies
 RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
@@ -166,14 +156,14 @@ prompt_new_workspace_setup() {
     echo "Step $step: Select a Docker profile" >&2
     ((step++))
     echo "" >&2
-    echo "  [1] minimal     - Base R only (~300MB)" >&2
-    echo "  [2] analysis    - tidyverse packages (~1.5GB)" >&2
-    echo "  [3] publishing  - LaTeX + pandoc for documents (~3GB)" >&2
+    echo "  [1] minimal     - Base R, command-line only (~650MB)" >&2
+    echo "  [2] analysis    - tidyverse data analysis (~1.2GB)" >&2
+    echo "  [3] rstudio     - RStudio Server (~980MB)" >&2
     echo "" >&2
 
     local default_profile_num=2
     [[ "$selected_profile" == "minimal" ]] && default_profile_num=1
-    [[ "$selected_profile" == "publishing" ]] && default_profile_num=3
+    [[ "$selected_profile" == "rstudio" ]] && default_profile_num=3
 
     local profile_choice
     zzc_read -r -p "Profile [$default_profile_num]: " profile_choice
@@ -182,7 +172,7 @@ prompt_new_workspace_setup() {
     case "$profile_choice" in
         1) selected_profile="minimal" ;;
         2) selected_profile="analysis" ;;
-        3) selected_profile="publishing" ;;
+        3) selected_profile="rstudio" ;;
         *)
             log_error "Invalid choice" >&2
             return 1

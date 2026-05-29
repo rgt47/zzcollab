@@ -771,7 +771,7 @@ config_project_prompt() {
     local val new_profile new_r_version new_github new_team
 
     prompt_select "Docker profile" \
-        "minimal,rstudio,analysis,modeling,publishing,shiny" \
+        "minimal,analysis,rstudio" \
         "$default_profile" val || return 1
     new_profile="$val"
 
@@ -1181,15 +1181,12 @@ _setup_change_existing() {
     #-------------------------------------------------------------------------
     print_section "Docker Preferences"
     echo "  minimal      - Essential R development (~650MB)"
-    echo "  rstudio      - RStudio Server IDE (~980MB)"
     echo "  analysis     - Data analysis with tidyverse (~1.2GB) [RECOMMENDED]"
-    echo "  modeling     - Machine learning with tidymodels (~1.5GB)"
-    echo "  publishing   - LaTeX/Quarto for manuscripts (~3GB)"
-    echo "  shiny        - Shiny web applications (~1.8GB)"
+    echo "  rstudio      - RStudio Server IDE (~980MB)"
     echo ""
 
     prompt_select "Default profile" \
-        "minimal,rstudio,analysis,modeling,publishing,shiny" \
+        "minimal,analysis,rstudio" \
         "${CONFIG_PROFILE_NAME:-analysis}" val || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "defaults.profile_name" "$val"
     yaml_set "$CONFIG_USER" "docker.default_profile" "$val"

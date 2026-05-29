@@ -22,7 +22,24 @@
       "Bash(shellcheck --severity=warning modules/help.sh)",
       "Bash(echo \"clean\")",
       "Bash(echo \"=== help ===\")",
-      "Bash(zzc help *)"
+      "Bash(zzc help *)",
+      "Bash(sed -n '1160,1170p' zzcollab.sh)",
+      "Bash(echo \"===1240===\")",
+      "Bash(sed -n '1236,1250p' zzcollab.sh)",
+      "Bash(echo \"===1630===\")",
+      "Bash(sed -n '1633,1640p' zzcollab.sh)",
+      "Bash(python3 -c ' *)",
+      "Bash(sed -n '50,70p' modules/docker.sh)",
+      "Bash(echo \"===picker===\")",
+      "Bash(sed -n '165,190p' modules/docker.sh)",
+      "Bash(python3)",
+      "Bash(shellcheck --severity=warning zzcollab.sh modules/config.sh modules/docker.sh modules/profiles.sh)",
+      "Bash(echo \"=== list profiles ===\")",
+      "Bash(zzc list *)",
+      "Bash(echo \"\")",
+      "Bash(echo \"=== help profiles ===\")",
+      "Bash(bash -c 'source ~/.zzcollab/lib/constants.sh; source ~/.zzcollab/lib/core.sh; source ~/.zzcollab/modules/profiles.sh; get_profile_base_image __TRACKED_VAR__')",
+      "Bash(bash -c \"source ~/.zzcollab/lib/constants.sh; source ~/.zzcollab/lib/core.sh; source ~/.zzcollab/modules/profiles.sh; get_profile_base_image publishing\")"
     ]
   }
 }

@@ -25,24 +25,6 @@ library_bundles:
     compatible_bases: ["rocker/*"]
     note: "Dev headers (libcurl4-openssl-dev, libssl-dev, libxml2-dev) in common section"
 
-  modeling:
-    description: "Statistical modeling and ML libraries"
-    deps:
-      - libgsl-dev
-    package_manager: "apt-get"
-    compatible_bases: ["rocker/*"]
-    note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev, build-essential in common; libblas-dev, liblapack-dev, gfortran in rocker/r-ver"
-
-  publishing:
-    description: "Publishing and LaTeX libraries"
-    deps:
-      - pandoc
-      - texlive-full
-      - libv8-dev
-    package_manager: "apt-get"
-    compatible_bases: ["rocker/verse", "rocker/*"]
-    note: "libxml2-dev, libcurl4-openssl-dev, libssl-dev in common section"
-
   terminals:
     description: "GUI terminals and fonts (lightweight GUI)"
     deps:
@@ -57,25 +39,6 @@ library_bundles:
     package_manager: "apt-get"
     compatible_bases: ["rocker/*"]
     note: "Requires X11 forwarding (XQuartz on macOS). Includes Nerd Fonts."
-
-  gui:
-    description: "X11 GUI support for graphical applications"
-    deps:
-      - xorg
-      - x11-apps
-      - xauth
-      - libx11-dev
-      - libxt-dev
-      - libcairo2-dev
-      - libgl1-mesa-dev
-      - libglu1-mesa-dev
-      - fonts-dejavu
-      - fonts-liberation
-      - firefox
-      - gedit
-    package_manager: "apt-get"
-    compatible_bases: ["rocker/*"]
-    note: "Requires X11 forwarding from host (XQuartz on macOS, X11 on Linux)"
 
 #=============================================================================
 # R PACKAGE BUNDLES (--pkgs)
@@ -102,63 +65,15 @@ package_bundles:
       - here
     requires_libs: ["minimal"]
 
-  modeling:
-    description: "Machine learning and statistical modeling"
-    packages:
-      - renv
-      - devtools
-      - tidyverse
-      - tidymodels
-      - xgboost
-      - randomForest
-      - glmnet
-      - caret
-    requires_libs: ["minimal", "modeling"]
-
-  publishing:
-    description: "Document publishing and visualization"
-    packages:
-      - renv
-      - devtools
-      - quarto
-      - bookdown
-      - blogdown
-      - distill
-      - flexdashboard
-      - DT
-    requires_libs: ["minimal", "publishing"]
-
-  shiny:
-    description: "Shiny web applications"
-    packages:
-      - renv
-      - devtools
-      - shiny
-      - shinydashboard
-      - shinyWidgets
-      - DT
-      - plotly
-      - bslib
-    requires_libs: ["minimal"]
-
-  gui:
-    description: "GUI applications and interactive graphics"
-    packages:
-      - renv
-      - devtools
-      - tidyverse
-      - rgl
-      - plotly
-      - shiny
-      - Cairo
-      - svglite
-    requires_libs: ["gui"]
-
 #=============================================================================
 # COMPLETE PROFILES (--profile-name)
 #=============================================================================
 # Predefined combinations of base-image + libs + pkgs
 # Run 'zzc help profiles' for descriptions
+#
+# Three canonical profiles. For specialised needs (LaTeX, modeling, shiny),
+# start from one of these and add packages inside the container with
+# install.packages(), then commit the updated renv.lock.
 
 profiles:
   minimal:
@@ -168,13 +83,6 @@ profiles:
     pkgs: minimal
     size: "~650MB"
 
-  rstudio:
-    description: "RStudio Server development environment"
-    base_image: "rocker/rstudio"
-    libs: minimal
-    pkgs: minimal
-    size: "~980MB"
-
   analysis:
     description: "Data analysis with tidyverse"
     base_image: "rocker/tidyverse"
@@ -182,43 +90,9 @@ profiles:
     pkgs: tidyverse
     size: "~1.2GB"
 
-  analysis_pdf:
-    description: "Data analysis with PDF rendering (tinytex + pandoc)"
-    base_image: "rocker/tidyverse"
-    libs: minimal
-    pkgs: tidyverse
-    extras:
-      - tinytex
-      - pandoc
-      - imagemagick
-    size: "~1.5GB"
-    note: "Lighter than publishing profile; uses tinytex instead of texlive-full"
-
-  modeling:
-    description: "Machine learning environment"
-    base_image: "rocker/r-ver"
-    libs: modeling
-    pkgs: modeling
-    size: "~1.5GB"
-
-  publishing:
-    description: "Document publishing with LaTeX and Quarto"
-    base_image: "rocker/verse"
-    libs: publishing
-    pkgs: publishing
-    size: "~3GB"
-
-  manuscript-package:
-    description: "R package with companion Rmd manuscripts (PDF rendering via tinytex)"
-    base_image: "rocker/verse"
+  rstudio:
+    description: "RStudio Server development environment"
+    base_image: "rocker/rstudio"
     libs: minimal
     pkgs: minimal
-    size: "~1.5GB"
-    note: "rocker/verse includes pandoc and tinytex; no Quarto needed for Rmd-only projects"
-
-  shiny:
-    description: "Shiny web applications"
-    base_image: "rocker/shiny"
-    libs: minimal
-    pkgs: shiny
-    size: "~1.8GB"
+    size: "~980MB"

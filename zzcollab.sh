@@ -13,7 +13,7 @@
 #
 # PROFILES (quickstart: init + renv + docker, or switch profile if existing):
 #   zzcollab analysis                Tidyverse compendium (recommended)
-#   zzcollab minimal | publishing | rstudio | shiny
+#   zzcollab minimal | rstudio
 #
 #   zzcollab --help                  Show help
 ##############################################################################
@@ -1126,7 +1126,7 @@ cmd_quickstart() {
     local base_image
     base_image=$(get_profile_base_image "$profile") || {
         log_error "Unknown profile: $profile"
-        log_info "Available: minimal, analysis, publishing, rstudio, shiny, verse, tidyverse"
+        log_info "Available: minimal, analysis, rstudio"
         return 1
     }
 
@@ -1163,8 +1163,8 @@ cmd_quickstart() {
                 log_success "Updated .Rprofile from template"
             fi
 
-            # Install zzvim-R graphics for analysis/publishing profiles (if not already present)
-            if [[ "$profile" =~ ^(analysis|analysis_pdf|publishing)$ ]] && [[ ! -f ".Rprofile.local" ]]; then
+            # Install zzvim-R graphics for the analysis profile (if not already present)
+            if [[ "$profile" == "analysis" ]] && [[ ! -f ".Rprofile.local" ]]; then
                 install_zzvimr_graphics_template || true
             fi
 
@@ -1235,15 +1235,8 @@ cmd_quickstart() {
     setup_project || return 1
     log_success "Project structure created"
 
-    # Install render-stamp tools for document-rendering profiles
-    case "$profile" in
-        analysis_pdf|publishing|manuscript-package)
-            create_tools_directory || true
-            ;;
-    esac
-
-    # Install zzvim-R graphics template for analysis/publishing profiles
-    if [[ "$profile" =~ ^(analysis|analysis_pdf|publishing)$ ]]; then
+    # Install zzvim-R graphics template for the analysis profile
+    if [[ "$profile" == "analysis" ]]; then
         install_zzvimr_graphics_template || true
     fi
 
@@ -1514,18 +1507,15 @@ Commands (can be combined):
   dockerhub  Push Docker image to DockerHub
 
 Profiles (new project: init+renv+docker, existing: switch profile):
-  analysis      Tidyverse packages (~1.5GB) - recommended
-  analysis_pdf  Tidyverse + tinytex for PDF (~1.5GB)
-  minimal       Base R only (~300MB)
-  publishing    LaTeX + pandoc (~3GB)
-  rstudio      RStudio Server
-  shiny        Shiny Server
+  minimal       Base R, command-line only (~650MB)
+  analysis      Tidyverse data analysis (~1.2GB) - recommended
+  rstudio       RStudio Server (~980MB)
 
 Management:
   build          Build Docker image (uses content-addressable cache)
   tools          Install render-stamp helpers in tools/ (PDF provenance)
   rm <feature>   Remove: docker, renv, git, github, cicd
-  uninstall      Remove all zzcollab files (uses manifest)
+  uninstall      Remove the zzcollab scaffold from this directory
   doctor         Workspace health checks (files, versions, CI)
   validate       Check project structure
   config         Configuration management
@@ -1557,7 +1547,7 @@ Examples:
   zzcollab docker                  # Add Docker (auto-adds renv, init)
   zzcollab docker -b github        # Build image + create GitHub repo
   zzcollab rm docker               # Remove Docker files
-  zzcollab publishing              # Switch to publishing profile (existing project)
+  zzcollab rstudio                 # Switch to rstudio profile (existing project)
 EOF
 }
 
@@ -1633,7 +1623,7 @@ main() {
                             shift 2
                             ;;
                         # Profile names as implicit --profile
-                        minimal|analysis|publishing|rstudio|shiny|verse|tidyverse)
+                        minimal|analysis|rstudio)
                             docker_args+=("--profile" "$1")
                             shift
                             ;;
@@ -1726,7 +1716,7 @@ main() {
                 ;;
 
             # Profile names as standalone commands → full quickstart
-            minimal|analysis|analysis_pdf|publishing|rstudio|shiny|verse|tidyverse)
+            minimal|analysis|rstudio)
                 local profile_name="$1"
                 shift
                 cmd_quickstart "$profile_name"
