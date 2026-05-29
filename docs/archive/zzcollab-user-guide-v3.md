@@ -1,5 +1,11 @@
 # ZZCOLLAB Framework User Guide v3.0
 
+> **ARCHIVED / OBSOLETE.** This guide documents an earlier zzcollab interface
+> (build modes `-F`/`-C`/`-S`, interface flags `-I`, variant building `-B`,
+> dotfiles `-d`) that no longer exists in the current CLI. It is retained for
+> historical reference only. For current documentation see
+> `ZZCOLLAB_USER_GUIDE.md` (repository root) and the guides under `docs/`.
+
 ## Table of Contents
 1. [What is ZZCOLLAB?](#what-is-zzcollab)
 2. [Configuration System](#configuration-system)

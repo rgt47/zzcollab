@@ -187,7 +187,7 @@ pipeline is unchanged.
 
 `tests/shell/test-docs.sh` has four pre-existing failures about
 documentation drift on obsolete CLI flags (`-i`, `-I`,
-`--build-mode`, `interface=`) in `docs/zzcollab-user-guide.md`.
+`--build-mode`, `interface=`) in `docs/archive/zzcollab-user-guide-v3.md`.
 Unrelated to these changes; failure messages name only
 documentation files.
 

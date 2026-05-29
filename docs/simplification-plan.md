@@ -508,3 +508,7 @@ installed in the project's Docker image or on the host. Add it to the
 `install.packages("zzrenvcheck")` inside the container. The `make check-renv`
 target requires R on the host only for the validation step; all other `zzc`
 operations remain shell-only.
+
+---
+*Rendered on 2026-05-29 at 08:03 PDT.*<br>
+*Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/simplification-plan.md*
