@@ -1,30 +1,38 @@
-# Makefile for zzcollab research compendium
+# zzcollab Makefile v$ZZCOLLAB_TEMPLATE_VERSION
 # Docker-first workflow for reproducible research
 
-PACKAGE_NAME = zzcollab
-R_VERSION = latest
+# Auto-detect from project (no manual configuration needed)
+PACKAGE_NAME := $(shell basename $(CURDIR))
+PROJECT_NAME := $(PACKAGE_NAME)
+R_VERSION := $(shell grep 'R_VERSION=' Dockerfile 2>/dev/null | head -1 | sed 's/.*=//' || echo "4.4.0")
+
+# Git-based versioning for reproducibility (use git SHA or date)
+GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo "$(shell date +%Y%m%d)")
+IMAGE_TAG = $(GIT_SHA)
 
 # Help target (default)
 help:
 	@echo "Available targets:"
-	@echo "  Validation (NO HOST R REQUIRED!):"
-	@echo "    check-renv            - Full validation: strict + auto-fix + verbose (recommended)"
-	@echo "    check-renv-no-fix     - Validation only, no auto-fix"
-	@echo "    check-renv-no-strict  - Standard mode (skip tests/, vignettes/, inst/)"
-	@echo "    check-renv-ci         - CI/CD validation (same as check-renv)"
+	@echo ""
+	@echo "  Validation (runs inside Docker, no host R required):"
+	@echo "    check-renv             - Full validation: strict + auto-fix (recommended)"
+	@echo "    check-renv-no-fix      - Report only, no modifications"
+	@echo "    check-renv-no-strict   - Skip tests/ and vignettes/"
+	@echo ""
+	@echo "  Main workflow (RECOMMENDED):"
+	@echo "    r                     - Start bash terminal (vim editing, all profiles)"
+	@echo "    rstudio               - Start RStudio Server on http://localhost:8787"
 	@echo ""
 	@echo "  Native R - requires local R installation:"
 	@echo "    document, build, check, install, vignettes, test, deps"
 	@echo ""
-	@echo "  Docker - works without local R:"
-	@echo "    r                     - Start container (RECOMMENDED! Auto-detects profile, mounts cache)"
-	@echo "    docker-run            - Same as 'make r' (auto-detects profile, mounts cache)"
-	@echo "    docker-build          - Build image (safe: auto-snapshots renv.lock first)"
-	@echo "    docker-build-no-snapshot - Build without snapshot (advanced)"
-	@echo "    docker-rstudio        - Start RStudio Server"
-	@echo "    docker-document, docker-build-pkg, docker-check"
-	@echo "    docker-test, docker-vignettes, docker-render, docker-check-renv"
-	@echo "    docker-check-renv-fix"
+	@echo "  Docker utilities:"
+	@echo "    docker-build          - Build image from current renv.lock"
+	@echo "    docker-rebuild        - Rebuild image without cache (force fresh build)"
+	@echo "    docker-build-log      - Build with detailed logs (for debugging)"
+	@echo "    docker-push-team, docker-document, docker-build-pkg, docker-check"
+	@echo "    docker-test, docker-vignettes, docker-render, docker-render-qmd"
+	@echo "    docker-check-renv"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, docker-clean"
@@ -34,7 +42,7 @@ help:
 
 # Native R targets (require local R installation)
 document:
-	R -e "devtools::document()"
+	R --quiet -e "devtools::document()"
 
 build:
 	R CMD build .
@@ -43,216 +51,157 @@ check: document
 	R CMD check --as-cran *.tar.gz
 
 install: document
-	R -e "devtools::install()"
+	R --quiet -e "devtools::install()"
 
 vignettes: document
-	R -e "devtools::build_vignettes()"
+	R --quiet -e "devtools::build_vignettes()"
 
-test: shell-test
-	R -e "devtools::test()"
-
-shell-test:
-	@echo "Running shell unit tests..."
-	@bash tests/shell/run_all_tests.sh
-
-shell-test-verbose:
-	@echo "Running shell unit tests (verbose)..."
-	@bash tests/shell/run_all_tests.sh --verbose
-
-shell-test-core:
-	@echo "Testing core.sh module..."
-	@bash tests/shell/test-core.sh
-
-shell-test-validation:
-	@echo "Testing validation.sh module..."
-	@bash tests/shell/test-validation.sh
-
-shell-test-cli:
-	@echo "Testing cli.sh module..."
-	@bash tests/shell/test-cli.sh
+test:
+	R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
 
 deps:
-	R -e "devtools::install_deps(dependencies = TRUE)"
+	R --quiet -e "devtools::install_deps(dependencies = TRUE)"
 
+# Validate package dependencies using zzrenvcheck inside the Docker container.
+# Scans R/, analysis/, scripts/ (and tests/, vignettes/ in strict mode) for
+# library()/require()/:: calls, then checks DESCRIPTION and renv.lock are in sync.
+# Run before `git commit` to catch issues locally and prevent CI failures.
+
+# Full validation: strict mode + auto-fix missing packages
 check-renv:
-	@./zzcollab.sh validate --fix --strict --verbose
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
+# Report only: identify gaps without modifying DESCRIPTION or renv.lock
 check-renv-no-fix:
-	@./zzcollab.sh validate --no-fix --strict --verbose
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
 
+# Non-strict: skip tests/ and vignettes/ directories
 check-renv-no-strict:
-	@./zzcollab.sh validate --fix --verbose
-
-check-renv-ci:
-	@./zzcollab.sh validate --fix --strict --verbose
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
 
 # Docker targets (work without local R)
-# SAFETY IMPROVEMENT: docker-build is now safe by default
-#   - Automatically runs renv::snapshot() to update renv.lock
-#   - Ensures Docker image matches your current R environment
-#   - Critical for automatic RSPM date detection from renv.lock
-docker-build: check-renv-fix docker-build-no-snapshot
+# Docker-first workflow:
+#   1. Work in containers (make r)
+#   2. Install packages (renv::install("pkg"))
+#   3. Exit container (auto-snapshot on exit)
+#   4. Build new image (make docker-build)
 
-# Advanced: Build without updating renv.lock (rarely needed)
-# Use this only when:
-#   - Debugging Dockerfile changes (no package changes)
-#   - You know renv.lock is already up-to-date
-#   - Faster iteration during Dockerfile development
-docker-build-no-snapshot:
-	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --build-arg R_VERSION=$(R_VERSION) -t $(PACKAGE_NAME) .
+docker-build:
+	zzcollab build
 
-# DEPRECATED: Use docker-build instead (now safe by default)
-docker-build-safe:
-	@echo "⚠️  WARNING: 'docker-build-safe' is deprecated."
-	@echo "           'docker-build' is now safe by default (auto-snapshots renv.lock)."
-	@echo "           Please use 'docker-build' instead."
-	@echo ""
-	@$(MAKE) docker-build
+docker-rebuild:
+	zzcollab build --no-cache
+
+docker-build-log:
+	zzcollab build --log
+
+docker-push-team:
+	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
+	docker tag $(PACKAGE_NAME) $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
+	@echo "Pushing to Docker Hub..."
+	docker push $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
+	@echo "✅ Team image pushed: $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
+	@echo "   Team members should update .zzcollab_team_setup to reference this tag"
 
 docker-document:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::document()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::document()"
 
 docker-build-pkg:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD build .
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
 
 docker-check: docker-document
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::test()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
 
 docker-vignettes: docker-document
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "devtools::build_vignettes()"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "rmarkdown::render('analysis/report/report.Rmd')"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('analysis/report/report.Rmd')"
+
+docker-render-qmd:
+	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
 
 docker-check-renv:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::status()"
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
 
 docker-check-renv-fix:
-	docker run --platform linux/amd64 --rm -v $$(pwd):/project $(PACKAGE_NAME) R -e "renv::snapshot()"
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
-	@echo "Username: analyst, Password: analyst"
-	docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init
+	@echo "Username: rstudio, Password: rstudio"
+	@echo "Terminal available for code editing with vim"
+	docker run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
-# Quick alias: 'make r' runs the last built image (same as docker-run)
-r: docker-run
-
-# Smart docker-run: Automatically detect profile and run appropriately
-docker-run:
+# Terminal: Interactive bash for vim editing
+r: check-renv
 	@if [ ! -f Dockerfile ]; then \
-		echo "❌ No Dockerfile found in current directory"; \
-		exit 1; \
-	fi
-	@PROFILE=$$(head -20 Dockerfile | grep -o 'Profile: [a-z0-9_]*' | head -1 | cut -d' ' -f2); \
-	if [ -z "$$PROFILE" ]; then \
-		echo "❌ Could not detect profile from Dockerfile"; \
-		echo "   Add '# Profile: <name>' comment to Dockerfile header"; \
+		echo ""; \
+		echo "❌ No Dockerfile found - workspace not initialized"; \
+		echo ""; \
+		echo "Run zzcollab to create a Docker environment:"; \
+		echo ""; \
+		echo "  zzcollab docker                            # default profile"; \
+		echo "  zzcollab docker --profile analysis         # tidyverse"; \
+		echo "  zzcollab docker --profile publishing       # with LaTeX"; \
+		echo ""; \
+		echo "See: zzcollab docker --help for all options"; \
+		echo ""; \
 		exit 1; \
 	fi; \
-	echo "🔍 Detected profile: $$PROFILE"; \
+	echo "🔍 Checking workspace..."; \
+	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
+	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
+	USERNAME=$$(grep '^ARG USERNAME=' Dockerfile | head -1 | cut -d= -f2); \
+	USERNAME=$${USERNAME:-analyst}; \
+	HOME_DIR="/home/$$USERNAME"; \
+	echo "🐳 Starting R ($$PROFILE)..."; \
 	echo ""; \
-	case "$$PROFILE" in \
-		ubuntu_standard_minimal|alpine_standard_minimal) \
-			echo "🐳 Starting minimal profile (sh shell)..."; \
-			docker run --platform linux/amd64 --rm -it -v $$(pwd):/project $(PACKAGE_NAME) /bin/sh; \
-			;; \
-		ubuntu_x11_minimal|alpine_x11_minimal) \
-			echo "🐳 Starting X11 minimal profile (GUI support)..."; \
-			echo "Setting up X11 forwarding..."; \
-			if ! command -v xquartz >/dev/null 2>&1 && ! [ -d /Applications/Utilities/XQuartz.app ]; then \
-				echo "❌ XQuartz not found. Installing..."; \
-				brew install --cask xquartz; \
-				echo "⚠️  XQuartz installed. Please log out and log back in, then run this command again."; \
-				exit 1; \
-			fi; \
-			CURRENT_SETTING=$$(defaults read org.xquartz.X11 nolisten_tcp 2>/dev/null || echo "1"); \
-			if [ "$$CURRENT_SETTING" != "0" ]; then \
-				echo "Configuring XQuartz to allow network connections..."; \
-				defaults write org.xquartz.X11 nolisten_tcp 0; \
-				echo "⚠️  XQuartz configuration updated. Restarting XQuartz..."; \
-				killall XQuartz 2>/dev/null || killall Xquartz 2>/dev/null || true; \
-				sleep 1; \
-			fi; \
-			if ! pgrep -x "XQuartz" >/dev/null && ! pgrep -x "Xquartz" >/dev/null; then \
-				echo "Starting XQuartz..."; \
-				open -a XQuartz; \
-				sleep 3; \
-			fi; \
-			if command -v xhost >/dev/null 2>&1; then \
-				xhost +localhost >/dev/null 2>&1 || true; \
-			fi; \
-			echo "✅ X11 setup complete"; \
-			echo ""; \
-			DISPLAY=:0 docker run --platform linux/amd64 --rm -it -v $$(pwd):/project -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /bin/sh; \
-			;; \
-		ubuntu_standard_analysis|alpine_standard_analysis) \
-			echo "🐳 Starting standard analysis profile (RStudio Server)..."; \
-			echo "📊 RStudio: http://localhost:8787"; \
-			echo "👤 Username: analyst, Password: analyst"; \
-			echo ""; \
-			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
-			;; \
-		ubuntu_x11_analysis|alpine_x11_analysis) \
-			echo "🐳 Starting X11 analysis profile (GUI + RStudio Server)..."; \
-			echo "Setting up X11 forwarding..."; \
-			if ! command -v xquartz >/dev/null 2>&1 && ! [ -d /Applications/Utilities/XQuartz.app ]; then \
-				echo "❌ XQuartz not found. Installing..."; \
-				brew install --cask xquartz; \
-				echo "⚠️  XQuartz installed. Please log out and log back in, then run this command again."; \
-				exit 1; \
-			fi; \
-			CURRENT_SETTING=$$(defaults read org.xquartz.X11 nolisten_tcp 2>/dev/null || echo "1"); \
-			if [ "$$CURRENT_SETTING" != "0" ]; then \
-				echo "Configuring XQuartz to allow network connections..."; \
-				defaults write org.xquartz.X11 nolisten_tcp 0; \
-				echo "⚠️  XQuartz configuration updated. Restarting XQuartz..."; \
-				killall XQuartz 2>/dev/null || killall Xquartz 2>/dev/null || true; \
-				sleep 1; \
-			fi; \
-			if ! pgrep -x "XQuartz" >/dev/null && ! pgrep -x "Xquartz" >/dev/null; then \
-				echo "Starting XQuartz..."; \
-				open -a XQuartz; \
-				sleep 3; \
-			fi; \
-			if command -v xhost >/dev/null 2>&1; then \
-				xhost +localhost >/dev/null 2>&1 || true; \
-			fi; \
-			echo "✅ X11 setup complete"; \
-			echo ""; \
-			echo "📊 RStudio: http://localhost:8787"; \
-			echo "👤 Username: analyst, Password: analyst"; \
-			echo ""; \
-			DISPLAY=:0 docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst -e DISPLAY=host.docker.internal:0 $(PACKAGE_NAME) /init; \
-			;; \
-		ubuntu_shiny_minimal|ubuntu_shiny_analysis) \
-			echo "🐳 Starting Shiny Server ($$PROFILE)..."; \
-			echo "📊 Shiny: http://localhost:3838"; \
-			echo ""; \
-			docker run --platform linux/amd64 --rm -p 3838:3838 -v $$(pwd):/project $(PACKAGE_NAME); \
-			;; \
-		ubuntu_standard_publishing) \
-			echo "🐳 Starting publishing profile (RStudio Server + LaTeX + Quarto)..."; \
-			echo "📊 RStudio: http://localhost:8787"; \
-			echo "👤 Username: analyst, Password: analyst"; \
-			echo ""; \
-			docker run --platform linux/amd64 --rm -p 8787:8787 -v $$(pwd):/project -e USER=analyst -e PASSWORD=analyst $(PACKAGE_NAME) /init; \
-			;; \
-		*) \
-			echo "❌ Unknown profile: $$PROFILE"; \
-			echo "   Supported profiles:"; \
-			echo "     Minimal: ubuntu_standard_minimal, alpine_standard_minimal"; \
-			echo "     X11: ubuntu_x11_minimal, alpine_x11_minimal"; \
-			echo "     Analysis: ubuntu_standard_analysis, alpine_standard_analysis"; \
-			echo "     X11 Analysis: ubuntu_x11_analysis, alpine_x11_analysis"; \
-			echo "     Shiny: ubuntu_shiny_minimal, ubuntu_shiny_analysis"; \
-			echo "     Publishing: ubuntu_standard_publishing"; \
-			exit 1; \
-			;; \
-	esac
+	mkdir -p $$HOME/.cache/R/renv 2>/dev/null || true; \
+	docker run --rm -it \
+		-v $$(pwd):$$HOME_DIR/project \
+		-v $$HOME/.cache/R/renv:$$HOME_DIR/.cache/R/renv \
+		-w $$HOME_DIR/project \
+		-e KITTY_WINDOW_ID="$${KITTY_WINDOW_ID:-}" \
+		-e ITERM_SESSION_ID="$${ITERM_SESSION_ID:-}" \
+		-e TERM_PROGRAM="$${TERM_PROGRAM:-}" \
+		-e GHOSTTY_RESOURCES_DIR="$${GHOSTTY_RESOURCES_DIR:-}" \
+		-e WEZTERM_EXECUTABLE="$${WEZTERM_EXECUTABLE:-}" \
+		$(PACKAGE_NAME) R; \
+	echo ""; \
+	echo "📋 Post-session validation..."; \
+	docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)" \
+	|| echo "⚠️  Package validation failed"
+
+# Alias for rstudio
+rstudio: docker-rstudio
 
 # Cleanup
 clean:
@@ -283,4 +232,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-build-no-snapshot docker-build-safe docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-rstudio docker-run r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

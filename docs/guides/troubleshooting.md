@@ -90,7 +90,7 @@ Error response from daemon: pull access denied
 **For solo researchers**:
 ```bash
 # Make sure you ran zzcollab in this project
-zzcollab -p projectname
+zzcollab docker
 ```
 
 **For team members**:
@@ -185,8 +185,8 @@ Installation of package 'X' had non-zero exit status
 # Some packages need system libraries
 # Example: sf package needs GDAL, GEOS, PROJ
 
-# Option 1: Use specialized Docker profile
-# zzcollab --profile geospatial  # For sf, terra, raster
+# Option 1: Use a base image with the libraries preinstalled
+# zzcollab docker --base-image rocker/geospatial  # For sf, terra, raster
 
 # Option 2: Ask team lead to add system libraries to Docker image
 
@@ -303,10 +303,10 @@ gh auth status
 # Should show: ✓ Logged in to github.com
 ```
 
-**Alternative** (no -G flag):
+**Alternative** (skip GitHub):
 ```bash
-# Skip automatic GitHub repo creation
-zzcollab -p project  # No -G flag
+# Set up the project without creating a GitHub repo
+zzcollab analysis  # do not run the 'github' command
 # Create repo manually later
 ```
 

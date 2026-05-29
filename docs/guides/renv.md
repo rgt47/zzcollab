@@ -253,7 +253,7 @@ renv::snapshot()
 ```r
 # Package needs system libraries (e.g., sf needs GDAL)
 # Options:
-# 1. Use specialized Docker profile (e.g., --profile geospatial for sf/terra)
+# 1. Use a base image with the libraries (e.g., --base-image rocker/geospatial for sf/terra)
 # 2. Ask team lead to add system libraries to Docker image
 # 3. Use alternative package
 ```
@@ -493,10 +493,9 @@ ZZCOLLAB uses **dynamic package management** for maximum flexibility:
 
 Docker profiles provide the foundation (team/shared):
 
-- **minimal**: Ultra-lightweight (~200MB) - Add all packages as needed
-- **analysis**: Tidyverse + common packages (~1.5GB)
-- **bioinformatics**: Bioconductor packages (~2GB)
-- **geospatial**: GDAL/PROJ + sf/terra (~2GB)
+- **minimal**: Ultra-lightweight (~650MB) - Add all packages as needed
+- **analysis**: Tidyverse + common packages (~1.2GB)
+- **modeling**: Machine learning packages (~1.5GB)
 - **publishing**: LaTeX + Quarto (~3GB)
 
 See [Variants Guide](../VARIANTS.md) for all 14+ profiles.
@@ -563,8 +562,9 @@ This example shows how three team members collaborate on a time-series forecasti
 
 **Alice (Team Lead)**:
 ```bash
+zzcollab config set dockerhub-account acme
 mkdir ~/projects/sales-forecast && cd ~/projects/sales-forecast
-zzcollab --team acme --project-name sales-forecast --r-version 4.4.0
+zzcollab analysis --r-version 4.4.0
 git init && git add . && git commit -m "Initial setup"
 make docker-rstudio
 ```
