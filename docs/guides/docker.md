@@ -519,7 +519,7 @@ You're analyzing satellite imagery and need:
 ```bash
 # Create project with geospatial profile
 mkdir ~/projects/forest-analysis && cd ~/projects/forest-analysis
-zzcollab --profile-name geospatial --project-name forest --r-version 4.4.0
+zzcollab --profile geospatial --project-name forest --r-version 4.4.0
 ```
 
 **What happens**:
@@ -642,7 +642,7 @@ Rebuild: `make docker-build`
 5. Team member repeats 1-4 (different results!)
 
 **With Docker** (zzcollab):
-1. `zzcollab --profile-name geospatial --r-version 4.4.0`
+1. `zzcollab --profile geospatial --r-version 4.4.0`
 2. `make docker-rstudio`
 3. Done! Team member: `make docker-build && make docker-rstudio`
 
@@ -683,7 +683,7 @@ Alpine profiles use `velaco/alpine-r` instead of official Rocker images because:
 
 ```bash
 # Create Alpine-based project
-zzcollab --profile-name alpine_minimal --r-version 4.4.0
+zzcollab --profile alpine_minimal --r-version 4.4.0
 
 # Build image (may take longer due to package compilation)
 make docker-build

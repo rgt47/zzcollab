@@ -136,7 +136,7 @@ $env:DISPLAY="host.docker.internal:0"
 
 ```bash
 # Solo developer
-zzcollab --profile-name ubuntu_x11_minimal
+zzcollab --profile ubuntu_x11_minimal
 
 # Team project
 zzcollab -t myteam -p analysis -r ubuntu_x11_minimal
@@ -204,7 +204,7 @@ brew install --cask xquartz    # macOS only
 # Log out and log back in
 
 mkdir ~/projects/data-viz && cd ~/projects/data-viz
-zzcollab --profile-name ubuntu_x11_minimal
+zzcollab --profile ubuntu_x11_minimal
 git init && git add . && git commit -m "Initial setup"
 make docker-build
 

@@ -293,16 +293,16 @@ git commit -m "Add analysis packages"
 
 ```bash
 # Minimal profile (lightweight, ~200MB)
-zzcollab --profile-name minimal
+zzcollab --profile minimal
 
 # Analysis profile (tidyverse + common packages)
-zzcollab --profile-name analysis
+zzcollab --profile analysis
 
 # Bioinformatics profile (Bioconductor packages)
-zzcollab --profile-name bioinformatics
+zzcollab --profile bioinformatics
 
 # Geospatial profile (GDAL, PROJ, sf, terra)
-zzcollab --profile-name geospatial
+zzcollab --profile geospatial
 ```
 
 *For complete profile documentation, see [Variants Guide](VARIANTS.md)*
@@ -330,7 +330,7 @@ RUN ${R_PACKAGES_INSTALL_CMD}
 
 ```bash
 # Team Lead:
-zzcollab -t team -p project --profile-name analysis
+zzcollab -t team -p project --profile analysis
 make docker-build && make docker-push-team
 git add . && git commit -m "Initial setup" && git push
 

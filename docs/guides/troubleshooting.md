@@ -186,7 +186,7 @@ Installation of package 'X' had non-zero exit status
 # Example: sf package needs GDAL, GEOS, PROJ
 
 # Option 1: Use specialized Docker profile
-# zzcollab --profile-name geospatial  # For sf, terra, raster
+# zzcollab --profile geospatial  # For sf, terra, raster
 
 # Option 2: Ask team lead to add system libraries to Docker image
 

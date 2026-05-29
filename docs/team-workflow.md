@@ -211,7 +211,7 @@ Only needed when:
 
 ```bash
 # Update Dockerfile or profile
-vim Dockerfile  # or update --profile-name
+vim Dockerfile  # or update --profile
 
 # Rebuild and push
 make docker-build

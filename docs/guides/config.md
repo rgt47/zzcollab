@@ -6,23 +6,23 @@ Stop typing the same flags repeatedly! Configure zzcollab once, use everywhere.
 
 ## Why Use Configuration?
 
-**WITHOUT CONFIG** (repetitive):
+**WITHOUT CONFIG** (specify the profile each time):
 ```bash
-zzcollab -t myname -p project1 --profile-name analysis
-zzcollab -t myname -p project2 --profile-name analysis
-zzcollab -t myname -p project3 --profile-name analysis
-# Typing "myname" and "analysis" every time!
+cd project1 && zzcollab analysis
+cd project2 && zzcollab analysis
+cd project3 && zzcollab analysis
+# Specifying the profile every time!
 ```
 
-**WITH CONFIG** (simple):
+**WITH CONFIG** (set the defaults once):
 ```bash
-zzcollab config set team-name "myname"
+zzcollab config set dockerhub-account "myname"
 zzcollab config set profile-name "analysis"
 
-# Then just:
-zzcollab -p project1
-zzcollab -p project2
-zzcollab -p project3
+# Then the docker step uses your default profile in each project:
+cd project1 && zzcollab docker
+cd project2 && zzcollab docker
+cd project3 && zzcollab docker
 ```
 
 ---
@@ -90,7 +90,7 @@ zzcollab config validate
 
 ### Docker Profile Settings
 
-- `profile-name` - minimal, analysis, modeling, bioinformatics, geospatial, publishing
+- `profile-name` - minimal, analysis, analysis_pdf, modeling, publishing, rstudio, shiny
 
 ### Automation Settings
 
@@ -157,7 +157,7 @@ zzcollab config set github-account "jsmith"
 zzcollab config set profile-name "analysis"
 
 # Now joining team projects is simple:
-zzcollab -t labteam -p study
+git clone https://github.com/labteam/study.git && cd study
 make docker-build
 ```
 
@@ -207,8 +207,8 @@ zzcollab config set profile-name "analysis"
 # Verify
 zzcollab config list
 
-# Create first project (uses config!)
-zzcollab -p myproject
+# Create first project (uses config defaults!)
+mkdir myproject && cd myproject && zzcollab docker
 ```
 
 ### Workflow 2: Check Current Settings
@@ -225,7 +225,7 @@ zzcollab config get profile-name
 ### Workflow 3: Change Docker Profile
 
 ```bash
-# Switch to different Docker environment (e.g., analysis, geospatial, bioinformatics)
+# Switch to different Docker environment (e.g., analysis, modeling, publishing)
 zzcollab config set profile-name "analysis"
 
 # Applies to all NEW projects
@@ -239,11 +239,11 @@ zzcollab config set profile-name "analysis"
 zzcollab config set r-version "4.4.0"
 
 # Now all new projects use R 4.4.0 automatically
-cd new-project && zzcollab
+cd new-project && zzcollab docker
 # ✓ Uses R 4.4.0 from config (no --r-version flag needed!)
 
 # Override for specific project
-zzcollab --r-version "4.3.1"  # Uses 4.3.1 instead
+zzcollab docker --r-version "4.3.1"  # Uses 4.3.1 instead
 ```
 
 **Benefits**:
@@ -283,11 +283,11 @@ profile-name: "analysis"
 
 **Command**:
 ```bash
-zzcollab -t different -p project --profile-name bioinformatics
+zzcollab docker --profile modeling
 ```
 
 **Result**:
-- Uses `team="different"` and `profile="bioinformatics"` (flags override config)
+- Uses `profile="modeling"` (the flag overrides the configured profile)
 - This project only! Config unchanged.
 
 ---
@@ -309,14 +309,14 @@ zzcollab config set team-name "yourname"
 
 - **minimal** - Lightweight base, add packages with `install.packages()`
 - **analysis** - Includes tidyverse (recommended for most research)
-- **modeling** - Statistical modeling packages
-- **bioinformatics** - Bioconductor and bioinfo tools
-- **geospatial** - Spatial data analysis packages
+- **modeling** - Statistical modeling and machine learning packages
+- **rstudio** - RStudio Server environment
+- **shiny** - Shiny web applications
 - **publishing** - Full publishing suite with LaTeX
 
 ### 4. Don't set auto-github to true unless you want repos for EVERYTHING
 
-Better: Use `-G` flag when you want GitHub repo
+Better: Use the `github` command when you want a GitHub repo
 
 ### 5. Keep ~/.zzcollab/config.yaml backed up
 
@@ -411,7 +411,7 @@ profiles:
     enabled: true
   analysis:
     enabled: true
-  bioinformatics:
+  modeling:
     enabled: true
 
 build:

@@ -253,7 +253,7 @@ renv::snapshot()
 ```r
 # Package needs system libraries (e.g., sf needs GDAL)
 # Options:
-# 1. Use specialized Docker profile (e.g., --profile-name geospatial for sf/terra)
+# 1. Use specialized Docker profile (e.g., --profile geospatial for sf/terra)
 # 2. Ask team lead to add system libraries to Docker image
 # 3. Use alternative package
 ```
