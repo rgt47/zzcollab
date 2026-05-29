@@ -285,9 +285,15 @@ cmd_init() {
     echo ""
 
     if [[ -t 0 ]]; then
-        local change_settings
-        zzc_read -r -p "  Change settings now? [y/N]: " change_settings
-        if [[ "$change_settings" =~ ^[Yy]$ ]]; then
+        local do_change=false
+        if has_gum; then
+            gum_confirm "Change settings now?" && do_change=true || true
+        else
+            local change_settings
+            zzc_read -r -p "  Change settings now? [y/N]: " change_settings
+            [[ "$change_settings" =~ ^[Yy]$ ]] && do_change=true
+        fi
+        if [[ "$do_change" == "true" ]]; then
             echo ""
             config_interactive_setup
             # Reload config after interactive setup
@@ -331,26 +337,44 @@ cmd_init() {
     echo "  [n] None           - Just project structure, configure later"
     echo ""
 
-    local repro_choice
-    zzc_read -r -p "Add reproducibility? [r/d/N]: " repro_choice
+    if has_gum; then
+        local gum_repro
+        gum_repro=$(gum_choose "Reproducibility Setup" \
+            "renv + Docker  - Full containerized environment (recommended)" \
+            "renv only      - Package lockfile for reproducibility" \
+            "None           - Just project structure, configure later") || \
+            gum_repro="None"
+        case "$gum_repro" in
+            "renv + Docker"*) cmd_docker ;;
+            "renv only"*)     cmd_renv ;;
+            *)
+                echo ""
+                log_info "Skipping reproducibility setup"
+                log_info "Run 'zzcollab renv' or 'zzcollab docker' later"
+                ;;
+        esac
+    else
+        local repro_choice
+        zzc_read -r -p "Add reproducibility? [r/d/N]: " repro_choice
 
-    case "$repro_choice" in
-        r|R)
-            cmd_renv
-            ;;
-        d|D)
-            cmd_docker
-            ;;
-        n|N|"")
-            echo ""
-            log_info "Skipping reproducibility setup"
-            log_info "Run 'zzcollab renv' or 'zzcollab docker' later"
-            ;;
-        *)
-            log_warn "Invalid choice, skipping reproducibility setup"
-            log_info "Run 'zzcollab renv' or 'zzcollab docker' later"
-            ;;
-    esac
+        case "$repro_choice" in
+            r|R)
+                cmd_renv
+                ;;
+            d|D)
+                cmd_docker
+                ;;
+            n|N|"")
+                echo ""
+                log_info "Skipping reproducibility setup"
+                log_info "Run 'zzcollab renv' or 'zzcollab docker' later"
+                ;;
+            *)
+                log_warn "Invalid choice, skipping reproducibility setup"
+                log_info "Run 'zzcollab renv' or 'zzcollab docker' later"
+                ;;
+        esac
+    fi
 
     return 0
 }

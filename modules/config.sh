@@ -205,6 +205,15 @@ prompt_input() {
     local result_var="$3"
     local input
 
+    if has_gum; then
+        input=$(gum_input "${default:-(enter value)}" "$prompt" "$default") || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
+        printf -v "$result_var" '%s' "${input:-$default}"
+        return 0
+    fi
+
     if [[ -n "$default" ]]; then
         printf "%s [%s]: " "$prompt" "$default"
     else
@@ -235,6 +244,22 @@ prompt_validated() {
     local error_msg="${5:-Invalid input}"
     local input
 
+    if has_gum; then
+        while true; do
+            input=$(gum_input "${default:-(enter value)}" "$prompt" "$default") || {
+                INTERACTIVE_CANCELLED=true
+                return 1
+            }
+            input="${input:-$default}"
+            if $validator "$input"; then
+                printf -v "$result_var" '%s' "$input"
+                return 0
+            else
+                log_warn "$error_msg"
+            fi
+        done
+    fi
+
     while true; do
         if [[ -n "$default" ]]; then
             printf "%s [%s]: " "$prompt" "$default"
@@ -254,7 +279,6 @@ prompt_validated() {
 
         input="${input:-$default}"
 
-        # Run validator function
         if $validator "$input"; then
             printf -v "$result_var" '%s' "$input"
             return 0
@@ -271,6 +295,33 @@ prompt_github_account() {
     local result_var="$3"
     local input
 
+    if has_gum; then
+        while true; do
+            input=$(gum_input "${default:-github-username}" "$prompt" "$default") || {
+                INTERACTIVE_CANCELLED=true
+                return 1
+            }
+            input="${input:-$default}"
+            if [[ -z "$input" ]]; then
+                printf -v "$result_var" '%s' ""
+                return 0
+            fi
+            if command -v gh &>/dev/null; then
+                log_info "Checking GitHub account..."
+                if gh api "users/$input" &>/dev/null; then
+                    log_success "Account found: $input"
+                    printf -v "$result_var" '%s' "$input"
+                    return 0
+                else
+                    log_warn "Account '$input' not found on GitHub. Please check the username."
+                fi
+            else
+                printf -v "$result_var" '%s' "$input"
+                return 0
+            fi
+        done
+    fi
+
     while true; do
         if [[ -n "$default" ]]; then
             printf "%s [%s]: " "$prompt" "$default"
@@ -290,13 +341,11 @@ prompt_github_account() {
 
         input="${input:-$default}"
 
-        # Empty is OK
         if [[ -z "$input" ]]; then
             printf -v "$result_var" '%s' ""
             return 0
         fi
 
-        # Check if account exists
         if command -v gh &>/dev/null; then
             printf "  Checking GitHub account..."
             if gh api "users/$input" &>/dev/null; then
@@ -308,7 +357,6 @@ prompt_github_account() {
                 echo "  Account '$input' not found on GitHub. Please check the username."
             fi
         else
-            # gh not available, accept without validation
             printf -v "$result_var" '%s' "$input"
             return 0
         fi
@@ -322,8 +370,17 @@ prompt_yesno() {
     local default="$2"
     local result_var="$3"
     local input
-    local hint="y/n"
 
+    if has_gum; then
+        if gum_confirm "$prompt"; then
+            printf -v "$result_var" '%s' "true"
+        else
+            printf -v "$result_var" '%s' "false"
+        fi
+        return 0
+    fi
+
+    local hint="y/n"
     [[ "$default" == "y" ]] && hint="Y/n"
     [[ "$default" == "n" ]] && hint="y/N"
 
@@ -357,6 +414,26 @@ prompt_select() {
     local result_var="$4"
     local input
 
+    if has_gum; then
+        local item items_csv
+        items_csv="$options"
+        local gum_args=()
+        local IFS_SAVED="$IFS"
+        IFS=',' read -ra gum_args <<< "$items_csv"
+        IFS="$IFS_SAVED"
+        # Trim leading spaces from each item
+        local trimmed_args=()
+        for item in "${gum_args[@]}"; do
+            trimmed_args+=("${item#"${item%%[! ]*}"}")
+        done
+        input=$(gum_choose "$prompt" "${trimmed_args[@]}") || {
+            INTERACTIVE_CANCELLED=true
+            return 1
+        }
+        printf -v "$result_var" '%s' "${input:-$default}"
+        return 0
+    fi
+
     while true; do
         printf "%s (%s) [%s]: " "$prompt" "$options" "$default"
 
@@ -372,7 +449,6 @@ prompt_select() {
 
         input="${input:-$default}"
 
-        # Validate input is one of the options
         if [[ ",$options," == *",$input,"* ]]; then
             printf -v "$result_var" '%s' "$input"
             return 0
@@ -385,6 +461,10 @@ prompt_select() {
 # Print section header
 print_section() {
     local title="$1"
+    if has_gum; then
+        gum_header "$title"
+        return 0
+    fi
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  $title"
@@ -759,36 +839,55 @@ config_interactive_setup() {
     load_config
 
     clear
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════════════════════╗"
-    echo "║                    ZZCOLLAB Configuration Setup                          ║"
-    echo "╠══════════════════════════════════════════════════════════════════════════╣"
-    echo "║  Press Enter to accept defaults shown in [brackets].                     ║"
-    echo "║  Type 'q' or press Ctrl-D at any time to exit and save progress.        ║"
-    echo "╚══════════════════════════════════════════════════════════════════════════╝"
-    echo ""
 
-    # Show menu
-    echo "  What would you like to do?"
-    echo ""
-    echo "    1) Review basic configuration values interactively"
-    echo "    2) Change existing values"
-    echo "    3) Edit advanced settings (R Package, Code Style, CI/CD)"
-    echo "    4) Full setup (all sections)"
-    echo "    q) Exit"
-    echo ""
-    printf "  Choice [1]: "
-    zzc_read -r choice || { _save_and_exit; return 0; }
-    choice="${choice:-1}"
+    if has_gum; then
+        gum_header "ZZCOLLAB Configuration Setup"
+        local gum_choice
+        gum_choice=$(gum_choose "What would you like to do?" \
+            "Review basic configuration values interactively" \
+            "Change existing values" \
+            "Edit advanced settings (R Package, Code Style, CI/CD)" \
+            "Full setup (all sections)" \
+            "Exit") || { _save_and_exit; return 0; }
+        case "$gum_choice" in
+            "Review basic"*)   _setup_missing_values ;;
+            "Change existing"*) _setup_change_existing ;;
+            "Edit advanced"*)  _setup_advanced ;;
+            "Full setup"*)     _setup_full ;;
+            "Exit")            return 0 ;;
+            *)                 return 0 ;;
+        esac
+    else
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════════════════╗"
+        echo "║                    ZZCOLLAB Configuration Setup                          ║"
+        echo "╠══════════════════════════════════════════════════════════════════════════╣"
+        echo "║  Press Enter to accept defaults shown in [brackets].                     ║"
+        echo "║  Type 'q' or press Ctrl-D at any time to exit and save progress.        ║"
+        echo "╚══════════════════════════════════════════════════════════════════════════╝"
+        echo ""
 
-    case "$choice" in
-        1) _setup_missing_values ;;
-        2) _setup_change_existing ;;
-        3) _setup_advanced ;;
-        4) _setup_full ;;
-        q|Q) return 0 ;;
-        *) echo "Invalid choice"; return 1 ;;
-    esac
+        echo "  What would you like to do?"
+        echo ""
+        echo "    1) Review basic configuration values interactively"
+        echo "    2) Change existing values"
+        echo "    3) Edit advanced settings (R Package, Code Style, CI/CD)"
+        echo "    4) Full setup (all sections)"
+        echo "    q) Exit"
+        echo ""
+        printf "  Choice [1]: "
+        zzc_read -r choice || { _save_and_exit; return 0; }
+        choice="${choice:-1}"
+
+        case "$choice" in
+            1) _setup_missing_values ;;
+            2) _setup_change_existing ;;
+            3) _setup_advanced ;;
+            4) _setup_full ;;
+            q|Q) return 0 ;;
+            *) echo "Invalid choice"; return 1 ;;
+        esac
+    fi
 
     # Reset trap
     trap - INT

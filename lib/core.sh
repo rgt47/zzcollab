@@ -632,6 +632,50 @@ validate_r_version() {
     return 0
 }
 
+#=============================================================================
+# GUM TUI WRAPPERS
+#=============================================================================
+# Thin wrappers around charmbracelet/gum for styled interactive prompts.
+# Install: brew install gum
+# All callers should guard with has_gum() and provide zzc_read fallbacks.
+
+has_gum() { command -v gum >/dev/null 2>&1; }
+
+# gum_header TEXT
+# Renders a rounded-border styled section banner.
+gum_header() {
+    gum style --foreground 212 --border rounded --padding '0 1' --margin '0 0' "$1"
+}
+
+# gum_input PLACEHOLDER HEADER [DEFAULT]
+# Prompts for freeform text. Writes result to stdout.
+# Returns 1 if the user cancels (Ctrl-C / Esc).
+gum_input() {
+    local placeholder="$1" header="$2" default="${3:-}"
+    local args=(gum input --placeholder "$placeholder")
+    [[ -n "$header" ]] && args+=(--header "$header")
+    [[ -n "$default" ]] && args+=(--value "$default")
+    "${args[@]}"
+}
+
+# gum_choose HEADER ITEM...
+# Presents a single-select list. Writes chosen item to stdout.
+# Returns 1 if the user cancels.
+gum_choose() {
+    local header="$1"; shift
+    gum choose --header "$header" "$@"
+}
+
+# gum_confirm PROMPT
+# Returns 0 for Yes, 1 for No or cancel.
+gum_confirm() {
+    gum confirm "$1"
+}
+
+#=============================================================================
+# CORE LIBRARY VALIDATION
+#=============================================================================
+
 # Validate that this library is being sourced correctly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "❌ Error: core.sh should be sourced, not executed directly" >&2
