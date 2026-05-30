@@ -182,7 +182,9 @@ test_that("run_script builds a make docker-script command", {
   file.create(file.path(temp_dir, "Makefile"))
   file.create(file.path(temp_dir, "analysis.R"))
   old_wd <- setwd(temp_dir)
-  on.exit({
+  # withr::defer (not on.exit) so we append to, rather than clobber, the
+  # restoration handler that local_mocked_bindings registered on this frame.
+  withr::defer({
     setwd(old_wd)
     unlink(temp_dir, recursive = TRUE)
   })
@@ -213,7 +215,9 @@ test_that("render_report passes REPORT= without a stray space", {
   dir.create(file.path(temp_dir, "analysis", "report"), recursive = TRUE)
   file.create(file.path(temp_dir, custom))
   old_wd <- setwd(temp_dir)
-  on.exit({
+  # withr::defer (not on.exit) so we append to, rather than clobber, the
+  # restoration handler that local_mocked_bindings registered on this frame.
+  withr::defer({
     setwd(old_wd)
     unlink(temp_dir, recursive = TRUE)
   })
