@@ -98,6 +98,96 @@ test_no_config_flag() {
   fi
 }
 
+# The following guard the removed monolithic-CLI flags. Project identity is the
+# working directory and team/account identity is config; profiles are selected
+# positionally ('zzcollab <profile>') or via 'docker -r/--profile'. Patterns are
+# scoped to 'zzcollab' invocations so prose and config keys do not trip them.
+
+test_no_profile_name_flag() {
+  # Removed flag '--profile-name'; the live flag is '--profile' and the live
+  # config key is 'profile-name' (no leading dashes).
+  local matches
+  matches=$(grep_active_docs "zzcollab.*\-\-profile-name")
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed --profile-name flag (use 'zzcollab <profile>' or 'docker --profile'):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
+test_no_project_name_flag() {
+  local matches
+  matches=$(grep_active_docs "\-\-project-name")
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed --project-name flag (the project name is the working directory):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
+test_no_team_flag() {
+  # Removed '--team' / '--team-name'; team identity is 'config set dockerhub-account'.
+  local matches
+  matches=$(grep_active_docs "zzcollab.*\-\-team")
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed --team flag (use 'zzcollab config set dockerhub-account'):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
+test_no_pkgs_libs_flag() {
+  # Removed '--pkgs' / '--libs'; bundles are components of profiles.
+  local matches
+  matches=$(grep_active_docs "zzcollab.*\-\-pkgs\|zzcollab.*\-\-libs\|zzcollab.*\-\-list-pkgs\|zzcollab.*\-\-list-libs")
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed --pkgs/--libs flag (packages come from the profile + renv):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
+test_no_next_steps_flag() {
+  # Removed flag '--next-steps'; the live form is 'help next-steps'.
+  local matches
+  matches=$(grep_active_docs "zzcollab.*\-\-next-steps")
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed --next-steps flag (use 'zzcollab help next-steps'):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
+test_no_team_init_flags() {
+  # Removed 'zzcollab -t TEAM -p PROJECT' team-init invocation.
+  local matches
+  matches=$(grep_active_docs "zzcollab -t [a-z]")
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed 'zzcollab -t ...' team-init form (use config + 'zzcollab <profile>'):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
+test_help_flags_documented() {
+  # Every long flag advertised by 'zzcollab --help' must appear in the flag
+  # reference of docs/CONFIGURATION.md, so the table cannot silently drift from
+  # the CLI when flags are added or removed.
+  local doc help_flags missing f
+  doc="$DOCS_DIR/CONFIGURATION.md"
+  help_flags=$(bash "$ZZCOLLAB_ROOT/zzcollab.sh" --help 2>&1 \
+    | grep -oE '\-\-[a-z][a-z-]+' | sort -u)
+  missing=""
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    grep -qF -- "$f" "$doc" || missing="$missing $f"
+  done <<< "$help_flags"
+  if [[ -n "$missing" ]]; then
+    echo "FAIL: Flags in 'zzcollab --help' not documented in docs/CONFIGURATION.md:$missing" >&2
+    return 1
+  fi
+}
+
 ##############################################################################
 # TEST: No obsolete terminology in active docs
 ##############################################################################

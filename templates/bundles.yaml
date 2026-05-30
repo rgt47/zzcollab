@@ -1,9 +1,10 @@
 # ZZCOLLAB Profile Bundles
 # Defines reusable bundles for system libraries and R packages
-# Used by --libs and --pkgs flags
+# These are the components of the predefined profiles (selected via
+# 'zzcollab <profile>')
 
 #=============================================================================
-# SYSTEM LIBRARY BUNDLES (--libs)
+# SYSTEM LIBRARY BUNDLES
 #=============================================================================
 # These are sets of system dependencies installed via apt-get
 
@@ -41,7 +42,7 @@ library_bundles:
     note: "Requires X11 forwarding (XQuartz on macOS). Includes Nerd Fonts."
 
 #=============================================================================
-# R PACKAGE BUNDLES (--pkgs)
+# R PACKAGE BUNDLES
 #=============================================================================
 # These are sets of R packages installed via install.packages()
 
@@ -66,7 +67,7 @@ package_bundles:
     requires_libs: ["minimal"]
 
 #=============================================================================
-# COMPLETE PROFILES (--profile-name)
+# COMPLETE PROFILES
 #=============================================================================
 # Predefined combinations of base-image + libs + pkgs
 # Run 'zzc help profiles' for descriptions

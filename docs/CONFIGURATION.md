@@ -27,30 +27,37 @@ ZZCOLLAB configuration spans three distinct domains:
 
 Flags are either global (valid in any position) or scoped to a specific command. Project and team identity are no longer flags: the project name is the working directory, and the team/GitHub accounts are stored via `zzcollab config set`.
 
-### Global flags
+### Global flags (valid in any position)
 
-| Short | Long Flag    | Purpose                       | Example            |
-|-------|--------------|-------------------------------|--------------------|
-| `-v`  | `--verbose`  | Verbose output                | `zzcollab -v docker` |
-| `-q`  | `--quiet`    | Quiet mode (errors only)      | `zzcollab -q docker` |
-| `-vv` | `--debug`    | Debug output + log file       | `zzcollab -vv docker` |
-| `-y`  | `--yes`      | Accept defaults (non-interactive) | `zzcollab -y analysis` |
-| `-Y`  | `--yes-all`  | Same as `--yes`               | `zzcollab -Y analysis` |
-|       | `--no-build` | Skip Docker build prompt      | `zzcollab --no-build docker` |
-|       | `--version`  | Print version and exit        | `zzcollab --version` |
-| `-h`  | `--help`     | Show help                     | `zzcollab -h`      |
+| Short | Long Flag    | Purpose                           |
+|-------|--------------|-----------------------------------|
+| `-v`  | `--verbose`  | Verbose output                    |
+| `-q`  | `--quiet`    | Quiet mode (errors only)          |
+| `-y`  | `--yes`      | Accept defaults (non-interactive) |
+| `-Y`  | `--yes-all`  | Same as `--yes`                   |
+|       | `--no-build` | Skip the Docker build prompt      |
+|       | `--version`  | Print version and exit            |
+| `-h`  | `--help`     | Show help (also `help <topic>`)   |
 
 ### Per-command flags
 
-| Command     | Short | Long Flag       | Purpose                          | Example                              |
-|-------------|-------|-----------------|----------------------------------|--------------------------------------|
-| `docker`    | `-b`  | `--build`       | Build image after generating     | `zzcollab docker -b`                 |
-| `docker`    | `-r`  | `--profile`     | Select profile                   | `zzcollab docker -r analysis`        |
-| `docker`    |       | `--base-image`  | Override base image              | `zzcollab docker --base-image rocker/verse` |
-| `docker`    |       | `--r-version`   | Pin R version                    | `zzcollab docker --r-version 4.5.2`  |
-| `dockerhub` | `-t`  | `--tag`         | Docker image tag (default: latest) | `zzcollab dockerhub --tag v2.1`    |
-| `github`    |       | `--private` / `--public` | Repository visibility   | `zzcollab github --public`           |
-| `rm`        | `-f`  | `--force`       | Skip confirmation                | `zzcollab rm docker -f`              |
+| Command            | Short | Long Flag          | Purpose                                  |
+|--------------------|-------|--------------------|------------------------------------------|
+| `docker`           | `-b`  | `--build`          | Build the image after generating         |
+| `docker`           | `-n`  | `--no`             | Generate only (answer "no" to the build prompt) |
+| `docker`           | `-r`  | `--profile <name>` | Select the profile (minimal, analysis, …) |
+| `docker`           |       | `--base-image <img>` | Override the base image (default `rocker/r-ver`) |
+| `docker`           |       | `--r-version <ver>`  | Pin the R version                      |
+| `renv`             |       | `--r-version <ver>`  | Pin the R version for the lockfile     |
+| `dockerhub`        | `-t`  | `--tag <tag>`      | DockerHub image tag (default `latest`)   |
+| `github`           |       | `--private`        | Create a private repository (default)    |
+| `github`           |       | `--public`         | Create a public repository               |
+| `build`            |       | `--no-cache`       | Force a full rebuild (skip the cache check) |
+| `build`            |       | `--log`            | Save build output to `docker-build.log`  |
+| `rm`, `uninstall`  | `-f`  | `--force`          | Skip the confirmation prompt             |
+| `uninstall`        | `-n`  | `--dry-run`        | Show what would be removed without removing |
+
+Profile selection is primarily positional (`zzcollab analysis`); `-r`/`--profile` is the same selection scoped to the `docker` command. `config` is a subcommand, not a flag: `config init | set | get | list | validate`.
 
 ### Usage Examples
 

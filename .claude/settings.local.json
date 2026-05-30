@@ -43,7 +43,9 @@
       "Bash(sed -n '1249,1318p' R/utils.R)",
       "Bash(sed -n '979,1043p' R/utils.R)",
       "Bash(echo \"exit:$?\")",
-      "Bash(export CLAUDE_CODE_TMPDIR=/tmp NOT_CRAN=true)"
+      "Bash(export CLAUDE_CODE_TMPDIR=/tmp NOT_CRAN=true)",
+      "Bash(bash tests/shell/test-core.sh)",
+      "Bash(bash tests/shell/test-validation.sh)"
     ]
   }
 }
