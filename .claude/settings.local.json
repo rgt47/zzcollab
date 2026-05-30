@@ -45,7 +45,13 @@
       "Bash(echo \"exit:$?\")",
       "Bash(export CLAUDE_CODE_TMPDIR=/tmp NOT_CRAN=true)",
       "Bash(bash tests/shell/test-core.sh)",
-      "Bash(bash tests/shell/test-validation.sh)"
+      "Bash(bash tests/shell/test-validation.sh)",
+      "Bash(command -v pandoc)",
+      "Bash(pandoc --version)",
+      "Bash(echo \"pandoc: yes \\($\\(pandoc --version)",
+      "Bash(bash *)",
+      "Bash(git reset *)",
+      "Bash(git add *)"
     ]
   }
 }
