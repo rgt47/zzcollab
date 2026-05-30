@@ -34,7 +34,6 @@ docs/
 | [variants.md](variants.md) | Docker profile system (14+ profiles) |
 | [team-workflow.md](team-workflow.md) | Team collaboration patterns |
 | [collaborative-reproducibility.md](collaborative-reproducibility.md) | Five Pillars model |
-| [validation-quick-reference.md](validation-quick-reference.md) | Package validation reference |
 | [workspace-structure.md](workspace-structure.md) | Standard workspace layout and doctor checks |
 | [x11-graphics-guide.md](x11-graphics-guide.md) | X11/GUI graphics in Docker |
 | [error-handling-guide.md](error-handling-guide.md) | Error handling patterns |
@@ -78,7 +77,6 @@ Coding standards and development guidelines:
 
 - [bash-standards.md](standards/bash-standards.md) - Bash coding standards
 - [coding-standards.md](standards/coding-standards.md) - General coding guidelines
-- [module-dependencies.md](standards/module-dependencies.md) - Module architecture
 
 ### [archive/](archive/) - Historical Documents
 
