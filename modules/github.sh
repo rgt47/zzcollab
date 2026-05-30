@@ -146,9 +146,7 @@ Brief description of changes.
 - [ ] Code follows style guidelines
 - [ ] Documentation updated'
 
-    if create_file_if_missing ".github/pull_request_template.md" "$pr_template" "PR template"; then
-        track_file ".github/pull_request_template.md"
-    fi
+    create_file_if_missing ".github/pull_request_template.md" "$pr_template" "PR template"
 
     local issue_dir=".github/ISSUE_TEMPLATE"
     safe_mkdir "$issue_dir" "issue templates directory"
@@ -174,9 +172,7 @@ What should happen.
 - R Version:
 - Docker: Yes/No'
 
-    if create_file_if_missing "$issue_dir/bug_report.md" "$bug_template" "bug template"; then
-        track_file "$issue_dir/bug_report.md"
-    fi
+    create_file_if_missing "$issue_dir/bug_report.md" "$bug_template" "bug template"
 
     local feature_template='---
 name: Feature request
@@ -194,9 +190,7 @@ What you want.
 **Alternatives**
 Other options considered.'
 
-    if create_file_if_missing "$issue_dir/feature_request.md" "$feature_template" "feature template"; then
-        track_file "$issue_dir/feature_request.md"
-    fi
+    create_file_if_missing "$issue_dir/feature_request.md" "$feature_template" "feature template"
 
     log_success "GitHub templates created"
 }

@@ -1134,7 +1134,7 @@ install_zzvimr_graphics_template() {
         fi
     done
 
-    log_warning "zzvim-R not found; skipping .Rprofile.local"
+    log_warn "zzvim-R not found; skipping .Rprofile.local"
     log_info "Install zzvim-R for terminal graphics: https://github.com/rgt47/zzvim-R"
     return 1
 }

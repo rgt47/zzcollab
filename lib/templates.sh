@@ -184,7 +184,6 @@ create_file_if_missing() {
 
     if [[ -f "$file_path" ]]; then
         log_info "$description already exists, skipping creation"
-        track_file "$file_path"
         return 0
     fi
 
@@ -202,7 +201,6 @@ create_file_if_missing() {
         return 1
     fi
 
-    track_file "$file_path"
     log_info "Created $description"
 }
 

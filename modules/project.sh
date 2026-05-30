@@ -205,20 +205,8 @@ create_renv_setup() {
     return 0
 }
 
-#=============================================================================
-# GITHUB WORKFLOWS
-#=============================================================================
-
-create_github_workflows() {
-    log_debug "Creating GitHub workflows..."
-
-    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/workflows/r-package.yml" ]]; then
-        install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" "R package workflow"
-    fi
-
-    log_success "GitHub Actions workflows created"
-    return 0
-}
+# GitHub Actions workflows are installed by create_github_workflows() in
+# modules/github.sh (sourced after this module), which setup_project() calls.
 
 #=============================================================================
 # DOCUMENTATION FILES
@@ -271,8 +259,6 @@ create_tools_directory() {
 setup_project() {
     log_info "Setting up project structure..."
 
-    # Initialize manifest tracking before creating any files
-
     create_directory_structure || return 1
     create_r_package_files || return 1
     create_test_infrastructure || return 1
@@ -283,7 +269,6 @@ setup_project() {
     create_docs_files || return 1
 
     # Adopt-mode: Dockerfile is written by the docker module, not here.
-    # Track it on retrofit so `zzc uninstall` can remove it later.
 
     log_success "Project setup complete"
     return 0
