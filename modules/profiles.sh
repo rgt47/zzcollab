@@ -266,15 +266,9 @@ get_profile_base_image() {
     [[ ! -f "$bundles_file" ]] && { echo "rocker/r-ver"; return 0; }
 
     local result
-    result=$(awk -v profile="$profile" '
-        /^profiles:/ { in_profiles=1; next }
-        in_profiles && /^[a-z]/ && !/^  / { in_profiles=0 }
-        in_profiles && $0 ~ "^  "profile":" { in_target=1; next }
-        in_target && /^  [a-z_-]+:/ { in_target=0 }
-        in_target && /base_image:/ { gsub(/.*base_image: *"?|"?$/, ""); print; exit }
-    ' "$bundles_file")
+    result=$(yq eval ".profiles.\"$profile\".base_image // \"\"" "$bundles_file" 2>/dev/null)
 
-    if [[ -n "$result" ]]; then
+    if [[ -n "$result" && "$result" != "null" ]]; then
         echo "$result"
     else
         log_warn "Unknown profile '$profile', using rocker/r-ver"
@@ -297,34 +291,11 @@ list_profiles() {
     echo "Available profiles:"
     echo ""
 
-    awk '
-        /^profiles:/ { in_profiles=1; next }
-        in_profiles && /^[a-z]/ && !/^  / { exit }
-        in_profiles && /^  [a-z_-]+:$/ {
-            gsub(/^  |:$/, "")
-            profile = $0
-            next
-        }
-        in_profiles && profile && /description:/ {
-            gsub(/.*description: *"?|"?$/, "")
-            desc = $0
-            next
-        }
-        in_profiles && profile && /base_image:/ {
-            gsub(/.*base_image: *"?|"?$/, "")
-            base = $0
-            next
-        }
-        in_profiles && profile && /size:/ {
-            gsub(/.*size: *"?|"?$/, "")
-            size = $0
-            printf "  %-12s %-20s %s (%s)\n", profile, base, desc, size
-            profile = ""
-            base = ""
-            desc = ""
-            size = ""
-        }
-    ' "$bundles_file"
+    yq eval '.profiles | to_entries | .[] |
+        .key + "\t" + .value.base_image + "\t" + .value.description + "\t" + .value.size' \
+        "$bundles_file" | while IFS=$'\t' read -r profile base desc size; do
+        printf "  %-12s %-20s %s (%s)\n" "$profile" "$base" "$desc" "$size"
+    done
 
     echo ""
     echo "Usage: zzcollab init -r <profile>"
@@ -341,20 +312,10 @@ list_library_bundles() {
     echo "System library bundles (components of profiles in bundles.yaml):"
     echo ""
 
-    awk '
-        /^library_bundles:/ { in_libs=1; next }
-        in_libs && /^[a-z]/ && !/^  / { exit }
-        in_libs && /^  [a-z_-]+:$/ {
-            gsub(/^  |:$/, "")
-            bundle = $0
-            next
-        }
-        in_libs && bundle && /description:/ {
-            gsub(/.*description: *"?|"?$/, "")
-            printf "  %-12s %s\n", bundle, $0
-            bundle = ""
-        }
-    ' "$bundles_file"
+    yq eval '.library_bundles | to_entries | .[] | .key + "\t" + .value.description' \
+        "$bundles_file" | while IFS=$'\t' read -r bundle desc; do
+        printf "  %-12s %s\n" "$bundle" "$desc"
+    done
 
     echo ""
     echo "Note: System deps are auto-derived from R packages in renv.lock."
@@ -372,20 +333,10 @@ list_package_bundles() {
     echo "R package bundles (components of profiles in bundles.yaml):"
     echo ""
 
-    awk '
-        /^package_bundles:/ { in_pkgs=1; next }
-        in_pkgs && /^[a-z]/ && !/^  / { exit }
-        in_pkgs && /^  [a-z_-]+:$/ {
-            gsub(/^  |:$/, "")
-            bundle = $0
-            next
-        }
-        in_pkgs && bundle && /description:/ {
-            gsub(/.*description: *"?|"?$/, "")
-            printf "  %-12s %s\n", bundle, $0
-            bundle = ""
-        }
-    ' "$bundles_file"
+    yq eval '.package_bundles | to_entries | .[] | .key + "\t" + .value.description' \
+        "$bundles_file" | while IFS=$'\t' read -r bundle desc; do
+        printf "  %-12s %s\n" "$bundle" "$desc"
+    done
 
     echo ""
     echo "Note: Packages are managed via renv.lock. Add packages with"

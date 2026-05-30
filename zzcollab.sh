@@ -381,12 +381,9 @@ cmd_docker() {
     if [[ ! -f "renv.lock" ]]; then
         log_info "No renv.lock found, creating minimal lockfile..."
 
-        # Determine R version: CLI arg > config > query CRAN
+        # Determine R version: CLI arg > config > default
         if [[ -z "$r_version" ]]; then
             load_config 2>/dev/null || true
-            r_version="${CONFIG_R_VERSION:-}"
-        fi
-        if [[ -z "$r_version" ]]; then
             r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
         fi
 
