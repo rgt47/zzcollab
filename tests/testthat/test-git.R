@@ -129,3 +129,42 @@ test_that("git_commit constructs proper commands", {
 
   expect_type(result, "logical")
 })
+
+test_that("git_commit shQuotes the message against shell injection", {
+  calls <- character(0)
+  local_mocked_bindings(
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
+
+  # A message with shell metacharacters must be quoted, not interpolated raw.
+  evil <- 'oops"; rm -rf $(pwd) #'
+  git_commit(evil, add_all = FALSE)
+
+  commit_call <- calls[grepl("git commit", calls, fixed = TRUE)]
+  expect_length(commit_call, 1)
+  # shQuote contains the metacharacters inside a quoted argument.
+  expect_equal(commit_call[[1]], paste("git commit -m", shQuote(evil)))
+})
+
+test_that("create_branch and git_push shQuote their ref arguments", {
+  calls <- character(0)
+  local_mocked_bindings(
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
+
+  create_branch("feat/x; touch HACKED")
+  git_push("feat/x; touch HACKED")
+
+  expect_true(any(grepl(paste("git checkout -b", shQuote("feat/x; touch HACKED")),
+                        calls, fixed = TRUE)))
+  expect_true(any(grepl(paste("git push origin", shQuote("feat/x; touch HACKED")),
+                        calls, fixed = TRUE)))
+})

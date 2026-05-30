@@ -35,8 +35,11 @@ test_that("init_project constructs current-model commands", {
                          profile = "analysis")
   expect_true(result)
 
-  # DockerHub account is set via the config command, not legacy -t/-p flags
-  expect_true(any(grepl("config set dockerhub-account myteam", calls)))
+  # DockerHub account is set via the config command, not legacy -t/-p flags.
+  # The team name is shQuote'd against shell injection, so match
+  # quote-tolerantly (command contains the key and the value).
+  expect_true(any(grepl("config set dockerhub-account", calls, fixed = TRUE) &
+                  grepl("myteam", calls, fixed = TRUE)))
   # Compendium is scaffolded via the profile quickstart
   expect_true(any(grepl("zzcollab analysis", calls, fixed = TRUE)))
   # Removed flags must not reappear
@@ -56,7 +59,8 @@ test_that("init_project sets github account when provided", {
 
   init_project(team_name = "myteam", project_name = "myproj",
                github_account = "myuni")
-  expect_true(any(grepl("config set github-account myuni", calls)))
+  expect_true(any(grepl("config set github-account", calls, fixed = TRUE) &
+                  grepl("myuni", calls, fixed = TRUE)))
 })
 
 test_that("join_project validates required parameters", {

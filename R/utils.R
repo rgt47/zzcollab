@@ -462,11 +462,11 @@ init_project <- function(team_name = NULL, project_name = NULL,
 
   # Persist team/GitHub accounts so later 'dockerhub' and 'github' commands can
   # push the team image and create the repository under the correct accounts.
-  safe_system(paste(zzcollab_path, "config set dockerhub-account", team_name),
+  safe_system(paste(zzcollab_path, "config set dockerhub-account", shQuote(team_name)),
               ignore.stdout = TRUE, ignore.stderr = TRUE,
               error_msg = "Failed to set dockerhub-account")
   if (!is.null(github_account)) {
-    safe_system(paste(zzcollab_path, "config set github-account", github_account),
+    safe_system(paste(zzcollab_path, "config set github-account", shQuote(github_account)),
                 ignore.stdout = TRUE, ignore.stderr = TRUE,
                 error_msg = "Failed to set github-account")
   }
@@ -751,8 +751,9 @@ git_commit <- function(message, add_all = TRUE) {
     }
   }
 
-  # Create commit with proper formatting
-  commit_cmd <- sprintf('git commit -m "%s"', message)
+  # shQuote the message so quotes, $(...), and other shell metacharacters in
+  # the commit message are not interpreted by the shell.
+  commit_cmd <- paste("git commit -m", shQuote(message))
   result2 <- safe_system(commit_cmd, error_msg = "Failed to create git commit")
 
   if (result2 == 0) {
@@ -773,7 +774,7 @@ git_push <- function(branch = NULL) {
   if (is.null(branch)) {
     cmd <- "git push"
   } else {
-    cmd <- paste("git push origin", branch)
+    cmd <- paste("git push origin", shQuote(branch))
   }
 
   result <- safe_system(cmd, error_msg = "Failed to push to GitHub")
@@ -851,7 +852,7 @@ create_branch <- function(branch_name) {
              error_msg = "Failed to pull latest changes")
 
   # Create and checkout new branch
-  result <- safe_system(paste("git checkout -b", branch_name),
+  result <- safe_system(paste("git checkout -b", shQuote(branch_name)),
                        error_msg = paste("Failed to create branch:", branch_name))
 
   if (result == 0) {
@@ -1113,7 +1114,7 @@ set_config <- function(key, value) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "config set", key, shQuote(value))
+  cmd <- paste(zzcollab_path, "config set", shQuote(key), shQuote(value))
   result <- safe_system(cmd, error_msg = paste("Failed to set config value:", key))
   return(result == 0)
 }
