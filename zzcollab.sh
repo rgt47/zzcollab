@@ -1150,6 +1150,10 @@ cmd_quickstart() {
     local profile="${1:-analysis}"
 
 
+    # Load resolved config so scaffolded metadata (DESCRIPTION/LICENSE author,
+    # license, roxygen version) reflects the user's settings.
+    load_config 2>/dev/null || true
+
     # Validate profile exists
     local base_image
     base_image=$(get_profile_base_image "$profile") || {

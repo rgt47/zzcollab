@@ -72,9 +72,11 @@ create_r_package_files() {
 exportPattern("^[[:alpha:]]+")'
     create_file_if_missing "NAMESPACE" "$namespace_content" "NAMESPACE file"
 
-    # LICENSE
-    local license_content="YEAR: $(date +%Y)
-COPYRIGHT HOLDER: ${AUTHOR_NAME:-Author}"
+    # LICENSE: year/holder from the resolved config, else current year/author
+    local license_year="${CONFIG_LICENSE_YEAR:-$(date +%Y)}"
+    local license_holder="${CONFIG_LICENSE_HOLDER:-${CONFIG_AUTHOR_NAME:-${AUTHOR_NAME:-Author}}}"
+    local license_content="YEAR: ${license_year}
+COPYRIGHT HOLDER: ${license_holder}"
     create_file_if_missing "LICENSE" "$license_content" "LICENSE file"
 
     log_success "R package files created"
@@ -82,17 +84,17 @@ COPYRIGHT HOLDER: ${AUTHOR_NAME:-Author}"
 
 create_description_file() {
     local pkg_name="$1"
+    # Fallback path (templates/DESCRIPTION absent); mirror its config wiring.
     local content="Package: ${pkg_name}
 Title: ${pkg_name} Data Analysis
 Version: 0.0.0.9000
-Authors@R: person(\"${AUTHOR_NAME:-Author}\",
-    email = \"${AUTHOR_EMAIL:-author@example.com}\",
-    role = c(\"aut\", \"cre\"))
+Authors@R:
+    $(render_authors_r)
 Description: Data analysis workspace for ${pkg_name}.
-License: GPL-3
-Encoding: UTF-8
+License: ${CONFIG_LICENSE_TYPE:-GPL-3}
+Encoding: ${CONFIG_RPACKAGE_ENCODING:-UTF-8}
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: ${CONFIG_RPACKAGE_ROXYGEN_VERSION:-7.3.2}
 Imports:
     renv
 Suggests:

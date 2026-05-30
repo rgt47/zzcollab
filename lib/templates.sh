@@ -117,6 +117,48 @@ regenerate_template_file() {
     return 0
 }
 
+# Function: render_authors_r
+# Purpose: Build a DESCRIPTION Authors@R person() call from the resolved
+#          config. Splits AUTHOR_NAME into given/family (last token = family),
+#          parses the comma-separated roles (default aut,cre), and appends an
+#          ORCID comment only when CONFIG_AUTHOR_ORCID is set.
+# OUTPUT:  A single-line person(...) expression on stdout.
+render_authors_r() {
+    local name="${CONFIG_AUTHOR_NAME:-${AUTHOR_NAME:-Your Name}}"
+    local email="${CONFIG_AUTHOR_EMAIL:-${AUTHOR_EMAIL:-your.email@example.com}}"
+    local orcid="${CONFIG_AUTHOR_ORCID:-${AUTHOR_ORCID:-}}"
+    local roles="${CONFIG_AUTHOR_ROLES:-aut,cre}"
+
+    local given family
+    if [[ "$name" == *" "* ]]; then
+        family="${name##* }"
+        given="${name% *}"
+    else
+        given="$name"
+        family=""
+    fi
+
+    # Build the role vector, e.g. "aut", "cre"
+    local role_vec="" r
+    local oldifs="$IFS"
+    IFS=','
+    for r in $roles; do
+        r="${r//[[:space:]]/}"
+        [[ -z "$r" ]] && continue
+        role_vec+="\"$r\", "
+    done
+    IFS="$oldifs"
+    role_vec="${role_vec%, }"
+    [[ -z "$role_vec" ]] && role_vec="\"aut\", \"cre\""
+
+    local out="person(given = \"$given\""
+    [[ -n "$family" ]] && out+=", family = \"$family\""
+    out+=", email = \"$email\", role = c($role_vec)"
+    [[ -n "$orcid" ]] && out+=", comment = c(ORCID = \"$orcid\")"
+    out+=")"
+    printf '%s' "$out"
+}
+
 # Function: substitute_variables
 # Purpose: Replace template placeholders (${VAR_NAME}) with actual variable values
 # USAGE:    substitute_variables "path/to/file" [pkg_name] [author_name]
@@ -134,6 +176,10 @@ substitute_variables() {
     if [[ -n "$author_name_override" ]]; then
         AUTHOR_NAME="$author_name_override" 2>/dev/null || true
     fi
+    # Resolved config (CONFIG_*, populated by load_config) wins over the
+    # core.sh placeholder defaults so scaffolded metadata reflects the user.
+    AUTHOR_NAME="${CONFIG_AUTHOR_NAME:-${AUTHOR_NAME:-Your Name}}"
+    AUTHOR_EMAIL="${CONFIG_AUTHOR_EMAIL:-${AUTHOR_EMAIL:-your.email@example.com}}"
     export AUTHOR_NAME 2>/dev/null || true
     export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     # Don't default R_VERSION to 'latest' - let generate_dockerfile read from renv.lock
@@ -142,7 +188,16 @@ substitute_variables() {
 
     export PACKAGE_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
     export AUTHOR_LAST="${AUTHOR_LAST:-}"
-    export AUTHOR_ORCID="${AUTHOR_ORCID:-}"
+    export AUTHOR_ORCID="${CONFIG_AUTHOR_ORCID:-${AUTHOR_ORCID:-}}"
+
+    # DESCRIPTION metadata sourced from the resolved config (with R-package
+    # defaults). AUTHORS_R is pre-rendered because envsubst cannot express the
+    # conditional ORCID/role structure of the person() call.
+    export LICENSE_TYPE="${CONFIG_LICENSE_TYPE:-GPL-3}"
+    export ROXYGEN_VERSION="${CONFIG_RPACKAGE_ROXYGEN_VERSION:-7.3.2}"
+    export PKG_ENCODING="${CONFIG_RPACKAGE_ENCODING:-UTF-8}"
+    AUTHORS_R="$(render_authors_r)"
+    export AUTHORS_R
     export MANUSCRIPT_TITLE="${MANUSCRIPT_TITLE:-Research Compendium Analysis}"
     export DATE="$(date +%Y-%m-%d)"
     export GITHUB_ACCOUNT="${GITHUB_ACCOUNT:-}"
@@ -162,7 +217,7 @@ substitute_variables() {
 
     # Note: $USERNAME and $BASE_IMAGE are intentionally excluded - they are runtime
     # shell variables in Makefile ($$USERNAME, $$BASE_IMAGE), not template placeholders
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHOR_LAST $AUTHOR_ORCID $MANUSCRIPT_TITLE $DATE $GITHUB_ACCOUNT $TEAM_NAME $PROJECT_NAME $DOCKERHUB_ACCOUNT $R_PACKAGES_INSTALL_CMD $SYSTEM_DEPS_INSTALL_CMD $LIBS_BUNDLE $PKGS_BUNDLE $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHOR_LAST $AUTHOR_ORCID $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $MANUSCRIPT_TITLE $DATE $GITHUB_ACCOUNT $TEAM_NAME $PROJECT_NAME $DOCKERHUB_ACCOUNT $R_PACKAGES_INSTALL_CMD $SYSTEM_DEPS_INSTALL_CMD $LIBS_BUNDLE $PKGS_BUNDLE $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1
@@ -205,7 +260,7 @@ create_file_if_missing() {
 }
 
 # Function: install_template
-# Purpose: Consolidated template installation with tracking and error handling
+# Purpose: Consolidated template installation with error handling
 install_template() {
     local template="$1"
     local dest="$2"
@@ -213,7 +268,6 @@ install_template() {
     local success_msg="${4:-"Created $description"}"
 
     if copy_template_file "$template" "$dest" "$description"; then
-        track_template_file "$template" "$dest"
         log_info "$success_msg"
         return 0
     else
