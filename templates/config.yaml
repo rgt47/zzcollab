@@ -10,7 +10,7 @@
 # USAGE:
 # 1. Set `enabled: true` for profiles you want to build
 # 2. Environment definitions are automatically pulled from profiles.yaml
-# 3. Run: zzcollab -p myproject (builds enabled profiles automatically)
+# 3. Run: cd myproject && zzcollab docker (builds enabled profiles automatically)
 
 #=============================================================================
 # TEAM METADATA
@@ -69,40 +69,29 @@ profiles:
   # Use ./add_profile.sh to browse all available options interactively
   
   # Standard research profiles
+  rstudio:
+    enabled: false   # RStudio Server development (~980MB)
+
+  analysis:
+    enabled: false   # Data analysis with tidyverse (~1.2GB)
+
+  analysis_pdf:
+    enabled: false   # Analysis + PDF rendering via tinytex (~1.5GB)
+
   modeling:
     enabled: false   # Machine learning with tidymodels (~1.5GB)
-  
+
   publishing:
     enabled: false   # LaTeX, Quarto, bookdown publishing (~3GB)
-  
-  # Specialized domain profiles  
-  bioinformatics:
-    enabled: false   # Bioconductor genomics packages (~2GB)
-    
-  geospatial:
-    enabled: false   # sf, terra, leaflet mapping (~2.5GB)
-  
-  # Lightweight Alpine profiles
-  alpine_minimal:
-    enabled: false   # Ultra-lightweight CI/CD (~200MB)
-    
-  alpine_analysis:
-    enabled: false   # Essential analysis in tiny container (~400MB)
-    
-  # R-hub testing profiles
-  rhub_ubuntu:
-    enabled: false   # CRAN-compatible testing (~1GB)
-    
-  rhub_fedora:
-    enabled: false   # R-devel testing (~1.2GB)
-    
-  rhub_windows:
-    enabled: false   # Windows compatibility testing (~1.5GB)
-    
-  # High-performance computing
-  hpc_alpine:
-    enabled: false   # Parallel processing optimized (~600MB)
-  
+
+  shiny:
+    enabled: false   # Interactive web applications (~1.8GB)
+
+  # Specialized domains not covered by a built-in profile can be built
+  # from a custom base image, e.g.:
+  #   zzcollab docker --base-image rocker/geospatial
+  #   zzcollab docker --base-image bioconductor/bioconductor_docker
+
   #---------------------------------------------------------------------------
   # CUSTOM PROFILES (Add your own)
   #---------------------------------------------------------------------------

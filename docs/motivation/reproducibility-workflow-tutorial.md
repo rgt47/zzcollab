@@ -292,8 +292,8 @@ git push
 ### Team Lead: Share Environment (3 minutes)
 
 ```bash
-# Convert solo project to team collaboration
-zzcollab -t mylab -p penguin-analysis -r analysis
+# Configure team DockerHub account (one-time)
+zzcollab config set dockerhub-account mylab
 
 # Build team Docker image
 make docker-build
@@ -315,10 +315,10 @@ git push
 git clone https://github.com/mylab/penguin-analysis.git
 cd penguin-analysis
 
-# Join project (pulls team Docker image)
-zzcollab -u
+# Join project (builds the team Docker image)
+make docker-build
 
-# Verify Docker image was pulled
+# Verify Docker image was built
 docker images | grep mylab/penguin-analysis
 
 # Enter container (same environment as team lead!)
@@ -402,8 +402,8 @@ mkdir test-reproducibility && cd test-reproducibility
 # Clone the repository
 git clone https://github.com/mylab/penguin-analysis.git .
 
-# Pull team Docker image
-zzcollab -u
+# Build team Docker image
+make docker-build
 
 # Enter container
 make r

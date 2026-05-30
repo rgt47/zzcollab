@@ -251,14 +251,15 @@ The ZZCOLLAB framework addresses many common CI/CD challenges through integrated
 
 ```bash
 # Team lead creates reproducible project environment
+zzcollab config set dockerhub-account mylab   # one-time
 mkdir customer-analysis && cd customer-analysis
-zzcollab -t mylab -p customer-analysis -r analysis
+zzcollab analysis
 make docker-build && make docker-push-team
 git add . && git commit -m "Initial project setup" && git push
 
 # Team members join with identical environment
 git clone https://github.com/mylab/customer-analysis.git && cd customer-analysis
-zzcollab -u                        # Pull team Docker image
+make docker-build                  # Build team Docker image
 
 # Development workflow with built-in validation
 make r                             # Enter container (launches R directly)

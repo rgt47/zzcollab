@@ -537,8 +537,9 @@ The ZZCOLLAB framework provides **sophisticated Docker integration** that addres
 #### Automated Container Management
 ```bash
 # ZZCOLLAB automatically creates Docker environments
+zzcollab config set dockerhub-account myteam   # one-time
 mkdir analysis-project && cd analysis-project
-zzcollab -t myteam -p analysis-project -r analysis
+zzcollab analysis
 
 # Creates:
 # - Dockerfile based on selected profile (14+ options)

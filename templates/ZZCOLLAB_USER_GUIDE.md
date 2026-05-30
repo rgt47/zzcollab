@@ -125,13 +125,17 @@ Docker profile by regenerating the Dockerfile.
 
 ### Custom Composition
 
-Combine a base image with specific package bundles:
+Build from a specific base image when no built-in profile fits:
 
 ```bash
-zzc docker --base-image rocker/r-ver --pkgs modeling
+zzc docker --base-image rocker/r-ver
 ```
 
-**R Package Bundles** (`--pkgs`):
+Additional R packages are added via renv inside the container (see
+[Package Management](#package-management)). Each built-in profile
+bundles a curated package set; the bundles below document those sets:
+
+**R Package Bundles** (built into profiles):
 
 | Bundle | Packages | Required Libs |
 |--------|----------|---------------|

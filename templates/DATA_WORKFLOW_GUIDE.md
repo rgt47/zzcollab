@@ -107,8 +107,8 @@ All documentation follows a structured approach for reproducible research:
 - [ ] **Create project structure (HOST)**
   ```bash
   # If new project - run on host system
-  zzcollab -p your-project-name
-  cd your-project-name
+  mkdir your-project-name && cd your-project-name
+  zzcollab analysis
   ```
 
 - [ ] **Receive and document data source (HOST)**

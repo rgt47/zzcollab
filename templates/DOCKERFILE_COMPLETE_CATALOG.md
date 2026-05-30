@@ -456,13 +456,15 @@ make docker-render
 
 ```bash
 # Team lead
-zzcollab -t mylab -p study -r analysis
+zzcollab config set dockerhub-account mylab
+mkdir study && cd study
+zzcollab analysis
 make docker-build
 make docker-push-team
 
 # Team member
 git clone https://github.com/mylab/study && cd study
-zzcollab -u  # Use team image
+make docker-build  # build from Dockerfile + renv.lock
 make r
 ```
 
@@ -601,8 +603,10 @@ make docker-build
 For custom combinations not covered by profiles:
 
 ```bash
-# Triggers Dockerfile.base.template generation
-zzcollab -b rocker/r-ver -k "tidyverse,sf,quarto"
+# Build from a custom base image (triggers Dockerfile.base.template
+# generation). Additional packages such as tidyverse, sf, and quarto
+# are added via renv inside the container.
+zzcollab docker --base-image rocker/r-ver
 ```
 
 ---

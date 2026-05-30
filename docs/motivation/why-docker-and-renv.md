@@ -561,7 +561,9 @@ docker run myrepo/analysis:v1.0
 
 ```bash
 # Create project with specific profile
-zzcollab -t mylab -p study -r analysis
+zzcollab config set dockerhub-account mylab   # one-time
+mkdir study && cd study
+zzcollab analysis
 
 # Build and share
 make docker-build    # 3-4 minutes with RSPM binaries

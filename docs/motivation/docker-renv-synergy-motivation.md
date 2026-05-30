@@ -570,8 +570,9 @@ ZZCOLLAB provides sophisticated automation for Docker+renv integration:
 
 ```bash
 # Create project with Docker profile
+zzcollab config set dockerhub-account myteam   # one-time
 mkdir climate-analysis && cd climate-analysis
-zzcollab -t myteam -p climate-analysis -r analysis
+zzcollab analysis
 
 # Automatically generates:
 # 1. Dockerfile based on selected profile (14+ options)

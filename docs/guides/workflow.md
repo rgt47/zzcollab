@@ -234,7 +234,7 @@ RStudio starts there automatically - you're safe!
 **Day 1 (Monday)**:
 ```bash
 mkdir ~/projects/final-project && cd ~/projects/final-project
-zzcollab -p final-project
+zzcollab docker
 make docker-rstudio
 # Set up project structure in RStudio
 # Ctrl+C when done
@@ -303,9 +303,11 @@ This example shows a complete workflow for analyzing the Palmer Penguins dataset
 
 **💻 HOST (Terminal)**:
 ```bash
-# Create project
+# Create project (project name is the working directory)
 mkdir ~/projects/penguin-analysis && cd ~/projects/penguin-analysis
-zzcollab --project-name penguins --r-version 4.4.0
+# Optionally pin the R version, then create the environment
+zzcollab config set r-version 4.4.0
+zzcollab analysis
 git init
 git add .
 git commit -m "Initial project setup with zzcollab"

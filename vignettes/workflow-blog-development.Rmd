@@ -146,7 +146,7 @@ cd ~/prj/qblog/posts
 mkdir palmer_penguins_part1 && cd palmer_penguins_part1
 
 # Initialize with publishing profile (includes Quarto)
-zzcollab -r ubuntu_standard_publishing
+zzcollab publishing
 ```
 
 ## Step 2: Set Up Blog Structure

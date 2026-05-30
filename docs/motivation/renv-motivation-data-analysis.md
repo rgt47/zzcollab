@@ -296,7 +296,7 @@ make check-renv
 ```bash
 # Team lead creates project with Docker profile
 mkdir my-project && cd my-project
-zzcollab                      # Initialize project
+zzcollab analysis             # Initialize project
 make docker-build             # Build Docker image
 make r                        # Enter container
 install.packages(c("tidyverse", "sf", "plotly"))
@@ -448,8 +448,9 @@ The ZZCOLLAB framework provides sophisticated renv integration addressing common
 #### Automated Environment Management
 ```bash
 # ZZCOLLAB automatically initializes renv
-mkdir my-project && cd my-project
-zzcollab -t myteam -p analysis-project -r analysis
+zzcollab config set dockerhub-account myteam   # one-time
+mkdir analysis-project && cd analysis-project
+zzcollab analysis
 
 # Creates project with:
 # - renv.lock (minimal, grows dynamically as you add packages)
@@ -460,17 +461,26 @@ zzcollab -t myteam -p analysis-project -r analysis
 ```
 
 #### Docker Profiles Replace Build Modes
-ZZCOLLAB provides 14+ specialized Docker profiles:
+ZZCOLLAB provides specialized Docker profiles:
 
 **Lightweight Profiles**:
 - `minimal` - Base R only, add packages dynamically
 - `analysis` - Includes tidyverse (recommended for most research)
-- `alpine_minimal` - Ultra-light (~200MB)
 
 **Specialized Profiles**:
-- `geospatial` - sf, terra, and spatial dependencies
-- `bioinformatics` - Bioconductor integration
+- `modeling` - Machine learning and statistical modeling tools
 - `publishing` - Full LaTeX + Quarto for manuscripts
+- `shiny` - Interactive Shiny applications
+
+For domain-specific foundations (for example geospatial or
+bioinformatics work), select a domain base image and add packages via
+renv, for example:
+
+```bash
+zzcollab docker --base-image rocker/geospatial
+# or
+zzcollab docker --base-image bioconductor/bioconductor_docker
+```
 
 **Key Design Principle**: Docker profiles provide the **foundation** (system dependencies, R version), while renv.lock captures exact package versions. Packages are added dynamically with `install.packages()` and auto-captured on container exit.
 

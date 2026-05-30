@@ -2,11 +2,14 @@
 
 ## Overview
 
-ZZCOLLAB provides 14+ specialized Docker profiles through a single
+ZZCOLLAB provides eight built-in Docker profiles through a single
 source of truth architecture that eliminates configuration
 duplication while enabling unlimited customization. This guide
 documents the profile system design, available profiles, and
 implementation patterns for research computing environments.
+Specialized research domains (for example genomics or geospatial
+work) are supported by selecting a custom base image rather than a
+dedicated profile; see the Specialized Domains section below.
 
 ## Profile System Architecture
 
@@ -19,7 +22,7 @@ The profile system implements a library-reference pattern:
 - Contains complete definitions for all available profiles
 - Maintained as single authoritative source
 - Updated independently from team configurations
-- Provides 14+ pre-configured environments
+- Provides the eight pre-configured environments
 
 **Team Configuration** (`config.yaml`):
 
@@ -34,8 +37,7 @@ The profile system implements a library-reference pattern:
    in one location
 2. **Simplified Maintenance**: Updates propagate to all projects
    automatically
-3. **Easy Discovery**: Interactive profile browser
-   (`add_profile.sh`)
+3. **Easy Discovery**: Profile listing via `zzcollab list`
 4. **Backward Compatibility**: Legacy full definitions still
    supported
 5. **Unlimited Customization**: Teams can define completely custom
@@ -43,7 +45,13 @@ The profile system implements a library-reference pattern:
 
 ## Profile Categories
 
-### Standard Research Environments (6 Profiles)
+The eight built-in profiles are: `minimal`, `analysis`,
+`analysis_pdf`, `modeling`, `publishing`, `rstudio`, `shiny`, and
+`manuscript-package`. Any of these may be supplied directly to the
+`zzcollab` quickstart (for example `zzcollab analysis`) or selected
+with `zzcollab -r <profile>` / `zzcollab --profile <profile>`.
+
+### Standard Research Environments
 
 Production-ready environments for general research computing.
 
@@ -112,163 +120,99 @@ Production-ready environments for general research computing.
 - **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
   libssl-dev
 
-**shiny_verse** (~3.5GB)
+**analysis_pdf** (~3GB)
 
-- **Base Image**: `rocker/shiny-verse:latest`
-- **Description**: Shiny applications with tidyverse and
-  publishing
-- **Key Packages**: All shiny packages plus tidyverse, rmarkdown,
-  bookdown
-- **Use Cases**: Complex dashboards with document generation,
-  integrated applications
-- **System Dependencies**: Complete tidyverse and shiny
-  dependencies
+- **Base Image**: `rocker/verse:latest`
+- **Description**: Data analysis with PDF report rendering
+- **Key Packages**: renv, tidyverse, rmarkdown, knitr, tinytex
+- **Use Cases**: Exploratory analysis that produces PDF output,
+  reproducible reports combining analysis and typeset documents
+- **System Dependencies**: texlive, libxml2-dev,
+  libcurl4-openssl-dev, libssl-dev
+- **Note**: AMD64 only, see ARM64 section for alternatives
 
-### Specialized Domains (2 Profiles)
+**rstudio** (~1.5GB)
 
-Domain-specific environments for specialized research fields.
-
-**bioinformatics** (~2GB)
-
-- **Base Image**: `bioconductor/bioconductor_docker:latest`
-- **Description**: Bioinformatics analysis with Bioconductor
-- **Key Packages**: renv, BiocManager, DESeq2, edgeR, limma,
-  GenomicRanges, Biostrings, rtracklayer
-- **Use Cases**: Genomics, transcriptomics, sequence analysis,
-  differential expression
+- **Base Image**: `rocker/rstudio:latest`
+- **Description**: RStudio Server for interactive development
+- **Key Packages**: renv, devtools, usethis, tidyverse
+- **Use Cases**: Browser-based RStudio sessions (`make
+  docker-rstudio`), interactive analysis and teaching
 - **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
-  libssl-dev, zlib1g-dev, libbz2-dev, liblzma-dev
+  libssl-dev
+
+**manuscript-package** (~3GB)
+
+- **Base Image**: `rocker/verse:latest`
+- **Description**: Manuscript writing combined with R package
+  development
+- **Key Packages**: renv, devtools, testthat, roxygen2, quarto,
+  bookdown, rmarkdown
+- **Use Cases**: Research compendia that ship both an R package
+  and a typeset manuscript, reproducible papers under package
+  structure
+- **System Dependencies**: Quarto CLI, pandoc, texlive,
+  libxml2-dev, libcurl4-openssl-dev, libssl-dev
+- **Note**: AMD64 only, see ARM64 section for alternatives
+
+### Specialized Domains
+
+ZZCOLLAB does not ship dedicated profiles for individual research
+fields such as genomics or geospatial analysis. Instead, start from
+one of the eight built-in profiles and supply a domain-specific base
+image with `zzcollab docker --base-image <image>`. Domain R packages
+are then installed and pinned through `renv` exactly as for any other
+project.
+
+**Genomics / Bioinformatics**
+
+- **Approach**: `zzcollab modeling`, then build on a Bioconductor
+  base image
+- **Command**:
+  ```bash
+  zzcollab docker --base-image bioconductor/bioconductor_docker
+  ```
+- **Packages**: install BiocManager, DESeq2, edgeR, limma,
+  GenomicRanges, and related packages inside the container, then
+  capture them with `renv::snapshot()`
 - **Documentation**: https://bioconductor.org/
 
-**geospatial** (~2.5GB)
+**Geospatial**
 
-- **Base Image**: `rocker/geospatial:latest`
-- **Description**: Geospatial analysis with sf, terra, and
-  mapping
-- **Key Packages**: renv, sf, terra, leaflet, mapview, tmap
-- **Use Cases**: Spatial data analysis, mapping, GIS operations,
-  remote sensing
-- **System Dependencies**: gdal-bin, proj-bin, libgeos-dev,
-  libproj-dev, libgdal-dev, libudunits2-dev, netcdf-bin,
-  libxml2-dev
+- **Approach**: `zzcollab modeling`, then build on a geospatial
+  base image
+- **Command**:
+  ```bash
+  zzcollab docker --base-image rocker/geospatial
+  ```
+- **Packages**: install sf, terra, leaflet, mapview, and tmap
+  inside the container, then capture them with `renv::snapshot()`
 - **Documentation**: https://r-spatial.org/
-
-### Lightweight Alpine Profiles (3 Profiles)
-
-Ultra-lightweight environments for resource-constrained scenarios.
-
-**alpine_minimal** (~200MB)
-
-- **Base Image**: `velaco/alpine-r:latest`
-- **Description**: Minimal Alpine Linux with R for CI/CD
-- **Key Packages**: renv, devtools, testthat
-- **Use Cases**: Continuous integration, automated testing,
-  resource-limited environments
-- **System Dependencies**: git, make, gcc, g++, musl-dev,
-  linux-headers, curl, curl-dev, openssl-dev, libxml2-dev
-- **Size Comparison**: ~200MB vs ~1GB for rocker images (5x
-  smaller)
-
-**alpine_analysis** (~400MB)
-
-- **Base Image**: `velaco/alpine-r:latest`
-- **Description**: Lightweight Alpine with core data analysis
-- **Key Packages**: renv, dplyr, ggplot2, readr, tidyr, here,
-  janitor, devtools
-- **Use Cases**: Lightweight data analysis, containerized
-  workflows, edge computing
-- **System Dependencies**: git, make, gcc, g++, gfortran,
-  musl-dev, linux-headers, curl, curl-dev, openssl-dev,
-  libxml2-dev
-- **Size Comparison**: ~400MB vs ~1.2GB for rocker/tidyverse
-
-**hpc_alpine** (~600MB)
-
-- **Base Image**: `velaco/alpine-r:latest`
-- **Description**: HPC-focused with parallel processing
-- **Key Packages**: renv, future, furrr, doParallel, foreach,
-  parallel, Rmpi
-- **Use Cases**: High-performance computing, parallel processing,
-  cluster computing
-- **System Dependencies**: openmpi, openmpi-dev, git, make, gcc,
-  g++, gfortran
-- **Features**: MPI support, parallel backends, cluster
-  integration
-
-### R-Hub Testing Environments (3 Profiles)
-
-CRAN-compatible testing environments for package validation.
-
-**rhub_ubuntu** (~1GB)
-
-- **Base Image**: `rhub/ubuntu-gcc:latest`
-- **Description**: Ubuntu testing environment matching CRAN
-- **Key Packages**: renv, devtools, testthat, rcmdcheck
-- **Use Cases**: CRAN submission preparation, Linux compatibility
-  testing
-- **R Version**: Multiple R versions available (R-release,
-  R-devel)
-- **Documentation**: https://r-hub.github.io/rhub/
-
-**rhub_fedora** (~1.2GB)
-
-- **Base Image**: `rhub/fedora-clang-devel:latest`
-- **Description**: Fedora with R-devel for forward compatibility
-- **Key Packages**: renv, devtools, testthat, rcmdcheck
-- **Use Cases**: Testing against R-devel, compiler compatibility
-  testing
-- **R Version**: R-devel (development version)
-- **Compiler**: Clang for stricter checking
-
-**rhub_windows** (~1.5GB)
-
-- **Base Image**: `rhub/windows-x86_64:latest`
-- **Description**: Windows compatibility testing
-- **Key Packages**: renv, devtools, testthat, rcmdcheck
-- **Use Cases**: Windows-specific testing, cross-platform
-  validation
-- **R Version**: R-release for Windows
-- **Note**: Requires Docker Windows containers support
 
 ## Profile Usage
 
-### Interactive Profile Selection
+### Listing Available Profiles
 
-**add_profile.sh Script**:
+Use the built-in `list` command to display the available profiles:
 
 ```bash
-# Launch interactive profile browser
-./add_profile.sh
+# List the built-in profiles
+zzcollab list
 
-# Displays categorized menu:
-=======================================================
-ZZCOLLAB DOCKER PROFILE LIBRARY
-=======================================================
-
-STANDARD RESEARCH ENVIRONMENTS
-  1) minimal          ~800MB  - Essential R packages
-  2) analysis         ~1.2GB  - Tidyverse + data analysis
-  3) modeling         ~1.5GB  - Machine learning
-  4) publishing       ~3GB    - LaTeX, Quarto, bookdown
-  5) shiny            ~1.8GB  - Interactive web apps
-  6) shiny_verse      ~3.5GB  - Shiny + tidyverse
-
-SPECIALIZED DOMAINS
-  7) bioinformatics   ~2GB    - Bioconductor genomics
-  8) geospatial       ~2.5GB  - sf, terra, mapping
-
-LIGHTWEIGHT ALPINE PROFILES
-  9) alpine_minimal   ~200MB  - Ultra-lightweight CI/CD
- 10) alpine_analysis  ~400MB  - Lightweight analysis
- 11) hpc_alpine       ~600MB  - Parallel processing
-
-R-HUB TESTING ENVIRONMENTS
- 12) rhub_ubuntu      ~1GB    - CRAN Ubuntu testing
- 13) rhub_fedora      ~1.2GB  - R-devel testing
- 14) rhub_windows     ~1.5GB  - Windows compatibility
-
-Enter profile numbers (space-separated): 1 2 9
+# Built-in profiles:
+#   minimal             ~800MB  - Essential R packages
+#   analysis            ~1.2GB  - Tidyverse + data analysis
+#   analysis_pdf        ~3GB    - Tidyverse + PDF rendering
+#   modeling            ~1.5GB  - Machine learning
+#   publishing          ~3GB    - LaTeX, Quarto, bookdown
+#   rstudio             ~1.5GB  - RStudio Server
+#   shiny               ~1.8GB  - Interactive web apps
+#   manuscript-package  ~3GB    - Manuscript + R package
 ```
+
+Select a profile when creating the project, for example
+`zzcollab analysis`, `zzcollab -r modeling`, or
+`zzcollab --profile publishing`.
 
 ### Manual Configuration
 
@@ -288,9 +232,9 @@ profiles:
   analysis:
     enabled: true             # ~1.2GB
 
-  # CI/CD testing
-  alpine_minimal:
-    enabled: true             # ~200MB
+  # Interactive RStudio Server
+  rstudio:
+    enabled: true             # ~1.5GB
 
   # Disabled profiles (available but not built)
   modeling:
@@ -299,11 +243,11 @@ profiles:
   publishing:
     enabled: false            # ~3GB
 
-  bioinformatics:
-    enabled: false            # ~2GB
+  analysis_pdf:
+    enabled: false            # ~3GB
 
-  geospatial:
-    enabled: false            # ~2.5GB
+  manuscript-package:
+    enabled: false            # ~3GB
 
 #=========================================================
 # BUILD CONFIGURATION
@@ -315,12 +259,6 @@ build:
 
   # Reference the profile library
   profile_library: "profiles.yaml"
-
-  # Docker build settings
-  docker:
-    platform: "auto"          # auto, linux/amd64, linux/arm64
-    no_cache: false
-    parallel_builds: true
 ```
 
 ### Command Line Usage
@@ -328,23 +266,27 @@ build:
 **Team Initialization**:
 
 ```bash
+# Set the team Docker Hub account once
+zzcollab config set dockerhub-account lab
+
 # Create project with default profiles
+# (project name is the working directory)
 mkdir study && cd study
-zzcollab -t lab -p study
+zzcollab analysis
 make docker-build
 make docker-push-team
 
 # For team collaboration, push team image to Docker Hub
 ```
 
-**Profile Addition**:
+**Adding a Profile to an Existing Project**:
 
 ```bash
-# Add profile to existing project
+# Edit config.yaml to enable an additional profile, then rebuild
 cd study
-./add_profile.sh
+zzcollab list          # review the available profiles
 
-# Rebuild Docker image after adding profile
+# Rebuild Docker image after enabling a profile
 make docker-build
 ```
 
@@ -500,10 +442,12 @@ RUN R -e "remotes::install_github('owner/repo')"
 
 1. Use compatible base images:
    ```bash
+   zzcollab config set dockerhub-account lab
    mkdir study && cd study
-   zzcollab -t lab -p study
+   zzcollab analysis
    # Customize config.yaml to enable only ARM64-compatible profiles
-   # (minimal, analysis, modeling - exclude verse, geospatial)
+   # (minimal, analysis, modeling, rstudio - exclude verse-based
+   # profiles such as publishing, analysis_pdf, manuscript-package)
    make docker-build
    make docker-push-team
    ```
@@ -561,15 +505,20 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 - General data analysis → **analysis**
 - Machine learning → **modeling**
 - Document writing → **publishing**
-- Bioinformatics → **bioinformatics**
-- Geospatial → **geospatial**
+- Analysis with PDF output → **analysis_pdf**
+- Interactive RStudio development → **rstudio**
+- Bioinformatics → **modeling** with a Bioconductor base image
+  (`zzcollab docker --base-image bioconductor/bioconductor_docker`)
+- Geospatial → **modeling** with a geospatial base image
+  (`zzcollab docker --base-image rocker/geospatial`)
 - Interactive apps → **shiny**
+- Manuscript plus R package → **manuscript-package**
 
 **Question 2: What are the resource constraints?**
 
-- Unlimited resources → Standard profiles
-- Limited disk space → Alpine profiles
-- CI/CD environment → alpine_minimal
+- Unlimited resources → standard profiles
+- Limited disk space → start from **minimal**
+- CI/CD environment → **minimal**
 
 **Question 3: What is the team structure?**
 
@@ -583,19 +532,19 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 - Required: analysis
 - Optional: modeling (if ML), shiny (if dashboards)
-- Testing: alpine_minimal
+- Testing: minimal
 
 **Manuscript Paradigm**:
 
 - Required: publishing
 - Optional: analysis (if reproducing analysis)
-- Testing: alpine_minimal
+- Testing: minimal
 
 **Package Paradigm**:
 
 - Required: minimal
 - Optional: analysis (if vignettes use data analysis)
-- Testing: alpine_minimal, rhub_ubuntu
+- Testing: minimal
 
 ## Profile Maintenance
 
@@ -608,7 +557,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 vim templates/profiles.yaml
 
 # Validate changes
-./add_profile.sh --validate
+zzcollab config validate
 
 # Commit to repository
 git add templates/profiles.yaml
@@ -700,7 +649,7 @@ COPY --from=builder /usr/local/lib/R/site-library \
 Error: Profile 'modelng' not found in library
 ```
 
-**Solution**: Check spelling, use `./add_profile.sh` to browse
+**Solution**: Check spelling, use `zzcollab list` to browse
 available profiles
 
 **Issue**: Base image pull fails
@@ -734,10 +683,10 @@ version
 
 ```bash
 # List available profiles
-./add_profile.sh --list
+zzcollab list
 
 # Validate profile configuration
-./add_profile.sh --validate
+zzcollab config validate
 
 # Check base image availability
 docker pull rocker/r-ver:latest
@@ -754,7 +703,7 @@ docker history lab/study-analysis:latest
 ### Profile Selection
 
 1. Start minimal, add profiles as needed
-2. Use Alpine for CI/CD pipelines
+2. Use the minimal profile for CI/CD pipelines
 3. Enable only profiles team actively uses
 4. Document profile choices in configuration
 

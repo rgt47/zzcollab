@@ -170,23 +170,25 @@ git add . && git commit -m "Create minimal team base image" && git push
 cd ..
 ```
 
-**Specialized domain profiles:**
+**Specialized domain images:**
 ```bash
 # Bioinformatics (Bioconductor genomics)
 mkdir bio-base && cd bio-base
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create bioinformatics team base image" && git push
 cd ..
+# Add genomics packages via renv (install.packages / BiocManager) as needed
 
 # Geospatial (GIS and spatial analysis)
 mkdir geo-base && cd geo-base
-zzc geospatial                   # Full setup with geospatial profile
+zzcollab docker --base-image rocker/geospatial  # Geospatial base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create geospatial team base image" && git push
 cd ..
+# Add spatial packages via renv (install.packages) as needed
 ```
 
 ### Step 2: Verify Image on Docker Hub
@@ -275,15 +277,15 @@ A genomics lab with 5 researchers and multiple ongoing studies.
 ```bash
 # Create lab base image with bioinformatics tools
 mkdir labbase && cd labbase
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github                       # Create private GitHub repo
 make docker-build                # Installs packages from renv.lock
 make docker-push-team            # Push to Docker Hub for team
 git add . && git commit -m "Create lab base image" && git push
 cd ..
 
-# The bioinformatics profile includes Bioconductor base image and packages
-# Additional packages can be added via install.packages() as needed
+# The Bioconductor base image provides genomics tooling
+# Additional packages can be added via install.packages() / BiocManager as needed
 ```
 
 **Team Members (joining existing projects):**
@@ -302,7 +304,7 @@ make docker-rstudio
 
 # Researcher 3: Create new variant calling project
 mkdir variant-calling && cd variant-calling
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github
 make docker-build && make docker-push-team
 make docker-rstudio
@@ -364,7 +366,7 @@ Create different base images for different research domains:
 ```bash
 # Bioinformatics base (Bioconductor packages)
 mkdir bio-base && cd bio-base
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create bioinformatics base image" && git push
@@ -373,7 +375,7 @@ cd ..
 
 # Geospatial base (sf, terra, raster)
 mkdir geo-base && cd geo-base
-zzc geospatial                   # Full setup with geospatial profile
+zzcollab docker --base-image rocker/geospatial  # Geospatial base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create geospatial base image" && git push
@@ -712,17 +714,17 @@ Keep a centralized list of available base images:
 # team-base-images.md
 # Lab Base Images
 
-| Name | Profile | Purpose | Last Updated |
-|------|---------|---------|--------------|
-| mylab/bio-base | bioinformatics | Bioconductor genomics | 2025-01-15 |
-| mylab/geo-base | geospatial | Geospatial analysis | 2025-01-10 |
-| mylab/ml-base | modeling | Machine learning | 2025-01-05 |
-| mylab/pub-base | publishing | LaTeX/Quarto docs | 2024-12-20 |
+| Name | Base | Purpose | Last Updated |
+|------|------|---------|--------------|
+| mylab/bio-base | bioconductor/bioconductor_docker | Bioconductor genomics | 2025-01-15 |
+| mylab/geo-base | rocker/geospatial | Geospatial analysis | 2025-01-10 |
+| mylab/ml-base | modeling profile | Machine learning | 2025-01-05 |
+| mylab/pub-base | publishing profile | LaTeX/Quarto docs | 2024-12-20 |
 
 ## Usage
 # For bioinformatics projects:
 mkdir <project-name> && cd <project-name>
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github                       # Create private GitHub repo
 ```
 
@@ -751,14 +753,14 @@ zzc github                       # Create private GitHub repo
 
 ### Profile Selection for Base Images
 
-| Use Case | Recommended Profile | Rationale |
-|----------|---------------------|-----------|
-| General purpose team base | analysis | Tidyverse ecosystem for data work |
-| Bioinformatics domain | bioinformatics | Bioconductor genomics packages |
-| Geospatial work | geospatial | GDAL/PROJ spatial tools |
-| Machine learning | modeling | Tidymodels ML framework |
-| Publishing/reports | publishing | LaTeX, Quarto, rmarkdown |
-| Lightweight base | minimal | Essential dev tools only |
+| Use Case | Recommended Profile or Base | Rationale |
+|----------|-----------------------------|-----------|
+| General purpose team base | analysis profile | Tidyverse ecosystem for data work |
+| Bioinformatics domain | bioconductor/bioconductor_docker base | Bioconductor genomics packages |
+| Geospatial work | rocker/geospatial base | GDAL/PROJ spatial tools |
+| Machine learning | modeling profile | Tidymodels ML framework |
+| Publishing/reports | publishing profile | LaTeX, Quarto, rmarkdown |
+| Lightweight base | minimal profile | Essential dev tools only |
 
 ## Summary
 

@@ -380,12 +380,13 @@ this gap.
 ## Example Workflow
 
 ```bash
-# Team lead creates environment with geospatial profile
+# Team lead creates environment with a geospatial base image
 mkdir climate-study && cd climate-study
-zzc geospatial                   # Full setup with geospatial profile
+zzc modeling                     # Full setup with modeling profile
+zzcollab docker --base-image rocker/geospatial  # Add geospatial base image
 zzc github                       # Create private GitHub repo
 
-# Profile provides:
+# Environment provides:
 # - R version: latest stable
 # - System libraries: gdal, geos, proj
 # - Base packages: tidyverse, sf, terra, raster
@@ -407,7 +408,7 @@ sf::sf_extSoftVersion()  # Same GDAL version for all
 
 ## Docker Profiles
 
-ZZCOLLAB provides 14+ predefined Docker profiles to balance image size and capabilities:
+ZZCOLLAB provides predefined Docker profiles to balance image size and capabilities:
 
 ```bash
 # Minimal: Essential R development (~780MB)
@@ -416,14 +417,15 @@ zzc minimal
 # Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
 zzc analysis
 
-# Geospatial: GIS and spatial analysis (~1.5GB)
-zzc geospatial
+# Modeling: Statistical and machine learning workloads (~1.5GB)
+zzc modeling
 
-# Bioinformatics: Genomics and proteomics (~1.98GB)
-zzc bioinformatics
+# Publishing: Manuscript and report rendering
+zzc publishing
 
-# Alpine Minimal: Lightweight (~200MB)
-zzc alpine_minimal
+# Specialized domains (e.g. GIS, genomics) use a custom base image
+# layered on top of a standard profile:
+zzcollab docker --base-image rocker/geospatial
 
 # List all available profiles
 zzc help profiles
@@ -1306,9 +1308,10 @@ require unit tests to ensure correctness. Geospatial packages (sf, terra) have
 complex system dependencies.
 
 ```bash
-# Team lead setup with geospatial profile
+# Team lead setup with a geospatial base image
 mkdir precipitation && cd precipitation
-zzc geospatial                   # Full setup with geospatial profile
+zzc modeling                     # Full setup with modeling profile
+zzcollab docker --base-image rocker/geospatial  # Add geospatial base image
 zzc github                       # Create private GitHub repo
 
 # Build and share team image (installs packages from renv.lock)

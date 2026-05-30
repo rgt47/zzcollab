@@ -52,9 +52,9 @@ templates/
                           ▼             ▼
                   ┌──────────────┐  ┌──────────────┐
                   │ Custom base  │  │ Use:         │
-                  │ image? (-b)  │  │ Dockerfile   │
-                  │ Custom libs? │  │ .{profile}   │
-                  │ Custom pkgs? │  │ (static,     │
+                  │ image?       │  │ Dockerfile   │
+                  │ (docker      │  │ .{profile}   │
+                  │ --base-image)│  │ (static,     │
                   └──┬───────┬───┘  │ optimized)   │
                      │Yes    │No    └──────────────┘
                      │       │
@@ -98,9 +98,8 @@ zzcollab -r minimal
 ### 2. Custom Dockerfile Generation
 
 **Triggers**:
-- Custom base image: `zzcollab -b rocker/custom`
-- Custom library bundles: `zzcollab -l "geospatial,modeling"`
-- Custom package bundles: `zzcollab -k "tidyverse,sf"`
+- Custom base image: `zzcollab docker --base-image rocker/custom`
+  (additional R packages are added via renv inside the container)
 
 **Generation Process**:
 1. Load `dockerfile_generator.sh` module
@@ -111,14 +110,14 @@ zzcollab -r minimal
 
 **Example**:
 ```bash
-# Custom combination
-zzcollab -b rocker/r-ver -k "tidyverse,sf,quarto"
+# Custom base image
+zzcollab docker --base-image rocker/r-ver
+# Additional packages (tidyverse, sf, quarto) are installed via renv
+# inside the container.
 
 # Output:
 # Generating custom Dockerfile...
 #   Base: rocker/r-ver:latest
-#   Libraries: geospatial
-#   Packages: tidyverse,sf,quarto
 # ✓ Generated custom Dockerfile
 ```
 
@@ -205,9 +204,9 @@ zzcollab -r analysis
 
 **Power User** (10% of users):
 ```bash
-zzcollab -b rocker/r-ver -k "custom,packages"
-# Generates custom Dockerfile
-# Logs specification clearly
+zzcollab docker --base-image rocker/r-ver
+# Generates custom Dockerfile from the chosen base image
+# Additional packages are added via renv inside the container
 # Still uses multi-stage build
 ```
 

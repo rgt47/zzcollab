@@ -235,7 +235,7 @@ Regardless of paradigm, every ZZCOLLAB project includes:
 ## 📚 **Learn More**
 
 - **ZZCOLLAB Documentation**: Run `zzcollab --help`
-- **Workflow Guidance**: Run `zzcollab --next-steps`
+- **Workflow Guidance**: Run `zzcollab help next-steps`
 - **Configuration Help**: Run `zzcollab config --help`  
 - **R Interface**: See `help(package = "zzcollab")` in R
 
