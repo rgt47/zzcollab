@@ -9,7 +9,7 @@ set -euo pipefail
 #          - System deps auto-derived from R packages
 #          - Simple profile presets (base image shortcuts)
 #
-# DEPENDENCIES: core.sh (logging), profiles.sh (system deps), validation.sh (package scanning)
+# DEPENDENCIES: core.sh (logging), profiles.sh (system deps)
 ##############################################################################
 
 
@@ -739,28 +739,6 @@ build_docker_image() {
         log_error "Docker build failed"
         return 1
     fi
-}
-
-#=============================================================================
-# CONVENIENCE FUNCTIONS
-#=============================================================================
-
-docker_setup() {
-    generate_dockerfile && build_docker_image
-}
-
-show_docker_help() {
-    cat << 'EOF'
-Docker Commands:
-  docker build -t PROJECT .                    Build image
-  docker run -it --rm -v $(pwd):/home/analyst/project PROJECT R
-                                               Interactive R
-  docker run -it --rm -v $(pwd):/home/analyst/project PROJECT bash
-                                               Shell access
-
-First run in container:
-  renv::restore()                              Install packages from renv.lock
-EOF
 }
 
 #=============================================================================

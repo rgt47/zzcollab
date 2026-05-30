@@ -137,24 +137,6 @@ test_safe_mkdir_creates_nested() {
 }
 
 ##############################################################################
-# TEST: require_module
-##############################################################################
-
-test_require_module_loads_module() {
-    # Core already loaded, test that it doesn't error on reload
-    require_module "core"
-}
-
-test_require_module_nonexistent() {
-    local exit_code=0
-    ( require_module "nonexistent_module_xyz" ) 2>/dev/null || exit_code=$?
-    if [[ "$exit_code" -eq 0 ]]; then
-        echo "FAIL: require_module should fail for nonexistent module" >&2
-        return 1
-    fi
-}
-
-##############################################################################
 # RUN TESTS
 ##############################################################################
 
@@ -177,8 +159,6 @@ tests=(
     test_log_info_shows_at_level_2
     test_safe_mkdir_creates_directory
     test_safe_mkdir_creates_nested
-    test_require_module_loads_module
-    test_require_module_nonexistent
 )
 
 pass=0

@@ -154,37 +154,6 @@ validate_base_image() {
 # validate_r_version() is defined in lib/core.sh (shared, supports
 # --strict and --lenient modes). CLI uses strict mode (X.Y.Z required).
 
-##############################################################################
-# FUNCTION: validate_bundle_name
-# PURPOSE:  Validate bundle name exists in bundles.yaml
-# ARGS:     $1 - bundle type (package_bundles or library_bundles)
-#           $2 - bundle name to validate
-# RETURNS:  0 if valid, 1 if invalid
-##############################################################################
-validate_bundle_name() {
-    local bundle_type="$1"
-    local bundle_name="$2"
-
-    if [[ -z "$bundle_name" ]]; then
-        return 0  # Empty is OK (optional)
-    fi
-
-    if [[ ! -f "${ZZCOLLAB_TEMPLATES_DIR}/bundles.yaml" ]]; then
-        log_warn "Bundles file not found, skipping bundle validation"
-        return 0
-    fi
-
-    # Check bundle exists using yq
-    if ! yq eval ".${bundle_type}.${bundle_name}" "${ZZCOLLAB_TEMPLATES_DIR}/bundles.yaml" &>/dev/null; then
-        log_error "Bundle not found: $bundle_name"
-        log_error "Available ${bundle_type}:"
-        yq eval ".${bundle_type} | keys" "${ZZCOLLAB_TEMPLATES_DIR}/bundles.yaml" 2>/dev/null | sed 's/^/  - /' || true
-        return 1
-    fi
-
-    return 0
-}
-
 #=============================================================================
 # CLI VARIABLE INITIALIZATION
 #=============================================================================

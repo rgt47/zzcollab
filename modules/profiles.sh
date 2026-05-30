@@ -5,7 +5,7 @@ set -euo pipefail
 ##############################################################################
 #
 # PURPOSE: R package to system dependency mapping
-#          Used by docker.sh and validation.sh to derive system deps
+#          Used by docker.sh to derive system deps
 #
 # SOURCE: Mappings derived from rstudio/r-system-requirements
 #         https://github.com/rstudio/r-system-requirements
@@ -255,76 +255,6 @@ get_package_build_deps() {
 }
 
 #=============================================================================
-# RUNTIME DEPENDENCIES
-#=============================================================================
-# Lighter-weight runtime packages (without -dev headers)
-# Used when creating minimal runtime images
-
-get_package_runtime_deps() {
-    local package="$1"
-    case "$package" in
-        sf|terra|rgdal|raster|stars)
-            echo "libgdal30 libgeos-c1v5 libproj25" ;;
-        units|udunits2)
-            echo "libudunits2-0" ;;
-        ragg|gdtools|svglite)
-            echo "libcairo2 libfreetype6 libjpeg8 libpng16-16" ;;
-        magick)
-            echo "libmagick++-6.q16-8" ;;
-        RPostgres|RPostgreSQL)
-            echo "libpq5" ;;
-        RMySQL|RMariaDB)
-            echo "libmariadb3" ;;
-        gsl)
-            echo "libgsl27" ;;
-        stringi)
-            echo "libicu72" ;;
-        xml2)
-            echo "libxml2" ;;
-        hdf5r|rhdf5)
-            echo "libhdf5-103" ;;
-        ncdf4|RNetCDF)
-            echo "libnetcdf19" ;;
-        *)
-            echo "" ;;
-    esac
-}
-
-#=============================================================================
-# UTILITY FUNCTIONS
-#=============================================================================
-
-# Check if a package has system dependencies
-package_has_system_deps() {
-    local deps
-    deps=$(get_package_build_deps "$1")
-    [[ -n "$deps" ]]
-}
-
-# Get all deps for a list of packages
-get_all_package_deps() {
-    local type="$1"
-    shift
-    local packages=("$@")
-    local all_deps=()
-
-    for pkg in "${packages[@]}"; do
-        local deps
-        if [[ "$type" == "build" ]]; then
-            deps=$(get_package_build_deps "$pkg")
-        else
-            deps=$(get_package_runtime_deps "$pkg")
-        fi
-        if [[ -n "$deps" ]]; then
-            # shellcheck disable=SC2206
-            all_deps+=($deps)
-        fi
-    done
-
-    [[ ${#all_deps[@]} -gt 0 ]] && printf '%s\n' "${all_deps[@]}" | sort -u | paste -sd' ' -
-}
-
-#=============================================================================
 # PROFILE CONFIGURATION
 #=============================================================================
 # Profile lookup from bundles.yaml
@@ -350,36 +280,6 @@ get_profile_base_image() {
         log_warn "Unknown profile '$profile', using rocker/r-ver"
         echo "rocker/r-ver"
     fi
-}
-
-get_profile_libs() {
-    local profile="$1"
-    local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
-
-    [[ ! -f "$bundles_file" ]] && { echo "minimal"; return 0; }
-
-    awk -v profile="$profile" '
-        /^profiles:/ { in_profiles=1; next }
-        in_profiles && /^[a-z]/ && !/^  / { in_profiles=0 }
-        in_profiles && $0 ~ "^  "profile":" { in_target=1; next }
-        in_target && /^  [a-z_-]+:/ { in_target=0 }
-        in_target && /libs:/ { gsub(/.*libs: */, ""); print; exit }
-    ' "$bundles_file"
-}
-
-get_profile_pkgs() {
-    local profile="$1"
-    local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
-
-    [[ ! -f "$bundles_file" ]] && { echo "minimal"; return 0; }
-
-    awk -v profile="$profile" '
-        /^profiles:/ { in_profiles=1; next }
-        in_profiles && /^[a-z]/ && !/^  / { in_profiles=0 }
-        in_profiles && $0 ~ "^  "profile":" { in_target=1; next }
-        in_target && /^  [a-z_-]+:/ { in_target=0 }
-        in_target && /pkgs:/ { gsub(/.*pkgs: */, ""); print; exit }
-    ' "$bundles_file"
 }
 
 #=============================================================================

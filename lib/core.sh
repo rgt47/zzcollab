@@ -9,9 +9,7 @@ set -euo pipefail
 #
 # FEATURES:
 #          - Unified logging system (log_info, log_error, log_success, log_warn)
-#          - Module dependency validation system (require_module function)
 #          - Package name validation and sanitization
-#          - Item tracking system for manifest generation
 #          - File safety utilities (safe_mkdir)
 #          - Command availability caching
 #          - Cross-platform compatibility helpers
@@ -294,25 +292,6 @@ validate_commands_exist() {
         return 1
     fi
 }
-
-#=============================================================================
-# MODULE DEPENDENCY VALIDATION
-#=============================================================================
-
-# Function: require_module
-# Purpose: Load modules on demand with dependency tracking
-#
-# DESCRIPTION:
-#   If entry point hasn't defined this function, provide a default loader.
-#   When called by modules, this loads any dependencies that haven't been loaded yet.
-#
-# ARGUMENTS:
-#   $1+ - Module names to load (e.g., "core", "templates", "config")
-#
-# USAGE EXAMPLES:
-#   require_module "core"                    # Single dependency
-#   require_module "core" "templates"        # Multiple dependencies
-#
 
 #=============================================================================
 # DIRECTORY SAFETY GUARD

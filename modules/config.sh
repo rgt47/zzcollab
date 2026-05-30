@@ -170,17 +170,6 @@ validate_percentage() {
     [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 0 ]] && [[ "$num" -le 100 ]]
 }
 
-# Validate GitHub account exists (requires gh CLI)
-validate_github_account() {
-    local account="$1"
-    [[ -z "$account" ]] && return 0  # Empty is OK (optional)
-    if command -v gh &>/dev/null; then
-        gh api "users/$account" &>/dev/null
-        return $?
-    fi
-    return 0  # Skip validation if gh not available
-}
-
 #=============================================================================
 # INTERACTIVE INPUT HELPERS
 #=============================================================================
