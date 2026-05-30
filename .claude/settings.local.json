@@ -42,7 +42,8 @@
       "Bash(bash -c \"source ~/.zzcollab/lib/constants.sh; source ~/.zzcollab/lib/core.sh; source ~/.zzcollab/modules/profiles.sh; get_profile_base_image publishing\")",
       "Bash(sed -n '1249,1318p' R/utils.R)",
       "Bash(sed -n '979,1043p' R/utils.R)",
-      "Bash(echo \"exit:$?\")"
+      "Bash(echo \"exit:$?\")",
+      "Bash(export CLAUDE_CODE_TMPDIR=/tmp NOT_CRAN=true)"
     ]
   }
 }

@@ -152,7 +152,7 @@ find_zzcollab_script <- function() {
   for (path in possible_paths) {
     if (file.exists(path)) {
       # Test if this version supports config commands
-      test_result <- safe_system(paste(path, "--config list"),
+      test_result <- safe_system(paste(path, "config list"),
                                  ignore.stdout = TRUE, ignore.stderr = TRUE,
                                  error_msg = "Failed to test zzcollab config support")
       if (test_result == 0) {
@@ -373,7 +373,7 @@ team_images <- function() {
 #'   Used with GitHub CLI to create private repositories.
 #'
 #' @param profile Character string naming the Docker profile / quickstart bundle
-#'   to scaffold (e.g. "analysis", "minimal", "publishing"). Defaults to "analysis".
+#'   to scaffold (e.g. "analysis", "minimal", "rstudio"). Defaults to "analysis".
 #'
 #' @return Logical value indicating success (TRUE) or failure (FALSE) of the
 #'   scaffolding step.
@@ -999,7 +999,7 @@ zzcollab_next_steps <- function() {
 #' @param key Character string specifying the configuration key to retrieve.
 #'   Common keys include:
 #'   - "team_name": Docker Hub team/organization name
-#'   - "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
+#'   - "profile_name": Docker profile ("minimal", "analysis", "rstudio")
 #'   - "github_account": GitHub account for repository creation
 #'   
 #' @return Character string with the configuration value, or NULL if the key is not set
@@ -1044,7 +1044,7 @@ get_config <- function(key) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "--config get", key)
+  cmd <- paste(zzcollab_path, "config get", key)
   result <- safe_system(cmd, intern = TRUE,
                        error_msg = paste("Failed to get config value:", key))
 
@@ -1065,7 +1065,7 @@ get_config <- function(key) {
 #' @param key Character string specifying the configuration key to set.
 #'   Recommended keys include:
 #'   - "team_name": Your Docker Hub team/organization name
-#'   - "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
+#'   - "profile_name": Docker profile ("minimal", "analysis", "rstudio")
 #'   - "github_account": Your GitHub account for repository creation
 #'   
 #' @param value Character string specifying the configuration value to set.
@@ -1116,7 +1116,7 @@ set_config <- function(key, value) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "--config set", key, shQuote(value))
+  cmd <- paste(zzcollab_path, "config set", key, shQuote(value))
   result <- safe_system(cmd, error_msg = paste("Failed to set config value:", key))
   return(result == 0)
 }
@@ -1177,7 +1177,7 @@ list_config <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "--config list")
+  cmd <- paste(zzcollab_path, "config list")
   result <- safe_system(cmd, intern = TRUE,
                        error_msg = "Failed to list configuration")
   return(result)
@@ -1234,7 +1234,7 @@ list_config <- function() {
 #' validate_config() || stop("Invalid zzcollab configuration")
 #' 
 #' # Validation after making changes
-#' set_config("profile_name", "publishing")
+#' set_config("profile_name", "rstudio")
 #' if (!validate_config()) {
 #'   warning("Configuration may have issues")
 #' }
@@ -1250,7 +1250,7 @@ validate_config <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "--config validate")
+  cmd <- paste(zzcollab_path, "config validate")
   result <- safe_system(cmd, error_msg = "Failed to validate configuration")
   return(result == 0)
 }
@@ -1320,7 +1320,7 @@ init_config <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "--config init")
+  cmd <- paste(zzcollab_path, "config init")
   result <- safe_system(cmd, error_msg = "Failed to initialize configuration")
   return(result == 0)
 }

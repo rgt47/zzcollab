@@ -624,7 +624,7 @@ build:
 
 1. **Multi-stage Builds**: Reduce final image size
 2. **Layer Cleanup**: Remove temporary files
-3. **Alpine Profiles**: Use for space-constrained scenarios
+3. **Minimal Profile**: Use for space-constrained scenarios
 
 **Example**:
 

@@ -26,7 +26,7 @@ If NULL, uses config default or falls back to \code{team_name}.
 Used with GitHub CLI to create private repositories.}
 
 \item{profile}{Character string naming the Docker profile / quickstart bundle
-to scaffold (e.g. "analysis", "minimal", "publishing"). Defaults to "analysis".}
+to scaffold (e.g. "analysis", "minimal", "rstudio"). Defaults to "analysis".}
 }
 \value{
 Logical value indicating success (TRUE) or failure (FALSE) of the

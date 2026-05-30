@@ -65,7 +65,7 @@ if (validate_config()) {
 validate_config() || stop("Invalid zzcollab configuration")
 
 # Validation after making changes
-set_config("profile_name", "publishing")
+set_config("profile_name", "rstudio")
 if (!validate_config()) {
   warning("Configuration may have issues")
 }

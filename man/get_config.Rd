@@ -11,7 +11,7 @@ get_config(key)
 Common keys include:
 \itemize{
 \item "team_name": Docker Hub team/organization name
-\item "profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)
+\item "profile_name": Docker profile ("minimal", "analysis", "rstudio")
 \item "github_account": GitHub account for repository creation
 }}
 }

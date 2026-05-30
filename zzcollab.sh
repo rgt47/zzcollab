@@ -789,9 +789,19 @@ cmd_config() {
             [[ $# -lt 2 ]] && { log_error "Usage: zzcollab config set KEY VALUE"; exit 1; }
             config_set "$1" "$2"
             ;;
+        validate)
+            # Confirm the config files load and parse without error.
+            if load_config 2>/dev/null; then
+                log_success "Configuration is valid"
+                return 0
+            else
+                log_error "Configuration failed to load"
+                return 1
+            fi
+            ;;
         *)
             log_error "Unknown config subcommand: $subcommand"
-            log_info "Valid subcommands: init, list, get, set"
+            log_info "Valid subcommands: init, list, get, set, validate"
             log_info "Or run 'zzc config' with no args for interactive setup"
             exit 1
             ;;

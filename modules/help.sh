@@ -58,17 +58,37 @@ EOF
 show_help() {
     local topic="${1:-}"
     case "$topic" in
-        ""|--all|-a)   show_help_brief ;;
-        docker)        show_help_docker ;;
-        profiles)      show_help_profiles ;;
-        config)        show_help_config_topic ;;
+        ""|--all|-a)        show_help_brief ;;
+        docker)             show_help_docker ;;
+        profiles)           show_help_profiles ;;
+        config)             show_help_config_topic ;;
+        next-steps|next_steps) show_help_next_steps ;;
         *)
             echo "Unknown help topic: $topic"
-            echo "Available topics: docker, profiles, config"
+            echo "Available topics: docker, profiles, config, next-steps"
             echo "Run 'zzc help' for the command list."
             return 1
             ;;
     esac
+}
+
+# Post-creation guidance. Also surfaced by the R wrapper zzcollab_next_steps().
+show_help_next_steps() {
+    cat << 'EOF'
+NEXT STEPS
+
+After zzc init / zzc <profile>:
+
+  1. Build the image:        make docker-build
+  2. Enter the container:    make r        (or: make docker-rstudio)
+  3. Work in R; on exit, renv snapshots your package additions
+  4. Run tests:             make docker-test
+  5. Validate deps:         make check-renv
+  6. Commit and push:       git add . && git commit && git push
+  7. (optional) Publish:    zzc github      zzc dockerhub
+
+See vignette("quickstart1") for the full walkthrough.
+EOF
 }
 
 #=============================================================================
