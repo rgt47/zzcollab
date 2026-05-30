@@ -1068,14 +1068,14 @@ cmd_dockerhub() {
     ensure_docker_image_built "$project_name" || return 1
 
     # Get DockerHub username from config or environment
-    # Priority: DOCKERHUB_ACCOUNT env > docker.account > defaults.dockerhub_account
+    # Priority: DOCKERHUB_ACCOUNT env > configured dockerhub_account
     load_config 2>/dev/null || true
-    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKER_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}}"
+    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
 
     if [[ -z "$dockerhub_user" ]]; then
         if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
             log_error "DockerHub username not configured"
-            echo "  Set with: zzc config set docker-account <username>" >&2
+            echo "  Set with: zzc config set dockerhub-account <username>" >&2
             return 1
         fi
         zzc_read -r -p "DockerHub username: " dockerhub_user
@@ -1086,7 +1086,7 @@ cmd_dockerhub() {
         local _save
         zzc_read -r -p "Save to config? [Y/n]: " _save
         if [[ ! "$_save" =~ ^[Nn]$ ]]; then
-            config_set "docker-account" "$dockerhub_user"
+            config_set "dockerhub-account" "$dockerhub_user"
         fi
     fi
 

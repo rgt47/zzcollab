@@ -23,7 +23,6 @@ readonly CONFIG_USER_DIR="${ZZCOLLAB_CONFIG_USER_DIR:-$HOME/.zzcollab}"
 readonly CONFIG_USER="${ZZCOLLAB_CONFIG_USER:-$CONFIG_USER_DIR/config.yaml}"
 
 # Interactive mode state
-INTERACTIVE_CANCELLED=false
 
 # Original configuration state (backward compatibility)
 CONFIG_TEAM_NAME=""
@@ -66,7 +65,8 @@ CONFIG_STYLE_ASSIGNMENT=""
 CONFIG_STYLE_NAMING_CONVENTION=""
 
 # Extended configuration state - Docker
-CONFIG_DOCKER_ACCOUNT=""
+# (The Docker Hub account is stored canonically in CONFIG_DOCKERHUB_ACCOUNT;
+# the former docker.account key is kept as a read alias for back-compat.)
 CONFIG_DOCKER_DEFAULT_PROFILE=""
 CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
 CONFIG_DOCKER_REGISTRY=""
@@ -77,19 +77,6 @@ CONFIG_GITHUB_DEFAULT_VISIBILITY=""
 CONFIG_GITHUB_DEFAULT_BRANCH=""
 CONFIG_GITHUB_CREATE_ISSUES=""
 CONFIG_GITHUB_CREATE_WIKI=""
-
-# Extended configuration state - CI/CD
-CONFIG_CICD_ENABLE_GITHUB_ACTIONS=""
-CONFIG_CICD_R_VERSIONS=""
-CONFIG_CICD_OS_MATRIX=""
-CONFIG_CICD_RUN_COVERAGE=""
-CONFIG_CICD_COVERAGE_THRESHOLD=""
-
-# Extended configuration state - Documentation
-CONFIG_DOCS_USE_PKGDOWN=""
-CONFIG_DOCS_USE_README=""
-CONFIG_DOCS_USE_NEWS=""
-CONFIG_DOCS_CITATION_STYLE=""
 
 #=============================================================================
 # YAML OPERATIONS
@@ -176,7 +163,6 @@ validate_percentage() {
 
 # Trap handler for clean exit
 _interactive_cleanup() {
-    INTERACTIVE_CANCELLED=true
     echo ""
     echo ""
     log_warn "Configuration cancelled by user"
@@ -195,7 +181,6 @@ prompt_input() {
 
     if has_gum; then
         input=$(gum_input "${default:-(enter value)}" "$prompt" "$default") || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
         printf -v "$result_var" '%s' "${input:-$default}"
@@ -209,12 +194,10 @@ prompt_input() {
     fi
 
     zzc_read -r input || {
-        INTERACTIVE_CANCELLED=true
         return 1
     }
 
     if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-        INTERACTIVE_CANCELLED=true
         return 1
     fi
 
@@ -235,7 +218,6 @@ prompt_validated() {
     if has_gum; then
         while true; do
             input=$(gum_input "${default:-(enter value)}" "$prompt" "$default") || {
-                INTERACTIVE_CANCELLED=true
                 return 1
             }
             input="${input:-$default}"
@@ -256,12 +238,10 @@ prompt_validated() {
         fi
 
         zzc_read -r input || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
 
         if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-            INTERACTIVE_CANCELLED=true
             return 1
         fi
 
@@ -286,7 +266,6 @@ prompt_github_account() {
     if has_gum; then
         while true; do
             input=$(gum_input "${default:-github-username}" "$prompt" "$default") || {
-                INTERACTIVE_CANCELLED=true
                 return 1
             }
             input="${input:-$default}"
@@ -318,12 +297,10 @@ prompt_github_account() {
         fi
 
         zzc_read -r input || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
 
         if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-            INTERACTIVE_CANCELLED=true
             return 1
         fi
 
@@ -375,12 +352,10 @@ prompt_yesno() {
     printf "%s (%s): " "$prompt" "$hint"
 
     zzc_read -r input || {
-        INTERACTIVE_CANCELLED=true
         return 1
     }
 
     if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-        INTERACTIVE_CANCELLED=true
         return 1
     fi
 
@@ -415,7 +390,6 @@ prompt_select() {
             trimmed_args+=("${item#"${item%%[! ]*}"}")
         done
         input=$(gum_choose "$prompt" "${trimmed_args[@]}") || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
         printf -v "$result_var" '%s' "${input:-$default}"
@@ -426,12 +400,10 @@ prompt_select() {
         printf "%s (%s) [%s]: " "$prompt" "$options" "$default"
 
         zzc_read -r input || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
 
         if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-            INTERACTIVE_CANCELLED=true
             return 1
         fi
 
@@ -506,15 +478,6 @@ load_config() {
     CONFIG_GITHUB_DEFAULT_BRANCH=""
     CONFIG_GITHUB_CREATE_ISSUES=""
     CONFIG_GITHUB_CREATE_WIKI=""
-    CONFIG_CICD_ENABLE_GITHUB_ACTIONS=""
-    CONFIG_CICD_R_VERSIONS=""
-    CONFIG_CICD_OS_MATRIX=""
-    CONFIG_CICD_RUN_COVERAGE=""
-    CONFIG_CICD_COVERAGE_THRESHOLD=""
-    CONFIG_DOCS_USE_PKGDOWN=""
-    CONFIG_DOCS_USE_README=""
-    CONFIG_DOCS_USE_NEWS=""
-    CONFIG_DOCS_CITATION_STYLE=""
 
     # Load in reverse priority (later overrides earlier)
     _load_file "$CONFIG_USER"
@@ -555,7 +518,6 @@ style.indent_size               CONFIG_STYLE_INDENT_SIZE
 style.use_native_pipe           CONFIG_STYLE_USE_NATIVE_PIPE
 style.assignment                CONFIG_STYLE_ASSIGNMENT
 style.naming_convention         CONFIG_STYLE_NAMING_CONVENTION
-docker.account                  CONFIG_DOCKER_ACCOUNT
 docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
 docker.default_base_image       CONFIG_DOCKER_DEFAULT_BASE_IMAGE
 docker.registry                 CONFIG_DOCKER_REGISTRY
@@ -565,15 +527,6 @@ github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
 github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
 github.create_issues            CONFIG_GITHUB_CREATE_ISSUES
 github.create_wiki              CONFIG_GITHUB_CREATE_WIKI
-cicd.enable_github_actions      CONFIG_CICD_ENABLE_GITHUB_ACTIONS
-cicd.r_versions                 CONFIG_CICD_R_VERSIONS
-cicd.os_matrix                  CONFIG_CICD_OS_MATRIX
-cicd.run_coverage               CONFIG_CICD_RUN_COVERAGE
-cicd.coverage_threshold         CONFIG_CICD_COVERAGE_THRESHOLD
-documentation.use_pkgdown       CONFIG_DOCS_USE_PKGDOWN
-documentation.use_readme        CONFIG_DOCS_USE_README
-documentation.use_news          CONFIG_DOCS_USE_NEWS
-documentation.citation_style    CONFIG_DOCS_CITATION_STYLE
 "
 
 _load_file() {
@@ -590,6 +543,10 @@ _load_file() {
     # docker.default_profile also overrides CONFIG_PROFILE_NAME (legacy compat)
     val=$(yaml_get "$file" "docker.default_profile") && \
         [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
+
+    # Legacy docker.account folds into the canonical dockerhub_account
+    [[ -z "$CONFIG_DOCKERHUB_ACCOUNT" ]] && val=$(yaml_get "$file" "docker.account") && \
+        [[ -n "$val" ]] && CONFIG_DOCKERHUB_ACCOUNT="$val"
 
     return 0
 }
@@ -619,7 +576,7 @@ _get_config_value() {
         # Original fields
         team_name) echo "$CONFIG_TEAM_NAME" ;;
         github_account) echo "$CONFIG_GITHUB_ACCOUNT" ;;
-        dockerhub_account) echo "$CONFIG_DOCKERHUB_ACCOUNT" ;;
+        dockerhub_account|docker_account) echo "$CONFIG_DOCKERHUB_ACCOUNT" ;;
         profile_name) echo "$CONFIG_PROFILE_NAME" ;;
         libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
         pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
@@ -939,27 +896,6 @@ github:
   create_wiki: false
 
 #=============================================================================
-# CI/CD PREFERENCES
-#=============================================================================
-
-cicd:
-  enable_github_actions: true
-  r_versions: "4.3, 4.4"
-  os_matrix: "ubuntu-latest"
-  run_coverage: true
-  coverage_threshold: 80
-
-#=============================================================================
-# DOCUMENTATION PREFERENCES
-#=============================================================================
-
-documentation:
-  use_pkgdown: false
-  use_readme: true
-  use_news: true
-  citation_style: "apa"
-
-#=============================================================================
 # LEGACY DEFAULTS (backward compatibility)
 #=============================================================================
 
@@ -984,7 +920,6 @@ EOF
 #=============================================================================
 
 config_interactive_setup() {
-    INTERACTIVE_CANCELLED=false
 
     # Set up trap for Ctrl+C
     trap '_interactive_cleanup; return 0' INT
@@ -1257,34 +1192,6 @@ _setup_advanced() {
         "${CONFIG_STYLE_ASSIGNMENT:-arrow}" val || \
         { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "style.assignment" "$val"
-
-    #-------------------------------------------------------------------------
-    # CI/CD
-    #-------------------------------------------------------------------------
-    print_section "CI/CD Preferences (Advanced)"
-    echo "Continuous integration settings for GitHub Actions."
-    echo ""
-
-    prompt_yesno "Enable GitHub Actions" \
-        "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-true}" val || \
-        { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "cicd.enable_github_actions" "$val"
-
-    if [[ "$val" == "true" ]]; then
-        prompt_input "R versions to test (comma-separated)" \
-            "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}" val || \
-            { _save_and_exit; return 0; }
-        yaml_set "$CONFIG_USER" "cicd.r_versions" "$val"
-
-        prompt_yesno "Run code coverage" "${CONFIG_CICD_RUN_COVERAGE:-true}" val || { _save_and_exit; return 0; }
-        yaml_set "$CONFIG_USER" "cicd.run_coverage" "$val"
-
-        if [[ "$val" == "true" ]]; then
-            prompt_validated "Coverage threshold (%)" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}" val validate_percentage \
-                "Invalid value. Must be 0-100" || { _save_and_exit; return 0; }
-            yaml_set "$CONFIG_USER" "cicd.coverage_threshold" "$val"
-        fi
-    fi
 }
 
 # Full setup - all sections
@@ -1358,7 +1265,7 @@ EOF
         github_default_visibility) yaml_path="github.default_visibility" ;;
         github_default_branch) yaml_path="github.default_branch" ;;
         # Docker fields
-        docker_account) yaml_path="docker.account" ;;
+        docker_account|dockerhub_account) yaml_path="defaults.dockerhub_account" ;;
         docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
         docker_registry) yaml_path="docker.registry" ;;
         # Dotted keys pass through as-is
@@ -1392,7 +1299,7 @@ config_get() {
         github_account) yaml_path="github.account" ;;
         github_default_visibility) yaml_path="github.default_visibility" ;;
         github_default_branch) yaml_path="github.default_branch" ;;
-        docker_account) yaml_path="docker.account" ;;
+        docker_account|dockerhub_account) yaml_path="defaults.dockerhub_account" ;;
         docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
         docker_registry) yaml_path="docker.registry" ;;
         *"."*) yaml_path="$key" ;;
@@ -1458,7 +1365,7 @@ config_list() {
     if [[ "$show_section" == "all" || "$show_section" == "docker" ]]; then
         echo ""
         echo "Docker:"
-        printf "  %-25s %s\n" "account:" "${CONFIG_DOCKER_ACCOUNT:-<not set>}"
+        printf "  %-25s %s\n" "account:" "${CONFIG_DOCKERHUB_ACCOUNT:-<not set>}"
         printf "  %-25s %s\n" "default_profile:" "${CONFIG_DOCKER_DEFAULT_PROFILE:-<not set>}"
         printf "  %-25s %s\n" "registry:" "${CONFIG_DOCKER_REGISTRY:-<not set>}"
     fi
@@ -1469,15 +1376,6 @@ config_list() {
         printf "  %-25s %s\n" "account:" "${CONFIG_GITHUB_ACCOUNT:-<not set>}"
         printf "  %-25s %s\n" "default_visibility:" "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-<not set>}"
         printf "  %-25s %s\n" "default_branch:" "${CONFIG_GITHUB_DEFAULT_BRANCH:-<not set>}"
-    fi
-
-    if [[ "$show_section" == "all" || "$show_section" == "cicd" ]]; then
-        echo ""
-        echo "CI/CD:"
-        printf "  %-25s %s\n" "enable_github_actions:" "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-<not set>}"
-        printf "  %-25s %s\n" "r_versions:" "${CONFIG_CICD_R_VERSIONS:-<not set>}"
-        printf "  %-25s %s\n" "run_coverage:" "${CONFIG_CICD_RUN_COVERAGE:-<not set>}"
-        printf "  %-25s %s\n" "coverage_threshold:" "${CONFIG_CICD_COVERAGE_THRESHOLD:-<not set>}"
     fi
 
     if [[ "$show_section" == "all" || "$show_section" == "defaults" ]]; then
@@ -1569,7 +1467,7 @@ handle_config_command() {
             echo "  validate                Validate YAML syntax"
             echo "  path                    Show config file paths"
             echo ""
-            echo "Sections: author, license, r_package, style, docker, github, cicd, defaults"
+            echo "Sections: author, license, r_package, style, docker, github, defaults"
             return 1
             ;;
     esac
