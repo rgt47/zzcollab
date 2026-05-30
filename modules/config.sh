@@ -1331,6 +1331,13 @@ EOF
     # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
     key="${key//-/_}"
 
+    # Validate team/account names: they become the Docker Hub namespace and
+    # image prefix, so enforce the team-name format at the point of entry.
+    case "$key" in
+        team_name|dockerhub_account|docker_account)
+            [[ -n "$value" ]] && { validate_team_name "$value" || return 1; } ;;
+    esac
+
     # Map simple keys to their proper dotted paths
     local yaml_path
     case "$key" in

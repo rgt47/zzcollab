@@ -353,6 +353,9 @@ cmd_docker() {
         esac
     done
 
+    # Validate a user-supplied base image before doing any work
+    [[ -n "$base_image" ]] && { validate_base_image "$base_image" || exit 1; }
+
     # Ensure zzcollab workspace is initialized
     ensure_workspace_initialized "docker" || exit 1
 
@@ -1234,6 +1237,9 @@ cmd_quickstart() {
     assert_safe_init_directory || return 1
     local project_name
     project_name=$(basename "$(pwd)")
+    # The project name is the directory name; reject malformed names before
+    # scaffolding (validate_package_name later derives the R-safe variant).
+    validate_project_name "$project_name" || return 1
 
     echo ""
     echo "═══════════════════════════════════════════════════════════"
