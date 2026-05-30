@@ -646,20 +646,22 @@ sync_env <- function() {
 #' Execute analysis script in container
 #'
 #' @param script_path Path to R script
-#' @param container_cmd Container command (default: "docker-r")
+#' @param container_cmd Make target that runs the script in the container
+#'   (default: "docker-script"). The target receives the script via the
+#'   SCRIPT make variable.
 #' @return Logical indicating success
 #' @export
-run_script <- function(script_path, container_cmd = "docker-r") {
+run_script <- function(script_path, container_cmd = "docker-script") {
   if (!file.exists(script_path)) {
     stop("Script file not found: ", script_path)
   }
-  
+
   if (!file.exists("Makefile")) {
     stop("No Makefile found. Are you in a zzcollab project directory?")
   }
-  
-  # Execute script in container
-  cmd <- paste("make", container_cmd, "ARGS='-e \"source(\\\"", script_path, "\\\")\"'")
+
+  # Execute script in container via the docker-script make target
+  cmd <- paste0("make ", container_cmd, " SCRIPT=", shQuote(script_path))
   message("Running script in container: ", script_path)
   result <- safe_system(cmd, error_msg = paste("Failed to run script:", script_path))
   return(result == 0)
@@ -680,7 +682,7 @@ render_report <- function(report_path = NULL) {
     if (!file.exists(report_path)) {
       stop("Report file not found: ", report_path)
     }
-    cmd <- paste("make docker-render REPORT=", shQuote(report_path))
+    cmd <- paste0("make docker-render REPORT=", shQuote(report_path))
   } else {
     # Use default make target
     cmd <- "make docker-render"
@@ -882,8 +884,9 @@ setup_project <- function(base_image = NULL) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  # Build command (no --init flag)
-  cmd <- zzcollab_path
+  # Build the Docker environment. --base-image is a flag of the docker
+  # subcommand, not a top-level option.
+  cmd <- paste(zzcollab_path, "docker")
 
   if (!is.null(base_image)) {
     cmd <- paste(cmd, "--base-image", base_image)
@@ -902,15 +905,9 @@ setup_project <- function(base_image = NULL) {
 #' @param topic Character string specifying which help page to display.
 #'   Options include:
 #'   - NULL or "general": Main help with all command-line options (default)
-#'   - "init": Team initialization help
-#'   - "quickstart": Individual researcher quick start guide
-#'   - "workflow": Daily development workflow
-#'   - "troubleshooting": Top 10 common issues and solutions
-#'   - "config": Configuration system guide
-#'   - "renv": Package management with renv
 #'   - "docker": Docker essentials for researchers
-#'   - "cicd": CI/CD and GitHub Actions
-#'   - "github": GitHub integration and automation
+#'   - "profiles": Available Docker profiles
+#'   - "config": Configuration system guide
 #'   - "next-steps": Development workflow guidance
 #'
 #' @return Character vector with help text, or invisible NULL if displayed via pager.
@@ -929,14 +926,11 @@ setup_project <- function(base_image = NULL) {
 #' # Display main help
 #' zzcollab_help()
 #'
-#' # Get quick start guide for individual researchers
-#' zzcollab_help("quickstart")
-#'
 #' # Learn about configuration system
 #' zzcollab_help("config")
 #'
-#' # Troubleshooting common issues
-#' zzcollab_help("troubleshooting")
+#' # Available Docker profiles
+#' zzcollab_help("profiles")
 #'
 #' # Docker basics for researchers
 #' zzcollab_help("docker")
@@ -951,9 +945,8 @@ zzcollab_help <- function(topic = NULL) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  # Valid help topics
-  valid_topics <- c("general", "init", "quickstart", "workflow", "troubleshooting",
-                    "config", "renv", "docker", "cicd", "github", "next-steps")
+  # Valid help topics (must match the CLI dispatcher in modules/help.sh)
+  valid_topics <- c("general", "docker", "profiles", "config", "next-steps")
 
   # Build command with topic argument.
   # The CLI routes topics via the 'help' subcommand (e.g. 'zzcollab help docker');
@@ -1048,7 +1041,11 @@ get_config <- function(key) {
   result <- safe_system(cmd, intern = TRUE,
                        error_msg = paste("Failed to get config value:", key))
 
-  if (length(result) > 0 && !grepl("\\(not set\\)", result[1])) {
+  # `config get` echoes an empty string for unset keys (the "(not set)"
+  # sentinel only appears in `config list`). Treat blank or sentinel
+  # output as unset so %||% fallbacks behave correctly.
+  if (length(result) > 0 && nzchar(trimws(result[1])) &&
+        !grepl("\\(not set\\)", result[1])) {
     return(result[1])
   } else {
     return(NULL)
