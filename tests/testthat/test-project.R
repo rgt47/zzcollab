@@ -116,26 +116,26 @@ test_that("join_project errors without a Makefile", {
   )
 })
 
-test_that("setup_project handles optional parameters", {
-  # Should work with no parameters (uses defaults)
-  result <- tryCatch({
-    setup_project()
-  }, error = function(e) {
-    expect_true(grepl("zzcollab.*script", e$message, ignore.case = TRUE))
-    FALSE
-  })
+test_that("setup_project routes through the docker subcommand", {
+  calls <- character(0)
+  local_mocked_bindings(
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
 
-  expect_type(result, "logical")
+  # No base_image: builds the default Docker environment.
+  expect_true(setup_project())
+  expect_true(any(grepl("zzcollab docker", calls, fixed = TRUE)))
 
-  # Should accept base_image parameter
-  result <- tryCatch({
-    setup_project(base_image = "rocker/rstudio")
-  }, error = function(e) {
-    expect_true(grepl("zzcollab.*script", e$message, ignore.case = TRUE))
-    FALSE
-  })
-
-  expect_type(result, "logical")
+  # base_image is a flag of the docker subcommand, not a top-level option.
+  calls <- character(0)
+  expect_true(setup_project(base_image = "rocker/rstudio"))
+  expect_true(any(grepl("zzcollab docker --base-image rocker/rstudio",
+                        calls, fixed = TRUE)))
 })
 
 test_that("init_project accepts a profile parameter", {

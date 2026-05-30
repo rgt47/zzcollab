@@ -10,6 +10,9 @@ R_VERSION := $(shell grep 'R_VERSION=' Dockerfile 2>/dev/null | head -1 | sed 's
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo "$(shell date +%Y%m%d)")
 IMAGE_TAG = $(GIT_SHA)
 
+# Report rendered by docker-render (override: make docker-render REPORT=path)
+REPORT ?= analysis/report/report.Rmd
+
 # Help target (default)
 help:
 	@echo "Available targets:"
@@ -144,7 +147,11 @@ docker-vignettes: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('analysis/report/report.Rmd')"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('$(REPORT)')"
+
+# Run an arbitrary R script in the container (used by zzcollab::run_script)
+docker-script:
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) Rscript -e "source('$(SCRIPT)')"
 
 docker-render-qmd:
 	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
