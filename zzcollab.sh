@@ -1575,6 +1575,9 @@ Per-command options (must follow their command):
   github:    --private | --public     Repo visibility (default: private)
   rm:        -f, --force              Skip confirmation
 
+Note: When commands are combined, a per-command option binds to the command
+      immediately before it. In 'zzcollab docker -b github', -b applies to
+      docker (build the image), not to github.
 Note: -t is the DockerHub image tag, not team; set the team with
       'zzcollab config set dockerhub-account NAME'.
 

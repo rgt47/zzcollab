@@ -1,5 +1,5 @@
 # ZZCOLLAB CLI Command and Flag Improvement Plan
-*2026-05-29 18:36 PDT (revised 2026-05-30 21:39 PDT)*
+*2026-05-29 18:36 PDT (revised 2026-05-31 08:38 PDT)*
 
 ## Purpose
 
@@ -33,13 +33,14 @@ sweep were then implemented on 2026-05-30. The current status of each finding:
 | F6 (flag-vs-config rule) | Done | 'Where settings live' subsection added to `docs/CONFIGURATION.md`. |
 | F7 (`build` vs `docker --build`) | Done | `build` renamed to `rebuild`; `build` kept as a deprecated alias with a warning. |
 | F8 (`validate` vs `doctor`) | Done (reframed) | The maintainer's zzrenvcheck refactor already removed the overlap: `validate` now checks package dependencies and `doctor` checks workspace files. Only the stale help label remained, now corrected. |
-| F4 (profile-token overload) | Partially done | Profiles reduced to `minimal`, `analysis`, `rstudio`; the `cmd_init` guard now hard-stops on an occupied directory unless `--force` (commit `56ae900`). The state-dependent verb remains. |
-| F9a (flag-binding doc) | Open | Help text unchanged. |
+| F4 (profile-token overload) | Scoped, decided | Profiles reduced and the `cmd_init` guard hardened (commit `56ae900`). The remaining verb split is now fully scoped and decided (B1 + D-break); ready to implement. |
+| F9a (flag-binding doc) | Done | Help notes that a per-command option binds to the command immediately before it. |
 
-Phase 0 (F1, F2, F3, F5, F9b, F10), Phase 1 (F6, F7, F8), and D1 are complete
-and verified (`shellcheck` clean; `test-cli`, `test-docs`, `test-profiles`,
-`test-config` pass). The only remaining open items are in Phase 2: F4's verb
-split and F9a. D1 is described below.
+Phase 0 (F1, F2, F3, F5, F9b, F10), Phase 1 (F6, F7, F8), F9a, and D1 are
+complete and verified (`shellcheck` clean; `test-cli`, `test-docs`,
+`test-profiles`, `test-config` pass). The single remaining open item is F4's
+verb split (the state-dependent profile token), which is a behavior change held
+for a coordinated release. D1 is described below.
 
 ## Scope and constraints
 
@@ -185,16 +186,79 @@ split and F9a. D1 is described below.
   overloaded token surface; and the `cmd_init` safety guard was hardened
   (commit `56ae900`) so that an occupied directory hard-stops unless `--force`
   is given, closing the accidental-scaffolding footgun.
-- **Remaining change**: The verb is still state dependent (create versus
-  switch). Reserve the bare profile token for creation and route profile
-  switching through an explicit path: either `config set profile-name X`
-  followed by `docker`, or a dedicated `profile <name>` verb.
-- **Files**: `zzcollab.sh` (`cmd_quickstart`, dispatch), `docs/`.
-- **Impact**: Changes the meaning of a bare profile token in an existing
-  project; warrants clear release notes.
+#### Scope of the remaining work (2026-05-31)
+
+**Current behavior (`cmd_quickstart`).** A bare profile token does three
+different things depending on directory state:
+
+1. Uninitialized directory: scaffold init + renv + docker (create). Correct.
+2. Initialized, same profile, Dockerfile present: print an idempotent
+   'already configured' status. Harmless.
+3. Initialized, different profile: silently switch. This path
+   (`zzcollab.sh:1196-1220`) rewrites `.Rprofile` and `Makefile` from the
+   templates via `safe_cp` and regenerates the Dockerfile. Because it
+   overwrites `.Rprofile`/`Makefile` unconditionally, a switch silently
+   clobbers user customizations. This is the defect.
+
+**Relevant existing path.** `zzcollab docker --profile X` already switches a
+project's profile (`zzcollab.sh:357-390`): it sets the base image, writes
+`profile-name` to config, and regenerates the Dockerfile only. It does NOT
+touch `.Rprofile`/`Makefile`, so it is the non-destructive switch.
+
+**Target behavior.**
+
+- `zzcollab <profile>` becomes create-or-idempotent only:
+  - uninitialized → create (unchanged);
+  - initialized, same profile → idempotent status (unchanged);
+  - initialized, different profile → refuse and direct the user to the
+    switch path, rather than silently overwriting files.
+- Switching uses one canonical, non-destructive path. Two options:
+  - **B1 (reuse, recommended):** `zzcollab docker --profile X`. No new
+    command; relies on the existing non-destructive switch.
+  - **B2 (dedicated verb):** add `zzcollab profile <name>` as sugar for the
+    switch. More discoverable, but adds surface against the maintainer's
+    simplification direction.
+- Remove the destructive `.Rprofile`/`Makefile` overwrite from the switch
+  entirely. If a template refresh is ever wanted it should be a separate,
+  explicit, confirmed action (it is closer to `doctor`'s remit).
+
+**Deprecation path (decision required).**
+
+- **D-warn (one-release window):** in this release, a different-profile bare
+  token still switches but prints a deprecation warning naming the new path;
+  the next release turns it into a hard error. Safest for existing users.
+- **D-break (clean break):** the different-profile bare token errors
+  immediately. Justified by the pre-1.0 CLI line and the fact that the
+  removed behavior was also destructive.
+
+**Files.** `zzcollab.sh` (`cmd_quickstart`; dispatch and `show_usage` if B2);
+`docs/CONFIGURATION.md` and the profile docs; `NEWS.md` / `CHANGELOG.md`.
+
+**Tests (`test-cli.sh`).** Create in an empty dir; idempotent same-profile;
+different-profile refusal (or warning under D-warn); the switch path leaves a
+customized `.Rprofile`/`Makefile` untouched.
+
+**Impact.** Behavior change for the 'bare token switches an existing project'
+case; removes a silent data-loss path. Needs a release note regardless of the
+deprecation choice.
+
+**Decided (2026-05-31).** B1 (switching stays `zzcollab docker --profile X`;
+no new verb) and D-break (a different-profile bare token errors immediately,
+directing the user to `docker --profile X`, with no warning window). The
+destructive `.Rprofile`/`Makefile` overwrite is removed either way. Ready to
+implement:
+
+- In `cmd_quickstart`, replace the different-profile branch
+  (`zzcollab.sh:1196-1220`) with a hard error that names the switch path; keep
+  the create and idempotent-same-profile branches.
+- No change to `cmd_docker --profile`, which is already the non-destructive
+  switch.
+- Add `test-cli` cases and a `NEWS.md`/`CHANGELOG.md` release note recording
+  the behavior change.
 
 ### F9a. Document the flag binding rule for combined commands
 
+- **Status**: Done (2026-05-31). The help text now states that a per-command option binds to the command immediately before it, with `zzcollab docker -b github` as the worked example. The optional stricter validation pass was not added.
 - **Problem**: Commands are combinable (`docker -b github`), but per-command
   flag scoping makes binding positional and non-obvious: `docker -b github`
   works while `-b docker` does not.
@@ -233,7 +297,7 @@ split and F9a. D1 is described below.
 | 0 | F1, F2, F3, F5, F9b, F10 | Done | Low | None | Done 2026-05-30 |
 | Docs | D1 | Done | Low | None | Done 2026-05-30 |
 | 1 | F6, F7, F8 | Done | Medium | None (aliased) | Done 2026-05-30 |
-| 2 | F4, F9a | F4 partial, F9a open | Higher | Behavior change | With profile reduction |
+| 2 | F4, F9a | F9a done; F4 partial | Higher | Behavior change | With profile reduction |
 
 ## Verification for every change
 
@@ -256,9 +320,10 @@ split and F9a. D1 is described below.
   were cut outright, since the framework is pre-1.0 on the CLI line and they
   were exact synonyms; the renamed `build` command kept an alias-with-warning
   because already-generated project Makefiles still call it.
-- Remaining Phase 2 decision: F4's verb split (a dedicated `profile <name>`
-  verb versus `config set profile-name` followed by `docker`).
+- F4: decided 2026-05-31 as B1 (reuse `zzcollab docker --profile X`) and
+  D-break (immediate error for a different-profile bare token). Scoped above and
+  ready to implement; no decisions remain.
 
 ---
-*Rendered on 2026-05-30 at 21:39 PDT.*<br>
+*Rendered on 2026-05-31 at 08:44 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/cli-ux-improvement-plan.md*
