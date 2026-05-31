@@ -81,9 +81,9 @@ get_config <- function(key) {
   # output as unset so %||% fallbacks behave correctly.
   if (length(result) > 0 && nzchar(trimws(result[1])) &&
         !grepl("\\(not set\\)", result[1])) {
-    return(result[1])
+    result[1]
   } else {
-    return(NULL)
+    NULL
   }
 }
 
@@ -147,7 +147,7 @@ get_config <- function(key) {
 set_config <- function(key, value) {
   result <- zzc_config(c("set", shQuote(key), shQuote(value)),
                        error_msg = paste("Failed to set config value:", key))
-  return(result == 0)
+  result == 0
 }
 
 #' List all configuration values from zzcollab configuration system
@@ -205,7 +205,7 @@ set_config <- function(key, value) {
 list_config <- function() {
   result <- zzc_config("list", intern = TRUE,
                        error_msg = "Failed to list configuration")
-  return(result)
+  result
 }
 
 #' Validate zzcollab configuration files
@@ -274,7 +274,7 @@ list_config <- function() {
 validate_config <- function() {
   result <- zzc_config("validate",
                        error_msg = "Failed to validate configuration")
-  return(result == 0)
+  result == 0
 }
 
 #' Initialize default zzcollab configuration file
@@ -341,7 +341,7 @@ validate_config <- function() {
 init_config <- function() {
   result <- zzc_config("init",
                        error_msg = "Failed to initialize configuration")
-  return(result == 0)
+  result == 0
 }
 
 #' Get configuration value with fallback default
@@ -397,8 +397,8 @@ init_config <- function() {
 get_config_default <- function(key, default = NULL) {
   config_value <- get_config(key)
   if (!is.null(config_value)) {
-    return(config_value)
+    config_value
   } else {
-    return(default)
+    default
   }
 }

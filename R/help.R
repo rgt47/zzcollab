@@ -60,12 +60,13 @@ zzcollab_help <- function(topic = NULL) {
     cmd <- paste(zzcollab_path, "help", topic)
   } else {
     stop("Unknown help topic: ", topic, "\n",
-         "Valid topics: ", paste(valid_topics, collapse = ", "))
+         "Valid topics: ", paste(valid_topics, collapse = ", "),
+         call. = FALSE)
   }
 
   result <- safe_system(cmd, intern = TRUE,
                        error_msg = "Failed to retrieve zzcollab help")
-  return(result)
+  result
 }
 
 #' Get zzcollab next steps
@@ -79,5 +80,5 @@ zzcollab_next_steps <- function() {
   cmd <- paste(zzcollab_path, "help next-steps")
   result <- safe_system(cmd, intern = TRUE,
                        error_msg = "Failed to retrieve next steps information")
-  return(result)
+  result
 }

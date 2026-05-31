@@ -75,7 +75,7 @@ status <- function() {
     return(character(0))
   }
 
-  return(result)
+  result
 }
 
 #' Trigger Docker image rebuild for zzcollab projects
@@ -133,7 +133,8 @@ rebuild <- function(target = "docker-build") {
   # Check if we're in a zzcollab project directory by looking for Makefile
   # The Makefile is created during project initialization and contains Docker targets
   if (!file.exists("Makefile")) {
-    stop("No Makefile found. Are you in a zzcollab project directory?")
+    stop("No Makefile found. Are you in a zzcollab project directory?",
+         call. = FALSE)
   }
 
   # Execute the make command with specified target
@@ -143,7 +144,7 @@ rebuild <- function(target = "docker-build") {
 
   # Return TRUE if command succeeded (exit code 0), FALSE otherwise
   # The %||% operator provides fallback value if status attribute is NULL
-  return(attr(result, "status") %||% 0 == 0)
+  attr(result, "status") %||% 0 == 0
 }
 
 #' List available zzcollab team Docker images
@@ -214,7 +215,7 @@ team_images <- function() {
     created = sapply(lines, `[`, 4),     # Extract fourth column (created)
     stringsAsFactors = FALSE             # Keep as character vectors
   )
-  return(df)
+  df
 }
 
 #' Initialize a new zzcollab team project
@@ -335,7 +336,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
   cmd <- paste(zzcollab_path, profile)
   message("Initializing project '", project_name, "' (profile: ", profile, "): ", cmd)
   result <- safe_system(cmd, error_msg = "Failed to initialize project")
-  return(result == 0)
+  result == 0
 }
 
 #' Join an existing zzcollab team project
@@ -427,7 +428,7 @@ join_project <- function(team_name = NULL, project_name = NULL) {
           "): building Docker image via 'make docker-build'")
   result <- safe_system("make docker-build",
                         error_msg = "Failed to build project Docker image")
-  return(result == 0)
+  result == 0
 }
 
 #' Add R package to renv
@@ -439,7 +440,7 @@ join_project <- function(team_name = NULL, project_name = NULL) {
 #' @export
 add_package <- function(packages, update_snapshot = TRUE) {
   if (!requireNamespace("renv", quietly = TRUE)) {
-    stop("renv package is required for this function")
+    stop("renv package is required for this function", call. = FALSE)
   }
 
   # Install packages
@@ -453,8 +454,8 @@ add_package <- function(packages, update_snapshot = TRUE) {
     message("Updating renv.lock...")
     renv::snapshot()
   }
-  
-  return(TRUE)
+
+  TRUE
 }
 
 #' Sync environment across team
@@ -463,11 +464,12 @@ add_package <- function(packages, update_snapshot = TRUE) {
 #' @export
 sync_env <- function() {
   if (!requireNamespace("renv", quietly = TRUE)) {
-    stop("renv package is required for this function")
+    stop("renv package is required for this function", call. = FALSE)
   }
-  
+
   if (!file.exists("renv.lock")) {
-    stop("No renv.lock file found. Are you in a zzcollab project directory?")
+    stop("No renv.lock file found. Are you in a zzcollab project directory?",
+         call. = FALSE)
   }
   
   message("Restoring environment from renv.lock...")
@@ -481,7 +483,7 @@ sync_env <- function() {
     message("Run rebuild() or 'make docker-build' to update Docker environment")
   }
 
-  return(TRUE)
+  TRUE
 }
 
 #' Execute analysis script in container
@@ -494,18 +496,19 @@ sync_env <- function() {
 #' @export
 run_script <- function(script_path, container_cmd = "docker-script") {
   if (!file.exists(script_path)) {
-    stop("Script file not found: ", script_path)
+    stop("Script file not found: ", script_path, call. = FALSE)
   }
 
   if (!file.exists("Makefile")) {
-    stop("No Makefile found. Are you in a zzcollab project directory?")
+    stop("No Makefile found. Are you in a zzcollab project directory?",
+         call. = FALSE)
   }
 
   # Execute script in container via the docker-script make target
   cmd <- paste0("make ", container_cmd, " SCRIPT=", shQuote(script_path))
   message("Running script in container: ", script_path)
   result <- safe_system(cmd, error_msg = paste("Failed to run script:", script_path))
-  return(result == 0)
+  result == 0
 }
 
 #' Render analysis reports
@@ -515,13 +518,14 @@ run_script <- function(script_path, container_cmd = "docker-script") {
 #' @export
 render_report <- function(report_path = NULL) {
   if (!file.exists("Makefile")) {
-    stop("No Makefile found. Are you in a zzcollab project directory?")
+    stop("No Makefile found. Are you in a zzcollab project directory?",
+         call. = FALSE)
   }
-  
+
   if (!is.null(report_path)) {
     # Render specific report
     if (!file.exists(report_path)) {
-      stop("Report file not found: ", report_path)
+      stop("Report file not found: ", report_path, call. = FALSE)
     }
     cmd <- paste0("make docker-render REPORT=", shQuote(report_path))
   } else {
@@ -531,7 +535,7 @@ render_report <- function(report_path = NULL) {
   
   message("Rendering report in container...")
   result <- safe_system(cmd, error_msg = "Failed to render report")
-  return(result == 0)
+  result == 0
 }
 
 #' Check reproducibility
@@ -574,8 +578,8 @@ validate_repro <- function() {
   } else {
     message("\u274c Some reproducibility checks failed")
   }
-  
-  return(all_passed)
+
+  all_passed
 }
 
 #' Setup zzcollab project (standard setup, non-init mode)
@@ -609,5 +613,5 @@ setup_project <- function(base_image = NULL) {
 
   message("Running: ", cmd)
   result <- safe_system(cmd, error_msg = "Failed to setup project")
-  return(result == 0)
+  result == 0
 }

@@ -12,7 +12,7 @@ git_commit <- function(message, add_all = TRUE) {
   if (add_all) {
     result1 <- safe_system("git add .", error_msg = "Failed to add files to git")
     if (result1 != 0) {
-      stop("Failed to add files to git")
+      stop("Failed to add files to git", call. = FALSE)
     }
   }
 
@@ -23,10 +23,10 @@ git_commit <- function(message, add_all = TRUE) {
 
   if (result2 == 0) {
     message("\u2705 Commit created: ", message)
-    return(TRUE)
+    TRUE
   } else {
     message("\u274c Commit failed")
-    return(FALSE)
+    FALSE
   }
 }
 
@@ -46,10 +46,10 @@ git_push <- function(branch = NULL) {
 
   if (result == 0) {
     message("\u2705 Successfully pushed to GitHub")
-    return(TRUE)
+    TRUE
   } else {
     message("\u274c Push failed")
-    return(FALSE)
+    FALSE
   }
 }
 
@@ -65,7 +65,8 @@ create_pr <- function(title, body = NULL, base = "main") {
     # Check if gh CLI is available
     if (safe_system("which gh", ignore.stdout = TRUE, ignore.stderr = TRUE,
                    error_msg = "GitHub CLI check failed") != 0) {
-      stop("GitHub CLI (gh) is required. Install with: brew install gh")
+      stop("GitHub CLI (gh) is required. Install with: brew install gh",
+           call. = FALSE)
     }
   }
 
@@ -79,10 +80,10 @@ create_pr <- function(title, body = NULL, base = "main") {
 
   if (result == 0) {
     message("\u2705 Pull request created successfully")
-    return(TRUE)
+    TRUE
   } else {
     message("\u274c Failed to create pull request")
-    return(FALSE)
+    FALSE
   }
 }
 
@@ -96,11 +97,11 @@ git_status <- function() {
 
   if (length(result) == 0) {
     message("\u2705 Working directory clean")
-    return(character(0))
+    character(0)
   } else {
     message("\ud83d\udcdd Changes detected:")
     print(result)
-    return(result)
+    result
   }
 }
 
@@ -122,9 +123,9 @@ create_branch <- function(branch_name) {
 
   if (result == 0) {
     message("\u2705 Created and switched to branch: ", branch_name)
-    return(TRUE)
+    TRUE
   } else {
     message("\u274c Failed to create branch: ", branch_name)
-    return(FALSE)
+    FALSE
   }
 }

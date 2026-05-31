@@ -50,7 +50,7 @@ validate_docker_name <- function(name, param_name) {
     stop(param_name, " must be 255 characters or less", call. = FALSE)
   }
 
-  return(TRUE)
+  TRUE
 }
 
 #' Validate and normalize file path
@@ -76,7 +76,7 @@ validate_path <- function(path, param_name, must_exist = FALSE) {
     stop(param_name, " does not exist: ", path, call. = FALSE)
   }
 
-  return(path)
+  path
 }
 
 #' Safe system call with error handling
@@ -176,6 +176,7 @@ find_zzcollab_script <- function() {
     }
   }
 
-  stop("zzcollab script with config support not found. Please use zzcollab from source directory or install updated version.")
+  stop("zzcollab script with config support not found. Please use zzcollab from source directory or install updated version.",
+       call. = FALSE)
 }
 
