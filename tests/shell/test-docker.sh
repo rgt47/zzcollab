@@ -199,6 +199,44 @@ EOF
 }
 
 ##############################################################################
+# TEST: find_cached_image (set -e safety on a cache miss)
+##############################################################################
+
+# Regression: a cache MISS must return 0, not 1. When it returned 1, the
+# caller `cached_image=$(find_cached_image ...)` tripped set -e and aborted the
+# build silently before it started (every first build of a project). docker is
+# mocked so these tests do not depend on the host daemon or its image cache.
+
+test_find_cached_image_miss_returns_success() {
+  docker() { return 0; }  # `docker images ... | head -1` prints nothing
+  local out rc
+  out=$(find_cached_image "deadbeef") && rc=0 || rc=$?
+  unset -f docker
+  assert_equals "0" "$rc" \
+    "cache miss must return 0 so the caller's set -e does not abort the build"
+  if [[ -n "$out" ]]; then
+    echo "FAIL: cache miss should produce empty output, got: $out" >&2
+    return 1
+  fi
+}
+
+test_find_cached_image_hit_echoes_id() {
+  docker() { echo "sha256:abc123"; }
+  local out rc
+  out=$(find_cached_image "deadbeef") && rc=0 || rc=$?
+  unset -f docker
+  assert_equals "0" "$rc" "cache hit must return 0"
+  assert_equals "sha256:abc123" "$out" "cache hit must echo the image id"
+}
+
+test_find_cached_image_empty_hash_returns_failure() {
+  local rc
+  find_cached_image "" && rc=0 || rc=$?
+  assert_equals "1" "$rc" \
+    "empty hash is an invalid lookup and must return 1"
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
