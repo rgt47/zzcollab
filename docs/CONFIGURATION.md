@@ -336,8 +336,8 @@ zzcollab config set profile-name "analysis"
 zzcollab config set auto-github true
 zzcollab config set skip-confirmation false
 
-# Set Docker platform
-zzcollab config set docker.platform "auto"
+# Force the Docker build platform (Docker's own env var, not a config key)
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
 ```
 
 ### Getting Values

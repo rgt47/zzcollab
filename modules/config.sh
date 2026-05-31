@@ -502,6 +502,30 @@ github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
 github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
 "
 
+# Friendly user-key aliases that do NOT follow the derivation rule (user key =
+# YAML path with 'defaults.' stripped and dots->underscores). snake_case form
+# on the left, canonical YAML write path on the right. Checked before the
+# derivation, so e.g. 'github_account' writes to github.account (the canonical
+# path) rather than the legacy load-only defaults.github_account.
+_CONFIG_ALIASES="
+profile_name      docker.default_profile
+profile           docker.default_profile
+docker_account    defaults.dockerhub_account
+github_account    github.account
+"
+
+# Map a YAML path to its CONFIG_* variable name via _CONFIG_MAP (the same table
+# the loader uses), so config get is symmetric with config set. Prints the var
+# name and returns 0, or returns 1 if the path is unknown.
+_yaml_path_to_var() {
+    local target="$1" yp vn
+    while read -r yp vn; do
+        [[ -z "$yp" ]] && continue
+        [[ "$yp" == "$target" ]] && { echo "$vn"; return 0; }
+    done <<< "$_CONFIG_MAP"
+    return 1
+}
+
 _load_file() {
     local file="$1"
     [[ -f "$file" ]] || return 0
@@ -578,42 +602,9 @@ apply_config_defaults() {
     return 0
 }
 
-_get_config_value() {
-    local key="$1"
-    case "$key" in
-        # Original fields
-        team_name) echo "$CONFIG_TEAM_NAME" ;;
-        github_account) echo "$CONFIG_GITHUB_ACCOUNT" ;;
-        dockerhub_account|docker_account) echo "$CONFIG_DOCKERHUB_ACCOUNT" ;;
-        profile_name) echo "$CONFIG_PROFILE_NAME" ;;
-        libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
-        pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
-        r_version) echo "$CONFIG_R_VERSION" ;;
-        auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
-        skip_confirmation) echo "$CONFIG_SKIP_CONFIRMATION" ;;
-        with_examples) echo "$CONFIG_WITH_EXAMPLES" ;;
-        # Author fields
-        author.name|author_name) echo "$CONFIG_AUTHOR_NAME" ;;
-        author.email|author_email) echo "$CONFIG_AUTHOR_EMAIL" ;;
-        author.orcid|author_orcid) echo "$CONFIG_AUTHOR_ORCID" ;;
-        author.affiliation|author_affiliation) echo "$CONFIG_AUTHOR_AFFILIATION" ;;
-        author.affiliation_full|author_affiliation_full) echo "$CONFIG_AUTHOR_AFFILIATION_FULL" ;;
-        author.roles|author_roles) echo "$CONFIG_AUTHOR_ROLES" ;;
-        # License fields
-        license.type|license_type) echo "$CONFIG_LICENSE_TYPE" ;;
-        license.year|license_year) echo "$CONFIG_LICENSE_YEAR" ;;
-        license.holder|license_holder) echo "$CONFIG_LICENSE_HOLDER" ;;
-        # R Package fields
-        r_package.min_r_version) echo "$CONFIG_RPACKAGE_MIN_R_VERSION" ;;
-        # Docker fields
-        docker.default_profile) echo "$CONFIG_DOCKER_DEFAULT_PROFILE" ;;
-        docker.registry) echo "$CONFIG_DOCKER_REGISTRY" ;;
-        # GitHub fields
-        github.default_visibility) echo "$CONFIG_GITHUB_DEFAULT_VISIBILITY" ;;
-        github.default_branch) echo "$CONFIG_GITHUB_DEFAULT_BRANCH" ;;
-        *) echo "" ;;
-    esac
-}
+# _get_config_value was removed: config get now reads the merged value via
+# _key_to_yaml_path + _yaml_path_to_var (the same _CONFIG_MAP the loader uses),
+# so get is symmetric with set and there is a single source of truth.
 
 #=============================================================================
 # INIT FLOW HELPERS
@@ -1223,28 +1214,33 @@ _save_and_exit() {
 
 # Translate a snake_case config key alias to its dotted YAML path. Shared by
 # config_get and config_set so the read and write paths cannot drift.
+# Resolve a user-facing key (snake_case) to its canonical YAML write path,
+# driven entirely by _CONFIG_ALIASES + _CONFIG_MAP. Prints the path and returns
+# 0; prints nothing and returns 1 if the key is unknown (so callers can reject
+# typos instead of silently writing an unreadable defaults.<typo> entry).
 _key_to_yaml_path() {
-    case "$1" in
-        author_name)               echo "author.name" ;;
-        author_email)              echo "author.email" ;;
-        author_orcid)              echo "author.orcid" ;;
-        author_affiliation)        echo "author.affiliation" ;;
-        author_affiliation_full)   echo "author.affiliation_full" ;;
-        author_roles)              echo "author.roles" ;;
-        license_type)              echo "license.type" ;;
-        license_year)              echo "license.year" ;;
-        license_holder)            echo "license.holder" ;;
-        license_include_file)      echo "license.include_file" ;;
-        github_account)            echo "github.account" ;;
-        github_default_visibility) echo "github.default_visibility" ;;
-        github_default_branch)     echo "github.default_branch" ;;
-        docker_account|dockerhub_account)            echo "defaults.dockerhub_account" ;;
-        docker_default_profile|profile_name|profile) echo "docker.default_profile" ;;
-        docker_registry)           echo "docker.registry" ;;
-        # Dotted keys pass through as-is; everything else goes to defaults.
-        *"."*)                     echo "$1" ;;
-        *)                         echo "defaults.$1" ;;
-    esac
+    local key="$1" yp vn k akey apath
+    # 1. Explicit friendly aliases (e.g. profile_name -> docker.default_profile).
+    while read -r akey apath; do
+        [[ -z "$akey" ]] && continue
+        [[ "$key" == "$akey" ]] && { echo "$apath"; return 0; }
+    done <<< "$_CONFIG_ALIASES"
+    # 2. Derive from _CONFIG_MAP: user key = path with 'defaults.' stripped and
+    #    remaining dots turned into underscores (team_name, docker_registry,
+    #    style_line_length, author_name, github_default_visibility, ...).
+    while read -r yp vn; do
+        [[ -z "$yp" ]] && continue
+        k="${yp#defaults.}"
+        k="${k//./_}"
+        [[ "$key" == "$k" ]] && { echo "$yp"; return 0; }
+    done <<< "$_CONFIG_MAP"
+    # 3. A fully-dotted key that names a known path passes through.
+    if [[ "$key" == *.* ]]; then
+        while read -r yp vn; do
+            [[ "$yp" == "$key" ]] && { echo "$yp"; return 0; }
+        done <<< "$_CONFIG_MAP"
+    fi
+    return 1
 }
 
 config_set() {
@@ -1279,9 +1275,14 @@ EOF
             [[ -n "$value" ]] && { validate_team_name "$value" || return 1; } ;;
     esac
 
-    # Map simple keys to their proper dotted paths
+    # Resolve the key to its canonical YAML path; reject unknown keys so a typo
+    # is not silently written to an unreadable defaults.<typo> entry.
     local yaml_path
-    yaml_path=$(_key_to_yaml_path "$key")
+    yaml_path=$(_key_to_yaml_path "$key") || {
+        log_error "Unknown config key: $1"
+        log_info "See available settings: zzcollab config list"
+        return 1
+    }
 
     yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
 }
@@ -1292,15 +1293,21 @@ config_get() {
     # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
     key="${key//-/_}"
 
-    # Map simple keys to their proper dotted paths (same mapping as config_set)
+    # Resolve the key to its canonical YAML path (same mapping as config_set).
     local yaml_path
-    yaml_path=$(_key_to_yaml_path "$key")
+    yaml_path=$(_key_to_yaml_path "$key") || {
+        log_error "Unknown config key: $1"
+        return 1
+    }
 
     if [[ "$local_only" == "true" ]]; then
         yaml_get "$CONFIG_PROJECT" "$yaml_path"
     else
         load_config
-        _get_config_value "$key"
+        # Read the merged value by mapping the YAML path to its CONFIG_ var, so
+        # get is symmetric with set (both route through _key_to_yaml_path).
+        local var
+        var=$(_yaml_path_to_var "$yaml_path") && printf '%s\n' "${!var}"
     fi
 }
 

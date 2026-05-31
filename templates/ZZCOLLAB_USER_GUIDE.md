@@ -663,11 +663,13 @@ on ARM64 hosts for images that require emulation.
 
 ### Platform Configuration
 
+The Docker build/run platform is controlled by Docker's own environment
+variable (zzcollab does not store it in config):
+
 ```bash
-zzc config set docker.platform auto      # auto-detect (default)
-zzc config set docker.platform amd64     # force AMD64
-zzc config set docker.platform arm64     # force ARM64
-zzc config set docker.platform native    # use host architecture
+export DOCKER_DEFAULT_PLATFORM=linux/amd64   # force AMD64 (e.g. rocker/verse on ARM)
+export DOCKER_DEFAULT_PLATFORM=linux/arm64   # force ARM64
+unset DOCKER_DEFAULT_PLATFORM                 # use the host architecture (default)
 ```
 
 ## CLI Reference

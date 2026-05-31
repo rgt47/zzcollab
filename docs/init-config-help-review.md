@@ -12,8 +12,8 @@ running the CLI in throwaway `/tmp` directories with `HOME` redirected (so the
 real `~/.zzcollab` was never touched). Each finding records severity, status,
 evidence, why it matters, and a fix.
 
-The init CRITICAL cluster (I1 through I4) was fixed and verified in this pass;
-everything else is open.
+Fixed and verified so far: the init CRITICAL cluster (I1 through I4) and the
+config key-merge (C1, C2; M1 partly). The remaining items are open.
 
 ## What is sound (so it is not re-audited)
 
@@ -76,7 +76,12 @@ interacted, so they were fixed together.
 
 ### C1. `config set KEY` and `config get KEY` disagree for many keys
 
-- **Status**: Open. **Verified**.
+- **Status**: FIXED (2026-05-31). `config get` now resolves the key through
+  `_key_to_yaml_path` and reads the merged value via `_yaml_path_to_var`
+  (driven by `_CONFIG_MAP`, the same table the loader uses), so get is
+  symmetric with set. `_get_config_value` was deleted. Verified: every
+  previously-empty key (`docker-registry`, `github.default_visibility`,
+  `style.line_length`, ...) now round-trips, in both kebab and dotted forms.
 - **Problem**: `config_set` resolves the key through `_key_to_yaml_path`
   (snake_case to dotted path) and writes it; `config_get` reads via a separate
   `_get_config_value` case whose labels do not cover everything `set` accepts,
@@ -93,7 +98,10 @@ interacted, so they were fixed together.
 
 ### C2. `config set` silently accepts unknown keys
 
-- **Status**: Open. **Verified**.
+- **Status**: FIXED (2026-05-31). `_key_to_yaml_path` is now driven by
+  `_CONFIG_MAP` + a small alias table and returns non-zero for unrecognized
+  keys; `config set`/`config get` reject them with "Unknown config key" and a
+  pointer to `config list`. Verified.
 - **Problem**: `_key_to_yaml_path` has a catch-all `*) echo "defaults.$1"`, so a
   typo (`dockerhub-acount`) is written under `defaults.` and then unreadable
   (C1). Misconfiguration is undetectable.
@@ -171,7 +179,13 @@ interacted, so they were fixed together.
 
 ### M1. Documented config keys that nothing consumes
 
-- **Status**: Open. **Verified**.
+- **Status**: Partly addressed (2026-05-31). Because the key set now drives an
+  allowlist, inert keys (`docker.platform`, `style.indent_size`, ...) are
+  rejected on `set`/`get` rather than silently stored, and the `docker.platform`
+  instructions in the user guide and `CONFIGURATION.md` were corrected to use
+  Docker's own `DOCKER_DEFAULT_PLATFORM` env var. The default-config heredoc
+  may still seed a few inert lines; trimming it (or wiring real consumers) is
+  the remaining work.
 - **Problem**: `docker.platform` (the user guide instructs `config set
   docker.platform amd64`), `r_package.language`, `style.indent_size`,
   `style.naming_convention`, `docker.default_base_image`, `github.create_issues`,
@@ -201,11 +215,13 @@ interacted, so they were fixed together.
 
 ## Root causes
 
-1. **The config key set is declared four times** (`_CONFIG_MAP`,
+1. **The config key set was declared four times** (`_CONFIG_MAP`,
    `_key_to_yaml_path`, `_get_config_value`, and the default-config heredoc) and
-   they have drifted. This spawns C1, C2, and M1. Collapse to one table that
-   drives loading, set-path, get-path, allowlist validation, and default
-   generation.
+   had drifted, spawning C1, C2, and M1. RESOLVED (2026-05-31): `_get_config_value`
+   was deleted and `_key_to_yaml_path` now derives from `_CONFIG_MAP` plus a
+   four-line alias table, so loading, set, get, and the allowlist share one
+   source of truth. Only the default-config heredoc remains separate (default
+   generation); see M1.
 2. **The init guard was added without covering every creation entry point or its
    own bypass.** This spawned the CRITICAL cluster (now fixed).
 3. **Help is maintained independently of the dispatcher with no cross-check**,
@@ -214,8 +230,7 @@ interacted, so they were fixed together.
 
 ## Recommended priority for the open items
 
-1. Config four-way merge (fixes C1, C2, M1 together) — highest, because `get`
-   misreporting live settings is the most damaging config property.
+1. ~~Config four-way merge (fixes C1, C2, M1)~~ — DONE 2026-05-31.
 2. Wire or remove `config set-local` (H1) and fix the subcommand `--help`s (H3).
 3. Fix the rebuild hint (H2) — trivial.
 4. Single PKG_NAME sanitizer (I5) and unknown-profile rejection (I6).
@@ -223,5 +238,5 @@ interacted, so they were fixed together.
    `zzc <word>` in help resolves in the dispatcher, and `config --help` exits 0.
 
 ---
-*Rendered on 2026-05-31 at 09:29 PDT.*<br>
+*Rendered on 2026-05-31 at 09:47 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/init-config-help-review.md*
