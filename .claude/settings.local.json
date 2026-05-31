@@ -51,7 +51,8 @@
       "Bash(echo \"pandoc: yes \\($\\(pandoc --version)",
       "Bash(bash *)",
       "Bash(git reset *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(md5 /Users/zenn/Dropbox/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh)"
     ]
   }
 }
