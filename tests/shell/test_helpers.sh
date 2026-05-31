@@ -199,3 +199,32 @@ print_result() {
         echo "  FAIL: $test_name"
     fi
 }
+
+# Auto-discover and run every test_* function defined in the calling script,
+# using the FAIL:/SKIP: output convention (assert_* helpers emit "FAIL:";
+# a test echoes "SKIP:" to skip). Prints per-test results plus a summary and
+# returns non-zero if any test failed. Shared by the auto-discovery test
+# files so the runner loop is defined once.
+run_test_suite() {
+    local test_func output
+    local passed=0 failed=0
+
+    for test_func in $(declare -F | awk '$3 ~ /^test_/ {print $3}'); do
+        output=$(run_test "$test_func" 2>&1) || true
+        if echo "$output" | grep -q "^FAIL:"; then
+            print_result "$test_func" 1
+            failed=$((failed + 1))
+            echo "$output" | head -5
+        elif echo "$output" | grep -q "^SKIP:"; then
+            print_result "$test_func (SKIPPED)" 0
+            passed=$((passed + 1))
+        else
+            print_result "$test_func" 0
+            passed=$((passed + 1))
+        fi
+    done
+
+    echo ""
+    echo "  Results: $passed passed, $failed failed"
+    [[ "$failed" -eq 0 ]]
+}

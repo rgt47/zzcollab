@@ -202,25 +202,4 @@ EOF
 # RUN ALL TESTS
 ##############################################################################
 
-TESTS_PASSED=0
-TESTS_FAILED=0
-
-for test_func in $(declare -F | awk '/test_/ {print $3}'); do
-  output=$(run_test "$test_func" 2>&1) || true
-  if echo "$output" | grep -q "^FAIL:"; then
-    print_result "$test_func" 1
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-    echo "$output" | head -3
-  elif echo "$output" | grep -q "^SKIP:"; then
-    print_result "$test_func (SKIPPED)" 0
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  else
-    print_result "$test_func" 0
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  fi
-done
-
-echo ""
-echo "  Results: $TESTS_PASSED passed, $TESTS_FAILED failed"
-
-[[ "$TESTS_FAILED" -eq 0 ]]
+run_test_suite
