@@ -144,7 +144,7 @@ rebuild <- function(target = 'docker-build') {
 
   # Return TRUE if command succeeded (exit code 0), FALSE otherwise
   # The %||% operator provides fallback value if status attribute is NULL
-  attr(result, 'status') %||% 0 == 0
+  (attr(result, 'status') %||% 0) == 0
 }
 
 #' List available zzcollab team Docker images
@@ -480,7 +480,7 @@ sync_env <- function() {
   # Check if we need to rebuild Docker image
   result <- safe_system('make docker-check-renv', intern = TRUE,
                        error_msg = 'Failed to check renv status')
-  if (attr(result, 'status') %||% 0 != 0) {
+  if ((attr(result, 'status') %||% 0) != 0) {
     message('Environment sync may require Docker image rebuild')
     message("Run rebuild() or 'make docker-build' to update Docker environment")
   }
@@ -558,7 +558,7 @@ validate_repro <- function() {
       message('Running reproducibility check: ', script)
       result <- safe_system(paste('Rscript', script), intern = TRUE,
                            error_msg = paste('Failed to run reproducibility check:', script))
-      if (attr(result, 'status') %||% 0 != 0) {
+      if ((attr(result, 'status') %||% 0) != 0) {
         message('FAILED: ', script)
         all_passed <- FALSE
       } else {

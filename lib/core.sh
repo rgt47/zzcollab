@@ -212,6 +212,12 @@ safe_mkdir() {
 # Arguments: $1 - source path, $2 - destination path
 safe_cp() {
     local src="$1" dest="$2"
+    # Verify the source exists before removing the destination, so a missing
+    # source cannot leave the destination deleted (and abort under set -e).
+    if [[ ! -f "$src" ]]; then
+        log_error "safe_cp: source not found: $src"
+        return 1
+    fi
     rm -f "$dest"
     cat "$src" > "$dest"
 }
