@@ -208,12 +208,14 @@ team_images <- function() {
   # Parse the tab-separated output into a structured data frame
   # Each line contains: repository, tag, size, created_date
   lines <- strsplit(result, "\t")
+  # vapply (not sapply) so each column is guaranteed a length-one character
+  # value per row (NA_character_ when a field is missing), never a list.
   df <- data.frame(
-    repository = sapply(lines, `[`, 1),  # Extract first column (repository)
-    tag = sapply(lines, `[`, 2),         # Extract second column (tag)
-    size = sapply(lines, `[`, 3),        # Extract third column (size)
-    created = sapply(lines, `[`, 4),     # Extract fourth column (created)
-    stringsAsFactors = FALSE             # Keep as character vectors
+    repository = vapply(lines, `[`, character(1), 1),
+    tag        = vapply(lines, `[`, character(1), 2),
+    size       = vapply(lines, `[`, character(1), 3),
+    created    = vapply(lines, `[`, character(1), 4),
+    stringsAsFactors = FALSE
   )
   df
 }

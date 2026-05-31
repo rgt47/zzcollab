@@ -240,8 +240,15 @@ assert_safe_init_directory() {
     fi
 
     if [[ "$items" -gt 3 ]]; then
-        log_warn "This directory has $items existing items."
-        confirm "Run zzc init here?" || return 1
+        # The soft prompt is a courtesy check, not the hard >1-subdir stop.
+        # Under --yes/accept-defaults, proceed non-interactively; the hard stop
+        # above still requires an explicit 'zzc init --force'.
+        if [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
+            log_warn "This directory has $items existing items; proceeding (--yes)."
+        else
+            log_warn "This directory has $items existing items."
+            confirm "Run zzc init here?" || return 1
+        fi
     fi
 
     return 0

@@ -90,6 +90,25 @@ is_workspace_initialized() {
     [[ -f "DESCRIPTION" ]]
 }
 
+# Run setup_project; on failure, roll back the partial scaffold by removing the
+# top-level entries it newly created. A snapshot taken before scaffolding means
+# pre-existing files are never removed (safe even under --force). This avoids a
+# half-created directory without re-introducing a manifest.
+setup_project_safe() {
+    local _before
+    _before=$(find . -maxdepth 1 -mindepth 1 2>/dev/null)
+    if setup_project; then
+        return 0
+    fi
+    local _entry
+    while IFS= read -r _entry; do
+        [[ -z "$_entry" ]] && continue
+        grep -qxF -- "$_entry" <<< "$_before" || rm -rf -- "$_entry"
+    done < <(find . -maxdepth 1 -mindepth 1 2>/dev/null)
+    log_warn "Initialization failed; rolled back the partial scaffold."
+    return 1
+}
+
 # Ensure zzcollab workspace exists, prompt to create if not
 # Returns 0 on success, 1 on failure/cancel
 ensure_workspace_initialized() {
@@ -132,8 +151,13 @@ ensure_workspace_initialized() {
     PKG_NAME=$(echo "$PKG_NAME" | tr '-' '.' | tr '[:upper:]' '[:lower:]')
     export PKG_NAME
 
+    # Guard against accidental scaffolding in an occupied directory. The lazy
+    # auto-init path (zzc docker / zzc renv) must not bypass the same check
+    # that 'init' and the profile quickstart use.
+    assert_safe_init_directory || return 1
+
     log_info "Initializing workspace: $PKG_NAME"
-    setup_project || {
+    setup_project_safe || {
         log_error "Workspace initialization failed"
         return 1
     }
@@ -254,7 +278,7 @@ cmd_init() {
     init_export_config_vars
 
     # Run project setup
-    setup_project || exit 1
+    setup_project_safe || exit 1
 
     log_success "Project setup complete"
     echo ""
@@ -1268,7 +1292,7 @@ cmd_quickstart() {
     log_info "Step 1/3: Creating project structure..."
     PKG_NAME=$(validate_package_name)
     export PKG_NAME
-    setup_project || return 1
+    setup_project_safe || return 1
     log_success "Project structure created"
 
     # Install zzvim-R graphics template for the analysis profile
@@ -1622,9 +1646,13 @@ main() {
                 ;;
 
             init)
-                cmd_init
-                commands_run=$((commands_run + 1))
                 shift
+                # Forward trailing flags (e.g. --force) so the guard's
+                # documented escape hatch is reachable; cmd_init parses leading
+                # flags, so consume them here before the next command.
+                cmd_init "$@"
+                commands_run=$((commands_run + 1))
+                while [[ $# -gt 0 ]] && [[ "$1" == -* ]]; do shift; done
                 ;;
             renv)
                 cmd_renv
