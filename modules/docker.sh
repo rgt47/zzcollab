@@ -401,31 +401,33 @@ parse_renv_lock() {
     jq -r '.Packages | keys[]' renv.lock 2>/dev/null | grep -v '^$' | sort -u || true
 }
 
+# Package-name filters for _is_valid_pkg (R base packages and heuristic noise).
+_DOCKER_BASE_PKGS=" base utils stats graphics grDevices methods datasets tools grid parallel "
+_DOCKER_SKIP_PKGS=" package pkg mypackage myproject yourpackage project data result output input test example sample demo template local any all none foo bar baz renv "
+
+# Filter a package name. The length filter ($2 = "strict") suppresses noise
+# from the heuristic code scan only; names sourced from renv.lock or
+# DESCRIPTION are authoritative and must not be dropped for being short
+# (e.g. sf, sp, V8, XML, gsl, gmp, png, bz2, fs, BH). Defined at file scope so
+# it is not re-created on every extract_r_packages call.
+_is_valid_pkg() {
+    local p="$1" mode="${2:-}"
+    [[ -z "$p" ]] && return 1
+    [[ "$mode" == "strict" && ${#p} -lt 3 ]] && return 1
+    [[ "$_DOCKER_BASE_PKGS" == *" $p "* ]] && return 1
+    [[ "$_DOCKER_SKIP_PKGS" == *" $p "* ]] && return 1
+    [[ "$p" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]] && return 0
+    return 1
+}
+
 extract_r_packages() {
     local packages=()
-    local base_pkgs=" base utils stats graphics grDevices methods datasets tools grid parallel "
-    local skip_pkgs=" package pkg mypackage myproject yourpackage "
-    skip_pkgs+="project data result output input test example sample "
-    skip_pkgs+="demo template local any all none foo bar baz renv "
 
-    # Helper: filter a package. The length filter ($2 = "strict") suppresses
-    # noise from the heuristic code scan only; names sourced from renv.lock or
-    # DESCRIPTION are authoritative and must not be dropped for being short
-    # (e.g. sf, sp, V8, XML, gsl, gmp, png, bz2, fs, BH).
-    _is_valid_pkg() {
-        local p="$1" mode="${2:-}"
-        [[ -z "$p" ]] && return 1
-        [[ "$mode" == "strict" && ${#p} -lt 3 ]] && return 1
-        [[ "$base_pkgs" == *" $p "* ]] && return 1
-        [[ "$skip_pkgs" == *" $p "* ]] && return 1
-        [[ "$p" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]] && return 0
-        return 1
-    }
-
-    # 1. Scan code files (heuristic — apply the length filter)
+    # 1. Scan code files (heuristic — apply the length filter). '.' already
+    # covers R/, scripts/, analysis/; listing them again just re-traverses.
     while IFS= read -r pkg; do
         _is_valid_pkg "$pkg" strict && packages+=("$pkg")
-    done < <(extract_code_packages "." "R" "scripts" "analysis" 2>/dev/null)
+    done < <(extract_code_packages "." 2>/dev/null)
 
     # 2. Add packages from DESCRIPTION (authoritative — no length filter)
     while IFS= read -r pkg; do

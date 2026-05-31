@@ -421,7 +421,13 @@ print_section() {
 # CONFIGURATION LOADING
 #=============================================================================
 
+# Memo so load_config parses the YAML at most once per process. config_set /
+# config_init reset it after writing so the next read reflects the change.
+_CONFIG_LOADED=""
+
 load_config() {
+    [[ "$_CONFIG_LOADED" == "true" ]] && return 0
+
     # Reset to defaults - original fields
     CONFIG_TEAM_NAME=""
     CONFIG_GITHUB_ACCOUNT=""
@@ -458,6 +464,8 @@ load_config() {
     # Load in reverse priority (later overrides earlier)
     _load_file "$CONFIG_USER"
     _load_file "$CONFIG_PROJECT"
+
+    _CONFIG_LOADED="true"
 }
 
 # Table mapping YAML paths to CONFIG_* variable names.
@@ -794,6 +802,7 @@ config_init() {
 
     # Create new config (only reached if file doesn't exist or user chose to overwrite)
     _create_default_config
+    _CONFIG_LOADED=""  # invalidate the memo: a fresh config file was written
 
     if [[ "$interactive" == "true" ]]; then
         config_interactive_setup
@@ -1266,6 +1275,8 @@ EOF
         return 1
     }
 
+    # Invalidate the load_config memo so the next read sees the new value.
+    _CONFIG_LOADED=""
     yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
 }
 

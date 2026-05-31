@@ -176,8 +176,10 @@ docker-rstudio:
 	@echo "Terminal available for code editing with vim"
 	docker run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
-# Terminal: Interactive bash for vim editing
-r: check-renv
+# Terminal: Interactive bash for vim editing.
+# No check-renv prerequisite: that spins up a full container validation before
+# you get a shell, and a second validation already runs after the session.
+r:
 	@if [ ! -f Dockerfile ]; then \
 		echo ""; \
 		echo "❌ No Dockerfile found - workspace not initialized"; \
