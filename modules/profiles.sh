@@ -263,10 +263,14 @@ get_profile_base_image() {
     local profile="$1"
     local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
 
+    command -v yq >/dev/null 2>&1 || { echo "rocker/r-ver"; return 0; }
     [[ ! -f "$bundles_file" ]] && { echo "rocker/r-ver"; return 0; }
 
+    # Pass the profile to yq as data (env(profile)) rather than splicing it
+    # into the query string, so an arbitrary profile name cannot inject yq
+    # expression syntax.
     local result
-    result=$(yq eval ".profiles.\"$profile\".base_image // \"\"" "$bundles_file" 2>/dev/null)
+    result=$(profile="$profile" yq eval '.profiles[env(profile)].base_image // ""' "$bundles_file" 2>/dev/null)
 
     if [[ -n "$result" && "$result" != "null" ]]; then
         echo "$result"
@@ -280,65 +284,53 @@ get_profile_base_image() {
 # LIST FUNCTIONS (for cmd_list)
 #=============================================================================
 
-list_profiles() {
+# Render a section of bundles.yaml as a list. The yq projection emits
+# tab-separated columns; the printf format must have exactly as many
+# specifiers as the projection emits columns (read -ra splits on tab only,
+# preserving spaces within a field).
+_list_yaml_section() {
+    local yq_expr="$1" fmt="$2" header="$3" footer="$4"
     local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
 
+    command -v yq >/dev/null 2>&1 || { log_error "yq required but not found"; return 1; }
     if [[ ! -f "$bundles_file" ]]; then
         log_error "bundles.yaml not found at $bundles_file"
         return 1
     fi
 
-    echo "Available profiles:"
+    echo "$header"
     echo ""
-
-    yq eval '.profiles | to_entries | .[] |
-        .key + "\t" + .value.base_image + "\t" + .value.description + "\t" + .value.size' \
-        "$bundles_file" | while IFS=$'\t' read -r profile base desc size; do
-        printf "  %-12s %-20s %s (%s)\n" "$profile" "$base" "$desc" "$size"
+    local fields
+    yq eval "$yq_expr" "$bundles_file" | while IFS=$'\t' read -ra fields; do
+        # shellcheck disable=SC2059
+        printf "$fmt\n" "${fields[@]}"
     done
-
     echo ""
-    echo "Usage: zzcollab init -r <profile>"
+    echo "$footer"
+}
+
+list_profiles() {
+    _list_yaml_section \
+        '.profiles | to_entries | .[] | .key + "\t" + .value.base_image + "\t" + .value.description + "\t" + .value.size' \
+        '  %-12s %-20s %s (%s)' \
+        'Available profiles:' \
+        'Usage: zzcollab init -r <profile>'
 }
 
 list_library_bundles() {
-    local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
-
-    if [[ ! -f "$bundles_file" ]]; then
-        log_error "bundles.yaml not found at $bundles_file"
-        return 1
-    fi
-
-    echo "System library bundles (components of profiles in bundles.yaml):"
-    echo ""
-
-    yq eval '.library_bundles | to_entries | .[] | .key + "\t" + .value.description' \
-        "$bundles_file" | while IFS=$'\t' read -r bundle desc; do
-        printf "  %-12s %s\n" "$bundle" "$desc"
-    done
-
-    echo ""
-    echo "Note: System deps are auto-derived from R packages in renv.lock."
-    echo "Libraries are selected by profile (zzc <profile> or --profile)."
+    _list_yaml_section \
+        '.library_bundles | to_entries | .[] | .key + "\t" + .value.description' \
+        '  %-12s %s' \
+        'System library bundles (components of profiles in bundles.yaml):' \
+        'Note: System deps are auto-derived from R packages in renv.lock.
+Libraries are selected by profile (zzc <profile> or --profile).'
 }
 
 list_package_bundles() {
-    local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
-
-    if [[ ! -f "$bundles_file" ]]; then
-        log_error "bundles.yaml not found at $bundles_file"
-        return 1
-    fi
-
-    echo "R package bundles (components of profiles in bundles.yaml):"
-    echo ""
-
-    yq eval '.package_bundles | to_entries | .[] | .key + "\t" + .value.description' \
-        "$bundles_file" | while IFS=$'\t' read -r bundle desc; do
-        printf "  %-12s %s\n" "$bundle" "$desc"
-    done
-
-    echo ""
-    echo "Note: Packages are managed via renv.lock. Add packages with"
-    echo "install.packages() inside the container."
+    _list_yaml_section \
+        '.package_bundles | to_entries | .[] | .key + "\t" + .value.description' \
+        '  %-12s %s' \
+        'R package bundles (components of profiles in bundles.yaml):' \
+        'Note: Packages are managed via renv.lock. Add packages with
+install.packages() inside the container.'
 }
