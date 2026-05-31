@@ -1,5 +1,5 @@
 # Tests for validation functions and error handling
-# Tests for Phase 2 improvements: safe_system(), validate_docker_name(), validate_path()
+# Tests for safe_system() and validate_docker_name()
 
 test_that("validate_docker_name accepts valid names", {
   # Valid Docker names
