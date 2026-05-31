@@ -54,29 +54,22 @@ CONFIG_LICENSE_INCLUDE_FILE="true"
 CONFIG_RPACKAGE_MIN_R_VERSION=""
 CONFIG_RPACKAGE_ROXYGEN_VERSION=""
 CONFIG_RPACKAGE_ENCODING=""
-CONFIG_RPACKAGE_LANGUAGE=""
 CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
 
 # Extended configuration state - Code Style
 CONFIG_STYLE_LINE_LENGTH=""
-CONFIG_STYLE_INDENT_SIZE=""
 CONFIG_STYLE_USE_NATIVE_PIPE=""
 CONFIG_STYLE_ASSIGNMENT=""
-CONFIG_STYLE_NAMING_CONVENTION=""
 
 # Extended configuration state - Docker
 # (The Docker Hub account is stored canonically in CONFIG_DOCKERHUB_ACCOUNT;
 # the former docker.account key is kept as a read alias for back-compat.)
 CONFIG_DOCKER_DEFAULT_PROFILE=""
-CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
 CONFIG_DOCKER_REGISTRY=""
-CONFIG_DOCKER_PLATFORM=""
 
 # Extended configuration state - GitHub
 CONFIG_GITHUB_DEFAULT_VISIBILITY=""
 CONFIG_GITHUB_DEFAULT_BRANCH=""
-CONFIG_GITHUB_CREATE_ISSUES=""
-CONFIG_GITHUB_CREATE_WIKI=""
 
 #=============================================================================
 # YAML OPERATIONS
@@ -457,21 +450,14 @@ load_config() {
     CONFIG_RPACKAGE_MIN_R_VERSION=""
     CONFIG_RPACKAGE_ROXYGEN_VERSION=""
     CONFIG_RPACKAGE_ENCODING=""
-    CONFIG_RPACKAGE_LANGUAGE=""
     CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
     CONFIG_STYLE_LINE_LENGTH=""
-    CONFIG_STYLE_INDENT_SIZE=""
     CONFIG_STYLE_USE_NATIVE_PIPE=""
     CONFIG_STYLE_ASSIGNMENT=""
-    CONFIG_STYLE_NAMING_CONVENTION=""
     CONFIG_DOCKER_DEFAULT_PROFILE=""
-    CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
     CONFIG_DOCKER_REGISTRY=""
-    CONFIG_DOCKER_PLATFORM=""
     CONFIG_GITHUB_DEFAULT_VISIBILITY=""
     CONFIG_GITHUB_DEFAULT_BRANCH=""
-    CONFIG_GITHUB_CREATE_ISSUES=""
-    CONFIG_GITHUB_CREATE_WIKI=""
 
     # Load in reverse priority (later overrides earlier)
     _load_file "$CONFIG_USER"
@@ -505,22 +491,15 @@ license.include_file            CONFIG_LICENSE_INCLUDE_FILE
 r_package.min_r_version         CONFIG_RPACKAGE_MIN_R_VERSION
 r_package.roxygen_version       CONFIG_RPACKAGE_ROXYGEN_VERSION
 r_package.encoding              CONFIG_RPACKAGE_ENCODING
-r_package.language              CONFIG_RPACKAGE_LANGUAGE
 r_package.vignette_builder      CONFIG_RPACKAGE_VIGNETTE_BUILDER
 style.line_length               CONFIG_STYLE_LINE_LENGTH
-style.indent_size               CONFIG_STYLE_INDENT_SIZE
 style.use_native_pipe           CONFIG_STYLE_USE_NATIVE_PIPE
 style.assignment                CONFIG_STYLE_ASSIGNMENT
-style.naming_convention         CONFIG_STYLE_NAMING_CONVENTION
 docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
-docker.default_base_image       CONFIG_DOCKER_DEFAULT_BASE_IMAGE
 docker.registry                 CONFIG_DOCKER_REGISTRY
-docker.platform                 CONFIG_DOCKER_PLATFORM
 github.account                  CONFIG_GITHUB_ACCOUNT
 github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
 github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
-github.create_issues            CONFIG_GITHUB_CREATE_ISSUES
-github.create_wiki              CONFIG_GITHUB_CREATE_WIKI
 "
 
 _load_file() {
