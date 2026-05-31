@@ -52,7 +52,9 @@
       "Bash(bash *)",
       "Bash(git reset *)",
       "Bash(git add *)",
-      "Bash(md5 /Users/zenn/Dropbox/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh)"
+      "Bash(md5 /Users/zenn/Dropbox/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh)",
+      "Bash(/Users/zenn/Dropbox/prj/sfw/07-zzcollab/zzcollab/zzcollab.sh --help)",
+      "Bash(echo \"=====EXIT $?=====\")"
     ]
   }
 }

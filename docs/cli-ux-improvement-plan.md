@@ -33,14 +33,13 @@ sweep were then implemented on 2026-05-30. The current status of each finding:
 | F6 (flag-vs-config rule) | Done | 'Where settings live' subsection added to `docs/CONFIGURATION.md`. |
 | F7 (`build` vs `docker --build`) | Done | `build` renamed to `rebuild`; `build` kept as a deprecated alias with a warning. |
 | F8 (`validate` vs `doctor`) | Done (reframed) | The maintainer's zzrenvcheck refactor already removed the overlap: `validate` now checks package dependencies and `doctor` checks workspace files. Only the stale help label remained, now corrected. |
-| F4 (profile-token overload) | Scoped, decided | Profiles reduced and the `cmd_init` guard hardened (commit `56ae900`). The remaining verb split is now fully scoped and decided (B1 + D-break); ready to implement. |
+| F4 (profile-token overload) | Done | Implemented (B1 + D-break): a bare profile token no longer switches an existing project; a different-profile request errors and points to `docker --profile`. The destructive `.Rprofile`/`Makefile` overwrite was removed. Test in `test-integration.sh`; changelog noted. |
 | F9a (flag-binding doc) | Done | Help notes that a per-command option binds to the command immediately before it. |
 
-Phase 0 (F1, F2, F3, F5, F9b, F10), Phase 1 (F6, F7, F8), F9a, and D1 are
-complete and verified (`shellcheck` clean; `test-cli`, `test-docs`,
-`test-profiles`, `test-config` pass). The single remaining open item is F4's
-verb split (the state-dependent profile token), which is a behavior change held
-for a coordinated release. D1 is described below.
+All findings are now complete: Phase 0 (F1, F2, F3, F5, F9b, F10), Phase 1
+(F6, F7, F8), F9a, F4, and D1. Verified `shellcheck` clean with `test-cli`,
+`test-docs`, `test-profiles`, `test-config`, and `test-integration` passing.
+D1 is described below.
 
 ## Scope and constraints
 
@@ -242,19 +241,13 @@ customized `.Rprofile`/`Makefile` untouched.
 case; removes a silent data-loss path. Needs a release note regardless of the
 deprecation choice.
 
-**Decided (2026-05-31).** B1 (switching stays `zzcollab docker --profile X`;
-no new verb) and D-break (a different-profile bare token errors immediately,
-directing the user to `docker --profile X`, with no warning window). The
-destructive `.Rprofile`/`Makefile` overwrite is removed either way. Ready to
-implement:
-
-- In `cmd_quickstart`, replace the different-profile branch
-  (`zzcollab.sh:1196-1220`) with a hard error that names the switch path; keep
-  the create and idempotent-same-profile branches.
-- No change to `cmd_docker --profile`, which is already the non-destructive
-  switch.
-- Add `test-cli` cases and a `NEWS.md`/`CHANGELOG.md` release note recording
-  the behavior change.
+**Done (2026-05-31), B1 + D-break.** The different-profile branch in
+`cmd_quickstart` was replaced with a hard error that names the switch path
+(`zzcollab docker --profile X`); the create and idempotent-same-profile branches
+are unchanged; the destructive `.Rprofile`/`Makefile` overwrite was removed.
+`cmd_docker --profile` (the non-destructive switch) was left as-is. Covered by
+`test_bare_profile_refuses_to_switch_existing_project` in
+`tests/shell/test-integration.sh`; recorded in `docs/changelog.md`.
 
 ### F9a. Document the flag binding rule for combined commands
 
@@ -325,5 +318,5 @@ implement:
   ready to implement; no decisions remain.
 
 ---
-*Rendered on 2026-05-31 at 08:44 PDT.*<br>
+*Rendered on 2026-05-31 at 08:57 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/cli-ux-improvement-plan.md*

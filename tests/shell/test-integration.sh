@@ -211,6 +211,43 @@ test_renv_lock_has_r_version() {
 }
 
 ##############################################################################
+# TEST: A bare profile token does not silently switch an existing project (F4)
+##############################################################################
+
+test_bare_profile_refuses_to_switch_existing_project() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  mkdir proj && cd proj
+
+  # Mock an initialized project configured with the 'analysis' profile,
+  # plus sentinel files that the old silent-switch path used to overwrite.
+  printf 'Package: proj\nVersion: 0.0.1\n' > DESCRIPTION
+  printf 'docker:\n  default_profile: "analysis"\n' > zzcollab.yaml
+  printf 'SENTINEL-RPROFILE\n' > .Rprofile
+  printf 'SENTINEL-MAKEFILE\n' > Makefile
+  local rp_before mk_before
+  rp_before=$(cksum .Rprofile)
+  mk_before=$(cksum Makefile)
+
+  # A different-profile bare token must error rather than switch.
+  local rc=0
+  bash "$ZZCOLLAB_SH" rstudio >/dev/null 2>&1 || rc=$?
+  assert_true "[ $rc -ne 0 ]" \
+    "bare 'zzcollab rstudio' on an existing 'analysis' project should error" \
+    || { teardown_test; return 1; }
+
+  # ...and must not have touched .Rprofile or Makefile.
+  assert_equals "$rp_before" "$(cksum .Rprofile)" \
+    ".Rprofile must be left untouched by a refused switch" \
+    || { teardown_test; return 1; }
+  assert_equals "$mk_before" "$(cksum Makefile)" \
+    "Makefile must be left untouched by a refused switch" \
+    || { teardown_test; return 1; }
+
+  teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

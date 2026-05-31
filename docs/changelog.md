@@ -2,6 +2,12 @@
 
 This document chronicles all major changes, enhancements, and improvements to ZZCOLLAB.
 
+## CLI UX changes (May 2026)
+
+**Behavior change: a bare profile token no longer switches an existing project.** `zzcollab <profile>` now creates a new compendium only. In an already-initialized project, requesting a *different* profile errors and directs the user to `zzcollab docker --profile <name>`, which switches the profile non-destructively (it regenerates the Dockerfile only). The previous behavior silently overwrote a customized `.Rprofile` and `Makefile` from templates; that path was removed.
+
+Other CLI cleanups: removed the redundant `docker -n`/`--no` and the `-Y`/`--yes-all` aliases; renamed the `build` command to `rebuild` (with `build` kept as a deprecated alias); `zzcollab <profile>` now rejects a trailing flag instead of partially scaffolding; and the help text documents flag binding for combined commands and clarifies that `-t` is the image tag, not team.
+
 ## Version 2.0 (2025) - Unified Paradigm Release
 
 ### Unified Paradigm Consolidation (October 2025)
