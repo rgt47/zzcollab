@@ -11,7 +11,7 @@
 #   zzcollab config [SUBCOMMAND]     Configuration management
 #   zzcollab help [TOPIC]            Show help
 #
-# PROFILES (quickstart: init + renv + docker, or switch profile if existing):
+# PROFILES (quickstart in a new directory: init + renv + docker):
 #   zzcollab analysis                Tidyverse compendium (recommended)
 #   zzcollab minimal | rstudio
 #
@@ -147,6 +147,14 @@ ensure_workspace_initialized() {
 # DOCKER IMAGE HELPER
 #=============================================================================
 
+# Prompt whether to build the Docker image now.
+# Returns 0 if the user wants to build, 1 to skip.
+prompt_build_now() {
+    local _choice
+    zzc_read -r -p "Build Docker image now? [Y/n]: " _choice
+    [[ ! "$_choice" =~ ^[Nn]$ ]]
+}
+
 # Ensure Docker image exists, prompt to build if not
 # Usage: ensure_docker_image_built [project_name]
 # Returns 0 on success, 1 on failure/cancel
@@ -241,23 +249,9 @@ cmd_init() {
         load_config 2>/dev/null || true
     fi
 
-    # Sync template substitution variables from the final resolved config.
-    # AUTHOR_NAME and AUTHOR_EMAIL are used by envsubst inside setup_project.
-    [[ -n "${CONFIG_AUTHOR_NAME:-}" ]]    && AUTHOR_NAME="$CONFIG_AUTHOR_NAME"
-    [[ -n "${CONFIG_AUTHOR_EMAIL:-}" ]]   && AUTHOR_EMAIL="$CONFIG_AUTHOR_EMAIL"
-    [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
-    [[ -n "${CONFIG_TEAM_NAME:-}" ]]      && TEAM_NAME="$CONFIG_TEAM_NAME"
-    export AUTHOR_NAME AUTHOR_EMAIL GITHUB_ACCOUNT TEAM_NAME
-
-    # Resolve profile and base image. CLI flag takes precedence over config.
-    local profile_name base_image
-    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] && [[ -n "${PROFILE_NAME:-}" ]]; then
-        profile_name="$PROFILE_NAME"
-    else
-        profile_name="${CONFIG_PROFILE_NAME:-minimal}"
-    fi
-    base_image=$(get_profile_base_image "$profile_name")
-    export BASE_IMAGE="$base_image"
+    # Export template-substitution vars and the resolved BASE_IMAGE from the
+    # final config, for envsubst and Dockerfile generation in setup_project.
+    init_export_config_vars
 
     # Run project setup
     setup_project || exit 1
@@ -275,6 +269,33 @@ cmd_init() {
     fi
 
     # Phase 3: Reproducibility setup
+    prompt_reproducibility_setup
+    return 0
+}
+
+# Sync template substitution variables (AUTHOR_NAME etc., used by envsubst in
+# setup_project) and the resolved BASE_IMAGE from the final config. A CLI
+# --profile flag takes precedence over the configured profile.
+init_export_config_vars() {
+    [[ -n "${CONFIG_AUTHOR_NAME:-}" ]]    && AUTHOR_NAME="$CONFIG_AUTHOR_NAME"
+    [[ -n "${CONFIG_AUTHOR_EMAIL:-}" ]]   && AUTHOR_EMAIL="$CONFIG_AUTHOR_EMAIL"
+    [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
+    [[ -n "${CONFIG_TEAM_NAME:-}" ]]      && TEAM_NAME="$CONFIG_TEAM_NAME"
+    export AUTHOR_NAME AUTHOR_EMAIL GITHUB_ACCOUNT TEAM_NAME
+
+    local profile_name base_image
+    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] && [[ -n "${PROFILE_NAME:-}" ]]; then
+        profile_name="$PROFILE_NAME"
+    else
+        profile_name="${CONFIG_PROFILE_NAME:-minimal}"
+    fi
+    base_image=$(get_profile_base_image "$profile_name")
+    export BASE_IMAGE="$base_image"
+}
+
+# cmd_init Phase 3: offer renv-only / renv+Docker / none and dispatch to
+# cmd_renv or cmd_docker. Uses only global state, so it extracts cleanly.
+prompt_reproducibility_setup() {
     echo "───────────────────────────────────────────────────────────"
     echo "  Reproducibility Setup"
     echo "───────────────────────────────────────────────────────────"
@@ -395,9 +416,7 @@ cmd_docker() {
         log_info "Build with: make docker-build"
     elif [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         echo ""
-        local build_choice
-        zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
-        if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+        if prompt_build_now; then
             build_docker_image || exit 1
         else
             log_info "Build later with: make docker-build"
@@ -1192,46 +1211,20 @@ cmd_quickstart() {
             return 0
         fi
 
-        # Profile change requested
+        # A different profile is requested for an existing project. Do NOT
+        # silently switch: that path used to overwrite a customized
+        # .Rprofile/Makefile. A bare profile token is create-only; switching is
+        # an explicit, non-destructive operation via 'docker --profile'.
         if [[ "$current_profile" != "$profile" ]]; then
-            log_info "Switching profile: ${current_profile:-<none>} → $profile"
-            config_set "profile-name" "$profile" true 2>/dev/null || true
-
-            # Update .Rprofile from template
-            if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
-                safe_cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
-                log_success "Updated .Rprofile from template"
-            fi
-
-            # Install zzvim-R graphics for the analysis profile (if not already present)
-            if [[ "$profile" == "analysis" ]] && [[ ! -f ".Rprofile.local" ]]; then
-                install_zzvimr_graphics_template || true
-            fi
-
-            # Update Makefile from template
-            if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/Makefile" ]]; then
-                safe_cp "$ZZCOLLAB_TEMPLATES_DIR/Makefile" Makefile
-                log_success "Updated Makefile from template"
-            fi
-
-            # Regenerate Dockerfile with new profile
-            export BASE_IMAGE="$base_image"
-            generate_dockerfile || return 1
-            log_success "Dockerfile regenerated with $profile profile"
-
-            # Prompt to build
-            if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
-                log_info "Build later with: zzc docker"
+            if [[ -n "$current_profile" ]]; then
+                log_error "This project is configured with the '$current_profile' profile."
+                log_info  "To switch it to '$profile':  zzcollab docker --profile $profile"
             else
-                echo ""
-                local build_choice
-                zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
-                if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
-                    build_docker_image || return 1
-                else
-                    log_info "Build later with: zzc docker"
-                fi
+                log_error "This project has no profile set."
+                log_info  "To configure it with '$profile':  zzcollab docker --profile $profile"
             fi
+            log_info  "(That regenerates the Dockerfile only; your .Rprofile and Makefile are left untouched.)"
+            return 1
         else
             # Same profile, missing Dockerfile
             log_info "Generating missing Dockerfile for profile: $profile"
@@ -1315,9 +1308,7 @@ cmd_quickstart() {
         echo ""
         log_info "Build later with: make docker-build"
     else
-        local build_choice
-        zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
-        if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+        if prompt_build_now; then
             echo ""
             build_docker_image || return 1
             echo ""
