@@ -102,34 +102,6 @@ test_validate_positive_int_text_invalid() {
 }
 
 ##############################################################################
-# TEST: validate_percentage
-##############################################################################
-
-test_validate_percentage_zero() {
-  validate_percentage "0"
-}
-
-test_validate_percentage_fifty() {
-  validate_percentage "50"
-}
-
-test_validate_percentage_hundred() {
-  validate_percentage "100"
-}
-
-test_validate_percentage_empty_ok() {
-  validate_percentage ""
-}
-
-test_validate_percentage_over_100_invalid() {
-  ! validate_percentage "101"
-}
-
-test_validate_percentage_negative_invalid() {
-  ! validate_percentage "-5"
-}
-
-##############################################################################
 # TEST: config_set / config_get (requires yq)
 ##############################################################################
 

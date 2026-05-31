@@ -36,7 +36,6 @@ get_base_image_tools() {
 # Generate install commands for missing tools
 # TinyTeX is excluded by default. The project directory is bind-mounted
 # from the host, so LaTeX rendering typically runs on the host.
-# Exception: analysis_pdf profile includes tinytex for self-contained PDF rendering.
 generate_tools_install() {
     local base_image="$1"
     local profile_name="${2:-}"
@@ -272,11 +271,6 @@ prompt_new_workspace_setup() {
     echo "$selected_version"
 }
 
-# Wrapper for backward compatibility
-prompt_r_version_selection() {
-    prompt_new_workspace_setup
-}
-
 extract_r_version() {
     if [[ -n "${R_VERSION:-}" ]]; then
         echo "$R_VERSION"
@@ -285,7 +279,7 @@ extract_r_version() {
 
     if [[ ! -f "renv.lock" ]]; then
         if [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
-            prompt_r_version_selection
+            prompt_new_workspace_setup
             return $?
         else
             log_error "R version not specified and renv.lock not found"
@@ -529,14 +523,13 @@ generate_dockerfile() {
     fi
 
     # Derive profile name from base image for Makefile compatibility
-    # Use PROFILE_NAME if set (from CLI), otherwise infer from base image
+    # Use PROFILE_NAME if set (from CLI), otherwise infer from base image.
+    # Only the three supported profiles are produced: minimal, analysis, rstudio.
     local profile_name="${PROFILE_NAME:-minimal}"
     if [[ "$profile_name" == "minimal" ]]; then
         case "$base_image" in
             *tidyverse*) profile_name="analysis" ;;
-            *verse*) profile_name="publishing" ;;
             *rstudio*) profile_name="rstudio" ;;
-            *shiny*) profile_name="shiny" ;;
         esac
     fi
 
@@ -673,7 +666,6 @@ find_cached_image() {
     [[ -n "$image_id" ]] && echo "$image_id"
 }
 
-# shellcheck disable=SC2120
 build_docker_image() {
     local project_name="${1:-$(basename "$(pwd)")}"
     local no_cache="${2:-false}"

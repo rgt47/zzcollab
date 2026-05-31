@@ -169,17 +169,13 @@ BASE_IMAGE="${DEFAULT_BASE_IMAGE}"
 TEAM_NAME=""
 PROJECT_NAME=""
 GITHUB_ACCOUNT=""
-DOCKERFILE_PATH=""
-IMAGE_TAG=""
 R_VERSION=""  # R version for Docker build (extracted from renv.lock or specified via --r-version)
 
 # Initialization mode variables
-PREPARE_DOCKERFILE=false
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
 WITH_EXAMPLES=false      # Include example files and templates in workspace
-ADD_EXAMPLES=false       # Add examples to existing project
 
 # Profile bundle variables (system libraries and R packages)
 LIBS_BUNDLE=""    # System library bundle (e.g., minimal, modeling, publishing, gui)
@@ -192,7 +188,6 @@ USER_PROVIDED_LIBS=false
 USER_PROVIDED_PKGS=false
 USER_PROVIDED_PROFILE=false
 USER_PROVIDED_R_VERSION=false
-USE_TEAM_IMAGE=false    # Deprecated: retained for backward compatibility
 
 #=============================================================================
 # WORKFLOW TEMPLATE HELPER

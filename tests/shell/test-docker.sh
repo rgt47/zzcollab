@@ -94,13 +94,6 @@ test_tools_install_always_has_yaml() {
     "should always install yaml package"
 }
 
-test_tools_install_analysis_pdf_has_tinytex() {
-  local result
-  result=$(generate_tools_install "rocker/r-ver:4.4.0" "analysis_pdf")
-  assert_output_contains "$result" "tinytex" \
-    "analysis_pdf profile should install tinytex"
-}
-
 test_tools_install_analysis_no_tinytex() {
   local result
   result=$(generate_tools_install "rocker/r-ver:4.4.0" "analysis")

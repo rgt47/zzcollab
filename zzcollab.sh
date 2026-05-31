@@ -47,14 +47,6 @@ log_error() { printf "❌ %s\n" "$*" >&2; }
 log_debug() { :; }
 
 #=============================================================================
-# PORTABILITY HELPERS
-#=============================================================================
-
-_reverse_lines() {
-    awk '{a[NR]=$0} END{for(i=NR;i>=1;i--)print a[i]}'
-}
-
-#=============================================================================
 # LOAD FOUNDATION LIBRARIES AND ALL MODULES
 #=============================================================================
 
@@ -338,7 +330,6 @@ cmd_docker() {
     local r_version=""
     local base_image=""
     local profile=""
-    local profile_changed=false
     local auto_no=false
 
     while [[ $# -gt 0 ]]; do
@@ -349,7 +340,7 @@ cmd_docker() {
             -n|--no) auto_no=true; shift ;;
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
-            --profile|-r) profile="$2"; profile_changed=true; shift 2 ;;
+            --profile|-r) profile="$2"; shift 2 ;;
             help|--help|-h) show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac

@@ -116,21 +116,6 @@ yaml_set() {
     _YQ_VAL="$value" yq eval ".$path = strenv(_YQ_VAL)" "$file" -i
 }
 
-yaml_set_bool() {
-    local file="$1" path="$2" value="$3"
-    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
-    [[ "$value" == "true" || "$value" == "false" ]] || { log_error "Boolean expected: $value"; return 1; }
-    _require_yq || return 1
-    yq eval ".$path = $value" "$file" -i
-}
-
-yaml_set_array() {
-    local file="$1" path="$2" value="$3"
-    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
-    _require_yq || return 1
-    yq eval ".$path = [$value]" "$file" -i
-}
-
 #=============================================================================
 # INPUT VALIDATION HELPERS
 #=============================================================================
@@ -160,13 +145,6 @@ validate_positive_int() {
     local num="$1"
     [[ -z "$num" ]] && return 0  # Empty is OK
     [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -gt 0 ]]
-}
-
-# Validate percentage (0-100)
-validate_percentage() {
-    local num="$1"
-    [[ -z "$num" ]] && return 0  # Empty is OK
-    [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 0 ]] && [[ "$num" -le 100 ]]
 }
 
 #=============================================================================
@@ -1402,87 +1380,6 @@ config_list() {
     [[ -f "$CONFIG_PROJECT" ]] && echo "  [x] $CONFIG_PROJECT" || echo "  [ ] $CONFIG_PROJECT"
     [[ -f "$CONFIG_USER" ]] && echo "  [x] $CONFIG_USER" || echo "  [ ] $CONFIG_USER"
     echo ""
-}
-
-config_validate() {
-    local errors=0
-    for file in "$CONFIG_PROJECT" "$CONFIG_USER"; do
-        [[ -f "$file" ]] || continue
-        printf "Checking %s... " "$file"
-        if yq eval '.' "$file" >/dev/null 2>&1; then
-            echo "OK"
-        else
-            echo "INVALID"
-            errors=$((errors + 1))
-        fi
-    done
-    [[ $errors -eq 0 ]]
-}
-
-#=============================================================================
-# COMMAND DISPATCHER
-#=============================================================================
-
-handle_config_command() {
-    local cmd="${1:-list}"
-    shift 2>/dev/null || true
-
-    case "$cmd" in
-        init)
-            if [[ "${1:-}" == "--interactive" || "${1:-}" == "-i" ]]; then
-                config_init true
-            else
-                config_init false
-            fi
-            ;;
-        set)
-            [[ $# -ge 2 ]] || { echo "Usage: config set KEY VALUE"; return 1; }
-            config_set "$1" "$2"
-            ;;
-        get)
-            [[ $# -ge 1 ]] || { echo "Usage: config get KEY"; return 1; }
-            config_get "$1"
-            ;;
-        list)
-            config_list false "${1:-all}"
-            ;;
-        set-local)
-            [[ $# -ge 2 ]] || { echo "Usage: config set-local KEY VALUE"; return 1; }
-            config_set "$1" "$2" true
-            ;;
-        get-local)
-            [[ $# -ge 1 ]] || { echo "Usage: config get-local KEY"; return 1; }
-            config_get "$1" true
-            ;;
-        list-local)
-            config_list true
-            ;;
-        validate)
-            config_validate
-            ;;
-        path)
-            echo "User:    $CONFIG_USER"
-            echo "Project: $CONFIG_PROJECT"
-            ;;
-        *)
-            echo "Unknown: $cmd"
-            echo ""
-            echo "Commands:"
-            echo "  init                    Create default config file"
-            echo "  init --interactive      Guided configuration wizard"
-            echo "  set KEY VALUE           Set a configuration value"
-            echo "  get KEY                 Get a configuration value"
-            echo "  list [section]          List all or section config"
-            echo "  set-local KEY VALUE     Set project-local value"
-            echo "  get-local KEY           Get project-local value"
-            echo "  list-local              List project config"
-            echo "  validate                Validate YAML syntax"
-            echo "  path                    Show config file paths"
-            echo ""
-            echo "Sections: author, license, r_package, style, docker, github, defaults"
-            return 1
-            ;;
-    esac
 }
 
 #=============================================================================

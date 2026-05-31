@@ -184,11 +184,8 @@ substitute_variables() {
     export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     # Don't default R_VERSION to 'latest' - let generate_dockerfile read from renv.lock
     [[ -n "${R_VERSION:-}" ]] && export R_VERSION
-    export USERNAME="${USERNAME:-analyst}"
 
     export PACKAGE_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
-    export AUTHOR_LAST="${AUTHOR_LAST:-}"
-    export AUTHOR_ORCID="${CONFIG_AUTHOR_ORCID:-${AUTHOR_ORCID:-}}"
 
     # DESCRIPTION metadata sourced from the resolved config (with R-package
     # defaults). AUTHORS_R is pre-rendered because envsubst cannot express the
@@ -198,26 +195,17 @@ substitute_variables() {
     export PKG_ENCODING="${CONFIG_RPACKAGE_ENCODING:-UTF-8}"
     AUTHORS_R="$(render_authors_r)"
     export AUTHORS_R
-    export MANUSCRIPT_TITLE="${MANUSCRIPT_TITLE:-Research Compendium Analysis}"
     export DATE="$(date +%Y-%m-%d)"
     export GITHUB_ACCOUNT="${GITHUB_ACCOUNT:-}"
-
-    export TEAM_NAME="${TEAM_NAME:-}"
     export PROJECT_NAME="${PROJECT_NAME:-}"
-    export DOCKERHUB_ACCOUNT="${DOCKERHUB_ACCOUNT:-}"
-
-    export R_PACKAGES_INSTALL_CMD="${R_PACKAGES_INSTALL_CMD:-# No R packages specified}"
-    export SYSTEM_DEPS_INSTALL_CMD="${SYSTEM_DEPS_INSTALL_CMD:-# No system dependencies specified}"
-    export LIBS_BUNDLE="${LIBS_BUNDLE:-minimal}"
-    export PKGS_BUNDLE="${PKGS_BUNDLE:-minimal}"
     if [[ -z "${ZZCOLLAB_TEMPLATE_VERSION:-}" ]]; then
         ZZCOLLAB_TEMPLATE_VERSION="0.0.0"
     fi
     export ZZCOLLAB_TEMPLATE_VERSION
 
-    # Note: $USERNAME and $BASE_IMAGE are intentionally excluded - they are runtime
-    # shell variables in Makefile ($$USERNAME, $$BASE_IMAGE), not template placeholders
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHOR_LAST $AUTHOR_ORCID $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $MANUSCRIPT_TITLE $DATE $GITHUB_ACCOUNT $TEAM_NAME $PROJECT_NAME $DOCKERHUB_ACCOUNT $R_PACKAGES_INSTALL_CMD $SYSTEM_DEPS_INSTALL_CMD $LIBS_BUNDLE $PKGS_BUNDLE $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    # Note: $BASE_IMAGE is intentionally excluded - it is a runtime shell
+    # variable in Makefile ($$BASE_IMAGE), not a template placeholder.
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1
