@@ -425,6 +425,7 @@ check_workspace() {
                 bump_stamp "$_fp" "$_pfx" "$_nv" && _n_fixed=$((_n_fixed + 1))
             done
             total_issues=$((total_issues - _n_fixed))
+            (( total_issues < 0 )) && total_issues=0
         fi
     fi
     echo ""
@@ -533,6 +534,11 @@ print_version_status() {
             printf "    %-18s ${COL_YELLOW}v%-6s (newer than template v%s)${COL_RESET}\n" \
                 "$filename" "$found_ver" "$CURRENT_VERSION"
             return 0
+            ;;
+        *)
+            printf "    %-18s ${COL_RED}v%-6s (version compare failed)${COL_RESET}\n" \
+                "$filename" "$found_ver"
+            return 1
             ;;
     esac
 }

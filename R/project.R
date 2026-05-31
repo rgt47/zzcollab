@@ -283,6 +283,14 @@ init_project <- function(team_name = NULL, project_name = NULL,
     validate_docker_name(github_account, "github_account")
   }
 
+  # Profile flows to the shell as a bare command; constrain it to the known
+  # set so an arbitrary string cannot reach the shell.
+  valid_profiles <- c("minimal", "analysis", "rstudio")
+  if (!profile %in% valid_profiles) {
+    stop("Invalid profile '", profile, "'. Must be one of: ",
+         paste(valid_profiles, collapse = ", "), call. = FALSE)
+  }
+
   # Now apply config defaults for missing parameters
   team_name <- team_name %||% get_config_default("team_name")
   github_account <- github_account %||% get_config_default("github_account") %||% team_name

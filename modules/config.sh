@@ -90,9 +90,20 @@ _require_yq() {
     }
 }
 
+# Reject any path that is not a plain dotted key, so a user-supplied key
+# cannot inject expressions into the yq program string.
+_validate_yaml_path() {
+    local path="$1"
+    [[ "$path" =~ ^[A-Za-z0-9_.]+$ ]] || {
+        log_error "Invalid config key: $path"
+        return 1
+    }
+}
+
 yaml_get() {
     local file="$1" path="$2"
     [[ -f "$file" ]] || return 1
+    _validate_yaml_path "$path" || return 1
     _require_yq || return 1
     yq eval ".$path // \"\"" "$file" 2>/dev/null
 }
@@ -100,6 +111,7 @@ yaml_get() {
 yaml_set() {
     local file="$1" path="$2" value="$3"
     [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
+    _validate_yaml_path "$path" || return 1
     _require_yq || return 1
     _YQ_VAL="$value" yq eval ".$path = strenv(_YQ_VAL)" "$file" -i
 }

@@ -217,7 +217,9 @@ cmd_init() {
         esac
     done
 
-    [[ "$force" == "false" ]] && assert_safe_init_directory || true
+    if [[ "$force" == "false" ]]; then
+        assert_safe_init_directory || exit 1
+    fi
 
     # Validate package name
     PKG_NAME=$(validate_package_name)
@@ -790,12 +792,27 @@ cmd_config() {
             config_set "$1" "$2"
             ;;
         validate)
-            # Confirm the config files load and parse without error.
-            if load_config 2>/dev/null; then
+            # Confirm each existing config file parses as valid YAML. load_config
+            # returns 0 unconditionally and swallows yq parse errors, so check
+            # syntax directly with `yq eval '.'`.
+            command -v yq >/dev/null 2>&1 || {
+                log_error "yq required to validate configuration but not found"
+                return 1
+            }
+            local _cfg _cfg_ok=true
+            for _cfg in "$CONFIG_USER" "$CONFIG_PROJECT"; do
+                [[ -f "$_cfg" ]] || continue
+                if yq eval '.' "$_cfg" >/dev/null 2>&1; then
+                    log_info "Valid YAML: $_cfg"
+                else
+                    log_error "Malformed YAML: $_cfg"
+                    _cfg_ok=false
+                fi
+            done
+            if [[ "$_cfg_ok" == "true" ]]; then
                 log_success "Configuration is valid"
                 return 0
             else
-                log_error "Configuration failed to load"
                 return 1
             fi
             ;;
@@ -1419,10 +1436,14 @@ cmd_rm_renv() {
     [[ -f "renv.lock" ]] && rm "renv.lock" && log_info "Removed renv.lock"
     [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
 
-    # Remove renv activation from .Rprofile if present
+    # Remove renv activation from .Rprofile if present. Edit via a temp file
+    # then mv into place; the project dir is often cloud-synced, where in-place
+    # sed risks a 0-byte truncation race with the sync provider.
     if [[ -f ".Rprofile" ]] && grep -q "renv/activate.R" .Rprofile; then
-        sed -i.bak '/renv\/activate.R/d' .Rprofile
-        rm -f .Rprofile.bak
+        local _rprofile_tmp
+        _rprofile_tmp=$(mktemp)
+        grep -v 'renv/activate.R' .Rprofile > "$_rprofile_tmp" || true
+        mv "$_rprofile_tmp" .Rprofile
         log_info "Removed renv activation from .Rprofile"
     fi
 

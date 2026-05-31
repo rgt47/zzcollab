@@ -385,27 +385,31 @@ extract_r_packages() {
     skip_pkgs+="project data result output input test example sample "
     skip_pkgs+="demo template local any all none foo bar baz renv "
 
-    # Helper: filter a package
+    # Helper: filter a package. The length filter ($2 = "strict") suppresses
+    # noise from the heuristic code scan only; names sourced from renv.lock or
+    # DESCRIPTION are authoritative and must not be dropped for being short
+    # (e.g. sf, sp, V8, XML, gsl, gmp, png, bz2, fs, BH).
     _is_valid_pkg() {
-        local p="$1"
-        [[ -z "$p" || ${#p} -lt 3 ]] && return 1
+        local p="$1" mode="${2:-}"
+        [[ -z "$p" ]] && return 1
+        [[ "$mode" == "strict" && ${#p} -lt 3 ]] && return 1
         [[ "$base_pkgs" == *" $p "* ]] && return 1
         [[ "$skip_pkgs" == *" $p "* ]] && return 1
         [[ "$p" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]] && return 0
         return 1
     }
 
-    # 1. Scan code files
+    # 1. Scan code files (heuristic — apply the length filter)
     while IFS= read -r pkg; do
-        _is_valid_pkg "$pkg" && packages+=("$pkg")
+        _is_valid_pkg "$pkg" strict && packages+=("$pkg")
     done < <(extract_code_packages "." "R" "scripts" "analysis" 2>/dev/null)
 
-    # 2. Add packages from DESCRIPTION
+    # 2. Add packages from DESCRIPTION (authoritative — no length filter)
     while IFS= read -r pkg; do
         _is_valid_pkg "$pkg" && packages+=("$pkg")
     done < <(parse_description_imports 2>/dev/null)
 
-    # 3. Add packages from renv.lock
+    # 3. Add packages from renv.lock (authoritative — no length filter)
     while IFS= read -r pkg; do
         _is_valid_pkg "$pkg" && packages+=("$pkg")
     done < <(parse_renv_lock 2>/dev/null)

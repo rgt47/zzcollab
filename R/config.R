@@ -58,7 +58,7 @@ get_config <- function(key) {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "config get", key)
+  cmd <- paste(zzcollab_path, "config get", shQuote(key))
   result <- safe_system(cmd, intern = TRUE,
                        error_msg = paste("Failed to get config value:", key))
 
