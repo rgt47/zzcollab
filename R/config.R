@@ -353,7 +353,7 @@ init_config <- function() {
 #'
 #' @param key Character string specifying the configuration key to retrieve.
 #'   Should match keys used in the zzcollab configuration system (e.g.,
-#'   \"team_name\", \"profile_name\", \"github_account\").
+#'   "team_name", "profile_name", "github_account").
 #'   
 #' @param default Default value to return if the configuration key is not set
 #'   or if \code{get_config()} returns NULL. Can be any type, but typically
@@ -363,7 +363,7 @@ init_config <- function() {
 #'   The return type matches the type of the configuration value or default.
 #'   
 #' @details
-#' This internal function implements the \"null-coalescing\" pattern commonly
+#' This internal function implements the "null-coalescing" pattern commonly
 #' used throughout zzcollab for configuration management. It provides a clean
 #' way to specify fallback values when configuration keys might not be set.
 #' 
@@ -379,14 +379,14 @@ init_config <- function() {
 #' @examples
 #' \dontrun{
 #' # Internal usage pattern in zzcollab functions
-#' team_name <- get_config_default(\"team_name\", \"defaultteam\")
-#' profile_name <- get_config_default(\"profile_name\", \"analysis\")
-#' 
+#' team_name <- get_config_default("team_name", "defaultteam")
+#' profile_name <- get_config_default("profile_name", "analysis")
+#'
 #' # Equivalent to using the %||% operator
-#' team_name <- get_config(\"team_name\") %||% \"defaultteam\"
-#' 
+#' team_name <- get_config("team_name") %||% "defaultteam"
+#'
 #' # Common usage with multiple fallbacks
-#' github_account <- get_config_default(\"github_account\", team_name)
+#' github_account <- get_config_default("github_account", team_name)
 #' }
 #'
 #' @seealso

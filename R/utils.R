@@ -5,14 +5,13 @@
 # path), populated lazily and reused across wrapper calls.
 .zzcollab_cache <- new.env(parent = emptyenv())
 
-#' Null-coalescing operator
+#' Null-coalescing operator (internal)
 #'
-#' @name grapes-or-or-grapes
-#' @rdname grapes-or-or-grapes
-#' @param lhs Left-hand side
-#' @param rhs Right-hand side
-#' @return lhs if not NULL, else rhs
-#' @export
+#' Provided for R < 4.4 where `base::\%||\%` is unavailable; on R >= 4.4 the
+#' package's own definition shadows the identical base operator within the
+#' namespace. Kept unexported to avoid masking `base::\%||\%` on attach.
+#'
+#' @noRd
 `%||%` <- function(lhs, rhs) {
   if (!is.null(lhs)) lhs else rhs
 }
