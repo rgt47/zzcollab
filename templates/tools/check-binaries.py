@@ -25,10 +25,12 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 PPM_BASE = "https://packagemanager.posit.co/__api__/repos/cran"
 PPM_BATCH = 75  # packages per sysreqs API call
+PPM_MAX_WORKERS = 16  # concurrent /packages calls (endpoint has no batch param)
 
 
 # ---------------------------------------------------------------------------
@@ -186,18 +188,29 @@ def fetch_compilation_flags(
 ) -> dict[str, bool]:
     """
     Return {name: needs_compilation} for each package.
-    Queries PPM in batches.
+
+    The PPM /packages endpoint matches a single exact name per call -- it has
+    no comma/repeated-param batching like /sysreqs -- so the previously serial
+    one-request-per-package loop is issued concurrently to bound wall time.
     """
     result: dict[str, bool] = {}
+    if not packages:
+        return result
 
-    for i in range(0, len(packages), PPM_BATCH):
-        batch = packages[i : i + PPM_BATCH]
-        for name, version in batch:
-            params = urllib.parse.urlencode({"name": name})
-            data = _get(f"{PPM_BASE}/packages?{params}")
-            if data and isinstance(data, list) and data:
-                flag = data[0].get("needs_compilation", "no")
-                result[name] = str(flag).lower() in ("yes", "true", "1")
+    def _flag(item: tuple[str, str]) -> tuple[str, bool] | None:
+        name = item[0]
+        params = urllib.parse.urlencode({"name": name})
+        data = _get(f"{PPM_BASE}/packages?{params}")
+        if data and isinstance(data, list) and data:
+            flag = data[0].get("needs_compilation", "no")
+            return name, str(flag).lower() in ("yes", "true", "1")
+        return None
+
+    workers = min(PPM_MAX_WORKERS, len(packages))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for res in pool.map(_flag, packages):
+            if res is not None:
+                result[res[0]] = res[1]
 
     return result
 
