@@ -382,7 +382,7 @@ this gap.
 ```bash
 # Team lead creates environment with a geospatial base image
 mkdir climate-study && cd climate-study
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzcollab docker --base-image rocker/geospatial  # Add geospatial base image
 zzc github                       # Create private GitHub repo
 
@@ -415,16 +415,16 @@ ZZCOLLAB provides predefined Docker profiles to balance image size and capabilit
 zzc minimal
 
 # Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
+# Statistical and machine learning packages are added via renv
 zzc analysis
 
-# Modeling: Statistical and machine learning workloads (~1.5GB)
-zzc modeling
+# RStudio Server in the browser
+zzc rstudio
 
-# Publishing: Manuscript and report rendering
-zzc publishing
+# Manuscript and report rendering (LaTeX/Quarto via the rocker/verse base image)
+zzcollab docker --base-image rocker/verse
 
-# Specialized domains (e.g. GIS, genomics) use a custom base image
-# layered on top of a standard profile:
+# Specialized domains (e.g. GIS, genomics) use a custom base image:
 zzcollab docker --base-image rocker/geospatial
 
 # List all available profiles
@@ -1310,7 +1310,7 @@ complex system dependencies.
 ```bash
 # Team lead setup with a geospatial base image
 mkdir precipitation && cd precipitation
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzcollab docker --base-image rocker/geospatial  # Add geospatial base image
 zzc github                       # Create private GitHub repo
 

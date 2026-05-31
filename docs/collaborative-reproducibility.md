@@ -445,7 +445,7 @@ Teams can optimize for different priorities:
 ```bash
 # Larger Docker image with more pre-installed packages
 zzcollab config set dockerhub-account lab
-mkdir project && cd project && zzcollab modeling
+mkdir project && cd project && zzcollab analysis
 # Docker image: ~3.5GB with 40+ pre-installed packages
 # Development startup: ~30 seconds (packages already present)
 ```

@@ -82,12 +82,16 @@ CONFIG_GITHUB_CREATE_WIKI=""
 # YAML OPERATIONS
 #=============================================================================
 
+_YQ_AVAILABLE=""
 _require_yq() {
-    command -v yq >/dev/null 2>&1 || {
-        log_error "yq required but not found"
-        log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
-        return 1
-    }
+    [[ "$_YQ_AVAILABLE" == "true" ]] && return 0
+    if command -v yq >/dev/null 2>&1; then
+        _YQ_AVAILABLE="true"
+        return 0
+    fi
+    log_error "yq required but not found"
+    log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
+    return 1
 }
 
 # Reject any path that is not a plain dotted key, so a user-supplied key
@@ -522,21 +526,56 @@ github.create_wiki              CONFIG_GITHUB_CREATE_WIKI
 _load_file() {
     local file="$1"
     [[ -f "$file" ]] || return 0
+    _require_yq || return 0
 
-    local yaml_path var_name val
+    # Read the whole file in a single yq pass, emitting one dotted
+    # "path=value" line per scalar leaf, then parse in bash. This replaces
+    # the previous one-yq-eval-per-key loop (~39 yq forks per file).
+    local dump
+    dump=$(yq eval \
+        '.. | select(tag != "!!map" and tag != "!!seq") | (path | join(".")) + "=" + (. | tostring)' \
+        "$file" 2>/dev/null) || return 0
+
+    # Parse the dump once into parallel path/value arrays. Splitting on the
+    # first '=' is safe because yq paths never contain '='.
+    local _paths=() _vals=() line
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        _paths+=("${line%%=*}")
+        _vals+=("${line#*=}")
+    done <<< "$dump"
+
+    # Assign in _CONFIG_MAP order so map precedence is preserved (e.g.
+    # github.account overrides defaults.github_account). Empty values are
+    # skipped, matching the previous behaviour.
+    local yaml_path var_name i
     while read -r yaml_path var_name; do
         [[ -z "$yaml_path" ]] && continue
-        val=$(yaml_get "$file" "$yaml_path") && [[ -n "$val" ]] && \
-            printf -v "$var_name" '%s' "$val"
+        for ((i = 0; i < ${#_paths[@]}; i++)); do
+            if [[ "${_paths[$i]}" == "$yaml_path" ]]; then
+                [[ -n "${_vals[$i]}" ]] && printf -v "$var_name" '%s' "${_vals[$i]}"
+                break
+            fi
+        done
     done <<< "$_CONFIG_MAP"
 
     # docker.default_profile also overrides CONFIG_PROFILE_NAME (legacy compat)
-    val=$(yaml_get "$file" "docker.default_profile") && \
-        [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
+    for ((i = 0; i < ${#_paths[@]}; i++)); do
+        if [[ "${_paths[$i]}" == "docker.default_profile" && -n "${_vals[$i]}" ]]; then
+            CONFIG_PROFILE_NAME="${_vals[$i]}"
+            break
+        fi
+    done
 
     # Legacy docker.account folds into the canonical dockerhub_account
-    [[ -z "$CONFIG_DOCKERHUB_ACCOUNT" ]] && val=$(yaml_get "$file" "docker.account") && \
-        [[ -n "$val" ]] && CONFIG_DOCKERHUB_ACCOUNT="$val"
+    if [[ -z "$CONFIG_DOCKERHUB_ACCOUNT" ]]; then
+        for ((i = 0; i < ${#_paths[@]}; i++)); do
+            if [[ "${_paths[$i]}" == "docker.account" && -n "${_vals[$i]}" ]]; then
+                CONFIG_DOCKERHUB_ACCOUNT="${_vals[$i]}"
+                break
+            fi
+        done
+    fi
 
     return 0
 }

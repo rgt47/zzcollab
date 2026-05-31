@@ -28,7 +28,7 @@ complete reproducibility.
 - Docker-based reproducibility with isolated computational environments
 - Two-layer architecture separating team infrastructure from
   individual package management
-- Seven Docker profiles ranging from ~650 MB to ~3 GB
+- Three Docker profiles ranging from ~650 MB to ~1.2 GB
 - Pure-shell dependency validation (no host R required)
 - Automatic renv snapshot on container exit
 - Content-addressable Docker build caching
@@ -107,16 +107,21 @@ libraries, and R packages. Select one with `zzc <profile>`:
 | Profile | Base Image | Size | Use Case |
 |---------|-----------|------|----------|
 | `minimal` | rocker/r-ver | ~650 MB | Essential development (CLI only) |
-| `rstudio` | rocker/rstudio | ~980 MB | RStudio Server development |
 | `analysis` | rocker/tidyverse | ~1.2 GB | Data analysis with tidyverse |
-| `analysis_pdf` | rocker/tidyverse | ~1.5 GB | Analysis + PDF rendering (tinytex) |
-| `modeling` | rocker/r-ver | ~1.5 GB | Machine learning (tidymodels, xgboost) |
-| `publishing` | rocker/verse | ~3 GB | Manuscripts with full LaTeX and Quarto |
-| `shiny` | rocker/shiny | ~1.8 GB | Shiny web applications |
+| `rstudio` | rocker/rstudio | ~980 MB | RStudio Server development |
+
+For specialized environments, build from a base image instead of a
+profile (see [Custom Composition](#custom-composition)):
+
+| Environment | Base Image |
+|-------------|-----------|
+| LaTeX / Quarto publishing | rocker/verse base image |
+| Shiny web applications | rocker/shiny base image |
+| Machine learning | analysis profile + ML packages via renv |
 
 ```bash
 zzc analysis                    # new project with tidyverse
-zzc publishing                  # new project with LaTeX + Quarto
+zzc docker --base-image rocker/verse   # LaTeX + Quarto environment
 zzc list profiles               # show all profiles with descriptions
 ```
 
@@ -544,7 +549,7 @@ for a specific project:
 
 ```yaml
 defaults:
-  profile_name: publishing
+  profile_name: analysis
   dockerhub_account: mylab
   github_account: mylab
 
@@ -646,11 +651,12 @@ Solution: make check-system-deps
 
 **AMD64-only profiles (run under emulation):**
 
-- `analysis`, `analysis_pdf` (rocker/tidyverse)
-- `publishing` (rocker/verse)
-- `shiny` (rocker/shiny)
-- `modeling` (rocker/r-ver -- native, but some compiled
-  dependencies may use emulation)
+- `analysis` (rocker/tidyverse)
+
+**Specialized base images (run under emulation on ARM64):**
+
+- rocker/verse base image (LaTeX / Quarto publishing)
+- rocker/shiny base image (Shiny applications)
 
 ZZCOLLAB automatically applies `--platform linux/amd64` when building
 on ARM64 hosts for images that require emulation.

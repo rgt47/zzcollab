@@ -333,9 +333,9 @@ mkdir PROJECT && cd PROJECT
 zzc analysis                     # Full setup (init + renv + docker)
 zzc github                       # Create private GitHub repo
 
-# With a different profile
-zzc modeling                     # Full setup with the modeling profile
-zzc publishing                   # Full setup with the publishing profile
+# With a different environment
+zzc analysis                              # ML packages are added via renv on top of analysis
+zzcollab docker --base-image rocker/verse # LaTeX/Quarto via the rocker/verse base image
 ```
 
 ### Team Member Commands

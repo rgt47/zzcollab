@@ -2,14 +2,15 @@
 
 ## Overview
 
-ZZCOLLAB provides eight built-in Docker profiles through a single
+ZZCOLLAB provides three built-in Docker profiles through a single
 source of truth architecture that eliminates configuration
 duplication while enabling unlimited customization. This guide
 documents the profile system design, available profiles, and
 implementation patterns for research computing environments.
-Specialized research domains (for example genomics or geospatial
-work) are supported by selecting a custom base image rather than a
-dedicated profile; see the Specialized Domains section below.
+Specialized research environments (for example LaTeX publishing,
+Shiny applications, machine learning, genomics, or geospatial work)
+are supported by selecting a custom base image rather than a
+dedicated profile; see the Specialized Environments section below.
 
 ## Profile System Architecture
 
@@ -22,7 +23,7 @@ The profile system implements a library-reference pattern:
 - Contains complete definitions for all available profiles
 - Maintained as single authoritative source
 - Updated independently from team configurations
-- Provides the eight pre-configured environments
+- Provides the three pre-configured environments
 
 **Team Configuration** (`config.yaml`):
 
@@ -45,9 +46,8 @@ The profile system implements a library-reference pattern:
 
 ## Profile Categories
 
-The eight built-in profiles are: `minimal`, `analysis`,
-`analysis_pdf`, `modeling`, `publishing`, `rstudio`, `shiny`, and
-`manuscript-package`. Any of these may be supplied directly to the
+The three built-in profiles are: `minimal`, `analysis`, and
+`rstudio`. Any of these may be supplied directly to the
 `zzcollab` quickstart (for example `zzcollab analysis`) or selected
 with `zzcollab -r <profile>` / `zzcollab --profile <profile>`.
 
@@ -76,62 +76,7 @@ Production-ready environments for general research computing.
 - **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
   libssl-dev
 
-**modeling** (~1.5GB)
-
-- **Base Image**: `rocker/r-ver:latest`
-- **Description**: Machine learning and statistical modeling
-- **Key Packages**: renv, tidyverse, tidymodels, xgboost,
-  randomForest, glmnet, caret, MASS, mlr3
-- **Use Cases**: Predictive modeling, machine learning pipelines,
-  statistical analysis
-- **System Dependencies**: libxml2-dev, libssl-dev, libgsl-dev,
-  libblas-dev, liblapack-dev, build-essential, gfortran
-
-**publishing** (~3GB)
-
-- **Base Image**: `rocker/verse:latest`
-- **Description**: Document publishing with LaTeX, Quarto, and RStudio Server
-- **Supported File Formats**: .R, .Rmd, .Rnw (Sweave), .qmd (Quarto)
-- **Key System Tools**: Quarto CLI (v1.6.33), pandoc, texlive-full (complete LaTeX)
-- **Key R Packages**: renv, devtools, quarto, bookdown, blogdown,
-  distill, flexdashboard, shiny, DT, plotly
-- **Use Cases**:
-  - Academic papers (.Rnw with LaTeX)
-  - Quarto documents (.qmd for R/Python/JS mixing)
-  - Books (bookdown)
-  - Blogs (blogdown)
-  - Interactive dashboards
-  - Manuscripts with reproducible analysis
-- **System Dependencies**: Quarto CLI, pandoc, texlive-full, libxml2-dev,
-  libcurl4-openssl-dev, libssl-dev, libv8-dev
-- **Design Note**: All system dependencies (including Quarto CLI version)
-  are version-controlled in the Dockerfile. Users should NOT install
-  system tools at runtime. To modify, edit the Dockerfile and rebuild.
-- **Note**: AMD64 only, see ARM64 section for alternatives
-
-**shiny** (~1.8GB)
-
-- **Base Image**: `rocker/shiny:latest`
-- **Description**: Interactive web applications and dashboards
-- **Key Packages**: renv, shiny, shinydashboard, shinyjs, plotly,
-  DT, tidyverse
-- **Use Cases**: Interactive dashboards, web applications, data
-  exploration tools
-- **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
-  libssl-dev
-
-**analysis_pdf** (~3GB)
-
-- **Base Image**: `rocker/verse:latest`
-- **Description**: Data analysis with PDF report rendering
-- **Key Packages**: renv, tidyverse, rmarkdown, knitr, tinytex
-- **Use Cases**: Exploratory analysis that produces PDF output,
-  reproducible reports combining analysis and typeset documents
-- **System Dependencies**: texlive, libxml2-dev,
-  libcurl4-openssl-dev, libssl-dev
-- **Note**: AMD64 only, see ARM64 section for alternatives
-
-**rstudio** (~1.5GB)
+**rstudio** (~980MB)
 
 - **Base Image**: `rocker/rstudio:latest`
 - **Description**: RStudio Server for interactive development
@@ -141,33 +86,56 @@ Production-ready environments for general research computing.
 - **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
   libssl-dev
 
-**manuscript-package** (~3GB)
+### Specialized Environments
 
-- **Base Image**: `rocker/verse:latest`
-- **Description**: Manuscript writing combined with R package
-  development
-- **Key Packages**: renv, devtools, testthat, roxygen2, quarto,
-  bookdown, rmarkdown
-- **Use Cases**: Research compendia that ship both an R package
-  and a typeset manuscript, reproducible papers under package
-  structure
-- **System Dependencies**: Quarto CLI, pandoc, texlive,
-  libxml2-dev, libcurl4-openssl-dev, libssl-dev
+ZZCOLLAB ships only the three profiles above. Specialized
+environments -- LaTeX/Quarto publishing, Shiny applications, machine
+learning, genomics, geospatial analysis, and similar -- are supported
+by selecting a domain-specific base image with
+`zzcollab docker --base-image <image>` rather than a dedicated
+profile. Domain R packages are then installed and pinned through
+`renv` exactly as for any other project.
+
+**LaTeX / Quarto publishing**
+
+- **Approach**: build on the `rocker/verse` base image, which bundles
+  texlive and Quarto
+- **Command**:
+  ```bash
+  zzcollab docker --base-image rocker/verse
+  ```
+- **Packages**: install quarto, bookdown, blogdown, distill,
+  flexdashboard, and DT inside the container, then capture them with
+  `renv::snapshot()`
 - **Note**: AMD64 only, see ARM64 section for alternatives
 
-### Specialized Domains
+**Shiny applications**
 
-ZZCOLLAB does not ship dedicated profiles for individual research
-fields such as genomics or geospatial analysis. Instead, start from
-one of the eight built-in profiles and supply a domain-specific base
-image with `zzcollab docker --base-image <image>`. Domain R packages
-are then installed and pinned through `renv` exactly as for any other
-project.
+- **Approach**: build on the `rocker/shiny` base image
+- **Command**:
+  ```bash
+  zzcollab docker --base-image rocker/shiny
+  ```
+- **Packages**: install shiny, shinydashboard, shinyWidgets, plotly,
+  and bslib inside the container, then capture them with
+  `renv::snapshot()`
+- **Note**: AMD64 only, see ARM64 section for alternatives
+
+**Machine learning / statistical modeling**
+
+- **Approach**: start from the `analysis` profile (or build on
+  `rocker/r-ver`) and add ML packages via renv
+- **Command**:
+  ```bash
+  zzcollab analysis
+  ```
+- **Packages**: install tidymodels, xgboost, randomForest, glmnet,
+  and caret inside the container, then capture them with
+  `renv::snapshot()`
 
 **Genomics / Bioinformatics**
 
-- **Approach**: `zzcollab modeling`, then build on a Bioconductor
-  base image
+- **Approach**: build on a Bioconductor base image
 - **Command**:
   ```bash
   zzcollab docker --base-image bioconductor/bioconductor_docker
@@ -179,8 +147,7 @@ project.
 
 **Geospatial**
 
-- **Approach**: `zzcollab modeling`, then build on a geospatial
-  base image
+- **Approach**: build on a geospatial base image
 - **Command**:
   ```bash
   zzcollab docker --base-image rocker/geospatial
@@ -202,17 +169,12 @@ zzcollab list
 # Built-in profiles:
 #   minimal             ~800MB  - Essential R packages
 #   analysis            ~1.2GB  - Tidyverse + data analysis
-#   analysis_pdf        ~3GB    - Tidyverse + PDF rendering
-#   modeling            ~1.5GB  - Machine learning
-#   publishing          ~3GB    - LaTeX, Quarto, bookdown
-#   rstudio             ~1.5GB  - RStudio Server
-#   shiny               ~1.8GB  - Interactive web apps
-#   manuscript-package  ~3GB    - Manuscript + R package
+#   rstudio             ~980MB  - RStudio Server
 ```
 
 Select a profile when creating the project, for example
-`zzcollab analysis`, `zzcollab -r modeling`, or
-`zzcollab --profile publishing`.
+`zzcollab analysis`, `zzcollab -r minimal`, or
+`zzcollab --profile rstudio`.
 
 ### Manual Configuration
 
@@ -234,20 +196,7 @@ profiles:
 
   # Interactive RStudio Server
   rstudio:
-    enabled: true             # ~1.5GB
-
-  # Disabled profiles (available but not built)
-  modeling:
-    enabled: false            # ~1.5GB
-
-  publishing:
-    enabled: false            # ~3GB
-
-  analysis_pdf:
-    enabled: false            # ~3GB
-
-  manuscript-package:
-    enabled: false            # ~3GB
+    enabled: true             # ~980MB
 
 #=========================================================
 # BUILD CONFIGURATION
@@ -354,9 +303,6 @@ profiles:
       - arrow
       - pins
       - vetiver
-
-  modeling:
-    enabled: true
     # Override base image
     base_image: "rocker/ml-verse:latest"
     # Add GPU support
@@ -445,9 +391,9 @@ RUN R -e "remotes::install_github('owner/repo')"
    zzcollab config set dockerhub-account lab
    mkdir study && cd study
    zzcollab analysis
-   # Customize config.yaml to enable only ARM64-compatible profiles
-   # (minimal, analysis, modeling, rstudio - exclude verse-based
-   # profiles such as publishing, analysis_pdf, manuscript-package)
+   # The built-in profiles (minimal, analysis, rstudio) run on ARM64.
+   # For verse-based environments (rocker/verse) supplied via
+   # --base-image, see the AMD64 build alternatives below.
    make docker-build
    make docker-push-team
    ```
@@ -464,12 +410,12 @@ RUN R -e "remotes::install_github('owner/repo')"
 3. Use platform-specific configuration:
    ```yaml
    profiles:
-     publishing:
+     custom_verse:
        enabled: true
        base_image: "rocker/verse:latest"
        platform: "linux/amd64"  # Force AMD64
 
-     publishing_arm64:
+     custom_verse_arm64:
        enabled: true
        base_image: "rocker/tidyverse:latest"
        platform: "linux/arm64"  # ARM64 alternative
@@ -503,16 +449,21 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 **Question 1: What is the primary analysis type?**
 
 - General data analysis → **analysis**
-- Machine learning → **modeling**
-- Document writing → **publishing**
-- Analysis with PDF output → **analysis_pdf**
 - Interactive RStudio development → **rstudio**
-- Bioinformatics → **modeling** with a Bioconductor base image
+- Minimal / package development / CI → **minimal**
+- Machine learning → **analysis**, add ML packages via renv
+- Document writing → **analysis** with the rocker/verse base image
+  (`zzcollab docker --base-image rocker/verse`)
+- Analysis with PDF output → **analysis** with the rocker/verse base
+  image (`zzcollab docker --base-image rocker/verse`)
+- Bioinformatics → **analysis** with a Bioconductor base image
   (`zzcollab docker --base-image bioconductor/bioconductor_docker`)
-- Geospatial → **modeling** with a geospatial base image
+- Geospatial → **analysis** with a geospatial base image
   (`zzcollab docker --base-image rocker/geospatial`)
-- Interactive apps → **shiny**
-- Manuscript plus R package → **manuscript-package**
+- Interactive apps → the rocker/shiny base image
+  (`zzcollab docker --base-image rocker/shiny`)
+- Manuscript plus R package → **analysis** with the rocker/verse base
+  image (`zzcollab docker --base-image rocker/verse`)
 
 **Question 2: What are the resource constraints?**
 
@@ -531,12 +482,14 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 **Analysis Paradigm**:
 
 - Required: analysis
-- Optional: modeling (if ML), shiny (if dashboards)
+- Optional: analysis plus the rocker/shiny base image (if dashboards);
+  ML packages added via renv
 - Testing: minimal
 
 **Manuscript Paradigm**:
 
-- Required: publishing
+- Required: analysis with the rocker/verse base image
+  (`zzcollab docker --base-image rocker/verse`)
 - Optional: analysis (if reproducing analysis)
 - Testing: minimal
 

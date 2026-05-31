@@ -162,16 +162,19 @@ tracked as D1 below.
 
 ### F4. Reduce the overload of a bare profile token
 
+- **Status**: Partially done.
 - **Problem**: `zzcollab analysis` means 'scaffold a new compendium' in an
   empty directory but 'switch profile' in an existing project, and in a
-  populated non-project directory it can scaffold unexpectedly. The
-  `assert_safe_init_directory` guard mitigates the worst case but the verb
-  remains state dependent.
-- **Change**: Reserve the bare profile token for creation. Route profile
+  populated non-project directory it could scaffold unexpectedly.
+- **Already addressed**: Two of the three concerns have landed. The profile
+  set is now reduced to `minimal`, `analysis`, `rstudio`, which shrinks the
+  overloaded token surface; and the `cmd_init` safety guard was hardened
+  (commit `56ae900`) so that an occupied directory hard-stops unless `--force`
+  is given, closing the accidental-scaffolding footgun.
+- **Remaining change**: The verb is still state dependent (create versus
+  switch). Reserve the bare profile token for creation and route profile
   switching through an explicit path: either `config set profile-name X`
-  followed by `docker`, or a dedicated `profile <name>` verb. Profile
-  reduction (Phase 2 of the simplification plan) shrinks the token set and
-  is the right moment to make this split.
+  followed by `docker`, or a dedicated `profile <name>` verb.
 - **Files**: `zzcollab.sh` (`cmd_quickstart`, dispatch), `docs/`.
 - **Impact**: Changes the meaning of a bare profile token in an existing
   project; warrants clear release notes.
@@ -188,13 +191,35 @@ tracked as D1 below.
 - **Files**: `zzcollab.sh` help and the main parse loop; `docs/`.
 - **Impact**: Clarifies an existing behavior; optional stricter validation.
 
+## Related: documentation follow-up (not a CLI change)
+
+### D1. Active docs reference removed profiles
+
+- **Status**: Open; surfaced by the profile reduction.
+- **Problem**: Reducing the profile set to `minimal`, `analysis`, `rstudio`
+  removed `modeling`, `publishing`, `shiny`, `analysis_pdf`, and
+  `manuscript-package`. Roughly fifteen active files (README, several guides
+  and vignettes, `docs/CONFIGURATION.md`, and `templates/`) still name those
+  profiles in commands and tables, so their examples no longer resolve. This
+  is downstream of the earlier old-interface documentation migration, which
+  used the then-current eight-profile set.
+- **Change**: Sweep the active docs and replace removed profile names with
+  one of the three current profiles, or with the `docker --base-image` form
+  for specialized domains. Then extend `test-docs.sh` with a guard asserting
+  that only live profile names appear in `zzcollab <profile>` and `--profile`
+  invocations, so the profile list cannot drift again.
+- **Files**: README and `docs/`, `vignettes/`, `templates/` per the grep
+  inventory.
+- **Impact**: Documentation accuracy; no CLI change.
+
 ## Sequencing and effort
 
-| Phase | Items | Risk | Functional loss | Suggested timing |
-|-------|-------|------|-----------------|------------------|
-| 0 | F1, F2, F3, F9b, F10 | Low | None | Now, one commit |
-| 1 | F6, F7, F8 | Medium | None (aliased) | Next minor release |
-| 2 | F4, F9a | Higher | Behavior change | With profile reduction |
+| Phase | Items | Status | Risk | Functional loss | Suggested timing |
+|-------|-------|--------|------|-----------------|------------------|
+| 0 | F1, F2, F3, F9b, F10 | Open | Low | None | Now, one commit |
+| 1 | F6, F7, F8 | Open | Medium | None (aliased) | Next minor release |
+| 2 | F4, F9a | F4 partial, F9a open | Higher | Behavior change | With profile reduction |
+| Docs | D1 | Open | Low | None | With or before Phase 0 |
 
 ## Verification for every change
 
@@ -215,5 +240,5 @@ tracked as D1 below.
   removal given the framework is pre-1.0 on the CLI line.
 
 ---
-*Rendered on 2026-05-29 at 18:36 PDT.*<br>
+*Rendered on 2026-05-30 at 18:55 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/cli-ux-improvement-plan.md*

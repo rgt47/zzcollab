@@ -148,10 +148,10 @@ zzc github
 ```bash
 # Create new projects with specific profiles
 mkdir genomics-study && cd genomics-study
-zzc shiny                      # Full setup with Shiny profile
+zzcollab docker --base-image rocker/shiny   # Shiny Server via the rocker/shiny base image
 
 mkdir spatial-analysis && cd spatial-analysis
-zzc publishing                 # Full setup with publishing profile (LaTeX)
+zzcollab docker --base-image rocker/verse   # LaTeX/Quarto via the rocker/verse base image
 
 # Switch profile on existing project
 zzc minimal                    # Regenerates Dockerfile with minimal profile
@@ -164,10 +164,11 @@ zzc list profiles
 
 - `minimal` - Base R, command-line only (~650MB)
 - `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
-- `modeling` - Machine learning with tidymodels (~1.5GB)
-- `publishing` - LaTeX + Quarto manuscripts (~3GB)
 - `rstudio` - RStudio Server (~980MB)
-- `shiny` - Shiny Server (~1.8GB)
+
+For machine learning, install packages such as `tidymodels` via renv. For
+LaTeX/Quarto manuscripts use `zzcollab docker --base-image rocker/verse`, and
+for Shiny applications use `zzcollab docker --base-image rocker/shiny`.
 
 ## Step 3: Add Research Data and Processing Pipeline
 
@@ -482,7 +483,7 @@ automatically:
 
 - **X11 profiles** (e.g., `x11_minimal`): Automatically enables DISPLAY for
   interactive graphics
-- **RStudio profiles** (e.g., `analysis`, `publishing`): Launches RStudio Server at http://localhost:8787
+- **RStudio profiles** (e.g., `analysis`, `rstudio`): Launches RStudio Server at http://localhost:8787
 - **Shiny profiles**: Launches Shiny Server at http://localhost:3838
 - **Standard profiles**: Opens interactive shell
 
@@ -1137,10 +1138,11 @@ zzc list pkgs
 
 - `minimal` - Base R, command-line only (~650MB)
 - `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
-- `modeling` - Machine learning with tidymodels (~1.5GB)
-- `publishing` - LaTeX + Quarto manuscripts (~3GB)
 - `rstudio` - RStudio Server (~980MB)
-- `shiny` - Shiny Server (~1.8GB)
+
+For machine learning, install packages such as `tidymodels` via renv. For
+LaTeX/Quarto manuscripts use `zzcollab docker --base-image rocker/verse`, and
+for Shiny applications use `zzcollab docker --base-image rocker/shiny`.
 
 ## Using Profiles
 
@@ -1153,12 +1155,12 @@ mkdir my-project && cd my-project
 zzc analysis                     # Full setup with analysis profile
 zzc github                       # Add GitHub (independent)
 
-# Change profile on existing project
-zzc publishing                   # Switch to publishing profile
+# Change base image on existing project
+zzcollab docker --base-image rocker/verse   # LaTeX/Quarto via the rocker/verse base image
 
-# Create with different profile
+# Create with a different base image
 mkdir new-project && cd new-project
-zzc shiny                        # Full setup with shiny profile
+zzcollab docker --base-image rocker/shiny   # Shiny Server via the rocker/shiny base image
 zzc github --public              # Create public GitHub repo
 ```
 
@@ -1168,7 +1170,7 @@ zzc github --public              # Create public GitHub repo
 
 - New project: Complete setup (init + renv + docker) with build prompt
 - Existing project: Switch profile and regenerate Dockerfile
-- Examples: `minimal`, `analysis`, `modeling`, `publishing`, `rstudio`, `shiny`
+- Examples: `minimal`, `analysis`, `rstudio`
 
 **Package Management:**
 

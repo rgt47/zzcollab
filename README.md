@@ -210,9 +210,9 @@ zzcollab provides several Docker profiles optimized for different research needs
 | Category | Profiles | Base Size | Use Case |
 |----------|----------|-----------|----------|
 | **Command-line** | minimal | ~650MB | Lightweight, CI/CD |
-| **Data analysis** | analysis, analysis_pdf, modeling | 1.2-1.5GB | General research, ML, PDF reports |
-| **Publishing** | publishing, manuscript-package | 1.5-3GB | Manuscripts, LaTeX, Quarto |
-| **Interactive** | rstudio, shiny | 1-1.8GB | RStudio Server, web apps |
+| **Data analysis** | analysis | 1.2-1.5GB | General research, ML, PDF reports |
+| **Publishing** | rocker/verse base image | 1.5-3GB | Manuscripts, LaTeX, Quarto |
+| **Interactive** | rstudio, rocker/shiny base image | 1-1.8GB | RStudio Server, web apps |
 
 Run `zzcollab list` for the full set of available profiles and bundles.
 
@@ -221,8 +221,9 @@ Run `zzcollab list` for the full set of available profiles and bundles.
 ```bash
 # Select the profile when creating the project (run inside the project directory)
 zzcollab analysis
-zzcollab publishing
-zzcollab modeling
+
+# LaTeX/Quarto via the rocker/verse base image
+zzcollab docker --base-image rocker/verse
 ```
 
 ### Adding Packages (All Team Members)
@@ -425,7 +426,7 @@ COMMANDS (can be combined):
   build, doctor, validate, config, list, help
 
 PROFILES (quickstart, or switch profile in an existing project):
-  minimal, analysis, analysis_pdf, modeling, publishing, rstudio, shiny
+  minimal, analysis, rstudio
 
 GLOBAL OPTIONS:
   -v, --verbose            More output
@@ -458,7 +459,7 @@ EXAMPLES:
   # Solo researcher
   mkdir study && cd study
   zzcollab analysis                           # Full setup (tidyverse)
-  zzcollab publishing                         # With a specific profile
+  zzcollab docker --base-image rocker/verse   # LaTeX/Quarto via the rocker/verse base image
 
   # Team collaboration - Lead
   cd study && zzcollab analysis

@@ -302,11 +302,11 @@ zzcollab --profile minimal
 # Analysis profile (tidyverse + common packages)
 zzcollab --profile analysis
 
-# Modeling profile (tidymodels, ML packages)
-zzcollab --profile modeling
+# ML packages are added via renv on top of analysis
+zzcollab --profile analysis
 
-# Publishing profile (LaTeX, Quarto)
-zzcollab --profile publishing
+# LaTeX/Quarto via the rocker/verse base image
+zzcollab docker --base-image rocker/verse
 ```
 
 *For complete profile documentation, see [Variants Guide](VARIANTS.md)*

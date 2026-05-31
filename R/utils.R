@@ -1,6 +1,10 @@
 # ZZCOLLAB R Interface Functions
 # Provides R functions to interact with zzcollab Docker infrastructure
 
+# Session-scoped cache for resolved internals (e.g. the zzcollab script
+# path), populated lazily and reused across wrapper calls.
+.zzcollab_cache <- new.env(parent = emptyenv())
+
 #' Null-coalescing operator
 #'
 #' @name grapes-or-or-grapes
@@ -125,9 +129,19 @@ safe_system <- function(command, intern = FALSE, ignore.stdout = FALSE,
 #' @return Path to zzcollab script
 #' @keywords internal
 find_zzcollab_script <- function() {
-  # First priority: Check if we're in the zzcollab source directory
+  # First priority: Check if we're in the zzcollab source directory. This is
+  # working-directory dependent and a cheap file.exists, so it is never
+  # cached (caching a relative path would break after a setwd()).
   if (file.exists("zzcollab.sh")) {
     return("./zzcollab.sh")
+  }
+
+  # Priorities 2 and 3 below launch zzcollab to probe config support, which
+  # forks a process per resolution. Installed locations do not move during a
+  # session, so cache the resolved path after the first successful probe.
+  cached <- get0("script_path", envir = .zzcollab_cache, inherits = FALSE)
+  if (!is.null(cached)) {
+    return(cached)
   }
 
   # Second priority: Check if zzcollab is in PATH (but only if it supports config)
@@ -138,6 +152,7 @@ find_zzcollab_script <- function() {
                                ignore.stdout = TRUE, ignore.stderr = TRUE,
                                error_msg = "Failed to test zzcollab config support")
     if (test_result == 0) {
+      assign("script_path", "zzcollab", envir = .zzcollab_cache)
       return("zzcollab")
     }
   }
@@ -156,6 +171,7 @@ find_zzcollab_script <- function() {
                                  ignore.stdout = TRUE, ignore.stderr = TRUE,
                                  error_msg = "Failed to test zzcollab config support")
       if (test_result == 0) {
+        assign("script_path", path, envir = .zzcollab_cache)
         return(path)
       }
     }

@@ -169,6 +169,24 @@ test_no_team_init_flags() {
   fi
 }
 
+test_no_removed_profiles() {
+  # The profile set is minimal/analysis/rstudio. The removed profiles
+  # (modeling, publishing, shiny, analysis_pdf, manuscript-package) must not
+  # appear as a 'zzcollab <profile>' or '--profile <profile>' invocation.
+  # Scoped to invocations, so bundle keys and base-image strings (rocker/shiny,
+  # rocker/verse) do not trip it.
+  local removed matches
+  removed='modeling\|publishing\|shiny\|analysis_pdf\|manuscript-package'
+  matches=$(grep_active_docs "zzc\(ollab\)\? \($removed\)")
+  matches="$matches$(grep_active_docs "\-\-profile \($removed\)")"
+  matches="$matches$(grep_active_docs "\-r \($removed\)")"
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed profile in a 'zzcollab <profile>'/'--profile' invocation (live profiles: minimal, analysis, rstudio):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
 test_help_flags_documented() {
   # Every long flag advertised by 'zzcollab --help' must appear in the flag
   # reference of docs/CONFIGURATION.md, so the table cannot silently drift from

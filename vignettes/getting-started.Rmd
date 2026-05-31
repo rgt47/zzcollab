@@ -66,13 +66,14 @@ can be added dynamically via `install.packages()` inside containers (Layer 2).
 - Base: rocker/tidyverse
 - Packages: minimal + tidyverse, here, testthat, knitr, rmarkdown
 
-**modeling**: Machine learning environment (~1.5GB)
-- Base: rocker/r-ver
-- Packages: tidymodels, xgboost, randomForest, glmnet, caret
+**rstudio**: RStudio Server in the browser (~980MB)
+- Base: rocker/rstudio
+- Packages: essential development tools
 
-**publishing**: Document publishing with LaTeX and Quarto (~3GB)
-- Base: rocker/verse
-- Packages: quarto, bookdown, distill, flexdashboard
+For machine learning, install packages such as tidymodels, xgboost,
+randomForest, glmnet, and caret via renv inside the analysis profile. For
+document publishing with LaTeX and Quarto, use the rocker/verse base image:
+`zzcollab docker --base-image rocker/verse`.
 
 ## Project Initialization
 
@@ -1305,8 +1306,7 @@ git push
 |----------------|----------|-------------------------------|--------------------|
 | minimal        | ~650MB   | Lightweight development       | rocker/r-ver       |
 | analysis       | ~1.2GB   | General analyses (recommended)| rocker/tidyverse   |
-| modeling       | ~1.5GB   | Machine learning              | rocker/r-ver       |
-| publishing     | ~3GB     | LaTeX/Quarto publishing       | rocker/verse       |
+| rstudio        | ~980MB   | RStudio Server                | rocker/rstudio     |
 
 ## Data Directory Functions
 

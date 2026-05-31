@@ -414,6 +414,8 @@ cmd_build() {
 
     local no_cache="false"
     local log_file=""
+    local project_name
+    project_name=$(basename "$(pwd)")
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -445,10 +447,10 @@ HELPEOF
     done
 
     if [[ -n "$log_file" ]]; then
-        build_docker_image "$(basename "$(pwd)")" "$no_cache" \
+        build_docker_image "$project_name" "$no_cache" \
             2>&1 | tee "$log_file"
     else
-        build_docker_image "$(basename "$(pwd)")" "$no_cache"
+        build_docker_image "$project_name" "$no_cache"
     fi
 }
 

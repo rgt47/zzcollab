@@ -69,8 +69,8 @@ zzcollab analysis
 
 **Select a different profile or base image**:
 ```bash
-zzcollab docker --profile publishing
 zzcollab docker --base-image rocker/verse
+zzcollab docker --base-image rocker/shiny
 ```
 
 ## Configuration Hierarchy
@@ -98,12 +98,12 @@ Priority 6: Built-in defaults (hardcoded fallbacks)
 **Scenario 1: Profile Resolution**
 
 ```bash
-# User config: profile_name: analysis
-# Command-line: --profile modeling
-# Result: modeling profile (command-line overrides config)
+# User config: profile_name: minimal
+# Command-line: --profile analysis
+# Result: analysis profile (command-line overrides config)
 
 mkdir study && cd study
-zzcollab docker --profile modeling
+zzcollab docker --profile analysis
 ```
 
 **Scenario 2: Team Name Resolution**
@@ -120,9 +120,9 @@ zzcollab analysis
 **Scenario 3: Custom Composition**
 
 ```bash
-# Use the modeling profile (run inside the project directory)
+# Use the analysis profile (run inside the project directory)
 mkdir research && cd research
-zzcollab modeling
+zzcollab analysis
 ```
 
 ## Configuration Files
@@ -197,7 +197,7 @@ team:
 
 docker_profile:
   # Option 1: Use predefined profile
-  profile_name: "modeling"
+  profile_name: "analysis"
 
   # Option 2: Custom composition with bundles
   # base_image: "rocker/r-ver"
@@ -323,7 +323,7 @@ ZZCOLLAB_CONFIG_USER=~/custom/config.yaml zzcollab config init
 # Set single values
 zzcollab config set team-name "mylab"
 zzcollab config set github-account "myusername"
-zzcollab config set profile-name "modeling"
+zzcollab config set profile-name "analysis"
 
 # Set boolean values
 zzcollab config set auto-github true
@@ -404,7 +404,7 @@ zzcollab config precedence
 **profile_name**
 
 - **Type**: String
-- **Values**: `minimal`, `rstudio`, `analysis`, `analysis_pdf`, `modeling`, `publishing`, `manuscript-package`, `shiny`
+- **Values**: `minimal`, `analysis`, `rstudio`
 - **Default**: `minimal`
 - **Description**: Predefined Docker environment profile
 
@@ -450,8 +450,8 @@ zzcollab config precedence
 **ZZCOLLAB_PROFILE_NAME**
 
 - **Description**: Override Docker profile
-- **Values**: Profile names (minimal, analysis, modeling, etc.)
-- **Example**: `export ZZCOLLAB_PROFILE_NAME=modeling`
+- **Values**: Profile names (minimal, analysis, rstudio)
+- **Example**: `export ZZCOLLAB_PROFILE_NAME=analysis`
 
 **ZZCOLLAB_TEAM_NAME**
 
@@ -511,7 +511,7 @@ make docker-build
 
 # Override profile for a specific project
 mkdir genomics && cd genomics
-zzcollab modeling
+zzcollab analysis
 
 # Custom base image
 mkdir spatial && cd spatial
@@ -528,14 +528,14 @@ zzcollab config set dockerhub-account lab
 
 # 2. Create the project with a Docker profile
 mkdir study && cd study
-zzcollab modeling
+zzcollab analysis
 
 # 3. Push the team image to Docker Hub
 zzcollab dockerhub
 
 # 4. Commit configuration to the repository
 git add zzcollab.yaml Dockerfile
-git commit -m "Initial setup with modeling profile"
+git commit -m "Initial setup with analysis profile"
 git push
 ```
 
@@ -608,7 +608,7 @@ init_project(project_name = "study")
 init_project(
   project_name = "study",
   team_name = "otherlab",   # Overrides config
-  profile = "modeling"      # Selects the Docker profile
+  profile = "analysis"      # Selects the Docker profile
 )
 
 # Team member joining
@@ -654,7 +654,7 @@ Solution: zzcollab config set team-name "myteam"
 
 ```
 Error: profile_name 'ultra-fast' not recognized
-Valid profiles: minimal, rstudio, analysis, analysis_pdf, modeling, publishing, manuscript-package, shiny
+Valid profiles: minimal, analysis, rstudio
 Solution: zzc list profiles  # See all available profiles
 ```
 
@@ -787,14 +787,15 @@ Document configuration decisions:
 ```yaml
 # zzcollab.yaml
 
-# RATIONALE: Using modeling profile for machine-learning workflows
+# RATIONALE: Using analysis profile for machine-learning workflows
+# (ML packages such as tidymodels are added via renv)
 docker_profile:
-  profile_name: "modeling"  # Includes tidymodels and ML packages
+  profile_name: "analysis"  # tidyverse base; add ML packages via renv
 
 # RATIONALE: AMD64 platform for rocker/verse compatibility on ARM64 Macs
 build:
   docker:
-    platform: "amd64"  # Required for publishing profile on Apple Silicon
+    platform: "amd64"  # Required for the rocker/verse base image on Apple Silicon
 ```
 
 ## Docker Profile Configuration
@@ -812,13 +813,8 @@ zzcollab list
 Available profiles:
 
   minimal            rocker/r-ver       Minimal development environment (~650MB)
-  rstudio            rocker/rstudio     RStudio Server environment (~980MB)
   analysis           rocker/tidyverse   Data analysis with tidyverse (~1.2GB)
-  analysis_pdf       rocker/tidyverse   Data analysis with PDF rendering (~1.5GB)
-  modeling           rocker/r-ver       Machine learning environment (~1.5GB)
-  publishing         rocker/verse       Document publishing with LaTeX/Quarto (~3GB)
-  manuscript-package rocker/verse       R package with companion Rmd manuscripts (~1.5GB)
-  shiny              rocker/shiny       Shiny web applications (~1.8GB)
+  rstudio            rocker/rstudio     RStudio Server environment (~980MB)
 ```
 
 ### Bundle Configuration
@@ -837,7 +833,7 @@ Create custom profiles in project `zzcollab.yaml`:
 ```yaml
 docker_profile:
   # Option 1: Predefined profile
-  profile_name: "modeling"
+  profile_name: "analysis"
 
   # Option 2: Custom composition
   base_image: "rocker/r-ver:4.4.0"

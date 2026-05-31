@@ -145,8 +145,8 @@ cd ~/prj/qblog/posts
 # Create post directory
 mkdir palmer_penguins_part1 && cd palmer_penguins_part1
 
-# Initialize with publishing profile (includes Quarto)
-zzcollab publishing
+# Initialize with the rocker/verse base image (LaTeX/Quarto via the rocker/verse base image)
+zzcollab docker --base-image rocker/verse
 ```
 
 ## Step 2: Set Up Blog Structure

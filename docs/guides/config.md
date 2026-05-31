@@ -90,7 +90,7 @@ zzcollab config validate
 
 ### Docker Profile Settings
 
-- `profile-name` - minimal, analysis, analysis_pdf, modeling, publishing, rstudio, shiny
+- `profile-name` - minimal, analysis, rstudio
 
 ### Automation Settings
 
@@ -225,7 +225,7 @@ zzcollab config get profile-name
 ### Workflow 3: Change Docker Profile
 
 ```bash
-# Switch to different Docker environment (e.g., analysis, modeling, publishing)
+# Switch to different Docker environment (e.g., minimal, analysis, rstudio)
 zzcollab config set profile-name "analysis"
 
 # Applies to all NEW projects
@@ -283,11 +283,11 @@ profile-name: "analysis"
 
 **Command**:
 ```bash
-zzcollab docker --profile modeling
+zzcollab docker --profile minimal
 ```
 
 **Result**:
-- Uses `profile="modeling"` (the flag overrides the configured profile)
+- Uses `profile="minimal"` (the flag overrides the configured profile)
 - This project only! Config unchanged.
 
 ---
@@ -308,11 +308,12 @@ zzcollab config set team-name "yourname"
 ### 3. Choose profile-name based on your needs
 
 - **minimal** - Lightweight base, add packages with `install.packages()`
-- **analysis** - Includes tidyverse (recommended for most research)
-- **modeling** - Statistical modeling and machine learning packages
+- **analysis** - Includes tidyverse (recommended for most research); ML packages are added via renv on top of `analysis`
 - **rstudio** - RStudio Server environment
-- **shiny** - Shiny web applications
-- **publishing** - Full publishing suite with LaTeX
+
+For LaTeX/Quarto or Shiny, use a base image instead of a profile:
+`zzcollab docker --base-image rocker/verse` (LaTeX/Quarto) or
+`zzcollab docker --base-image rocker/shiny` (Shiny web applications).
 
 ### 4. Don't set auto-github to true unless you want repos for EVERYTHING
 
@@ -411,7 +412,7 @@ profiles:
     enabled: true
   analysis:
     enabled: true
-  modeling:
+  rstudio:
     enabled: true
 
 build:

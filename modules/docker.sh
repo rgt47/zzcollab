@@ -325,20 +325,38 @@ extract_code_packages() {
     done
     for skip in "${_DOCKER_SKIP_FILES[@]}"; do exclude="$exclude ! -path '$skip'"; done
 
+    # Single awk pass per file replaces the previous four grep|sed pipelines
+    # (each spawning 2-3 processes). One pass emits library()/require() args,
+    # pkg:: references, and roxygen @import/@importFrom targets. Using \047
+    # (octal single quote) is portable across GNU and BSD awk, unlike the old
+    # sed which silently dropped single-quoted args on BSD/macOS.
     while IFS= read -r file; do
         [[ -f "$file" ]] || continue
-        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
-            | grep -E '(library|require)[[:space:]]*\(' 2>/dev/null \
-            | sed -E \
-          's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' \
-            || true
-        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
-            | grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' 2>/dev/null \
-            | sed 's/:://' || true
-        grep -E "#'[[:space:]]*@importFrom[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
-            sed -E 's/.*@importFrom[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
-        grep -E "#'[[:space:]]*@import[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
-            sed -E 's/.*@import[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
+        awk '
+            /@importFrom[[:space:]]+[a-zA-Z]/ {
+                if (match($0, /@importFrom[[:space:]]+[a-zA-Z0-9.]+/)) {
+                    s = substr($0, RSTART, RLENGTH); sub(/@importFrom[[:space:]]+/, "", s); print s
+                }
+            }
+            /@import[[:space:]]+[a-zA-Z]/ {
+                if ($0 !~ /@importFrom/ && match($0, /@import[[:space:]]+[a-zA-Z0-9.]+/)) {
+                    s = substr($0, RSTART, RLENGTH); sub(/@import[[:space:]]+/, "", s); print s
+                }
+            }
+            /^[[:space:]]*#/ { next }
+            {
+                tmp = $0
+                while (match(tmp, /(library|require)[[:space:]]*\([[:space:]]*["\047]?[a-zA-Z][a-zA-Z0-9.]*/)) {
+                    s = substr(tmp, RSTART, RLENGTH); sub(/.*\([[:space:]]*["\047]?/, "", s); print s
+                    tmp = substr(tmp, RSTART + RLENGTH)
+                }
+                tmp = $0
+                while (match(tmp, /[a-zA-Z][a-zA-Z0-9.]*::/)) {
+                    s = substr(tmp, RSTART, RLENGTH); sub(/::$/, "", s); print s
+                    tmp = substr(tmp, RSTART + RLENGTH)
+                }
+            }
+        ' "$file" 2>/dev/null || true
     done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) $exclude 2>/dev/null")
 }
 

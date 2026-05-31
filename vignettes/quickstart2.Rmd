@@ -1158,7 +1158,7 @@ The final repository contains:
 | Build Docker image | `make docker-build` |
 | Push to DockerHub | `zzc dockerhub` |
 | Push with tag | `zzc dockerhub --tag v1.0` |
-| Switch profile | `zzc publishing` |
+| Change base image | `zzcollab docker --base-image rocker/verse` |
 | List profiles | `zzc list profiles` |
 | Render report | `make docker-render` |
 
