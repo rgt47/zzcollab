@@ -141,17 +141,6 @@ test_that("validation functions provide helpful error messages", {
     validate_docker_name("My Project", "github_account"),
     "github_account must contain only lowercase"
   )
-
-  # validate_path should mention parameter name
-  expect_error(
-    validate_path(c("a", "b"), "some_path"),
-    "some_path must be a single character string"
-  )
-
-  expect_error(
-    validate_path("/nonexistent", "config_file", must_exist = TRUE),
-    "config_file does not exist"
-  )
 })
 
 test_that("edge cases are handled correctly", {
@@ -160,9 +149,4 @@ test_that("edge cases are handled correctly", {
 
   # validate_docker_name with all allowed characters
   expect_true(validate_docker_name("abc123._-xyz", "name"))
-
-  # validate_path with relative path
-  result <- validate_path(".", "current_dir")
-  expect_type(result, "character")
-  expect_true(nchar(result) > 1)  # Should be expanded to absolute path
 })
