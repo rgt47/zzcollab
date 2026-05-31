@@ -1,5 +1,5 @@
 # ZZCOLLAB CLI Command and Flag Improvement Plan
-*2026-05-29 18:36 PDT (revised 2026-05-30 19:49 PDT)*
+*2026-05-29 18:36 PDT (revised 2026-05-30 21:39 PDT)*
 
 ## Purpose
 
@@ -30,16 +30,16 @@ sweep were then implemented on 2026-05-30. The current status of each finding:
 | F9b (duplicate global parsing) | Done | Dead local cases removed; the build decision now honors `ZZCOLLAB_NO_BUILD`, which also fixed a latent bug where `docker --no-build` did not skip the build. |
 | F10 (`-t` help note) | Done | Help footer clarifies `-t` is the tag, not team. |
 | D1 (docs name removed profiles) | Done | Swept ~15 files to `minimal`/`analysis`/`rstudio` or `--base-image`; guarded by `test_no_removed_profiles`. |
-| F6 (flag-vs-config rule) | Open | Documentation only. |
-| F7 (`build` vs `docker --build`) | Open | Both still present (`cmd_build`). |
-| F8 (`validate` vs `doctor`) | Open | Both still present (`cmd_validate`, `cmd_doctor`). |
+| F6 (flag-vs-config rule) | Done | 'Where settings live' subsection added to `docs/CONFIGURATION.md`. |
+| F7 (`build` vs `docker --build`) | Done | `build` renamed to `rebuild`; `build` kept as a deprecated alias with a warning. |
+| F8 (`validate` vs `doctor`) | Done (reframed) | The maintainer's zzrenvcheck refactor already removed the overlap: `validate` now checks package dependencies and `doctor` checks workspace files. Only the stale help label remained, now corrected. |
 | F4 (profile-token overload) | Partially done | Profiles reduced to `minimal`, `analysis`, `rstudio`; the `cmd_init` guard now hard-stops on an occupied directory unless `--force` (commit `56ae900`). The state-dependent verb remains. |
 | F9a (flag-binding doc) | Open | Help text unchanged. |
 
-Phase 0 (F1, F2, F3, F5, F9b, F10) and D1 are complete and verified
-(`shellcheck` clean; `test-cli`, `test-docs`, `test-profiles`, `test-config`
-pass). The remaining open items are Phase 1 (F6, F7, F8) and the rest of
-Phase 2 (F4 verb split, F9a). D1 is described below.
+Phase 0 (F1, F2, F3, F5, F9b, F10), Phase 1 (F6, F7, F8), and D1 are complete
+and verified (`shellcheck` clean; `test-cli`, `test-docs`, `test-profiles`,
+`test-config` pass). The only remaining open items are in Phase 2: F4's verb
+split and F9a. D1 is described below.
 
 ## Scope and constraints
 
@@ -130,6 +130,7 @@ Phase 2 (F4 verb split, F9a). D1 is described below.
 
 ### F6. State and enforce one flag-versus-config rule
 
+- **Status**: Done (2026-05-30). A 'Where settings live' subsection in `docs/CONFIGURATION.md` documents the rule: per-build overrides are flags; durable identity is config; the project name is the directory.
 - **Problem**: `--base-image`, `--r-version`, and `--profile` exist as both
   flags and config keys; `dockerhub-account` and `github-account` are
   config-only with no flag; the project name is neither. A user cannot
@@ -143,6 +144,7 @@ Phase 2 (F4 verb split, F9a). D1 is described below.
 
 ### F7. Disambiguate `build` from `docker --build`
 
+- **Status**: Done (2026-05-30), option A. `build` renamed to `rebuild`; `build` kept as a deprecated alias that warns and forwards. Updated the template `Makefile`, the user guide, the help command list, and the `CONFIGURATION.md` flag table. Already-generated project Makefiles continue to work via the alias.
 - **Problem**: Two build entry points with names that do not signal the
   difference: `docker --build` (generate then build) versus `build`
   (rebuild an existing image, with `--no-cache` / `--log`).
@@ -157,14 +159,18 @@ Phase 2 (F4 verb split, F9a). D1 is described below.
 
 ### F8. Resolve the `validate` versus `doctor` overlap
 
-- **Problem**: Both answer 'is my project healthy?'. The split (validate =
-  structure; doctor = files, versions, CI) is invisible at the call site.
-- **Change**: Make `validate` a documented subset that `doctor` calls, and
-  have `doctor` present validation as one of its sections. Align this with
-  the planned slimming of `doctor.sh` in `docs/simplification-plan.md`.
-- **Files**: `modules/doctor.sh`, `modules/validation.sh` (or its
-  successor), help, `docs/`.
-- **Impact**: Consolidation; `validate` remains available.
+- **Status**: Done (2026-05-30), reframed. The original recommendation (merge
+  the two) was overtaken by the maintainer's refactor: `validation.sh` was
+  deleted and `validate` now delegates package-dependency checking to the
+  `zzrenvcheck` R package, while `doctor` checks that workspace files are
+  current with templates. The two commands are now genuinely distinct, so a
+  merge would be wrong. The only residue was a stale help label
+  (`validate` described as 'Check project structure'), now corrected to
+  'Validate package dependencies (renv / zzrenvcheck)'.
+- **Original problem**: Both appeared to answer 'is my project healthy?', with
+  an invisible split between them.
+- **Files**: `zzcollab.sh` (help command list).
+- **Impact**: Labels now disambiguate; no behavior change.
 
 ## Phase 2: structural (coordinate with the simplification plan)
 
@@ -226,7 +232,7 @@ Phase 2 (F4 verb split, F9a). D1 is described below.
 |-------|-------|--------|------|-----------------|--------|
 | 0 | F1, F2, F3, F5, F9b, F10 | Done | Low | None | Done 2026-05-30 |
 | Docs | D1 | Done | Low | None | Done 2026-05-30 |
-| 1 | F6, F7, F8 | Open | Medium | None (aliased) | Next minor release |
+| 1 | F6, F7, F8 | Done | Medium | None (aliased) | Done 2026-05-30 |
 | 2 | F4, F9a | F4 partial, F9a open | Higher | Behavior change | With profile reduction |
 
 ## Verification for every change
@@ -241,12 +247,18 @@ Phase 2 (F4 verb split, F9a). D1 is described below.
 
 ## Open decisions
 
-- F3: forward flags from the quickstart (option A) or hard-error (option B).
-- F7: rename `build` to `rebuild` (option A) or fold into `docker` (option
-  B).
-- Deprecation policy: alias-with-warning for one release, or immediate
-  removal given the framework is pre-1.0 on the CLI line.
+- F3: resolved as option B (hard-error). Option A (forwarding the flags from
+  the quickstart so `analysis --r-version` works) remains a possible future
+  enhancement.
+- F7: resolved as option A (`build` renamed to `rebuild`, with `build` kept as
+  a deprecated alias).
+- Deprecation policy as applied: removed flags (`-n`/`--no`, `-Y`/`--yes-all`)
+  were cut outright, since the framework is pre-1.0 on the CLI line and they
+  were exact synonyms; the renamed `build` command kept an alias-with-warning
+  because already-generated project Makefiles still call it.
+- Remaining Phase 2 decision: F4's verb split (a dedicated `profile <name>`
+  verb versus `config set profile-name` followed by `docker`).
 
 ---
-*Rendered on 2026-05-30 at 19:49 PDT.*<br>
+*Rendered on 2026-05-30 at 21:39 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/cli-ux-improvement-plan.md*

@@ -1,5 +1,34 @@
 # ZZCOLLAB R Interface: Project and Docker workflow (split out of utils.R)
 
+#' Validate and resolve shared team/project parameters
+#'
+#' Shared by \code{init_project()} and \code{join_project()}: validates
+#' \code{project_name} and \code{team_name}, fills \code{team_name} from the
+#' configured default when not supplied, and errors when a required value is
+#' missing.
+#'
+#' @param team_name,project_name As passed by the caller; either may be NULL.
+#' @return The resolved \code{team_name}.
+#' @keywords internal
+resolve_team_project <- function(team_name, project_name) {
+  if (is.null(project_name)) {
+    stop("project_name is required", call. = FALSE)
+  }
+  validate_docker_name(project_name, "project_name")
+
+  if (!is.null(team_name)) {
+    validate_docker_name(team_name, "team_name")
+  }
+
+  team_name <- team_name %||% get_config_default("team_name")
+
+  if (is.null(team_name)) {
+    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
+         call. = FALSE)
+  }
+  team_name
+}
+
 #' Check Docker container status for zzcollab projects
 #'
 #' This function checks for running Docker containers that have the 'zzcollab' label.
@@ -268,17 +297,8 @@ team_images <- function() {
 init_project <- function(team_name = NULL, project_name = NULL,
                          github_account = NULL, profile = "analysis") {
 
-  # Validate ALL explicitly-provided parameters FIRST (before getting config defaults)
-  # This allows tests to validate error messages without needing zzcollab script
-  if (is.null(project_name)) {
-    stop("project_name is required", call. = FALSE)
-  }
-  validate_docker_name(project_name, "project_name")
-
-  if (!is.null(team_name)) {
-    validate_docker_name(team_name, "team_name")
-  }
-
+  # Validate the init-only parameters first (before resolving config defaults),
+  # so tests can check error messages without needing the zzcollab script.
   if (!is.null(github_account)) {
     validate_docker_name(github_account, "github_account")
   }
@@ -291,15 +311,9 @@ init_project <- function(team_name = NULL, project_name = NULL,
          paste(valid_profiles, collapse = ", "), call. = FALSE)
   }
 
-  # Now apply config defaults for missing parameters
-  team_name <- team_name %||% get_config_default("team_name")
+  # Shared project/team validation and team_name resolution.
+  team_name <- resolve_team_project(team_name, project_name)
   github_account <- github_account %||% get_config_default("github_account") %||% team_name
-
-  # Validate team_name is set (either passed or from config)
-  if (is.null(team_name)) {
-    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
-         call. = FALSE)
-  }
 
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
@@ -397,25 +411,8 @@ init_project <- function(team_name = NULL, project_name = NULL,
 #' @export
 join_project <- function(team_name = NULL, project_name = NULL) {
 
-  # Validate ALL explicitly-provided parameters FIRST (before getting config defaults)
-  # This allows tests to validate error messages without needing zzcollab script
-  if (is.null(project_name)) {
-    stop("project_name is required", call. = FALSE)
-  }
-  validate_docker_name(project_name, "project_name")
-
-  if (!is.null(team_name)) {
-    validate_docker_name(team_name, "team_name")
-  }
-
-  # Now apply config defaults for missing parameters
-  team_name <- team_name %||% get_config_default("team_name")
-
-  # Validate team_name is set (either passed or from config)
-  if (is.null(team_name)) {
-    stop("team_name is required. Set via parameter or config: set_config('team_name', 'myteam')",
-         call. = FALSE)
-  }
+  # Shared project/team validation and team_name resolution.
+  team_name <- resolve_team_project(team_name, project_name)
 
   # In the current model a team member joins by cloning the project repository
   # and building its Docker image from the committed Dockerfile + renv.lock.

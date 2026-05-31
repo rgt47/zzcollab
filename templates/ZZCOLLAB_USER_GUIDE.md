@@ -679,7 +679,7 @@ zzc <profile>                   # create or switch profile
 zzc init                        # create R package structure
 zzc renv                        # set up renv
 zzc docker [OPTIONS]            # generate/build Dockerfile
-zzc build [OPTIONS]             # build Docker image
+zzc rebuild [OPTIONS]           # rebuild Docker image
 zzc git                         # initialize git
 zzc github [--public|--private] # create GitHub repository
 zzc dockerhub [--tag TAG]       # push image to Docker Hub

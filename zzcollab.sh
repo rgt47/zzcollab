@@ -420,14 +420,15 @@ cmd_build() {
             --log)      log_file="docker-build.log"; shift ;;
             help|--help|-h)
                 cat << 'HELPEOF'
-BUILD DOCKER IMAGE
+REBUILD DOCKER IMAGE
 
-Builds the Docker image using the content-addressable cache.
-If an image with the same Dockerfile+renv.lock hash exists,
-it is retagged instead of rebuilt.
+Rebuilds the project's Docker image using the content-addressable cache.
+If an image with the same Dockerfile+renv.lock hash exists, it is retagged
+instead of rebuilt. To generate the Dockerfile and build in one step,
+use 'zzcollab docker --build' instead.
 
 USAGE:
-    zzcollab build [OPTIONS]
+    zzcollab rebuild [OPTIONS]
 
 OPTIONS:
     --no-cache     Skip cache check; force full rebuild
@@ -1547,12 +1548,12 @@ Profiles (new project: init+renv+docker, existing: switch profile):
   rstudio       RStudio Server (~980MB)
 
 Management:
-  build          Build Docker image (uses content-addressable cache)
+  rebuild        Rebuild Docker image (uses content-addressable cache)
   tools          Install render-stamp helpers in tools/ (PDF provenance)
   rm <feature>   Remove: docker, renv, git, github, cicd
   uninstall      Remove the zzcollab scaffold from this directory
   doctor         Check workspace files are current with templates
-  validate       Check project structure
+  validate       Validate package dependencies (renv / zzrenvcheck)
   config         Configuration management
   list           List profiles, libs, packages
   help           Show help
@@ -1771,8 +1772,16 @@ main() {
                 ;;
 
             # Other commands that pass through
-            build)
+            rebuild)
                 shift
+                cmd_build "$@"
+                exit $?
+                ;;
+            build)
+                # Deprecated alias for 'rebuild' (kept for already-generated
+                # project Makefiles that still call 'zzcollab build').
+                shift
+                log_warn "'zzcollab build' is deprecated; use 'zzcollab rebuild'."
                 cmd_build "$@"
                 exit $?
                 ;;

@@ -4,6 +4,24 @@
 # CONFIGURATION SYSTEM R INTERFACE
 #=============================================================================
 
+#' Run a zzcollab config subcommand
+#'
+#' Internal helper shared by the config wrappers: resolves the zzcollab
+#' script once and runs \code{zzcollab config <args>} via \code{safe_system()}.
+#'
+#' @param args Character vector of arguments following \code{config}, already
+#'   shell-quoted where needed (e.g. \code{c("get", shQuote(key))}).
+#' @param intern Passed to \code{safe_system()}; \code{TRUE} captures stdout.
+#' @param error_msg Passed to \code{safe_system()}.
+#' @return The \code{safe_system()} result: captured lines when
+#'   \code{intern = TRUE}, otherwise the integer exit status.
+#' @keywords internal
+zzc_config <- function(args, intern = FALSE, error_msg = NULL) {
+  zzcollab_path <- find_zzcollab_script()
+  cmd <- paste(c(zzcollab_path, "config", args), collapse = " ")
+  safe_system(cmd, intern = intern, error_msg = error_msg)
+}
+
 #' Get configuration value from zzcollab configuration system
 #'
 #' Retrieves configuration values from the zzcollab configuration hierarchy.
@@ -55,11 +73,7 @@
 #'
 #' @export
 get_config <- function(key) {
-  # Find zzcollab script
-  zzcollab_path <- find_zzcollab_script()
-
-  cmd <- paste(zzcollab_path, "config get", shQuote(key))
-  result <- safe_system(cmd, intern = TRUE,
+  result <- zzc_config(c("get", shQuote(key)), intern = TRUE,
                        error_msg = paste("Failed to get config value:", key))
 
   # `config get` echoes an empty string for unset keys (the "(not set)"
@@ -131,11 +145,8 @@ get_config <- function(key) {
 #'
 #' @export
 set_config <- function(key, value) {
-  # Find zzcollab script
-  zzcollab_path <- find_zzcollab_script()
-
-  cmd <- paste(zzcollab_path, "config set", shQuote(key), shQuote(value))
-  result <- safe_system(cmd, error_msg = paste("Failed to set config value:", key))
+  result <- zzc_config(c("set", shQuote(key), shQuote(value)),
+                       error_msg = paste("Failed to set config value:", key))
   return(result == 0)
 }
 
@@ -192,11 +203,7 @@ set_config <- function(key, value) {
 #'
 #' @export
 list_config <- function() {
-  # Find zzcollab script
-  zzcollab_path <- find_zzcollab_script()
-
-  cmd <- paste(zzcollab_path, "config list")
-  result <- safe_system(cmd, intern = TRUE,
+  result <- zzc_config("list", intern = TRUE,
                        error_msg = "Failed to list configuration")
   return(result)
 }
@@ -265,11 +272,8 @@ list_config <- function() {
 #'
 #' @export
 validate_config <- function() {
-  # Find zzcollab script
-  zzcollab_path <- find_zzcollab_script()
-
-  cmd <- paste(zzcollab_path, "config validate")
-  result <- safe_system(cmd, error_msg = "Failed to validate configuration")
+  result <- zzc_config("validate",
+                       error_msg = "Failed to validate configuration")
   return(result == 0)
 }
 
@@ -335,11 +339,8 @@ validate_config <- function() {
 #'
 #' @export
 init_config <- function() {
-  # Find zzcollab script
-  zzcollab_path <- find_zzcollab_script()
-
-  cmd <- paste(zzcollab_path, "config init")
-  result <- safe_system(cmd, error_msg = "Failed to initialize configuration")
+  result <- zzc_config("init",
+                       error_msg = "Failed to initialize configuration")
   return(result == 0)
 }
 

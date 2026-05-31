@@ -44,7 +44,6 @@ Flags are either global (valid in any position) or scoped to a specific command.
 | Command            | Short | Long Flag          | Purpose                                  |
 |--------------------|-------|--------------------|------------------------------------------|
 | `docker`           | `-b`  | `--build`          | Build the image after generating         |
-| `docker`           | `-n`  | `--no`             | Generate only (answer "no" to the build prompt) |
 | `docker`           | `-r`  | `--profile <name>` | Select the profile (minimal, analysis, …) |
 | `docker`           |       | `--base-image <img>` | Override the base image (default `rocker/r-ver`) |
 | `docker`           |       | `--r-version <ver>`  | Pin the R version                      |
@@ -52,8 +51,8 @@ Flags are either global (valid in any position) or scoped to a specific command.
 | `dockerhub`        | `-t`  | `--tag <tag>`      | DockerHub image tag (default `latest`)   |
 | `github`           |       | `--private`        | Create a private repository (default)    |
 | `github`           |       | `--public`         | Create a public repository               |
-| `build`            |       | `--no-cache`       | Force a full rebuild (skip the cache check) |
-| `build`            |       | `--log`            | Save build output to `docker-build.log`  |
+| `rebuild`          |       | `--no-cache`       | Force a full rebuild (skip the cache check) |
+| `rebuild`          |       | `--log`            | Save build output to `docker-build.log`  |
 | `rm`, `uninstall`  | `-f`  | `--force`          | Skip the confirmation prompt             |
 | `uninstall`        | `-n`  | `--dry-run`        | Show what would be removed without removing |
 
@@ -72,6 +71,14 @@ zzcollab analysis
 zzcollab docker --base-image rocker/verse
 zzcollab docker --base-image rocker/shiny
 ```
+
+### Where settings live
+
+ZZCOLLAB draws one consistent line between flags and configuration:
+
+- **Per-build overrides are flags.** Values that pertain to a single build of a single project are flags on the relevant command: `--base-image`, `--r-version`, `--profile` (and `--tag` for the image push).
+- **Durable identity is configuration.** Values reused across projects live in config and have no flag: the DockerHub account (`config set dockerhub-account`) and the GitHub account (`config set github-account`).
+- **The project name is the working directory.** It is neither a flag nor a config value.
 
 ## Configuration Hierarchy
 

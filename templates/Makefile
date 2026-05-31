@@ -115,13 +115,13 @@ check-binaries:
 	fi
 
 docker-build: check-binaries
-	zzcollab build
+	zzcollab rebuild
 
 docker-rebuild:
-	zzcollab build --no-cache
+	zzcollab rebuild --no-cache
 
 docker-build-log:
-	zzcollab build --log
+	zzcollab rebuild --log
 
 docker-push-team:
 	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
