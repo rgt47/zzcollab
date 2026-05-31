@@ -329,12 +329,16 @@ _DOCKER_SKIP_FILES=("*/README.Rmd" "*/README.md" "*/CLAUDE.md" "*/examples/*" "*
 # Scan code files for library()/require()/pkg::/@importFrom/@import usages.
 extract_code_packages() {
     local dirs=("$@")
-    local find_pattern="" exclude=""
+    # Build the find expression as arrays so patterns/paths are passed as
+    # literal arguments -- no eval, no word-splitting on whitespace/globs.
+    local name_args=() exclude_args=() ext skip
     for ext in "${_DOCKER_FILE_EXTENSIONS[@]}"; do
-        [[ -n "$find_pattern" ]] && find_pattern="$find_pattern -o"
-        find_pattern="$find_pattern -name \"*.$ext\""
+        [[ ${#name_args[@]} -gt 0 ]] && name_args+=(-o)
+        name_args+=(-name "*.$ext")
     done
-    for skip in "${_DOCKER_SKIP_FILES[@]}"; do exclude="$exclude ! -path '$skip'"; done
+    for skip in "${_DOCKER_SKIP_FILES[@]}"; do
+        exclude_args+=(! -path "$skip")
+    done
 
     # Single awk pass per file replaces the previous four grep|sed pipelines
     # (each spawning 2-3 processes). One pass emits library()/require() args,
@@ -368,7 +372,7 @@ extract_code_packages() {
                 }
             }
         ' "$file" 2>/dev/null || true
-    done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) $exclude 2>/dev/null")
+    done < <(find "${dirs[@]}" -type f \( "${name_args[@]}" \) "${exclude_args[@]}" 2>/dev/null)
 }
 
 # Extract a comma-separated DESCRIPTION field (e.g. Imports), one pkg per line.
@@ -683,6 +687,11 @@ find_cached_image() {
         --format '{{.ID}}' | head -1)
 
     [[ -n "$image_id" ]] && echo "$image_id"
+    # A "no cached image" result is not an error. Without this explicit success,
+    # the function returns the exit status of the failed [[ -n ]] test (1), and
+    # the caller's `cached_image=$(find_cached_image ...)` trips set -e, aborting
+    # the build silently before it ever starts.
+    return 0
 }
 
 build_docker_image() {
@@ -721,7 +730,9 @@ build_docker_image() {
 
     log_info "Building Docker image: $project_name"
 
-    local platform_args=""
+    # Assemble docker build flags as an array so multi-token values are passed
+    # as distinct, unsplit arguments.
+    local build_args=()
     if [[ "$(uname -m)" == "arm64" ]]; then
         local base_image
         base_image=$(grep "^FROM" Dockerfile | head -1 | awk '{print $2}' | cut -d: -f1)
@@ -732,22 +743,17 @@ build_docker_image() {
         fi
         case "$base_image" in
             *tidyverse*|*shiny*|*verse*)
-                platform_args="--platform linux/amd64"
+                build_args+=(--platform linux/amd64)
                 log_info "Using AMD64 emulation for $base_image"
                 ;;
         esac
     fi
 
     # Build with hash label for future cache lookups
-    local label_args=""
-    if [[ -n "$dockerfile_hash" ]]; then
-        label_args="--label zzcollab.dockerfile.hash=$dockerfile_hash"
-    fi
+    [[ -n "$dockerfile_hash" ]] && build_args+=(--label "zzcollab.dockerfile.hash=$dockerfile_hash")
+    [[ "$no_cache" == "true" ]] && build_args+=(--no-cache)
 
-    local cache_args=""
-    [[ "$no_cache" == "true" ]] && cache_args="--no-cache"
-
-    if DOCKER_BUILDKIT=1 docker build $platform_args $label_args $cache_args -t "$project_name" .; then
+    if DOCKER_BUILDKIT=1 docker build ${build_args[@]+"${build_args[@]}"} -t "$project_name" .; then
         log_success "Docker image '$project_name' built successfully"
         log_info "Run: docker run -it --rm -v \$(pwd):/home/analyst/project $project_name"
     else
