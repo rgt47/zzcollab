@@ -61,16 +61,17 @@ git_push <- function(branch = NULL) {
 #' @return Logical indicating success
 #' @export
 create_pr <- function(title, body = NULL, base = 'main') {
-  if (!nzchar(system.file(package = 'gh'))) {
-    # Check if gh CLI is available
-    if (safe_system('which gh', ignore.stdout = TRUE, ignore.stderr = TRUE,
-                   error_msg = 'GitHub CLI check failed') != 0) {
-      stop('GitHub CLI (gh) is required. Install with: brew install gh',
-           call. = FALSE)
-    }
+  # Require the gh CLI (the GitHub command-line tool). Sys.which resolves it
+  # in-process; the previous system.file(package = 'gh') check probed for an
+  # unrelated CRAN R package named 'gh' and, if that was installed, skipped
+  # the CLI check entirely.
+  if (!nzchar(Sys.which('gh'))) {
+    stop('GitHub CLI (gh) is required. Install with: brew install gh',
+         call. = FALSE)
   }
 
-  cmd <- paste('gh pr create --title', shQuote(title), '--base', base)
+  # shQuote base as well as title/body so a branch name cannot inject shell.
+  cmd <- paste('gh pr create --title', shQuote(title), '--base', shQuote(base))
 
   if (!is.null(body)) {
     cmd <- paste(cmd, '--body', shQuote(body))

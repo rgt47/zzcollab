@@ -20,12 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         profile:
-          # Core profiles (mapped to rocker base images)
+          # The three supported profiles (mapped to rocker base images)
           - minimal
           - analysis
-          - publishing
           - rstudio
-          - shiny
         r_version: ['4.4.0']
 
     steps:
@@ -262,9 +260,12 @@ jobs:
         # List available make targets
         make help || echo "Help target not required"
 
-        # Verify critical targets exist in Makefile
-        grep -q "docker-build" Makefile
-        grep -q "docker-run" Makefile || grep -q "docker-r" Makefile
+        # Verify critical targets exist in Makefile. Anchor on '^target:' so a
+        # substring (e.g. 'docker-render' satisfying a bare 'docker-r' grep)
+        # cannot pass the assertion vacuously.
+        grep -qE '^docker-build:' Makefile
+        grep -qE '^r:' Makefile
+        grep -qE '^docker-rstudio:' Makefile
 
     - name: Test results summary
       if: always()

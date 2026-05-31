@@ -1231,7 +1231,7 @@ cmd_quickstart() {
             else
                 echo "  To build:    zzc docker" >&2
             fi
-            echo "  To rebuild:  zzc docker --force" >&2
+            echo "  To rebuild:  make docker-rebuild" >&2
             return 0
         fi
 
@@ -1570,6 +1570,7 @@ Management:
   doctor         Check workspace files are current with templates
   validate       Validate package dependencies (renv / zzrenvcheck)
   config         Configuration management
+  menu           Interactive hub for common project actions
   list           List profiles, libs, packages
   help           Show help
 
@@ -1603,8 +1604,140 @@ Examples:
   zzcollab docker                  # Add Docker (auto-adds renv, init)
   zzcollab docker -b github        # Build image + create GitHub repo
   zzcollab rm docker               # Remove Docker files
-  zzcollab rstudio                 # Switch to rstudio profile (existing project)
+  zzcollab menu                    # Interactive hub (change profile, add package, ...)
+  zzcollab docker --profile rstudio # Switch an existing project's profile
 EOF
+}
+
+#=============================================================================
+# INTERACTIVE POST-INIT HUB (zzcollab menu)
+#=============================================================================
+
+# _menu_choose HEADER ITEM...
+# Single-select via gum when available, else a numbered zzc_read fallback.
+# Prints the chosen item to stdout; returns 1 on cancel.
+_menu_choose() {
+    local header="$1"; shift
+    local items=("$@")
+    if has_gum; then
+        gum choose --header "$header" "${items[@]}"
+        return $?
+    fi
+    printf '%s\n' "$header" >&2
+    local i
+    for i in "${!items[@]}"; do
+        printf '  %d) %s\n' "$((i + 1))" "${items[$i]}" >&2
+    done
+    local sel
+    zzc_read -r -p "Choice: " sel || return 1
+    [[ "$sel" =~ ^[0-9]+$ ]] && (( sel >= 1 && sel <= ${#items[@]} )) \
+        && { printf '%s' "${items[$((sel - 1))]}"; return 0; }
+    return 1
+}
+
+# Change the project's profile (non-destructive: regenerates the Dockerfile via
+# 'docker --profile'). Preselects the current profile in the gum picker.
+_menu_change_profile() {
+    local current new
+    current=$(config_get profile-name 2>/dev/null || echo "")
+    if has_gum; then
+        local args=(gum choose --header "Select profile (current: ${current:-none})")
+        [[ -n "$current" ]] && args+=(--selected "$current")
+        args+=(minimal analysis rstudio)
+        new=$("${args[@]}") || return 0
+    else
+        new=$(_menu_choose "Select profile (current: ${current:-none})" \
+            minimal analysis rstudio) || return 0
+    fi
+    [[ -z "$new" ]] && return 0
+    cmd_docker --profile "$new"
+}
+
+# Set a single config value (with the current value as the default).
+_menu_set_value() {
+    local key="$1" label="$2" current val
+    current=$(config_get "$key" 2>/dev/null || echo "")
+    if has_gum; then
+        val=$(gum_input "${current:-(enter value)}" "$label" "$current") || return 0
+    else
+        zzc_read -r -p "$label [${current:-unset}]: " val || return 0
+        val="${val:-$current}"
+    fi
+    [[ -z "$val" ]] && return 0
+    config_set "$key" "$val"
+}
+
+# Install R package(s) into the project image and snapshot renv.lock.
+_menu_add_package() {
+    local image pkgs rvec
+    image=$(basename "$(pwd)")
+    if ! command -v docker >/dev/null 2>&1; then
+        log_error "Docker is not installed."
+        return 0
+    fi
+    if ! docker image inspect "$image" >/dev/null 2>&1; then
+        log_error "Docker image '$image' not found. Build it first (menu: Rebuild Docker image)."
+        return 0
+    fi
+    if has_gum; then
+        pkgs=$(gum_input "dplyr ggplot2" "R package(s) to add (space or comma separated)" "") || return 0
+    else
+        zzc_read -r -p "R package(s) to add (space/comma separated): " pkgs || return 0
+    fi
+    [[ -z "$pkgs" ]] && return 0
+    # Build an R character vector from the space/comma separated list.
+    rvec=$(printf '%s' "$pkgs" | tr ',' ' ' | xargs -n1 2>/dev/null \
+        | sed 's/^/"/; s/$/"/' | paste -sd, -)
+    [[ -z "$rvec" ]] && return 0
+    log_info "Installing into '$image' and snapshotting renv.lock..."
+    if docker run --rm \
+        -v "$(pwd):/home/analyst/project" \
+        -w /home/analyst/project \
+        "$image" \
+        Rscript -e "renv::install(c($rvec)); renv::snapshot(prompt = FALSE)"; then
+        log_success "Added: $pkgs (captured in renv.lock). Commit renv.lock to share."
+    else
+        log_error "Package install failed."
+    fi
+}
+
+# Interactive post-init hub. Each action dispatches to an existing command.
+cmd_menu() {
+    if ! is_workspace_initialized; then
+        log_error "No zzcollab project in this directory."
+        log_info  "Create one first:  zzcollab analysis  (or minimal, rstudio)"
+        return 1
+    fi
+    while true; do
+        local choice
+        choice=$(_menu_choose "zzcollab — what would you like to do?" \
+            "Change profile" \
+            "Add R package(s)" \
+            "Set DockerHub account" \
+            "Set GitHub account" \
+            "Pin R version" \
+            "Rebuild Docker image" \
+            "Push image to Docker Hub" \
+            "Create GitHub repo" \
+            "View configuration" \
+            "Check workspace health" \
+            "Quit") || break
+        case "$choice" in
+            "Change profile")            _menu_change_profile ;;
+            "Add R package(s)")          _menu_add_package ;;
+            "Set DockerHub account")     _menu_set_value dockerhub-account "DockerHub account" ;;
+            "Set GitHub account")        _menu_set_value github-account "GitHub account" ;;
+            "Pin R version")             _menu_set_value r-version "R version (X.Y.Z)" ;;
+            "Rebuild Docker image")      cmd_build ;;
+            "Push image to Docker Hub")  cmd_dockerhub ;;
+            "Create GitHub repo")        cmd_github ;;
+            "View configuration")        config_list ;;
+            "Check workspace health")    cmd_doctor ;;
+            "Quit"|"")                   break ;;
+        esac
+        echo "" >&2
+    done
+    return 0
 }
 
 main() {
@@ -1835,6 +1968,11 @@ main() {
             help)
                 shift
                 cmd_help "$@"
+                exit $?
+                ;;
+            menu)
+                shift
+                cmd_menu "$@"
                 exit $?
                 ;;
 

@@ -16,38 +16,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run core module tests
+    - name: Run shell test suite
       run: |
-        echo "Running core module tests..."
-        bash tests/shell/test-core.sh
-
-    - name: Run CLI module tests
-      run: |
-        echo "Running CLI module tests..."
-        bash tests/shell/test-cli.sh
-
-    - name: Run validation module tests
-      run: |
-        echo "Running validation module tests..."
-        bash tests/shell/test-validation.sh
-
-    - name: Run all tests summary
-      run: |
-        echo "Running complete test suite..."
-        bash tests/shell/run_all_tests.sh
-
-    - name: Generate test report
-      if: always()
-      run: |
+        # run_all_tests.sh auto-discovers and runs every tests/shell/test-*.sh.
+        # Capture the output once (pipefail makes the step fail if the suite
+        # fails) so the report artifact does not re-run the whole suite.
         mkdir -p test-reports
         {
           echo "# Shell Tests Report"
           echo "Generated on: $(date)"
           echo ""
-          echo "## Test Results"
-          echo ""
-          bash tests/shell/run_all_tests.sh 2>&1 || true
         } > test-reports/shell-tests-report.md
+        bash tests/shell/run_all_tests.sh 2>&1 \
+          | tee -a test-reports/shell-tests-report.md
 
     - name: Upload test report
       if: always()
