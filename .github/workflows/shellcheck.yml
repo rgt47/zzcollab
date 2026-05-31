@@ -47,6 +47,22 @@ jobs:
           fi
         done
         
+    - name: Run ShellCheck on developer scripts
+      run: |
+        echo "Checking developer scripts..."
+        find scripts -name "*.sh" -type f | while read -r file; do
+          echo "Checking $file..."
+          shellcheck --severity=warning "$file"
+        done
+
+    - name: Run ShellCheck on shell tests
+      run: |
+        echo "Checking shell tests..."
+        find tests/shell -name "*.sh" -type f | while read -r file; do
+          echo "Checking $file..."
+          shellcheck --severity=warning "$file"
+        done
+
     - name: Run ShellCheck on template scripts
       run: |
         echo "Checking template scripts..."

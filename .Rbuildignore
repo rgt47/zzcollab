@@ -91,3 +91,5 @@
 ^tests/testthat/tests$
 ^tests/testthat/fixtures$
 ^CODE_OF_CONDUCT\.md$
+^[^/]+\.pdf$
+^notes\.txt$
