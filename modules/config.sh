@@ -1242,6 +1242,32 @@ _save_and_exit() {
 # CONFIG SET/GET/LIST COMMANDS
 #=============================================================================
 
+# Translate a snake_case config key alias to its dotted YAML path. Shared by
+# config_get and config_set so the read and write paths cannot drift.
+_key_to_yaml_path() {
+    case "$1" in
+        author_name)               echo "author.name" ;;
+        author_email)              echo "author.email" ;;
+        author_orcid)              echo "author.orcid" ;;
+        author_affiliation)        echo "author.affiliation" ;;
+        author_affiliation_full)   echo "author.affiliation_full" ;;
+        author_roles)              echo "author.roles" ;;
+        license_type)              echo "license.type" ;;
+        license_year)              echo "license.year" ;;
+        license_holder)            echo "license.holder" ;;
+        license_include_file)      echo "license.include_file" ;;
+        github_account)            echo "github.account" ;;
+        github_default_visibility) echo "github.default_visibility" ;;
+        github_default_branch)     echo "github.default_branch" ;;
+        docker_account|dockerhub_account)            echo "defaults.dockerhub_account" ;;
+        docker_default_profile|profile_name|profile) echo "docker.default_profile" ;;
+        docker_registry)           echo "docker.registry" ;;
+        # Dotted keys pass through as-is; everything else goes to defaults.
+        *"."*)                     echo "$1" ;;
+        *)                         echo "defaults.$1" ;;
+    esac
+}
+
 config_set() {
     local key="$1" value="$2" local_only="${3:-false}"
     local file="$CONFIG_USER"
@@ -1276,32 +1302,7 @@ EOF
 
     # Map simple keys to their proper dotted paths
     local yaml_path
-    case "$key" in
-        # Author fields
-        author_name) yaml_path="author.name" ;;
-        author_email) yaml_path="author.email" ;;
-        author_orcid) yaml_path="author.orcid" ;;
-        author_affiliation) yaml_path="author.affiliation" ;;
-        author_affiliation_full) yaml_path="author.affiliation_full" ;;
-        author_roles) yaml_path="author.roles" ;;
-        # License fields
-        license_type) yaml_path="license.type" ;;
-        license_year) yaml_path="license.year" ;;
-        license_holder) yaml_path="license.holder" ;;
-        license_include_file) yaml_path="license.include_file" ;;
-        # GitHub fields
-        github_account) yaml_path="github.account" ;;
-        github_default_visibility) yaml_path="github.default_visibility" ;;
-        github_default_branch) yaml_path="github.default_branch" ;;
-        # Docker fields
-        docker_account|dockerhub_account) yaml_path="defaults.dockerhub_account" ;;
-        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
-        docker_registry) yaml_path="docker.registry" ;;
-        # Dotted keys pass through as-is
-        *"."*) yaml_path="$key" ;;
-        # Everything else goes to defaults section
-        *) yaml_path="defaults.$key" ;;
-    esac
+    yaml_path=$(_key_to_yaml_path "$key")
 
     yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
 }
@@ -1314,26 +1315,7 @@ config_get() {
 
     # Map simple keys to their proper dotted paths (same mapping as config_set)
     local yaml_path
-    case "$key" in
-        author_name) yaml_path="author.name" ;;
-        author_email) yaml_path="author.email" ;;
-        author_orcid) yaml_path="author.orcid" ;;
-        author_affiliation) yaml_path="author.affiliation" ;;
-        author_affiliation_full) yaml_path="author.affiliation_full" ;;
-        author_roles) yaml_path="author.roles" ;;
-        license_type) yaml_path="license.type" ;;
-        license_year) yaml_path="license.year" ;;
-        license_holder) yaml_path="license.holder" ;;
-        license_include_file) yaml_path="license.include_file" ;;
-        github_account) yaml_path="github.account" ;;
-        github_default_visibility) yaml_path="github.default_visibility" ;;
-        github_default_branch) yaml_path="github.default_branch" ;;
-        docker_account|dockerhub_account) yaml_path="defaults.dockerhub_account" ;;
-        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
-        docker_registry) yaml_path="docker.registry" ;;
-        *"."*) yaml_path="$key" ;;
-        *) yaml_path="defaults.$key" ;;
-    esac
+    yaml_path=$(_key_to_yaml_path "$key")
 
     if [[ "$local_only" == "true" ]]; then
         yaml_get "$CONFIG_PROJECT" "$yaml_path"
