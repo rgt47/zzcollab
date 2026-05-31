@@ -99,6 +99,45 @@ EOF
     log_success "Created renv.lock (R $r_ver)"
 }
 
+# Fast path for prompt_new_workspace_setup: when a profile and R version are
+# already configured, show them and offer to keep them. Echoes the chosen R
+# version and returns 0 when the configured settings are used; returns 1 to
+# fall through to the interactive wizard.
+# Args: profile version github_account dockerhub_account project_name
+_workspace_use_configured() {
+    local selected_profile="$1" selected_version="$2"
+    local github_account="$3" dockerhub_account="$4" project_name="$5"
+
+    [[ -n "$selected_profile" && -n "$selected_version" ]] || return 1
+
+    local base_image
+    base_image=$(get_profile_base_image "$selected_profile")
+    echo "" >&2
+    echo "  Profile:    $selected_profile ($base_image)" >&2
+    echo "  R version:  $selected_version" >&2
+    [[ -n "$github_account" ]] && echo "  GitHub:     $github_account/$project_name" >&2
+    [[ -n "$dockerhub_account" ]] && echo "  DockerHub:  $dockerhub_account/$project_name" >&2
+    echo "" >&2
+
+    local change_settings
+    zzc_read -r -p "Change settings? [y/N]: " change_settings
+    if [[ "$change_settings" =~ ^[Yy]$ ]]; then
+        echo "" >&2
+        return 1
+    fi
+
+    # Use existing settings, proceed to build
+    create_renv_lock_minimal "$selected_version" >&2
+    R_VERSION="$selected_version"
+    BASE_IMAGE="$base_image"
+    GITHUB_ACCOUNT="$github_account"
+    DOCKERHUB_ACCOUNT="$dockerhub_account"
+    ZZCOLLAB_BUILD_AFTER_SETUP="true"
+    export R_VERSION BASE_IMAGE GITHUB_ACCOUNT DOCKERHUB_ACCOUNT ZZCOLLAB_BUILD_AFTER_SETUP
+    echo "$selected_version"
+    return 0
+}
+
 prompt_new_workspace_setup() {
     load_config 2>/dev/null || true
 
@@ -121,31 +160,10 @@ prompt_new_workspace_setup() {
     echo "  New zzcollab workspace: $project_name" >&2
     echo "═══════════════════════════════════════════════════════════" >&2
 
-    # Check if all required values are pre-configured
-    if [[ -n "$selected_profile" && -n "$selected_version" ]]; then
-        base_image=$(get_profile_base_image "$selected_profile")
-        echo "" >&2
-        echo "  Profile:    $selected_profile ($base_image)" >&2
-        echo "  R version:  $selected_version" >&2
-        [[ -n "$github_account" ]] && echo "  GitHub:     $github_account/$project_name" >&2
-        [[ -n "$dockerhub_account" ]] && echo "  DockerHub:  $dockerhub_account/$project_name" >&2
-        echo "" >&2
-
-        local change_settings
-        zzc_read -r -p "Change settings? [y/N]: " change_settings
-        if [[ ! "$change_settings" =~ ^[Yy]$ ]]; then
-            # Use existing settings, proceed to build
-            create_renv_lock_minimal "$selected_version" >&2
-            R_VERSION="$selected_version"
-            BASE_IMAGE="$base_image"
-            GITHUB_ACCOUNT="$github_account"
-            DOCKERHUB_ACCOUNT="$dockerhub_account"
-            ZZCOLLAB_BUILD_AFTER_SETUP="true"
-            export R_VERSION BASE_IMAGE GITHUB_ACCOUNT DOCKERHUB_ACCOUNT ZZCOLLAB_BUILD_AFTER_SETUP
-            echo "$selected_version"
-            return 0
-        fi
-        echo "" >&2
+    # Fast path: reuse the configured profile + R version if the user agrees.
+    if _workspace_use_configured "$selected_profile" "$selected_version" \
+           "$github_account" "$dockerhub_account" "$project_name"; then
+        return 0
     fi
 
     # Interactive setup (either no config or user wants to change)
