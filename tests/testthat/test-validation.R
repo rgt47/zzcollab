@@ -68,50 +68,6 @@ test_that("validate_docker_name rejects invalid names", {
   )
 })
 
-test_that("validate_path handles NULL values", {
-  # NULL should return NULL
-  expect_null(validate_path(NULL, "some_path"))
-})
-
-test_that("validate_path normalizes valid paths", {
-  # Should normalize path
-  result <- validate_path("~/test", "test_path")
-  expect_type(result, "character")
-  expect_length(result, 1)
-  # Should expand ~
-  expect_false(grepl("^~", result))
-})
-
-test_that("validate_path rejects invalid input", {
-  # Not a character
-  expect_error(
-    validate_path(123, "test_path"),
-    "test_path must be a single character string"
-  )
-
-  # Multiple values
-  expect_error(
-    validate_path(c("path1", "path2"), "test_path"),
-    "test_path must be a single character string"
-  )
-})
-
-test_that("validate_path checks existence when required", {
-  # Create a temporary file
-  temp_file <- tempfile()
-  file.create(temp_file)
-  on.exit(unlink(temp_file))
-
-  # Should succeed for existing file
-  expect_type(validate_path(temp_file, "test_path", must_exist = TRUE), "character")
-
-  # Should fail for non-existent file
-  expect_error(
-    validate_path("/nonexistent/path/file.txt", "test_path", must_exist = TRUE),
-    "test_path does not exist"
-  )
-})
-
 test_that("safe_system handles successful commands", {
   # Simple successful command
   result <- safe_system("echo 'test'", intern = TRUE)

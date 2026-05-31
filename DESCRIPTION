@@ -15,8 +15,6 @@ Imports:
     renv (>= 1.0.0),
     utils
 Suggests:
-    BiocManager,
-    desc,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),

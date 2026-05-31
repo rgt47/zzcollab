@@ -58,12 +58,6 @@ RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
     echo "$cmds"
 }
 
-#=============================================================================
-# R VERSION DETECTION
-#=============================================================================
-
-
-
 create_renv_lock_minimal() {
     local r_ver="$1"
     local repo_url="${2:-https://packagemanager.posit.co/cran/__linux__/noble/latest}"

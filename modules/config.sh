@@ -29,8 +29,6 @@ CONFIG_TEAM_NAME=""
 CONFIG_GITHUB_ACCOUNT=""
 CONFIG_DOCKERHUB_ACCOUNT=""
 CONFIG_PROFILE_NAME=""
-CONFIG_LIBS_BUNDLE=""
-CONFIG_PKGS_BUNDLE=""
 CONFIG_R_VERSION=""
 CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
@@ -429,8 +427,6 @@ load_config() {
     CONFIG_GITHUB_ACCOUNT=""
     CONFIG_DOCKERHUB_ACCOUNT=""
     CONFIG_PROFILE_NAME=""
-    CONFIG_LIBS_BUNDLE=""
-    CONFIG_PKGS_BUNDLE=""
     CONFIG_R_VERSION=""
     CONFIG_AUTO_GITHUB="false"
     CONFIG_SKIP_CONFIRMATION="false"
@@ -472,8 +468,6 @@ defaults.team_name              CONFIG_TEAM_NAME
 defaults.github_account         CONFIG_GITHUB_ACCOUNT
 defaults.dockerhub_account      CONFIG_DOCKERHUB_ACCOUNT
 defaults.profile_name           CONFIG_PROFILE_NAME
-defaults.libs_bundle            CONFIG_LIBS_BUNDLE
-defaults.pkgs_bundle            CONFIG_PKGS_BUNDLE
 defaults.r_version              CONFIG_R_VERSION
 defaults.auto_github            CONFIG_AUTO_GITHUB
 defaults.skip_confirmation      CONFIG_SKIP_CONFIRMATION
@@ -588,12 +582,9 @@ apply_config_defaults() {
     [[ -z "${GITHUB_ACCOUNT:-}" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
     [[ -z "${DOCKERHUB_ACCOUNT:-}" && -n "$CONFIG_DOCKERHUB_ACCOUNT" ]] && DOCKERHUB_ACCOUNT="$CONFIG_DOCKERHUB_ACCOUNT"
     [[ -z "${PROFILE_NAME:-}" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
-    [[ -z "${LIBS_BUNDLE:-}" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
-    [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
 
     if [[ -z "${R_VERSION:-}" ]]; then
         R_VERSION="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
-        USER_PROVIDED_R_VERSION="false"
     fi
 
     [[ "$CONFIG_AUTO_GITHUB" == "true" ]] && CREATE_GITHUB_REPO=true
@@ -858,7 +849,6 @@ r_package:
   min_r_version: "4.1.0"       # Minimum R version (for native pipe)
   roxygen_version: "7.3.0"
   encoding: "UTF-8"
-  language: "en-US"
   vignette_builder: "knitr"
 
 #=============================================================================
@@ -868,10 +858,8 @@ r_package:
 
 style:
   line_length: 78
-  indent_size: 2
   use_native_pipe: true        # |> instead of %>%
   assignment: "arrow"          # <- instead of =
-  naming_convention: "snake_case"
 
 #=============================================================================
 # DOCKER PREFERENCES
@@ -879,9 +867,7 @@ style:
 
 docker:
   default_profile: "analysis"
-  default_base_image: "rocker/tidyverse"
   registry: "docker.io"        # docker.io, ghcr.io
-  platform: "linux/amd64"
 
 #=============================================================================
 # GITHUB PREFERENCES
@@ -891,8 +877,6 @@ github:
   account: ""
   default_visibility: "private"
   default_branch: "main"
-  create_issues: true
-  create_wiki: false
 
 #=============================================================================
 # LEGACY DEFAULTS (backward compatibility)
@@ -903,8 +887,6 @@ defaults:
   github_account: ""
   dockerhub_account: ""
   profile_name: "analysis"
-  libs_bundle: "minimal"
-  pkgs_bundle: "minimal"
   r_version: ""
   auto_github: false
   skip_confirmation: false

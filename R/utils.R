@@ -53,32 +53,6 @@ validate_docker_name <- function(name, param_name) {
   TRUE
 }
 
-#' Validate and normalize file path
-#'
-#' @param path Character string path
-#' @param param_name Name of parameter for error messages
-#' @param must_exist Logical, whether path must exist
-#' @return Normalized path
-#' @keywords internal
-validate_path <- function(path, param_name, must_exist = FALSE) {
-  if (is.null(path)) {
-    return(NULL)
-  }
-
-  if (!is.character(path) || length(path) != 1) {
-    stop(param_name, ' must be a single character string', call. = FALSE)
-  }
-
-  # Normalize path
-  path <- normalizePath(path, mustWork = FALSE)
-
-  if (must_exist && !file.exists(path)) {
-    stop(param_name, ' does not exist: ', path, call. = FALSE)
-  }
-
-  path
-}
-
 #' Safe system call with error handling
 #'
 #' Wrapper around system() with comprehensive error handling via tryCatch.

@@ -5,8 +5,8 @@ set -euo pipefail
 ##############################################################################
 #
 # PURPOSE: CLI validation utilities, variable defaults, and workflow helper.
-#          - Argument validation functions (require_arg, validate_*) used to
-#            vet user-supplied values; covered by tests/shell/test-cli.sh.
+#          - Validation functions (validate_*) that vet user-supplied values;
+#            covered by tests/shell/test-cli.sh.
 #          - Initializes the flag/interface variables that downstream modules
 #            read (defaults; live values are set by the command dispatchers in
 #            zzcollab.sh, e.g. cmd_docker).
@@ -24,25 +24,6 @@ set -euo pipefail
 #=============================================================================
 # CLI ARGUMENT VALIDATION FUNCTIONS
 #=============================================================================
-
-##############################################################################
-# FUNCTION: require_arg
-# PURPOSE:  Validate that a command line flag has a required argument
-# USAGE:    require_arg "--flag-name" "$argument_value"
-# ARGS:
-#   $1 - flag_name: Name of the command line flag for error reporting
-#   $2 - argument_value: The argument value to validate (may be empty)
-# RETURNS:
-#   0 - Argument is present and non-empty
-#   1 - Argument is missing or empty
-##############################################################################
-require_arg() {
-    if [[ -z "${2:-}" ]]; then
-        echo "❌ Error: $1 requires an argument" >&2
-        return 1  # Recoverable: caller can handle error
-    fi
-    return 0
-}
 
 ##############################################################################
 # FUNCTION: validate_team_name
@@ -159,8 +140,6 @@ validate_base_image() {
 #=============================================================================
 
 # Initialize variables for command line options
-# Note: BUILD_DOCKER=false by default - users run 'make docker-build' manually
-BUILD_DOCKER=false
 # Use centralized constants if available
 readonly DEFAULT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_BASE_IMAGE:-rocker/r-ver}"
 BASE_IMAGE="${DEFAULT_BASE_IMAGE}"
@@ -177,17 +156,9 @@ CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
 WITH_EXAMPLES=false      # Include example files and templates in workspace
 
-# Profile bundle variables (system libraries and R packages)
-LIBS_BUNDLE=""    # System library bundle (e.g., minimal, modeling, publishing, gui)
-PKGS_BUNDLE=""    # R package bundle (e.g., tidyverse, shiny, modeling)
-
-# Track whether user explicitly provided these flags (read by config.sh and
-# zzcollab.sh for team-member validation and config precedence)
-USER_PROVIDED_BASE_IMAGE=false
-USER_PROVIDED_LIBS=false
-USER_PROVIDED_PKGS=false
+# Track whether the user explicitly chose a profile (read by init_export_config_vars
+# in zzcollab.sh so a CLI --profile flag wins over the configured default).
 USER_PROVIDED_PROFILE=false
-USER_PROVIDED_R_VERSION=false
 
 #=============================================================================
 # WORKFLOW TEMPLATE HELPER

@@ -1689,13 +1689,20 @@ _menu_add_package() {
     rvec=$(printf '%s' "$pkgs" | tr ',' ' ' | xargs -n1 2>/dev/null \
         | sed 's/^/"/; s/$/"/' | paste -sd, -)
     [[ -z "$rvec" ]] && return 0
-    log_info "Installing into '$image' and snapshotting renv.lock..."
+    log_info "Installing into '$image' and recording in renv.lock..."
+    # Install, then renv::record the packages directly into the lockfile.
+    # 'record' is used rather than 'snapshot' because the project uses
+    # implicit snapshots (renv/settings.json snapshot.type=implicit), which
+    # only capture packages declared/used in code; a freshly added package
+    # would otherwise be dropped. ZZCOLLAB_AUTO_SNAPSHOT=false stops the
+    # .Rprofile .Last hook from re-running an implicit snapshot on exit.
     if docker run --rm \
+        -e ZZCOLLAB_AUTO_SNAPSHOT=false \
         -v "$(pwd):/home/analyst/project" \
         -w /home/analyst/project \
         "$image" \
-        Rscript -e "renv::install(c($rvec)); renv::snapshot(prompt = FALSE)"; then
-        log_success "Added: $pkgs (captured in renv.lock). Commit renv.lock to share."
+        Rscript -e "renv::install(c($rvec)); renv::record(c($rvec))"; then
+        log_success "Added: $pkgs (recorded in renv.lock). Commit renv.lock to share."
     else
         log_error "Package install failed."
     fi
