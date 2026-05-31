@@ -38,7 +38,6 @@ get_base_image_tools() {
 # from the host, so LaTeX rendering typically runs on the host.
 generate_tools_install() {
     local base_image="$1"
-    local profile_name="${2:-}"
     local has_pandoc
     has_pandoc=$(get_base_image_tools "$base_image")
 
@@ -558,24 +557,13 @@ generate_dockerfile() {
         deps_comment="Packages: ${r_packages[*]}"
     fi
 
-    # Derive profile name from base image for Makefile compatibility
-    # Use PROFILE_NAME if set (from CLI), otherwise infer from base image.
-    # Only the three supported profiles are produced: minimal, analysis, rstudio.
-    local profile_name="${PROFILE_NAME:-minimal}"
-    if [[ "$profile_name" == "minimal" ]]; then
-        case "$base_image" in
-            *tidyverse*) profile_name="analysis" ;;
-            *rstudio*) profile_name="rstudio" ;;
-        esac
-    fi
-
     local tools_install
-    tools_install=$(generate_tools_install "$base_image" "$profile_name")
+    tools_install=$(generate_tools_install "$base_image")
     log_info "  Tools: pandoc, languageserver, yaml (as needed)"
 
     generate_dockerfile_inline "$base_image" "$r_version" \
         "$system_deps_install" "$tools_install" \
-        "$deps_comment" "$profile_name"
+        "$deps_comment"
     prompt_docker_build "$project_name" "$r_version"
     return $?
 }
@@ -615,7 +603,6 @@ prompt_docker_build() {
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3"
     local tools_install="$4" deps_comment="$5"
-    local profile_name="${6:-minimal}"
 
     rm -f Dockerfile
     cat > Dockerfile << EOF

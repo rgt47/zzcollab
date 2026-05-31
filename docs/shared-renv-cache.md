@@ -169,8 +169,8 @@ the lock file.
   `~/.cache/R/renv` is already correct.
 - `templates/workflows/*.yml` -- GitHub Actions cache paths
   are unrelated to Docker mounts.
-- `templates/unified/Dockerfile` -- container-internal path;
-  overridden by the volume mount.
+- the generated `Dockerfile` (from `modules/docker.sh`) -- container-internal
+  path; overridden by the volume mount.
 
 
 ## Migration
