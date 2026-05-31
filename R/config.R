@@ -18,7 +18,7 @@
 #' @keywords internal
 zzc_config <- function(args, intern = FALSE, error_msg = NULL) {
   zzcollab_path <- find_zzcollab_script()
-  cmd <- paste(c(zzcollab_path, "config", args), collapse = " ")
+  cmd <- paste(c(zzcollab_path, 'config', args), collapse = ' ')
   safe_system(cmd, intern = intern, error_msg = error_msg)
 }
 
@@ -73,14 +73,14 @@ zzc_config <- function(args, intern = FALSE, error_msg = NULL) {
 #'
 #' @export
 get_config <- function(key) {
-  result <- zzc_config(c("get", shQuote(key)), intern = TRUE,
-                       error_msg = paste("Failed to get config value:", key))
+  result <- zzc_config(c('get', shQuote(key)), intern = TRUE,
+                       error_msg = paste('Failed to get config value:', key))
 
   # `config get` echoes an empty string for unset keys (the "(not set)"
   # sentinel only appears in `config list`). Treat blank or sentinel
   # output as unset so %||% fallbacks behave correctly.
   if (length(result) > 0 && nzchar(trimws(result[1])) &&
-        !grepl("\\(not set\\)", result[1])) {
+        !grepl('\\(not set\\)', result[1])) {
     result[1]
   } else {
     NULL
@@ -145,8 +145,8 @@ get_config <- function(key) {
 #'
 #' @export
 set_config <- function(key, value) {
-  result <- zzc_config(c("set", shQuote(key), shQuote(value)),
-                       error_msg = paste("Failed to set config value:", key))
+  result <- zzc_config(c('set', shQuote(key), shQuote(value)),
+                       error_msg = paste('Failed to set config value:', key))
   result == 0
 }
 
@@ -203,8 +203,8 @@ set_config <- function(key, value) {
 #'
 #' @export
 list_config <- function() {
-  result <- zzc_config("list", intern = TRUE,
-                       error_msg = "Failed to list configuration")
+  result <- zzc_config('list', intern = TRUE,
+                       error_msg = 'Failed to list configuration')
   result
 }
 
@@ -272,8 +272,8 @@ list_config <- function() {
 #'
 #' @export
 validate_config <- function() {
-  result <- zzc_config("validate",
-                       error_msg = "Failed to validate configuration")
+  result <- zzc_config('validate',
+                       error_msg = 'Failed to validate configuration')
   result == 0
 }
 
@@ -339,8 +339,8 @@ validate_config <- function() {
 #'
 #' @export
 init_config <- function() {
-  result <- zzc_config("init",
-                       error_msg = "Failed to initialize configuration")
+  result <- zzc_config('init',
+                       error_msg = 'Failed to initialize configuration')
   result == 0
 }
 

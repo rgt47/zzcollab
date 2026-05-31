@@ -25,29 +25,29 @@
 validate_docker_name <- function(name, param_name) {
   # Check type
   if (!is.character(name) || length(name) != 1) {
-    stop(param_name, " must be a single character string", call. = FALSE)
+    stop(param_name, ' must be a single character string', call. = FALSE)
   }
 
   # Check for empty string
   if (nchar(name) == 0) {
-    stop(param_name, " cannot be empty", call. = FALSE)
+    stop(param_name, ' cannot be empty', call. = FALSE)
   }
 
   # Docker repository name rules:
   # - Lowercase letters, numbers, dots, underscores, hyphens
   # - Cannot start with dot or hyphen
   # - Max 255 characters
-  if (grepl("^[.-]", name)) {
-    stop(param_name, " cannot start with a dot or hyphen", call. = FALSE)
+  if (grepl('^[.-]', name)) {
+    stop(param_name, ' cannot start with a dot or hyphen', call. = FALSE)
   }
 
-  if (grepl("[^a-z0-9._-]", name)) {
-    stop(param_name, " must contain only lowercase letters, numbers, dots, underscores, and hyphens",
+  if (grepl('[^a-z0-9._-]', name)) {
+    stop(param_name, ' must contain only lowercase letters, numbers, dots, underscores, and hyphens',
          call. = FALSE)
   }
 
   if (nchar(name) > 255) {
-    stop(param_name, " must be 255 characters or less", call. = FALSE)
+    stop(param_name, ' must be 255 characters or less', call. = FALSE)
   }
 
   TRUE
@@ -66,14 +66,14 @@ validate_path <- function(path, param_name, must_exist = FALSE) {
   }
 
   if (!is.character(path) || length(path) != 1) {
-    stop(param_name, " must be a single character string", call. = FALSE)
+    stop(param_name, ' must be a single character string', call. = FALSE)
   }
 
   # Normalize path
   path <- normalizePath(path, mustWork = FALSE)
 
   if (must_exist && !file.exists(path)) {
-    stop(param_name, " does not exist: ", path, call. = FALSE)
+    stop(param_name, ' does not exist: ', path, call. = FALSE)
   }
 
   path
@@ -103,9 +103,9 @@ safe_system <- function(command, intern = FALSE, ignore.stdout = FALSE,
     if (!intern) {
       if (result != 0) {
         msg <- if (!is.null(error_msg)) {
-          paste0(error_msg, " (exit code: ", result, ")")
+          paste0(error_msg, ' (exit code: ', result, ')')
         } else {
-          paste0("Command failed with exit code ", result, ": ", command)
+          paste0('Command failed with exit code ', result, ': ', command)
         }
         warning(msg, call. = FALSE)
       }
@@ -115,9 +115,9 @@ safe_system <- function(command, intern = FALSE, ignore.stdout = FALSE,
 
   }, error = function(e) {
     msg <- if (!is.null(error_msg)) {
-      paste0(error_msg, ": ", conditionMessage(e))
+      paste0(error_msg, ': ', conditionMessage(e))
     } else {
-      paste0("System command error: ", conditionMessage(e))
+      paste0('System command error: ', conditionMessage(e))
     }
     stop(msg, call. = FALSE)
   })
@@ -131,52 +131,52 @@ find_zzcollab_script <- function() {
   # First priority: Check if we're in the zzcollab source directory. This is
   # working-directory dependent and a cheap file.exists, so it is never
   # cached (caching a relative path would break after a setwd()).
-  if (file.exists("zzcollab.sh")) {
-    return("./zzcollab.sh")
+  if (file.exists('zzcollab.sh')) {
+    return('./zzcollab.sh')
   }
 
   # Priorities 2 and 3 below launch zzcollab to probe config support, which
   # forks a process per resolution. Installed locations do not move during a
   # session, so cache the resolved path after the first successful probe.
-  cached <- get0("script_path", envir = .zzcollab_cache, inherits = FALSE)
+  cached <- get0('script_path', envir = .zzcollab_cache, inherits = FALSE)
   if (!is.null(cached)) {
     return(cached)
   }
 
   # Second priority: Check if zzcollab is in PATH (but only if it supports config)
-  zzcollab_path <- Sys.which("zzcollab")
-  if (zzcollab_path != "") {
+  zzcollab_path <- Sys.which('zzcollab')
+  if (zzcollab_path != '') {
     # Test if this version supports config commands
-    test_result <- safe_system(paste(zzcollab_path, "config list"),
+    test_result <- safe_system(paste(zzcollab_path, 'config list'),
                                ignore.stdout = TRUE, ignore.stderr = TRUE,
-                               error_msg = "Failed to test zzcollab config support")
+                               error_msg = 'Failed to test zzcollab config support')
     if (test_result == 0) {
-      assign("script_path", "zzcollab", envir = .zzcollab_cache)
-      return("zzcollab")
+      assign('script_path', 'zzcollab', envir = .zzcollab_cache)
+      return('zzcollab')
     }
   }
 
   # Third priority: Check common installation locations
   possible_paths <- c(
-    file.path(Sys.getenv("HOME"), "bin", "zzcollab"),
-    "/usr/local/bin/zzcollab",
-    "/usr/bin/zzcollab"
+    file.path(Sys.getenv('HOME'), 'bin', 'zzcollab'),
+    '/usr/local/bin/zzcollab',
+    '/usr/bin/zzcollab'
   )
 
   for (path in possible_paths) {
     if (file.exists(path)) {
       # Test if this version supports config commands
-      test_result <- safe_system(paste(path, "config list"),
+      test_result <- safe_system(paste(path, 'config list'),
                                  ignore.stdout = TRUE, ignore.stderr = TRUE,
-                                 error_msg = "Failed to test zzcollab config support")
+                                 error_msg = 'Failed to test zzcollab config support')
       if (test_result == 0) {
-        assign("script_path", path, envir = .zzcollab_cache)
+        assign('script_path', path, envir = .zzcollab_cache)
         return(path)
       }
     }
   }
 
-  stop("zzcollab script with config support not found. Please use zzcollab from source directory or install updated version.",
+  stop('zzcollab script with config support not found. Please use zzcollab from source directory or install updated version.',
        call. = FALSE)
 }
 

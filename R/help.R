@@ -49,23 +49,23 @@ zzcollab_help <- function(topic = NULL) {
   zzcollab_path <- find_zzcollab_script()
 
   # Valid help topics (must match the CLI dispatcher in modules/help.sh)
-  valid_topics <- c("general", "docker", "profiles", "config", "next-steps")
+  valid_topics <- c('general', 'docker', 'profiles', 'config', 'next-steps')
 
   # Build command with topic argument.
   # The CLI routes topics via the 'help' subcommand (e.g. 'zzcollab help docker');
   # 'next-steps' is a help topic, not a flag.
-  if (is.null(topic) || topic == "general") {
-    cmd <- paste(zzcollab_path, "help")
+  if (is.null(topic) || topic == 'general') {
+    cmd <- paste(zzcollab_path, 'help')
   } else if (topic %in% valid_topics) {
-    cmd <- paste(zzcollab_path, "help", topic)
+    cmd <- paste(zzcollab_path, 'help', topic)
   } else {
-    stop("Unknown help topic: ", topic, "\n",
-         "Valid topics: ", paste(valid_topics, collapse = ", "),
+    stop('Unknown help topic: ', topic, '\n',
+         'Valid topics: ', paste(valid_topics, collapse = ', '),
          call. = FALSE)
   }
 
   result <- safe_system(cmd, intern = TRUE,
-                       error_msg = "Failed to retrieve zzcollab help")
+                       error_msg = 'Failed to retrieve zzcollab help')
   result
 }
 
@@ -77,8 +77,8 @@ zzcollab_next_steps <- function() {
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
 
-  cmd <- paste(zzcollab_path, "help next-steps")
+  cmd <- paste(zzcollab_path, 'help next-steps')
   result <- safe_system(cmd, intern = TRUE,
-                       error_msg = "Failed to retrieve next steps information")
+                       error_msg = 'Failed to retrieve next steps information')
   result
 }
