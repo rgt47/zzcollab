@@ -1,5 +1,5 @@
 # ZZCOLLAB CLI Command and Flag Improvement Plan
-*2026-05-29 18:36 PDT*
+*2026-05-29 18:36 PDT (revised 2026-05-30 18:55 PDT)*
 
 ## Purpose
 
@@ -14,6 +14,29 @@ no functional loss and are safe to apply immediately. Phase 1 items change
 naming or consistency and warrant a deprecation window. Phase 2 items are
 structural and overlap with the existing simplification effort in
 `docs/simplification-plan.md`.
+
+## Status (2026-05-30 codebase review)
+
+A parallel simplification effort has since landed (commits `56ae900` 'Fix P0
+correctness bugs' and `890528c` 'Remove dead code (P1)', among others). That
+work is the maintainer's own P0/P1 track, distinct from this plan's phases, and
+it did not touch this plan's Phase 0 items. The current status of each finding:
+
+| Finding | Status | Note |
+|---------|--------|------|
+| F1, F2 (`docker -n`/`--no`) | Open | Still at `zzcollab.sh:340`; the short-flag collision with `uninstall -n` remains at `:826`. |
+| F5 (`-Y`/`--yes-all`) | Open | Still at `:339` and `:1606`. |
+| F3 (quickstart trailing flags) | Open | The worst-case accidental scaffolding is now blunted by the hardened init guard (see F4), but `analysis --r-version` still mis-parses. |
+| F9b (duplicate global parsing) | Open | Still at `:338-339`. |
+| F10 (`-t` help note) | Open | Help text unchanged. |
+| F6 (flag-vs-config rule) | Open | Documentation only. |
+| F7 (`build` vs `docker --build`) | Open | Both still present (`cmd_build` at `:413`). |
+| F8 (`validate` vs `doctor`) | Open | Both still present (`cmd_validate` `:609`, `cmd_doctor` `:644`). |
+| F4 (profile-token overload) | Partially done | Profiles reduced to `minimal`, `analysis`, `rstudio`; the `cmd_init` guard now hard-stops on an occupied directory unless `--force` (commit `56ae900`). The state-dependent verb remains. |
+| F9a (flag-binding doc) | Open | Help text unchanged. |
+
+A related documentation issue surfaced from the profile reduction; it is
+tracked as D1 below.
 
 ## Scope and constraints
 
@@ -31,10 +54,10 @@ structural and overlap with the existing simplification effort in
 ### F2, F1. Remove the `docker -n` / `--no` flag
 
 - **Problem**: Within `docker`, both the global `--no-build`
-  (`zzcollab.sh:345`) and `-n` / `--no` (`:347`) reach the same skip branch
-  (`:404`); they are functionally identical and `--no` is the more cryptic
+  (`zzcollab.sh:338`) and `-n` / `--no` (`:340`) reach the same skip branch
+  (`:397`); they are functionally identical and `--no` is the more cryptic
   name. The short `-n` also collides with `uninstall -n` / `--dry-run`
-  (`:818`), where it means the opposite of a behavior modifier.
+  (`:826`), where it means the opposite of a behavior modifier.
 - **Change**: Delete the `-n) --no)` case from `cmd_docker`. Keep
   `--no-build` as the single 'skip the build' flag. Leave `uninstall`
   `--dry-run` as the long form and, if a short is wanted, rebind it to `-d`.
@@ -48,7 +71,7 @@ structural and overlap with the existing simplification effort in
 ### F5. Collapse `-Y` / `--yes-all` into `-y` / `--yes`
 
 - **Problem**: `-y`, `--yes`, `-Y`, and `--yes-all` set the identical
-  variable (`zzcollab.sh:346`, `:1598`). Three of the four spellings are dead
+  variable (`zzcollab.sh:339`, `:1606`). Three of the four spellings are dead
   surface left from a time when `-Y` presumably meant a stronger consent.
 - **Change**: Remove `-Y` and `--yes-all` from the pre-scan and from
   `cmd_docker`. Keep `-y` / `--yes`. If a stronger 'consent to destructive
@@ -79,7 +102,7 @@ structural and overlap with the existing simplification effort in
 ### F9b. Remove duplicate global parsing inside `cmd_docker`
 
 - **Problem**: `cmd_docker` re-parses `--no-build` and the `-y` family that
-  the global pre-scan already handled (`zzcollab.sh:345-346`). Duplicated
+  the global pre-scan already handled (`zzcollab.sh:338-339`). Duplicated
   parsing can drift from the canonical pre-scan.
 - **Change**: Delete the redundant local cases now that the pre-scan owns the
   globals. Verify the pre-scan exports reach `cmd_docker` (they do, via
