@@ -1,5 +1,5 @@
 # ZZCOLLAB CLI Command and Flag Improvement Plan
-*2026-05-29 18:36 PDT (revised 2026-05-30 18:55 PDT)*
+*2026-05-29 18:36 PDT (revised 2026-05-30 19:49 PDT)*
 
 ## Purpose
 
@@ -17,26 +17,29 @@ structural and overlap with the existing simplification effort in
 
 ## Status (2026-05-30 codebase review)
 
-A parallel simplification effort has since landed (commits `56ae900` 'Fix P0
-correctness bugs' and `890528c` 'Remove dead code (P1)', among others). That
-work is the maintainer's own P0/P1 track, distinct from this plan's phases, and
-it did not touch this plan's Phase 0 items. The current status of each finding:
+A parallel simplification effort landed first (commits `56ae900` 'Fix P0
+correctness bugs' and `890528c` 'Remove dead code (P1)', among others); that is
+the maintainer's own P0/P1 track. This plan's Phase 0 and the D1 documentation
+sweep were then implemented on 2026-05-30. The current status of each finding:
 
 | Finding | Status | Note |
 |---------|--------|------|
-| F1, F2 (`docker -n`/`--no`) | Open | Still at `zzcollab.sh:340`; the short-flag collision with `uninstall -n` remains at `:826`. |
-| F5 (`-Y`/`--yes-all`) | Open | Still at `:339` and `:1606`. |
-| F3 (quickstart trailing flags) | Open | The worst-case accidental scaffolding is now blunted by the hardened init guard (see F4), but `analysis --r-version` still mis-parses. |
-| F9b (duplicate global parsing) | Open | Still at `:338-339`. |
-| F10 (`-t` help note) | Open | Help text unchanged. |
+| F1, F2 (`docker -n`/`--no`) | Done | Flag removed from `cmd_docker`; the `uninstall -n` collision is gone. |
+| F5 (`-Y`/`--yes-all`) | Done | Removed from the pre-scan and help; `-Y` now errors. |
+| F3 (quickstart trailing flags) | Done | Option B: `zzcollab <profile>` hard-errors on a trailing flag before any filesystem work, naming the supported alternatives. |
+| F9b (duplicate global parsing) | Done | Dead local cases removed; the build decision now honors `ZZCOLLAB_NO_BUILD`, which also fixed a latent bug where `docker --no-build` did not skip the build. |
+| F10 (`-t` help note) | Done | Help footer clarifies `-t` is the tag, not team. |
+| D1 (docs name removed profiles) | Done | Swept ~15 files to `minimal`/`analysis`/`rstudio` or `--base-image`; guarded by `test_no_removed_profiles`. |
 | F6 (flag-vs-config rule) | Open | Documentation only. |
-| F7 (`build` vs `docker --build`) | Open | Both still present (`cmd_build` at `:413`). |
-| F8 (`validate` vs `doctor`) | Open | Both still present (`cmd_validate` `:609`, `cmd_doctor` `:644`). |
+| F7 (`build` vs `docker --build`) | Open | Both still present (`cmd_build`). |
+| F8 (`validate` vs `doctor`) | Open | Both still present (`cmd_validate`, `cmd_doctor`). |
 | F4 (profile-token overload) | Partially done | Profiles reduced to `minimal`, `analysis`, `rstudio`; the `cmd_init` guard now hard-stops on an occupied directory unless `--force` (commit `56ae900`). The state-dependent verb remains. |
 | F9a (flag-binding doc) | Open | Help text unchanged. |
 
-A related documentation issue surfaced from the profile reduction; it is
-tracked as D1 below.
+Phase 0 (F1, F2, F3, F5, F9b, F10) and D1 are complete and verified
+(`shellcheck` clean; `test-cli`, `test-docs`, `test-profiles`, `test-config`
+pass). The remaining open items are Phase 1 (F6, F7, F8) and the rest of
+Phase 2 (F4 verb split, F9a). D1 is described below.
 
 ## Scope and constraints
 
@@ -53,6 +56,7 @@ tracked as D1 below.
 
 ### F2, F1. Remove the `docker -n` / `--no` flag
 
+- **Status**: Done (2026-05-30). `-n` / `--no` removed from `cmd_docker`; the collision with `uninstall -n` is gone.
 - **Problem**: Within `docker`, both the global `--no-build`
   (`zzcollab.sh:338`) and `-n` / `--no` (`:340`) reach the same skip branch
   (`:397`); they are functionally identical and `--no` is the more cryptic
@@ -70,6 +74,7 @@ tracked as D1 below.
 
 ### F5. Collapse `-Y` / `--yes-all` into `-y` / `--yes`
 
+- **Status**: Done (2026-05-30). `-Y` / `--yes-all` removed from the pre-scan and help; `-Y` now errors.
 - **Problem**: `-y`, `--yes`, `-Y`, and `--yes-all` set the identical
   variable (`zzcollab.sh:339`, `:1606`). Three of the four spellings are dead
   surface left from a time when `-Y` presumably meant a stronger consent.
@@ -83,6 +88,7 @@ tracked as D1 below.
 
 ### F3. Make the quickstart reject trailing flags instead of partially scaffolding
 
+- **Status**: Done (2026-05-30), option B. `zzcollab <profile>` hard-errors on a trailing flag before any filesystem work and names the supported alternatives. Verified: `analysis --r-version 4.4.0` errors with zero files created. Option A (forwarding the flags) remains a possible future enhancement.
 - **Problem**: `zzcollab analysis --r-version 4.4.0` is the natural way to
   create a project pinned to an R version, but the positional profile path
   does not parse trailing flags. It scaffolds with the default, then the
@@ -101,6 +107,7 @@ tracked as D1 below.
 
 ### F9b. Remove duplicate global parsing inside `cmd_docker`
 
+- **Status**: Done (2026-05-30). The dead local `--no-build` / `-y` cases were removed and the build decision now reads `ZZCOLLAB_NO_BUILD`. This also fixed a latent bug: because the pre-scan stripped `--no-build` before `cmd_docker`, the build decision had been ignoring it, so `zzcollab docker --no-build` did not actually skip the build. It does now.
 - **Problem**: `cmd_docker` re-parses `--no-build` and the `-y` family that
   the global pre-scan already handled (`zzcollab.sh:338-339`). Duplicated
   parsing can drift from the canonical pre-scan.
@@ -112,6 +119,7 @@ tracked as D1 below.
 
 ### F10. Add a help note clarifying `-t`
 
+- **Status**: Done (2026-05-30). The help footer now states `-t` is the tag, not team.
 - **Problem**: `-t` now means `--tag` on `dockerhub`, but meant 'team' across
   years of older documentation and user muscle memory.
 - **Change**: Add a single line to the help footer: '`-t` is the DockerHub
@@ -195,7 +203,7 @@ tracked as D1 below.
 
 ### D1. Active docs reference removed profiles
 
-- **Status**: Open; surfaced by the profile reduction.
+- **Status**: Done (2026-05-30). Swept ~15 active files; removed-profile invocations now use `minimal`/`analysis`/`rstudio` or `docker --base-image`, guarded by `test_no_removed_profiles` in `test-docs.sh`.
 - **Problem**: Reducing the profile set to `minimal`, `analysis`, `rstudio`
   removed `modeling`, `publishing`, `shiny`, `analysis_pdf`, and
   `manuscript-package`. Roughly fifteen active files (README, several guides
@@ -214,12 +222,12 @@ tracked as D1 below.
 
 ## Sequencing and effort
 
-| Phase | Items | Status | Risk | Functional loss | Suggested timing |
-|-------|-------|--------|------|-----------------|------------------|
-| 0 | F1, F2, F3, F9b, F10 | Open | Low | None | Now, one commit |
+| Phase | Items | Status | Risk | Functional loss | Timing |
+|-------|-------|--------|------|-----------------|--------|
+| 0 | F1, F2, F3, F5, F9b, F10 | Done | Low | None | Done 2026-05-30 |
+| Docs | D1 | Done | Low | None | Done 2026-05-30 |
 | 1 | F6, F7, F8 | Open | Medium | None (aliased) | Next minor release |
 | 2 | F4, F9a | F4 partial, F9a open | Higher | Behavior change | With profile reduction |
-| Docs | D1 | Open | Low | None | With or before Phase 0 |
 
 ## Verification for every change
 
@@ -240,5 +248,5 @@ tracked as D1 below.
   removal given the framework is pre-1.0 on the CLI line.
 
 ---
-*Rendered on 2026-05-30 at 18:55 PDT.*<br>
+*Rendered on 2026-05-30 at 19:49 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/cli-ux-improvement-plan.md*

@@ -330,14 +330,11 @@ cmd_docker() {
     local r_version=""
     local base_image=""
     local profile=""
-    local auto_no=false
-
+    # Global flags (-v/-q/-y/--no-build) are consumed by the pre-scan in main()
+    # before this runs, so they are not handled here.
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --build|-b) build_image=true; shift ;;
-            --no-build) build_image=false; shift ;;
-            -y|--yes|-Y|--yes-all) export ZZCOLLAB_ACCEPT_DEFAULTS=true; shift ;;
-            -n|--no) auto_no=true; shift ;;
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; shift 2 ;;
@@ -394,7 +391,7 @@ cmd_docker() {
 
     if [[ "$build_image" == "true" ]]; then
         build_docker_image || exit 1
-    elif [[ "$build_image" == "false" ]] || [[ "$auto_no" == "true" ]]; then
+    elif [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
         log_info "Build with: make docker-build"
     elif [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         echo ""
@@ -1564,7 +1561,6 @@ Global options (any position):
   -v, --verbose    More output
   -q, --quiet      Errors only
   -y, --yes        Accept defaults (non-interactive)
-  -Y, --yes-all    Same as -y
   --no-build       Skip Docker build prompt
   --version        Print version and exit
   -h, --help       Show this help
@@ -1577,6 +1573,9 @@ Per-command options (must follow their command):
   dockerhub: -t, --tag <tag>          Image tag (default: latest)
   github:    --private | --public     Repo visibility (default: private)
   rm:        -f, --force              Skip confirmation
+
+Note: -t is the DockerHub image tag, not team; set the team with
+      'zzcollab config set dockerhub-account NAME'.
 
 Examples:
   zzcollab analysis                # Quickstart: init + renv + docker (recommended)
@@ -1605,7 +1604,7 @@ main() {
         case "$_arg" in
             -v|--verbose)          export VERBOSITY_LEVEL=2 ;;
             -q|--quiet)            export VERBOSITY_LEVEL=0 ;;
-            -y|--yes|-Y|--yes-all) export ZZCOLLAB_ACCEPT_DEFAULTS=true ;;
+            -y|--yes)              export ZZCOLLAB_ACCEPT_DEFAULTS=true ;;
             --no-build)            export ZZCOLLAB_NO_BUILD=true ;;
             *)                     _filtered+=("$_arg") ;;
         esac
@@ -1757,6 +1756,16 @@ main() {
             minimal|analysis|rstudio)
                 local profile_name="$1"
                 shift
+                # The quickstart takes no flags. A trailing flag (e.g.
+                # --r-version) would otherwise be silently ignored after the
+                # project is scaffolded; reject it before doing any work. A
+                # trailing command (e.g. 'github') is still allowed to chain.
+                if [[ "${1:-}" == -* ]]; then
+                    log_error "'zzcollab $profile_name' does not take flags (got '$1')."
+                    log_info  "Pin the R version: 'zzcollab config set r-version X.Y.Z' then 'zzcollab $profile_name'."
+                    log_info  "Override the base image: 'zzcollab docker --base-image IMG'."
+                    exit 2
+                fi
                 cmd_quickstart "$profile_name"
                 commands_run=$((commands_run + 1))
                 ;;
