@@ -103,26 +103,20 @@ test_that("zzcollab_next_steps works", {
   expect_type(result, "character")
 })
 
-test_that("help system uses new --help TOPIC pattern", {
-  skip_if_not(exists("find_zzcollab_script"))
-
-  # Mock find_zzcollab_script
+test_that("zzcollab_help routes topics via the 'help' subcommand", {
+  captured <- NULL
   local_mocked_bindings(
-    find_zzcollab_script = function() "/usr/local/bin/zzcollab",
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      captured <<- command
+      character(0)
+    },
     .package = "zzcollab"
   )
 
-  # Capture the command that would be executed
-  # The new pattern should be: zzcollab --help TOPIC
-  # Not: zzcollab --help-TOPIC
-
-  result <- tryCatch({
-    zzcollab_help("docker")
-  }, error = function(e) {
-    # Command construction error should show our new pattern
-    # Old pattern: --help-docker
-    # New pattern: --help docker
-    expect_false(grepl("--help-docker", e$message))
-    TRUE
-  })
+  zzcollab_help("docker")
+  # Topics use the 'help' subcommand (zzcollab help docker), not a
+  # hyphenated --help-docker flag.
+  expect_true(grepl("zzcollab help docker", captured, fixed = TRUE))
+  expect_false(grepl("--help-docker", captured, fixed = TRUE))
 })

@@ -151,3 +151,44 @@ test_that("join_project no longer accepts interface parameter", {
   formals_names <- names(formals(join_project))
   expect_false("interface" %in% formals_names)
 })
+
+test_that("team_images parses docker output into a data frame", {
+  local_mocked_bindings(
+    safe_system = function(command, ...) {
+      c("myteam/proj1\tlatest\t1.2GB\t2026-01-01",
+        "myteam/proj2\tv2\t900MB\t2026-02-02")
+    },
+    .package = "zzcollab"
+  )
+
+  df <- team_images()
+  expect_s3_class(df, "data.frame")
+  expect_equal(nrow(df), 2)
+  expect_equal(df$repository, c("myteam/proj1", "myteam/proj2"))
+  expect_equal(df$tag, c("latest", "v2"))
+  expect_equal(df$size, c("1.2GB", "900MB"))
+  expect_equal(df$created, c("2026-01-01", "2026-02-02"))
+})
+
+test_that("team_images returns an empty data frame when no images exist", {
+  local_mocked_bindings(
+    safe_system = function(command, ...) character(0),
+    .package = "zzcollab"
+  )
+
+  df <- team_images()
+  expect_s3_class(df, "data.frame")
+  expect_equal(nrow(df), 0)
+})
+
+test_that("team_images tolerates a short (malformed) row without erroring", {
+  local_mocked_bindings(
+    safe_system = function(command, ...) "onlyrepo\tlatest",
+    .package = "zzcollab"
+  )
+
+  df <- team_images()
+  expect_s3_class(df, "data.frame")
+  expect_equal(df$repository, "onlyrepo")
+  expect_true(is.na(df$size))
+})

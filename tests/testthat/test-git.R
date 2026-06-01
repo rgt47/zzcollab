@@ -117,7 +117,7 @@ test_that("git functions handle non-git directories gracefully", {
 test_that("git_commit constructs proper commands", {
   skip_if_not(dir.exists(".git"), message = "Not a git repository")
 
-  # Verify it uses the new commit message format with Claude Code attribution
+  # The commit message is passed through as-is (no attribution is added).
   result <- tryCatch({
     git_commit("test: add feature")
   }, error = function(e) {

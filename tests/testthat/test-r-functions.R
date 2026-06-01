@@ -49,12 +49,12 @@ test_that("validate_docker_name enforces length limit", {
 # SECTION 2: Null-Coalescing Operator (2 tests)
 ################################################################################
 
-test_that("%%||%% operator returns left value when not NULL", {
+test_that("%||% operator returns left value when not NULL", {
   result <- "value" %||% "default"
   expect_equal(result, "value")
 })
 
-test_that("%%||%% operator returns right value when left is NULL", {
+test_that("%||% operator returns right value when left is NULL", {
   result <- NULL %||% "default"
   expect_equal(result, "default")
 })
