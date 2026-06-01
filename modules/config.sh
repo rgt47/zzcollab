@@ -111,6 +111,14 @@ yaml_set() {
     _YQ_VAL="$value" yq eval ".$path = strenv(_YQ_VAL)" "$file" -i
 }
 
+# Persist the GitHub account to both the canonical github.account key and the
+# legacy defaults.github_account, so older config readers still resolve it.
+# Centralized so the dual write cannot drift across its call sites.
+_set_github_account_yaml() {
+    yaml_set "$1" "github.account" "$2"
+    yaml_set "$1" "defaults.github_account" "$2"
+}
+
 #=============================================================================
 # INPUT VALIDATION HELPERS
 #=============================================================================
@@ -674,8 +682,7 @@ config_identity_gate() {
         echo "  Your personal GitHub username (can be overridden per-project in the next step)."
         prompt_github_account "Personal GitHub username (optional)" "" val || return 1
         if [[ -n "$val" ]]; then
-            yaml_set "$CONFIG_USER" "github.account" "$val"
-            yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+            _set_github_account_yaml "$CONFIG_USER" "$val"
             CONFIG_GITHUB_ACCOUNT="$val"
         fi
     fi
@@ -1029,8 +1036,7 @@ _setup_missing_values() {
         has_missing=true
         prompt_github_account "GitHub username" "" val || { _save_and_exit; return 0; }
         [[ -n "$val" ]] && {
-            yaml_set "$CONFIG_USER" "github.account" "$val"
-            yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+            _set_github_account_yaml "$CONFIG_USER" "$val"
         }
     fi
 
@@ -1116,8 +1122,7 @@ _setup_change_existing() {
 
     prompt_github_account "GitHub username" "${CONFIG_GITHUB_ACCOUNT:-}" val || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && {
-        yaml_set "$CONFIG_USER" "github.account" "$val"
-        yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+        _set_github_account_yaml "$CONFIG_USER" "$val"
     }
 
     prompt_select "Default repository visibility" "private,public" \
