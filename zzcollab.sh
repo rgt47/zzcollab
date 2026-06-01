@@ -1206,11 +1206,67 @@ install_zzvimr_graphics_template() {
 }
 
 ##############################################################################
+# FUNCTION: _quickstart_existing_project
+# PURPOSE:  Handle 'zzc <profile>' when the directory is already a workspace.
+#           Reports status for a matching profile, refuses a non-destructive
+#           profile switch (directing the user to 'docker --profile'), or
+#           regenerates a missing Dockerfile for the current profile. Always
+#           returns, so the caller propagates its exit status.
+# ARGS:     $1 - requested profile name
+#           $2 - resolved base image for that profile
+##############################################################################
+_quickstart_existing_project() {
+    local profile="$1" base_image="$2"
+    local current_profile
+    current_profile=$(config_get "profile-name" true 2>/dev/null || echo "")
+    local project_name
+    project_name=$(basename "$(pwd)")
+    local image_exists=false
+    docker image inspect "$project_name" &>/dev/null && image_exists=true
+
+    # Check if profile matches and files exist (don't require Docker image)
+    if [[ "$current_profile" == "$profile" ]] && [[ -f "Dockerfile" ]]; then
+        log_success "Project already configured with '$profile' profile"
+        if [[ "$image_exists" == "true" ]]; then
+            echo "  Docker image '$project_name' exists" >&2
+            echo "  To develop:  make r" >&2
+        else
+            echo "  To build:    zzc docker" >&2
+        fi
+        echo "  To rebuild:  make docker-rebuild" >&2
+        return 0
+    fi
+
+    # A different profile is requested for an existing project. Do NOT
+    # silently switch: that path used to overwrite a customized
+    # .Rprofile/Makefile. A bare profile token is create-only; switching is
+    # an explicit, non-destructive operation via 'docker --profile'.
+    if [[ "$current_profile" != "$profile" ]]; then
+        if [[ -n "$current_profile" ]]; then
+            log_error "This project is configured with the '$current_profile' profile."
+            log_info  "To switch it to '$profile':  zzcollab docker --profile $profile"
+        else
+            log_error "This project has no profile set."
+            log_info  "To configure it with '$profile':  zzcollab docker --profile $profile"
+        fi
+        log_info  "(That regenerates the Dockerfile only; your .Rprofile and Makefile are left untouched.)"
+        return 1
+    fi
+
+    # Same profile, missing Dockerfile
+    log_info "Generating missing Dockerfile for profile: $profile"
+    export BASE_IMAGE="$base_image"
+    generate_dockerfile || return 1
+    log_success "Dockerfile generated with $profile profile"
+    return 0
+}
+
+##############################################################################
 # FUNCTION: cmd_quickstart
 # PURPOSE:  Smart profile command - quickstart for new, switch for existing
 # USAGE:    zzcollab analysis
 #           zzcollab minimal
-# ARGS:     $1 - profile name (analysis, minimal, publishing, etc.)
+# ARGS:     $1 - profile name (minimal, analysis, rstudio)
 ##############################################################################
 cmd_quickstart() {
     local profile="${1:-analysis}"
@@ -1228,50 +1284,11 @@ cmd_quickstart() {
         return 1
     }
 
-    # Existing project → check if anything needs to be done
+    # Existing project → the handler decides what (if anything) to do and
+    # always returns; propagate its status.
     if is_workspace_initialized; then
-        local current_profile
-        current_profile=$(config_get "profile-name" true 2>/dev/null || echo "")
-        local project_name
-        project_name=$(basename "$(pwd)")
-        local image_exists=false
-        docker image inspect "$project_name" &>/dev/null && image_exists=true
-
-        # Check if profile matches and files exist (don't require Docker image)
-        if [[ "$current_profile" == "$profile" ]] && [[ -f "Dockerfile" ]]; then
-            log_success "Project already configured with '$profile' profile"
-            if [[ "$image_exists" == "true" ]]; then
-                echo "  Docker image '$project_name' exists" >&2
-                echo "  To develop:  make r" >&2
-            else
-                echo "  To build:    zzc docker" >&2
-            fi
-            echo "  To rebuild:  make docker-rebuild" >&2
-            return 0
-        fi
-
-        # A different profile is requested for an existing project. Do NOT
-        # silently switch: that path used to overwrite a customized
-        # .Rprofile/Makefile. A bare profile token is create-only; switching is
-        # an explicit, non-destructive operation via 'docker --profile'.
-        if [[ "$current_profile" != "$profile" ]]; then
-            if [[ -n "$current_profile" ]]; then
-                log_error "This project is configured with the '$current_profile' profile."
-                log_info  "To switch it to '$profile':  zzcollab docker --profile $profile"
-            else
-                log_error "This project has no profile set."
-                log_info  "To configure it with '$profile':  zzcollab docker --profile $profile"
-            fi
-            log_info  "(That regenerates the Dockerfile only; your .Rprofile and Makefile are left untouched.)"
-            return 1
-        else
-            # Same profile, missing Dockerfile
-            log_info "Generating missing Dockerfile for profile: $profile"
-            export BASE_IMAGE="$base_image"
-            generate_dockerfile || return 1
-            log_success "Dockerfile generated with $profile profile"
-        fi
-        return 0
+        _quickstart_existing_project "$profile" "$base_image"
+        return $?
     fi
 
     # New project → full quickstart
