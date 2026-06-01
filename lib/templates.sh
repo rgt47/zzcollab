@@ -16,36 +16,24 @@ set -euo pipefail
 # TEMPLATE FILE PROCESSING FUNCTIONS
 #=============================================================================
 
-# Function: copy_template_file
-# Purpose: Copy a template file and substitute variables within it
-# USAGE:    copy_template_file "Dockerfile" "Dockerfile" ["Docker config"] [templates_dir]
-# ARGS:
-#   $1 - template: Template filename (relative to templates directory)
-#   $2 - dest: Destination path for the copied file
-#   $3 - description: Optional description for logging (defaults to destination path)
-#   $4 - templates_dir: Optional templates directory (defaults to ZZCOLLAB_TEMPLATES_DIR)
-# RETURNS:
-#   0 - File copied and variables substituted successfully
-#   1 - Failed (template not found, copy failed, substitution failed)
-copy_template_file() {
-    local template="$1"
-    local dest="$2"
-    local description="${3:-$dest}"
-    local templates_dir="${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}"
-
-    [[ $# -ge 2 ]] || { log_error "copy_template_file: need template and destination"; return 1; }
+# Function: _render_template (private)
+# Purpose: Copy a template into place and substitute its variables. Shared core
+#          of copy_template_file (overwrite=false) and regenerate_template_file
+#          (overwrite=true).
+# ARGS: $1 template  $2 dest  $3 description  $4 templates_dir  $5 overwrite
+# RETURNS: 0 on success (or skip), 1 on failure.
+_render_template() {
+    local template="$1" dest="$2" description="$3" templates_dir="$4" overwrite="$5"
 
     if [[ -z "$templates_dir" ]]; then
-        log_error "copy_template_file: templates directory not specified"
+        log_error "render_template: templates directory not specified"
         return 1
     fi
-
     if [[ ! -f "$templates_dir/$template" ]]; then
         log_error "Template not found: $templates_dir/$template"
         return 1
     fi
-
-    if [[ -f "$dest" ]]; then
+    if [[ "$overwrite" != "true" && -f "$dest" ]]; then
         log_info "$description already exists, skipping creation"
         return 0
     fi
@@ -58,61 +46,33 @@ copy_template_file() {
             return 1
         fi
     fi
-
     if ! safe_cp "$templates_dir/$template" "$dest"; then
         log_error "Failed to copy template: $template"
         return 1
     fi
-
     if ! substitute_variables "$dest"; then
         log_error "Failed to substitute variables in: $dest"
         return 1
     fi
-
     return 0
 }
 
-# Function: regenerate_template_file
-# Purpose: Copy a template file and substitute variables, overwriting if exists
-# USAGE:    regenerate_template_file "Makefile" "Makefile" ["Makefile"] [templates_dir]
-# ARGS:
-#   $1 - template: Template filename (relative to templates directory)
-#   $2 - dest: Destination path for the copied file
-#   $3 - description: Optional description for logging (defaults to destination path)
-#   $4 - templates_dir: Optional templates directory (defaults to ZZCOLLAB_TEMPLATES_DIR)
-# RETURNS:
-#   0 - File regenerated and variables substituted successfully
-#   1 - Failed (template not found, copy failed, substitution failed)
+# Copy a template and substitute variables, skipping if the destination exists.
+# USAGE: copy_template_file TEMPLATE DEST [DESCRIPTION] [TEMPLATES_DIR]
+copy_template_file() {
+    [[ $# -ge 2 ]] || { log_error "copy_template_file: need template and destination"; return 1; }
+    _render_template "$1" "$2" "${3:-$2}" \
+        "${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}" "false"
+}
+
+# Copy a template and substitute variables, overwriting the destination.
+# USAGE: regenerate_template_file TEMPLATE DEST [DESCRIPTION] [TEMPLATES_DIR]
 regenerate_template_file() {
-    local template="$1"
-    local dest="$2"
-    local description="${3:-$dest}"
-    local templates_dir="${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}"
-
     [[ $# -ge 2 ]] || { log_error "regenerate_template_file: need template and destination"; return 1; }
-
-    if [[ -z "$templates_dir" ]]; then
-        log_error "regenerate_template_file: templates directory not specified"
-        return 1
-    fi
-
-    if [[ ! -f "$templates_dir/$template" ]]; then
-        log_error "Template not found: $templates_dir/$template"
-        return 1
-    fi
-
-    if ! safe_cp "$templates_dir/$template" "$dest"; then
-        log_error "Failed to copy template: $template"
-        return 1
-    fi
-
-    if ! substitute_variables "$dest"; then
-        log_error "Failed to substitute variables in: $dest"
-        return 1
-    fi
-
-    log_success "Regenerated $description"
-    return 0
+    local description="${3:-$2}"
+    _render_template "$1" "$2" "$description" \
+        "${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}" "true" \
+        && log_success "Regenerated $description"
 }
 
 # Function: render_authors_r
