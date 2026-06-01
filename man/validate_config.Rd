@@ -7,48 +7,13 @@
 validate_config()
 }
 \value{
-Logical value indicating whether all configuration files are valid (TRUE)
-or if validation errors were found (FALSE). Returns TRUE if all configuration
-files that exist are syntactically correct and contain valid values.
-Missing configuration files are not considered errors.
+Logical: TRUE when every existing configuration file is
+syntactically valid YAML, FALSE if any fails to parse.
 }
 \description{
-Performs comprehensive validation of all zzcollab configuration files in the
-configuration hierarchy, checking for syntax errors, invalid values, and
-structural problems. This helps ensure your configuration is valid before
-running zzcollab operations.
-}
-\details{
-The validation process checks multiple aspects of configuration files:
-
-\strong{Syntax Validation:}
-\itemize{
-\item YAML syntax correctness in all configuration files
-\item Proper key-value structure and indentation
-\item No duplicate keys or invalid characters
-}
-
-\strong{Value Validation:}
-\itemize{
-\item Build mode values are one of: "minimal", "fast", "standard", "comprehensive"
-\item Boolean values are properly formatted as "true" or "false"
-\item Path values are syntactically valid (though may not exist)
-}
-
-\strong{File Structure:}
-\itemize{
-\item Configuration directory permissions and accessibility
-\item File permissions for reading and writing
-\item Backup file integrity (*.backup files)
-}
-
-This function is particularly useful for:
-\itemize{
-\item \strong{Pre-flight checks}: Validate configuration before important operations
-\item \strong{Troubleshooting}: Identify configuration problems causing failures
-\item \strong{Setup verification}: Confirm configuration files are properly structured
-\item \strong{CI/CD pipelines}: Automated validation of configuration in workflows
-}
+Checks that each existing configuration file in the hierarchy
+(project-level ./zzcollab.yaml and user-level ~/.zzcollab/config.yaml)
+parses as valid YAML. Missing files are not errors.
 }
 \examples{
 \dontrun{

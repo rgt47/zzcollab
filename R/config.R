@@ -210,39 +210,12 @@ list_config <- function() {
 
 #' Validate zzcollab configuration files
 #'
-#' Performs comprehensive validation of all zzcollab configuration files in the
-#' configuration hierarchy, checking for syntax errors, invalid values, and
-#' structural problems. This helps ensure your configuration is valid before
-#' running zzcollab operations.
+#' Checks that each existing configuration file in the hierarchy
+#' (project-level ./zzcollab.yaml and user-level ~/.zzcollab/config.yaml)
+#' parses as valid YAML. Missing files are not errors.
 #'
-#' @return Logical value indicating whether all configuration files are valid (TRUE)
-#'   or if validation errors were found (FALSE). Returns TRUE if all configuration
-#'   files that exist are syntactically correct and contain valid values.
-#'   Missing configuration files are not considered errors.
-#'   
-#' @details
-#' The validation process checks multiple aspects of configuration files:
-#' 
-#' **Syntax Validation:**
-#' - YAML syntax correctness in all configuration files
-#' - Proper key-value structure and indentation
-#' - No duplicate keys or invalid characters
-#' 
-#' **Value Validation:**
-#' - Build mode values are one of: "minimal", "fast", "standard", "comprehensive"
-#' - Boolean values are properly formatted as "true" or "false"
-#' - Path values are syntactically valid (though may not exist)
-#' 
-#' **File Structure:**
-#' - Configuration directory permissions and accessibility
-#' - File permissions for reading and writing
-#' - Backup file integrity (*.backup files)
-#' 
-#' This function is particularly useful for:
-#' - **Pre-flight checks**: Validate configuration before important operations
-#' - **Troubleshooting**: Identify configuration problems causing failures
-#' - **Setup verification**: Confirm configuration files are properly structured
-#' - **CI/CD pipelines**: Automated validation of configuration in workflows
+#' @return Logical: TRUE when every existing configuration file is
+#'   syntactically valid YAML, FALSE if any fails to parse.
 #'
 #' @examples
 #' \dontrun{
