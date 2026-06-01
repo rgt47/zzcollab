@@ -694,6 +694,12 @@ cmd_doctor() {
 }
 
 # Silent advisory: warn once if any workspace template is outdated
+# Extract the 'vX.Y.Z' stamp from a stamped template file (empty if absent).
+# The stamp line is '# zzcollab <file> vX.Y.Z'.
+_template_stamp_version() {
+    sed -n "s/^# zzcollab ${1} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$1" | head -1
+}
+
 warn_if_templates_outdated() {
     local cur="${ZZCOLLAB_TEMPLATE_VERSION:-}"
     [[ -z "$cur" ]] && return 0
@@ -701,7 +707,7 @@ warn_if_templates_outdated() {
     local file ver outdated=""
     for file in Makefile .Rprofile Dockerfile; do
         [[ -f "$file" ]] || continue
-        ver=$(sed -n "s/^# zzcollab ${file} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1)
+        ver=$(_template_stamp_version "$file")
         if [[ -n "$ver" && "$ver" != "$cur" ]]; then
             outdated="${outdated:+$outdated, }${file} (v${ver})"
         fi
@@ -725,7 +731,7 @@ check_and_prompt_outdated_templates() {
 
     for file in Makefile .Rprofile; do
         [[ -f "$file" ]] || continue
-        ver=$(sed -n "s/^# zzcollab ${file} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1)
+        ver=$(_template_stamp_version "$file")
         if [[ -z "$ver" ]]; then
             unstamped_files+=("$file")
         elif [[ "$ver" != "$cur" ]]; then
