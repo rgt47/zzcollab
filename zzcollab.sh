@@ -882,7 +882,10 @@ cmd_uninstall() {
         esac
     done
 
-    local known_dirs=(R/ analysis/ tests/ man/ vignettes/ docs/ .github/ renv/ .zzcollab/)
+    # analysis/ is intentionally NOT in this list: it holds the user's data,
+    # scripts, and report, which --help promises are preserved. (zzc rm all is
+    # the nuke-everything counterpart that does remove analysis/.)
+    local known_dirs=(R/ tests/ man/ vignettes/ docs/ .github/ renv/ .zzcollab/)
     local known_files=(DESCRIPTION NAMESPACE LICENSE Makefile Dockerfile
                        renv.lock .Rprofile .gitignore .Rbuildignore zzcollab.yaml)
 
