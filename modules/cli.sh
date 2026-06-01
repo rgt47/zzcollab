@@ -165,8 +165,8 @@ USER_PROVIDED_PROFILE=false
 #=============================================================================
 
 get_workflow_template() {
-    # Unified paradigm uses single workflow template from unified/ directory
-    echo "unified/.github/workflows/render-report.yml"
+    # The report-rendering workflow installed into generated projects.
+    echo "workflows/render-report.yml"
 }
 
 #=============================================================================
