@@ -8,6 +8,10 @@ This document chronicles all major changes, enhancements, and improvements to ZZ
 
 Other CLI cleanups: removed the redundant `docker -n`/`--no` and the `-Y`/`--yes-all` aliases; renamed the `build` command to `rebuild` (with `build` kept as a deprecated alias); `zzcollab <profile>` now rejects a trailing flag instead of partially scaffolding; and the help text documents flag binding for combined commands and clarifies that `-t` is the image tag, not team.
 
+**Bug fix: `zzcollab rebuild` silent failure on the first build.** `find_cached_image` returned a non-zero status on a cache miss (its last statement, `[[ -n "$image_id" ]] && echo`, evaluated false when no image matched). The caller's `cached_image=$(find_cached_image ...)` propagated that status through `set -euo pipefail`, aborting `build_docker_image` with no output before the build began. This affected every first build with no prior cache hit, reached through `zzcollab rebuild`, `zzcollab docker --build`, and the build step of `zzcollab analysis`. The lookup now treats a miss as success with empty output; regression tests cover the miss, hit, and empty-hash paths.
+
+**New: `zzcollab menu` interactive hub.** A post-initialization menu (gum-driven, with plain-prompt fallback) for common actions against an existing project: change profile, add R package(s), and edit configuration values. Add-package installs into the project image and writes the package to `renv.lock` via `renv::record` (not an implicit snapshot, which would drop a newly added package), then prompts the user to commit `renv.lock` to share. On Apple Silicon the prompt notes that source-compiled packages may require an amd64 image.
+
 ## Version 2.0 (2025) - Unified Paradigm Release
 
 ### Unified Paradigm Consolidation (October 2025)
