@@ -1,0 +1,266 @@
+---
+title: "zzcollab Architecture Diagrams"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+---
+
+*2026-05-31 18:52 PDT*
+
+This document collects standard software-architecture views of the zzcollab
+system as Mermaid diagrams. The set follows the C4 model (context, container,
+component) supplemented by a module-dependency view, two interaction
+sequences, a data-flow view of the template-substitution pipeline, a runtime
+deployment view, and a project-lifecycle state machine.
+
+The diagrams are written in Mermaid fenced blocks. They render natively when
+the file is viewed on GitHub and when the document is rendered with Quarto
+(`quarto render`). Under plain `rmarkdown::render()` to `html_document`,
+Mermaid blocks require the `DiagrammeR` engine or a Mermaid header include;
+the source blocks below remain the canonical, version-controlled definition
+regardless of renderer.
+
+The views reflect the source after the 2026-05 simplification: modules are
+sourced unconditionally in dependency order (no `require_module` system),
+`doctor.sh` is executed as a standalone script, dependency validation is
+delegated to the `zzrenvcheck` R package, and there are three profiles
+(`minimal`, `analysis`, `rstudio`).
+
+## 1. System context (C4 level 1)
+
+The single highest-level view: who uses zzcollab and which external systems
+it integrates with. zzcollab is a generator and orchestrator; it owns no
+running service of its own.
+
+```mermaid
+flowchart TB
+    user["Researcher"]
+    subgraph zzc["zzcollab framework"]
+        sysnode["zzc CLI + R interface package"]
+    end
+    docker["Docker Engine"]
+    registry["Container registry<br/>(Docker Hub / GHCR)"]
+    ppm["Posit Package Manager"]
+    gh["GitHub + GitHub Actions"]
+    zrc["zzrenvcheck (R package)"]
+    user -->|"runs zzc commands"| sysnode
+    sysnode -->|"generate / build / run images"| docker
+    docker -->|"pull base, push team images"| registry
+    docker -->|"install pre-built R binaries"| ppm
+    sysnode -->|"create repo, install CI workflows"| gh
+    sysnode -->|"validate deps inside the container"| zrc
+```
+
+## 2. Containers (C4 level 2)
+
+The deployable and runnable parts of the system and the data stores they
+share. The R package is a thin wrapper that shells out to the bash CLI; the
+configuration store and template library are the CLI's inputs, and the
+generated compendium plus its Docker image are its outputs.
+
+```mermaid
+flowchart TB
+    user["Researcher"]
+    rpkg["R package 'zzcollab'<br/>thin wrapper via safe_system()"]
+    cli["zzcollab.sh CLI (bash)"]
+    cfg[("Config store<br/>~/.zzcollab/config.yaml<br/>./zzcollab.yaml<br/>templates/bundles.yaml")]
+    tmpl[("Template library<br/>templates/")]
+    proj[("Generated compendium<br/>DESCRIPTION, renv.lock, .Rprofile,<br/>Dockerfile, Makefile, R/, analysis/")]
+    img["Project Docker image"]
+    user --> rpkg
+    user --> cli
+    rpkg -->|"shells out"| cli
+    cli -->|"read / write (yq)"| cfg
+    cli -->|"render (envsubst)"| tmpl
+    cli -->|"scaffold"| proj
+    cli -->|"build with cache"| img
+```
+
+## 3. Components (C4 level 3) and load order
+
+The internal decomposition of the CLI. `zzcollab.sh` sources the libraries
+and modules unconditionally at startup in dependency order
+(`constants` then `core` then `templates`, then every module), then
+dispatches subcommands. `doctor.sh` is the one exception: it is executed as a
+standalone script, not sourced.
+
+```mermaid
+flowchart TB
+    entry["zzcollab.sh<br/>entry, dispatch, main()"]
+    subgraph libg["lib/ (sourced first, in order)"]
+        constants["constants.sh<br/>defaults, versions"]
+        core["core.sh<br/>logging, safe_cp, guards"]
+        templates["templates.sh<br/>substitute_variables, render"]
+    end
+    subgraph modg["modules/ (sourced after lib)"]
+        clim["cli.sh<br/>validators, flag defaults"]
+        configm["config.sh<br/>yq load / get / set"]
+        profilesm["profiles.sh<br/>bundles.yaml lookups"]
+        projectm["project.sh<br/>scaffold compendium"]
+        dockerm["docker.sh<br/>Dockerfile gen + build cache"]
+        githubm["github.sh<br/>repo + workflows"]
+        helpm["help.sh"]
+    end
+    doctor["doctor.sh<br/>standalone executable"]
+    entry --> constants
+    constants --> core
+    core --> templates
+    entry --> clim
+    entry --> configm
+    entry --> profilesm
+    entry --> projectm
+    entry --> dockerm
+    entry --> githubm
+    entry --> helpm
+    projectm -->|"install_template"| templates
+    dockerm -->|"get_profile_base_image"| profilesm
+    configm --> core
+    entry -. "bash doctor.sh (executed, not sourced)" .-> doctor
+```
+
+## 4. Interaction: generating a project (`zzc analysis`)
+
+The core use case, as a sequence. Configuration is loaded once (memoized),
+the compendium is scaffolded with variable substitution, the Dockerfile is
+generated from a pinned base image, and the build consults a
+content-addressable cache keyed on a hash of the Dockerfile plus `renv.lock`.
+
+```mermaid
+sequenceDiagram
+    actor U as Researcher
+    participant CLI as zzcollab.sh
+    participant CFG as config.sh
+    participant PRJ as project.sh
+    participant TPL as templates.sh
+    participant DOC as docker.sh
+    participant DK as Docker
+    U->>CLI: zzc analysis
+    CLI->>CFG: load_config (single yq pass, memoized)
+    CLI->>PRJ: setup_project
+    PRJ->>TPL: install_template (DESCRIPTION, Makefile, .Rprofile, ...)
+    TPL->>TPL: substitute_variables (envsubst allowlist)
+    CLI->>DOC: generate_dockerfile
+    DOC->>DOC: extract_r_version / extract_r_packages / derive_system_deps
+    DOC->>DOC: generate_dockerfile_inline (heredoc, pinned base:R_VERSION)
+    CLI->>DOC: build_docker_image
+    DOC->>DOC: compute_dockerfile_hash, find_cached_image
+    alt cache hit
+        DOC->>DK: docker tag cached-image project:latest
+    else cache miss
+        DOC->>DK: docker build --label dockerfile.hash
+    end
+    DK-->>U: project image ready
+```
+
+## 5. Interaction: the R interface
+
+The R package functions validate and quote their inputs, then delegate to the
+bash CLI through `safe_system()`. No business logic is duplicated in R; the
+package is an ergonomic front door.
+
+```mermaid
+sequenceDiagram
+    actor U as Researcher
+    participant R as R function (e.g. init_project)
+    participant SS as safe_system()
+    participant CLI as zzcollab.sh
+    U->>R: init_project(team, project, profile)
+    R->>R: validate args, resolve_team_project()
+    R->>SS: safe_system("zzcollab ...", shell-quoted args)
+    SS->>CLI: system() shell-out
+    CLI-->>SS: exit status / captured stdout
+    SS-->>R: result
+    R-->>U: TRUE / FALSE
+```
+
+## 6. Data flow: the substitution pipeline
+
+The heart of zzcollab is a substitution pipeline that turns configuration
+into the generated artifacts. `load_config` flattens the YAML in a single
+`yq` pass into `CONFIG_*` variables; `substitute_variables` fills the
+allowlisted placeholders in the text templates; the Dockerfile and
+`renv.lock` are generated programmatically rather than templated.
+
+```mermaid
+flowchart LR
+    args["CLI flags"]
+    ucfg[("~/.zzcollab/config.yaml")]
+    pcfg[("./zzcollab.yaml")]
+    bundles[("templates/bundles.yaml")]
+    load["load_config<br/>single yq pass, _CONFIG_MAP"]
+    cvars["CONFIG_* variables"]
+    subst["substitute_variables<br/>envsubst allowlist"]
+    desc["DESCRIPTION"]
+    mk["Makefile"]
+    rprof[".Rprofile"]
+    renvlock["renv.lock<br/>create_renv_lock_minimal"]
+    dfile["Dockerfile<br/>generate_dockerfile_inline"]
+    ucfg --> load
+    pcfg --> load
+    load --> cvars
+    args --> cvars
+    cvars --> subst
+    subst --> desc
+    subst --> mk
+    subst --> rprof
+    bundles -->|"get_profile_base_image"| dfile
+    cvars -->|"R_VERSION, BASE_IMAGE"| dfile
+    cvars -->|"R version"| renvlock
+```
+
+## 7. Runtime deployment
+
+The runtime topology of a generated project. The container is built from a
+version-pinned base image; the project directory and a shared host-level renv
+cache are bind-mounted at run time, so the container itself stays stateless
+and reproducible.
+
+```mermaid
+flowchart TB
+    subgraph host["Host machine"]
+        projdir[("project/ working dir")]
+        cache[("~/.cache/R/renv<br/>shared host cache")]
+        subgraph cont["Docker container (project image)"]
+            ruser["USER analyst<br/>WORKDIR /home/analyst/project"]
+        end
+    end
+    registry["Docker Hub / GHCR"]
+    ppm["Posit Package Manager (noble)"]
+    projdir -. "-v bind mount" .-> ruser
+    cache -. "-v bind mount" .-> ruser
+    cont -->|"FROM base:R_VERSION (pinned)"| registry
+    cont -->|"renv::restore() binaries"| ppm
+```
+
+## 8. Project lifecycle (state)
+
+The states a compendium passes through. The individual subcommands advance it
+one step at a time; the `analysis` quickstart performs the whole chain.
+`doctor.sh` inspects a built workspace to confirm the Five Pillars are present
+and their template version stamps are current.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Empty
+    Empty --> Scaffolded: zzc init
+    Scaffolded --> RenvLocked: zzc renv
+    RenvLocked --> Dockerized: zzc docker
+    Dockerized --> Built: make docker-build
+    Scaffolded --> Built: zzc analysis (init + renv + docker + build)
+    Built --> [*]
+    note right of Built
+        doctor.sh verifies the Five Pillars
+        and template version stamps
+    end note
+```
+
+## Notes on scope
+
+These eight views are deliberately a small, standard set rather than the full
+UML catalogue. The C4 levels (sections 1 to 3) carry the structural story; the
+sequences (4 and 5) and the data-flow view (6) carry the behavioural story;
+the deployment (7) and state (8) views carry the runtime and lifecycle story.
+A class diagram is omitted because the bash codebase is procedural, and a
+code-level (C4 level 4) view is omitted as unnecessary detail for an
+architecture document.
