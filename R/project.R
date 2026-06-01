@@ -29,6 +29,15 @@ resolve_team_project <- function(team_name, project_name) {
   team_name
 }
 
+#' Error if the working directory has no Makefile (not a zzcollab project)
+#' @keywords internal
+require_makefile <- function() {
+  if (!file.exists('Makefile')) {
+    stop('No Makefile found. Are you in a zzcollab project directory?',
+         call. = FALSE)
+  }
+}
+
 #' Check Docker container status for zzcollab projects
 #'
 #' This function checks for running Docker containers that have the 'zzcollab' label.
@@ -132,10 +141,7 @@ status <- function() {
 rebuild <- function(target = 'docker-build') {
   # Check if we're in a zzcollab project directory by looking for Makefile
   # The Makefile is created during project initialization and contains Docker targets
-  if (!file.exists('Makefile')) {
-    stop('No Makefile found. Are you in a zzcollab project directory?',
-         call. = FALSE)
-  }
+  require_makefile()
 
   # Execute the make command with specified target
   # intern = TRUE captures output, attr(result, "status") contains exit code
@@ -501,10 +507,7 @@ run_script <- function(script_path, container_cmd = 'docker-script') {
     stop('Script file not found: ', script_path, call. = FALSE)
   }
 
-  if (!file.exists('Makefile')) {
-    stop('No Makefile found. Are you in a zzcollab project directory?',
-         call. = FALSE)
-  }
+  require_makefile()
 
   # Execute script in container via the docker-script make target
   cmd <- paste0('make ', container_cmd, ' SCRIPT=', shQuote(script_path))
@@ -519,10 +522,7 @@ run_script <- function(script_path, container_cmd = 'docker-script') {
 #' @return Logical indicating success
 #' @export
 render_report <- function(report_path = NULL) {
-  if (!file.exists('Makefile')) {
-    stop('No Makefile found. Are you in a zzcollab project directory?',
-         call. = FALSE)
-  }
+  require_makefile()
 
   if (!is.null(report_path)) {
     # Render specific report

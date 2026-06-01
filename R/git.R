@@ -2,6 +2,19 @@
 # Split out of utils.R. Shared internals (safe_system, find_zzcollab_script,
 # %||%) live in utils.R and are available at load time.
 
+# Print an outcome message based on a command's exit status and return the
+# logical result. Shared by the git/PR wrappers below (git_status differs: it
+# returns the porcelain output rather than a logical).
+report_status <- function(result, ok_msg, fail_msg) {
+  if (result == 0) {
+    message(ok_msg)
+    TRUE
+  } else {
+    message(fail_msg)
+    FALSE
+  }
+}
+
 #' Create and push git commit
 #'
 #' @param message Commit message
@@ -21,13 +34,8 @@ git_commit <- function(message, add_all = TRUE) {
   commit_cmd <- paste('git commit -m', shQuote(message))
   result2 <- safe_system(commit_cmd, error_msg = 'Failed to create git commit')
 
-  if (result2 == 0) {
-    message('\u2705 Commit created: ', message)
-    TRUE
-  } else {
-    message('\u274c Commit failed')
-    FALSE
-  }
+  report_status(result2, paste0('\u2705 Commit created: ', message),
+                '\u274c Commit failed')
 }
 
 #' Push commits to GitHub
@@ -44,13 +52,7 @@ git_push <- function(branch = NULL) {
 
   result <- safe_system(cmd, error_msg = 'Failed to push to GitHub')
 
-  if (result == 0) {
-    message('\u2705 Successfully pushed to GitHub')
-    TRUE
-  } else {
-    message('\u274c Push failed')
-    FALSE
-  }
+  report_status(result, '\u2705 Successfully pushed to GitHub', '\u274c Push failed')
 }
 
 #' Create GitHub pull request
@@ -79,13 +81,8 @@ create_pr <- function(title, body = NULL, base = 'main') {
 
   result <- safe_system(cmd, error_msg = 'Failed to create pull request')
 
-  if (result == 0) {
-    message('\u2705 Pull request created successfully')
-    TRUE
-  } else {
-    message('\u274c Failed to create pull request')
-    FALSE
-  }
+  report_status(result, '\u2705 Pull request created successfully',
+                '\u274c Failed to create pull request')
 }
 
 #' Check git status
@@ -122,11 +119,7 @@ create_branch <- function(branch_name) {
   result <- safe_system(paste('git checkout -b', shQuote(branch_name)),
                        error_msg = paste('Failed to create branch:', branch_name))
 
-  if (result == 0) {
-    message('\u2705 Created and switched to branch: ', branch_name)
-    TRUE
-  } else {
-    message('\u274c Failed to create branch: ', branch_name)
-    FALSE
-  }
+  report_status(result,
+                paste0('\u2705 Created and switched to branch: ', branch_name),
+                paste0('\u274c Failed to create branch: ', branch_name))
 }
