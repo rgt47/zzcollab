@@ -1690,6 +1690,9 @@ _menu_add_package() {
         | sed 's/^/"/; s/$/"/' | paste -sd, -)
     [[ -z "$rvec" ]] && return 0
     log_info "Installing into '$image' and recording in renv.lock..."
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        log_info "Note: on Apple Silicon, packages that compile from source may fail to load unless the image provides a working amd64 toolchain (see DOCKER_DEFAULT_PLATFORM). Pure-R packages install reliably."
+    fi
     # Install, then renv::record the packages directly into the lockfile.
     # 'record' is used rather than 'snapshot' because the project uses
     # implicit snapshots (renv/settings.json snapshot.type=implicit), which
