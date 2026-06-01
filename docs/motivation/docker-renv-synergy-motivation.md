@@ -1,6 +1,6 @@
 # The Synergy of Docker and renv: Achieving Complete Computational Reproducibility
 
-> **Current Implementation Note**: This document describes Docker + renv synergy principles. The current ZZCOLLAB framework implements these principles through **14+ Docker profiles** with **dynamic package management** (standard `install.packages()`) and **auto-snapshot architecture** (automatic on container exit). Validation uses pure shell (`make check-renv`) requiring no host R installation. See [Development Guide](DEVELOPMENT.md) for current workflow.
+> **Current Implementation Note**: This document describes Docker + renv synergy principles. The current ZZCOLLAB framework implements these principles through **three built-in Docker profiles** (minimal, analysis, rstudio; other environments via `zzcollab docker --base-image <image>`) with **dynamic package management** (standard `install.packages()`) and **auto-snapshot architecture** (automatic on container exit). Validation uses the companion R package `zzrenvcheck` via `make check-renv`. See [Development Guide](DEVELOPMENT.md) for current workflow.
 
 **Document Version:** 1.0
 **Date:** September 30, 2025
@@ -575,12 +575,12 @@ mkdir climate-analysis && cd climate-analysis
 zzcollab analysis
 
 # Automatically generates:
-# 1. Dockerfile based on selected profile (14+ options)
+# 1. Dockerfile based on selected profile (minimal, analysis, rstudio)
 # 2. Minimal renv.lock (grows dynamically as you add packages)
 # 3. .Rprofile with auto-snapshot on exit and auto-restore on start
 # 4. GitHub Actions for environment validation
 # 5. Makefile targets for container management
-# 6. Pure shell validation (make check-renv) requiring no host R
+# 6. Validation via zzrenvcheck (make check-renv)
 
 # Build and enter container
 make docker-build
@@ -618,14 +618,14 @@ EXPOSE 8787
 Unlike static lockfiles, ZZCOLLAB uses dynamic package management:
 
 ```bash
-# Start with minimal renv.lock (just renv and testthat)
+# Start with minimal renv.lock (just renv and tinytest)
 # Add packages as needed inside container
 make r
 install.packages(c("tidyverse", "sf", "terra"))
 q()  # Exit R - auto-snapshot captures packages
 
 # renv.lock now contains exact versions
-# Validate on host (no R required)
+# Validate dependencies
 make check-renv
 ```
 
@@ -636,12 +636,12 @@ make check-renv
 make r                      # Enter container (launches R directly)
 make rstudio                # Start RStudio Server at localhost:8787
 make docker-test            # Run tests in standardized environment
-make check-renv             # Validate renv.lock consistency (pure shell)
+make check-renv             # Validate renv.lock consistency (zzrenvcheck)
 ```
 
 #### Validation Integration:
 ```bash
-# Automated environment validation (no R required on host)
+# Automated environment validation (zzrenvcheck)
 make check-renv
 
 # Scans code for:

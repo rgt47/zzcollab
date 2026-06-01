@@ -1,6 +1,6 @@
 # ADR 0001: R Version Detection and Mismatch Handling
 
-**Status**: Accepted
+**Status**: Superseded (2026-05 simplification)
 
 **Date**: 2025-12-05
 
@@ -212,3 +212,4 @@ Future enhancement: Provide Docker integration to automatically isolate project 
 | Date | Status | Changes |
 |------|--------|---------|
 | 2025-12-05 | Accepted | Initial ADR from R version mismatch experience |
+| 2026-05-31 | Superseded | The 2026-05 simplification refactor reduced live CRAN and system R-version auto-detection to a pinned default constant (`ZZCOLLAB_DEFAULT_R_VERSION` in `lib/constants.sh`). The detect-and-prompt mechanism described here is no longer the operative design. The `--r-version` flag and the interactive 'Use R <version> (current)' selection prompt remain available. |

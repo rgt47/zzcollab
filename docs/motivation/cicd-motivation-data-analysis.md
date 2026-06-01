@@ -265,7 +265,7 @@ make docker-build                  # Build team Docker image
 make r                             # Enter container (launches R directly)
 # ... develop analysis code ...
 q()                                # Exit R - auto-snapshot on exit
-make check-renv                    # Validate dependencies (pure shell)
+make check-renv                    # Validate dependencies (zzrenvcheck)
 make docker-test                   # Run automated tests
 git add . && git commit -m "Add analysis" && git push
 

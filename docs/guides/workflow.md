@@ -558,8 +558,8 @@ make r
 ### Run specific R commands
 
 ```bash
-make docker-r
-# Opens R console
+make r
+# Opens an R session in the container
 # Run commands
 # q() to quit
 ```

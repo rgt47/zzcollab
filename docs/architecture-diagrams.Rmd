@@ -14,12 +14,16 @@ component) supplemented by a module-dependency view, two interaction
 sequences, a data-flow view of the template-substitution pipeline, a runtime
 deployment view, and a project-lifecycle state machine.
 
-The diagrams are written in Mermaid fenced blocks. They render natively when
-the file is viewed on GitHub and when the document is rendered with Quarto
-(`quarto render`). Under plain `rmarkdown::render()` to `html_document`,
-Mermaid blocks require the `DiagrammeR` engine or a Mermaid header include;
-the source blocks below remain the canonical, version-controlled definition
-regardless of renderer.
+The diagrams are written in Mermaid fenced blocks, which GitHub renders
+natively when viewing this file. To produce a PDF with the diagrams
+rasterized as on-page images, run `docs/render-architecture-pdf.sh`: it
+converts the fences to Quarto executable cells, renders them through a
+headless browser (registered once via `quarto install chrome-headless-shell`),
+and scales each diagram to fit the page. Plain `rmarkdown::render()` does not
+rasterize Mermaid; the fenced blocks below remain the canonical,
+version-controlled definition regardless of renderer. Each diagram is followed
+by a descriptive caption so its content stays legible even where a wide
+diagram is reduced to fit the page.
 
 The views reflect the source after the 2026-05 simplification: modules are
 sourced unconditionally in dependency order (no `require_module` system),
@@ -52,6 +56,15 @@ flowchart TB
     sysnode -->|"validate deps inside the container"| zrc
 ```
 
+*Figure 1. System context. The sole external actor, the Researcher, drives the
+zzcollab framework (the `zzc` CLI plus its R interface package) through `zzc`
+commands. zzcollab owns no long-running service; it orchestrates five external
+systems: the Docker Engine (to generate, build, and run images), a container
+registry (Docker Hub or GHCR, for base pulls and team-image pushes), Posit
+Package Manager (pre-built R binaries), GitHub with GitHub Actions (repository
+creation and CI workflows), and the `zzrenvcheck` R package (dependency
+validation inside the container).*
+
 ## 2. Containers (C4 level 2)
 
 The deployable and runnable parts of the system and the data stores they
@@ -76,6 +89,15 @@ flowchart TB
     cli -->|"scaffold"| proj
     cli -->|"build with cache"| img
 ```
+
+*Figure 2. Container view. The Researcher may invoke the R package (a thin
+wrapper that shells out through `safe_system()`) or the `zzcollab.sh` CLI
+directly; all logic lives in the CLI. The CLI reads and writes the
+configuration store (`~/.zzcollab/config.yaml`, `./zzcollab.yaml`,
+`templates/bundles.yaml`) with `yq`, renders the template library with
+`envsubst`, scaffolds the generated compendium (DESCRIPTION, renv.lock,
+.Rprofile, Dockerfile, Makefile, R/, analysis/), and builds the project Docker
+image with content-addressable caching.*
 
 ## 3. Components (C4 level 3) and load order
 
@@ -119,6 +141,16 @@ flowchart TB
     entry -. "bash doctor.sh (executed, not sourced)" .-> doctor
 ```
 
+*Figure 3. Component decomposition and load order. At startup `zzcollab.sh`
+sources the libraries in dependency order (`constants.sh`, then `core.sh`,
+then `templates.sh`) and then every module (`cli.sh`, `config.sh`,
+`profiles.sh`, `project.sh`, `docker.sh`, `github.sh`, `help.sh`); solid
+arrows from the entry point denote this unconditional sourcing. Inter-module
+calls are shown separately: `project.sh` installs templates via
+`templates.sh`, `docker.sh` resolves base images via `profiles.sh`, and
+`config.sh` logs through `core.sh`. The dashed arrow marks the one exception,
+`doctor.sh`, which is executed as a standalone script rather than sourced.*
+
 ## 4. Interaction: generating a project (`zzc analysis`)
 
 The core use case, as a sequence. Configuration is loaded once (memoized),
@@ -153,6 +185,16 @@ sequenceDiagram
     DK-->>U: project image ready
 ```
 
+*Figure 4. Generating a project, as a sequence. `zzc analysis` loads
+configuration once (a single memoized `yq` pass), then `project.sh` scaffolds
+the compendium, installing each template through `templates.sh`, which fills
+allowlisted placeholders via `substitute_variables`. `docker.sh` then derives
+the R version, package set, and system dependencies and writes the Dockerfile
+inline from a heredoc pinned to `base:R_VERSION`. The build computes a hash of
+the Dockerfile plus `renv.lock` and consults the content-addressable cache: on
+a hit it retags the cached image; on a miss it runs `docker build` labelled
+with the hash. The finished project image is returned to the user.*
+
 ## 5. Interaction: the R interface
 
 The R package functions validate and quote their inputs, then delegate to the
@@ -173,6 +215,15 @@ sequenceDiagram
     SS-->>R: result
     R-->>U: TRUE / FALSE
 ```
+
+*Figure 5. The R interface, as a sequence. An R entry point such as
+`init_project()` validates its arguments and resolves the team and project
+names, then calls `safe_system()` with the `zzcollab` command and its
+shell-quoted arguments. `safe_system()` shells out via `system()` to
+`zzcollab.sh`, which returns an exit status and any captured stdout. The R
+function maps that result to a logical (`TRUE`/`FALSE`) for the caller. No
+business logic is duplicated in R; the package is an ergonomic front door to
+the CLI.*
 
 ## 6. Data flow: the substitution pipeline
 
@@ -209,6 +260,18 @@ flowchart LR
     cvars -->|"R version"| renvlock
 ```
 
+*Figure 6. Data-flow of the substitution pipeline (read left to right). The two
+configuration files (`~/.zzcollab/config.yaml` and `./zzcollab.yaml`) feed
+`load_config`, which flattens them in a single `yq` pass into `_CONFIG_MAP` and
+exports `CONFIG_*` variables; CLI flags overlay these same variables.
+`substitute_variables` then fills the `envsubst` allowlist to produce the text
+templates (DESCRIPTION, Makefile, .Rprofile). The two artifacts that are not
+templated are generated programmatically instead: the Dockerfile by
+`generate_dockerfile_inline` (taking the base image from
+`templates/bundles.yaml` via `get_profile_base_image`, plus `R_VERSION` and
+`BASE_IMAGE` from the config variables), and `renv.lock` by
+`create_renv_lock_minimal` (seeded with the configured R version).*
+
 ## 7. Runtime deployment
 
 The runtime topology of a generated project. The container is built from a
@@ -233,6 +296,16 @@ flowchart TB
     cont -->|"renv::restore() binaries"| ppm
 ```
 
+*Figure 7. Runtime deployment of a generated project. The container is built
+`FROM base:R_VERSION` (a version-pinned base pulled from Docker Hub or GHCR),
+and `renv::restore()` installs binaries from Posit Package Manager (the `noble`
+distribution). At run time the host bind-mounts two directories into the
+container (`USER analyst`, `WORKDIR /home/analyst/project`): the project
+working directory and a shared host-level renv cache at `~/.cache/R/renv`.
+Because all state lives in the bind mounts, the container image itself stays
+stateless and reproducible, and the shared cache lets every project reuse
+already-downloaded packages.*
+
 ## 8. Project lifecycle (state)
 
 The states a compendium passes through. The individual subcommands advance it
@@ -254,6 +327,14 @@ stateDiagram-v2
         and template version stamps
     end note
 ```
+
+*Figure 8. Project lifecycle, as a state machine. A compendium advances one
+state at a time: `Empty` to `Scaffolded` (`zzc init`), to `RenvLocked`
+(`zzc renv`), to `Dockerized` (`zzc docker`), to `Built` (`make docker-build`).
+The `zzc analysis` quickstart performs the whole chain in one step, shown as
+the direct `Scaffolded` to `Built` transition. Once a workspace is `Built`,
+`doctor.sh` inspects it to confirm the Five Pillars are present and their
+template version stamps are current.*
 
 ## Notes on scope
 

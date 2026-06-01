@@ -1,5 +1,14 @@
 # ZZCOLLAB CI Workflow Architecture
 
+> Historical note: this document describes the framework prior to the 2026-05 simplification. The in-tree shell validator (modules/validation.sh) was replaced by the companion R package zzrenvcheck, the module-loading system was removed, and the Docker profile set was consolidated to three (minimal, analysis, rstudio). See the current guides for up-to-date behaviour.
+
+> Path correction: the `templates/.github/workflows/` tree referenced
+> in Section 3.1 no longer exists. Project workflow templates now live
+> under `templates/workflows/` and consist of `r-package.yml` and
+> `render-report.yml`. The remainder of this document is a
+> point-in-time troubleshooting record of a renv/CI-tool library
+> conflict and is retained for that context.
+
 ## White Paper: Understanding the CI Design and Current Issues
 
 **Author:** Claude Code Analysis

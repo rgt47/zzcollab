@@ -36,7 +36,7 @@ ZZCOLLAB establishes systematic testing standards:
 
 ZZCOLLAB implements testing at three distinct layers:
 
-**Layer 1: Unit Tests** (`tests/testthat/`)
+**Layer 1: Unit Tests** (`inst/tinytest/`)
 
 - Individual function behavior validation
 - Isolated component testing
@@ -44,7 +44,7 @@ ZZCOLLAB implements testing at three distinct layers:
 - No external dependencies
 - Comprehensive edge case coverage
 
-**Layer 2: Integration Tests** (`tests/integration/`)
+**Layer 2: Integration Tests** (`inst/tinytest/`, workflow-level files)
 
 - Complete workflow validation
 - Multi-function interaction testing
@@ -66,30 +66,35 @@ ZZCOLLAB testing infrastructure consists of:
 
 ```
 tests/
-├── testthat/
-│   ├── test-<function>.R       # Unit tests (one per R file)
-│   ├── test-helpers.R          # Testing utilities
-│   └── helper-functions.R      # Shared test functions
-├── integration/
-│   ├── test-workflow.R         # End-to-end workflow tests
-│   ├── test-data-pipeline.R   # Data processing validation
-│   └── test-reproducibility.R # Reproducibility checks
-└── data/
-    ├── test-data.rds           # Small test datasets
-    └── expected-output.rds     # Expected results
+└── tinytest.R                  # Driver: tinytest::test_package()
+inst/
+└── tinytest/
+    ├── test-<function>.R        # Unit tests (one per R file)
+    ├── test-workflow.R          # End-to-end workflow tests
+    ├── test-data-pipeline.R     # Data processing validation
+    └── test-reproducibility.R   # Reproducibility checks
 ```
+
+ZZCOLLAB projects use the **tinytest** framework. Test files live in
+`inst/tinytest/` and are discovered by `tests/tinytest.R`, which calls
+`tinytest::test_package()`. The code examples in the remainder of this
+guide illustrate general testing principles; translate the assertion
+syntax to tinytest (for example, `expect_equal(a, b)` becomes
+`expect_equal(a, b)` from the tinytest namespace, and the file-level
+`test_that()` grouping is replaced by top-level `expect_*` calls).
 
 ## Unit Testing
 
-### testthat Framework
+### tinytest Framework
 
-ZZCOLLAB uses testthat for unit testing due to:
+ZZCOLLAB uses tinytest for unit testing due to:
 
-- Industry standard in R community
-- Excellent RStudio integration
-- Comprehensive assertion library
-- Clear test output formatting
-- Integration with R CMD check
+- Zero runtime dependencies (no Suggests beyond tinytest itself)
+- Tests ship inside the installed package (`inst/tinytest/`)
+- A compact assertion vocabulary (`expect_equal`, `expect_true`,
+  `expect_error`, `expect_silent`, and related functions)
+- Clear, plain-text test output
+- Integration with R CMD check via `tests/tinytest.R`
 
 ### Unit Test Structure
 
@@ -684,10 +689,12 @@ test_that("examples run without errors", {
 
 ### GitHub Actions Configuration
 
-ZZCOLLAB projects include comprehensive CI/CD testing:
+ZZCOLLAB projects ship two workflow templates, `r-package.yml` and
+`render-report.yml` (see `templates/workflows/`). The `r-package.yml`
+workflow performs R CMD check and the test suite:
 
 ```yaml
-# .github/workflows/test.yml
+# .github/workflows/r-package.yml
 name: R Package Tests
 
 on:
@@ -730,10 +737,11 @@ jobs:
 
 ### Docker-Based Testing
 
-Test in reproducible Docker environment:
+Test in a reproducible Docker environment. The same `r-package.yml`
+workflow can build the image and run the suite inside the container:
 
 ```yaml
-# .github/workflows/docker-test.yml
+# .github/workflows/r-package.yml (Docker job)
 name: Docker Environment Tests
 
 on: [push, pull_request]
@@ -751,11 +759,8 @@ jobs:
       - name: Run tests in container
         run: make docker-test
 
-      - name: Run integration tests
-        run: make docker-integration-test
-
       - name: Check reproducibility
-        run: make docker-check-renv
+        run: make check-renv
 ```
 
 ## Test Execution
@@ -769,39 +774,34 @@ jobs:
 make test
 
 # Docker environment (no local R required)
+# Runs tinytest::run_test_dir() against inst/tinytest/
 make docker-test
 ```
 
 **Specific Test Files**:
 
 ```r
-# Load testthat
-library(testthat)
+# Load tinytest
+library(tinytest)
 
-# Run specific test file
-test_file("tests/testthat/test-data-functions.R")
+# Run a single test file
+run_test_file("inst/tinytest/test-data-functions.R")
 
-# Run specific test
-test_file("tests/testthat/test-data-functions.R",
-          filter = "handles missing values")
+# Run all test files in the directory
+run_test_dir("inst/tinytest")
 ```
 
 **Interactive Testing**:
 
 ```r
 # Load package
-devtools::load_all()
+pkgload::load_all()
 
-# Run all tests
-devtools::test()
+# Run the full package test suite
+tinytest::test_package("zzcollabpaper")
 
-# Run tests with coverage
-covr::package_coverage()
-
-# Run specific test interactively
-testthat::test_that("my test", {
-  # Test code here
-})
+# Run a single file during development
+tinytest::run_test_file("inst/tinytest/test-data-functions.R")
 ```
 
 ### Test Output Interpretation
@@ -961,18 +961,18 @@ test_that("functions do not leak memory", {
 
 ```r
 # Good: Organized by functionality
-tests/
-├── testthat/
-│   ├── test-data-loading.R      # All data loading tests
-│   ├── test-data-cleaning.R     # All cleaning tests
-│   ├── test-statistical-tests.R # All statistical tests
-│   └── test-visualization.R     # All visualization tests
+inst/
+└── tinytest/
+    ├── test-data-loading.R      # All data loading tests
+    ├── test-data-cleaning.R     # All cleaning tests
+    ├── test-statistical-tests.R # All statistical tests
+    └── test-visualization.R     # All visualization tests
 
 # Bad: Organized by file structure
-tests/
-├── testthat/
-│   ├── test-file1.R  # Mixed functionality
-│   ├── test-file2.R  # Mixed functionality
+inst/
+└── tinytest/
+    ├── test-file1.R  # Mixed functionality
+    └── test-file2.R  # Mixed functionality
 ```
 
 ### Test Documentation
@@ -1007,9 +1007,10 @@ test_data <- read.csv("../data/test.csv")
 # Good: Use here package
 test_data <- read.csv(here::here("data", "test.csv"))
 
-# Better: Use testthat test_path
+# Better: Resolve paths relative to the installed package
 test_data <- read.csv(
-  testthat::test_path("fixtures", "test.csv")
+  system.file("tinytest", "fixtures", "test.csv",
+              package = "zzcollabpaper")
 )
 ```
 
@@ -1045,7 +1046,7 @@ test_that("function completes in reasonable time", {
 
 ### Documentation
 
-- testthat Documentation: https://testthat.r-lib.org/
+- tinytest Documentation: https://github.com/markvanderloo/tinytest
 - R Packages Testing Chapter: https://r-pkgs.org/testing-basics.html
 - Advanced R Testing: http://adv-r.had.co.nz/Testing.html
 

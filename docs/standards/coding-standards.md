@@ -55,7 +55,7 @@ function process_data() {
 **Pattern**: `ZZCOLLAB_MODULE_CONSTANT`
 
 ```bash
-# In modules/constants.sh
+# In lib/constants.sh
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_TEMPLATES_DIR="$SCRIPT_DIR/templates"
 readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"
@@ -281,14 +281,16 @@ function_name() {
 #          - GLOBAL_VAR2 - Description
 ##############################################################################
 
-# Module dependency validation
-require_module "core" "templates"
-
 # ... module code ...
 
 # Set module loaded flag
 readonly ZZCOLLAB_MODULENAME_LOADED=true
 ```
+
+Modules are sourced once at startup by `zzcollab.sh`; there is no
+`require_module` loader. A module relies on `lib/constants.sh` and
+`lib/core.sh` having been sourced first, which the startup sequence
+guarantees.
 
 ### Inline Comments
 
@@ -313,9 +315,6 @@ sha256sum "$file" > "$checksumfile"
 ##############################################################################
 # ZZCOLLAB MODULE_NAME - DESCRIPTION
 ##############################################################################
-
-# Dependency validation
-require_module "core"
 
 #=============================================================================
 # CONSTANTS
@@ -358,11 +357,17 @@ readonly ZZCOLLAB_MODULENAME_LOADED=true
 
 ### Module Loading Order
 
-1. **Core modules first**: constants.sh → core.sh
-2. **Configuration**: config.sh, cli.sh
-3. **Utilities**: templates.sh, utils.sh
-4. **Feature modules**: structure.sh, docker.sh, etc.
-5. **Validation last**: profile_validation.sh
+`zzcollab.sh` sources the libraries and modules once at startup, in this
+order:
+
+1. **Foundation libraries** (`lib/`): constants.sh → core.sh → templates.sh
+2. **Modules** (`modules/`): cli, config, docker, doctor, github, help,
+   profiles, project
+
+Foundation libraries load first so that every module can rely on the
+constants and logging functions being available. There is no separate
+validation module and no `require_module` dependency check; correct
+ordering is enforced by the fixed source sequence in `zzcollab.sh`.
 
 ---
 
@@ -430,7 +435,7 @@ fi
 ```bash
 # Declaration
 local files=()
-local modules=("core" "templates" "utils")
+local modules=("core" "templates" "docker")
 
 # Iteration
 for file in "${files[@]}"; do
@@ -569,7 +574,6 @@ rm -rf *             # Dangerous, avoid wildcards with rm -rf
 - Shellcheck for syntax and best practices
 - Function size limits (150 lines max)
 - Documentation header presence
-- Module dependency validation
 
 ### CI/CD Validation
 - All tests must pass
@@ -579,5 +583,5 @@ rm -rf *             # Dangerous, avoid wildcards with rm -rf
 
 ---
 
-**Last Updated**: October 2025
-**Version**: 1.0
+**Last Updated**: 2026-05-31
+**Version**: 1.1

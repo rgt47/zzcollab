@@ -31,7 +31,7 @@ docs/
 | [development.md](development.md) | Developer commands and workflows |
 | [docker-architecture.md](docker-architecture.md) | Docker technical details |
 | [testing-guide.md](testing-guide.md) | Testing framework and best practices |
-| [variants.md](variants.md) | Docker profile system (14+ profiles) |
+| [variants.md](variants.md) | Docker profile system (three profiles; other environments via --base-image) |
 | [team-workflow.md](team-workflow.md) | Team collaboration patterns |
 | [collaborative-reproducibility.md](collaborative-reproducibility.md) | Five Pillars model |
 | [workspace-structure.md](workspace-structure.md) | Standard workspace layout and doctor checks |
@@ -69,7 +69,7 @@ Documents explaining why certain practices matter:
 - [docker-motivation-data-analysis.md](motivation/docker-motivation-data-analysis.md) - Docker rationale
 - [renv-motivation-data-analysis.md](motivation/renv-motivation-data-analysis.md) - renv rationale
 - [why-docker-and-renv.md](motivation/why-docker-and-renv.md) - Combined approach
-- [validation-whitepaper.md](motivation/validation-whitepaper.md) - Validation system design
+- [validation-whitepaper.md](motivation/validation-whitepaper.md) - Validation system design (historical; the pure-shell validator it describes was replaced by the zzrenvcheck R package)
 
 ### [standards/](standards/) - Development Standards
 
@@ -103,4 +103,4 @@ for historical reference but are not actively maintained.
 
 ---
 
-**Last Updated**: December 2025
+**Last Updated**: 2026-05-31

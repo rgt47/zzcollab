@@ -5,7 +5,7 @@
 **What You'll Learn**:
 - Docker-based reproducible environments
 - Dynamic package management with auto-snapshot
-- Shell-based validation (no host R required)
+- Dependency validation with zzrenvcheck
 - Team collaboration workflow
 - CI/CD integration
 
@@ -32,7 +32,6 @@ ls -la
 ```
 .
 ├── .zzcollab/
-│   ├── manifest.json          # Tracks all created files
 │   └── uninstall.sh           # Cleanup script
 ├── analysis/
 │   ├── data/
@@ -44,7 +43,8 @@ ls -la
 │   ├── tables/                # Generated tables
 │   └── scripts/               # Analysis scripts (empty - you create)
 ├── R/                         # Reusable functions
-├── tests/testthat/            # Unit tests
+├── inst/tinytest/             # Unit tests (tinytest)
+├── tests/tinytest.R           # Test driver
 ├── DESCRIPTION                # Package metadata
 ├── Dockerfile                 # Computational environment
 ├── Makefile                   # Development commands
@@ -115,7 +115,7 @@ quit(save = "no")
 When you type `exit` or quit R, the container entrypoint automatically:
 1. Runs `renv::snapshot()` to update `renv.lock`
 2. Adjusts timestamps for RSPM binary availability
-3. Validates package consistency (pure shell, no host R!)
+3. Validates package consistency (via zzrenvcheck)
 
 **Validation Check** (back on host):
 ```bash
@@ -128,7 +128,7 @@ jq '.Packages | keys | .[]' renv.lock | grep -E "(dplyr|ggplot2|readr)"
 # "readr"
 # ... plus their dependencies
 
-# Run shell-based validation (NO HOST R REQUIRED!)
+# Run dependency validation (zzrenvcheck)
 make check-renv
 
 # Should show:
@@ -229,7 +229,7 @@ exit
 
 ### Step 5: Host-Based Validation (2 minutes)
 
-**Back on Host** (no R required!):
+**Back on Host**:
 ```bash
 # Automatic validation ran on container exit, but let's verify manually
 make check-renv
@@ -523,22 +523,16 @@ jq '.R.Repositories[0].URL' renv.lock
 # Should show RSPM snapshot date
 ```
 
-### Test Validation Without Host R
+### Run Dependency Validation
 
 ```bash
-# Verify you DON'T need R on host
-which R
-# If not found: perfect! Validation still works
-
-# Run pure shell validation
-modules/validation.sh
+# Run validation via the companion package zzrenvcheck
+make check-renv
 
 # Should show:
 # ✓ Validation completed successfully
 # ✓ All packages in code exist in DESCRIPTION
 # ✓ All Imports/Depends exist in renv.lock
-
-# This proves: NO HOST R REQUIRED for entire workflow!
 ```
 
 ---
@@ -600,7 +594,7 @@ After completing this tutorial, you should have:
 1. **Working Project**: Complete research project with real data analysis
 2. **Docker Environment**: Reproducible computational environment
 3. **Package Management**: Dynamic package addition with auto-snapshot
-4. **Validation Proof**: Shell-based validation (no host R needed)
+4. **Validation Proof**: Dependency validation via zzrenvcheck
 5. **Team Workflow**: Demonstrated collaboration capability
 6. **CI/CD Integration**: Automated testing and validation
 7. **Reproducibility Evidence**: Identical results from clean rebuild
@@ -632,7 +626,7 @@ exit
 **Solution**:
 ```bash
 # Check what's wrong
-modules/validation.sh
+make check-renv
 
 # Common issues:
 # 1. Package used in code but not in DESCRIPTION
@@ -694,7 +688,7 @@ This tutorial demonstrated ZZCOLLAB's complete reproducibility workflow:
 
 - **Docker-First**: All development in containers
 - **Auto-Snapshot**: No manual `renv::snapshot()` needed
-- **Shell Validation**: No host R required
+- **Dependency Validation**: zzrenvcheck via `make check-renv`
 - **Team Collaboration**: Identical environments for all members
 - **Five Pillars**: Dockerfile, renv.lock, .Rprofile, code, data
 - **CI/CD Integration**: Automated validation on every commit

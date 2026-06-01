@@ -542,7 +542,7 @@ mkdir analysis-project && cd analysis-project
 zzcollab analysis
 
 # Creates:
-# - Dockerfile based on selected profile (14+ options)
+# - Dockerfile based on selected profile (minimal, analysis, rstudio)
 # - Minimal renv.lock (grows dynamically)
 # - .Rprofile with auto-snapshot on exit
 # - Makefile for container management
@@ -574,8 +574,8 @@ make rstudio                       # RStudio Server at localhost:8787
 install.packages("tidyverse")      # Standard R command
 q()                                # Exit R - auto-snapshot on exit
 
-# Validation on host (no R required)
-make check-renv                    # Validate dependencies (pure shell)
+# Validate dependencies
+make check-renv                    # Validate dependencies (zzrenvcheck)
 make docker-test                   # Automated testing
 ```
 
@@ -635,16 +635,16 @@ jobs:
       - name: Build containers
         run: docker build -t test-env .
       - name: Validate dependencies
-        run: make check-renv  # Pure shell, no R required
+        run: make check-renv  # zzrenvcheck
       - name: Run package check
         run: docker run test-env R CMD check .
       - name: Run tests
-        run: docker run test-env Rscript -e "devtools::test()"
+        run: docker run test-env Rscript -e "tinytest::test_package('mypkg')"
 ```
 
 **Automated Validation**:
 - **Environment consistency checks** on every commit
-- **Pure shell dependency validation** (no R required on CI runner)
+- **Dependency validation via zzrenvcheck** on every commit
 - **Dependency validation** ensuring renv.lock accuracy
 - **Integration testing** with complete pipeline validation
 

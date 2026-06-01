@@ -1,50 +1,51 @@
 # Shell Unit Testing Framework for zzcollab
 
-**Status:** Framework created and ready for enhancement
+**Status:** Framework in use; suite reconciled with current modules
 **Created:** December 5, 2025
+**Updated:** 2026-05-31
 
 ## Overview
 
-A comprehensive shell unit testing framework has been created for zzcollab. This framework provides:
+A shell unit testing framework provides coverage for zzcollab's Bash
+components. This framework provides:
 
 - **Test Helpers** (`test_helpers.sh`) - Common test utilities
-- **Test Suites** - Unit tests for critical modules:
-  - `test-core.sh` - Tests for core.sh module
-  - `test-validation.sh` - Tests for validation.sh module
-  - `test-cli.sh` - Tests for cli.sh module
+- **Test Suites** - Unit tests for the framework modules:
+  - `test-core.sh` - Tests for core.sh
+  - `test-cli.sh` - Tests for cli.sh
+  - `test-config.sh` - Tests for config.sh
+  - `test-docker.sh` - Tests for docker.sh
+  - `test-profiles.sh` - Tests for profiles.sh
+  - `test-docs.sh` - Documentation checks
+  - `test-integration.sh` - Cross-module integration tests
 - **Test Runner** (`run_all_tests.sh`) - Unified test execution
 - **Makefile Integration** - `make shell-test` target
 
-## Files Created
+## Files
 
 ```
 tests/shell/
 ├── test_helpers.sh          # Test utilities and assertions
-├── test-core.sh             # core.sh module tests
-├── test-validation.sh       # validation.sh module tests
-├── test-cli.sh              # cli.sh module tests
+├── test-core.sh             # core.sh tests
+├── test-cli.sh              # cli.sh tests
+├── test-config.sh           # config.sh tests
+├── test-docker.sh           # docker.sh tests
+├── test-profiles.sh         # profiles.sh tests
+├── test-docs.sh             # documentation tests
+├── test-integration.sh      # integration tests
 └── run_all_tests.sh         # Test runner script
 ```
 
 ## Test Coverage
 
-### core.sh Module Tests (18 tests)
-- Module loading and dependency resolution
-- Logging system (all 5 levels: debug, info, warn, error, success)
-- Error handling and exit codes
-- Manifest tracking (JSON and text formats)
-- Variable validation (package names)
-- Readonly constants verification
+### core.sh Module Tests (14 tests)
+- Package name validation (valid names, dots, invalid-character
+  stripping, leading-letter rule, empty input)
+- Command existence checks (`command_exists`)
+- Logging system (error, success, info) and verbosity gating
+- Safe directory creation (`safe_mkdir`, including nested paths)
 
-### validation.sh Module Tests (17 tests)
-- DESCRIPTION file verification
-- Package name validation
-- DESCRIPTION file operations (add packages)
-- Package extraction from R code
-- Error message quality
-- Integration tests (full project validation)
-
-### cli.sh Module Tests (23 tests)
+### cli.sh Module Tests (19 tests)
 - Argument requirement validation (`require_arg`)
 - Team name validation (format, length, reserved names)
 - Project name validation
@@ -64,7 +65,6 @@ make shell-test-verbose      # Run with detailed output
 ### Run Individual Test Suites
 ```bash
 make shell-test-core         # Test core.sh only
-make shell-test-validation   # Test validation.sh only
 make shell-test-cli          # Test cli.sh only
 ```
 
@@ -73,8 +73,8 @@ make shell-test-cli          # Test cli.sh only
 bash tests/shell/run_all_tests.sh           # All tests
 bash tests/shell/run_all_tests.sh --verbose # Verbose output
 bash tests/shell/test-core.sh               # core.sh only
-bash tests/shell/test-validation.sh         # validation.sh only
 bash tests/shell/test-cli.sh                # cli.sh only
+bash tests/shell/test-docker.sh             # docker.sh only
 ```
 
 ## Test Framework Features
@@ -116,11 +116,10 @@ Each test file contains:
 ## Next Steps for Test Enhancement
 
 ### Phase 1: Core Functionality (Ready)
-- ✅ Module loading and dependency resolution tests
-- ✅ Logging system tests
-- ✅ Error handling tests
-- ✅ CLI argument validation tests
-- ✅ File operation tests
+- Logging system tests
+- Error handling tests
+- CLI argument validation tests
+- File operation tests
 
 ### Phase 2: Integration Tests (Ready to implement)
 - Docker integration tests
@@ -142,23 +141,23 @@ Running shell unit tests...
 Shell Unit Test Runner
 ==========================================
 
-✅ test_require_module_success
-✅ test_log_error_outputs
-✅ test_validate_team_name_valid
-❌ test_validate_team_name_too_short
+PASS test_log_error_always_outputs
+PASS test_validate_package_name_valid
+PASS test_require_arg_with_value
+FAIL test_validate_team_name_too_short
 ...
 
 ==========================================
 Test Summary
 ==========================================
-Total Passed: 45
+Total Passed: 117
 Total Failed: 2
 
 Failed Test Suites:
-  ❌ test-validation
+  test-cli
 ==========================================
 
-❌ Some tests failed
+Some tests failed
 ```
 
 ## Architecture
@@ -170,23 +169,25 @@ make shell-test
 run_all_tests.sh
     ↓
     ├─ test-core.sh
-    │  ├─ test_require_module_success
-    │  ├─ test_log_error_outputs
+    │  ├─ test_log_error_always_outputs
+    │  ├─ test_validate_package_name_valid
     │  └─ ...
-    ├─ test-validation.sh
-    │  ├─ test_verify_description_file_exists
+    ├─ test-cli.sh
+    │  ├─ test_require_arg_with_value
     │  └─ ...
-    └─ test-cli.sh
-       ├─ test_require_arg_with_value
+    └─ test-docker.sh
+       ├─ ...
        └─ ...
     ↓
 Results Summary
 ```
 
-### Module Loading Strategy
-Tests use a conservative module loading approach:
-1. Source only required modules (core.sh, constants.sh)
-2. Set up minimal test environment
+### Module Sourcing Strategy
+Tests source module files directly via the `load_module_for_testing`
+helper (there is no production module-loading or dependency-resolution
+system to exercise):
+1. Source only the required files (for example, core.sh, constants.sh)
+2. Set up a minimal test environment
 3. Test individual functions in isolation
 4. Provide fixture data as needed
 
@@ -227,9 +228,9 @@ Add mock function support for:
 - Performance regression detection
 
 ### Additional Test Suites
-- `test-docker.sh` - Docker-related functions
-- `test-profile-validation.sh` - Profile validation tests
 - `test-error-handling.sh` - Error recovery tests
+- `test-github.sh` - GitHub integration helpers
+- `test-doctor.sh` - Environment diagnostics
 
 ## Contributing Tests
 
@@ -288,5 +289,6 @@ bash -x tests/shell/test-core.sh
 ---
 
 **Testing Framework Created:** December 5, 2025
-**Status:** Production Ready for Unit Testing
-**Critical Coverage:** 287 shell functions → First phase tests for core modules
+**Updated:** 2026-05-31 (suite reconciled with current 8-module layout)
+**Status:** In use for unit and integration testing
+**Coverage:** core, cli, config, docker, profiles, docs, integration suites

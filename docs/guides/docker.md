@@ -648,9 +648,10 @@ Rebuild: `make docker-build`
 
 ---
 
-## Advanced: Alpine Linux Profiles
+## Advanced: Alpine Linux via custom base image
 
-ZZCOLLAB supports ultra-lightweight Alpine Linux profiles for minimal container sizes (~200MB vs ~3GB for standard profiles).
+ZZCOLLAB can target ultra-lightweight Alpine Linux base images for minimal
+container sizes (~200MB vs ~3GB for tidyverse-based images).
 
 ### Alpine via custom base image
 
@@ -660,9 +661,9 @@ build).
 
 ### Important Limitations
 
-**⚠️ Alpine profiles require third-party base images**
+**Alpine base images are third-party**
 
-Alpine profiles use `velaco/alpine-r` instead of official Rocker images because:
+Alpine setups use `velaco/alpine-r` instead of official Rocker images because:
 - Rocker project does not provide official Alpine builds
 - Alpine uses `apk` package manager instead of `apt-get`
 - Package availability differs from Debian/Ubuntu
@@ -704,7 +705,7 @@ make r
 - Use `apk add <package>` instead of `apt-get`
 - Package names differ from Debian (e.g., `python3` vs `python`)
 
-**For most users**: Stick with standard profiles unless you have specific size constraints.
+**For most users**: Stick with the built-in profiles unless you have specific size constraints.
 
 ---
 

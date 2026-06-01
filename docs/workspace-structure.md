@@ -11,20 +11,20 @@ project/
 ├── .git/                  # Git repository (zzc git)
 ├── .github/               # GitHub workflows (zzc github)
 │   └── workflows/
-│       ├── R-CMD-check.yaml
-│       └── docker-build.yaml
-├── .zzcollab/             # zzcollab metadata
-│   └── manifest.json      # Tracks all generated files
+│       ├── r-package.yml
+│       └── render-report.yml
 ├── R/                     # R package functions
 │   └── *.R
 ├── analysis/              # Analysis scripts and reports
 │   ├── data/              # Raw data (never modified)
 │   ├── derived/           # Processed data
 │   └── *.Rmd / *.qmd      # Analysis documents
-├── tests/                 # testthat tests
-│   ├── testthat/
-│   │   └── test-*.R
-│   └── testthat.R
+├── tests/                 # tinytest tests
+│   ├── tinytest.R         # Test runner
+│   └── ...
+├── inst/
+│   └── tinytest/          # Test files
+│       └── test_*.R
 ├── man/                   # roxygen2 documentation (generated)
 ├── vignettes/             # Package vignettes
 ├── docs/                  # Project documentation
@@ -68,10 +68,10 @@ builds.
 | File | Required | Version Stamped | Description |
 |:-----|:--------:|:---------------:|:------------|
 | `renv.lock` | Yes | No | Package versions lockfile |
-| `.Rprofile` | Yes | **v2.2.0** | renv activation, auto-snapshot |
-| `Dockerfile` | Yes | **v2.2.0** | Container definition |
+| `.Rprofile` | Yes | **v2.4.0** | renv activation, auto-snapshot |
+| `Dockerfile` | Yes | **v2.4.0** | Container definition |
 | `.dockerignore` | Yes | No | Files excluded from Docker build |
-| `Makefile` | Yes | **v2.2.0** | Development targets |
+| `Makefile` | Yes | **v2.4.0** | Development targets |
 
 ### Editor/IDE Support
 
@@ -85,7 +85,7 @@ builds.
 | File | Required | Version Stamped | Description |
 |:-----|:--------:|:---------------:|:------------|
 | `README.md` | No | No | Project readme (user-customized) |
-| `docs/ZZCOLLAB_USER_GUIDE.md` | No | **v2.2.0** | Framework usage guide |
+| `docs/ZZCOLLAB_USER_GUIDE.md` | No | **v2.4.0** | Framework usage guide |
 
 ### Version Control (zzc git, zzc github)
 
@@ -105,9 +105,9 @@ The stamp format is:
 
 Example stamps:
 ```bash
-# zzcollab Makefile v2.2.0      # Line 1 of Makefile
-# zzcollab .Rprofile v2.2.0     # Line 2 of .Rprofile
-# zzcollab Dockerfile v2.2.0   # Line 2 of Dockerfile
+# zzcollab Makefile v2.4.0      # Line 1 of Makefile
+# zzcollab .Rprofile v2.4.0     # Line 2 of .Rprofile
+# zzcollab Dockerfile v2.4.0   # Line 2 of Dockerfile
 ```
 
 Third-party tools use a similar format:
@@ -117,7 +117,7 @@ Third-party tools use a similar format:
 
 The current template version is defined in `lib/constants.sh`:
 ```bash
-ZZCOLLAB_TEMPLATE_VERSION="2.2.0"
+ZZCOLLAB_TEMPLATE_VERSION="2.4.0"
 ```
 
 ## Doctor Checks
@@ -144,9 +144,8 @@ Check that required directories exist:
 
 Optional directories (warnings only):
 
-- `tests/testthat/` - Test files
+- `inst/tinytest/` - Test files
 - `man/` - Documentation
-- `.zzcollab/` - Metadata directory
 
 ### 3. Ignore File Contents
 
@@ -182,12 +181,15 @@ For each stamped file, compare embedded version against current
 | `(outdated)` | Version is older than current |
 | `(no stamp)` | File exists but has no version stamp |
 
-### 5. Manifest Integrity (planned)
+### 5. Initialization Overwrite Guard
 
-If `.zzcollab/manifest.json` exists, verify:
-
-- All tracked files still exist
-- No orphaned files from partial operations
+zzcollab does not track generated files in a manifest. Instead,
+`zzc init` protects existing work with a snapshot-and-rollback
+directory guard: before scaffolding, it records the top-level
+entries already present in the project directory. If initialization
+fails, only the entries it newly created are removed, so pre-existing
+files are never deleted (safe even under `--force`). This avoids
+leaving a half-created compendium behind.
 
 ## File Ownership
 

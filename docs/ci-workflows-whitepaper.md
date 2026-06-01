@@ -1,11 +1,22 @@
 # Continuous Integration Workflows for Reproducible Research Frameworks
 
+> Historical note: this document describes the framework prior to the 2026-05 simplification. The in-tree shell validator (modules/validation.sh) was replaced by the companion R package zzrenvcheck, the module-loading system was removed, and the Docker profile set was consolidated to three (minimal, analysis, rstudio). See the current guides for up-to-date behaviour.
+
+> Current-state corrections: the framework now has eight CI workflows,
+> not six (shell-tests, shellcheck, security-scan, r-package,
+> integration-tests, benchmarks, pkgdown, test-coverage). The module
+> set is eight (cli, config, docker, doctor, github, help, profiles,
+> project); there is no `validation` module. The Docker integration
+> matrix exercises three built-in profiles (minimal, analysis,
+> rstudio), not five.
+
 ## A Design Rationale for the ZZCOLLAB CI Pipeline
 
 **Date:** February 2026
 **Context:** ZZCOLLAB framework (`github.com/rgt47/zzcollab`)
-**Scope:** Six GitHub Actions workflows comprising the framework's
-continuous integration strategy
+**Scope:** The GitHub Actions workflows comprising the framework's
+continuous integration strategy (six at the time of writing; now
+eight, see the historical note above)
 
 ---
 
@@ -104,7 +115,7 @@ Tier 2: Package Validation (minutes)
   └── Security Scanning    ~2m    Trivy + Hadolint + dependency audit
 
 Tier 3: End-to-End Validation (minutes to tens of minutes)
-  ├── Integration Tests    ~30m   Docker builds across 5 profiles
+  ├── Integration Tests    ~30m   Docker builds across 3 profiles
   └── Benchmarks           ~5m    Build time + test time tracking
 ```
 
@@ -190,9 +201,12 @@ The workflow scans scripts in four scopes at `--severity=warning`:
    containing subcommand dispatch, module loading, and orchestration
    logic.
 
-2. **Modules** (`modules/*.sh`): Six modules covering CLI parsing,
-   configuration management, Docker image generation, GitHub
-   integration, profile management, and validation.
+2. **Modules** (`modules/*.sh`): Eight modules covering CLI parsing,
+   configuration management, Docker image generation, environment
+   diagnostics, GitHub integration, help output, profile management,
+   and project scaffolding. (At the time of writing this document
+   listed six modules including a `validation` module; that module was
+   later removed and validation moved to the `zzrenvcheck` package.)
 
 3. **Utility scripts** (`install.sh`): The framework installer that
    configures PATH, creates symlinks, and validates prerequisites.
@@ -404,10 +418,10 @@ package installation.
 
 The workflow contains two jobs:
 
-**1. Docker Integration Matrix (5 profiles x 1 R version)**
+**1. Docker Integration Matrix (3 profiles x 1 R version)**
 
-For each of the five core profiles (minimal, analysis, publishing,
-rstudio, shiny), the workflow:
+For each of the three built-in profiles (minimal, analysis, rstudio),
+the workflow:
 
 1. Creates a test project directory with DESCRIPTION, renv.lock,
    and .Rprofile

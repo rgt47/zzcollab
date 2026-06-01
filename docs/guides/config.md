@@ -66,12 +66,6 @@ zzcollab config get SETTING
 zzcollab config list
 ```
 
-### Reset to defaults
-
-```bash
-zzcollab config reset
-```
-
 ### Validate configuration
 
 ```bash
@@ -259,16 +253,6 @@ zzcollab docker --r-version "4.3.1"  # Uses 4.3.1 instead
 3. `renv.lock` R version (third priority)
 4. FAIL with error (no defaults to `:latest`)
 
-### Workflow 5: Reset Everything
-
-```bash
-# Start over with defaults
-zzcollab config reset
-
-# Reconfigure
-zzcollab config set team-name "newname"
-```
-
 ---
 
 ## Command-Line Flags vs Configuration
@@ -365,9 +349,10 @@ ls -la ~/.zzcollab/
 zzcollab config validate
 ```
 
-**Reset and start over**:
+**Start over**:
 ```bash
-zzcollab config reset
+# Re-initialize the user config file
+zzcollab config init
 zzcollab config set team-name "yourname"
 ```
 
@@ -402,26 +387,25 @@ snap install yq  # Linux
 **Example team configuration**:
 
 ```yaml
-team:
-  name: "labteam"
-  project: "study"
-  description: "Cancer genomics analysis"
+# Project-specific zzcollab configuration
+# Overrides user config (~/.zzcollab/config.yaml). Commit to version control.
 
-profiles:
-  minimal:
-    enabled: true
-  analysis:
-    enabled: true
-  rstudio:
-    enabled: true
+defaults:
+  team_name: "labteam"
+  r_version: "4.4.0"
 
-build:
-  use_config_profiles: true
-  docker:
-    platform: "auto"
+docker:
+  default_profile: "analysis"
+
+github:
+  account: "labteam"
 ```
 
-This overrides user config for THIS PROJECT ONLY.
+A project selects a single profile via `docker.default_profile`. The profile
+fixes the base environment (R version, system libraries) for all team members;
+individual package requirements accumulate in `renv.lock` via the union model
+rather than by enabling multiple profiles. This file overrides user config for
+THIS PROJECT ONLY, and only the keys it sets.
 
 ---
 

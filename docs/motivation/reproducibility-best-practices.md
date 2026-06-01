@@ -238,10 +238,10 @@ commit that changes renv.lock or code dependencies.
 # Inside container (after making code/package changes):
 
 # 1. VALIDATE dependencies
-Rscript validate_package_environment.R --fix --fail-on-issues
+make check-renv
 
 # 2. RUN tests
-devtools::test()
+tinytest::test_package('mypkg')
 
 # 3. EXIT container
 exit
@@ -252,7 +252,7 @@ git commit -m "Add analysis"
 git push
 ```
 
-**Why this matters**: validate_package_environment.R prevents:
+**Why this matters**: `make check-renv` prevents:
 - Code using packages not in renv.lock
 - Packages in renv.lock not in DESCRIPTION
 - Invalid package sources
@@ -376,7 +376,7 @@ make docker-test
 
 Reproducible research with ZZCOLLAB requires:
 
-1. **Use automated tools**: validate_package_environment.R, check_rprofile_options.R
+1. **Use automated tools**: `make check-renv` (zzrenvcheck), check_rprofile_options.R
 2. **Follow the five pillars**: Dockerfile, renv.lock, .Rprofile, Source Code, Data
 3. **Verify before committing**: Run validation, tests, check git status
 4. **Document everything**: Data provenance, analytical decisions, package purposes

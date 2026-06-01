@@ -22,21 +22,21 @@
 
 ## Overview
 
-ZZCOLLAB provides X11-enabled Docker profiles for running graphical R
-applications. This enables:
+ZZCOLLAB can run graphical R applications inside Docker containers when the
+image carries the necessary X11 system libraries. This enables:
 
 - Interactive plots that open on your host screen
 - 3D visualizations with rgl
 - Shiny app development
 - GUI tools (browsers, terminals) inside containers
 
-**Available X11 Profiles**:
-
-| Profile | Size | Description |
-|---------|------|-------------|
-| `ubuntu_x11_minimal` | ~1.5GB | Lightweight with X11 graphics, Zsh, Vim |
-| `ubuntu_x11_analysis` | ~2.0GB | Analysis tools + X11 |
-| `gui` | ~2.5GB | Full GUI with Firefox, kitty, gedit |
+X11 graphics are not provided through a dedicated profile. The X11 system
+libraries are supplied either through the `gui` library bundle defined in
+`templates/bundles.yaml`, or by selecting a custom base image that already
+includes them with `zzcollab docker --base-image <image>`. The three
+built-in profiles are `minimal` (rocker/r-ver), `analysis`
+(rocker/tidyverse; the default), and `rstudio` (rocker/rstudio); any of
+these can be combined with the `gui` bundle to add graphics support.
 
 **Use Cases**:
 - Interactive data exploration
@@ -54,7 +54,7 @@ applications. This enables:
 - **Cairo**: Advanced 2D graphics library
 - **Fonts**: DejaVu and Liberation font families
 
-### GUI Applications (gui profile)
+### GUI Applications (gui bundle)
 - **kitty**: Modern, GPU-accelerated terminal emulator
 - **Firefox ESR**: Web browser for viewing HTML reports and Shiny apps
 - **gedit**: Simple text editor
@@ -132,19 +132,19 @@ $env:DISPLAY="host.docker.internal:0"
 
 ## Quick Start
 
-### 1. Create Project with X11 Profile
+### 1. Create Project with X11 Support
 
 ```bash
-# Solo developer
-zzcollab --profile ubuntu_x11_minimal
+# Default analysis profile, then add the gui bundle for X11 libraries
+zzcollab analysis
 
-# Team project (set the DockerHub account once, then select the profile)
-zzcollab config set dockerhub-account myteam
-zzcollab docker -r ubuntu_x11_minimal
-
-# Full GUI profile
-zzcollab docker -r gui
+# Or select a base image that already ships X11 system libraries
+zzcollab docker --base-image rocker/verse
 ```
+
+X11 system libraries are added either through the `gui` bundle in
+`templates/bundles.yaml` or by choosing a base image that includes them.
+There is no `ubuntu_x11_*` profile.
 
 ### 2. Build Docker Image
 
@@ -205,7 +205,7 @@ brew install --cask xquartz    # macOS only
 # Log out and log back in
 
 mkdir ~/projects/data-viz && cd ~/projects/data-viz
-zzcollab --profile ubuntu_x11_minimal
+zzcollab analysis
 git init && git add . && git commit -m "Initial setup"
 make docker-build
 
@@ -315,7 +315,7 @@ shinyApp(ui, server)
 # Generate HTML report
 R -e "rmarkdown::render('analysis/report/report.Rmd')"
 
-# View in Firefox (gui profile)
+# View in Firefox (gui bundle)
 firefox analysis/report/paper.html &
 ```
 
@@ -536,7 +536,7 @@ jobs:
       - name: Build Docker image
         run: make docker-build
       - name: Test graphics (headless)
-        run: xvfb-run make docker-test-graphics
+        run: xvfb-run make docker-test
 ```
 
 ### Headless R Test
@@ -577,4 +577,4 @@ RStudio Server provides:
 
 ---
 
-**Last Updated**: December 2025
+**Last Updated**: 2026-05-31

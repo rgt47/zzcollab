@@ -483,5 +483,5 @@ git push -u origin main
 
 ---
 
-**Last Updated**: October 2025
-**ZZCOLLAB Version**: 2.0+
+**Last Updated**: 2026-05-31
+**ZZCOLLAB Version**: 0.9.2

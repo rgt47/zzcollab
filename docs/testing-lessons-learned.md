@@ -1,5 +1,7 @@
 # Testing Lessons Learned for zzcollab Workspaces
 
+> Historical note: this document describes the framework prior to the 2026-05 simplification. The in-tree shell validator (modules/validation.sh) was replaced by the companion R package zzrenvcheck, the module-loading system was removed, and the Docker profile set was consolidated to three (minimal, analysis, rstudio). See the current guides for up-to-date behaviour. This is a dated field report from one compendium that used testthat; current zzcollab projects use tinytest (test files in `inst/tinytest/`, driven by `tests/tinytest.R`). The statistical and debugging lessons below remain applicable, but translate the `testthat` assertion syntax to tinytest.
+
 **Date**: 2025-11-14
 **Project**: ptsd-diabetes-mediation (d09)
 **Test Suite**: 873 tests, 1,301 lines of test code

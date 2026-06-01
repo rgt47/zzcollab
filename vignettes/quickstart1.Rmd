@@ -177,7 +177,7 @@ This step demonstrates the complete data workflow following the Five Pillars of 
 - **Pillar 5**: Raw data in `analysis/data/raw_data/`
 - **Pillar 4**: Processing scripts in `analysis/scripts/`
 - **Pillar 4**: Reusable functions in `R/`
-- **Pillar 4**: Unit tests in `tests/testthat/`
+- **Pillar 4**: Unit tests in `inst/tinytest/`
 
 Start the Docker development environment:
 
@@ -359,74 +359,53 @@ Rscript -e 'install.packages(c("dplyr", "here"))'
 
 ### Create Unit Tests
 
-Add tests for the data processing functions.
+Add tests for the data processing functions. ZZCOLLAB projects use tinytest:
+test files live in `inst/tinytest/` and contain bare top-level expectations
+(no `test_that()` wrapper).
 
-Create `tests/testthat/test-data_utils.R`:
+Create `inst/tinytest/test-data_utils.R`:
 
 ```r
 # Tests for data utility functions
-# Note: devtools::test() automatically loads functions from R/ via load_all()
+# make docker-test loads functions from R/ via devtools::load_all()
 
-test_that("load_penguin_data loads valid data", {
-  # This test assumes processing script has been run
-  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+clean_csv <- 'analysis/data/derived_data/penguins_clean.csv'
 
+# load_penguin_data loads valid data (only when processing has been run)
+if (file.exists(clean_csv)) {
   data <- load_penguin_data()
-
-  # Check structure
   expect_true(is.data.frame(data))
-  expect_gt(nrow(data), 0)
+  expect_true(nrow(data) > 0)
+  expect_true('species' %in% names(data))
+  expect_true('bill_length_mm' %in% names(data))
+  expect_true('bill_depth_mm' %in% names(data))
+  expect_true('bill_ratio' %in% names(data))
 
-  # Check required columns
-  expect_true("species" %in% names(data))
-  expect_true("bill_length_mm" %in% names(data))
-  expect_true("bill_depth_mm" %in% names(data))
-  expect_true("bill_ratio" %in% names(data))
-})
-
-test_that("load_penguin_data fails gracefully with missing file", {
-  expect_error(
-    load_penguin_data("/nonexistent/path.csv"),
-    "Clean data file not found"
-  )
-})
-
-test_that("summarize_by_species produces valid output", {
-  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
-
-  data <- load_penguin_data()
+  # summarize_by_species produces valid output
   summary <- summarize_by_species(data)
-
-  # Check structure
   expect_true(is.data.frame(summary))
-  expect_true("species" %in% names(summary))
-  expect_true("n" %in% names(summary))
-  expect_true("mean_bill_length" %in% names(summary))
-
-  # Check values are numeric
-  expect_type(summary$mean_bill_length, "double")
-  expect_type(summary$mean_bill_depth, "double")
-
-  # Check all means are positive
+  expect_true('species' %in% names(summary))
+  expect_true('n' %in% names(summary))
+  expect_true('mean_bill_length' %in% names(summary))
+  expect_true(is.double(summary$mean_bill_length))
+  expect_true(is.double(summary$mean_bill_depth))
   expect_true(all(summary$mean_bill_length > 0))
   expect_true(all(summary$mean_bill_depth > 0))
-})
 
-test_that("bill_ratio is calculated correctly", {
-  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+  # bill_ratio is calculated correctly
+  expect_equal(data$bill_ratio,
+               data$bill_length_mm / data$bill_depth_mm)
+}
 
-  data <- load_penguin_data()
-
-  # Verify bill_ratio calculation
-  expected_ratio <- data$bill_length_mm / data$bill_depth_mm
-  expect_equal(data$bill_ratio, expected_ratio)
-})
+# load_penguin_data fails gracefully with a missing file
+expect_error(load_penguin_data('/nonexistent/path.csv'),
+             pattern = 'Clean data file not found')
 ```
 
 Run tests:
 
 ```bash
-Rscript -e 'devtools::test()'
+make docker-test
 ```
 
 **What this accomplishes:**
@@ -435,7 +414,7 @@ Rscript -e 'devtools::test()'
 2. Processing Pipeline: Script in `analysis/scripts/01_process_data.R`
 3. Derived Data: Cleaned data in `analysis/data/derived_data/`
 4. Reusable Functions: Data utilities in `R/data_utils.R`
-5. Unit Tests: Tests in `tests/testthat/test-data_utils.R`
+5. Unit Tests: Tests in `inst/tinytest/test-data_utils.R`
 6. Documentation: README files documenting data provenance and processing
 
 This establishes the complete data workflow that ensures reproducibility from raw data through to analysis.
@@ -614,7 +593,7 @@ exit
 # Run tests in clean environment
 make docker-test
 
-# Optional: Manually validate dependencies (now pure shell, no R required!)
+# Optional: Manually validate dependencies (runs zzrenvcheck in the container)
 make check-renv
 ```
 
@@ -630,7 +609,7 @@ Data Workflow (5 Pillars):
 - Processing script: analysis/scripts/01_process_data.R (Pillar 4)
 - Derived data: analysis/data/derived_data/penguins_clean.csv (Pillar 5)
 - Functions: R/data_utils.R, R/bill_analysis.R (Pillar 4)
-- Unit tests: tests/testthat/test-data_utils.R (Pillar 4)
+- Unit tests: inst/tinytest/test-data_utils.R (Pillar 4)
 - Analysis report: analysis/report/report.Rmd (Pillar 4)
 
 Reproducibility:
@@ -660,11 +639,12 @@ gh repo view --web
 GitHub Actions will automatically:
 
 1. Build Docker container from scratch
-2. Validate package dependencies (uses shell-based validation)
+2. Validate package dependencies (runs zzrenvcheck via make check-renv)
 3. Run unit tests
 4. Report results
 
-**Note**: CI/CD now uses pure shell validation (`make check-renv`) which doesn't require R on the host!
+**Note**: CI/CD runs `make check-renv`, which invokes
+`zzrenvcheck::check_packages()` inside the container.
 
 ## Step 7: Verify Report Rendering CI/CD (Optional)
 
@@ -737,7 +717,10 @@ Your analysis is now fully reproducible thanks to five essential components that
 - **Environment variables**: Locale and system settings
 
 ```dockerfile
-FROM rocker/verse:4.4.0
+# The analysis profile builds on rocker/tidyverse. For LaTeX/Quarto
+# manuscripts, build on rocker/verse via
+# `zzcollab docker --base-image rocker/verse`.
+FROM rocker/tidyverse:4.4.0
 
 # Set locale for reproducible sorting/formatting
 ENV LANG=en_US.UTF-8
@@ -786,7 +769,7 @@ source("renv/activate.R")
 - **Processing scripts**: `analysis/scripts/01_process_data.R`
 - **Reusable functions**: `R/data_utils.R`, `R/bill_analysis.R`
 - **Reports**: `analysis/report/report.Rmd`
-- **Tests**: `tests/testthat/test-data_utils.R`
+- **Tests**: `inst/tinytest/test-data_utils.R`
 - **Random seeds**: Set explicitly in code for stochastic analyses
 
 ```r
@@ -940,9 +923,11 @@ penguin-bills/
 │   └── tables/                  # Generated tables
 ├── data/                        # R package data (optional, for package distribution)
 ├── scripts/                     # Working scripts and exploration
-├── tests/
-│   └── testthat/
+├── inst/
+│   └── tinytest/
 │       └── test-data_utils.R    # Unit tests
+├── tests/
+│   └── tinytest.R               # tinytest driver
 ├── man/                         # Generated function documentation
 ├── vignettes/                   # Package tutorials
 ├── docs/                        # Project documentation
@@ -983,11 +968,9 @@ fit_bill_model <- function(data) {
   lm(bill_depth_mm ~ bill_length_mm * species, data = data)
 }
 
-# Write more tests
-test_that("model includes species interaction", {
-  model <- fit_bill_model(penguins)
-  expect_true("bill_length_mm:species" %in% names(coef(model)))
-})
+# Write more tests (tinytest, in inst/tinytest/)
+model <- fit_bill_model(penguins)
+expect_true('bill_length_mm:species' %in% names(coef(model)))
 ```
 
 ## Collaborate
@@ -1100,12 +1083,12 @@ make docker-build
 ## Test Failures
 
 ```bash
-# Run tests with verbose output
-make r
-devtools::test()  # See detailed failure messages
+# Run the tinytest suite (shows detailed failure messages)
+make docker-test
 
-# Check test coverage
-covr::package_coverage()
+# Or interactively in the container
+make r
+# tinytest::run_test_dir('inst/tinytest')
 ```
 
 ## CI/CD Failures
@@ -1114,7 +1097,7 @@ covr::package_coverage()
 # View workflow logs
 gh run view --log
 
-# Validate locally first (pure shell, no R required!)
+# Validate locally first (make check-renv runs zzrenvcheck)
 make check-renv
 make docker-test
 ```

@@ -1,6 +1,6 @@
 # The Critical Importance of renv in Data Analysis: Preventing Dependency Hell and Reproducibility Failures
 
-> **Current Implementation Note**: ZZCOLLAB implements renv with **auto-snapshot architecture** (automatic renv::snapshot() on container exit) and **dynamic package management** (add packages via standard `install.packages()`). Docker profiles (14+) replace historical "build modes". Validation uses pure shell (`make check-renv`) requiring no host R installation. See [guides/renv.md](guides/renv.md).
+> **Current Implementation Note**: ZZCOLLAB implements renv with **auto-snapshot architecture** (automatic renv::snapshot() on container exit) and **dynamic package management** (add packages via standard `install.packages()`). Three built-in Docker profiles (minimal, analysis, rstudio) replace historical "build modes", with other environments selected via `zzcollab docker --base-image <image>`. Validation uses the companion R package `zzrenvcheck` via `make check-renv`. See [guides/renv.md](guides/renv.md).
 
 **Document Version:** 1.0
 **Date:** September 30, 2025
@@ -288,7 +288,7 @@ make r
 install.packages("tidyverse")
 q()  # Auto-snapshot on exit
 
-# Validate on host (no R required)
+# Validate dependencies
 make check-renv
 ```
 
@@ -457,20 +457,16 @@ zzcollab analysis
 # - .Rprofile configured with auto-snapshot and auto-restore
 # - Docker integration for cross-platform consistency
 # - CI/CD workflows with dependency validation
-# - Pure shell validation (make check-renv) requiring no host R
+# - Validation via zzrenvcheck (make check-renv)
 ```
 
 #### Docker Profiles Replace Build Modes
-ZZCOLLAB provides specialized Docker profiles:
+ZZCOLLAB provides three built-in Docker profiles:
 
-**Lightweight Profiles**:
-- `minimal` - Base R only, add packages dynamically
-- `analysis` - Includes tidyverse (recommended for most research)
-
-**Specialized Profiles**:
-- `modeling` - Machine learning and statistical modeling tools
-- `publishing` - Full LaTeX + Quarto for manuscripts
-- `shiny` - Interactive Shiny applications
+- `minimal` - Base R only (`rocker/r-ver`), add packages dynamically
+- `analysis` - Includes tidyverse (`rocker/tidyverse`, default,
+  recommended for most research)
+- `rstudio` - RStudio Server environment (`rocker/rstudio`)
 
 For domain-specific foundations (for example geospatial or
 bioinformatics work), select a domain base image and add packages via
@@ -486,7 +482,7 @@ zzcollab docker --base-image bioconductor/bioconductor_docker
 
 #### Dependency Validation Integration
 ```bash
-# Built-in dependency checking (pure shell, no R required on host)
+# Built-in dependency checking (zzrenvcheck)
 make check-renv
 # Scans code for library()/require()/pkg::function() usage
 # Auto-adds missing packages to DESCRIPTION and renv.lock

@@ -1,10 +1,12 @@
 # ZZCOLLAB Package Validation Architecture: A Host-Independent Reproducibility Framework
 
-> **⚠️ PARTIALLY OUTDATED**: This document describes auto-snapshot via Docker entrypoint (Section 3.2), which was replaced on November 5, 2025 with `.Last()` function in `.Rprofile`.
+> Historical note: this document describes the framework prior to the 2026-05 simplification. The in-tree shell validator (modules/validation.sh) was replaced by the companion R package zzrenvcheck, the module-loading system was removed, and the Docker profile set was consolidated to three (minimal, analysis, rstudio). See the current guides for up-to-date behaviour.
+
+> **⚠️ OUTDATED**: This document describes auto-snapshot via Docker entrypoint (Section 3.2), which was replaced on November 5, 2025 with the `.Last()` function in `.Rprofile`.
 >
-> **Still Accurate**: Pure shell validation system (Section 4), RSPM timestamp optimization (Section 3.3), and host-independent architecture remain correct.
+> **No Longer Accurate**: The 'pure shell validation system' described in Sections 4 and 5 has been removed. There is no `modules/validation.sh`, and the commands `bash modules/validation.sh` and `bash modules/validation.sh --strict` no longer exist. Validation now runs through the companion R package `zzrenvcheck` (https://github.com/rgt47/zzrenvcheck): `zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)` executes inside the container via `make check-renv`, and `zzcollab validate` wraps it on the host. The host-independent design goal and the RSPM timestamp optimization (Section 3.3) remain part of the rationale, but the specific shell implementation is historical.
 >
-> **Current Auto-Snapshot**: Now uses `.Last()` function in `.Rprofile` instead of Docker entrypoint trap. See `templates/.Rprofile` for implementation.
+> **Current Auto-Snapshot**: Now uses the `.Last()` function in `.Rprofile` instead of a Docker entrypoint trap. See `templates/.Rprofile` for the implementation.
 
 **Version:** 2.0 (Section 3.2 outdated)
 **Date:** October 31, 2025

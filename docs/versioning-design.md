@@ -25,13 +25,23 @@ serve fundamentally different purposes:
 ### Tool version: `ZZCOLLAB_VERSION`
 
 This is the version of the zzcollab CLI tool itself. It is reported by
-`zzc --version` and is set during installation via `install.sh`. It
-tracks releases of the framework as a whole---new commands, bug fixes,
-behavioral changes. A user running `zzc --version` and seeing `2.0.0`
-knows which release of the tool is installed.
+`zzc --version`, which echoes `${ZZCOLLAB_VERSION:-2.0.0}`. It is intended
+to track releases of the framework as a whole; new commands, bug fixes,
+behavioral changes.
 
 This version is **not** embedded into generated files. It describes the
 tool, not the artifacts the tool produces.
+
+**Known discrepancy.** The version reported by `zzc --version` is not
+currently a clean single source of truth. `ZZCOLLAB_VERSION` is normally
+unset, so the command falls back to the hardcoded literal `2.0.0` in
+`zzcollab.sh`. The R package metadata in `DESCRIPTION`, meanwhile, declares
+version `0.9.2`. These two numbers disagree, and neither is derived from
+the other. This document records the disagreement rather than asserting a
+reconciled scheme; aligning the tool-version sources is outstanding work.
+Note that this tool version is separate again from
+`ZZCOLLAB_TEMPLATE_VERSION` (below), which is the only version that is
+programmatically authoritative.
 
 ### Template version: `ZZCOLLAB_TEMPLATE_VERSION`
 
@@ -40,9 +50,9 @@ This is the version of the template *output*. It is defined once in
 into every file that zzcollab generates:
 
 ```
-# zzcollab Makefile v2.1.0        (line 1 of Makefile)
-# zzcollab .Rprofile v2.1.0       (line 2 of .Rprofile)
-# zzcollab Dockerfile v2.1.0      (line 2 of Dockerfile)
+# zzcollab Makefile v2.4.0        (line 1 of Makefile)
+# zzcollab .Rprofile v2.4.0       (line 2 of .Rprofile)
+# zzcollab Dockerfile v2.4.0      (line 2 of Dockerfile)
 ```
 
 The template version answers a different question: *what generation of
@@ -85,7 +95,7 @@ defensive safety) and includes `$ZZCOLLAB_TEMPLATE_VERSION` in the
 version:
 
 ```
-# zzcollab Makefile v2.1.0
+# zzcollab Makefile v2.4.0
 ```
 
 ### Dockerfile: heredoc path
@@ -133,9 +143,9 @@ zzcollab template files and, if present, the zzvim-R `.Rprofile.local`:
 
 ```
 Checking: ~/prj/res/08-mmrmrobust/
-  Makefile       v2.0.0 -> v2.1.0  (outdated)
-  .Rprofile      v2.0.0 -> v2.1.0  (outdated)
-  Dockerfile     v2.1.0             (current)
+  Makefile       v2.0.0 -> v2.4.0  (outdated)
+  .Rprofile      v2.0.0 -> v2.4.0  (outdated)
+  Dockerfile     v2.4.0             (current)
   .Rprofile.local v1.9.0            (zzvim-R)
 ```
 
@@ -178,7 +188,7 @@ match `ZZCOLLAB_TEMPLATE_VERSION`, a single warning line is emitted to
 stderr:
 
 ```
-⚠  Outdated templates: Makefile (v2.0.0), .Rprofile (v2.0.0) → v2.1.0. Run: zzc doctor
+⚠  Outdated templates: Makefile (v2.0.0), .Rprofile (v2.0.0) → v2.4.0. Run: zzc doctor
 ```
 
 Design properties of this advisory:
@@ -222,9 +232,9 @@ a shared convention across the zz* ecosystem:
 Concrete examples:
 
 ```
-# zzcollab Makefile v2.1.0
-# zzcollab .Rprofile v2.1.0
-# zzcollab Dockerfile v2.1.0
+# zzcollab Makefile v2.4.0
+# zzcollab .Rprofile v2.4.0
+# zzcollab Dockerfile v2.4.0
 # zzvim-R .Rprofile.local v1.9.0
 ```
 
@@ -326,7 +336,7 @@ Applying this principle to the Makefile would require introducing a
 separation mechanism. The most natural approach in Make is:
 
 ```makefile
-# zzcollab Makefile v2.1.0
+# zzcollab Makefile v2.4.0
 # Framework-generated targets (do not edit)
 
 # ... all zzcollab-generated targets ...

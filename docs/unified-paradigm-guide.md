@@ -1,5 +1,7 @@
 # zzcollab Unified Paradigm Guide
 
+*Historical design rationale; profile consolidation completed in the 2026-05 simplification.*
+
 **Version**: 2.0 (2025)
 **Status**: Current framework design
 
@@ -67,13 +69,14 @@ When you create a new project, you get:
 my_project/
 ├── .github/workflows/       # CI/CD (minimal, well-documented)
 │   ├── README.md
-│   └── render-paper.yml
+│   ├── r-package.yml
+│   └── render-report.yml
 ├── analysis/                # Research workspace
 │   ├── data/
 │   │   ├── raw_data/       # Original data (read-only)
 │   │   ├── derived_data/   # Processed data (generated)
 │   │   └── README.md
-│   ├── paper/
+│   ├── report/
 │   │   ├── report.Rmd       # Manuscript
 │   │   └── references.bib
 │   ├── figures/            # Generated visualizations
@@ -133,7 +136,7 @@ package/            # Paradigm 3: R package development
 ```
 analysis/           # All research work
   ├── data/         # Data analysis phase
-  ├── paper/        # Writing phase
+  ├── report/       # Writing phase
   └── scripts/      # Analysis code
 R/                  # Package development phase (if needed)
 tests/              # Testing (if needed)
@@ -156,13 +159,13 @@ tests/              # Testing (if needed)
 
 - `data/raw_data/` - Original, unmodified data (read-only)
 - `data/derived_data/` - Processed, analysis-ready data (generated)
-- `paper/` - Manuscript and bibliography
+- `report/` - Manuscript and bibliography
 - `figures/` - All generated visualizations
 - `scripts/` - Analysis code (user creates)
 
 **Marwick classification**:
 - **Read-only**: raw_data/
-- **Human-generated**: scripts/, paper/
+- **Human-generated**: scripts/, report/
 - **Project-generated**: derived_data/, figures/
 
 #### `R/`
@@ -196,7 +199,8 @@ R package metadata - even if you are not making a package, this provides:
 
 #### `Dockerfile`
 Computational environment specification:
-- Base image (rocker/verse:4.4.0)
+- Base image (the analysis profile default is rocker/tidyverse;
+  other environments via `zzcollab docker --base-image <image>`)
 - System dependencies
 - R package installation (via renv)
 
@@ -212,7 +216,7 @@ install.packages("tidyverse")
 # Exit R - auto-snapshot on exit
 q()
 
-# Validate on host (no R required)
+# Validate dependencies (via zzrenvcheck)
 make check-renv
 ```
 
@@ -594,7 +598,7 @@ Start with everything in `scripts/`, extract to `R/` when you find reusable patt
 - [CI/CD Guide](./CICD_GUIDE.md) - Advanced GitHub Actions patterns
 - [Configuration Guide](./CONFIGURATION.md) - Multi-level configuration system
 - [Development Guide](./DEVELOPMENT.md) - Package management and workflows
-- [Variants Guide](./VARIANTS.md) - Docker profile system (14+ profiles)
+- [Variants Guide](./VARIANTS.md) - Docker profile system (three built-in profiles plus `--base-image`)
 
 **Related Resources**:
 - [rrtools](https://github.com/benmarwick/rrtools) - Marwick's implementation

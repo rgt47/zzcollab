@@ -386,22 +386,21 @@ if [[ ! -f "$BUNDLES_FILE" ]]; then
 fi
 ```
 
-### Module Dependency Error
+### Missing Bundles Configuration
 
 ```bash
-if [[ "${!module_var:-}" != "true" ]]; then
+if [[ ! -f "$BUNDLES_FILE" ]]; then
     {
-        echo "Module Dependency Error: ${current_module}.sh requires ${module}.sh"
+        echo "Bundles file not found: $BUNDLES_FILE"
         echo ""
-        echo "Module '${module}.sh' was not loaded before '${current_module}.sh'."
+        echo "bundles.yaml defines the Docker profiles and package bundles."
+        echo "Without it, zzcollab cannot resolve a profile to a base image."
         echo ""
         echo "Recovery steps:"
-        echo "  1. Check module loading order in zzcollab.sh"
-        echo "  2. Ensure modules are sourced in correct order:"
-        echo "     - constants.sh must load first"
-        echo "     - core.sh must load before any other module"
+        echo "  1. Copy from templates: cp templates/bundles.yaml ."
+        echo "  2. Or restore from git: git checkout templates/bundles.yaml"
         echo ""
-        echo "See: docs/development.md for module initialization details"
+        echo "See: docs/variants.md for profile and bundle configuration"
     } >&2
     exit 1
 fi
@@ -454,4 +453,4 @@ log_error "See: docs/configuration.md for structure"
 
 ---
 
-**Last Updated**: December 2025
+**Last Updated**: 2026-05-31

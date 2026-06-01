@@ -16,33 +16,27 @@ dedicated profile; see the Specialized Environments section below.
 
 ### Single Source of Truth Design
 
-The profile system implements a library-reference pattern:
+The profile system is defined in one place:
 
-**Master Library** (`templates/profiles.yaml`):
+**Profile Bundles** (`templates/bundles.yaml`):
 
-- Contains complete definitions for all available profiles
-- Maintained as single authoritative source
-- Updated independently from team configurations
-- Provides the three pre-configured environments
+- Contains the definitions for the three built-in profiles
+- Maintained as the single authoritative source
+- Composes each profile from a base image, a system-library bundle,
+  and an R-package bundle
 
-**Team Configuration** (`config.yaml`):
-
-- References profiles by name from library
-- Enables/disables specific profiles for project
-- Optionally overrides specific parameters
-- Eliminates duplicate profile definitions
+Any environment beyond the three built-in profiles is obtained by
+passing a base image to `zzcollab docker --base-image <image>` and
+installing the required packages through `renv`; see the Specialized
+Environments section.
 
 ### Benefits
 
-1. **Elimination of Duplication**: Profile definitions maintained
-   in one location
-2. **Simplified Maintenance**: Updates propagate to all projects
-   automatically
-3. **Easy Discovery**: Profile listing via `zzcollab list`
-4. **Backward Compatibility**: Legacy full definitions still
-   supported
-5. **Unlimited Customization**: Teams can define completely custom
-   profiles
+1. **Single Definition**: The three profiles are defined in one
+   location (`templates/bundles.yaml`)
+2. **Easy Discovery**: Profile listing via `zzcollab list`
+3. **Open Customization**: Any base image can be supplied with
+   `zzcollab docker --base-image <image>`
 
 ## Profile Categories
 
@@ -55,11 +49,11 @@ with `zzcollab -r <profile>` / `zzcollab --profile <profile>`.
 
 Production-ready environments for general research computing.
 
-**minimal** (~800MB)
+**minimal** (~650MB)
 
-- **Base Image**: `rocker/r-ver:latest`
+- **Base Image**: `rocker/r-ver`
 - **Description**: Essential R packages for package development
-- **Key Packages**: renv, devtools, usethis, testthat, roxygen2
+- **Key Packages**: renv, devtools, usethis, tinytest, roxygen2
 - **Use Cases**: Package development, CI/CD testing, minimal
   overhead projects
 - **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
@@ -67,10 +61,9 @@ Production-ready environments for general research computing.
 
 **analysis** (~1.2GB)
 
-- **Base Image**: `rocker/tidyverse:latest`
+- **Base Image**: `rocker/tidyverse`
 - **Description**: Data analysis with tidyverse ecosystem
-- **Key Packages**: renv, devtools, here, janitor, scales,
-  patchwork, gt, DT
+- **Key Packages**: renv, devtools, tidyverse, here
 - **Use Cases**: Exploratory data analysis, standard data
   manipulation, visualization
 - **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
@@ -78,9 +71,9 @@ Production-ready environments for general research computing.
 
 **rstudio** (~980MB)
 
-- **Base Image**: `rocker/rstudio:latest`
+- **Base Image**: `rocker/rstudio`
 - **Description**: RStudio Server for interactive development
-- **Key Packages**: renv, devtools, usethis, tidyverse
+- **Key Packages**: renv, devtools, usethis, tinytest, roxygen2
 - **Use Cases**: Browser-based RStudio sessions (`make
   docker-rstudio`), interactive analysis and teaching
 - **System Dependencies**: libxml2-dev, libcurl4-openssl-dev,
@@ -167,7 +160,7 @@ Use the built-in `list` command to display the available profiles:
 zzcollab list
 
 # Built-in profiles:
-#   minimal             ~800MB  - Essential R packages
+#   minimal             ~650MB  - Essential R packages
 #   analysis            ~1.2GB  - Tidyverse + data analysis
 #   rstudio             ~980MB  - RStudio Server
 ```
@@ -176,39 +169,22 @@ Select a profile when creating the project, for example
 `zzcollab analysis`, `zzcollab -r minimal`, or
 `zzcollab --profile rstudio`.
 
-### Manual Configuration
+### Selecting the Default Profile
 
-**config.yaml Structure**:
+The active profile is recorded as `profile-name` in the
+configuration hierarchy. Set it once and the quickstart and Docker
+commands honour it:
 
-```yaml
-#=========================================================
-# DOCKER PROFILES
-#=========================================================
+```bash
+# Record the default profile for the user
+zzcollab config set profile-name analysis
 
-profiles:
-  # Essential development
-  minimal:
-    enabled: true             # ~800MB
-
-  # Primary analysis environment
-  analysis:
-    enabled: true             # ~1.2GB
-
-  # Interactive RStudio Server
-  rstudio:
-    enabled: true             # ~980MB
-
-#=========================================================
-# BUILD CONFIGURATION
-#=========================================================
-
-build:
-  # Use profiles defined in this config
-  use_config_profiles: true
-
-  # Reference the profile library
-  profile_library: "profiles.yaml"
+# Inspect the current value
+zzcollab config get profile-name
 ```
+
+A `--profile <name>` (or `-r <name>`) flag on the command line
+overrides the configured default for a single invocation.
 
 ### Command Line Usage
 
@@ -228,87 +204,45 @@ make docker-push-team
 # For team collaboration, push team image to Docker Hub
 ```
 
-**Adding a Profile to an Existing Project**:
+**Switching the Profile of an Existing Project**:
 
 ```bash
-# Edit config.yaml to enable an additional profile, then rebuild
 cd study
-zzcollab list          # review the available profiles
+zzcollab list                          # review the available profiles
+zzcollab docker --profile rstudio      # regenerate the Dockerfile
 
-# Rebuild Docker image after enabling a profile
+# Rebuild the Docker image after switching profiles
 make docker-build
 ```
 
-## Custom Profile Definition
+## Beyond the Built-in Profiles
 
-### Complete Custom Profile
+For any environment outside the three built-in profiles, supply a
+domain-specific base image with `zzcollab docker --base-image
+<image>` and install the required packages through `renv`. The
+project then captures those packages in `renv.lock`, so the
+environment remains reproducible without a dedicated profile.
 
-Define entirely new profiles in config.yaml:
+```bash
+# GPU-accelerated machine learning
+zzcollab docker --base-image \
+  nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
-```yaml
-profiles:
-  custom_gpu:
-    base_image: "nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04"
-    description: "GPU-accelerated machine learning"
-    packages:
-      - renv
-      - keras
-      - tensorflow
-      - torch
-      - xgboost
-    system_deps:
-      - libcudnn8
-      - python3
-      - python3-pip
-    enabled: true
-    category: "custom"
-    size: "~3.5GB"
-    notes: "Requires NVIDIA GPU and Docker GPU support"
-
-  custom_spatial:
-    base_image: "rocker/geospatial:latest"
-    description: "Extended geospatial with specialized packages"
-    packages:
-      - renv
-      - sf
-      - terra
-      - stars
-      - gstat
-      - spatstat
-      - mapview
-      - leaflet
-      - tmap
-    system_deps:
-      - gdal-bin
-      - proj-bin
-      - libgeos-dev
-      - libproj-dev
-      - libgdal-dev
-      - libudunits2-dev
-    enabled: true
-    category: "custom"
-    size: "~2.8GB"
+# Extended geospatial work
+zzcollab docker --base-image rocker/geospatial
 ```
 
-### Extending Existing Profiles
+After selecting the base image, install packages inside the
+container and snapshot them:
 
-Override specific parameters from library profiles:
-
-```yaml
-profiles:
-  analysis:
-    enabled: true
-    # Add additional packages to analysis profile
-    additional_packages:
-      - arrow
-      - pins
-      - vetiver
-    # Override base image
-    base_image: "rocker/ml-verse:latest"
-    # Add GPU support
-    system_deps:
-      - nvidia-cuda-toolkit
+```r
+renv::install(c('sf', 'terra', 'stars', 'gstat', 'tmap'))
+renv::snapshot()
 ```
+
+System libraries required by those packages are derived
+automatically when the Dockerfile is generated, so they do not need
+to be enumerated by hand.
 
 ## Profile Architecture
 
@@ -407,37 +341,19 @@ RUN R -e "remotes::install_github('owner/repo')"
    RUN install2.r bookdown blogdown quarto
    ```
 
-3. Use platform-specific configuration:
-   ```yaml
-   profiles:
-     custom_verse:
-       enabled: true
-       base_image: "rocker/verse:latest"
-       platform: "linux/amd64"  # Force AMD64
-
-     custom_verse_arm64:
-       enabled: true
-       base_image: "rocker/tidyverse:latest"
-       platform: "linux/arm64"  # ARM64 alternative
+3. Pin the platform at build time. On Apple Silicon, AMD64-only
+   base images run under emulation when the platform is forced:
+   ```bash
+   # Build a verse-based image for AMD64 on ARM64 hardware
+   zzcollab docker --base-image rocker/verse
+   docker build --platform linux/amd64 -t lab/study:latest .
    ```
 
 ### Multi-Platform Builds
 
-Enable multi-platform builds:
-
-```yaml
-build:
-  docker:
-    platforms:
-      - linux/amd64
-      - linux/arm64
-    buildx: true
-```
-
-Command line:
+Build for multiple architectures with `docker buildx`:
 
 ```bash
-# Build for multiple platforms
 docker buildx build --platform linux/amd64,linux/arm64 \
   -t lab/study:latest .
 ```
@@ -503,54 +419,27 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ### Updating Profile Definitions
 
-**Library Updates** (maintainer only):
+The three built-in profiles are defined in
+`templates/bundles.yaml`. Maintainers edit that file to adjust the
+base image, system-library bundle, or R-package bundle of a profile:
 
 ```bash
-# Edit master library
-vim templates/profiles.yaml
+# Edit the profile bundles
+vim templates/bundles.yaml
 
-# Validate changes
+# Confirm the file parses as valid YAML
 zzcollab config validate
 
-# Commit to repository
-git add templates/profiles.yaml
+# Commit to the repository
+git add templates/bundles.yaml
 git commit -m "Update profile definitions"
 ```
 
-**Team Configuration Updates**:
+After pulling updated definitions, collaborators rebuild the image:
 
 ```bash
-# Team members pull latest changes
 git pull
-
-# Rebuild with updated definitions
 make docker-build
-```
-
-### Version Control
-
-Track profile configuration changes:
-
-```bash
-# Version tag for major changes
-git tag -a profiles-v2.0 -m "Add GPU and spatial profiles"
-
-# Reference specific version
-git checkout profiles-v2.0
-make docker-build
-```
-
-### Deprecation
-
-When profiles become obsolete:
-
-```yaml
-profiles:
-  old_profile:
-    enabled: false
-    deprecated: true
-    deprecation_message: "Use 'new_profile' instead"
-    removal_date: "2025-06-01"
 ```
 
 ## Performance Optimization
@@ -660,12 +549,15 @@ docker history lab/study-analysis:latest
 3. Enable only profiles team actively uses
 4. Document profile choices in configuration
 
-### Custom Profiles
+### Specialized Environments
 
-1. Extend existing profiles rather than creating from scratch
-2. Document package selections and rationale
-3. Test profiles thoroughly before team deployment
-4. Version control custom profile definitions
+1. Start from the closest built-in profile, then supply a base image
+   with `--base-image` only when necessary
+2. Document the base image choice and package selections in the
+   project
+3. Capture every added package with `renv::snapshot()` so the
+   environment remains reproducible
+4. Commit the updated `renv.lock` alongside the Dockerfile
 
 ### Team Collaboration
 

@@ -1,5 +1,10 @@
 # Shared renv Cache Architecture
 
+*This is a dated design record. It predates the 2026-05 simplification
+refactor; some implementation details below (notably `modules/validation.sh`
+and the `zzcollab validate --fix --strict --verbose` interface) no longer
+match the current source. The conceptual cache discussion remains accurate.*
+
 ## Summary
 
 This document records the investigation into renv.lock growth during
@@ -12,7 +17,8 @@ per-project renv caches with a single shared host-level cache.
 
 - `templates/Makefile` -- host-side mount path
 - `templates/.Rprofile` -- container-side cache path
-- `modules/validation.sh` -- transitive dependency warning
+- dependency validation -- transitive dependency warning (the validation
+  logic now lives in the `zzrenvcheck` R package, not a shell module)
 
 
 ## Problem Statement
@@ -47,16 +53,16 @@ but has no mechanical link to the lock file.
 
 ### Pre-session validation
 
-The `make r` target depends on `check-renv`, which runs:
+The `make r` target depends on `check-renv`, which runs the companion
+`zzrenvcheck` R package inside the container:
 
 ```
-zzcollab validate --fix --strict --verbose
+zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)
 ```
 
 This scans all `.R`, `.Rmd`, `.qmd`, and `.Rnw` files for
 `library()`, `require()`, and `pkg::fn()` calls. It then adds
-any missing packages to both `DESCRIPTION` and `renv.lock` by
-fetching metadata from the crandb API.
+any missing packages to both `DESCRIPTION` and `renv.lock`.
 
 Critically, the host-side validation adds only direct packages.
 It does not resolve or record transitive dependencies. For the
@@ -154,11 +160,12 @@ if (Sys.getenv("RENV_PATHS_CACHE") == "") {
 }
 ```
 
-**`modules/validation.sh`** -- added a warning when `--fix`
+**dependency validation** -- added a warning when auto_fix
 adds packages to `renv.lock`, noting that transitive
 dependencies are not included and a container session with
 `renv::restore()` + `renv::snapshot()` is required to complete
-the lock file.
+the lock file. (At the time of this record the logic lived in a
+shell module; it now resides in the `zzrenvcheck` R package.)
 
 ### Files not changed
 

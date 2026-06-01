@@ -491,14 +491,16 @@ ZZCOLLAB uses **dynamic package management** for maximum flexibility:
 
 ### Docker Profiles Control Base Environment
 
-Docker profiles provide the foundation (team/shared):
+Docker profiles provide the foundation (team/shared). Three profiles are
+built in:
 
 - **minimal**: Ultra-lightweight (~650MB) - Add all packages as needed
-- **analysis**: Tidyverse + common packages (~1.2GB)
-- **modeling**: Machine learning packages (~1.5GB)
-- **publishing**: LaTeX + Quarto (~3GB)
+- **analysis**: Tidyverse base (~1.2GB), the default
+- **rstudio**: RStudio Server environment (~980MB)
 
-See [Variants Guide](../VARIANTS.md) for all 14+ profiles.
+For other environments (LaTeX/Quarto, geospatial, Bioconductor), select a base
+image instead, e.g. `zzcollab docker --base-image rocker/verse`. See the
+[Variants Guide](../VARIANTS.md) for details.
 
 ### renv.lock Captures All Package Changes
 

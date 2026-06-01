@@ -19,7 +19,7 @@ The configuration system adheres to four key principles:
 
 ZZCOLLAB configuration spans three distinct domains:
 
-- **Docker Profile Management**: Selection of 14+ specialized environments
+- **Docker Profile Management**: Selection of one of three built-in profiles (minimal, analysis, rstudio), or any base image via `zzcollab docker --base-image <image>`
 - **Package Management**: Dynamic via standard `install.packages()` inside containers with auto-snapshot/auto-restore
 - **Development Settings**: Team collaboration preferences and automation options
 
@@ -208,8 +208,8 @@ docker_profile:
 
   # Option 2: Custom composition with bundles
   # base_image: "rocker/r-ver"
-  # libs: "modeling"
-  # pkgs: "modeling"
+  # libs: "minimal"
+  # pkgs: "tidyverse"
 
 #=========================================================
 # BUILD CONFIGURATION
@@ -364,14 +364,11 @@ zzcollab config validate ./zzcollab.yaml
 ### Configuration Inspection
 
 ```bash
-# Show effective configuration (resolved hierarchy)
-zzcollab config show
+# List the merged configuration (resolved hierarchy)
+zzcollab config list
 
-# Show configuration sources
-zzcollab config sources
-
-# Show configuration precedence
-zzcollab config precedence
+# Read a single resolved value
+zzcollab config get profile-name
 ```
 
 ## Configuration Parameters
@@ -425,16 +422,16 @@ zzcollab config precedence
 **libs_bundle** (for custom composition)
 
 - **Type**: String
-- **Values**: `none`, `minimal`, `modeling`, `publishing`, `terminals`, `gui`
-- **Description**: System library bundle
-- **Example**: `"modeling"`
+- **Values**: `none`, `minimal`, `terminals`
+- **Description**: System library bundle (defined in `templates/bundles.yaml`)
+- **Example**: `"minimal"`
 
 **pkgs_bundle** (for custom composition)
 
 - **Type**: String
-- **Values**: `minimal`, `tidyverse`, `modeling`, `publishing`, `shiny`, `gui`
-- **Description**: R package bundle
-- **Example**: `"modeling"`
+- **Values**: `minimal`, `tidyverse`
+- **Description**: R package bundle (defined in `templates/bundles.yaml`)
+- **Example**: `"tidyverse"`
 
 **auto_github**
 
@@ -669,7 +666,9 @@ Solution: zzc list profiles  # See all available profiles
 
 ```
 Error: Package 'sf' requires system libraries not in Dockerfile
-Solution: Run 'make check-system-deps' to see required libraries
+Solution: Add the package to renv.lock, then regenerate the
+Dockerfile; required system libraries are derived automatically at
+Dockerfile-generation time. Rebuild with 'make docker-build'.
 ```
 
 ## Troubleshooting
@@ -681,11 +680,8 @@ Solution: Run 'make check-system-deps' to see required libraries
 **Diagnosis**:
 
 ```bash
-# Check configuration precedence
-zzcollab config precedence
-
-# Verify configuration loading
-zzcollab config sources
+# List the merged configuration to see the effective values
+zzcollab config list
 
 # Check for environment variable overrides
 echo $ZZCOLLAB_PROFILE_NAME
@@ -844,8 +840,8 @@ docker_profile:
 
   # Option 2: Custom composition
   base_image: "rocker/r-ver:4.4.0"
-  libs: "modeling"
-  pkgs: "modeling"
+  libs: "minimal"
+  pkgs: "tidyverse"
 
   # Option 3: Fully custom
   base_image: "my-org/custom-r:latest"
@@ -860,29 +856,28 @@ docker_profile:
 
 ## Configuration Migration
 
-### Upgrading Configuration Format
+The user and project configuration files are plain YAML, so
+migration is handled with ordinary file operations rather than
+dedicated subcommands.
 
-When zzcollab introduces new configuration features:
+### Backing Up Configuration
 
 ```bash
 # Backup existing configuration
 cp ~/.zzcollab/config.yaml ~/.zzcollab/config.yaml.backup
 
-# Upgrade configuration format
-zzcollab config upgrade
-
-# Validate upgraded configuration
+# After any manual edit, confirm the file still parses
 zzcollab config validate
 ```
 
 ### Migrating Between Systems
 
 ```bash
-# Export configuration
-zzcollab config export > config-export.yaml
+# Copy the configuration file to the new system
+scp ~/.zzcollab/config.yaml newhost:~/.zzcollab/config.yaml
 
-# On new system, import configuration
-zzcollab config import < config-export.yaml
+# On the new system, confirm it parses
+zzcollab config validate
 ```
 
 ## Verbosity System

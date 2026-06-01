@@ -84,6 +84,9 @@ Each serves a different purpose. This guide explains when and how to use each.
 - Revision history
 
 **Example**: ADR-0001 - R Version Detection and Mismatch Handling
+(note: ADR-0001 has since been superseded by the 2026-05 simplification,
+which reduced live R-version detection to a pinned default constant; it
+remains a useful illustration of the ADR format)
 
 **Duration**: Should be completed before or during implementation of the decision (1-3 days)
 

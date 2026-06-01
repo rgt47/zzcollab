@@ -33,7 +33,8 @@ XQuartz or X11 libraries.
 ## Prerequisites
 
 - [Kitty terminal](https://sw.kovidgoyal.net/kitty/) installed on your host
-- Docker with a ZZCOLLAB profile (e.g., `ubuntu_standard_analysis_vim`)
+- Docker with a ZZCOLLAB profile (e.g., `analysis`). Terminal editors such
+  as vim and X11 tooling can be added via `--base-image` or `.Rprofile.local`
 - No X11 or XQuartz required
 
 ## Method 1: Save and Display with icat
@@ -169,7 +170,7 @@ When running R in Docker, forward the httpgd port:
 
 ```bash
 # Start container with port forwarding
-docker run -it -p 8888:8888 -v $(pwd):/home/rstudio/project myproject
+docker run -it -p 8888:8888 -v $(pwd):/home/analyst/project myproject
 ```
 ```{r}
 # Inside R
@@ -188,7 +189,7 @@ Add to your Makefile for convenience:
 r-httpgd:
 	docker run --platform linux/amd64 --rm -it \
 		-p 8888:8888 \
-		-v $$(pwd):/home/rstudio/project \
+		-v $$(pwd):/home/analyst/project \
 		$(PACKAGE_NAME)
 ```
 
@@ -231,7 +232,7 @@ directory to be accessible from the host.
 ├─────────────────────────────────────────────────┤
 │ Docker Container                                │
 │   R, ggplot2                                    │
-│   Project mounted at: /home/rstudio/project     │
+│   Project mounted at: /home/analyst/project     │
 │   tempfile() → /tmp (not accessible from host!) │
 └─────────────────────────────────────────────────┘
 ```
@@ -444,10 +445,10 @@ if (interactive()) {
 
 ### Image Size Comparison
 
-| Profile | Size | Graphics Method |
-|---------|------|-----------------|
-| `ubuntu_standard_analysis_vim` | ~1.8GB | kitty/httpgd |
-| `ubuntu_x11_analysis_vim` | ~2.2GB | X11 forwarding |
+| Configuration | Size | Graphics Method |
+|---------------|------|-----------------|
+| `analysis` profile | ~1.2GB | kitty/httpgd |
+| `analysis` profile plus X11 (via `--base-image`) | ~2.2GB | X11 forwarding |
 
 ## Troubleshooting
 
@@ -488,4 +489,3 @@ hgd(host = "0.0.0.0", port = 8888)
 - [zzvim-R Terminal Graphics](workflow-zzvim-r-plots.html) - Auto-display plots with vim integration
 - [Kitty Graphics Protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
 - [httpgd Package](https://nx10.github.io/httpgd/)
-- [ZZCOLLAB X11 Plotting Workflow](workflow-x11-plotting.html)

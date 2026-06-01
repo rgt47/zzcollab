@@ -27,7 +27,8 @@ ZZCOLLAB's configuration system provides flexible control over Docker environmen
 ## Key Features
 
 - **Multi-layered configuration**: User, project, system, and built-in defaults
-- **Docker profile system**: 14+ specialized environments from 200MB to 3.5GB
+- **Docker profile system**: three built-in profiles (minimal, analysis,
+  rstudio), with other environments available via a custom base image
 - **Dynamic package management**: Add packages via `install.packages()` with automatic snapshot/restore
 - **Two-layer architecture**: Docker profiles (team/shared) + renv packages (personal/flexible)
 - **CLI and R interfaces**: Work via command line or entirely within R/RStudio
@@ -363,7 +364,7 @@ Profiles provide the Docker environment (Layer 1), while additional packages are
 ```yaml
 base_image: rocker/r-ver:latest
 packages:
-  - renv, devtools, usethis, here, testthat
+  - renv, devtools, usethis, tinytest, roxygen2
 
 use_cases:
   - Lightweight development
@@ -376,9 +377,8 @@ use_cases:
 ```yaml
 base_image: rocker/tidyverse:latest
 packages:
-  - renv, devtools, usethis, here, testthat
+  - renv, devtools, here
   - tidyverse (dplyr, ggplot2, tidyr, readr, purrr, stringr, forcats, lubridate)
-  - knitr, rmarkdown
 
 use_cases:
   - General data analysis
@@ -391,7 +391,7 @@ use_cases:
 ```yaml
 base_image: rocker/rstudio:latest
 packages:
-  - renv, devtools, usethis, testthat
+  - renv, devtools, usethis, tinytest, roxygen2
 
 use_cases:
   - RStudio Server (browser IDE at localhost:8787)
@@ -1149,7 +1149,8 @@ ZZCOLLAB's configuration system provides control over reproducible research envi
 ## Key Concepts
 
 1. **Configuration hierarchy**: Command-line → environment → project → user → system → defaults
-2. **Docker profiles**: 14+ specialized environments from 200MB to 3.5GB
+2. **Docker profiles**: three built-in profiles (minimal ~650MB, analysis
+   ~1.2GB, rstudio ~980MB); other environments via a custom base image
 3. **Two-layer architecture**: Docker profiles (shared) + renv packages (flexible)
 4. **CLI flags**: Comprehensive control over all aspects
 5. **R interface**: Complete configuration management within R
@@ -1193,5 +1194,6 @@ q()  # Exit R - snapshot happens automatically
 - `zzcollab --help` - Complete CLI reference
 - `help(package = "zzcollab")` - R package documentation
 - `vignette("getting-started")` - Comprehensive tutorial
-- `docs/VARIANTS.md` - Detailed profile documentation
+- `docs/VARIANTS.md` - The three built-in profiles and the custom
+  base-image workflow for specialized environments
 - `docs/CONFIGURATION.md` - Advanced configuration guide

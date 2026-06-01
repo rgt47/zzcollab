@@ -26,36 +26,43 @@ make docker-render         # Render analysis reports
 
 ### CI/CD Validation
 ```bash
-# Pure shell validation (NO HOST R REQUIRED!)
+# Dependency validation (delegated to the zzrenvcheck R package)
 make check-renv            # Full validation + auto-fix (strict mode, default)
 make check-renv-no-fix     # Validation only, no auto-add
 make check-renv-no-strict  # Standard mode (skip tests/, vignettes/)
-
-# R options monitoring
-Rscript check_rprofile_options.R    # Track critical R options changes
+make docker-check-renv     # Run the same validation inside the container
+make docker-check-renv-fix # Container validation with auto-fix
 
 # Container-based CI commands (used in GitHub Actions)
 docker run --rm -v $(PWD):/project rocker/tidyverse:latest Rscript -e "rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'warning')"
 ```
 
-**Pure Shell Validation System** (October-November 2025):
-- Uses `modules/validation.sh` - pure shell (curl, jq, awk, grep, sed)
-- Extracts packages from code without R (BSD grep compatible)
-- **Auto-fixes** Code → DESCRIPTION → renv.lock pipeline
-- Parses DESCRIPTION with awk, edits with awk
-- Parses/edits renv.lock with jq
-- Queries CRAN API (crandb.r-pkg.org) for package metadata
-- Smart filtering: 19 filters remove placeholders and false positives
-- Works on any system (no R installation required!)
-- Automatically runs after all `docker-*` targets exit
+**Dependency Validation via zzrenvcheck**:
+
+Dependency validation is performed by the companion R package
+`zzrenvcheck` (https://github.com/rgt47/zzrenvcheck), installed into
+the project image. The `modules/validation.sh` shell implementation
+was removed in the 2026-05 simplification.
+
+- `make check-renv` runs
+  `zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`
+  inside the container
+- `zzcollab validate` runs the same check on the host when R and
+  `zzrenvcheck` are available
+- Enforces the dependency triad: packages used in code are a subset
+  of those declared in `DESCRIPTION`, which are a subset of those
+  pinned in `renv.lock`
+- `auto_fix` adds missing declarations along the Code → DESCRIPTION →
+  renv.lock pipeline; `strict` extends the scan to `tests/`,
+  `vignettes/`, and `inst/`
+- Validation runs automatically after the `docker-*` targets exit
 
 ## Docker Development Environments
 
 ### Development Shells
 ```bash
-make r                     # Interactive shell (recommended)
+make r                     # Interactive R session in the container
 make docker-rstudio        # RStudio Server at localhost:8787
-make docker-r              # R console only
 ```
 
 **Auto-Snapshot & Auto-Restore Architecture** (October-November 2025):
@@ -65,7 +72,7 @@ All `docker-*` targets automatically snapshot renv.lock on container exit and au
 **Auto-Snapshot on Exit**:
 1. **No manual `renv::snapshot()` required!** - Just work and exit
 2. **RSPM timestamp optimization** - Adjusts renv.lock timestamp for binary packages (10-20x faster Docker builds)
-3. **Pure shell validation** - Validates packages on host without R
+3. **Dependency validation** - Validates packages via zzrenvcheck
 4. **Timestamp restoration** - Restores to current time for accurate git history
 
 **Auto-Restore on Startup**:
@@ -122,7 +129,7 @@ make docker-build          # Build Docker image from Dockerfile
 
 ### renv Commands
 ```bash
-# Pure shell validation (recommended - no host R required!)
+# Dependency validation via zzrenvcheck (runs in the container)
 make check-renv            # Full validation + auto-fix (strict mode, default)
 make check-renv-no-fix     # Validation only, no auto-add
 make check-renv-no-strict  # Standard mode (skip tests/, vignettes/)
@@ -296,7 +303,7 @@ git commit -m "Add analysis packages"
 **Profile System**: Select pre-configured Docker environments optimized for different use cases:
 
 ```bash
-# Minimal profile (lightweight, ~200MB)
+# Minimal profile (lightweight, ~650MB)
 zzcollab --profile minimal
 
 # Analysis profile (tidyverse + common packages)

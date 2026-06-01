@@ -308,7 +308,7 @@ exit
 # Auto-snapshot architecture (October 2025)
 # - renv::snapshot() runs automatically on container exit
 # - No manual snapshot command required!
-# - renv.lock automatically updated and validated (pure shell)
+# - renv.lock automatically updated and validated (via zzrenvcheck)
 
 # Collaborator gets identical environment
 git clone project
@@ -411,7 +411,7 @@ sf::sf_extSoftVersion()  # Same GDAL version for all
 ZZCOLLAB provides predefined Docker profiles to balance image size and capabilities:
 
 ```bash
-# Minimal: Essential R development (~780MB)
+# Minimal: Essential R development (~650MB)
 zzc minimal
 
 # Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
@@ -463,11 +463,13 @@ my-project/
 ├── renv.lock
 ├── Dockerfile
 ├── docker-compose.yml
-├── tests/                          # Test suite (NEW)
-│   └── testthat/
+├── inst/                           # Test suite (NEW)
+│   └── tinytest/
 │       ├── test-data-preparation.R # Data processing tests
 │       ├── test-analysis.R         # Statistical tests
 │       └── test-visualization.R    # Plot validation tests
+├── tests/
+│   └── tinytest.R                  # tinytest driver
 ├── Makefile
 ├── R/
 │   └── data_functions.R           # Tested functions
@@ -485,12 +487,9 @@ mkdir my-project && cd my-project
 zzc analysis                     # Full setup (init + renv + docker)
 zzc github                       # Create private GitHub repo (optional)
 
-# Add testthat infrastructure
-make r
-R
-> usethis::use_testthat()
-> quit()
-exit
+# tinytest infrastructure is created by zzcollab: tests/tinytest.R drives
+# the suite, and test files live in inst/tinytest/. No usethis::use_testthat()
+# is needed.
 ```
 
 ## Typical Workflow
@@ -500,35 +499,26 @@ exit
 make r
 
 # Inside container: Test-Driven Development cycle
-R
-> # 1. Write test first (documents expected behavior)
-> usethis::use_test("data-preparation")
+# 1. Write the test first in inst/tinytest/test-data-preparation.R.
+#    tinytest uses bare top-level expectations (no test_that wrapper):
 
-# tests/testthat/test-data-preparation.R
-> # Write failing test
-> test_that("prepare_data removes rows with missing body_mass_g", {
->   library(palmerpenguins)
->   result <- prepare_data(penguins)
->   expect_false(anyNA(result$body_mass_g))
-> })
+# inst/tinytest/test-data-preparation.R
+library(palmerpenguins)
+result <- prepare_data(penguins)
+expect_false(anyNA(result$body_mass_g))
 
-> # 2. Run test (fails - function doesn't exist yet)
-> devtools::test()
+# 2. Run the test (fails - function does not exist yet)
+#    make docker-test
 
-> # 3. Implement function to make test pass
-> usethis::use_r("data_functions")
-
+# 3. Implement the function in R/data_functions.R to make it pass:
 # R/data_functions.R
-> prepare_data <- function(data) {
->   data %>%
->     filter(!is.na(body_mass_g))
-> }
+prepare_data <- function(data) {
+  data |>
+    dplyr::filter(!is.na(body_mass_g))
+}
 
-> # 4. Run test again (passes)
-> devtools::test()
-
-> # 5. Refactor with confidence
-> quit()
+# 4. Run the test again (passes), then refactor with confidence
+#    make docker-test
 exit
 
 # Validate in clean environment
@@ -549,7 +539,7 @@ make docker-test
 ## Cons
 
 - **Time investment**: Writing tests takes 20-40% additional development time
-- **Learning curve**: testthat syntax and testing patterns
+- **Learning curve**: tinytest syntax and testing patterns
 - **Maintenance burden**: Tests must be updated when requirements change
 - **False security**: Tests only validate what you test
 - **Incomplete coverage**: Difficult to test some statistical properties
@@ -593,43 +583,23 @@ log transformation.
 #### Step 1: Write Tests for Data Preparation
 
 ```r
-# tests/testthat/test-data-preparation.R
-library(testthat)
+# inst/tinytest/test-data-preparation.R
 library(palmerpenguins)
 
-test_that("prepare_penguin_data removes missing values", {
-  result <- prepare_penguin_data(penguins)
+# prepare_penguin_data removes missing values
+result <- prepare_penguin_data(penguins)
+expect_false(anyNA(result$body_mass_g))
+expect_false(anyNA(result$bill_length_mm))
 
-  # No missing values in analysis variables
-  expect_false(anyNA(result$body_mass_g))
-  expect_false(anyNA(result$bill_length_mm))
-})
+# prepare_penguin_data creates a correct log transformation
+expect_true('log_body_mass_g' %in% names(result))
+expect_equal(result$log_body_mass_g, log(result$body_mass_g))
 
-test_that("prepare_penguin_data creates log transformation", {
-  result <- prepare_penguin_data(penguins)
-
-  # Log transformation exists
-  expect_true("log_body_mass_g" %in% names(result))
-
-  # Log transformation is correct
-  expect_equal(
-    result$log_body_mass_g,
-    log(result$body_mass_g)
-  )
-})
-
-test_that("prepare_penguin_data handles edge cases", {
-  # Empty data
-  empty_data <- penguins[0, ]
-  result <- prepare_penguin_data(empty_data)
-  expect_equal(nrow(result), 0)
-
-  # All missing data
-  all_na <- penguins
-  all_na$body_mass_g <- NA
-  result <- prepare_penguin_data(all_na)
-  expect_equal(nrow(result), 0)
-})
+# prepare_penguin_data handles edge cases
+expect_equal(nrow(prepare_penguin_data(penguins[0, ])), 0L)
+all_na <- penguins
+all_na$body_mass_g <- NA
+expect_equal(nrow(prepare_penguin_data(all_na)), 0L)
 ```
 
 #### Step 2: Implement Function to Pass Tests
@@ -654,28 +624,17 @@ prepare_penguin_data <- function(data) {
 #### Step 3: Write Tests for Statistical Analysis
 
 ```r
-# tests/testthat/test-analysis.R
-test_that("fit_penguin_model returns valid lm object", {
-  test_data <- prepare_penguin_data(penguins)
-  model <- fit_penguin_model(test_data)
+# inst/tinytest/test-analysis.R
+test_data <- prepare_penguin_data(penguins)
+model <- fit_penguin_model(test_data)
 
-  # Valid lm object
-  expect_s3_class(model, "lm")
+# fit_penguin_model returns a valid lm object
+expect_inherits(model, 'lm')
+expect_true('bill_length_mm' %in% names(coef(model)))
+expect_true(summary(model)$r.squared > 0)
 
-  # Correct variables in model
-  expect_true("bill_length_mm" %in% names(coef(model)))
-
-  # Model has reasonable fit (R-squared > 0)
-  expect_gt(summary(model)$r.squared, 0)
-})
-
-test_that("fit_penguin_model coefficients are sensible", {
-  test_data <- prepare_penguin_data(penguins)
-  model <- fit_penguin_model(test_data)
-
-  # Positive relationship expected (larger bills -> larger penguins)
-  expect_gt(coef(model)["bill_length_mm"], 0)
-})
+# Coefficients are sensible: larger bills imply larger penguins
+expect_true(coef(model)['bill_length_mm'] > 0)
 ```
 
 #### Step 4: Implement Analysis Function
@@ -696,31 +655,21 @@ fit_penguin_model <- function(data) {
 #### Step 5: Write Tests for Data Quality
 
 ```r
-# tests/testthat/test-data-quality.R
-test_that("penguin data has expected structure", {
-  # Required columns exist
-  required_cols <- c("species", "island", "bill_length_mm",
-                     "bill_depth_mm", "body_mass_g")
-  expect_true(all(required_cols %in% names(penguins)))
+# inst/tinytest/test-data-quality.R
 
-  # Reasonable sample size
-  expect_gt(nrow(penguins), 300)
+# Penguin data has the expected structure
+required_cols <- c('species', 'island', 'bill_length_mm',
+                   'bill_depth_mm', 'body_mass_g')
+expect_true(all(required_cols %in% names(penguins)))
+expect_true(nrow(penguins) > 300)
+expect_true(all(penguins$species %in%
+                  c('Adelie', 'Chinstrap', 'Gentoo')))
 
-  # Species are valid
-  expect_true(all(penguins$species %in%
-                    c("Adelie", "Chinstrap", "Gentoo")))
-})
-
-test_that("body mass measurements are plausible", {
-  valid_data <- penguins %>% filter(!is.na(body_mass_g))
-
-  # Body mass in plausible range (2500g to 6500g)
-  expect_true(all(valid_data$body_mass_g >= 2500))
-  expect_true(all(valid_data$body_mass_g <= 6500))
-
-  # No negative values
-  expect_true(all(valid_data$body_mass_g > 0))
-})
+# Body mass measurements are plausible (2500g to 6500g, all positive)
+valid_data <- penguins[!is.na(penguins$body_mass_g), ]
+expect_true(all(valid_data$body_mass_g >= 2500))
+expect_true(all(valid_data$body_mass_g <= 6500))
+expect_true(all(valid_data$body_mass_g > 0))
 ```
 
 ## Test Coverage Requirements
@@ -748,53 +697,44 @@ report(coverage)
 
 ## Testing Best Practices for Research
 
+These examples use tinytest, the framework ZZCOLLAB projects ship with.
+Expectations are written as bare top-level calls; there is no `test_that()`
+wrapper.
+
 ### Test Data Transformations
 
 ```r
-test_that("outlier removal preserves data integrity", {
-  test_data <- data.frame(x = c(1, 2, 100, 3, 4))  # 100 is outlier
-
-  result <- remove_outliers(test_data, "x", threshold = 3)
-
-  # Outlier removed
-  expect_equal(nrow(result), 4)
-
-  # Non-outliers preserved
-  expect_true(all(c(1, 2, 3, 4) %in% result$x))
-})
+# outlier removal preserves data integrity
+test_data <- data.frame(x = c(1, 2, 100, 3, 4))  # 100 is an outlier
+result <- remove_outliers(test_data, 'x', threshold = 3)
+expect_equal(nrow(result), 4L)
+expect_true(all(c(1, 2, 3, 4) %in% result$x))
 ```
 
 ### Test Statistical Calculations
 
 ```r
-test_that("standard error calculation is correct", {
-  x <- c(1, 2, 3, 4, 5)
-
-  result <- calculate_se(x)
-
-  # Known correct value
-  expected <- sd(x) / sqrt(length(x))
-  expect_equal(result, expected)
-})
+# standard error calculation is correct
+x <- c(1, 2, 3, 4, 5)
+expect_equal(calculate_se(x), sd(x) / sqrt(length(x)))
 ```
 
 ### Test Edge Cases
 
 ```r
-test_that("analysis handles edge cases gracefully", {
-  # Single observation
-  single_obs <- data.frame(x = 1, y = 2)
-  expect_error(fit_model(single_obs), "Insufficient data")
+# analysis handles edge cases gracefully
 
-  # No variance
-  no_variance <- data.frame(x = c(1, 1, 1), y = c(2, 3, 4))
-  expect_warning(fit_model(no_variance), "No variance in predictor")
+# Single observation
+expect_error(fit_model(data.frame(x = 1, y = 2)),
+             pattern = 'Insufficient data')
 
-  # Perfect correlation
-  perfect_cor <- data.frame(x = 1:10, y = 1:10)
-  result <- fit_model(perfect_cor)
-  expect_equal(summary(result)$r.squared, 1.0)
-})
+# No variance
+expect_warning(fit_model(data.frame(x = c(1, 1, 1), y = c(2, 3, 4))),
+               pattern = 'No variance in predictor')
+
+# Perfect correlation
+result <- fit_model(data.frame(x = 1:10, y = 1:10))
+expect_equal(summary(result)$r.squared, 1.0)
 ```
 
 ## Scientific Motivation for Testing
@@ -829,14 +769,10 @@ analyze_data <- function(data) {
   return(result)
 }
 
-# With tests: Error caught immediately
-test_that("variance calculation is correct", {
-  test_data <- data.frame(x = c(1, 2, 3, 4, 5))
-
-  # This test fails, exposing the bug
-  result <- calculate_variance(test_data$x)
-  expect_equal(result, var(test_data$x))  # FAILS
-})
+# With tests: error caught immediately
+# This expectation fails, exposing the bug
+x <- c(1, 2, 3, 4, 5)
+expect_equal(calculate_variance(x), var(x))  # FAILS
 ```
 
 ## Common Testing Mistakes
@@ -844,64 +780,40 @@ test_that("variance calculation is correct", {
 ### Testing Too Little
 
 ```r
-# Insufficient test
-test_that("function works", {
-  result <- my_function(data)
-  expect_true(is.data.frame(result))  # Only tests type, not correctness
-})
+# Insufficient test: only tests type, not correctness
+result <- my_function(data)
+expect_true(is.data.frame(result))
 
-# Better test
-test_that("function produces correct transformations", {
-  test_data <- data.frame(x = c(1, 2, 3), y = c(4, 5, 6))
-  result <- my_function(test_data)
-
-  # Test specific expected behavior
-  expect_equal(result$x_squared, c(1, 4, 9))
-  expect_equal(result$y_doubled, c(8, 10, 12))
-  expect_equal(nrow(result), 3)
-})
+# Better test: specific expected behavior
+test_data <- data.frame(x = c(1, 2, 3), y = c(4, 5, 6))
+result <- my_function(test_data)
+expect_equal(result$x_squared, c(1, 4, 9))
+expect_equal(result$y_doubled, c(8, 10, 12))
+expect_equal(nrow(result), 3L)
 ```
 
 ### Testing Implementation Instead of Behavior
 
 ```r
-# Wrong: Tests implementation details
-test_that("function uses dplyr::filter", {
-  # Breaks if you refactor to base R
-  expect_true(exists("filter", envir = environment(my_function)))
-})
+# Wrong: tests implementation details (breaks if you refactor to base R)
+expect_true(exists('filter', envir = environment(my_function)))
 
-# Right: Tests behavior
-test_that("function removes missing values", {
-  # Passes regardless of implementation
-  test_data <- data.frame(x = c(1, NA, 3))
-  result <- my_function(test_data)
-  expect_false(anyNA(result))
-})
+# Right: tests behavior (passes regardless of implementation)
+result <- my_function(data.frame(x = c(1, NA, 3)))
+expect_false(anyNA(result))
 ```
 
 ### Not Testing Edge Cases
 
 ```r
-# Incomplete testing
-test_that("mean calculation works", {
-  expect_equal(calculate_mean(c(1, 2, 3)), 2)
-})
+# Incomplete testing: normal case only
+expect_equal(calculate_mean(c(1, 2, 3)), 2)
 
 # Complete testing includes edge cases
-test_that("mean calculation handles edge cases", {
-  # Normal case
-  expect_equal(calculate_mean(c(1, 2, 3)), 2)
-
-  # Single value
-  expect_equal(calculate_mean(5), 5)
-
-  # Empty vector
-  expect_true(is.nan(calculate_mean(numeric(0))))
-
-  # Missing values
-  expect_equal(calculate_mean(c(1, NA, 3), na.rm = TRUE), 2)
-})
+expect_equal(calculate_mean(c(1, 2, 3)), 2)        # Normal case
+expect_equal(calculate_mean(5), 5)                 # Single value
+expect_true(is.nan(calculate_mean(numeric(0))))    # Empty vector
+expect_equal(calculate_mean(c(1, NA, 3), na.rm = TRUE), 2)  # Missing
 ```
 
 ## Migration from Level 3
@@ -909,32 +821,24 @@ test_that("mean calculation handles edge cases", {
 Adding tests to existing Docker project:
 
 ```bash
-# Start development container
+# The tinytest scaffolding (tests/tinytest.R) already exists in a zzcollab
+# project. Add test files under inst/tinytest/, then run the suite.
+
+# Create a test file for an existing function:
+#   inst/tinytest/test-my_function.R
+# Write tests for critical functions, focusing on data preparation
+# and statistical calculations.
+
+# Run the suite and check coverage
+make docker-test
 make r
-
-# Inside container
-R
-> # Initialize testing infrastructure
-> usethis::use_testthat()
-
-> # Create test file for existing function
-> usethis::use_test("my_function")
-
-> # Write tests for critical functions
-> # Focus on data preparation and statistical calculations
-
-> # Run tests
-> devtools::test()
-
-> # Check coverage
-> covr::package_coverage()
-
-> quit()
+# Inside the container, optionally check coverage:
+# covr::package_coverage()
 exit
 
-# Commit test infrastructure
-git add tests/ DESCRIPTION
-git commit -m "Add unit testing infrastructure"
+# Commit the tests
+git add inst/tinytest/ DESCRIPTION
+git commit -m "Add unit tests"
 ```
 
 ## When Testing Is Not Worth It
@@ -974,11 +878,11 @@ my-project/
 │   └── workflows/
 │       ├── r-package.yml           # R package validation
 │       └── render-paper.yml        # Manuscript rendering
-├── modules/
-│   └── validation.sh               # Pure shell dependency validation (NO R REQUIRED!)
-├── tests/
-│   └── testthat/
+├── inst/
+│   └── tinytest/
 │       └── test-analysis.R         # Automated tests
+├── tests/
+│   └── tinytest.R                  # tinytest driver
 ├── Makefile
 ├── R/
 ├── data/
@@ -1005,8 +909,8 @@ make r
 # ... work in container ...
 exit  # Auto-snapshot runs on exit!
 
-# Validate before committing (pure shell - NO R REQUIRED!)
-make check-renv  # Pure shell validation (grep, awk, jq)
+# Validate before committing (make check-renv runs zzrenvcheck)
+make check-renv
 make docker-test
 
 # Commit and push
@@ -1016,7 +920,7 @@ git push
 
 # GitHub Actions automatically:
 # 1. Builds Docker container from scratch
-# 2. Validates package dependencies (pure shell validation)
+# 2. Validates package dependencies (zzrenvcheck via make check-renv)
 # 3. Runs R CMD check
 # 4. Executes test suite
 # 5. Renders manuscripts
@@ -1080,7 +984,7 @@ ZZCOLLAB creates two standard workflows:
 ```yaml
 # Runs on: every push, every pull request
 # Validates:
-#   - Package dependencies synchronized (pure shell validation via make check-renv)
+#   - Package dependencies synchronized (zzrenvcheck via make check-renv)
 #   - R CMD check passes
 #   - Test suite passes
 #   - Project structure valid
@@ -1109,11 +1013,11 @@ zzc github                       # Create private GitHub repo with CI/CD
 # Day 5: Add analysis code
 make r
 # ... develop code ...
-# ... write tests in tests/testthat/ ...
+# ... write tests in inst/tinytest/ ...
 exit  # Auto-snapshot runs automatically!
 
-# Validate locally first (pure shell - NO R REQUIRED!)
-make check-renv  # Pure shell validation (grep, awk, jq)
+# Validate locally first (make check-renv runs zzrenvcheck)
+make check-renv
 make docker-test
 
 # Commit and push
@@ -1123,7 +1027,7 @@ git push
 
 # GitHub Actions runs automatically:
 # - Builds Docker container
-# - Validates dependencies (pure shell validation)
+# - Validates dependencies (zzrenvcheck via make check-renv)
 # - Runs all tests
 # - Success: green checkmark on commit
 # - Failure: email notification with logs
@@ -1138,19 +1042,17 @@ git push
 
 **Write tests incrementally**:
 ```r
-# tests/testthat/test-data-preparation.R
-test_that("prepare_data removes missing values", {
-  raw <- data.frame(x = c(1, NA, 3), y = c(4, 5, 6))
-  result <- prepare_data(raw)
-  expect_equal(nrow(result), 2)
-  expect_false(anyNA(result))
-})
+# inst/tinytest/test-data-preparation.R
+raw <- data.frame(x = c(1, NA, 3), y = c(4, 5, 6))
+result <- prepare_data(raw)
+expect_equal(nrow(result), 2L)
+expect_false(anyNA(result))
 ```
 
 **Validate dependencies before committing**:
 ```bash
-# Check that all packages used in code are declared (pure shell - NO R REQUIRED!)
-make check-renv  # Pure shell validation (grep, awk, jq)
+# Confirm all packages used in code are declared (zzrenvcheck)
+make check-renv
 
 # This prevents CI failures due to missing packages
 ```
@@ -1232,10 +1134,9 @@ Level 2 → Level 3:
   zzc analysis                   # Or full analysis environment
 
 Level 3 → Level 4:
-  # Inside Docker container
-  usethis::use_testthat()  # Initialize testing
-  # Write tests for critical functions
-  # 1-2 days for comprehensive test suite
+  # tinytest scaffolding already exists (tests/tinytest.R)
+  # Add test files under inst/tinytest/ for critical functions
+  # 1-2 days for a comprehensive test suite
 
 Level 4 → Level 5:
   zzc github                     # Adds GitHub workflows (or already done)
@@ -1318,14 +1219,10 @@ zzc github                       # Create private GitHub repo
 make docker-build
 make docker-push-team            # Optional but efficient for team
 
-# Add testing infrastructure
-make r
-R
-> usethis::use_testthat()
-> # Write tests for spatial interpolation algorithms
-> # Write tests for data quality validation
-> quit()
-exit
+# Add tests under inst/tinytest/ (tinytest scaffolding already present):
+# - Tests for spatial interpolation algorithms
+# - Tests for data quality validation
+make docker-test
 
 # Team members (any platform)
 git clone https://github.com/climate-team/precipitation
@@ -1386,16 +1283,11 @@ reports. CI/CD (Level 5) optional if code changes infrequently.
 mkdir weekly-report && cd weekly-report
 zzc minimal                      # Full setup with minimal profile
 
-# Add tests for report calculations
-make r
-R
-> usethis::use_testthat()
-> # Write tests for:
-> # - Statistical summaries (means, medians, etc.)
-> # - Data quality checks (missing data, outliers)
-> # - Report formatting functions
-> quit()
-exit
+# Add tests for report calculations under inst/tinytest/:
+# - Statistical summaries (means, medians, etc.)
+# - Data quality checks (missing data, outliers)
+# - Report formatting functions
+make docker-test
 
 # Deploy to server
 docker build -t weekly-report .
@@ -1462,8 +1354,8 @@ jobs:
     container: rocker/tidyverse:latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate dependencies (pure shell - NO R REQUIRED!)
-        run: make check-renv  # Pure shell validation (grep, awk, jq)
+      - name: Validate dependencies (zzrenvcheck)
+        run: make check-renv
 ```
 
 # Common Pitfalls
@@ -1550,43 +1442,27 @@ container.
 **Not testing edge cases**:
 
 ```r
-# Inadequate test
-test_that("data preparation works", {
-  result <- prepare_data(penguins)
-  expect_true(is.data.frame(result))
-})
+# Inadequate test: only checks the return type
+result <- prepare_data(penguins)
+expect_true(is.data.frame(result))
 
 # Better test includes edge cases
-test_that("data preparation handles edge cases", {
-  # Normal case
-  result <- prepare_data(penguins)
-  expect_equal(nrow(result), 333)
-
-  # Empty data
-  expect_equal(nrow(prepare_data(penguins[0, ])), 0)
-
-  # All missing values
-  all_na <- penguins
-  all_na$body_mass_g <- NA
-  expect_equal(nrow(prepare_data(all_na)), 0)
-})
+expect_equal(nrow(prepare_data(penguins)), 333L)       # Normal case
+expect_equal(nrow(prepare_data(penguins[0, ])), 0L)    # Empty data
+all_na <- penguins
+all_na$body_mass_g <- NA
+expect_equal(nrow(prepare_data(all_na)), 0L)           # All missing
 ```
 
 **Testing implementation details instead of behavior**:
 
 ```r
-# Wrong: Tests how function is implemented
-test_that("uses dplyr for filtering", {
-  # Breaks if you switch to base R
-  expect_match(deparse(body(prepare_data)), "filter")
-})
+# Wrong: tests how the function is implemented (breaks under refactoring)
+expect_true(grepl('filter', deparse(body(prepare_data))))
 
-# Right: Tests what function does
-test_that("removes rows with missing body mass", {
-  # Works regardless of implementation
-  result <- prepare_data(penguins)
-  expect_false(anyNA(result$body_mass_g))
-})
+# Right: tests what the function does (works regardless of implementation)
+result <- prepare_data(penguins)
+expect_false(anyNA(result$body_mass_g))
 ```
 
 **Forgetting to run tests before committing**:
@@ -1610,8 +1486,8 @@ git commit -m "Update analysis"
 git commit -m "Fix analysis"
 git push  # CI fails, must fix and push again
 
-# Right workflow (pure shell validation - NO R REQUIRED!)
-make check-renv  # Pure shell validation (grep, awk, jq)
+# Right workflow (make check-renv runs zzrenvcheck)
+make check-renv
 make docker-test
 git commit -m "Fix analysis"
 git push  # CI passes

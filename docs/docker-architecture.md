@@ -13,13 +13,19 @@ This guide covers Docker architecture considerations for ZZCOLLAB, including pla
 ARM64 Compatible:
 - rocker/r-ver     (Both AMD64 and ARM64)
 - rocker/rstudio   (Both AMD64 and ARM64)
+- rocker/tidyverse (Both AMD64 and ARM64)
 
 AMD64 Only:
 - rocker/verse     (Publishing workflow with LaTeX)
-- rocker/tidyverse (AMD64 only)
 - rocker/geospatial (AMD64 only)
 - rocker/shiny     (AMD64 only)
 ```
+
+The three built-in profiles (minimal on rocker/r-ver, analysis on
+rocker/tidyverse, rstudio on rocker/rstudio) all run natively on
+ARM64. The AMD64-only images above are reached through
+`zzcollab docker --base-image <image>` rather than a built-in
+profile.
 
 ## Solutions for ARM64 Users
 
@@ -327,15 +333,17 @@ Image             AMD64    ARM64    Notes
 ─────────────────────────────────────────────────────────────────────
 rocker/r-ver       ✓        ✓      Base R only
 rocker/rstudio     ✓        ✓      RStudio Server included
-rocker/tidyverse   ✓        ✗      Tidyverse packages (AMD64 only)
+rocker/tidyverse   ✓        ✓      Tidyverse packages (analysis profile)
 rocker/verse       ✓        ✗      Publishing tools (AMD64 only)
 rocker/shiny       ✓        ✗      Shiny Server (AMD64 only)
 rocker/geospatial  ✓        ✗      Spatial packages (AMD64 only)
 ```
 
-The limitation exists because RStudio Server and Shiny Server binaries are only
-available for AMD64. The rocker team cannot build ARM64 versions of images that
-depend on these binaries.
+The limitation for rocker/verse, rocker/shiny, and rocker/geospatial
+stems from AMD64-only components in those images (for example the
+Shiny Server binary and several compiled geospatial libraries). The
+rocker team cannot build ARM64 versions of images that depend on
+those components.
 
 #### Docker Manifests and Multi-Platform Images
 
@@ -607,6 +615,6 @@ diagnose edge cases and plan for R version upgrades.
 ## Related Documentation
 
 - **Development Commands**: [Development Guide](DEVELOPMENT.md)
-- **Docker Profiles**: [Variants Guide](VARIANTS.md) - 14+ specialized environments
+- **Docker Profiles**: [Variants Guide](VARIANTS.md) - three built-in profiles plus any base image via `--base-image`
 - **Package Management**: [Package Management Guide](guides/renv.md) - Dynamic renv workflow
 - **Configuration**: [Configuration Guide](CONFIGURATION.md)

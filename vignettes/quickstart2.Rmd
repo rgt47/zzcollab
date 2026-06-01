@@ -101,8 +101,10 @@ mtcars-analysis/
 │   │   └── references.bib
 │   └── scripts/
 ├── R/
+├── inst/
+│   └── tinytest/
 ├── tests/
-│   └── testthat/
+│   └── tinytest.R
 ├── DESCRIPTION
 ├── Dockerfile
 ├── Makefile
@@ -274,137 +276,114 @@ validate_mtcars_data <- function(data) {
 
 ### 3.1 Create Data Validation Tests
 
-Create `tests/testthat/test-data-validation.R`:
+ZZCOLLAB projects use tinytest. Test files live in `inst/tinytest/` and
+contain bare top-level expectations (no `test_that()` wrapper).
+
+Create `inst/tinytest/test-data-validation.R`:
 
 ```r
 # test-data-validation.R
 # Tests for data integrity and validation functions
 
-test_that("raw data file exists and is readable", {
-  raw_data_path <- "analysis/data/raw_data/mtcars.csv"
+raw_data_path <- 'analysis/data/raw_data/mtcars.csv'
 
-  expect_true(file.exists(raw_data_path))
+# Raw data file exists and is readable
+expect_true(file.exists(raw_data_path))
+data <- read.csv(raw_data_path, row.names = 1)
+expect_inherits(data, 'data.frame')
 
-  data <- read.csv(raw_data_path, row.names = 1)
-  expect_s3_class(data, "data.frame")
-})
+# Expected dimensions
+expect_equal(nrow(data), 32L)
+expect_equal(ncol(data), 11L)
 
-test_that("raw data has expected dimensions", {
-  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
+# Required columns present
+required_cols <- c('mpg', 'cyl', 'disp', 'hp', 'drat', 'wt',
+                   'qsec', 'vs', 'am', 'gear', 'carb')
+expect_true(all(required_cols %in% names(data)))
 
-  expect_equal(nrow(data), 32)
-  expect_equal(ncol(data), 11)
-})
+# Values within expected ranges
+expect_true(all(data$mpg > 0 & data$mpg < 50))
+expect_true(all(data$cyl %in% c(4, 6, 8)))
+expect_true(all(data$hp > 0 & data$hp < 500))
+expect_true(all(data$wt > 0))
 
-test_that("raw data contains required columns", {
-  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
-
-  required_cols <- c("mpg", "cyl", "disp", "hp", "drat", "wt",
-                     "qsec", "vs", "am", "gear", "carb")
-
-  expect_true(all(required_cols %in% names(data)))
-})
-
-test_that("raw data values are within expected ranges", {
-  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
-
-  expect_true(all(data$mpg > 0 & data$mpg < 50))
-  expect_true(all(data$cyl %in% c(4, 6, 8)))
-  expect_true(all(data$hp > 0 & data$hp < 500))
-  expect_true(all(data$wt > 0))
-})
-
-test_that("derived data has correct subset size", {
-  skip_if_not(file.exists("analysis/data/derived_data/mtcars_processed.rds"))
-
-  data <- readRDS("analysis/data/derived_data/mtcars_processed.rds")
-
-  expect_equal(nrow(data), 16)
-})
+# Derived data has the correct subset size (only if it has been created)
+derived_path <- 'analysis/data/derived_data/mtcars_processed.rds'
+if (file.exists(derived_path)) {
+  expect_equal(nrow(readRDS(derived_path)), 16L)
+}
 ```
 
 ### 3.2 Create Function Tests
 
-Create `tests/testthat/test-data-functions.R`:
+Create `inst/tinytest/test-data-functions.R`:
 
 ```r
 # test-data-functions.R
 # Tests for R/data_functions.R
 
-test_that("validate_mtcars_data accepts valid data", {
-  valid_data <- data.frame(
-    mpg = c(21, 22), cyl = c(6, 4), disp = c(160, 140),
-    hp = c(110, 93), drat = c(3.9, 3.85), wt = c(2.6, 2.3),
-    qsec = c(16.5, 18.6), vs = c(0, 1), am = c(1, 1),
-    gear = c(4, 4), carb = c(4, 2)
-  )
+# validate_mtcars_data accepts valid data
+valid_data <- data.frame(
+  mpg = c(21, 22), cyl = c(6, 4), disp = c(160, 140),
+  hp = c(110, 93), drat = c(3.9, 3.85), wt = c(2.6, 2.3),
+  qsec = c(16.5, 18.6), vs = c(0, 1), am = c(1, 1),
+  gear = c(4, 4), carb = c(4, 2)
+)
+expect_true(validate_mtcars_data(valid_data))
 
-  expect_true(validate_mtcars_data(valid_data))
-})
+# validate_mtcars_data rejects missing columns
+expect_error(validate_mtcars_data(data.frame(mpg = 21, cyl = 6)),
+             pattern = 'Missing required columns')
 
-test_that("validate_mtcars_data rejects missing columns", {
-  incomplete_data <- data.frame(mpg = 21, cyl = 6)
+# validate_mtcars_data rejects empty data
+expect_error(validate_mtcars_data(mtcars[0, ]), pattern = 'empty')
 
-  expect_error(
-    validate_mtcars_data(incomplete_data),
-    "Missing required columns"
-  )
-})
+# validate_mtcars_data rejects invalid mpg
+bad_data <- mtcars[1:2, ]
+bad_data$mpg[1] <- -5
+expect_error(validate_mtcars_data(bad_data),
+             pattern = 'mpg must be positive')
 
-test_that("validate_mtcars_data rejects empty data", {
-  empty_data <- mtcars[0, ]
+# add_derived_variables creates the expected columns
+result <- add_derived_variables(mtcars[1:5, ])
+expect_true('efficiency_class' %in% names(result))
+expect_true('weight_kg' %in% names(result))
+expect_true('power_to_weight' %in% names(result))
 
-  expect_error(validate_mtcars_data(empty_data), "empty")
-})
+# add_derived_variables calculates efficiency_class correctly
+ec_data <- data.frame(
+  mpg = c(25, 17, 12),
+  wt = c(2.5, 3.0, 3.5),
+  hp = c(100, 150, 200)
+)
+expect_equal(add_derived_variables(ec_data)$efficiency_class,
+             c('high', 'medium', 'low'))
 
-test_that("validate_mtcars_data rejects invalid mpg", {
-  bad_data <- mtcars[1:2, ]
-  bad_data$mpg[1] <- -5
+# add_derived_variables calculates weight_kg correctly
+kg_result <- add_derived_variables(data.frame(mpg = 20, wt = 1, hp = 100))
+expect_equal(kg_result$weight_kg, 453.592, tolerance = 0.001)
 
-  expect_error(validate_mtcars_data(bad_data), "mpg must be positive")
-})
-
-test_that("add_derived_variables creates expected columns", {
-  test_data <- mtcars[1:5, ]
-  result <- add_derived_variables(test_data)
-
-  expect_true("efficiency_class" %in% names(result))
-  expect_true("weight_kg" %in% names(result))
-  expect_true("power_to_weight" %in% names(result))
-})
-
-test_that("add_derived_variables calculates efficiency_class correctly", {
-  test_data <- data.frame(
-    mpg = c(25, 17, 12),
-    wt = c(2.5, 3.0, 3.5),
-    hp = c(100, 150, 200)
-  )
-
-  result <- add_derived_variables(test_data)
-
-  expect_equal(result$efficiency_class, c("high", "medium", "low"))
-})
-
-test_that("add_derived_variables calculates weight_kg correctly", {
-  test_data <- data.frame(mpg = 20, wt = 1, hp = 100)
-  result <- add_derived_variables(test_data)
-
-  expect_equal(result$weight_kg, 453.592, tolerance = 0.001)
-})
-
-test_that("add_derived_variables requires correct input columns", {
-  bad_data <- data.frame(x = 1, y = 2)
-
-  expect_error(
-    add_derived_variables(bad_data),
-    "must contain mpg, wt, and hp"
-  )
-})
+# add_derived_variables requires the correct input columns
+expect_error(add_derived_variables(data.frame(x = 1, y = 2)),
+             pattern = 'must contain mpg, wt, and hp')
 ```
 
 ### 3.3 Run Tests
 
-Enter the container and run tests:
+Run the tinytest suite:
+
+```bash
+make docker-test
+```
+
+Expected output (each expectation reported as a passing check):
+
+```
+inst/tinytest/test-data-functions.R............    8 tests OK
+inst/tinytest/test-data-validation.R...........    7 tests OK
+```
+
+To run interactively inside the container instead:
 
 ```bash
 make r
@@ -412,14 +391,7 @@ make r
 
 ```r
 # Inside R
-devtools::test()
-```
-
-Expected output:
-
-```
-== Testing mtcarsanalysis =====================================================
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 11 ]
+tinytest::run_test_dir('inst/tinytest')
 ```
 
 Exit R when done:
@@ -586,11 +558,7 @@ git commit -m "Initial project setup with mtcars analysis
 - Add raw data (complete mtcars CSV)
 - Create data processing script (extracts first half)
 - Add data validation and function tests
-- Create initial report structure
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+- Create initial report structure"
 
 gh repo create myteam/mtcars-analysis --private --source=. --push
 ```
@@ -627,7 +595,7 @@ make r
 readRDS("analysis/data/derived_data/mtcars_processed.rds") |> head()
 
 # Run existing tests to ensure environment is correct
-devtools::test()
+tinytest::run_test_dir('inst/tinytest')
 
 q()
 ```
@@ -694,84 +662,51 @@ plot_mpg_by_cylinder <- function(data) {
 
 ### 6.4 Add Tests for New Functions
 
-Create `tests/testthat/test-plot-functions.R`:
+Create `inst/tinytest/test-plot-functions.R`:
 
 ```r
 # test-plot-functions.R
 # Tests for R/plot_functions.R
 
-test_that("plot_power_weight returns ggplot object", {
-  test_data <- mtcars[1:5, ] |> add_derived_variables()
+# plot_power_weight returns a ggplot object
+pw_data <- mtcars[1:5, ] |> add_derived_variables()
+expect_inherits(plot_power_weight(pw_data), 'ggplot')
 
-  result <- plot_power_weight(test_data)
+# plot_power_weight requires the power_to_weight column
+expect_error(plot_power_weight(mtcars[1:5, ]),
+             pattern = 'power_to_weight')
 
-  expect_s3_class(result, "ggplot")
-})
+# plot_power_weight respects the show_labels parameter
+expect_inherits(plot_power_weight(pw_data, show_labels = TRUE), 'ggplot')
+expect_inherits(plot_power_weight(pw_data, show_labels = FALSE), 'ggplot')
 
-test_that("plot_power_weight requires power_to_weight column", {
-  bad_data <- mtcars[1:5, ]
-
-  expect_error(
-    plot_power_weight(bad_data),
-    "power_to_weight"
-  )
-})
-
-test_that("plot_power_weight respects show_labels parameter", {
-  test_data <- mtcars[1:5, ] |> add_derived_variables()
-
-  with_labels <- plot_power_weight(test_data, show_labels = TRUE)
-  without_labels <- plot_power_weight(test_data, show_labels = FALSE)
-
-  expect_s3_class(with_labels, "ggplot")
-  expect_s3_class(without_labels, "ggplot")
-})
-
-test_that("plot_mpg_by_cylinder returns ggplot object", {
-  test_data <- mtcars[1:5, ]
-
-  result <- plot_mpg_by_cylinder(test_data)
-
-  expect_s3_class(result, "ggplot")
-})
+# plot_mpg_by_cylinder returns a ggplot object
+expect_inherits(plot_mpg_by_cylinder(mtcars[1:5, ]), 'ggplot')
 ```
 
 ### 6.5 Run All Tests
 
 ```bash
-make r
+make docker-test
 ```
 
-```r
-devtools::test()
-```
-
-Expected output:
+Expected output (all three test files passing):
 
 ```
-== Testing mtcarsanalysis =====================================================
-[ FAIL 0 | WARN 0 | SKIP 0 | PASS 15 ]
-```
-
-Exit R:
-
-```r
-q()
+inst/tinytest/test-data-functions.R............    8 tests OK
+inst/tinytest/test-data-validation.R...........    7 tests OK
+inst/tinytest/test-plot-functions.R............    5 tests OK
 ```
 
 ### 6.6 Commit and Push Changes
 
 ```bash
-git add R/plot_functions.R tests/testthat/test-plot-functions.R
+git add R/plot_functions.R inst/tinytest/test-plot-functions.R
 git commit -m "Add visualization functions for power-weight analysis
 
 - Add plot_power_weight() for scatter plots
 - Add plot_mpg_by_cylinder() for boxplots
-- Include tests for both plotting functions
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+- Include tests for both plotting functions"
 
 git push
 ```
@@ -795,8 +730,8 @@ make r
 Verify new packages are auto-restored:
 
 ```r
-devtools::test()
-# All 15 tests should pass
+tinytest::run_test_dir('inst/tinytest')
+# All three test files should pass
 
 q()
 ```
@@ -888,11 +823,7 @@ git commit -m "Finalize analysis report with collaborative visualizations
 - Integrate power-weight scatter plot
 - Add cylinder comparison boxplot
 - Write conclusions section
-- Add session info for reproducibility
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+- Add session info for reproducibility"
 
 git push
 ```
@@ -1153,7 +1084,7 @@ The final repository contains:
 | Create project (full setup) | `zzc analysis` |
 | Add GitHub repo | `zzc github` |
 | Enter container | `make r` |
-| Run tests | `devtools::test()` inside R |
+| Run tests | `make docker-test` |
 | Validate packages | `make check-renv` |
 | Build Docker image | `make docker-build` |
 | Push to DockerHub | `zzc dockerhub` |

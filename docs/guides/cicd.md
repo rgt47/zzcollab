@@ -51,43 +51,28 @@ Think of it like this:
 
 zzcollab creates these automatic workflows:
 
-### 1. R Package Check (r-package-check.yml)
+### 1. R Package Check (r-package.yml)
 
 **When**: Every push to GitHub
 
 **What it does**:
+- Restores packages from renv.lock
 - Runs R CMD check
-- Validates package structure
-- Runs testthat tests
-- Checks documentation
+- Runs the tinytest suite
+- Validates package dependencies via zzrenvcheck (renv.lock completeness)
 
 **Triggers on**:
-- push to main branch
+- push to main or master branch
 - pull requests
 
 **Time**: ~5-10 minutes
 
-### 2. Environment Validation (validate-environment.yml)
+### 2. Render Report (render-report.yml) [if using analysis/report/]
 
 **When**: Every push to GitHub
 
 **What it does**:
-- Validates renv.lock completeness
-- Checks for missing packages
-- Verifies R environment options
-
-**Triggers on**:
-- push to any branch
-- pull requests
-
-**Time**: ~2-3 minutes
-
-### 3. Render Paper (render-paper.yml) [if using analysis/report/]
-
-**When**: Every push to GitHub
-
-**What it does**:
-- Renders `analysis/report/report.Rmd`
+- Renders the manuscript under `analysis/report/`
 - Generates HTML/PDF output
 - Uploads as artifact
 
@@ -95,6 +80,11 @@ zzcollab creates these automatic workflows:
 - push to main branch
 
 **Time**: ~5-15 minutes (depends on analysis complexity)
+
+Environment and dependency validation is not a separate workflow. It runs
+inside `r-package.yml` (and via `make check-renv`) using the companion
+`zzrenvcheck` package, which confirms that every package used in code is
+declared in both DESCRIPTION and renv.lock.
 
 ---
 
@@ -135,35 +125,37 @@ gh run watch                   # Watch run in real-time
 
 **Location**: `.github/workflows/`
 
-**Example**: `r-package-check.yml`
+**Example**: `r-package.yml`
 
 ```yaml
-name: R Package Check
+name: R Package Check (Container)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    container: rocker/tidyverse:latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: r-lib/actions/setup-r@v2
-      - name: Install dependencies
-        run: renv::restore()
+      - uses: actions/checkout@v4
+      - name: Install renv and restore project packages
+        run: |
+          Rscript -e "install.packages('renv')"
+          Rscript -e "renv::restore(prompt = FALSE)"
       - name: Run tests
-        run: devtools::test()
+        run: Rscript -e "tinytest::test_package('mypackage')"
 ```
 
 **What this means**:
 - `on: push` → Runs automatically on git push
-- `runs-on: ubuntu-latest` → Uses Ubuntu Linux
+- `runs-on: ubuntu-latest` with `container:` → Runs inside a fixed R image
 - `steps:` → Sequential actions to take
 - `renv::restore()` → Install packages from renv.lock
-- `devtools::test()` → Run all tests
+- `tinytest::test_package()` → Run all tests
 
 ---
 
@@ -335,7 +327,7 @@ docker run --rm -v $(pwd):/project rocker/r-ver:latest \
     key: renv-${{ hashFiles('renv.lock') }}
 ```
 
-**2. Use lightweight Docker profile for CI** (e.g., alpine_minimal ~200MB for faster builds)
+**2. Use lightweight Docker profile for CI** (e.g., the `minimal` profile for faster builds)
 
 **3. Split into separate workflows** (test vs. full analysis)
 
@@ -499,9 +491,8 @@ A: Create issue on GitHub to track. Fix when you can. Don't ignore!
 ### Workflow Files
 
 ```
-.github/workflows/r-package-check.yml     # Package validation
-.github/workflows/validate-environment.yml # renv validation
-.github/workflows/render-paper.yml        # Paper rendering
+.github/workflows/r-package.yml      # Package check + renv validation
+.github/workflows/render-report.yml  # Report rendering
 ```
 
 ### View Results

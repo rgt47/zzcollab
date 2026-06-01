@@ -1,5 +1,19 @@
 # The Dependency Triad: DESCRIPTION, renv.lock, and Dockerfile
 
+> Historical note: this document describes the framework prior to the 2026-05 simplification. The in-tree shell validator (modules/validation.sh) was replaced by the companion R package zzrenvcheck, the module-loading system was removed, and the Docker profile set was consolidated to three (minimal, analysis, rstudio). See the current guides for up-to-date behaviour.
+
+> The `modules/validation.sh` line references throughout this document
+> (for example, `validation.sh:518`, `validation.sh:273`,
+> `validation.sh:393`) describe a shell validator that no longer exists.
+> Dependency validation now lives in the companion R package
+> `zzrenvcheck` (https://github.com/rgt47/zzrenvcheck), invoked as
+> `zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)` inside
+> the container (via `make check-renv`) and wrapped on the host by
+> `zzcollab validate`. The conceptual triad analysis below, that
+> DESCRIPTION holds direct dependencies, renv.lock holds the full
+> transitive closure, and information must flow downward rather than
+> upward, remains valid.
+
 ## Problem Statement
 
 Running `zzc validate --fix` on a fresh workspace inflates DESCRIPTION

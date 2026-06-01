@@ -570,22 +570,27 @@ ZZCOLLAB employs distributed validation through pre-commit checks and continuous
 
 **Purpose**: Local developer tool that ensures synchronization between code, DESCRIPTION, and renv.lock BEFORE committing changes.
 
-**Key insight**: This is a pure shell validation (no R required on host). It helps developers identify missing dependencies before pushing code.
+**Key insight**: Validation is performed by the companion R package
+`zzrenvcheck` (https://github.com/rgt47/zzrenvcheck), which is installed into
+the project Docker image. The `make check-renv` target invokes
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)` inside the
+container; on the host, `zzcollab validate` wraps the same check. Variants
+`make check-renv-no-fix` and `make check-renv-no-strict` toggle the auto_fix
+and strict arguments.
 
 **Operational workflow**:
 
 ```bash
 # Developer workflow
 vim R/spatial_functions.R           # Add code using sf package
-make check-renv                      # Validate + auto-fix
+make check-renv                      # Validate + auto-fix (zzrenvcheck)
 
-# The validation performs these operations:
+# The check performs these operations:
 # 1. Scans ALL code files (R/, scripts/, analysis/, tests/, vignettes/)
 # 2. Extracts package dependencies (library(), require(), pkg::fun())
-# 3. Validates against CRAN API
-# 4. Updates DESCRIPTION with missing packages (pure shell)
-# 5. Updates renv.lock with missing packages (pure shell + jq)
-# 6. Exits with code 1 if critical issues found
+# 3. Confirms each package is declared in DESCRIPTION and renv.lock
+# 4. Adds missing packages when auto_fix is enabled
+# 5. Exits with code 1 if critical issues remain (strict mode)
 
 git add R/spatial_functions.R DESCRIPTION renv.lock
 git commit -m "Add spatial analysis functions"
@@ -597,12 +602,10 @@ git push origin feature-branch
 - Does NOT push to remote repository
 - Does NOT update the shared team environment
 - Does NOT require team lead approval
-- Does NOT require R installed on host
 
 **What it DOES do**:
-- Validates local environment consistency
-- Updates local DESCRIPTION file (pure awk)
-- Updates local renv.lock file (curl + jq)
+- Validates that code, DESCRIPTION, and renv.lock agree
+- Adds missing packages to DESCRIPTION and renv.lock under auto_fix
 - Provides actionable error messages
 - Prevents committing code with missing dependencies
 
@@ -613,25 +616,24 @@ git push origin feature-branch
 **Operational workflow**:
 
 ```yaml
-# .github/workflows/validate-environment.yml
-name: Validate Environment
-on: [pull_request]
+# .github/workflows/r-package.yml
+name: R Package Check (Container)
+on: [push, pull_request]
 jobs:
-  validate:
+  check:
     runs-on: ubuntu-latest
+    container: rocker/tidyverse:latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup R
-        uses: r-lib/actions/setup-r@v2
+      - uses: actions/checkout@v4
       - name: Restore packages
         run: |
-          R -e "renv::restore()"
+          Rscript -e "renv::restore(prompt = FALSE)"
       - name: Run tests
         run: |
-          R -e "devtools::test()"
+          Rscript -e "tinytest::test_package('mypackage')"
       - name: Validate dependencies
         run: |
-          make check-renv
+          Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
 ```
 
 **Critical insight**: CI/CD validation runs in a clean environment, ensuring that analyses do not depend on developer-specific configurations or accidentally uncommitted files.
