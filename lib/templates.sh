@@ -161,9 +161,19 @@ substitute_variables() {
     fi
     export ZZCOLLAB_TEMPLATE_VERSION
 
+    # PPM snapshot date and Ubuntu codename for pinned repository URLs.
+    # get_ubuntu_codename is defined in modules/docker.sh; we guard in case
+    # templates.sh is ever sourced without docker.sh.
+    export PPM_SNAPSHOT="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    if declare -f get_ubuntu_codename > /dev/null 2>&1; then
+        export UBUNTU_CODENAME="${UBUNTU_CODENAME:-$(get_ubuntu_codename "${R_VERSION:-4.4.0}")}"
+    else
+        export UBUNTU_CODENAME="${UBUNTU_CODENAME:-noble}"
+    fi
+
     # Note: $BASE_IMAGE is intentionally excluded - it is a runtime shell
     # variable in Makefile ($$BASE_IMAGE), not a template placeholder.
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1

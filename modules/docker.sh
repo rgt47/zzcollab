@@ -60,7 +60,11 @@ RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
 
 create_renv_lock_minimal() {
     local r_ver="$1"
-    local repo_url="${2:-https://packagemanager.posit.co/cran/__linux__/noble/latest}"
+    local codename snapshot default_url
+    codename="$(get_ubuntu_codename "$r_ver")"
+    snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    default_url="https://packagemanager.posit.co/cran/__linux__/${codename}/${snapshot}"
+    local repo_url="${2:-$default_url}"
 
     cat > renv.lock << EOF
 {
@@ -600,9 +604,26 @@ prompt_docker_build() {
     return 0
 }
 
+# Map an R version string (e.g. "4.4.2") to the Ubuntu codename used by the
+# rocker images and Posit Package Manager for that release.
+get_ubuntu_codename() {
+    local r_version="$1"
+    local minor
+    minor="$(echo "$r_version" | cut -d. -f1-2)"
+    case "$minor" in
+        4.2|4.3) echo "jammy" ;;
+        4.4|4.5) echo "noble" ;;
+        *)        echo "noble" ;;
+    esac
+}
+
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3"
     local tools_install="$4" deps_comment="$5"
+    local ubuntu_codename ppm_snapshot ppm_url
+    ubuntu_codename="$(get_ubuntu_codename "$r_version")"
+    ppm_snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
 
     rm -f Dockerfile
     cat > Dockerfile << EOF
@@ -618,23 +639,27 @@ FROM \${BASE_IMAGE}:\${R_VERSION}
 ARG USERNAME=analyst
 ARG DEBIAN_FRONTEND=noninteractive
 
-# RENV_CONFIG_REPOS_OVERRIDE forces renv to use Posit PPM binaries
+# RENV_PATHS_LIBRARY is outside the project bind-mount so the baked library
+# is not shadowed at runtime. ZZCOLLAB_AUTO_RESTORE=false disables the
+# startup restore so the image library is authoritative.
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
-    RENV_PATHS_CACHE=/home/\${USERNAME}/.cache/R/renv \\
-    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \\
-    ZZCOLLAB_CONTAINER=true
+    RENV_PATHS_LIBRARY=/opt/renv/library \\
+    RENV_PATHS_CACHE=/opt/renv/cache \\
+    RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\
+    ZZCOLLAB_CONTAINER=true \\
+    ZZCOLLAB_AUTO_RESTORE=false
 
 ${system_deps_install}
 
 # Configure R to use Posit Package Manager for pre-compiled binaries
-RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))' \\
+RUN echo 'options(repos = c(CRAN = "${ppm_url}"))' \\
         >> /usr/local/lib/R/etc/Rprofile.site && \\
     echo 'options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version["platform"], R.version["arch"], R.version["os"])))' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install renv and restore packages from lockfile (using PPM binaries)
 RUN R -e "install.packages('renv')"
-RUN mkdir -p /home/\${USERNAME}/.cache/R/renv && chmod 777 /home/\${USERNAME}/.cache/R/renv
+RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
 COPY renv.lock renv.lock
 RUN R -e "renv::restore()"
 

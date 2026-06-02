@@ -24,12 +24,12 @@ set -euo pipefail
 # When run as a standalone script (via cmd_doctor: bash doctor.sh "$@"),
 # load the library dependencies directly.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    _doctor_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=/dev/null
-    source "${_script_dir}/../lib/constants.sh"
+    source "${_doctor_dir}/../lib/constants.sh"
     # shellcheck source=/dev/null
-    source "${_script_dir}/../lib/core.sh"
-    unset _script_dir
+    source "${_doctor_dir}/../lib/core.sh"
+    unset _doctor_dir
 fi
 
 CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"

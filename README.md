@@ -28,8 +28,7 @@ environments, automated CI/CD workflows, and team collaboration tools.
 - **Team collaboration** with shared base images
 - **R package interface** for integration with R workflows
 - **Advanced configuration system** with user/project-level settings
-- **14+ specialized Docker profiles** (from 200MB Alpine to 3.5GB
-  full-featured)
+- **Three Docker profiles**: minimal, analysis, rstudio
 - **Profile-based architecture**: Team lead selects Docker profile, members add packages as needed
 - **Automated CI/CD** workflows
 - **Analysis and reporting** tools
@@ -115,7 +114,7 @@ The **team lead** selects a Docker profile that defines the foundational environ
 - **Base R version** (e.g., R 4.4.0)
 - **System dependencies** (GDAL, PROJ, LaTeX, etc.)
 - **Pre-installed packages** (tidyverse, sf, etc.)
-- **14+ specialized profiles** available (see docs/VARIANTS.md)
+- **Three profiles** available: minimal, analysis, rstudio
 
 **Key principle**: Once selected, the Docker profile is **fixed** for the team. Team members cannot change the base image to ensure consistent environments.
 

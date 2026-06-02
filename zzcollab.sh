@@ -1086,7 +1086,7 @@ Generated with zzcollab" || {
                 git remote add origin "https://github.com/${gh_user}/${project_name}.git" 2>/dev/null || \
                     git remote set-url origin "https://github.com/${gh_user}/${project_name}.git"
                 git branch -M main
-                git push -u origin main --force
+                git push -u origin main --force-with-lease
                 log_success "Connected and pushed to existing repository"
                 return 0
                 ;;

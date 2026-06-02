@@ -29,8 +29,8 @@ if (in_container) {
   # Use Posit Package Manager for pre-compiled binaries in container
   # Set both repos AND renv.repos.cran (renv uses this option as its default)
   options(
-    repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"),
-    renv.repos.cran = "https://packagemanager.posit.co/cran/__linux__/noble/latest"
+    repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"),
+    renv.repos.cran = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"
   )
 } else {
   options(repos = c(CRAN = "https://cloud.r-project.org"))
@@ -184,7 +184,7 @@ if (!in_container) {
   }
 
   # Re-apply Posit PM repos AFTER renv::load() (which overrides from lockfile)
-  options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))
+  options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"))
 }
 
 # ==========================================

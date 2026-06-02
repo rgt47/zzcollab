@@ -210,8 +210,9 @@ run_test_suite() {
     local passed=0 failed=0
 
     for test_func in $(declare -F | awk '$3 ~ /^test_/ {print $3}'); do
-        output=$(run_test "$test_func" 2>&1) || true
-        if echo "$output" | grep -q "^FAIL:"; then
+        output=$(run_test "$test_func" 2>&1)
+        local exit_code=$?
+        if echo "$output" | grep -q "^FAIL:" || [[ "$exit_code" -ne 0 ]]; then
             print_result "$test_func" 1
             failed=$((failed + 1))
             echo "$output" | head -5
