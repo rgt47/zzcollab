@@ -10,7 +10,7 @@ authors:
     given-names: $AUTHOR_GIVEN_NAME
     orcid: ""
     email: $AUTHOR_EMAIL
-    affiliation: $AUTHOR_INSTITUTE
+    affiliation: $AUTHOR_AFFILIATION
 abstract: >
   Reproducible research compendium created with zzcollab v$ZZCOLLAB_TEMPLATE_VERSION.
   Contains all data, code, and computational environment needed to reproduce

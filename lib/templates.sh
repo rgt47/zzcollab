@@ -138,6 +138,10 @@ substitute_variables() {
     # core.sh placeholder defaults so scaffolded metadata reflects the user.
     AUTHOR_NAME="${CONFIG_AUTHOR_NAME:-${AUTHOR_NAME:-Your Name}}"
     AUTHOR_EMAIL="${CONFIG_AUTHOR_EMAIL:-${AUTHOR_EMAIL:-your.email@example.com}}"
+    # AUTHOR_INSTITUTE / AUTHOR_INSTITUTE_FULL are readonly in core.sh.
+    # Export non-clashing names that pick up the config value for templates.
+    export AUTHOR_AFFILIATION="${CONFIG_AUTHOR_AFFILIATION:-${AUTHOR_INSTITUTE:-Your Institution}}"
+    export AUTHOR_AFFILIATION_FULL="${CONFIG_AUTHOR_AFFILIATION_FULL:-${AUTHOR_INSTITUTE_FULL:-Your Institution Full Name}}"
     export AUTHOR_NAME 2>/dev/null || true
     export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     # Don't default R_VERSION to 'latest' - let generate_dockerfile read from renv.lock
@@ -186,7 +190,7 @@ substitute_variables() {
 
     # Note: $BASE_IMAGE is intentionally excluded - it is a runtime shell
     # variable in Makefile ($$BASE_IMAGE), not a template placeholder.
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_GIVEN_NAME $AUTHOR_FAMILY_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_GIVEN_NAME $AUTHOR_FAMILY_NAME $AUTHOR_EMAIL $AUTHOR_AFFILIATION $AUTHOR_AFFILIATION_FULL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1
