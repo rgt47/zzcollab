@@ -230,8 +230,16 @@ for required in "zzcollab.sh" "lib" "modules" "templates"; do
 done
 
 # Check for existing installation
+_config_backup=""
 if [[ -d "$ZZCOLLAB_HOME" ]]; then
     if [[ "$FORCE" == "true" ]]; then
+        # Preserve user config across the reinstall so personal settings
+        # (author name, email, team defaults) are not wiped.
+        if [[ -f "$ZZCOLLAB_HOME/config.yaml" ]]; then
+            _config_backup="$(mktemp)"
+            cp "$ZZCOLLAB_HOME/config.yaml" "$_config_backup"
+            log_info "Preserving user config (will restore after install)"
+        fi
         log_warn "Removing existing installation (--force)"
         rm -rf "$ZZCOLLAB_HOME"
     else
@@ -343,6 +351,13 @@ fi
 #=============================================================================
 # VERIFICATION
 #=============================================================================
+
+# Restore user config if it was preserved across a --force reinstall.
+if [[ -n "$_config_backup" && -f "$_config_backup" ]]; then
+    cp "$_config_backup" "$ZZCOLLAB_HOME/config.yaml"
+    rm -f "$_config_backup"
+    log_success "Restored user config"
+fi
 
 log_info "Verifying installation..."
 
