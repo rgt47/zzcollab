@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "zzcollab: Docker-based Reproducible Research Collaboration Framework"
+version: 0.9.2
+date-released: "2026-06-01"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/rgt47/zzcollab"
+abstract: >
+  zzcollab is a turnkey framework for reproducible research collaboration
+  using Docker containers. It generates research compendiums with pinned
+  R environments (renv), content-addressed base images, dated Posit Package
+  Manager snapshots, and team collaboration workflows. The package provides
+  both a command-line scaffold tool and an R interface for managing
+  containerised analysis environments.
+authors:
+  - family-names: Thomas
+    given-names: Ronald G.
+    orcid: "https://orcid.org/0000-0003-1686-4965"
+    email: rgthomas@ucsd.edu
+    affiliation: University of California San Diego
+keywords:
+  - reproducible-research
+  - docker
+  - renv
+  - research-compendium
+  - computational-reproducibility
+  - collaboration

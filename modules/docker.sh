@@ -712,6 +712,17 @@ ARG USERNAME=analyst
 
 FROM ${from_spec}
 
+# OCI image labels for reproducibility provenance and tooling integration.
+# base_digest records the resolved sha256 of the rocker base at build time;
+# ppm_snapshot records the dated PPM URL used to pin package binaries.
+LABEL org.opencontainers.image.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \\
+      org.opencontainers.image.licenses="GPL-3.0-or-later" \\
+      zzcollab.template.version="${ZZCOLLAB_TEMPLATE_VERSION}" \\
+      zzcollab.r.version="${r_version}" \\
+      zzcollab.base.image="${base_image}:${r_version}" \\
+      zzcollab.base.digest="${image_digest:-unknown}" \\
+      zzcollab.ppm.snapshot="${ppm_snapshot}"
+
 ARG USERNAME=analyst
 ARG DEBIAN_FRONTEND=noninteractive
 

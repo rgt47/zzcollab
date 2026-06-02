@@ -156,6 +156,17 @@ create_devtools() {
         install_template "Makefile" "Makefile" "Makefile"
     fi
 
+    # CITATION.cff — machine-readable citation metadata for the project
+    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/CITATION.cff" ]]; then
+        install_template "CITATION.cff" "CITATION.cff" "CITATION.cff"
+    fi
+
+    # devcontainer.json — VS Code / GitHub Codespaces container configuration
+    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/devcontainer.json" ]]; then
+        mkdir -p ".devcontainer"
+        install_template "devcontainer.json" ".devcontainer/devcontainer.json" "devcontainer config"
+    fi
+
     # .gitignore
     local gitignore_content='.Rproj.user
 .Rhistory

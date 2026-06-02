@@ -124,12 +124,36 @@ docker-build-log:
 	zzcollab rebuild --log
 
 docker-push-team:
-	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
-	docker tag $(PACKAGE_NAME) $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
-	@echo "Pushing to Docker Hub..."
-	docker push $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
+	@echo "Building and pushing multi-arch image $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
+	@echo "Platforms: linux/amd64,linux/arm64 (native on both x86 and Apple Silicon)"
+	docker buildx build \
+		--platform linux/amd64,linux/arm64 \
+		--tag $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG) \
+		--push \
+		.
 	@echo "✅ Team image pushed: $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
-	@echo "   Team members should update .zzcollab_team_setup to reference this tag"
+	@echo "   Recording image digest for reproducible pulls..."
+	@docker buildx imagetools inspect \
+		$(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG) \
+		--format '{{json .Manifest.Digest}}' \
+		| tr -d '"' > .team-image-digest
+	@echo "   Digest written to .team-image-digest"
+	@echo "   Commit .team-image-digest so team members pull the exact same image."
+
+# Pull the team image pinned to the digest in .team-image-digest.
+# This guarantees every team member runs bit-identical containers regardless
+# of when they pull (the mutable tag may be overwritten; the digest never is).
+docker-pull-team:
+	@if [ ! -f .team-image-digest ]; then \
+	  echo "No .team-image-digest found. Run 'make docker-push-team' first." >&2; \
+	  exit 1; \
+	fi
+	@DIGEST=$$(cat .team-image-digest); \
+	REF="$(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME)@$$DIGEST"; \
+	echo "Pulling team image pinned to digest: $$DIGEST"; \
+	docker pull "$$REF"; \
+	docker tag "$$REF" $(PACKAGE_NAME); \
+	echo "✅ Team image loaded as $(PACKAGE_NAME)"
 
 docker-document:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::document()"
@@ -274,4 +298,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
