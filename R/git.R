@@ -102,11 +102,11 @@ git_status <- function() {
 #' @return Logical indicating success
 #' @export
 create_branch <- function(branch_name) {
-  # Ensure we're on main and up to date
-  safe_system('git checkout main', ignore.stdout = TRUE,
-             error_msg = 'Failed to checkout main branch')
-  safe_system('git pull', ignore.stdout = TRUE,
-             error_msg = 'Failed to pull latest changes')
+  # Ensure we're on main and up to date (literal args, no user data)
+  safe_system2('git', c('checkout', 'main'), ignore.stdout = TRUE,
+               error_msg = 'Failed to checkout main branch')
+  safe_system2('git', 'pull', ignore.stdout = TRUE,
+               error_msg = 'Failed to pull latest changes')
 
   # Create and checkout new branch (P-3: pass branch_name as a separate arg)
   result <- safe_system2('git', c('checkout', '-b', branch_name),
