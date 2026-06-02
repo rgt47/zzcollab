@@ -113,8 +113,11 @@ if (!in_container) {
     # ==========================================
     # Recover renv infrastructure if missing
     # ==========================================
-    # This handles: renv.lock exists but renv/ doesn't (e.g., git clone)
-    if (!file.exists("renv/activate.R")) {
+    # This handles: renv.lock exists but renv/ doesn't (e.g., git clone on host).
+    # Skip in the container: the baked library at RENV_PATHS_LIBRARY is the
+    # source of truth; renv/ is not bind-mounted and recovery would attempt to
+    # write to a read-only path.
+    if (!file.exists("renv/activate.R") && !in_container) {
       message("\n🔧 ZZCOLLAB: renv.lock found but renv/ missing - recovering...")
       tryCatch({
         renv_init_quiet()
