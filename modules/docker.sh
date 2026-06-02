@@ -499,6 +499,38 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\
 EOF
 }
 
+# Write tooling.lock: a JSON file recording the pinned versions of tools
+# installed into the image outside of renv (zzrenvcheck, renv itself).
+# This file serves as the content-addressed record called for by R-5.
+write_tooling_lock() {
+    local r_version="$1" image_digest="${2:-}"
+    local tag="${ZZRENVCHECK_TAG:-v0.3.0}"
+    local snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    local digest_field
+    if [[ -n "$image_digest" ]]; then
+        digest_field="\"${image_digest}\""
+    else
+        digest_field="null"
+    fi
+
+    cat > tooling.lock << EOF
+{
+  "generated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "r_version": "${r_version}",
+  "base_image_digest": ${digest_field},
+  "ppm_snapshot": "${snapshot}",
+  "tools": {
+    "zzrenvcheck": {
+      "source": "github",
+      "ref": "rgt47/zzrenvcheck@${tag}",
+      "tag": "${tag}"
+    }
+  }
+}
+EOF
+    log_info "  Wrote tooling.lock (zzrenvcheck ${tag})"
+}
+
 #=============================================================================
 # DOCKERFILE GENERATION
 #=============================================================================
@@ -565,9 +597,17 @@ generate_dockerfile() {
     tools_install=$(generate_tools_install "$base_image")
     log_info "  Tools: pandoc, languageserver, yaml (as needed)"
 
+    # Resolve the base-image digest for content-addressed pinning (R-2).
+    local image_digest
+    image_digest=$(resolve_image_digest "${base_image}:${r_version}")
+
     generate_dockerfile_inline "$base_image" "$r_version" \
         "$system_deps_install" "$tools_install" \
-        "$deps_comment"
+        "$deps_comment" "$image_digest"
+
+    # Write a tooling lockfile recording the pinned tool versions (R-5).
+    write_tooling_lock "$r_version" "$image_digest"
+
     prompt_docker_build "$project_name" "$r_version"
     return $?
 }
@@ -604,6 +644,33 @@ prompt_docker_build() {
     return 0
 }
 
+# Resolve the repo digest for a pulled image tag so the Dockerfile FROM line
+# can be pinned by content address rather than by mutable tag.
+# Returns the full sha256:... string, or an empty string if Docker is not
+# available or the pull fails (caller must handle the degraded case).
+resolve_image_digest() {
+    local image_ref="$1"
+    local digest
+
+    if ! command -v docker > /dev/null 2>&1; then
+        log_warn "Docker not found; base-image digest not pinned (R-2)"
+        echo ""
+        return 0
+    fi
+
+    log_info "  Pulling ${image_ref} to resolve digest..."
+    if ! docker pull "$image_ref" > /dev/null 2>&1; then
+        log_warn "Could not pull ${image_ref}; base-image digest not pinned (R-2)"
+        echo ""
+        return 0
+    fi
+
+    digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image_ref" 2>/dev/null)
+    # RepoDigests entry is "name@sha256:..." -- extract just the sha256 part
+    digest="${digest##*@}"
+    echo "$digest"
+}
+
 # Map an R version string (e.g. "4.4.2") to the Ubuntu codename used by the
 # rocker images and Posit Package Manager for that release.
 get_ubuntu_codename() {
@@ -619,11 +686,20 @@ get_ubuntu_codename() {
 
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3"
-    local tools_install="$4" deps_comment="$5"
-    local ubuntu_codename ppm_snapshot ppm_url
+    local tools_install="$4" deps_comment="$5" image_digest="${6:-}"
+    local ubuntu_codename ppm_snapshot ppm_url from_spec zzrenvcheck_tag
     ubuntu_codename="$(get_ubuntu_codename "$r_version")"
     ppm_snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
     ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
+    zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.0}"
+
+    # Pin the FROM line to a content-addressed digest when available (R-2).
+    # Fallback to tag-only reference if digest resolution was skipped.
+    if [[ -n "$image_digest" ]]; then
+        from_spec="${base_image}:${r_version}@${image_digest}"
+    else
+        from_spec="${base_image}:${r_version}"
+    fi
 
     rm -f Dockerfile
     cat > Dockerfile << EOF
@@ -634,7 +710,7 @@ ARG BASE_IMAGE=${base_image}
 ARG R_VERSION=${r_version}
 ARG USERNAME=analyst
 
-FROM \${BASE_IMAGE}:\${R_VERSION}
+FROM ${from_spec}
 
 ARG USERNAME=analyst
 ARG DEBIAN_FRONTEND=noninteractive
@@ -663,9 +739,10 @@ RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /o
 COPY renv.lock renv.lock
 RUN R -e "renv::restore()"
 
-# Install zzrenvcheck as a validation tool (system library, outside project renv)
+# Install zzrenvcheck as a validation tool (system library, outside project renv).
+# Tag is pinned at scaffold time; bump ZZRENVCHECK_TAG in lib/constants.sh to upgrade.
 RUN R -e "install.packages('remotes')" && \\
-    R -e "remotes::install_github('rgt47/zzrenvcheck')"
+    R -e "remotes::install_github('rgt47/zzrenvcheck@${zzrenvcheck_tag}')"
 
 ${tools_install}
 
