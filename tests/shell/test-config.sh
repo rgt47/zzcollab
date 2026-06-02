@@ -182,6 +182,43 @@ EOF
 }
 
 ##############################################################################
+# TEST: Config precedence - project overrides user (T-5)
+##############################################################################
+
+# The documented invariant: a project-level key overrides the same key in the
+# user-level config. load_config loads user first, then project, so the last
+# write wins. This test pins that contract.
+test_project_config_overrides_user_config() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+
+  # Write user-level config with one team name.
+  local user_cfg="$TEST_TEMP_DIR/user-config.yaml"
+  cat > "$user_cfg" << 'EOF'
+defaults:
+  team_name: user-team
+EOF
+
+  # Write project-level config with a different team name.
+  local project_cfg="$TEST_TEMP_DIR/project-config.yaml"
+  cat > "$project_cfg" << 'EOF'
+defaults:
+  team_name: project-team
+EOF
+
+  # Drive _load_file directly in precedence order (user then project).
+  # CONFIG_* variables are reset first so the test is not polluted by prior state.
+  CONFIG_TEAM_NAME=""
+  _load_file "$user_cfg" 2>/dev/null || true
+  _load_file "$project_cfg" 2>/dev/null || true
+
+  assert_equals "project-team" "$CONFIG_TEAM_NAME" \
+    "Project config must override user config for the same key"
+
+  teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

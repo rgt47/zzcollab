@@ -237,6 +237,80 @@ test_find_cached_image_empty_hash_returns_failure() {
 }
 
 ##############################################################################
+# TEST: Dockerfile generation determinism (T-2)
+##############################################################################
+
+# Identical inputs must produce a byte-identical Dockerfile.
+test_dockerfile_generation_is_deterministic() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  cat > renv.lock << 'EOF'
+{
+  "R": {"Version": "4.4.0", "Repositories": [{"Name": "CRAN", "URL": "https://cloud.r-project.org"}]},
+  "Packages": {}
+}
+EOF
+  PPM_SNAPSHOT=2026-01-01 generate_dockerfile_inline \
+    "rocker/tidyverse" "4.4.0" "" "" "" > /dev/null 2>&1
+  cp Dockerfile Dockerfile.first
+  rm -f Dockerfile
+  PPM_SNAPSHOT=2026-01-01 generate_dockerfile_inline \
+    "rocker/tidyverse" "4.4.0" "" "" "" > /dev/null 2>&1
+  if ! diff -q Dockerfile Dockerfile.first > /dev/null 2>&1; then
+    echo "FAIL: Identical inputs produced different Dockerfiles" >&2
+    diff Dockerfile Dockerfile.first >&2 || true
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+# Hash stability: compute_dockerfile_hash must be stable WITH renv.lock present
+# (the original test used an empty directory, exercising only the fallback).
+test_compute_dockerfile_hash_stable_with_renv_lock() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  cat > Dockerfile << 'EOF'
+FROM rocker/tidyverse:4.4.0
+EOF
+  cat > renv.lock << 'EOF'
+{"R": {"Version": "4.4.0"}, "Packages": {}}
+EOF
+  local h1 h2
+  h1=$(compute_dockerfile_hash)
+  h2=$(compute_dockerfile_hash)
+  assert_equals "$h1" "$h2" \
+    "Hash must be stable across repeated calls with renv.lock present"
+  teardown_test
+}
+
+# Mutating renv.lock must change the hash so stale cache entries are evicted.
+test_compute_dockerfile_hash_changes_with_renv_lock_mutation() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  cat > Dockerfile << 'EOF'
+FROM rocker/tidyverse:4.4.0
+EOF
+  cat > renv.lock << 'EOF'
+{"R": {"Version": "4.4.0"}, "Packages": {}}
+EOF
+  local h1
+  h1=$(compute_dockerfile_hash)
+  # Mutate lockfile
+  cat > renv.lock << 'EOF'
+{"R": {"Version": "4.4.1"}, "Packages": {}}
+EOF
+  local h2
+  h2=$(compute_dockerfile_hash)
+  if [[ "$h1" == "$h2" ]]; then
+    echo "FAIL: Hash did not change after renv.lock mutation" >&2
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

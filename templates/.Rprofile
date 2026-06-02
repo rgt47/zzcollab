@@ -19,6 +19,16 @@ options(
 )
 
 # ==========================================
+# RNG discipline (R-7)
+# ==========================================
+# Pin the RNG algorithm and normal-variate method explicitly so that
+# stochastic analyses (bootstrap, MCMC, cross-validation, simulation)
+# are reproducible across R versions. R 3.6.0 changed the default
+# sample.kind, which silently breaks previously reproducible seeds.
+# Set a project-level seed with set.seed() in each analysis script.
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+
+# ==========================================
 # Part 2: Container Detection
 # ==========================================
 # Set ZZCOLLAB_CONTAINER=true in Dockerfile to enable renv

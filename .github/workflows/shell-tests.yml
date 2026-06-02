@@ -7,6 +7,9 @@ on:
     branches: [ main, master, develop ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   shell-tests:
     name: Shell Unit Tests
@@ -14,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     - name: Run shell test suite
       run: |
@@ -32,7 +35,7 @@ jobs:
 
     - name: Upload test report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: shell-tests-report
         path: test-reports/shell-tests-report.md

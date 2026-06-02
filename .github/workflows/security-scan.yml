@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Docker image for scanning
         run: |
@@ -35,16 +35,18 @@ jobs:
           docker build -f Dockerfile.security-test -t zzcollab:security-scan .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
           image-ref: 'zzcollab:security-scan'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           scan-type: 'image'
+          exit-code: '1'
+          ignore-unfixed: true
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@fee9466b8957867761f2d78f922ab084e3e2dd17 # v3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -75,7 +77,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Check for high-risk system packages
         run: |
@@ -88,7 +90,7 @@ jobs:
 
           # List of known vulnerable base images to warn about
           if echo "$BASE_IMAGE" | grep -qE "alpine:latest|ubuntu:latest|debian:latest"; then
-            echo "⚠️ WARNING: Using :latest tag can introduce unexpected vulnerabilities"
+            echo "WARNING: Using :latest tag can introduce unexpected vulnerabilities"
             echo "Consider pinning to a specific version: e.g., ubuntu:22.04 or alpine:3.18"
           fi
 
@@ -96,11 +98,7 @@ jobs:
           echo "Checking for security best practices..."
 
           if grep -q "^RUN.*sudo" Dockerfile; then
-            echo "⚠️ WARNING: Using sudo in Docker build"
-          fi
-
-          if grep -q "^RUN.*-y" Dockerfile | grep -v "apt-get\|yum"; then
-            echo "⚠️ WARNING: Auto-accepting prompts without verification"
+            echo "WARNING: Using sudo in Docker build"
           fi
 
       - name: Check R package dependencies
@@ -114,8 +112,7 @@ jobs:
             PACKAGE_COUNT=$(grep -c '"Package"' renv.lock || echo "0")
             echo "- **Total packages**: $PACKAGE_COUNT" >> $GITHUB_STEP_SUMMARY
 
-            # Check for common vulnerable packages (advisory)
-            echo "- **Status**: ✅ renv.lock present and valid" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: renv.lock present and valid" >> $GITHUB_STEP_SUMMARY
           fi
 
   dockerfile-lint:
@@ -124,10 +121,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Run Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: Dockerfile
           ignore: DL3008,DL3009,DL3007,DL3003,DL3016,DL3059,DL3001
@@ -142,27 +139,24 @@ jobs:
 
           # Check for non-root USER
           if ! grep -q "^USER" Dockerfile; then
-            echo "⚠️ No explicit USER directive found" >> $GITHUB_STEP_SUMMARY
+            echo "No explicit USER directive found" >> $GITHUB_STEP_SUMMARY
             ISSUES=$((ISSUES + 1))
           else
-            echo "✅ Explicit USER directive found" >> $GITHUB_STEP_SUMMARY
+            echo "Explicit USER directive found" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Check for HEALTHCHECK
           if ! grep -q "^HEALTHCHECK" Dockerfile; then
-            echo "⚠️ No HEALTHCHECK directive" >> $GITHUB_STEP_SUMMARY
+            echo "No HEALTHCHECK directive" >> $GITHUB_STEP_SUMMARY
             ISSUES=$((ISSUES + 1))
           else
-            echo "✅ HEALTHCHECK directive present" >> $GITHUB_STEP_SUMMARY
+            echo "HEALTHCHECK directive present" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Check for minimal unnecessary files
-          echo "✅ Checking file size considerations" >> $GITHUB_STEP_SUMMARY
-
           if [ $ISSUES -eq 0 ]; then
-            echo "## ✅ All Best Practices Checks Passed" >> $GITHUB_STEP_SUMMARY
+            echo "## All Best Practices Checks Passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ⚠️ $ISSUES Best Practice(s) to Review" >> $GITHUB_STEP_SUMMARY
+            echo "## $ISSUES Best Practice(s) to Review" >> $GITHUB_STEP_SUMMARY
           fi
 
   security-summary:
@@ -177,8 +171,8 @@ jobs:
           echo "## Security Scan Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Scans Performed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Container image vulnerability scan (Trivy)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Dependency vulnerability check" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Dockerfile best practices review (Hadolint)" >> $GITHUB_STEP_SUMMARY
+          echo "- Container image vulnerability scan (Trivy)" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependency vulnerability check" >> $GITHUB_STEP_SUMMARY
+          echo "- Dockerfile best practices review (Hadolint)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Review detailed results in the Security tab of this repository." >> $GITHUB_STEP_SUMMARY

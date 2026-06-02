@@ -137,6 +137,69 @@ test_safe_mkdir_creates_nested() {
 }
 
 ##############################################################################
+# TEST: setup_project_safe rollback (T-4)
+##############################################################################
+# These tests source zzcollab.sh (BASH_SOURCE guard prevents main() from
+# running) to reach setup_project_safe, which lives in the main script.
+
+_ZZCOLLAB_SCRIPT="$(cd "${SCRIPT_DIR}/../.." && pwd)/zzcollab.sh"
+_ZZCOLLAB_AVAILABLE=false
+if [[ -f "$_ZZCOLLAB_SCRIPT" ]]; then
+    # shellcheck source=/dev/null
+    source "$_ZZCOLLAB_SCRIPT" 2>/dev/null && _ZZCOLLAB_AVAILABLE=true
+fi
+
+test_setup_project_safe_rollback_preserves_preexisting_files() {
+    if [[ "$_ZZCOLLAB_AVAILABLE" != "true" ]]; then
+        echo "SKIP: zzcollab.sh not found"
+        return 0
+    fi
+    setup_test
+    cd "$TEST_TEMP_DIR"
+    echo "preexisting content" > sentinel.txt
+
+    setup_project() { return 1; }
+
+    local rc=0
+    setup_project_safe 2>/dev/null || rc=$?
+
+    unset -f setup_project 2>/dev/null || true
+
+    if [[ "$rc" -eq 0 ]]; then
+        echo "FAIL: setup_project_safe should return nonzero on failure" >&2
+        teardown_test
+        return 1
+    fi
+    assert_file_exists "sentinel.txt" \
+        "Pre-existing file must survive setup_project_safe rollback"
+    teardown_test
+}
+
+test_setup_project_safe_rollback_removes_new_files() {
+    if [[ "$_ZZCOLLAB_AVAILABLE" != "true" ]]; then
+        echo "SKIP: zzcollab.sh not found"
+        return 0
+    fi
+    setup_test
+    cd "$TEST_TEMP_DIR"
+
+    setup_project() {
+        echo "scaffold" > new-scaffold-file.txt
+        return 1
+    }
+
+    setup_project_safe 2>/dev/null || true
+    unset -f setup_project 2>/dev/null || true
+
+    if [[ -f "new-scaffold-file.txt" ]]; then
+        echo "FAIL: File created during failed init was not rolled back" >&2
+        teardown_test
+        return 1
+    fi
+    teardown_test
+}
+
+##############################################################################
 # RUN TESTS
 ##############################################################################
 
@@ -159,6 +222,8 @@ tests=(
     test_log_info_shows_at_level_2
     test_safe_mkdir_creates_directory
     test_safe_mkdir_creates_nested
+    test_setup_project_safe_rollback_preserves_preexisting_files
+    test_setup_project_safe_rollback_removes_new_files
 )
 
 pass=0

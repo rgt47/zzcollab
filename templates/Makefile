@@ -225,6 +225,26 @@ r:
 # Alias for rstudio
 rstudio: docker-rstudio
 
+## Data integrity (R-8)
+# Write a sha256 manifest of raw_data/ so any silent mutation is detectable.
+# Commit data-manifest.sha256 alongside raw_data/ and regenerate after updates.
+hash-data:
+	@if [ ! -d raw_data ]; then \
+	  echo "No raw_data/ directory found; skipping hash-data."; \
+	  exit 0; \
+	fi
+	find raw_data -type f | sort | xargs shasum -a 256 > data-manifest.sha256
+	@echo "Data manifest written to data-manifest.sha256"
+	@echo "Commit this file to make future mutations detectable."
+
+verify-data:
+	@if [ ! -f data-manifest.sha256 ]; then \
+	  echo "No data-manifest.sha256 found; run 'make hash-data' first." >&2; \
+	  exit 1; \
+	fi
+	shasum -a 256 --check data-manifest.sha256
+	@echo "All data files verified."
+
 # Cleanup
 clean:
 	rm -f *.tar.gz

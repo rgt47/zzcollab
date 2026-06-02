@@ -7,28 +7,32 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   shellcheck:
     name: ShellCheck Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
-      
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
     - name: Install ShellCheck
       run: |
         sudo apt-get update
         sudo apt-get install -y shellcheck
-        
+
     - name: Verify ShellCheck installation
       run: shellcheck --version
-      
+
     - name: Run ShellCheck on main script
       run: |
         echo "Checking main zzcollab.sh script..."
         shellcheck --severity=warning zzcollab.sh
-        
+
     - name: Run ShellCheck on modules
       run: |
         echo "Checking all modules..."
@@ -36,7 +40,7 @@ jobs:
           echo "Checking $file..."
           shellcheck --severity=warning "$file"
         done
-        
+
     - name: Run ShellCheck on utility scripts
       run: |
         echo "Checking utility scripts..."
@@ -46,7 +50,7 @@ jobs:
             shellcheck --severity=warning "$script"
           fi
         done
-        
+
     - name: Run ShellCheck on developer scripts
       run: |
         echo "Checking developer scripts..."
@@ -70,7 +74,7 @@ jobs:
           echo "Checking $file..."
           shellcheck --severity=warning "$file"
         done
-        
+
     - name: Check for :latest base-image defaults (CRITICAL for reproducibility)
       run: |
         echo "Checking base-image pins in the Dockerfile generator and templates..."
@@ -87,7 +91,7 @@ jobs:
         VIOLATIONS=0
         for file in "${CRITICAL_FILES[@]}"; do
           if [ ! -f "$file" ]; then
-            echo "❌ ERROR: expected file not found: $file"
+            echo "ERROR: expected file not found: $file"
             VIOLATIONS=$((VIOLATIONS + 1))
             continue
           fi
@@ -96,21 +100,21 @@ jobs:
           # FROM ...:latest, or an ARG/ENV R_VERSION/BASE_IMAGE of latest.
           # Local output tags such as "$project:latest" are fine and not matched.
           if grep -nE 'FROM[^#]*:latest|(ARG|ENV)[[:space:]]+(R_VERSION|BASE_IMAGE)[^#]*latest' "$file"; then
-            echo "❌ ERROR: Found :latest base-image default in $file"
+            echo "ERROR: Found :latest base-image default in $file"
             VIOLATIONS=$((VIOLATIONS + 1))
           else
-            echo "✓ $file OK (base image is pinned)"
+            echo "OK: $file base image is pinned"
           fi
         done
 
         if [ "$VIOLATIONS" -gt 0 ]; then
           echo ""
-          echo "❌ FAILED: $VIOLATIONS reproducibility issue(s)"
+          echo "FAILED: $VIOLATIONS reproducibility issue(s)"
           echo "Docker base images must be version-pinned."
           exit 1
         fi
 
-        echo "✓ All critical files OK - base images are pinned"
+        echo "All critical files OK - base images are pinned"
 
     - name: Generate ShellCheck report
       run: |
@@ -128,17 +132,17 @@ jobs:
           echo "## Analysis Results"
           echo "All scripts passed ShellCheck analysis with no issues."
         } > shellcheck-report.md
-        
+
     - name: Upload ShellCheck report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: shellcheck-report
         path: shellcheck-report.md
         retention-days: 30
-        
+
     - name: Comment on PR (if pull request)
       if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
+      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
       with:
         script: |
           const fs = require('fs');
@@ -149,29 +153,29 @@ jobs:
             repo: context.repo.repo,
             body: '## ShellCheck Analysis Results\n\n' + report
           });
-          
+
   shellcheck-diff:
     name: ShellCheck Diff Analysis
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       with:
         fetch-depth: 0
-        
+
     - name: Install ShellCheck
       run: |
         sudo apt-get update
         sudo apt-get install -y shellcheck
-        
+
     - name: Get changed shell files
       id: changed-files
       run: |
         git diff --name-only origin/main...HEAD | grep -E '\.(sh|bash)$' | tee changed-files.txt || true
-        echo "changed_files=$(cat changed-files.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
-        
+        echo "changed_files=$(tr '\n' ' ' < changed-files.txt)" >> "$GITHUB_OUTPUT"
+
     - name: Run ShellCheck on changed files
       if: steps.changed-files.outputs.changed_files != ''
       run: |
@@ -182,7 +186,7 @@ jobs:
             shellcheck --severity=warning "$file"
           fi
         done < changed-files.txt
-        
+
     - name: No shell files changed
       if: steps.changed-files.outputs.changed_files == ''
       run: |
