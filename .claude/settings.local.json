@@ -64,7 +64,9 @@
       "Bash(shellcheck --severity=warning /Users/zenn/prj/sfw/07-zzcollab/zzcollab/zzcollab.sh)",
       "Bash(git checkout *)",
       "Bash(git cherry-pick *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(sed -i '' 's/RUN R -e \"renv::restore\\(\\)\"/RUN R -e \"renv::init\\(bare=TRUE, force=TRUE, restart=FALSE\\); renv::restore\\(\\)\"/' Dockerfile)",
+      "Bash(docker build *)"
     ]
   }
 }
