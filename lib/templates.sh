@@ -153,6 +153,19 @@ substitute_variables() {
     export PKG_ENCODING="${CONFIG_RPACKAGE_ENCODING:-UTF-8}"
     AUTHORS_R="$(render_authors_r)"
     export AUTHORS_R
+
+    # Split AUTHOR_NAME into given/family for CFF and other structured formats.
+    # Convention: last whitespace-delimited token is the family name.
+    # "Ronald G. Thomas" -> given="Ronald G.", family="Thomas"
+    local _cff_name="${AUTHOR_NAME:-Your Name}"
+    if [[ "$_cff_name" == *' '* ]]; then
+        export AUTHOR_FAMILY_NAME="${_cff_name##* }"
+        export AUTHOR_GIVEN_NAME="${_cff_name% *}"
+    else
+        export AUTHOR_GIVEN_NAME="$_cff_name"
+        export AUTHOR_FAMILY_NAME=""
+    fi
+
     export DATE="$(date +%Y-%m-%d)"
     export GITHUB_ACCOUNT="${GITHUB_ACCOUNT:-}"
     export PROJECT_NAME="${PROJECT_NAME:-}"
@@ -173,7 +186,7 @@ substitute_variables() {
 
     # Note: $BASE_IMAGE is intentionally excluded - it is a runtime shell
     # variable in Makefile ($$BASE_IMAGE), not a template placeholder.
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_GIVEN_NAME $AUTHOR_FAMILY_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1

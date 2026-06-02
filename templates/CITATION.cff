@@ -6,8 +6,8 @@ version: 0.1.0
 date-released: "$DATE"
 license: $LICENSE_TYPE
 authors:
-  - family-names: ""
-    given-names: $AUTHOR_NAME
+  - family-names: $AUTHOR_FAMILY_NAME
+    given-names: $AUTHOR_GIVEN_NAME
     orcid: ""
     email: $AUTHOR_EMAIL
     affiliation: $AUTHOR_INSTITUTE
