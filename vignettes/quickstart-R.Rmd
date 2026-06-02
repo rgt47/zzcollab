@@ -82,8 +82,8 @@ if (is.null(team)) {
   set_config("team_name", "myteam")
 }
 
-# Update existing configuration
-set_config("profile_name", "bioinformatics")
+# Update existing configuration (built-in profiles: minimal, analysis, rstudio)
+set_config("profile_name", "analysis")
 
 # View all settings
 config <- list_config()
@@ -208,9 +208,12 @@ Create a team project with R interface:
 ```{r}
 library(zzcollab)
 
-# Set team configuration
+# Set team configuration. Built-in profiles are minimal, analysis, and
+# rstudio; for genomics, start from analysis and either add Bioconductor
+# packages via renv or build on a Bioconductor base image with
+# `zzcollab docker --base-image bioconductor/bioconductor_docker`.
 set_config("team_name", "genomicslab")
-set_config("profile_name", "bioinformatics")
+set_config("profile_name", "analysis")
 set_config("github_account", "genomicslab")
 
 # Navigate to project directory
@@ -243,7 +246,7 @@ print(images)
 
 ```{r}
 # Commit initial setup
-git_commit("Initial project setup with bioinformatics profile")
+git_commit("Initial project setup with analysis profile")
 
 # Push to GitHub
 git_push()
@@ -443,7 +446,7 @@ add_package(c("sf", "terra", "mapview"))
 # Sync from renv.lock (e.g., after git pull)
 sync_env()
 
-# Validate package consistency (pure shell - NO R required!)
+# Validate package consistency (runs zzrenvcheck in the container)
 rebuild("docker-check-renv")
 ```
 
@@ -495,17 +498,16 @@ library(zzcollab)
 
 # Comprehensive reproducibility check
 if (validate_repro()) {
-  message("✅ All reproducibility checks passed")
-  message("✓ renv environment synchronized")
-  message("✓ Validation scripts passed")
-  message("✓ Package consistency verified")
+  message("All reproducibility checks passed")
+  message("renv environment synchronized")
+  message("Package consistency verified by zzrenvcheck")
 } else {
-  message("❌ Some reproducibility checks failed")
+  message("Some reproducibility checks failed")
   message("Review output above for details")
 }
 
 # Individual validation steps
-system("make check-renv")  # Pure shell - NO R REQUIRED! (grep, awk, curl, jq)
+system("make check-renv")  # Runs zzrenvcheck in the container
 system("Rscript check_rprofile_options.R")  # R options monitoring
 
 # Check Docker consistency
@@ -629,9 +631,9 @@ preflight_check <- function() {
   all_passed <- all(unlist(checks))
 
   if (all_passed) {
-    message("✅ All pre-flight checks passed")
+    message("All pre-flight checks passed")
   } else {
-    message("❌ Some checks failed:")
+    message("Some checks failed:")
     print(checks)
   }
 

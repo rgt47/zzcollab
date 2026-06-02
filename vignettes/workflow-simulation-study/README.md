@@ -25,11 +25,11 @@ workflow-simulation-study/
 │   ├── simulate_data.R                 # Data generation functions
 │   ├── fit_models.R                    # Model fitting functions
 │   └── performance_metrics.R           # Performance evaluation
-├── tests/
-│   └── testthat/
-│       ├── test-simulate_data.R        # 20 tests
-│       ├── test-fit_models.R           # 18 tests
-│       └── test-performance_metrics.R  # 22 tests
+├── inst/
+│   └── tinytest/
+│       ├── test_simulate_data.R        # 20 tests
+│       ├── test_fit_models.R           # 18 tests
+│       └── test_performance_metrics.R  # 22 tests
 ├── analysis/
 │   ├── scripts/
 │   │   ├── 02_run_simulation.R         # Main simulation runner
@@ -165,11 +165,13 @@ Based on the simulation design:
 
 ```r
 # Run all tests
-testthat::test_dir("tests/testthat")
+tinytest::run_test_dir("inst/tinytest")
 
 # Run specific test file
-testthat::test_file("tests/testthat/test-simulate_data.R")
+tinytest::run_test_file("inst/tinytest/test_simulate_data.R")
 ```
+
+Or run the full suite in the container with `make docker-test`.
 
 ## Customization
 

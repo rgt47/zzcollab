@@ -11,7 +11,7 @@
 #   zzcollab config [SUBCOMMAND]     Configuration management
 #   zzcollab help [TOPIC]            Show help
 #
-# PROFILES (quickstart: init + renv + docker, or switch profile if existing):
+# PROFILES (quickstart in a new directory: init + renv + docker):
 #   zzcollab analysis                Tidyverse compendium (recommended)
 #   zzcollab minimal | rstudio
 #
@@ -45,14 +45,6 @@ export ZZCOLLAB_TEMPLATES_DIR="$ZZCOLLAB_HOME/templates"
 log_info() { printf "ℹ️  %s\n" "$*" >&2; }
 log_error() { printf "❌ %s\n" "$*" >&2; }
 log_debug() { :; }
-
-#=============================================================================
-# PORTABILITY HELPERS
-#=============================================================================
-
-_reverse_lines() {
-    awk '{a[NR]=$0} END{for(i=NR;i>=1;i--)print a[i]}'
-}
 
 #=============================================================================
 # LOAD FOUNDATION LIBRARIES AND ALL MODULES
@@ -98,6 +90,25 @@ is_workspace_initialized() {
     [[ -f "DESCRIPTION" ]]
 }
 
+# Run setup_project; on failure, roll back the partial scaffold by removing the
+# top-level entries it newly created. A snapshot taken before scaffolding means
+# pre-existing files are never removed (safe even under --force). This avoids a
+# half-created directory without re-introducing a manifest.
+setup_project_safe() {
+    local _before
+    _before=$(find . -maxdepth 1 -mindepth 1 2>/dev/null)
+    if setup_project; then
+        return 0
+    fi
+    local _entry
+    while IFS= read -r _entry; do
+        [[ -z "$_entry" ]] && continue
+        grep -qxF -- "$_entry" <<< "$_before" || rm -rf -- "$_entry"
+    done < <(find . -maxdepth 1 -mindepth 1 2>/dev/null)
+    log_warn "Initialization failed; rolled back the partial scaffold."
+    return 1
+}
+
 # Ensure zzcollab workspace exists, prompt to create if not
 # Returns 0 on success, 1 on failure/cancel
 ensure_workspace_initialized() {
@@ -140,8 +151,13 @@ ensure_workspace_initialized() {
     PKG_NAME=$(echo "$PKG_NAME" | tr '-' '.' | tr '[:upper:]' '[:lower:]')
     export PKG_NAME
 
+    # Guard against accidental scaffolding in an occupied directory. The lazy
+    # auto-init path (zzc docker / zzc renv) must not bypass the same check
+    # that 'init' and the profile quickstart use.
+    assert_safe_init_directory || return 1
+
     log_info "Initializing workspace: $PKG_NAME"
-    setup_project || {
+    setup_project_safe || {
         log_error "Workspace initialization failed"
         return 1
     }
@@ -154,6 +170,14 @@ ensure_workspace_initialized() {
 #=============================================================================
 # DOCKER IMAGE HELPER
 #=============================================================================
+
+# Prompt whether to build the Docker image now.
+# Returns 0 if the user wants to build, 1 to skip.
+prompt_build_now() {
+    local _choice
+    zzc_read -r -p "Build Docker image now? [Y/n]: " _choice
+    [[ ! "$_choice" =~ ^[Nn]$ ]]
+}
 
 # Ensure Docker image exists, prompt to build if not
 # Usage: ensure_docker_image_built [project_name]
@@ -217,7 +241,9 @@ cmd_init() {
         esac
     done
 
-    [[ "$force" == "false" ]] && assert_safe_init_directory || true
+    if [[ "$force" == "false" ]]; then
+        assert_safe_init_directory || exit 1
+    fi
 
     # Validate package name
     PKG_NAME=$(validate_package_name)
@@ -247,26 +273,12 @@ cmd_init() {
         load_config 2>/dev/null || true
     fi
 
-    # Sync template substitution variables from the final resolved config.
-    # AUTHOR_NAME and AUTHOR_EMAIL are used by envsubst inside setup_project.
-    [[ -n "${CONFIG_AUTHOR_NAME:-}" ]]    && AUTHOR_NAME="$CONFIG_AUTHOR_NAME"
-    [[ -n "${CONFIG_AUTHOR_EMAIL:-}" ]]   && AUTHOR_EMAIL="$CONFIG_AUTHOR_EMAIL"
-    [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
-    [[ -n "${CONFIG_TEAM_NAME:-}" ]]      && TEAM_NAME="$CONFIG_TEAM_NAME"
-    export AUTHOR_NAME AUTHOR_EMAIL GITHUB_ACCOUNT TEAM_NAME
-
-    # Resolve profile and base image. CLI flag takes precedence over config.
-    local profile_name base_image
-    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] && [[ -n "${PROFILE_NAME:-}" ]]; then
-        profile_name="$PROFILE_NAME"
-    else
-        profile_name="${CONFIG_PROFILE_NAME:-minimal}"
-    fi
-    base_image=$(get_profile_base_image "$profile_name")
-    export BASE_IMAGE="$base_image"
+    # Export template-substitution vars and the resolved BASE_IMAGE from the
+    # final config, for envsubst and Dockerfile generation in setup_project.
+    init_export_config_vars
 
     # Run project setup
-    setup_project || exit 1
+    setup_project_safe || exit 1
 
     log_success "Project setup complete"
     echo ""
@@ -281,6 +293,33 @@ cmd_init() {
     fi
 
     # Phase 3: Reproducibility setup
+    prompt_reproducibility_setup
+    return 0
+}
+
+# Sync template substitution variables (AUTHOR_NAME etc., used by envsubst in
+# setup_project) and the resolved BASE_IMAGE from the final config. A CLI
+# --profile flag takes precedence over the configured profile.
+init_export_config_vars() {
+    [[ -n "${CONFIG_AUTHOR_NAME:-}" ]]    && AUTHOR_NAME="$CONFIG_AUTHOR_NAME"
+    [[ -n "${CONFIG_AUTHOR_EMAIL:-}" ]]   && AUTHOR_EMAIL="$CONFIG_AUTHOR_EMAIL"
+    [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
+    [[ -n "${CONFIG_TEAM_NAME:-}" ]]      && TEAM_NAME="$CONFIG_TEAM_NAME"
+    export AUTHOR_NAME AUTHOR_EMAIL GITHUB_ACCOUNT TEAM_NAME
+
+    local profile_name base_image
+    if [[ "${USER_PROVIDED_PROFILE:-false}" == "true" ]] && [[ -n "${PROFILE_NAME:-}" ]]; then
+        profile_name="$PROFILE_NAME"
+    else
+        profile_name="${CONFIG_PROFILE_NAME:-minimal}"
+    fi
+    base_image=$(get_profile_base_image "$profile_name")
+    export BASE_IMAGE="$base_image"
+}
+
+# cmd_init Phase 3: offer renv-only / renv+Docker / none and dispatch to
+# cmd_renv or cmd_docker. Uses only global state, so it extracts cleanly.
+prompt_reproducibility_setup() {
     echo "───────────────────────────────────────────────────────────"
     echo "  Reproducibility Setup"
     echo "───────────────────────────────────────────────────────────"
@@ -336,22 +375,21 @@ cmd_docker() {
     local r_version=""
     local base_image=""
     local profile=""
-    local profile_changed=false
-    local auto_no=false
-
+    # Global flags (-v/-q/-y/--no-build) are consumed by the pre-scan in main()
+    # before this runs, so they are not handled here.
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --build|-b) build_image=true; shift ;;
-            --no-build) build_image=false; shift ;;
-            -y|--yes|-Y|--yes-all) export ZZCOLLAB_ACCEPT_DEFAULTS=true; shift ;;
-            -n|--no) auto_no=true; shift ;;
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
-            --profile|-r) profile="$2"; profile_changed=true; shift 2 ;;
+            --profile|-r) profile="$2"; shift 2 ;;
             help|--help|-h) show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
     done
+
+    # Validate a user-supplied base image before doing any work
+    [[ -n "$base_image" ]] && { validate_base_image "$base_image" || exit 1; }
 
     # Ensure zzcollab workspace is initialized
     ensure_workspace_initialized "docker" || exit 1
@@ -378,12 +416,9 @@ cmd_docker() {
     if [[ ! -f "renv.lock" ]]; then
         log_info "No renv.lock found, creating minimal lockfile..."
 
-        # Determine R version: CLI arg > config > query CRAN
+        # Determine R version: CLI arg > config > default
         if [[ -z "$r_version" ]]; then
             load_config 2>/dev/null || true
-            r_version="${CONFIG_R_VERSION:-}"
-        fi
-        if [[ -z "$r_version" ]]; then
             r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
         fi
 
@@ -401,13 +436,11 @@ cmd_docker() {
 
     if [[ "$build_image" == "true" ]]; then
         build_docker_image || exit 1
-    elif [[ "$build_image" == "false" ]] || [[ "$auto_no" == "true" ]]; then
+    elif [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
         log_info "Build with: make docker-build"
     elif [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         echo ""
-        local build_choice
-        zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
-        if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+        if prompt_build_now; then
             build_docker_image || exit 1
         else
             log_info "Build later with: make docker-build"
@@ -421,6 +454,8 @@ cmd_build() {
 
     local no_cache="false"
     local log_file=""
+    local project_name
+    project_name=$(basename "$(pwd)")
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -428,14 +463,15 @@ cmd_build() {
             --log)      log_file="docker-build.log"; shift ;;
             help|--help|-h)
                 cat << 'HELPEOF'
-BUILD DOCKER IMAGE
+REBUILD DOCKER IMAGE
 
-Builds the Docker image using the content-addressable cache.
-If an image with the same Dockerfile+renv.lock hash exists,
-it is retagged instead of rebuilt.
+Rebuilds the project's Docker image using the content-addressable cache.
+If an image with the same Dockerfile+renv.lock hash exists, it is retagged
+instead of rebuilt. To generate the Dockerfile and build in one step,
+use 'zzcollab docker --build' instead.
 
 USAGE:
-    zzcollab build [OPTIONS]
+    zzcollab rebuild [OPTIONS]
 
 OPTIONS:
     --no-cache     Skip cache check; force full rebuild
@@ -452,10 +488,10 @@ HELPEOF
     done
 
     if [[ -n "$log_file" ]]; then
-        build_docker_image "$(basename "$(pwd)")" "$no_cache" \
+        build_docker_image "$project_name" "$no_cache" \
             2>&1 | tee "$log_file"
     else
-        build_docker_image "$(basename "$(pwd)")" "$no_cache"
+        build_docker_image "$project_name" "$no_cache"
     fi
 }
 
@@ -658,6 +694,12 @@ cmd_doctor() {
 }
 
 # Silent advisory: warn once if any workspace template is outdated
+# Extract the 'vX.Y.Z' stamp from a stamped template file (empty if absent).
+# The stamp line is '# zzcollab <file> vX.Y.Z'.
+_template_stamp_version() {
+    sed -n "s/^# zzcollab ${1} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$1" | head -1
+}
+
 warn_if_templates_outdated() {
     local cur="${ZZCOLLAB_TEMPLATE_VERSION:-}"
     [[ -z "$cur" ]] && return 0
@@ -665,7 +707,7 @@ warn_if_templates_outdated() {
     local file ver outdated=""
     for file in Makefile .Rprofile Dockerfile; do
         [[ -f "$file" ]] || continue
-        ver=$(sed -n "s/^# zzcollab ${file} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1)
+        ver=$(_template_stamp_version "$file")
         if [[ -n "$ver" && "$ver" != "$cur" ]]; then
             outdated="${outdated:+$outdated, }${file} (v${ver})"
         fi
@@ -689,7 +731,7 @@ check_and_prompt_outdated_templates() {
 
     for file in Makefile .Rprofile; do
         [[ -f "$file" ]] || continue
-        ver=$(sed -n "s/^# zzcollab ${file} v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p" "$file" | head -1)
+        ver=$(_template_stamp_version "$file")
         if [[ -z "$ver" ]]; then
             unstamped_files+=("$file")
         elif [[ "$ver" != "$cur" ]]; then
@@ -790,12 +832,27 @@ cmd_config() {
             config_set "$1" "$2"
             ;;
         validate)
-            # Confirm the config files load and parse without error.
-            if load_config 2>/dev/null; then
+            # Confirm each existing config file parses as valid YAML. load_config
+            # returns 0 unconditionally and swallows yq parse errors, so check
+            # syntax directly with `yq eval '.'`.
+            command -v yq >/dev/null 2>&1 || {
+                log_error "yq required to validate configuration but not found"
+                return 1
+            }
+            local _cfg _cfg_ok=true
+            for _cfg in "$CONFIG_USER" "$CONFIG_PROJECT"; do
+                [[ -f "$_cfg" ]] || continue
+                if yq eval '.' "$_cfg" >/dev/null 2>&1; then
+                    log_info "Valid YAML: $_cfg"
+                else
+                    log_error "Malformed YAML: $_cfg"
+                    _cfg_ok=false
+                fi
+            done
+            if [[ "$_cfg_ok" == "true" ]]; then
                 log_success "Configuration is valid"
                 return 0
             else
-                log_error "Configuration failed to load"
                 return 1
             fi
             ;;
@@ -807,6 +864,14 @@ cmd_config() {
             ;;
     esac
 }
+
+# Shared zzcollab scaffold inventory (everything zzc generates except analysis/
+# and .git/). Single source of truth so cmd_uninstall and cmd_rm_all cannot
+# drift. cmd_uninstall removes this set (preserving analysis/); cmd_rm_all
+# removes this set plus analysis/.
+readonly ZZCOLLAB_SCAFFOLD_DIRS=(R tests man vignettes docs .github renv .zzcollab)
+readonly ZZCOLLAB_SCAFFOLD_FILES=(DESCRIPTION NAMESPACE LICENSE Makefile Dockerfile
+    renv.lock .Rprofile .gitignore .Rbuildignore)
 
 cmd_uninstall() {
     local force=false
@@ -825,9 +890,10 @@ cmd_uninstall() {
         esac
     done
 
-    local known_dirs=(R/ analysis/ tests/ man/ vignettes/ docs/ .github/ renv/ .zzcollab/)
-    local known_files=(DESCRIPTION NAMESPACE LICENSE Makefile Dockerfile
-                       renv.lock .Rprofile .gitignore .Rbuildignore zzcollab.yaml)
+    # Shared scaffold, minus analysis/ (preserved, per --help), plus the
+    # project-level zzcollab.yaml.
+    local known_dirs=("${ZZCOLLAB_SCAFFOLD_DIRS[@]}")
+    local known_files=("${ZZCOLLAB_SCAFFOLD_FILES[@]}" zzcollab.yaml)
 
     if [[ "$dry_run" == "true" ]]; then
         log_info "Would remove:"
@@ -1020,7 +1086,7 @@ Generated with zzcollab" || {
                 git remote add origin "https://github.com/${gh_user}/${project_name}.git" 2>/dev/null || \
                     git remote set-url origin "https://github.com/${gh_user}/${project_name}.git"
                 git branch -M main
-                git push -u origin main --force
+                git push -u origin main --force-with-lease
                 log_success "Connected and pushed to existing repository"
                 return 0
                 ;;
@@ -1068,14 +1134,14 @@ cmd_dockerhub() {
     ensure_docker_image_built "$project_name" || return 1
 
     # Get DockerHub username from config or environment
-    # Priority: DOCKERHUB_ACCOUNT env > docker.account > defaults.dockerhub_account
+    # Priority: DOCKERHUB_ACCOUNT env > configured dockerhub_account
     load_config 2>/dev/null || true
-    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKER_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}}"
+    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
 
     if [[ -z "$dockerhub_user" ]]; then
         if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
             log_error "DockerHub username not configured"
-            echo "  Set with: zzc config set docker-account <username>" >&2
+            echo "  Set with: zzc config set dockerhub-account <username>" >&2
             return 1
         fi
         zzc_read -r -p "DockerHub username: " dockerhub_user
@@ -1086,7 +1152,7 @@ cmd_dockerhub() {
         local _save
         zzc_read -r -p "Save to config? [Y/n]: " _save
         if [[ ! "$_save" =~ ^[Nn]$ ]]; then
-            config_set "docker-account" "$dockerhub_user"
+            config_set "dockerhub-account" "$dockerhub_user"
         fi
     fi
 
@@ -1134,9 +1200,65 @@ install_zzvimr_graphics_template() {
         fi
     done
 
-    log_warning "zzvim-R not found; skipping .Rprofile.local"
+    log_warn "zzvim-R not found; skipping .Rprofile.local"
     log_info "Install zzvim-R for terminal graphics: https://github.com/rgt47/zzvim-R"
     return 1
+}
+
+##############################################################################
+# FUNCTION: _quickstart_existing_project
+# PURPOSE:  Handle 'zzc <profile>' when the directory is already a workspace.
+#           Reports status for a matching profile, refuses a non-destructive
+#           profile switch (directing the user to 'docker --profile'), or
+#           regenerates a missing Dockerfile for the current profile. Always
+#           returns, so the caller propagates its exit status.
+# ARGS:     $1 - requested profile name
+#           $2 - resolved base image for that profile
+##############################################################################
+_quickstart_existing_project() {
+    local profile="$1" base_image="$2"
+    local current_profile
+    current_profile=$(config_get "profile-name" true 2>/dev/null || echo "")
+    local project_name
+    project_name=$(basename "$(pwd)")
+    local image_exists=false
+    docker image inspect "$project_name" &>/dev/null && image_exists=true
+
+    # Check if profile matches and files exist (don't require Docker image)
+    if [[ "$current_profile" == "$profile" ]] && [[ -f "Dockerfile" ]]; then
+        log_success "Project already configured with '$profile' profile"
+        if [[ "$image_exists" == "true" ]]; then
+            echo "  Docker image '$project_name' exists" >&2
+            echo "  To develop:  make r" >&2
+        else
+            echo "  To build:    zzc docker" >&2
+        fi
+        echo "  To rebuild:  make docker-rebuild" >&2
+        return 0
+    fi
+
+    # A different profile is requested for an existing project. Do NOT
+    # silently switch: that path used to overwrite a customized
+    # .Rprofile/Makefile. A bare profile token is create-only; switching is
+    # an explicit, non-destructive operation via 'docker --profile'.
+    if [[ "$current_profile" != "$profile" ]]; then
+        if [[ -n "$current_profile" ]]; then
+            log_error "This project is configured with the '$current_profile' profile."
+            log_info  "To switch it to '$profile':  zzcollab docker --profile $profile"
+        else
+            log_error "This project has no profile set."
+            log_info  "To configure it with '$profile':  zzcollab docker --profile $profile"
+        fi
+        log_info  "(That regenerates the Dockerfile only; your .Rprofile and Makefile are left untouched.)"
+        return 1
+    fi
+
+    # Same profile, missing Dockerfile
+    log_info "Generating missing Dockerfile for profile: $profile"
+    export BASE_IMAGE="$base_image"
+    generate_dockerfile || return 1
+    log_success "Dockerfile generated with $profile profile"
+    return 0
 }
 
 ##############################################################################
@@ -1144,11 +1266,15 @@ install_zzvimr_graphics_template() {
 # PURPOSE:  Smart profile command - quickstart for new, switch for existing
 # USAGE:    zzcollab analysis
 #           zzcollab minimal
-# ARGS:     $1 - profile name (analysis, minimal, publishing, etc.)
+# ARGS:     $1 - profile name (minimal, analysis, rstudio)
 ##############################################################################
 cmd_quickstart() {
     local profile="${1:-analysis}"
 
+
+    # Load resolved config so scaffolded metadata (DESCRIPTION/LICENSE author,
+    # license, roxygen version) reflects the user's settings.
+    load_config 2>/dev/null || true
 
     # Validate profile exists
     local base_image
@@ -1158,82 +1284,20 @@ cmd_quickstart() {
         return 1
     }
 
-    # Existing project → check if anything needs to be done
+    # Existing project → the handler decides what (if anything) to do and
+    # always returns; propagate its status.
     if is_workspace_initialized; then
-        local current_profile
-        current_profile=$(config_get "profile-name" true 2>/dev/null || echo "")
-        local project_name
-        project_name=$(basename "$(pwd)")
-        local image_exists=false
-        docker image inspect "$project_name" &>/dev/null && image_exists=true
-
-        # Check if profile matches and files exist (don't require Docker image)
-        if [[ "$current_profile" == "$profile" ]] && [[ -f "Dockerfile" ]]; then
-            log_success "Project already configured with '$profile' profile"
-            if [[ "$image_exists" == "true" ]]; then
-                echo "  Docker image '$project_name' exists" >&2
-                echo "  To develop:  make r" >&2
-            else
-                echo "  To build:    zzc docker" >&2
-            fi
-            echo "  To rebuild:  zzc docker --force" >&2
-            return 0
-        fi
-
-        # Profile change requested
-        if [[ "$current_profile" != "$profile" ]]; then
-            log_info "Switching profile: ${current_profile:-<none>} → $profile"
-            config_set "profile-name" "$profile" true 2>/dev/null || true
-
-            # Update .Rprofile from template
-            if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
-                safe_cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
-                log_success "Updated .Rprofile from template"
-            fi
-
-            # Install zzvim-R graphics for the analysis profile (if not already present)
-            if [[ "$profile" == "analysis" ]] && [[ ! -f ".Rprofile.local" ]]; then
-                install_zzvimr_graphics_template || true
-            fi
-
-            # Update Makefile from template
-            if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/Makefile" ]]; then
-                safe_cp "$ZZCOLLAB_TEMPLATES_DIR/Makefile" Makefile
-                log_success "Updated Makefile from template"
-            fi
-
-            # Regenerate Dockerfile with new profile
-            export BASE_IMAGE="$base_image"
-            generate_dockerfile || return 1
-            log_success "Dockerfile regenerated with $profile profile"
-
-            # Prompt to build
-            if [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
-                log_info "Build later with: zzc docker"
-            else
-                echo ""
-                local build_choice
-                zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
-                if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
-                    build_docker_image || return 1
-                else
-                    log_info "Build later with: zzc docker"
-                fi
-            fi
-        else
-            # Same profile, missing Dockerfile
-            log_info "Generating missing Dockerfile for profile: $profile"
-            export BASE_IMAGE="$base_image"
-            generate_dockerfile || return 1
-            log_success "Dockerfile generated with $profile profile"
-        fi
-        return 0
+        _quickstart_existing_project "$profile" "$base_image"
+        return $?
     fi
 
     # New project → full quickstart
     assert_safe_init_directory || return 1
     local project_name
     project_name=$(basename "$(pwd)")
+    # The project name is the directory name; reject malformed names before
+    # scaffolding (validate_package_name later derives the R-safe variant).
+    validate_project_name "$project_name" || return 1
 
     echo ""
     echo "═══════════════════════════════════════════════════════════"
@@ -1260,7 +1324,7 @@ cmd_quickstart() {
     log_info "Step 1/3: Creating project structure..."
     PKG_NAME=$(validate_package_name)
     export PKG_NAME
-    setup_project || return 1
+    setup_project_safe || return 1
     log_success "Project structure created"
 
     # Install zzvim-R graphics template for the analysis profile
@@ -1300,9 +1364,7 @@ cmd_quickstart() {
         echo ""
         log_info "Build later with: make docker-build"
     else
-        local build_choice
-        zzc_read -r -p "Build Docker image now? [Y/n]: " build_choice
-        if [[ ! "$build_choice" =~ ^[Nn]$ ]]; then
+        if prompt_build_now; then
             echo ""
             build_docker_image || return 1
             echo ""
@@ -1412,10 +1474,14 @@ cmd_rm_renv() {
     [[ -f "renv.lock" ]] && rm "renv.lock" && log_info "Removed renv.lock"
     [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
 
-    # Remove renv activation from .Rprofile if present
+    # Remove renv activation from .Rprofile if present. Edit via a temp file
+    # then mv into place; the project dir is often cloud-synced, where in-place
+    # sed risks a 0-byte truncation race with the sync provider.
     if [[ -f ".Rprofile" ]] && grep -q "renv/activate.R" .Rprofile; then
-        sed -i.bak '/renv\/activate.R/d' .Rprofile
-        rm -f .Rprofile.bak
+        local _rprofile_tmp
+        _rprofile_tmp=$(mktemp)
+        grep -v 'renv/activate.R' .Rprofile > "$_rprofile_tmp" || true
+        mv "$_rprofile_tmp" .Rprofile
         log_info "Removed renv activation from .Rprofile"
     fi
 
@@ -1464,19 +1530,8 @@ cmd_rm_cicd() {
 }
 
 cmd_rm_all() {
-    # If manifest exists, use manifest-based uninstall (preferred)
-    if [[ -f ".zzcollab/manifest.json" ]] || [[ -f ".zzcollab/manifest.txt" ]]; then
-        echo ""
-        log_info "Found zzcollab manifest - using manifest-based removal"
-        echo "  Note: .git/ will NOT be removed (use 'zzc rm git' separately)"
-        echo ""
-        cmd_uninstall "$@"
-        return $?
-    fi
-
-    # Fallback for legacy projects without manifest
     echo ""
-    log_warn "No manifest found - using legacy removal (hardcoded file list)"
+    log_warn "Removing all zzcollab scaffolding (hardcoded file list)"
     echo ""
     echo "  Directories: R/, analysis/, tests/, man/, vignettes/, docs/, .github/"
     echo "  Files:       Dockerfile, Makefile, DESCRIPTION, NAMESPACE, LICENSE,"
@@ -1490,18 +1545,16 @@ cmd_rm_all() {
         return 0
     fi
 
-    # Directories
-    local dirs=(R analysis tests man vignettes docs .github .zzcollab)
+    # Directories: the shared scaffold (which includes renv) plus analysis/ and
+    # inst/ (generated by scaffolding; uninstall keeps it, the nuke removes it).
+    local dirs=("${ZZCOLLAB_SCAFFOLD_DIRS[@]}" analysis inst)
     for d in "${dirs[@]}"; do
         [[ -d "$d" ]] && rm -rf "$d" && log_info "Removed $d/"
     done
 
-    # Files
-    local files=(
-        Dockerfile .dockerignore Makefile
-        DESCRIPTION NAMESPACE LICENSE
-        renv.lock .Rprofile .Rbuildignore .gitignore
-    )
+    # Files: the shared scaffold plus .dockerignore and the project config, so
+    # 'rm all' leaves only the user's original files (a superset of uninstall).
+    local files=("${ZZCOLLAB_SCAFFOLD_FILES[@]}" .dockerignore zzcollab.yaml)
     for f in "${files[@]}"; do
         [[ -f "$f" ]] && rm "$f" && log_info "Removed $f"
     done
@@ -1510,9 +1563,6 @@ cmd_rm_all() {
     for f in *.Rproj; do
         [[ -f "$f" ]] && rm "$f" && log_info "Removed $f"
     done
-
-    # renv directory
-    [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
 
     log_success "All zzcollab files removed"
     log_info "Directory now contains only your original files"
@@ -1540,13 +1590,14 @@ Profiles (new project: init+renv+docker, existing: switch profile):
   rstudio       RStudio Server (~980MB)
 
 Management:
-  build          Build Docker image (uses content-addressable cache)
+  rebuild        Rebuild Docker image (uses content-addressable cache)
   tools          Install render-stamp helpers in tools/ (PDF provenance)
   rm <feature>   Remove: docker, renv, git, github, cicd
   uninstall      Remove the zzcollab scaffold from this directory
   doctor         Check workspace files are current with templates
-  validate       Check project structure
+  validate       Validate package dependencies (renv / zzrenvcheck)
   config         Configuration management
+  menu           Interactive hub for common project actions
   list           List profiles, libs, packages
   help           Show help
 
@@ -1554,7 +1605,6 @@ Global options (any position):
   -v, --verbose    More output
   -q, --quiet      Errors only
   -y, --yes        Accept defaults (non-interactive)
-  -Y, --yes-all    Same as -y
   --no-build       Skip Docker build prompt
   --version        Print version and exit
   -h, --help       Show this help
@@ -1568,6 +1618,12 @@ Per-command options (must follow their command):
   github:    --private | --public     Repo visibility (default: private)
   rm:        -f, --force              Skip confirmation
 
+Note: When commands are combined, a per-command option binds to the command
+      immediately before it. In 'zzcollab docker -b github', -b applies to
+      docker (build the image), not to github.
+Note: -t is the DockerHub image tag, not team; set the team with
+      'zzcollab config set dockerhub-account NAME'.
+
 Examples:
   zzcollab analysis                # Quickstart: init + renv + docker (recommended)
   zzcollab minimal                 # Quickstart with minimal profile
@@ -1575,8 +1631,168 @@ Examples:
   zzcollab docker                  # Add Docker (auto-adds renv, init)
   zzcollab docker -b github        # Build image + create GitHub repo
   zzcollab rm docker               # Remove Docker files
-  zzcollab rstudio                 # Switch to rstudio profile (existing project)
+  zzcollab menu                    # Interactive hub (change profile, add package, ...)
+  zzcollab docker --profile rstudio # Switch an existing project's profile
 EOF
+}
+
+#=============================================================================
+# INTERACTIVE POST-INIT HUB (zzcollab menu)
+#=============================================================================
+
+# _menu_choose HEADER ITEM...
+# Single-select via gum when available, else a numbered zzc_read fallback.
+# Prints the chosen item to stdout; returns 1 on cancel.
+_menu_choose() {
+    local header="$1"; shift
+    local items=("$@")
+    if has_gum; then
+        gum choose --header "$header" "${items[@]}"
+        return $?
+    fi
+    printf '%s\n' "$header" >&2
+    local i
+    for i in "${!items[@]}"; do
+        printf '  %d) %s\n' "$((i + 1))" "${items[$i]}" >&2
+    done
+    local sel
+    zzc_read -r -p "Choice: " sel || return 1
+    [[ "$sel" =~ ^[0-9]+$ ]] && (( sel >= 1 && sel <= ${#items[@]} )) \
+        && { printf '%s' "${items[$((sel - 1))]}"; return 0; }
+    return 1
+}
+
+# Change the project's profile (non-destructive: regenerates the Dockerfile via
+# 'docker --profile'). Preselects the current profile in the gum picker.
+_menu_change_profile() {
+    local current new
+    current=$(config_get profile-name 2>/dev/null || echo "")
+    if has_gum; then
+        local args=(gum choose --header "Select profile (current: ${current:-none})")
+        [[ -n "$current" ]] && args+=(--selected "$current")
+        args+=(minimal analysis rstudio)
+        new=$("${args[@]}") || return 0
+    else
+        new=$(_menu_choose "Select profile (current: ${current:-none})" \
+            minimal analysis rstudio) || return 0
+    fi
+    [[ -z "$new" ]] && return 0
+    cmd_docker --profile "$new"
+}
+
+# Set a single config value (with the current value as the default).
+_menu_set_value() {
+    local key="$1" label="$2" current val
+    current=$(config_get "$key" 2>/dev/null || echo "")
+    if has_gum; then
+        val=$(gum_input "${current:-(enter value)}" "$label" "$current") || return 0
+    else
+        zzc_read -r -p "$label [${current:-unset}]: " val || return 0
+        val="${val:-$current}"
+    fi
+    [[ -z "$val" ]] && return 0
+    config_set "$key" "$val"
+}
+
+# Install R package(s) into the project image and snapshot renv.lock.
+_menu_add_package() {
+    local image pkgs rvec
+    image=$(basename "$(pwd)")
+    if ! command -v docker >/dev/null 2>&1; then
+        log_error "Docker is not installed."
+        return 0
+    fi
+    if ! docker image inspect "$image" >/dev/null 2>&1; then
+        log_error "Docker image '$image' not found. Build it first (menu: Rebuild Docker image)."
+        return 0
+    fi
+    if has_gum; then
+        pkgs=$(gum_input "dplyr ggplot2" "R package(s) to add (space or comma separated)" "") || return 0
+    else
+        zzc_read -r -p "R package(s) to add (space/comma separated): " pkgs || return 0
+    fi
+    [[ -z "$pkgs" ]] && return 0
+
+    # S-4: Validate each token against the R package-name grammar before
+    # building the argument list. Names containing shell metacharacters or
+    # quotes could break out of the Rscript invocation.
+    # Allowed: CRAN names ([A-Za-z][A-Za-z0-9.]*), GitHub refs (user/pkg),
+    # and version-pinned refs (user/pkg@tag or pkg@version).
+    local -a pkg_list=()
+    local _tok
+    while IFS= read -r _tok; do
+        [[ -z "$_tok" ]] && continue
+        if ! [[ "$_tok" =~ ^[A-Za-z][A-Za-z0-9.]*(/[A-Za-z][A-Za-z0-9._-]*)?(@[A-Za-z0-9._-]+)?$ ]]; then
+            log_error "Invalid package name: '$_tok'"
+            log_error "  CRAN: letters/numbers/dots, e.g. 'dplyr', 'R.utils'"
+            log_error "  GitHub: 'user/pkg' or 'user/pkg@tag'"
+            return 1
+        fi
+        pkg_list+=("$_tok")
+    done < <(printf '%s' "$pkgs" | tr ',' ' ' | xargs -n1 2>/dev/null)
+    [[ "${#pkg_list[@]}" -eq 0 ]] && return 0
+
+    log_info "Installing into '$image' and recording in renv.lock..."
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        log_info "Note: on Apple Silicon, packages that compile from source may fail to load unless the image provides a working amd64 toolchain (see DOCKER_DEFAULT_PLATFORM). Pure-R packages install reliably."
+    fi
+    # Install, then renv::record the packages directly into the lockfile.
+    # 'record' is used rather than 'snapshot' because the project uses
+    # implicit snapshots (renv/settings.json snapshot.type=implicit), which
+    # only capture packages declared/used in code; a freshly added package
+    # would otherwise be dropped. ZZCOLLAB_AUTO_SNAPSHOT=false stops the
+    # .Rprofile .Last hook from re-running an implicit snapshot on exit.
+    # Package names are passed as positional arguments (no string interpolation).
+    if docker run --rm \
+        -e ZZCOLLAB_AUTO_SNAPSHOT=false \
+        -v "$(pwd):/home/analyst/project" \
+        -w /home/analyst/project \
+        "$image" \
+        Rscript -e 'args <- commandArgs(trailingOnly=TRUE); renv::install(args); renv::record(args)' \
+        --args "${pkg_list[@]}"; then
+        log_success "Added: ${pkg_list[*]} (recorded in renv.lock). Commit renv.lock to share."
+    else
+        log_error "Package install failed."
+    fi
+}
+
+# Interactive post-init hub. Each action dispatches to an existing command.
+cmd_menu() {
+    if ! is_workspace_initialized; then
+        log_error "No zzcollab project in this directory."
+        log_info  "Create one first:  zzcollab analysis  (or minimal, rstudio)"
+        return 1
+    fi
+    while true; do
+        local choice
+        choice=$(_menu_choose "zzcollab — what would you like to do?" \
+            "Change profile" \
+            "Add R package(s)" \
+            "Set DockerHub account" \
+            "Set GitHub account" \
+            "Pin R version" \
+            "Rebuild Docker image" \
+            "Push image to Docker Hub" \
+            "Create GitHub repo" \
+            "View configuration" \
+            "Check workspace health" \
+            "Quit") || break
+        case "$choice" in
+            "Change profile")            _menu_change_profile ;;
+            "Add R package(s)")          _menu_add_package ;;
+            "Set DockerHub account")     _menu_set_value dockerhub-account "DockerHub account" ;;
+            "Set GitHub account")        _menu_set_value github-account "GitHub account" ;;
+            "Pin R version")             _menu_set_value r-version "R version (X.Y.Z)" ;;
+            "Rebuild Docker image")      cmd_build ;;
+            "Push image to Docker Hub")  cmd_dockerhub ;;
+            "Create GitHub repo")        cmd_github ;;
+            "View configuration")        config_list ;;
+            "Check workspace health")    cmd_doctor ;;
+            "Quit"|"")                   break ;;
+        esac
+        echo "" >&2
+    done
+    return 0
 }
 
 main() {
@@ -1595,7 +1811,7 @@ main() {
         case "$_arg" in
             -v|--verbose)          export VERBOSITY_LEVEL=2 ;;
             -q|--quiet)            export VERBOSITY_LEVEL=0 ;;
-            -y|--yes|-Y|--yes-all) export ZZCOLLAB_ACCEPT_DEFAULTS=true ;;
+            -y|--yes)              export ZZCOLLAB_ACCEPT_DEFAULTS=true ;;
             --no-build)            export ZZCOLLAB_NO_BUILD=true ;;
             *)                     _filtered+=("$_arg") ;;
         esac
@@ -1618,9 +1834,13 @@ main() {
                 ;;
 
             init)
-                cmd_init
-                commands_run=$((commands_run + 1))
                 shift
+                # Forward trailing flags (e.g. --force) so the guard's
+                # documented escape hatch is reachable; cmd_init parses leading
+                # flags, so consume them here before the next command.
+                cmd_init "$@"
+                commands_run=$((commands_run + 1))
+                while [[ $# -gt 0 ]] && [[ "$1" == -* ]]; do shift; done
                 ;;
             renv)
                 cmd_renv
@@ -1747,13 +1967,31 @@ main() {
             minimal|analysis|rstudio)
                 local profile_name="$1"
                 shift
+                # The quickstart takes no flags. A trailing flag (e.g.
+                # --r-version) would otherwise be silently ignored after the
+                # project is scaffolded; reject it before doing any work. A
+                # trailing command (e.g. 'github') is still allowed to chain.
+                if [[ "${1:-}" == -* ]]; then
+                    log_error "'zzcollab $profile_name' does not take flags (got '$1')."
+                    log_info  "Pin the R version: 'zzcollab config set r-version X.Y.Z' then 'zzcollab $profile_name'."
+                    log_info  "Override the base image: 'zzcollab docker --base-image IMG'."
+                    exit 2
+                fi
                 cmd_quickstart "$profile_name"
                 commands_run=$((commands_run + 1))
                 ;;
 
             # Other commands that pass through
-            build)
+            rebuild)
                 shift
+                cmd_build "$@"
+                exit $?
+                ;;
+            build)
+                # Deprecated alias for 'rebuild' (kept for already-generated
+                # project Makefiles that still call 'zzcollab build').
+                shift
+                log_warn "'zzcollab build' is deprecated; use 'zzcollab rebuild'."
                 cmd_build "$@"
                 exit $?
                 ;;
@@ -1785,6 +2023,11 @@ main() {
             help)
                 shift
                 cmd_help "$@"
+                exit $?
+                ;;
+            menu)
+                shift
+                cmd_menu "$@"
                 exit $?
                 ;;
 

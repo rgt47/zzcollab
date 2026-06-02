@@ -27,7 +27,8 @@ ZZCOLLAB's configuration system provides flexible control over Docker environmen
 ## Key Features
 
 - **Multi-layered configuration**: User, project, system, and built-in defaults
-- **Docker profile system**: 14+ specialized environments from 200MB to 3.5GB
+- **Docker profile system**: three built-in profiles (minimal, analysis,
+  rstudio), with other environments available via a custom base image
 - **Dynamic package management**: Add packages via `install.packages()` with automatic snapshot/restore
 - **Two-layer architecture**: Docker profiles (team/shared) + renv packages (personal/flexible)
 - **CLI and R interfaces**: Work via command line or entirely within R/RStudio
@@ -91,7 +92,7 @@ team:
   description: "Multi-omics cancer research"
 
 defaults:
-  profile-name: "modeling"
+  profile-name: "analysis"
 
 collaboration:
   github:
@@ -174,7 +175,7 @@ zzcollab config list --verbose
 
 # Output shows:
 # team-name: "myteam" (from ~/.zzcollab/config.yaml)
-# profile-name: "modeling" (from ./zzcollab.yaml) [OVERRIDING user config]
+# profile-name: "analysis" (from ./zzcollab.yaml) [OVERRIDING user config]
 ```
 
 ### Validate Configuration
@@ -209,11 +210,11 @@ zzcollab  # Uses all configured defaults
 # Personal defaults
 zzcollab config set team-name "genomicslab"
 zzcollab config set github-account "genomicslab"
-zzcollab config set profile-name "modeling"
+zzcollab config set profile-name "analysis"
 
 # Create team project with project-specific config
 mkdir cancer-study && cd cancer-study
-zzcollab modeling
+zzcollab analysis
 
 # Customize project config for team
 cat > zzcollab.yaml << 'EOF'
@@ -222,7 +223,7 @@ team:
   project: "cancer-study"
 
 defaults:
-  profile-name: "modeling"
+  profile-name: "analysis"
 
 collaboration:
   github:
@@ -278,15 +279,14 @@ zzcollab config set dockerhub-account myteam
 
 ```bash
 # Create the project with a profile (run in the project directory)
-zzcollab analysis         # ~1.2GB, tidyverse ecosystem
 zzcollab minimal          # ~650MB, essential dev tools
-zzcollab modeling         # ~1.5GB, tidymodels / ML
-zzcollab publishing       # ~3GB, LaTeX/Quarto
+zzcollab analysis         # ~1.2GB, tidyverse ecosystem
 zzcollab rstudio          # RStudio Server
-zzcollab shiny            # Shiny apps
 
-# Switch profile on the docker step
-zzcollab docker --profile publishing
+# For LaTeX/Quarto, Shiny, or ML, build on a base image and add
+# packages via renv:
+zzcollab docker --base-image rocker/verse   # LaTeX/Quarto
+zzcollab docker --base-image rocker/shiny   # Shiny apps
 
 # List all available profiles
 zzcollab list
@@ -358,17 +358,13 @@ Profiles provide the Docker environment (Layer 1), while additional packages are
 
 ## Available Profiles
 
-### Standard Research Profiles
+### The Three Profiles
 
-#### minimal (~780MB)
+#### minimal (~650MB)
 ```yaml
 base_image: rocker/r-ver:latest
 packages:
-  - renv
-  - devtools
-  - usethis
-  - here
-  - testthat
+  - renv, devtools, usethis, tinytest, roxygen2
 
 use_cases:
   - Lightweight development
@@ -379,12 +375,10 @@ use_cases:
 
 #### analysis (~1.2GB) [RECOMMENDED]
 ```yaml
-base_image: rocker/rstudio:latest
+base_image: rocker/tidyverse:latest
 packages:
-  - renv, devtools, usethis, here, testthat
+  - renv, devtools, here
   - tidyverse (dplyr, ggplot2, tidyr, readr, purrr, stringr, forcats, lubridate)
-  - knitr, rmarkdown
-  - palmerpenguins (example data)
 
 use_cases:
   - General data analysis
@@ -393,91 +387,43 @@ use_cases:
   - Teaching and workshops
 ```
 
-#### modeling (~1.5GB)
+#### rstudio (~980MB)
 ```yaml
-base_image: rocker/ml:latest
+base_image: rocker/rstudio:latest
 packages:
-  - analysis packages plus:
-  - tidymodels (parsnip, recipes, workflows, tune, yardstick)
-  - xgboost, ranger, glmnet
+  - renv, devtools, usethis, tinytest, roxygen2
 
 use_cases:
-  - Machine learning projects
-  - Predictive modeling
-  - Model evaluation and tuning
-  - Feature engineering
+  - RStudio Server (browser IDE at localhost:8787)
+  - Interactive development
 ```
 
-#### publishing (~3GB)
-```yaml
-base_image: rocker/verse:latest
-packages:
-  - analysis packages plus:
-  - LaTeX (full installation)
-  - quarto, bookdown, blogdown
-  - tinytex
-  - kableExtra, gt, flextable
+### Specialized Environments via a Custom Base Image
 
-use_cases:
-  - Manuscript writing
-  - Book authoring
-  - Academic publishing
-  - Technical documentation
-```
-
-### Additional Profiles
-
-#### analysis_pdf (~1.5GB)
-```yaml
-base_image: rocker/tidyverse:latest
-packages:
-  - analysis packages plus tinytex, pandoc
-
-use_cases:
-  - Data analysis with PDF report rendering
-```
-
-#### shiny (~1.8GB)
-```yaml
-base_image: rocker/shiny:latest
-packages:
-  - shiny, shinydashboard, DT, plotly, bslib
-
-use_cases:
-  - Interactive web applications and dashboards
-```
-
-#### manuscript-package (~1.5GB)
-```yaml
-base_image: rocker/verse:latest
-packages:
-  - R package structure with companion Rmd manuscripts (tinytex)
-
-use_cases:
-  - R packages with paper-style reports
-```
-
-### Specialized Domains via a Custom Base Image
-
-For domains without a built-in profile (e.g. genomics or geospatial), build on a
-domain base image with `zzcollab docker --base-image` and add packages via renv:
+Other environments are not separate profiles. Build on a domain base image with
+`zzcollab docker --base-image` and add packages via renv:
 
 ```bash
+zzcollab docker --base-image rocker/verse                      # LaTeX / Quarto
+zzcollab docker --base-image rocker/shiny                      # Shiny Server
 zzcollab docker --base-image bioconductor/bioconductor_docker  # genomics
 zzcollab docker --base-image rocker/geospatial                 # GIS / spatial
 ```
+
+Machine-learning packages (tidymodels, xgboost, ranger) are added via renv on
+top of the `analysis` profile.
 
 ## Profile Selection Guide
 
 | Research Domain | Recommended Profile | Alternative |
 |-----------------|---------------------|-------------|
 | Data analysis | analysis | minimal |
-| Machine learning | modeling | analysis |
+| Machine learning | analysis (ML packages via renv) | minimal |
 | Genomics | analysis + Bioconductor base image | minimal |
 | GIS/spatial | analysis + rocker/geospatial base image | minimal |
-| Publishing | publishing | manuscript-package |
-| Interactive apps | shiny | rstudio |
-| Teaching | analysis | minimal, publishing |
+| Publishing | analysis + rocker/verse base image | analysis |
+| Interactive apps | analysis + rocker/shiny base image | rstudio |
+| Teaching | analysis | minimal, rstudio |
 
 ## Custom Profile Composition
 
@@ -486,9 +432,9 @@ When predefined profiles don't fit, compose custom environments:
 ### Example: Bayesian Statistics Environment
 
 ```bash
-# Start from the modeling profile
+# Start from the analysis profile
 mkdir bayes-study && cd bayes-study
-zzcollab modeling
+zzcollab analysis
 
 # Inside container, add specialized Bayesian packages:
 # install.packages(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))
@@ -533,7 +479,7 @@ ZZCOLLAB uses a two-layer system for maximum flexibility and reproducibility.
 ```bash
 # Team lead creates base environment
 mkdir study && cd study
-zzc analysis                     # Or: zzc modeling for a machine-learning profile
+zzc analysis                     # ML packages added via renv on top of analysis
 zzc github
 make docker-build
 zzc dockerhub                    # Push for team members
@@ -633,7 +579,7 @@ git clone https://github.com/genomicslab/rnaseq-study.git
 cd rnaseq-study
 
 # Can use ANY compatible Docker base image
-zzcollab --profile minimal  # or analysis, or modeling
+zzcollab --profile minimal  # or analysis, or rstudio
 make r
 
 # renv automatically restores EXACT packages Alice used on R startup
@@ -653,7 +599,7 @@ Rscript analysis/scripts/differential_expression.R
 1. **Research domain**
    - Genomics → `analysis` + a Bioconductor base image
    - GIS/spatial → `analysis` + the `rocker/geospatial` base image
-   - Machine learning → `modeling` profile
+   - Machine learning → `analysis` profile (ML packages via renv)
    - General analysis → `analysis` profile
 
 2. **Team consensus**
@@ -778,17 +724,17 @@ collaboration:
 ```bash
 # Base images for different workflows
 mkdir biocore-rnaseq && cd biocore-rnaseq
-zzc modeling                     # Full setup; add genomics packages via renv
+zzc analysis                     # Full setup; add genomics packages via renv
 zzc github
 make docker-build && make docker-push-team
 
 cd .. && mkdir biocore-chipseq && cd biocore-chipseq
-zzc modeling
+zzc analysis
 zzc github
 make docker-build && make docker-push-team
 
 cd .. && mkdir biocore-singlecell && cd biocore-singlecell
-zzc modeling
+zzc analysis
 zzc github
 make docker-build && make docker-push-team
 ```
@@ -815,7 +761,7 @@ q()  # Exit R - snapshot happens automatically
 ```bash
 # Quarterly standardized environment
 mkdir q1-2025-base && cd q1-2025-base
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzc github
 
 # Document package versions
@@ -823,7 +769,7 @@ cat > ENVIRONMENT.md << 'EOF'
 # Q1 2025 Standardized Environment
 
 Base: rocker/ml:latest (R 4.4.0)
-Profile: modeling
+Profile: analysis
 
 Key packages:
 - tidyverse 2.0.0
@@ -843,7 +789,7 @@ git add . && git commit -m "Q1 2025 base environment" && git push
 ```bash
 # Create client project using quarterly base
 mkdir client-churn-prediction && cd client-churn-prediction
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzc github
 
 # Team base image provides foundation
@@ -887,7 +833,7 @@ zzcollab config list --verbose
 # Output:
 # team-name: "genomicslab"
 #   Source: ~/.zzcollab/config.yaml (user config)
-# profile-name: "modeling"
+# profile-name: "rstudio"
 #   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting "analysis"]
 ```
 
@@ -911,14 +857,14 @@ zzcollab config list
 # Symptom: Set profile-name in user config but project uses different profile
 zzcollab config set profile-name "analysis"
 zzcollab config get profile-name
-# Output: modeling  (Expected: analysis)
+# Output: rstudio  (Expected: analysis)
 ```
 
 **Solution**: Check configuration sources
 ```bash
 zzcollab config list --verbose
 # Output shows:
-# profile-name: "modeling"
+# profile-name: "rstudio"
 #   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting]
 
 # Project config (./zzcollab.yaml) overrides user config
@@ -1056,7 +1002,7 @@ init_project("my-analysis")
 # Override specific settings
 init_project(
   project_name = "special-study",
-  profile = "modeling"  # Override default profile
+  profile = "rstudio"  # Override default profile
   # Other settings from config
 )
 
@@ -1064,7 +1010,7 @@ init_project(
 init_project(
   team_name = "genomicslab",
   project_name = "cancer-study",
-  profile = "modeling"
+  profile = "analysis"
 )
 ```
 
@@ -1145,7 +1091,7 @@ development:
 1. **Use appropriate profiles**
    - Development: `minimal` or `analysis`
    - CI/CD: `minimal`
-   - Production: `modeling` or domain-specific
+   - Production: `analysis` or domain-specific
 
 2. **Layer caching**
    - Base image changes → full rebuild
@@ -1203,7 +1149,8 @@ ZZCOLLAB's configuration system provides control over reproducible research envi
 ## Key Concepts
 
 1. **Configuration hierarchy**: Command-line → environment → project → user → system → defaults
-2. **Docker profiles**: 14+ specialized environments from 200MB to 3.5GB
+2. **Docker profiles**: three built-in profiles (minimal ~650MB, analysis
+   ~1.2GB, rstudio ~980MB); other environments via a custom base image
 3. **Two-layer architecture**: Docker profiles (shared) + renv packages (flexible)
 4. **CLI flags**: Comprehensive control over all aspects
 5. **R interface**: Complete configuration management within R
@@ -1247,5 +1194,6 @@ q()  # Exit R - snapshot happens automatically
 - `zzcollab --help` - Complete CLI reference
 - `help(package = "zzcollab")` - R package documentation
 - `vignette("getting-started")` - Comprehensive tutorial
-- `docs/VARIANTS.md` - Detailed profile documentation
+- `docs/VARIANTS.md` - The three built-in profiles and the custom
+  base-image workflow for specialized environments
 - `docs/CONFIGURATION.md` - Advanced configuration guide

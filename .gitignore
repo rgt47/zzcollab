@@ -58,8 +58,10 @@ test.md
 *-mini.*
 dev-archive/
 
-# Documentation generated files
-docs/*.pdf
+# Technical documentation tree: version-controlled locally (Dropbox), but
+# intentionally untracked so it is never pushed to the public GitHub repo.
+# Vignettes (the package's public documentation) are deliberately NOT ignored.
+/docs/
 *.backup
 *.bak
 

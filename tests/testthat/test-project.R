@@ -35,8 +35,11 @@ test_that("init_project constructs current-model commands", {
                          profile = "analysis")
   expect_true(result)
 
-  # DockerHub account is set via the config command, not legacy -t/-p flags
-  expect_true(any(grepl("config set dockerhub-account myteam", calls)))
+  # DockerHub account is set via the config command, not legacy -t/-p flags.
+  # The team name is shQuote'd against shell injection, so match
+  # quote-tolerantly (command contains the key and the value).
+  expect_true(any(grepl("config set dockerhub-account", calls, fixed = TRUE) &
+                  grepl("myteam", calls, fixed = TRUE)))
   # Compendium is scaffolded via the profile quickstart
   expect_true(any(grepl("zzcollab analysis", calls, fixed = TRUE)))
   # Removed flags must not reappear
@@ -56,7 +59,8 @@ test_that("init_project sets github account when provided", {
 
   init_project(team_name = "myteam", project_name = "myproj",
                github_account = "myuni")
-  expect_true(any(grepl("config set github-account myuni", calls)))
+  expect_true(any(grepl("config set github-account", calls, fixed = TRUE) &
+                  grepl("myuni", calls, fixed = TRUE)))
 })
 
 test_that("join_project validates required parameters", {
@@ -116,26 +120,26 @@ test_that("join_project errors without a Makefile", {
   )
 })
 
-test_that("setup_project handles optional parameters", {
-  # Should work with no parameters (uses defaults)
-  result <- tryCatch({
-    setup_project()
-  }, error = function(e) {
-    expect_true(grepl("zzcollab.*script", e$message, ignore.case = TRUE))
-    FALSE
-  })
+test_that("setup_project routes through the docker subcommand", {
+  calls <- character(0)
+  local_mocked_bindings(
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
 
-  expect_type(result, "logical")
+  # No base_image: builds the default Docker environment.
+  expect_true(setup_project())
+  expect_true(any(grepl("zzcollab docker", calls, fixed = TRUE)))
 
-  # Should accept base_image parameter
-  result <- tryCatch({
-    setup_project(base_image = "rocker/rstudio")
-  }, error = function(e) {
-    expect_true(grepl("zzcollab.*script", e$message, ignore.case = TRUE))
-    FALSE
-  })
-
-  expect_type(result, "logical")
+  # base_image is a flag of the docker subcommand, not a top-level option.
+  calls <- character(0)
+  expect_true(setup_project(base_image = "rocker/rstudio"))
+  expect_true(any(grepl("zzcollab docker --base-image rocker/rstudio",
+                        calls, fixed = TRUE)))
 })
 
 test_that("init_project accepts a profile parameter", {
@@ -146,4 +150,45 @@ test_that("join_project no longer accepts interface parameter", {
   # Verify interface parameter was removed (breaking change)
   formals_names <- names(formals(join_project))
   expect_false("interface" %in% formals_names)
+})
+
+test_that("team_images parses docker output into a data frame", {
+  local_mocked_bindings(
+    safe_system = function(command, ...) {
+      c("myteam/proj1\tlatest\t1.2GB\t2026-01-01",
+        "myteam/proj2\tv2\t900MB\t2026-02-02")
+    },
+    .package = "zzcollab"
+  )
+
+  df <- team_images()
+  expect_s3_class(df, "data.frame")
+  expect_equal(nrow(df), 2)
+  expect_equal(df$repository, c("myteam/proj1", "myteam/proj2"))
+  expect_equal(df$tag, c("latest", "v2"))
+  expect_equal(df$size, c("1.2GB", "900MB"))
+  expect_equal(df$created, c("2026-01-01", "2026-02-02"))
+})
+
+test_that("team_images returns an empty data frame when no images exist", {
+  local_mocked_bindings(
+    safe_system = function(command, ...) character(0),
+    .package = "zzcollab"
+  )
+
+  df <- team_images()
+  expect_s3_class(df, "data.frame")
+  expect_equal(nrow(df), 0)
+})
+
+test_that("team_images tolerates a short (malformed) row without erroring", {
+  local_mocked_bindings(
+    safe_system = function(command, ...) "onlyrepo\tlatest",
+    .package = "zzcollab"
+  )
+
+  df <- team_images()
+  expect_s3_class(df, "data.frame")
+  expect_equal(df$repository, "onlyrepo")
+  expect_true(is.na(df$size))
 })

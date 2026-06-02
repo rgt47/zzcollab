@@ -169,6 +169,24 @@ test_no_team_init_flags() {
   fi
 }
 
+test_no_removed_profiles() {
+  # The profile set is minimal/analysis/rstudio. The removed profiles
+  # (modeling, publishing, shiny, analysis_pdf, manuscript-package) must not
+  # appear as a 'zzcollab <profile>' or '--profile <profile>' invocation.
+  # Scoped to invocations, so bundle keys and base-image strings (rocker/shiny,
+  # rocker/verse) do not trip it.
+  local removed matches
+  removed='modeling\|publishing\|shiny\|analysis_pdf\|manuscript-package'
+  matches=$(grep_active_docs "zzc\(ollab\)\? \($removed\)")
+  matches="$matches$(grep_active_docs "\-\-profile \($removed\)")"
+  matches="$matches$(grep_active_docs "\-r \($removed\)")"
+  if [[ -n "$matches" ]]; then
+    echo "FAIL: Found removed profile in a 'zzcollab <profile>'/'--profile' invocation (live profiles: minimal, analysis, rstudio):" >&2
+    echo "$matches" | head -5 >&2
+    return 1
+  fi
+}
+
 test_help_flags_documented() {
   # Every long flag advertised by 'zzcollab --help' must appear in the flag
   # reference of docs/CONFIGURATION.md, so the table cannot silently drift from
@@ -292,25 +310,4 @@ test_help_mentions_profile_name() {
 # RUN ALL TESTS
 ##############################################################################
 
-TESTS_PASSED=0
-TESTS_FAILED=0
-
-for test_func in $(declare -F | awk '/test_/ {print $3}'); do
-  output=$(run_test "$test_func" 2>&1) || true
-  if echo "$output" | grep -q "^FAIL:"; then
-    print_result "$test_func" 1
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-    echo "$output" | head -5
-  elif echo "$output" | grep -q "^SKIP:"; then
-    print_result "$test_func (SKIPPED)" 0
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  else
-    print_result "$test_func" 0
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  fi
-done
-
-echo ""
-echo "  Results: $TESTS_PASSED passed, $TESTS_FAILED failed"
-
-[[ "$TESTS_FAILED" -eq 0 ]]
+run_test_suite

@@ -72,9 +72,11 @@ create_r_package_files() {
 exportPattern("^[[:alpha:]]+")'
     create_file_if_missing "NAMESPACE" "$namespace_content" "NAMESPACE file"
 
-    # LICENSE
-    local license_content="YEAR: $(date +%Y)
-COPYRIGHT HOLDER: ${AUTHOR_NAME:-Author}"
+    # LICENSE: year/holder from the resolved config, else current year/author
+    local license_year="${CONFIG_LICENSE_YEAR:-$(date +%Y)}"
+    local license_holder="${CONFIG_LICENSE_HOLDER:-${CONFIG_AUTHOR_NAME:-${AUTHOR_NAME:-Author}}}"
+    local license_content="YEAR: ${license_year}
+COPYRIGHT HOLDER: ${license_holder}"
     create_file_if_missing "LICENSE" "$license_content" "LICENSE file"
 
     log_success "R package files created"
@@ -82,17 +84,17 @@ COPYRIGHT HOLDER: ${AUTHOR_NAME:-Author}"
 
 create_description_file() {
     local pkg_name="$1"
+    # Fallback path (templates/DESCRIPTION absent); mirror its config wiring.
     local content="Package: ${pkg_name}
 Title: ${pkg_name} Data Analysis
 Version: 0.0.0.9000
-Authors@R: person(\"${AUTHOR_NAME:-Author}\",
-    email = \"${AUTHOR_EMAIL:-author@example.com}\",
-    role = c(\"aut\", \"cre\"))
+Authors@R:
+    $(render_authors_r)
 Description: Data analysis workspace for ${pkg_name}.
-License: GPL-3
-Encoding: UTF-8
+License: ${CONFIG_LICENSE_TYPE:-GPL-3}
+Encoding: ${CONFIG_RPACKAGE_ENCODING:-UTF-8}
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: ${CONFIG_RPACKAGE_ROXYGEN_VERSION:-7.3.2}
 Imports:
     renv
 Suggests:
@@ -154,6 +156,17 @@ create_devtools() {
         install_template "Makefile" "Makefile" "Makefile"
     fi
 
+    # CITATION.cff — machine-readable citation metadata for the project
+    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/CITATION.cff" ]]; then
+        install_template "CITATION.cff" "CITATION.cff" "CITATION.cff"
+    fi
+
+    # devcontainer.json — VS Code / GitHub Codespaces container configuration
+    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/devcontainer.json" ]]; then
+        mkdir -p ".devcontainer"
+        install_template "devcontainer.json" ".devcontainer/devcontainer.json" "devcontainer config"
+    fi
+
     # .gitignore
     local gitignore_content='.Rproj.user
 .Rhistory
@@ -205,20 +218,8 @@ create_renv_setup() {
     return 0
 }
 
-#=============================================================================
-# GITHUB WORKFLOWS
-#=============================================================================
-
-create_github_workflows() {
-    log_debug "Creating GitHub workflows..."
-
-    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/workflows/r-package.yml" ]]; then
-        install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" "R package workflow"
-    fi
-
-    log_success "GitHub Actions workflows created"
-    return 0
-}
+# GitHub Actions workflows are installed by create_github_workflows() in
+# modules/github.sh (sourced after this module), which setup_project() calls.
 
 #=============================================================================
 # DOCUMENTATION FILES
@@ -271,8 +272,6 @@ create_tools_directory() {
 setup_project() {
     log_info "Setting up project structure..."
 
-    # Initialize manifest tracking before creating any files
-
     create_directory_structure || return 1
     create_r_package_files || return 1
     create_test_infrastructure || return 1
@@ -283,7 +282,6 @@ setup_project() {
     create_docs_files || return 1
 
     # Adopt-mode: Dockerfile is written by the docker module, not here.
-    # Track it on retrofit so `zzc uninstall` can remove it later.
 
     log_success "Project setup complete"
     return 0

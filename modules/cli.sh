@@ -5,8 +5,8 @@ set -euo pipefail
 ##############################################################################
 #
 # PURPOSE: CLI validation utilities, variable defaults, and workflow helper.
-#          - Argument validation functions (require_arg, validate_*) used to
-#            vet user-supplied values; covered by tests/shell/test-cli.sh.
+#          - Validation functions (validate_*) that vet user-supplied values;
+#            covered by tests/shell/test-cli.sh.
 #          - Initializes the flag/interface variables that downstream modules
 #            read (defaults; live values are set by the command dispatchers in
 #            zzcollab.sh, e.g. cmd_docker).
@@ -24,25 +24,6 @@ set -euo pipefail
 #=============================================================================
 # CLI ARGUMENT VALIDATION FUNCTIONS
 #=============================================================================
-
-##############################################################################
-# FUNCTION: require_arg
-# PURPOSE:  Validate that a command line flag has a required argument
-# USAGE:    require_arg "--flag-name" "$argument_value"
-# ARGS:
-#   $1 - flag_name: Name of the command line flag for error reporting
-#   $2 - argument_value: The argument value to validate (may be empty)
-# RETURNS:
-#   0 - Argument is present and non-empty
-#   1 - Argument is missing or empty
-##############################################################################
-require_arg() {
-    if [[ -z "${2:-}" ]]; then
-        echo "❌ Error: $1 requires an argument" >&2
-        return 1  # Recoverable: caller can handle error
-    fi
-    return 0
-}
 
 ##############################################################################
 # FUNCTION: validate_team_name
@@ -154,44 +135,11 @@ validate_base_image() {
 # validate_r_version() is defined in lib/core.sh (shared, supports
 # --strict and --lenient modes). CLI uses strict mode (X.Y.Z required).
 
-##############################################################################
-# FUNCTION: validate_bundle_name
-# PURPOSE:  Validate bundle name exists in bundles.yaml
-# ARGS:     $1 - bundle type (package_bundles or library_bundles)
-#           $2 - bundle name to validate
-# RETURNS:  0 if valid, 1 if invalid
-##############################################################################
-validate_bundle_name() {
-    local bundle_type="$1"
-    local bundle_name="$2"
-
-    if [[ -z "$bundle_name" ]]; then
-        return 0  # Empty is OK (optional)
-    fi
-
-    if [[ ! -f "${ZZCOLLAB_TEMPLATES_DIR}/bundles.yaml" ]]; then
-        log_warn "Bundles file not found, skipping bundle validation"
-        return 0
-    fi
-
-    # Check bundle exists using yq
-    if ! yq eval ".${bundle_type}.${bundle_name}" "${ZZCOLLAB_TEMPLATES_DIR}/bundles.yaml" &>/dev/null; then
-        log_error "Bundle not found: $bundle_name"
-        log_error "Available ${bundle_type}:"
-        yq eval ".${bundle_type} | keys" "${ZZCOLLAB_TEMPLATES_DIR}/bundles.yaml" 2>/dev/null | sed 's/^/  - /' || true
-        return 1
-    fi
-
-    return 0
-}
-
 #=============================================================================
 # CLI VARIABLE INITIALIZATION
 #=============================================================================
 
 # Initialize variables for command line options
-# Note: BUILD_DOCKER=false by default - users run 'make docker-build' manually
-BUILD_DOCKER=false
 # Use centralized constants if available
 readonly DEFAULT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_BASE_IMAGE:-rocker/r-ver}"
 BASE_IMAGE="${DEFAULT_BASE_IMAGE}"
@@ -200,38 +148,25 @@ BASE_IMAGE="${DEFAULT_BASE_IMAGE}"
 TEAM_NAME=""
 PROJECT_NAME=""
 GITHUB_ACCOUNT=""
-DOCKERFILE_PATH=""
-IMAGE_TAG=""
 R_VERSION=""  # R version for Docker build (extracted from renv.lock or specified via --r-version)
 
 # Initialization mode variables
-PREPARE_DOCKERFILE=false
 SKIP_CONFIRMATION=false
 CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
 WITH_EXAMPLES=false      # Include example files and templates in workspace
-ADD_EXAMPLES=false       # Add examples to existing project
 
-# Profile bundle variables (system libraries and R packages)
-LIBS_BUNDLE=""    # System library bundle (e.g., minimal, modeling, publishing, gui)
-PKGS_BUNDLE=""    # R package bundle (e.g., tidyverse, shiny, modeling)
-
-# Track whether user explicitly provided these flags (read by config.sh and
-# zzcollab.sh for team-member validation and config precedence)
-USER_PROVIDED_BASE_IMAGE=false
-USER_PROVIDED_LIBS=false
-USER_PROVIDED_PKGS=false
+# Track whether the user explicitly chose a profile (read by init_export_config_vars
+# in zzcollab.sh so a CLI --profile flag wins over the configured default).
 USER_PROVIDED_PROFILE=false
-USER_PROVIDED_R_VERSION=false
-USE_TEAM_IMAGE=false    # Deprecated: retained for backward compatibility
 
 #=============================================================================
 # WORKFLOW TEMPLATE HELPER
 #=============================================================================
 
 get_workflow_template() {
-    # Unified paradigm uses single workflow template from unified/ directory
-    echo "unified/.github/workflows/render-report.yml"
+    # The report-rendering workflow installed into generated projects.
+    echo "workflows/render-report.yml"
 }
 
 #=============================================================================

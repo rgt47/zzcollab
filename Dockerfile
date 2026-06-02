@@ -16,15 +16,7 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \
     RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \
     ZZCOLLAB_CONTAINER=true
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    set -ex && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential pkg-config \
-        libcurl4-openssl-dev libssl-dev libxml2-dev \
-        libmariadb-dev libpq-dev libsqlite3-dev unixodbc-dev && \
-    rm -rf /var/lib/apt/lists/*
+# No additional system dependencies required
 
 # Configure R to use Posit Package Manager for pre-compiled binaries
 RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))' \

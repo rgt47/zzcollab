@@ -23,15 +23,12 @@ readonly CONFIG_USER_DIR="${ZZCOLLAB_CONFIG_USER_DIR:-$HOME/.zzcollab}"
 readonly CONFIG_USER="${ZZCOLLAB_CONFIG_USER:-$CONFIG_USER_DIR/config.yaml}"
 
 # Interactive mode state
-INTERACTIVE_CANCELLED=false
 
 # Original configuration state (backward compatibility)
 CONFIG_TEAM_NAME=""
 CONFIG_GITHUB_ACCOUNT=""
 CONFIG_DOCKERHUB_ACCOUNT=""
 CONFIG_PROFILE_NAME=""
-CONFIG_LIBS_BUNDLE=""
-CONFIG_PKGS_BUNDLE=""
 CONFIG_R_VERSION=""
 CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
@@ -55,50 +52,55 @@ CONFIG_LICENSE_INCLUDE_FILE="true"
 CONFIG_RPACKAGE_MIN_R_VERSION=""
 CONFIG_RPACKAGE_ROXYGEN_VERSION=""
 CONFIG_RPACKAGE_ENCODING=""
-CONFIG_RPACKAGE_LANGUAGE=""
 CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
 
 # Extended configuration state - Code Style
 CONFIG_STYLE_LINE_LENGTH=""
-CONFIG_STYLE_INDENT_SIZE=""
 CONFIG_STYLE_USE_NATIVE_PIPE=""
 CONFIG_STYLE_ASSIGNMENT=""
-CONFIG_STYLE_NAMING_CONVENTION=""
 
 # Extended configuration state - Docker
-CONFIG_DOCKER_ACCOUNT=""
+# (The Docker Hub account is stored canonically in CONFIG_DOCKERHUB_ACCOUNT;
+# the former docker.account key is kept as a read alias for back-compat.)
 CONFIG_DOCKER_DEFAULT_PROFILE=""
-CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
 CONFIG_DOCKER_REGISTRY=""
-CONFIG_DOCKER_PLATFORM=""
 
 # Extended configuration state - GitHub
 CONFIG_GITHUB_DEFAULT_VISIBILITY=""
 CONFIG_GITHUB_DEFAULT_BRANCH=""
-CONFIG_GITHUB_CREATE_ISSUES=""
-CONFIG_GITHUB_CREATE_WIKI=""
-
-# Extended configuration state - CI/CD
-CONFIG_CICD_ENABLE_GITHUB_ACTIONS=""
-CONFIG_CICD_R_VERSIONS=""
-CONFIG_CICD_OS_MATRIX=""
-CONFIG_CICD_RUN_COVERAGE=""
-CONFIG_CICD_COVERAGE_THRESHOLD=""
-
-# Extended configuration state - Documentation
-CONFIG_DOCS_USE_PKGDOWN=""
-CONFIG_DOCS_USE_README=""
-CONFIG_DOCS_USE_NEWS=""
-CONFIG_DOCS_CITATION_STYLE=""
 
 #=============================================================================
 # YAML OPERATIONS
 #=============================================================================
 
+_YQ_AVAILABLE=""
 _require_yq() {
-    command -v yq >/dev/null 2>&1 || {
-        log_error "yq required but not found"
-        log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
+    [[ "$_YQ_AVAILABLE" == "true" ]] && return 0
+    if command -v yq >/dev/null 2>&1; then
+        # C-4: assert mikefarah yq v4+. kislyuk's Python yq and v3 both produce
+        # subtly wrong output that config parsing silently swallows.
+        local ver_line
+        ver_line=$(yq --version 2>&1 | head -1)
+        if echo "$ver_line" | grep -qE '(mikefarah|version v?4\.[0-9])'; then
+            _YQ_AVAILABLE="true"
+            return 0
+        else
+            log_error "yq found but not mikefarah v4 (got: $ver_line)"
+            log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
+            return 1
+        fi
+    fi
+    log_error "yq required but not found"
+    log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
+    return 1
+}
+
+# Reject any path that is not a plain dotted key, so a user-supplied key
+# cannot inject expressions into the yq program string.
+_validate_yaml_path() {
+    local path="$1"
+    [[ "$path" =~ ^[A-Za-z0-9_.]+$ ]] || {
+        log_error "Invalid config key: $path"
         return 1
     }
 }
@@ -106,6 +108,7 @@ _require_yq() {
 yaml_get() {
     local file="$1" path="$2"
     [[ -f "$file" ]] || return 1
+    _validate_yaml_path "$path" || return 1
     _require_yq || return 1
     yq eval ".$path // \"\"" "$file" 2>/dev/null
 }
@@ -113,23 +116,26 @@ yaml_get() {
 yaml_set() {
     local file="$1" path="$2" value="$3"
     [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
+    _validate_yaml_path "$path" || return 1
     _require_yq || return 1
     _YQ_VAL="$value" yq eval ".$path = strenv(_YQ_VAL)" "$file" -i
 }
 
-yaml_set_bool() {
-    local file="$1" path="$2" value="$3"
-    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
-    [[ "$value" == "true" || "$value" == "false" ]] || { log_error "Boolean expected: $value"; return 1; }
-    _require_yq || return 1
-    yq eval ".$path = $value" "$file" -i
+# Persist the GitHub account to both the canonical github.account key and the
+# legacy defaults.github_account, so older config readers still resolve it.
+# Centralized so the dual write cannot drift across its call sites.
+_set_github_account_yaml() {
+    yaml_set "$1" "github.account" "$2"
+    yaml_set "$1" "defaults.github_account" "$2"
 }
 
-yaml_set_array() {
-    local file="$1" path="$2" value="$3"
-    [[ -f "$file" ]] || { log_error "File not found: $file"; return 1; }
-    _require_yq || return 1
-    yq eval ".$path = [$value]" "$file" -i
+# C-2: Persist profile to both docker.default_profile (canonical, what
+# 'config get profile_name' reads) and defaults.profile_name (what the default
+# template writes and what the loader uses for CONFIG_PROFILE_NAME).
+# Centralised so both interactive and non-interactive set paths stay in sync.
+_set_profile_name_yaml() {
+    yaml_set "$1" "docker.default_profile" "$2"
+    yaml_set "$1" "defaults.profile_name" "$2"
 }
 
 #=============================================================================
@@ -163,31 +169,12 @@ validate_positive_int() {
     [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -gt 0 ]]
 }
 
-# Validate percentage (0-100)
-validate_percentage() {
-    local num="$1"
-    [[ -z "$num" ]] && return 0  # Empty is OK
-    [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 0 ]] && [[ "$num" -le 100 ]]
-}
-
-# Validate GitHub account exists (requires gh CLI)
-validate_github_account() {
-    local account="$1"
-    [[ -z "$account" ]] && return 0  # Empty is OK (optional)
-    if command -v gh &>/dev/null; then
-        gh api "users/$account" &>/dev/null
-        return $?
-    fi
-    return 0  # Skip validation if gh not available
-}
-
 #=============================================================================
 # INTERACTIVE INPUT HELPERS
 #=============================================================================
 
 # Trap handler for clean exit
 _interactive_cleanup() {
-    INTERACTIVE_CANCELLED=true
     echo ""
     echo ""
     log_warn "Configuration cancelled by user"
@@ -206,7 +193,6 @@ prompt_input() {
 
     if has_gum; then
         input=$(gum_input "${default:-(enter value)}" "$prompt" "$default") || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
         printf -v "$result_var" '%s' "${input:-$default}"
@@ -220,12 +206,10 @@ prompt_input() {
     fi
 
     zzc_read -r input || {
-        INTERACTIVE_CANCELLED=true
         return 1
     }
 
     if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-        INTERACTIVE_CANCELLED=true
         return 1
     fi
 
@@ -246,7 +230,6 @@ prompt_validated() {
     if has_gum; then
         while true; do
             input=$(gum_input "${default:-(enter value)}" "$prompt" "$default") || {
-                INTERACTIVE_CANCELLED=true
                 return 1
             }
             input="${input:-$default}"
@@ -267,12 +250,10 @@ prompt_validated() {
         fi
 
         zzc_read -r input || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
 
         if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-            INTERACTIVE_CANCELLED=true
             return 1
         fi
 
@@ -297,7 +278,6 @@ prompt_github_account() {
     if has_gum; then
         while true; do
             input=$(gum_input "${default:-github-username}" "$prompt" "$default") || {
-                INTERACTIVE_CANCELLED=true
                 return 1
             }
             input="${input:-$default}"
@@ -329,12 +309,10 @@ prompt_github_account() {
         fi
 
         zzc_read -r input || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
 
         if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-            INTERACTIVE_CANCELLED=true
             return 1
         fi
 
@@ -386,12 +364,10 @@ prompt_yesno() {
     printf "%s (%s): " "$prompt" "$hint"
 
     zzc_read -r input || {
-        INTERACTIVE_CANCELLED=true
         return 1
     }
 
     if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-        INTERACTIVE_CANCELLED=true
         return 1
     fi
 
@@ -426,7 +402,6 @@ prompt_select() {
             trimmed_args+=("${item#"${item%%[! ]*}"}")
         done
         input=$(gum_choose "$prompt" "${trimmed_args[@]}") || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
         printf -v "$result_var" '%s' "${input:-$default}"
@@ -437,12 +412,10 @@ prompt_select() {
         printf "%s (%s) [%s]: " "$prompt" "$options" "$default"
 
         zzc_read -r input || {
-            INTERACTIVE_CANCELLED=true
             return 1
         }
 
         if [[ "$input" == "q" || "$input" == "Q" || "$input" == ":q" ]]; then
-            INTERACTIVE_CANCELLED=true
             return 1
         fi
 
@@ -475,14 +448,18 @@ print_section() {
 # CONFIGURATION LOADING
 #=============================================================================
 
+# Memo so load_config parses the YAML at most once per process. config_set /
+# config_init reset it after writing so the next read reflects the change.
+_CONFIG_LOADED=""
+
 load_config() {
+    [[ "$_CONFIG_LOADED" == "true" ]] && return 0
+
     # Reset to defaults - original fields
     CONFIG_TEAM_NAME=""
     CONFIG_GITHUB_ACCOUNT=""
     CONFIG_DOCKERHUB_ACCOUNT=""
     CONFIG_PROFILE_NAME=""
-    CONFIG_LIBS_BUNDLE=""
-    CONFIG_PKGS_BUNDLE=""
     CONFIG_R_VERSION=""
     CONFIG_AUTO_GITHUB="false"
     CONFIG_SKIP_CONFIRMATION="false"
@@ -502,34 +479,20 @@ load_config() {
     CONFIG_RPACKAGE_MIN_R_VERSION=""
     CONFIG_RPACKAGE_ROXYGEN_VERSION=""
     CONFIG_RPACKAGE_ENCODING=""
-    CONFIG_RPACKAGE_LANGUAGE=""
     CONFIG_RPACKAGE_VIGNETTE_BUILDER=""
     CONFIG_STYLE_LINE_LENGTH=""
-    CONFIG_STYLE_INDENT_SIZE=""
     CONFIG_STYLE_USE_NATIVE_PIPE=""
     CONFIG_STYLE_ASSIGNMENT=""
-    CONFIG_STYLE_NAMING_CONVENTION=""
     CONFIG_DOCKER_DEFAULT_PROFILE=""
-    CONFIG_DOCKER_DEFAULT_BASE_IMAGE=""
     CONFIG_DOCKER_REGISTRY=""
-    CONFIG_DOCKER_PLATFORM=""
     CONFIG_GITHUB_DEFAULT_VISIBILITY=""
     CONFIG_GITHUB_DEFAULT_BRANCH=""
-    CONFIG_GITHUB_CREATE_ISSUES=""
-    CONFIG_GITHUB_CREATE_WIKI=""
-    CONFIG_CICD_ENABLE_GITHUB_ACTIONS=""
-    CONFIG_CICD_R_VERSIONS=""
-    CONFIG_CICD_OS_MATRIX=""
-    CONFIG_CICD_RUN_COVERAGE=""
-    CONFIG_CICD_COVERAGE_THRESHOLD=""
-    CONFIG_DOCS_USE_PKGDOWN=""
-    CONFIG_DOCS_USE_README=""
-    CONFIG_DOCS_USE_NEWS=""
-    CONFIG_DOCS_CITATION_STYLE=""
 
     # Load in reverse priority (later overrides earlier)
     _load_file "$CONFIG_USER"
     _load_file "$CONFIG_PROJECT"
+
+    _CONFIG_LOADED="true"
 }
 
 # Table mapping YAML paths to CONFIG_* variable names.
@@ -540,8 +503,6 @@ defaults.team_name              CONFIG_TEAM_NAME
 defaults.github_account         CONFIG_GITHUB_ACCOUNT
 defaults.dockerhub_account      CONFIG_DOCKERHUB_ACCOUNT
 defaults.profile_name           CONFIG_PROFILE_NAME
-defaults.libs_bundle            CONFIG_LIBS_BUNDLE
-defaults.pkgs_bundle            CONFIG_PKGS_BUNDLE
 defaults.r_version              CONFIG_R_VERSION
 defaults.auto_github            CONFIG_AUTO_GITHUB
 defaults.skip_confirmation      CONFIG_SKIP_CONFIRMATION
@@ -559,48 +520,109 @@ license.include_file            CONFIG_LICENSE_INCLUDE_FILE
 r_package.min_r_version         CONFIG_RPACKAGE_MIN_R_VERSION
 r_package.roxygen_version       CONFIG_RPACKAGE_ROXYGEN_VERSION
 r_package.encoding              CONFIG_RPACKAGE_ENCODING
-r_package.language              CONFIG_RPACKAGE_LANGUAGE
 r_package.vignette_builder      CONFIG_RPACKAGE_VIGNETTE_BUILDER
 style.line_length               CONFIG_STYLE_LINE_LENGTH
-style.indent_size               CONFIG_STYLE_INDENT_SIZE
 style.use_native_pipe           CONFIG_STYLE_USE_NATIVE_PIPE
 style.assignment                CONFIG_STYLE_ASSIGNMENT
-style.naming_convention         CONFIG_STYLE_NAMING_CONVENTION
-docker.account                  CONFIG_DOCKER_ACCOUNT
 docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
-docker.default_base_image       CONFIG_DOCKER_DEFAULT_BASE_IMAGE
 docker.registry                 CONFIG_DOCKER_REGISTRY
-docker.platform                 CONFIG_DOCKER_PLATFORM
 github.account                  CONFIG_GITHUB_ACCOUNT
 github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
 github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
-github.create_issues            CONFIG_GITHUB_CREATE_ISSUES
-github.create_wiki              CONFIG_GITHUB_CREATE_WIKI
-cicd.enable_github_actions      CONFIG_CICD_ENABLE_GITHUB_ACTIONS
-cicd.r_versions                 CONFIG_CICD_R_VERSIONS
-cicd.os_matrix                  CONFIG_CICD_OS_MATRIX
-cicd.run_coverage               CONFIG_CICD_RUN_COVERAGE
-cicd.coverage_threshold         CONFIG_CICD_COVERAGE_THRESHOLD
-documentation.use_pkgdown       CONFIG_DOCS_USE_PKGDOWN
-documentation.use_readme        CONFIG_DOCS_USE_README
-documentation.use_news          CONFIG_DOCS_USE_NEWS
-documentation.citation_style    CONFIG_DOCS_CITATION_STYLE
 "
+
+# Friendly user-key aliases that do NOT follow the derivation rule (user key =
+# YAML path with 'defaults.' stripped and dots->underscores). snake_case form
+# on the left, canonical YAML write path on the right. Checked before the
+# derivation, so e.g. 'github_account' writes to github.account (the canonical
+# path) rather than the legacy load-only defaults.github_account.
+_CONFIG_ALIASES="
+profile_name      docker.default_profile
+profile           docker.default_profile
+docker_account    defaults.dockerhub_account
+github_account    github.account
+"
+
+# Map a YAML path to its CONFIG_* variable name via _CONFIG_MAP (the same table
+# the loader uses), so config get is symmetric with config set. Prints the var
+# name and returns 0, or returns 1 if the path is unknown.
+_yaml_path_to_var() {
+    local target="$1" yp vn
+    while read -r yp vn; do
+        [[ -z "$yp" ]] && continue
+        [[ "$yp" == "$target" ]] && { echo "$vn"; return 0; }
+    done <<< "$_CONFIG_MAP"
+    return 1
+}
 
 _load_file() {
     local file="$1"
+    # Absent file is normal (user may not have a project config yet).
     [[ -f "$file" ]] || return 0
+    _require_yq || return 0
 
-    local yaml_path var_name val
+    # C-3: distinguish "file absent" (handled above) from "file present but
+    # unparseable". A malformed zzcollab.yaml must be an error, not a silent
+    # fallback to defaults that silently selects a different Docker image.
+    local dump yq_rc
+    dump=$(yq eval \
+        '.. | select(tag != "!!map" and tag != "!!seq") | (path | join(".")) + "=" + (. | tostring)' \
+        "$file" 2>&1)
+    yq_rc=$?
+    if [[ "$yq_rc" -ne 0 ]]; then
+        log_error "Failed to parse config file: $file"
+        log_error "  $(echo "$dump" | head -3)"
+        return 1
+    fi
+
+    # Parse the dump once into parallel path/value arrays. Splitting on the
+    # first '=' is safe because yq paths never contain '='.
+    local _paths=() _vals=() line
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        _paths+=("${line%%=*}")
+        _vals+=("${line#*=}")
+    done <<< "$dump"
+
+    # Assign in _CONFIG_MAP order so map precedence is preserved (e.g.
+    # github.account overrides defaults.github_account). Empty values are
+    # skipped, matching the previous behaviour.
+    local yaml_path var_name i
     while read -r yaml_path var_name; do
         [[ -z "$yaml_path" ]] && continue
-        val=$(yaml_get "$file" "$yaml_path") && [[ -n "$val" ]] && \
-            printf -v "$var_name" '%s' "$val"
+        for ((i = 0; i < ${#_paths[@]}; i++)); do
+            if [[ "${_paths[$i]}" == "$yaml_path" ]]; then
+                [[ -n "${_vals[$i]}" ]] && printf -v "$var_name" '%s' "${_vals[$i]}"
+                break
+            fi
+        done
     done <<< "$_CONFIG_MAP"
 
     # docker.default_profile also overrides CONFIG_PROFILE_NAME (legacy compat)
-    val=$(yaml_get "$file" "docker.default_profile") && \
-        [[ -n "$val" ]] && CONFIG_PROFILE_NAME="$val"
+    for ((i = 0; i < ${#_paths[@]}; i++)); do
+        if [[ "${_paths[$i]}" == "docker.default_profile" && -n "${_vals[$i]}" ]]; then
+            CONFIG_PROFILE_NAME="${_vals[$i]}"
+            break
+        fi
+    done
+
+    # C-1: mirror defaults.profile_name → CONFIG_DOCKER_DEFAULT_PROFILE so that
+    # 'config get profile_name' (which reads CONFIG_DOCKER_DEFAULT_PROFILE via the
+    # alias table) is symmetric with what the default template writes
+    # (defaults.profile_name). Matches the github.account dual-load pattern.
+    if [[ -n "$CONFIG_PROFILE_NAME" && -z "$CONFIG_DOCKER_DEFAULT_PROFILE" ]]; then
+        CONFIG_DOCKER_DEFAULT_PROFILE="$CONFIG_PROFILE_NAME"
+    fi
+
+    # Legacy docker.account folds into the canonical dockerhub_account
+    if [[ -z "$CONFIG_DOCKERHUB_ACCOUNT" ]]; then
+        for ((i = 0; i < ${#_paths[@]}; i++)); do
+            if [[ "${_paths[$i]}" == "docker.account" && -n "${_vals[$i]}" ]]; then
+                CONFIG_DOCKERHUB_ACCOUNT="${_vals[$i]}"
+                break
+            fi
+        done
+    fi
 
     return 0
 }
@@ -610,12 +632,9 @@ apply_config_defaults() {
     [[ -z "${GITHUB_ACCOUNT:-}" && -n "$CONFIG_GITHUB_ACCOUNT" ]] && GITHUB_ACCOUNT="$CONFIG_GITHUB_ACCOUNT"
     [[ -z "${DOCKERHUB_ACCOUNT:-}" && -n "$CONFIG_DOCKERHUB_ACCOUNT" ]] && DOCKERHUB_ACCOUNT="$CONFIG_DOCKERHUB_ACCOUNT"
     [[ -z "${PROFILE_NAME:-}" && -n "$CONFIG_PROFILE_NAME" ]] && PROFILE_NAME="$CONFIG_PROFILE_NAME"
-    [[ -z "${LIBS_BUNDLE:-}" && -n "$CONFIG_LIBS_BUNDLE" ]] && LIBS_BUNDLE="$CONFIG_LIBS_BUNDLE"
-    [[ -z "${PKGS_BUNDLE:-}" && -n "$CONFIG_PKGS_BUNDLE" ]] && PKGS_BUNDLE="$CONFIG_PKGS_BUNDLE"
 
     if [[ -z "${R_VERSION:-}" ]]; then
         R_VERSION="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
-        USER_PROVIDED_R_VERSION="false"
     fi
 
     [[ "$CONFIG_AUTO_GITHUB" == "true" ]] && CREATE_GITHUB_REPO=true
@@ -624,42 +643,9 @@ apply_config_defaults() {
     return 0
 }
 
-_get_config_value() {
-    local key="$1"
-    case "$key" in
-        # Original fields
-        team_name) echo "$CONFIG_TEAM_NAME" ;;
-        github_account) echo "$CONFIG_GITHUB_ACCOUNT" ;;
-        dockerhub_account) echo "$CONFIG_DOCKERHUB_ACCOUNT" ;;
-        profile_name) echo "$CONFIG_PROFILE_NAME" ;;
-        libs_bundle) echo "$CONFIG_LIBS_BUNDLE" ;;
-        pkgs_bundle) echo "$CONFIG_PKGS_BUNDLE" ;;
-        r_version) echo "$CONFIG_R_VERSION" ;;
-        auto_github) echo "$CONFIG_AUTO_GITHUB" ;;
-        skip_confirmation) echo "$CONFIG_SKIP_CONFIRMATION" ;;
-        with_examples) echo "$CONFIG_WITH_EXAMPLES" ;;
-        # Author fields
-        author.name|author_name) echo "$CONFIG_AUTHOR_NAME" ;;
-        author.email|author_email) echo "$CONFIG_AUTHOR_EMAIL" ;;
-        author.orcid|author_orcid) echo "$CONFIG_AUTHOR_ORCID" ;;
-        author.affiliation|author_affiliation) echo "$CONFIG_AUTHOR_AFFILIATION" ;;
-        author.affiliation_full|author_affiliation_full) echo "$CONFIG_AUTHOR_AFFILIATION_FULL" ;;
-        author.roles|author_roles) echo "$CONFIG_AUTHOR_ROLES" ;;
-        # License fields
-        license.type|license_type) echo "$CONFIG_LICENSE_TYPE" ;;
-        license.year|license_year) echo "$CONFIG_LICENSE_YEAR" ;;
-        license.holder|license_holder) echo "$CONFIG_LICENSE_HOLDER" ;;
-        # R Package fields
-        r_package.min_r_version) echo "$CONFIG_RPACKAGE_MIN_R_VERSION" ;;
-        # Docker fields
-        docker.default_profile) echo "$CONFIG_DOCKER_DEFAULT_PROFILE" ;;
-        docker.registry) echo "$CONFIG_DOCKER_REGISTRY" ;;
-        # GitHub fields
-        github.default_visibility) echo "$CONFIG_GITHUB_DEFAULT_VISIBILITY" ;;
-        github.default_branch) echo "$CONFIG_GITHUB_DEFAULT_BRANCH" ;;
-        *) echo "" ;;
-    esac
-}
+# _get_config_value was removed: config get now reads the merged value via
+# _key_to_yaml_path + _yaml_path_to_var (the same _CONFIG_MAP the loader uses),
+# so get is symmetric with set and there is a single source of truth.
 
 #=============================================================================
 # INIT FLOW HELPERS
@@ -730,8 +716,7 @@ config_identity_gate() {
         echo "  Your personal GitHub username (can be overridden per-project in the next step)."
         prompt_github_account "Personal GitHub username (optional)" "" val || return 1
         if [[ -n "$val" ]]; then
-            yaml_set "$CONFIG_USER" "github.account" "$val"
-            yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+            _set_github_account_yaml "$CONFIG_USER" "$val"
             CONFIG_GITHUB_ACCOUNT="$val"
         fi
     fi
@@ -858,6 +843,7 @@ config_init() {
 
     # Create new config (only reached if file doesn't exist or user chose to overwrite)
     _create_default_config
+    _CONFIG_LOADED=""  # invalidate the memo: a fresh config file was written
 
     if [[ "$interactive" == "true" ]]; then
         config_interactive_setup
@@ -913,7 +899,6 @@ r_package:
   min_r_version: "4.1.0"       # Minimum R version (for native pipe)
   roxygen_version: "7.3.0"
   encoding: "UTF-8"
-  language: "en-US"
   vignette_builder: "knitr"
 
 #=============================================================================
@@ -923,10 +908,8 @@ r_package:
 
 style:
   line_length: 78
-  indent_size: 2
   use_native_pipe: true        # |> instead of %>%
   assignment: "arrow"          # <- instead of =
-  naming_convention: "snake_case"
 
 #=============================================================================
 # DOCKER PREFERENCES
@@ -934,9 +917,7 @@ style:
 
 docker:
   default_profile: "analysis"
-  default_base_image: "rocker/tidyverse"
   registry: "docker.io"        # docker.io, ghcr.io
-  platform: "linux/amd64"
 
 #=============================================================================
 # GITHUB PREFERENCES
@@ -946,29 +927,6 @@ github:
   account: ""
   default_visibility: "private"
   default_branch: "main"
-  create_issues: true
-  create_wiki: false
-
-#=============================================================================
-# CI/CD PREFERENCES
-#=============================================================================
-
-cicd:
-  enable_github_actions: true
-  r_versions: "4.3, 4.4"
-  os_matrix: "ubuntu-latest"
-  run_coverage: true
-  coverage_threshold: 80
-
-#=============================================================================
-# DOCUMENTATION PREFERENCES
-#=============================================================================
-
-documentation:
-  use_pkgdown: false
-  use_readme: true
-  use_news: true
-  citation_style: "apa"
 
 #=============================================================================
 # LEGACY DEFAULTS (backward compatibility)
@@ -979,8 +937,6 @@ defaults:
   github_account: ""
   dockerhub_account: ""
   profile_name: "analysis"
-  libs_bundle: "minimal"
-  pkgs_bundle: "minimal"
   r_version: ""
   auto_github: false
   skip_confirmation: false
@@ -995,7 +951,6 @@ EOF
 #=============================================================================
 
 config_interactive_setup() {
-    INTERACTIVE_CANCELLED=false
 
     # Set up trap for Ctrl+C
     trap '_interactive_cleanup; return 0' INT
@@ -1115,8 +1070,7 @@ _setup_missing_values() {
         has_missing=true
         prompt_github_account "GitHub username" "" val || { _save_and_exit; return 0; }
         [[ -n "$val" ]] && {
-            yaml_set "$CONFIG_USER" "github.account" "$val"
-            yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+            _set_github_account_yaml "$CONFIG_USER" "$val"
         }
     fi
 
@@ -1202,8 +1156,7 @@ _setup_change_existing() {
 
     prompt_github_account "GitHub username" "${CONFIG_GITHUB_ACCOUNT:-}" val || { _save_and_exit; return 0; }
     [[ -n "$val" ]] && {
-        yaml_set "$CONFIG_USER" "github.account" "$val"
-        yaml_set "$CONFIG_USER" "defaults.github_account" "$val"
+        _set_github_account_yaml "$CONFIG_USER" "$val"
     }
 
     prompt_select "Default repository visibility" "private,public" \
@@ -1268,34 +1221,6 @@ _setup_advanced() {
         "${CONFIG_STYLE_ASSIGNMENT:-arrow}" val || \
         { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "style.assignment" "$val"
-
-    #-------------------------------------------------------------------------
-    # CI/CD
-    #-------------------------------------------------------------------------
-    print_section "CI/CD Preferences (Advanced)"
-    echo "Continuous integration settings for GitHub Actions."
-    echo ""
-
-    prompt_yesno "Enable GitHub Actions" \
-        "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-true}" val || \
-        { _save_and_exit; return 0; }
-    yaml_set "$CONFIG_USER" "cicd.enable_github_actions" "$val"
-
-    if [[ "$val" == "true" ]]; then
-        prompt_input "R versions to test (comma-separated)" \
-            "${CONFIG_CICD_R_VERSIONS:-4.3, 4.4}" val || \
-            { _save_and_exit; return 0; }
-        yaml_set "$CONFIG_USER" "cicd.r_versions" "$val"
-
-        prompt_yesno "Run code coverage" "${CONFIG_CICD_RUN_COVERAGE:-true}" val || { _save_and_exit; return 0; }
-        yaml_set "$CONFIG_USER" "cicd.run_coverage" "$val"
-
-        if [[ "$val" == "true" ]]; then
-            prompt_validated "Coverage threshold (%)" "${CONFIG_CICD_COVERAGE_THRESHOLD:-80}" val validate_percentage \
-                "Invalid value. Must be 0-100" || { _save_and_exit; return 0; }
-            yaml_set "$CONFIG_USER" "cicd.coverage_threshold" "$val"
-        fi
-    fi
 }
 
 # Full setup - all sections
@@ -1316,6 +1241,37 @@ _save_and_exit() {
 #=============================================================================
 # CONFIG SET/GET/LIST COMMANDS
 #=============================================================================
+
+# Translate a snake_case config key alias to its dotted YAML path. Shared by
+# config_get and config_set so the read and write paths cannot drift.
+# Resolve a user-facing key (snake_case) to its canonical YAML write path,
+# driven entirely by _CONFIG_ALIASES + _CONFIG_MAP. Prints the path and returns
+# 0; prints nothing and returns 1 if the key is unknown (so callers can reject
+# typos instead of silently writing an unreadable defaults.<typo> entry).
+_key_to_yaml_path() {
+    local key="$1" yp vn k akey apath
+    # 1. Explicit friendly aliases (e.g. profile_name -> docker.default_profile).
+    while read -r akey apath; do
+        [[ -z "$akey" ]] && continue
+        [[ "$key" == "$akey" ]] && { echo "$apath"; return 0; }
+    done <<< "$_CONFIG_ALIASES"
+    # 2. Derive from _CONFIG_MAP: user key = path with 'defaults.' stripped and
+    #    remaining dots turned into underscores (team_name, docker_registry,
+    #    style_line_length, author_name, github_default_visibility, ...).
+    while read -r yp vn; do
+        [[ -z "$yp" ]] && continue
+        k="${yp#defaults.}"
+        k="${k//./_}"
+        [[ "$key" == "$k" ]] && { echo "$yp"; return 0; }
+    done <<< "$_CONFIG_MAP"
+    # 3. A fully-dotted key that names a known path passes through.
+    if [[ "$key" == *.* ]]; then
+        while read -r yp vn; do
+            [[ "$yp" == "$key" ]] && { echo "$yp"; return 0; }
+        done <<< "$_CONFIG_MAP"
+    fi
+    return 1
+}
 
 config_set() {
     local key="$1" value="$2" local_only="${3:-false}"
@@ -1342,36 +1298,60 @@ EOF
     # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
     key="${key//-/_}"
 
-    # Map simple keys to their proper dotted paths
-    local yaml_path
-    case "$key" in
-        # Author fields
-        author_name) yaml_path="author.name" ;;
-        author_email) yaml_path="author.email" ;;
-        author_orcid) yaml_path="author.orcid" ;;
-        author_affiliation) yaml_path="author.affiliation" ;;
-        author_affiliation_full) yaml_path="author.affiliation_full" ;;
-        author_roles) yaml_path="author.roles" ;;
-        # License fields
-        license_type) yaml_path="license.type" ;;
-        license_year) yaml_path="license.year" ;;
-        license_holder) yaml_path="license.holder" ;;
-        license_include_file) yaml_path="license.include_file" ;;
-        # GitHub fields
-        github_account) yaml_path="github.account" ;;
-        github_default_visibility) yaml_path="github.default_visibility" ;;
-        github_default_branch) yaml_path="github.default_branch" ;;
-        # Docker fields
-        docker_account) yaml_path="docker.account" ;;
-        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
-        docker_registry) yaml_path="docker.registry" ;;
-        # Dotted keys pass through as-is
-        *"."*) yaml_path="$key" ;;
-        # Everything else goes to defaults section
-        *) yaml_path="defaults.$key" ;;
-    esac
+    # C-5: Dispatch validators so non-interactive config set rejects bad values
+    # with the same checks the interactive path applies.
+    if [[ -n "$value" ]]; then
+        case "$key" in
+            team_name|dockerhub_account|docker_account)
+                validate_team_name "$value" || return 1 ;;
+            author_email)
+                validate_email "$value" || {
+                    log_error "Invalid email: $value"
+                    return 1
+                } ;;
+            author_orcid)
+                validate_orcid "$value" || {
+                    log_error "Invalid ORCID (expected 0000-0000-0000-000X): $value"
+                    return 1
+                } ;;
+            r_version|rpackage_min_r_version)
+                validate_r_version_lenient "$value" || {
+                    log_error "Invalid R version (expected X.Y or X.Y.Z): $value"
+                    return 1
+                } ;;
+            style_line_length|rpackage_roxygen_version)
+                validate_positive_int "$value" || {
+                    log_error "Invalid value (expected positive integer): $value"
+                    return 1
+                } ;;
+            profile_name|profile)
+                case "$value" in
+                    minimal|analysis|rstudio) ;;
+                    *) log_error "Unknown profile: $value (valid: minimal, analysis, rstudio)"
+                       return 1 ;;
+                esac ;;
+        esac
+    fi
 
-    yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
+    # Resolve the key to its canonical YAML path; reject unknown keys so a typo
+    # is not silently written to an unreadable defaults.<typo> entry.
+    local yaml_path
+    yaml_path=$(_key_to_yaml_path "$key") || {
+        log_error "Unknown config key: $1"
+        log_info "See available settings: zzcollab config list"
+        return 1
+    }
+
+    # Invalidate the load_config memo so the next read sees the new value.
+    _CONFIG_LOADED=""
+
+    # C-2: profile_name must write to both YAML paths to keep the loader and
+    # the alias table in sync.
+    if [[ "$yaml_path" == "docker.default_profile" ]]; then
+        _set_profile_name_yaml "$file" "$value" && log_success "Set profile_name = $value"
+    else
+        yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
+    fi
 }
 
 config_get() {
@@ -1380,34 +1360,21 @@ config_get() {
     # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
     key="${key//-/_}"
 
-    # Map simple keys to their proper dotted paths (same mapping as config_set)
+    # Resolve the key to its canonical YAML path (same mapping as config_set).
     local yaml_path
-    case "$key" in
-        author_name) yaml_path="author.name" ;;
-        author_email) yaml_path="author.email" ;;
-        author_orcid) yaml_path="author.orcid" ;;
-        author_affiliation) yaml_path="author.affiliation" ;;
-        author_affiliation_full) yaml_path="author.affiliation_full" ;;
-        author_roles) yaml_path="author.roles" ;;
-        license_type) yaml_path="license.type" ;;
-        license_year) yaml_path="license.year" ;;
-        license_holder) yaml_path="license.holder" ;;
-        license_include_file) yaml_path="license.include_file" ;;
-        github_account) yaml_path="github.account" ;;
-        github_default_visibility) yaml_path="github.default_visibility" ;;
-        github_default_branch) yaml_path="github.default_branch" ;;
-        docker_account) yaml_path="docker.account" ;;
-        docker_default_profile|profile_name|profile) yaml_path="docker.default_profile" ;;
-        docker_registry) yaml_path="docker.registry" ;;
-        *"."*) yaml_path="$key" ;;
-        *) yaml_path="defaults.$key" ;;
-    esac
+    yaml_path=$(_key_to_yaml_path "$key") || {
+        log_error "Unknown config key: $1"
+        return 1
+    }
 
     if [[ "$local_only" == "true" ]]; then
         yaml_get "$CONFIG_PROJECT" "$yaml_path"
     else
         load_config
-        _get_config_value "$key"
+        # Read the merged value by mapping the YAML path to its CONFIG_ var, so
+        # get is symmetric with set (both route through _key_to_yaml_path).
+        local var
+        var=$(_yaml_path_to_var "$yaml_path") && printf '%s\n' "${!var}"
     fi
 }
 
@@ -1462,7 +1429,7 @@ config_list() {
     if [[ "$show_section" == "all" || "$show_section" == "docker" ]]; then
         echo ""
         echo "Docker:"
-        printf "  %-25s %s\n" "account:" "${CONFIG_DOCKER_ACCOUNT:-<not set>}"
+        printf "  %-25s %s\n" "account:" "${CONFIG_DOCKERHUB_ACCOUNT:-<not set>}"
         printf "  %-25s %s\n" "default_profile:" "${CONFIG_DOCKER_DEFAULT_PROFILE:-<not set>}"
         printf "  %-25s %s\n" "registry:" "${CONFIG_DOCKER_REGISTRY:-<not set>}"
     fi
@@ -1473,15 +1440,6 @@ config_list() {
         printf "  %-25s %s\n" "account:" "${CONFIG_GITHUB_ACCOUNT:-<not set>}"
         printf "  %-25s %s\n" "default_visibility:" "${CONFIG_GITHUB_DEFAULT_VISIBILITY:-<not set>}"
         printf "  %-25s %s\n" "default_branch:" "${CONFIG_GITHUB_DEFAULT_BRANCH:-<not set>}"
-    fi
-
-    if [[ "$show_section" == "all" || "$show_section" == "cicd" ]]; then
-        echo ""
-        echo "CI/CD:"
-        printf "  %-25s %s\n" "enable_github_actions:" "${CONFIG_CICD_ENABLE_GITHUB_ACTIONS:-<not set>}"
-        printf "  %-25s %s\n" "r_versions:" "${CONFIG_CICD_R_VERSIONS:-<not set>}"
-        printf "  %-25s %s\n" "run_coverage:" "${CONFIG_CICD_RUN_COVERAGE:-<not set>}"
-        printf "  %-25s %s\n" "coverage_threshold:" "${CONFIG_CICD_COVERAGE_THRESHOLD:-<not set>}"
     fi
 
     if [[ "$show_section" == "all" || "$show_section" == "defaults" ]]; then
@@ -1496,87 +1454,6 @@ config_list() {
     [[ -f "$CONFIG_PROJECT" ]] && echo "  [x] $CONFIG_PROJECT" || echo "  [ ] $CONFIG_PROJECT"
     [[ -f "$CONFIG_USER" ]] && echo "  [x] $CONFIG_USER" || echo "  [ ] $CONFIG_USER"
     echo ""
-}
-
-config_validate() {
-    local errors=0
-    for file in "$CONFIG_PROJECT" "$CONFIG_USER"; do
-        [[ -f "$file" ]] || continue
-        printf "Checking %s... " "$file"
-        if yq eval '.' "$file" >/dev/null 2>&1; then
-            echo "OK"
-        else
-            echo "INVALID"
-            errors=$((errors + 1))
-        fi
-    done
-    [[ $errors -eq 0 ]]
-}
-
-#=============================================================================
-# COMMAND DISPATCHER
-#=============================================================================
-
-handle_config_command() {
-    local cmd="${1:-list}"
-    shift 2>/dev/null || true
-
-    case "$cmd" in
-        init)
-            if [[ "${1:-}" == "--interactive" || "${1:-}" == "-i" ]]; then
-                config_init true
-            else
-                config_init false
-            fi
-            ;;
-        set)
-            [[ $# -ge 2 ]] || { echo "Usage: config set KEY VALUE"; return 1; }
-            config_set "$1" "$2"
-            ;;
-        get)
-            [[ $# -ge 1 ]] || { echo "Usage: config get KEY"; return 1; }
-            config_get "$1"
-            ;;
-        list)
-            config_list false "${1:-all}"
-            ;;
-        set-local)
-            [[ $# -ge 2 ]] || { echo "Usage: config set-local KEY VALUE"; return 1; }
-            config_set "$1" "$2" true
-            ;;
-        get-local)
-            [[ $# -ge 1 ]] || { echo "Usage: config get-local KEY"; return 1; }
-            config_get "$1" true
-            ;;
-        list-local)
-            config_list true
-            ;;
-        validate)
-            config_validate
-            ;;
-        path)
-            echo "User:    $CONFIG_USER"
-            echo "Project: $CONFIG_PROJECT"
-            ;;
-        *)
-            echo "Unknown: $cmd"
-            echo ""
-            echo "Commands:"
-            echo "  init                    Create default config file"
-            echo "  init --interactive      Guided configuration wizard"
-            echo "  set KEY VALUE           Set a configuration value"
-            echo "  get KEY                 Get a configuration value"
-            echo "  list [section]          List all or section config"
-            echo "  set-local KEY VALUE     Set project-local value"
-            echo "  get-local KEY           Get project-local value"
-            echo "  list-local              List project config"
-            echo "  validate                Validate YAML syntax"
-            echo "  path                    Show config file paths"
-            echo ""
-            echo "Sections: author, license, r_package, style, docker, github, cicd, defaults"
-            return 1
-            ;;
-    esac
 }
 
 #=============================================================================

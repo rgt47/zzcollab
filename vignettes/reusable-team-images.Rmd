@@ -139,7 +139,7 @@ cd ..
 **What this does:**
 - Creates project structure with DESCRIPTION, Makefile, etc.
 - Builds from `rocker/rstudio:latest`
-- Installs analysis profile packages (tidyverse, here, testthat, knitr, rmarkdown)
+- Installs analysis profile packages (renv, devtools, tidyverse, here)
 - Creates `mylab/baseimage:latest`
 - Pushes to Docker Hub for team access
 
@@ -153,9 +153,9 @@ make docker-build && make docker-push-team
 git add . && git commit -m "Create analysis team base image" && git push
 cd ..
 
-# Modeling profile (machine learning focused)
+# Machine learning focused
 mkdir modeling-base && cd modeling-base
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create modeling team base image" && git push
@@ -382,9 +382,9 @@ git add . && git commit -m "Create geospatial base image" && git push
 cd ..
 # Use for: climate modeling, ecology, urban planning projects
 
-# Machine learning base (modeling packages)
+# Machine learning base (ML packages)
 mkdir ml-base && cd ml-base
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create machine learning base image" && git push
@@ -393,7 +393,7 @@ cd ..
 
 # Publishing base (LaTeX, Quarto, rmarkdown)
 mkdir pub-base && cd pub-base
-zzc publishing                   # Full setup with publishing profile
+zzcollab docker --base-image rocker/verse   # LaTeX/Quarto via the rocker/verse base image
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create publishing base image" && git push
@@ -647,12 +647,16 @@ Create `BASE_IMAGE_README.md` in base image project:
 Data analysis environment for lab projects.
 
 ## Docker Profile
-analysis: tidyverse, here, testthat, knitr, rmarkdown
+analysis: renv, devtools, tidyverse, here
 
 ## Key Packages
 - tidyverse: Data manipulation
 - here: Project-relative paths
-- testthat: Unit testing
+- renv: Dependency management
+- devtools: Package development helpers
+
+## Added via renv (not in the base profile)
+- tinytest: Unit testing
 - knitr/rmarkdown: Reproducible reports
 
 ## Last Updated
@@ -693,12 +697,11 @@ mkdir test-project && cd test-project
 zzc analysis
 make docker-rstudio
 
-# Verify all key packages load
+# Verify key packages load. The analysis profile provides the tidyverse
+# only; packages such as tidymodels or shiny are not pre-installed and must
+# be added via renv (renv::install(), then snapshot and rebuild the image).
 # In RStudio:
 library(tidyverse)
-library(tidymodels)
-library(shiny)
-# etc.
 
 # If tests pass, promote to production
 docker tag mylab/baseimage-test:latest \
@@ -718,8 +721,8 @@ Keep a centralized list of available base images:
 |------|------|---------|--------------|
 | mylab/bio-base | bioconductor/bioconductor_docker | Bioconductor genomics | 2025-01-15 |
 | mylab/geo-base | rocker/geospatial | Geospatial analysis | 2025-01-10 |
-| mylab/ml-base | modeling profile | Machine learning | 2025-01-05 |
-| mylab/pub-base | publishing profile | LaTeX/Quarto docs | 2024-12-20 |
+| mylab/ml-base | analysis profile (ML via renv) | Machine learning | 2025-01-05 |
+| mylab/pub-base | rocker/verse | LaTeX/Quarto docs | 2024-12-20 |
 
 ## Usage
 # For bioinformatics projects:
@@ -758,8 +761,8 @@ zzc github                       # Create private GitHub repo
 | General purpose team base | analysis profile | Tidyverse ecosystem for data work |
 | Bioinformatics domain | bioconductor/bioconductor_docker base | Bioconductor genomics packages |
 | Geospatial work | rocker/geospatial base | GDAL/PROJ spatial tools |
-| Machine learning | modeling profile | Tidymodels ML framework |
-| Publishing/reports | publishing profile | LaTeX, Quarto, rmarkdown |
+| Machine learning | analysis profile (ML via renv) | Tidymodels ML framework |
+| Publishing/reports | rocker/verse base image | LaTeX, Quarto, rmarkdown |
 | Lightweight base | minimal profile | Essential dev tools only |
 
 ## Summary

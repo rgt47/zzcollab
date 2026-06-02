@@ -167,6 +167,75 @@ test_that("render_report validates inputs", {
   )
 })
 
+test_that("run_script builds a make docker-script command", {
+  calls <- character(0)
+  local_mocked_bindings(
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
+
+  temp_dir <- tempfile()
+  dir.create(temp_dir)
+  file.create(file.path(temp_dir, "Makefile"))
+  file.create(file.path(temp_dir, "analysis.R"))
+  old_wd <- setwd(temp_dir)
+  # withr::defer (not on.exit) so we append to, rather than clobber, the
+  # restoration handler that local_mocked_bindings registered on this frame.
+  withr::defer({
+    setwd(old_wd)
+    unlink(temp_dir, recursive = TRUE)
+  })
+
+  expect_true(run_script("analysis.R"))
+  # Target and SCRIPT= variable must match templates/Makefile docker-script.
+  expect_true(any(grepl("make docker-script SCRIPT=", calls, fixed = TRUE)))
+  expect_true(any(grepl("analysis.R", calls, fixed = TRUE)))
+  # The removed ARGS mechanism and nonexistent docker-r target must not return.
+  expect_false(any(grepl("docker-r ", calls, fixed = TRUE)))
+  expect_false(any(grepl("ARGS=", calls, fixed = TRUE)))
+})
+
+test_that("render_report passes REPORT= without a stray space", {
+  calls <- character(0)
+  local_mocked_bindings(
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
+
+  temp_dir <- tempfile()
+  dir.create(temp_dir)
+  file.create(file.path(temp_dir, "Makefile"))
+  custom <- file.path("analysis", "report", "custom.Rmd")
+  dir.create(file.path(temp_dir, "analysis", "report"), recursive = TRUE)
+  file.create(file.path(temp_dir, custom))
+  old_wd <- setwd(temp_dir)
+  # withr::defer (not on.exit) so we append to, rather than clobber, the
+  # restoration handler that local_mocked_bindings registered on this frame.
+  withr::defer({
+    setwd(old_wd)
+    unlink(temp_dir, recursive = TRUE)
+  })
+
+  expect_true(render_report(custom))
+  # REPORT= must be immediately followed by the quoted path (no space, which
+  # would split it into a separate make goal and silently render the default).
+  expect_true(any(grepl(
+    paste0("make docker-render REPORT=", shQuote(custom)),
+    calls, fixed = TRUE
+  )))
+
+  calls <- character(0)
+  expect_true(render_report())
+  expect_true(any(grepl("make docker-render", calls, fixed = TRUE)))
+  expect_false(any(grepl("REPORT=", calls, fixed = TRUE)))
+})
+
 test_that("sync_env validates renv.lock exists", {
   # Test without renv.lock
   temp_dir <- tempfile()

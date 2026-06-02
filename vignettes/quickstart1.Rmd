@@ -148,10 +148,10 @@ zzc github
 ```bash
 # Create new projects with specific profiles
 mkdir genomics-study && cd genomics-study
-zzc shiny                      # Full setup with Shiny profile
+zzcollab docker --base-image rocker/shiny   # Shiny Server via the rocker/shiny base image
 
 mkdir spatial-analysis && cd spatial-analysis
-zzc publishing                 # Full setup with publishing profile (LaTeX)
+zzcollab docker --base-image rocker/verse   # LaTeX/Quarto via the rocker/verse base image
 
 # Switch profile on existing project
 zzc minimal                    # Regenerates Dockerfile with minimal profile
@@ -164,10 +164,11 @@ zzc list profiles
 
 - `minimal` - Base R, command-line only (~650MB)
 - `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
-- `modeling` - Machine learning with tidymodels (~1.5GB)
-- `publishing` - LaTeX + Quarto manuscripts (~3GB)
 - `rstudio` - RStudio Server (~980MB)
-- `shiny` - Shiny Server (~1.8GB)
+
+For machine learning, install packages such as `tidymodels` via renv. For
+LaTeX/Quarto manuscripts use `zzcollab docker --base-image rocker/verse`, and
+for Shiny applications use `zzcollab docker --base-image rocker/shiny`.
 
 ## Step 3: Add Research Data and Processing Pipeline
 
@@ -176,7 +177,7 @@ This step demonstrates the complete data workflow following the Five Pillars of 
 - **Pillar 5**: Raw data in `analysis/data/raw_data/`
 - **Pillar 4**: Processing scripts in `analysis/scripts/`
 - **Pillar 4**: Reusable functions in `R/`
-- **Pillar 4**: Unit tests in `tests/testthat/`
+- **Pillar 4**: Unit tests in `inst/tinytest/`
 
 Start the Docker development environment:
 
@@ -358,74 +359,53 @@ Rscript -e 'install.packages(c("dplyr", "here"))'
 
 ### Create Unit Tests
 
-Add tests for the data processing functions.
+Add tests for the data processing functions. ZZCOLLAB projects use tinytest:
+test files live in `inst/tinytest/` and contain bare top-level expectations
+(no `test_that()` wrapper).
 
-Create `tests/testthat/test-data_utils.R`:
+Create `inst/tinytest/test-data_utils.R`:
 
 ```r
 # Tests for data utility functions
-# Note: devtools::test() automatically loads functions from R/ via load_all()
+# make docker-test loads functions from R/ via devtools::load_all()
 
-test_that("load_penguin_data loads valid data", {
-  # This test assumes processing script has been run
-  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+clean_csv <- 'analysis/data/derived_data/penguins_clean.csv'
 
+# load_penguin_data loads valid data (only when processing has been run)
+if (file.exists(clean_csv)) {
   data <- load_penguin_data()
-
-  # Check structure
   expect_true(is.data.frame(data))
-  expect_gt(nrow(data), 0)
+  expect_true(nrow(data) > 0)
+  expect_true('species' %in% names(data))
+  expect_true('bill_length_mm' %in% names(data))
+  expect_true('bill_depth_mm' %in% names(data))
+  expect_true('bill_ratio' %in% names(data))
 
-  # Check required columns
-  expect_true("species" %in% names(data))
-  expect_true("bill_length_mm" %in% names(data))
-  expect_true("bill_depth_mm" %in% names(data))
-  expect_true("bill_ratio" %in% names(data))
-})
-
-test_that("load_penguin_data fails gracefully with missing file", {
-  expect_error(
-    load_penguin_data("/nonexistent/path.csv"),
-    "Clean data file not found"
-  )
-})
-
-test_that("summarize_by_species produces valid output", {
-  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
-
-  data <- load_penguin_data()
+  # summarize_by_species produces valid output
   summary <- summarize_by_species(data)
-
-  # Check structure
   expect_true(is.data.frame(summary))
-  expect_true("species" %in% names(summary))
-  expect_true("n" %in% names(summary))
-  expect_true("mean_bill_length" %in% names(summary))
-
-  # Check values are numeric
-  expect_type(summary$mean_bill_length, "double")
-  expect_type(summary$mean_bill_depth, "double")
-
-  # Check all means are positive
+  expect_true('species' %in% names(summary))
+  expect_true('n' %in% names(summary))
+  expect_true('mean_bill_length' %in% names(summary))
+  expect_true(is.double(summary$mean_bill_length))
+  expect_true(is.double(summary$mean_bill_depth))
   expect_true(all(summary$mean_bill_length > 0))
   expect_true(all(summary$mean_bill_depth > 0))
-})
 
-test_that("bill_ratio is calculated correctly", {
-  skip_if_not(file.exists("analysis/data/derived_data/penguins_clean.csv"))
+  # bill_ratio is calculated correctly
+  expect_equal(data$bill_ratio,
+               data$bill_length_mm / data$bill_depth_mm)
+}
 
-  data <- load_penguin_data()
-
-  # Verify bill_ratio calculation
-  expected_ratio <- data$bill_length_mm / data$bill_depth_mm
-  expect_equal(data$bill_ratio, expected_ratio)
-})
+# load_penguin_data fails gracefully with a missing file
+expect_error(load_penguin_data('/nonexistent/path.csv'),
+             pattern = 'Clean data file not found')
 ```
 
 Run tests:
 
 ```bash
-Rscript -e 'devtools::test()'
+make docker-test
 ```
 
 **What this accomplishes:**
@@ -434,7 +414,7 @@ Rscript -e 'devtools::test()'
 2. Processing Pipeline: Script in `analysis/scripts/01_process_data.R`
 3. Derived Data: Cleaned data in `analysis/data/derived_data/`
 4. Reusable Functions: Data utilities in `R/data_utils.R`
-5. Unit Tests: Tests in `tests/testthat/test-data_utils.R`
+5. Unit Tests: Tests in `inst/tinytest/test-data_utils.R`
 6. Documentation: README files documenting data provenance and processing
 
 This establishes the complete data workflow that ensures reproducibility from raw data through to analysis.
@@ -482,7 +462,7 @@ automatically:
 
 - **X11 profiles** (e.g., `x11_minimal`): Automatically enables DISPLAY for
   interactive graphics
-- **RStudio profiles** (e.g., `analysis`, `publishing`): Launches RStudio Server at http://localhost:8787
+- **RStudio profiles** (e.g., `analysis`, `rstudio`): Launches RStudio Server at http://localhost:8787
 - **Shiny profiles**: Launches Shiny Server at http://localhost:3838
 - **Standard profiles**: Opens interactive shell
 
@@ -586,20 +566,16 @@ Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 exit
 ```
 
-**Auto-Snapshot & Auto-Restore Architecture**
+**Auto-Snapshot Architecture**
 
-When you **exit R** (inside the container), ZZCOLLAB automatically:
+When you **exit R** (inside the container), zzcollab automatically:
 
-1. Runs `renv::snapshot()` to capture package dependencies in renv.lock
+1. Runs `renv::snapshot()` to capture package dependencies in `renv.lock`
 2. Reports success and reminds you to commit changes
 
-When you **start R** (inside the container), ZZCOLLAB automatically:
+**You do not need to manually run `renv::snapshot()`** — just exit R and commit the updated `renv.lock`.
 
-1. Activates renv and checks package status
-2. Runs `renv::restore()` to install missing packages and all dependencies
-3. Ensures you always have a working environment without manual intervention
-
-**You no longer need to manually run `renv::snapshot()` or `renv::restore()`!** Just work, exit, and restart.
+**Package restoration**: The container image is built with all packages from `renv.lock` baked in at `/opt/renv/library`. Auto-restore on startup is intentionally disabled (`ZZCOLLAB_AUTO_RESTORE=false` in the Dockerfile) so the baked library is authoritative and the container does not re-resolve packages from the network on every startup. If you add packages with `install.packages()` inside the container, exit R (auto-snapshot runs), rebuild the image (`make docker-build`), and the new packages will be baked in.
 
 ## Step 5: Validate and Commit
 
@@ -613,7 +589,7 @@ exit
 # Run tests in clean environment
 make docker-test
 
-# Optional: Manually validate dependencies (now pure shell, no R required!)
+# Optional: Manually validate dependencies (runs zzrenvcheck in the container)
 make check-renv
 ```
 
@@ -629,7 +605,7 @@ Data Workflow (5 Pillars):
 - Processing script: analysis/scripts/01_process_data.R (Pillar 4)
 - Derived data: analysis/data/derived_data/penguins_clean.csv (Pillar 5)
 - Functions: R/data_utils.R, R/bill_analysis.R (Pillar 4)
-- Unit tests: tests/testthat/test-data_utils.R (Pillar 4)
+- Unit tests: inst/tinytest/test-data_utils.R (Pillar 4)
 - Analysis report: analysis/report/report.Rmd (Pillar 4)
 
 Reproducibility:
@@ -659,11 +635,12 @@ gh repo view --web
 GitHub Actions will automatically:
 
 1. Build Docker container from scratch
-2. Validate package dependencies (uses shell-based validation)
+2. Validate package dependencies (runs zzrenvcheck via make check-renv)
 3. Run unit tests
 4. Report results
 
-**Note**: CI/CD now uses pure shell validation (`make check-renv`) which doesn't require R on the host!
+**Note**: CI/CD runs `make check-renv`, which invokes
+`zzrenvcheck::check_packages()` inside the container.
 
 ## Step 7: Verify Report Rendering CI/CD (Optional)
 
@@ -736,13 +713,33 @@ Your analysis is now fully reproducible thanks to five essential components that
 - **Environment variables**: Locale and system settings
 
 ```dockerfile
-FROM rocker/verse:4.4.0
+# Generated by zzcollab -- do not edit manually.
+# The analysis profile builds on rocker/tidyverse. For LaTeX/Quarto
+# manuscripts use zzcollab docker --base-image rocker/verse.
+FROM rocker/tidyverse:4.4.2@sha256:<digest>   # pinned by zzc at init time
 
-# Set locale for reproducible sorting/formatting
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
+# OCI provenance labels
+LABEL zzcollab.template.version="2.4.0" \
+      zzcollab.r.version="4.4.2" \
+      zzcollab.ppm.snapshot="2026-06-01"
 
-RUN apt-get update && apt-get install -y libcurl4-openssl-dev
+# Library lives outside the project bind-mount so the baked environment
+# is not shadowed when the host working tree is mounted at runtime.
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \
+    RENV_PATHS_LIBRARY=/opt/renv/library \
+    RENV_PATHS_CACHE=/opt/renv/cache \
+    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/2026-06-01" \
+    ZZCOLLAB_CONTAINER=true \
+    ZZCOLLAB_AUTO_RESTORE=false
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev libssl-dev libxml2-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN R -e "install.packages('renv')"
+RUN mkdir -p /opt/renv/library /opt/renv/cache
+COPY renv.lock renv.lock
+RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
 ```
 
 ### 2. renv.lock - Exact Package Versions
@@ -763,34 +760,45 @@ RUN apt-get update && apt-get install -y libcurl4-openssl-dev
 ### 3. .Rprofile - R Session Configuration
 
 - **Critical R options**: Version controlled and copied into Docker
-- **Monitored settings**: `stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`
-- **Automatic checking**: `check_rprofile_options.R` alerts on changes
+- **Pinned settings**: `stringsAsFactors`, `contrasts`, `na.action`, `digits`, `OutDec`
+- **RNG discipline**: `RNGkind()` pinned to ensure seed reproducibility across R versions
 
 ```r
-# .Rprofile (version controlled)
+# .Rprofile (version controlled, generated by zzcollab)
+
+# Pin RNG algorithm so stochastic analyses are reproducible across R versions.
+# R 3.6.0 changed the default sample.kind, silently breaking seeded analyses.
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+
+# Reproducibility options — applied on both host and in container
 options(
   stringsAsFactors = FALSE,
+  contrasts = c("contr.treatment", "contr.poly"),
+  na.action = "na.omit",
   digits = 7,
   OutDec = "."
 )
-
-# Activate renv for package management
-source("renv/activate.R")
+# renv activation and auto-snapshot-on-exit are handled automatically.
+# Do not add source("renv/activate.R") manually; it is in the template.
 ```
 
-**Important**: ZZCOLLAB monitors critical `.Rprofile` options that affect analysis behavior. The `check_rprofile_options.R` script runs in CI/CD to catch changes that could alter results.
+**Important**: zzcollab's `.Rprofile` template pins the RNG kind and critical
+session options. These settings are version-controlled and copied into Docker,
+ensuring consistent behaviour across team members and CI/CD runs.
 
 ### 4. Analysis Source Code - Computational Logic
 
 - **Processing scripts**: `analysis/scripts/01_process_data.R`
 - **Reusable functions**: `R/data_utils.R`, `R/bill_analysis.R`
 - **Reports**: `analysis/report/report.Rmd`
-- **Tests**: `tests/testthat/test-data_utils.R`
-- **Random seeds**: Set explicitly in code for stochastic analyses
+- **Tests**: `inst/tinytest/test-data_utils.R`
+- **Random seeds**: Set explicitly in code for stochastic analyses. The
+  `.Rprofile` pins `RNGkind()` to Mersenne-Twister/Inversion/Rejection so
+  seeds behave consistently across R versions.
 
 ```r
-# Example: Set seed for reproducible random processes
-set.seed(42)
+# Example: Set seed for reproducible stochastic processes
+set.seed(42)  # .Rprofile pins RNGkind so this seed is version-stable
 model <- randomForest(species ~ ., data = penguins)
 ```
 
@@ -883,7 +891,8 @@ All five pillars are version controlled in Git, representing the necessary and s
 When preparing analysis for publication or sharing, verify all five pillars.
 
 For comprehensive best practices, troubleshooting, and team collaboration
-patterns, see **docs/REPRODUCIBILITY_BEST_PRACTICES.md**.
+patterns, see `vignette("reproducibility-layers")` and
+`docs/collaborative-reproducibility.md`.
 
 **Pillar 1 - Dockerfile**:
 
@@ -899,9 +908,9 @@ patterns, see **docs/REPRODUCIBILITY_BEST_PRACTICES.md**.
 
 **Pillar 3 - .Rprofile**:
 
-- Critical options version controlled
-- Monitored by check_rprofile_options.R in CI/CD
-- Copied into Docker container
+- Critical options version controlled and copied into Docker
+- RNGkind pinned for seed reproducibility across R versions
+- renv activation and auto-snapshot managed by the template automatically
 
 **Pillar 4 - Source Code**:
 
@@ -939,9 +948,11 @@ penguin-bills/
 │   └── tables/                  # Generated tables
 ├── data/                        # R package data (optional, for package distribution)
 ├── scripts/                     # Working scripts and exploration
-├── tests/
-│   └── testthat/
+├── inst/
+│   └── tinytest/
 │       └── test-data_utils.R    # Unit tests
+├── tests/
+│   └── tinytest.R               # tinytest driver
 ├── man/                         # Generated function documentation
 ├── vignettes/                   # Package tutorials
 ├── docs/                        # Project documentation
@@ -982,11 +993,9 @@ fit_bill_model <- function(data) {
   lm(bill_depth_mm ~ bill_length_mm * species, data = data)
 }
 
-# Write more tests
-test_that("model includes species interaction", {
-  model <- fit_bill_model(penguins)
-  expect_true("bill_length_mm:species" %in% names(coef(model)))
-})
+# Write more tests (tinytest, in inst/tinytest/)
+model <- fit_bill_model(penguins)
+expect_true('bill_length_mm:species' %in% names(coef(model)))
 ```
 
 ## Collaborate
@@ -1099,12 +1108,12 @@ make docker-build
 ## Test Failures
 
 ```bash
-# Run tests with verbose output
-make r
-devtools::test()  # See detailed failure messages
+# Run the tinytest suite (shows detailed failure messages)
+make docker-test
 
-# Check test coverage
-covr::package_coverage()
+# Or interactively in the container
+make r
+# tinytest::run_test_dir('inst/tinytest')
 ```
 
 ## CI/CD Failures
@@ -1113,7 +1122,7 @@ covr::package_coverage()
 # View workflow logs
 gh run view --log
 
-# Validate locally first (pure shell, no R required!)
+# Validate locally first (make check-renv runs zzrenvcheck)
 make check-renv
 make docker-test
 ```
@@ -1137,10 +1146,11 @@ zzc list pkgs
 
 - `minimal` - Base R, command-line only (~650MB)
 - `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
-- `modeling` - Machine learning with tidymodels (~1.5GB)
-- `publishing` - LaTeX + Quarto manuscripts (~3GB)
 - `rstudio` - RStudio Server (~980MB)
-- `shiny` - Shiny Server (~1.8GB)
+
+For machine learning, install packages such as `tidymodels` via renv. For
+LaTeX/Quarto manuscripts use `zzcollab docker --base-image rocker/verse`, and
+for Shiny applications use `zzcollab docker --base-image rocker/shiny`.
 
 ## Using Profiles
 
@@ -1153,12 +1163,12 @@ mkdir my-project && cd my-project
 zzc analysis                     # Full setup with analysis profile
 zzc github                       # Add GitHub (independent)
 
-# Change profile on existing project
-zzc publishing                   # Switch to publishing profile
+# Change base image on existing project
+zzcollab docker --base-image rocker/verse   # LaTeX/Quarto via the rocker/verse base image
 
-# Create with different profile
+# Create with a different base image
 mkdir new-project && cd new-project
-zzc shiny                        # Full setup with shiny profile
+zzcollab docker --base-image rocker/shiny   # Shiny Server via the rocker/shiny base image
 zzc github --public              # Create public GitHub repo
 ```
 
@@ -1168,7 +1178,7 @@ zzc github --public              # Create public GitHub repo
 
 - New project: Complete setup (init + renv + docker) with build prompt
 - Existing project: Switch profile and regenerate Dockerfile
-- Examples: `minimal`, `analysis`, `modeling`, `publishing`, `rstudio`, `shiny`
+- Examples: `minimal`, `analysis`, `rstudio`
 
 **Package Management:**
 

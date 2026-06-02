@@ -94,13 +94,6 @@ test_tools_install_always_has_yaml() {
     "should always install yaml package"
 }
 
-test_tools_install_analysis_pdf_has_tinytex() {
-  local result
-  result=$(generate_tools_install "rocker/r-ver:4.4.0" "analysis_pdf")
-  assert_output_contains "$result" "tinytex" \
-    "analysis_pdf profile should install tinytex"
-}
-
 test_tools_install_analysis_no_tinytex() {
   local result
   result=$(generate_tools_install "rocker/r-ver:4.4.0" "analysis")
@@ -206,28 +199,119 @@ EOF
 }
 
 ##############################################################################
+# TEST: find_cached_image (set -e safety on a cache miss)
+##############################################################################
+
+# Regression: a cache MISS must return 0, not 1. When it returned 1, the
+# caller `cached_image=$(find_cached_image ...)` tripped set -e and aborted the
+# build silently before it started (every first build of a project). docker is
+# mocked so these tests do not depend on the host daemon or its image cache.
+
+test_find_cached_image_miss_returns_success() {
+  docker() { return 0; }  # `docker images ... | head -1` prints nothing
+  local out rc
+  out=$(find_cached_image "deadbeef") && rc=0 || rc=$?
+  unset -f docker
+  assert_equals "0" "$rc" \
+    "cache miss must return 0 so the caller's set -e does not abort the build"
+  if [[ -n "$out" ]]; then
+    echo "FAIL: cache miss should produce empty output, got: $out" >&2
+    return 1
+  fi
+}
+
+test_find_cached_image_hit_echoes_id() {
+  docker() { echo "sha256:abc123"; }
+  local out rc
+  out=$(find_cached_image "deadbeef") && rc=0 || rc=$?
+  unset -f docker
+  assert_equals "0" "$rc" "cache hit must return 0"
+  assert_equals "sha256:abc123" "$out" "cache hit must echo the image id"
+}
+
+test_find_cached_image_empty_hash_returns_failure() {
+  local rc
+  find_cached_image "" && rc=0 || rc=$?
+  assert_equals "1" "$rc" \
+    "empty hash is an invalid lookup and must return 1"
+}
+
+##############################################################################
+# TEST: Dockerfile generation determinism (T-2)
+##############################################################################
+
+# Identical inputs must produce a byte-identical Dockerfile.
+test_dockerfile_generation_is_deterministic() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  cat > renv.lock << 'EOF'
+{
+  "R": {"Version": "4.4.0", "Repositories": [{"Name": "CRAN", "URL": "https://cloud.r-project.org"}]},
+  "Packages": {}
+}
+EOF
+  PPM_SNAPSHOT=2026-01-01 generate_dockerfile_inline \
+    "rocker/tidyverse" "4.4.0" "" "" "" > /dev/null 2>&1
+  cp Dockerfile Dockerfile.first
+  rm -f Dockerfile
+  PPM_SNAPSHOT=2026-01-01 generate_dockerfile_inline \
+    "rocker/tidyverse" "4.4.0" "" "" "" > /dev/null 2>&1
+  if ! diff -q Dockerfile Dockerfile.first > /dev/null 2>&1; then
+    echo "FAIL: Identical inputs produced different Dockerfiles" >&2
+    diff Dockerfile Dockerfile.first >&2 || true
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+# Hash stability: compute_dockerfile_hash must be stable WITH renv.lock present
+# (the original test used an empty directory, exercising only the fallback).
+test_compute_dockerfile_hash_stable_with_renv_lock() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  cat > Dockerfile << 'EOF'
+FROM rocker/tidyverse:4.4.0
+EOF
+  cat > renv.lock << 'EOF'
+{"R": {"Version": "4.4.0"}, "Packages": {}}
+EOF
+  local h1 h2
+  h1=$(compute_dockerfile_hash)
+  h2=$(compute_dockerfile_hash)
+  assert_equals "$h1" "$h2" \
+    "Hash must be stable across repeated calls with renv.lock present"
+  teardown_test
+}
+
+# Mutating renv.lock must change the hash so stale cache entries are evicted.
+test_compute_dockerfile_hash_changes_with_renv_lock_mutation() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  cat > Dockerfile << 'EOF'
+FROM rocker/tidyverse:4.4.0
+EOF
+  cat > renv.lock << 'EOF'
+{"R": {"Version": "4.4.0"}, "Packages": {}}
+EOF
+  local h1
+  h1=$(compute_dockerfile_hash)
+  # Mutate lockfile
+  cat > renv.lock << 'EOF'
+{"R": {"Version": "4.4.1"}, "Packages": {}}
+EOF
+  local h2
+  h2=$(compute_dockerfile_hash)
+  if [[ "$h1" == "$h2" ]]; then
+    echo "FAIL: Hash did not change after renv.lock mutation" >&2
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
-TESTS_PASSED=0
-TESTS_FAILED=0
-
-for test_func in $(declare -F | awk '/test_/ {print $3}'); do
-  output=$(run_test "$test_func" 2>&1) || true
-  if echo "$output" | grep -q "^FAIL:"; then
-    print_result "$test_func" 1
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-    echo "$output" | head -3
-  elif echo "$output" | grep -q "^SKIP:"; then
-    print_result "$test_func (SKIPPED)" 0
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  else
-    print_result "$test_func" 0
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  fi
-done
-
-echo ""
-echo "  Results: $TESTS_PASSED passed, $TESTS_FAILED failed"
-
-[[ "$TESTS_FAILED" -eq 0 ]]
+run_test_suite

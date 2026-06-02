@@ -9,7 +9,7 @@ set -euo pipefail
 #          - System deps auto-derived from R packages
 #          - Simple profile presets (base image shortcuts)
 #
-# DEPENDENCIES: core.sh (logging), profiles.sh (system deps), validation.sh (package scanning)
+# DEPENDENCIES: core.sh (logging), profiles.sh (system deps)
 ##############################################################################
 
 
@@ -36,10 +36,8 @@ get_base_image_tools() {
 # Generate install commands for missing tools
 # TinyTeX is excluded by default. The project directory is bind-mounted
 # from the host, so LaTeX rendering typically runs on the host.
-# Exception: analysis_pdf profile includes tinytex for self-contained PDF rendering.
 generate_tools_install() {
     local base_image="$1"
-    local profile_name="${2:-}"
     local has_pandoc
     has_pandoc=$(get_base_image_tools "$base_image")
 
@@ -60,15 +58,13 @@ RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
     echo "$cmds"
 }
 
-#=============================================================================
-# R VERSION DETECTION
-#=============================================================================
-
-
-
 create_renv_lock_minimal() {
     local r_ver="$1"
-    local repo_url="${2:-https://packagemanager.posit.co/cran/__linux__/noble/latest}"
+    local codename snapshot default_url
+    codename="$(get_ubuntu_codename "$r_ver")"
+    snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    default_url="https://packagemanager.posit.co/cran/__linux__/${codename}/${snapshot}"
+    local repo_url="${2:-$default_url}"
 
     cat > renv.lock << EOF
 {
@@ -100,6 +96,45 @@ EOF
     log_success "Created renv.lock (R $r_ver)"
 }
 
+# Fast path for prompt_new_workspace_setup: when a profile and R version are
+# already configured, show them and offer to keep them. Echoes the chosen R
+# version and returns 0 when the configured settings are used; returns 1 to
+# fall through to the interactive wizard.
+# Args: profile version github_account dockerhub_account project_name
+_workspace_use_configured() {
+    local selected_profile="$1" selected_version="$2"
+    local github_account="$3" dockerhub_account="$4" project_name="$5"
+
+    [[ -n "$selected_profile" && -n "$selected_version" ]] || return 1
+
+    local base_image
+    base_image=$(get_profile_base_image "$selected_profile")
+    echo "" >&2
+    echo "  Profile:    $selected_profile ($base_image)" >&2
+    echo "  R version:  $selected_version" >&2
+    [[ -n "$github_account" ]] && echo "  GitHub:     $github_account/$project_name" >&2
+    [[ -n "$dockerhub_account" ]] && echo "  DockerHub:  $dockerhub_account/$project_name" >&2
+    echo "" >&2
+
+    local change_settings
+    zzc_read -r -p "Change settings? [y/N]: " change_settings
+    if [[ "$change_settings" =~ ^[Yy]$ ]]; then
+        echo "" >&2
+        return 1
+    fi
+
+    # Use existing settings, proceed to build
+    create_renv_lock_minimal "$selected_version" >&2
+    R_VERSION="$selected_version"
+    BASE_IMAGE="$base_image"
+    GITHUB_ACCOUNT="$github_account"
+    DOCKERHUB_ACCOUNT="$dockerhub_account"
+    ZZCOLLAB_BUILD_AFTER_SETUP="true"
+    export R_VERSION BASE_IMAGE GITHUB_ACCOUNT DOCKERHUB_ACCOUNT ZZCOLLAB_BUILD_AFTER_SETUP
+    echo "$selected_version"
+    return 0
+}
+
 prompt_new_workspace_setup() {
     load_config 2>/dev/null || true
 
@@ -122,31 +157,10 @@ prompt_new_workspace_setup() {
     echo "  New zzcollab workspace: $project_name" >&2
     echo "═══════════════════════════════════════════════════════════" >&2
 
-    # Check if all required values are pre-configured
-    if [[ -n "$selected_profile" && -n "$selected_version" ]]; then
-        base_image=$(get_profile_base_image "$selected_profile")
-        echo "" >&2
-        echo "  Profile:    $selected_profile ($base_image)" >&2
-        echo "  R version:  $selected_version" >&2
-        [[ -n "$github_account" ]] && echo "  GitHub:     $github_account/$project_name" >&2
-        [[ -n "$dockerhub_account" ]] && echo "  DockerHub:  $dockerhub_account/$project_name" >&2
-        echo "" >&2
-
-        local change_settings
-        zzc_read -r -p "Change settings? [y/N]: " change_settings
-        if [[ ! "$change_settings" =~ ^[Yy]$ ]]; then
-            # Use existing settings, proceed to build
-            create_renv_lock_minimal "$selected_version" >&2
-            R_VERSION="$selected_version"
-            BASE_IMAGE="$base_image"
-            GITHUB_ACCOUNT="$github_account"
-            DOCKERHUB_ACCOUNT="$dockerhub_account"
-            ZZCOLLAB_BUILD_AFTER_SETUP="true"
-            export R_VERSION BASE_IMAGE GITHUB_ACCOUNT DOCKERHUB_ACCOUNT ZZCOLLAB_BUILD_AFTER_SETUP
-            echo "$selected_version"
-            return 0
-        fi
-        echo "" >&2
+    # Fast path: reuse the configured profile + R version if the user agrees.
+    if _workspace_use_configured "$selected_profile" "$selected_version" \
+           "$github_account" "$dockerhub_account" "$project_name"; then
+        return 0
     fi
 
     # Interactive setup (either no config or user wants to change)
@@ -272,11 +286,6 @@ prompt_new_workspace_setup() {
     echo "$selected_version"
 }
 
-# Wrapper for backward compatibility
-prompt_r_version_selection() {
-    prompt_new_workspace_setup
-}
-
 extract_r_version() {
     if [[ -n "${R_VERSION:-}" ]]; then
         echo "$R_VERSION"
@@ -285,7 +294,7 @@ extract_r_version() {
 
     if [[ ! -f "renv.lock" ]]; then
         if [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
-            prompt_r_version_selection
+            prompt_new_workspace_setup
             return $?
         else
             log_error "R version not specified and renv.lock not found"
@@ -324,28 +333,50 @@ _DOCKER_SKIP_FILES=("*/README.Rmd" "*/README.md" "*/CLAUDE.md" "*/examples/*" "*
 # Scan code files for library()/require()/pkg::/@importFrom/@import usages.
 extract_code_packages() {
     local dirs=("$@")
-    local find_pattern="" exclude=""
+    # Build the find expression as arrays so patterns/paths are passed as
+    # literal arguments -- no eval, no word-splitting on whitespace/globs.
+    local name_args=() exclude_args=() ext skip
     for ext in "${_DOCKER_FILE_EXTENSIONS[@]}"; do
-        [[ -n "$find_pattern" ]] && find_pattern="$find_pattern -o"
-        find_pattern="$find_pattern -name \"*.$ext\""
+        [[ ${#name_args[@]} -gt 0 ]] && name_args+=(-o)
+        name_args+=(-name "*.$ext")
     done
-    for skip in "${_DOCKER_SKIP_FILES[@]}"; do exclude="$exclude ! -path '$skip'"; done
+    for skip in "${_DOCKER_SKIP_FILES[@]}"; do
+        exclude_args+=(! -path "$skip")
+    done
 
+    # Single awk pass per file replaces the previous four grep|sed pipelines
+    # (each spawning 2-3 processes). One pass emits library()/require() args,
+    # pkg:: references, and roxygen @import/@importFrom targets. Using \047
+    # (octal single quote) is portable across GNU and BSD awk, unlike the old
+    # sed which silently dropped single-quoted args on BSD/macOS.
     while IFS= read -r file; do
         [[ -f "$file" ]] || continue
-        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
-            | grep -E '(library|require)[[:space:]]*\(' 2>/dev/null \
-            | sed -E \
-          's/.*(library|require)[[:space:]]*\([[:space:]]*["\047]?([a-zA-Z][a-zA-Z0-9.]*)["\047]?[[:space:]]*\).*/\2/' \
-            || true
-        grep -v '^[[:space:]]*#' "$file" 2>/dev/null \
-            | grep -oE '[a-zA-Z][a-zA-Z0-9.]*::' 2>/dev/null \
-            | sed 's/:://' || true
-        grep -E "#'[[:space:]]*@importFrom[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
-            sed -E 's/.*@importFrom[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
-        grep -E "#'[[:space:]]*@import[[:space:]]+[a-zA-Z]" "$file" 2>/dev/null | \
-            sed -E 's/.*@import[[:space:]]+([a-zA-Z0-9.]+).*/\1/' || true
-    done < <(eval "find ${dirs[*]} -type f \( $find_pattern \) $exclude 2>/dev/null")
+        awk '
+            /@importFrom[[:space:]]+[a-zA-Z]/ {
+                if (match($0, /@importFrom[[:space:]]+[a-zA-Z0-9.]+/)) {
+                    s = substr($0, RSTART, RLENGTH); sub(/@importFrom[[:space:]]+/, "", s); print s
+                }
+            }
+            /@import[[:space:]]+[a-zA-Z]/ {
+                if ($0 !~ /@importFrom/ && match($0, /@import[[:space:]]+[a-zA-Z0-9.]+/)) {
+                    s = substr($0, RSTART, RLENGTH); sub(/@import[[:space:]]+/, "", s); print s
+                }
+            }
+            /^[[:space:]]*#/ { next }
+            {
+                tmp = $0
+                while (match(tmp, /(library|require)[[:space:]]*\([[:space:]]*["\047]?[a-zA-Z][a-zA-Z0-9.]*/)) {
+                    s = substr(tmp, RSTART, RLENGTH); sub(/.*\([[:space:]]*["\047]?/, "", s); print s
+                    tmp = substr(tmp, RSTART + RLENGTH)
+                }
+                tmp = $0
+                while (match(tmp, /[a-zA-Z][a-zA-Z0-9.]*::/)) {
+                    s = substr(tmp, RSTART, RLENGTH); sub(/::$/, "", s); print s
+                    tmp = substr(tmp, RSTART + RLENGTH)
+                }
+            }
+        ' "$file" 2>/dev/null || true
+    done < <(find "${dirs[@]}" -type f \( "${name_args[@]}" \) "${exclude_args[@]}" 2>/dev/null)
 }
 
 # Extract a comma-separated DESCRIPTION field (e.g. Imports), one pkg per line.
@@ -378,34 +409,40 @@ parse_renv_lock() {
     jq -r '.Packages | keys[]' renv.lock 2>/dev/null | grep -v '^$' | sort -u || true
 }
 
+# Package-name filters for _is_valid_pkg (R base packages and heuristic noise).
+_DOCKER_BASE_PKGS=" base utils stats graphics grDevices methods datasets tools grid parallel "
+_DOCKER_SKIP_PKGS=" package pkg mypackage myproject yourpackage project data result output input test example sample demo template local any all none foo bar baz renv "
+
+# Filter a package name. The length filter ($2 = "strict") suppresses noise
+# from the heuristic code scan only; names sourced from renv.lock or
+# DESCRIPTION are authoritative and must not be dropped for being short
+# (e.g. sf, sp, V8, XML, gsl, gmp, png, bz2, fs, BH). Defined at file scope so
+# it is not re-created on every extract_r_packages call.
+_is_valid_pkg() {
+    local p="$1" mode="${2:-}"
+    [[ -z "$p" ]] && return 1
+    [[ "$mode" == "strict" && ${#p} -lt 3 ]] && return 1
+    [[ "$_DOCKER_BASE_PKGS" == *" $p "* ]] && return 1
+    [[ "$_DOCKER_SKIP_PKGS" == *" $p "* ]] && return 1
+    [[ "$p" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]] && return 0
+    return 1
+}
+
 extract_r_packages() {
     local packages=()
-    local base_pkgs=" base utils stats graphics grDevices methods datasets tools grid parallel "
-    local skip_pkgs=" package pkg mypackage myproject yourpackage "
-    skip_pkgs+="project data result output input test example sample "
-    skip_pkgs+="demo template local any all none foo bar baz renv "
 
-    # Helper: filter a package
-    _is_valid_pkg() {
-        local p="$1"
-        [[ -z "$p" || ${#p} -lt 3 ]] && return 1
-        [[ "$base_pkgs" == *" $p "* ]] && return 1
-        [[ "$skip_pkgs" == *" $p "* ]] && return 1
-        [[ "$p" =~ ^[a-zA-Z][a-zA-Z0-9.]*$ ]] && return 0
-        return 1
-    }
-
-    # 1. Scan code files
+    # 1. Scan code files (heuristic — apply the length filter). '.' already
+    # covers R/, scripts/, analysis/; listing them again just re-traverses.
     while IFS= read -r pkg; do
-        _is_valid_pkg "$pkg" && packages+=("$pkg")
-    done < <(extract_code_packages "." "R" "scripts" "analysis" 2>/dev/null)
+        _is_valid_pkg "$pkg" strict && packages+=("$pkg")
+    done < <(extract_code_packages "." 2>/dev/null)
 
-    # 2. Add packages from DESCRIPTION
+    # 2. Add packages from DESCRIPTION (authoritative — no length filter)
     while IFS= read -r pkg; do
         _is_valid_pkg "$pkg" && packages+=("$pkg")
     done < <(parse_description_imports 2>/dev/null)
 
-    # 3. Add packages from renv.lock
+    # 3. Add packages from renv.lock (authoritative — no length filter)
     while IFS= read -r pkg; do
         _is_valid_pkg "$pkg" && packages+=("$pkg")
     done < <(parse_renv_lock 2>/dev/null)
@@ -460,6 +497,38 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\
         $deps && \\
     rm -rf /var/lib/apt/lists/*
 EOF
+}
+
+# Write tooling.lock: a JSON file recording the pinned versions of tools
+# installed into the image outside of renv (zzrenvcheck, renv itself).
+# This file serves as the content-addressed record called for by R-5.
+write_tooling_lock() {
+    local r_version="$1" image_digest="${2:-}"
+    local tag="${ZZRENVCHECK_TAG:-v0.3.0}"
+    local snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    local digest_field
+    if [[ -n "$image_digest" ]]; then
+        digest_field="\"${image_digest}\""
+    else
+        digest_field="null"
+    fi
+
+    cat > tooling.lock << EOF
+{
+  "generated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "r_version": "${r_version}",
+  "base_image_digest": ${digest_field},
+  "ppm_snapshot": "${snapshot}",
+  "tools": {
+    "zzrenvcheck": {
+      "source": "github",
+      "ref": "rgt47/zzrenvcheck@${tag}",
+      "tag": "${tag}"
+    }
+  }
+}
+EOF
+    log_info "  Wrote tooling.lock (zzrenvcheck ${tag})"
 }
 
 #=============================================================================
@@ -524,25 +593,21 @@ generate_dockerfile() {
         deps_comment="Packages: ${r_packages[*]}"
     fi
 
-    # Derive profile name from base image for Makefile compatibility
-    # Use PROFILE_NAME if set (from CLI), otherwise infer from base image
-    local profile_name="${PROFILE_NAME:-minimal}"
-    if [[ "$profile_name" == "minimal" ]]; then
-        case "$base_image" in
-            *tidyverse*) profile_name="analysis" ;;
-            *verse*) profile_name="publishing" ;;
-            *rstudio*) profile_name="rstudio" ;;
-            *shiny*) profile_name="shiny" ;;
-        esac
-    fi
-
     local tools_install
-    tools_install=$(generate_tools_install "$base_image" "$profile_name")
+    tools_install=$(generate_tools_install "$base_image")
     log_info "  Tools: pandoc, languageserver, yaml (as needed)"
+
+    # Resolve the base-image digest for content-addressed pinning (R-2).
+    local image_digest
+    image_digest=$(resolve_image_digest "${base_image}:${r_version}")
 
     generate_dockerfile_inline "$base_image" "$r_version" \
         "$system_deps_install" "$tools_install" \
-        "$deps_comment" "$profile_name"
+        "$deps_comment" "$image_digest"
+
+    # Write a tooling lockfile recording the pinned tool versions (R-5).
+    write_tooling_lock "$r_version" "$image_digest"
+
     prompt_docker_build "$project_name" "$r_version"
     return $?
 }
@@ -579,10 +644,62 @@ prompt_docker_build() {
     return 0
 }
 
+# Resolve the repo digest for a pulled image tag so the Dockerfile FROM line
+# can be pinned by content address rather than by mutable tag.
+# Returns the full sha256:... string, or an empty string if Docker is not
+# available or the pull fails (caller must handle the degraded case).
+resolve_image_digest() {
+    local image_ref="$1"
+    local digest
+
+    if ! command -v docker > /dev/null 2>&1; then
+        log_warn "Docker not found; base-image digest not pinned (R-2)"
+        echo ""
+        return 0
+    fi
+
+    log_info "  Pulling ${image_ref} to resolve digest..."
+    if ! docker pull "$image_ref" > /dev/null 2>&1; then
+        log_warn "Could not pull ${image_ref}; base-image digest not pinned (R-2)"
+        echo ""
+        return 0
+    fi
+
+    digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image_ref" 2>/dev/null)
+    # RepoDigests entry is "name@sha256:..." -- extract just the sha256 part
+    digest="${digest##*@}"
+    echo "$digest"
+}
+
+# Map an R version string (e.g. "4.4.2") to the Ubuntu codename used by the
+# rocker images and Posit Package Manager for that release.
+get_ubuntu_codename() {
+    local r_version="$1"
+    local minor
+    minor="$(echo "$r_version" | cut -d. -f1-2)"
+    case "$minor" in
+        4.2|4.3) echo "jammy" ;;
+        4.4|4.5) echo "noble" ;;
+        *)        echo "noble" ;;
+    esac
+}
+
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3"
-    local tools_install="$4" deps_comment="$5"
-    local profile_name="${6:-minimal}"
+    local tools_install="$4" deps_comment="$5" image_digest="${6:-}"
+    local ubuntu_codename ppm_snapshot ppm_url from_spec zzrenvcheck_tag
+    ubuntu_codename="$(get_ubuntu_codename "$r_version")"
+    ppm_snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
+    zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.0}"
+
+    # Pin the FROM line to a content-addressed digest when available (R-2).
+    # Fallback to tag-only reference if digest resolution was skipped.
+    if [[ -n "$image_digest" ]]; then
+        from_spec="${base_image}:${r_version}@${image_digest}"
+    else
+        from_spec="${base_image}:${r_version}"
+    fi
 
     rm -f Dockerfile
     cat > Dockerfile << EOF
@@ -593,34 +710,53 @@ ARG BASE_IMAGE=${base_image}
 ARG R_VERSION=${r_version}
 ARG USERNAME=analyst
 
-FROM \${BASE_IMAGE}:\${R_VERSION}
+FROM ${from_spec}
+
+# OCI image labels for reproducibility provenance and tooling integration.
+# base_digest records the resolved sha256 of the rocker base at build time;
+# ppm_snapshot records the dated PPM URL used to pin package binaries.
+LABEL org.opencontainers.image.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \\
+      org.opencontainers.image.licenses="GPL-3.0-or-later" \\
+      zzcollab.template.version="${ZZCOLLAB_TEMPLATE_VERSION}" \\
+      zzcollab.r.version="${r_version}" \\
+      zzcollab.base.image="${base_image}:${r_version}" \\
+      zzcollab.base.digest="${image_digest:-unknown}" \\
+      zzcollab.ppm.snapshot="${ppm_snapshot}"
 
 ARG USERNAME=analyst
 ARG DEBIAN_FRONTEND=noninteractive
 
-# RENV_CONFIG_REPOS_OVERRIDE forces renv to use Posit PPM binaries
+# RENV_PATHS_LIBRARY is outside the project bind-mount so the baked library
+# is not shadowed at runtime. ZZCOLLAB_AUTO_RESTORE=false disables the
+# startup restore so the image library is authoritative.
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
-    RENV_PATHS_CACHE=/home/\${USERNAME}/.cache/R/renv \\
-    RENV_CONFIG_REPOS_OVERRIDE="https://packagemanager.posit.co/cran/__linux__/noble/latest" \\
-    ZZCOLLAB_CONTAINER=true
+    RENV_PATHS_LIBRARY=/opt/renv/library \\
+    RENV_PATHS_CACHE=/opt/renv/cache \\
+    RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\
+    ZZCOLLAB_CONTAINER=true \\
+    ZZCOLLAB_AUTO_RESTORE=false
 
 ${system_deps_install}
 
 # Configure R to use Posit Package Manager for pre-compiled binaries
-RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))' \\
+RUN echo 'options(repos = c(CRAN = "${ppm_url}"))' \\
         >> /usr/local/lib/R/etc/Rprofile.site && \\
     echo 'options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version["platform"], R.version["arch"], R.version["os"])))' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
 # Install renv and restore packages from lockfile (using PPM binaries)
 RUN R -e "install.packages('renv')"
-RUN mkdir -p /home/\${USERNAME}/.cache/R/renv && chmod 777 /home/\${USERNAME}/.cache/R/renv
+RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
 COPY renv.lock renv.lock
-RUN R -e "renv::restore()"
+# renv::init creates the platform-specific library directory structure that
+# renv::restore() requires to link packages from the cache. Without init,
+# restore downloads to the cache but never populates the library.
+RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
 
-# Install zzrenvcheck as a validation tool (system library, outside project renv)
+# Install zzrenvcheck as a validation tool (system library, outside project renv).
+# Tag is pinned at scaffold time; bump ZZRENVCHECK_TAG in lib/constants.sh to upgrade.
 RUN R -e "install.packages('remotes')" && \\
-    R -e "remotes::install_github('rgt47/zzrenvcheck')"
+    R -e "remotes::install_github('rgt47/zzrenvcheck@${zzrenvcheck_tag}')"
 
 ${tools_install}
 
@@ -667,9 +803,13 @@ find_cached_image() {
         --format '{{.ID}}' | head -1)
 
     [[ -n "$image_id" ]] && echo "$image_id"
+    # A "no cached image" result is not an error. Without this explicit success,
+    # the function returns the exit status of the failed [[ -n ]] test (1), and
+    # the caller's `cached_image=$(find_cached_image ...)` trips set -e, aborting
+    # the build silently before it ever starts.
+    return 0
 }
 
-# shellcheck disable=SC2120
 build_docker_image() {
     local project_name="${1:-$(basename "$(pwd)")}"
     local no_cache="${2:-false}"
@@ -706,7 +846,9 @@ build_docker_image() {
 
     log_info "Building Docker image: $project_name"
 
-    local platform_args=""
+    # Assemble docker build flags as an array so multi-token values are passed
+    # as distinct, unsplit arguments.
+    local build_args=()
     if [[ "$(uname -m)" == "arm64" ]]; then
         local base_image
         base_image=$(grep "^FROM" Dockerfile | head -1 | awk '{print $2}' | cut -d: -f1)
@@ -717,50 +859,23 @@ build_docker_image() {
         fi
         case "$base_image" in
             *tidyverse*|*shiny*|*verse*)
-                platform_args="--platform linux/amd64"
+                build_args+=(--platform linux/amd64)
                 log_info "Using AMD64 emulation for $base_image"
                 ;;
         esac
     fi
 
     # Build with hash label for future cache lookups
-    local label_args=""
-    if [[ -n "$dockerfile_hash" ]]; then
-        label_args="--label zzcollab.dockerfile.hash=$dockerfile_hash"
-    fi
+    [[ -n "$dockerfile_hash" ]] && build_args+=(--label "zzcollab.dockerfile.hash=$dockerfile_hash")
+    [[ "$no_cache" == "true" ]] && build_args+=(--no-cache)
 
-    local cache_args=""
-    [[ "$no_cache" == "true" ]] && cache_args="--no-cache"
-
-    if DOCKER_BUILDKIT=1 docker build $platform_args $label_args $cache_args -t "$project_name" .; then
+    if DOCKER_BUILDKIT=1 docker build ${build_args[@]+"${build_args[@]}"} -t "$project_name" .; then
         log_success "Docker image '$project_name' built successfully"
         log_info "Run: docker run -it --rm -v \$(pwd):/home/analyst/project $project_name"
     else
         log_error "Docker build failed"
         return 1
     fi
-}
-
-#=============================================================================
-# CONVENIENCE FUNCTIONS
-#=============================================================================
-
-docker_setup() {
-    generate_dockerfile && build_docker_image
-}
-
-show_docker_help() {
-    cat << 'EOF'
-Docker Commands:
-  docker build -t PROJECT .                    Build image
-  docker run -it --rm -v $(pwd):/home/analyst/project PROJECT R
-                                               Interactive R
-  docker run -it --rm -v $(pwd):/home/analyst/project PROJECT bash
-                                               Shell access
-
-First run in container:
-  renv::restore()                              Install packages from renv.lock
-EOF
 }
 
 #=============================================================================

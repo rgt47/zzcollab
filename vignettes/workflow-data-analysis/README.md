@@ -13,9 +13,9 @@ workflow-data-analysis/
 ├── references.bib                 # Bibliography
 ├── R/
 │   └── allometry.R                # Extracted analysis functions
-├── tests/
-│   └── testthat/
-│       └── test-allometry.R       # Unit tests for functions
+├── inst/
+│   └── tinytest/
+│       └── test_allometry.R       # Unit tests for functions
 └── analysis/
     └── data/
         └── README.md              # Data documentation template
@@ -49,7 +49,7 @@ Reusable functions extracted from the manuscript:
 These functions emerged through progressive disclosure as patterns became
 apparent during analysis.
 
-### tests/testthat/test-allometry.R
+### inst/tinytest/test_allometry.R
 
 Unit tests for the extracted functions, including:
 
@@ -110,12 +110,12 @@ Required R packages:
 - palmerpenguins
 - tidyverse
 - broom
-- testthat (for tests)
+- tinytest (for tests)
 
 Install with:
 
 ```r
-install.packages(c("palmerpenguins", "tidyverse", "broom", "testthat"))
+install.packages(c("palmerpenguins", "tidyverse", "broom", "tinytest"))
 ```
 
 ## Related Resources

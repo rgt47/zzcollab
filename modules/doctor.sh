@@ -24,12 +24,12 @@ set -euo pipefail
 # When run as a standalone script (via cmd_doctor: bash doctor.sh "$@"),
 # load the library dependencies directly.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    _doctor_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=/dev/null
-    source "${_script_dir}/../lib/constants.sh"
+    source "${_doctor_dir}/../lib/constants.sh"
     # shellcheck source=/dev/null
-    source "${_script_dir}/../lib/core.sh"
-    unset _script_dir
+    source "${_doctor_dir}/../lib/core.sh"
+    unset _doctor_dir
 fi
 
 CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"
@@ -253,6 +253,23 @@ check_ignore_files() {
 
 # Check version stamps in template files
 # Returns number of outdated/unstamped files
+# Copy a template into place, substituting the $ZZCOLLAB_TEMPLATE_VERSION
+# stamp with the given version. Writes through a temp file then cat-backs
+# (avoids in-place sed on cloud-synced project dirs). Returns 0 on success.
+install_template_stamped() {
+    local src="$1" dest="$2" version="$3"
+    local tmp
+    tmp=$(mktemp)
+    if safe_cp "$src" "$dest" \
+       && sed "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${version}/g" "$dest" > "$tmp" \
+       && cat "$tmp" > "$dest"; then
+        rm -f "$tmp"
+        return 0
+    fi
+    rm -f "$tmp"
+    return 1
+}
+
 check_version_stamps() {
     local dir="$1"
     local issues=0
@@ -293,18 +310,12 @@ check_version_stamps() {
             local copy_choice
             read -r -p "    Copy from template? [Y/n]: " copy_choice
             if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
-                local _tmp_guide
-                _tmp_guide=$(mktemp)
-                if safe_cp "$template_guide" "$dir/docs/ZZCOLLAB_USER_GUIDE.md" \
-                   && sed "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
-                          "$dir/docs/ZZCOLLAB_USER_GUIDE.md" > "$_tmp_guide" \
-                   && cat "$_tmp_guide" > "$dir/docs/ZZCOLLAB_USER_GUIDE.md"; then
-                    rm -f "$_tmp_guide"
+                if install_template_stamped "$template_guide" \
+                       "$dir/docs/ZZCOLLAB_USER_GUIDE.md" "$CURRENT_VERSION"; then
                     printf "    ${COL_GREEN}✓ Copied user guide to docs/ (v%s)${COL_RESET}\n" \
                         "$CURRENT_VERSION"
                     issues=$((issues - 1))
                 else
-                    rm -f "$_tmp_guide"
                     printf "    ${COL_RED}✗ Failed to copy${COL_RESET}\n"
                 fi
             fi
@@ -328,18 +339,12 @@ check_version_stamps() {
                 local replace_choice
                 read -r -p "    Replace with template (overwrites local edits)? [y/N]: " replace_choice
                 if [[ "$replace_choice" =~ ^[Yy]$ ]]; then
-                    local _tmp_wf_r
-                    _tmp_wf_r=$(mktemp)
-                    if safe_cp "$template_workflow" "$workflow_file" \
-                       && sed "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
-                              "$workflow_file" > "$_tmp_wf_r" \
-                       && cat "$_tmp_wf_r" > "$workflow_file"; then
-                        rm -f "$_tmp_wf_r"
+                    if install_template_stamped "$template_workflow" \
+                           "$workflow_file" "$CURRENT_VERSION"; then
                         printf "    ${COL_GREEN}✓ Replaced r-package.yml (v%s)${COL_RESET}\n" \
                             "$CURRENT_VERSION"
                         issues=$((issues - 1))
                     else
-                        rm -f "$_tmp_wf_r"
                         printf "    ${COL_RED}✗ Failed to replace${COL_RESET}\n"
                     fi
                 fi
@@ -353,18 +358,12 @@ check_version_stamps() {
             local copy_choice
             read -r -p "    Copy from template? [Y/n]: " copy_choice
             if [[ ! "$copy_choice" =~ ^[Nn]$ ]]; then
-                local _tmp_wf_c
-                _tmp_wf_c=$(mktemp)
-                if safe_cp "$template_workflow" "$workflow_file" \
-                   && sed "s/\\\$ZZCOLLAB_TEMPLATE_VERSION/${CURRENT_VERSION}/g" \
-                          "$workflow_file" > "$_tmp_wf_c" \
-                   && cat "$_tmp_wf_c" > "$workflow_file"; then
-                    rm -f "$_tmp_wf_c"
+                if install_template_stamped "$template_workflow" \
+                       "$workflow_file" "$CURRENT_VERSION"; then
                     printf "    ${COL_GREEN}✓ Copied r-package.yml (v%s)${COL_RESET}\n" \
                         "$CURRENT_VERSION"
                     issues=$((issues - 1))
                 else
-                    rm -f "$_tmp_wf_c"
                     printf "    ${COL_RED}✗ Failed to copy${COL_RESET}\n"
                 fi
             fi
@@ -419,12 +418,9 @@ check_workspace() {
         read -r -p "  Update ${_n_outdated} outdated stamp(s)? [Y/n]: " _fix_choice
         if [[ ! "$_fix_choice" =~ ^[Nn]$ ]]; then
             echo "  Applying stamp fixes:"
-            local _n_fixed=0 _target _fp _pfx _nv
-            for _target in "${FIX_TARGETS[@]}"; do
-                IFS='|' read -r _fp _pfx _nv <<< "$_target"
-                bump_stamp "$_fp" "$_pfx" "$_nv" && _n_fixed=$((_n_fixed + 1))
-            done
-            total_issues=$((total_issues - _n_fixed))
+            _apply_fix_targets
+            total_issues=$((total_issues - FIXES_APPLIED))
+            (( total_issues < 0 )) && total_issues=0
         fi
     fi
     echo ""
@@ -487,6 +483,18 @@ bump_stamp() {
         "${filepath/#$HOME/~}" "$new_ver"
 }
 
+# Bump every recorded FIX_TARGET via bump_stamp; sets FIXES_APPLIED to the
+# number successfully bumped. Shared by apply_fixes (--fix mode) and the
+# interactive prompt in check_workspace.
+_apply_fix_targets() {
+    local target filepath prefix new_ver
+    FIXES_APPLIED=0
+    for target in "${FIX_TARGETS[@]}"; do
+        IFS='|' read -r filepath prefix new_ver <<< "$target"
+        bump_stamp "$filepath" "$prefix" "$new_ver" && FIXES_APPLIED=$((FIXES_APPLIED + 1))
+    done
+}
+
 # Apply recorded FIX_TARGETS for the current workspace.
 apply_fixes() {
     [[ ${#FIX_TARGETS[@]} -eq 0 ]] && return 0
@@ -498,11 +506,7 @@ apply_fixes() {
         echo "  Applying stamp fixes:"
     fi
 
-    local target filepath prefix new_ver
-    for target in "${FIX_TARGETS[@]}"; do
-        IFS='|' read -r filepath prefix new_ver <<< "$target"
-        bump_stamp "$filepath" "$prefix" "$new_ver"
-    done
+    _apply_fix_targets
 }
 
 # Print version status line for a single file
@@ -533,6 +537,11 @@ print_version_status() {
             printf "    %-18s ${COL_YELLOW}v%-6s (newer than template v%s)${COL_RESET}\n" \
                 "$filename" "$found_ver" "$CURRENT_VERSION"
             return 0
+            ;;
+        *)
+            printf "    %-18s ${COL_RED}v%-6s (version compare failed)${COL_RESET}\n" \
+                "$filename" "$found_ver"
+            return 1
             ;;
     esac
 }

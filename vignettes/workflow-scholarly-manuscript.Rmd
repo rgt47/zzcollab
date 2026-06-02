@@ -44,7 +44,7 @@ Traditional workflow:
 2. Write prose describing your question and approach
 3. Add analysis code inline as you work
 4. Extract reusable code to `R/` when patterns emerge
-5. Add tests to `tests/testthat/` as functions solidify
+5. Add tests to `inst/tinytest/` as functions solidify
 6. Move heavy computations to `analysis/scripts/` to speed rendering
 
 The manuscript drives the analysis, not the reverse.
@@ -79,8 +79,8 @@ my-project/
 │       ├── report.Rmd        # THE MANUSCRIPT (start here!)
 │       └── references.bib    # Bibliography
 ├── R/                        # Reusable functions (extract when ready)
-├── tests/
-│   └── testthat/             # Unit tests (add as functions solidify)
+├── inst/
+│   └── tinytest/             # Unit tests (add as functions solidify)
 ├── DESCRIPTION               # Project metadata
 ├── Dockerfile                # Computational environment
 └── renv.lock                 # Package versions
@@ -96,7 +96,7 @@ my-project/
 | `analysis/figures/` | Publication figures | Store final figures |
 | `analysis/scripts/` | Heavy computations | When rendering is slow |
 | `R/` | Reusable functions | When code is used 2+ times |
-| `tests/testthat/` | Unit tests | When functions are stable |
+| `inst/tinytest/` | Unit tests | When functions are stable |
 
 ## The Progressive Extraction Pattern
 
@@ -121,7 +121,7 @@ summarise_by_species(penguins, body_mass_g)
 **Stage 3: Tested function** (Week 3+)
 ```r
 # Critical for results, needs validation
-# R/data_functions.R has tests in tests/testthat/test-data_functions.R
+# R/data_functions.R has tests in inst/tinytest/test_data_functions.R
 ```
 
 # Step-by-Step Workflow
@@ -137,7 +137,9 @@ make docker-build
 ```
 
 This creates the standard compendium structure with empty directories ready
-for use.
+for use. Note that `make r` runs the `zzrenvcheck` dependency gate before and
+after the session, so package usage stays consistent with `DESCRIPTION` and
+`renv.lock`.
 
 ## Step 2: Start the Manuscript (Day 1)
 
@@ -376,66 +378,58 @@ slopes |>
 ## Step 6: Add Tests (When Functions Are Stable)
 
 Once functions are working and you rely on them for results, add tests.
+This project uses tinytest: test files live in `inst/tinytest/` and contain
+bare top-level expectations (no `test_that()` wrapper).
 
-**Create `tests/testthat/test-scaling_functions.R`**:
+**Create `inst/tinytest/test_scaling_functions.R`**:
 
 ```r
-test_that("extract_allometric_slopes returns correct structure", {
-  data <- palmerpenguins::penguins
+# extract_allometric_slopes returns correct structure
+data <- palmerpenguins::penguins
 
-  result <- extract_allometric_slopes(
-    data,
-    bill_length_mm,
-    body_mass_g,
-    species
-  )
+result <- extract_allometric_slopes(
+  data,
+  bill_length_mm,
+  body_mass_g,
+  species
+)
 
-  expect_s3_class(result, "data.frame")
-  expect_equal(nrow(result), 3)  # Three species
-  expect_true(all(c("slope", "slope_se", "r_squared") %in% names(result)))
-})
+expect_inherits(result, 'data.frame')
+expect_equal(nrow(result), 3)  # Three species
+expect_true(all(c('slope', 'slope_se', 'r_squared') %in% names(result)))
 
-test_that("extract_allometric_slopes handles missing values", {
-  data <- data.frame(
-    x = c(1, 2, NA, 4),
-    y = c(2, 4, 6, NA),
-    group = c("A", "A", "B", "B")
-  )
+# extract_allometric_slopes handles missing values
+missing_data <- data.frame(
+  x = c(1, 2, NA, 4),
+  y = c(2, 4, 6, NA),
+  group = c('A', 'A', 'B', 'B')
+)
 
-  result <- extract_allometric_slopes(data, y, x, group)
+result_missing <- extract_allometric_slopes(missing_data, y, x, group)
+expect_equal(nrow(result_missing), 2)
 
-  expect_equal(nrow(result), 2)
-})
+# test_isometry correctly identifies scaling types
+expect_equal(test_isometry(slope = 1.0, se = 0.05)$scaling_type, 'isometric')
+expect_equal(
+  test_isometry(slope = 0.7, se = 0.05)$scaling_type,
+  'negative allometry'
+)
+expect_equal(
+  test_isometry(slope = 1.3, se = 0.05)$scaling_type,
+  'positive allometry'
+)
 
-test_that("test_isometry correctly identifies scaling types", {
-  # Isometric (slope = 1)
-  result <- test_isometry(slope = 1.0, se = 0.05)
-  expect_equal(result$scaling_type, "isometric")
-
-  # Negative allometry (slope < 1)
-  result <- test_isometry(slope = 0.7, se = 0.05)
-  expect_equal(result$scaling_type, "negative allometry")
-
-  # Positive allometry (slope > 1)
-  result <- test_isometry(slope = 1.3, se = 0.05)
-  expect_equal(result$scaling_type, "positive allometry")
-})
-
-test_that("test_isometry returns correct p-value for known case", {
-  # slope = 1.0, se = 0.1 -> t = 0 -> p = 1
-  result <- test_isometry(slope = 1.0, se = 0.1)
-  expect_equal(result$t_statistic, 0)
-  expect_equal(result$p_value, 1)
-})
+# test_isometry returns correct p-value for known case
+# slope = 1.0, se = 0.1 -> t = 0 -> p = 1
+iso <- test_isometry(slope = 1.0, se = 0.1)
+expect_equal(iso$t_statistic, 0)
+expect_equal(iso$p_value, 1)
 ```
 
 Run tests:
 
 ```bash
-make r
-
-> devtools::test()
-> q()
+make docker-test
 ```
 
 ## Step 7: Move Heavy Computations to Scripts
@@ -536,9 +530,9 @@ penguin-morphology/
 │       └── references.bib
 ├── R/
 │   └── scaling_functions.R            # Reusable functions
-├── tests/
-│   └── testthat/
-│       └── test-scaling_functions.R   # Unit tests
+├── inst/
+│   └── tinytest/
+│       └── test_scaling_functions.R   # Unit tests
 ├── DESCRIPTION
 ├── Dockerfile
 ├── Makefile
@@ -626,7 +620,7 @@ git push origin v1.1-revision
 3. **Extract functions when ready**: When you copy-paste code or use similar
    logic in multiple places, create a function in `R/`.
 
-4. **Test critical code**: Add tests in `tests/testthat/` for functions that
+4. **Test critical code**: Add tests in `inst/tinytest/` for functions that
    directly produce results in the manuscript.
 
 5. **Cache expensive computations**: Move slow code to `analysis/scripts/`

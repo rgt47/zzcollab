@@ -1,33 +1,53 @@
 # Tests for help system
 
-test_that("zzcollab_help accepts valid topics", {
-  valid_topics <- c(
-    "init", "github", "quickstart", "workflow",
-    "troubleshooting", "config", "renv",
-    "docker", "cicd", "next-steps"
+# Topics accepted by the CLI dispatcher in modules/help.sh. "general"/NULL
+# is handled separately below.
+help_topics <- c("docker", "profiles", "config", "next-steps")
+
+test_that("zzcollab_help builds 'help TOPIC' commands for valid topics", {
+  calls <- character(0)
+  local_mocked_bindings(
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      character(0)
+    },
+    .package = "zzcollab"
   )
 
-  for (topic in valid_topics) {
-    # Should not error on topic validation
-    result <- tryCatch({
-      zzcollab_help(topic)
-    }, error = function(e) {
-      # Expect zzcollab script error, not topic validation error
-      expect_false(grepl("Unknown.*topic", e$message))
-      expect_true(grepl("zzcollab.*script", e$message, ignore.case = TRUE))
-      character(0)
-    })
-
-    expect_type(result, "character")
+  for (topic in help_topics) {
+    calls <- character(0)
+    zzcollab_help(topic)
+    expect_true(any(grepl(paste("zzcollab help", topic), calls, fixed = TRUE)))
   }
 })
 
-test_that("zzcollab_help rejects invalid topics", {
-  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+test_that("zzcollab_help with NULL or 'general' builds the bare help command", {
+  calls <- character(0)
+  local_mocked_bindings(
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      character(0)
+    },
+    .package = "zzcollab"
+  )
 
-  # Invalid topic should error with helpful message
+  zzcollab_help(NULL)
+  zzcollab_help("general")
+  expect_true(all(grepl("^zzcollab help$", trimws(calls))))
+})
+
+test_that("zzcollab_help rejects invalid topics", {
+  # Topic validation happens in R before any shell call, so no script needed.
   expect_error(
     zzcollab_help("invalid_topic_xyz"),
+    "Unknown.*topic"
+  )
+
+  # Topics that were valid before the help.sh trim must now be rejected.
+  expect_error(
+    zzcollab_help("troubleshooting"),
     "Unknown.*topic"
   )
 
@@ -48,10 +68,7 @@ test_that("zzcollab_help works with NULL (general help)", {
   expect_type(result, "character")
 })
 
-test_that("zzcollab_help lists all valid topics in error", {
-  skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
-
-  # Error message should list valid topics
+test_that("zzcollab_help lists current valid topics in error", {
   result <- tryCatch({
     zzcollab_help("invalid")
   }, error = function(e) {
@@ -60,14 +77,14 @@ test_that("zzcollab_help lists all valid topics in error", {
     # Should mention it's unknown
     expect_true(grepl("Unknown", msg))
 
-    # Should list valid topics
-    expect_true(grepl("init", msg))
+    # Should list the current valid topics
     expect_true(grepl("docker", msg))
+    expect_true(grepl("profiles", msg))
     expect_true(grepl("config", msg))
 
     # Should NOT mention removed topics
+    expect_false(grepl("troubleshooting", msg))
     expect_false(grepl("variants", msg))
-    expect_false(grepl("build-modes", msg))
 
     TRUE
   })
@@ -86,26 +103,20 @@ test_that("zzcollab_next_steps works", {
   expect_type(result, "character")
 })
 
-test_that("help system uses new --help TOPIC pattern", {
-  skip_if_not(exists("find_zzcollab_script"))
-
-  # Mock find_zzcollab_script
+test_that("zzcollab_help routes topics via the 'help' subcommand", {
+  captured <- NULL
   local_mocked_bindings(
-    find_zzcollab_script = function() "/usr/local/bin/zzcollab",
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      captured <<- command
+      character(0)
+    },
     .package = "zzcollab"
   )
 
-  # Capture the command that would be executed
-  # The new pattern should be: zzcollab --help TOPIC
-  # Not: zzcollab --help-TOPIC
-
-  result <- tryCatch({
-    zzcollab_help("docker")
-  }, error = function(e) {
-    # Command construction error should show our new pattern
-    # Old pattern: --help-docker
-    # New pattern: --help docker
-    expect_false(grepl("--help-docker", e$message))
-    TRUE
-  })
+  zzcollab_help("docker")
+  # Topics use the 'help' subcommand (zzcollab help docker), not a
+  # hyphenated --help-docker flag.
+  expect_true(grepl("zzcollab help docker", captured, fixed = TRUE))
+  expect_false(grepl("--help-docker", captured, fixed = TRUE))
 })

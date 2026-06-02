@@ -80,8 +80,8 @@ simulation-study/
 │   ├── simulate_data.R           # Data generation (extract when ready)
 │   ├── fit_models.R              # Model fitting (extract when ready)
 │   └── performance_metrics.R     # Evaluation (extract when ready)
-├── tests/
-│   └── testthat/                 # Tests for each R/ file
+├── inst/
+│   └── tinytest/                 # Tests for each R/ file
 ├── DESCRIPTION
 ├── Dockerfile
 └── renv.lock
@@ -497,40 +497,33 @@ calculate_performance <- function(estimates, ses, true_value, alpha = 0.05) {
 
 # Step 6: Add Tests
 
-**Create `tests/testthat/test-simulate_data.R`**:
+This project uses tinytest. Create `inst/tinytest/test_simulate_data.R` with
+bare top-level expectations (no `test_that()` wrapper):
 
 ```r
-test_that("simulate_longitudinal_binary returns correct structure", {
-  data <- simulate_longitudinal_binary(n_subjects = 10, seed = 42)
+# simulate_longitudinal_binary returns correct structure
+data <- simulate_longitudinal_binary(n_subjects = 10, seed = 42)
+expect_inherits(data, 'data.frame')
+expect_equal(nrow(data), 40)
+expect_true(all(c('subject_id', 'time', 'treatment', 'y') %in% names(data)))
 
-  expect_s3_class(data, "data.frame")
-  expect_equal(nrow(data), 40)
-  expect_true(all(c("subject_id", "time", "treatment", "y") %in% names(data)))
-})
+# simulate_longitudinal_binary respects seed
+data1 <- simulate_longitudinal_binary(n_subjects = 20, seed = 123)
+data2 <- simulate_longitudinal_binary(n_subjects = 20, seed = 123)
+expect_identical(data1, data2)
 
-test_that("simulate_longitudinal_binary respects seed", {
-  data1 <- simulate_longitudinal_binary(n_subjects = 20, seed = 123)
-  data2 <- simulate_longitudinal_binary(n_subjects = 20, seed = 123)
+# simulate_longitudinal_binary produces valid outcomes
+data_valid <- simulate_longitudinal_binary(n_subjects = 100, seed = 42)
+expect_true(all(data_valid$y %in% c(0, 1)))
 
-  expect_identical(data1, data2)
-})
-
-test_that("simulate_longitudinal_binary produces valid outcomes", {
-  data <- simulate_longitudinal_binary(n_subjects = 100, seed = 42)
-
-  expect_true(all(data$y %in% c(0, 1)))
-})
-
-test_that("create_simulation_grid produces correct dimensions", {
-  grid <- create_simulation_grid(
-    n_subjects = c(50, 100),
-    beta_interaction = c(0, 0.3),
-    sigma_b = 0.5,
-    n_sims = 10
-  )
-
-  expect_equal(nrow(grid), 2 * 2 * 1 * 10)
-})
+# create_simulation_grid produces correct dimensions
+grid <- create_simulation_grid(
+  n_subjects = c(50, 100),
+  beta_interaction = c(0, 0.3),
+  sigma_b = 0.5,
+  n_sims = 10
+)
+expect_equal(nrow(grid), 2 * 2 * 1 * 10)
 ```
 
 # Step 7: Move Full Simulation to Scripts
@@ -666,7 +659,7 @@ Working implementations are available in
 - `R/simulate_data.R` - Data generation
 - `R/fit_models.R` - Model fitting
 - `R/performance_metrics.R` - Evaluation
-- `tests/testthat/` - Unit tests for each module
+- `inst/tinytest/` - Unit tests for each module
 - `analysis/scripts/02_run_simulation.R` - Full simulation runner
 - `analysis/report/report.Rmd` - Manuscript template
 

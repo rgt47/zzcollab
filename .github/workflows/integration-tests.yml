@@ -10,6 +10,9 @@ on:
   schedule:
     - cron: '0 0 * * 0'
 
+permissions:
+  contents: read
+
 jobs:
   docker-integration:
     name: Docker Integration Tests
@@ -20,20 +23,18 @@ jobs:
       fail-fast: false
       matrix:
         profile:
-          # Core profiles (mapped to rocker base images)
+          # The three supported profiles (mapped to rocker base images)
           - minimal
           - analysis
-          - publishing
           - rstudio
-          - shiny
         r_version: ['4.4.0']
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
     - name: Install test dependencies
       run: |
@@ -116,7 +117,7 @@ jobs:
         EOF
 
     - name: Build Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
       with:
         context: test-project
         push: false
@@ -225,7 +226,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     - name: Install zzcollab
       run: |
@@ -262,9 +263,12 @@ jobs:
         # List available make targets
         make help || echo "Help target not required"
 
-        # Verify critical targets exist in Makefile
-        grep -q "docker-build" Makefile
-        grep -q "docker-run" Makefile || grep -q "docker-r" Makefile
+        # Verify critical targets exist in Makefile. Anchor on '^target:' so a
+        # substring (e.g. 'docker-render' satisfying a bare 'docker-r' grep)
+        # cannot pass the assertion vacuously.
+        grep -qE '^docker-build:' Makefile
+        grep -qE '^r:' Makefile
+        grep -qE '^docker-rstudio:' Makefile
 
     - name: Test results summary
       if: always()

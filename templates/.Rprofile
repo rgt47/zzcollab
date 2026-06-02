@@ -19,6 +19,16 @@ options(
 )
 
 # ==========================================
+# RNG discipline (R-7)
+# ==========================================
+# Pin the RNG algorithm and normal-variate method explicitly so that
+# stochastic analyses (bootstrap, MCMC, cross-validation, simulation)
+# are reproducible across R versions. R 3.6.0 changed the default
+# sample.kind, which silently breaks previously reproducible seeds.
+# Set a project-level seed with set.seed() in each analysis script.
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+
+# ==========================================
 # Part 2: Container Detection
 # ==========================================
 # Set ZZCOLLAB_CONTAINER=true in Dockerfile to enable renv
@@ -29,8 +39,8 @@ if (in_container) {
   # Use Posit Package Manager for pre-compiled binaries in container
   # Set both repos AND renv.repos.cran (renv uses this option as its default)
   options(
-    repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"),
-    renv.repos.cran = "https://packagemanager.posit.co/cran/__linux__/noble/latest"
+    repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"),
+    renv.repos.cran = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"
   )
 } else {
   options(repos = c(CRAN = "https://cloud.r-project.org"))
@@ -184,7 +194,7 @@ if (!in_container) {
   }
 
   # Re-apply Posit PM repos AFTER renv::load() (which overrides from lockfile)
-  options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))
+  options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"))
 }
 
 # ==========================================

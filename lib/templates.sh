@@ -12,42 +12,28 @@ set -euo pipefail
 # DEPENDENCIES: lib/core.sh (for logging functions)
 ##############################################################################
 
-# Validate core library is loaded
-
 #=============================================================================
 # TEMPLATE FILE PROCESSING FUNCTIONS
 #=============================================================================
 
-# Function: copy_template_file
-# Purpose: Copy a template file and substitute variables within it
-# USAGE:    copy_template_file "Dockerfile" "Dockerfile" ["Docker config"] [templates_dir]
-# ARGS:
-#   $1 - template: Template filename (relative to templates directory)
-#   $2 - dest: Destination path for the copied file
-#   $3 - description: Optional description for logging (defaults to destination path)
-#   $4 - templates_dir: Optional templates directory (defaults to ZZCOLLAB_TEMPLATES_DIR)
-# RETURNS:
-#   0 - File copied and variables substituted successfully
-#   1 - Failed (template not found, copy failed, substitution failed)
-copy_template_file() {
-    local template="$1"
-    local dest="$2"
-    local description="${3:-$dest}"
-    local templates_dir="${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}"
-
-    [[ $# -ge 2 ]] || { log_error "copy_template_file: need template and destination"; return 1; }
+# Function: _render_template (private)
+# Purpose: Copy a template into place and substitute its variables. Shared core
+#          of copy_template_file (overwrite=false) and regenerate_template_file
+#          (overwrite=true).
+# ARGS: $1 template  $2 dest  $3 description  $4 templates_dir  $5 overwrite
+# RETURNS: 0 on success (or skip), 1 on failure.
+_render_template() {
+    local template="$1" dest="$2" description="$3" templates_dir="$4" overwrite="$5"
 
     if [[ -z "$templates_dir" ]]; then
-        log_error "copy_template_file: templates directory not specified"
+        log_error "render_template: templates directory not specified"
         return 1
     fi
-
     if [[ ! -f "$templates_dir/$template" ]]; then
         log_error "Template not found: $templates_dir/$template"
         return 1
     fi
-
-    if [[ -f "$dest" ]]; then
+    if [[ "$overwrite" != "true" && -f "$dest" ]]; then
         log_info "$description already exists, skipping creation"
         return 0
     fi
@@ -60,61 +46,75 @@ copy_template_file() {
             return 1
         fi
     fi
-
     if ! safe_cp "$templates_dir/$template" "$dest"; then
         log_error "Failed to copy template: $template"
         return 1
     fi
-
     if ! substitute_variables "$dest"; then
         log_error "Failed to substitute variables in: $dest"
         return 1
     fi
-
     return 0
 }
 
-# Function: regenerate_template_file
-# Purpose: Copy a template file and substitute variables, overwriting if exists
-# USAGE:    regenerate_template_file "Makefile" "Makefile" ["Makefile"] [templates_dir]
-# ARGS:
-#   $1 - template: Template filename (relative to templates directory)
-#   $2 - dest: Destination path for the copied file
-#   $3 - description: Optional description for logging (defaults to destination path)
-#   $4 - templates_dir: Optional templates directory (defaults to ZZCOLLAB_TEMPLATES_DIR)
-# RETURNS:
-#   0 - File regenerated and variables substituted successfully
-#   1 - Failed (template not found, copy failed, substitution failed)
+# Copy a template and substitute variables, skipping if the destination exists.
+# USAGE: copy_template_file TEMPLATE DEST [DESCRIPTION] [TEMPLATES_DIR]
+copy_template_file() {
+    [[ $# -ge 2 ]] || { log_error "copy_template_file: need template and destination"; return 1; }
+    _render_template "$1" "$2" "${3:-$2}" \
+        "${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}" "false"
+}
+
+# Copy a template and substitute variables, overwriting the destination.
+# USAGE: regenerate_template_file TEMPLATE DEST [DESCRIPTION] [TEMPLATES_DIR]
 regenerate_template_file() {
-    local template="$1"
-    local dest="$2"
-    local description="${3:-$dest}"
-    local templates_dir="${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}"
-
     [[ $# -ge 2 ]] || { log_error "regenerate_template_file: need template and destination"; return 1; }
+    local description="${3:-$2}"
+    _render_template "$1" "$2" "$description" \
+        "${4:-${TEMPLATES_DIR:-$ZZCOLLAB_TEMPLATES_DIR}}" "true" \
+        && log_success "Regenerated $description"
+}
 
-    if [[ -z "$templates_dir" ]]; then
-        log_error "regenerate_template_file: templates directory not specified"
-        return 1
+# Function: render_authors_r
+# Purpose: Build a DESCRIPTION Authors@R person() call from the resolved
+#          config. Splits AUTHOR_NAME into given/family (last token = family),
+#          parses the comma-separated roles (default aut,cre), and appends an
+#          ORCID comment only when CONFIG_AUTHOR_ORCID is set.
+# OUTPUT:  A single-line person(...) expression on stdout.
+render_authors_r() {
+    local name="${CONFIG_AUTHOR_NAME:-${AUTHOR_NAME:-Your Name}}"
+    local email="${CONFIG_AUTHOR_EMAIL:-${AUTHOR_EMAIL:-your.email@example.com}}"
+    local orcid="${CONFIG_AUTHOR_ORCID:-${AUTHOR_ORCID:-}}"
+    local roles="${CONFIG_AUTHOR_ROLES:-aut,cre}"
+
+    local given family
+    if [[ "$name" == *" "* ]]; then
+        family="${name##* }"
+        given="${name% *}"
+    else
+        given="$name"
+        family=""
     fi
 
-    if [[ ! -f "$templates_dir/$template" ]]; then
-        log_error "Template not found: $templates_dir/$template"
-        return 1
-    fi
+    # Build the role vector, e.g. "aut", "cre"
+    local role_vec="" r
+    local oldifs="$IFS"
+    IFS=','
+    for r in $roles; do
+        r="${r//[[:space:]]/}"
+        [[ -z "$r" ]] && continue
+        role_vec+="\"$r\", "
+    done
+    IFS="$oldifs"
+    role_vec="${role_vec%, }"
+    [[ -z "$role_vec" ]] && role_vec="\"aut\", \"cre\""
 
-    if ! safe_cp "$templates_dir/$template" "$dest"; then
-        log_error "Failed to copy template: $template"
-        return 1
-    fi
-
-    if ! substitute_variables "$dest"; then
-        log_error "Failed to substitute variables in: $dest"
-        return 1
-    fi
-
-    log_success "Regenerated $description"
-    return 0
+    local out="person(given = \"$given\""
+    [[ -n "$family" ]] && out+=", family = \"$family\""
+    out+=", email = \"$email\", role = c($role_vec)"
+    [[ -n "$orcid" ]] && out+=", comment = c(ORCID = \"$orcid\")"
+    out+=")"
+    printf '%s' "$out"
 }
 
 # Function: substitute_variables
@@ -134,35 +134,46 @@ substitute_variables() {
     if [[ -n "$author_name_override" ]]; then
         AUTHOR_NAME="$author_name_override" 2>/dev/null || true
     fi
+    # Resolved config (CONFIG_*, populated by load_config) wins over the
+    # core.sh placeholder defaults so scaffolded metadata reflects the user.
+    AUTHOR_NAME="${CONFIG_AUTHOR_NAME:-${AUTHOR_NAME:-Your Name}}"
+    AUTHOR_EMAIL="${CONFIG_AUTHOR_EMAIL:-${AUTHOR_EMAIL:-your.email@example.com}}"
     export AUTHOR_NAME 2>/dev/null || true
     export AUTHOR_EMAIL AUTHOR_INSTITUTE AUTHOR_INSTITUTE_FULL BASE_IMAGE
     # Don't default R_VERSION to 'latest' - let generate_dockerfile read from renv.lock
     [[ -n "${R_VERSION:-}" ]] && export R_VERSION
-    export USERNAME="${USERNAME:-analyst}"
 
     export PACKAGE_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
-    export AUTHOR_LAST="${AUTHOR_LAST:-}"
-    export AUTHOR_ORCID="${AUTHOR_ORCID:-}"
-    export MANUSCRIPT_TITLE="${MANUSCRIPT_TITLE:-Research Compendium Analysis}"
+
+    # DESCRIPTION metadata sourced from the resolved config (with R-package
+    # defaults). AUTHORS_R is pre-rendered because envsubst cannot express the
+    # conditional ORCID/role structure of the person() call.
+    export LICENSE_TYPE="${CONFIG_LICENSE_TYPE:-GPL-3}"
+    export ROXYGEN_VERSION="${CONFIG_RPACKAGE_ROXYGEN_VERSION:-7.3.2}"
+    export PKG_ENCODING="${CONFIG_RPACKAGE_ENCODING:-UTF-8}"
+    AUTHORS_R="$(render_authors_r)"
+    export AUTHORS_R
     export DATE="$(date +%Y-%m-%d)"
     export GITHUB_ACCOUNT="${GITHUB_ACCOUNT:-}"
-
-    export TEAM_NAME="${TEAM_NAME:-}"
     export PROJECT_NAME="${PROJECT_NAME:-}"
-    export DOCKERHUB_ACCOUNT="${DOCKERHUB_ACCOUNT:-}"
-
-    export R_PACKAGES_INSTALL_CMD="${R_PACKAGES_INSTALL_CMD:-# No R packages specified}"
-    export SYSTEM_DEPS_INSTALL_CMD="${SYSTEM_DEPS_INSTALL_CMD:-# No system dependencies specified}"
-    export LIBS_BUNDLE="${LIBS_BUNDLE:-minimal}"
-    export PKGS_BUNDLE="${PKGS_BUNDLE:-minimal}"
     if [[ -z "${ZZCOLLAB_TEMPLATE_VERSION:-}" ]]; then
         ZZCOLLAB_TEMPLATE_VERSION="0.0.0"
     fi
     export ZZCOLLAB_TEMPLATE_VERSION
 
-    # Note: $USERNAME and $BASE_IMAGE are intentionally excluded - they are runtime
-    # shell variables in Makefile ($$USERNAME, $$BASE_IMAGE), not template placeholders
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHOR_LAST $AUTHOR_ORCID $MANUSCRIPT_TITLE $DATE $GITHUB_ACCOUNT $TEAM_NAME $PROJECT_NAME $DOCKERHUB_ACCOUNT $R_PACKAGES_INSTALL_CMD $SYSTEM_DEPS_INSTALL_CMD $LIBS_BUNDLE $PKGS_BUNDLE $ZZCOLLAB_TEMPLATE_VERSION' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    # PPM snapshot date and Ubuntu codename for pinned repository URLs.
+    # get_ubuntu_codename is defined in modules/docker.sh; we guard in case
+    # templates.sh is ever sourced without docker.sh.
+    export PPM_SNAPSHOT="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    if declare -f get_ubuntu_codename > /dev/null 2>&1; then
+        export UBUNTU_CODENAME="${UBUNTU_CODENAME:-$(get_ubuntu_codename "${R_VERSION:-4.4.0}")}"
+    else
+        export UBUNTU_CODENAME="${UBUNTU_CODENAME:-noble}"
+    fi
+
+    # Note: $BASE_IMAGE is intentionally excluded - it is a runtime shell
+    # variable in Makefile ($$BASE_IMAGE), not a template placeholder.
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_EMAIL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1
@@ -184,7 +195,6 @@ create_file_if_missing() {
 
     if [[ -f "$file_path" ]]; then
         log_info "$description already exists, skipping creation"
-        track_file "$file_path"
         return 0
     fi
 
@@ -202,12 +212,11 @@ create_file_if_missing() {
         return 1
     fi
 
-    track_file "$file_path"
     log_info "Created $description"
 }
 
 # Function: install_template
-# Purpose: Consolidated template installation with tracking and error handling
+# Purpose: Consolidated template installation with error handling
 install_template() {
     local template="$1"
     local dest="$2"
@@ -215,7 +224,6 @@ install_template() {
     local success_msg="${4:-"Created $description"}"
 
     if copy_template_file "$template" "$dest" "$description"; then
-        track_template_file "$template" "$dest"
         log_info "$success_msg"
         return 0
     else
@@ -223,9 +231,3 @@ install_template() {
         return 1
     fi
 }
-
-#=============================================================================
-# TEMPLATES LIBRARY VALIDATION
-#=============================================================================
-
-# Set templates module loaded flag

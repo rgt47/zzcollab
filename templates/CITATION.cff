@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this research compendium, please cite it as below."
+type: software
+title: "$PKG_NAME"
+version: 0.1.0
+date-released: "$DATE"
+license: $LICENSE_TYPE
+authors:
+  - family-names: ""
+    given-names: $AUTHOR_NAME
+    orcid: ""
+    email: $AUTHOR_EMAIL
+    affiliation: $AUTHOR_INSTITUTE
+abstract: >
+  Reproducible research compendium created with zzcollab v$ZZCOLLAB_TEMPLATE_VERSION.
+  Contains all data, code, and computational environment needed to reproduce
+  the analyses.
+keywords:
+  - reproducible-research
+  - research-compendium

@@ -9,9 +9,7 @@ set -euo pipefail
 #
 # FEATURES:
 #          - Unified logging system (log_info, log_error, log_success, log_warn)
-#          - Module dependency validation system (require_module function)
 #          - Package name validation and sanitization
-#          - Item tracking system for manifest generation
 #          - File safety utilities (safe_mkdir)
 #          - Command availability caching
 #          - Cross-platform compatibility helpers
@@ -214,105 +212,16 @@ safe_mkdir() {
 # Arguments: $1 - source path, $2 - destination path
 safe_cp() {
     local src="$1" dest="$2"
+    # Verify the source exists before removing the destination, so a missing
+    # source cannot leave the destination deleted (and abort under set -e).
+    if [[ ! -f "$src" ]]; then
+        log_error "safe_cp: source not found: $src"
+        return 1
+    fi
     rm -f "$dest"
     cat "$src" > "$dest"
 }
 
-
-#=============================================================================
-# UNIFIED VALIDATION SYSTEM
-#=============================================================================
-
-# Function: validate_files_exist
-# Purpose: Check that required files exist
-# Arguments: $1 - description, $2+ - file paths
-validate_files_exist() {
-    local description="$1"
-    shift
-    local files=("$@")
-    local missing_files=()
-
-    for file in "${files[@]}"; do
-        if [[ ! -f "$file" ]]; then
-            missing_files+=("$file")
-        fi
-    done
-
-    if [[ ${#missing_files[@]} -eq 0 ]]; then
-        log_success "$description: all files exist"
-        return 0
-    else
-        log_error "$description: missing files: ${missing_files[*]}"
-        return 1
-    fi
-}
-
-# Function: validate_directories_exist
-# Purpose: Check that required directories exist
-# Arguments: $1 - description, $2+ - directory paths
-validate_directories_exist() {
-    local description="$1"
-    shift
-    local directories=("$@")
-    local missing_dirs=()
-
-    for dir in "${directories[@]}"; do
-        if [[ ! -d "$dir" ]]; then
-            missing_dirs+=("$dir")
-        fi
-    done
-
-    if [[ ${#missing_dirs[@]} -eq 0 ]]; then
-        log_success "$description: all directories exist"
-        return 0
-    else
-        log_error "$description: missing directories: ${missing_dirs[*]}"
-        return 1
-    fi
-}
-
-# Function: validate_commands_exist
-# Purpose: Check that required commands are available
-# Arguments: $1 - description, $2+ - command names
-validate_commands_exist() {
-    local description="$1"
-    shift
-    local commands=("$@")
-    local missing_commands=()
-
-    for cmd in "${commands[@]}"; do
-        if ! command_exists "$cmd"; then
-            missing_commands+=("$cmd")
-        fi
-    done
-
-    if [[ ${#missing_commands[@]} -eq 0 ]]; then
-        log_success "$description: all commands available"
-        return 0
-    else
-        log_error "$description: missing commands: ${missing_commands[*]}"
-        return 1
-    fi
-}
-
-#=============================================================================
-# MODULE DEPENDENCY VALIDATION
-#=============================================================================
-
-# Function: require_module
-# Purpose: Load modules on demand with dependency tracking
-#
-# DESCRIPTION:
-#   If entry point hasn't defined this function, provide a default loader.
-#   When called by modules, this loads any dependencies that haven't been loaded yet.
-#
-# ARGUMENTS:
-#   $1+ - Module names to load (e.g., "core", "templates", "config")
-#
-# USAGE EXAMPLES:
-#   require_module "core"                    # Single dependency
-#   require_module "core" "templates"        # Multiple dependencies
-#
 
 #=============================================================================
 # DIRECTORY SAFETY GUARD
@@ -337,8 +246,15 @@ assert_safe_init_directory() {
     fi
 
     if [[ "$items" -gt 3 ]]; then
-        log_warn "This directory has $items existing items."
-        confirm "Run zzc init here?" || return 1
+        # The soft prompt is a courtesy check, not the hard >1-subdir stop.
+        # Under --yes/accept-defaults, proceed non-interactively; the hard stop
+        # above still requires an explicit 'zzc init --force'.
+        if [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
+            log_warn "This directory has $items existing items; proceeding (--yes)."
+        else
+            log_warn "This directory has $items existing items."
+            confirm "Run zzc init here?" || return 1
+        fi
     fi
 
     return 0
@@ -386,10 +302,6 @@ confirm() {
     echo
     [[ $REPLY =~ ^[Yy]$ ]]
 }
-
-#=============================================================================
-# CORE LIBRARY VALIDATION
-#=============================================================================
 
 #=============================================================================
 # SHARED VALIDATION FUNCTIONS
@@ -481,5 +393,3 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "❌ Error: core.sh should be sourced, not executed directly" >&2
     exit 1
 fi
-
-# Set module loaded flags (core absorbs utils)

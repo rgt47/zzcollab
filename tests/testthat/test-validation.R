@@ -1,5 +1,5 @@
 # Tests for validation functions and error handling
-# Tests for Phase 2 improvements: safe_system(), validate_docker_name(), validate_path()
+# Tests for safe_system() and validate_docker_name()
 
 test_that("validate_docker_name accepts valid names", {
   # Valid Docker names
@@ -65,50 +65,6 @@ test_that("validate_docker_name rejects invalid names", {
   expect_error(
     validate_docker_name(paste(rep("a", 256), collapse = ""), "team_name"),
     "team_name must be 255 characters or less"
-  )
-})
-
-test_that("validate_path handles NULL values", {
-  # NULL should return NULL
-  expect_null(validate_path(NULL, "some_path"))
-})
-
-test_that("validate_path normalizes valid paths", {
-  # Should normalize path
-  result <- validate_path("~/test", "test_path")
-  expect_type(result, "character")
-  expect_length(result, 1)
-  # Should expand ~
-  expect_false(grepl("^~", result))
-})
-
-test_that("validate_path rejects invalid input", {
-  # Not a character
-  expect_error(
-    validate_path(123, "test_path"),
-    "test_path must be a single character string"
-  )
-
-  # Multiple values
-  expect_error(
-    validate_path(c("path1", "path2"), "test_path"),
-    "test_path must be a single character string"
-  )
-})
-
-test_that("validate_path checks existence when required", {
-  # Create a temporary file
-  temp_file <- tempfile()
-  file.create(temp_file)
-  on.exit(unlink(temp_file))
-
-  # Should succeed for existing file
-  expect_type(validate_path(temp_file, "test_path", must_exist = TRUE), "character")
-
-  # Should fail for non-existent file
-  expect_error(
-    validate_path("/nonexistent/path/file.txt", "test_path", must_exist = TRUE),
-    "test_path does not exist"
   )
 })
 
@@ -185,17 +141,6 @@ test_that("validation functions provide helpful error messages", {
     validate_docker_name("My Project", "github_account"),
     "github_account must contain only lowercase"
   )
-
-  # validate_path should mention parameter name
-  expect_error(
-    validate_path(c("a", "b"), "some_path"),
-    "some_path must be a single character string"
-  )
-
-  expect_error(
-    validate_path("/nonexistent", "config_file", must_exist = TRUE),
-    "config_file does not exist"
-  )
 })
 
 test_that("edge cases are handled correctly", {
@@ -204,9 +149,4 @@ test_that("edge cases are handled correctly", {
 
   # validate_docker_name with all allowed characters
   expect_true(validate_docker_name("abc123._-xyz", "name"))
-
-  # validate_path with relative path
-  result <- validate_path(".", "current_dir")
-  expect_type(result, "character")
-  expect_true(nchar(result) > 1)  # Should be expanded to absolute path
 })

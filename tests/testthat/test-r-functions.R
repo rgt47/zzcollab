@@ -45,23 +45,16 @@ test_that("validate_docker_name enforces length limit", {
                "255 characters or less")
 })
 
-test_that("validate_path normalizes paths correctly", {
-  temp_dir <- tempdir()
-  result <- zzcollab:::validate_path(temp_dir, "test_path")
-  expect_true(is.character(result))
-  expect_true(nchar(result) > 0)
-})
-
 ################################################################################
 # SECTION 2: Null-Coalescing Operator (2 tests)
 ################################################################################
 
-test_that("%%||%% operator returns left value when not NULL", {
+test_that("%||% operator returns left value when not NULL", {
   result <- "value" %||% "default"
   expect_equal(result, "value")
 })
 
-test_that("%%||%% operator returns right value when left is NULL", {
+test_that("%||% operator returns right value when left is NULL", {
   result <- NULL %||% "default"
   expect_equal(result, "default")
 })

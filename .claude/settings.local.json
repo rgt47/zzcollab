@@ -45,7 +45,26 @@
       "Bash(echo \"exit:$?\")",
       "Bash(export CLAUDE_CODE_TMPDIR=/tmp NOT_CRAN=true)",
       "Bash(bash tests/shell/test-core.sh)",
-      "Bash(bash tests/shell/test-validation.sh)"
+      "Bash(bash tests/shell/test-validation.sh)",
+      "Bash(command -v pandoc)",
+      "Bash(pandoc --version)",
+      "Bash(echo \"pandoc: yes \\($\\(pandoc --version)",
+      "Bash(bash *)",
+      "Bash(git reset *)",
+      "Bash(git add *)",
+      "Bash(md5 /Users/zenn/Dropbox/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh)",
+      "Bash(/Users/zenn/Dropbox/prj/sfw/07-zzcollab/zzcollab/zzcollab.sh --help)",
+      "Bash(echo \"=====EXIT $?=====\")",
+      "Bash(shellcheck --severity=warning /Users/zenn/prj/sfw/07-zzcollab/zzcollab/modules/docker.sh)",
+      "Bash(ZZCOLLAB_HOME=/Users/zenn/prj/sfw/07-zzcollab/zzcollab bash -c 'source \"$ZZCOLLAB_HOME/lib/constants.sh\"; source \"$ZZCOLLAB_HOME/lib/core.sh\"; source \"$ZZCOLLAB_HOME/modules/docker.sh\"; PPM_SNAPSHOT=2026-06-01 write_tooling_lock 4.4.2 \"\" && cat tooling.lock')",
+      "Bash(ZZCOLLAB_HOME=/Users/zenn/prj/sfw/07-zzcollab/zzcollab bash -c 'source \"$ZZCOLLAB_HOME/lib/constants.sh\"; source \"$ZZCOLLAB_HOME/lib/core.sh\"; source \"$ZZCOLLAB_HOME/modules/docker.sh\"; echo \"R 4.3.x codename: $\\(get_ubuntu_codename 4.3.1\\)\"; echo \"R 4.4.x codename: $\\(get_ubuntu_codename 4.4.2\\)\"; echo \"R 4.5.x codename: $\\(get_ubuntu_codename 4.5.2\\)\"')",
+      "Bash(git commit -m ' *)",
+      "Bash(sort -t@ -k2)",
+      "Bash(gh api *)",
+      "Bash(shellcheck --severity=warning /Users/zenn/prj/sfw/07-zzcollab/zzcollab/zzcollab.sh)",
+      "Bash(git checkout *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git commit *)"
     ]
   }
 }

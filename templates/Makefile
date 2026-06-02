@@ -10,6 +10,9 @@ R_VERSION := $(shell grep 'R_VERSION=' Dockerfile 2>/dev/null | head -1 | sed 's
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo "$(shell date +%Y%m%d)")
 IMAGE_TAG = $(GIT_SHA)
 
+# Report rendered by docker-render (override: make docker-render REPORT=path)
+REPORT ?= analysis/report/report.Rmd
+
 # Help target (default)
 help:
 	@echo "Available targets:"
@@ -34,6 +37,14 @@ help:
 	@echo "    docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-render-qmd"
 	@echo "    docker-check-renv"
+	@echo ""
+	@echo "  Team collaboration:"
+	@echo "    docker-push-team         - Multi-arch build and push; writes .team-image-digest"
+	@echo "    docker-pull-team         - Pull team image pinned by digest in .team-image-digest"
+	@echo ""
+	@echo "  Data integrity:"
+	@echo "    hash-data                - Write sha256 manifest of raw_data/ to data-manifest.sha256"
+	@echo "    verify-data              - Verify raw_data/ against data-manifest.sha256"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, docker-clean"
@@ -112,21 +123,45 @@ check-binaries:
 	fi
 
 docker-build: check-binaries
-	zzcollab build
+	zzcollab rebuild
 
 docker-rebuild:
-	zzcollab build --no-cache
+	zzcollab rebuild --no-cache
 
 docker-build-log:
-	zzcollab build --log
+	zzcollab rebuild --log
 
 docker-push-team:
-	@echo "Tagging image as $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
-	docker tag $(PACKAGE_NAME) $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
-	@echo "Pushing to Docker Hub..."
-	docker push $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)
+	@echo "Building and pushing multi-arch image $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
+	@echo "Platforms: linux/amd64,linux/arm64 (native on both x86 and Apple Silicon)"
+	docker buildx build \
+		--platform linux/amd64,linux/arm64 \
+		--tag $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG) \
+		--push \
+		.
 	@echo "✅ Team image pushed: $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
-	@echo "   Team members should update .zzcollab_team_setup to reference this tag"
+	@echo "   Recording image digest for reproducible pulls..."
+	@docker buildx imagetools inspect \
+		$(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG) \
+		--format '{{json .Manifest.Digest}}' \
+		| tr -d '"' > .team-image-digest
+	@echo "   Digest written to .team-image-digest"
+	@echo "   Commit .team-image-digest so team members pull the exact same image."
+
+# Pull the team image pinned to the digest in .team-image-digest.
+# This guarantees every team member runs bit-identical containers regardless
+# of when they pull (the mutable tag may be overwritten; the digest never is).
+docker-pull-team:
+	@if [ ! -f .team-image-digest ]; then \
+	  echo "No .team-image-digest found. Run 'make docker-push-team' first." >&2; \
+	  exit 1; \
+	fi
+	@DIGEST=$$(cat .team-image-digest); \
+	REF="$(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME)@$$DIGEST"; \
+	echo "Pulling team image pinned to digest: $$DIGEST"; \
+	docker pull "$$REF"; \
+	docker tag "$$REF" $(PACKAGE_NAME); \
+	echo "✅ Team image loaded as $(PACKAGE_NAME)"
 
 docker-document:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::document()"
@@ -144,7 +179,11 @@ docker-vignettes: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('analysis/report/report.Rmd')"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('$(REPORT)')"
+
+# Run an arbitrary R script in the container (used by zzcollab::run_script)
+docker-script:
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) Rscript -e "source('$(SCRIPT)')"
 
 docker-render-qmd:
 	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
@@ -169,8 +208,10 @@ docker-rstudio:
 	@echo "Terminal available for code editing with vim"
 	docker run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
-# Terminal: Interactive bash for vim editing
-r: check-renv
+# Terminal: Interactive bash for vim editing.
+# No check-renv prerequisite: that spins up a full container validation before
+# you get a shell, and a second validation already runs after the session.
+r:
 	@if [ ! -f Dockerfile ]; then \
 		echo ""; \
 		echo "❌ No Dockerfile found - workspace not initialized"; \
@@ -179,7 +220,7 @@ r: check-renv
 		echo ""; \
 		echo "  zzcollab docker                            # default profile"; \
 		echo "  zzcollab docker --profile analysis         # tidyverse"; \
-		echo "  zzcollab docker --profile publishing       # with LaTeX"; \
+		echo "  zzcollab docker --base-image rocker/verse  # LaTeX/Quarto via the rocker/verse base image"; \
 		echo ""; \
 		echo "See: zzcollab docker --help for all options"; \
 		echo ""; \
@@ -187,7 +228,7 @@ r: check-renv
 	fi; \
 	echo "🔍 Checking workspace..."; \
 	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
-	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
+	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|rocker/verse|; s|r-ver|minimal|'); \
 	USERNAME=$$(grep '^ARG USERNAME=' Dockerfile | head -1 | cut -d= -f2); \
 	USERNAME=$${USERNAME:-analyst}; \
 	HOME_DIR="/home/$$USERNAME"; \
@@ -196,7 +237,7 @@ r: check-renv
 	mkdir -p $$HOME/.cache/R/renv 2>/dev/null || true; \
 	docker run --rm -it \
 		-v $$(pwd):$$HOME_DIR/project \
-		-v $$HOME/.cache/R/renv:$$HOME_DIR/.cache/R/renv \
+		-v $$HOME/.cache/R/renv:/opt/renv/cache \
 		-w $$HOME_DIR/project \
 		-e KITTY_WINDOW_ID="$${KITTY_WINDOW_ID:-}" \
 		-e ITERM_SESSION_ID="$${ITERM_SESSION_ID:-}" \
@@ -215,6 +256,26 @@ r: check-renv
 
 # Alias for rstudio
 rstudio: docker-rstudio
+
+## Data integrity (R-8)
+# Write a sha256 manifest of raw_data/ so any silent mutation is detectable.
+# Commit data-manifest.sha256 alongside raw_data/ and regenerate after updates.
+hash-data:
+	@if [ ! -d raw_data ]; then \
+	  echo "No raw_data/ directory found; skipping hash-data."; \
+	  exit 0; \
+	fi
+	find raw_data -type f | sort | xargs shasum -a 256 > data-manifest.sha256
+	@echo "Data manifest written to data-manifest.sha256"
+	@echo "Commit this file to make future mutations detectable."
+
+verify-data:
+	@if [ ! -f data-manifest.sha256 ]; then \
+	  echo "No data-manifest.sha256 found; run 'make hash-data' first." >&2; \
+	  exit 1; \
+	fi
+	shasum -a 256 --check data-manifest.sha256
+	@echo "All data files verified."
 
 # Cleanup
 clean:
@@ -245,4 +306,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

@@ -16,35 +16,6 @@ load_module_for_testing "core.sh"
 load_module_for_testing "cli.sh"
 
 ##############################################################################
-# TEST: require_arg
-##############################################################################
-
-test_require_arg_with_value() {
-    if ! require_arg "--flag" "value"; then
-        echo "FAIL: require_arg should succeed with value" >&2
-        return 1
-    fi
-}
-
-test_require_arg_empty() {
-    local exit_code=0
-    require_arg "--flag" "" 2>/dev/null || exit_code=$?
-    if [[ "$exit_code" -eq 0 ]]; then
-        echo "FAIL: require_arg should fail with empty value" >&2
-        return 1
-    fi
-}
-
-test_require_arg_missing() {
-    local exit_code=0
-    require_arg "--flag" 2>/dev/null || exit_code=$?
-    if [[ "$exit_code" -eq 0 ]]; then
-        echo "FAIL: require_arg should fail with missing value" >&2
-        return 1
-    fi
-}
-
-##############################################################################
 # TEST: validate_team_name
 ##############################################################################
 
@@ -217,9 +188,6 @@ echo "CLI MODULE TESTS"
 echo "=========================================="
 
 tests=(
-    test_require_arg_with_value
-    test_require_arg_empty
-    test_require_arg_missing
     test_validate_team_name_valid
     test_validate_team_name_valid_simple
     test_validate_team_name_valid_numbers
