@@ -130,41 +130,50 @@ test_that("git_commit constructs proper commands", {
   expect_type(result, "logical")
 })
 
-test_that("git_commit shQuotes the message against shell injection", {
-  calls <- character(0)
+test_that("git_commit passes message as a separate arg (no shell interpolation)", {
+  calls <- list()
   local_mocked_bindings(
-    safe_system = function(command, ...) {
-      calls[[length(calls) + 1]] <<- command
+    safe_system2 = function(cmd, args = character(), ...) {
+      calls[[length(calls) + 1L]] <<- list(cmd = cmd, args = args)
       0L
     },
     .package = "zzcollab"
   )
 
-  # A message with shell metacharacters must be quoted, not interpolated raw.
+  # Shell metacharacters in the message must never reach the shell.
+  # With safe_system2 the message is an element of the args vector, so the
+  # shell layer is bypassed entirely — no quoting needed or applied.
   evil <- 'oops"; rm -rf $(pwd) #'
   git_commit(evil, add_all = FALSE)
 
-  commit_call <- calls[grepl("git commit", calls, fixed = TRUE)]
-  expect_length(commit_call, 1)
-  # shQuote contains the metacharacters inside a quoted argument.
-  expect_equal(commit_call[[1]], paste("git commit -m", shQuote(evil)))
+  commit_call <- Filter(function(x) identical(x$cmd, 'git') &&
+                          isTRUE(x$args[1] == 'commit'), calls)
+  expect_length(commit_call, 1L)
+  expect_equal(commit_call[[1L]]$args, c('commit', '-m', evil))
 })
 
-test_that("create_branch and git_push shQuote their ref arguments", {
-  calls <- character(0)
+test_that("create_branch and git_push pass refs as separate args", {
+  calls <- list()
   local_mocked_bindings(
-    safe_system = function(command, ...) {
-      calls[[length(calls) + 1]] <<- command
+    safe_system2 = function(cmd, args = character(), ...) {
+      calls[[length(calls) + 1L]] <<- list(cmd = cmd, args = args)
       0L
     },
     .package = "zzcollab"
   )
 
-  create_branch("feat/x; touch HACKED")
-  git_push("feat/x; touch HACKED")
+  evil_ref <- "feat/x; touch HACKED"
+  create_branch(evil_ref)
+  git_push(evil_ref)
 
-  expect_true(any(grepl(paste("git checkout -b", shQuote("feat/x; touch HACKED")),
-                        calls, fixed = TRUE)))
-  expect_true(any(grepl(paste("git push origin", shQuote("feat/x; touch HACKED")),
-                        calls, fixed = TRUE)))
+  branch_call <- Filter(function(x) identical(x$cmd, 'git') &&
+                          length(x$args) >= 2 &&
+                          x$args[1] == 'checkout' && x$args[2] == '-b', calls)
+  expect_length(branch_call, 1L)
+  expect_equal(branch_call[[1L]]$args[3], evil_ref)
+
+  push_call <- Filter(function(x) identical(x$cmd, 'git') &&
+                        length(x$args) >= 1 && x$args[1] == 'push', calls)
+  expect_true(length(push_call) >= 1L)
+  expect_equal(push_call[[length(push_call)]]$args[3], evil_ref)
 })

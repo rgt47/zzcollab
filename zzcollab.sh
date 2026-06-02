@@ -1712,10 +1712,26 @@ _menu_add_package() {
         zzc_read -r -p "R package(s) to add (space/comma separated): " pkgs || return 0
     fi
     [[ -z "$pkgs" ]] && return 0
-    # Build an R character vector from the space/comma separated list.
-    rvec=$(printf '%s' "$pkgs" | tr ',' ' ' | xargs -n1 2>/dev/null \
-        | sed 's/^/"/; s/$/"/' | paste -sd, -)
-    [[ -z "$rvec" ]] && return 0
+
+    # S-4: Validate each token against the R package-name grammar before
+    # building the argument list. Names containing shell metacharacters or
+    # quotes could break out of the Rscript invocation.
+    # Allowed: CRAN names ([A-Za-z][A-Za-z0-9.]*), GitHub refs (user/pkg),
+    # and version-pinned refs (user/pkg@tag or pkg@version).
+    local -a pkg_list=()
+    local _tok
+    while IFS= read -r _tok; do
+        [[ -z "$_tok" ]] && continue
+        if ! [[ "$_tok" =~ ^[A-Za-z][A-Za-z0-9.]*(/[A-Za-z][A-Za-z0-9._-]*)?(@[A-Za-z0-9._-]+)?$ ]]; then
+            log_error "Invalid package name: '$_tok'"
+            log_error "  CRAN: letters/numbers/dots, e.g. 'dplyr', 'R.utils'"
+            log_error "  GitHub: 'user/pkg' or 'user/pkg@tag'"
+            return 1
+        fi
+        pkg_list+=("$_tok")
+    done < <(printf '%s' "$pkgs" | tr ',' ' ' | xargs -n1 2>/dev/null)
+    [[ "${#pkg_list[@]}" -eq 0 ]] && return 0
+
     log_info "Installing into '$image' and recording in renv.lock..."
     if [[ "$(uname -m)" == "arm64" ]]; then
         log_info "Note: on Apple Silicon, packages that compile from source may fail to load unless the image provides a working amd64 toolchain (see DOCKER_DEFAULT_PLATFORM). Pure-R packages install reliably."
@@ -1726,13 +1742,15 @@ _menu_add_package() {
     # only capture packages declared/used in code; a freshly added package
     # would otherwise be dropped. ZZCOLLAB_AUTO_SNAPSHOT=false stops the
     # .Rprofile .Last hook from re-running an implicit snapshot on exit.
+    # Package names are passed as positional arguments (no string interpolation).
     if docker run --rm \
         -e ZZCOLLAB_AUTO_SNAPSHOT=false \
         -v "$(pwd):/home/analyst/project" \
         -w /home/analyst/project \
         "$image" \
-        Rscript -e "renv::install(c($rvec)); renv::record(c($rvec))"; then
-        log_success "Added: $pkgs (recorded in renv.lock). Commit renv.lock to share."
+        Rscript -e 'args <- commandArgs(trailingOnly=TRUE); renv::install(args); renv::record(args)' \
+        --args "${pkg_list[@]}"; then
+        log_success "Added: ${pkg_list[*]} (recorded in renv.lock). Commit renv.lock to share."
     else
         log_error "Package install failed."
     fi

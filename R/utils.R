@@ -53,10 +53,61 @@ validate_docker_name <- function(name, param_name) {
   TRUE
 }
 
-#' Safe system call with error handling
+#' Safe system call with error handling (vector-argument form)
 #'
-#' Wrapper around system() with comprehensive error handling via tryCatch.
-#' Provides consistent error messages and behavior across all zzcollab functions.
+#' Wrapper around \code{system2()} that accepts the command and its arguments
+#' as separate values, eliminating the shell-quoting surface that
+#' \code{system(paste(cmd, args))} requires. Callers should pass each argument
+#' as a distinct element of \code{args}; no quoting is necessary.
+#'
+#' Use this function for any invocation where at least one argument is derived
+#' from user input. For backward-compatible literal-string calls use the
+#' lower-level \code{safe_system_str()} (internal).
+#'
+#' @param cmd Character scalar: the executable to run (e.g. \code{'git'}).
+#' @param args Character vector of arguments (default: \code{character()}).
+#' @param intern Logical, capture stdout as a character vector (default: FALSE).
+#' @param ignore.stdout Logical, discard stdout (default: FALSE).
+#' @param ignore.stderr Logical, discard stderr (default: FALSE).
+#' @param error_msg Custom prefix for warning/error messages (optional).
+#' @return For \code{intern = FALSE}: integer exit status (0 = success).
+#'         For \code{intern = TRUE}: character vector of captured output.
+#' @keywords internal
+safe_system2 <- function(cmd, args = character(), intern = FALSE,
+                         ignore.stdout = FALSE, ignore.stderr = FALSE,
+                         error_msg = NULL) {
+  tryCatch({
+    stdout_val <- if (intern) TRUE else if (ignore.stdout) FALSE else ''
+    stderr_val <- if (ignore.stderr) FALSE else ''
+    result <- system2(cmd, args = args,
+                      stdout = stdout_val,
+                      stderr = stderr_val)
+
+    if (!intern && !identical(result, 0L) && !identical(result, 0)) {
+      msg <- if (!is.null(error_msg)) {
+        paste0(error_msg, ' (exit code: ', result, ')')
+      } else {
+        paste0('Command failed (exit code ', result, '): ',
+               cmd, ' ', paste(args, collapse = ' '))
+      }
+      warning(msg, call. = FALSE)
+    }
+    result
+  }, error = function(e) {
+    msg <- if (!is.null(error_msg)) {
+      paste0(error_msg, ': ', conditionMessage(e))
+    } else {
+      paste0('System command error: ', conditionMessage(e))
+    }
+    stop(msg, call. = FALSE)
+  })
+}
+
+#' Safe system call (string form, internal)
+#'
+#' Legacy wrapper around \code{system()} retained for literal-string callers
+#' that do not pass user-controlled data. New code should use
+#' \code{safe_system2(cmd, args)} instead.
 #'
 #' @param command Character string command to execute
 #' @param intern Logical, capture output (default: FALSE)
@@ -102,35 +153,31 @@ safe_system <- function(command, intern = FALSE, ignore.stdout = FALSE,
 #' @return Path to zzcollab script
 #' @keywords internal
 find_zzcollab_script <- function() {
-  # First priority: Check if we're in the zzcollab source directory. This is
-  # working-directory dependent and a cheap file.exists, so it is never
-  # cached (caching a relative path would break after a setwd()).
-  if (file.exists('zzcollab.sh')) {
-    return('./zzcollab.sh')
-  }
+  # P-3: Do NOT prefer './zzcollab.sh' from the current working directory.
+  # A working-directory-relative path is a trust issue: any zzcollab.sh placed
+  # in the user's project directory would be executed instead of the installed
+  # tool. Installed locations (PATH + known absolute paths) are used exclusively.
 
-  # Priorities 2 and 3 below launch zzcollab to probe config support, which
-  # forks a process per resolution. Installed locations do not move during a
-  # session, so cache the resolved path after the first successful probe.
+  # Installed locations do not move during a session, so cache the resolved
+  # path after the first successful probe.
   cached <- get0('script_path', envir = .zzcollab_cache, inherits = FALSE)
   if (!is.null(cached)) {
     return(cached)
   }
 
-  # Second priority: Check if zzcollab is in PATH (but only if it supports config)
+  # First priority: zzcollab in PATH
   zzcollab_path <- Sys.which('zzcollab')
-  if (zzcollab_path != '') {
-    # Test if this version supports config commands
-    test_result <- safe_system(paste(zzcollab_path, 'config list'),
-                               ignore.stdout = TRUE, ignore.stderr = TRUE,
-                               error_msg = 'Failed to test zzcollab config support')
-    if (test_result == 0) {
+  if (nzchar(zzcollab_path)) {
+    test_result <- safe_system2('zzcollab', c('config', 'list'),
+                                ignore.stdout = TRUE, ignore.stderr = TRUE,
+                                error_msg = 'Failed to test zzcollab config support')
+    if (identical(test_result, 0L) || identical(test_result, 0)) {
       assign('script_path', 'zzcollab', envir = .zzcollab_cache)
       return('zzcollab')
     }
   }
 
-  # Third priority: Check common installation locations
+  # Second priority: known absolute installation paths
   possible_paths <- c(
     file.path(Sys.getenv('HOME'), 'bin', 'zzcollab'),
     '/usr/local/bin/zzcollab',
@@ -139,11 +186,10 @@ find_zzcollab_script <- function() {
 
   for (path in possible_paths) {
     if (file.exists(path)) {
-      # Test if this version supports config commands
-      test_result <- safe_system(paste(path, 'config list'),
-                                 ignore.stdout = TRUE, ignore.stderr = TRUE,
-                                 error_msg = 'Failed to test zzcollab config support')
-      if (test_result == 0) {
+      test_result <- safe_system2(path, c('config', 'list'),
+                                  ignore.stdout = TRUE, ignore.stderr = TRUE,
+                                  error_msg = 'Failed to test zzcollab config support')
+      if (identical(test_result, 0L) || identical(test_result, 0)) {
         assign('script_path', path, envir = .zzcollab_cache)
         return(path)
       }

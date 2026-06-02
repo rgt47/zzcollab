@@ -18,8 +18,10 @@
 #' @keywords internal
 zzc_config <- function(args, intern = FALSE, error_msg = NULL) {
   zzcollab_path <- find_zzcollab_script()
-  cmd <- paste(c(zzcollab_path, 'config', args), collapse = ' ')
-  safe_system(cmd, intern = intern, error_msg = error_msg)
+  # P-3: use safe_system2 so key/value args are passed as a vector rather than
+  # interpolated into a shell string. shQuote is no longer needed at call sites.
+  safe_system2(zzcollab_path, c('config', args),
+               intern = intern, error_msg = error_msg)
 }
 
 #' Get configuration value from zzcollab configuration system
@@ -73,7 +75,7 @@ zzc_config <- function(args, intern = FALSE, error_msg = NULL) {
 #'
 #' @export
 get_config <- function(key) {
-  result <- zzc_config(c('get', shQuote(key)), intern = TRUE,
+  result <- zzc_config(c('get', key), intern = TRUE,
                        error_msg = paste('Failed to get config value:', key))
 
   # `config get` echoes an empty string for unset keys (the "(not set)"
@@ -145,7 +147,7 @@ get_config <- function(key) {
 #'
 #' @export
 set_config <- function(key, value) {
-  result <- zzc_config(c('set', shQuote(key), shQuote(value)),
+  result <- zzc_config(c('set', key, value),
                        error_msg = paste('Failed to set config value:', key))
   result == 0
 }

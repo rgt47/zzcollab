@@ -23,16 +23,15 @@ report_status <- function(result, ok_msg, fail_msg) {
 #' @export
 git_commit <- function(message, add_all = TRUE) {
   if (add_all) {
-    result1 <- safe_system('git add .', error_msg = 'Failed to add files to git')
-    if (result1 != 0) {
+    result1 <- safe_system2('git', 'add .' , error_msg = 'Failed to add files to git')
+    if (!identical(result1, 0L) && !identical(result1, 0)) {
       stop('Failed to add files to git', call. = FALSE)
     }
   }
 
-  # shQuote the message so quotes, $(...), and other shell metacharacters in
-  # the commit message are not interpreted by the shell.
-  commit_cmd <- paste('git commit -m', shQuote(message))
-  result2 <- safe_system(commit_cmd, error_msg = 'Failed to create git commit')
+  # P-3: pass message as a separate argument so no shell quoting is needed.
+  result2 <- safe_system2('git', c('commit', '-m', message),
+                           error_msg = 'Failed to create git commit')
 
   report_status(result2, paste0('\u2705 Commit created: ', message),
                 '\u274c Commit failed')
@@ -44,13 +43,8 @@ git_commit <- function(message, add_all = TRUE) {
 #' @return Logical indicating success  
 #' @export
 git_push <- function(branch = NULL) {
-  if (is.null(branch)) {
-    cmd <- 'git push'
-  } else {
-    cmd <- paste('git push origin', shQuote(branch))
-  }
-
-  result <- safe_system(cmd, error_msg = 'Failed to push to GitHub')
+  args <- if (is.null(branch)) 'push' else c('push', 'origin', branch)
+  result <- safe_system2('git', args, error_msg = 'Failed to push to GitHub')
 
   report_status(result, '\u2705 Successfully pushed to GitHub', '\u274c Push failed')
 }
@@ -72,14 +66,13 @@ create_pr <- function(title, body = NULL, base = 'main') {
          call. = FALSE)
   }
 
-  # shQuote base as well as title/body so a branch name cannot inject shell.
-  cmd <- paste('gh pr create --title', shQuote(title), '--base', shQuote(base))
-
+  # P-3: pass title, body, and base as separate args (no shell quoting needed).
+  args <- c('pr', 'create', '--title', title, '--base', base)
   if (!is.null(body)) {
-    cmd <- paste(cmd, '--body', shQuote(body))
+    args <- c(args, '--body', body)
   }
 
-  result <- safe_system(cmd, error_msg = 'Failed to create pull request')
+  result <- safe_system2('gh', args, error_msg = 'Failed to create pull request')
 
   report_status(result, '\u2705 Pull request created successfully',
                 '\u274c Failed to create pull request')
@@ -115,9 +108,9 @@ create_branch <- function(branch_name) {
   safe_system('git pull', ignore.stdout = TRUE,
              error_msg = 'Failed to pull latest changes')
 
-  # Create and checkout new branch
-  result <- safe_system(paste('git checkout -b', shQuote(branch_name)),
-                       error_msg = paste('Failed to create branch:', branch_name))
+  # Create and checkout new branch (P-3: pass branch_name as a separate arg)
+  result <- safe_system2('git', c('checkout', '-b', branch_name),
+                         error_msg = paste('Failed to create branch:', branch_name))
 
   report_status(result,
                 paste0('\u2705 Created and switched to branch: ', branch_name),
