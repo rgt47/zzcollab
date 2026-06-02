@@ -744,7 +744,14 @@ RUN echo 'options(repos = c(CRAN = "${ppm_url}"))' \\
     echo 'options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version["platform"], R.version["arch"], R.version["os"])))' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install renv and restore packages from lockfile (using PPM binaries)
+${tools_install}
+
+# Install renv and restore packages from lockfile (using PPM binaries).
+# tools_install runs BEFORE renv::init so IDE tools (languageserver, yaml)
+# are installed into the system library. renv::init creates /.Rprofile which
+# activates renv for all subsequent R processes; any install.packages call
+# after that step is intercepted by renv and installed to RENV_PATHS_LIBRARY,
+# which can cause load-test failures for packages with native dependencies.
 RUN R -e "install.packages('renv')"
 RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
 COPY renv.lock renv.lock
@@ -755,10 +762,9 @@ RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
 
 # Install zzrenvcheck as a validation tool (system library, outside project renv).
 # Tag is pinned at scaffold time; bump ZZRENVCHECK_TAG in lib/constants.sh to upgrade.
+# Runs after renv::init; remotes::install_github bypasses renv interception.
 RUN R -e "install.packages('remotes')" && \\
     R -e "remotes::install_github('rgt47/zzrenvcheck@${zzrenvcheck_tag}')"
-
-${tools_install}
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash \${USERNAME} && \\
