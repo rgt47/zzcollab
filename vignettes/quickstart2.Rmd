@@ -400,7 +400,7 @@ Exit R when done:
 q()
 ```
 
-Packages are automatically captured to renv.lock on exit.
+Packages are automatically captured to `renv.lock` when you exit R (auto-snapshot). Auto-restore on startup is disabled in the container; packages are baked into the image at build time.
 
 ## Part 4: Initial Analysis Report (Developer 1)
 
@@ -530,7 +530,7 @@ After exiting R, validate that all packages are properly tracked:
 make check-renv
 ```
 
-This pure-shell validation ensures DESCRIPTION and renv.lock are synchronized.
+This runs `zzrenvcheck::check_packages()` inside the container to verify that DESCRIPTION and renv.lock are synchronized with the code's actual `library()` calls.
 
 ## Part 5: Push to GitHub (Developer 1)
 
@@ -567,21 +567,39 @@ gh repo create myteam/mtcars-analysis --private --source=. --push
 
 ```bash
 make docker-build
-zzc dockerhub                    # Push to DockerHub
+
+# Multi-arch push (amd64 + arm64) and records digest to .team-image-digest:
+make docker-push-team
+
+# Commit the digest so team members can pull the exact same image:
+git add .team-image-digest
+git commit -m "Record team image digest"
+git push
 ```
 
-This makes the Docker image available for Developer 2.
+`make docker-push-team` builds a multi-architecture image (linux/amd64 and
+linux/arm64), pushes it to Docker Hub, and writes the manifest digest to
+`.team-image-digest`. Committing that file lets team members run
+`make docker-pull-team` to get the byte-identical image.
+
+`zzc dockerhub` is a simpler alternative that pushes a single-architecture
+image without recording the digest.
 
 ## Part 6: Add Visualization (Developer 2)
 
 ### 6.1 Clone the Repository
 
-Developer 2 clones the project and pulls the team Docker image:
+Developer 2 clones the project and loads the team Docker image:
 
 ```bash
 git clone git@github.com:myteam/mtcars-analysis.git
 cd mtcars-analysis
-docker pull myteam/mtcars-analysis:latest
+
+# Preferred: pull the exact digest the team lead recorded (bit-identical)
+make docker-pull-team          # reads .team-image-digest committed by team lead
+
+# Alternative: build from Dockerfile (always works, takes 5-15 min)
+make docker-build
 ```
 
 ### 6.2 Enter Container and Verify Setup
@@ -905,10 +923,10 @@ packages immediately - no installation wait.
 | Pull from DockerHub | Downloads pre-built image with packages | 1-3 min |
 
 ```bash
-# Option B: Pull pre-built image (faster, requires DockerHub setup)
+# Option B: Pull pre-built image pinned by digest (faster, requires DockerHub setup)
 git clone https://github.com/myteam/study.git
 cd study
-docker pull myteam/study:latest
+make docker-pull-team    # reads .team-image-digest; byte-identical for all members
 make r
 ```
 
@@ -932,21 +950,22 @@ image. This is what makes pulling faster for team members - packages are
 pre-installed rather than installed on first run.
 
 ```bash
-# 1. Build image (installs packages from renv.lock)
+# 1. Build image (installs packages from renv.lock into /opt/renv/library)
 make docker-build
 
-# 2. Push the built image to DockerHub
-zzc dockerhub                    # Pushes to dockerhub-account/project:latest
+# 2. Push multi-arch image and record digest (preferred)
+make docker-push-team            # writes .team-image-digest; commit this file
 
-# Or with version tag
-zzc dockerhub --tag v1.0
+# Alternative: single-arch push without digest recording
+zzc dockerhub                    # Pushes to dockerhub-account/project:latest
+zzc dockerhub --tag v1.0         # Or with an explicit version tag
 ```
 
 **When to rebuild and push:**
 
-- After adding packages (renv.lock changed)
+- After adding packages (`renv.lock` changed)
 - After modifying Dockerfile
-- Before onboarding new team members (ensure they get latest)
+- Before onboarding new team members (ensure they get current image)
 
 ```bash
 # Check if renv.lock changed since last push
@@ -1020,9 +1039,10 @@ mkdir team-analysis && cd team-analysis
 zzc analysis
 zzc github
 
-# Push Docker image
-docker login                     # One-time authentication
-zzc dockerhub
+# Build and push multi-arch image; records digest to .team-image-digest
+docker login                     # One-time DockerHub authentication
+make docker-push-team
+git add .team-image-digest && git commit -m "Record team image digest" && git push
 
 # Add collaborators
 gh repo edit --add-collaborator alice
@@ -1036,23 +1056,23 @@ gh repo edit --add-collaborator bob
 git clone https://github.com/leader/team-analysis.git
 cd team-analysis
 
-# Option A: Fast path (pull image)
+# Option A: Pull image pinned to the committed digest (fast, reproducible)
 docker login                     # If private DockerHub repo
-docker pull leader/team-analysis:latest
+make docker-pull-team            # reads .team-image-digest
 make r
 
-# Option B: Full reproducibility (build from scratch)
-make docker-build                # Takes longer but verifies Dockerfile
+# Option B: Build from Dockerfile (always works, verifies reproducibility)
+make docker-build
 make r
 ```
 
 **Daily workflow (all team members):**
 
 ```bash
-git pull                         # Get latest code
-make r                           # Enter container (auto-restores packages)
-# ... work ...
-exit                             # Auto-snapshots packages
+git pull                         # Get latest code and any updated digest
+make r                           # Enter container (packages baked in)
+# ... work, install new packages with install.packages() if needed ...
+exit                             # Auto-snapshot writes updated renv.lock
 git add . && git commit && git push
 ```
 
@@ -1087,8 +1107,12 @@ The final repository contains:
 | Run tests | `make docker-test` |
 | Validate packages | `make check-renv` |
 | Build Docker image | `make docker-build` |
-| Push to DockerHub | `zzc dockerhub` |
+| Push multi-arch image + record digest | `make docker-push-team` |
+| Pull image pinned by digest | `make docker-pull-team` |
+| Push single-arch (simpler) | `zzc dockerhub` |
 | Push with tag | `zzc dockerhub --tag v1.0` |
+| Hash raw data for integrity | `make hash-data` |
+| Verify raw data against manifest | `make verify-data` |
 | Change base image | `zzcollab docker --base-image rocker/verse` |
 | List profiles | `zzc list profiles` |
 | Render report | `make docker-render` |
