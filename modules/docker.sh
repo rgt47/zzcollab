@@ -748,7 +748,10 @@ RUN echo 'options(repos = c(CRAN = "${ppm_url}"))' \\
 RUN R -e "install.packages('renv')"
 RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
 COPY renv.lock renv.lock
-RUN R -e "renv::restore()"
+# renv::init creates the platform-specific library directory structure that
+# renv::restore() requires to link packages from the cache. Without init,
+# restore downloads to the cache but never populates the library.
+RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
 
 # Install zzrenvcheck as a validation tool (system library, outside project renv).
 # Tag is pinned at scaffold time; bump ZZRENVCHECK_TAG in lib/constants.sh to upgrade.
