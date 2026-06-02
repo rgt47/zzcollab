@@ -219,6 +219,125 @@ EOF
 }
 
 ##############################################################################
+# TEST: C-1 - profile_name get/load symmetry
+##############################################################################
+
+# config get profile_name must return the value written by the default template
+# under defaults.profile_name, not the empty CONFIG_DOCKER_DEFAULT_PROFILE.
+test_profile_name_get_is_symmetric_with_load() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+
+  local cfg="$TEST_TEMP_DIR/zzcollab.yaml"
+  cat > "$cfg" << 'EOF'
+defaults:
+  profile_name: analysis
+EOF
+
+  CONFIG_PROFILE_NAME=""
+  CONFIG_DOCKER_DEFAULT_PROFILE=""
+  _load_file "$cfg" 2>/dev/null || true
+
+  assert_equals "analysis" "$CONFIG_DOCKER_DEFAULT_PROFILE" \
+    "defaults.profile_name must populate CONFIG_DOCKER_DEFAULT_PROFILE (C-1)"
+  teardown_test
+}
+
+##############################################################################
+# TEST: C-3 - malformed config propagates error
+##############################################################################
+
+test_load_file_errors_on_malformed_yaml() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+
+  local bad_cfg="$TEST_TEMP_DIR/bad.yaml"
+  printf 'defaults:\n  team_name: [unclosed\n' > "$bad_cfg"
+
+  local rc=0
+  _load_file "$bad_cfg" 2>/dev/null || rc=$?
+
+  if [[ "$rc" -eq 0 ]]; then
+    echo "FAIL: _load_file should return nonzero on malformed YAML" >&2
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+##############################################################################
+# TEST: C-4 - yq version detection
+##############################################################################
+
+test_require_yq_succeeds_when_mikefarah_v4_present() {
+  if ! command -v yq >/dev/null 2>&1; then
+    echo "SKIP: yq not installed"
+    return 0
+  fi
+  _YQ_AVAILABLE=""
+  if ! _require_yq 2>/dev/null; then
+    echo "FAIL: _require_yq should succeed when mikefarah yq v4 is installed" >&2
+    return 1
+  fi
+}
+
+##############################################################################
+# TEST: C-5 - config set validates values
+##############################################################################
+
+test_config_set_rejects_bad_email() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+
+  local cfg="$TEST_TEMP_DIR/user.yaml"
+  printf 'author:\n  email: ""\n' > "$cfg"
+  CONFIG_USER_OVERRIDE="$cfg"
+
+  local rc=0
+  ZZCOLLAB_CONFIG_USER="$cfg" config_set "author_email" "not-an-email" 2>/dev/null || rc=$?
+
+  if [[ "$rc" -eq 0 ]]; then
+    echo "FAIL: config set should reject an invalid email" >&2
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+test_config_set_rejects_unknown_profile() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+
+  local cfg="$TEST_TEMP_DIR/user.yaml"
+  printf 'defaults:\n  profile_name: ""\n' > "$cfg"
+
+  local rc=0
+  ZZCOLLAB_CONFIG_USER="$cfg" config_set "profile_name" "shiny" 2>/dev/null || rc=$?
+
+  if [[ "$rc" -eq 0 ]]; then
+    echo "FAIL: config set should reject unknown profile 'shiny'" >&2
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+test_config_set_accepts_valid_profile() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+
+  local cfg="$TEST_TEMP_DIR/user.yaml"
+  printf 'defaults:\n  profile_name: ""\n' > "$cfg"
+
+  if ! ZZCOLLAB_CONFIG_USER="$cfg" config_set "profile_name" "analysis" 2>/dev/null; then
+    echo "FAIL: config set should accept valid profile 'analysis'" >&2
+    teardown_test
+    return 1
+  fi
+  teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

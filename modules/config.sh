@@ -77,8 +77,18 @@ _YQ_AVAILABLE=""
 _require_yq() {
     [[ "$_YQ_AVAILABLE" == "true" ]] && return 0
     if command -v yq >/dev/null 2>&1; then
-        _YQ_AVAILABLE="true"
-        return 0
+        # C-4: assert mikefarah yq v4+. kislyuk's Python yq and v3 both produce
+        # subtly wrong output that config parsing silently swallows.
+        local ver_line
+        ver_line=$(yq --version 2>&1 | head -1)
+        if echo "$ver_line" | grep -qE '(mikefarah|version v?4\.[0-9])'; then
+            _YQ_AVAILABLE="true"
+            return 0
+        else
+            log_error "yq found but not mikefarah v4 (got: $ver_line)"
+            log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
+            return 1
+        fi
     fi
     log_error "yq required but not found"
     log_info "Install: brew install yq (macOS) or snap install yq (Ubuntu)"
@@ -117,6 +127,15 @@ yaml_set() {
 _set_github_account_yaml() {
     yaml_set "$1" "github.account" "$2"
     yaml_set "$1" "defaults.github_account" "$2"
+}
+
+# C-2: Persist profile to both docker.default_profile (canonical, what
+# 'config get profile_name' reads) and defaults.profile_name (what the default
+# template writes and what the loader uses for CONFIG_PROFILE_NAME).
+# Centralised so both interactive and non-interactive set paths stay in sync.
+_set_profile_name_yaml() {
+    yaml_set "$1" "docker.default_profile" "$2"
+    yaml_set "$1" "defaults.profile_name" "$2"
 }
 
 #=============================================================================
@@ -538,16 +557,23 @@ _yaml_path_to_var() {
 
 _load_file() {
     local file="$1"
+    # Absent file is normal (user may not have a project config yet).
     [[ -f "$file" ]] || return 0
     _require_yq || return 0
 
-    # Read the whole file in a single yq pass, emitting one dotted
-    # "path=value" line per scalar leaf, then parse in bash. This replaces
-    # the previous one-yq-eval-per-key loop (~39 yq forks per file).
-    local dump
+    # C-3: distinguish "file absent" (handled above) from "file present but
+    # unparseable". A malformed zzcollab.yaml must be an error, not a silent
+    # fallback to defaults that silently selects a different Docker image.
+    local dump yq_rc
     dump=$(yq eval \
         '.. | select(tag != "!!map" and tag != "!!seq") | (path | join(".")) + "=" + (. | tostring)' \
-        "$file" 2>/dev/null) || return 0
+        "$file" 2>&1)
+    yq_rc=$?
+    if [[ "$yq_rc" -ne 0 ]]; then
+        log_error "Failed to parse config file: $file"
+        log_error "  $(echo "$dump" | head -3)"
+        return 1
+    fi
 
     # Parse the dump once into parallel path/value arrays. Splitting on the
     # first '=' is safe because yq paths never contain '='.
@@ -579,6 +605,14 @@ _load_file() {
             break
         fi
     done
+
+    # C-1: mirror defaults.profile_name → CONFIG_DOCKER_DEFAULT_PROFILE so that
+    # 'config get profile_name' (which reads CONFIG_DOCKER_DEFAULT_PROFILE via the
+    # alias table) is symmetric with what the default template writes
+    # (defaults.profile_name). Matches the github.account dual-load pattern.
+    if [[ -n "$CONFIG_PROFILE_NAME" && -z "$CONFIG_DOCKER_DEFAULT_PROFILE" ]]; then
+        CONFIG_DOCKER_DEFAULT_PROFILE="$CONFIG_PROFILE_NAME"
+    fi
 
     # Legacy docker.account folds into the canonical dockerhub_account
     if [[ -z "$CONFIG_DOCKERHUB_ACCOUNT" ]]; then
@@ -1264,12 +1298,40 @@ EOF
     # Normalize key: convert kebab-case to snake_case (user-facing uses kebab-case)
     key="${key//-/_}"
 
-    # Validate team/account names: they become the Docker Hub namespace and
-    # image prefix, so enforce the team-name format at the point of entry.
-    case "$key" in
-        team_name|dockerhub_account|docker_account)
-            [[ -n "$value" ]] && { validate_team_name "$value" || return 1; } ;;
-    esac
+    # C-5: Dispatch validators so non-interactive config set rejects bad values
+    # with the same checks the interactive path applies.
+    if [[ -n "$value" ]]; then
+        case "$key" in
+            team_name|dockerhub_account|docker_account)
+                validate_team_name "$value" || return 1 ;;
+            author_email)
+                validate_email "$value" || {
+                    log_error "Invalid email: $value"
+                    return 1
+                } ;;
+            author_orcid)
+                validate_orcid "$value" || {
+                    log_error "Invalid ORCID (expected 0000-0000-0000-000X): $value"
+                    return 1
+                } ;;
+            r_version|rpackage_min_r_version)
+                validate_r_version_lenient "$value" || {
+                    log_error "Invalid R version (expected X.Y or X.Y.Z): $value"
+                    return 1
+                } ;;
+            style_line_length|rpackage_roxygen_version)
+                validate_positive_int "$value" || {
+                    log_error "Invalid value (expected positive integer): $value"
+                    return 1
+                } ;;
+            profile_name|profile)
+                case "$value" in
+                    minimal|analysis|rstudio) ;;
+                    *) log_error "Unknown profile: $value (valid: minimal, analysis, rstudio)"
+                       return 1 ;;
+                esac ;;
+        esac
+    fi
 
     # Resolve the key to its canonical YAML path; reject unknown keys so a typo
     # is not silently written to an unreadable defaults.<typo> entry.
@@ -1282,7 +1344,14 @@ EOF
 
     # Invalidate the load_config memo so the next read sees the new value.
     _CONFIG_LOADED=""
-    yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
+
+    # C-2: profile_name must write to both YAML paths to keep the loader and
+    # the alias table in sync.
+    if [[ "$yaml_path" == "docker.default_profile" ]]; then
+        _set_profile_name_yaml "$file" "$value" && log_success "Set profile_name = $value"
+    else
+        yaml_set "$file" "$yaml_path" "$value" && log_success "Set $yaml_path = $value"
+    fi
 }
 
 config_get() {
