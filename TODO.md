@@ -164,29 +164,12 @@ this as a gap against the 2026 state of the art.
 
 ## P3 — maturity
 
-### 6. Decompose `config.sh`
+### 6. ~~Decompose `config.sh`~~ — DONE (2026-06-02)
 
-`modules/config.sh` is 1,400 lines bundling seven responsibilities:
-
-- YAML I/O (`yaml_get`, `yaml_set`, `_load_file`)
-- Config loading and precedence (`load_config`)
-- Input validation helpers (`validate_email`, `validate_orcid`, etc.)
-- Interactive prompts (`prompt_input`, `prompt_validated`, `prompt_select`)
-- Init wizard sections (`_setup_basic`, `_setup_advanced`, etc.)
-- `config_set` / `config_get` / `config_list` commands
-- Identity gate (`config_identity_gate`)
-
-The interactive UI layer (wizard sections + prompt helpers) is the clearest
-extraction target — roughly 40% of the file, with no tests. Extract to
-`modules/config-interactive.sh`, sourced unconditionally at startup alongside
-the other modules.
-
-**Why:** The file is too large to audit, test, or modify safely. The review
-(Section 6) flags it explicitly; the P1 config fixes (C-1 through C-5) worked
-around the size by making targeted edits.
-
-**Files:** New `modules/config-interactive.sh`, reduced `modules/config.sh`,
-update `zzcollab.sh` source block.
+Extracted interactive UI layer to `modules/config-ui.sh` (836 lines).
+`modules/config.sh` reduced from 1,467 to 615 lines — now entirely
+non-interactive and testable. `zzcollab.sh` sources `config-ui.sh`
+immediately after `config.sh`. All 29 config tests pass.
 
 ---
 
