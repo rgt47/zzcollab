@@ -68,6 +68,7 @@ source "$ZZCOLLAB_LIB_DIR/templates.sh"
 source "$ZZCOLLAB_MODULES_DIR/cli.sh"
 # shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/config.sh"
+source "$ZZCOLLAB_MODULES_DIR/config-ui.sh"
 # shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/profiles.sh"
 # shellcheck source=/dev/null
