@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovateapp.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["rgt47/zzrenvcheck"],
+      "groupName": "zzrenvcheck",
+      "commitMessageTopic": "zzrenvcheck"
+    },
+    {
+      "matchPackageNames": ["rocker/tidyverse", "rocker/r-ver"],
+      "groupName": "rocker base image",
+      "commitMessageTopic": "rocker base image"
+    }
+  ],
+  "regexManagers": [
+    {
+      "description": "zzrenvcheck tag fallbacks in constants.sh and docker.sh",
+      "fileMatch": ["^lib/constants\\.sh$", "^modules/docker\\.sh$"],
+      "matchStrings": [
+        "ZZRENVCHECK_TAG:-(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "depNameTemplate": "rgt47/zzrenvcheck",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "zzrenvcheck direct pin in Dockerfile",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "zzrenvcheck@(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "depNameTemplate": "rgt47/zzrenvcheck",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "R version ARG in Dockerfile (tracks rocker/tidyverse)",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "ARG R_VERSION=(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "depNameTemplate": "rocker/tidyverse",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Default R version in constants.sh (tracks rocker/r-ver)",
+      "fileMatch": ["^lib/constants\\.sh$"],
+      "matchStrings": [
+        "ZZCOLLAB_DEFAULT_R_VERSION=\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "depNameTemplate": "rocker/r-ver",
+      "datasourceTemplate": "docker"
+    }
+  ]
+}
