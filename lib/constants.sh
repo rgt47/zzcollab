@@ -60,7 +60,7 @@ readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_R_VERSION="4.5.2"
 # Pinned tag for the zzrenvcheck validation tool installed into the image.
 # Bump this constant when upgrading zzrenvcheck.
-readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.3.0}"
+readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.3.1}"
 
 # Author information (should be set via environment variables or config file)
 readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"

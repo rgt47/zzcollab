@@ -32,7 +32,7 @@ RUN R -e "renv::restore()"
 
 # Install zzrenvcheck as a validation tool (system library, outside project renv)
 RUN R -e "install.packages('remotes')" && \
-    R -e "remotes::install_github('rgt47/zzrenvcheck')"
+    R -e "remotes::install_github('rgt47/zzrenvcheck@v0.3.1')"
 
 # Install languageserver for IDE support and yaml for R Markdown dependencies
 RUN R -e "install.packages(c('languageserver', 'yaml'))"

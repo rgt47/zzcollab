@@ -504,7 +504,7 @@ EOF
 # This file serves as the content-addressed record called for by R-5.
 write_tooling_lock() {
     local r_version="$1" image_digest="${2:-}"
-    local tag="${ZZRENVCHECK_TAG:-v0.3.0}"
+    local tag="${ZZRENVCHECK_TAG:-v0.3.1}"
     local snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
     local digest_field
     if [[ -n "$image_digest" ]]; then
@@ -691,7 +691,7 @@ generate_dockerfile_inline() {
     ubuntu_codename="$(get_ubuntu_codename "$r_version")"
     ppm_snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
     ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
-    zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.0}"
+    zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.1}"
 
     # Pin the FROM line to a content-addressed digest when available (R-2).
     # Fallback to tag-only reference if digest resolution was skipped.
