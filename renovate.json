@@ -10,7 +10,7 @@
       "commitMessageTopic": "zzrenvcheck"
     },
     {
-      "matchPackageNames": ["rocker/tidyverse", "rocker/r-ver"],
+      "matchPackageNames": ["rocker/tidyverse", "rocker/r-ver", "rocker/rstudio"],
       "groupName": "rocker base image",
       "commitMessageTopic": "rocker base image"
     }
