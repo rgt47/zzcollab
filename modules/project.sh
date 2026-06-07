@@ -49,6 +49,9 @@ create_directory_structure() {
     done
 
     log_success "Created ${#dirs[@]} directories"
+
+    # Write project marker for _zzcollab_root() detection.
+    touch .zzcollab
 }
 
 #=============================================================================

@@ -608,6 +608,9 @@ generate_dockerfile() {
     # Write a tooling lockfile recording the pinned tool versions (R-5).
     write_tooling_lock "$r_version" "$image_digest"
 
+    # Write project marker so _zzcollab_root() can detect this directory.
+    touch .zzcollab
+
     prompt_docker_build "$project_name" "$r_version"
     return $?
 }

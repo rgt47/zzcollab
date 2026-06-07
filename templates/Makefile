@@ -236,6 +236,7 @@ r:
 	echo ""; \
 	mkdir -p $$HOME/.cache/R/renv 2>/dev/null || true; \
 	docker run --rm -it \
+		--platform linux/amd64 \
 		-v $$(pwd):$$HOME_DIR/project \
 		-v $$HOME/.cache/R/renv:/opt/renv/cache \
 		-w $$HOME_DIR/project \
