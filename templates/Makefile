@@ -248,12 +248,20 @@ r:
 		$(PACKAGE_NAME) R; \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
+	if Rscript -e "quit(status = if(requireNamespace('zzrenvcheck', quietly=TRUE)) 0L else 1L)" 2>/dev/null; then \
 		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)" \
-	|| echo "⚠️  Package validation failed"
+		|| echo "⚠️  Package validation failed"; \
+	else \
+		echo "zzrenvcheck not installed on host."; \
+		printf "Install now? [Y/n] "; \
+		read _ans; \
+		case "$$_ans" in \
+			[Nn]*) echo "Skipping validation." ;; \
+			*) Rscript -e "install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck@v0.3.1')" \
+			   && Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)" \
+			   || echo "⚠️  Package validation failed" ;; \
+		esac; \
+	fi
 
 # Alias for rstudio
 rstudio: docker-rstudio
