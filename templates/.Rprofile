@@ -57,6 +57,8 @@ if (!in_container) {
   # Container R: Full renv workflow
   # ==========================================
 
+  message("🐳 Container R session (", Sys.getenv("HOSTNAME", "zzcollab"), ")")
+
   # CI detection (GitHub Actions sets CI=true)
   in_ci <- nzchar(Sys.getenv("CI"))
 
