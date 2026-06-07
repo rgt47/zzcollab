@@ -687,11 +687,12 @@ get_ubuntu_codename() {
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3"
     local tools_install="$4" deps_comment="$5" image_digest="${6:-}"
-    local ubuntu_codename ppm_snapshot ppm_url from_spec zzrenvcheck_tag
+    local ubuntu_codename ppm_snapshot ppm_url from_spec zzrenvcheck_tag zzrenvcheck_version
     ubuntu_codename="$(get_ubuntu_codename "$r_version")"
     ppm_snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
     ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
     zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.1}"
+    zzrenvcheck_version="${zzrenvcheck_tag#v}"
 
     # Pin the FROM line to a content-addressed digest when available (R-2).
     # Fallback to tag-only reference if digest resolution was skipped.
@@ -761,10 +762,9 @@ COPY renv.lock renv.lock
 RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
 
 # Install zzrenvcheck as a validation tool (system library, outside project renv).
-# Tag is pinned at scaffold time; bump ZZRENVCHECK_TAG in lib/constants.sh to upgrade.
-# Runs after renv::init; remotes::install_github bypasses renv interception.
-RUN R -e "install.packages('remotes')" && \\
-    R -e "remotes::install_github('rgt47/zzrenvcheck@${zzrenvcheck_tag}')"
+# Installed post-build via make install-zzrenvcheck to avoid GitHub/network
+# issues during docker build on cloud-mounted filesystems.
+
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash \${USERNAME} && \\
