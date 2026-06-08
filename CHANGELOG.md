@@ -5,6 +5,32 @@ R package release notes are in `NEWS.md`.
 
 ---
 
+## 2.8.0 — 2026-06-08
+
+### r-package.yml template (v2.8.0)
+
+- `Sys.glob('renv/library/*/*')[1]` now wrapped in `normalizePath(...,
+  mustWork = FALSE)` before being added to `.libPaths()`. The bare glob
+  returns a relative path; when `rcmdcheck::rcmdcheck()` spawns `R CMD
+  check` in a temp directory, relative library paths resolve to nothing
+  and packages installed by `renv::restore()` (e.g. `markdown`,
+  `rmarkdown`) are invisible to the vignette-building subprocess. The
+  absolute path survives the working-directory change.
+- `Rscript --no-init-file` added to the Run R CMD check step, consistent
+  with the deployed majority and with the explicit `.libPaths()` setup
+  that follows.
+
+### Version alignment
+
+- `ZZCOLLAB_TEMPLATE_VERSION` bumped from `2.5.0` to `2.8.0` to exceed
+  the `v2.7.0` stamp previously deployed to all 35 render-report.yml
+  files. At `2.5.0`, doctor reported deployed files as forward-newer
+  than the template and never offered replacement; at `2.8.0`, doctor
+  correctly identifies both workflow files as outdated and offers
+  interactive replacement.
+
+---
+
 ## 2.5.0 — 2026-06-08
 
 ### render-report.yml template (v2.5.0)

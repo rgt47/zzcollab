@@ -55,7 +55,7 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.
 # DEFAULT VALUES
 #=============================================================================
 
-readonly ZZCOLLAB_TEMPLATE_VERSION="2.5.0"
+readonly ZZCOLLAB_TEMPLATE_VERSION="2.8.0"
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_R_VERSION="4.5.2"
 # Pinned tag for the zzrenvcheck validation tool installed into the image.
