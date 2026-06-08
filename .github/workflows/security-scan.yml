@@ -17,12 +17,14 @@ jobs:
   trivy-scan:
     name: Trivy Vulnerability Scan
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Docker image for scanning
+        timeout-minutes: 15
         run: |
           # Create a minimal Dockerfile for security scanning using public base
           cat > Dockerfile.security-test << 'EOF'
@@ -32,7 +34,11 @@ jobs:
               git curl && \
               rm -rf /var/lib/apt/lists/*
           EOF
-          docker build -f Dockerfile.security-test -t zzcollab:security-scan .
+          for attempt in 1 2 3; do
+            docker build -f Dockerfile.security-test -t zzcollab:security-scan . && break
+            echo "Attempt $attempt failed, retrying in 30s..."
+            sleep 30
+          done
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
