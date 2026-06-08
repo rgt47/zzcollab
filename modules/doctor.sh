@@ -370,6 +370,50 @@ check_version_stamps() {
         fi
     fi
 
+    # .github/workflows/render-report.yml
+    local render_workflow_file="$dir/.github/workflows/render-report.yml"
+    local template_render_workflow="${ZZCOLLAB_TEMPLATES_DIR}/workflows/render-report.yml"
+
+    if [[ -f "$render_workflow_file" ]]; then
+        local render_workflow_ver
+        render_workflow_ver=$(extract_version "$render_workflow_file" "render-report.yml")
+        if ! print_version_status "render-report.yml" "$render_workflow_ver"; then
+            issues=$((issues + 1))
+            if [[ -t 0 ]] && [[ -f "$template_render_workflow" ]]; then
+                local replace_render_choice
+                read -r -p "    Replace with template (overwrites local edits)? [y/N]: " replace_render_choice
+                if [[ "$replace_render_choice" =~ ^[Yy]$ ]]; then
+                    if install_template_stamped "$template_render_workflow" \
+                           "$render_workflow_file" "$CURRENT_VERSION"; then
+                        printf "    ${COL_GREEN}✓ Replaced render-report.yml (v%s)${COL_RESET}\n" \
+                            "$CURRENT_VERSION"
+                        issues=$((issues - 1))
+                    else
+                        printf "    ${COL_RED}✗ Failed to replace${COL_RESET}\n"
+                    fi
+                fi
+            fi
+        fi
+    elif [[ -d "$dir/.github/workflows" ]]; then
+        printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "render-report.yml"
+        issues=$((issues + 1))
+
+        if [[ -t 0 ]] && [[ -f "$template_render_workflow" ]]; then
+            local copy_render_choice
+            read -r -p "    Copy from template? [Y/n]: " copy_render_choice
+            if [[ ! "$copy_render_choice" =~ ^[Nn]$ ]]; then
+                if install_template_stamped "$template_render_workflow" \
+                       "$render_workflow_file" "$CURRENT_VERSION"; then
+                    printf "    ${COL_GREEN}✓ Copied render-report.yml (v%s)${COL_RESET}\n" \
+                        "$CURRENT_VERSION"
+                    issues=$((issues - 1))
+                else
+                    printf "    ${COL_RED}✗ Failed to copy${COL_RESET}\n"
+                fi
+            fi
+        fi
+    fi
+
     # .Rprofile.local (owned by zzvim-R, informational only)
     if [[ -f "$dir/.Rprofile.local" ]]; then
         local rprofile_local_ver
@@ -585,7 +629,8 @@ main() {
                 echo "  - Directory layout  R/, analysis/"
                 echo "  - Ignore files      .gitignore, .Rbuildignore entries"
                 echo "  - Version stamps    Makefile, .Rprofile, Dockerfile,"
-                echo "                      docs/USER_GUIDE.md, r-package.yml"
+                echo "                      docs/USER_GUIDE.md, r-package.yml,"
+                echo "                      render-report.yml"
                 echo ""
                 echo "Options:"
                 echo "  DIR            One or more workspace directories (default: .)"

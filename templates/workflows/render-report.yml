@@ -1,4 +1,4 @@
-# zzcollab render-report.yml v2.7.0
+# zzcollab render-report.yml v$ZZCOLLAB_TEMPLATE_VERSION
 #
 # Tier 3 (render) for all zzcollab research compendia.
 # Builds the project Docker image and renders all manuscripts to HTML
