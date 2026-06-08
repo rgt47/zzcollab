@@ -50,10 +50,11 @@ jobs:
 
       - name: Run R CMD check
         run: |
-          Rscript -e "
-            .libPaths(c(Sys.getenv('CI_TOOLS_LIB'), .libPaths()))
-            rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'error')
-          "
+          Rscript --no-init-file -e "\
+            rlib <- normalizePath(Sys.glob('renv/library/*/*')[1], mustWork = FALSE); \
+            libs <- c(Sys.getenv('CI_TOOLS_LIB'), rlib, .libPaths()); \
+            .libPaths(libs[!is.na(libs) & nchar(libs) > 0]); \
+            rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'error')"
 
       - name: Run tests
         continue-on-error: true
