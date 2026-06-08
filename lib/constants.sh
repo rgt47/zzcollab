@@ -57,7 +57,7 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.
 
 readonly ZZCOLLAB_TEMPLATE_VERSION="2.8.0"
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
-readonly ZZCOLLAB_DEFAULT_R_VERSION="4.5.2"
+readonly ZZCOLLAB_DEFAULT_R_VERSION="4.6.0"
 # Pinned tag for the zzrenvcheck validation tool installed into the image.
 # Bump this constant when upgrading zzrenvcheck.
 readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.3.1}"
