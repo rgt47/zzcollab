@@ -180,6 +180,7 @@ create_devtools() {
 inst/doc
 renv/library/
 renv/staging/
+.make/
 .zzcollab.log'
     create_file_if_missing ".gitignore" "$gitignore_content" ".gitignore"
 

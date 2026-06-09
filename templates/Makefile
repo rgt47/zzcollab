@@ -37,6 +37,7 @@ help:
 	@echo "    docker-push-team, docker-document, docker-build-pkg, docker-check"
 	@echo "    docker-test, docker-vignettes, docker-render, docker-render-qmd"
 	@echo "    docker-check-renv"
+	@echo "    test-container        - Run tinytest suite in container (cached by make)"
 	@echo ""
 	@echo "  Team collaboration:"
 	@echo "    docker-push-team         - Multi-arch build and push; writes .team-image-digest"
@@ -175,6 +176,25 @@ docker-check: docker-document
 docker-test:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
 
+# Cached tinytest target. Re-runs only when R sources, test files, or
+# renv.lock change since the last passing run. Add .make/ to .gitignore.
+TEST_SOURCES := $(wildcard R/*.R) $(wildcard inst/tinytest/*.R)
+
+.make/tests-passed: $(TEST_SOURCES) renv.lock
+	@mkdir -p .make
+	docker run --rm \
+		--platform linux/amd64 \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		-e ZZCOLLAB_CONTAINER=true \
+		$(PACKAGE_NAME) \
+		Rscript -e "if (dir.exists('inst/tinytest')) \
+		  tinytest::run_test_dir('inst/tinytest') \
+		  else message('No inst/tinytest -- skipping')"
+	@touch $@
+
+test-container: .make/tests-passed
+
 docker-vignettes: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
 
@@ -262,6 +282,7 @@ r:
 			   || echo "⚠️  Package validation failed" ;; \
 		esac; \
 	fi
+	$(MAKE) test-container
 
 # Alias for rstudio
 rstudio: docker-rstudio
@@ -315,4 +336,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

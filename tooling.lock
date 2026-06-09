@@ -1,0 +1,13 @@
+{
+  "generated": "2026-06-09T04:33:32Z",
+  "r_version": "4.5.0",
+  "base_image_digest": null,
+  "ppm_snapshot": "2026-06-08",
+  "tools": {
+    "zzrenvcheck": {
+      "source": "github",
+      "ref": "rgt47/zzrenvcheck@v0.3.1",
+      "tag": "v0.3.1"
+    }
+  }
+}

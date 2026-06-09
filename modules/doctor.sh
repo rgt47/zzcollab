@@ -80,6 +80,7 @@ REQUIRED_GITIGNORE=(
     ".RData"
     "renv/library/"
     "renv/staging/"
+    ".make/"
 )
 
 # Required .Rbuildignore entries (regex patterns)
