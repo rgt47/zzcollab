@@ -45,8 +45,11 @@ jobs:
           docker run --rm -e CI=true \
             -v ${{ github.workspace }}:/project \
             -w /project compendium-env \
-            Rscript -e '
-              renv::restore()
+            Rscript --vanilla -e '
+              baked_lib <- Sys.glob("/opt/renv/library/*/*")[1]
+              if (!is.na(baked_lib) && nzchar(baked_lib)) {
+                .libPaths(c(baked_lib, .libPaths()))
+              }
               rmds <- list.files(
                 "analysis", pattern = "^report[.]Rmd$",
                 recursive = TRUE, full.names = TRUE
