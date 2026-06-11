@@ -4,7 +4,7 @@
 
 This document records deferred work following the June 2026 system-review
 remediation. P0 through P2 are complete; items below are ordered by priority
-within each tier. The source audit is `docs/zzcollab-system-review.pdf`.
+within each tier. The source audit is `docs/zzcollab-system-review.md`.
 
 ---
 
