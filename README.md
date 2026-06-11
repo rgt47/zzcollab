@@ -565,9 +565,6 @@ docker run -e RSTUDIO_AUTH=none -p 8787:8787 your-image
 
 ## Documentation
 
-- [Profile System Guide](docs/VARIANTS.md) - Docker profile specifications
-- [Configuration Guide](docs/CONFIGURATION.md) - Multi-layer configuration system
-- [Testing Guide](docs/TESTING_GUIDE.md) - Test framework and best practices
 - [Tutorial Examples](examples/) - Step-by-step learning resources
 - [Command Reference](#command-line-options) - All available options
 - [Docker Guide](#docker-integration) - Container workflows
