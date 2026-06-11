@@ -60,20 +60,19 @@ can be added dynamically via `install.packages()` inside containers (Layer 2).
 
 **minimal**: Lightweight development environment (~650MB)
 - Base: rocker/r-ver
-- Packages: renv, devtools, usethis (essential development tools only)
+- Packages: renv, devtools, usethis, tinytest, roxygen2
 
-**analysis**: Balanced environment for typical analyses (~1.2GB, recommended)
+**analysis**: Data analysis environment (~1.2GB, recommended)
 - Base: rocker/tidyverse
-- Packages: minimal + tidyverse, here, tinytest, knitr, rmarkdown
+- Packages: renv, devtools, tidyverse, here
 
 **rstudio**: RStudio Server in the browser (~980MB)
 - Base: rocker/rstudio
-- Packages: essential development tools
+- Packages: renv, devtools, usethis, tinytest, roxygen2
 
-For machine learning, install packages such as tidymodels, xgboost,
-randomForest, glmnet, and caret via renv inside the analysis profile. For
-document publishing with LaTeX and Quarto, use the rocker/verse base image:
-`zzcollab docker --base-image rocker/verse`.
+For specialised needs (LaTeX, Shiny, machine learning), start with one of
+these profiles and add packages inside the container with
+`install.packages()`, then commit the updated `renv.lock`.
 
 ## Project Initialization
 

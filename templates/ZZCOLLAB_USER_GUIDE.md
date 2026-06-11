@@ -146,10 +146,6 @@ bundles a curated package set; the bundles below document those sets:
 |--------|----------|---------------|
 | `minimal` | renv, devtools, usethis, tinytest, roxygen2 | minimal |
 | `tidyverse` | renv, devtools, tidyverse, here | minimal |
-| `modeling` | tidyverse + tidymodels, xgboost, randomForest, glmnet, caret | modeling |
-| `publishing` | quarto, bookdown, blogdown, distill, flexdashboard, DT | publishing |
-| `shiny` | shiny, shinydashboard, shinyWidgets, DT, plotly, bslib | minimal |
-| `gui` | tidyverse + rgl, plotly, shiny, Cairo, svglite | gui |
 
 ```bash
 zzc list pkgs                   # show all package bundles
