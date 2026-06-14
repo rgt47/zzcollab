@@ -8,7 +8,5 @@ License: ${LICENSE_TYPE}
 Encoding: ${PKG_ENCODING}
 Roxygen: list(markdown = TRUE)
 RoxygenNote: ${ROXYGEN_VERSION}
-Imports:
-    renv
 Suggests:
     tinytest (>= 1.4.0)
