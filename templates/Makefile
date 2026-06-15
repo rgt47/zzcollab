@@ -21,6 +21,18 @@ DOCKERHUB_ACCOUNT ?=
 # project's data lives elsewhere).
 RAW_DATA_DIR ?= analysis/data/raw_data
 
+# Container execution. The mount and work path follow the Dockerfile's
+# ARG USERNAME (default analyst), matching what the `r` target resolves at
+# runtime, so a customised container user is honoured rather than hardcoded.
+# PLATFORM is pinned so every batch container run matches CI and the cached
+# test target rather than the host architecture (the real prior inconsistency).
+PLATFORM       ?= linux/amd64
+CONTAINER_USER := $(shell grep '^ARG USERNAME=' Dockerfile 2>/dev/null | head -1 | cut -d= -f2)
+CONTAINER_HOME := /home/$(if $(CONTAINER_USER),$(CONTAINER_USER),analyst)
+DOCKER_RUN = docker run --rm --platform $(PLATFORM) \
+    -v "$(CURDIR)":$(CONTAINER_HOME)/project \
+    -w $(CONTAINER_HOME)/project $(PACKAGE_NAME)
+
 # Help target (default)
 help:
 	@echo "Available targets:"
@@ -90,27 +102,15 @@ deps:
 
 # Full validation: strict mode + auto-fix missing packages
 check-renv:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
 # Report only: identify gaps without modifying DESCRIPTION or renv.lock
 check-renv-no-fix:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
+	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
 
 # Non-strict: skip tests/ and vignettes/ directories
 check-renv-no-strict:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
+	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
 
 # Docker targets (work without local R)
 # Docker-first workflow:
@@ -183,16 +183,16 @@ docker-pull-team:
 	echo "✅ Team image loaded as $(PACKAGE_NAME)"
 
 docker-document:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::document()"
+	$(DOCKER_RUN) R --quiet -e "devtools::document()"
 
 docker-build-pkg: docker-document
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
+	$(DOCKER_RUN) R CMD build .
 
 docker-check: docker-build-pkg
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
+	$(DOCKER_RUN) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
+	$(DOCKER_RUN) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
 
 # Cached tinytest target. Re-runs only when R sources, test files, or
 # renv.lock change since the last passing run. Add .make/ to .gitignore.
@@ -201,9 +201,9 @@ TEST_SOURCES := $(wildcard R/*.R) $(wildcard inst/tinytest/*.R)
 .make/tests-passed: $(TEST_SOURCES) renv.lock
 	@mkdir -p .make
 	docker run --rm \
-		--platform linux/amd64 \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
+		--platform $(PLATFORM) \
+		-v "$(CURDIR)":$(CONTAINER_HOME)/project \
+		-w $(CONTAINER_HOME)/project \
 		-e ZZCOLLAB_CONTAINER=true \
 		$(PACKAGE_NAME) \
 		Rscript -e "if (dir.exists('inst/tinytest')) \
@@ -214,17 +214,17 @@ TEST_SOURCES := $(wildcard R/*.R) $(wildcard inst/tinytest/*.R)
 test-container: .make/tests-passed
 
 docker-vignettes: docker-document
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
+	$(DOCKER_RUN) R --quiet -e "devtools::build_vignettes()"
 
 docker-render:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('$(REPORT)')"
+	$(DOCKER_RUN) R --quiet -e "rmarkdown::render('$(REPORT)')"
 
 # Run an arbitrary R script in the container (used by zzcollab::run_script)
 docker-script:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) Rscript -e "source('$(SCRIPT)')"
+	$(DOCKER_RUN) Rscript -e "source('$(SCRIPT)')"
 
 docker-render-qmd:
-	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
+	$(DOCKER_RUN) quarto render analysis/report/index.qmd
 
 # Back-compat aliases. docker-check-renv is invoked by zzcollab::run_script;
 # both are identical to check-renv-no-fix and check-renv respectively, so they
