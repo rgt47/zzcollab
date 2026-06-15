@@ -5,6 +5,51 @@ R package release notes are in `NEWS.md`.
 
 ---
 
+## 2.8.1 — 2026-06-15
+
+### DESCRIPTION template
+
+- Removed `renv` from `Imports`. `renv` is activated by `.Rprofile` and is
+  never called by package code, so declaring it as a hard dependency made
+  `R CMD check` fail with `Package required but not available: 'renv'`
+  (`renv::restore()` does not install renv into the project library). The
+  same removal was applied to the fallback generator in
+  `modules/project.sh`.
+
+### r-package.yml template
+
+- Added `_R_CHECK_FORCE_SUGGESTS_: 'false'` to the job environment so a
+  suggested package the check library does not provide (e.g. `tinytest`)
+  is not treated as an error.
+
+### Makefile template
+
+- Fixed four defects. `hash-data`/`verify-data` read a `RAW_DATA_DIR`
+  variable defaulting to `analysis/data/raw_data` (previously scanned a
+  non-existent top-level `raw_data/`). `check`/`docker-check` depend on
+  `build`/`docker-build-pkg`, so the tarball exists before `R CMD check`.
+  The team targets guard on an unset `DOCKERHUB_ACCOUNT`. The duplicate
+  `docker-check-renv`/`docker-check-renv-fix` delegate to
+  `check-renv-no-fix`/`check-renv` rather than duplicating their commands.
+- Factored the repeated `docker run` into a single `DOCKER_RUN` variable.
+  This pins `--platform` uniformly across batch targets (which previously
+  ran the host architecture while the cached test target and CI ran
+  amd64) and derives the mount and work path from the Dockerfile's
+  `ARG USERNAME` (default analyst) instead of hardcoding
+  `/home/analyst/project`.
+- Best-practice cleanup. Self-documenting `help` generated from `##`
+  target annotations and `##@` section markers; `docker-clean` removes
+  only this project's image (system-wide prune left to
+  `docker-prune-all`/`-cache`); `docker-prune-*` use `$(MAKE)`; `.PHONY`
+  adds `docker-script` and `rstudio` and drops the dead `all`; fail-fast
+  recipes via `SHELL=/bin/bash` and `.SHELLFLAGS=-eu -c`.
+
+### Version alignment
+
+- `ZZCOLLAB_TEMPLATE_VERSION` bumped from `2.8.0` to `2.8.1`.
+
+---
+
 ## 2.8.0 — 2026-06-08
 
 ### r-package.yml template (v2.8.0)
