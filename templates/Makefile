@@ -13,6 +13,14 @@ IMAGE_TAG = $(GIT_SHA)
 # Report rendered by docker-render (override: make docker-render REPORT=path)
 REPORT ?= analysis/report/report.Rmd
 
+# Docker Hub account for team image push/pull. Override on the command line
+# (make docker-push-team DOCKERHUB_ACCOUNT=youraccount) or export it.
+DOCKERHUB_ACCOUNT ?=
+
+# Raw data directory hashed by hash-data/verify-data (override if the
+# project's data lives elsewhere).
+RAW_DATA_DIR ?= analysis/data/raw_data
+
 # Help target (default)
 help:
 	@echo "Available targets:"
@@ -44,8 +52,8 @@ help:
 	@echo "    docker-pull-team         - Pull team image pinned by digest in .team-image-digest"
 	@echo ""
 	@echo "  Data integrity:"
-	@echo "    hash-data                - Write sha256 manifest of raw_data/ to data-manifest.sha256"
-	@echo "    verify-data              - Verify raw_data/ against data-manifest.sha256"
+	@echo "    hash-data                - Write sha256 manifest of \$$(RAW_DATA_DIR) to data-manifest.sha256"
+	@echo "    verify-data              - Verify data files against data-manifest.sha256"
 	@echo ""
 	@echo "  Cleanup:"
 	@echo "    clean, docker-clean"
@@ -57,10 +65,10 @@ help:
 document:
 	R --quiet -e "devtools::document()"
 
-build:
+build: document
 	R CMD build .
 
-check: document
+check: build
 	R CMD check --as-cran *.tar.gz
 
 install: document
@@ -133,6 +141,11 @@ docker-build-log:
 	zzcollab rebuild --log
 
 docker-push-team:
+	@if [ -z "$(DOCKERHUB_ACCOUNT)" ]; then \
+	  echo "DOCKERHUB_ACCOUNT is not set." >&2; \
+	  echo "Run: make docker-push-team DOCKERHUB_ACCOUNT=youraccount" >&2; \
+	  exit 1; \
+	fi
 	@echo "Building and pushing multi-arch image $(DOCKERHUB_ACCOUNT)/$(PROJECT_NAME):$(IMAGE_TAG)"
 	@echo "Platforms: linux/amd64,linux/arm64 (native on both x86 and Apple Silicon)"
 	docker buildx build \
@@ -153,6 +166,11 @@ docker-push-team:
 # This guarantees every team member runs bit-identical containers regardless
 # of when they pull (the mutable tag may be overwritten; the digest never is).
 docker-pull-team:
+	@if [ -z "$(DOCKERHUB_ACCOUNT)" ]; then \
+	  echo "DOCKERHUB_ACCOUNT is not set." >&2; \
+	  echo "Run: make docker-pull-team DOCKERHUB_ACCOUNT=youraccount" >&2; \
+	  exit 1; \
+	fi
 	@if [ ! -f .team-image-digest ]; then \
 	  echo "No .team-image-digest found. Run 'make docker-push-team' first." >&2; \
 	  exit 1; \
@@ -167,10 +185,10 @@ docker-pull-team:
 docker-document:
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::document()"
 
-docker-build-pkg:
+docker-build-pkg: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD build .
 
-docker-check: docker-document
+docker-check: docker-build-pkg
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
@@ -208,19 +226,12 @@ docker-script:
 docker-render-qmd:
 	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
 
-docker-check-renv:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
+# Back-compat aliases. docker-check-renv is invoked by zzcollab::run_script;
+# both are identical to check-renv-no-fix and check-renv respectively, so they
+# delegate rather than duplicate the docker run command.
+docker-check-renv: check-renv-no-fix
 
-docker-check-renv-fix:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+docker-check-renv-fix: check-renv
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
@@ -291,11 +302,11 @@ rstudio: docker-rstudio
 # Write a sha256 manifest of raw_data/ so any silent mutation is detectable.
 # Commit data-manifest.sha256 alongside raw_data/ and regenerate after updates.
 hash-data:
-	@if [ ! -d raw_data ]; then \
-	  echo "No raw_data/ directory found; skipping hash-data."; \
+	@if [ ! -d "$(RAW_DATA_DIR)" ]; then \
+	  echo "No $(RAW_DATA_DIR) directory found; skipping hash-data."; \
 	  exit 0; \
 	fi
-	find raw_data -type f | sort | xargs shasum -a 256 > data-manifest.sha256
+	find "$(RAW_DATA_DIR)" -type f | sort | xargs shasum -a 256 > data-manifest.sha256
 	@echo "Data manifest written to data-manifest.sha256"
 	@echo "Commit this file to make future mutations detectable."
 
