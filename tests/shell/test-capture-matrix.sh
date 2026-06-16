@@ -214,6 +214,55 @@ test_matrix_verify_detects_drift() {
 }
 
 ##############################################################################
+# Phase 5 migration: doctor is toggle-aware and back-fills the state record.
+##############################################################################
+
+# Run doctor on the current dir; echo its exit code.
+_doctor_rc() {
+    bash "$ZZCOLLAB_ROOT/modules/doctor.sh" "$@" < /dev/null > /dev/null 2>&1
+    echo $?
+}
+
+# An L1 repo (renv, no Docker) is a valid lower capture level, not a broken
+# workspace: doctor must not flag the absent Dockerfile.
+test_migration_doctor_toggle_aware() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    _zzc renv          || { echo "FAIL: renv"; teardown_test; return 1; }
+
+    assert_false "[[ -f Dockerfile ]]" "toggle-aware: L1 has no Dockerfile"
+    assert_equals "0" "$(_doctor_rc .)" "toggle-aware: doctor must pass on L1 (no Dockerfile)"
+
+    teardown_test
+}
+
+# A repo created before .zzcollab-state existed is back-filled from artifact
+# presence by 'doctor --fix', without deleting any primary artifact.
+test_migration_doctor_backfills_state() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force              || { echo "FAIL: init"; teardown_test; return 1; }
+    _zzc docker --profile analysis || { echo "FAIL: docker"; teardown_test; return 1; }
+
+    # Simulate a pre-state (legacy) repo.
+    rm -f .zzcollab-state
+    assert_equals "1" "$(_doctor_rc .)" "backfill: missing state is flagged without --fix"
+
+    # Back-fill and confirm the record is reconstructed from presence.
+    _doctor_rc . --fix > /dev/null
+    assert_file_exists ".zzcollab-state" "backfill: state record written"
+    assert_equals "renv" "$(_state_get install_mode)" "backfill: install_mode from COPY renv.lock"
+    assert_true "grep -q '^base_image=rocker' .zzcollab-state" "backfill: base from Dockerfile FROM"
+    assert_true "grep -q '^r_version=' .zzcollab-state"        "backfill: r_version recovered"
+    assert_equals "0" "$(_doctor_rc .)" "backfill: doctor clean after back-fill"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

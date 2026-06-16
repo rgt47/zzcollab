@@ -685,10 +685,13 @@ EOF
     # Create renv.lock
     create_renv_lock_minimal "$r_version"
 
-    # Create .Rprofile from template (always overwrite to ensure latest version)
+    # Create .Rprofile from template (always overwrite to ensure latest
+    # version). Use regenerate_template_file, not a raw copy, so the
+    # $ZZCOLLAB_TEMPLATE_VERSION stamp and other template variables are
+    # substituted; a raw safe_cp left the literal stamp, which doctor then
+    # reported as "(no stamp)".
     if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
-        safe_cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
-        log_success "Created .Rprofile from template"
+        regenerate_template_file ".Rprofile" ".Rprofile" ".Rprofile"
     else
         log_error "Template .Rprofile not found at $ZZCOLLAB_TEMPLATES_DIR/.Rprofile"
         return 1
