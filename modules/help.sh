@@ -34,6 +34,7 @@ Commands:
   dockerhub [--tag T]   Push image to Docker Hub
   status                Show reproducibility features and level (read-only)
   validate              Check package dependencies (via zzrenvcheck)
+  verify [--full]       Confirm reproducibility: coherence, or rebuild for L3
   doctor [--fix]        Check workspace files are current with templates
   config <subcommand>   Manage configuration (get/set/list/init)
   list <profiles|libs|pkgs>

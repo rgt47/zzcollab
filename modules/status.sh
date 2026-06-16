@@ -67,11 +67,14 @@ _zzc_write_state() {
 }
 
 # Read a key from the generator-written .zzcollab-state record (key=value,
-# dependency-free). Echoes the value, or nothing if absent.
+# dependency-free). Echoes the value, or nothing if absent. Always returns 0:
+# a missing key makes grep exit nonzero, which under `set -o pipefail` would
+# otherwise abort an assignment in a `set -e` caller (e.g. optional keys like
+# `verified`).
 _zzc_state_get() {
     local key="$1" d="${2:-.}"
     [[ -f "$d/.zzcollab-state" ]] || return 0
-    grep -m1 "^${key}=" "$d/.zzcollab-state" 2>/dev/null | cut -d= -f2-
+    grep -m1 "^${key}=" "$d/.zzcollab-state" 2>/dev/null | cut -d= -f2- || true
 }
 
 # Read the base image from a Dockerfile's FROM line. Fallback for older repos
@@ -124,8 +127,13 @@ cmd_status() {
     [[ -d "$d/.binder" ]]              && binder=true  || binder=false
     [[ -d "$d/.git" ]]                 && git_on=true  || git_on=false
 
-    local level base digest mode src
+    local level base digest mode src verified
     level=$(_zzc_compute_level "$backend" "$docker_on")
+    # zzc verify --full stamps this on a successful rebuild+test. Any later
+    # regeneration rewrites .zzcollab-state without the key, so a changed
+    # environment reverts to unverified automatically.
+    verified=$(_zzc_state_get verified "$d")
+    if [[ -n "$verified" ]]; then level="L3"; fi
     # Prefer the generator-written state record; fall back to grepping FROM
     # for older repos that predate .zzcollab-state.
     base=$(_zzc_state_get base_image "$d")
@@ -140,7 +148,7 @@ cmd_status() {
     fi
 
     echo ""
-    echo "LOCAL   $(cd "$d" && pwd)   (level: $level, verified: no)"
+    echo "LOCAL   $(cd "$d" && pwd)   (level: $level, verified: ${verified:-no})"
     # Capture axes
     if [[ "$backend" == "conflict" ]]; then
         printf "  %-14s %s\n" "backend" "CONFLICT: both renv.lock and a nix file present; resolve to one"
@@ -164,6 +172,10 @@ cmd_status() {
     printf "  %-14s %s\n" "git"        "$(_zzc_onoff "$git_on")"
     echo ""
     echo "Levels: L0 locatable, L1 pinned packages, L2 pinned environment, L3 verified."
-    echo "verified: no  (zzc verify not yet implemented)"
+    if [[ -n "$verified" ]]; then
+        echo "verified: $verified  (zzc verify --full)"
+    else
+        echo "verified: no  (run 'zzc verify' for coherence, 'zzc verify --full' for L3)"
+    fi
     echo ""
 }

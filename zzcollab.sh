@@ -81,6 +81,8 @@ source "$ZZCOLLAB_MODULES_DIR/github.sh"
 source "$ZZCOLLAB_MODULES_DIR/help.sh"
 # shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/status.sh"
+
+source "$ZZCOLLAB_MODULES_DIR/verify.sh"
 # Note: doctor.sh is executed as a standalone script by cmd_doctor, not sourced.
 
 #=============================================================================
@@ -2178,6 +2180,11 @@ main() {
             validate)
                 shift
                 cmd_validate "$@"
+                exit $?
+                ;;
+            verify)
+                shift
+                cmd_verify "$@"
                 exit $?
                 ;;
             doctor)
