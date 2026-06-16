@@ -1556,6 +1556,29 @@ cmd_rm_renv() {
         log_info "Removed renv activation from .Rprofile"
     fi
 
+    # A present Dockerfile was generated to restore from renv.lock; regenerate
+    # it so it self-adapts to DESCRIPTION-install mode now that renv is gone,
+    # otherwise the toggle leaves a broken COPY renv.lock. Base image and R
+    # version come from .zzcollab-state, which avoids the interactive wizard.
+    if [[ -f "Dockerfile" ]]; then
+        local _sb _sr
+        _sb=$(_zzc_state_get base_image . 2>/dev/null)
+        _sr=$(_zzc_state_get r_version . 2>/dev/null)
+        if [[ -n "$_sb" ]]; then
+            export BASE_IMAGE="${_sb%:*}"
+            export R_VERSION="${_sr:-${_sb##*:}}"
+            log_info "Regenerating Dockerfile in DESCRIPTION-install mode..."
+            if generate_dockerfile >/dev/null 2>&1; then
+                log_info "Dockerfile updated; rebuild to apply: make docker-build"
+            else
+                log_warn "Could not regenerate Dockerfile; run 'zzc docker --no-renv' manually."
+            fi
+        else
+            log_warn "Dockerfile present but no .zzcollab-state."
+            log_info "Run 'zzc docker --no-renv' to switch it to DESCRIPTION mode."
+        fi
+    fi
+
     log_success "renv configuration removed"
 }
 
