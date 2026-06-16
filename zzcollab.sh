@@ -478,11 +478,27 @@ cmd_docker() {
         BASE_IMAGE=$(get_profile_base_image "$profile")
         export BASE_IMAGE
         config_set "profile-name" "$profile" true 2>/dev/null || true
+    elif [[ -n "$base_image" ]]; then
+        : # explicit --base-image already exported above
     else
-        load_config 2>/dev/null || true
-        if [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
-            BASE_IMAGE=$(get_profile_base_image "$CONFIG_PROFILE_NAME")
-            export BASE_IMAGE
+        # Re-adding Docker: prefer the base image remembered in .zzcollab-state
+        # (symmetry with the renv toggle) so 'zzc docker' restores the
+        # previously chosen environment without re-deriving it. The record's
+        # base_image is empty for a project that never had Docker, so first-time
+        # setup still falls through to the configured profile. The digest is
+        # re-resolved fresh by generate_dockerfile.
+        local _state_base
+        _state_base=$(_zzc_state_get base_image . 2>/dev/null)
+        if [[ -n "$_state_base" ]]; then
+            export BASE_IMAGE="${_state_base%:*}"
+            [[ -z "$r_version" ]] && r_version="${_state_base##*:}"
+            log_success "Reusing remembered base image: $_state_base"
+        else
+            load_config 2>/dev/null || true
+            if [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
+                BASE_IMAGE=$(get_profile_base_image "$CONFIG_PROFILE_NAME")
+                export BASE_IMAGE
+            fi
         fi
     fi
 
