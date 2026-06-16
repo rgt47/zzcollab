@@ -436,12 +436,14 @@ GLOBAL OPTIONS:
   -h, --help               Show help message
 
 PER-COMMAND OPTIONS:
+  init:      --force                  Scaffold even if the directory is not empty
   docker:    -b, --build              Build image after generating
              -r, --profile NAME       Select profile (analysis, minimal, ...)
              --base-image IMG         Override base image (default: rocker/r-ver)
              --r-version VER          Pin R version
   dockerhub: -t, --tag TAG            Image tag (default: latest)
   github:    --private | --public     Repo visibility (default: private)
+  rm:        -f, --force              Skip the removal confirmation prompt
 
 CONFIG COMMANDS:
   zzcollab config init                    # Create default config
