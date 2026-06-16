@@ -35,11 +35,12 @@ Commands:
   status                Show reproducibility features and level (read-only)
   validate              Check package dependencies (via zzrenvcheck)
   verify [--full]       Confirm reproducibility: coherence, or rebuild for L3
+  data                  Write a sha256 manifest of raw data (integrity toggle)
   doctor [--fix]        Check workspace files are current with templates
   config <subcommand>   Manage configuration (get/set/list/init)
   list <profiles|libs|pkgs>
                         List available profiles and bundles
-  rm <feature>          Remove a feature (docker, renv, git, github, cicd, all)
+  rm <feature>          Remove a feature (docker, renv, git, github, cicd, data, all)
   uninstall [--force]   Remove the zzcollab scaffold from this directory
   help <topic>          Show detailed help for a topic
 

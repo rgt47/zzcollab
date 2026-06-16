@@ -779,6 +779,60 @@ EOF
     fi
 }
 
+# cmd_data - data-integrity toggle (capture feature). Writes a sha256 manifest
+# of the immutable raw-data directory so later silent mutations are detectable.
+# Presence of data-manifest.sha256 is the feature's on state (zzc status); zzc
+# verify checks the data still matches it. Mirrors the Makefile hash-data target
+# so the manifest is identical whether written from the CLI or `make hash-data`.
+cmd_data() {
+    case "${1:-}" in
+        help|--help|-h)
+            cat << 'EOF'
+DATA INTEGRITY
+
+Writes a sha256 manifest of the raw-data directory (analysis/data/raw_data)
+so any later mutation of immutable source data is detectable.
+
+USAGE:
+    zzcollab data        # write/refresh data-manifest.sha256
+    zzcollab rm data     # remove the manifest (feature off)
+
+The manifest is the feature's presence signal. Commit it; refresh with
+'zzc data' after intentional data updates. 'zzc verify' checks the data
+against it. Equivalent to 'make hash-data' / 'make verify-data'.
+EOF
+            return 0 ;;
+    esac
+
+    ensure_workspace_initialized "data" || exit 1
+
+    local raw="analysis/data/raw_data"
+    if [[ ! -d "$raw" ]]; then
+        log_error "No $raw directory found; nothing to hash."
+        log_info "Place immutable source data in $raw, then run 'zzc data'."
+        return 1
+    fi
+    if ! command -v shasum >/dev/null 2>&1; then
+        log_error "shasum not found; cannot write the data manifest."
+        return 1
+    fi
+
+    local files
+    files=$(find "$raw" -type f | sort)
+    if [[ -z "$files" ]]; then
+        log_warn "No files under $raw; manifest not written."
+        return 1
+    fi
+    printf '%s\n' "$files" | xargs shasum -a 256 > data-manifest.sha256
+
+    local n
+    n=$(wc -l < data-manifest.sha256 | tr -d ' ')
+    log_success "Wrote data-manifest.sha256 (${n} file(s) under $raw)"
+    echo "  Commit it so later data mutations are detectable."
+    echo "  Refresh after intentional updates:  zzc data"
+    echo "  Check the data against it:          zzc verify"
+}
+
 cmd_validate() {
     # Dependency validation is delegated to the zzrenvcheck R package.
     # Runs on the host if R + zzrenvcheck are installed; otherwise advises
@@ -1557,20 +1611,32 @@ cmd_rm() {
         cicd)
             cmd_rm_cicd
             ;;
+        data)
+            cmd_rm_data
+            ;;
         all)
             cmd_rm_all "$@"  # Pass through flags like -f, --force
             ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
-            log_info "Features: docker, renv, git, github, cicd, all"
+            log_info "Features: docker, renv, git, github, cicd, data, all"
             return 1
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, git, github, cicd, all"
+            log_info "Features: docker, renv, git, github, cicd, data, all"
             return 1
             ;;
     esac
+}
+
+cmd_rm_data() {
+    if [[ -f data-manifest.sha256 ]]; then
+        rm -f data-manifest.sha256
+        log_success "Removed data-manifest.sha256 (data-integrity hashing off)"
+    else
+        log_info "No data-manifest.sha256 to remove"
+    fi
 }
 
 cmd_rm_docker() {
@@ -2040,6 +2106,11 @@ main() {
                 cmd_renv
                 commands_run=$((commands_run + 1))
                 shift
+                ;;
+            data)
+                shift
+                cmd_data "$@"
+                exit $?
                 ;;
             tools)
                 cmd_tools

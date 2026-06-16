@@ -201,6 +201,17 @@ EOF
         fi
     fi
 
+    # 6b. Data integrity: the raw data still matches its recorded manifest.
+    if [[ -f "$d/data-manifest.sha256" ]]; then
+        if ! command -v shasum >/dev/null 2>&1; then
+            _vrf_skip "shasum absent; cannot check data-manifest.sha256"
+        elif ( cd "$d" && shasum -a 256 --check data-manifest.sha256 ) >/dev/null 2>&1; then
+            _vrf_pass "raw data matches data-manifest.sha256"
+        else
+            _vrf_fail "raw data does not match data-manifest.sha256 (changed/missing files)"
+        fi
+    fi
+
     # 7. Dependency triad (Code subset of DESCRIPTION subset of renv.lock).
     # Delegated to zzrenvcheck; reported but not gating (advisory layer).
     if command -v Rscript >/dev/null 2>&1 \

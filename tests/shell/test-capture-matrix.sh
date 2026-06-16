@@ -263,6 +263,37 @@ test_migration_doctor_backfills_state() {
 }
 
 ##############################################################################
+# Data-integrity toggle: zzc data writes a manifest, verify checks it, rm
+# removes it. A capture feature with a presence-driven artifact.
+##############################################################################
+
+test_toggle_data_integrity() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    echo "immutable source row" > analysis/data/raw_data/sample.csv
+    _zzc data || { echo "FAIL: zzc data"; teardown_test; return 1; }
+
+    assert_file_exists "data-manifest.sha256" "data: manifest written"
+    assert_equals "0" "$(_verify_rc .)" "data: verify passes when data matches manifest"
+
+    # Tampering with the immutable data must make verify fail.
+    echo "tampered row" >> analysis/data/raw_data/sample.csv
+    assert_equals "1" "$(_verify_rc .)" "data: verify fails when data changed"
+
+    # Refreshing the manifest re-establishes the match.
+    _zzc data || { echo "FAIL: zzc data refresh"; teardown_test; return 1; }
+    assert_equals "0" "$(_verify_rc .)" "data: verify passes again after refresh"
+
+    _zzc rm data
+    assert_false "[[ -f data-manifest.sha256 ]]" "data: manifest removed by rm data"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
