@@ -804,6 +804,21 @@ WORKDIR /home/\${USERNAME}/project
 CMD ["R", "--quiet"]
 EOF
 
+    # Generator-written state record (machine-readable; never hand-edited).
+    # zzc status reads this for robust read-back instead of re-parsing the
+    # Dockerfile FROM/ARG lines, which is brittle under digest pins and
+    # multi-stage builds (toggle plan, Section 4).
+    {
+        echo "schema=1"
+        echo "template_version=${ZZCOLLAB_TEMPLATE_VERSION}"
+        echo "r_version=${r_version}"
+        echo "base_image=${base_image}:${r_version}"
+        echo "base_digest=${image_digest:-unknown}"
+        echo "ppm_snapshot=${ppm_snapshot}"
+        echo "install_mode=${install_mode}"
+        echo "generated=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    } > .zzcollab-state
+
     log_success "Generated Dockerfile"
 }
 

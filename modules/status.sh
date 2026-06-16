@@ -46,8 +46,16 @@ _zzc_compute_level() {
     fi
 }
 
-# Read the base image from a Dockerfile's FROM line (stopgap until the
-# generator writes .zzcollab-state; see the plan, Section 4).
+# Read a key from the generator-written .zzcollab-state record (key=value,
+# dependency-free). Echoes the value, or nothing if absent.
+_zzc_state_get() {
+    local key="$1" d="${2:-.}"
+    [[ -f "$d/.zzcollab-state" ]] || return 0
+    grep -m1 "^${key}=" "$d/.zzcollab-state" 2>/dev/null | cut -d= -f2-
+}
+
+# Read the base image from a Dockerfile's FROM line. Fallback for older repos
+# that predate .zzcollab-state; the state record is preferred.
 _zzc_base_from_dockerfile() {
     local d="${1:-.}"
     [[ -f "$d/Dockerfile" ]] || return 0
@@ -96,9 +104,20 @@ cmd_status() {
     [[ -d "$d/.binder" ]]              && binder=true  || binder=false
     [[ -d "$d/.git" ]]                 && git_on=true  || git_on=false
 
-    local level base
+    local level base digest mode src
     level=$(_zzc_compute_level "$backend" "$docker_on")
-    base=$(_zzc_base_from_dockerfile "$d")
+    # Prefer the generator-written state record; fall back to grepping FROM
+    # for older repos that predate .zzcollab-state.
+    base=$(_zzc_state_get base_image "$d")
+    digest=$(_zzc_state_get base_digest "$d")
+    mode=$(_zzc_state_get install_mode "$d")
+    if [[ -n "$base" ]]; then
+        src=".zzcollab-state"
+        [[ -n "$digest" && "$digest" != unknown ]] && base="${base}@${digest:0:14}…"
+    else
+        base=$(_zzc_base_from_dockerfile "$d")
+        src="Dockerfile FROM (no state record)"
+    fi
 
     echo ""
     echo "LOCAL   $(cd "$d" && pwd)   (level: $level, verified: no)"
@@ -108,7 +127,7 @@ cmd_status() {
     else
         printf "  %-14s %s\n" "backend" "$backend  (capture)"
     fi
-    printf "  %-14s %s\n" "environment" "docker $docker_on  (capture)${base:+   base: $base}"
+    printf "  %-14s %s\n" "environment" "docker $docker_on  (capture)${base:+   base: $base}${mode:+   install: $mode}"
     # Validation layer
     printf "  %-14s %s\n" "CI check"   "$(_zzc_onoff "$ci_check")  (validation)   r-package.yml"
     printf "  %-14s %s\n" "CI render"  "$(_zzc_onoff "$ci_render")  (validation)   render-report.yml"
