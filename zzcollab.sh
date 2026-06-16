@@ -1625,6 +1625,19 @@ cmd_rm_renv() {
     [[ -f "renv.lock" ]] && rm "renv.lock" && log_info "Removed renv.lock"
     [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
 
+    # The check workflow self-adapts to backend presence at run time, but an
+    # older r-package.yml hard-requires renv.lock and would now fail CI.
+    # Refresh it from the template so the DESCRIPTION-backend path is available.
+    if [[ -f ".github/workflows/r-package.yml" ]]; then
+        if regenerate_template_file "workflows/r-package.yml" \
+               ".github/workflows/r-package.yml" "check workflow" \
+               >/dev/null 2>&1; then
+            echo "  Check workflow updated to DESCRIPTION-backend mode"
+        else
+            log_warn "Could not refresh r-package.yml; CI may still require renv.lock"
+        fi
+    fi
+
     # The .Rprofile is left untouched: it self-adapts at run time, gating its
     # renv workflow (auto-init, restore, snapshot) on ZZCOLLAB_INSTALL_MODE,
     # which the regenerated Dockerfile sets to "description" below. Editing the

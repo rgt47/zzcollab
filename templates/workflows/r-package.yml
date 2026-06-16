@@ -1,4 +1,10 @@
 # zzcollab r-package.yml v$ZZCOLLAB_TEMPLATE_VERSION
+#
+# Self-adapting package check. Runs in a generic rocker container (not the
+# project image) and detects the backend at run time: with renv.lock present it
+# restores the pinned library (L1); without it, it installs dependencies from
+# DESCRIPTION via pak (L0). The same workflow therefore survives toggling renv
+# on or off with no edits.
 name: R Package Check (Container)
 
 on:
@@ -24,13 +30,25 @@ jobs:
         run: |
           apt-get update && apt-get install -y jq libcurl4-openssl-dev libssl-dev libxml2-dev cmake
 
+      - name: Detect backend
+        id: mode
+        run: |
+          if [ -f renv.lock ]; then
+            echo "renv=true" >> "$GITHUB_OUTPUT"
+            echo "Backend: renv (renv.lock present)"
+          else
+            echo "renv=false" >> "$GITHUB_OUTPUT"
+            echo "Backend: DESCRIPTION (no renv.lock)"
+          fi
+
       - name: Validate package files exist
         run: |
           test -f DESCRIPTION || { echo "Missing DESCRIPTION"; exit 1; }
-          test -f renv.lock || { echo "Missing renv.lock"; exit 1; }
           echo "Package files validated"
 
+      # --- renv backend: restore the pinned library ---
       - name: Cache renv packages
+        if: steps.mode.outputs.renv == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cache/R/renv
@@ -39,9 +57,17 @@ jobs:
             renv-
 
       - name: Install renv and restore project packages
+        if: steps.mode.outputs.renv == 'true'
         run: |
           Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
           Rscript -e "renv::restore(prompt = FALSE)"
+
+      # --- DESCRIPTION backend: install declared dependencies via pak ---
+      - name: Install dependencies from DESCRIPTION
+        if: steps.mode.outputs.renv == 'false'
+        run: |
+          Rscript -e "install.packages('pak', repos = 'https://cloud.r-project.org')"
+          Rscript -e "pak::local_install_deps(root = '.', dependencies = TRUE)"
 
       - name: Install CI tools to separate library
         run: |
@@ -75,5 +101,6 @@ jobs:
         run: |
           echo "✅ DESCRIPTION found"
           test -d R && echo "✅ R/ directory found" || echo "⚠️  No R/ directory"
-          echo "✅ renv.lock found"
+          test -f renv.lock && echo "✅ renv.lock found (renv backend)" \
+            || echo "ℹ️  no renv.lock (DESCRIPTION backend)"
           echo "✅ Project structure validated"
