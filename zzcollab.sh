@@ -763,11 +763,16 @@ EOF
     echo "  # renv.lock auto-updates on exit"
     echo ""
 
-    # Offer to save R version to config
-    local save_config
-    zzc_read -r -p "Save R version to config? [Y/n]: " save_config
-    if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
-        config_set "r-version" "$r_version"
+    # Offer to save R version to config. This is optional convenience and must
+    # never fail the command: skip the prompt entirely when non-interactive
+    # (no tty or accept-defaults), and keep config_set non-fatal otherwise so a
+    # write failure or EOF does not abort zzc renv under set -e.
+    if [[ -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+        local save_config
+        zzc_read -r -p "Save R version to config? [Y/n]: " save_config || true
+        if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
+            config_set "r-version" "$r_version" || true
+        fi
     fi
 }
 
