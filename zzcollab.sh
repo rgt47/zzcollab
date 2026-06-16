@@ -79,6 +79,8 @@ source "$ZZCOLLAB_MODULES_DIR/docker.sh"
 source "$ZZCOLLAB_MODULES_DIR/github.sh"
 # shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/help.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/status.sh"
 # Note: doctor.sh is executed as a standalone script by cmd_doctor, not sourced.
 
 #=============================================================================
@@ -2058,6 +2060,11 @@ main() {
                 shift
                 log_warn "'zzcollab build' is deprecated; use 'zzcollab rebuild'."
                 cmd_build "$@"
+                exit $?
+                ;;
+            status)
+                shift
+                cmd_status "$@"
                 exit $?
                 ;;
             validate)

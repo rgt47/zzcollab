@@ -32,6 +32,7 @@ Commands:
   renv                  Create or update renv.lock
   github [--public]     Create GitHub repo and push
   dockerhub [--tag T]   Push image to Docker Hub
+  status                Show reproducibility features and level (read-only)
   validate              Check package dependencies (via zzrenvcheck)
   doctor [--fix]        Check workspace files are current with templates
   config <subcommand>   Manage configuration (get/set/list/init)
