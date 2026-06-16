@@ -2019,7 +2019,7 @@ main() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --version)
-                echo "zzcollab ${ZZCOLLAB_VERSION:-2.0.0}"
+                echo "zzcollab ${ZZCOLLAB_VERSION:-0.1.0}"
                 exit 0
                 ;;
             --help|-h)
