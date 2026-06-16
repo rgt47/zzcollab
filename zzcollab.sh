@@ -710,15 +710,15 @@ EOF
         if [[ -n "$_sb" ]]; then
             export BASE_IMAGE="${_sb%:*}"
             export R_VERSION="${_sr:-${_sb##*:}}"
-            log_info "Regenerating Dockerfile in renv-restore mode..."
             if generate_dockerfile >/dev/null 2>&1; then
-                log_info "Dockerfile updated; rebuild to apply: make docker-build"
+                echo "  Dockerfile regenerated in renv-restore mode"
+                echo "  rebuild to apply:  make docker-build"
             else
                 log_warn "Could not regenerate Dockerfile; run 'zzc docker' manually."
             fi
         else
             log_warn "Dockerfile present but no .zzcollab-state."
-            log_info "Run 'zzc docker' to switch it to renv-restore mode."
+            echo "  Run 'zzc docker' to switch it to renv-restore mode."
         fi
     fi
 
@@ -1552,9 +1552,38 @@ cmd_rm_docker() {
 
     if [[ $removed -eq 0 ]]; then
         log_info "No Docker files to remove"
-    else
-        log_success "Docker configuration removed"
+        return 0
     fi
+
+    # The render workflow self-adapts to artifact presence at run time, so with
+    # the Dockerfile gone it falls back to a host render. Refresh it from the
+    # template so repos carrying an older Docker-only render-report.yml pick up
+    # the dual-mode version; without this the next render would `docker build`
+    # against a missing Dockerfile and fail.
+    local refreshed=false
+    if [[ -f ".github/workflows/render-report.yml" ]]; then
+        if regenerate_template_file "workflows/render-report.yml" \
+               ".github/workflows/render-report.yml" "render workflow" \
+               >/dev/null 2>&1; then
+            refreshed=true
+        else
+            log_warn "Could not refresh render-report.yml; it may still expect a Dockerfile"
+        fi
+    fi
+
+    log_success "Docker configuration removed"
+    echo ""
+    echo "  The project now runs on the host environment:"
+    if [[ -f "renv.lock" ]]; then
+        echo "    packages pinned by renv.lock (capture level L1)"
+    else
+        echo "    packages installed from DESCRIPTION, unpinned (capture level L0)"
+        echo "    add renv to pin package versions:  zzc renv"
+    fi
+    [[ "$refreshed" == true ]] && \
+        echo "    render workflow updated to host-render mode"
+    echo "    review the configuration:          zzc status"
+    echo ""
 }
 
 cmd_rm_renv() {
@@ -1591,15 +1620,15 @@ cmd_rm_renv() {
         if [[ -n "$_sb" ]]; then
             export BASE_IMAGE="${_sb%:*}"
             export R_VERSION="${_sr:-${_sb##*:}}"
-            log_info "Regenerating Dockerfile in DESCRIPTION-install mode..."
             if generate_dockerfile >/dev/null 2>&1; then
-                log_info "Dockerfile updated; rebuild to apply: make docker-build"
+                echo "  Dockerfile regenerated in DESCRIPTION-install mode"
+                echo "  rebuild to apply:  make docker-build"
             else
                 log_warn "Could not regenerate Dockerfile; run 'zzc docker --no-renv' manually."
             fi
         else
             log_warn "Dockerfile present but no .zzcollab-state."
-            log_info "Run 'zzc docker --no-renv' to switch it to DESCRIPTION mode."
+            echo "  Run 'zzc docker --no-renv' to switch it to DESCRIPTION mode."
         fi
     fi
 

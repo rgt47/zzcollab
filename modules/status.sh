@@ -127,7 +127,14 @@ cmd_status() {
     else
         printf "  %-14s %s\n" "backend" "$backend  (capture)"
     fi
-    printf "  %-14s %s\n" "environment" "docker $docker_on  (capture)${base:+   base: $base}${mode:+   install: $mode}"
+    # base image and install mode describe the Docker environment; suppress
+    # them when Docker is off so a stale .zzcollab-state record (kept as the
+    # remembered config for a later re-add) does not read as the live state.
+    local env_detail=""
+    if [[ "$docker_on" == on ]]; then
+        env_detail="${base:+   base: $base}${mode:+   install: $mode}"
+    fi
+    printf "  %-14s %s\n" "environment" "docker $docker_on  (capture)${env_detail}"
     # Validation layer
     printf "  %-14s %s\n" "CI check"   "$(_zzc_onoff "$ci_check")  (validation)   r-package.yml"
     printf "  %-14s %s\n" "CI render"  "$(_zzc_onoff "$ci_render")  (validation)   render-report.yml"
