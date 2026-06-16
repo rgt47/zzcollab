@@ -698,6 +698,30 @@ EOF
         log_success "Created renv/.gitignore"
     fi
 
+    # Symmetric to cmd_rm_renv: a present Dockerfile may have been generated in
+    # DESCRIPTION-install mode. renv.lock now exists, so regenerate it to flip
+    # to renv-restore mode; otherwise adding renv leaves the image installing
+    # from DESCRIPTION and ignoring the lockfile. Base image and R version come
+    # from .zzcollab-state to avoid the interactive wizard.
+    if [[ -f "Dockerfile" ]]; then
+        local _sb _sr
+        _sb=$(_zzc_state_get base_image . 2>/dev/null)
+        _sr=$(_zzc_state_get r_version . 2>/dev/null)
+        if [[ -n "$_sb" ]]; then
+            export BASE_IMAGE="${_sb%:*}"
+            export R_VERSION="${_sr:-${_sb##*:}}"
+            log_info "Regenerating Dockerfile in renv-restore mode..."
+            if generate_dockerfile >/dev/null 2>&1; then
+                log_info "Dockerfile updated; rebuild to apply: make docker-build"
+            else
+                log_warn "Could not regenerate Dockerfile; run 'zzc docker' manually."
+            fi
+        else
+            log_warn "Dockerfile present but no .zzcollab-state."
+            log_info "Run 'zzc docker' to switch it to renv-restore mode."
+        fi
+    fi
+
     echo ""
     echo "───────────────────────────────────────────────────────────"
     echo "  Setup complete"
