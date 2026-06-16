@@ -1623,16 +1623,11 @@ cmd_rm_renv() {
     [[ -f "renv.lock" ]] && rm "renv.lock" && log_info "Removed renv.lock"
     [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
 
-    # Remove renv activation from .Rprofile if present. Edit via a temp file
-    # then mv into place; the project dir is often cloud-synced, where in-place
-    # sed risks a 0-byte truncation race with the sync provider.
-    if [[ -f ".Rprofile" ]] && grep -q "renv/activate.R" .Rprofile; then
-        local _rprofile_tmp
-        _rprofile_tmp=$(mktemp)
-        grep -v 'renv/activate.R' .Rprofile > "$_rprofile_tmp" || true
-        mv "$_rprofile_tmp" .Rprofile
-        log_info "Removed renv activation from .Rprofile"
-    fi
+    # The .Rprofile is left untouched: it self-adapts at run time, gating its
+    # renv workflow (auto-init, restore, snapshot) on ZZCOLLAB_INSTALL_MODE,
+    # which the regenerated Dockerfile sets to "description" below. Editing the
+    # file with grep would mangle the conditional renv blocks in the current
+    # template; the env-driven gate is both correct and reversible.
 
     # A present Dockerfile was generated to restore from renv.lock; regenerate
     # it so it self-adapts to DESCRIPTION-install mode now that renv is gone,

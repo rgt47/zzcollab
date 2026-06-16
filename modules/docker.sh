@@ -770,6 +770,7 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
     RENV_PATHS_CACHE=/opt/renv/cache \\
     RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\
     ZZCOLLAB_CONTAINER=true \\
+    ZZCOLLAB_INSTALL_MODE=${install_mode} \\
     ZZCOLLAB_AUTO_RESTORE=false
 
 ${system_deps_install}
