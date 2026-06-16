@@ -46,6 +46,26 @@ _zzc_compute_level() {
     fi
 }
 
+# Write the generator state record (key=value, dependency-free; never
+# hand-edited). Overwrites .zzcollab-state in the current directory. All keys
+# are always written so the schema stays stable; callers pass empty strings for
+# fields they do not know (e.g. cmd_init has no base image yet). zzc status and
+# the toggle commands read this for robust read-back instead of re-parsing the
+# Dockerfile (toggle plan, Section 4).
+#   $1 r_version  $2 base_image:tag  $3 base_digest  $4 ppm_snapshot  $5 install_mode
+_zzc_write_state() {
+    {
+        echo "schema=1"
+        echo "template_version=${ZZCOLLAB_TEMPLATE_VERSION:-unknown}"
+        echo "r_version=${1:-}"
+        echo "base_image=${2:-}"
+        echo "base_digest=${3:-}"
+        echo "ppm_snapshot=${4:-}"
+        echo "install_mode=${5:-}"
+        echo "generated=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    } > .zzcollab-state
+}
+
 # Read a key from the generator-written .zzcollab-state record (key=value,
 # dependency-free). Echoes the value, or nothing if absent.
 _zzc_state_get() {

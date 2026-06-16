@@ -283,6 +283,15 @@ cmd_init() {
     # Run project setup
     setup_project_safe || exit 1
 
+    # Every zzcollab project carries a state record, so no-Docker compendia have
+    # provenance and the toggle commands never hit a missing-state fallback.
+    # Write a minimal record (R version from config/default; environment fields
+    # empty until Docker is added) only when none exists, so a fuller record
+    # written by a later 'zzc docker' or an existing project is not clobbered.
+    if [[ ! -f .zzcollab-state ]]; then
+        _zzc_write_state "${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}" "" "" "" ""
+    fi
+
     log_success "Project setup complete"
     echo ""
     echo "  To change user-level defaults:     zzc config set KEY VALUE"
