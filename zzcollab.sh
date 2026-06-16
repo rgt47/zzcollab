@@ -438,6 +438,7 @@ cmd_docker() {
     local r_version=""
     local base_image=""
     local profile=""
+    local no_renv=""
     # Global flags (-v/-q/-y/--no-build) are consumed by the pre-scan in main()
     # before this runs, so they are not handled here.
     while [[ $# -gt 0 ]]; do
@@ -446,6 +447,7 @@ cmd_docker() {
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; shift 2 ;;
+            --no-renv) no_renv=true; shift ;;
             help|--help|-h) show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
@@ -475,24 +477,30 @@ cmd_docker() {
         fi
     fi
 
-    # Ensure renv.lock exists (required by Dockerfile)
-    if [[ ! -f "renv.lock" ]]; then
-        log_info "No renv.lock found, creating minimal lockfile..."
+    # Determine R version: CLI arg > config > default.
+    if [[ -z "$r_version" ]]; then
+        load_config 2>/dev/null || true
+        r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
+    fi
 
-        # Determine R version: CLI arg > config > default
-        if [[ -z "$r_version" ]]; then
-            load_config 2>/dev/null || true
-            r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
+    # renv is the default backend: create a minimal renv.lock if absent so the
+    # Dockerfile restores from it. --no-renv opts into DESCRIPTION-install mode,
+    # in which the Dockerfile self-adapts to the absence of renv.lock (the
+    # install step branches on presence; see modules/docker.sh). This severs
+    # the old coupling that always wrote a minimal lockfile.
+    if [[ "$no_renv" == "true" ]]; then
+        if [[ -f "renv.lock" ]]; then
+            log_warn "--no-renv given but renv.lock exists; renv mode will be used."
+            log_info "Run 'zzc rm renv' first for DESCRIPTION-install mode."
+        else
+            log_info "--no-renv: no renv.lock; Dockerfile installs from DESCRIPTION."
         fi
-
-        # Verify the chosen R version exists as a tag for BASE_IMAGE; fall
-        # back to the latest published tag if not (e.g., CRAN has 4.6.0 but
-        # rocker/tidyverse has only 4.5.3).
-
+    elif [[ ! -f "renv.lock" ]]; then
+        log_info "No renv.lock found, creating minimal lockfile..."
         create_renv_lock_minimal "$r_version"
     fi
 
-    [[ -n "$r_version" ]] && export R_VERSION="$r_version"
+    export R_VERSION="$r_version"
 
     # Generate Dockerfile + renv.lock (wizard handles new workspaces)
     generate_dockerfile || exit 1
@@ -1931,6 +1939,10 @@ main() {
                             ;;
                         -b|--build)
                             docker_args+=("--build")
+                            shift
+                            ;;
+                        --no-renv)
+                            docker_args+=("--no-renv")
                             shift
                             ;;
                         --r-version|--base-image)

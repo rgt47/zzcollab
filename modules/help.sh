@@ -104,6 +104,7 @@ DOCKER
   zzc docker --build          Generate and build the image
   zzc docker --profile NAME   Use a specific profile
   zzc docker --base-image IMG Use a custom base image
+  zzc docker --no-renv        Install from DESCRIPTION (no renv.lock)
 
 Make targets:
   make docker-build           Build image (runs check-binaries first)
