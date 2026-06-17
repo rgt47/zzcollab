@@ -520,10 +520,8 @@ EOF
                 esac ;;
             docker_runtime)
                 case "$value" in
-                    docker|podman) ;;
-                    apptainer) log_error "apptainer is not yet wired into the Makefile; use docker or podman"
-                       return 1 ;;
-                    *) log_error "Unknown runtime: $value (valid: docker, podman)"
+                    docker|podman|apptainer) ;;
+                    *) log_error "Unknown runtime: $value (valid: docker, podman, apptainer)"
                        return 1 ;;
                 esac ;;
         esac

@@ -649,12 +649,12 @@ test_runtime_config_default_podman() {
     teardown_test
 }
 
-test_runtime_rejects_apptainer() {
+test_runtime_rejects_unknown() {
     setup_test
     _seed_config
     local rc=0
-    bash "$ZZCOLLAB_SH" config set docker-runtime apptainer > /dev/null 2>&1 || rc=$?
-    assert_equals "1" "$rc" "runtime: apptainer rejected (not yet wired)"
+    bash "$ZZCOLLAB_SH" config set docker-runtime singularity > /dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "runtime: unknown value rejected (valid: docker, podman, apptainer)"
     teardown_test
 }
 
@@ -775,6 +775,38 @@ test_blog_render_workflow_includes_posts() {
     local n
     n=$(grep -c 'list.files("analysis/posts"' "$wf")
     assert_equals "3" "$n" "render: posts collected in all three backend branches"
+}
+
+##############################################################################
+# Apptainer runtime: a SIF built from the project image, run via apptainer
+# exec/shell (no --platform). Verified by config + `make -n` (no apptainer run).
+##############################################################################
+
+test_apptainer_config_accepted() {
+    setup_test
+    _seed_config
+    bash "$ZZCOLLAB_SH" config set docker-runtime apptainer > /dev/null 2>&1
+    assert_equals "apptainer" "$(bash "$ZZCOLLAB_SH" config get docker-runtime 2>/dev/null)" \
+        "apptainer: accepted as a runtime"
+    teardown_test
+}
+
+test_apptainer_makefile_wiring() {
+    command -v make >/dev/null 2>&1 || { echo "SKIP: make not available"; return 0; }
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    # run targets exec the SIF under the apptainer runtime
+    make CONTAINER_RUNTIME=apptainer -n docker-document 2>/dev/null \
+        | grep -q 'apptainer exec env.sif' \
+        || { echo "FAIL: docker-document not via apptainer exec"; teardown_test; return 1; }
+    # the SIF build target uses apptainer build
+    make -n sif 2>/dev/null | grep -q 'apptainer build env.sif' \
+        || { echo "FAIL: sif target missing"; teardown_test; return 1; }
+
+    teardown_test
 }
 
 ##############################################################################
