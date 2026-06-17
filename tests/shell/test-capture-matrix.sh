@@ -433,9 +433,10 @@ test_init_wizard_recommends_renv_docker() {
     setup_test
     _seed_config
     cd proj
-    # Interactive (no ACCEPT_DEFAULTS), no build. 7 checklist prompts kept at
+    # Interactive (no ACCEPT_DEFAULTS), no build. First line answers the
+    # archetype prompt (empty -> analysis); then 7 checklist prompts kept at
     # their defaults (backend=renv, docker=on recommended) + confirm y.
-    printf '\n\n\n\n\n\n\ny\n' \
+    printf '\n\n\n\n\n\n\n\ny\n' \
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
 
     assert_file_exists "renv.lock"  "init wizard: recommended renv enabled"
@@ -515,8 +516,9 @@ test_toggle_global_affects_init() {
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle --global > /dev/null 2>&1
 
     cd proj
-    # Interactive init accepting defaults: renv recommended on, Docker now off.
-    printf '\n\n\n\n\n\n\ny\n' \
+    # Interactive init: archetype prompt (empty -> analysis), then the wizard
+    # accepting defaults (renv recommended on, Docker now off from global).
+    printf '\n\n\n\n\n\n\n\ny\n' \
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
 
     assert_file_exists "renv.lock"            "global->init: renv still recommended"
@@ -725,6 +727,35 @@ test_nix_makefile_wiring() {
     _zzc nix || { echo "FAIL: zzc nix"; teardown_test; return 1; }
     make -n test 2>/dev/null | grep -q 'nix develop -c R' \
         || { echo "FAIL: nix target not via nix develop"; teardown_test; return 1; }
+
+    teardown_test
+}
+
+##############################################################################
+# Archetype depth: interactive init prompt and a distinct blog layout.
+##############################################################################
+
+test_archetype_blog_layout() {
+    setup_test
+    _seed_config
+    ( cd proj && _zzc init --force --archetype blog ) \
+        || { echo "FAIL: init blog"; teardown_test; return 1; }
+    assert_file_exists "proj/analysis/posts/first-post.Rmd" "blog: posts/ layout scaffolded"
+    teardown_test
+}
+
+test_archetype_interactive_prompt() {
+    setup_test
+    _seed_config
+    cd proj
+    # Not accept-defaults, so the archetype prompt fires. Answer 'blog', then
+    # step through the init feature wizard (7 prompts kept) and decline the
+    # confirm so no features change.
+    printf 'blog\n\n\n\n\n\n\n\nn\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
+
+    assert_equals "blog" "$(_state_get archetype)" "interactive: archetype from prompt"
+    assert_file_exists "analysis/posts/first-post.Rmd" "interactive: blog layout applied"
 
     teardown_test
 }
