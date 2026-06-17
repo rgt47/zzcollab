@@ -445,6 +445,47 @@ test_init_wizard_recommends_renv_docker() {
 }
 
 ##############################################################################
+# Section 12.3 couplings/nudges enforced by the wizard.
+##############################################################################
+
+# Enabling CI when no report exists offers to scaffold one (answered yes here).
+test_coupling_render_scaffolds_report() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    rm -rf .github/workflows
+    find analysis -name 'report.Rmd' -delete 2>/dev/null
+    assert_false "[[ -n \"\$(find analysis -name report.Rmd)\" ]]" "coupling: no report to start"
+
+    # backend keep, docker keep, ci ON, data/code-quality/tests/cloud keep,
+    # confirm y, scaffold-report y.
+    printf '\n\non\n\n\n\n\ny\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
+
+    assert_file_exists "analysis/report/report.Rmd" "coupling: report scaffolded on CI enable"
+
+    teardown_test
+}
+
+# Choosing renv while leaving Docker off surfaces the L1/L2 nudge.
+test_coupling_renv_docker_nudge() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    local out
+    # backend renv, docker off, rest keep, decline the confirm (no changes).
+    out=$(printf 'renv\noff\n\n\n\n\n\nn\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle 2>&1)
+    echo "$out" | grep -q "renv pins packages" \
+        || { echo "FAIL: renv/Docker nudge not shown"; teardown_test; return 1; }
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

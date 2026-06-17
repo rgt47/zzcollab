@@ -162,6 +162,12 @@ run_feature_wizard() {
         want_cloud=$(_toggle_ask   "Cloud launch (devcontainer)" "$def_cloud")
     fi
 
+    # Backend nudge (advisory, not a constraint): renv pins packages (L1) but
+    # reaches L2 only with Docker; flag the gap rather than forcing it.
+    if [[ "$want_backend" == renv && "$want_docker" == off ]]; then
+        echo "  Note: renv pins packages (L1); enable Docker to pin the environment (L2)."
+    fi
+
     # --- Diff desired against current --------------------------------------
     local -a changes=()
     [[ "$want_backend" != "$cur_backend" ]] && changes+=("backend: $cur_backend -> $want_backend")
@@ -211,7 +217,29 @@ run_feature_wizard() {
     fi
 
     if [[ "$want_ci" != "$cur_ci" ]]; then
-        if [[ "$want_ci" == on ]]; then _toggle_add_ci && log_success "Installed CI workflows"; else cmd_rm_cicd; fi
+        if [[ "$want_ci" == on ]]; then
+            _toggle_add_ci && log_success "Installed CI workflows"
+            # Coupling: the render workflow renders analysis/**/report.Rmd. With
+            # no report it has nothing to render, so offer to scaffold one.
+            if [[ -z "$(find analysis -name 'report.Rmd' 2>/dev/null | head -1)" ]] \
+               && [[ -f "$ZZCOLLAB_TEMPLATES_DIR/report.Rmd" ]]; then
+                local _scaffold=false
+                if [[ "$use_gum" == true ]]; then
+                    gum_confirm "Render CI is on but no report exists. Scaffold analysis/report/report.Rmd?" && _scaffold=true
+                else
+                    local _a
+                    zzc_read -r -p "  Render CI is on but no report exists. Scaffold analysis/report/report.Rmd? [y/N]: " _a
+                    [[ "$_a" =~ ^[Yy]$ ]] && _scaffold=true
+                fi
+                if [[ "$_scaffold" == true ]]; then
+                    mkdir -p analysis/report
+                    install_template "report.Rmd" "analysis/report/report.Rmd" "report" \
+                        && log_success "Scaffolded analysis/report/report.Rmd"
+                fi
+            fi
+        else
+            cmd_rm_cicd
+        fi
     fi
 
     [[ "$want_data" != "$cur_data" ]] && { [[ "$want_data" == on ]] && cmd_data || cmd_rm_data; }
