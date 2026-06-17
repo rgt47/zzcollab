@@ -911,11 +911,25 @@ build_docker_image() {
     [[ -n "$dockerfile_hash" ]] && build_args+=(--label "zzcollab.dockerfile.hash=$dockerfile_hash")
     [[ "$no_cache" == "true" ]] && build_args+=(--no-cache)
 
-    if DOCKER_BUILDKIT=1 docker build ${build_args[@]+"${build_args[@]}"} -t "$project_name" .; then
-        log_success "Docker image '$project_name' built successfully"
-        log_info "Run: docker run -it --rm -v \$(pwd):/home/analyst/project $project_name"
+    # Container runtime for the local build: docker (BuildKit) or podman, which
+    # accepts the same build flags. (Multi-arch team publishing uses docker
+    # buildx and stays docker-specific; see the Makefile.)
+    [[ -z "${CONFIG_DOCKER_RUNTIME:-}" ]] && load_config 2>/dev/null || true
+    local runtime="${CONFIG_DOCKER_RUNTIME:-docker}"
+    log_info "Building image with $runtime..."
+
+    local _built=false
+    if [[ "$runtime" == "docker" ]]; then
+        DOCKER_BUILDKIT=1 docker build ${build_args[@]+"${build_args[@]}"} -t "$project_name" . && _built=true
     else
-        log_error "Docker build failed"
+        "$runtime" build ${build_args[@]+"${build_args[@]}"} -t "$project_name" . && _built=true
+    fi
+
+    if [[ "$_built" == true ]]; then
+        log_success "Image '$project_name' built successfully ($runtime)"
+        log_info "Run: $runtime run -it --rm -v \$(pwd):/home/analyst/project $project_name"
+    else
+        log_error "Image build failed ($runtime)"
         return 1
     fi
 }

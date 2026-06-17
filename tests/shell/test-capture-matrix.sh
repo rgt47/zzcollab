@@ -629,6 +629,9 @@ test_runtime_makefile_parameterised() {
     assert_true "grep -q 'CONTAINER_RUNTIME ?= docker' Makefile" "runtime: default docker baked"
     assert_true "grep -q '[$][(]CONTAINER_RUNTIME[)] run' Makefile" "runtime: run uses the variable"
     assert_false "grep -qE '^[[:space:]]*docker run' Makefile" "runtime: no bare 'docker run' left"
+    # Local image management (rmi) is runtime-aware too; multi-arch team
+    # publishing (buildx) stays docker-specific.
+    assert_true "grep -q '[$][(]CONTAINER_RUNTIME[)] rmi' Makefile" "runtime: docker-clean uses the variable"
 
     teardown_test
 }
