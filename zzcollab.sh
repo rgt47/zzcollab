@@ -886,6 +886,72 @@ cmd_rm_cloud() {
     fi
 }
 
+# cmd_nix - Nix backend (capture choice, mutually exclusive with renv). Writes a
+# starter flake.nix pinning the whole environment to one nixpkgs revision (L2
+# without a container). Presence of flake.nix/default.nix is the backend's on
+# state (zzc status); flake.lock is the exact pin (the renv.lock analogue).
+cmd_nix() {
+    case "${1:-}" in
+        help|--help|-h)
+            cat << 'EOF'
+NIX BACKEND
+
+Writes a starter flake.nix that pins R, packages, and system libraries to
+one nixpkgs revision - reproducibility level L2 without a container.
+
+USAGE:
+    zzcollab nix          # write flake.nix
+    zzcollab rm nix       # remove the Nix files
+
+Next steps:
+    nix flake update      # write flake.lock (the exact pin)
+    nix develop           # enter the environment
+
+Nix and renv are mutually exclusive backends; switch between them with
+'zzc toggle'. For exact DESCRIPTION-tracked packages, regenerate the flake
+with rix::rix().
+EOF
+            return 0 ;;
+    esac
+
+    ensure_workspace_initialized "nix" || exit 1
+
+    if [[ -f renv.lock ]]; then
+        log_error "renv.lock present: renv and Nix are mutually exclusive backends."
+        log_info "Switch with 'zzc toggle' (backend: nix), or run 'zzc rm renv' first."
+        return 1
+    fi
+    if [[ -f flake.nix || -f default.nix ]]; then
+        log_info "Nix backend already present (flake.nix/default.nix)."
+        return 0
+    fi
+    if [[ ! -f "$ZZCOLLAB_TEMPLATES_DIR/flake.nix" ]]; then
+        log_error "flake.nix template not found."
+        return 1
+    fi
+
+    # Copy without variable substitution: the flake uses nix ${...}
+    # interpolation, which envsubst would mangle.
+    safe_cp "$ZZCOLLAB_TEMPLATES_DIR/flake.nix" flake.nix
+    log_success "Created flake.nix (Nix backend)"
+    echo "  Pin and enter the environment:"
+    echo "    nix flake update      # writes flake.lock (the exact pin)"
+    echo "    nix develop           # enter the R environment"
+    echo "  For exact DESCRIPTION-tracked packages, regenerate with rix::rix()."
+}
+
+cmd_rm_nix() {
+    local removed=0
+    for f in flake.nix default.nix flake.lock; do
+        [[ -f "$f" ]] && rm -f "$f" && removed=1
+    done
+    if [[ "$removed" -eq 1 ]]; then
+        log_success "Removed Nix backend (flake.nix/default.nix/flake.lock)"
+    else
+        log_info "No Nix files to remove"
+    fi
+}
+
 cmd_validate() {
     # Dependency validation is delegated to the zzrenvcheck R package.
     # Runs on the host if R + zzrenvcheck are installed; otherwise advises
@@ -1641,8 +1707,42 @@ cmd_tools() {
 }
 
 #=============================================================================
-# REMOVE COMMANDS
+# ADD / REMOVE COMMANDS
 #=============================================================================
+
+# cmd_add - explicit add form mirroring cmd_rm. Routes 'zzc add <feature>' to
+# the per-feature command, passing through any flags (e.g. add docker
+# --base-image IMG). The bare verbs (zzc docker, zzc renv, ...) still work; this
+# is the symmetric, discoverable form the plan's explicit-flags note assumes.
+cmd_add() {
+    local feature="${1:-}"
+    shift || true
+    case "$feature" in
+        docker)        cmd_docker "$@" ;;
+        renv)          cmd_renv "$@" ;;
+        nix)           cmd_nix "$@" ;;
+        data)          cmd_data "$@" ;;
+        code-quality)  cmd_code_quality "$@" ;;
+        tests)         cmd_tests "$@" ;;
+        cloud)         cmd_cloud "$@" ;;
+        github)        cmd_github "$@" ;;
+        cicd)
+            ensure_workspace_initialized "cicd" || return 1
+            _toggle_add_ci && log_success "Installed CI workflows"
+            ;;
+        ""|help|--help|-h)
+            echo "Usage: zzcollab add <feature> [options]"
+            echo "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github"
+            echo "Equivalent to the bare verbs (zzc docker, zzc renv, ...); 'rm' is the inverse."
+            [[ -z "$feature" ]] && return 1 || return 0
+            ;;
+        *)
+            log_error "Unknown feature: $feature"
+            log_info "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github"
+            return 1
+            ;;
+    esac
+}
 
 cmd_rm() {
     local feature="${1:-}"
@@ -1676,17 +1776,20 @@ cmd_rm() {
         cloud)
             cmd_rm_cloud
             ;;
+        nix)
+            cmd_rm_nix
+            ;;
         all)
             cmd_rm_all "$@"  # Pass through flags like -f, --force
             ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
-            log_info "Features: docker, renv, git, github, cicd, data, code-quality, tests, cloud, all"
+            log_info "Features: docker, renv, nix, git, github, cicd, data, code-quality, tests, cloud, all"
             return 1
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, git, github, cicd, data, code-quality, tests, cloud, all"
+            log_info "Features: docker, renv, nix, git, github, cicd, data, code-quality, tests, cloud, all"
             return 1
             ;;
     esac
@@ -2193,6 +2296,11 @@ main() {
                 cmd_cloud "$@"
                 exit $?
                 ;;
+            nix)
+                shift
+                cmd_nix "$@"
+                exit $?
+                ;;
             tools)
                 cmd_tools
                 commands_run=$((commands_run + 1))
@@ -2295,6 +2403,14 @@ main() {
                 ;;
 
             # Remove command
+            add)
+                # Explicit, non-interactive add form mirroring 'rm'. Routes to
+                # the per-feature commands so scripts/CI never hit the wizard.
+                shift
+                cmd_add "$@"
+                exit $?
+                ;;
+
             rm)
                 shift
                 if [[ $# -eq 0 ]]; then

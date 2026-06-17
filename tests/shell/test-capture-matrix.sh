@@ -526,6 +526,134 @@ test_toggle_global_affects_init() {
 }
 
 ##############################################################################
+# Nix backend: mutually exclusive with renv; flake.nix is the presence signal
+# (status reports backend nix at L2). Nix is not evaluated here (no nix).
+##############################################################################
+
+test_nix_backend_add_remove() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    _zzc nix || { echo "FAIL: zzc nix"; teardown_test; return 1; }
+    assert_file_exists "flake.nix" "nix: flake.nix created"
+    assert_equals "L2" "$(_status_level)" "nix: level L2 (env pinned without container)"
+
+    _zzc rm nix
+    assert_false "[[ -f flake.nix ]]" "nix: flake.nix removed"
+
+    teardown_test
+}
+
+test_nix_renv_mutually_exclusive() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    _zzc renv || { echo "FAIL: renv"; teardown_test; return 1; }
+
+    # zzc nix must refuse while renv.lock is present (single-select backend).
+    _zzc nix
+    assert_false "[[ -f flake.nix ]]" "nix: refused while renv.lock present"
+    assert_file_exists "renv.lock" "nix: renv.lock untouched by refused nix"
+
+    teardown_test
+}
+
+test_toggle_backend_renv_to_nix() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    _zzc renv || { echo "FAIL: renv"; teardown_test; return 1; }
+
+    # backend nix, then 6 feature prompts kept, confirm y.
+    printf 'nix\n\n\n\n\n\n\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
+
+    assert_file_exists "flake.nix"        "toggle: switched to nix"
+    assert_false "[[ -f renv.lock ]]"     "toggle: renv removed (backends exclusive)"
+
+    teardown_test
+}
+
+##############################################################################
+# Explicit 'zzc add <feature>' form, symmetric with 'zzc rm <feature>'.
+##############################################################################
+
+test_add_form_routes_to_features() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    echo "row" > analysis/data/raw_data/d.csv
+
+    _zzc add data         || { echo "FAIL: add data"; teardown_test; return 1; }
+    _zzc add code-quality || { echo "FAIL: add code-quality"; teardown_test; return 1; }
+    assert_file_exists "data-manifest.sha256"    "add: data routed"
+    assert_file_exists ".pre-commit-config.yaml" "add: code-quality routed"
+
+    # add/rm are inverses.
+    _zzc rm data
+    assert_false "[[ -f data-manifest.sha256 ]]" "add/rm: symmetric"
+
+    teardown_test
+}
+
+test_add_unknown_feature_fails() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    local rc=0
+    ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" add bogus > /dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "add: unknown feature exits non-zero"
+    teardown_test
+}
+
+##############################################################################
+# Container-runtime parameter (Podman). The Makefile uses $(CONTAINER_RUNTIME)
+# for run commands, defaulting to the configured docker.runtime (else docker),
+# overridable with `make CONTAINER_RUNTIME=...`.
+##############################################################################
+
+test_runtime_makefile_parameterised() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    assert_true "grep -q 'CONTAINER_RUNTIME ?= docker' Makefile" "runtime: default docker baked"
+    assert_true "grep -q '[$][(]CONTAINER_RUNTIME[)] run' Makefile" "runtime: run uses the variable"
+    assert_false "grep -qE '^[[:space:]]*docker run' Makefile" "runtime: no bare 'docker run' left"
+
+    teardown_test
+}
+
+test_runtime_config_default_podman() {
+    setup_test
+    _seed_config
+    # Configure podman as the default before generating the project.
+    bash "$ZZCOLLAB_SH" config set docker-runtime podman > /dev/null 2>&1
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    assert_true "grep -q 'CONTAINER_RUNTIME ?= podman' Makefile" "runtime: configured podman baked as default"
+
+    teardown_test
+}
+
+test_runtime_rejects_apptainer() {
+    setup_test
+    _seed_config
+    local rc=0
+    bash "$ZZCOLLAB_SH" config set docker-runtime apptainer > /dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "runtime: apptainer rejected (not yet wired)"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

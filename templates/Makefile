@@ -34,9 +34,14 @@ RAW_DATA_DIR ?= analysis/data/raw_data
 # PLATFORM is pinned so every batch container run matches CI and the cached
 # test target rather than the host architecture (the real prior inconsistency).
 PLATFORM       ?= linux/amd64
+# Container runtime: docker (default) or podman (drop-in for `run`). The
+# default below is the configured zzcollab runtime; override per-invocation
+# with `make CONTAINER_RUNTIME=podman r`. (Apptainer needs a different recipe
+# and is not yet wired here.)
+CONTAINER_RUNTIME ?= $CONTAINER_RUNTIME
 CONTAINER_USER := $(shell grep '^ARG USERNAME=' Dockerfile 2>/dev/null | head -1 | cut -d= -f2)
 CONTAINER_HOME := /home/$(if $(CONTAINER_USER),$(CONTAINER_USER),analyst)
-DOCKER_RUN = docker run --rm --platform $(PLATFORM) \
+DOCKER_RUN = $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
     -v "$(CURDIR)":$(CONTAINER_HOME)/project \
     -w $(CONTAINER_HOME)/project $(PACKAGE_NAME)
 
@@ -91,7 +96,7 @@ r: ## Interactive container R session (all profiles)
 	echo "🐳 Starting R ($$PROFILE)..."; \
 	echo ""; \
 	mkdir -p $$HOME/.cache/R/renv 2>/dev/null || true; \
-	docker run --rm -it \
+	$(CONTAINER_RUNTIME) run --rm -it \
 		--platform $(PLATFORM) \
 		-v $$(pwd):$$HOME_DIR/project \
 		-v $$HOME/.cache/R/renv:/opt/renv/cache \
@@ -124,7 +129,7 @@ docker-rstudio: ## RStudio Server at http://localhost:8787
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: rstudio, Password: rstudio"
 	@echo "Terminal available for code editing with vim"
-	docker run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
+	$(CONTAINER_RUNTIME) run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
 # Alias for rstudio
 rstudio: docker-rstudio ## Alias for docker-rstudio
@@ -195,7 +200,7 @@ TEST_SOURCES := $(wildcard R/*.R) $(wildcard inst/tinytest/*.R)
 
 .make/tests-passed: $(TEST_SOURCES) renv.lock
 	@mkdir -p .make
-	docker run --rm \
+	$(CONTAINER_RUNTIME) run --rm \
 		--platform $(PLATFORM) \
 		-v "$(CURDIR)":$(CONTAINER_HOME)/project \
 		-w $(CONTAINER_HOME)/project \
