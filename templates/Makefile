@@ -34,11 +34,12 @@ RAW_DATA_DIR ?= analysis/data/raw_data
 # PLATFORM is pinned so every batch container run matches CI and the cached
 # test target rather than the host architecture (the real prior inconsistency).
 PLATFORM       ?= linux/amd64
-# Container runtime: docker (default) or podman (drop-in for `run`). The
-# default below is the configured zzcollab runtime; override per-invocation
-# with `make CONTAINER_RUNTIME=podman r`. (Apptainer needs a different recipe
-# and is not yet wired here.)
+# Container runtime: docker (default), podman (drop-in for `run`), or apptainer
+# (HPC; executes a SIF built from the project image, no --platform). The default
+# below is the configured zzcollab runtime; override per-invocation with
+# `make CONTAINER_RUNTIME=podman r`.
 CONTAINER_RUNTIME ?= $CONTAINER_RUNTIME
+SIF ?= env.sif
 # Backend-aware prefix for the host-style R targets (document, build, check,
 # test, ...). With a Nix flake present the environment is entered via
 # `nix develop -c`; otherwise the commands run on the host (renv) directly.
@@ -50,9 +51,15 @@ else
 endif
 CONTAINER_USER := $(shell grep '^ARG USERNAME=' Dockerfile 2>/dev/null | head -1 | cut -d= -f2)
 CONTAINER_HOME := /home/$(if $(CONTAINER_USER),$(CONTAINER_USER),analyst)
-DOCKER_RUN = $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
+# Apptainer execs a SIF (auto-binds the CWD; no --platform); docker/podman run
+# the OCI image with explicit mounts. Both expose the project at the CWD.
+ifeq ($(CONTAINER_RUNTIME),apptainer)
+  DOCKER_RUN = apptainer exec $(SIF)
+else
+  DOCKER_RUN = $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
     -v "$(CURDIR)":$(CONTAINER_HOME)/project \
     -w $(CONTAINER_HOME)/project $(PACKAGE_NAME)
+endif
 
 # Self-documenting help. Targets are described with a trailing `## text` and
 # grouped by `##@ Section` markers, so the listing cannot drift from reality.
@@ -81,8 +88,16 @@ check-renv-no-strict: ## Validate deps: skip tests/ and vignettes/
 # Terminal: Interactive bash for vim editing.
 # No check-renv prerequisite: that spins up a full container validation before
 # you get a shell, and a second validation already runs after the session.
-r: ## Interactive R session (Docker, or `nix develop` with a flake)
-	@if [ -f flake.nix ]; then \
+r: ## Interactive R session (Docker/Podman, nix develop, or apptainer shell)
+	@if [ "$(CONTAINER_RUNTIME)" = apptainer ]; then \
+		if [ ! -f $(SIF) ]; then \
+			echo "No $(SIF) found - build it first: make sif"; exit 1; \
+		fi; \
+		echo "📦 Apptainer: entering 'apptainer shell $(SIF)'..."; \
+		apptainer shell $(SIF); \
+		exit 0; \
+	fi; \
+	if [ -f flake.nix ]; then \
 		echo "❄️  Nix backend detected; entering 'nix develop'..."; \
 		nix develop; \
 		exit 0; \
@@ -193,6 +208,15 @@ docker-rebuild: ## Rebuild image without cache (force fresh build)
 
 docker-build-log: ## Build image with detailed logs (for debugging)
 	zzcollab rebuild --log
+
+##@ Apptainer (HPC)
+
+# Build the SIF from the project's local docker/podman image (build it first
+# with `make docker-build`). On a cluster you would instead build from the
+# digest-pinned team image: apptainer build $(SIF) docker://ACCOUNT/IMAGE@sha256:...
+sif: ## Build env.sif from the project image (apptainer runtime)
+	apptainer build $(SIF) docker-daemon://$(PACKAGE_NAME):latest
+	@echo "✅ Built $(SIF). Use it: make CONTAINER_RUNTIME=apptainer r"
 
 ##@ Docker package operations
 

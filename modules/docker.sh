@@ -916,6 +916,12 @@ build_docker_image() {
     # buildx and stays docker-specific; see the Makefile.)
     [[ -z "${CONFIG_DOCKER_RUNTIME:-}" ]] && load_config 2>/dev/null || true
     local runtime="${CONFIG_DOCKER_RUNTIME:-docker}"
+    # Apptainer execs a SIF built from an OCI image, so the local image is still
+    # built with docker (the SIF source); 'make sif' then converts it.
+    if [[ "$runtime" == "apptainer" ]]; then
+        runtime="docker"
+        log_info "Apptainer runtime: building the OCI image with docker; run 'make sif' to convert."
+    fi
     log_info "Building image with $runtime..."
 
     local _built=false
