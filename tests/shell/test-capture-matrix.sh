@@ -486,6 +486,46 @@ test_coupling_renv_docker_nudge() {
 }
 
 ##############################################################################
+# zzc toggle --global: edits the new-project feature defaults in config,
+# which the init wizard then honours. No project artifacts change.
+##############################################################################
+
+test_toggle_global_writes_config() {
+    setup_test
+    _seed_config
+    # global mode needs no workspace; run from the temp root.
+    # 7 prompts: backend renv, docker off, ci keep, data ON, code-quality keep,
+    # tests keep, cloud keep (no confirm step in global mode).
+    printf 'renv\noff\n\non\n\n\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle --global > /dev/null 2>&1
+
+    assert_equals "off" "$(bash "$ZZCOLLAB_SH" config get features-docker 2>/dev/null)" \
+        "global: docker default saved"
+    assert_equals "on" "$(bash "$ZZCOLLAB_SH" config get features-data 2>/dev/null)" \
+        "global: data default saved"
+
+    teardown_test
+}
+
+test_toggle_global_affects_init() {
+    setup_test
+    _seed_config
+    # Set the global Docker default off, keep the rest at recommendation.
+    printf '\noff\n\n\n\n\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle --global > /dev/null 2>&1
+
+    cd proj
+    # Interactive init accepting defaults: renv recommended on, Docker now off.
+    printf '\n\n\n\n\n\n\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
+
+    assert_file_exists "renv.lock"            "global->init: renv still recommended"
+    assert_false "[[ -f Dockerfile ]]"        "global->init: Docker default off honoured"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

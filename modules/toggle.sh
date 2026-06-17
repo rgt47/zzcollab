@@ -41,31 +41,37 @@ _toggle_ask() {
 }
 
 cmd_toggle() {
+    local mode=toggle
     case "${1:-}" in
         help|--help|-h)
             cat << 'EOF'
 TOGGLE - view and change reproducibility features
 
 USAGE:
-    zzc toggle
+    zzc toggle            # change this project's features
+    zzc toggle --global   # change the defaults new projects start from
 
-Interactively shows the current features (backend, Docker, CI, data
-integrity, code quality), lets you change them, confirms the diff, and
-applies it by reusing the per-feature commands. Cancellation makes no
-changes.
+Interactively shows the features (backend, Docker, CI, data integrity,
+code quality, unit tests, cloud launch), lets you change them, confirms
+the diff, and applies it by reusing the per-feature commands. With
+--global it edits ~/.zzcollab/config.yaml instead of a project.
+Cancellation makes no changes.
 
 For scripts and CI use the explicit commands instead:
-    zzc renv | zzc docker | zzc data | zzc code-quality
+    zzc renv | zzc docker | zzc data | zzc code-quality | zzc tests | zzc cloud
     zzc rm <feature>
 EOF
             return 0 ;;
+        --global) mode=global ;;
     esac
 
-    if [[ ! -f .zzcollab && ! ( -f DESCRIPTION && -f Makefile ) ]]; then
-        log_error "Not a zzcollab workspace (no .zzcollab marker or DESCRIPTION)."
-        return 1
+    if [[ "$mode" != global ]]; then
+        if [[ ! -f .zzcollab && ! ( -f DESCRIPTION && -f Makefile ) ]]; then
+            log_error "Not a zzcollab workspace (no .zzcollab marker or DESCRIPTION)."
+            return 1
+        fi
     fi
-    run_feature_wizard toggle
+    run_feature_wizard "$mode"
 }
 
 # run_feature_wizard [init|toggle] - the one wizard shared by cmd_init (Phase 3,
@@ -93,25 +99,49 @@ run_feature_wizard() {
 
     # --- Detect current state ----------------------------------------------
     local cur_backend cur_docker cur_ci cur_data cur_quality cur_tests cur_cloud
-    cur_backend=$(_zzc_detect_backend ".")
-    [[ "$cur_backend" == "conflict" ]] && { log_error "Backend conflict (renv.lock and a nix file); resolve first."; return 1; }
-    [[ -f Dockerfile ]]                       && cur_docker=on  || cur_docker=off
-    [[ -f .github/workflows/r-package.yml ]]  && cur_ci=on      || cur_ci=off
-    [[ -f data-manifest.sha256 ]]             && cur_data=on    || cur_data=off
-    [[ -f .pre-commit-config.yaml ]]          && cur_quality=on || cur_quality=off
-    [[ -d inst/tinytest ]]                    && cur_tests=on   || cur_tests=off
-    { [[ -d .devcontainer ]] || [[ -d .binder ]]; } && cur_cloud=on || cur_cloud=off
+    if [[ "$mode" == global ]]; then
+        # Global mode reads the configured defaults (empty -> recommendation),
+        # not any project's artifacts.
+        load_config 2>/dev/null || true
+        cur_backend="${CONFIG_FEAT_BACKEND:-renv}"
+        cur_docker="${CONFIG_FEAT_DOCKER:-on}"
+        cur_ci="${CONFIG_FEAT_CI:-on}"
+        cur_data="${CONFIG_FEAT_DATA:-off}"
+        cur_quality="${CONFIG_FEAT_CODE_QUALITY:-off}"
+        cur_tests="${CONFIG_FEAT_TESTS:-on}"
+        cur_cloud="${CONFIG_FEAT_CLOUD:-on}"
+    else
+        cur_backend=$(_zzc_detect_backend ".")
+        [[ "$cur_backend" == "conflict" ]] && { log_error "Backend conflict (renv.lock and a nix file); resolve first."; return 1; }
+        [[ -f Dockerfile ]]                       && cur_docker=on  || cur_docker=off
+        [[ -f .github/workflows/r-package.yml ]]  && cur_ci=on      || cur_ci=off
+        [[ -f data-manifest.sha256 ]]             && cur_data=on    || cur_data=off
+        [[ -f .pre-commit-config.yaml ]]          && cur_quality=on || cur_quality=off
+        [[ -d inst/tinytest ]]                    && cur_tests=on   || cur_tests=off
+        { [[ -d .devcontainer ]] || [[ -d .binder ]]; } && cur_cloud=on || cur_cloud=off
+    fi
 
-    # Pre-selected defaults: current state, except init recommends renv + Docker.
+    # Pre-selected defaults: current state, except init recommends renv + Docker
+    # (overridable by the configured global feature defaults).
     local def_backend="$cur_backend" def_docker="$cur_docker"
     local def_ci="$cur_ci" def_data="$cur_data" def_quality="$cur_quality"
     local def_tests="$cur_tests" def_cloud="$cur_cloud"
     if [[ "$mode" == init ]]; then
-        def_backend="renv"; def_docker="on"
+        load_config 2>/dev/null || true
+        def_backend="${CONFIG_FEAT_BACKEND:-renv}"
+        def_docker="${CONFIG_FEAT_DOCKER:-on}"
+        def_ci="${CONFIG_FEAT_CI:-$cur_ci}"
+        def_data="${CONFIG_FEAT_DATA:-$cur_data}"
+        def_quality="${CONFIG_FEAT_CODE_QUALITY:-$cur_quality}"
+        def_tests="${CONFIG_FEAT_TESTS:-$cur_tests}"
+        def_cloud="${CONFIG_FEAT_CLOUD:-$cur_cloud}"
         echo "Reproducibility setup. Recommended: renv + Docker (untick to skip)."
     fi
 
     echo ""
+    if [[ "$mode" == global ]]; then
+        echo "Global defaults for new projects (~/.zzcollab/config.yaml):"
+    fi
     echo "Current: backend=$cur_backend  docker=$cur_docker  ci=$cur_ci  data=$cur_data  code-quality=$cur_quality  tests=$cur_tests  cloud=$cur_cloud"
     echo ""
 
@@ -166,6 +196,21 @@ run_feature_wizard() {
     # reaches L2 only with Docker; flag the gap rather than forcing it.
     if [[ "$want_backend" == renv && "$want_docker" == off ]]; then
         echo "  Note: renv pins packages (L1); enable Docker to pin the environment (L2)."
+    fi
+
+    # --- Global mode: persist the choices as new-project defaults ----------
+    if [[ "$mode" == global ]]; then
+        config_set features-backend      "$want_backend" >/dev/null
+        config_set features-docker       "$want_docker"  >/dev/null
+        config_set features-ci           "$want_ci"      >/dev/null
+        config_set features-data         "$want_data"    >/dev/null
+        config_set features-code-quality "$want_quality" >/dev/null
+        config_set features-tests        "$want_tests"   >/dev/null
+        config_set features-cloud        "$want_cloud"   >/dev/null
+        echo ""
+        log_success "Saved global feature defaults for new projects."
+        echo "  backend=$want_backend  docker=$want_docker  ci=$want_ci  data=$want_data  code-quality=$want_quality  tests=$want_tests  cloud=$want_cloud"
+        return 0
     fi
 
     # --- Diff desired against current --------------------------------------

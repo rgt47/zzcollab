@@ -38,6 +38,16 @@ CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
 CONFIG_WITH_EXAMPLES="false"
 
+# Feature defaults for new projects (set by 'zzc toggle --global', read by the
+# init feature wizard). Empty means "use the built-in recommendation".
+CONFIG_FEAT_BACKEND=""
+CONFIG_FEAT_DOCKER=""
+CONFIG_FEAT_CI=""
+CONFIG_FEAT_DATA=""
+CONFIG_FEAT_CODE_QUALITY=""
+CONFIG_FEAT_TESTS=""
+CONFIG_FEAT_CLOUD=""
+
 # Extended configuration state - Author
 CONFIG_AUTHOR_NAME=""
 CONFIG_AUTHOR_EMAIL=""
@@ -200,6 +210,15 @@ load_config() {
     CONFIG_SKIP_CONFIRMATION="false"
     CONFIG_WITH_EXAMPLES="false"
 
+    # Reset feature defaults (empty -> built-in recommendation)
+    CONFIG_FEAT_BACKEND=""
+    CONFIG_FEAT_DOCKER=""
+    CONFIG_FEAT_CI=""
+    CONFIG_FEAT_DATA=""
+    CONFIG_FEAT_CODE_QUALITY=""
+    CONFIG_FEAT_TESTS=""
+    CONFIG_FEAT_CLOUD=""
+
     # Reset extended fields
     CONFIG_AUTHOR_NAME=""
     CONFIG_AUTHOR_EMAIL=""
@@ -261,6 +280,13 @@ style.use_native_pipe           CONFIG_STYLE_USE_NATIVE_PIPE
 style.assignment                CONFIG_STYLE_ASSIGNMENT
 docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
 docker.registry                 CONFIG_DOCKER_REGISTRY
+features.backend                CONFIG_FEAT_BACKEND
+features.docker                 CONFIG_FEAT_DOCKER
+features.ci                     CONFIG_FEAT_CI
+features.data                   CONFIG_FEAT_DATA
+features.code_quality           CONFIG_FEAT_CODE_QUALITY
+features.tests                  CONFIG_FEAT_TESTS
+features.cloud                  CONFIG_FEAT_CLOUD
 github.account                  CONFIG_GITHUB_ACCOUNT
 github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
 github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
