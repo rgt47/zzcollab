@@ -888,6 +888,112 @@ cmd_rm_code_quality() {
     fi
 }
 
+# cmd_tests - unit-testing toggle (validation feature). Scaffolds the tinytest
+# infrastructure (tests/tinytest.R + inst/tinytest/). Presence of inst/tinytest/
+# is the feature's on state (zzc status). Reuses the init scaffolder so the
+# layout is identical whether created at init or added later.
+cmd_tests() {
+    case "${1:-}" in
+        help|--help|-h)
+            cat << 'EOF'
+UNIT TESTING (tinytest)
+
+Scaffolds tests/tinytest.R and inst/tinytest/ with an example test.
+
+USAGE:
+    zzcollab tests        # scaffold the tinytest infrastructure
+    zzcollab rm tests     # remove it (feature off)
+
+Run the tests with:  make test   (or: make docker-test)
+EOF
+            return 0 ;;
+    esac
+
+    ensure_workspace_initialized "tests" || exit 1
+    export PKG_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
+    create_test_infrastructure
+    echo ""
+    echo "  Add tests under inst/tinytest/ (bare expect_*() expressions)."
+    echo "  Run them:  make test    (or: make docker-test)"
+}
+
+cmd_rm_tests() {
+    local removed=0
+    [[ -d "inst/tinytest" ]]   && rm -rf "inst/tinytest"   && removed=1
+    [[ -f "tests/tinytest.R" ]] && rm -f "tests/tinytest.R" && removed=1
+    # Leave tests/ itself (it may hold testthat); prune only if now empty.
+    [[ -d "tests" ]] && rmdir "tests" 2>/dev/null || true
+    if [[ "$removed" -eq 1 ]]; then
+        log_success "Removed unit tests (inst/tinytest/, tests/tinytest.R)"
+    else
+        log_info "No tinytest infrastructure to remove"
+    fi
+}
+
+# cmd_cloud - cloud-launch toggle (+ platform parameter). Scaffolds a
+# browser-launchable container config. Presence of .devcontainer/ (or .binder/)
+# is the feature's on state (zzc status). devcontainer drives VS Code / GitHub
+# Codespaces; binder is recognised by status but not yet templated.
+cmd_cloud() {
+    local platform="devcontainer"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --platform) platform="$2"; shift 2 ;;
+            help|--help|-h)
+                cat << 'EOF'
+CLOUD LAUNCH
+
+Scaffolds a config that lets the compendium run in a browser-based
+container.
+
+USAGE:
+    zzcollab cloud                       # devcontainer (Codespaces/VS Code)
+    zzcollab cloud --platform devcontainer
+    zzcollab rm cloud                    # remove cloud config
+
+Platforms: devcontainer (default). binder is detected by 'zzc status'
+but not yet templated.
+EOF
+                return 0 ;;
+            *) log_error "Unknown option: $1"; return 1 ;;
+        esac
+    done
+
+    ensure_workspace_initialized "cloud" || exit 1
+
+    case "$platform" in
+        devcontainer)
+            if [[ ! -f "$ZZCOLLAB_TEMPLATES_DIR/devcontainer.json" ]]; then
+                log_error "devcontainer template not found."
+                return 1
+            fi
+            mkdir -p ".devcontainer"
+            install_template "devcontainer.json" ".devcontainer/devcontainer.json" \
+                "devcontainer config"
+            echo ""
+            echo "  Cloud launch (devcontainer) enabled."
+            echo "  Open in GitHub Codespaces, or VS Code: 'Reopen in Container'."
+            ;;
+        binder)
+            log_error "binder platform is not yet templated; use --platform devcontainer."
+            return 1 ;;
+        *)
+            log_error "Unknown platform: $platform (supported: devcontainer)"
+            return 1 ;;
+    esac
+}
+
+cmd_rm_cloud() {
+    local removed=0
+    [[ -d ".devcontainer" ]] && rm -rf ".devcontainer" && removed=1
+    [[ -d ".binder" ]]       && rm -rf ".binder"       && removed=1
+    if [[ "$removed" -eq 1 ]]; then
+        log_success "Removed cloud launch config (.devcontainer/ and/or .binder/)"
+    else
+        log_info "No cloud launch config to remove"
+    fi
+}
+
 cmd_validate() {
     # Dependency validation is delegated to the zzrenvcheck R package.
     # Runs on the host if R + zzrenvcheck are installed; otherwise advises
@@ -1672,17 +1778,23 @@ cmd_rm() {
         code-quality)
             cmd_rm_code_quality
             ;;
+        tests)
+            cmd_rm_tests
+            ;;
+        cloud)
+            cmd_rm_cloud
+            ;;
         all)
             cmd_rm_all "$@"  # Pass through flags like -f, --force
             ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
-            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, tests, cloud, all"
             return 1
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, tests, cloud, all"
             return 1
             ;;
     esac
@@ -2177,6 +2289,16 @@ main() {
             code-quality)
                 shift
                 cmd_code_quality "$@"
+                exit $?
+                ;;
+            tests)
+                shift
+                cmd_tests "$@"
+                exit $?
+                ;;
+            cloud)
+                shift
+                cmd_cloud "$@"
                 exit $?
                 ;;
             tools)

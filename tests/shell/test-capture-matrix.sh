@@ -364,6 +364,46 @@ test_toggle_enables_features() {
 }
 
 ##############################################################################
+# Unit-testing and cloud-launch toggles (validation features; detected by
+# status, now with add/remove commands).
+##############################################################################
+
+test_toggle_unit_tests() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    # init scaffolds tinytest; start from off.
+    rm -rf inst/tinytest tests/tinytest.R
+    assert_false "[[ -d inst/tinytest ]]" "tests: starts off"
+
+    _zzc tests || { echo "FAIL: zzc tests"; teardown_test; return 1; }
+    assert_dir_exists  "inst/tinytest"    "tests: inst/tinytest scaffolded"
+    assert_file_exists "tests/tinytest.R" "tests: runner scaffolded"
+
+    _zzc rm tests
+    assert_false "[[ -d inst/tinytest ]]" "tests: removed by rm tests"
+
+    teardown_test
+}
+
+test_toggle_cloud_devcontainer() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    rm -rf .devcontainer .binder
+
+    _zzc cloud || { echo "FAIL: zzc cloud"; teardown_test; return 1; }
+    assert_file_exists ".devcontainer/devcontainer.json" "cloud: devcontainer scaffolded"
+
+    _zzc rm cloud
+    assert_false "[[ -d .devcontainer ]]" "cloud: removed by rm cloud"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
