@@ -706,6 +706,30 @@ test_archetype_invalid_rejected() {
 }
 
 ##############################################################################
+# Nix Makefile wiring: host R targets run via `nix develop -c` when a flake is
+# present, on the host otherwise. Verified by `make -n` (no nix toolchain run).
+##############################################################################
+
+test_nix_makefile_wiring() {
+    command -v make >/dev/null 2>&1 || { echo "SKIP: make not available"; return 0; }
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    # Host backend: bare R.
+    make -n test 2>/dev/null | grep -qE '^[[:space:]]*R --quiet' \
+        || { echo "FAIL: host target not bare R"; teardown_test; return 1; }
+
+    # Nix backend: same target wrapped in nix develop -c.
+    _zzc nix || { echo "FAIL: zzc nix"; teardown_test; return 1; }
+    make -n test 2>/dev/null | grep -q 'nix develop -c R' \
+        || { echo "FAIL: nix target not via nix develop"; teardown_test; return 1; }
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

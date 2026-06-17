@@ -39,6 +39,15 @@ PLATFORM       ?= linux/amd64
 # with `make CONTAINER_RUNTIME=podman r`. (Apptainer needs a different recipe
 # and is not yet wired here.)
 CONTAINER_RUNTIME ?= $CONTAINER_RUNTIME
+# Backend-aware prefix for the host-style R targets (document, build, check,
+# test, ...). With a Nix flake present the environment is entered via
+# `nix develop -c`; otherwise the commands run on the host (renv) directly.
+# This is the same presence-branch idiom the Dockerfile and workflows use.
+ifneq ($(wildcard flake.nix),)
+  R_RUN := nix develop -c
+else
+  R_RUN :=
+endif
 CONTAINER_USER := $(shell grep '^ARG USERNAME=' Dockerfile 2>/dev/null | head -1 | cut -d= -f2)
 CONTAINER_HOME := /home/$(if $(CONTAINER_USER),$(CONTAINER_USER),analyst)
 DOCKER_RUN = $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
@@ -72,8 +81,13 @@ check-renv-no-strict: ## Validate deps: skip tests/ and vignettes/
 # Terminal: Interactive bash for vim editing.
 # No check-renv prerequisite: that spins up a full container validation before
 # you get a shell, and a second validation already runs after the session.
-r: ## Interactive container R session (all profiles)
-	@if [ ! -f Dockerfile ]; then \
+r: ## Interactive R session (Docker, or `nix develop` with a flake)
+	@if [ -f flake.nix ]; then \
+		echo "❄️  Nix backend detected; entering 'nix develop'..."; \
+		nix develop; \
+		exit 0; \
+	fi; \
+	if [ ! -f Dockerfile ]; then \
 		echo ""; \
 		echo "❌ No Dockerfile found - workspace not initialized"; \
 		echo ""; \
@@ -134,28 +148,28 @@ docker-rstudio: ## RStudio Server at http://localhost:8787
 # Alias for rstudio
 rstudio: docker-rstudio ## Alias for docker-rstudio
 
-##@ Native R (requires local R installation)
+##@ Native R (host renv, or Nix shell when a flake is present)
 
 document: ## Generate roxygen2 documentation
-	R --quiet -e "devtools::document()"
+	$(R_RUN) R --quiet -e "devtools::document()"
 
 build: document ## R CMD build (documents first)
-	R CMD build .
+	$(R_RUN) R CMD build .
 
 check: build ## R CMD check --as-cran (builds first)
-	R CMD check --as-cran *.tar.gz
+	$(R_RUN) R CMD check --as-cran *.tar.gz
 
 install: document ## devtools::install
-	R --quiet -e "devtools::install()"
+	$(R_RUN) R --quiet -e "devtools::install()"
 
 vignettes: document ## Build vignettes
-	R --quiet -e "devtools::build_vignettes()"
+	$(R_RUN) R --quiet -e "devtools::build_vignettes()"
 
 test: ## Run the tinytest suite
-	R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
+	$(R_RUN) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
 
 deps: ## Install package dependencies
-	R --quiet -e "devtools::install_deps(dependencies = TRUE)"
+	$(R_RUN) R --quiet -e "devtools::install_deps(dependencies = TRUE)"
 
 ##@ Docker build
 
