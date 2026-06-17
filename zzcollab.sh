@@ -308,8 +308,9 @@ cmd_init() {
         return $?
     fi
 
-    # Phase 3: Reproducibility setup
-    prompt_reproducibility_setup
+    # Phase 3: Reproducibility setup, via the shared feature wizard (init mode:
+    # recommends renv + Docker; makes no changes under accept-defaults).
+    run_feature_wizard init
     return 0
 }
 
@@ -333,117 +334,8 @@ init_export_config_vars() {
     export BASE_IMAGE="$base_image"
 }
 
-# Print a summary of what the wizard completed.
-# Args: setup_level (none|renv|docker), docker_profile (string, may be empty)
-_wizard_summary() {
-    local setup_level="${1:-none}" docker_profile="${2:-}"
-    echo ""
-    echo "═══════════════════════════════════════════════════════════"
-    echo "  Setup Summary"
-    echo "═══════════════════════════════════════════════════════════"
-    echo ""
-    printf "  %-10s  %s\n" "Scaffold" "done"
-    case "$setup_level" in
-        renv)
-            printf "  %-10s  %s\n" "renv"   "done"
-            printf "  %-10s  %s\n" "Docker" "skipped  —  run: zzc docker"
-            ;;
-        docker)
-            printf "  %-10s  %s\n" "renv"   "done  (minimal lockfile)"
-            printf "  %-10s  %s\n" "Docker" "done  (profile: $docker_profile)"
-            ;;
-        *)
-            printf "  %-10s  %s\n" "renv"   "skipped  —  run: zzc renv"
-            printf "  %-10s  %s\n" "Docker" "skipped  —  run: zzc docker"
-            ;;
-    esac
-    echo ""
-}
-
-# cmd_init Phase 3: offer renv-only / renv+Docker / none and dispatch to
-# cmd_renv or cmd_docker. Uses only global state, so it extracts cleanly.
-prompt_reproducibility_setup() {
-    echo "───────────────────────────────────────────────────────────"
-    echo "  Reproducibility Setup"
-    echo "───────────────────────────────────────────────────────────"
-    echo ""
-    echo "  Your zzcollab workspace is ready for host R development."
-    echo "  For reproducible research, add package tracking and/or Docker."
-    echo ""
-    echo "  [r] renv only      - Package lockfile for reproducibility"
-    echo "  [d] renv + Docker  - Full containerized environment (recommended)"
-    echo "  [n] None           - Just project structure, configure later"
-    echo ""
-
-    local setup_level="none" docker_profile=""
-
-    if has_gum; then
-        local gum_repro
-        gum_repro=$(gum_choose "Reproducibility Setup" \
-            "renv + Docker  - Full containerized environment (recommended)" \
-            "renv only      - Package lockfile for reproducibility" \
-            "None           - Just project structure, configure later" \
-            "Stop here      - Exit wizard and show summary") || \
-            gum_repro="Stop here"
-        case "$gum_repro" in
-            "renv + Docker"*)
-                local gum_profile
-                gum_profile=$(gum_choose "Choose a profile" \
-                    "analysis  - tidyverse + data science tools (recommended)" \
-                    "minimal   - base R only" \
-                    "rstudio   - RStudio Server" \
-                    "Stop here - Skip Docker and show summary") || \
-                    gum_profile="Stop here"
-                case "$gum_profile" in
-                    "Stop here"*)
-                        log_info "Docker setup cancelled. Run 'zzc docker' later."
-                        ;;
-                    *)
-                        docker_profile=$(echo "$gum_profile" | cut -d' ' -f1)
-                        cmd_docker --profile "$docker_profile"
-                        setup_level="docker"
-                        ;;
-                esac
-                ;;
-            "renv only"*)
-                cmd_renv
-                setup_level="renv"
-                ;;
-            *)
-                log_info "Skipping reproducibility setup."
-                log_info "Run 'zzc renv' or 'zzc docker' when ready."
-                ;;
-        esac
-    else
-        local repro_choice
-        zzc_read -r -p "Add reproducibility? [r/d/N]: " repro_choice
-        case "$repro_choice" in
-            r|R)
-                cmd_renv
-                setup_level="renv"
-                ;;
-            d|D)
-                local profile_choice
-                zzc_read -r -p "Profile [analysis/minimal/rstudio] (default: analysis): " \
-                    profile_choice
-                docker_profile="${profile_choice:-analysis}"
-                cmd_docker --profile "$docker_profile"
-                setup_level="docker"
-                ;;
-            n|N|"")
-                log_info "Skipping reproducibility setup."
-                log_info "Run 'zzc renv' or 'zzc docker' when ready."
-                ;;
-            *)
-                log_warn "Invalid choice, skipping reproducibility setup."
-                log_info "Run 'zzc renv' or 'zzc docker' when ready."
-                ;;
-        esac
-    fi
-
-    _wizard_summary "$setup_level" "$docker_profile"
-    return 0
-}
+# The init reproducibility prompt and its summary were replaced by the shared
+# run_feature_wizard (modules/toggle.sh); cmd_init now calls that in init mode.
 
 cmd_docker() {
 

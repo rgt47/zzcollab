@@ -423,6 +423,28 @@ test_toggle_cloud_devcontainer() {
 }
 
 ##############################################################################
+# init/toggle unification: cmd_init's Phase 3 is run_feature_wizard in init
+# mode. Interactively it recommends renv + Docker; accepting the defaults
+# builds L2. (Accept-defaults init skipping to L0 is covered by every other
+# test, which inits non-interactively.)
+##############################################################################
+
+test_init_wizard_recommends_renv_docker() {
+    setup_test
+    _seed_config
+    cd proj
+    # Interactive (no ACCEPT_DEFAULTS), no build. 7 checklist prompts kept at
+    # their defaults (backend=renv, docker=on recommended) + confirm y.
+    printf '\n\n\n\n\n\n\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
+
+    assert_file_exists "renv.lock"  "init wizard: recommended renv enabled"
+    assert_file_exists "Dockerfile" "init wizard: recommended Docker enabled"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

@@ -65,17 +65,51 @@ EOF
         log_error "Not a zzcollab workspace (no .zzcollab marker or DESCRIPTION)."
         return 1
     fi
+    run_feature_wizard toggle
+}
+
+# run_feature_wizard [init|toggle] - the one wizard shared by cmd_init (Phase 3,
+# with the scaffold's defaults present) and cmd_toggle (existing project). It
+# detects the current state by presence, presents the backend (single-select)
+# and the feature checklist (multi-select), diffs the desired state against the
+# current one, confirms once, applies via the per-feature commands, and prints
+# zzc status. In init mode the pre-selected defaults are the recommended L2 set
+# (renv + Docker); in toggle mode they mirror the current state. Non-interactive
+# (accept-defaults) makes no changes.
+run_feature_wizard() {
+    local mode="${1:-toggle}"
+
+    # Accept-defaults / non-interactive: make no changes. Init under
+    # accept-defaults therefore scaffolds without renv/Docker, as before.
+    if [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
+        if [[ "$mode" == init ]]; then
+            log_info "Non-interactive: skipping reproducibility setup."
+            log_info "Add it later with 'zzc toggle', 'zzc renv', or 'zzc docker'."
+        else
+            echo "Accept-defaults: no changes."
+        fi
+        return 0
+    fi
 
     # --- Detect current state ----------------------------------------------
     local cur_backend cur_docker cur_ci cur_data cur_quality cur_tests cur_cloud
     cur_backend=$(_zzc_detect_backend ".")
-    [[ "$cur_backend" == "conflict" ]] && { log_error "Backend conflict (renv.lock and a nix file); resolve before toggling."; return 1; }
+    [[ "$cur_backend" == "conflict" ]] && { log_error "Backend conflict (renv.lock and a nix file); resolve first."; return 1; }
     [[ -f Dockerfile ]]                       && cur_docker=on  || cur_docker=off
     [[ -f .github/workflows/r-package.yml ]]  && cur_ci=on      || cur_ci=off
     [[ -f data-manifest.sha256 ]]             && cur_data=on    || cur_data=off
     [[ -f .pre-commit-config.yaml ]]          && cur_quality=on || cur_quality=off
     [[ -d inst/tinytest ]]                    && cur_tests=on   || cur_tests=off
     { [[ -d .devcontainer ]] || [[ -d .binder ]]; } && cur_cloud=on || cur_cloud=off
+
+    # Pre-selected defaults: current state, except init recommends renv + Docker.
+    local def_backend="$cur_backend" def_docker="$cur_docker"
+    local def_ci="$cur_ci" def_data="$cur_data" def_quality="$cur_quality"
+    local def_tests="$cur_tests" def_cloud="$cur_cloud"
+    if [[ "$mode" == init ]]; then
+        def_backend="renv"; def_docker="on"
+        echo "Reproducibility setup. Recommended: renv + Docker (untick to skip)."
+    fi
 
     echo ""
     echo "Current: backend=$cur_backend  docker=$cur_docker  ci=$cur_ci  data=$cur_data  code-quality=$cur_quality  tests=$cur_tests  cloud=$cur_cloud"
@@ -88,25 +122,27 @@ EOF
     # nix is documented as a future backend; only renv|none are buildable today.
     local want_backend
     if [[ "$use_gum" == true ]]; then
-        want_backend=$(gum_choose "Package backend (current: $cur_backend)" renv none) \
+        # List the recommended/default backend first so it is the highlighted choice.
+        local _opts=(renv none); [[ "$def_backend" == none ]] && _opts=(none renv)
+        want_backend=$(gum_choose "Package backend (current: $cur_backend)" "${_opts[@]}") \
             || { echo "Cancelled; no changes."; return 0; }
     else
         local _b
-        zzc_read -r -p "Backend [renv/none] (current: $cur_backend): " _b
-        want_backend="${_b:-$cur_backend}"
+        zzc_read -r -p "Backend [renv/none] (default: $def_backend): " _b
+        want_backend="${_b:-$def_backend}"
     fi
-    case "$want_backend" in renv|none) ;; *) want_backend="$cur_backend" ;; esac
+    case "$want_backend" in renv|none) ;; *) want_backend="$def_backend" ;; esac
 
     # --- Desired feature checklist (multi-select) --------------------------
     local want_docker want_ci want_data want_quality want_tests want_cloud
     if [[ "$use_gum" == true ]]; then
         local sel=() chosen
-        [[ "$cur_docker" == on ]]  && sel+=("docker")
-        [[ "$cur_ci" == on ]]      && sel+=("ci")
-        [[ "$cur_data" == on ]]    && sel+=("data")
-        [[ "$cur_quality" == on ]] && sel+=("code-quality")
-        [[ "$cur_tests" == on ]]   && sel+=("tests")
-        [[ "$cur_cloud" == on ]]   && sel+=("cloud")
+        [[ "$def_docker" == on ]]  && sel+=("docker")
+        [[ "$def_ci" == on ]]      && sel+=("ci")
+        [[ "$def_data" == on ]]    && sel+=("data")
+        [[ "$def_quality" == on ]] && sel+=("code-quality")
+        [[ "$def_tests" == on ]]   && sel+=("tests")
+        [[ "$def_cloud" == on ]]   && sel+=("cloud")
         local sel_csv; sel_csv=$(IFS=,; echo "${sel[*]}")
         chosen=$(gum_multichoose "Features (space toggles, enter applies)" \
             "$sel_csv" docker ci data code-quality tests cloud) \
@@ -118,12 +154,12 @@ EOF
         grep -qx tests        <<< "$chosen" && want_tests=on   || want_tests=off
         grep -qx cloud        <<< "$chosen" && want_cloud=on   || want_cloud=off
     else
-        want_docker=$(_toggle_ask  "Docker environment"        "$cur_docker")
-        want_ci=$(_toggle_ask      "CI workflows"              "$cur_ci")
-        want_data=$(_toggle_ask    "Data integrity hashing"    "$cur_data")
-        want_quality=$(_toggle_ask "Code quality (pre-commit)" "$cur_quality")
-        want_tests=$(_toggle_ask   "Unit testing (tinytest)"   "$cur_tests")
-        want_cloud=$(_toggle_ask   "Cloud launch (devcontainer)" "$cur_cloud")
+        want_docker=$(_toggle_ask  "Docker environment"        "$def_docker")
+        want_ci=$(_toggle_ask      "CI workflows"              "$def_ci")
+        want_data=$(_toggle_ask    "Data integrity hashing"    "$def_data")
+        want_quality=$(_toggle_ask "Code quality (pre-commit)" "$def_quality")
+        want_tests=$(_toggle_ask   "Unit testing (tinytest)"   "$def_tests")
+        want_cloud=$(_toggle_ask   "Cloud launch (devcontainer)" "$def_cloud")
     fi
 
     # --- Diff desired against current --------------------------------------
