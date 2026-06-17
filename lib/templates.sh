@@ -149,6 +149,11 @@ substitute_variables() {
 
     export PACKAGE_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
 
+    # Container runtime baked as the Makefile's CONTAINER_RUNTIME default
+    # (overridable with `make CONTAINER_RUNTIME=...`). Falls back to docker so
+    # the substitution never yields an empty default.
+    export CONTAINER_RUNTIME="${CONFIG_DOCKER_RUNTIME:-docker}"
+
     # DESCRIPTION metadata sourced from the resolved config (with R-package
     # defaults). AUTHORS_R is pre-rendered because envsubst cannot express the
     # conditional ORCID/role structure of the person() call.
@@ -190,7 +195,7 @@ substitute_variables() {
 
     # Note: $BASE_IMAGE is intentionally excluded - it is a runtime shell
     # variable in Makefile ($$BASE_IMAGE), not a template placeholder.
-    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_GIVEN_NAME $AUTHOR_FAMILY_NAME $AUTHOR_EMAIL $AUTHOR_AFFILIATION $AUTHOR_AFFILIATION_FULL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
+    if ! (envsubst '$PKG_NAME $AUTHOR_NAME $AUTHOR_GIVEN_NAME $AUTHOR_FAMILY_NAME $AUTHOR_EMAIL $AUTHOR_AFFILIATION $AUTHOR_AFFILIATION_FULL $AUTHOR_INSTITUTE $AUTHOR_INSTITUTE_FULL $R_VERSION $PACKAGE_NAME $AUTHORS_R $LICENSE_TYPE $ROXYGEN_VERSION $PKG_ENCODING $DATE $GITHUB_ACCOUNT $PROJECT_NAME $ZZCOLLAB_TEMPLATE_VERSION $UBUNTU_CODENAME $PPM_SNAPSHOT $CONTAINER_RUNTIME' < "$file" > "$file.tmp" && mv "$file.tmp" "$file"); then
         log_error "Failed to substitute variables in file: $file"
         rm -f "$file.tmp"
         return 1

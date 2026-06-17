@@ -114,6 +114,7 @@ cmd_status() {
     printf "  %-14s %s\n" "profile"  "${g_profile:-(unset)}"
     printf "  %-14s %s\n" "registry" "ghcr"
     printf "  %-14s %s\n" "dockerhub" "${g_account:-(unset)}"
+    printf "  %-14s %s\n" "runtime"  "${CONFIG_DOCKER_RUNTIME:-docker}"
 
     # --- Local tier: live state from artifact presence ----------------------
     local backend docker_on ci_check ci_render tests data quality dev binder git_on

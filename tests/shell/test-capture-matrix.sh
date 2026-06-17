@@ -613,6 +613,47 @@ test_add_unknown_feature_fails() {
 }
 
 ##############################################################################
+# Container-runtime parameter (Podman). The Makefile uses $(CONTAINER_RUNTIME)
+# for run commands, defaulting to the configured docker.runtime (else docker),
+# overridable with `make CONTAINER_RUNTIME=...`.
+##############################################################################
+
+test_runtime_makefile_parameterised() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    assert_true "grep -q 'CONTAINER_RUNTIME ?= docker' Makefile" "runtime: default docker baked"
+    assert_true "grep -q '[$][(]CONTAINER_RUNTIME[)] run' Makefile" "runtime: run uses the variable"
+    assert_false "grep -qE '^[[:space:]]*docker run' Makefile" "runtime: no bare 'docker run' left"
+
+    teardown_test
+}
+
+test_runtime_config_default_podman() {
+    setup_test
+    _seed_config
+    # Configure podman as the default before generating the project.
+    bash "$ZZCOLLAB_SH" config set docker-runtime podman > /dev/null 2>&1
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    assert_true "grep -q 'CONTAINER_RUNTIME ?= podman' Makefile" "runtime: configured podman baked as default"
+
+    teardown_test
+}
+
+test_runtime_rejects_apptainer() {
+    setup_test
+    _seed_config
+    local rc=0
+    bash "$ZZCOLLAB_SH" config set docker-runtime apptainer > /dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "runtime: apptainer rejected (not yet wired)"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

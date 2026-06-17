@@ -78,6 +78,7 @@ CONFIG_STYLE_ASSIGNMENT=""
 # the former docker.account key is kept as a read alias for back-compat.)
 CONFIG_DOCKER_DEFAULT_PROFILE=""
 CONFIG_DOCKER_REGISTRY=""
+CONFIG_DOCKER_RUNTIME=""
 
 # Extended configuration state - GitHub
 CONFIG_GITHUB_DEFAULT_VISIBILITY=""
@@ -239,6 +240,7 @@ load_config() {
     CONFIG_STYLE_ASSIGNMENT=""
     CONFIG_DOCKER_DEFAULT_PROFILE=""
     CONFIG_DOCKER_REGISTRY=""
+    CONFIG_DOCKER_RUNTIME=""
     CONFIG_GITHUB_DEFAULT_VISIBILITY=""
     CONFIG_GITHUB_DEFAULT_BRANCH=""
 
@@ -280,6 +282,7 @@ style.use_native_pipe           CONFIG_STYLE_USE_NATIVE_PIPE
 style.assignment                CONFIG_STYLE_ASSIGNMENT
 docker.default_profile          CONFIG_DOCKER_DEFAULT_PROFILE
 docker.registry                 CONFIG_DOCKER_REGISTRY
+docker.runtime                  CONFIG_DOCKER_RUNTIME
 features.backend                CONFIG_FEAT_BACKEND
 features.docker                 CONFIG_FEAT_DOCKER
 features.ci                     CONFIG_FEAT_CI
@@ -502,6 +505,14 @@ EOF
                 case "$value" in
                     minimal|analysis|rstudio) ;;
                     *) log_error "Unknown profile: $value (valid: minimal, analysis, rstudio)"
+                       return 1 ;;
+                esac ;;
+            docker_runtime)
+                case "$value" in
+                    docker|podman) ;;
+                    apptainer) log_error "apptainer is not yet wired into the Makefile; use docker or podman"
+                       return 1 ;;
+                    *) log_error "Unknown runtime: $value (valid: docker, podman)"
                        return 1 ;;
                 esac ;;
         esac
