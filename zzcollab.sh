@@ -308,8 +308,9 @@ cmd_init() {
         return $?
     fi
 
-    # Phase 3: Reproducibility setup
-    prompt_reproducibility_setup
+    # Phase 3: Reproducibility setup, via the shared feature wizard (init mode:
+    # recommends renv + Docker; makes no changes under accept-defaults).
+    run_feature_wizard init
     return 0
 }
 
@@ -333,117 +334,8 @@ init_export_config_vars() {
     export BASE_IMAGE="$base_image"
 }
 
-# Print a summary of what the wizard completed.
-# Args: setup_level (none|renv|docker), docker_profile (string, may be empty)
-_wizard_summary() {
-    local setup_level="${1:-none}" docker_profile="${2:-}"
-    echo ""
-    echo "═══════════════════════════════════════════════════════════"
-    echo "  Setup Summary"
-    echo "═══════════════════════════════════════════════════════════"
-    echo ""
-    printf "  %-10s  %s\n" "Scaffold" "done"
-    case "$setup_level" in
-        renv)
-            printf "  %-10s  %s\n" "renv"   "done"
-            printf "  %-10s  %s\n" "Docker" "skipped  —  run: zzc docker"
-            ;;
-        docker)
-            printf "  %-10s  %s\n" "renv"   "done  (minimal lockfile)"
-            printf "  %-10s  %s\n" "Docker" "done  (profile: $docker_profile)"
-            ;;
-        *)
-            printf "  %-10s  %s\n" "renv"   "skipped  —  run: zzc renv"
-            printf "  %-10s  %s\n" "Docker" "skipped  —  run: zzc docker"
-            ;;
-    esac
-    echo ""
-}
-
-# cmd_init Phase 3: offer renv-only / renv+Docker / none and dispatch to
-# cmd_renv or cmd_docker. Uses only global state, so it extracts cleanly.
-prompt_reproducibility_setup() {
-    echo "───────────────────────────────────────────────────────────"
-    echo "  Reproducibility Setup"
-    echo "───────────────────────────────────────────────────────────"
-    echo ""
-    echo "  Your zzcollab workspace is ready for host R development."
-    echo "  For reproducible research, add package tracking and/or Docker."
-    echo ""
-    echo "  [r] renv only      - Package lockfile for reproducibility"
-    echo "  [d] renv + Docker  - Full containerized environment (recommended)"
-    echo "  [n] None           - Just project structure, configure later"
-    echo ""
-
-    local setup_level="none" docker_profile=""
-
-    if has_gum; then
-        local gum_repro
-        gum_repro=$(gum_choose "Reproducibility Setup" \
-            "renv + Docker  - Full containerized environment (recommended)" \
-            "renv only      - Package lockfile for reproducibility" \
-            "None           - Just project structure, configure later" \
-            "Stop here      - Exit wizard and show summary") || \
-            gum_repro="Stop here"
-        case "$gum_repro" in
-            "renv + Docker"*)
-                local gum_profile
-                gum_profile=$(gum_choose "Choose a profile" \
-                    "analysis  - tidyverse + data science tools (recommended)" \
-                    "minimal   - base R only" \
-                    "rstudio   - RStudio Server" \
-                    "Stop here - Skip Docker and show summary") || \
-                    gum_profile="Stop here"
-                case "$gum_profile" in
-                    "Stop here"*)
-                        log_info "Docker setup cancelled. Run 'zzc docker' later."
-                        ;;
-                    *)
-                        docker_profile=$(echo "$gum_profile" | cut -d' ' -f1)
-                        cmd_docker --profile "$docker_profile"
-                        setup_level="docker"
-                        ;;
-                esac
-                ;;
-            "renv only"*)
-                cmd_renv
-                setup_level="renv"
-                ;;
-            *)
-                log_info "Skipping reproducibility setup."
-                log_info "Run 'zzc renv' or 'zzc docker' when ready."
-                ;;
-        esac
-    else
-        local repro_choice
-        zzc_read -r -p "Add reproducibility? [r/d/N]: " repro_choice
-        case "$repro_choice" in
-            r|R)
-                cmd_renv
-                setup_level="renv"
-                ;;
-            d|D)
-                local profile_choice
-                zzc_read -r -p "Profile [analysis/minimal/rstudio] (default: analysis): " \
-                    profile_choice
-                docker_profile="${profile_choice:-analysis}"
-                cmd_docker --profile "$docker_profile"
-                setup_level="docker"
-                ;;
-            n|N|"")
-                log_info "Skipping reproducibility setup."
-                log_info "Run 'zzc renv' or 'zzc docker' when ready."
-                ;;
-            *)
-                log_warn "Invalid choice, skipping reproducibility setup."
-                log_info "Run 'zzc renv' or 'zzc docker' when ready."
-                ;;
-        esac
-    fi
-
-    _wizard_summary "$setup_level" "$docker_profile"
-    return 0
-}
+# The init reproducibility prompt and its summary were replaced by the shared
+# run_feature_wizard (modules/toggle.sh); cmd_init now calls that in init mode.
 
 cmd_docker() {
 
@@ -885,6 +777,112 @@ cmd_rm_code_quality() {
         log_info "Pre-commit git hooks, if installed, remain; run 'pre-commit uninstall' to remove them."
     else
         log_info "No .pre-commit-config.yaml to remove"
+    fi
+}
+
+# cmd_tests - unit-testing toggle (validation feature). Scaffolds the tinytest
+# infrastructure (tests/tinytest.R + inst/tinytest/). Presence of inst/tinytest/
+# is the feature's on state (zzc status). Reuses the init scaffolder so the
+# layout is identical whether created at init or added later.
+cmd_tests() {
+    case "${1:-}" in
+        help|--help|-h)
+            cat << 'EOF'
+UNIT TESTING (tinytest)
+
+Scaffolds tests/tinytest.R and inst/tinytest/ with an example test.
+
+USAGE:
+    zzcollab tests        # scaffold the tinytest infrastructure
+    zzcollab rm tests     # remove it (feature off)
+
+Run the tests with:  make test   (or: make docker-test)
+EOF
+            return 0 ;;
+    esac
+
+    ensure_workspace_initialized "tests" || exit 1
+    export PKG_NAME="${PKG_NAME:-$(basename "$(pwd)" | tr '-' '.' | tr '[:upper:]' '[:lower:]')}"
+    create_test_infrastructure
+    echo ""
+    echo "  Add tests under inst/tinytest/ (bare expect_*() expressions)."
+    echo "  Run them:  make test    (or: make docker-test)"
+}
+
+cmd_rm_tests() {
+    local removed=0
+    [[ -d "inst/tinytest" ]]   && rm -rf "inst/tinytest"   && removed=1
+    [[ -f "tests/tinytest.R" ]] && rm -f "tests/tinytest.R" && removed=1
+    # Leave tests/ itself (it may hold testthat); prune only if now empty.
+    [[ -d "tests" ]] && rmdir "tests" 2>/dev/null || true
+    if [[ "$removed" -eq 1 ]]; then
+        log_success "Removed unit tests (inst/tinytest/, tests/tinytest.R)"
+    else
+        log_info "No tinytest infrastructure to remove"
+    fi
+}
+
+# cmd_cloud - cloud-launch toggle (+ platform parameter). Scaffolds a
+# browser-launchable container config. Presence of .devcontainer/ (or .binder/)
+# is the feature's on state (zzc status). devcontainer drives VS Code / GitHub
+# Codespaces; binder is recognised by status but not yet templated.
+cmd_cloud() {
+    local platform="devcontainer"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --platform) platform="$2"; shift 2 ;;
+            help|--help|-h)
+                cat << 'EOF'
+CLOUD LAUNCH
+
+Scaffolds a config that lets the compendium run in a browser-based
+container.
+
+USAGE:
+    zzcollab cloud                       # devcontainer (Codespaces/VS Code)
+    zzcollab cloud --platform devcontainer
+    zzcollab rm cloud                    # remove cloud config
+
+Platforms: devcontainer (default). binder is detected by 'zzc status'
+but not yet templated.
+EOF
+                return 0 ;;
+            *) log_error "Unknown option: $1"; return 1 ;;
+        esac
+    done
+
+    ensure_workspace_initialized "cloud" || exit 1
+
+    case "$platform" in
+        devcontainer)
+            if [[ ! -f "$ZZCOLLAB_TEMPLATES_DIR/devcontainer.json" ]]; then
+                log_error "devcontainer template not found."
+                return 1
+            fi
+            mkdir -p ".devcontainer"
+            install_template "devcontainer.json" ".devcontainer/devcontainer.json" \
+                "devcontainer config"
+            echo ""
+            echo "  Cloud launch (devcontainer) enabled."
+            echo "  Open in GitHub Codespaces, or VS Code: 'Reopen in Container'."
+            ;;
+        binder)
+            log_error "binder platform is not yet templated; use --platform devcontainer."
+            return 1 ;;
+        *)
+            log_error "Unknown platform: $platform (supported: devcontainer)"
+            return 1 ;;
+    esac
+}
+
+cmd_rm_cloud() {
+    local removed=0
+    [[ -d ".devcontainer" ]] && rm -rf ".devcontainer" && removed=1
+    [[ -d ".binder" ]]       && rm -rf ".binder"       && removed=1
+    if [[ "$removed" -eq 1 ]]; then
+        log_success "Removed cloud launch config (.devcontainer/ and/or .binder/)"
+    else
+        log_info "No cloud launch config to remove"
     fi
 }
 
@@ -1672,17 +1670,23 @@ cmd_rm() {
         code-quality)
             cmd_rm_code_quality
             ;;
+        tests)
+            cmd_rm_tests
+            ;;
+        cloud)
+            cmd_rm_cloud
+            ;;
         all)
             cmd_rm_all "$@"  # Pass through flags like -f, --force
             ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
-            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, tests, cloud, all"
             return 1
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, tests, cloud, all"
             return 1
             ;;
     esac
@@ -2177,6 +2181,16 @@ main() {
             code-quality)
                 shift
                 cmd_code_quality "$@"
+                exit $?
+                ;;
+            tests)
+                shift
+                cmd_tests "$@"
+                exit $?
+                ;;
+            cloud)
+                shift
+                cmd_cloud "$@"
                 exit $?
                 ;;
             tools)

@@ -340,7 +340,8 @@ test_toggle_noop_makes_no_changes() {
     _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
 
     # Keep every feature (empty answers default to current); no confirm reached.
-    assert_equals "0" "$(_toggle_with '\n\n\n\n\n')" "toggle: no-op exits 0"
+    # 7 prompts (backend, docker, ci, data, code-quality, tests, cloud), all kept.
+    assert_equals "0" "$(_toggle_with '\n\n\n\n\n\n\n')" "toggle: no-op exits 0"
     assert_false "[[ -f data-manifest.sha256 ]]"  "toggle: no-op created no manifest"
     assert_false "[[ -f .pre-commit-config.yaml ]]" "toggle: no-op installed no pre-commit"
 
@@ -354,11 +355,172 @@ test_toggle_enables_features() {
     _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
     echo "immutable row" > analysis/data/raw_data/d.csv
 
-    # backend keep, docker keep, ci keep, data ON, code-quality ON, confirm y.
-    _toggle_with '\n\n\non\non\ny\n' > /dev/null
+    # backend keep, docker keep, ci keep, data ON, code-quality ON,
+    # tests keep, cloud keep, confirm y.
+    _toggle_with '\n\n\non\non\n\n\ny\n' > /dev/null
 
     assert_file_exists "data-manifest.sha256"   "toggle: enabled data integrity"
     assert_file_exists ".pre-commit-config.yaml" "toggle: enabled code quality"
+
+    teardown_test
+}
+
+test_toggle_enables_tests_and_cloud() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    # init scaffolds both; start from off so the enable is observable.
+    rm -rf inst/tinytest tests/tinytest.R .devcontainer .binder
+
+    # keep backend/docker/ci/data/code-quality, enable tests + cloud, confirm y.
+    _toggle_with '\n\n\n\n\non\non\ny\n' > /dev/null
+
+    assert_dir_exists  "inst/tinytest"                   "toggle: enabled unit tests"
+    assert_file_exists ".devcontainer/devcontainer.json" "toggle: enabled cloud launch"
+
+    teardown_test
+}
+
+##############################################################################
+# Unit-testing and cloud-launch toggles (validation features; detected by
+# status, now with add/remove commands).
+##############################################################################
+
+test_toggle_unit_tests() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    # init scaffolds tinytest; start from off.
+    rm -rf inst/tinytest tests/tinytest.R
+    assert_false "[[ -d inst/tinytest ]]" "tests: starts off"
+
+    _zzc tests || { echo "FAIL: zzc tests"; teardown_test; return 1; }
+    assert_dir_exists  "inst/tinytest"    "tests: inst/tinytest scaffolded"
+    assert_file_exists "tests/tinytest.R" "tests: runner scaffolded"
+
+    _zzc rm tests
+    assert_false "[[ -d inst/tinytest ]]" "tests: removed by rm tests"
+
+    teardown_test
+}
+
+test_toggle_cloud_devcontainer() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    rm -rf .devcontainer .binder
+
+    _zzc cloud || { echo "FAIL: zzc cloud"; teardown_test; return 1; }
+    assert_file_exists ".devcontainer/devcontainer.json" "cloud: devcontainer scaffolded"
+
+    _zzc rm cloud
+    assert_false "[[ -d .devcontainer ]]" "cloud: removed by rm cloud"
+
+    teardown_test
+}
+
+##############################################################################
+# init/toggle unification: cmd_init's Phase 3 is run_feature_wizard in init
+# mode. Interactively it recommends renv + Docker; accepting the defaults
+# builds L2. (Accept-defaults init skipping to L0 is covered by every other
+# test, which inits non-interactively.)
+##############################################################################
+
+test_init_wizard_recommends_renv_docker() {
+    setup_test
+    _seed_config
+    cd proj
+    # Interactive (no ACCEPT_DEFAULTS), no build. 7 checklist prompts kept at
+    # their defaults (backend=renv, docker=on recommended) + confirm y.
+    printf '\n\n\n\n\n\n\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
+
+    assert_file_exists "renv.lock"  "init wizard: recommended renv enabled"
+    assert_file_exists "Dockerfile" "init wizard: recommended Docker enabled"
+
+    teardown_test
+}
+
+##############################################################################
+# Section 12.3 couplings/nudges enforced by the wizard.
+##############################################################################
+
+# Enabling CI when no report exists offers to scaffold one (answered yes here).
+test_coupling_render_scaffolds_report() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    rm -rf .github/workflows
+    find analysis -name 'report.Rmd' -delete 2>/dev/null
+    assert_false "[[ -n \"\$(find analysis -name report.Rmd)\" ]]" "coupling: no report to start"
+
+    # backend keep, docker keep, ci ON, data/code-quality/tests/cloud keep,
+    # confirm y, scaffold-report y.
+    printf '\n\non\n\n\n\n\ny\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
+
+    assert_file_exists "analysis/report/report.Rmd" "coupling: report scaffolded on CI enable"
+
+    teardown_test
+}
+
+# Choosing renv while leaving Docker off surfaces the L1/L2 nudge.
+test_coupling_renv_docker_nudge() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    local out
+    # backend renv, docker off, rest keep, decline the confirm (no changes).
+    out=$(printf 'renv\noff\n\n\n\n\n\nn\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle 2>&1)
+    echo "$out" | grep -q "renv pins packages" \
+        || { echo "FAIL: renv/Docker nudge not shown"; teardown_test; return 1; }
+
+    teardown_test
+}
+
+##############################################################################
+# zzc toggle --global: edits the new-project feature defaults in config,
+# which the init wizard then honours. No project artifacts change.
+##############################################################################
+
+test_toggle_global_writes_config() {
+    setup_test
+    _seed_config
+    # global mode needs no workspace; run from the temp root.
+    # 7 prompts: backend renv, docker off, ci keep, data ON, code-quality keep,
+    # tests keep, cloud keep (no confirm step in global mode).
+    printf 'renv\noff\n\non\n\n\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle --global > /dev/null 2>&1
+
+    assert_equals "off" "$(bash "$ZZCOLLAB_SH" config get features-docker 2>/dev/null)" \
+        "global: docker default saved"
+    assert_equals "on" "$(bash "$ZZCOLLAB_SH" config get features-data 2>/dev/null)" \
+        "global: data default saved"
+
+    teardown_test
+}
+
+test_toggle_global_affects_init() {
+    setup_test
+    _seed_config
+    # Set the global Docker default off, keep the rest at recommendation.
+    printf '\noff\n\n\n\n\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle --global > /dev/null 2>&1
+
+    cd proj
+    # Interactive init accepting defaults: renv recommended on, Docker now off.
+    printf '\n\n\n\n\n\n\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
+
+    assert_file_exists "renv.lock"            "global->init: renv still recommended"
+    assert_false "[[ -f Dockerfile ]]"        "global->init: Docker default off honoured"
 
     teardown_test
 }
