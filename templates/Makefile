@@ -249,6 +249,9 @@ docker-check-renv-fix: check-renv
 
 ##@ Team images
 
+# Multi-arch team publishing uses docker buildx + imagetools, which have no
+# podman equivalent, so these targets are docker-specific regardless of
+# CONTAINER_RUNTIME. Local build (zzcollab rebuild) and run honour the runtime.
 docker-push-team: ## Multi-arch build and push; writes .team-image-digest
 	@if [ -z "$(DOCKERHUB_ACCOUNT)" ]; then \
 	  echo "DOCKERHUB_ACCOUNT is not set." >&2; \
@@ -319,7 +322,7 @@ clean: ## Remove build artifacts (*.tar.gz, *.Rcheck)
 	rm -rf *.Rcheck
 
 docker-clean: ## Remove this project's image (system-wide: docker-prune-*)
-	docker rmi $(PACKAGE_NAME) || true
+	$(CONTAINER_RUNTIME) rmi $(PACKAGE_NAME) || true
 
 docker-disk-usage: ## Show Docker disk usage
 	@echo "Docker disk usage:"
