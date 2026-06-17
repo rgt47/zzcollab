@@ -764,6 +764,20 @@ test_archetype_interactive_prompt() {
 }
 
 ##############################################################################
+# Blog post-rendering: the render workflow collects analysis/posts/*.Rmd in
+# addition to report.Rmd (template-level check; the workflow is unrunnable here).
+##############################################################################
+
+test_blog_render_workflow_includes_posts() {
+    local wf="$ZZCOLLAB_ROOT/templates/workflows/render-report.yml"
+    assert_file_exists "$wf" "render workflow template present"
+    # All three render branches (nix/docker/host) must collect posts.
+    local n
+    n=$(grep -c 'list.files("analysis/posts"' "$wf")
+    assert_equals "3" "$n" "render: posts collected in all three backend branches"
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

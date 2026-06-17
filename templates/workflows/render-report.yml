@@ -12,9 +12,11 @@
 #                          from renv.lock when present (L1), otherwise
 #                          installed from DESCRIPTION via pak (L0).
 #
-# HTML output validates R code execution and package reproducibility without
-# requiring a LaTeX installation in CI. PDF rendering is performed on the host
-# with the local xelatex toolchain. Path-filtered to run only when analysis
+# Renders every analysis/**/report.Rmd plus, for the blog archetype, every
+# analysis/posts/*.Rmd. HTML output validates R code execution and package
+# reproducibility without requiring a LaTeX installation in CI. PDF rendering is
+# performed on the host with the local xelatex toolchain. Path-filtered to run
+# only when analysis
 # code or the environment definition changes.
 #
 name: Render Reports
@@ -70,10 +72,12 @@ jobs:
         if: steps.mode.outputs.backend == 'nix'
         run: |
           nix develop -c Rscript -e '
-            rmds <- list.files(
-              "analysis", pattern = "^report[.]Rmd$",
-              recursive = TRUE, full.names = TRUE
-            )
+            rmds <- unique(c(
+              list.files("analysis", pattern = "^report[.]Rmd$",
+                         recursive = TRUE, full.names = TRUE),
+              list.files("analysis/posts", pattern = "[.]Rmd$",
+                         full.names = TRUE)
+            ))
             cat("Found", length(rmds), "manuscripts to render\n\n")
             failed <- character()
             for (rmd in rmds) {
@@ -119,10 +123,12 @@ jobs:
               if (!is.na(baked_lib) && nzchar(baked_lib)) {
                 .libPaths(c(baked_lib, .libPaths()))
               }
-              rmds <- list.files(
-                "analysis", pattern = "^report[.]Rmd$",
-                recursive = TRUE, full.names = TRUE
-              )
+              rmds <- unique(c(
+                list.files("analysis", pattern = "^report[.]Rmd$",
+                           recursive = TRUE, full.names = TRUE),
+                list.files("analysis/posts", pattern = "[.]Rmd$",
+                           full.names = TRUE)
+              ))
               cat("Found", length(rmds), "manuscripts to render\n\n")
               failed <- character()
               for (rmd in rmds) {
@@ -175,10 +181,12 @@ jobs:
         if: steps.mode.outputs.backend == 'host'
         run: |
           Rscript -e '
-            rmds <- list.files(
-              "analysis", pattern = "^report[.]Rmd$",
-              recursive = TRUE, full.names = TRUE
-            )
+            rmds <- unique(c(
+              list.files("analysis", pattern = "^report[.]Rmd$",
+                         recursive = TRUE, full.names = TRUE),
+              list.files("analysis/posts", pattern = "[.]Rmd$",
+                         full.names = TRUE)
+            ))
             cat("Found", length(rmds), "manuscripts to render\n\n")
             failed <- character()
             for (rmd in rmds) {
