@@ -37,6 +37,9 @@ CONFIG_R_VERSION=""
 CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
 CONFIG_WITH_EXAMPLES="false"
+# Research archetype (init-time scaffolding axis): manuscript | analysis |
+# package | simulation | blog. Empty -> analysis.
+CONFIG_ARCHETYPE=""
 
 # Feature defaults for new projects (set by 'zzc toggle --global', read by the
 # init feature wizard). Empty means "use the built-in recommendation".
@@ -210,6 +213,7 @@ load_config() {
     CONFIG_AUTO_GITHUB="false"
     CONFIG_SKIP_CONFIRMATION="false"
     CONFIG_WITH_EXAMPLES="false"
+    CONFIG_ARCHETYPE=""
 
     # Reset feature defaults (empty -> built-in recommendation)
     CONFIG_FEAT_BACKEND=""
@@ -263,6 +267,7 @@ defaults.r_version              CONFIG_R_VERSION
 defaults.auto_github            CONFIG_AUTO_GITHUB
 defaults.skip_confirmation      CONFIG_SKIP_CONFIRMATION
 defaults.with_examples          CONFIG_WITH_EXAMPLES
+defaults.archetype              CONFIG_ARCHETYPE
 author.name                     CONFIG_AUTHOR_NAME
 author.email                    CONFIG_AUTHOR_EMAIL
 author.orcid                    CONFIG_AUTHOR_ORCID
@@ -505,6 +510,12 @@ EOF
                 case "$value" in
                     minimal|analysis|rstudio) ;;
                     *) log_error "Unknown profile: $value (valid: minimal, analysis, rstudio)"
+                       return 1 ;;
+                esac ;;
+            archetype)
+                case "$value" in
+                    manuscript|analysis|package|simulation|blog) ;;
+                    *) log_error "Unknown archetype: $value (valid: manuscript, analysis, package, simulation, blog)"
                        return 1 ;;
                 esac ;;
             docker_runtime)

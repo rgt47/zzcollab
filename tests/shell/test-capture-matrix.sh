@@ -654,6 +654,58 @@ test_runtime_rejects_apptainer() {
 }
 
 ##############################################################################
+# Archetype axis (init-time scaffolding parameter, plan §9.4). Determines
+# whether a report exists (the render gate) and is recorded in .zzcollab-state.
+##############################################################################
+
+test_archetype_report_vs_package() {
+    setup_test
+    _seed_config
+    # manuscript/analysis/blog scaffold a report; package/simulation do not.
+    ( cd proj && _zzc init --force --archetype manuscript ) \
+        || { echo "FAIL: init manuscript"; teardown_test; return 1; }
+    assert_file_exists "proj/analysis/report/report.Rmd" "archetype: manuscript has a report"
+
+    rm -rf proj && mkdir proj
+    ( cd proj && _zzc init --force --archetype package ) \
+        || { echo "FAIL: init package"; teardown_test; return 1; }
+    assert_false "[[ -f proj/analysis/report/report.Rmd ]]" "archetype: package has no report"
+
+    teardown_test
+}
+
+test_archetype_simulation_starter() {
+    setup_test
+    _seed_config
+    ( cd proj && _zzc init --force --archetype simulation ) \
+        || { echo "FAIL: init simulation"; teardown_test; return 1; }
+    assert_file_exists "proj/analysis/scripts/simulation.R" "archetype: simulation starter scaffolded"
+    assert_false "[[ -f proj/analysis/report/report.Rmd ]]" "archetype: simulation has no report"
+    assert_equals "simulation" "$(cd proj && _state_get archetype)" "archetype: recorded in state"
+
+    teardown_test
+}
+
+test_archetype_preserved_across_docker() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force --archetype package || { echo "FAIL: init"; teardown_test; return 1; }
+    _zzc docker --profile analysis        || { echo "FAIL: docker"; teardown_test; return 1; }
+    assert_equals "package" "$(_state_get archetype)" "archetype: preserved across Dockerfile regeneration"
+    teardown_test
+}
+
+test_archetype_invalid_rejected() {
+    setup_test
+    _seed_config
+    local rc=0
+    bash "$ZZCOLLAB_SH" config set archetype bogus > /dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "archetype: invalid value rejected"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

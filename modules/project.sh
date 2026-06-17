@@ -137,11 +137,42 @@ create_analysis_files() {
         install_template "data_README.md" "analysis/data/README.md" "data README"
     fi
 
-    # Only create examples if requested
-    if [[ "${WITH_EXAMPLES:-false}" == "true" ]]; then
+    # Archetype-driven scaffolding (plan §9.4). The archetype decides whether a
+    # report exists - manuscript/analysis/blog render a document (and so carry
+    # the render gate); package/simulation do not. WITH_EXAMPLES forces the
+    # report regardless, for the example-laden quickstart.
+    local _arch="${ARCHETYPE:-analysis}"
+    local _want_report=false
+    case "$_arch" in
+        manuscript|analysis|blog) _want_report=true ;;
+    esac
+    if [[ "${WITH_EXAMPLES:-false}" == "true" ]]; then _want_report=true; fi
+
+    if [[ "$_want_report" == true ]]; then
         install_template "report.Rmd" "analysis/report/report.Rmd" "report template" 2>/dev/null || true
         install_template "references.bib" "analysis/report/references.bib" "bibliography" 2>/dev/null || true
-        log_success "Example analysis files created"
+        log_success "Report scaffolded (archetype: $_arch)"
+    fi
+
+    # Simulation archetype: a seeded, parallel-ready starter script instead of a
+    # report, reflecting the archetype's emphasis on reproducible stochastics.
+    if [[ "$_arch" == "simulation" ]]; then
+        local sim='# Simulation entry point (archetype: simulation).
+# Reproducible stochastics: set the RNG seed explicitly. RNGkind is pinned in
+# .Rprofile. For parallel runs use parallel::clusterSetRNGStream() or
+# future + furrr with a single global seed.
+set.seed(1)
+
+run_simulation <- function(n = 1000L) {
+  # Replace with the study design.
+  mean(rnorm(n))
+}
+
+if (sys.nframe() == 0L) {
+  result <- run_simulation()
+  cat("simulation result:", result, "\n")
+}'
+        create_file_if_missing "analysis/scripts/simulation.R" "$sim" "simulation starter"
     fi
 }
 
