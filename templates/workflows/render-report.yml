@@ -4,9 +4,11 @@
 # environment backend is detected at run time from artifact presence, so the
 # same workflow survives toggling Docker on or off without edits.
 #
+#   flake.nix present   -> install Nix and render inside `nix develop` (the
+#                          flake pins the environment, capture level L2).
 #   Dockerfile present  -> build the project image and render inside the
 #                          container (environment pinned, capture level L2).
-#   Dockerfile absent   -> render on the host runner. Packages are restored
+#   neither             -> render on the host runner. Packages are restored
 #                          from renv.lock when present (L1), otherwise
 #                          installed from DESCRIPTION via pak (L0).
 #
@@ -26,6 +28,7 @@ on:
       - 'DESCRIPTION'
       - 'renv.lock'
       - 'Dockerfile'
+      - 'flake.nix'
       - '.github/workflows/render-report.yml'
   pull_request:
     branches: [ main, master ]
@@ -35,6 +38,7 @@ on:
       - 'DESCRIPTION'
       - 'renv.lock'
       - 'Dockerfile'
+      - 'flake.nix'
 
 jobs:
   render:
@@ -46,27 +50,66 @@ jobs:
       - name: Detect environment backend
         id: mode
         run: |
-          if [ -f Dockerfile ]; then
-            echo "docker=true" >> "$GITHUB_OUTPUT"
+          if [ -f flake.nix ]; then
+            echo "backend=nix" >> "$GITHUB_OUTPUT"
+            echo "Environment: Nix flake"
+          elif [ -f Dockerfile ]; then
+            echo "backend=docker" >> "$GITHUB_OUTPUT"
             echo "Environment: Docker (Dockerfile present)"
           else
-            echo "docker=false" >> "$GITHUB_OUTPUT"
-            echo "Environment: host runner (no Dockerfile)"
+            echo "backend=host" >> "$GITHUB_OUTPUT"
+            echo "Environment: host runner"
           fi
+
+      # --- Nix render: the flake pins the environment; render in `nix develop` ---
+      - name: Install Nix
+        if: steps.mode.outputs.backend == 'nix'
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Render all manuscripts (nix)
+        if: steps.mode.outputs.backend == 'nix'
+        run: |
+          nix develop -c Rscript -e '
+            rmds <- list.files(
+              "analysis", pattern = "^report[.]Rmd$",
+              recursive = TRUE, full.names = TRUE
+            )
+            cat("Found", length(rmds), "manuscripts to render\n\n")
+            failed <- character()
+            for (rmd in rmds) {
+              cat("=== Rendering:", rmd, "===\n")
+              old_wd <- setwd(dirname(rmd))
+              tryCatch(
+                rmarkdown::render(basename(rmd), output_format = "html_document"),
+                error = function(e) {
+                  cat("FAILED:", conditionMessage(e), "\n")
+                  failed <<- c(failed, rmd)
+                }
+              )
+              setwd(old_wd)
+            }
+            cat("\n=== summary ===\n")
+            cat("rendered:", length(rmds) - length(failed), "\n")
+            cat("failed:  ", length(failed), "\n")
+            if (length(failed) > 0) {
+              for (f in failed) cat("  ", f, "\n")
+              quit(status = 1)
+            }
+          '
 
       # --- Containerised render: environment pinned by the project image ---
       - name: Set up Buildx
-        if: steps.mode.outputs.docker == 'true'
+        if: steps.mode.outputs.backend == 'docker'
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        if: steps.mode.outputs.docker == 'true'
+        if: steps.mode.outputs.backend == 'docker'
         run: |
           echo "Building computational environment..."
           docker build -t compendium-env .
 
       - name: Render all manuscripts (container)
-        if: steps.mode.outputs.docker == 'true'
+        if: steps.mode.outputs.backend == 'docker'
         run: |
           docker run --rm -e CI=true \
             -v ${{ github.workspace }}:/project \
@@ -105,17 +148,17 @@ jobs:
 
       # --- Host render: no Dockerfile; renv pins packages when present ---
       - name: Set up pandoc
-        if: steps.mode.outputs.docker == 'false'
+        if: steps.mode.outputs.backend == 'host'
         uses: r-lib/actions/setup-pandoc@v2
 
       - name: Set up R
-        if: steps.mode.outputs.docker == 'false'
+        if: steps.mode.outputs.backend == 'host'
         uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
 
       - name: Restore or install packages (host)
-        if: steps.mode.outputs.docker == 'false'
+        if: steps.mode.outputs.backend == 'host'
         run: |
           if [ -f renv.lock ]; then
             echo "Restoring packages from renv.lock..."
@@ -129,7 +172,7 @@ jobs:
           Rscript -e "if (!requireNamespace('rmarkdown', quietly = TRUE)) install.packages('rmarkdown', repos = 'https://cloud.r-project.org')"
 
       - name: Render all manuscripts (host)
-        if: steps.mode.outputs.docker == 'false'
+        if: steps.mode.outputs.backend == 'host'
         run: |
           Rscript -e '
             rmds <- list.files(
