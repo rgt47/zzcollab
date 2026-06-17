@@ -30,6 +30,7 @@ Commands:
                         or switch profile (existing project)
   docker [--build]      Generate/build the Docker image
   renv                  Create or update renv.lock
+  nix                   Create flake.nix (Nix backend, alternative to renv)
   github [--public]     Create GitHub repo and push
   dockerhub [--tag T]   Push image to Docker Hub
   status                Show reproducibility features and level (read-only)

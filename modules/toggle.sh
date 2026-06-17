@@ -150,18 +150,31 @@ run_feature_wizard() {
 
     # --- Desired backend (single-select: renv | none) ----------------------
     # nix is documented as a future backend; only renv|none are buildable today.
+    # Backend is single-select (renv | nix | none): the three are mutually
+    # exclusive, so they are values of one choice, not checklist items.
     local want_backend
     if [[ "$use_gum" == true ]]; then
-        # List the recommended/default backend first so it is the highlighted choice.
-        local _opts=(renv none); [[ "$def_backend" == none ]] && _opts=(none renv)
+        # List the default backend first so it is the highlighted choice.
+        local _opts=(renv nix none)
+        case "$def_backend" in
+            nix)  _opts=(nix renv none) ;;
+            none) _opts=(none renv nix) ;;
+        esac
         want_backend=$(gum_choose "Package backend (current: $cur_backend)" "${_opts[@]}") \
             || { echo "Cancelled; no changes."; return 0; }
     else
         local _b
-        zzc_read -r -p "Backend [renv/none] (default: $def_backend): " _b
+        zzc_read -r -p "Backend [renv/nix/none] (default: $def_backend): " _b
         want_backend="${_b:-$def_backend}"
     fi
-    case "$want_backend" in renv|none) ;; *) want_backend="$def_backend" ;; esac
+    case "$want_backend" in renv|nix|none) ;; *) want_backend="$def_backend" ;; esac
+
+    # Nix nudge (Section 12.3): Nix reaches L2 without a container, so default
+    # Docker off when Nix is chosen. A default, not a constraint.
+    if [[ "$want_backend" == nix && "$cur_backend" != nix ]]; then
+        def_docker="off"
+        echo "  Note: Nix pins the environment (L2) without a container; Docker is for distribution only."
+    fi
 
     # --- Desired feature checklist (multi-select) --------------------------
     local want_docker want_ci want_data want_quality want_tests want_cloud
@@ -246,11 +259,15 @@ run_feature_wizard() {
     # --- Apply (order matters: backend before docker so the Dockerfile is
     # regenerated in the right install mode) --------------------------------
     if [[ "$want_backend" != "$cur_backend" ]]; then
-        if [[ "$want_backend" == "renv" ]]; then
-            cmd_renv
-        else
-            ZZCOLLAB_ASSUME_YES=1 cmd_rm_renv
-        fi
+        # Backends are mutually exclusive: remove the old one before adding the
+        # new, so renv.lock and a nix file never coexist (status would flag it).
+        [[ "$cur_backend" == renv ]] && ZZCOLLAB_ASSUME_YES=1 cmd_rm_renv
+        [[ "$cur_backend" == nix ]]  && cmd_rm_nix
+        case "$want_backend" in
+            renv) cmd_renv ;;
+            nix)  cmd_nix ;;
+            none) : ;;
+        esac
     fi
 
     if [[ "$want_docker" != "$cur_docker" ]]; then

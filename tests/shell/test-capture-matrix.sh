@@ -526,6 +526,59 @@ test_toggle_global_affects_init() {
 }
 
 ##############################################################################
+# Nix backend: mutually exclusive with renv; flake.nix is the presence signal
+# (status reports backend nix at L2). Nix is not evaluated here (no nix).
+##############################################################################
+
+test_nix_backend_add_remove() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    _zzc nix || { echo "FAIL: zzc nix"; teardown_test; return 1; }
+    assert_file_exists "flake.nix" "nix: flake.nix created"
+    assert_equals "L2" "$(_status_level)" "nix: level L2 (env pinned without container)"
+
+    _zzc rm nix
+    assert_false "[[ -f flake.nix ]]" "nix: flake.nix removed"
+
+    teardown_test
+}
+
+test_nix_renv_mutually_exclusive() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    _zzc renv || { echo "FAIL: renv"; teardown_test; return 1; }
+
+    # zzc nix must refuse while renv.lock is present (single-select backend).
+    _zzc nix
+    assert_false "[[ -f flake.nix ]]" "nix: refused while renv.lock present"
+    assert_file_exists "renv.lock" "nix: renv.lock untouched by refused nix"
+
+    teardown_test
+}
+
+test_toggle_backend_renv_to_nix() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    _zzc renv || { echo "FAIL: renv"; teardown_test; return 1; }
+
+    # backend nix, then 6 feature prompts kept, confirm y.
+    printf 'nix\n\n\n\n\n\n\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
+
+    assert_file_exists "flake.nix"        "toggle: switched to nix"
+    assert_false "[[ -f renv.lock ]]"     "toggle: renv removed (backends exclusive)"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
