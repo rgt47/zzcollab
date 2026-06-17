@@ -45,7 +45,8 @@ Commands:
   config <subcommand>   Manage configuration (get/set/list/init)
   list <profiles|libs|pkgs>
                         List available profiles and bundles
-  rm <feature>          Remove a feature (docker, renv, git, github, cicd, data, all)
+  add <feature>         Add a feature (docker, renv, nix, data, code-quality, tests, cloud, cicd)
+  rm <feature>          Remove a feature (docker, renv, nix, git, github, cicd, data, code-quality, tests, cloud, all)
   uninstall [--force]   Remove the zzcollab scaffold from this directory
   help <topic>          Show detailed help for a topic
 

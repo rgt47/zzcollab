@@ -579,6 +579,40 @@ test_toggle_backend_renv_to_nix() {
 }
 
 ##############################################################################
+# Explicit 'zzc add <feature>' form, symmetric with 'zzc rm <feature>'.
+##############################################################################
+
+test_add_form_routes_to_features() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    echo "row" > analysis/data/raw_data/d.csv
+
+    _zzc add data         || { echo "FAIL: add data"; teardown_test; return 1; }
+    _zzc add code-quality || { echo "FAIL: add code-quality"; teardown_test; return 1; }
+    assert_file_exists "data-manifest.sha256"    "add: data routed"
+    assert_file_exists ".pre-commit-config.yaml" "add: code-quality routed"
+
+    # add/rm are inverses.
+    _zzc rm data
+    assert_false "[[ -f data-manifest.sha256 ]]" "add/rm: symmetric"
+
+    teardown_test
+}
+
+test_add_unknown_feature_fails() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    local rc=0
+    ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" add bogus > /dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "add: unknown feature exits non-zero"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

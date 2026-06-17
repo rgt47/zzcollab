@@ -1707,8 +1707,42 @@ cmd_tools() {
 }
 
 #=============================================================================
-# REMOVE COMMANDS
+# ADD / REMOVE COMMANDS
 #=============================================================================
+
+# cmd_add - explicit add form mirroring cmd_rm. Routes 'zzc add <feature>' to
+# the per-feature command, passing through any flags (e.g. add docker
+# --base-image IMG). The bare verbs (zzc docker, zzc renv, ...) still work; this
+# is the symmetric, discoverable form the plan's explicit-flags note assumes.
+cmd_add() {
+    local feature="${1:-}"
+    shift || true
+    case "$feature" in
+        docker)        cmd_docker "$@" ;;
+        renv)          cmd_renv "$@" ;;
+        nix)           cmd_nix "$@" ;;
+        data)          cmd_data "$@" ;;
+        code-quality)  cmd_code_quality "$@" ;;
+        tests)         cmd_tests "$@" ;;
+        cloud)         cmd_cloud "$@" ;;
+        github)        cmd_github "$@" ;;
+        cicd)
+            ensure_workspace_initialized "cicd" || return 1
+            _toggle_add_ci && log_success "Installed CI workflows"
+            ;;
+        ""|help|--help|-h)
+            echo "Usage: zzcollab add <feature> [options]"
+            echo "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github"
+            echo "Equivalent to the bare verbs (zzc docker, zzc renv, ...); 'rm' is the inverse."
+            [[ -z "$feature" ]] && return 1 || return 0
+            ;;
+        *)
+            log_error "Unknown feature: $feature"
+            log_info "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github"
+            return 1
+            ;;
+    esac
+}
 
 cmd_rm() {
     local feature="${1:-}"
@@ -2369,6 +2403,14 @@ main() {
                 ;;
 
             # Remove command
+            add)
+                # Explicit, non-interactive add form mirroring 'rm'. Routes to
+                # the per-feature commands so scripts/CI never hit the wizard.
+                shift
+                cmd_add "$@"
+                exit $?
+                ;;
+
             rm)
                 shift
                 if [[ $# -eq 0 ]]; then
