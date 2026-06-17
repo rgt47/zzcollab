@@ -244,6 +244,7 @@ cmd_init() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --force|-f) force=true; shift ;;
+            --archetype) ZZCOLLAB_ARCHETYPE="$2"; shift 2 ;;
             *) break ;;
         esac
     done
@@ -293,8 +294,10 @@ cmd_init() {
     # empty until Docker is added) only when none exists, so a fuller record
     # written by a later 'zzc docker' or an existing project is not clobbered.
     if [[ ! -f .zzcollab-state ]]; then
-        _zzc_write_state "${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}" "" "" "" ""
+        _zzc_write_state "${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}" "" "" "" "" "${ARCHETYPE:-analysis}"
     fi
+    # Record the archetype in the project config too (plan §9.4: both places).
+    config_set "archetype" "${ARCHETYPE:-analysis}" true >/dev/null 2>&1 || true
 
     log_success "Project setup complete"
     echo ""
@@ -332,6 +335,14 @@ init_export_config_vars() {
     fi
     base_image=$(get_profile_base_image "$profile_name")
     export BASE_IMAGE="$base_image"
+
+    # Research archetype (init-time scaffolding axis): flag > config > analysis.
+    export ARCHETYPE="${ZZCOLLAB_ARCHETYPE:-${CONFIG_ARCHETYPE:-analysis}}"
+    case "$ARCHETYPE" in
+        manuscript|analysis|package|simulation|blog) ;;
+        *) log_warn "Unknown archetype '$ARCHETYPE'; using 'analysis'."
+           export ARCHETYPE="analysis" ;;
+    esac
 }
 
 # The init reproducibility prompt and its summary were replaced by the shared
@@ -2264,12 +2275,19 @@ main() {
 
             init)
                 shift
-                # Forward trailing flags (e.g. --force) so the guard's
-                # documented escape hatch is reachable; cmd_init parses leading
-                # flags, so consume them here before the next command.
+                # Forward trailing flags (e.g. --force, --archetype X) so the
+                # guard's escape hatch is reachable; cmd_init parses leading
+                # flags, so consume them here before the next command. Flags that
+                # take a value (--archetype) consume the value too, else it would
+                # be misread as the next command.
                 cmd_init "$@"
                 commands_run=$((commands_run + 1))
-                while [[ $# -gt 0 ]] && [[ "$1" == -* ]]; do shift; done
+                while [[ $# -gt 0 ]] && [[ "$1" == -* ]]; do
+                    case "$1" in
+                        --archetype) shift 2 ;;
+                        *) shift ;;
+                    esac
+                done
                 ;;
             renv)
                 cmd_renv

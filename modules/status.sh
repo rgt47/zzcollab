@@ -52,8 +52,13 @@ _zzc_compute_level() {
 # fields they do not know (e.g. cmd_init has no base image yet). zzc status and
 # the toggle commands read this for robust read-back instead of re-parsing the
 # Dockerfile (toggle plan, Section 4).
-#   $1 r_version  $2 base_image:tag  $3 base_digest  $4 ppm_snapshot  $5 install_mode
+#   $1 r_version  $2 base_image:tag  $3 base_digest  $4 ppm_snapshot
+#   $5 install_mode  $6 archetype (optional; preserved from the existing record
+#   when omitted, so Dockerfile regeneration does not drop it)
 _zzc_write_state() {
+    local arch="${6:-}"
+    [[ -z "$arch" && -f .zzcollab-state ]] && \
+        arch=$(grep -m1 '^archetype=' .zzcollab-state 2>/dev/null | cut -d= -f2- || true)
     {
         echo "schema=1"
         echo "template_version=${ZZCOLLAB_TEMPLATE_VERSION:-unknown}"
@@ -62,6 +67,7 @@ _zzc_write_state() {
         echo "base_digest=${3:-}"
         echo "ppm_snapshot=${4:-}"
         echo "install_mode=${5:-}"
+        echo "archetype=${arch}"
         echo "generated=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     } > .zzcollab-state
 }
@@ -149,8 +155,12 @@ cmd_status() {
         src="Dockerfile FROM (no state record)"
     fi
 
+    local archetype
+    archetype=$(_zzc_state_get archetype "$d")
+
     echo ""
     echo "LOCAL   $(cd "$d" && pwd)   (level: $level, verified: ${verified:-no})"
+    printf "  %-14s %s\n" "archetype" "${archetype:-analysis}"
     # Capture axes
     if [[ "$backend" == "conflict" ]]; then
         printf "  %-14s %s\n" "backend" "CONFLICT: both renv.lock and a nix file present; resolve to one"

@@ -24,7 +24,9 @@ zzcollab - reproducible research compendium framework.
 Creates R package projects with Docker, renv, and CI/CD.
 
 Commands:
-  init [--force]        Create compendium structure in current directory
+  init [--force] [--archetype A]
+                        Create compendium structure (archetype: manuscript|
+                        analysis|package|simulation|blog; default analysis)
   analysis | minimal | rstudio
                         Quickstart: init + renv + docker (new project),
                         or switch profile (existing project)
