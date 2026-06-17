@@ -116,13 +116,14 @@ cmd_status() {
     printf "  %-14s %s\n" "dockerhub" "${g_account:-(unset)}"
 
     # --- Local tier: live state from artifact presence ----------------------
-    local backend docker_on ci_check ci_render tests data dev binder git_on
+    local backend docker_on ci_check ci_render tests data quality dev binder git_on
     backend=$(_zzc_detect_backend "$d")
     [[ -f "$d/Dockerfile" ]] && docker_on=on || docker_on=off
     [[ -f "$d/.github/workflows/r-package.yml" ]]    && ci_check=true  || ci_check=false
     [[ -f "$d/.github/workflows/render-report.yml" ]] && ci_render=true || ci_render=false
     [[ -d "$d/inst/tinytest" ]]        && tests=true  || tests=false
     [[ -f "$d/data-manifest.sha256" ]] && data=true   || data=false
+    [[ -f "$d/.pre-commit-config.yaml" ]] && quality=true || quality=false
     [[ -d "$d/.devcontainer" ]]        && dev=true     || dev=false
     [[ -d "$d/.binder" ]]              && binder=true  || binder=false
     [[ -d "$d/.git" ]]                 && git_on=true  || git_on=false
@@ -167,6 +168,7 @@ cmd_status() {
     printf "  %-14s %s\n" "CI check"   "$(_zzc_onoff "$ci_check")  (validation)   r-package.yml"
     printf "  %-14s %s\n" "CI render"  "$(_zzc_onoff "$ci_render")  (validation)   render-report.yml"
     printf "  %-14s %s\n" "unit tests" "$(_zzc_onoff "$tests")  (validation)   inst/tinytest/"
+    printf "  %-14s %s\n" "code quality" "$(_zzc_onoff "$quality")  (validation)   .pre-commit-config.yaml"
     printf "  %-14s %s\n" "data hash"  "$(_zzc_onoff "$data")  (capture)      data-manifest.sha256"
     printf "  %-14s %s\n" "cloud"      "devcontainer $(_zzc_onoff "$dev")  binder $(_zzc_onoff "$binder")"
     printf "  %-14s %s\n" "git"        "$(_zzc_onoff "$git_on")"

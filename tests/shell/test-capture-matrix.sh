@@ -294,6 +294,32 @@ test_toggle_data_integrity() {
 }
 
 ##############################################################################
+# Code-quality toggle: a validation feature (does not move the level). Its
+# artifact is .pre-commit-config.yaml; zzc status reports it on/off.
+##############################################################################
+
+test_toggle_code_quality() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    assert_false "[[ -f .pre-commit-config.yaml ]]" "code-quality: off by default"
+
+    _zzc code-quality || { echo "FAIL: zzc code-quality"; teardown_test; return 1; }
+    assert_file_exists ".pre-commit-config.yaml" "code-quality: config installed"
+    assert_true "grep -q 'lintr' .pre-commit-config.yaml"  "code-quality: lintr hook present"
+    assert_true "grep -q 'style-files' .pre-commit-config.yaml" "code-quality: styler hook present"
+    # Validation toggle: the level is unchanged (init repo is L0).
+    assert_equals "L0" "$(_status_level)" "code-quality: level unchanged (validation, not capture)"
+
+    _zzc rm code-quality
+    assert_false "[[ -f .pre-commit-config.yaml ]]" "code-quality: removed by rm"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

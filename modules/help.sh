@@ -36,6 +36,7 @@ Commands:
   validate              Check package dependencies (via zzrenvcheck)
   verify [--full]       Confirm reproducibility: coherence, or rebuild for L3
   data                  Write a sha256 manifest of raw data (integrity toggle)
+  code-quality          Install pre-commit hooks (styler + lintr)
   doctor [--fix]        Check workspace files are current with templates
   config <subcommand>   Manage configuration (get/set/list/init)
   list <profiles|libs|pkgs>

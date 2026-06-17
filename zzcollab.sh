@@ -833,6 +833,59 @@ EOF
     echo "  Check the data against it:          zzc verify"
 }
 
+# cmd_code_quality - code-quality toggle (validation feature). Installs a
+# .pre-commit-config.yaml driving styler and lintr. Presence is the feature's
+# on state (zzc status); it captures nothing, so it does not move the level.
+cmd_code_quality() {
+    case "${1:-}" in
+        help|--help|-h)
+            cat << 'EOF'
+CODE QUALITY
+
+Installs a .pre-commit-config.yaml that runs styler and lintr (plus hygiene
+checks) on staged R code before each commit.
+
+USAGE:
+    zzcollab code-quality     # install .pre-commit-config.yaml
+    zzcollab rm code-quality  # remove it (feature off)
+
+Activate the hooks after installing:
+    pip install pre-commit    # or: brew install pre-commit
+    pre-commit install
+    pre-commit run --all-files
+EOF
+            return 0 ;;
+    esac
+
+    ensure_workspace_initialized "code-quality" || exit 1
+
+    if [[ -f ".pre-commit-config.yaml" ]]; then
+        log_info ".pre-commit-config.yaml already present; refreshing from template."
+    fi
+    if regenerate_template_file ".pre-commit-config.yaml" \
+           ".pre-commit-config.yaml" "pre-commit config"; then
+        echo ""
+        echo "  Code-quality hooks installed (styler + lintr)."
+        echo "  Activate them:"
+        echo "    pip install pre-commit    # or: brew install pre-commit"
+        echo "    pre-commit install"
+        echo "    pre-commit run --all-files"
+    else
+        log_error "Failed to install .pre-commit-config.yaml"
+        return 1
+    fi
+}
+
+cmd_rm_code_quality() {
+    if [[ -f ".pre-commit-config.yaml" ]]; then
+        rm -f ".pre-commit-config.yaml"
+        log_success "Removed .pre-commit-config.yaml (code-quality off)"
+        log_info "Pre-commit git hooks, if installed, remain; run 'pre-commit uninstall' to remove them."
+    else
+        log_info "No .pre-commit-config.yaml to remove"
+    fi
+}
+
 cmd_validate() {
     # Dependency validation is delegated to the zzrenvcheck R package.
     # Runs on the host if R + zzrenvcheck are installed; otherwise advises
@@ -1614,17 +1667,20 @@ cmd_rm() {
         data)
             cmd_rm_data
             ;;
+        code-quality)
+            cmd_rm_code_quality
+            ;;
         all)
             cmd_rm_all "$@"  # Pass through flags like -f, --force
             ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
-            log_info "Features: docker, renv, git, github, cicd, data, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
             return 1
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, git, github, cicd, data, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
             return 1
             ;;
     esac
@@ -2110,6 +2166,11 @@ main() {
             data)
                 shift
                 cmd_data "$@"
+                exit $?
+                ;;
+            code-quality)
+                shift
+                cmd_code_quality "$@"
                 exit $?
                 ;;
             tools)
