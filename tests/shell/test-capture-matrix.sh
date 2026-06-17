@@ -320,6 +320,50 @@ test_toggle_code_quality() {
 }
 
 ##############################################################################
+# zzc toggle: interactive view-and-change. Driven here through the zzc_read
+# fallback by piping answers (ACCEPT_DEFAULTS is NOT set, so the reads consume
+# the piped input). Prompt order: backend, docker, ci, data, code-quality,
+# then a confirm.
+##############################################################################
+
+# Run zzc toggle with the given newline-separated answers; echo its exit code.
+_toggle_with() {
+    printf '%b' "$1" | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle \
+        > /dev/null 2>&1
+    echo $?
+}
+
+test_toggle_noop_makes_no_changes() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    # Keep every feature (empty answers default to current); no confirm reached.
+    assert_equals "0" "$(_toggle_with '\n\n\n\n\n')" "toggle: no-op exits 0"
+    assert_false "[[ -f data-manifest.sha256 ]]"  "toggle: no-op created no manifest"
+    assert_false "[[ -f .pre-commit-config.yaml ]]" "toggle: no-op installed no pre-commit"
+
+    teardown_test
+}
+
+test_toggle_enables_features() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    echo "immutable row" > analysis/data/raw_data/d.csv
+
+    # backend keep, docker keep, ci keep, data ON, code-quality ON, confirm y.
+    _toggle_with '\n\n\non\non\ny\n' > /dev/null
+
+    assert_file_exists "data-manifest.sha256"   "toggle: enabled data integrity"
+    assert_file_exists ".pre-commit-config.yaml" "toggle: enabled code quality"
+
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

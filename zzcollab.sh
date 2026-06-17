@@ -83,6 +83,8 @@ source "$ZZCOLLAB_MODULES_DIR/help.sh"
 source "$ZZCOLLAB_MODULES_DIR/status.sh"
 
 source "$ZZCOLLAB_MODULES_DIR/verify.sh"
+
+source "$ZZCOLLAB_MODULES_DIR/toggle.sh"
 # Note: doctor.sh is executed as a standalone script by cmd_doctor, not sourced.
 
 #=============================================================================
@@ -1744,12 +1746,16 @@ cmd_rm_docker() {
 }
 
 cmd_rm_renv() {
-    echo ""
-    log_warn "This will remove renv.lock and renv/ directory"
-    zzc_read -r -p "Continue? [y/N]: " confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        log_info "Cancelled"
-        return 0
+    # ZZCOLLAB_ASSUME_YES skips the prompt for callers that have already
+    # confirmed (e.g. zzc toggle), so the removal is not double-confirmed.
+    if [[ "${ZZCOLLAB_ASSUME_YES:-}" != "1" ]]; then
+        echo ""
+        log_warn "This will remove renv.lock and renv/ directory"
+        zzc_read -r -p "Continue? [y/N]: " confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            log_info "Cancelled"
+            return 0
+        fi
     fi
 
     [[ -f "renv.lock" ]] && rm "renv.lock" && log_info "Removed renv.lock"
@@ -2338,6 +2344,11 @@ main() {
             verify)
                 shift
                 cmd_verify "$@"
+                exit $?
+                ;;
+            toggle)
+                shift
+                cmd_toggle "$@"
                 exit $?
                 ;;
             doctor)

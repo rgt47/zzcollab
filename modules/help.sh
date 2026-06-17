@@ -33,6 +33,7 @@ Commands:
   github [--public]     Create GitHub repo and push
   dockerhub [--tag T]   Push image to Docker Hub
   status                Show reproducibility features and level (read-only)
+  toggle                Interactively view and change features
   validate              Check package dependencies (via zzrenvcheck)
   verify [--full]       Confirm reproducibility: coherence, or rebuild for L3
   data                  Write a sha256 manifest of raw data (integrity toggle)
