@@ -67,16 +67,18 @@ EOF
     fi
 
     # --- Detect current state ----------------------------------------------
-    local cur_backend cur_docker cur_ci cur_data cur_quality
+    local cur_backend cur_docker cur_ci cur_data cur_quality cur_tests cur_cloud
     cur_backend=$(_zzc_detect_backend ".")
     [[ "$cur_backend" == "conflict" ]] && { log_error "Backend conflict (renv.lock and a nix file); resolve before toggling."; return 1; }
     [[ -f Dockerfile ]]                       && cur_docker=on  || cur_docker=off
     [[ -f .github/workflows/r-package.yml ]]  && cur_ci=on      || cur_ci=off
     [[ -f data-manifest.sha256 ]]             && cur_data=on    || cur_data=off
     [[ -f .pre-commit-config.yaml ]]          && cur_quality=on || cur_quality=off
+    [[ -d inst/tinytest ]]                    && cur_tests=on   || cur_tests=off
+    { [[ -d .devcontainer ]] || [[ -d .binder ]]; } && cur_cloud=on || cur_cloud=off
 
     echo ""
-    echo "Current: backend=$cur_backend  docker=$cur_docker  ci=$cur_ci  data=$cur_data  code-quality=$cur_quality"
+    echo "Current: backend=$cur_backend  docker=$cur_docker  ci=$cur_ci  data=$cur_data  code-quality=$cur_quality  tests=$cur_tests  cloud=$cur_cloud"
     echo ""
 
     local use_gum=false
@@ -96,26 +98,32 @@ EOF
     case "$want_backend" in renv|none) ;; *) want_backend="$cur_backend" ;; esac
 
     # --- Desired feature checklist (multi-select) --------------------------
-    local want_docker want_ci want_data want_quality
+    local want_docker want_ci want_data want_quality want_tests want_cloud
     if [[ "$use_gum" == true ]]; then
         local sel=() chosen
         [[ "$cur_docker" == on ]]  && sel+=("docker")
         [[ "$cur_ci" == on ]]      && sel+=("ci")
         [[ "$cur_data" == on ]]    && sel+=("data")
         [[ "$cur_quality" == on ]] && sel+=("code-quality")
+        [[ "$cur_tests" == on ]]   && sel+=("tests")
+        [[ "$cur_cloud" == on ]]   && sel+=("cloud")
         local sel_csv; sel_csv=$(IFS=,; echo "${sel[*]}")
         chosen=$(gum_multichoose "Features (space toggles, enter applies)" \
-            "$sel_csv" docker ci data code-quality) \
+            "$sel_csv" docker ci data code-quality tests cloud) \
             || { echo "Cancelled; no changes."; return 0; }
         grep -qx docker       <<< "$chosen" && want_docker=on  || want_docker=off
         grep -qx ci           <<< "$chosen" && want_ci=on      || want_ci=off
         grep -qx data         <<< "$chosen" && want_data=on    || want_data=off
         grep -qx code-quality <<< "$chosen" && want_quality=on || want_quality=off
+        grep -qx tests        <<< "$chosen" && want_tests=on   || want_tests=off
+        grep -qx cloud        <<< "$chosen" && want_cloud=on   || want_cloud=off
     else
         want_docker=$(_toggle_ask  "Docker environment"        "$cur_docker")
         want_ci=$(_toggle_ask      "CI workflows"              "$cur_ci")
         want_data=$(_toggle_ask    "Data integrity hashing"    "$cur_data")
         want_quality=$(_toggle_ask "Code quality (pre-commit)" "$cur_quality")
+        want_tests=$(_toggle_ask   "Unit testing (tinytest)"   "$cur_tests")
+        want_cloud=$(_toggle_ask   "Cloud launch (devcontainer)" "$cur_cloud")
     fi
 
     # --- Diff desired against current --------------------------------------
@@ -125,6 +133,8 @@ EOF
     [[ "$want_ci"      != "$cur_ci"      ]] && changes+=("ci: $cur_ci -> $want_ci")
     [[ "$want_data"    != "$cur_data"    ]] && changes+=("data: $cur_data -> $want_data")
     [[ "$want_quality" != "$cur_quality" ]] && changes+=("code-quality: $cur_quality -> $want_quality")
+    [[ "$want_tests"   != "$cur_tests"   ]] && changes+=("tests: $cur_tests -> $want_tests")
+    [[ "$want_cloud"   != "$cur_cloud"   ]] && changes+=("cloud: $cur_cloud -> $want_cloud")
 
     if [[ ${#changes[@]} -eq 0 ]]; then
         echo "No changes."
@@ -170,6 +180,8 @@ EOF
 
     [[ "$want_data" != "$cur_data" ]] && { [[ "$want_data" == on ]] && cmd_data || cmd_rm_data; }
     [[ "$want_quality" != "$cur_quality" ]] && { [[ "$want_quality" == on ]] && cmd_code_quality || cmd_rm_code_quality; }
+    [[ "$want_tests" != "$cur_tests" ]] && { [[ "$want_tests" == on ]] && cmd_tests || cmd_rm_tests; }
+    [[ "$want_cloud" != "$cur_cloud" ]] && { [[ "$want_cloud" == on ]] && cmd_cloud || cmd_rm_cloud; }
 
     echo ""
     cmd_status "."

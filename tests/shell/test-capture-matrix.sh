@@ -340,7 +340,8 @@ test_toggle_noop_makes_no_changes() {
     _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
 
     # Keep every feature (empty answers default to current); no confirm reached.
-    assert_equals "0" "$(_toggle_with '\n\n\n\n\n')" "toggle: no-op exits 0"
+    # 7 prompts (backend, docker, ci, data, code-quality, tests, cloud), all kept.
+    assert_equals "0" "$(_toggle_with '\n\n\n\n\n\n\n')" "toggle: no-op exits 0"
     assert_false "[[ -f data-manifest.sha256 ]]"  "toggle: no-op created no manifest"
     assert_false "[[ -f .pre-commit-config.yaml ]]" "toggle: no-op installed no pre-commit"
 
@@ -354,11 +355,29 @@ test_toggle_enables_features() {
     _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
     echo "immutable row" > analysis/data/raw_data/d.csv
 
-    # backend keep, docker keep, ci keep, data ON, code-quality ON, confirm y.
-    _toggle_with '\n\n\non\non\ny\n' > /dev/null
+    # backend keep, docker keep, ci keep, data ON, code-quality ON,
+    # tests keep, cloud keep, confirm y.
+    _toggle_with '\n\n\non\non\n\n\ny\n' > /dev/null
 
     assert_file_exists "data-manifest.sha256"   "toggle: enabled data integrity"
     assert_file_exists ".pre-commit-config.yaml" "toggle: enabled code quality"
+
+    teardown_test
+}
+
+test_toggle_enables_tests_and_cloud() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+    # init scaffolds both; start from off so the enable is observable.
+    rm -rf inst/tinytest tests/tinytest.R .devcontainer .binder
+
+    # keep backend/docker/ci/data/code-quality, enable tests + cloud, confirm y.
+    _toggle_with '\n\n\n\n\non\non\ny\n' > /dev/null
+
+    assert_dir_exists  "inst/tinytest"                   "toggle: enabled unit tests"
+    assert_file_exists ".devcontainer/devcontainer.json" "toggle: enabled cloud launch"
 
     teardown_test
 }
