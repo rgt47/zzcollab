@@ -281,6 +281,26 @@ cmd_init() {
         load_config 2>/dev/null || true
     fi
 
+    # Archetype question (plan §9.4, the creation-time scaffolding axis). An
+    # explicit --archetype flag or a configured default wins; otherwise ask
+    # interactively. Skipped under accept-defaults (uses config/analysis), and
+    # safe when stdin is closed (zzc_read returns the default on EOF).
+    if [[ -z "${ZZCOLLAB_ARCHETYPE:-}" ]] && [[ -z "${CONFIG_ARCHETYPE:-}" ]] \
+       && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+        local _arch
+        if has_gum && [[ -t 0 ]]; then
+            _arch=$(gum_choose "Research archetype (scaffolding + render gate)" \
+                analysis manuscript package simulation blog) || _arch="analysis"
+        else
+            # || true: read returns non-zero on EOF (closed stdin), which would
+            # otherwise abort init under set -e; fall back to the default.
+            _arch=""
+            zzc_read -r -p "Archetype [analysis/manuscript/package/simulation/blog] (default analysis): " _arch || true
+            _arch="${_arch:-analysis}"
+        fi
+        ZZCOLLAB_ARCHETYPE="$_arch"
+    fi
+
     # Export template-substitution vars and the resolved BASE_IMAGE from the
     # final config, for envsubst and Dockerfile generation in setup_project.
     init_export_config_vars

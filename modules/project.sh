@@ -174,6 +174,22 @@ if (sys.nframe() == 0L) {
 }'
         create_file_if_missing "analysis/scripts/simulation.R" "$sim" "simulation starter"
     fi
+
+    # Blog archetype: a posts/ layout with a starter post, distinguishing it
+    # from the single-report analysis/manuscript layouts. (Rendering every post,
+    # rather than only report.Rmd, is a render-workflow generalisation left as
+    # follow-up; the scaffolded report.Rmd remains the render-gate entry point.)
+    if [[ "$_arch" == "blog" ]]; then
+        local post='---
+title: "First post"
+author: "'"${AUTHOR_NAME:-Your Name}"'"
+date: "'"$(date +%Y-%m-%d 2>/dev/null || echo 2026-01-01)"'"
+output: html_document
+---
+
+Write the post here. Add further posts as `analysis/posts/<slug>.Rmd`.'
+        create_file_if_missing "analysis/posts/first-post.Rmd" "$post" "blog starter post"
+    fi
 }
 
 #=============================================================================
