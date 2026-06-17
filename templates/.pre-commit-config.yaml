@@ -1,0 +1,29 @@
+# zzcollab .pre-commit-config.yaml v$ZZCOLLAB_TEMPLATE_VERSION
+#
+# Code-quality validation toggle. Runs styler and lintr on staged R code (plus
+# a few hygiene checks) before each commit. Presence of this file is the
+# feature's on state (zzc status); zzc rm code-quality removes it.
+#
+# Activate after 'zzc code-quality':
+#     pip install pre-commit   # or: brew install pre-commit
+#     pre-commit install
+#
+# Run on all files once:  pre-commit run --all-files
+repos:
+  - repo: https://github.com/lorenzwalthert/precommit
+    rev: v0.4.3
+    hooks:
+      - id: style-files
+        args: [--style_pkg=styler, --style_fun=tidyverse_style]
+      - id: lintr
+      - id: parsable-R
+      - id: no-browser-statement
+      - id: no-debug-statement
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: [--maxkb=5000]
+      - id: check-merge-conflict

@@ -705,6 +705,36 @@ generate_dockerfile_inline() {
         from_spec="${base_image}:${r_version}"
     fi
 
+    # Self-adapting dependency install: branch on renv.lock presence at
+    # generation time (a true build-time branch is blocked by Docker's
+    # inability to COPY an optionally-present file; see the toggle plan).
+    # renv mode restores the lockfile; DESCRIPTION mode installs declared
+    # dependencies from DESCRIPTION against the dated snapshot pinned above.
+    # The choice is recorded as INSTALL_MODE (ARG + LABEL) so the image is
+    # self-describing rather than silently context-dependent.
+    local install_mode install_block
+    if [[ -f renv.lock ]]; then
+        install_mode="renv"
+        install_block=$(cat <<'IRENV'
+RUN R -e "install.packages('renv')"
+RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
+COPY renv.lock renv.lock
+# renv::init creates the platform-specific library directory structure that
+# renv::restore() requires to link packages from the cache.
+RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
+IRENV
+)
+    else
+        install_mode="description"
+        install_block=$(cat <<'IDESC'
+COPY DESCRIPTION DESCRIPTION
+# No renv.lock: install declared dependencies from DESCRIPTION against the
+# dated PPM snapshot pinned above (no renv; pak resolves Imports/Suggests).
+RUN R -e "install.packages('pak'); pak::local_install_deps(root = '.', dependencies = TRUE)"
+IDESC
+)
+    fi
+
     rm -f Dockerfile
     cat > Dockerfile << EOF
 # syntax=docker/dockerfile:1.4
@@ -725,9 +755,11 @@ LABEL org.opencontainers.image.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \\
       zzcollab.r.version="${r_version}" \\
       zzcollab.base.image="${base_image}:${r_version}" \\
       zzcollab.base.digest="${image_digest:-unknown}" \\
-      zzcollab.ppm.snapshot="${ppm_snapshot}"
+      zzcollab.ppm.snapshot="${ppm_snapshot}" \\
+      zzcollab.install.mode="${install_mode}"
 
 ARG USERNAME=analyst
+ARG INSTALL_MODE=${install_mode}
 ARG DEBIAN_FRONTEND=noninteractive
 
 # RENV_PATHS_LIBRARY is outside the project bind-mount so the baked library
@@ -738,6 +770,7 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
     RENV_PATHS_CACHE=/opt/renv/cache \\
     RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\
     ZZCOLLAB_CONTAINER=true \\
+    ZZCOLLAB_INSTALL_MODE=${install_mode} \\
     ZZCOLLAB_AUTO_RESTORE=false
 
 ${system_deps_install}
@@ -750,19 +783,12 @@ RUN echo 'options(repos = c(CRAN = "${ppm_url}"))' \\
 
 ${tools_install}
 
-# Install renv and restore packages from lockfile (using PPM binaries).
-# tools_install runs BEFORE renv::init so IDE tools (languageserver, yaml)
-# are installed into the system library. renv::init creates /.Rprofile which
-# activates renv for all subsequent R processes; any install.packages call
-# after that step is intercepted by renv and installed to RENV_PATHS_LIBRARY,
-# which can cause load-test failures for packages with native dependencies.
-RUN R -e "install.packages('renv')"
-RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
-COPY renv.lock renv.lock
-# renv::init creates the platform-specific library directory structure that
-# renv::restore() requires to link packages from the cache. Without init,
-# restore downloads to the cache but never populates the library.
-RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
+# Dependency install (self-adapting, INSTALL_MODE=${install_mode}). The block
+# below is emitted by generation-time branch on renv.lock presence. In renv
+# mode, tools_install above runs BEFORE renv::init so IDE tools are in the
+# system library; renv::init then activates renv and routes later installs to
+# RENV_PATHS_LIBRARY.
+${install_block}
 
 # Install zzrenvcheck as a validation tool (system library, outside project renv).
 # Installed post-build via make install-zzrenvcheck to avoid GitHub/network
@@ -778,6 +804,13 @@ WORKDIR /home/\${USERNAME}/project
 
 CMD ["R", "--quiet"]
 EOF
+
+    # Generator-written state record (machine-readable; never hand-edited).
+    # zzc status reads this for robust read-back instead of re-parsing the
+    # Dockerfile FROM/ARG lines, which is brittle under digest pins and
+    # multi-stage builds (toggle plan, Section 4). Shared writer with cmd_init.
+    _zzc_write_state "${r_version}" "${base_image}:${r_version}" \
+        "${image_digest:-unknown}" "${ppm_snapshot}" "${install_mode}"
 
     log_success "Generated Dockerfile"
 }

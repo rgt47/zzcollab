@@ -378,6 +378,14 @@ gum_choose() {
     gum choose --header "$header" "$@"
 }
 
+# gum_multichoose HEADER PRESELECTED_CSV OPTION...
+# Multi-select checklist, pre-ticked to PRESELECTED_CSV (comma-separated subset
+# of OPTION). Echoes the chosen options, one per line.
+gum_multichoose() {
+    local header="$1" selected="$2"; shift 2
+    gum choose --no-limit --header "$header" --selected="$selected" "$@"
+}
+
 # gum_confirm PROMPT
 # Returns 0 for Yes, 1 for No or cancel.
 gum_confirm() {

@@ -34,6 +34,14 @@ RNGkind("Mersenne-Twister", "Inversion", "Rejection")
 # Set ZZCOLLAB_CONTAINER=true in Dockerfile to enable renv
 in_container <- Sys.getenv("ZZCOLLAB_CONTAINER") == "true"
 
+# Install mode governs whether renv manages packages. The Dockerfile records it
+# (ZZCOLLAB_INSTALL_MODE) so this profile self-adapts when renv is toggled: in
+# DESCRIPTION-install mode the renv workflow (auto-init, restore, snapshot) is
+# skipped entirely, so removing renv does not get undone by container startup.
+# Default "renv" so images predating this variable keep the full workflow.
+install_mode <- Sys.getenv("ZZCOLLAB_INSTALL_MODE", "renv")
+renv_enabled <- in_container && install_mode != "description"
+
 # Set repos based on environment
 if (in_container) {
   # Use Posit Package Manager for pre-compiled binaries in container
@@ -46,11 +54,15 @@ if (in_container) {
   options(repos = c(CRAN = "https://cloud.r-project.org"))
 }
 
-if (!in_container) {
+if (!renv_enabled) {
   # ==========================================
-  # Host R: Skip renv
+  # renv not active (host R, or container in DESCRIPTION-install mode)
   # ==========================================
-  message("ℹ️ Host R session (renv skipped - use container for reproducibility)")
+  if (!in_container) {
+    message("ℹ️ Host R session (renv skipped - use container for reproducibility)")
+  } else {
+    message("📦 Container R session (DESCRIPTION-install mode; renv not in use)")
+  }
 
 } else {
   # ==========================================

@@ -32,12 +32,17 @@ Commands:
   renv                  Create or update renv.lock
   github [--public]     Create GitHub repo and push
   dockerhub [--tag T]   Push image to Docker Hub
+  status                Show reproducibility features and level (read-only)
+  toggle                Interactively view and change features
   validate              Check package dependencies (via zzrenvcheck)
+  verify [--full]       Confirm reproducibility: coherence, or rebuild for L3
+  data                  Write a sha256 manifest of raw data (integrity toggle)
+  code-quality          Install pre-commit hooks (styler + lintr)
   doctor [--fix]        Check workspace files are current with templates
   config <subcommand>   Manage configuration (get/set/list/init)
   list <profiles|libs|pkgs>
                         List available profiles and bundles
-  rm <feature>          Remove a feature (docker, renv, git, github, cicd, all)
+  rm <feature>          Remove a feature (docker, renv, git, github, cicd, data, all)
   uninstall [--force]   Remove the zzcollab scaffold from this directory
   help <topic>          Show detailed help for a topic
 
@@ -103,6 +108,7 @@ DOCKER
   zzc docker --build          Generate and build the image
   zzc docker --profile NAME   Use a specific profile
   zzc docker --base-image IMG Use a custom base image
+  zzc docker --no-renv        Install from DESCRIPTION (no renv.lock)
 
 Make targets:
   make docker-build           Build image (runs check-binaries first)

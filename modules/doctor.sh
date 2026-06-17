@@ -51,14 +51,22 @@ readonly COL_DIM='\033[2m'
 # Reference: docs/workspace-structure.md
 #=============================================================================
 
-# Required files (must exist for a valid workspace)
+# Core scaffold files: present at every capture level (L0-L2), so their
+# absence is a genuine defect.
 REQUIRED_FILES=(
     "DESCRIPTION"
-    "renv.lock"
     ".Rprofile"
     "Makefile"
-    "Dockerfile"
     ".gitignore"
+)
+
+# Feature artifacts: presence is a valid toggle state, not a requirement.
+# renv.lock -> renv backend on; Dockerfile -> Docker environment on. A repo
+# without them is a lower capture level (L0/L1), not a broken one, so these are
+# reported as on/off and never counted as missing.
+FEATURE_FILES=(
+    "renv.lock"
+    "Dockerfile"
 )
 
 # Required directories (must exist for a valid workspace)
@@ -149,6 +157,87 @@ check_required_files() {
     done
 
     return $missing
+}
+
+# Report the reproducibility feature toggles by artifact presence. Informational
+# only: absence is a valid lower capture level, so this never affects the exit
+# code. Returns 0 always.
+report_feature_files() {
+    local dir="$1" f
+    echo "  Reproducibility features:"
+    for f in "${FEATURE_FILES[@]}"; do
+        if [[ -f "$dir/$f" ]]; then
+            case "$f" in
+                renv.lock) printf "    %-20s ${COL_GREEN}on${COL_RESET}  (renv backend)\n" "$f" ;;
+                Dockerfile) printf "    %-20s ${COL_GREEN}on${COL_RESET}  (Docker environment)\n" "$f" ;;
+                *)         printf "    %-20s ${COL_GREEN}on${COL_RESET}\n" "$f" ;;
+            esac
+        else
+            printf "    %-20s ${COL_DIM}off${COL_RESET}\n" "$f"
+        fi
+    done
+    return 0
+}
+
+# Phase 5 migration: ensure a .zzcollab-state record exists. Repos created
+# before the record existed are back-filled from artifact presence, never
+# deleting or altering a primary artifact. The schema mirrors _zzc_write_state
+# in modules/status.sh; keep the two in sync. Returns 1 if a record is missing
+# and was not written (so doctor flags it), 0 otherwise.
+check_state_record() {
+    local dir="$1"
+    echo "  State record:"
+    if [[ -f "$dir/.zzcollab-state" ]]; then
+        printf "    %-20s ${COL_GREEN}✓${COL_RESET}\n" ".zzcollab-state"
+        return 0
+    fi
+
+    if [[ "$FIX_MODE" != "true" ]]; then
+        printf "    %-20s ${COL_YELLOW}missing (run with --fix to back-fill)${COL_RESET}\n" ".zzcollab-state"
+        return 1
+    fi
+    if [[ "$DRY_RUN" == "true" ]]; then
+        printf "    %-20s ${COL_CYAN}would back-fill from presence${COL_RESET}\n" ".zzcollab-state"
+        return 1
+    fi
+
+    # Derive fields from artifact presence only.
+    local r_version="" base="" digest="" mode="" ppm="" from
+    if [[ -f "$dir/renv.lock" ]]; then
+        r_version=$(grep -A3 '"R"' "$dir/renv.lock" 2>/dev/null \
+            | grep -m1 '"Version"' | cut -d'"' -f4)
+    fi
+    if [[ -f "$dir/Dockerfile" ]]; then
+        [[ -f "$dir/renv.lock" ]] && mode="renv" || mode="description"
+        from=$(grep -m1 '^FROM ' "$dir/Dockerfile" 2>/dev/null | awk '{print $2}')
+        if [[ "$from" == *'${'* ]]; then
+            # ARG-substituted FROM: read the recorded ARGs instead.
+            local bi rv
+            bi=$(grep -m1 '^ARG BASE_IMAGE=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2)
+            rv=$(grep -m1 '^ARG R_VERSION=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2)
+            base="${bi}:${rv}"
+            [[ -z "$r_version" ]] && r_version="$rv"
+        else
+            base="${from%@*}"
+            [[ "$from" == *@* ]] && digest="${from#*@}"
+        fi
+        if [[ -z "$r_version" ]]; then
+            r_version=$(grep -m1 '^ARG R_VERSION=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2)
+        fi
+    fi
+
+    {
+        echo "schema=1"
+        echo "template_version=${CURRENT_VERSION}"
+        echo "r_version=${r_version}"
+        echo "base_image=${base}"
+        echo "base_digest=${digest}"
+        echo "ppm_snapshot=${ppm}"
+        echo "install_mode=${mode}"
+        echo "generated=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    } > "$dir/.zzcollab-state"
+    printf "    %-20s ${COL_GREEN}✓ back-filled from presence${COL_RESET}\n" ".zzcollab-state"
+    return 0
 }
 
 # Check required directories exist
@@ -289,11 +378,14 @@ check_version_stamps() {
     _maybe_record_fix "$dir/.Rprofile" "# zzcollab .Rprofile" "$rprofile_ver"
     print_version_status ".Rprofile" "$rprofile_ver" || issues=$((issues + 1))
 
-    # Dockerfile
-    local dockerfile_ver
-    dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
-    _maybe_record_fix "$dir/Dockerfile" "# zzcollab Dockerfile" "$dockerfile_ver"
-    print_version_status "Dockerfile" "$dockerfile_ver" || issues=$((issues + 1))
+    # Dockerfile (only when the Docker environment feature is on; its absence
+    # is a valid toggle state, not a stale stamp).
+    if [[ -f "$dir/Dockerfile" ]]; then
+        local dockerfile_ver
+        dockerfile_ver=$(extract_version "$dir/Dockerfile" "Dockerfile")
+        _maybe_record_fix "$dir/Dockerfile" "# zzcollab Dockerfile" "$dockerfile_ver"
+        print_version_status "Dockerfile" "$dockerfile_ver" || issues=$((issues + 1))
+    fi
 
     # docs/ZZCOLLAB_USER_GUIDE.md
     if [[ -f "$dir/docs/ZZCOLLAB_USER_GUIDE.md" ]]; then
@@ -440,6 +532,15 @@ check_workspace() {
 
     # Check required files
     check_required_files "$dir"
+    total_issues=$((total_issues + $?))
+    echo ""
+
+    # Report reproducibility feature toggles (informational, never an issue)
+    report_feature_files "$dir"
+    echo ""
+
+    # Ensure a state record exists; back-fill in --fix mode
+    check_state_record "$dir"
     total_issues=$((total_issues + $?))
     echo ""
 

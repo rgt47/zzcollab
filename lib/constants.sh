@@ -55,7 +55,11 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.
 # DEFAULT VALUES
 #=============================================================================
 
-readonly ZZCOLLAB_TEMPLATE_VERSION="2.8.1"
+# Single source of truth for the zzcollab version. The CLI --version, the
+# template stamp, and the R package DESCRIPTION all track this number.
+# install.sh rewrites ZZCOLLAB_VERSION in the installed copy.
+readonly ZZCOLLAB_VERSION="0.1.0"
+readonly ZZCOLLAB_TEMPLATE_VERSION="$ZZCOLLAB_VERSION"
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_R_VERSION="4.6.0"
 # Pinned tag for the zzrenvcheck validation tool installed into the image.

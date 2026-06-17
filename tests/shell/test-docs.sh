@@ -16,16 +16,18 @@ VIGNETTES_DIR="$ZZCOLLAB_ROOT/vignettes"
 TEMPLATES_DIR="$ZZCOLLAB_ROOT/templates"
 
 ##############################################################################
-# HELPER: grep active docs (excludes docs/archive/)
+# HELPER: grep the shipped (version-controlled) docs only.
+# docs/ is intentionally gitignored (working notes, plans, generated PDFs):
+# it is empty in a fresh checkout, so including it would miss in CI, and
+# locally it false-positives on notes that legitimately discuss removed flags.
 ##############################################################################
 grep_active_docs() {
   local pattern="$1"
   grep -rn "$pattern" \
-    "$DOCS_DIR" "$VIGNETTES_DIR" "$TEMPLATES_DIR" \
+    "$VIGNETTES_DIR" "$TEMPLATES_DIR" \
     "$ZZCOLLAB_ROOT/README.md" \
     --include="*.md" --include="*.Rmd" \
     2>/dev/null \
-    | grep -v "docs/archive/" \
     | grep -v "CHANGELOG" \
     | grep -v "changelog" \
     || true
@@ -188,20 +190,24 @@ test_no_removed_profiles() {
 }
 
 test_help_flags_documented() {
-  # Every long flag advertised by 'zzcollab --help' must appear in the flag
-  # reference of docs/CONFIGURATION.md, so the table cannot silently drift from
-  # the CLI when flags are added or removed.
-  local doc help_flags missing f
-  doc="$DOCS_DIR/CONFIGURATION.md"
+  # Every long flag advertised by 'zzcollab --help' must appear in some shipped
+  # (version-controlled) doc, so the docs cannot silently drift from the CLI
+  # when flags are added or removed. The flag reference formerly lived in a
+  # single docs/CONFIGURATION.md; that content has since dispersed into the
+  # vignettes, README, and the user guide, and docs/ is now gitignored, so the
+  # invariant is checked across the shipped docs rather than one file.
+  local help_flags missing f
   help_flags=$(bash "$ZZCOLLAB_ROOT/zzcollab.sh" --help 2>&1 \
     | grep -oE '\-\-[a-z][a-z-]+' | sort -u)
   missing=""
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
-    grep -qF -- "$f" "$doc" || missing="$missing $f"
+    grep -rqF --include='*.md' --include='*.Rmd' -- "$f" \
+      "$ZZCOLLAB_ROOT/README.md" "$VIGNETTES_DIR" "$TEMPLATES_DIR" 2>/dev/null \
+      || missing="$missing $f"
   done <<< "$help_flags"
   if [[ -n "$missing" ]]; then
-    echo "FAIL: Flags in 'zzcollab --help' not documented in docs/CONFIGURATION.md:$missing" >&2
+    echo "FAIL: Flags in 'zzcollab --help' not documented in any shipped doc:$missing" >&2
     return 1
   fi
 }

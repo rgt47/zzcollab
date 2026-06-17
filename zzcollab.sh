@@ -79,6 +79,12 @@ source "$ZZCOLLAB_MODULES_DIR/docker.sh"
 source "$ZZCOLLAB_MODULES_DIR/github.sh"
 # shellcheck source=/dev/null
 source "$ZZCOLLAB_MODULES_DIR/help.sh"
+# shellcheck source=/dev/null
+source "$ZZCOLLAB_MODULES_DIR/status.sh"
+
+source "$ZZCOLLAB_MODULES_DIR/verify.sh"
+
+source "$ZZCOLLAB_MODULES_DIR/toggle.sh"
 # Note: doctor.sh is executed as a standalone script by cmd_doctor, not sourced.
 
 #=============================================================================
@@ -281,6 +287,15 @@ cmd_init() {
     # Run project setup
     setup_project_safe || exit 1
 
+    # Every zzcollab project carries a state record, so no-Docker compendia have
+    # provenance and the toggle commands never hit a missing-state fallback.
+    # Write a minimal record (R version from config/default; environment fields
+    # empty until Docker is added) only when none exists, so a fuller record
+    # written by a later 'zzc docker' or an existing project is not clobbered.
+    if [[ ! -f .zzcollab-state ]]; then
+        _zzc_write_state "${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}" "" "" "" ""
+    fi
+
     log_success "Project setup complete"
     echo ""
     echo "  To change user-level defaults:     zzc config set KEY VALUE"
@@ -436,6 +451,7 @@ cmd_docker() {
     local r_version=""
     local base_image=""
     local profile=""
+    local no_renv=""
     # Global flags (-v/-q/-y/--no-build) are consumed by the pre-scan in main()
     # before this runs, so they are not handled here.
     while [[ $# -gt 0 ]]; do
@@ -444,6 +460,7 @@ cmd_docker() {
             --r-version) r_version="$2"; shift 2 ;;
             --base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; shift 2 ;;
+            --no-renv) no_renv=true; shift ;;
             help|--help|-h) show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
@@ -465,32 +482,54 @@ cmd_docker() {
         BASE_IMAGE=$(get_profile_base_image "$profile")
         export BASE_IMAGE
         config_set "profile-name" "$profile" true 2>/dev/null || true
+    elif [[ -n "$base_image" ]]; then
+        : # explicit --base-image already exported above
     else
-        load_config 2>/dev/null || true
-        if [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
-            BASE_IMAGE=$(get_profile_base_image "$CONFIG_PROFILE_NAME")
-            export BASE_IMAGE
+        # Re-adding Docker: prefer the base image remembered in .zzcollab-state
+        # (symmetry with the renv toggle) so 'zzc docker' restores the
+        # previously chosen environment without re-deriving it. The record's
+        # base_image is empty for a project that never had Docker, so first-time
+        # setup still falls through to the configured profile. The digest is
+        # re-resolved fresh by generate_dockerfile.
+        local _state_base
+        _state_base=$(_zzc_state_get base_image . 2>/dev/null)
+        if [[ -n "$_state_base" ]]; then
+            export BASE_IMAGE="${_state_base%:*}"
+            [[ -z "$r_version" ]] && r_version="${_state_base##*:}"
+            log_success "Reusing remembered base image: $_state_base"
+        else
+            load_config 2>/dev/null || true
+            if [[ -n "${CONFIG_PROFILE_NAME:-}" ]]; then
+                BASE_IMAGE=$(get_profile_base_image "$CONFIG_PROFILE_NAME")
+                export BASE_IMAGE
+            fi
         fi
     fi
 
-    # Ensure renv.lock exists (required by Dockerfile)
-    if [[ ! -f "renv.lock" ]]; then
-        log_info "No renv.lock found, creating minimal lockfile..."
+    # Determine R version: CLI arg > config > default.
+    if [[ -z "$r_version" ]]; then
+        load_config 2>/dev/null || true
+        r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
+    fi
 
-        # Determine R version: CLI arg > config > default
-        if [[ -z "$r_version" ]]; then
-            load_config 2>/dev/null || true
-            r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
+    # renv is the default backend: create a minimal renv.lock if absent so the
+    # Dockerfile restores from it. --no-renv opts into DESCRIPTION-install mode,
+    # in which the Dockerfile self-adapts to the absence of renv.lock (the
+    # install step branches on presence; see modules/docker.sh). This severs
+    # the old coupling that always wrote a minimal lockfile.
+    if [[ "$no_renv" == "true" ]]; then
+        if [[ -f "renv.lock" ]]; then
+            log_warn "--no-renv given but renv.lock exists; renv mode will be used."
+            log_info "Run 'zzc rm renv' first for DESCRIPTION-install mode."
+        else
+            log_info "--no-renv: no renv.lock; Dockerfile installs from DESCRIPTION."
         fi
-
-        # Verify the chosen R version exists as a tag for BASE_IMAGE; fall
-        # back to the latest published tag if not (e.g., CRAN has 4.6.0 but
-        # rocker/tidyverse has only 4.5.3).
-
+    elif [[ ! -f "renv.lock" ]]; then
+        log_info "No renv.lock found, creating minimal lockfile..."
         create_renv_lock_minimal "$r_version"
     fi
 
-    [[ -n "$r_version" ]] && export R_VERSION="$r_version"
+    export R_VERSION="$r_version"
 
     # Generate Dockerfile + renv.lock (wizard handles new workspaces)
     generate_dockerfile || exit 1
@@ -648,10 +687,13 @@ EOF
     # Create renv.lock
     create_renv_lock_minimal "$r_version"
 
-    # Create .Rprofile from template (always overwrite to ensure latest version)
+    # Create .Rprofile from template (always overwrite to ensure latest
+    # version). Use regenerate_template_file, not a raw copy, so the
+    # $ZZCOLLAB_TEMPLATE_VERSION stamp and other template variables are
+    # substituted; a raw safe_cp left the literal stamp, which doctor then
+    # reported as "(no stamp)".
     if [[ -f "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" ]]; then
-        safe_cp "$ZZCOLLAB_TEMPLATES_DIR/.Rprofile" .Rprofile
-        log_success "Created .Rprofile from template"
+        regenerate_template_file ".Rprofile" ".Rprofile" ".Rprofile"
     else
         log_error "Template .Rprofile not found at $ZZCOLLAB_TEMPLATES_DIR/.Rprofile"
         return 1
@@ -688,6 +730,30 @@ EOF
         log_success "Created renv/.gitignore"
     fi
 
+    # Symmetric to cmd_rm_renv: a present Dockerfile may have been generated in
+    # DESCRIPTION-install mode. renv.lock now exists, so regenerate it to flip
+    # to renv-restore mode; otherwise adding renv leaves the image installing
+    # from DESCRIPTION and ignoring the lockfile. Base image and R version come
+    # from .zzcollab-state to avoid the interactive wizard.
+    if [[ -f "Dockerfile" ]]; then
+        local _sb _sr
+        _sb=$(_zzc_state_get base_image . 2>/dev/null)
+        _sr=$(_zzc_state_get r_version . 2>/dev/null)
+        if [[ -n "$_sb" ]]; then
+            export BASE_IMAGE="${_sb%:*}"
+            export R_VERSION="${_sr:-${_sb##*:}}"
+            if generate_dockerfile >/dev/null 2>&1; then
+                echo "  Dockerfile regenerated in renv-restore mode"
+                echo "  rebuild to apply:  make docker-build"
+            else
+                log_warn "Could not regenerate Dockerfile; run 'zzc docker' manually."
+            fi
+        else
+            log_warn "Dockerfile present but no .zzcollab-state."
+            echo "  Run 'zzc docker' to switch it to renv-restore mode."
+        fi
+    fi
+
     echo ""
     echo "───────────────────────────────────────────────────────────"
     echo "  Setup complete"
@@ -702,11 +768,123 @@ EOF
     echo "  # renv.lock auto-updates on exit"
     echo ""
 
-    # Offer to save R version to config
-    local save_config
-    zzc_read -r -p "Save R version to config? [Y/n]: " save_config
-    if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
-        config_set "r-version" "$r_version"
+    # Offer to save R version to config. This is optional convenience and must
+    # never fail the command: skip the prompt entirely when non-interactive
+    # (no tty or accept-defaults), and keep config_set non-fatal otherwise so a
+    # write failure or EOF does not abort zzc renv under set -e.
+    if [[ -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+        local save_config
+        zzc_read -r -p "Save R version to config? [Y/n]: " save_config || true
+        if [[ ! "$save_config" =~ ^[Nn]$ ]]; then
+            config_set "r-version" "$r_version" || true
+        fi
+    fi
+}
+
+# cmd_data - data-integrity toggle (capture feature). Writes a sha256 manifest
+# of the immutable raw-data directory so later silent mutations are detectable.
+# Presence of data-manifest.sha256 is the feature's on state (zzc status); zzc
+# verify checks the data still matches it. Mirrors the Makefile hash-data target
+# so the manifest is identical whether written from the CLI or `make hash-data`.
+cmd_data() {
+    case "${1:-}" in
+        help|--help|-h)
+            cat << 'EOF'
+DATA INTEGRITY
+
+Writes a sha256 manifest of the raw-data directory (analysis/data/raw_data)
+so any later mutation of immutable source data is detectable.
+
+USAGE:
+    zzcollab data        # write/refresh data-manifest.sha256
+    zzcollab rm data     # remove the manifest (feature off)
+
+The manifest is the feature's presence signal. Commit it; refresh with
+'zzc data' after intentional data updates. 'zzc verify' checks the data
+against it. Equivalent to 'make hash-data' / 'make verify-data'.
+EOF
+            return 0 ;;
+    esac
+
+    ensure_workspace_initialized "data" || exit 1
+
+    local raw="analysis/data/raw_data"
+    if [[ ! -d "$raw" ]]; then
+        log_error "No $raw directory found; nothing to hash."
+        log_info "Place immutable source data in $raw, then run 'zzc data'."
+        return 1
+    fi
+    if ! command -v shasum >/dev/null 2>&1; then
+        log_error "shasum not found; cannot write the data manifest."
+        return 1
+    fi
+
+    local files
+    files=$(find "$raw" -type f | sort)
+    if [[ -z "$files" ]]; then
+        log_warn "No files under $raw; manifest not written."
+        return 1
+    fi
+    printf '%s\n' "$files" | xargs shasum -a 256 > data-manifest.sha256
+
+    local n
+    n=$(wc -l < data-manifest.sha256 | tr -d ' ')
+    log_success "Wrote data-manifest.sha256 (${n} file(s) under $raw)"
+    echo "  Commit it so later data mutations are detectable."
+    echo "  Refresh after intentional updates:  zzc data"
+    echo "  Check the data against it:          zzc verify"
+}
+
+# cmd_code_quality - code-quality toggle (validation feature). Installs a
+# .pre-commit-config.yaml driving styler and lintr. Presence is the feature's
+# on state (zzc status); it captures nothing, so it does not move the level.
+cmd_code_quality() {
+    case "${1:-}" in
+        help|--help|-h)
+            cat << 'EOF'
+CODE QUALITY
+
+Installs a .pre-commit-config.yaml that runs styler and lintr (plus hygiene
+checks) on staged R code before each commit.
+
+USAGE:
+    zzcollab code-quality     # install .pre-commit-config.yaml
+    zzcollab rm code-quality  # remove it (feature off)
+
+Activate the hooks after installing:
+    pip install pre-commit    # or: brew install pre-commit
+    pre-commit install
+    pre-commit run --all-files
+EOF
+            return 0 ;;
+    esac
+
+    ensure_workspace_initialized "code-quality" || exit 1
+
+    if [[ -f ".pre-commit-config.yaml" ]]; then
+        log_info ".pre-commit-config.yaml already present; refreshing from template."
+    fi
+    if regenerate_template_file ".pre-commit-config.yaml" \
+           ".pre-commit-config.yaml" "pre-commit config"; then
+        echo ""
+        echo "  Code-quality hooks installed (styler + lintr)."
+        echo "  Activate them:"
+        echo "    pip install pre-commit    # or: brew install pre-commit"
+        echo "    pre-commit install"
+        echo "    pre-commit run --all-files"
+    else
+        log_error "Failed to install .pre-commit-config.yaml"
+        return 1
+    fi
+}
+
+cmd_rm_code_quality() {
+    if [[ -f ".pre-commit-config.yaml" ]]; then
+        rm -f ".pre-commit-config.yaml"
+        log_success "Removed .pre-commit-config.yaml (code-quality off)"
+        log_info "Pre-commit git hooks, if installed, remain; run 'pre-commit uninstall' to remove them."
+    else
+        log_info "No .pre-commit-config.yaml to remove"
     fi
 }
 
@@ -1488,20 +1666,35 @@ cmd_rm() {
         cicd)
             cmd_rm_cicd
             ;;
+        data)
+            cmd_rm_data
+            ;;
+        code-quality)
+            cmd_rm_code_quality
+            ;;
         all)
             cmd_rm_all "$@"  # Pass through flags like -f, --force
             ;;
         "")
             log_error "Usage: zzcollab rm <feature>"
-            log_info "Features: docker, renv, git, github, cicd, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
             return 1
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, git, github, cicd, all"
+            log_info "Features: docker, renv, git, github, cicd, data, code-quality, all"
             return 1
             ;;
     esac
+}
+
+cmd_rm_data() {
+    if [[ -f data-manifest.sha256 ]]; then
+        rm -f data-manifest.sha256
+        log_success "Removed data-manifest.sha256 (data-integrity hashing off)"
+    else
+        log_info "No data-manifest.sha256 to remove"
+    fi
 }
 
 cmd_rm_docker() {
@@ -1518,32 +1711,96 @@ cmd_rm_docker() {
 
     if [[ $removed -eq 0 ]]; then
         log_info "No Docker files to remove"
-    else
-        log_success "Docker configuration removed"
+        return 0
     fi
+
+    # The render workflow self-adapts to artifact presence at run time, so with
+    # the Dockerfile gone it falls back to a host render. Refresh it from the
+    # template so repos carrying an older Docker-only render-report.yml pick up
+    # the dual-mode version; without this the next render would `docker build`
+    # against a missing Dockerfile and fail.
+    local refreshed=false
+    if [[ -f ".github/workflows/render-report.yml" ]]; then
+        if regenerate_template_file "workflows/render-report.yml" \
+               ".github/workflows/render-report.yml" "render workflow" \
+               >/dev/null 2>&1; then
+            refreshed=true
+        else
+            log_warn "Could not refresh render-report.yml; it may still expect a Dockerfile"
+        fi
+    fi
+
+    log_success "Docker configuration removed"
+    echo ""
+    echo "  The project now runs on the host environment:"
+    if [[ -f "renv.lock" ]]; then
+        echo "    packages pinned by renv.lock (capture level L1)"
+    else
+        echo "    packages installed from DESCRIPTION, unpinned (capture level L0)"
+        echo "    add renv to pin package versions:  zzc renv"
+    fi
+    [[ "$refreshed" == true ]] && \
+        echo "    render workflow updated to host-render mode"
+    echo "    review the configuration:          zzc status"
+    echo ""
 }
 
 cmd_rm_renv() {
-    echo ""
-    log_warn "This will remove renv.lock and renv/ directory"
-    zzc_read -r -p "Continue? [y/N]: " confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        log_info "Cancelled"
-        return 0
+    # ZZCOLLAB_ASSUME_YES skips the prompt for callers that have already
+    # confirmed (e.g. zzc toggle), so the removal is not double-confirmed.
+    if [[ "${ZZCOLLAB_ASSUME_YES:-}" != "1" ]]; then
+        echo ""
+        log_warn "This will remove renv.lock and renv/ directory"
+        zzc_read -r -p "Continue? [y/N]: " confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            log_info "Cancelled"
+            return 0
+        fi
     fi
 
     [[ -f "renv.lock" ]] && rm "renv.lock" && log_info "Removed renv.lock"
     [[ -d "renv" ]] && rm -rf "renv" && log_info "Removed renv/"
 
-    # Remove renv activation from .Rprofile if present. Edit via a temp file
-    # then mv into place; the project dir is often cloud-synced, where in-place
-    # sed risks a 0-byte truncation race with the sync provider.
-    if [[ -f ".Rprofile" ]] && grep -q "renv/activate.R" .Rprofile; then
-        local _rprofile_tmp
-        _rprofile_tmp=$(mktemp)
-        grep -v 'renv/activate.R' .Rprofile > "$_rprofile_tmp" || true
-        mv "$_rprofile_tmp" .Rprofile
-        log_info "Removed renv activation from .Rprofile"
+    # The check workflow self-adapts to backend presence at run time, but an
+    # older r-package.yml hard-requires renv.lock and would now fail CI.
+    # Refresh it from the template so the DESCRIPTION-backend path is available.
+    if [[ -f ".github/workflows/r-package.yml" ]]; then
+        if regenerate_template_file "workflows/r-package.yml" \
+               ".github/workflows/r-package.yml" "check workflow" \
+               >/dev/null 2>&1; then
+            echo "  Check workflow updated to DESCRIPTION-backend mode"
+        else
+            log_warn "Could not refresh r-package.yml; CI may still require renv.lock"
+        fi
+    fi
+
+    # The .Rprofile is left untouched: it self-adapts at run time, gating its
+    # renv workflow (auto-init, restore, snapshot) on ZZCOLLAB_INSTALL_MODE,
+    # which the regenerated Dockerfile sets to "description" below. Editing the
+    # file with grep would mangle the conditional renv blocks in the current
+    # template; the env-driven gate is both correct and reversible.
+
+    # A present Dockerfile was generated to restore from renv.lock; regenerate
+    # it so it self-adapts to DESCRIPTION-install mode now that renv is gone,
+    # otherwise the toggle leaves a broken COPY renv.lock. Base image and R
+    # version come from .zzcollab-state, which avoids the interactive wizard.
+    if [[ -f "Dockerfile" ]]; then
+        local _sb _sr
+        _sb=$(_zzc_state_get base_image . 2>/dev/null)
+        _sr=$(_zzc_state_get r_version . 2>/dev/null)
+        if [[ -n "$_sb" ]]; then
+            export BASE_IMAGE="${_sb%:*}"
+            export R_VERSION="${_sr:-${_sb##*:}}"
+            if generate_dockerfile >/dev/null 2>&1; then
+                echo "  Dockerfile regenerated in DESCRIPTION-install mode"
+                echo "  rebuild to apply:  make docker-build"
+            else
+                log_warn "Could not regenerate Dockerfile; run 'zzc docker --no-renv' manually."
+            fi
+        else
+            log_warn "Dockerfile present but no .zzcollab-state."
+            echo "  Run 'zzc docker --no-renv' to switch it to DESCRIPTION mode."
+        fi
     fi
 
     log_success "renv configuration removed"
@@ -1890,7 +2147,7 @@ main() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --version)
-                echo "zzcollab ${ZZCOLLAB_VERSION:-2.0.0}"
+                echo "zzcollab ${ZZCOLLAB_VERSION:-0.1.0}"
                 exit 0
                 ;;
             --help|-h)
@@ -1912,6 +2169,16 @@ main() {
                 commands_run=$((commands_run + 1))
                 shift
                 ;;
+            data)
+                shift
+                cmd_data "$@"
+                exit $?
+                ;;
+            code-quality)
+                shift
+                cmd_code_quality "$@"
+                exit $?
+                ;;
             tools)
                 cmd_tools
                 commands_run=$((commands_run + 1))
@@ -1929,6 +2196,10 @@ main() {
                             ;;
                         -b|--build)
                             docker_args+=("--build")
+                            shift
+                            ;;
+                        --no-renv)
+                            docker_args+=("--no-renv")
                             shift
                             ;;
                         --r-version|--base-image)
@@ -2060,9 +2331,24 @@ main() {
                 cmd_build "$@"
                 exit $?
                 ;;
+            status)
+                shift
+                cmd_status "$@"
+                exit $?
+                ;;
             validate)
                 shift
                 cmd_validate "$@"
+                exit $?
+                ;;
+            verify)
+                shift
+                cmd_verify "$@"
+                exit $?
+                ;;
+            toggle)
+                shift
+                cmd_toggle "$@"
                 exit $?
                 ;;
             doctor)
