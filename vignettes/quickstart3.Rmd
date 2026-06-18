@@ -286,6 +286,135 @@ zzc doctor          # report
 zzc doctor --fix    # refresh stamps and back-fill the state record
 ```
 
+## Moving across the option space
+
+The features form a small state space. The two capture axes, **backend**
+(`none` / `renv` / `nix`) and **environment** (`Docker` off / on), set the
+level; the validation features and the runtime are independent of it. This
+section walks selections around that space and shows the effect of each move.
+
+### Climbing the levels (L0 to L2)
+
+```bash
+zzc init --yes --archetype analysis   # L0: scaffold only, nothing pinned
+zzc renv                              # L1: packages pinned (renv.lock)
+zzc docker --profile analysis         # L2: environment pinned (Dockerfile)
+```
+
+| After    | backend | docker | level |
+|----------|---------|--------|-------|
+| `init`   | none    | off    | L0    |
+| `renv`   | renv    | off    | L1    |
+| `docker` | renv    | on     | L2    |
+
+The backend-environment grid and how to move between cells:
+
+| backend \\ docker | off            | on             |
+|-------------------|----------------|----------------|
+| none              | L0             | L2 (DESCRIPTION install) |
+| renv              | L1             | L2 (renv restore) |
+| nix               | L2 (flake)     | L2 (+ container) |
+
+### Switching the backend (renv, Nix, none)
+
+The backend is single-select, so a switch removes the old artifact before
+writing the new one; `renv.lock` and `flake.nix` never coexist.
+
+```bash
+# renv -> Nix (drops renv.lock, writes flake.nix; still L2 via the flake)
+zzc rm renv
+zzc nix
+
+# Nix -> none (drops flake.nix; L0 unless Docker is on)
+zzc rm nix
+
+# none -> renv
+zzc renv
+```
+
+With a `Dockerfile` present, each switch regenerates it in the matching
+install mode and reuses the remembered base image, so the environment is
+preserved across the backend change.
+
+### Switching the container runtime (Docker, Podman, Apptainer)
+
+The runtime is a parameter over the same image, not a capture change, so the
+level is untouched:
+
+```bash
+zzc config set docker-runtime podman      # make r / build now use podman
+zzc config set docker-runtime apptainer   # HPC
+make sif                                   # build env.sif for apptainer
+zzc config set docker-runtime docker       # back to the default
+```
+
+### Toggling validation features on and off
+
+These flip independently and never move the level (they check, they do not
+capture):
+
+```bash
+zzc tests          ; zzc rm tests           # inst/tinytest
+zzc code-quality   ; zzc rm code-quality    # .pre-commit-config.yaml
+zzc data           ; zzc rm data            # data-manifest.sha256
+zzc rm cicd        ; zzc add cicd           # the CI workflows
+zzc cloud          ; zzc rm cloud           # .devcontainer
+```
+
+After each, `zzc status` shows the feature flip while the `level:` field holds
+steady.
+
+### Downgrades and re-adds
+
+Removing a capture feature lowers the level and the self-adapting files
+follow; re-adding restores the prior configuration without re-asking:
+
+```bash
+zzc rm docker      # L2 -> L1; the render workflow falls back to a host render
+zzc status         # environment off; base image no longer shown
+zzc docker         # re-add: reuses the remembered base image + R version
+zzc status         # back to L2, same base as before
+```
+
+### One interactive step changing several selections
+
+`zzc toggle` can move several axes at once. Here the developer switches to the
+Nix backend, turns on data integrity and code quality, and turns off cloud
+launch, all in one confirmed diff:
+
+```
+Backend [renv/nix/none] (default: renv): nix
+  Note: Nix pins the environment (L2) without a container; Docker is for distribution only.
+  Docker environment        [on/off] (current: on): off
+  CI workflows              [on/off] (current: on): on
+  Data integrity hashing    [on/off] (current: off): on
+  Code quality (pre-commit) [on/off] (current: off): on
+  Unit testing (tinytest)   [on/off] (current: on): on
+  Cloud launch (devcontainer) [on/off] (current: on): off
+
+Planned changes:
+  - backend: renv -> nix
+  - docker: on -> off
+  - data: off -> on
+  - code-quality: off -> on
+  - cloud: on -> off
+
+Apply these changes? [y/N]: y
+```
+
+### A round trip that ends where it began
+
+Toggling a feature off and on returns the compendium to its starting state,
+and `verify` confirms coherence at each end:
+
+```bash
+zzc verify                 # coherence passes (renv mode)
+zzc rm renv                # Dockerfile flips to DESCRIPTION-install mode
+zzc verify                 # coherence still passes (description mode)
+zzc renv                   # Dockerfile flips back to renv-restore mode
+zzc verify                 # coherence passes again, identical to the start
+```
+
 ## A complete walkthrough
 
 ```bash
