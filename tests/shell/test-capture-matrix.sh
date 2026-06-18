@@ -810,6 +810,23 @@ test_apptainer_makefile_wiring() {
 }
 
 ##############################################################################
+# r-package.yml Nix path: a detect job routes to a container check (non-nix) or
+# a nix check job that runs R CMD check in `nix develop` (template-level check).
+##############################################################################
+
+test_rpackage_nix_check_job() {
+    local wf="$ZZCOLLAB_ROOT/templates/workflows/r-package.yml"
+    assert_file_exists "$wf" "r-package workflow template present"
+    grep -q '^  check-nix:' "$wf" \
+        || { echo "FAIL: no check-nix job"; return 1; }
+    grep -q 'nix develop -c' "$wf" \
+        || { echo "FAIL: nix check does not use nix develop"; return 1; }
+    # The container check must be gated off for the nix backend.
+    grep -q "nix != 'true'" "$wf" \
+        || { echo "FAIL: container check not gated against nix"; return 1; }
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
