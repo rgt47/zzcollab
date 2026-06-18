@@ -1048,7 +1048,10 @@ warn_if_templates_outdated() {
     for file in Makefile .Rprofile Dockerfile; do
         [[ -f "$file" ]] || continue
         ver=$(_template_stamp_version "$file")
-        if [[ -n "$ver" && "$ver" != "$cur" ]]; then
+        # Only a stamp strictly older than the current template is outdated.
+        # A newer stamp (e.g. a project built with a later zzcollab, or one
+        # predating a version reset) must not be flagged for a downgrade.
+        if [[ -n "$ver" ]] && [[ "$(semver_cmp "$ver" "$cur")" == "-1" ]]; then
             outdated="${outdated:+$outdated, }${file} (v${ver})"
         fi
     done
@@ -1074,7 +1077,9 @@ check_and_prompt_outdated_templates() {
         ver=$(_template_stamp_version "$file")
         if [[ -z "$ver" ]]; then
             unstamped_files+=("$file")
-        elif [[ "$ver" != "$cur" ]]; then
+        elif [[ "$(semver_cmp "$ver" "$cur")" == "-1" ]]; then
+            # Strictly older than the current template; newer/equal is not a
+            # candidate for a downgrade prompt before docker operations.
             outdated_files+=("$file (v${ver})")
         fi
     done
