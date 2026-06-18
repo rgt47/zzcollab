@@ -142,6 +142,8 @@ Backend [renv/nix/none] (default: renv): renv
   Code quality (pre-commit) [on/off] (current: off): on
   Unit testing (tinytest)   [on/off] (current: on): on
   Cloud launch (devcontainer) [on/off] (current: on): on
+  Validation: strict (scan tests/ & vignettes/) [on/off] (current: on): on
+  Validation: auto-fix DESCRIPTION [on/off] (current: off): off
 
 Planned changes:
   - data: off -> on
@@ -363,6 +365,39 @@ zzc cloud          ; zzc rm cloud           # .devcontainer
 
 After each, `zzc status` shows the feature flip while the `level:` field holds
 steady.
+
+### Dependency-validation strictness and auto-fix
+
+The dependency check (`zzc validate`, also run by `make check-renv`) enforces
+that every package used in code is declared in `DESCRIPTION` and pinned in
+`renv.lock`. Two knobs ride the same toggle checklist as the features above,
+but they are configuration rather than artifacts:
+
+- **strict** also scans `tests/` and `vignettes/` for package use (default on).
+- **auto-fix** repairs `DESCRIPTION` in place when a used package is missing
+  (default off).
+
+Because they are configuration, the toggle persists them rather than creating
+or deleting a file: project-local in `zzc toggle`, user-level in
+`zzc toggle --global`. `zzc status` reports the effective values:
+
+```
+GLOBAL  ~/.zzcollab/config.yaml   (defaults for new projects)
+  validate       strict=true  fix=false
+```
+
+Set them without the wizard, or override per invocation with explicit flags
+that take precedence over the stored defaults:
+
+```bash
+zzc config set validate-strict false          # persist (user-level)
+zzc config set-local validate-fix true        # persist (this project only)
+zzc validate --no-strict                       # override for one run
+zzc validate --fix                             # override for one run
+```
+
+Neither knob moves the reproducibility level; both only affect how the
+dependency check behaves.
 
 ### Downgrades and re-adds
 

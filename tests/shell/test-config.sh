@@ -157,6 +157,66 @@ EOF
   teardown_test
 }
 
+test_config_validate_keys_roundtrip() {
+  if ! command -v yq &>/dev/null; then
+    echo "SKIP: yq not available" >&2
+    return 0
+  fi
+
+  setup_test
+  export CONFIG_USER="$TEST_TEMP_DIR/config.yaml"
+  export CONFIG_PROJECT="$TEST_TEMP_DIR/zzcollab.yaml"
+
+  cat > "$CONFIG_USER" << 'EOF'
+defaults:
+  team_name: ""
+docker:
+  default_profile: ""
+EOF
+
+  config_set "validate-strict" "false" >/dev/null 2>&1
+  config_set "validate-fix" "true" >/dev/null 2>&1
+  assert_equals "false" "$(config_get validate-strict)" \
+    "validate-strict round-trips via config_set/get"
+  assert_equals "true" "$(config_get validate-fix)" \
+    "validate-fix round-trips via config_set/get"
+
+  # Non-boolean values are rejected by the dispatched validator.
+  config_set "validate-strict" "maybe" >/dev/null 2>&1
+  assert_false "config_set validate-strict maybe" \
+    "validate-strict rejects non-boolean values"
+
+  teardown_test
+}
+
+test_config_set_local_overrides_user() {
+  if ! command -v yq &>/dev/null; then
+    echo "SKIP: yq not available" >&2
+    return 0
+  fi
+
+  setup_test
+  export CONFIG_USER="$TEST_TEMP_DIR/config.yaml"
+  export CONFIG_PROJECT="$TEST_TEMP_DIR/zzcollab.yaml"
+
+  cat > "$CONFIG_USER" << 'EOF'
+validate:
+  fix: false
+docker:
+  default_profile: ""
+EOF
+
+  # set-local writes the project file; load_config layers it over the user
+  # value, so the merged read returns the project-local override.
+  config_set "validate-fix" "true" "true" >/dev/null 2>&1
+  assert_true "[[ -f \"$CONFIG_PROJECT\" ]]" \
+    "set-local creates the project config file"
+  assert_equals "true" "$(config_get validate-fix)" \
+    "project-local validate-fix overrides the user-level value"
+
+  teardown_test
+}
+
 test_config_key_mapping_author() {
   if ! command -v yq &>/dev/null; then
     echo "SKIP: yq not available" >&2

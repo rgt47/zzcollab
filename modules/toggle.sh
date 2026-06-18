@@ -121,11 +121,19 @@ run_feature_wizard() {
         { [[ -d .devcontainer ]] || [[ -d .binder ]]; } && cur_cloud=on || cur_cloud=off
     fi
 
+    # Dependency-validation defaults are config-backed (not artifacts), so they
+    # are read from config in every mode (strict default on, fix default off).
+    load_config 2>/dev/null || true
+    local cur_vstrict cur_vfix
+    [[ "${CONFIG_VALIDATE_STRICT:-true}" == "false" ]] && cur_vstrict=off || cur_vstrict=on
+    [[ "${CONFIG_VALIDATE_FIX:-false}"   == "true"  ]] && cur_vfix=on    || cur_vfix=off
+
     # Pre-selected defaults: current state, except init recommends renv + Docker
     # (overridable by the configured global feature defaults).
     local def_backend="$cur_backend" def_docker="$cur_docker"
     local def_ci="$cur_ci" def_data="$cur_data" def_quality="$cur_quality"
     local def_tests="$cur_tests" def_cloud="$cur_cloud"
+    local def_vstrict="$cur_vstrict" def_vfix="$cur_vfix"
     if [[ "$mode" == init ]]; then
         load_config 2>/dev/null || true
         def_backend="${CONFIG_FEAT_BACKEND:-renv}"
@@ -178,6 +186,7 @@ run_feature_wizard() {
 
     # --- Desired feature checklist (multi-select) --------------------------
     local want_docker want_ci want_data want_quality want_tests want_cloud
+    local want_vstrict want_vfix
     if [[ "$use_gum" == true ]]; then
         local sel=() chosen
         [[ "$def_docker" == on ]]  && sel+=("docker")
@@ -186,23 +195,31 @@ run_feature_wizard() {
         [[ "$def_quality" == on ]] && sel+=("code-quality")
         [[ "$def_tests" == on ]]   && sel+=("tests")
         [[ "$def_cloud" == on ]]   && sel+=("cloud")
+        # validate-strict / validate-fix are dependency-validation defaults
+        # (zzrenvcheck), not artifacts; carried in the same checklist.
+        [[ "$def_vstrict" == on ]] && sel+=("validate-strict")
+        [[ "$def_vfix" == on ]]    && sel+=("validate-fix")
         local sel_csv; sel_csv=$(IFS=,; echo "${sel[*]}")
         chosen=$(gum_multichoose "Features (space toggles, enter applies)" \
-            "$sel_csv" docker ci data code-quality tests cloud) \
+            "$sel_csv" docker ci data code-quality tests cloud validate-strict validate-fix) \
             || { echo "Cancelled; no changes."; return 0; }
-        grep -qx docker       <<< "$chosen" && want_docker=on  || want_docker=off
-        grep -qx ci           <<< "$chosen" && want_ci=on      || want_ci=off
-        grep -qx data         <<< "$chosen" && want_data=on    || want_data=off
-        grep -qx code-quality <<< "$chosen" && want_quality=on || want_quality=off
-        grep -qx tests        <<< "$chosen" && want_tests=on   || want_tests=off
-        grep -qx cloud        <<< "$chosen" && want_cloud=on   || want_cloud=off
+        grep -qx docker          <<< "$chosen" && want_docker=on  || want_docker=off
+        grep -qx ci              <<< "$chosen" && want_ci=on      || want_ci=off
+        grep -qx data            <<< "$chosen" && want_data=on    || want_data=off
+        grep -qx code-quality    <<< "$chosen" && want_quality=on || want_quality=off
+        grep -qx tests           <<< "$chosen" && want_tests=on   || want_tests=off
+        grep -qx cloud           <<< "$chosen" && want_cloud=on   || want_cloud=off
+        grep -qx validate-strict <<< "$chosen" && want_vstrict=on || want_vstrict=off
+        grep -qx validate-fix    <<< "$chosen" && want_vfix=on    || want_vfix=off
     else
-        want_docker=$(_toggle_ask  "Docker environment"        "$def_docker")
-        want_ci=$(_toggle_ask      "CI workflows"              "$def_ci")
-        want_data=$(_toggle_ask    "Data integrity hashing"    "$def_data")
-        want_quality=$(_toggle_ask "Code quality (pre-commit)" "$def_quality")
-        want_tests=$(_toggle_ask   "Unit testing (tinytest)"   "$def_tests")
+        want_docker=$(_toggle_ask  "Docker environment"          "$def_docker")
+        want_ci=$(_toggle_ask      "CI workflows"                "$def_ci")
+        want_data=$(_toggle_ask    "Data integrity hashing"      "$def_data")
+        want_quality=$(_toggle_ask "Code quality (pre-commit)"   "$def_quality")
+        want_tests=$(_toggle_ask   "Unit testing (tinytest)"     "$def_tests")
         want_cloud=$(_toggle_ask   "Cloud launch (devcontainer)" "$def_cloud")
+        want_vstrict=$(_toggle_ask "Validation: strict (scan tests/ & vignettes/)" "$def_vstrict")
+        want_vfix=$(_toggle_ask    "Validation: auto-fix DESCRIPTION" "$def_vfix")
     fi
 
     # Backend nudge (advisory, not a constraint): renv pins packages (L1) but
@@ -220,9 +237,12 @@ run_feature_wizard() {
         config_set features-code-quality "$want_quality" >/dev/null
         config_set features-tests        "$want_tests"   >/dev/null
         config_set features-cloud        "$want_cloud"   >/dev/null
+        config_set validate-strict "$([[ "$want_vstrict" == on ]] && echo true || echo false)" >/dev/null
+        config_set validate-fix    "$([[ "$want_vfix" == on ]] && echo true || echo false)"    >/dev/null
         echo ""
         log_success "Saved global feature defaults for new projects."
         echo "  backend=$want_backend  docker=$want_docker  ci=$want_ci  data=$want_data  code-quality=$want_quality  tests=$want_tests  cloud=$want_cloud"
+        echo "  validate: strict=$want_vstrict  fix=$want_vfix"
         return 0
     fi
 
@@ -235,6 +255,8 @@ run_feature_wizard() {
     [[ "$want_quality" != "$cur_quality" ]] && changes+=("code-quality: $cur_quality -> $want_quality")
     [[ "$want_tests"   != "$cur_tests"   ]] && changes+=("tests: $cur_tests -> $want_tests")
     [[ "$want_cloud"   != "$cur_cloud"   ]] && changes+=("cloud: $cur_cloud -> $want_cloud")
+    [[ "$want_vstrict" != "$cur_vstrict" ]] && changes+=("validate-strict: $cur_vstrict -> $want_vstrict")
+    [[ "$want_vfix"    != "$cur_vfix"    ]] && changes+=("validate-fix: $cur_vfix -> $want_vfix")
 
     if [[ ${#changes[@]} -eq 0 ]]; then
         echo "No changes."
@@ -308,6 +330,16 @@ run_feature_wizard() {
     [[ "$want_quality" != "$cur_quality" ]] && { [[ "$want_quality" == on ]] && cmd_code_quality || cmd_rm_code_quality; }
     [[ "$want_tests" != "$cur_tests" ]] && { [[ "$want_tests" == on ]] && cmd_tests || cmd_rm_tests; }
     [[ "$want_cloud" != "$cur_cloud" ]] && { [[ "$want_cloud" == on ]] && cmd_cloud || cmd_rm_cloud; }
+
+    # Dependency-validation defaults are config (not artifacts): persist them
+    # project-local so this compendium's `zzc validate` / `make check-renv`
+    # picks them up. Explicit --strict/--fix flags still override per-invocation.
+    if [[ "$want_vstrict" != "$cur_vstrict" ]]; then
+        config_set validate-strict "$([[ "$want_vstrict" == on ]] && echo true || echo false)" true >/dev/null
+    fi
+    if [[ "$want_vfix" != "$cur_vfix" ]]; then
+        config_set validate-fix "$([[ "$want_vfix" == on ]] && echo true || echo false)" true >/dev/null
+    fi
 
     echo ""
     cmd_status "."
