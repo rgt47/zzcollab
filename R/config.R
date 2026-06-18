@@ -366,7 +366,7 @@ init_config <- function() {
 #'
 #' @seealso
 #' \code{\link{get_config}} for basic configuration retrieval
-#' \code{\link{\%||\%}} for the null-coalescing operator used internally
+#' \code{\%||\%} for the null-coalescing operator used internally
 #'
 #' @keywords internal
 get_config_default <- function(key, default = NULL) {
