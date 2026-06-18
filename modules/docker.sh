@@ -891,20 +891,16 @@ build_docker_image() {
     # Assemble docker build flags as an array so multi-token values are passed
     # as distinct, unsplit arguments.
     local build_args=()
+    # The Makefile runs every container with --platform linux/amd64 (for parity
+    # with CI, which is amd64). Build the image the same way on arm64 hosts, for
+    # ALL base images: an arm64-native build (e.g. rocker/r-ver for the minimal
+    # and rstudio profiles) is invisible to the amd64-pinned `make r` /
+    # `docker-test`, which then report "image not found". A previous version
+    # pinned amd64 only for tidyverse/shiny/verse, so minimal/rstudio builds on
+    # Apple Silicon broke at run time (found by the real-infra validation pass).
     if [[ "$(uname -m)" == "arm64" ]]; then
-        local base_image
-        base_image=$(grep "^FROM" Dockerfile | head -1 | awk '{print $2}' | cut -d: -f1)
-        # When FROM uses ARG substitution (e.g. FROM ${BASE_IMAGE}:...), resolve
-        # the actual image name from the ARG BASE_IMAGE line
-        if [[ "$base_image" == *'${'* ]]; then
-            base_image=$(grep "^ARG BASE_IMAGE=" Dockerfile | head -1 | cut -d= -f2)
-        fi
-        case "$base_image" in
-            *tidyverse*|*shiny*|*verse*)
-                build_args+=(--platform linux/amd64)
-                log_info "Using AMD64 emulation for $base_image"
-                ;;
-        esac
+        build_args+=(--platform linux/amd64)
+        log_info "arm64 host: building for linux/amd64 (matches the amd64-pinned container runs)"
     fi
 
     # Build with hash label for future cache lookups
