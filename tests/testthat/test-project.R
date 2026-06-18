@@ -24,6 +24,10 @@ test_that("init_project constructs current-model commands", {
   calls <- character(0)
   local_mocked_bindings(
     find_zzcollab_script = function() "zzcollab",
+    # github_account is NULL here, so init_project resolves it from config.
+    # Stub the lookup (it shells out via safe_system2, which is not mocked) so
+    # the test exercises command construction without an installed CLI.
+    get_config_default = function(...) NULL,
     safe_system = function(command, ...) {
       calls[[length(calls) + 1]] <<- command
       0L

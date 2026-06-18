@@ -45,23 +45,28 @@
 #'
 #' @export
 zzcollab_help <- function(topic = NULL) {
+  # Valid help topics (must match the CLI dispatcher in modules/help.sh).
+  valid_topics <- c('general', 'docker', 'profiles', 'config', 'next-steps')
+
+  # Validate the topic before any script lookup: topic validation is pure R, so
+  # an invalid topic must be rejected with a clear error even when the zzcollab
+  # CLI is not installed (e.g. during package tests / R CMD check).
+  if (!is.null(topic) && topic != 'general' && !(topic %in% valid_topics)) {
+    stop('Unknown help topic: ', topic, '\n',
+         'Valid topics: ', paste(valid_topics, collapse = ', '),
+         call. = FALSE)
+  }
+
   # Find zzcollab script
   zzcollab_path <- find_zzcollab_script()
-
-  # Valid help topics (must match the CLI dispatcher in modules/help.sh)
-  valid_topics <- c('general', 'docker', 'profiles', 'config', 'next-steps')
 
   # Build command with topic argument.
   # The CLI routes topics via the 'help' subcommand (e.g. 'zzcollab help docker');
   # 'next-steps' is a help topic, not a flag.
   if (is.null(topic) || topic == 'general') {
     cmd <- paste(zzcollab_path, 'help')
-  } else if (topic %in% valid_topics) {
-    cmd <- paste(zzcollab_path, 'help', topic)
   } else {
-    stop('Unknown help topic: ', topic, '\n',
-         'Valid topics: ', paste(valid_topics, collapse = ', '),
-         call. = FALSE)
+    cmd <- paste(zzcollab_path, 'help', topic)
   }
 
   result <- safe_system(cmd, intern = TRUE,
