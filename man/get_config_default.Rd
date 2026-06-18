@@ -55,6 +55,6 @@ github_account <- get_config_default("github_account", team_name)
 }
 \seealso{
 \code{\link{get_config}} for basic configuration retrieval
-\code{\link{\%||\%}} for the null-coalescing operator used internally
+\code{\%||\%} for the null-coalescing operator used internally
 }
 \keyword{internal}
