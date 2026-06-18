@@ -987,7 +987,13 @@ cmd_validate() {
     # Dependency validation is delegated to the zzrenvcheck R package.
     # Runs on the host if R + zzrenvcheck are installed; otherwise advises
     # running inside the container (make check-renv).
-    local strict="TRUE" auto_fix="FALSE"
+    #
+    # Defaults come from the configured validate.strict / validate.fix
+    # (settable via 'zzc toggle'), and explicit flags below override them.
+    load_config 2>/dev/null || true
+    local strict auto_fix
+    [[ "${CONFIG_VALIDATE_STRICT:-true}" == "false" ]] && strict="FALSE" || strict="TRUE"
+    [[ "${CONFIG_VALIDATE_FIX:-false}"   == "true"  ]] && auto_fix="TRUE" || auto_fix="FALSE"
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --fix)         auto_fix="TRUE";  shift ;;
@@ -1165,6 +1171,10 @@ cmd_config() {
             [[ $# -lt 2 ]] && { log_error "Usage: zzcollab config set KEY VALUE"; exit 1; }
             config_set "$1" "$2"
             ;;
+        set-local)
+            [[ $# -lt 2 ]] && { log_error "Usage: zzcollab config set-local KEY VALUE"; exit 1; }
+            config_set "$1" "$2" "true"
+            ;;
         validate)
             # Confirm each existing config file parses as valid YAML. load_config
             # returns 0 unconditionally and swallows yq parse errors, so check
@@ -1192,7 +1202,7 @@ cmd_config() {
             ;;
         *)
             log_error "Unknown config subcommand: $subcommand"
-            log_info "Valid subcommands: init, list, get, set, validate"
+            log_info "Valid subcommands: init, list, get, set, set-local, validate"
             log_info "Or run 'zzc config' with no args for interactive setup"
             exit 1
             ;;

@@ -356,8 +356,8 @@ test_toggle_enables_features() {
     echo "immutable row" > analysis/data/raw_data/d.csv
 
     # backend keep, docker keep, ci keep, data ON, code-quality ON,
-    # tests keep, cloud keep, confirm y.
-    _toggle_with '\n\n\non\non\n\n\ny\n' > /dev/null
+    # tests keep, cloud keep, validate-strict keep, validate-fix keep, confirm y.
+    _toggle_with '\n\n\non\non\n\n\n\n\ny\n' > /dev/null
 
     assert_file_exists "data-manifest.sha256"   "toggle: enabled data integrity"
     assert_file_exists ".pre-commit-config.yaml" "toggle: enabled code quality"
@@ -373,8 +373,9 @@ test_toggle_enables_tests_and_cloud() {
     # init scaffolds both; start from off so the enable is observable.
     rm -rf inst/tinytest tests/tinytest.R .devcontainer .binder
 
-    # keep backend/docker/ci/data/code-quality, enable tests + cloud, confirm y.
-    _toggle_with '\n\n\n\n\non\non\ny\n' > /dev/null
+    # keep backend/docker/ci/data/code-quality, enable tests + cloud, keep both
+    # validate options, confirm y.
+    _toggle_with '\n\n\n\n\non\non\n\n\ny\n' > /dev/null
 
     assert_dir_exists  "inst/tinytest"                   "toggle: enabled unit tests"
     assert_file_exists ".devcontainer/devcontainer.json" "toggle: enabled cloud launch"
@@ -434,9 +435,10 @@ test_init_wizard_recommends_renv_docker() {
     _seed_config
     cd proj
     # Interactive (no ACCEPT_DEFAULTS), no build. First line answers the
-    # archetype prompt (empty -> analysis); then 7 checklist prompts kept at
-    # their defaults (backend=renv, docker=on recommended) + confirm y.
-    printf '\n\n\n\n\n\n\n\ny\n' \
+    # archetype prompt (empty -> analysis); then 9 checklist prompts kept at
+    # their defaults (backend=renv, docker=on recommended, validate-strict on /
+    # validate-fix off) + confirm y.
+    printf '\n\n\n\n\n\n\n\n\n\ny\n' \
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
 
     assert_file_exists "renv.lock"  "init wizard: recommended renv enabled"
@@ -460,8 +462,8 @@ test_coupling_render_scaffolds_report() {
     assert_false "[[ -n \"\$(find analysis -name report.Rmd)\" ]]" "coupling: no report to start"
 
     # backend keep, docker keep, ci ON, data/code-quality/tests/cloud keep,
-    # confirm y, scaffold-report y.
-    printf '\n\non\n\n\n\n\ny\ny\n' \
+    # validate-strict/validate-fix keep, confirm y, scaffold-report y.
+    printf '\n\non\n\n\n\n\n\n\ny\ny\n' \
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
 
     assert_file_exists "analysis/report/report.Rmd" "coupling: report scaffolded on CI enable"
@@ -518,7 +520,7 @@ test_toggle_global_affects_init() {
     cd proj
     # Interactive init: archetype prompt (empty -> analysis), then the wizard
     # accepting defaults (renv recommended on, Docker now off from global).
-    printf '\n\n\n\n\n\n\n\ny\n' \
+    printf '\n\n\n\n\n\n\n\n\n\ny\n' \
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" init --force > /dev/null 2>&1
 
     assert_file_exists "renv.lock"            "global->init: renv still recommended"
@@ -571,7 +573,7 @@ test_toggle_backend_renv_to_nix() {
     _zzc renv || { echo "FAIL: renv"; teardown_test; return 1; }
 
     # backend nix, then 6 feature prompts kept, confirm y.
-    printf 'nix\n\n\n\n\n\n\ny\n' \
+    printf 'nix\n\n\n\n\n\n\n\n\ny\n' \
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
 
     assert_file_exists "flake.nix"        "toggle: switched to nix"
@@ -824,6 +826,44 @@ test_rpackage_nix_check_job() {
     # The container check must be gated off for the nix backend.
     grep -q "nix != 'true'" "$wf" \
         || { echo "FAIL: container check not gated against nix"; return 1; }
+}
+
+##############################################################################
+# Dependency-validation toggles (zzrenvcheck strict / auto-fix) ride the same
+# gum checklist. They are config (not artifacts): project mode persists them
+# project-local; global mode persists user-level. `zzc validate` reads them.
+##############################################################################
+
+test_toggle_validate_persists_project_local() {
+    setup_test
+    _seed_config
+    cd proj
+    _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
+
+    # keep the 7 feature prompts, then validate-strict OFF, validate-fix ON,
+    # confirm y. Config (not artifacts) so it persists to the project config.
+    printf '\n\n\n\n\n\n\noff\non\ny\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
+
+    assert_equals "false" "$(bash "$ZZCOLLAB_SH" config get validate-strict 2>/dev/null)" \
+        "toggle: validate-strict off persisted project-local"
+    assert_equals "true" "$(bash "$ZZCOLLAB_SH" config get validate-fix 2>/dev/null)" \
+        "toggle: validate-fix on persisted project-local"
+
+    teardown_test
+}
+
+test_toggle_validate_global_persists_user_level() {
+    setup_test
+    _seed_config
+    # global mode, no workspace: keep features, validate-strict keep, fix ON.
+    printf '\n\n\n\n\n\n\n\non\n' \
+        | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle --global > /dev/null 2>&1
+
+    assert_equals "true" "$(bash "$ZZCOLLAB_SH" config get validate-fix 2>/dev/null)" \
+        "global: validate-fix default saved user-level"
+
+    teardown_test
 }
 
 ##############################################################################
