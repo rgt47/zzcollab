@@ -683,6 +683,7 @@ zzc github [--public|--private] # create GitHub repository
 zzc dockerhub [--tag TAG]       # push image to Docker Hub
 zzc validate [OPTIONS]          # check project structure
 zzc doctor [DIR] [--scan DIR]   # detect outdated templates
+zzc update [DIR] [--dry-run] [--force]  # regenerate managed files to current version
 zzc config <subcommand>         # configuration management
 zzc list [profiles|libs|pkgs]   # list available options
 zzc rm <feature> [-f]           # remove docker|renv|git|all
