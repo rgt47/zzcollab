@@ -44,6 +44,7 @@ Commands:
   tests                 Scaffold tinytest unit-test infrastructure
   cloud                 Scaffold cloud-launch config (devcontainer)
   doctor [--fix]        Check workspace files are current with templates
+  update [--dry-run]    Regenerate framework-managed files to current template version
   config <subcommand>   Manage configuration (get/set/list/init)
   list <profiles|libs|pkgs>
                         List available profiles and bundles
