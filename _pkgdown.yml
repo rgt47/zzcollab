@@ -54,6 +54,7 @@ articles:
       - quickstart-rstudio
       - quickstart1
       - quickstart2
+      - quickstart3
       - configuration
   - title: Concepts
     navbar: ~
@@ -61,6 +62,7 @@ articles:
       - reproducibility-layers
       - reusable-team-images
       - why-reproducibility-matters
+      - score-replication-crisis-zzcollab
       - testing
       - report
   - title: Workflows
