@@ -16,32 +16,29 @@ consistent with the manuscript workflow.
 ### What You Will Learn
 
 - Structuring blog posts as reproducible research compendia
-- Using symlinks to integrate with Quarto’s blog system
+- Authoring the post as `analysis/report/index.qmd` within the
+  compendium
 - Organizing media assets (images, audio, video)
-- Running Quarto blog development inside Docker containers
+- Rendering Quarto posts inside Docker with `make docker-render-qmd`
 - Managing dependencies with renv for exact reproducibility
 
 ### Prerequisites
 
 - Docker installed and running
 - ZZCOLLAB installed (`./install.sh`)
-- An existing Quarto blog (or willingness to create one)
+- A base image with Quarto (the `rocker/verse` base provides Quarto and
+  LaTeX; see Step 1)
 - Git configured with credentials
 
 ## The Blog Post as Research Compendium
 
 ### Structure Overview
 
-Each blog post follows the unified compendium structure with a
-dual-symlink system that enables intuitive editing while maintaining
-Quarto compatibility:
+Each blog post follows the unified compendium structure. The post itself
+lives at `analysis/report/index.qmd`, consistent with the manuscript
+workflow, and renders in place with `make docker-render-qmd`:
 
     posts/palmer_penguins_part1/
-    ├── index.qmd → analysis/report/index.qmd     # Symlink for Quarto
-    ├── figures/ → analysis/figures/              # Symlink for HTML resolution
-    ├── media/ → analysis/media/                  # Symlink for HTML resolution
-    ├── data/ → analysis/data/                    # Symlink for HTML resolution
-    │
     ├── Dockerfile                                # Computational environment
     ├── renv.lock                                 # Exact package versions
     ├── .Rprofile                                 # R session configuration
@@ -50,22 +47,19 @@ Quarto compatibility:
     ├── README.md                                 # Reader instructions
     │
     ├── analysis/
-    │   ├── paper/
-    │   │   ├── index.qmd                         # Blog post content (actual file)
-    │   │   ├── figures/ → ../figures/            # Symlink for intuitive editing
-    │   │   ├── media/ → ../media/                # Symlink for intuitive editing
-    │   │   └── data/ → ../data/                  # Symlink for intuitive editing
+    │   ├── report/
+    │   │   └── index.qmd                         # Blog post content (Quarto)
     │   │
     │   ├── scripts/                              # Numbered analysis pipeline
     │   │   ├── 01_prepare_data.R
     │   │   ├── 02_fit_models.R
     │   │   └── 03_generate_figures.R
     │   │
-    │   ├── figures/                              # R-generated plots (actual)
+    │   ├── figures/                              # R-generated plots
     │   │   ├── eda-overview.png
     │   │   └── model-diagnostics.png
     │   │
-    │   ├── media/                                # Static media assets (actual)
+    │   ├── media/                                # Static media assets
     │   │   ├── images/                           # Hero images, photos
     │   │   │   ├── README.md                     # Source/license info
     │   │   │   └── penguin-hero.jpg
@@ -84,32 +78,22 @@ Quarto compatibility:
     └── R/                                        # Reusable functions (optional)
         └── utils.R
 
-### Why Dual Symlinks?
+### Paths Are Relative to the Post
 
-Quarto blogs expect `posts/*/index.qmd` at the post root, but ZZCOLLAB
-places documents in `analysis/report/`. The dual-symlink system
-addresses this:
-
-**At post root** (for Quarto and HTML resolution):
-
-    index.qmd → analysis/report/index.qmd
-    figures/  → analysis/figures/
-    media/    → analysis/media/
-    data/     → analysis/data/
-
-**In analysis/report/** (for intuitive editing):
-
-    figures/ → ../figures/
-    media/   → ../media/
-    data/    → ../data/
+The post and its assets live together under `analysis/`, so figures,
+media, and data are referenced with paths relative to
+`analysis/report/index.qmd`. Quarto renders the document in place;
+`make docker-render-qmd` runs `quarto render analysis/report/index.qmd`
+inside the container.
 
 **Benefits**:
 
-1.  **Quarto compatibility**: Finds `index.qmd` at expected location
-2.  **Intuitive paths**: Write `![Plot](figures/plot.png)` in your
-    `.qmd`
-3.  **Correct HTML**: Rendered paths resolve via root symlinks
-4.  **rrtools consistency**: Actual content lives in `analysis/report/`
+1.  **No symlinks to maintain**: One canonical location for the post and
+    assets
+2.  **Intuitive paths**: Reference assets relative to `analysis/report/`
+3.  **Reproducible render**: `make docker-render-qmd` builds in the
+    container
+4.  **rrtools consistency**: Content lives in `analysis/report/`
 
 ### Directory Purposes
 
@@ -132,44 +116,29 @@ cd ~/prj/qblog/posts
 # Create post directory
 mkdir palmer_penguins_part1 && cd palmer_penguins_part1
 
-# Initialize with publishing profile (includes Quarto)
-zzcollab -r ubuntu_standard_publishing
+# Initialize with the rocker/verse base image, which provides Quarto and
+# LaTeX (needed for PDF output). For HTML-only posts, the default analysis
+# profile is sufficient.
+zzcollab docker --base-image rocker/verse
 ```
 
-### Step 2: Set Up Blog Structure
+### Step 2: Prepare the Post Directories
 
-Run the `setup_symlinks.sh` script to create the blog post structure:
+Create the media directories and the Quarto post file inside the
+compendium:
 
 ``` bash
-# Run the setup script (creates symlinks, media dirs, and index.qmd template)
-modules/setup_symlinks.sh
+# Media directories for static assets
+mkdir -p analysis/media/images analysis/media/audio analysis/media/video
+
+# The Quarto post lives alongside the manuscript
+touch analysis/report/index.qmd
 ```
 
-This single command:
-
-1.  Creates media directories (`analysis/media/{images,audio,video}/`)
-2.  Copies the `index.qmd` template to `analysis/report/`
-3.  Creates root-level symlinks for Quarto compatibility
-4.  Creates `analysis/report/` symlinks for intuitive editing
-
-**Verify the structure:**
-
-``` bash
-# Check root-level symlinks
-ls -la
-
-# Check analysis/report/ symlinks
-ls -la analysis/report/
-
-# Check status anytime
-modules/setup_symlinks.sh --status
-```
-
-**To remove blog structure** (revert to standard ZZCOLLAB project):
-
-``` bash
-modules/setup_symlinks.sh --remove
-```
+The post is authored at `analysis/report/index.qmd` and rendered with
+`make docker-render-qmd`, which runs
+`quarto render analysis/report/index.qmd` inside the container. No
+symlinks are required.
 
 ### Step 3: Add Static Media Assets
 
@@ -198,8 +167,9 @@ EOF
 
 ### Step 4: Edit Blog Post
 
-The `setup_symlinks.sh` script created a template at
-`analysis/report/index.qmd`. Edit it to customize your post:
+Author the post at `analysis/report/index.qmd`. Asset paths are relative
+to that file, so they begin with `../` to reach `analysis/figures/`,
+`analysis/media/`, and `analysis/data/`:
 
 ```` markdown
 ---
@@ -209,7 +179,7 @@ author: "Your Name"
 date: "2025-01-15"
 categories: [R Programming, Data Science, Palmer Penguins]
 description: "Exploratory data analysis and simple regression modeling"
-image: "media/images/penguin-hero.jpg"
+image: "../media/images/penguin-hero.jpg"
 execute:
   echo: true
   warning: false
@@ -219,7 +189,7 @@ format:
     code-fold: false
 ---
 
-![Palmer Station, Antarctica](media/images/palmer-station.jpg){.img-fluid}
+![Palmer Station, Antarctica](../media/images/palmer-station.jpg){.img-fluid}
 
 # Introduction
 
@@ -230,31 +200,31 @@ Welcome to our exploration of the Palmer penguins dataset!
 library(tidyverse)
 
 # Load pre-computed results (generated by analysis/scripts/)
-penguins_clean <- read_csv("data/derived_data/penguins_clean.csv")
-model_results <- read_csv("data/derived_data/model_coefficients.csv")
+penguins_clean <- read_csv("../data/derived_data/penguins_clean.csv")
+model_results <- read_csv("../data/derived_data/model_coefficients.csv")
 ```
 
 # Exploratory Data Analysis
 
 Our analysis reveals distinct patterns across species:
 
-![Species distribution and morphometric relationships](figures/eda-overview.png)
+![Species distribution and morphometric relationships](../figures/eda-overview.png)
 
 # Model Results
 
 
 ``` r
-simple_model <- readRDS("data/derived_data/simple_model.rds")
+simple_model <- readRDS("../data/derived_data/simple_model.rds")
 summary(simple_model)
 ```
 
-![Model diagnostic plots](figures/model-diagnostics.png)
+![Model diagnostic plots](../figures/model-diagnostics.png)
 
 # Video Walkthrough
 
 ```{=html}
 <video width="100%" controls>
-  <source src="media/video/analysis-walkthrough.mp4" type="video/mp4">
+  <source src="../media/video/analysis-walkthrough.mp4" type="video/mp4">
 </video>
 ```
 
@@ -264,7 +234,7 @@ This post is a reproducible research compendium:
 
 ```bash
 git clone <repo> && cd posts/palmer_penguins_part1
-make docker-build && make docker-post-render
+make docker-build && make docker-render-qmd
 ```
 
 
@@ -273,8 +243,8 @@ sessionInfo()
 ```
 ````
 
-**Note**: All paths are simple (`figures/`, `media/`, `data/`) because
-symlinks in `analysis/report/` resolve them to actual directories.
+**Note**: Asset paths use `../` because they are resolved relative to
+`analysis/report/index.qmd`.
 
 ### Step 5: Create Analysis Scripts
 
@@ -381,38 +351,39 @@ Rscript analysis/scripts/01_prepare_data.R
 Rscript analysis/scripts/02_fit_models.R
 Rscript analysis/scripts/03_generate_figures.R
 
-# Render blog post (from post root, via symlink)
-quarto render index.qmd
+# Render the Quarto post
+quarto render analysis/report/index.qmd
 
 # Exit container
 exit
 ```
 
-### Step 7: Add Makefile Targets
+Alternatively, render from the host with the framework target, which
+runs `quarto render analysis/report/index.qmd` inside the container:
 
-Add to `Makefile`:
+``` bash
+make docker-render-qmd
+```
+
+### Step 7: Optional Project Targets for the Pipeline
+
+The framework provides `make docker-render-qmd` for rendering. If you
+want a single command that also runs the analysis pipeline first, you
+can add your own project target. The following are user-added targets,
+not framework provided:
 
 ``` makefile
-.PHONY: post-analysis post-render docker-post-render docker-post-preview
+.PHONY: post-analysis post-render
 
-# Run analysis pipeline
+# Run analysis pipeline (user-added convenience target)
 post-analysis:
     Rscript analysis/scripts/01_prepare_data.R
     Rscript analysis/scripts/02_fit_models.R
     Rscript analysis/scripts/03_generate_figures.R
 
-# Render blog post (via root symlink)
+# Run pipeline then render via the framework target
 post-render: post-analysis
-    quarto render index.qmd
-
-# Docker versions
-docker-post-render:
-    docker run --rm -v "$$(pwd):/project" -w /project $(DOCKER_IMAGE) \
-        make post-render
-
-docker-post-preview:
-    docker run --rm -p 8080:8080 -v "$$(pwd):/project" -w /project $(DOCKER_IMAGE) \
-        quarto preview index.qmd --host 0.0.0.0 --port 8080
+    $(MAKE) docker-render-qmd
 ```
 
 ## Integration with Parent Blog
@@ -426,7 +397,7 @@ project:
   type: website
   render:
     - "*.qmd"
-    - "posts/*/index.qmd"    # Finds symlinked index.qmd
+    - "posts/*/analysis/report/index.qmd"   # Post lives in the compendium
     - "!posts/*/analysis/scripts/"
     - "!posts/*/R/"
 ```
@@ -438,10 +409,10 @@ project:
 ``` bash
 # Each post renders in its own container (full reproducibility)
 cd posts/palmer_penguins_part1
-make docker-post-render
+make docker-render-qmd
 
 cd ../palmer_penguins_part2
-make docker-post-render
+make docker-render-qmd
 
 # Build parent blog
 cd ../..
@@ -459,7 +430,7 @@ set -e
 for post in posts/*/; do
     if [ -f "$post/Makefile" ] && [ -f "$post/Dockerfile" ]; then
         echo "=== Rendering: $post ==="
-        (cd "$post" && make docker-build && make docker-post-render)
+        (cd "$post" && make docker-build && make docker-render-qmd)
     fi
 done
 
@@ -529,19 +500,6 @@ git add .gitattributes
 
 # OS files
 .DS_Store
-
-# Don't ignore symlinks - they're part of the structure
-# !index.qmd  # This is a symlink, keep it
-```
-
-### Committing Symlinks
-
-Git tracks symlinks as files containing the target path. Commit them:
-
-``` bash
-git add index.qmd figures media data
-git add analysis/report/figures analysis/report/media analysis/report/data
-git commit -m "Add symlink structure for blog post"
 ```
 
 ### Complete Commit
@@ -555,10 +513,9 @@ Structure:
 - analysis/scripts/: Analysis pipeline (3 scripts)
 - analysis/figures/: Generated plots
 - analysis/media/: Static images, audio, video
-- Dual symlinks for Quarto compatibility
 
 Reproduce:
-  make docker-build && make docker-post-render"
+  make docker-build && make docker-render-qmd"
 ```
 
 ## Reader Instructions (README.md)
@@ -575,9 +532,9 @@ git clone https://github.com/yourusername/qblog.git
 cd qblog/posts/palmer_penguins_part1
 
 make docker-build
-make docker-post-render
+make docker-render-qmd
 
-open index.html
+open analysis/report/index.html
 ```
 
 ### Requirements
@@ -587,11 +544,8 @@ open index.html
 
 ### Structure
 
-    ├── index.qmd              # Symlink to analysis/report/index.qmd
-    ├── figures/               # Symlink to analysis/figures/
-    ├── media/                 # Symlink to analysis/media/
     ├── analysis/
-    │   ├── paper/index.qmd    # Blog post (actual file)
+    │   ├── report/index.qmd   # Blog post (Quarto)
     │   ├── scripts/           # Analysis pipeline
     │   ├── figures/           # Generated plots
     │   ├── media/             # Static assets
@@ -602,7 +556,7 @@ open index.html
 ### Reproducibility
 
 All figures are generated by scripts in `analysis/scripts/`. Run the
-pipeline: `make post-analysis`
+pipeline, then render with `make docker-render-qmd`.
 
 
     # Best Practices Summary
@@ -610,17 +564,17 @@ pipeline: `make post-analysis`
     ## Structure
 
     - **Blog post in `analysis/report/index.qmd`** - Consistent with rrtools
-    - **Dual symlinks** - Root level for Quarto, paper level for editing
+    - **Assets under `analysis/`** - Referenced with `../` relative paths
     - **Numbered scripts** - Clear execution order
     - **Separate figures from media** - Generated vs static
 
     ## Paths in index.qmd
 
-    Write simple, intuitive paths:
+    Reference assets relative to `analysis/report/index.qmd`:
 
     ```markdown
-    ![Plot](figures/plot.png)           # Works via symlink
-    ![Hero](media/images/hero.jpg)      # Works via symlink
+    ![Plot](../figures/plot.png)           # analysis/figures/
+    ![Hero](../media/images/hero.jpg)      # analysis/media/images/
 
 ### Reproducibility
 
@@ -633,8 +587,8 @@ pipeline: `make post-analysis`
 
 ``` bash
 make docker-build         # Build environment
-make r            # Interactive development
-make docker-post-render   # Full pipeline + render
+make r                    # Interactive development
+make docker-render-qmd    # Render the Quarto post
 ```
 
 ## Self-Contained Project Guidelines
@@ -658,15 +612,15 @@ directory
 # Copy hero image INTO the post
 cp ~/assets/penguin-hero.jpg posts/my_post/analysis/media/images/
 
-# Reference it locally in your index.qmd
-![Hero image](media/images/penguin-hero.jpg){.img-fluid}
+# Reference it relative to analysis/report/index.qmd
+![Hero image](../media/images/penguin-hero.jpg){.img-fluid}
 ```
 
-**DON’T ❌**: Reference images from parent project paths
+**DON’T**: Reference images from parent project paths
 
 ``` bash
 # AVOID: This breaks if post is cloned independently
-![Hero image](../../images/posts/penguin-hero.jpg){.img-fluid}
+![Hero image](../../../images/posts/penguin-hero.jpg){.img-fluid}
 ```
 
 ### Verifying Self-Containment
@@ -680,49 +634,42 @@ cd qblog
 git sparse-checkout set posts/my_post
 cd posts/my_post
 
-# Try to render - should work without parent project
+# Try to render; should work without parent project
 make docker-build
-make docker-post-render
+make docker-render-qmd
 
-# If images render correctly, you're self-contained ✓
-open index.html
+# If images render correctly, the post is self-contained
+open analysis/report/index.html
 ```
 
 ### Media Directory Checklist
 
 Before publishing your blog post, verify:
 
-- [x] All images are in `analysis/media/images/`
-- [x] `analysis/media/images/README.md` documents all image sources
-- [x] All image paths use `media/images/filename` (not
-  `../../images/...`)
-- [x] Large media files (video, audio) use Git LFS tracking
-- [x] Post renders successfully: `make docker-post-render`
-- [x] Post is self-contained: can clone just this directory and render
+- All images are in `analysis/media/images/`
+- `analysis/media/images/README.md` documents all image sources
+- All image paths use `../media/images/filename` (relative to the post)
+- Large media files (video, audio) use Git LFS tracking
+- Post renders successfully: `make docker-render-qmd`
+- Post is self-contained: can clone just this directory and render
 
 ### Example: Complete Self-Contained Post
 
     posts/my_analysis/
-    ├── index.qmd → analysis/report/index.qmd       # Symlink
-    ├── figures/ → analysis/figures/                # Symlink
-    ├── media/ → analysis/media/                    # Symlink
-    ├── data/ → analysis/data/                      # Symlink
-    │
     ├── analysis/report/
-    │   ├── index.qmd                               # Actual blog post file
-    │   ├── figures/ → ../figures/                  # Symlink
-    │   ├── media/ → ../media/                      # Symlink
-    │   └── data/ → ../data/                        # Symlink
+    │   └── index.qmd                               # Blog post (Quarto)
     │
     ├── analysis/media/
     │   └── images/
     │       ├── README.md                           # Image sources/licenses
-    │       ├── hero-image.jpg                      # ✓ STORED HERE (12 MB)
-    │       └── supporting-photo.jpg                # ✓ STORED HERE
+    │       ├── hero-image.jpg                      # Stored here (12 MB)
+    │       └── supporting-photo.jpg                # Stored here
     │
     ├── analysis/figures/                           # Generated by scripts
     │   ├── eda-plot.png
     │   └── model-diagnostics.png
+    │
+    ├── analysis/data/                              # Raw and derived data
     │
     ├── Dockerfile                                  # Complete environment
     ├── renv.lock                                   # Exact packages
@@ -735,31 +682,10 @@ In `analysis/report/index.qmd`:
 ``` markdown
 ---
 title: "My Analysis"
-image: "media/images/hero-image.jpg"  # YAML also uses local path
+image: "../media/images/hero-image.jpg"  # Relative to the post
 ---
 
-![Hero](media/images/hero-image.jpg){.img-fluid}  # Local reference
-```
-
-### Template Post as Reference
-
-The `template_post/` in your ZZCOLLAB installation serves as a **working
-exemplar** of a self-contained blog post:
-
-``` bash
-# Copy the template as your starting point
-cp -r /path/to/zzcollab/template_post posts/my_new_post
-
-# It already has:
-# ✓ Correct directory structure
-# ✓ Images in analysis/media/images/
-# ✓ All symlinks properly set up
-# ✓ Example YAML and content
-# ✓ Analysis scripts showing best practices
-
-# Just customize the content
-cd posts/my_new_post
-$EDITOR analysis/report/index.qmd
+![Hero](../media/images/hero-image.jpg){.img-fluid}  # Relative reference
 ```
 
 ## References

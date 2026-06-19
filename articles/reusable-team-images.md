@@ -126,7 +126,7 @@ cd ..
 
 **What this does:** - Creates project structure with DESCRIPTION,
 Makefile, etc. - Builds from `rocker/rstudio:latest` - Installs analysis
-profile packages (tidyverse, here, testthat, knitr, rmarkdown) - Creates
+profile packages (renv, devtools, tidyverse, here) - Creates
 `mylab/baseimage:latest` - Pushes to Docker Hub for team access
 
 **Profile options:**
@@ -140,9 +140,9 @@ make docker-build && make docker-push-team
 git add . && git commit -m "Create analysis team base image" && git push
 cd ..
 
-# Modeling profile (machine learning focused)
+# Machine learning focused
 mkdir modeling-base && cd modeling-base
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create modeling team base image" && git push
@@ -157,24 +157,26 @@ git add . && git commit -m "Create minimal team base image" && git push
 cd ..
 ```
 
-**Specialized domain profiles:**
+**Specialized domain images:**
 
 ``` bash
 # Bioinformatics (Bioconductor genomics)
 mkdir bio-base && cd bio-base
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create bioinformatics team base image" && git push
 cd ..
+# Add genomics packages via renv (install.packages / BiocManager) as needed
 
 # Geospatial (GIS and spatial analysis)
 mkdir geo-base && cd geo-base
-zzc geospatial                   # Full setup with geospatial profile
+zzcollab docker --base-image rocker/geospatial  # Geospatial base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create geospatial team base image" && git push
 cd ..
+# Add spatial packages via renv (install.packages) as needed
 ```
 
 ### Step 2: Verify Image on Docker Hub
@@ -263,15 +265,15 @@ A genomics lab with 5 researchers and multiple ongoing studies.
 ``` bash
 # Create lab base image with bioinformatics tools
 mkdir labbase && cd labbase
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github                       # Create private GitHub repo
 make docker-build                # Installs packages from renv.lock
 make docker-push-team            # Push to Docker Hub for team
 git add . && git commit -m "Create lab base image" && git push
 cd ..
 
-# The bioinformatics profile includes Bioconductor base image and packages
-# Additional packages can be added via install.packages() as needed
+# The Bioconductor base image provides genomics tooling
+# Additional packages can be added via install.packages() / BiocManager as needed
 ```
 
 **Team Members (joining existing projects):**
@@ -291,7 +293,7 @@ make docker-rstudio
 
 # Researcher 3: Create new variant calling project
 mkdir variant-calling && cd variant-calling
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github
 make docker-build && make docker-push-team
 make docker-rstudio
@@ -356,7 +358,7 @@ Create different base images for different research domains:
 ``` bash
 # Bioinformatics base (Bioconductor packages)
 mkdir bio-base && cd bio-base
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create bioinformatics base image" && git push
@@ -365,16 +367,16 @@ cd ..
 
 # Geospatial base (sf, terra, raster)
 mkdir geo-base && cd geo-base
-zzc geospatial                   # Full setup with geospatial profile
+zzcollab docker --base-image rocker/geospatial  # Geospatial base
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create geospatial base image" && git push
 cd ..
 # Use for: climate modeling, ecology, urban planning projects
 
-# Machine learning base (modeling packages)
+# Machine learning base (ML packages)
 mkdir ml-base && cd ml-base
-zzc modeling                     # Full setup with modeling profile
+zzc analysis                     # Full setup; ML packages added via renv
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create machine learning base image" && git push
@@ -383,7 +385,7 @@ cd ..
 
 # Publishing base (LaTeX, Quarto, rmarkdown)
 mkdir pub-base && cd pub-base
-zzc publishing                   # Full setup with publishing profile
+zzcollab docker --base-image rocker/verse   # LaTeX/Quarto via the rocker/verse base image
 zzc github
 make docker-build && make docker-push-team
 git add . && git commit -m "Create publishing base image" && git push
@@ -645,12 +647,16 @@ Create `BASE_IMAGE_README.md` in base image project:
 Data analysis environment for lab projects.
 
 ## Docker Profile
-analysis: tidyverse, here, testthat, knitr, rmarkdown
+analysis: renv, devtools, tidyverse, here
 
 ## Key Packages
 - tidyverse: Data manipulation
 - here: Project-relative paths
-- testthat: Unit testing
+- renv: Dependency management
+- devtools: Package development helpers
+
+## Added via renv (not in the base profile)
+- tinytest: Unit testing
 - knitr/rmarkdown: Reproducible reports
 
 ## Last Updated
@@ -691,12 +697,11 @@ mkdir test-project && cd test-project
 zzc analysis
 make docker-rstudio
 
-# Verify all key packages load
+# Verify key packages load. The analysis profile provides the tidyverse
+# only; packages such as tidymodels or shiny are not pre-installed and must
+# be added via renv (renv::install(), then snapshot and rebuild the image).
 # In RStudio:
 library(tidyverse)
-library(tidymodels)
-library(shiny)
-# etc.
 
 # If tests pass, promote to production
 docker tag mylab/baseimage-test:latest \
@@ -712,17 +717,17 @@ Keep a centralized list of available base images:
 # team-base-images.md
 # Lab Base Images
 
-| Name | Profile | Purpose | Last Updated |
-|------|---------|---------|--------------|
-| mylab/bio-base | bioinformatics | Bioconductor genomics | 2025-01-15 |
-| mylab/geo-base | geospatial | Geospatial analysis | 2025-01-10 |
-| mylab/ml-base | modeling | Machine learning | 2025-01-05 |
-| mylab/pub-base | publishing | LaTeX/Quarto docs | 2024-12-20 |
+| Name | Base | Purpose | Last Updated |
+|------|------|---------|--------------|
+| mylab/bio-base | bioconductor/bioconductor_docker | Bioconductor genomics | 2025-01-15 |
+| mylab/geo-base | rocker/geospatial | Geospatial analysis | 2025-01-10 |
+| mylab/ml-base | analysis profile (ML via renv) | Machine learning | 2025-01-05 |
+| mylab/pub-base | rocker/verse | LaTeX/Quarto docs | 2024-12-20 |
 
 ## Usage
 # For bioinformatics projects:
 mkdir <project-name> && cd <project-name>
-zzc bioinformatics               # Full setup with bioinformatics profile
+zzcollab docker --base-image bioconductor/bioconductor_docker  # Bioconductor base
 zzc github                       # Create private GitHub repo
 ```
 
@@ -748,14 +753,14 @@ R version requirements
 
 ### Profile Selection for Base Images
 
-| Use Case | Recommended Profile | Rationale |
+| Use Case | Recommended Profile or Base | Rationale |
 |----|----|----|
-| General purpose team base | analysis | Tidyverse ecosystem for data work |
-| Bioinformatics domain | bioinformatics | Bioconductor genomics packages |
-| Geospatial work | geospatial | GDAL/PROJ spatial tools |
-| Machine learning | modeling | Tidymodels ML framework |
-| Publishing/reports | publishing | LaTeX, Quarto, rmarkdown |
-| Lightweight base | minimal | Essential dev tools only |
+| General purpose team base | analysis profile | Tidyverse ecosystem for data work |
+| Bioinformatics domain | bioconductor/bioconductor_docker base | Bioconductor genomics packages |
+| Geospatial work | rocker/geospatial base | GDAL/PROJ spatial tools |
+| Machine learning | analysis profile (ML via renv) | Tidymodels ML framework |
+| Publishing/reports | rocker/verse base image | LaTeX, Quarto, rmarkdown |
+| Lightweight base | minimal profile | Essential dev tools only |
 
 ## Summary
 

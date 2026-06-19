@@ -46,8 +46,8 @@ progressive disclosure**.
     └── functions.R         └── functions.R                 └── functions.R
                             man/                            man/
                             └── *.Rd (auto-generated)       └── *.Rd
-                            tests/                          tests/
-                            └── testthat/                   └── testthat/
+                            inst/                           inst/
+                            └── tinytest/                   └── tinytest/
                                                             vignettes/
                                                             └── tutorial.Rmd
                                                             NEWS.md
@@ -79,7 +79,7 @@ The package development workflow starts **identically** to data analysis
 zzcollab config init
 zzcollab config set team-name "myusername"
 zzcollab config set github-account "myusername"
-zzcollab config set profile-name "ubuntu_standard_analysis"  # Analysis profile works for packages!
+zzcollab config set profile-name "analysis"  # Analysis profile works for packages!
 ```
 
 #### Create Package Project
@@ -122,11 +122,16 @@ then implement functions.
 
 #### Initialize Testing
 
+ZZCOLLAB projects use tinytest, not testthat. The test runner
+`tests/tinytest.R` is created by the framework; you only need to add
+test files under `inst/tinytest/`.
+
 ``` bash
 make r
 
 R
-> usethis::use_testthat()
+> # tinytest is already available in the analysis and minimal profiles
+> # Create a test file directly under inst/tinytest/
 > quit()
 
 exit
@@ -136,57 +141,52 @@ exit
 
 ##### Step 2a: Write Test First
 
-Create `tests/testthat/test-prepare_data.R`:
+Create `inst/tinytest/test_prepare_data.R`. tinytest uses bare top-level
+expectations rather than a `test_that()` wrapper:
 
 ``` r
 
-# test-prepare_data.R
-library(testthat)
+# test_prepare_data.R
+# prepare_penguin_data removes incomplete cases
+test_data <- data.frame(
+  species = c('Adelie', 'Adelie', 'Chinstrap'),
+  bill_length_mm = c(39.1, NA, 46.5),
+  bill_depth_mm = c(18.7, 17.8, 17.9),
+  body_mass_g = c(3750, 3800, NA),
+  sex = c('male', 'female', 'male')
+)
 
-test_that("prepare_penguin_data removes incomplete cases", {
-  # Create test data with missing values
-  test_data <- data.frame(
-    species = c("Adelie", "Adelie", "Chinstrap"),
-    bill_length_mm = c(39.1, NA, 46.5),
-    bill_depth_mm = c(18.7, 17.8, 17.9),
-    body_mass_g = c(3750, 3800, NA),
-    sex = c("male", "female", "male")
-  )
+result <- prepare_penguin_data(test_data)
 
-  result <- prepare_penguin_data(test_data)
+# Should keep only complete cases
+expect_equal(nrow(result), 1)
+expect_false(anyNA(result$bill_length_mm))
+expect_false(anyNA(result$body_mass_g))
 
-  # Should keep only complete cases
-  expect_equal(nrow(result), 1)
-  expect_false(anyNA(result$bill_length_mm))
-  expect_false(anyNA(result$body_mass_g))
-})
+# prepare_penguin_data creates log transformation
+single <- data.frame(
+  species = c('Adelie'),
+  bill_length_mm = c(39.1),
+  bill_depth_mm = c(18.7),
+  body_mass_g = c(3750),
+  sex = c('male')
+)
 
-test_that("prepare_penguin_data creates log transformation", {
-  test_data <- data.frame(
-    species = c("Adelie"),
-    bill_length_mm = c(39.1),
-    bill_depth_mm = c(18.7),
-    body_mass_g = c(3750),
-    sex = c("male")
-  )
+single_result <- prepare_penguin_data(single)
 
-  result <- prepare_penguin_data(test_data)
+# Log variable should exist and be correct
+expect_true('log_body_mass_g' %in% names(single_result))
+expect_equal(single_result$log_body_mass_g, log(3750))
 
-  # Log variable should exist and be correct
-  expect_true("log_body_mass_g" %in% names(result))
-  expect_equal(result$log_body_mass_g, log(3750))
-})
+# prepare_penguin_data validates input
+# Not a data frame
+expect_error(prepare_penguin_data('not a data frame'),
+             'must be a data frame')
 
-test_that("prepare_penguin_data validates input", {
-  # Not a data frame
-  expect_error(prepare_penguin_data("not a data frame"),
-               "must be a data frame")
-
-  # Missing required columns
-  incomplete <- data.frame(x = 1, y = 2)
-  expect_error(prepare_penguin_data(incomplete),
-               "Missing required columns")
-})
+# Missing required columns
+incomplete <- data.frame(x = 1, y = 2)
+expect_error(prepare_penguin_data(incomplete),
+             'Missing required columns')
 ```
 
 ##### Step 2b: Run Test (Should Fail)
@@ -325,11 +325,8 @@ exit
 #### Verify Documentation
 
 ``` bash
-# Check all functions are documented
-R CMD check
-
-# Or use ZZCOLLAB convenience target
-make check
+# Run R CMD check in the container (Docker-first path)
+make docker-check
 ```
 
 ### Step 4: Create Package Vignettes
@@ -433,7 +430,7 @@ Imports:
     dplyr (>= 1.0.0),
     ggplot2 (>= 3.3.0)
 Suggests:
-    testthat (>= 3.0.0),
+    tinytest,
     palmerpenguins,
     knitr,
     rmarkdown
@@ -521,48 +518,46 @@ observation, extreme values - **Error cases**: Invalid inputs produce
 informative errors - **Boundary conditions**: Min/max values, NA
 handling
 
-Example comprehensive test:
+Example comprehensive test (tinytest, bare top-level expectations):
 
 ``` r
 
-test_that("prepare_penguin_data handles all edge cases", {
-  # Normal case
-  normal_data <- data.frame(
-    species = c("Adelie", "Adelie"),
-    bill_length_mm = c(39.1, 40.3),
-    bill_depth_mm = c(18.7, 18.0),
-    body_mass_g = c(3750, 3900),
-    sex = c("male", "female")
-  )
-  result <- prepare_penguin_data(normal_data)
-  expect_equal(nrow(result), 2)
+# prepare_penguin_data handles all edge cases
+# Normal case
+normal_data <- data.frame(
+  species = c('Adelie', 'Adelie'),
+  bill_length_mm = c(39.1, 40.3),
+  bill_depth_mm = c(18.7, 18.0),
+  body_mass_g = c(3750, 3900),
+  sex = c('male', 'female')
+)
+expect_equal(nrow(prepare_penguin_data(normal_data)), 2)
 
-  # Empty data
-  empty <- normal_data[0, ]
-  expect_equal(nrow(prepare_penguin_data(empty)), 0)
+# Empty data
+empty <- normal_data[0, ]
+expect_equal(nrow(prepare_penguin_data(empty)), 0)
 
-  # Single observation
-  single <- normal_data[1, ]
-  expect_equal(nrow(prepare_penguin_data(single)), 1)
+# Single observation
+single <- normal_data[1, ]
+expect_equal(nrow(prepare_penguin_data(single)), 1)
 
-  # All missing values
-  all_na <- normal_data
-  all_na$body_mass_g <- NA
-  expect_equal(nrow(prepare_penguin_data(all_na)), 0)
+# All missing values
+all_na <- normal_data
+all_na$body_mass_g <- NA
+expect_equal(nrow(prepare_penguin_data(all_na)), 0)
 
-  # Extreme values (should be kept - data-driven)
-  extreme <- normal_data
-  extreme$body_mass_g[1] <- 10000  # Very large penguin!
-  expect_equal(nrow(prepare_penguin_data(extreme)), 2)
+# Extreme values (should be kept; data-driven)
+extreme <- normal_data
+extreme$body_mass_g[1] <- 10000  # Very large penguin
+expect_equal(nrow(prepare_penguin_data(extreme)), 2)
 
-  # Invalid input type
-  expect_error(prepare_penguin_data("not a data frame"))
-  expect_error(prepare_penguin_data(list(x = 1, y = 2)))
+# Invalid input type
+expect_error(prepare_penguin_data('not a data frame'))
+expect_error(prepare_penguin_data(list(x = 1, y = 2)))
 
-  # Missing required columns
-  incomplete <- data.frame(x = 1, y = 2)
-  expect_error(prepare_penguin_data(incomplete), "Missing required columns")
-})
+# Missing required columns
+incomplete <- data.frame(x = 1, y = 2)
+expect_error(prepare_penguin_data(incomplete), 'Missing required columns')
 ```
 
 ### Step 7: Multi-Platform CI/CD
@@ -655,11 +650,11 @@ jobs:
           )
         shell: Rscript {0}
 
-      - name: Show testthat output
+      - name: Show test output
         if: always()
         run: |
           ## --------------------------------------------------------------------
-          find ${{ runner.temp }}/package -name 'testthat.Rout*' -exec cat '{}' \; || true
+          find ${{ runner.temp }}/package -name 'tinytest.Rout*' -exec cat '{}' \; || true
         shell: bash
 
       - name: Upload test results
@@ -990,11 +985,11 @@ but no package infrastructure yet.
     my-project/
     ├── analysis/
     ├── R/
-    └── tests/                    # ADD: Unit tests
-        └── testthat/
-            ├── test-data_functions.R
-            ├── test-analysis_functions.R
-            └── test-plot_functions.R
+    └── inst/                     # ADD: Unit tests
+        └── tinytest/
+            ├── test_data_functions.R
+            ├── test_analysis_functions.R
+            └── test_plot_functions.R
 
 **Still not a package** - but now with quality assurance.
 
@@ -1035,13 +1030,15 @@ need, when you need it** (Marwick et al. 2018).
 ### Sharing as Blog Post
 
 Want to share your package development journey or analysis as a blog
-post? ZZCOLLAB projects integrate with Quarto blogs:
+post? ZZCOLLAB projects integrate with Quarto blogs by placing the post
+at `analysis/report/index.qmd` and rendering with
+`make docker-render-qmd`:
 
 ``` bash
-# Run the blog setup script
-modules/setup_symlinks.sh
+# Author the post at analysis/report/index.qmd, then render in the container
+make docker-render-qmd
 
-# See vignette: "Blog Post Development with ZZCOLLAB"
+# See vignette: "Reproducible Blog Post Development with ZZCOLLAB"
 ```
 
 ## References

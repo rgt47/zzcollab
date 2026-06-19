@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,7 +95,7 @@
 <li>
 <strong>Advanced configuration system</strong> with user/project-level settings</li>
 <li>
-<strong>14+ specialized Docker profiles</strong> (from 200MB Alpine to 3.5GB full-featured)</li>
+<strong>Three Docker profiles</strong>: minimal, analysis, rstudio</li>
 <li>
 <strong>Profile-based architecture</strong>: Team lead selects Docker profile, members add packages as needed</li>
 <li>
@@ -199,7 +199,7 @@
 <li>
 <strong>Pre-installed packages</strong> (tidyverse, sf, etc.)</li>
 <li>
-<strong>14+ specialized profiles</strong> available (see docs/VARIANTS.md)</li>
+<strong>Three profiles</strong> available: minimal, analysis, rstudio</li>
 </ul>
 <p><strong>Key principle</strong>: Once selected, the Docker profile is <strong>fixed</strong> for the team. Team members cannot change the base image to ensure consistent environments.</p>
 </div>
@@ -225,10 +225,11 @@
 <h3 id="workflow-example">Workflow Example<a class="anchor" aria-label="anchor" href="#workflow-example"></a>
 </h3>
 <p><strong>Team Lead</strong> (one-time setup):</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> mylab <span class="at">-p</span> study <span class="at">--profile-name</span> analysis</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">zzcollab</span> config set dockerhub-account mylab   <span class="co"># one-time</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis                             <span class="co"># init + renv + docker (tidyverse)</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="ex">zzcollab</span> dockerhub                            <span class="co"># push team image to Docker Hub</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
 <p><strong>Team Member</strong> (joining project):</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/mylab/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">make</span> docker-build             <span class="co"># Build Docker image from Dockerfile</span></span>
@@ -282,61 +283,48 @@
 <div class="section level2">
 <h2 id="docker-profiles">Docker Profiles<a class="anchor" aria-label="anchor" href="#docker-profiles"></a>
 </h2>
-<p>zzcollab provides 14+ specialized Docker profiles optimized for different research needs. The <strong>team lead</strong> selects the appropriate profile when initializing the project.</p>
+<p>zzcollab provides several Docker profiles optimized for different research needs. The profile is selected when creating the project (or switched later in an existing project).</p>
 <table class="table">
 <colgroup>
-<col width="24%">
-<col width="24%">
-<col width="26%">
-<col width="24%">
+<col width="25%">
+<col width="30%">
+<col width="16%">
+<col width="27%">
 </colgroup>
 <thead><tr>
-<th>Category</th>
-<th>Profiles</th>
-<th>Base Size</th>
+<th>Profile</th>
+<th>Base Image</th>
+<th>Size</th>
 <th>Use Case</th>
 </tr></thead>
 <tbody>
 <tr>
-<td><strong>Standard</strong></td>
-<td>minimal, analysis, modeling</td>
-<td>200MB-1.5GB</td>
-<td>General research, data analysis</td>
+<td><code>minimal</code></td>
+<td>rocker/r-ver</td>
+<td>~650 MB</td>
+<td>Lightweight, CI/CD</td>
 </tr>
 <tr>
-<td><strong>Publishing</strong></td>
-<td>publishing, shiny, shiny_verse</td>
-<td>2-3.5GB</td>
-<td>Manuscript writing, web apps</td>
+<td><code>analysis</code></td>
+<td>rocker/tidyverse</td>
+<td>~1.2 GB</td>
+<td>Data analysis with tidyverse</td>
 </tr>
 <tr>
-<td><strong>Specialized</strong></td>
-<td>bioinformatics, geospatial</td>
-<td>2-3GB</td>
-<td>Domain-specific workflows</td>
-</tr>
-<tr>
-<td><strong>Lightweight</strong></td>
-<td>alpine_minimal, alpine_analysis, hpc_alpine</td>
-<td>200-500MB</td>
-<td>HPC clusters, CI/CD</td>
-</tr>
-<tr>
-<td><strong>Testing</strong></td>
-<td>rhub_ubuntu, rhub_fedora, rhub_windows</td>
-<td>Varies</td>
-<td>Cross-platform package testing</td>
+<td><code>rstudio</code></td>
+<td>rocker/rstudio</td>
+<td>~980 MB</td>
+<td>RStudio Server development</td>
 </tr>
 </tbody>
 </table>
-<p>See <a href="docs/VARIANTS.html">docs/VARIANTS.md</a> for detailed profile specifications.</p>
+<p>For specialised needs (LaTeX, Shiny, machine learning), start from one of these profiles and add packages inside the container with <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, then commit the updated <code>renv.lock</code>.</p>
+<p>Run <code>zzcollab list</code> for the full set of available profiles and bundles.</p>
 <div class="section level3">
 <h3 id="selecting-a-profile">Selecting a Profile<a class="anchor" aria-label="anchor" href="#selecting-a-profile"></a>
 </h3>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Team lead selects profile during initialization</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> myteam <span class="at">-p</span> study <span class="at">--profile-name</span> analysis</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> myteam <span class="at">-p</span> study <span class="at">--profile-name</span> publishing</span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-t</span> myteam <span class="at">-p</span> study <span class="at">--profile-name</span> geospatial</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Select the profile when creating the project (run inside the project directory)</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="adding-packages-all-team-members">Adding Packages (All Team Members)<a class="anchor" aria-label="anchor" href="#adding-packages-all-team-members"></a>
@@ -378,11 +366,11 @@
 <div class="section level3">
 <h3 id="configuration-commands">Configuration Commands<a class="anchor" aria-label="anchor" href="#configuration-commands"></a>
 </h3>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> init                    <span class="co"># Create default config file</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> set team-name <span class="st">"myteam"</span>  <span class="co"># Set configuration value</span></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> get team-name           <span class="co"># Get configuration value</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> list                    <span class="co"># List all configuration</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--config</span> validate               <span class="co"># Validate YAML syntax</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="ex">zzcollab</span> config init                    <span class="co"># Create default config file</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"myteam"</span>  <span class="co"># Set configuration value</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="ex">zzcollab</span> config get team-name           <span class="co"># Get configuration value</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="ex">zzcollab</span> config list                    <span class="co"># List all configuration</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="ex">zzcollab</span> config validate               <span class="co"># Validate YAML syntax</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="customizable-settings">Customizable Settings<a class="anchor" aria-label="anchor" href="#customizable-settings"></a>
@@ -577,54 +565,64 @@
 <div class="section level2">
 <h2 id="command-line-options">Command Line Options<a class="anchor" aria-label="anchor" href="#command-line-options"></a>
 </h2>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span></span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="ex">zzcollab</span> config <span class="pp">[</span><span class="ss">SUBCOMMAND</span><span class="pp">]</span></span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a></span>
-<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="ex">OPTIONS:</span></span>
-<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>  <span class="ex">--base-image</span> NAME        Use custom Docker base image</span>
-<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>                           <span class="kw">(</span><span class="ex">default:</span> rocker/r-ver<span class="kw">)</span></span>
-<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>  <span class="ex">--no-docker,</span> <span class="at">-n</span>          Skip Docker image build during setup</span>
-<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>  <span class="ex">--profile-name</span> NAME      Select Docker profile <span class="er">(</span><span class="ex">analysis,</span> publishing,</span>
-<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>                           <span class="ex">geospatial,</span> etc.<span class="kw">)</span></span>
-<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  <span class="ex">--team</span> NAME, <span class="at">-t</span>          Team name for Docker Hub namespace</span>
-<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a>  <span class="ex">--project</span> NAME, <span class="at">-p</span>       Project name</span>
-<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a>  <span class="ex">--use-team-image</span>         Deprecated <span class="er">(</span><span class="ex">no-op</span><span class="kw">);</span> <span class="ex">use</span> <span class="kw">`</span><span class="fu">make</span> docker-build<span class="kw">`</span></span>
-<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>  <span class="ex">--next-steps</span>             Show development workflow and next steps</span>
-<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a>  <span class="ex">--help,</span> <span class="at">-h</span>               Show help message</span>
-<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a></span>
-<span id="cb21-16"><a href="#cb21-16" tabindex="-1"></a><span class="ex">CONFIG</span> COMMANDS:</span>
-<span id="cb21-17"><a href="#cb21-17" tabindex="-1"></a>  <span class="ex">zzcollab</span> config init                    <span class="co"># Create default config</span></span>
-<span id="cb21-18"><a href="#cb21-18" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set KEY VALUE           <span class="co"># Set configuration value</span></span>
-<span id="cb21-19"><a href="#cb21-19" tabindex="-1"></a>  <span class="ex">zzcollab</span> config get KEY                 <span class="co"># Get configuration value</span></span>
-<span id="cb21-20"><a href="#cb21-20" tabindex="-1"></a>  <span class="ex">zzcollab</span> config list                    <span class="co"># List all configuration</span></span>
-<span id="cb21-21"><a href="#cb21-21" tabindex="-1"></a>  <span class="ex">zzcollab</span> config validate               <span class="co"># Validate YAML syntax</span></span>
-<span id="cb21-22"><a href="#cb21-22" tabindex="-1"></a></span>
-<span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a><span class="ex">EXAMPLES:</span></span>
-<span id="cb21-24"><a href="#cb21-24" tabindex="-1"></a>  <span class="co"># Configuration setup</span></span>
-<span id="cb21-25"><a href="#cb21-25" tabindex="-1"></a>  <span class="ex">zzcollab</span> config init                        <span class="co"># One-time setup</span></span>
-<span id="cb21-26"><a href="#cb21-26" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set team_name <span class="st">"myteam"</span>      <span class="co"># Set team default</span></span>
-<span id="cb21-27"><a href="#cb21-27" tabindex="-1"></a></span>
-<span id="cb21-28"><a href="#cb21-28" tabindex="-1"></a>  <span class="co"># Solo researcher</span></span>
-<span id="cb21-29"><a href="#cb21-29" tabindex="-1"></a>  <span class="ex">zzcollab</span>                                    <span class="co"># Basic setup</span></span>
-<span id="cb21-30"><a href="#cb21-30" tabindex="-1"></a>  <span class="ex">zzcollab</span> <span class="at">--profile-name</span> publishing          <span class="co"># With specific profile</span></span>
-<span id="cb21-31"><a href="#cb21-31" tabindex="-1"></a></span>
-<span id="cb21-32"><a href="#cb21-32" tabindex="-1"></a>  <span class="co"># Team collaboration - Lead</span></span>
-<span id="cb21-33"><a href="#cb21-33" tabindex="-1"></a>  <span class="ex">zzcollab</span> <span class="at">-t</span> myteam <span class="at">-p</span> study <span class="at">--profile-name</span> analysis</span>
-<span id="cb21-34"><a href="#cb21-34" tabindex="-1"></a>  <span class="fu">make</span> docker-build                           <span class="co"># Build team image</span></span>
-<span id="cb21-35"><a href="#cb21-35" tabindex="-1"></a>  <span class="fu">make</span> docker-push-team                       <span class="co"># Push to Docker Hub</span></span>
-<span id="cb21-36"><a href="#cb21-36" tabindex="-1"></a>  <span class="fu">git</span> add .</span>
-<span id="cb21-37"><a href="#cb21-37" tabindex="-1"></a>  <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial team project setup"</span></span>
-<span id="cb21-38"><a href="#cb21-38" tabindex="-1"></a>  <span class="fu">git</span> push <span class="at">-u</span> origin main</span>
-<span id="cb21-39"><a href="#cb21-39" tabindex="-1"></a></span>
-<span id="cb21-40"><a href="#cb21-40" tabindex="-1"></a>  <span class="co"># Team collaboration - Member</span></span>
-<span id="cb21-41"><a href="#cb21-41" tabindex="-1"></a>  <span class="fu">git</span> clone https://github.com/myteam/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb21-42"><a href="#cb21-42" tabindex="-1"></a>  <span class="fu">make</span> docker-build                           <span class="co"># Build from project Dockerfile</span></span>
-<span id="cb21-43"><a href="#cb21-43" tabindex="-1"></a>  <span class="fu">make</span> r                              <span class="co"># Start development</span></span>
-<span id="cb21-44"><a href="#cb21-44" tabindex="-1"></a>  <span class="co"># Inside container: install.packages("pkg") as needed</span></span>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="op">&lt;</span>command<span class="op">&gt;</span> <span class="pp">[</span><span class="ss">options</span><span class="pp">]</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="op">&lt;</span>profile<span class="op">&gt;</span>            <span class="co"># quickstart: init + renv + docker</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="ex">zzcollab</span> config <span class="op">&lt;</span>subcommand<span class="op">&gt;</span></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="ex">COMMANDS</span> <span class="er">(</span><span class="ex">can</span> be combined<span class="kw">)</span><span class="bu">:</span></span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>  <span class="ex">init,</span> renv, docker, git, github, dockerhub</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>  <span class="ex">build,</span> doctor, validate, config, list, help</span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="ex">PROFILES</span> <span class="er">(</span><span class="ex">quickstart,</span> or switch profile in an existing project<span class="kw">)</span><span class="bu">:</span></span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  <span class="ex">minimal,</span> analysis, rstudio</span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a></span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="ex">GLOBAL</span> OPTIONS:</span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>  <span class="ex">-v,</span> <span class="at">--verbose</span>            More output</span>
+<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a>  <span class="ex">-q,</span> <span class="at">--quiet</span>              Errors only</span>
+<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a>  <span class="ex">-y,</span> <span class="at">--yes</span>  /  <span class="at">-Y</span>         Accept defaults <span class="er">(</span><span class="ex">non-interactive</span><span class="kw">)</span></span>
+<span id="cb21-16"><a href="#cb21-16" tabindex="-1"></a>  <span class="ex">--no-build</span>               Skip Docker build prompt</span>
+<span id="cb21-17"><a href="#cb21-17" tabindex="-1"></a>  <span class="ex">--version</span>                Print version</span>
+<span id="cb21-18"><a href="#cb21-18" tabindex="-1"></a>  <span class="ex">-h,</span> <span class="at">--help</span>               Show help message</span>
+<span id="cb21-19"><a href="#cb21-19" tabindex="-1"></a></span>
+<span id="cb21-20"><a href="#cb21-20" tabindex="-1"></a><span class="ex">PER-COMMAND</span> OPTIONS:</span>
+<span id="cb21-21"><a href="#cb21-21" tabindex="-1"></a>  <span class="ex">init:</span>      <span class="at">--force</span>                  Scaffold even if the directory is not empty</span>
+<span id="cb21-22"><a href="#cb21-22" tabindex="-1"></a>  <span class="ex">docker:</span>    <span class="at">-b,</span> <span class="at">--build</span>              Build image after generating</span>
+<span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a>             <span class="ex">-r,</span> <span class="at">--profile</span> NAME       Select profile <span class="er">(</span><span class="ex">analysis,</span> minimal, ...<span class="kw">)</span></span>
+<span id="cb21-24"><a href="#cb21-24" tabindex="-1"></a>             <span class="ex">--base-image</span> IMG         Override base image <span class="er">(</span><span class="ex">default:</span> rocker/r-ver<span class="kw">)</span></span>
+<span id="cb21-25"><a href="#cb21-25" tabindex="-1"></a>             <span class="ex">--r-version</span> VER          Pin R version</span>
+<span id="cb21-26"><a href="#cb21-26" tabindex="-1"></a>  <span class="ex">dockerhub:</span> <span class="at">-t,</span> <span class="at">--tag</span> TAG            Image tag <span class="er">(</span><span class="ex">default:</span> latest<span class="kw">)</span></span>
+<span id="cb21-27"><a href="#cb21-27" tabindex="-1"></a>  <span class="ex">github:</span>    <span class="at">--private</span> <span class="kw">|</span> <span class="ex">--public</span>     Repo visibility <span class="er">(</span><span class="ex">default:</span> private<span class="kw">)</span></span>
+<span id="cb21-28"><a href="#cb21-28" tabindex="-1"></a>  <span class="ex">rm:</span>        <span class="at">-f,</span> <span class="at">--force</span>              Skip the removal confirmation prompt</span>
+<span id="cb21-29"><a href="#cb21-29" tabindex="-1"></a></span>
+<span id="cb21-30"><a href="#cb21-30" tabindex="-1"></a><span class="ex">CONFIG</span> COMMANDS:</span>
+<span id="cb21-31"><a href="#cb21-31" tabindex="-1"></a>  <span class="ex">zzcollab</span> config init                    <span class="co"># Create default config</span></span>
+<span id="cb21-32"><a href="#cb21-32" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set KEY VALUE           <span class="co"># Set configuration value</span></span>
+<span id="cb21-33"><a href="#cb21-33" tabindex="-1"></a>  <span class="ex">zzcollab</span> config get KEY                 <span class="co"># Get configuration value</span></span>
+<span id="cb21-34"><a href="#cb21-34" tabindex="-1"></a>  <span class="ex">zzcollab</span> config list                    <span class="co"># List all configuration</span></span>
+<span id="cb21-35"><a href="#cb21-35" tabindex="-1"></a>  <span class="ex">zzcollab</span> config validate                <span class="co"># Validate YAML syntax</span></span>
+<span id="cb21-36"><a href="#cb21-36" tabindex="-1"></a></span>
+<span id="cb21-37"><a href="#cb21-37" tabindex="-1"></a><span class="ex">EXAMPLES:</span></span>
+<span id="cb21-38"><a href="#cb21-38" tabindex="-1"></a>  <span class="co"># Configuration (one-time)</span></span>
+<span id="cb21-39"><a href="#cb21-39" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set dockerhub-account myteam   <span class="co"># Docker Hub namespace</span></span>
+<span id="cb21-40"><a href="#cb21-40" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set github-account myorg       <span class="co"># GitHub namespace</span></span>
+<span id="cb21-41"><a href="#cb21-41" tabindex="-1"></a></span>
+<span id="cb21-42"><a href="#cb21-42" tabindex="-1"></a>  <span class="co"># Solo researcher</span></span>
+<span id="cb21-43"><a href="#cb21-43" tabindex="-1"></a>  <span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb21-44"><a href="#cb21-44" tabindex="-1"></a>  <span class="ex">zzcollab</span> analysis                           <span class="co"># Full setup (tidyverse)</span></span>
 <span id="cb21-45"><a href="#cb21-45" tabindex="-1"></a></span>
-<span id="cb21-46"><a href="#cb21-46" tabindex="-1"></a>  <span class="co"># Traditional usage</span></span>
-<span id="cb21-47"><a href="#cb21-47" tabindex="-1"></a>  <span class="ex">zzcollab</span> <span class="at">--base-image</span> rgt47/r-pluspackages  <span class="co"># Custom base</span></span>
-<span id="cb21-48"><a href="#cb21-48" tabindex="-1"></a>  <span class="ex">zzcollab</span> <span class="at">--no-docker</span>                        <span class="co"># Setup without build</span></span></code></pre></div>
+<span id="cb21-46"><a href="#cb21-46" tabindex="-1"></a>  <span class="co"># Team collaboration - Lead</span></span>
+<span id="cb21-47"><a href="#cb21-47" tabindex="-1"></a>  <span class="bu">cd</span> study <span class="kw">&amp;&amp;</span> <span class="ex">zzcollab</span> analysis</span>
+<span id="cb21-48"><a href="#cb21-48" tabindex="-1"></a>  <span class="ex">zzcollab</span> dockerhub                          <span class="co"># Push team image to Docker Hub</span></span>
+<span id="cb21-49"><a href="#cb21-49" tabindex="-1"></a>  <span class="ex">zzcollab</span> github                             <span class="co"># Create repo + push</span></span>
+<span id="cb21-50"><a href="#cb21-50" tabindex="-1"></a></span>
+<span id="cb21-51"><a href="#cb21-51" tabindex="-1"></a>  <span class="co"># Team collaboration - Member</span></span>
+<span id="cb21-52"><a href="#cb21-52" tabindex="-1"></a>  <span class="fu">git</span> clone https://github.com/myteam/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb21-53"><a href="#cb21-53" tabindex="-1"></a>  <span class="fu">make</span> docker-build                           <span class="co"># Build from project Dockerfile</span></span>
+<span id="cb21-54"><a href="#cb21-54" tabindex="-1"></a>  <span class="fu">make</span> r                                      <span class="co"># Start development</span></span>
+<span id="cb21-55"><a href="#cb21-55" tabindex="-1"></a>  <span class="co"># Inside container: install.packages("pkg") as needed</span></span>
+<span id="cb21-56"><a href="#cb21-56" tabindex="-1"></a></span>
+<span id="cb21-57"><a href="#cb21-57" tabindex="-1"></a>  <span class="co"># Custom base image</span></span>
+<span id="cb21-58"><a href="#cb21-58" tabindex="-1"></a>  <span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rgt47/r-pluspackages</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="docker-integration">Docker Integration<a class="anchor" aria-label="anchor" href="#docker-integration"></a>
@@ -633,7 +631,7 @@
 <h3 id="pre-built-base-images">Pre-built Base Images<a class="anchor" aria-label="anchor" href="#pre-built-base-images"></a>
 </h3>
 <div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co"># Use base image with common R packages pre-installed</span></span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--base-image</span> rgt47/r-pluspackages</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rgt47/r-pluspackages</span>
 <span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a></span>
 <span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="co"># Packages included: tidyverse, DT, conflicted, ggthemes,</span></span>
 <span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="co"># datapasta, janitor, kableExtra, tidytuesdayR, and more</span></span></code></pre></div>
@@ -648,7 +646,7 @@
 <span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="ex">docker</span> push myorg/r-base:latest</span>
 <span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a></span>
 <span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="co"># Use in projects</span></span>
-<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--base-image</span> myorg/r-base</span></code></pre></div>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> myorg/r-base</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -737,12 +735,6 @@
 </h2>
 <ul>
 <li>
-<a href="docs/VARIANTS.html">Profile System Guide</a> - Docker profile specifications</li>
-<li>
-<a href="docs/CONFIGURATION.html">Configuration Guide</a> - Multi-layer configuration system</li>
-<li>
-<a href="docs/TESTING_GUIDE.html">Testing Guide</a> - Test framework and best practices</li>
-<li>
 <a href="examples/">Tutorial Examples</a> - Step-by-step learning resources</li>
 <li>
 <a href="#command-line-options">Command Reference</a> - All available options</li>
@@ -769,9 +761,9 @@
 <div class="section level3">
 <h3 id="getting-help">Getting Help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
 </h3>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--help</span>          <span class="co"># Command line help</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--next-steps</span>     <span class="co"># Show workflow guidance</span></span>
-<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="fu">make</span> help                 <span class="co"># Show all make targets</span></span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--help</span>            <span class="co"># Command line help</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="ex">zzcollab</span> help next-steps   <span class="co"># Show workflow guidance</span></span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="fu">make</span> help                  <span class="co"># Show all make targets</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

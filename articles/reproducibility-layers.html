@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-05-28</h4>
+            <h4 data-toc-skip class="date">2026-06-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/reproducibility-layers.Rmd" class="external-link"><code>vignettes/reproducibility-layers.Rmd</code></a></small>
       <div class="d-none name"><code>reproducibility-layers.Rmd</code></div>
@@ -155,8 +155,8 @@ Packages are installed in the user’s global R library using
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Perform analysis</span></span>
-<span><span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">condition</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span><span class="va">data</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">condition</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -226,7 +226,7 @@ operating systems</li>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># January 2024: Code works</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu">select</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">x</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span>  <span class="co"># dplyr 1.1.0</span></span>
+<span><span class="va">data</span> <span class="op">%&gt;%</span> <span class="fu">select</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">x</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span>  <span class="co"># dplyr 1.1.0</span></span>
 <span></span>
 <span><span class="co"># June 2024: After update.packages()</span></span>
 <span><span class="co"># dplyr 1.2.0 introduces breaking change</span></span>
@@ -443,7 +443,7 @@ identical Linux environment regardless of host operating system.</p>
 <span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co"># Auto-snapshot architecture (October 2025)</span></span>
 <span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co"># - renv::snapshot() runs automatically on container exit</span></span>
 <span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co"># - No manual snapshot command required!</span></span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co"># - renv.lock automatically updated and validated (pure shell)</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co"># - renv.lock automatically updated and validated (via zzrenvcheck)</span></span>
 <span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a></span>
 <span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co"># Collaborator gets identical environment</span></span>
 <span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="fu">git</span> clone project</span>
@@ -550,52 +550,54 @@ correct results</strong>. This is the reproducibility paradox:</p>
 <div class="section level3">
 <h3 id="example-workflow-1">Example Workflow<a class="anchor" aria-label="anchor" href="#example-workflow-1"></a>
 </h3>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Team lead creates environment with geospatial profile</span></span>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Team lead creates environment with a geospatial base image</span></span>
 <span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">mkdir</span> climate-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> climate-study</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="ex">zzc</span> geospatial                   <span class="co"># Full setup with geospatial profile</span></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co"># Profile provides:</span></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co"># - R version: latest stable</span></span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co"># - System libraries: gdal, geos, proj</span></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co"># - Base packages: tidyverse, sf, terra, raster</span></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co"># Build and share team image (installs packages from renv.lock)</span></span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="fu">make</span> docker-push-team            <span class="co"># Optional but efficient for team</span></span>
-<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a></span>
-<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="co"># Team member joins</span></span>
-<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/mylab/climate-study</span>
-<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="bu">cd</span> climate-study</span>
-<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a><span class="fu">make</span> docker-build               <span class="co"># Build from project Dockerfile</span></span>
-<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a></span>
-<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a><span class="co"># Inside container - everyone has same environment</span></span>
-<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a><span class="ex">R</span> <span class="at">--version</span>  <span class="co"># Same R version for all</span></span>
-<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a><span class="fu">sf::sf_extSoftVersion()</span>  <span class="co"># Same GDAL version for all</span></span></code></pre></div>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial  <span class="co"># Add geospatial base image</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co"># Environment provides:</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co"># - R version: latest stable</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co"># - System libraries: gdal, geos, proj</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co"># - Base packages: tidyverse, sf, terra, raster</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co"># Build and share team image (installs packages from renv.lock)</span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="fu">make</span> docker-push-team            <span class="co"># Optional but efficient for team</span></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a><span class="co"># Team member joins</span></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/mylab/climate-study</span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a><span class="bu">cd</span> climate-study</span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a><span class="fu">make</span> docker-build               <span class="co"># Build from project Dockerfile</span></span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a></span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a><span class="co"># Inside container - everyone has same environment</span></span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a><span class="ex">R</span> <span class="at">--version</span>  <span class="co"># Same R version for all</span></span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a><span class="fu">sf::sf_extSoftVersion()</span>  <span class="co"># Same GDAL version for all</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="docker-profiles">Docker Profiles<a class="anchor" aria-label="anchor" href="#docker-profiles"></a>
 </h3>
-<p>ZZCOLLAB provides 14+ predefined Docker profiles to balance image
-size and capabilities:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Minimal: Essential R development (~780MB)</span></span>
+<p>ZZCOLLAB provides predefined Docker profiles to balance image size
+and capabilities:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Minimal: Essential R development (~650MB)</span></span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">zzc</span> minimal</span>
 <span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a></span>
 <span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co"># Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co"># Geospatial: GIS and spatial analysis (~1.5GB)</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="ex">zzc</span> geospatial</span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co"># Bioinformatics: Genomics and proteomics (~1.98GB)</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="ex">zzc</span> bioinformatics</span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co"># Alpine Minimal: Lightweight (~200MB)</span></span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="ex">zzc</span> alpine_minimal</span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a></span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co"># List all available profiles</span></span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="ex">zzc</span> help profiles</span></code></pre></div>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co"># Statistical and machine learning packages are added via renv</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co"># RStudio Server in the browser</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="ex">zzc</span> rstudio</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co"># Manuscript and report rendering (LaTeX/Quarto via the rocker/verse base image)</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/verse</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co"># Specialized domains (e.g. GIS, genomics) use a custom base image:</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial</span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co"># List all available profiles</span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="ex">zzc</span> help profiles</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -636,11 +638,13 @@ validated specifications</strong>.</p>
 ├── renv.lock
 ├── Dockerfile
 ├── docker-compose.yml
-├── tests/                          # Test suite (NEW)
-│   └── testthat/
+├── inst/                           # Test suite (NEW)
+│   └── tinytest/
 │       ├── test-data-preparation.R # Data processing tests
 │       ├── test-analysis.R         # Statistical tests
 │       └── test-visualization.R    # Plot validation tests
+├── tests/
+│   └── tinytest.R                  # tinytest driver
 ├── Makefile
 ├── R/
 │   └── data_functions.R           # Tested functions
@@ -657,12 +661,9 @@ validated specifications</strong>.</p>
 <span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
 <span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo (optional)</span></span>
 <span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a></span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="co"># Add testthat infrastructure</span></span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_testthat<span class="kw">()</span></span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="co"># tinytest infrastructure is created by zzcollab: tests/tinytest.R drives</span></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="co"># the suite, and test files live in inst/tinytest/. No usethis::use_testthat()</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="co"># is needed.</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="typical-workflow-3">Typical Workflow<a class="anchor" aria-label="anchor" href="#typical-workflow-3"></a>
@@ -671,39 +672,30 @@ validated specifications</strong>.</p>
 <span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a></span>
 <span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co"># Inside container: Test-Driven Development cycle</span></span>
-<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># 1. Write test first (documents expected behavior)</span></span>
-<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_test<span class="kw">(</span><span class="st">"data-preparation"</span><span class="kw">)</span></span>
-<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a></span>
-<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="co"># tests/testthat/test-data-preparation.R</span></span>
-<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Write failing test</span></span>
-<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="op">&gt;</span> test_that<span class="kw">(</span><span class="st">"prepare_data removes rows with missing body_mass_g"</span><span class="ex">,</span> {</span>
-<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="op">&gt;</span>   library<span class="kw">(</span><span class="ex">palmerpenguins</span><span class="kw">)</span></span>
-<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="op">&gt;</span>   result <span class="op">&lt;</span>- <span class="ex">prepare_data</span><span class="er">(</span><span class="ex">penguins</span><span class="kw">)</span></span>
-<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="op">&gt;</span>   expect_false<span class="kw">(</span><span class="ex">anyNA</span><span class="er">(</span><span class="ex">result</span><span class="va">$body_mass_g</span><span class="kw">))</span></span>
-<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a><span class="op">&gt;</span> }<span class="kw">)</span></span>
-<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a></span>
-<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># 2. Run test (fails - function doesn't exist yet)</span></span>
-<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a><span class="op">&gt;</span> devtools::test<span class="kw">()</span></span>
-<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a></span>
-<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># 3. Implement function to make test pass</span></span>
-<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_r<span class="kw">(</span><span class="st">"data_functions"</span><span class="kw">)</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="co"># 1. Write the test first in inst/tinytest/test-data-preparation.R.</span></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a><span class="co">#    tinytest uses bare top-level expectations (no test_that wrapper):</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a><span class="co"># inst/tinytest/test-data-preparation.R</span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="ex">library</span><span class="er">(</span><span class="ex">palmerpenguins</span><span class="kw">)</span></span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="ex">result</span> <span class="op">&lt;</span>- prepare_data<span class="er">(</span><span class="ex">penguins</span><span class="kw">)</span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="ex">expect_false</span><span class="er">(</span><span class="ex">anyNA</span><span class="er">(</span><span class="ex">result</span><span class="va">$body_mass_g</span><span class="kw">))</span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a></span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="co"># 2. Run the test (fails - function does not exist yet)</span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co">#    make docker-test</span></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a></span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a><span class="co"># 3. Implement the function in R/data_functions.R to make it pass:</span></span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="co"># R/data_functions.R</span></span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a><span class="ex">prepare_data</span> <span class="op">&lt;</span>- function<span class="er">(</span><span class="ex">data</span><span class="kw">)</span> <span class="kw">{</span></span>
+<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a>  <span class="ex">data</span> <span class="kw">|</span><span class="op">&gt;</span></span>
+<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a>    <span class="ex">dplyr::filter</span><span class="er">(</span><span class="ex">!is.na</span><span class="er">(</span><span class="ex">body_mass_g</span><span class="kw">))</span></span>
+<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a><span class="kw">}</span></span>
 <span id="cb17-22"><a href="#cb17-22" tabindex="-1"></a></span>
-<span id="cb17-23"><a href="#cb17-23" tabindex="-1"></a><span class="co"># R/data_functions.R</span></span>
-<span id="cb17-24"><a href="#cb17-24" tabindex="-1"></a><span class="op">&gt;</span> prepare_data <span class="op">&lt;</span>- <span class="kw">function(</span><span class="ex">data</span><span class="kw">)</span> <span class="kw">{</span></span>
-<span id="cb17-25"><a href="#cb17-25" tabindex="-1"></a><span class="op">&gt;</span>   data <span class="ex">%</span><span class="op">&gt;</span>%</span>
-<span id="cb17-26"><a href="#cb17-26" tabindex="-1"></a><span class="op">&gt;</span>     filter<span class="kw">(</span><span class="ex">!is.na</span><span class="er">(</span><span class="ex">body_mass_g</span><span class="kw">))</span></span>
-<span id="cb17-27"><a href="#cb17-27" tabindex="-1"></a><span class="op">&gt;</span> }</span>
-<span id="cb17-28"><a href="#cb17-28" tabindex="-1"></a></span>
-<span id="cb17-29"><a href="#cb17-29" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># 4. Run test again (passes)</span></span>
-<span id="cb17-30"><a href="#cb17-30" tabindex="-1"></a><span class="op">&gt;</span> devtools::test<span class="kw">()</span></span>
-<span id="cb17-31"><a href="#cb17-31" tabindex="-1"></a></span>
-<span id="cb17-32"><a href="#cb17-32" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># 5. Refactor with confidence</span></span>
-<span id="cb17-33"><a href="#cb17-33" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb17-34"><a href="#cb17-34" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb17-35"><a href="#cb17-35" tabindex="-1"></a></span>
-<span id="cb17-36"><a href="#cb17-36" tabindex="-1"></a><span class="co"># Validate in clean environment</span></span>
-<span id="cb17-37"><a href="#cb17-37" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
+<span id="cb17-23"><a href="#cb17-23" tabindex="-1"></a><span class="co"># 4. Run the test again (passes), then refactor with confidence</span></span>
+<span id="cb17-24"><a href="#cb17-24" tabindex="-1"></a><span class="co">#    make docker-test</span></span>
+<span id="cb17-25"><a href="#cb17-25" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb17-26"><a href="#cb17-26" tabindex="-1"></a></span>
+<span id="cb17-27"><a href="#cb17-27" tabindex="-1"></a><span class="co"># Validate in clean environment</span></span>
+<span id="cb17-28"><a href="#cb17-28" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pros-3">Pros<a class="anchor" aria-label="anchor" href="#pros-3"></a>
@@ -743,7 +735,7 @@ from reaching publication</li>
 <strong>Time investment</strong>: Writing tests takes 20-40%
 additional development time</li>
 <li>
-<strong>Learning curve</strong>: testthat syntax and testing
+<strong>Learning curve</strong>: tinytest syntax and testing
 patterns</li>
 <li>
 <strong>Maintenance burden</strong>: Tests must be updated when
@@ -802,43 +794,23 @@ and body mass with log transformation.</p>
 <h5 id="step-1-write-tests-for-data-preparation">Step 1: Write Tests for Data Preparation<a class="anchor" aria-label="anchor" href="#step-1-write-tests-for-data-preparation"></a>
 </h5>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># tests/testthat/test-data-preparation.R</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://testthat.r-lib.org" class="external-link">testthat</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># inst/tinytest/test-data-preparation.R</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://allisonhorst.github.io/palmerpenguins/" class="external-link">palmerpenguins</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"prepare_penguin_data removes missing values"</span>, <span class="op">{</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
+<span><span class="co"># prepare_penguin_data removes missing values</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
+<span><span class="fu">expect_false</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_false</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># No missing values in analysis variables</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_false</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_false</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># prepare_penguin_data creates a correct log transformation</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="st">'log_body_mass_g'</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">log_body_mass_g</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"prepare_penguin_data creates log transformation"</span>, <span class="op">{</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Log transformation exists</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="st">"log_body_mass_g"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Log transformation is correct</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">result</span><span class="op">$</span><span class="va">log_body_mass_g</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"prepare_penguin_data handles edge cases"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Empty data</span></span>
-<span>  <span class="va">empty_data</span> <span class="op">&lt;-</span> <span class="va">penguins</span><span class="op">[</span><span class="fl">0</span>, <span class="op">]</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">empty_data</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># All missing data</span></span>
-<span>  <span class="va">all_na</span> <span class="op">&lt;-</span> <span class="va">penguins</span></span>
-<span>  <span class="va">all_na</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">all_na</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># prepare_penguin_data handles edge cases</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">[</span><span class="fl">0</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="fl">0L</span><span class="op">)</span></span>
+<span><span class="va">all_na</span> <span class="op">&lt;-</span> <span class="va">penguins</span></span>
+<span><span class="va">all_na</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">all_na</span><span class="op">)</span><span class="op">)</span>, <span class="fl">0L</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level5">
 <h5 id="step-2-implement-function-to-pass-tests">Step 2: Implement Function to Pass Tests<a class="anchor" aria-label="anchor" href="#step-2-implement-function-to-pass-tests"></a>
@@ -854,8 +826,8 @@ and body mass with log transformation.</p>
 <span><span class="co">#' @return Data frame with complete cases and log_body_mass_g variable</span></span>
 <span><span class="co">#' @export</span></span>
 <span><span class="va">prepare_penguin_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">body_mass_g</span><span class="op">)</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">bill_length_mm</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="va">data</span> <span class="op">%&gt;%</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">body_mass_g</span><span class="op">)</span>, <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">bill_length_mm</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>    <span class="fu">mutate</span><span class="op">(</span>log_body_mass_g <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
@@ -863,28 +835,17 @@ and body mass with log transformation.</p>
 <h5 id="step-3-write-tests-for-statistical-analysis">Step 3: Write Tests for Statistical Analysis<a class="anchor" aria-label="anchor" href="#step-3-write-tests-for-statistical-analysis"></a>
 </h5>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># tests/testthat/test-analysis.R</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"fit_penguin_model returns valid lm object"</span>, <span class="op">{</span></span>
-<span>  <span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
-<span>  <span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">fit_penguin_model</span><span class="op">(</span><span class="va">test_data</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># inst/tinytest/test-analysis.R</span></span>
+<span><span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">fit_penguin_model</span><span class="op">(</span><span class="va">test_data</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Valid lm object</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/inheritance-expectations.html" class="external-link">expect_s3_class</a></span><span class="op">(</span><span class="va">model</span>, <span class="st">"lm"</span><span class="op">)</span></span>
+<span><span class="co"># fit_penguin_model returns a valid lm object</span></span>
+<span><span class="fu">expect_inherits</span><span class="op">(</span><span class="va">model</span>, <span class="st">'lm'</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="st">'bill_length_mm'</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">$</span><span class="va">r.squared</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Correct variables in model</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="st">"bill_length_mm"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Model has reasonable fit (R-squared &gt; 0)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/comparison-expectations.html" class="external-link">expect_gt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">$</span><span class="va">r.squared</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"fit_penguin_model coefficients are sensible"</span>, <span class="op">{</span></span>
-<span>  <span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu">prepare_penguin_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
-<span>  <span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">fit_penguin_model</span><span class="op">(</span><span class="va">test_data</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Positive relationship expected (larger bills -&gt; larger penguins)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/comparison-expectations.html" class="external-link">expect_gt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">[</span><span class="st">"bill_length_mm"</span><span class="op">]</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Coefficients are sensible: larger bills imply larger penguins</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">[</span><span class="st">'bill_length_mm'</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level5">
 <h5 id="step-4-implement-analysis-function">Step 4: Implement Analysis Function<a class="anchor" aria-label="anchor" href="#step-4-implement-analysis-function"></a>
@@ -905,31 +866,21 @@ and body mass with log transformation.</p>
 <h5 id="step-5-write-tests-for-data-quality">Step 5: Write Tests for Data Quality<a class="anchor" aria-label="anchor" href="#step-5-write-tests-for-data-quality"></a>
 </h5>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># tests/testthat/test-data-quality.R</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguin data has expected structure"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Required columns exist</span></span>
-<span>  <span class="va">required_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"species"</span>, <span class="st">"island"</span>, <span class="st">"bill_length_mm"</span>,</span>
-<span>                     <span class="st">"bill_depth_mm"</span>, <span class="st">"body_mass_g"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">required_cols</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># inst/tinytest/test-data-quality.R</span></span>
 <span></span>
-<span>  <span class="co"># Reasonable sample size</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/comparison-expectations.html" class="external-link">expect_gt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span>, <span class="fl">300</span><span class="op">)</span></span>
+<span><span class="co"># Penguin data has the expected structure</span></span>
+<span><span class="va">required_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'species'</span>, <span class="st">'island'</span>, <span class="st">'bill_length_mm'</span>,</span>
+<span>                   <span class="st">'bill_depth_mm'</span>, <span class="st">'body_mass_g'</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">required_cols</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">300</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">penguins</span><span class="op">$</span><span class="va">species</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span></span>
+<span>                  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Adelie'</span>, <span class="st">'Chinstrap'</span>, <span class="st">'Gentoo'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Species are valid</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">penguins</span><span class="op">$</span><span class="va">species</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span></span>
-<span>                    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Adelie"</span>, <span class="st">"Chinstrap"</span>, <span class="st">"Gentoo"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"body mass measurements are plausible"</span>, <span class="op">{</span></span>
-<span>  <span class="va">valid_data</span> <span class="op">&lt;-</span> <span class="va">penguins</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Body mass in plausible range (2500g to 6500g)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">valid_data</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&gt;=</span> <span class="fl">2500</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">valid_data</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&lt;=</span> <span class="fl">6500</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># No negative values</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">valid_data</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Body mass measurements are plausible (2500g to 6500g, all positive)</span></span>
+<span><span class="va">valid_data</span> <span class="op">&lt;-</span> <span class="va">penguins</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">penguins</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">valid_data</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&gt;=</span> <span class="fl">2500</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">valid_data</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&lt;=</span> <span class="fl">6500</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">valid_data</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -966,54 +917,44 @@ one-off analyses</li>
 <div class="section level3">
 <h3 id="testing-best-practices-for-research">Testing Best Practices for Research<a class="anchor" aria-label="anchor" href="#testing-best-practices-for-research"></a>
 </h3>
+<p>These examples use tinytest, the framework ZZCOLLAB projects ship
+with. Expectations are written as bare top-level calls; there is no
+<code>test_that()</code> wrapper.</p>
 <div class="section level4">
 <h4 id="test-data-transformations">Test Data Transformations<a class="anchor" aria-label="anchor" href="#test-data-transformations"></a>
 </h4>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"outlier removal preserves data integrity"</span>, <span class="op">{</span></span>
-<span>  <span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">100</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>  <span class="co"># 100 is outlier</span></span>
-<span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">remove_outliers</span><span class="op">(</span><span class="va">test_data</span>, <span class="st">"x"</span>, threshold <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Outlier removed</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Non-outliers preserved</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">result</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># outlier removal preserves data integrity</span></span>
+<span><span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">100</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>  <span class="co"># 100 is an outlier</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">remove_outliers</span><span class="op">(</span><span class="va">test_data</span>, <span class="st">'x'</span>, threshold <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">4L</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">result</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="test-statistical-calculations">Test Statistical Calculations<a class="anchor" aria-label="anchor" href="#test-statistical-calculations"></a>
 </h4>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"standard error calculation is correct"</span>, <span class="op">{</span></span>
-<span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">calculate_se</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Known correct value</span></span>
-<span>  <span class="va">expected</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span>, <span class="va">expected</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># standard error calculation is correct</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu">calculate_se</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="test-edge-cases">Test Edge Cases<a class="anchor" aria-label="anchor" href="#test-edge-cases"></a>
 </h4>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"analysis handles edge cases gracefully"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Single observation</span></span>
-<span>  <span class="va">single_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span>, y <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/expect_error.html" class="external-link">expect_error</a></span><span class="op">(</span><span class="fu">fit_model</span><span class="op">(</span><span class="va">single_obs</span><span class="op">)</span>, <span class="st">"Insufficient data"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># analysis handles edge cases gracefully</span></span>
 <span></span>
-<span>  <span class="co"># No variance</span></span>
-<span>  <span class="va">no_variance</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/expect_error.html" class="external-link">expect_warning</a></span><span class="op">(</span><span class="fu">fit_model</span><span class="op">(</span><span class="va">no_variance</span><span class="op">)</span>, <span class="st">"No variance in predictor"</span><span class="op">)</span></span>
+<span><span class="co"># Single observation</span></span>
+<span><span class="fu">expect_error</span><span class="op">(</span><span class="fu">fit_model</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span>, y <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>             pattern <span class="op">=</span> <span class="st">'Insufficient data'</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Perfect correlation</span></span>
-<span>  <span class="va">perfect_cor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">fit_model</span><span class="op">(</span><span class="va">perfect_cor</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">r.squared</span>, <span class="fl">1.0</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># No variance</span></span>
+<span><span class="fu">expect_warning</span><span class="op">(</span><span class="fu">fit_model</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>               pattern <span class="op">=</span> <span class="st">'No variance in predictor'</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Perfect correlation</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">fit_model</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">r.squared</span>, <span class="fl">1.0</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1064,14 +1005,10 @@ fewer defects</strong>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># With tests: Error caught immediately</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"variance calculation is correct"</span>, <span class="op">{</span></span>
-<span>  <span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># This test fails, exposing the bug</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">calculate_variance</span><span class="op">(</span><span class="va">test_data</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span>, <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">test_data</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>  <span class="co"># FAILS</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># With tests: error caught immediately</span></span>
+<span><span class="co"># This expectation fails, exposing the bug</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu">calculate_variance</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span>  <span class="co"># FAILS</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1081,96 +1018,64 @@ fewer defects</strong>
 <h4 id="testing-too-little">Testing Too Little<a class="anchor" aria-label="anchor" href="#testing-too-little"></a>
 </h4>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Insufficient test</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"function works"</span>, <span class="op">{</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">my_function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">is.data.frame</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span>  <span class="co"># Only tests type, not correctness</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Insufficient test: only tests type, not correctness</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">my_function</span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">is.data.frame</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Better test</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"function produces correct transformations"</span>, <span class="op">{</span></span>
-<span>  <span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">my_function</span><span class="op">(</span><span class="va">test_data</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Test specific expected behavior</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">x_squared</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span>, <span class="fl">9</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">y_doubled</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">10</span>, <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Better test: specific expected behavior</span></span>
+<span><span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">my_function</span><span class="op">(</span><span class="va">test_data</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">x_squared</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span>, <span class="fl">9</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">y_doubled</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">10</span>, <span class="fl">12</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">3L</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="testing-implementation-instead-of-behavior">Testing Implementation Instead of Behavior<a class="anchor" aria-label="anchor" href="#testing-implementation-instead-of-behavior"></a>
 </h4>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Wrong: Tests implementation details</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"function uses dplyr::filter"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Breaks if you refactor to base R</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">"filter"</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">environment</a></span><span class="op">(</span><span class="va">my_function</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Wrong: tests implementation details (breaks if you refactor to base R)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/exists.html" class="external-link">exists</a></span><span class="op">(</span><span class="st">'filter'</span>, envir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">environment</a></span><span class="op">(</span><span class="va">my_function</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Right: Tests behavior</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"function removes missing values"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Passes regardless of implementation</span></span>
-<span>  <span class="va">test_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">my_function</span><span class="op">(</span><span class="va">test_data</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_false</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Right: tests behavior (passes regardless of implementation)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">my_function</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_false</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="not-testing-edge-cases">Not Testing Edge Cases<a class="anchor" aria-label="anchor" href="#not-testing-edge-cases"></a>
 </h4>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Incomplete testing</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"mean calculation works"</span>, <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Incomplete testing: normal case only</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Complete testing includes edge cases</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"mean calculation handles edge cases"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Normal case</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Single value</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, <span class="fl">5</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Empty vector</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.nan</a></span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Missing values</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>        <span class="co"># Normal case</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fl">5</span><span class="op">)</span>, <span class="fl">5</span><span class="op">)</span>                 <span class="co"># Single value</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.nan</a></span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>    <span class="co"># Empty vector</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu">calculate_mean</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>  <span class="co"># Missing</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
 <h3 id="migration-from-level-3">Migration from Level 3<a class="anchor" aria-label="anchor" href="#migration-from-level-3"></a>
 </h3>
 <p>Adding tests to existing Docker project:</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Start development container</span></span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="fu">make</span> r</span>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># The tinytest scaffolding (tests/tinytest.R) already exists in a zzcollab</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="co"># project. Add test files under inst/tinytest/, then run the suite.</span></span>
 <span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a></span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="co"># Inside container</span></span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Initialize testing infrastructure</span></span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_testthat<span class="kw">()</span></span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="co"># Create a test file for an existing function:</span></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="co">#   inst/tinytest/test-my_function.R</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="co"># Write tests for critical functions, focusing on data preparation</span></span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="co"># and statistical calculations.</span></span>
 <span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a></span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Create test file for existing function</span></span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_test<span class="kw">(</span><span class="st">"my_function"</span><span class="kw">)</span></span>
-<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a></span>
-<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Write tests for critical functions</span></span>
-<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Focus on data preparation and statistical calculations</span></span>
-<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a></span>
-<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Run tests</span></span>
-<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="op">&gt;</span> devtools::test<span class="kw">()</span></span>
-<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a></span>
-<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Check coverage</span></span>
-<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a><span class="op">&gt;</span> covr::package_coverage<span class="kw">()</span></span>
-<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a></span>
-<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb31-22"><a href="#cb31-22" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb31-23"><a href="#cb31-23" tabindex="-1"></a></span>
-<span id="cb31-24"><a href="#cb31-24" tabindex="-1"></a><span class="co"># Commit test infrastructure</span></span>
-<span id="cb31-25"><a href="#cb31-25" tabindex="-1"></a><span class="fu">git</span> add tests/ DESCRIPTION</span>
-<span id="cb31-26"><a href="#cb31-26" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add unit testing infrastructure"</span></span></code></pre></div>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="co"># Run the suite and check coverage</span></span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="co"># Inside the container, optionally check coverage:</span></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="co"># covr::package_coverage()</span></span>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a></span>
+<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="co"># Commit the tests</span></span>
+<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a><span class="fu">git</span> add inst/tinytest/ DESCRIPTION</span>
+<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add unit tests"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="when-testing-is-not-worth-it">When Testing Is Not Worth It<a class="anchor" aria-label="anchor" href="#when-testing-is-not-worth-it"></a>
@@ -1225,11 +1130,11 @@ errors early.</p>
 │   └── workflows/
 │       ├── r-package.yml           # R package validation
 │       └── render-paper.yml        # Manuscript rendering
-├── modules/
-│   └── validation.sh               # Pure shell dependency validation (NO R REQUIRED!)
-├── tests/
-│   └── testthat/
+├── inst/
+│   └── tinytest/
 │       └── test-analysis.R         # Automated tests
+├── tests/
+│   └── tinytest.R                  # tinytest driver
 ├── Makefile
 ├── R/
 ├── data/
@@ -1254,8 +1159,8 @@ errors early.</p>
 <span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="co"># ... work in container ...</span></span>
 <span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Auto-snapshot runs on exit!</span></span>
 <span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a></span>
-<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="co"># Validate before committing (pure shell - NO R REQUIRED!)</span></span>
-<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Pure shell validation (grep, awk, jq)</span></span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="co"># Validate before committing (make check-renv runs zzrenvcheck)</span></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
 <span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
 <span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a></span>
 <span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="co"># Commit and push</span></span>
@@ -1265,7 +1170,7 @@ errors early.</p>
 <span id="cb34-14"><a href="#cb34-14" tabindex="-1"></a></span>
 <span id="cb34-15"><a href="#cb34-15" tabindex="-1"></a><span class="co"># GitHub Actions automatically:</span></span>
 <span id="cb34-16"><a href="#cb34-16" tabindex="-1"></a><span class="co"># 1. Builds Docker container from scratch</span></span>
-<span id="cb34-17"><a href="#cb34-17" tabindex="-1"></a><span class="co"># 2. Validates package dependencies (pure shell validation)</span></span>
+<span id="cb34-17"><a href="#cb34-17" tabindex="-1"></a><span class="co"># 2. Validates package dependencies (zzrenvcheck via make check-renv)</span></span>
 <span id="cb34-18"><a href="#cb34-18" tabindex="-1"></a><span class="co"># 3. Runs R CMD check</span></span>
 <span id="cb34-19"><a href="#cb34-19" tabindex="-1"></a><span class="co"># 4. Executes test suite</span></span>
 <span id="cb34-20"><a href="#cb34-20" tabindex="-1"></a><span class="co"># 5. Renders manuscripts</span></span>
@@ -1366,7 +1271,7 @@ computational correctness (tests) + automated verification (CI/CD)</p>
 </h4>
 <div class="sourceCode" id="cb35"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="co"># Runs on: every push, every pull request</span></span>
 <span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="co"># Validates:</span></span>
-<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="co">#   - Package dependencies synchronized (pure shell validation via make check-renv)</span></span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="co">#   - Package dependencies synchronized (zzrenvcheck via make check-renv)</span></span>
 <span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a><span class="co">#   - R CMD check passes</span></span>
 <span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="co">#   - Test suite passes</span></span>
 <span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a><span class="co">#   - Project structure valid</span></span></code></pre></div>
@@ -1394,11 +1299,11 @@ computational correctness (tests) + automated verification (CI/CD)</p>
 <span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a><span class="co"># Day 5: Add analysis code</span></span>
 <span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="co"># ... develop code ...</span></span>
-<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="co"># ... write tests in tests/testthat/ ...</span></span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="co"># ... write tests in inst/tinytest/ ...</span></span>
 <span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Auto-snapshot runs automatically!</span></span>
 <span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a></span>
-<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a><span class="co"># Validate locally first (pure shell - NO R REQUIRED!)</span></span>
-<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Pure shell validation (grep, awk, jq)</span></span>
+<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a><span class="co"># Validate locally first (make check-renv runs zzrenvcheck)</span></span>
+<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
 <span id="cb37-16"><a href="#cb37-16" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
 <span id="cb37-17"><a href="#cb37-17" tabindex="-1"></a></span>
 <span id="cb37-18"><a href="#cb37-18" tabindex="-1"></a><span class="co"># Commit and push</span></span>
@@ -1408,7 +1313,7 @@ computational correctness (tests) + automated verification (CI/CD)</p>
 <span id="cb37-22"><a href="#cb37-22" tabindex="-1"></a></span>
 <span id="cb37-23"><a href="#cb37-23" tabindex="-1"></a><span class="co"># GitHub Actions runs automatically:</span></span>
 <span id="cb37-24"><a href="#cb37-24" tabindex="-1"></a><span class="co"># - Builds Docker container</span></span>
-<span id="cb37-25"><a href="#cb37-25" tabindex="-1"></a><span class="co"># - Validates dependencies (pure shell validation)</span></span>
+<span id="cb37-25"><a href="#cb37-25" tabindex="-1"></a><span class="co"># - Validates dependencies (zzrenvcheck via make check-renv)</span></span>
 <span id="cb37-26"><a href="#cb37-26" tabindex="-1"></a><span class="co"># - Runs all tests</span></span>
 <span id="cb37-27"><a href="#cb37-27" tabindex="-1"></a><span class="co"># - Success: green checkmark on commit</span></span>
 <span id="cb37-28"><a href="#cb37-28" tabindex="-1"></a><span class="co"># - Failure: email notification with logs</span></span>
@@ -1423,16 +1328,14 @@ computational correctness (tests) + automated verification (CI/CD)</p>
 </h3>
 <p><strong>Write tests incrementally</strong>:</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># tests/testthat/test-data-preparation.R</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"prepare_data removes missing values"</span>, <span class="op">{</span></span>
-<span>  <span class="va">raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_data</span><span class="op">(</span><span class="va">raw</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_false</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># inst/tinytest/test-data-preparation.R</span></span>
+<span><span class="va">raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="cn">NA</span>, <span class="fl">3</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_data</span><span class="op">(</span><span class="va">raw</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="fu">expect_false</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Validate dependencies before committing</strong>:</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Check that all packages used in code are declared (pure shell - NO R REQUIRED!)</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Pure shell validation (grep, awk, jq)</span></span>
+<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Confirm all packages used in code are declared (zzrenvcheck)</span></span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
 <span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a></span>
 <span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="co"># This prevents CI failures due to missing packages</span></span></code></pre></div>
 <p><strong>Use descriptive commit messages</strong>:</p>
@@ -1583,10 +1486,9 @@ Level 2 → Level 3:
   zzc analysis                   # Or full analysis environment
 
 Level 3 → Level 4:
-  # Inside Docker container
-  usethis::use_testthat()  # Initialize testing
-  # Write tests for critical functions
-  # 1-2 days for comprehensive test suite
+  # tinytest scaffolding already exists (tests/tinytest.R)
+  # Add test files under inst/tinytest/ for critical functions
+  # 1-2 days for a comprehensive test suite
 
 Level 4 → Level 5:
   zzc github                     # Adds GitHub workflows (or already done)</code></pre>
@@ -1649,32 +1551,29 @@ geospatial dependencies. Custom spatial interpolation algorithms.</p>
 <p><strong>Rationale</strong>: Cross-platform team requires Docker.
 Complex custom algorithms require unit tests to ensure correctness.
 Geospatial packages (sf, terra) have complex system dependencies.</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="co"># Team lead setup with geospatial profile</span></span>
+<div class="sourceCode" id="cb44"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="co"># Team lead setup with a geospatial base image</span></span>
 <span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a><span class="fu">mkdir</span> precipitation <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> precipitation</span>
-<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a><span class="ex">zzc</span> geospatial                   <span class="co"># Full setup with geospatial profile</span></span>
-<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
-<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a></span>
-<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a><span class="co"># Build and share team image (installs packages from renv.lock)</span></span>
-<span id="cb44-7"><a href="#cb44-7" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb44-8"><a href="#cb44-8" tabindex="-1"></a><span class="fu">make</span> docker-push-team            <span class="co"># Optional but efficient for team</span></span>
-<span id="cb44-9"><a href="#cb44-9" tabindex="-1"></a></span>
-<span id="cb44-10"><a href="#cb44-10" tabindex="-1"></a><span class="co"># Add testing infrastructure</span></span>
-<span id="cb44-11"><a href="#cb44-11" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb44-12"><a href="#cb44-12" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb44-13"><a href="#cb44-13" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_testthat<span class="kw">()</span></span>
-<span id="cb44-14"><a href="#cb44-14" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Write tests for spatial interpolation algorithms</span></span>
-<span id="cb44-15"><a href="#cb44-15" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Write tests for data quality validation</span></span>
-<span id="cb44-16"><a href="#cb44-16" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb44-17"><a href="#cb44-17" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb44-18"><a href="#cb44-18" tabindex="-1"></a></span>
-<span id="cb44-19"><a href="#cb44-19" tabindex="-1"></a><span class="co"># Team members (any platform)</span></span>
-<span id="cb44-20"><a href="#cb44-20" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/climate-team/precipitation</span>
-<span id="cb44-21"><a href="#cb44-21" tabindex="-1"></a><span class="bu">cd</span> precipitation</span>
-<span id="cb44-22"><a href="#cb44-22" tabindex="-1"></a><span class="fu">make</span> docker-build               <span class="co"># Build from project Dockerfile</span></span>
-<span id="cb44-23"><a href="#cb44-23" tabindex="-1"></a><span class="fu">make</span> r  <span class="co"># Identical environment on all platforms</span></span>
-<span id="cb44-24"><a href="#cb44-24" tabindex="-1"></a></span>
-<span id="cb44-25"><a href="#cb44-25" tabindex="-1"></a><span class="co"># Inside container - everyone has same GDAL, GEOS versions</span></span>
-<span id="cb44-26"><a href="#cb44-26" tabindex="-1"></a><span class="co"># Tests validate spatial algorithms work correctly</span></span></code></pre></div>
+<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
+<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial  <span class="co"># Add geospatial base image</span></span>
+<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
+<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a></span>
+<span id="cb44-7"><a href="#cb44-7" tabindex="-1"></a><span class="co"># Build and share team image (installs packages from renv.lock)</span></span>
+<span id="cb44-8"><a href="#cb44-8" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb44-9"><a href="#cb44-9" tabindex="-1"></a><span class="fu">make</span> docker-push-team            <span class="co"># Optional but efficient for team</span></span>
+<span id="cb44-10"><a href="#cb44-10" tabindex="-1"></a></span>
+<span id="cb44-11"><a href="#cb44-11" tabindex="-1"></a><span class="co"># Add tests under inst/tinytest/ (tinytest scaffolding already present):</span></span>
+<span id="cb44-12"><a href="#cb44-12" tabindex="-1"></a><span class="co"># - Tests for spatial interpolation algorithms</span></span>
+<span id="cb44-13"><a href="#cb44-13" tabindex="-1"></a><span class="co"># - Tests for data quality validation</span></span>
+<span id="cb44-14"><a href="#cb44-14" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
+<span id="cb44-15"><a href="#cb44-15" tabindex="-1"></a></span>
+<span id="cb44-16"><a href="#cb44-16" tabindex="-1"></a><span class="co"># Team members (any platform)</span></span>
+<span id="cb44-17"><a href="#cb44-17" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/climate-team/precipitation</span>
+<span id="cb44-18"><a href="#cb44-18" tabindex="-1"></a><span class="bu">cd</span> precipitation</span>
+<span id="cb44-19"><a href="#cb44-19" tabindex="-1"></a><span class="fu">make</span> docker-build               <span class="co"># Build from project Dockerfile</span></span>
+<span id="cb44-20"><a href="#cb44-20" tabindex="-1"></a><span class="fu">make</span> r  <span class="co"># Identical environment on all platforms</span></span>
+<span id="cb44-21"><a href="#cb44-21" tabindex="-1"></a></span>
+<span id="cb44-22"><a href="#cb44-22" tabindex="-1"></a><span class="co"># Inside container - everyone has same GDAL, GEOS versions</span></span>
+<span id="cb44-23"><a href="#cb44-23" tabindex="-1"></a><span class="co"># Tests validate spatial algorithms work correctly</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="example-4-open-source-r-package">Example 4: Open Source R Package<a class="anchor" aria-label="anchor" href="#example-4-open-source-r-package"></a>
@@ -1718,23 +1617,18 @@ code changes infrequently.</p>
 <span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a><span class="fu">mkdir</span> weekly-report <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> weekly-report</span>
 <span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a><span class="ex">zzc</span> minimal                      <span class="co"># Full setup with minimal profile</span></span>
 <span id="cb46-4"><a href="#cb46-4" tabindex="-1"></a></span>
-<span id="cb46-5"><a href="#cb46-5" tabindex="-1"></a><span class="co"># Add tests for report calculations</span></span>
-<span id="cb46-6"><a href="#cb46-6" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb46-7"><a href="#cb46-7" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb46-8"><a href="#cb46-8" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_testthat<span class="kw">()</span></span>
-<span id="cb46-9"><a href="#cb46-9" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Write tests for:</span></span>
-<span id="cb46-10"><a href="#cb46-10" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># - Statistical summaries (means, medians, etc.)</span></span>
-<span id="cb46-11"><a href="#cb46-11" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># - Data quality checks (missing data, outliers)</span></span>
-<span id="cb46-12"><a href="#cb46-12" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># - Report formatting functions</span></span>
-<span id="cb46-13"><a href="#cb46-13" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb46-14"><a href="#cb46-14" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb46-15"><a href="#cb46-15" tabindex="-1"></a></span>
-<span id="cb46-16"><a href="#cb46-16" tabindex="-1"></a><span class="co"># Deploy to server</span></span>
-<span id="cb46-17"><a href="#cb46-17" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> weekly-report .</span>
-<span id="cb46-18"><a href="#cb46-18" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> /data:/data weekly-report Rscript generate_report.R</span>
-<span id="cb46-19"><a href="#cb46-19" tabindex="-1"></a></span>
-<span id="cb46-20"><a href="#cb46-20" tabindex="-1"></a><span class="co"># Optional: Add CI/CD (Level 5) if code complexity grows or team expands</span></span>
-<span id="cb46-21"><a href="#cb46-21" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Creates GitHub repo with CI/CD workflows</span></span></code></pre></div>
+<span id="cb46-5"><a href="#cb46-5" tabindex="-1"></a><span class="co"># Add tests for report calculations under inst/tinytest/:</span></span>
+<span id="cb46-6"><a href="#cb46-6" tabindex="-1"></a><span class="co"># - Statistical summaries (means, medians, etc.)</span></span>
+<span id="cb46-7"><a href="#cb46-7" tabindex="-1"></a><span class="co"># - Data quality checks (missing data, outliers)</span></span>
+<span id="cb46-8"><a href="#cb46-8" tabindex="-1"></a><span class="co"># - Report formatting functions</span></span>
+<span id="cb46-9"><a href="#cb46-9" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
+<span id="cb46-10"><a href="#cb46-10" tabindex="-1"></a></span>
+<span id="cb46-11"><a href="#cb46-11" tabindex="-1"></a><span class="co"># Deploy to server</span></span>
+<span id="cb46-12"><a href="#cb46-12" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> weekly-report .</span>
+<span id="cb46-13"><a href="#cb46-13" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> /data:/data weekly-report Rscript generate_report.R</span>
+<span id="cb46-14"><a href="#cb46-14" tabindex="-1"></a></span>
+<span id="cb46-15"><a href="#cb46-15" tabindex="-1"></a><span class="co"># Optional: Add CI/CD (Level 5) if code complexity grows or team expands</span></span>
+<span id="cb46-16"><a href="#cb46-16" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Creates GitHub repo with CI/CD workflows</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1811,8 +1705,8 @@ directory is mounted for live editing.</p>
 <span id="cb49-5"><a href="#cb49-5" tabindex="-1"></a><span class="at">    </span><span class="fu">container</span><span class="kw">:</span><span class="at"> rocker/tidyverse:latest</span></span>
 <span id="cb49-6"><a href="#cb49-6" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
 <span id="cb49-7"><a href="#cb49-7" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
-<span id="cb49-8"><a href="#cb49-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Validate dependencies (pure shell - NO R REQUIRED!)</span></span>
-<span id="cb49-9"><a href="#cb49-9" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> make check-renv</span><span class="co">  # Pure shell validation (grep, awk, jq)</span></span></code></pre></div>
+<span id="cb49-8"><a href="#cb49-8" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Validate dependencies (zzrenvcheck)</span></span>
+<span id="cb49-9"><a href="#cb49-9" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> make check-renv</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1889,41 +1783,25 @@ host, run in container.</p>
 </h3>
 <p><strong>Not testing edge cases</strong>:</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Inadequate test</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"data preparation works"</span>, <span class="op">{</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">is.data.frame</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Inadequate test: only checks the return type</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">is.data.frame</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Better test includes edge cases</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"data preparation handles edge cases"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Normal case</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">333</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Empty data</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">[</span><span class="fl">0</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># All missing values</span></span>
-<span>  <span class="va">all_na</span> <span class="op">&lt;-</span> <span class="va">penguins</span></span>
-<span>  <span class="va">all_na</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">prepare_data</span><span class="op">(</span><span class="va">all_na</span><span class="op">)</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span><span class="op">)</span>, <span class="fl">333L</span><span class="op">)</span>       <span class="co"># Normal case</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">[</span><span class="fl">0</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="fl">0L</span><span class="op">)</span>    <span class="co"># Empty data</span></span>
+<span><span class="va">all_na</span> <span class="op">&lt;-</span> <span class="va">penguins</span></span>
+<span><span class="va">all_na</span><span class="op">$</span><span class="va">body_mass_g</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">prepare_data</span><span class="op">(</span><span class="va">all_na</span><span class="op">)</span><span class="op">)</span>, <span class="fl">0L</span><span class="op">)</span>           <span class="co"># All missing</span></span></code></pre></div>
 <p><strong>Testing implementation details instead of
 behavior</strong>:</p>
 <div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Wrong: Tests how function is implemented</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"uses dplyr for filtering"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Breaks if you switch to base R</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/expect_match.html" class="external-link">expect_match</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/deparse.html" class="external-link">deparse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/body.html" class="external-link">body</a></span><span class="op">(</span><span class="va">prepare_data</span><span class="op">)</span><span class="op">)</span>, <span class="st">"filter"</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Wrong: tests how the function is implemented (breaks under refactoring)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">'filter'</span>, <span class="fu"><a href="https://rdrr.io/r/base/deparse.html" class="external-link">deparse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/body.html" class="external-link">body</a></span><span class="op">(</span><span class="va">prepare_data</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Right: Tests what function does</span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"removes rows with missing body mass"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Works regardless of implementation</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_false</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Right: tests what the function does (works regardless of implementation)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">prepare_data</span><span class="op">(</span><span class="va">penguins</span><span class="op">)</span></span>
+<span><span class="fu">expect_false</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Forgetting to run tests before committing</strong>:</p>
 <div class="sourceCode" id="cb56"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1" tabindex="-1"></a><span class="co"># Wrong workflow</span></span>
 <span id="cb56-2"><a href="#cb56-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Update analysis"</span></span>
@@ -1941,8 +1819,8 @@ behavior</strong>:</p>
 <span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Fix analysis"</span></span>
 <span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a><span class="fu">git</span> push  <span class="co"># CI fails, must fix and push again</span></span>
 <span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a></span>
-<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a><span class="co"># Right workflow (pure shell validation - NO R REQUIRED!)</span></span>
-<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Pure shell validation (grep, awk, jq)</span></span>
+<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a><span class="co"># Right workflow (make check-renv runs zzrenvcheck)</span></span>
+<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
 <span id="cb57-7"><a href="#cb57-7" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
 <span id="cb57-8"><a href="#cb57-8" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Fix analysis"</span></span>
 <span id="cb57-9"><a href="#cb57-9" tabindex="-1"></a><span class="fu">git</span> push  <span class="co"># CI passes</span></span></code></pre></div>

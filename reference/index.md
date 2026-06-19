@@ -16,8 +16,6 @@
   : Push commits to GitHub
 - [`git_status()`](https://rgt47.github.io/zzcollab/reference/git_status.md)
   : Check git status
-- [`` `%||%` ``](https://rgt47.github.io/zzcollab/reference/grapes-or-or-grapes.md)
-  : Null-coalescing operator
 - [`init_config()`](https://rgt47.github.io/zzcollab/reference/init_config.md)
   : Initialize default zzcollab configuration file
 - [`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)

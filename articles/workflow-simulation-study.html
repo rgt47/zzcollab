@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-05-28</h4>
+            <h4 data-toc-skip class="date">2026-06-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-simulation-study.Rmd" class="external-link"><code>vignettes/workflow-simulation-study.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-simulation-study.Rmd</code></div>
@@ -154,8 +154,8 @@ success?</li>
 │   ├── simulate_data.R           # Data generation (extract when ready)
 │   ├── fit_models.R              # Model fitting (extract when ready)
 │   └── performance_metrics.R     # Evaluation (extract when ready)
-├── tests/
-│   └── testthat/                 # Tests for each R/ file
+├── inst/
+│   └── tinytest/                 # Tests for each R/ file
 ├── DESCRIPTION
 ├── Dockerfile
 └── renv.lock</code></pre>
@@ -170,7 +170,7 @@ success?</li>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">author</span><span class="kw">:</span></span>
 <span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Your Name</span></span>
 <span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="at">    </span><span class="fu">affiliation</span><span class="kw">:</span><span class="at"> Department of Biostatistics</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"May 28, 2026"</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"June 19, 2026"</span></span>
 <span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="fu">output</span><span class="kw">:</span></span>
 <span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="at">  </span><span class="fu">pdf_document</span><span class="kw">:</span></span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="at">    </span><span class="fu">number_sections</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
@@ -554,40 +554,33 @@ test it:</p>
 <div class="section level2">
 <h2 id="step-6-add-tests">Step 6: Add Tests<a class="anchor" aria-label="anchor" href="#step-6-add-tests"></a>
 </h2>
-<p><strong>Create
-<code>tests/testthat/test-simulate_data.R</code></strong>:</p>
+<p>This project uses tinytest. Create
+<code>inst/tinytest/test_simulate_data.R</code> with bare top-level
+expectations (no <code>test_that()</code> wrapper):</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"simulate_longitudinal_binary returns correct structure"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># simulate_longitudinal_binary returns correct structure</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span>
+<span><span class="fu">expect_inherits</span><span class="op">(</span><span class="va">data</span>, <span class="st">'data.frame'</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fl">40</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'subject_id'</span>, <span class="st">'time'</span>, <span class="st">'treatment'</span>, <span class="st">'y'</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/inheritance-expectations.html" class="external-link">expect_s3_class</a></span><span class="op">(</span><span class="va">data</span>, <span class="st">"data.frame"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fl">40</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"subject_id"</span>, <span class="st">"time"</span>, <span class="st">"treatment"</span>, <span class="st">"y"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># simulate_longitudinal_binary respects seed</span></span>
+<span><span class="va">data1</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="va">data2</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="fu">expect_identical</span><span class="op">(</span><span class="va">data1</span>, <span class="va">data2</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"simulate_longitudinal_binary respects seed"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data1</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span>  <span class="va">data2</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">20</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="co"># simulate_longitudinal_binary produces valid outcomes</span></span>
+<span><span class="va">data_valid</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">data_valid</span><span class="op">$</span><span class="va">y</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_identical</a></span><span class="op">(</span><span class="va">data1</span>, <span class="va">data2</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"simulate_longitudinal_binary produces valid outcomes"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">simulate_longitudinal_binary</span><span class="op">(</span>n_subjects <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">y</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"create_simulation_grid produces correct dimensions"</span>, <span class="op">{</span></span>
-<span>  <span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu">create_simulation_grid</span><span class="op">(</span></span>
-<span>    n_subjects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">100</span><span class="op">)</span>,</span>
-<span>    beta_interaction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span>,</span>
-<span>    sigma_b <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>    n_sims <span class="op">=</span> <span class="fl">10</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span>, <span class="fl">2</span> <span class="op">*</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">1</span> <span class="op">*</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># create_simulation_grid produces correct dimensions</span></span>
+<span><span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu">create_simulation_grid</span><span class="op">(</span></span>
+<span>  n_subjects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">100</span><span class="op">)</span>,</span>
+<span>  beta_interaction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span>,</span>
+<span>  sigma_b <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  n_sims <span class="op">=</span> <span class="fl">10</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span>, <span class="fl">2</span> <span class="op">*</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">1</span> <span class="op">*</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-7-move-full-simulation-to-scripts">Step 7: Move Full Simulation to Scripts<a class="anchor" aria-label="anchor" href="#step-7-move-full-simulation-to-scripts"></a>
@@ -729,7 +722,7 @@ re-running simulations.</p></li>
 <li>
 <code>R/performance_metrics.R</code> - Evaluation</li>
 <li>
-<code>tests/testthat/</code> - Unit tests for each module</li>
+<code>inst/tinytest/</code> - Unit tests for each module</li>
 <li>
 <code>analysis/scripts/02_run_simulation.R</code> - Full simulation
 runner</li>

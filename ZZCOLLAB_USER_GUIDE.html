@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
 <h3 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a></h3>
 <ul><li>Docker-based reproducibility with isolated computational environments</li>
 <li>Two-layer architecture separating team infrastructure from individual package management</li>
-<li>Seven Docker profiles ranging from ~650 MB to ~3 GB</li>
+<li>Three Docker profiles ranging from ~650 MB to ~1.2 GB</li>
 <li>Pure-shell dependency validation (no host R required)</li>
 <li>Automatic renv snapshot on container exit</li>
 <li>Content-addressable Docker build caching</li>
@@ -139,41 +139,35 @@
 <td>rocker/r-ver</td>
 <td>~650 MB</td>
 <td>Essential development (CLI only)</td>
-</tr><tr><td><code>rstudio</code></td>
-<td>rocker/rstudio</td>
-<td>~980 MB</td>
-<td>RStudio Server development</td>
 </tr><tr><td><code>analysis</code></td>
 <td>rocker/tidyverse</td>
 <td>~1.2 GB</td>
 <td>Data analysis with tidyverse</td>
-</tr><tr><td><code>analysis_pdf</code></td>
-<td>rocker/tidyverse</td>
-<td>~1.5 GB</td>
-<td>Analysis + PDF rendering (tinytex)</td>
-</tr><tr><td><code>modeling</code></td>
-<td>rocker/r-ver</td>
-<td>~1.5 GB</td>
-<td>Machine learning (tidymodels, xgboost)</td>
-</tr><tr><td><code>publishing</code></td>
-<td>rocker/verse</td>
-<td>~3 GB</td>
-<td>Manuscripts with full LaTeX and Quarto</td>
-</tr><tr><td><code>shiny</code></td>
-<td>rocker/shiny</td>
-<td>~1.8 GB</td>
-<td>Shiny web applications</td>
+</tr><tr><td><code>rstudio</code></td>
+<td>rocker/rstudio</td>
+<td>~980 MB</td>
+<td>RStudio Server development</td>
+</tr></tbody></table><p>For specialized environments, build from a base image instead of a profile (see <a href="#custom-composition">Custom Composition</a>):</p>
+<table class="table"><thead><tr><th>Environment</th>
+<th>Base Image</th>
+</tr></thead><tbody><tr><td>LaTeX / Quarto publishing</td>
+<td>rocker/verse base image</td>
+</tr><tr><td>Shiny web applications</td>
+<td>rocker/shiny base image</td>
+</tr><tr><td>Machine learning</td>
+<td>analysis profile + ML packages via renv</td>
 </tr></tbody></table><div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">zzc</span> analysis                    <span class="co"># new project with tidyverse</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">zzc</span> publishing                  <span class="co"># new project with LaTeX + Quarto</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base-image</span> rocker/verse   <span class="co"># LaTeX + Quarto environment</span></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="ex">zzc</span> list profiles               <span class="co"># show all profiles with descriptions</span></span></code></pre></div>
 <p>If a workspace already exists, running <code>zzc &lt;profile&gt;</code> switches the Docker profile by regenerating the Dockerfile.</p>
 </div>
 <div class="section level3">
 <h3 id="custom-composition">Custom Composition<a class="anchor" aria-label="anchor" href="#custom-composition"></a></h3>
-<p>Combine a base image with specific package bundles:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base-image</span> rocker/r-ver <span class="at">--pkgs</span> modeling</span></code></pre></div>
-<p><strong>R Package Bundles</strong> (<code>--pkgs</code>):</p>
-<table class="table"><colgroup><col width="24%"><col width="30%"><col width="45%"></colgroup><thead><tr><th>Bundle</th>
+<p>Build from a specific base image when no built-in profile fits:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base-image</span> rocker/r-ver</span></code></pre></div>
+<p>Additional R packages are added via renv inside the container (see <a href="#package-management">Package Management</a>). Each built-in profile bundles a curated package set; the bundles below document those sets:</p>
+<p><strong>R Package Bundles</strong> (built into profiles):</p>
+<table class="table"><thead><tr><th>Bundle</th>
 <th>Packages</th>
 <th>Required Libs</th>
 </tr></thead><tbody><tr><td><code>minimal</code></td>
@@ -182,18 +176,6 @@
 </tr><tr><td><code>tidyverse</code></td>
 <td>renv, devtools, tidyverse, here</td>
 <td>minimal</td>
-</tr><tr><td><code>modeling</code></td>
-<td>tidyverse + tidymodels, xgboost, randomForest, glmnet, caret</td>
-<td>modeling</td>
-</tr><tr><td><code>publishing</code></td>
-<td>quarto, bookdown, blogdown, distill, flexdashboard, DT</td>
-<td>publishing</td>
-</tr><tr><td><code>shiny</code></td>
-<td>shiny, shinydashboard, shinyWidgets, DT, plotly, bslib</td>
-<td>minimal</td>
-</tr><tr><td><code>gui</code></td>
-<td>tidyverse + rgl, plotly, shiny, Cairo, svglite</td>
-<td>gui</td>
 </tr></tbody></table><div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">zzc</span> list pkgs                   <span class="co"># show all package bundles</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">zzc</span> list libs                   <span class="co"># show all system library bundles</span></span>
 <span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="ex">zzc</span> list                        <span class="co"># show everything</span></span></code></pre></div>
@@ -489,7 +471,7 @@
 <h3 id="project-level-configuration">Project-Level Configuration<a class="anchor" aria-label="anchor" href="#project-level-configuration"></a></h3>
 <p>Create <code>zzcollab.yaml</code> in the project root to override user defaults for a specific project:</p>
 <div class="sourceCode" id="cb32"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="at">  </span><span class="fu">profile_name</span><span class="kw">:</span><span class="at"> publishing</span></span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="at">  </span><span class="fu">profile_name</span><span class="kw">:</span><span class="at"> analysis</span></span>
 <span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="at">  </span><span class="fu">dockerhub_account</span><span class="kw">:</span><span class="at"> mylab</span></span>
 <span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="at">  </span><span class="fu">github_account</span><span class="kw">:</span><span class="at"> mylab</span></span>
 <span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a></span>
@@ -574,21 +556,18 @@ Solution: make check-system-deps</code></pre>
 <code>rstudio</code> (rocker/rstudio)</li>
 </ul><p><strong>AMD64-only profiles (run under emulation):</strong></p>
 <ul><li>
-<code>analysis</code>, <code>analysis_pdf</code> (rocker/tidyverse)</li>
-<li>
-<code>publishing</code> (rocker/verse)</li>
-<li>
-<code>shiny</code> (rocker/shiny)</li>
-<li>
-<code>modeling</code> (rocker/r-ver – native, but some compiled dependencies may use emulation)</li>
+<code>analysis</code> (rocker/tidyverse)</li>
+</ul><p><strong>Specialized base images (run under emulation on ARM64):</strong></p>
+<ul><li>rocker/verse base image (LaTeX / Quarto publishing)</li>
+<li>rocker/shiny base image (Shiny applications)</li>
 </ul><p>ZZCOLLAB automatically applies <code>--platform linux/amd64</code> when building on ARM64 hosts for images that require emulation.</p>
 </div>
 <div class="section level3">
 <h3 id="platform-configuration">Platform Configuration<a class="anchor" aria-label="anchor" href="#platform-configuration"></a></h3>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="ex">zzc</span> config set docker.platform auto      <span class="co"># auto-detect (default)</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="ex">zzc</span> config set docker.platform amd64     <span class="co"># force AMD64</span></span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="ex">zzc</span> config set docker.platform arm64     <span class="co"># force ARM64</span></span>
-<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="ex">zzc</span> config set docker.platform native    <span class="co"># use host architecture</span></span></code></pre></div>
+<p>The Docker build/run platform is controlled by Docker’s own environment variable (zzcollab does not store it in config):</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64   <span class="co"># force AMD64 (e.g. rocker/verse on ARM)</span></span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/arm64   <span class="co"># force ARM64</span></span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="bu">unset</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span>                 <span class="co"># use the host architecture (default)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -599,7 +578,7 @@ Solution: make check-system-deps</code></pre>
 <span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="ex">zzc</span> init                        <span class="co"># create R package structure</span></span>
 <span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a><span class="ex">zzc</span> renv                        <span class="co"># set up renv</span></span>
 <span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>            <span class="co"># generate/build Dockerfile</span></span>
-<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="ex">zzc</span> build <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>             <span class="co"># build Docker image</span></span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="ex">zzc</span> rebuild <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>           <span class="co"># rebuild Docker image</span></span>
 <span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="ex">zzc</span> git                         <span class="co"># initialize git</span></span>
 <span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a><span class="ex">zzc</span> github [--public<span class="kw">|</span><span class="ex">--private]</span> <span class="co"># create GitHub repository</span></span>
 <span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="ex">zzc</span> dockerhub [--tag TAG]       <span class="co"># push image to Docker Hub</span></span>

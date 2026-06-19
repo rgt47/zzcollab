@@ -19,23 +19,11 @@ zzcollab_help(topic = NULL)
 
   - NULL or "general": Main help with all command-line options (default)
 
-  - "init": Team initialization help
-
-  - "quickstart": Individual researcher quick start guide
-
-  - "workflow": Daily development workflow
-
-  - "troubleshooting": Top 10 common issues and solutions
-
-  - "config": Configuration system guide
-
-  - "renv": Package management with renv
-
   - "docker": Docker essentials for researchers
 
-  - "cicd": CI/CD and GitHub Actions
+  - "profiles": Available Docker profiles
 
-  - "github": GitHub integration and automation
+  - "config": Configuration system guide
 
   - "next-steps": Development workflow guidance
 
@@ -69,14 +57,11 @@ if (FALSE) { # \dontrun{
 # Display main help
 zzcollab_help()
 
-# Get quick start guide for individual researchers
-zzcollab_help("quickstart")
-
 # Learn about configuration system
 zzcollab_help("config")
 
-# Troubleshooting common issues
-zzcollab_help("troubleshooting")
+# Available Docker profiles
+zzcollab_help("profiles")
 
 # Docker basics for researchers
 zzcollab_help("docker")

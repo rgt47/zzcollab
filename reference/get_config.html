@@ -11,7 +11,7 @@ project-level (./zzcollab.yaml) &amp;gt; user-level (~/.zzcollab/config.yaml) &a
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,7 @@ project-level (./zzcollab.yaml) &amp;gt; user-level (~/.zzcollab/config.yaml) &a
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Get configuration value from zzcollab configuration system</h1>
-      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/config.R" class="external-link"><code>R/config.R</code></a></small>
       <div class="d-none name"><code>get_config.Rd</code></div>
     </div>
 
@@ -68,7 +68,7 @@ project-level (./zzcollab.yaml) &gt; user-level (~/.zzcollab/config.yaml) &gt; s
 <dl><dt id="arg-key">key<a class="anchor" aria-label="anchor" href="#arg-key"></a></dt>
 <dd><p>Character string specifying the configuration key to retrieve.
 Common keys include:</p><ul><li><p>"team_name": Docker Hub team/organization name</p></li>
-<li><p>"profile_name": Docker profile ("minimal", "analysis", "bioinformatics", "geospatial", etc.)</p></li>
+<li><p>"profile_name": Docker profile ("minimal", "analysis", "rstudio")</p></li>
 <li><p>"github_account": GitHub account for repository creation</p></li>
 </ul></dd>
 
@@ -108,10 +108,10 @@ This provides consistent configuration management between R and shell interfaces
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Check Docker profile setting</span></span></span>
 <span class="r-in"><span><span class="va">profile</span> <span class="op">&lt;-</span> <span class="fu">get_config</span><span class="op">(</span><span class="st">"profile_name"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Docker profile:"</span>, <span class="va">profile</span> <span class="op"><a href="grapes-or-or-grapes.html">%||%</a></span> <span class="st">"minimal"</span>, <span class="st">"\n"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Docker profile:"</span>, <span class="va">profile</span> <span class="op"><a href="https://rdrr.io/r/base/Control.html" class="external-link">%||%</a></span> <span class="st">"minimal"</span>, <span class="st">"\n"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Get GitHub account with fallback</span></span></span>
-<span class="r-in"><span><span class="va">github</span> <span class="op">&lt;-</span> <span class="fu">get_config</span><span class="op">(</span><span class="st">"github_account"</span><span class="op">)</span> <span class="op"><a href="grapes-or-or-grapes.html">%||%</a></span> <span class="fu">get_config</span><span class="op">(</span><span class="st">"team_name"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">github</span> <span class="op">&lt;-</span> <span class="fu">get_config</span><span class="op">(</span><span class="st">"github_account"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/Control.html" class="external-link">%||%</a></span> <span class="fu">get_config</span><span class="op">(</span><span class="st">"team_name"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-05-28</h4>
+            <h4 data-toc-skip class="date">2026-06-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
       <div class="d-none name"><code>getting-started.Rmd</code></div>
@@ -128,17 +128,18 @@ additional packages can be added dynamically via
 <h3 id="predefined-docker-profiles">Predefined Docker Profiles<a class="anchor" aria-label="anchor" href="#predefined-docker-profiles"></a>
 </h3>
 <p><strong>minimal</strong>: Lightweight development environment
-(~780MB) - Base: rocker/r-ver - Packages: renv, devtools, usethis
-(essential development tools only)</p>
-<p><strong>analysis</strong>: Balanced environment for typical analyses
-(~1.2GB, recommended) - Base: rocker/rstudio - Packages: minimal +
-tidyverse, here, testthat, knitr, rmarkdown</p>
-<p><strong>bioinformatics</strong>: Genomics and proteomics workflows
-(~1.98GB) - Base: bioconductor/bioconductor_docker - Packages: DESeq2,
-edgeR, limma, GenomicRanges, Biostrings</p>
-<p><strong>geospatial</strong>: Spatial data analysis (~1.5GB) - Base:
-rocker/geospatial - System libs: GDAL, PROJ, GEOS - Packages: sf, terra,
-raster, mapview</p>
+(~650MB) - Base: rocker/r-ver - Packages: renv, devtools, usethis,
+tinytest, roxygen2</p>
+<p><strong>analysis</strong>: Data analysis environment (~1.2GB,
+recommended) - Base: rocker/tidyverse - Packages: renv, devtools,
+tidyverse, here</p>
+<p><strong>rstudio</strong>: RStudio Server in the browser (~980MB) -
+Base: rocker/rstudio - Packages: renv, devtools, usethis, tinytest,
+roxygen2</p>
+<p>For specialised needs (LaTeX, Shiny, machine learning), start with
+one of these profiles and add packages inside the container with
+<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, then commit the updated
+<code>renv.lock</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="project-initialization">Project Initialization<a class="anchor" aria-label="anchor" href="#project-initialization"></a>
@@ -157,16 +158,17 @@ provides necessary dependencies including tidyverse ecosystem:</p>
 <span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="ex">zzc</span> help profiles</span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="custom-profile-composition">Custom Profile Composition<a class="anchor" aria-label="anchor" href="#custom-profile-composition"></a>
+<h3 id="custom-base-image">Custom Base Image<a class="anchor" aria-label="anchor" href="#custom-base-image"></a>
 </h3>
-<p>For specialized needs, compose custom profiles using bundles:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Custom: bioinformatics base with modeling packages</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-b</span> bioconductor/bioconductor_docker <span class="at">--pkgs</span> modeling</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co"># Custom: minimal base with tidyverse packages</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-b</span> rocker/r-ver <span class="at">--pkgs</span> tidyverse</span></code></pre></div>
-<p>System library dependencies are automatically detected via
-<code>make check-system-deps</code>.</p>
+<p>To build on a different base image (for example, an organization
+image with packages pre-installed), pass <code>--base-image</code> to
+the <code>docker</code> command:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Use a custom base image</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/r-ver</span></code></pre></div>
+<p>Additional R packages are installed inside the container and captured
+in <code>renv.lock</code>; system library dependencies are detected
+automatically.</p>
 </div>
 <div class="section level3">
 <h3 id="initialization-process">Initialization Process<a class="anchor" aria-label="anchor" href="#initialization-process"></a>
@@ -177,7 +179,7 @@ provides necessary dependencies including tidyverse ecosystem:</p>
 <li>Establishes data organization hierarchy (raw_data/,
 derived_data/)</li>
 <li>Builds Docker image with specified package dependencies</li>
-<li>Configures testing framework using testthat</li>
+<li>Configures testing framework using tinytest</li>
 <li>Generates data documentation templates</li>
 <li>Creates GitHub Actions workflow definitions</li>
 <li>Sets reproducibility-critical environment variables in
@@ -384,11 +386,12 @@ properties, and enabling reproducible research workflows.</p>
 </h3>
 <p>Create comprehensive validation tests:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Execute from host environment</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="ex">vim</span> tests/testthat/test-raw-data-validation.R</span></code></pre></div>
-<p>Implement the following test suite:</p>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="ex">vim</span> inst/tinytest/test-raw-data-validation.R</span></code></pre></div>
+<p>Implement the following test suite. ZZCOLLAB projects use tinytest,
+so tests are bare top-level expectations with no
+<code>test_that()</code> wrapper:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># tests/testthat/test-raw-data-validation.R</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://testthat.r-lib.org" class="external-link">testthat</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># inst/tinytest/test-raw-data-validation.R</span></span>
 <span></span>
 <span><span class="co">#=======================================================================</span></span>
 <span><span class="co"># RAW DATA VALIDATION TESTS</span></span>
@@ -397,263 +400,90 @@ properties, and enabling reproducible research workflows.</p>
 <span><span class="co"># Rationale: Raw data immutability requires validation against</span></span>
 <span><span class="co">#            accidental modifications</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data file exists and is accessible"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data_file</span> <span class="op">&lt;-</span> <span class="st">"analysis/data/raw_data/penguins_raw.csv"</span></span>
+<span><span class="va">data_file</span> <span class="op">&lt;-</span> <span class="st">'analysis/data/raw_data/penguins_raw.csv'</span></span>
 <span></span>
-<span>  <span class="co"># Verify file existence</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">data_file</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Raw data file must exist at specified location"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Verify file existence</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">data_file</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Verify file readability</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/expect_no_error.html" class="external-link">expect_no_error</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>    <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">data_file</span><span class="op">)</span></span>
-<span>  <span class="op">}</span>, info <span class="op">=</span> <span class="st">"Raw data file must be readable without errors"</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># Verify file readability and capture for subsequent checks</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">data_file</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data has expected structure"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"analysis/data/raw_data/penguins_raw.csv"</span><span class="op">)</span></span>
+<span><span class="co"># Validate observation count (raw data invariant)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fl">344L</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate observation count (raw data invariant)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fl">344</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Raw data must contain exactly 344 observations"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Validate variable count</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fl">8L</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate variable count</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="fl">8</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Raw data must contain exactly 8 variables"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Validate column names and ordering</span></span>
+<span><span class="va">expected_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">'species'</span>, <span class="st">'island'</span>, <span class="st">'bill_length_mm'</span>, <span class="st">'bill_depth_mm'</span>,</span>
+<span>  <span class="st">'flipper_length_mm'</span>, <span class="st">'body_mass_g'</span>, <span class="st">'sex'</span>, <span class="st">'year'</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="va">expected_cols</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate column names and ordering</span></span>
-<span>  <span class="va">expected_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="st">"species"</span>, <span class="st">"island"</span>, <span class="st">"bill_length_mm"</span>, <span class="st">"bill_depth_mm"</span>,</span>
-<span>    <span class="st">"flipper_length_mm"</span>, <span class="st">"body_mass_g"</span>, <span class="st">"sex"</span>, <span class="st">"year"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span>, <span class="va">expected_cols</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Column names and order must match specification"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># Re-read with factor conversion for type and level checks</span></span>
+<span><span class="va">data_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">data_file</span>, stringsAsFactors <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data has expected data types"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
-<span>    <span class="st">"analysis/data/raw_data/penguins_raw.csv"</span>,</span>
-<span>    stringsAsFactors <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Validate categorical variables</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">species</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">island</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">sex</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate categorical variables</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Species must be factor type"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">island</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Island must be factor type"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">sex</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Sex must be factor type"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Validate numeric variables</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">is.numeric</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">is.numeric</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">bill_depth_mm</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate numeric variables</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">is.numeric</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Bill length must be numeric type"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">is.numeric</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">bill_depth_mm</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Bill depth must be numeric type"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Validate integer variables</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">is.integer</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">flipper_length_mm</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">is.integer</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">is.integer</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">year</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate integer variables</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">is.integer</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">flipper_length_mm</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Flipper length must be integer type"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">is.integer</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Body mass must be integer type"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">is.integer</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">year</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Year must be integer type"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># Validate factor levels (alphabetical order)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>,</span>
+<span>             <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Adelie'</span>, <span class="st">'Chinstrap'</span>, <span class="st">'Gentoo'</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">island</span><span class="op">)</span>,</span>
+<span>             <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Biscoe'</span>, <span class="st">'Dream'</span>, <span class="st">'Torgersen'</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">sex</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'female'</span>, <span class="st">'male'</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data has expected factor levels"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
-<span>    <span class="st">"analysis/data/raw_data/penguins_raw.csv"</span>,</span>
-<span>    stringsAsFactors <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Validate values within expected ranges (drop NA first)</span></span>
+<span><span class="va">bill_length</span> <span class="op">&lt;-</span> <span class="va">data</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">bill_depth</span> <span class="op">&lt;-</span> <span class="va">data</span><span class="op">$</span><span class="va">bill_depth_mm</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">bill_depth_mm</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">flipper</span> <span class="op">&lt;-</span> <span class="va">data</span><span class="op">$</span><span class="va">flipper_length_mm</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">flipper_length_mm</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">body_mass</span> <span class="op">&lt;-</span> <span class="va">data</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
-<span>  <span class="co"># Validate species levels</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">species</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Adelie"</span>, <span class="st">"Chinstrap"</span>, <span class="st">"Gentoo"</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Species must have three levels in alphabetical order"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">bill_length</span> <span class="op">&gt;=</span> <span class="fl">30</span> <span class="op">&amp;</span> <span class="va">bill_length</span> <span class="op">&lt;=</span> <span class="fl">60</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">bill_depth</span> <span class="op">&gt;=</span> <span class="fl">13</span> <span class="op">&amp;</span> <span class="va">bill_depth</span> <span class="op">&lt;=</span> <span class="fl">22</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">flipper</span> <span class="op">&gt;=</span> <span class="fl">170</span> <span class="op">&amp;</span> <span class="va">flipper</span> <span class="op">&lt;=</span> <span class="fl">235</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">body_mass</span> <span class="op">&gt;=</span> <span class="fl">2700</span> <span class="op">&amp;</span> <span class="va">body_mass</span> <span class="op">&lt;=</span> <span class="fl">6300</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">year</span> <span class="op">&gt;=</span> <span class="fl">2007</span> <span class="op">&amp;</span> <span class="va">data</span><span class="op">$</span><span class="va">year</span> <span class="op">&lt;=</span> <span class="fl">2009</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate island levels</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">island</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Biscoe"</span>, <span class="st">"Dream"</span>, <span class="st">"Torgersen"</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Island must have three levels in alphabetical order"</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># Validate missing-value pattern</span></span>
+<span><span class="va">missing_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colSums</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'bill_length_mm'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'bill_depth_mm'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'flipper_length_mm'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'body_mass_g'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'sex'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">11L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'species'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">0L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'island'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">0L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="va">missing_counts</span><span class="op">[</span><span class="st">'year'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">0L</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Validate sex levels</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">sex</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"female"</span>, <span class="st">"male"</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Sex must have two levels in alphabetical order"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># Validate sample sizes per group</span></span>
+<span><span class="va">species_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">species_counts</span><span class="op">[</span><span class="st">'Adelie'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">152L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">species_counts</span><span class="op">[</span><span class="st">'Chinstrap'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">68L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">species_counts</span><span class="op">[</span><span class="st">'Gentoo'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">124L</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data values within expected ranges"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"analysis/data/raw_data/penguins_raw.csv"</span><span class="op">)</span></span>
+<span><span class="va">island_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">data_f</span><span class="op">$</span><span class="va">island</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">island_counts</span><span class="op">[</span><span class="st">'Biscoe'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">168L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">island_counts</span><span class="op">[</span><span class="st">'Dream'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">124L</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">island_counts</span><span class="op">[</span><span class="st">'Torgersen'</span><span class="op">]</span><span class="op">)</span>, <span class="fl">52L</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># Remove NA values for range validation</span></span>
-<span>  <span class="va">bill_length</span> <span class="op">&lt;-</span></span>
-<span>    <span class="va">data</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">bill_length_mm</span><span class="op">)</span><span class="op">]</span></span>
-<span>  <span class="va">bill_depth</span> <span class="op">&lt;-</span></span>
-<span>    <span class="va">data</span><span class="op">$</span><span class="va">bill_depth_mm</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">bill_depth_mm</span><span class="op">)</span><span class="op">]</span></span>
-<span>  <span class="va">flipper</span> <span class="op">&lt;-</span></span>
-<span>    <span class="va">data</span><span class="op">$</span><span class="va">flipper_length_mm</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">flipper_length_mm</span><span class="op">)</span><span class="op">]</span></span>
-<span>  <span class="va">body_mass</span> <span class="op">&lt;-</span></span>
-<span>    <span class="va">data</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span>  <span class="co"># Validate bill length (biologically plausible range)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">bill_length</span> <span class="op">&gt;=</span> <span class="fl">30</span> <span class="op">&amp;</span> <span class="va">bill_length</span> <span class="op">&lt;=</span> <span class="fl">60</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Bill length must be within 30-60mm range"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate bill depth</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">bill_depth</span> <span class="op">&gt;=</span> <span class="fl">13</span> <span class="op">&amp;</span> <span class="va">bill_depth</span> <span class="op">&lt;=</span> <span class="fl">22</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Bill depth must be within 13-22mm range"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate flipper length</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">flipper</span> <span class="op">&gt;=</span> <span class="fl">170</span> <span class="op">&amp;</span> <span class="va">flipper</span> <span class="op">&lt;=</span> <span class="fl">235</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Flipper length must be within 170-235mm range"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate body mass</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">body_mass</span> <span class="op">&gt;=</span> <span class="fl">2700</span> <span class="op">&amp;</span> <span class="va">body_mass</span> <span class="op">&lt;=</span> <span class="fl">6300</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Body mass must be within 2700-6300g range"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate study years</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">year</span> <span class="op">&gt;=</span> <span class="fl">2007</span> <span class="op">&amp;</span> <span class="va">data</span><span class="op">$</span><span class="va">year</span> <span class="op">&lt;=</span> <span class="fl">2009</span><span class="op">)</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Study years must be within 2007-2009 period"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data has expected missing pattern"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"analysis/data/raw_data/penguins_raw.csv"</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Quantify missing values per variable</span></span>
-<span>  <span class="va">missing_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colSums</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate morphometric measurements (2 missing each)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"bill_length_mm"</span><span class="op">]</span>, <span class="fl">2</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Bill length must have exactly 2 missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"bill_depth_mm"</span><span class="op">]</span>, <span class="fl">2</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Bill depth must have exactly 2 missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"flipper_length_mm"</span><span class="op">]</span>, <span class="fl">2</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Flipper length must have exactly 2 missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"body_mass_g"</span><span class="op">]</span>, <span class="fl">2</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Body mass must have exactly 2 missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate sex variable (11 missing)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"sex"</span><span class="op">]</span>, <span class="fl">11</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Sex must have exactly 11 missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate complete variables (0 missing)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"species"</span><span class="op">]</span>, <span class="fl">0</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Species must have no missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"island"</span><span class="op">]</span>, <span class="fl">0</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Island must have no missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="va">missing_counts</span><span class="op">[</span><span class="st">"year"</span><span class="op">]</span>, <span class="fl">0</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Year must have no missing values"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data sample sizes per group"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
-<span>    <span class="st">"analysis/data/raw_data/penguins_raw.csv"</span>,</span>
-<span>    stringsAsFactors <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate species distribution</span></span>
-<span>  <span class="va">species_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">species</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">species_counts</span><span class="op">[</span><span class="st">"Adelie"</span><span class="op">]</span><span class="op">)</span>, <span class="fl">152</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Adelie must have 152 observations"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">species_counts</span><span class="op">[</span><span class="st">"Chinstrap"</span><span class="op">]</span><span class="op">)</span>, <span class="fl">68</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Chinstrap must have 68 observations"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">species_counts</span><span class="op">[</span><span class="st">"Gentoo"</span><span class="op">]</span><span class="op">)</span>, <span class="fl">124</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Gentoo must have 124 observations"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Validate island distribution</span></span>
-<span>  <span class="va">island_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">island</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">island_counts</span><span class="op">[</span><span class="st">"Biscoe"</span><span class="op">]</span><span class="op">)</span>, <span class="fl">168</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Biscoe must have 168 observations"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">island_counts</span><span class="op">[</span><span class="st">"Dream"</span><span class="op">]</span><span class="op">)</span>, <span class="fl">124</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Dream must have 124 observations"</span></span>
-<span>  <span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">island_counts</span><span class="op">[</span><span class="st">"Torgersen"</span><span class="op">]</span><span class="op">)</span>, <span class="fl">52</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"Torgersen must have 52 observations"</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"penguins raw data file integrity verification"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data_file</span> <span class="op">&lt;-</span> <span class="st">"analysis/data/raw_data/penguins_raw.csv"</span></span>
-<span></span>
-<span>  <span class="co"># Calculate MD5 checksum for file integrity</span></span>
-<span>  <span class="va">file_md5</span> <span class="op">&lt;-</span> <span class="fu">tools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/tools/md5sum.html" class="external-link">md5sum</a></span><span class="op">(</span><span class="va">data_file</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Verify checksum format (32 hexadecimal characters)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nchar</a></span><span class="op">(</span><span class="va">file_md5</span><span class="op">)</span> <span class="op">==</span> <span class="fl">32</span>,</span>
-<span>    info <span class="op">=</span> <span class="st">"MD5 checksum must be 32 characters"</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Document checksum for future validation</span></span>
-<span>  <span class="co"># In production: expect_equal(file_md5, "known_hash_value")</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Current MD5 checksum: "</span>, <span class="va">file_md5</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Record this value for ongoing integrity checks"</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># File integrity: MD5 checksum format (32 hexadecimal characters)</span></span>
+<span><span class="va">file_md5</span> <span class="op">&lt;-</span> <span class="fu">tools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/tools/md5sum.html" class="external-link">md5sum</a></span><span class="op">(</span><span class="va">data_file</span><span class="op">)</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nchar</a></span><span class="op">(</span><span class="va">file_md5</span><span class="op">)</span> <span class="op">==</span> <span class="fl">32</span><span class="op">)</span></span>
+<span><span class="co"># Document the checksum for future validation; in production, pin it:</span></span>
+<span><span class="co"># expect_equal(unname(file_md5), 'known_hash_value')</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="test-execution">Test Execution<a class="anchor" aria-label="anchor" href="#test-execution"></a>
@@ -662,9 +492,8 @@ properties, and enabling reproducible research workflows.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Navigate to project directory</span></span>
 <span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="bu">cd</span> ~/projects/penguin-analysis</span>
 <span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># Run validation test suite</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"library(testthat); </span><span class="dt">\</span></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="st">  test_file('tests/testthat/test-raw-data-validation.R')"</span></span></code></pre></div>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># Run the tinytest suite in the container</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -698,10 +527,7 @@ environment with all specified dependencies pre-installed.</p>
 <span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co"># RStudio Server web interface</span></span>
 <span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="fu">make</span> docker-rstudio</span>
 <span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co"># Access via web browser: http://localhost:8787</span></span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co"># Credentials: username=rstudio, password=rstudio</span></span>
-<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co"># R console only</span></span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="fu">make</span> docker-r</span></code></pre></div>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co"># Credentials: username=rstudio, password=rstudio</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="environment-verification">Environment Verification<a class="anchor" aria-label="anchor" href="#environment-verification"></a>
@@ -893,152 +719,57 @@ Create tests for the preparation function:
 
 ```bash
 # Within container environment
-cat &gt; tests/testthat/test-prepare-penguin-data.R &lt;&lt; 'EOF'
-library(testthat)
+cat &gt; inst/tinytest/test-prepare-penguin-data.R &lt;&lt; 'EOF'
+# tinytest expectations are bare top-level calls (no test_that wrapper).
+# devtools::load_all() (run by make docker-test) exposes package functions.
 
-test_that("prepare_penguin_data() loads and cleans correctly", {
-  # Execute preparation function
-  penguins &lt;- prepare_penguin_data()
+# Loads and cleans correctly
+penguins &lt;- prepare_penguin_data()
+expect_inherits(penguins, 'data.frame')
+expect_false(any(is.na(penguins)))
+expect_equal(nrow(penguins), 333L)
+expect_true(all(c('bill_ratio', 'log_body_mass_g', 'body_mass_kg')
+                %in% names(penguins)))
 
-  # Verify return type
-  expect_s3_class(penguins, "data.frame")
+# Derived variables are computed correctly
+expect_true(all(penguins$bill_ratio &gt; 0))
+expect_equal(penguins$bill_ratio,
+             penguins$bill_length_mm / penguins$bill_depth_mm)
+expect_equal(penguins$log_body_mass_g, log(penguins$body_mass_g))
+expect_equal(penguins$body_mass_kg, penguins$body_mass_g / 1000)
 
-  # Verify completeness
-  expect_false(
-    any(is.na(penguins)),
-    info = "Cleaned data must contain no missing values"
-  )
+# Honours the n_records parameter
+penguins_50 &lt;- prepare_penguin_data(n_records = 50)
+expect_equal(nrow(penguins_50), 50L)
+expect_warning(prepare_penguin_data(n_records = 500),
+               pattern = 'only.*available')
+penguins_many &lt;- suppressWarnings(prepare_penguin_data(n_records = 500))
+expect_equal(nrow(penguins_many), 333L)
 
-  # Verify sample size (344 original - 11 incomplete = 333)
-  expect_equal(
-    nrow(penguins), 333,
-    info = "Must contain 333 complete observations"
-  )
+# Adds metadata attributes
+expect_false(is.null(attr(penguins, 'preparation_date')))
+expect_false(is.null(attr(penguins, 'source_file')))
+expect_false(is.null(attr(penguins, 'n_removed')))
+expect_equal(attr(penguins, 'n_removed'), 11L)
 
-  # Verify derived variables present
-  expect_true(
-    all(c("bill_ratio", "log_body_mass_g", "body_mass_kg")
-        %in% names(penguins)),
-    info = "Derived variables must be present"
-  )
-})
+# Maintains species distribution
+species_counts &lt;- table(penguins$species)
+expect_equal(length(species_counts), 3L)
+expect_true(species_counts['Adelie'] &gt; 140)
+expect_true(species_counts['Gentoo'] &gt; 110)
+expect_true(species_counts['Chinstrap'] &gt; 60)
 
-test_that("prepare_penguin_data() creates valid derivations", {
-  penguins &lt;- prepare_penguin_data()
-
-  # Verify bill ratio validity
-  expect_true(
-    all(penguins$bill_ratio &gt; 0),
-    info = "Bill ratio must be positive"
-  )
-
-  # Verify bill ratio calculation
-  expected_ratio &lt;-
-    penguins$bill_length_mm / penguins$bill_depth_mm
-  expect_equal(
-    penguins$bill_ratio, expected_ratio,
-    info = "Bill ratio calculation must be accurate"
-  )
-
-  # Verify log body mass calculation
-  expected_log &lt;- log(penguins$body_mass_g)
-  expect_equal(
-    penguins$log_body_mass_g, expected_log,
-    info = "Log body mass calculation must be accurate"
-  )
-
-  # Verify body mass conversion
-  expected_kg &lt;- penguins$body_mass_g / 1000
-  expect_equal(
-    penguins$body_mass_kg, expected_kg,
-    info = "Body mass conversion must be accurate"
-  )
-})
-
-test_that("prepare_penguin_data() handles n_records parameter", {
-  # Request subset of 50 records
-  penguins_50 &lt;- prepare_penguin_data(n_records = 50)
-
-  expect_equal(
-    nrow(penguins_50), 50,
-    info = "Must return exactly 50 records when requested"
-  )
-
-  # Request excessive records (should warn)
-  expect_warning({
-    penguins_many &lt;- prepare_penguin_data(n_records = 500)
-  }, regexp = "only.*available")
-
-  expect_equal(
-    nrow(penguins_many), 333,
-    info = "Must return all available records when request exceeds"
-  )
-})
-
-test_that("prepare_penguin_data() adds metadata attributes", {
-  penguins &lt;- prepare_penguin_data()
-
-  # Verify metadata presence
-  expect_true(
-    !is.null(attr(penguins, "preparation_date")),
-    info = "Must contain preparation_date attribute"
-  )
-  expect_true(
-    !is.null(attr(penguins, "source_file")),
-    info = "Must contain source_file attribute"
-  )
-  expect_true(
-    !is.null(attr(penguins, "n_removed")),
-    info = "Must contain n_removed attribute"
-  )
-
-  # Verify n_removed value
-  expect_equal(
-    attr(penguins, "n_removed"), 11,
-    info = "Must have removed exactly 11 incomplete cases"
-  )
-})
-
-test_that("prepare_penguin_data() maintains distribution", {
-  penguins &lt;- prepare_penguin_data()
-
-  # Quantify species distribution
-  species_counts &lt;- table(penguins$species)
-
-  # Verify all species present
-  expect_equal(
-    length(species_counts), 3,
-    info = "Must contain all three species"
-  )
-
-  # Verify adequate sample sizes after missing data removal
-  expect_true(
-    species_counts["Adelie"] &gt; 140,
-    info = "Must retain substantial Adelie sample"
-  )
-  expect_true(
-    species_counts["Gentoo"] &gt; 110,
-    info = "Must retain substantial Gentoo sample"
-  )
-  expect_true(
-    species_counts["Chinstrap"] &gt; 60,
-    info = "Must retain substantial Chinstrap sample"
-  )
-})
-
-test_that("prepare_penguin_data() errors on invalid file", {
-  expect_error({
-    prepare_penguin_data(data_file = "nonexistent.csv")
-  }, regexp = "Data file not found")
-})
+# Errors on an invalid file
+expect_error(prepare_penguin_data(data_file = 'nonexistent.csv'),
+             pattern = 'Data file not found')
 EOF</code></pre>
 </div>
 <div class="section level3">
 <h3 id="test-execution-1">Test Execution<a class="anchor" aria-label="anchor" href="#test-execution-1"></a>
 </h3>
 <p>Run the complete test suite:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="co"># Within container environment</span></span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="ex">R</span> <span class="at">-e</span> <span class="st">"devtools::test()"</span></span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="co"># Run the tinytest suite in the container</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1077,7 +808,7 @@ the host environment.</p>
 <span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="fu">cat</span> R/prepare_penguin_data.R</span>
 <span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a></span>
 <span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="co"># Verify test persistence</span></span>
-<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="fu">ls</span> tests/testthat/</span></code></pre></div>
+<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="fu">ls</span> inst/tinytest/</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1232,39 +963,43 @@ properly synchronized with the code.</p>
 <h3 id="dependency-validation">Dependency Validation<a class="anchor" aria-label="anchor" href="#dependency-validation"></a>
 </h3>
 <p>ZZCOLLAB provides automated dependency checking to ensure
-reproducibility:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># On HOST (after exiting container) - NO R INSTALLATION REQUIRED!</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="co"># Validate dependencies are synchronized (pure shell validation)</span></span>
-<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Uses grep, awk, jq - NO R required!</span></span></code></pre></div>
-<p><strong>Pure Shell Validation</strong> (October 2025):</p>
-<p>This pure shell validation performs comprehensive checks without
-requiring R on the host:</p>
+reproducibility. The check is implemented by the companion R package
+<code>zzrenvcheck</code>, which is installed into the project image.
+<code>make check-renv</code> runs
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>
+inside the container; <code>zzcollab validate</code> wraps the same
+check on the host.</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Validate dependencies are synchronized (runs zzrenvcheck in the container)</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<p>The default <code>check-renv</code> target is strict and
+auto-fixing:</p>
 <ul>
 <li>Verifies all packages used in R/ code are declared in
 DESCRIPTION</li>
 <li>Checks that renv.lock matches actual package usage</li>
+<li>Scans tests/, vignettes/, and inst/ in addition to R/</li>
 <li>Validates packages across CRAN, Bioconductor, and GitHub</li>
-<li>Ensures no missing or undeclared dependencies</li>
-<li>
-<strong>Works without R installed on host machine!</strong> (uses
-grep, awk, jq)</li>
+<li>Repairs DESCRIPTION and renv.lock discrepancies automatically</li>
 </ul>
 <p><strong>Common validation scenarios:</strong></p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Standard validation (recommended before every commit)</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Pure shell validation</span></span>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Standard validation (strict + auto-fix, recommended before every commit)</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
 <span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="co"># Strict mode (also scans tests/, vignettes/)</span></span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="fu">make</span> check-renv-strict</span></code></pre></div>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="co"># Report only, without modifying any files</span></span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="fu">make</span> check-renv-no-fix</span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a><span class="co"># Skip the tests/ and vignettes/ scan</span></span>
+<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a><span class="fu">make</span> check-renv-no-strict</span></code></pre></div>
 <p><strong>Interpreting validation results:</strong></p>
 <pre><code># Success - ready to commit
-✓ All dependencies properly declared
-✓ renv.lock synchronized with code
-✓ No missing packages detected
+All dependencies properly declared
+renv.lock synchronized with code
+No missing packages detected
 
 # Failure - requires attention
-✗ Missing packages in DESCRIPTION: tidymodels, broom
-✗ Package used but not in renv.lock: ggrepel
-→ Run with --fix flag to resolve automatically</code></pre>
+Missing packages in DESCRIPTION: tidymodels, broom
+Package used but not in renv.lock: ggrepel
+Auto-fix applies the necessary additions</code></pre>
 </div>
 <div class="section level3">
 <h3 id="commit-workflow">Commit Workflow<a class="anchor" aria-label="anchor" href="#commit-workflow"></a>
@@ -1285,9 +1020,9 @@ grep, awk, jq)</li>
 <span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a><span class="st">- Generate publication-quality visualizations</span></span>
 <span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a><span class="st">- Document data provenance and transformations</span></span>
 <span id="cb30-15"><a href="#cb30-15" tabindex="-1"></a></span>
-<span id="cb30-16"><a href="#cb30-16" tabindex="-1"></a><span class="st">Tests: All 23 tests passing</span></span>
+<span id="cb30-16"><a href="#cb30-16" tabindex="-1"></a><span class="st">Tests: All tinytest expectations passing</span></span>
 <span id="cb30-17"><a href="#cb30-17" tabindex="-1"></a><span class="st">Coverage: Complete coverage of data preparation code</span></span>
-<span id="cb30-18"><a href="#cb30-18" tabindex="-1"></a><span class="st">Dependencies: Validated with pure shell validation (make check-renv)"</span></span>
+<span id="cb30-18"><a href="#cb30-18" tabindex="-1"></a><span class="st">Dependencies: Validated with make check-renv (zzrenvcheck)"</span></span>
 <span id="cb30-19"><a href="#cb30-19" tabindex="-1"></a></span>
 <span id="cb30-20"><a href="#cb30-20" tabindex="-1"></a><span class="co"># Push to remote repository (if configured)</span></span>
 <span id="cb30-21"><a href="#cb30-21" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
@@ -1328,17 +1063,19 @@ lifecycle.</p>
 <span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="co"># Development workflow (within container)</span></span>
 <span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="ex">R</span>                              <span class="co"># Start R session</span></span>
 <span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="fu">devtools::load_all()</span>           <span class="co"># Load project functions</span></span>
-<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="fu">devtools::test()</span>               <span class="co"># Execute test suite</span></span>
-<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a><span class="bu">source</span><span class="er">(</span><span class="st">"scripts/01_analysis.R"</span><span class="kw">)</span>  <span class="co"># Run analysis</span></span>
-<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a><span class="bu">exit</span>                           <span class="co"># Exit R</span></span>
-<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a></span>
-<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a><span class="co"># Container exit</span></span>
-<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb31-22"><a href="#cb31-22" tabindex="-1"></a></span>
-<span id="cb31-23"><a href="#cb31-23" tabindex="-1"></a><span class="co"># Version control (host environment)</span></span>
-<span id="cb31-24"><a href="#cb31-24" tabindex="-1"></a><span class="fu">git</span> add .</span>
-<span id="cb31-25"><a href="#cb31-25" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Commit message"</span></span>
-<span id="cb31-26"><a href="#cb31-26" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="bu">source</span><span class="er">(</span><span class="st">"scripts/01_analysis.R"</span><span class="kw">)</span>  <span class="co"># Run analysis</span></span>
+<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a><span class="bu">exit</span>                           <span class="co"># Exit R</span></span>
+<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a></span>
+<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a><span class="co"># Run the tinytest suite (from host or container)</span></span>
+<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
+<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a></span>
+<span id="cb31-22"><a href="#cb31-22" tabindex="-1"></a><span class="co"># Container exit</span></span>
+<span id="cb31-23"><a href="#cb31-23" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb31-24"><a href="#cb31-24" tabindex="-1"></a></span>
+<span id="cb31-25"><a href="#cb31-25" tabindex="-1"></a><span class="co"># Version control (host environment)</span></span>
+<span id="cb31-26"><a href="#cb31-26" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb31-27"><a href="#cb31-27" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Commit message"</span></span>
+<span id="cb31-28"><a href="#cb31-28" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="docker-profile-comparison">Docker Profile Comparison<a class="anchor" aria-label="anchor" href="#docker-profile-comparison"></a>
@@ -1359,7 +1096,7 @@ lifecycle.</p>
 <tbody>
 <tr class="odd">
 <td>minimal</td>
-<td>~780MB</td>
+<td>~650MB</td>
 <td>Lightweight development</td>
 <td>rocker/r-ver</td>
 </tr>
@@ -1367,19 +1104,13 @@ lifecycle.</p>
 <td>analysis</td>
 <td>~1.2GB</td>
 <td>General analyses (recommended)</td>
-<td>rocker/rstudio</td>
+<td>rocker/tidyverse</td>
 </tr>
 <tr class="odd">
-<td>bioinformatics</td>
-<td>~1.98GB</td>
-<td>Genomics workflows</td>
-<td>bioconductor</td>
-</tr>
-<tr class="even">
-<td>geospatial</td>
-<td>~1.5GB</td>
-<td>Spatial data analysis</td>
-<td>rocker/geospatial</td>
+<td>rstudio</td>
+<td>~980MB</td>
+<td>RStudio Server</td>
+<td>rocker/rstudio</td>
 </tr>
 </tbody>
 </table>
@@ -1452,8 +1183,8 @@ OMP_NUM_THREADS)</li>
 <li>✅ Packages from all contributors included (for team projects)</li>
 <li>✅ renv.lock synchronized with code</li>
 </ul>
-<p><strong>Verification</strong> (pure shell - NO R REQUIRED!):</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Pure shell validation (grep, awk, jq)</span></span>
+<p><strong>Verification</strong>:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Runs zzrenvcheck in the container</span></span>
 <span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="fu">git</span> status renv.lock  <span class="co"># Should show "nothing to commit"</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -1475,13 +1206,12 @@ OMP_NUM_THREADS)</li>
 <ul>
 <li>✅ Analysis scripts committed (analysis/scripts/)</li>
 <li>✅ Reusable functions documented (R/)</li>
-<li>✅ Comprehensive tests written (tests/testthat/)</li>
+<li>✅ Comprehensive tests written (inst/tinytest/)</li>
 <li>✅ Random seeds explicit for stochastic analyses</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span>           <span class="co"># All tests should pass</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span>          <span class="co"># R CMD check should succeed</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">make</span> docker-test           <span class="co"># All tinytest expectations should pass</span></span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="fu">make</span> docker-check          <span class="co"># R CMD check should succeed</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pillar-5-research-data">Pillar 5: Research Data<a class="anchor" aria-label="anchor" href="#pillar-5-research-data"></a>
@@ -1499,7 +1229,7 @@ codes)</li>
 <p><strong>Verification</strong>:</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-lh</span> analysis/data/raw_data/        <span class="co"># Raw data files present</span></span>
 <span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">cat</span> analysis/data/README.md           <span class="co"># Documentation complete</span></span>
-<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="fu">devtools::test()</span>                      <span class="co"># Data validation tests pass</span></span></code></pre></div>
+<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="fu">make</span> docker-test                      <span class="co"># Data validation tests pass</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="continuous-integration-1">Continuous Integration<a class="anchor" aria-label="anchor" href="#continuous-integration-1"></a>

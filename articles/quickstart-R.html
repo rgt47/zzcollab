@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-05-28</h4>
+            <h4 data-toc-skip class="date">2026-06-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/quickstart-R.Rmd" class="external-link"><code>vignettes/quickstart-R.Rmd</code></a></small>
       <div class="d-none name"><code>quickstart-R.Rmd</code></div>
@@ -145,8 +145,8 @@ commands</li>
 <span>  <span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"team_name"</span>, <span class="st">"myteam"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># Update existing configuration</span></span>
-<span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"profile_name"</span>, <span class="st">"bioinformatics"</span><span class="op">)</span></span>
+<span><span class="co"># Update existing configuration (built-in profiles: minimal, analysis, rstudio)</span></span>
+<span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"profile_name"</span>, <span class="st">"analysis"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># View all settings</span></span>
 <span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/list_config.html">list_config</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -269,9 +269,12 @@ environment:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rgt47/zzcollab" class="external-link">zzcollab</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Set team configuration</span></span>
+<span><span class="co"># Set team configuration. Built-in profiles are minimal, analysis, and</span></span>
+<span><span class="co"># rstudio; for genomics, start from analysis and either add Bioconductor</span></span>
+<span><span class="co"># packages via renv or build on a Bioconductor base image with</span></span>
+<span><span class="co"># `zzcollab docker --base-image bioconductor/bioconductor_docker`.</span></span>
 <span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"team_name"</span>, <span class="st">"genomicslab"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"profile_name"</span>, <span class="st">"bioinformatics"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"profile_name"</span>, <span class="st">"analysis"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"github_account"</span>, <span class="st">"genomicslab"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Navigate to project directory</span></span>
@@ -299,7 +302,7 @@ image:</p>
 <p><strong>Commit and push project structure:</strong></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Commit initial setup</span></span>
-<span><span class="fu"><a href="../reference/git_commit.html">git_commit</a></span><span class="op">(</span><span class="st">"Initial project setup with bioinformatics profile"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/git_commit.html">git_commit</a></span><span class="op">(</span><span class="st">"Initial project setup with analysis profile"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Push to GitHub</span></span>
 <span><span class="fu"><a href="../reference/git_push.html">git_push</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -507,7 +510,7 @@ containers:</p>
 <span><span class="co"># Sync from renv.lock (e.g., after git pull)</span></span>
 <span><span class="fu"><a href="../reference/sync_env.html">sync_env</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Validate package consistency (pure shell - NO R required!)</span></span>
+<span><span class="co"># Validate package consistency (runs zzrenvcheck in the container)</span></span>
 <span><span class="fu"><a href="../reference/rebuild.html">rebuild</a></span><span class="op">(</span><span class="st">"docker-check-renv"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Auto-Snapshot &amp; Auto-Restore Architecture</strong>:</p>
 <ul>
@@ -568,17 +571,16 @@ needed)</li>
 <span></span>
 <span><span class="co"># Comprehensive reproducibility check</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="../reference/validate_repro.html">validate_repro</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"✅ All reproducibility checks passed"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"✓ renv environment synchronized"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"✓ Validation scripts passed"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"✓ Package consistency verified"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"All reproducibility checks passed"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"renv environment synchronized"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Package consistency verified by zzrenvcheck"</span><span class="op">)</span></span>
 <span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"❌ Some reproducibility checks failed"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Some reproducibility checks failed"</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Review output above for details"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="co"># Individual validation steps</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"make check-renv"</span><span class="op">)</span>  <span class="co"># Pure shell - NO R REQUIRED! (grep, awk, curl, jq)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"make check-renv"</span><span class="op">)</span>  <span class="co"># Runs zzrenvcheck in the container</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.html" class="external-link">system</a></span><span class="op">(</span><span class="st">"Rscript check_rprofile_options.R"</span><span class="op">)</span>  <span class="co"># R options monitoring</span></span>
 <span></span>
 <span><span class="co"># Check Docker consistency</span></span>
@@ -708,9 +710,9 @@ needed)</li>
 <span>  <span class="va">all_passed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">checks</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="va">all_passed</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"✅ All pre-flight checks passed"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"All pre-flight checks passed"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"❌ Some checks failed:"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Some checks failed:"</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">checks</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span></span>

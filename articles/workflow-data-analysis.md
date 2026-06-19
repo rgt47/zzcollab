@@ -88,7 +88,7 @@ ZZCOLLAB creates a unified research compendium structure:
     │   │   └── references.bib      # Bibliography
     │   └── scripts/                # Standalone scripts (if needed)
     ├── R/                          # Reusable functions (extract later)
-    ├── tests/                      # Unit tests (add as needed)
+    ├── inst/tinytest/              # Unit tests (add as needed)
     ├── DESCRIPTION                 # Project metadata
     ├── Dockerfile                  # Computational environment
     └── renv.lock                   # Package versions
@@ -485,26 +485,25 @@ extract_species_slopes <- function(model, x_var = "log_body_mass",
 
 ### Add Tests
 
-Create `tests/testthat/test-allometry.R`:
+This project uses tinytest. Create `inst/tinytest/test_allometry.R` with
+bare top-level expectations (no `test_that()` wrapper):
 
 ``` r
 
-test_that("extract_species_slopes returns correct structure", {
-  # Create test data
-  test_data <- data.frame(
-    y = rnorm(100),
-    x = rnorm(100),
-    species = factor(rep(c("A", "B"), 50))
-  )
-  model <- lm(y ~ x * species, data = test_data)
+# extract_species_slopes returns correct structure
+test_data <- data.frame(
+  y = rnorm(100),
+  x = rnorm(100),
+  species = factor(rep(c('A', 'B'), 50))
+)
+model <- lm(y ~ x * species, data = test_data)
 
-  result <- extract_species_slopes(model, "x", "species")
+result <- extract_species_slopes(model, 'x', 'species')
 
-  expect_s3_class(result, "data.frame")
-  expect_equal(nrow(result), 2)
-  expect_true("species" %in% names(result))
-  expect_true("slope" %in% names(result))
-})
+expect_inherits(result, 'data.frame')
+expect_equal(nrow(result), 2)
+expect_true('species' %in% names(result))
+expect_true('slope' %in% names(result))
 ```
 
 ### Update Manuscript to Use Function
@@ -631,5 +630,5 @@ The following files are extracted from this vignette and available in
 
 - `report.Rmd` - Complete manuscript template
 - `R/allometry.R` - Extracted allometry functions
-- `tests/testthat/test-allometry.R` - Unit tests
+- `inst/tinytest/test_allometry.R` - Unit tests
 - `analysis/data/README.md` - Data documentation template

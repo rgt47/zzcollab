@@ -1,14 +1,20 @@
 # Initialize a new zzcollab team project
 
-Creates a complete team research collaboration infrastructure including
-Docker base images, GitHub repository, and project structure. This
-function is the R interface to the `zzcollab --init` command and should
-be used by team leads to set up new collaborative research projects.
+Creates a research compendium in the current working directory and
+records the team's DockerHub and GitHub accounts in the zzcollab
+configuration so that the `dockerhub` and `github` commands can publish
+under them. Intended for team leads setting up a new collaborative
+research project.
 
 ## Usage
 
 ``` r
-init_project(team_name = NULL, project_name = NULL, github_account = NULL)
+init_project(
+  team_name = NULL,
+  project_name = NULL,
+  github_account = NULL,
+  profile = "analysis"
+)
 ```
 
 ## Arguments
@@ -22,9 +28,10 @@ init_project(team_name = NULL, project_name = NULL, github_account = NULL)
 
 - project_name:
 
-  Character string specifying the project name. Used for Docker image
-  names, GitHub repository, and directory names. Must be a valid Docker
-  repository name (lowercase, no spaces).
+  Character string specifying the project name. The compendium is
+  created in the current working directory (which should be named
+  accordingly); the value is validated and used in status messages. Must
+  be a valid Docker repository name (lowercase, no spaces).
 
 - github_account:
 
@@ -32,31 +39,31 @@ init_project(team_name = NULL, project_name = NULL, github_account = NULL)
   NULL, uses config default or falls back to `team_name`. Used with
   GitHub CLI to create private repositories.
 
+- profile:
+
+  Character string naming the Docker profile / quickstart bundle to
+  scaffold (e.g. "analysis", "minimal", "rstudio"). Defaults to
+  "analysis".
+
 ## Value
 
 Logical value indicating success (TRUE) or failure (FALSE) of the
-initialization process. The function creates multiple components, so
-partial failures may occur.
+scaffolding step.
 
 ## Details
 
-This function orchestrates the complete team project setup process:
+This function performs two steps using the current zzcollab CLI:
 
-1.  **Team Docker Images**: Creates and pushes base images to Docker Hub
+1.  **Configuration**: Records the DockerHub account (and GitHub
+    account, if given) via `zzcollab config set` so that later
+    `dockerhub` and `github` commands publish under the correct
+    accounts.
 
-2.  **Project Structure**: Generates R package structure with analysis
-    templates
+2.  **Scaffolding**: Runs the profile quickstart (`zzcollab <profile>`),
+    which creates the R package structure, renv.lock, and Dockerfile.
 
-3.  **GitHub Repository**: Creates private repository with CI/CD
-    workflows
-
-4.  **Configuration Files**: Sets up Dockerfile, Makefile, and config
-    files
-
-5.  **Documentation**: Generates user guides and README files
-
-The function integrates with the zzcollab configuration system, allowing
-team leads to set default values once and reuse them across projects.
+To publish the team image and repository afterwards, run
+`zzcollab dockerhub` and `zzcollab github` in the project directory.
 
 **Prerequisites:**
 

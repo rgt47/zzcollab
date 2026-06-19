@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -122,8 +122,10 @@ the terminal without requiring XQuartz or X11 libraries.</p>
 <li>
 <a href="https://sw.kovidgoyal.net/kitty/" class="external-link">Kitty terminal</a>
 installed on your host</li>
-<li>Docker with a ZZCOLLAB profile (e.g.,
-<code>ubuntu_standard_analysis_vim</code>)</li>
+<li>Docker with a ZZCOLLAB profile (e.g., <code>analysis</code>).
+Terminal editors such as vim and X11 tooling can be added via
+<code>--base-image</code> or <code>.Rprofile.local</code>
+</li>
 <li>No X11 or XQuartz required</li>
 </ul>
 </div>
@@ -255,7 +257,7 @@ plots.</p>
 </h3>
 <p>When running R in Docker, forward the httpgd port:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Start container with port forwarding</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="at">-p</span> 8888:8888 <span class="at">-v</span> <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/home/rstudio/project myproject</span></code></pre></div>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="at">-p</span> 8888:8888 <span class="at">-v</span> <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/home/analyst/project myproject</span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Inside R</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/nx10/httpgd" class="external-link">httpgd</a></span><span class="op">)</span></span>
@@ -271,7 +273,7 @@ plots.</p>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="dv">r-httpgd:</span></span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="er">    </span>docker run --platform linux/amd64 --rm -it \</span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>        <span class="ch">-</span><span class="fu">p 8888:8888 </span><span class="ch">\</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="fu">        -v </span><span class="ch">$$</span><span class="fu">(pwd):/home/rstudio/project </span><span class="ch">\</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="fu">        -v </span><span class="ch">$$</span><span class="fu">(pwd):/home/analyst/project </span><span class="ch">\</span></span>
 <span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="fu">        </span><span class="ch">$(</span><span class="dt">PACKAGE_NAME</span><span class="ch">)</span></span></code></pre></div>
 </div>
 </div>
@@ -314,7 +316,7 @@ host.</p>
 ├─────────────────────────────────────────────────┤
 │ Docker Container                                │
 │   R, ggplot2                                    │
-│   Project mounted at: /home/rstudio/project     │
+│   Project mounted at: /home/analyst/project     │
 │   tempfile() → /tmp (not accessible from host!) │
 └─────────────────────────────────────────────────┘</code></pre>
 <p>Files saved to <code>/tmp</code> inside the container are not
@@ -513,19 +515,27 @@ runs directly on the host.</p>
 <h3 id="image-size-comparison">Image Size Comparison<a class="anchor" aria-label="anchor" href="#image-size-comparison"></a>
 </h3>
 <table class="table">
+<colgroup>
+<col width="39%">
+<col width="15%">
+<col width="44%">
+</colgroup>
 <thead><tr class="header">
-<th>Profile</th>
+<th>Configuration</th>
 <th>Size</th>
 <th>Graphics Method</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>ubuntu_standard_analysis_vim</code></td>
-<td>~1.8GB</td>
+<td>
+<code>analysis</code> profile</td>
+<td>~1.2GB</td>
 <td>kitty/httpgd</td>
 </tr>
 <tr class="even">
-<td><code>ubuntu_x11_analysis_vim</code></td>
+<td>
+<code>analysis</code> profile plus X11 (via
+<code>--base-image</code>)</td>
 <td>~2.2GB</td>
 <td>X11 forwarding</td>
 </tr>
@@ -574,8 +584,6 @@ runs directly on the host.</p>
 <li><a href="https://sw.kovidgoyal.net/kitty/graphics-protocol/" class="external-link">Kitty
 Graphics Protocol</a></li>
 <li><a href="https://nx10.github.io/httpgd/" class="external-link">httpgd Package</a></li>
-<li><a href="workflow-x11-plotting.html">ZZCOLLAB X11 Plotting
-Workflow</a></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -213,7 +213,7 @@ packages.</p>
 <p><strong>What this does:</strong> - Creates project structure with
 DESCRIPTION, Makefile, etc. - Builds from
 <code>rocker/rstudio:latest</code> - Installs analysis profile packages
-(tidyverse, here, testthat, knitr, rmarkdown) - Creates
+(renv, devtools, tidyverse, here) - Creates
 <code>mylab/baseimage:latest</code> - Pushes to Docker Hub for team
 access</p>
 <p><strong>Profile options:</strong></p>
@@ -225,9 +225,9 @@ access</p>
 <span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create analysis team base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
 <span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="bu">cd</span> ..</span>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co"># Modeling profile (machine learning focused)</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co"># Machine learning focused</span></span>
 <span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="fu">mkdir</span> modeling-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> modeling-base</span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="ex">zzc</span> modeling                     <span class="co"># Full setup with modeling profile</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
 <span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create modeling team base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
@@ -240,22 +240,24 @@ access</p>
 <span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create minimal team base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
 <span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="bu">cd</span> ..</span></code></pre></div>
-<p><strong>Specialized domain profiles:</strong></p>
+<p><strong>Specialized domain images:</strong></p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Bioinformatics (Bioconductor genomics)</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">mkdir</span> bio-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> bio-base</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="ex">zzc</span> bioinformatics               <span class="co"># Full setup with bioinformatics profile</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># Bioconductor base</span></span>
 <span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create bioinformatics team base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
 <span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="bu">cd</span> ..</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co"># Geospatial (GIS and spatial analysis)</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="fu">mkdir</span> geo-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> geo-base</span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="ex">zzc</span> geospatial                   <span class="co"># Full setup with geospatial profile</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create geospatial team base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="bu">cd</span> ..</span></code></pre></div>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># Add genomics packages via renv (install.packages / BiocManager) as needed</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co"># Geospatial (GIS and spatial analysis)</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="fu">mkdir</span> geo-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> geo-base</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial  <span class="co"># Geospatial base</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create geospatial team base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="bu">cd</span> ..</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co"># Add spatial packages via renv (install.packages) as needed</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-2-verify-image-on-docker-hub">Step 2: Verify Image on Docker Hub<a class="anchor" aria-label="anchor" href="#step-2-verify-image-on-docker-hub"></a>
@@ -338,15 +340,15 @@ environments.</p>
 <p><strong>Team Lead (one-time setup):</strong></p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Create lab base image with bioinformatics tools</span></span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">mkdir</span> labbase <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> labbase</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="ex">zzc</span> bioinformatics               <span class="co"># Full setup with bioinformatics profile</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># Bioconductor base</span></span>
 <span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
 <span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="fu">make</span> docker-build                <span class="co"># Installs packages from renv.lock</span></span>
 <span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="fu">make</span> docker-push-team            <span class="co"># Push to Docker Hub for team</span></span>
 <span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create lab base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
 <span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="bu">cd</span> ..</span>
 <span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co"># The bioinformatics profile includes Bioconductor base image and packages</span></span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co"># Additional packages can be added via install.packages() as needed</span></span></code></pre></div>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co"># The Bioconductor base image provides genomics tooling</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co"># Additional packages can be added via install.packages() / BiocManager as needed</span></span></code></pre></div>
 <p><strong>Team Members (joining existing projects):</strong></p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Researcher 1: Join existing cancer genomics project</span></span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/cancer-study.git</span>
@@ -362,7 +364,7 @@ environments.</p>
 <span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a></span>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="co"># Researcher 3: Create new variant calling project</span></span>
 <span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a><span class="fu">mkdir</span> variant-calling <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> variant-calling</span>
-<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="ex">zzc</span> bioinformatics               <span class="co"># Full setup with bioinformatics profile</span></span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># Bioconductor base</span></span>
 <span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="fu">make</span> docker-rstudio</span>
@@ -420,7 +422,7 @@ across all client projects.</p>
 <p>Create different base images for different research domains:</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Bioinformatics base (Bioconductor packages)</span></span>
 <span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">mkdir</span> bio-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> bio-base</span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">zzc</span> bioinformatics               <span class="co"># Full setup with bioinformatics profile</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># Bioconductor base</span></span>
 <span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create bioinformatics base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
@@ -429,16 +431,16 @@ across all client projects.</p>
 <span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a></span>
 <span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co"># Geospatial base (sf, terra, raster)</span></span>
 <span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="fu">mkdir</span> geo-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> geo-base</span>
-<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="ex">zzc</span> geospatial                   <span class="co"># Full setup with geospatial profile</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial  <span class="co"># Geospatial base</span></span>
 <span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create geospatial base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
 <span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="bu">cd</span> ..</span>
 <span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co"># Use for: climate modeling, ecology, urban planning projects</span></span>
 <span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a></span>
-<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="co"># Machine learning base (modeling packages)</span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="co"># Machine learning base (ML packages)</span></span>
 <span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="fu">mkdir</span> ml-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> ml-base</span>
-<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="ex">zzc</span> modeling                     <span class="co"># Full setup with modeling profile</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
 <span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create machine learning base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
@@ -447,7 +449,7 @@ across all client projects.</p>
 <span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a></span>
 <span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a><span class="co"># Publishing base (LaTeX, Quarto, rmarkdown)</span></span>
 <span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a><span class="fu">mkdir</span> pub-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> pub-base</span>
-<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a><span class="ex">zzc</span> publishing                   <span class="co"># Full setup with publishing profile</span></span>
+<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/verse   <span class="co"># LaTeX/Quarto via the rocker/verse base image</span></span>
 <span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
 <span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Create publishing base image"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
@@ -708,21 +710,25 @@ failures across the team.</p>
 <span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>Data analysis environment for lab projects.</span>
 <span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a></span>
 <span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="fu">## Docker Profile</span></span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a>analysis: tidyverse, here, testthat, knitr, rmarkdown</span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a>analysis: renv, devtools, tidyverse, here</span>
 <span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a></span>
 <span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a><span class="fu">## Key Packages</span></span>
 <span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a><span class="ss">- </span>tidyverse: Data manipulation</span>
 <span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a><span class="ss">- </span>here: Project-relative paths</span>
-<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="ss">- </span>testthat: Unit testing</span>
-<span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a><span class="ss">- </span>knitr/rmarkdown: Reproducible reports</span>
+<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="ss">- </span>renv: Dependency management</span>
+<span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a><span class="ss">- </span>devtools: Package development helpers</span>
 <span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a></span>
-<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="fu">## Last Updated</span></span>
-<span id="cb29-16"><a href="#cb29-16" tabindex="-1"></a>2025-01-15</span>
-<span id="cb29-17"><a href="#cb29-17" tabindex="-1"></a></span>
-<span id="cb29-18"><a href="#cb29-18" tabindex="-1"></a><span class="fu">## Rebuild Command</span></span>
-<span id="cb29-19"><a href="#cb29-19" tabindex="-1"></a>cd baseimage</span>
-<span id="cb29-20"><a href="#cb29-20" tabindex="-1"></a>make docker-build</span>
-<span id="cb29-21"><a href="#cb29-21" tabindex="-1"></a>make docker-push-team</span></code></pre></div>
+<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="fu">## Added via renv (not in the base profile)</span></span>
+<span id="cb29-16"><a href="#cb29-16" tabindex="-1"></a><span class="ss">- </span>tinytest: Unit testing</span>
+<span id="cb29-17"><a href="#cb29-17" tabindex="-1"></a><span class="ss">- </span>knitr/rmarkdown: Reproducible reports</span>
+<span id="cb29-18"><a href="#cb29-18" tabindex="-1"></a></span>
+<span id="cb29-19"><a href="#cb29-19" tabindex="-1"></a><span class="fu">## Last Updated</span></span>
+<span id="cb29-20"><a href="#cb29-20" tabindex="-1"></a>2025-01-15</span>
+<span id="cb29-21"><a href="#cb29-21" tabindex="-1"></a></span>
+<span id="cb29-22"><a href="#cb29-22" tabindex="-1"></a><span class="fu">## Rebuild Command</span></span>
+<span id="cb29-23"><a href="#cb29-23" tabindex="-1"></a>cd baseimage</span>
+<span id="cb29-24"><a href="#cb29-24" tabindex="-1"></a>make docker-build</span>
+<span id="cb29-25"><a href="#cb29-25" tabindex="-1"></a>make docker-push-team</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="use-semantic-versioning-for-critical-bases">3. Use Semantic Versioning for Critical Bases<a class="anchor" aria-label="anchor" href="#use-semantic-versioning-for-critical-bases"></a>
@@ -752,17 +758,16 @@ failures across the team.</p>
 <span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
 <span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="fu">make</span> docker-rstudio</span>
 <span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a></span>
-<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="co"># Verify all key packages load</span></span>
-<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="co"># In RStudio:</span></span>
-<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="ex">library</span><span class="er">(</span><span class="ex">tidyverse</span><span class="kw">)</span></span>
-<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a><span class="ex">library</span><span class="er">(</span><span class="ex">tidymodels</span><span class="kw">)</span></span>
-<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a><span class="ex">library</span><span class="er">(</span><span class="ex">shiny</span><span class="kw">)</span></span>
-<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a><span class="co"># etc.</span></span>
-<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a></span>
-<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a><span class="co"># If tests pass, promote to production</span></span>
-<span id="cb31-22"><a href="#cb31-22" tabindex="-1"></a><span class="ex">docker</span> tag mylab/baseimage-test:latest <span class="dt">\</span></span>
-<span id="cb31-23"><a href="#cb31-23" tabindex="-1"></a>  mylab/baseimage:latest</span>
-<span id="cb31-24"><a href="#cb31-24" tabindex="-1"></a><span class="ex">docker</span> push mylab/baseimage:latest</span></code></pre></div>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="co"># Verify key packages load. The analysis profile provides the tidyverse</span></span>
+<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="co"># only; packages such as tidymodels or shiny are not pre-installed and must</span></span>
+<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="co"># be added via renv (renv::install(), then snapshot and rebuild the image).</span></span>
+<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a><span class="co"># In RStudio:</span></span>
+<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a><span class="ex">library</span><span class="er">(</span><span class="ex">tidyverse</span><span class="kw">)</span></span>
+<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a></span>
+<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a><span class="co"># If tests pass, promote to production</span></span>
+<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a><span class="ex">docker</span> tag mylab/baseimage-test:latest <span class="dt">\</span></span>
+<span id="cb31-22"><a href="#cb31-22" tabindex="-1"></a>  mylab/baseimage:latest</span>
+<span id="cb31-23"><a href="#cb31-23" tabindex="-1"></a><span class="ex">docker</span> push mylab/baseimage:latest</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="maintain-team-base-image-registry">5. Maintain Team Base Image Registry<a class="anchor" aria-label="anchor" href="#maintain-team-base-image-registry"></a>
@@ -771,17 +776,17 @@ failures across the team.</p>
 <div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># team-base-images.md</span></span>
 <span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="co"># Lab Base Images</span></span>
 <span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="kw">|</span> <span class="ex">Name</span> <span class="kw">|</span> <span class="ex">Profile</span> <span class="kw">|</span> <span class="ex">Purpose</span> <span class="kw">|</span> <span class="ex">Last</span> Updated <span class="kw">|</span></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="kw">|</span><span class="ex">------</span><span class="kw">|</span><span class="ex">---------</span><span class="kw">|</span><span class="ex">---------</span><span class="kw">|</span><span class="ex">--------------</span><span class="kw">|</span></span>
-<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/bio-base</span> <span class="kw">|</span> <span class="ex">bioinformatics</span> <span class="kw">|</span> <span class="ex">Bioconductor</span> genomics <span class="kw">|</span> <span class="ex">2025-01-15</span> <span class="kw">|</span></span>
-<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/geo-base</span> <span class="kw">|</span> <span class="ex">geospatial</span> <span class="kw">|</span> <span class="ex">Geospatial</span> analysis <span class="kw">|</span> <span class="ex">2025-01-10</span> <span class="kw">|</span></span>
-<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/ml-base</span> <span class="kw">|</span> <span class="ex">modeling</span> <span class="kw">|</span> <span class="ex">Machine</span> learning <span class="kw">|</span> <span class="ex">2025-01-05</span> <span class="kw">|</span></span>
-<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/pub-base</span> <span class="kw">|</span> <span class="ex">publishing</span> <span class="kw">|</span> <span class="ex">LaTeX/Quarto</span> docs <span class="kw">|</span> <span class="ex">2024-12-20</span> <span class="kw">|</span></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="kw">|</span> <span class="ex">Name</span> <span class="kw">|</span> <span class="ex">Base</span> <span class="kw">|</span> <span class="ex">Purpose</span> <span class="kw">|</span> <span class="ex">Last</span> Updated <span class="kw">|</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="kw">|</span><span class="ex">------</span><span class="kw">|</span><span class="ex">------</span><span class="kw">|</span><span class="ex">---------</span><span class="kw">|</span><span class="ex">--------------</span><span class="kw">|</span></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/bio-base</span> <span class="kw">|</span> <span class="ex">bioconductor/bioconductor_docker</span> <span class="kw">|</span> <span class="ex">Bioconductor</span> genomics <span class="kw">|</span> <span class="ex">2025-01-15</span> <span class="kw">|</span></span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/geo-base</span> <span class="kw">|</span> <span class="ex">rocker/geospatial</span> <span class="kw">|</span> <span class="ex">Geospatial</span> analysis <span class="kw">|</span> <span class="ex">2025-01-10</span> <span class="kw">|</span></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/ml-base</span> <span class="kw">|</span> <span class="ex">analysis</span> profile <span class="er">(</span><span class="ex">ML</span> via renv<span class="kw">)</span> <span class="kw">|</span> <span class="ex">Machine</span> learning <span class="kw">|</span> <span class="ex">2025-01-05</span> <span class="kw">|</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="kw">|</span> <span class="ex">mylab/pub-base</span> <span class="kw">|</span> <span class="ex">rocker/verse</span> <span class="kw">|</span> <span class="ex">LaTeX/Quarto</span> docs <span class="kw">|</span> <span class="ex">2024-12-20</span> <span class="kw">|</span></span>
 <span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a></span>
 <span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="co">## Usage</span></span>
 <span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="co"># For bioinformatics projects:</span></span>
 <span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="fu">mkdir</span> <span class="op">&lt;</span>project-name<span class="op">&gt;</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> <span class="op">&lt;</span>project-name<span class="op">&gt;</span></span>
-<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a><span class="ex">zzc</span> bioinformatics               <span class="co"># Full setup with bioinformatics profile</span></span>
+<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># Bioconductor base</span></span>
 <span id="cb32-15"><a href="#cb32-15" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span></code></pre></div>
 </div>
 </div>
@@ -810,44 +815,44 @@ have different R version requirements</p>
 </h3>
 <table class="table">
 <colgroup>
-<col width="23%">
-<col width="50%">
-<col width="26%">
+<col width="20%">
+<col width="57%">
+<col width="22%">
 </colgroup>
 <thead><tr class="header">
 <th>Use Case</th>
-<th>Recommended Profile</th>
+<th>Recommended Profile or Base</th>
 <th>Rationale</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td>General purpose team base</td>
-<td>analysis</td>
+<td>analysis profile</td>
 <td>Tidyverse ecosystem for data work</td>
 </tr>
 <tr class="even">
 <td>Bioinformatics domain</td>
-<td>bioinformatics</td>
+<td>bioconductor/bioconductor_docker base</td>
 <td>Bioconductor genomics packages</td>
 </tr>
 <tr class="odd">
 <td>Geospatial work</td>
-<td>geospatial</td>
+<td>rocker/geospatial base</td>
 <td>GDAL/PROJ spatial tools</td>
 </tr>
 <tr class="even">
 <td>Machine learning</td>
-<td>modeling</td>
+<td>analysis profile (ML via renv)</td>
 <td>Tidymodels ML framework</td>
 </tr>
 <tr class="odd">
 <td>Publishing/reports</td>
-<td>publishing</td>
+<td>rocker/verse base image</td>
 <td>LaTeX, Quarto, rmarkdown</td>
 </tr>
 <tr class="even">
 <td>Lightweight base</td>
-<td>minimal</td>
+<td>minimal profile</td>
 <td>Essential dev tools only</td>
 </tr>
 </tbody>

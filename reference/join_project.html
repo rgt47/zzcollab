@@ -13,7 +13,7 @@ collaboration workflows."><meta property="og:image" content="https://rgt47.githu
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,7 @@ collaboration workflows."><meta property="og:image" content="https://rgt47.githu
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Join an existing zzcollab team project</h1>
-      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/project.R" class="external-link"><code>R/project.R</code></a></small>
       <div class="d-none name"><code>join_project.Rd</code></div>
     </div>
 
@@ -90,9 +90,10 @@ The function validates team images exist before proceeding with setup.</p>
     <p>This function is designed for team members joining existing projects.
 The team lead should have already run <code><a href="init_project.html">init_project()</a></code> to create
 the necessary team infrastructure.</p>
-<p><strong>Setup Process:</strong></p><ol><li><p><strong>Validation</strong>: Checks that team Docker images exist and are accessible</p></li>
-<li><p><strong>Project Setup</strong>: Creates local project structure and configuration</p></li>
-<li><p><strong>Environment</strong>: Configures to use team's Docker image via –use-team-image</p></li>
+<p><strong>Setup Process:</strong></p><ol><li><p><strong>Prerequisite</strong>: The project repository is already cloned and is the
+current working directory.</p></li>
+<li><p><strong>Build</strong>: Builds the project's Docker image from the committed Dockerfile
+and renv.lock via <code>make docker-build</code>.</p></li>
 </ol><p><strong>Prerequisites:</strong></p><ul><li><p>Team lead has run <code><a href="init_project.html">init_project()</a></code> and shared repository access</p></li>
 <li><p>Docker installed and running locally</p></li>
 <li><p>Access to team's Docker images (usually public on Docker Hub)</p></li>

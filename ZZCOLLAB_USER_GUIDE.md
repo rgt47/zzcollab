@@ -27,7 +27,7 @@ complete reproducibility.
 - Docker-based reproducibility with isolated computational environments
 - Two-layer architecture separating team infrastructure from individual
   package management
-- Seven Docker profiles ranging from ~650 MB to ~3 GB
+- Three Docker profiles ranging from ~650 MB to ~1.2 GB
 - Pure-shell dependency validation (no host R required)
 - Automatic renv snapshot on container exit
 - Content-addressable Docker build caching
@@ -104,19 +104,24 @@ git add . && git commit -m "Add analysis" && git push
 Each profile is a predefined combination of base image, system
 libraries, and R packages. Select one with `zzc <profile>`:
 
-| Profile | Base Image | Size | Use Case |
-|----|----|----|----|
-| `minimal` | rocker/r-ver | ~650 MB | Essential development (CLI only) |
-| `rstudio` | rocker/rstudio | ~980 MB | RStudio Server development |
-| `analysis` | rocker/tidyverse | ~1.2 GB | Data analysis with tidyverse |
-| `analysis_pdf` | rocker/tidyverse | ~1.5 GB | Analysis + PDF rendering (tinytex) |
-| `modeling` | rocker/r-ver | ~1.5 GB | Machine learning (tidymodels, xgboost) |
-| `publishing` | rocker/verse | ~3 GB | Manuscripts with full LaTeX and Quarto |
-| `shiny` | rocker/shiny | ~1.8 GB | Shiny web applications |
+| Profile    | Base Image       | Size    | Use Case                         |
+|------------|------------------|---------|----------------------------------|
+| `minimal`  | rocker/r-ver     | ~650 MB | Essential development (CLI only) |
+| `analysis` | rocker/tidyverse | ~1.2 GB | Data analysis with tidyverse     |
+| `rstudio`  | rocker/rstudio   | ~980 MB | RStudio Server development       |
+
+For specialized environments, build from a base image instead of a
+profile (see [Custom Composition](#custom-composition)):
+
+| Environment               | Base Image                              |
+|---------------------------|-----------------------------------------|
+| LaTeX / Quarto publishing | rocker/verse base image                 |
+| Shiny web applications    | rocker/shiny base image                 |
+| Machine learning          | analysis profile + ML packages via renv |
 
 ``` bash
 zzc analysis                    # new project with tidyverse
-zzc publishing                  # new project with LaTeX + Quarto
+zzc docker --base-image rocker/verse   # LaTeX + Quarto environment
 zzc list profiles               # show all profiles with descriptions
 ```
 
@@ -125,22 +130,22 @@ Docker profile by regenerating the Dockerfile.
 
 ### Custom Composition
 
-Combine a base image with specific package bundles:
+Build from a specific base image when no built-in profile fits:
 
 ``` bash
-zzc docker --base-image rocker/r-ver --pkgs modeling
+zzc docker --base-image rocker/r-ver
 ```
 
-**R Package Bundles** (`--pkgs`):
+Additional R packages are added via renv inside the container (see
+[Package Management](#package-management)). Each built-in profile
+bundles a curated package set; the bundles below document those sets:
 
-| Bundle | Packages | Required Libs |
-|----|----|----|
-| `minimal` | renv, devtools, usethis, tinytest, roxygen2 | minimal |
-| `tidyverse` | renv, devtools, tidyverse, here | minimal |
-| `modeling` | tidyverse + tidymodels, xgboost, randomForest, glmnet, caret | modeling |
-| `publishing` | quarto, bookdown, blogdown, distill, flexdashboard, DT | publishing |
-| `shiny` | shiny, shinydashboard, shinyWidgets, DT, plotly, bslib | minimal |
-| `gui` | tidyverse + rgl, plotly, shiny, Cairo, svglite | gui |
+**R Package Bundles** (built into profiles):
+
+| Bundle      | Packages                                    | Required Libs |
+|-------------|---------------------------------------------|---------------|
+| `minimal`   | renv, devtools, usethis, tinytest, roxygen2 | minimal       |
+| `tidyverse` | renv, devtools, tidyverse, here             | minimal       |
 
 ``` bash
 zzc list pkgs                   # show all package bundles
@@ -535,7 +540,7 @@ a specific project:
 
 ``` yaml
 defaults:
-  profile_name: publishing
+  profile_name: analysis
   dockerhub_account: mylab
   github_account: mylab
 
@@ -625,22 +630,25 @@ Create an access token at <https://hub.docker.com/settings/security>.
 
 **AMD64-only profiles (run under emulation):**
 
-- `analysis`, `analysis_pdf` (rocker/tidyverse)
-- `publishing` (rocker/verse)
-- `shiny` (rocker/shiny)
-- `modeling` (rocker/r-ver – native, but some compiled dependencies may
-  use emulation)
+- `analysis` (rocker/tidyverse)
+
+**Specialized base images (run under emulation on ARM64):**
+
+- rocker/verse base image (LaTeX / Quarto publishing)
+- rocker/shiny base image (Shiny applications)
 
 ZZCOLLAB automatically applies `--platform linux/amd64` when building on
 ARM64 hosts for images that require emulation.
 
 ### Platform Configuration
 
+The Docker build/run platform is controlled by Docker’s own environment
+variable (zzcollab does not store it in config):
+
 ``` bash
-zzc config set docker.platform auto      # auto-detect (default)
-zzc config set docker.platform amd64     # force AMD64
-zzc config set docker.platform arm64     # force ARM64
-zzc config set docker.platform native    # use host architecture
+export DOCKER_DEFAULT_PLATFORM=linux/amd64   # force AMD64 (e.g. rocker/verse on ARM)
+export DOCKER_DEFAULT_PLATFORM=linux/arm64   # force ARM64
+unset DOCKER_DEFAULT_PLATFORM                 # use the host architecture (default)
 ```
 
 ## CLI Reference
@@ -652,7 +660,7 @@ zzc <profile>                   # create or switch profile
 zzc init                        # create R package structure
 zzc renv                        # set up renv
 zzc docker [OPTIONS]            # generate/build Dockerfile
-zzc build [OPTIONS]             # build Docker image
+zzc rebuild [OPTIONS]           # rebuild Docker image
 zzc git                         # initialize git
 zzc github [--public|--private] # create GitHub repository
 zzc dockerhub [--tag TAG]       # push image to Docker Hub

@@ -13,7 +13,7 @@ with sensible fallbacks."><meta property="og:image" content="https://rgt47.githu
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,7 @@ with sensible fallbacks."><meta property="og:image" content="https://rgt47.githu
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Get configuration value with fallback default</h1>
-      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/config.R" class="external-link"><code>R/config.R</code></a></small>
       <div class="d-none name"><code>get_config_default.Rd</code></div>
     </div>
 
@@ -71,7 +71,7 @@ with sensible fallbacks.</p>
 <dl><dt id="arg-key">key<a class="anchor" aria-label="anchor" href="#arg-key"></a></dt>
 <dd><p>Character string specifying the configuration key to retrieve.
 Should match keys used in the zzcollab configuration system (e.g.,
-\"team_name\", \"profile_name\", \"github_account\").</p></dd>
+"team_name", "profile_name", "github_account").</p></dd>
 
 
 <dt id="arg-default">default<a class="anchor" aria-label="anchor" href="#arg-default"></a></dt>
@@ -87,7 +87,7 @@ The return type matches the type of the configuration value or default.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>This internal function implements the \"null-coalescing\" pattern commonly
+    <p>This internal function implements the "null-coalescing" pattern commonly
 used throughout zzcollab for configuration management. It provides a clean
 way to specify fallback values when configuration keys might not be set.</p>
 <p>The function is particularly useful in other zzcollab functions that need
@@ -101,12 +101,24 @@ to provide sensible defaults when users haven't configured specific values.</p>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="get_config.html">get_config</a></code> for basic configuration retrieval
-<code><a href="grapes-or-or-grapes.html">%||%</a></code> for the null-coalescing operator used internally</p></div>
+<code>%||%</code> for the null-coalescing operator used internally</p></div>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Internal usage pattern in zzcollab functions</span></span></span>
+<span class="r-in"><span><span class="va">team_name</span> <span class="op">&lt;-</span> <span class="fu">get_config_default</span><span class="op">(</span><span class="st">"team_name"</span>, <span class="st">"defaultteam"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">profile_name</span> <span class="op">&lt;-</span> <span class="fu">get_config_default</span><span class="op">(</span><span class="st">"profile_name"</span>, <span class="st">"analysis"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Equivalent to using the %||% operator</span></span></span>
+<span class="r-in"><span><span class="va">team_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="get_config.html">get_config</a></span><span class="op">(</span><span class="st">"team_name"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/Control.html" class="external-link">%||%</a></span> <span class="st">"defaultteam"</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Common usage with multiple fallbacks</span></span></span>
+<span class="r-in"><span><span class="va">github_account</span> <span class="op">&lt;-</span> <span class="fu">get_config_default</span><span class="op">(</span><span class="st">"github_account"</span>, <span class="va">team_name</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

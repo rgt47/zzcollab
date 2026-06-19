@@ -40,13 +40,11 @@ to create the necessary team infrastructure.
 
 **Setup Process:**
 
-1.  **Validation**: Checks that team Docker images exist and are
-    accessible
+1.  **Prerequisite**: The project repository is already cloned and is
+    the current working directory.
 
-2.  **Project Setup**: Creates local project structure and configuration
-
-3.  **Environment**: Configures to use team's Docker image via
-    –use-team-image
+2.  **Build**: Builds the project's Docker image from the committed
+    Dockerfile and renv.lock via `make docker-build`.
 
 **Prerequisites:**
 

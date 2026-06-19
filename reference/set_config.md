@@ -20,8 +20,7 @@ set_config(key, value)
 
   - "team_name": Your Docker Hub team/organization name
 
-  - "profile_name": Docker profile ("minimal", "analysis",
-    "bioinformatics", "geospatial", etc.)
+  - "profile_name": Docker profile ("minimal", "analysis", "rstudio")
 
   - "github_account": Your GitHub account for repository creation
 

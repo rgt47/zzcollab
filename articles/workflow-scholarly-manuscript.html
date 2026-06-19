@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-05-28</h4>
+            <h4 data-toc-skip class="date">2026-06-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-scholarly-manuscript.Rmd" class="external-link"><code>vignettes/workflow-scholarly-manuscript.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-scholarly-manuscript.Rmd</code></div>
@@ -102,7 +102,7 @@ compendium directories (<code>R/</code>, <code>tests/</code>,
 <li>Write prose describing your question and approach</li>
 <li>Add analysis code inline as you work</li>
 <li>Extract reusable code to <code>R/</code> when patterns emerge</li>
-<li>Add tests to <code>tests/testthat/</code> as functions solidify</li>
+<li>Add tests to <code>inst/tinytest/</code> as functions solidify</li>
 <li>Move heavy computations to <code>analysis/scripts/</code> to speed
 rendering</li>
 </ol>
@@ -149,8 +149,8 @@ modules</li>
 │       ├── report.Rmd        # THE MANUSCRIPT (start here!)
 │       └── references.bib    # Bibliography
 ├── R/                        # Reusable functions (extract when ready)
-├── tests/
-│   └── testthat/             # Unit tests (add as functions solidify)
+├── inst/
+│   └── tinytest/             # Unit tests (add as functions solidify)
 ├── DESCRIPTION               # Project metadata
 ├── Dockerfile                # Computational environment
 └── renv.lock                 # Package versions</code></pre>
@@ -201,7 +201,7 @@ modules</li>
 <td>When code is used 2+ times</td>
 </tr>
 <tr class="odd">
-<td><code>tests/testthat/</code></td>
+<td><code>inst/tinytest/</code></td>
 <td>Unit tests</td>
 <td>When functions are stable</td>
 </tr>
@@ -227,7 +227,7 @@ modules</li>
 <p><strong>Stage 3: Tested function</strong> (Week 3+)</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Critical for results, needs validation</span></span>
-<span><span class="co"># R/data_functions.R has tests in tests/testthat/test-data_functions.R</span></span></code></pre></div>
+<span><span class="co"># R/data_functions.R has tests in inst/tinytest/test_data_functions.R</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -242,7 +242,10 @@ modules</li>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
 <p>This creates the standard compendium structure with empty directories
-ready for use.</p>
+ready for use. Note that <code>make r</code> runs the
+<code>zzrenvcheck</code> dependency gate before and after the session,
+so package usage stays consistent with <code>DESCRIPTION</code> and
+<code>renv.lock</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="step-2-start-the-manuscript-day-1">Step 2: Start the Manuscript (Day 1)<a class="anchor" aria-label="anchor" href="#step-2-start-the-manuscript-day-1"></a>
@@ -253,7 +256,7 @@ ready for use.</p>
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">author</span><span class="kw">:</span></span>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Your Name</span></span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="at">    </span><span class="fu">affiliation</span><span class="kw">:</span><span class="at"> Department of Biology</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"May 28, 2026"</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"June 19, 2026"</span></span>
 <span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="fu">output</span><span class="kw">:</span></span>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="at">  </span><span class="fu">pdf_document</span><span class="kw">:</span></span>
 <span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="at">    </span><span class="fu">number_sections</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
@@ -460,62 +463,54 @@ extract to <code>R/</code>:</p>
 <h3 id="step-6-add-tests-when-functions-are-stable">Step 6: Add Tests (When Functions Are Stable)<a class="anchor" aria-label="anchor" href="#step-6-add-tests-when-functions-are-stable"></a>
 </h3>
 <p>Once functions are working and you rely on them for results, add
-tests.</p>
+tests. This project uses tinytest: test files live in
+<code>inst/tinytest/</code> and contain bare top-level expectations (no
+<code>test_that()</code> wrapper).</p>
 <p><strong>Create
-<code>tests/testthat/test-scaling_functions.R</code></strong>:</p>
+<code>inst/tinytest/test_scaling_functions.R</code></strong>:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"extract_allometric_slopes returns correct structure"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">palmerpenguins</span><span class="fu">::</span><span class="va">penguins</span></span>
+<code class="sourceCode R"><span><span class="co"># extract_allometric_slopes returns correct structure</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">palmerpenguins</span><span class="fu">::</span><span class="va">penguins</span></span>
 <span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">extract_allometric_slopes</span><span class="op">(</span></span>
-<span>    <span class="va">data</span>,</span>
-<span>    <span class="va">bill_length_mm</span>,</span>
-<span>    <span class="va">body_mass_g</span>,</span>
-<span>    <span class="va">species</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">extract_allometric_slopes</span><span class="op">(</span></span>
+<span>  <span class="va">data</span>,</span>
+<span>  <span class="va">bill_length_mm</span>,</span>
+<span>  <span class="va">body_mass_g</span>,</span>
+<span>  <span class="va">species</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/inheritance-expectations.html" class="external-link">expect_s3_class</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">"data.frame"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>  <span class="co"># Three species</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/logical-expectations.html" class="external-link">expect_true</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"slope"</span>, <span class="st">"slope_se"</span>, <span class="st">"r_squared"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="fu">expect_inherits</span><span class="op">(</span><span class="va">result</span>, <span class="st">'data.frame'</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>  <span class="co"># Three species</span></span>
+<span><span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'slope'</span>, <span class="st">'slope_se'</span>, <span class="st">'r_squared'</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"extract_allometric_slopes handles missing values"</span>, <span class="op">{</span></span>
-<span>  <span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="cn">NA</span>, <span class="fl">4</span><span class="op">)</span>,</span>
-<span>    y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">6</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>    group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"B"</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
+<span><span class="co"># extract_allometric_slopes handles missing values</span></span>
+<span><span class="va">missing_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="cn">NA</span>, <span class="fl">4</span><span class="op">)</span>,</span>
+<span>  y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">6</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>  group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'A'</span>, <span class="st">'A'</span>, <span class="st">'B'</span>, <span class="st">'B'</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">extract_allometric_slopes</span><span class="op">(</span><span class="va">data</span>, <span class="va">y</span>, <span class="va">x</span>, <span class="va">group</span><span class="op">)</span></span>
+<span><span class="va">result_missing</span> <span class="op">&lt;-</span> <span class="fu">extract_allometric_slopes</span><span class="op">(</span><span class="va">missing_data</span>, <span class="va">y</span>, <span class="va">x</span>, <span class="va">group</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result_missing</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># test_isometry correctly identifies scaling types</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1.0</span>, se <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">$</span><span class="va">scaling_type</span>, <span class="st">'isometric'</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span></span>
+<span>  <span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">0.7</span>, se <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">$</span><span class="va">scaling_type</span>,</span>
+<span>  <span class="st">'negative allometry'</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span></span>
+<span>  <span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1.3</span>, se <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span><span class="op">$</span><span class="va">scaling_type</span>,</span>
+<span>  <span class="st">'positive allometry'</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"test_isometry correctly identifies scaling types"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># Isometric (slope = 1)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1.0</span>, se <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">scaling_type</span>, <span class="st">"isometric"</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Negative allometry (slope &lt; 1)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">0.7</span>, se <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">scaling_type</span>, <span class="st">"negative allometry"</span><span class="op">)</span></span>
-<span></span>
-<span>  <span class="co"># Positive allometry (slope &gt; 1)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1.3</span>, se <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">scaling_type</span>, <span class="st">"positive allometry"</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_that.html" class="external-link">test_that</a></span><span class="op">(</span><span class="st">"test_isometry returns correct p-value for known case"</span>, <span class="op">{</span></span>
-<span>  <span class="co"># slope = 1.0, se = 0.1 -&gt; t = 0 -&gt; p = 1</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1.0</span>, se <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">t_statistic</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://testthat.r-lib.org/reference/equality-expectations.html" class="external-link">expect_equal</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">p_value</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># test_isometry returns correct p-value for known case</span></span>
+<span><span class="co"># slope = 1.0, se = 0.1 -&gt; t = 0 -&gt; p = 1</span></span>
+<span><span class="va">iso</span> <span class="op">&lt;-</span> <span class="fu">test_isometry</span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1.0</span>, se <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="va">iso</span><span class="op">$</span><span class="va">t_statistic</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="fu">expect_equal</span><span class="op">(</span><span class="va">iso</span><span class="op">$</span><span class="va">p_value</span>, <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Run tests:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a></span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="op">&gt;</span> devtools::test<span class="kw">()</span></span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-7-move-heavy-computations-to-scripts">Step 7: Move Heavy Computations to Scripts<a class="anchor" aria-label="anchor" href="#step-7-move-heavy-computations-to-scripts"></a>
@@ -606,9 +601,9 @@ tests.</p>
 │       └── references.bib
 ├── R/
 │   └── scaling_functions.R            # Reusable functions
-├── tests/
-│   └── testthat/
-│       └── test-scaling_functions.R   # Unit tests
+├── inst/
+│   └── tinytest/
+│       └── test_scaling_functions.R   # Unit tests
 ├── DESCRIPTION
 ├── Dockerfile
 ├── Makefile
@@ -698,7 +693,7 @@ when patterns emerge and code is reused.</p></li>
 copy-paste code or use similar logic in multiple places, create a
 function in <code>R/</code>.</p></li>
 <li><p><strong>Test critical code</strong>: Add tests in
-<code>tests/testthat/</code> for functions that directly produce results
+<code>inst/tinytest/</code> for functions that directly produce results
 in the manuscript.</p></li>
 <li><p><strong>Cache expensive computations</strong>: Move slow code to
 <code>analysis/scripts/</code> and save results to

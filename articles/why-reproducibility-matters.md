@@ -554,7 +554,7 @@ cd zzcollab && ./install.sh
 
 # Create a reproducible project
 mkdir my-analysis && cd my-analysis
-zzcollab -r analysis
+zzcollab analysis
 
 # Build environment (3-4 minutes with RSPM)
 make docker-build
@@ -593,6 +593,6 @@ make r      # Identical environment
 ### For More Information
 
 - ZZCOLLAB documentation: `docs/` directory
-- Docker guide: `docs/DOCKER_ARCHITECTURE.md`
-- Testing guide: `docs/TESTING_GUIDE.md`
+- Docker guide: `docs/docker-architecture.md`
+- Testing guide: `docs/testing-guide.md`
 - Configuration: `docs/CONFIGURATION.md`

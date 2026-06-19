@@ -17,7 +17,7 @@ get_config_default(key, default = NULL)
 
   Character string specifying the configuration key to retrieve. Should
   match keys used in the zzcollab configuration system (e.g.,
-  \\team_name\\, \\profile_name\\, \\github_account\\).
+  "team_name", "profile_name", "github_account").
 
 - default:
 
@@ -33,10 +33,10 @@ type matches the type of the configuration value or default.
 
 ## Details
 
-This internal function implements the \\null-coalescing\\ pattern
-commonly used throughout zzcollab for configuration management. It
-provides a clean way to specify fallback values when configuration keys
-might not be set.
+This internal function implements the "null-coalescing" pattern commonly
+used throughout zzcollab for configuration management. It provides a
+clean way to specify fallback values when configuration keys might not
+be set.
 
 The function is particularly useful in other zzcollab functions that
 need to handle optional configuration parameters gracefully. It
@@ -50,8 +50,21 @@ configured specific values.
 ## See also
 
 [`get_config`](https://rgt47.github.io/zzcollab/reference/get_config.md)
-for basic configuration retrieval
-[`%||%`](https://rgt47.github.io/zzcollab/reference/grapes-or-or-grapes.md)
-for the null-coalescing operator used internally
+for basic configuration retrieval `%||%` for the null-coalescing
+operator used internally
 
 ## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Internal usage pattern in zzcollab functions
+team_name <- get_config_default("team_name", "defaultteam")
+profile_name <- get_config_default("profile_name", "analysis")
+
+# Equivalent to using the %||% operator
+team_name <- get_config("team_name") %||% "defaultteam"
+
+# Common usage with multiple fallbacks
+github_account <- get_config_default("github_account", team_name)
+} # }
+```

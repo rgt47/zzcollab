@@ -9,7 +9,7 @@ help pages covering specific topics like configuration, workflows, Docker, and m
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,7 +44,7 @@ help pages covering specific topics like configuration, workflows, Docker, and m
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Get zzcollab help</h1>
-      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/R/help.R" class="external-link"><code>R/help.R</code></a></small>
       <div class="d-none name"><code>zzcollab_help.Rd</code></div>
     </div>
 
@@ -65,15 +65,9 @@ help pages covering specific topics like configuration, workflows, Docker, and m
 <dl><dt id="arg-topic">topic<a class="anchor" aria-label="anchor" href="#arg-topic"></a></dt>
 <dd><p>Character string specifying which help page to display.
 Options include:</p><ul><li><p>NULL or "general": Main help with all command-line options (default)</p></li>
-<li><p>"init": Team initialization help</p></li>
-<li><p>"quickstart": Individual researcher quick start guide</p></li>
-<li><p>"workflow": Daily development workflow</p></li>
-<li><p>"troubleshooting": Top 10 common issues and solutions</p></li>
-<li><p>"config": Configuration system guide</p></li>
-<li><p>"renv": Package management with renv</p></li>
 <li><p>"docker": Docker essentials for researchers</p></li>
-<li><p>"cicd": CI/CD and GitHub Actions</p></li>
-<li><p>"github": GitHub integration and automation</p></li>
+<li><p>"profiles": Available Docker profiles</p></li>
+<li><p>"config": Configuration system guide</p></li>
 <li><p>"next-steps": Development workflow guidance</p></li>
 </ul></dd>
 
@@ -103,14 +97,11 @@ running interactively, allowing easy navigation of longer help content.</p>
 <span class="r-in"><span><span class="co"># Display main help</span></span></span>
 <span class="r-in"><span><span class="fu">zzcollab_help</span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Get quick start guide for individual researchers</span></span></span>
-<span class="r-in"><span><span class="fu">zzcollab_help</span><span class="op">(</span><span class="st">"quickstart"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Learn about configuration system</span></span></span>
 <span class="r-in"><span><span class="fu">zzcollab_help</span><span class="op">(</span><span class="st">"config"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Troubleshooting common issues</span></span></span>
-<span class="r-in"><span><span class="fu">zzcollab_help</span><span class="op">(</span><span class="st">"troubleshooting"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Available Docker profiles</span></span></span>
+<span class="r-in"><span><span class="fu">zzcollab_help</span><span class="op">(</span><span class="st">"profiles"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Docker basics for researchers</span></span></span>
 <span class="r-in"><span><span class="fu">zzcollab_help</span><span class="op">(</span><span class="st">"docker"</span><span class="op">)</span></span></span>

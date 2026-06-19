@@ -71,35 +71,33 @@ Following the reproducible research workflow principles (Poldrack,
 
 ### Testing Framework Overview
 
-#### The testthat Package
+#### The tinytest Package
 
-The `testthat` package (Wickham, 2011) provides the foundation for
-testing in R. It offers:
+ZZCOLLAB projects use the `tinytest` package for testing. It is a
+lightweight, zero-dependency framework that requires no scaffolding:
+test files contain bare, top-level expectation calls rather than tests
+wrapped in a `test_that()` block. It offers:
 
-- Structured test organization with
-  [`describe()`](https://testthat.r-lib.org/reference/describe.html) and
-  [`test_that()`](https://testthat.r-lib.org/reference/test_that.html)
-- Rich expectation functions
-  ([`expect_equal()`](https://testthat.r-lib.org/reference/equality-expectations.html),
-  [`expect_error()`](https://testthat.r-lib.org/reference/expect_error.html),
-  etc.)
-- Integration with R package development workflows
-- Clear, informative test output
+- Rich expectation functions (`expect_equal()`, `expect_true()`,
+  `expect_identical()`, `expect_inherits()`, and others)
+- A flat file structure with no helper boilerplate
+- Tests that double as runnable scripts during development
+
+Test files live in `inst/tinytest/`, are driven by `tests/tinytest.R`,
+and run via `make docker-test`, which executes
+`tinytest::run_test_dir('inst/tinytest')` inside the container.
 
 ``` r
 
-library(testthat)
-
-test_that("data loading works correctly", {
-  data <- load_data("sample.csv")
-  expect_true(nrow(data) > 0)
-  expect_true("outcome" %in% names(data))
-})
+# inst/tinytest/test_data_loading.R
+data <- load_data('sample.csv')
+expect_true(nrow(data) > 0)
+expect_true('outcome' %in% names(data))
 ```
 
 #### Extended Testing Ecosystem
 
-For data analysis, additional packages complement `testthat`:
+For data analysis, additional packages complement `tinytest`:
 
 - **testdat**: Data validation testing (Hope, 2022)
 - **validate**: Rule-based data validation (van der Loo & de Jonge,
@@ -116,12 +114,11 @@ Test individual analysis functions in isolation:
 
 ``` r
 
-test_that("outlier detection function works", {
-  test_data <- c(1, 2, 3, 100, 4, 5)
-  outliers <- detect_outliers(test_data, method = "iqr")
-  expect_equal(outliers, 100)
-  expect_length(outliers, 1)
-})
+# inst/tinytest/test_outlier_detection.R
+test_data <- c(1, 2, 3, 100, 4, 5)
+outliers <- detect_outliers(test_data, method = 'iqr')
+expect_equal(outliers, 100)
+expect_equal(length(outliers), 1)
 ```
 
 #### 2. Integration Tests
@@ -130,18 +127,15 @@ Test how different components work together:
 
 ``` r
 
-test_that("complete data pipeline runs successfully", {
-  # Test entire workflow from raw data to results
-  expect_no_error({
-    raw_data <- load_raw_data()
-    clean_data <- clean_data(raw_data)
-    model <- fit_model(clean_data)
-    results <- generate_results(model)
-  })
-  
-  expect_s3_class(results, "analysis_results")
-  expect_true(results$converged)
-})
+# inst/tinytest/test_data_pipeline.R
+# Test entire workflow from raw data to results
+raw_data <- load_raw_data()
+clean_data <- clean_data(raw_data)
+model <- fit_model(clean_data)
+results <- generate_results(model)
+
+expect_inherits(results, 'analysis_results')
+expect_true(results$converged)
 ```
 
 #### 3. Data Validation Tests
@@ -150,21 +144,20 @@ Ensure data quality and consistency:
 
 ``` r
 
-test_that("data meets quality standards", {
-  data <- load_analysis_data()
-  
-  # Check data structure
-  expect_equal(ncol(data), 15)
-  expect_true(all(c("id", "outcome", "treatment") %in% names(data)))
-  
-  # Check data ranges
-  expect_true(all(data$age >= 0 & data$age <= 120))
-  expect_true(all(data$outcome %in% c("success", "failure")))
-  
-  # Check for missing data patterns
-  missing_rate <- sum(is.na(data)) / (nrow(data) * ncol(data))
-  expect_true(missing_rate < 0.05)  # Less than 5% missing
-})
+# inst/tinytest/test_data_quality.R
+data <- load_analysis_data()
+
+# Check data structure
+expect_equal(ncol(data), 15)
+expect_true(all(c('id', 'outcome', 'treatment') %in% names(data)))
+
+# Check data ranges
+expect_true(all(data$age >= 0 & data$age <= 120))
+expect_true(all(data$outcome %in% c('success', 'failure')))
+
+# Check for missing data patterns
+missing_rate <- sum(is.na(data)) / (nrow(data) * ncol(data))
+expect_true(missing_rate < 0.05)  # Less than 5% missing
 ```
 
 #### 4. Reproducibility Tests
@@ -173,74 +166,75 @@ Verify analysis can be reproduced:
 
 ``` r
 
-test_that("analysis produces identical results", {
-  set.seed(12345)
-  results1 <- run_analysis()
-  
-  set.seed(12345)
-  results2 <- run_analysis()
-  
-  expect_equal(results1$estimates, results2$estimates)
-  expect_equal(results1$p_values, results2$p_values)
-})
+# inst/tinytest/test_reproducibility.R
+set.seed(12345)
+results1 <- run_analysis()
+
+set.seed(12345)
+results2 <- run_analysis()
+
+expect_equal(results1$estimates, results2$estimates)
+expect_equal(results1$p_values, results2$p_values)
 ```
 
 ### Setting Up Your Testing Environment
 
 #### Directory Structure
 
-Organize tests following R package conventions with extensions for data
-analysis:
+ZZCOLLAB projects place all test files in `inst/tinytest/`, with the
+test runner in `tests/tinytest.R`. A flat layout is sufficient; group
+related concerns by file name rather than by subdirectory:
 
     tests/
-    ├── testthat/
-    │   ├── test-data-loading.R
-    │   ├── test-data-cleaning.R
-    │   ├── test-statistical-models.R
-    │   ├── test-visualization.R
-    │   └── helper-test-data.R
-    ├── integration/
-    │   ├── test-data-pipeline.R
-    │   ├── test-analysis-scripts.R
-    │   └── test-report-rendering.R
-    └── data/
-        ├── sample-data.csv
-        └── expected-outputs.rds
+    └── tinytest.R              # Test runner
+    inst/
+    └── tinytest/
+        ├── test_data_loading.R
+        ├── test_data_cleaning.R
+        ├── test_statistical_models.R
+        ├── test_visualization.R
+        ├── test_data_pipeline.R
+        ├── test_report_rendering.R
+        └── data/
+            ├── sample-data.csv
+            └── expected-outputs.rds
 
 #### Test Configuration
 
-Create a `testthat.R` file in your `tests/` directory:
+Create a `tests/tinytest.R` file that runs the suite when `R CMD check`
+invokes it:
 
 ``` r
 
-library(testthat)
-library(myproject)  # Your analysis package
-
-# Set testing options
-options(warn = 2)  # Convert warnings to errors during testing
-
-# Run all tests
-test_check("myproject")
+# tests/tinytest.R
+if (requireNamespace('tinytest', quietly = TRUE)) {
+  tinytest::test_package('myproject')
+}
 ```
+
+Within the container, the same suite runs via `make docker-test`, which
+calls `tinytest::run_test_dir('inst/tinytest')`.
 
 #### Helper Functions
 
-Create reusable test utilities in `helper-*.R` files:
+Because tinytest files are plain scripts, define reusable test utilities
+at the top of a file, or in a shared file sourced by the tests that need
+it:
 
 ``` r
 
-# helper-test-data.R
+# inst/tinytest/helpers.R
 create_test_dataset <- function(n = 100) {
   data.frame(
     id = 1:n,
-    treatment = sample(c("A", "B"), n, replace = TRUE),
+    treatment = sample(c('A', 'B'), n, replace = TRUE),
     outcome = rnorm(n, mean = 50, sd = 10),
     age = sample(18:80, n, replace = TRUE)
   )
 }
 
 expect_valid_model <- function(model) {
-  expect_s3_class(model, "lm")
+  expect_inherits(model, 'lm')
   expect_true(length(coef(model)) > 0)
   expect_true(summary(model)$r.squared >= 0)
 }
@@ -254,20 +248,19 @@ Test statistical computations with known results:
 
 ``` r
 
-test_that("confidence interval calculation is correct", {
-  # Test with known values
-  data <- c(10, 12, 14, 16, 18, 20)
-  ci <- calculate_ci(data, confidence = 0.95)
-  
-  # Verify structure
-  expect_length(ci, 2)
-  expect_named(ci, c("lower", "upper"))
-  
-  # Verify mathematical properties
-  expect_true(ci$lower < mean(data))
-  expect_true(ci$upper > mean(data))
-  expect_true(ci$upper > ci$lower)
-})
+# inst/tinytest/test_confidence_interval.R
+# Test with known values
+data <- c(10, 12, 14, 16, 18, 20)
+ci <- calculate_ci(data, confidence = 0.95)
+
+# Verify structure
+expect_equal(length(ci), 2)
+expect_equal(names(ci), c('lower', 'upper'))
+
+# Verify mathematical properties
+expect_true(ci$lower < mean(data))
+expect_true(ci$upper > mean(data))
+expect_true(ci$upper > ci$lower)
 ```
 
 #### Data Transformation Functions
@@ -276,21 +269,20 @@ Test data manipulation and cleaning:
 
 ``` r
 
-test_that("missing value imputation works correctly", {
-  test_data <- data.frame(
-    x = c(1, 2, NA, 4, 5),
-    y = c(10, NA, 30, 40, 50)
-  )
-  
-  imputed <- impute_missing(test_data, method = "mean")
-  
-  # Check no missing values remain
-  expect_false(any(is.na(imputed)))
-  
-  # Check imputation values are reasonable
-  expect_equal(imputed$x[3], mean(c(1, 2, 4, 5)))
-  expect_equal(imputed$y[2], mean(c(10, 30, 40, 50)))
-})
+# inst/tinytest/test_imputation.R
+test_data <- data.frame(
+  x = c(1, 2, NA, 4, 5),
+  y = c(10, NA, 30, 40, 50)
+)
+
+imputed <- impute_missing(test_data, method = 'mean')
+
+# Check no missing values remain
+expect_false(any(is.na(imputed)))
+
+# Check imputation values are reasonable
+expect_equal(imputed$x[3], mean(c(1, 2, 4, 5)))
+expect_equal(imputed$y[2], mean(c(10, 30, 40, 50)))
 ```
 
 #### Visualization Functions
@@ -299,20 +291,19 @@ Test plot generation and properties:
 
 ``` r
 
-test_that("scatter plot function creates valid plot", {
-  test_data <- create_test_dataset()
-  
-  # Test plot creation
-  p <- create_scatter_plot(test_data, x = "age", y = "outcome")
-  
-  # Check plot object
-  expect_s3_class(p, "ggplot")
-  expect_equal(length(p$layers), 1)
-  
-  # Check plot data
-  plot_data <- ggplot_build(p)$data[[1]]
-  expect_equal(nrow(plot_data), nrow(test_data))
-})
+# inst/tinytest/test_scatter_plot.R
+test_data <- create_test_dataset()
+
+# Test plot creation
+p <- create_scatter_plot(test_data, x = 'age', y = 'outcome')
+
+# Check plot object
+expect_inherits(p, 'ggplot')
+expect_equal(length(p$layers), 1)
+
+# Check plot data
+plot_data <- ggplot2::ggplot_build(p)$data[[1]]
+expect_equal(nrow(plot_data), nrow(test_data))
 ```
 
 ### Integration Testing for Data Pipelines
@@ -323,32 +314,29 @@ Test the entire data analysis workflow:
 
 ``` r
 
-test_that("full analysis pipeline executes successfully", {
-  # Create temporary directory for outputs
-  temp_dir <- tempdir()
-  output_dir <- file.path(temp_dir, "analysis_output")
-  dir.create(output_dir, recursive = TRUE)
-  
-  # Run complete pipeline
-  expect_no_error({
-    results <- run_full_analysis(
-      input_file = "tests/data/sample-data.csv",
-      output_dir = output_dir
-    )
-  })
-  
-  # Verify outputs exist
-  expect_true(file.exists(file.path(output_dir, "results.csv")))
-  expect_true(file.exists(file.path(output_dir, "plots.pdf")))
-  
-  # Verify results structure
-  expect_s3_class(results, "analysis_results")
-  expect_true("model_summary" %in% names(results))
-  expect_true("diagnostics" %in% names(results))
-  
-  # Cleanup
-  unlink(output_dir, recursive = TRUE)
-})
+# inst/tinytest/test_full_pipeline.R
+# Create temporary directory for outputs
+temp_dir <- tempdir()
+output_dir <- file.path(temp_dir, 'analysis_output')
+dir.create(output_dir, recursive = TRUE)
+
+# Run complete pipeline
+results <- run_full_analysis(
+  input_file = 'inst/tinytest/data/sample-data.csv',
+  output_dir = output_dir
+)
+
+# Verify outputs exist
+expect_true(file.exists(file.path(output_dir, 'results.csv')))
+expect_true(file.exists(file.path(output_dir, 'plots.pdf')))
+
+# Verify results structure
+expect_inherits(results, 'analysis_results')
+expect_true('model_summary' %in% names(results))
+expect_true('diagnostics' %in% names(results))
+
+# Cleanup
+unlink(output_dir, recursive = TRUE)
 ```
 
 #### Cross-Script Dependencies
@@ -357,24 +345,20 @@ Test that analysis scripts work together:
 
 ``` r
 
-test_that("analysis scripts run in sequence", {
-  scripts <- c(
-    "01_data_preparation.R",
-    "02_exploratory_analysis.R", 
-    "03_statistical_modeling.R",
-    "04_results_visualization.R"
-  )
-  
-  # Create isolated environment for each script
-  for (script in scripts) {
-    script_path <- file.path("scripts", script)
-    expect_true(file.exists(script_path))
-    
-    expect_no_error({
-      source(script_path, local = new.env())
-    }, info = paste("Script", script, "failed to execute"))
-  }
-})
+# inst/tinytest/test_script_sequence.R
+scripts <- c(
+  '01_data_preparation.R',
+  '02_exploratory_analysis.R',
+  '03_statistical_modeling.R',
+  '04_results_visualization.R'
+)
+
+# Execute each script in an isolated environment
+for (script in scripts) {
+  script_path <- file.path('scripts', script)
+  expect_true(file.exists(script_path))
+  source(script_path, local = new.env())
+}
 ```
 
 ### Data Validation and Quality Testing
@@ -386,25 +370,24 @@ frames:
 
 ``` r
 
+# inst/tinytest/test_data_quality_rules.R
 library(testdat)
 
-test_that("dataset meets quality requirements", {
-  data <- load_analysis_data()
-  
-  # Test data completeness
-  expect_data(data, has_all_names, c("id", "treatment", "outcome"))
-  expect_data(data, has_nrows, min = 100)
-  expect_data(data, has_ncols, 10)
-  
-  # Test data types
-  expect_data(data, is_col_type, "id", "integer")
-  expect_data(data, is_col_type, "treatment", "factor")
-  expect_data(data, is_col_type, "outcome", "numeric")
-  
-  # Test value ranges
-  expect_data(data, has_range, "age", min = 0, max = 120)
-  expect_data(data, has_no_missing, "id")
-})
+data <- load_analysis_data()
+
+# Test data completeness
+expect_data(data, has_all_names, c('id', 'treatment', 'outcome'))
+expect_data(data, has_nrows, min = 100)
+expect_data(data, has_ncols, 10)
+
+# Test data types
+expect_data(data, is_col_type, 'id', 'integer')
+expect_data(data, is_col_type, 'treatment', 'factor')
+expect_data(data, is_col_type, 'outcome', 'numeric')
+
+# Test value ranges
+expect_data(data, has_range, 'age', min = 0, max = 120)
+expect_data(data, has_no_missing, 'id')
 ```
 
 #### Custom Validation Rules
@@ -413,23 +396,22 @@ Create domain-specific validation functions:
 
 ``` r
 
-validate_clinical_data <- function(data) {
-  test_that("clinical data validation", {
-    # Patient ID format
-    expect_true(all(grepl("^P\\d{6}$", data$patient_id)))
-    
-    # Visit dates are reasonable
-    expect_true(all(data$visit_date >= as.Date("2020-01-01")))
-    expect_true(all(data$visit_date <= Sys.Date()))
-    
-    # Biomarker values within expected ranges
-    expect_true(all(data$biomarker >= 0 & data$biomarker <= 1000))
-    
-    # Treatment groups are balanced
-    treatment_table <- table(data$treatment)
-    expect_true(all(treatment_table >= 0.3 * nrow(data)))
-  })
-}
+# inst/tinytest/test_clinical_validation.R
+data <- load_clinical_data()
+
+# Patient ID format
+expect_true(all(grepl('^P\\d{6}$', data$patient_id)))
+
+# Visit dates are reasonable
+expect_true(all(data$visit_date >= as.Date('2020-01-01')))
+expect_true(all(data$visit_date <= Sys.Date()))
+
+# Biomarker values within expected ranges
+expect_true(all(data$biomarker >= 0 & data$biomarker <= 1000))
+
+# Treatment groups are balanced
+treatment_table <- table(data$treatment)
+expect_true(all(treatment_table >= 0.3 * nrow(data)))
 ```
 
 ### Reproducibility Testing
@@ -440,20 +422,19 @@ Ensure random processes are reproducible:
 
 ``` r
 
-test_that("random sampling is reproducible", {
-  # Test bootstrap procedure
-  test_data <- create_test_dataset(100)
-  
-  set.seed(42)
-  bootstrap1 <- bootstrap_analysis(test_data, n_boots = 1000)
-  
-  set.seed(42)  
-  bootstrap2 <- bootstrap_analysis(test_data, n_boots = 1000)
-  
-  expect_equal(bootstrap1$estimates, bootstrap2$estimates)
-  expect_equal(bootstrap1$confidence_intervals, 
-               bootstrap2$confidence_intervals)
-})
+# inst/tinytest/test_random_sampling.R
+# Test bootstrap procedure
+test_data <- create_test_dataset(100)
+
+set.seed(42)
+bootstrap1 <- bootstrap_analysis(test_data, n_boots = 1000)
+
+set.seed(42)
+bootstrap2 <- bootstrap_analysis(test_data, n_boots = 1000)
+
+expect_equal(bootstrap1$estimates, bootstrap2$estimates)
+expect_equal(bootstrap1$confidence_intervals,
+             bootstrap2$confidence_intervals)
 ```
 
 #### Cross-Platform Reproducibility
@@ -462,19 +443,18 @@ Test that analysis works across different systems:
 
 ``` r
 
-test_that("analysis is platform independent", {
-  # Test numerical stability
-  test_data <- create_test_dataset(1000)
-  
-  # Run analysis multiple times
-  results <- replicate(10, {
-    model <- fit_complex_model(test_data)
-    summary(model)$coefficients[1, 1]  # First coefficient
-  })
-  
-  # Check consistency (allowing for floating point precision)
-  expect_true(sd(results) < 1e-10)
+# inst/tinytest/test_platform_independence.R
+# Test numerical stability
+test_data <- create_test_dataset(1000)
+
+# Run analysis multiple times
+results <- replicate(10, {
+  model <- fit_complex_model(test_data)
+  summary(model)$coefficients[1, 1]  # First coefficient
 })
+
+# Check consistency (allowing for floating point precision)
+expect_true(sd(results) < 1e-10)
 ```
 
 #### Package Version Testing
@@ -483,24 +463,24 @@ Ensure results are stable across package versions:
 
 ``` r
 
-test_that("results consistent with package versions", {
-  # Document package versions
-  packages <- c("lme4", "ggplot2", "dplyr")
-  versions <- sapply(packages, function(pkg) {
-    as.character(packageVersion(pkg))
-  })
-  
-  # Store with results for reproducibility tracking
-  expect_true(all(packages %in% loadedNamespaces()))
-  
-  # Test that known results match
-  known_results <- readRDS("tests/data/known_results_v1.rds")
-  current_results <- run_standard_analysis()
-  
-  expect_equal(current_results$coefficients, 
-               known_results$coefficients, 
-               tolerance = 1e-6)
+# inst/tinytest/test_package_versions.R
+# Document package versions
+packages <- c('lme4', 'ggplot2', 'dplyr')
+versions <- sapply(packages, function(pkg) {
+  as.character(packageVersion(pkg))
 })
+
+# Store with results for reproducibility tracking
+for (pkg in packages) requireNamespace(pkg, quietly = TRUE)
+expect_true(all(packages %in% loadedNamespaces()))
+
+# Test that known results match
+known_results <- readRDS('inst/tinytest/data/known_results_v1.rds')
+current_results <- run_standard_analysis()
+
+expect_equal(current_results$coefficients,
+             known_results$coefficients,
+             tolerance = 1e-6)
 ```
 
 ### Testing Analysis Scripts
@@ -511,21 +491,17 @@ Test that numbered analysis scripts run without error:
 
 ``` r
 
-test_that("analysis scripts execute in order", {
-  script_dir <- "scripts"
-  scripts <- list.files(script_dir, pattern = "^\\d+_.*\\.R$", 
-                       full.names = TRUE)
-  scripts <- sort(scripts)  # Ensure numerical order
-  
-  # Create clean environment for each script
-  for (script in scripts) {
-    script_env <- new.env()
-    
-    expect_no_error({
-      source(script, local = script_env)
-    }, info = paste("Failed to execute:", basename(script)))
-  }
-})
+# inst/tinytest/test_scripts_execute.R
+script_dir <- 'scripts'
+scripts <- list.files(script_dir, pattern = '^\\d+_.*\\.R$',
+                      full.names = TRUE)
+scripts <- sort(scripts)  # Ensure numerical order
+
+# Execute each script in a clean environment
+for (script in scripts) {
+  script_env <- new.env()
+  source(script, local = script_env)
+}
 ```
 
 #### Output Validation
@@ -534,18 +510,17 @@ Test that scripts produce expected outputs:
 
 ``` r
 
-test_that("scripts create expected outputs", {
-  # Run data preparation script
-  source("scripts/01_data_preparation.R", local = new.env())
-  
-  # Check that cleaned data was created
-  expect_true(file.exists("data/derived_data/cleaned_data.rds"))
-  
-  # Validate cleaned data
-  cleaned_data <- readRDS("data/derived_data/cleaned_data.rds")
-  expect_true(nrow(cleaned_data) > 0)
-  expect_false(any(is.na(cleaned_data$primary_outcome)))
-})
+# inst/tinytest/test_script_outputs.R
+# Run data preparation script
+source('scripts/01_data_preparation.R', local = new.env())
+
+# Check that cleaned data was created
+expect_true(file.exists('data/derived_data/cleaned_data.rds'))
+
+# Validate cleaned data
+cleaned_data <- readRDS('data/derived_data/cleaned_data.rds')
+expect_true(nrow(cleaned_data) > 0)
+expect_false(any(is.na(cleaned_data$primary_outcome)))
 ```
 
 ### Testing Report Generation
@@ -556,33 +531,32 @@ Test that reports can be rendered:
 
 ``` r
 
-test_that("main report renders successfully", {
-  report_path <- "analysis/report/report.Rmd"
-  output_dir <- tempdir()
-  
-  # Test YAML parsing
-  yaml_content <- rmarkdown::yaml_front_matter(report_path)
-  expect_true("title" %in% names(yaml_content))
-  expect_true("author" %in% names(yaml_content))
-  
-  # Test dependencies
-  required_packages <- c("rmarkdown", "knitr", "ggplot2")
-  for (pkg in required_packages) {
-    expect_true(requireNamespace(pkg, quietly = TRUE))
-  }
-  
-  # Test rendering (if LaTeX available)
-  skip_if_not_installed("tinytex")
-  expect_no_error({
-    rmarkdown::render(report_path, 
-                     output_dir = output_dir,
-                     quiet = TRUE)
-  })
-  
+# inst/tinytest/test_report_render.R
+report_path <- 'analysis/report/report.Rmd'
+output_dir <- tempdir()
+
+# Test YAML parsing
+yaml_content <- rmarkdown::yaml_front_matter(report_path)
+expect_true('title' %in% names(yaml_content))
+expect_true('author' %in% names(yaml_content))
+
+# Test dependencies
+required_packages <- c('rmarkdown', 'knitr', 'ggplot2')
+for (pkg in required_packages) {
+  expect_true(requireNamespace(pkg, quietly = TRUE))
+}
+
+# Test rendering only when LaTeX is available. tinytest has no
+# skip helper, so guard with a conditional instead.
+if (requireNamespace('tinytex', quietly = TRUE)) {
+  rmarkdown::render(report_path,
+                    output_dir = output_dir,
+                    quiet = TRUE)
+
   # Verify PDF was created
-  pdf_file <- file.path(output_dir, "report.pdf")
+  pdf_file <- file.path(output_dir, 'report.pdf')
   expect_true(file.exists(pdf_file))
-})
+}
 ```
 
 #### Content Validation
@@ -591,22 +565,21 @@ Test report content quality:
 
 ``` r
 
-test_that("report contains required sections", {
-  report_path <- "analysis/report/report.Rmd"
-  content <- readLines(report_path)
-  
-  # Check for required sections
-  expect_true(any(grepl("# Introduction", content)))
-  expect_true(any(grepl("# Methods", content)))
-  expect_true(any(grepl("# Results", content)))
-  expect_true(any(grepl("# Discussion", content)))
-  
-  # Check for figure references
-  expect_true(any(grepl("Figure \\\\@ref", content)))
-  
-  # Check for table references  
-  expect_true(any(grepl("Table \\\\@ref", content)))
-})
+# inst/tinytest/test_report_content.R
+report_path <- 'analysis/report/report.Rmd'
+content <- readLines(report_path)
+
+# Check for required sections
+expect_true(any(grepl('# Introduction', content)))
+expect_true(any(grepl('# Methods', content)))
+expect_true(any(grepl('# Results', content)))
+expect_true(any(grepl('# Discussion', content)))
+
+# Check for figure references
+expect_true(any(grepl('Figure \\\\@ref', content)))
+
+# Check for table references
+expect_true(any(grepl('Table \\\\@ref', content)))
 ```
 
 ### Continuous Integration for Data Analysis
@@ -636,22 +609,27 @@ jobs:
       with:
         cache-version: 2
         
-    - name: Run unit tests
+    - name: Run tinytest suite
       run: |
-        Rscript -e "testthat::test_dir('tests/testthat')"
-        
-    - name: Run integration tests  
-      run: |
-        Rscript -e "testthat::test_dir('tests/integration')"
-        
+        Rscript -e "tinytest::run_test_dir('inst/tinytest')"
+
     - name: Check reproducibility
       run: |
         Rscript -e "source('scripts/99_reproducibility_check.R')"
-        
-    - name: Validate environment (pure shell - NO R REQUIRED!)
+
+    - name: Validate package dependencies
       run: |
-        make check-renv  # Pure shell validation (grep, awk, jq)
+        make check-renv
 ```
+
+The `make check-renv` target runs the companion `zzrenvcheck` package
+inside the project’s Docker image. It executes
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`, which
+verifies that every package referenced in code is declared in both
+`DESCRIPTION` and `renv.lock`. The host wrapper `zzcollab validate`
+performs the same check. Variants `make check-renv-no-fix` (report only)
+and `make check-renv-no-strict` (skip `tests/` and `vignettes/`) are
+available.
 
 #### Quality Gates
 
@@ -660,23 +638,21 @@ Implement automated quality checks:
 ``` r
 
 # scripts/99_reproducibility_check.R
-library(testthat)
+library(tinytest)
 
-test_that("analysis environment is reproducible", {
-  # Check renv lockfile is current
-  expect_true(renv::status()$synchronized)
-  
-  # Check R options are documented
-  source("check_rprofile_options.R")
-  
-  # Check data integrity
-  data_files <- list.files("data/raw_data", full.names = TRUE)
-  for (file in data_files) {
-    checksum <- digest::digest(file, file = TRUE)
-    # Compare with stored checksums
-    expect_true(verify_checksum(file, checksum))
-  }
-})
+# Check renv lockfile is current
+expect_true(renv::status()$synchronized)
+
+# Check R options are documented
+source('check_rprofile_options.R')
+
+# Check data integrity
+data_files <- list.files('data/raw_data', full.names = TRUE)
+for (file in data_files) {
+  checksum <- digest::digest(file, file = TRUE)
+  # Compare with stored checksums
+  expect_true(verify_checksum(file, checksum))
+}
 ```
 
 ### Best Practices and Common Pitfalls
@@ -710,25 +686,26 @@ test_that("analysis environment is reproducible", {
 
 ``` r
 
-test_that("analysis completes within reasonable time", {
-  start_time <- Sys.time()
-  
-  results <- run_analysis(large_dataset)
-  
-  end_time <- Sys.time()
-  duration <- as.numeric(difftime(end_time, start_time, units = "mins"))
-  
-  expect_true(duration < 5)  # Should complete within 5 minutes
-})
+# inst/tinytest/test_performance.R
+start_time <- Sys.time()
+
+results <- run_analysis(large_dataset)
+
+end_time <- Sys.time()
+duration <- as.numeric(difftime(end_time, start_time, units = 'mins'))
+
+expect_true(duration < 5)  # Should complete within 5 minutes
 ```
 
 ### Tools and Packages
 
 #### Core Testing Framework
 
-- **testthat**: Primary testing framework for R (Wickham, 2011)
-- **devtools**: Development tools including test runners
-- **usethis**: Automated test setup and configuration
+- **tinytest**: Primary testing framework for ZZCOLLAB projects; a
+  lightweight, zero-dependency alternative to testthat (van der Loo,
+  2020. 
+- **devtools**: Development tools, including helpers for running checks
+- **renv**: Environment reproducibility, validated via `make check-renv`
 
 #### Data Validation
 
@@ -760,56 +737,45 @@ test_that("analysis completes within reasonable time", {
 
 ``` r
 
-# tests/testthat/test-iris-analysis.R
-library(testthat)
+# inst/tinytest/test_iris_analysis.R
+data(iris)
 
-test_that("iris dataset has expected structure", {
-  data(iris)
-  
-  # Test basic structure
-  expect_equal(nrow(iris), 150)
-  expect_equal(ncol(iris), 5)
-  expect_true(all(c("Sepal.Length", "Sepal.Width", "Petal.Length", 
-                    "Petal.Width", "Species") %in% names(iris)))
-  
-  # Test data types
-  expect_true(is.numeric(iris$Sepal.Length))
-  expect_true(is.numeric(iris$Sepal.Width))
-  expect_true(is.factor(iris$Species))
-  
-  # Test value ranges
-  expect_true(all(iris$Sepal.Length > 0))
-  expect_true(all(iris$Petal.Length >= 0))
-  expect_true(max(iris$Sepal.Length) <= 10)  # Reasonable upper bound
-  
-  # Test species levels
-  expected_species <- c("setosa", "versicolor", "virginica")
-  expect_equal(levels(iris$Species), expected_species)
-  expect_equal(table(iris$Species), rep(50, 3))
-})
+# Test basic structure
+expect_equal(nrow(iris), 150)
+expect_equal(ncol(iris), 5)
+expect_true(all(c('Sepal.Length', 'Sepal.Width', 'Petal.Length',
+                  'Petal.Width', 'Species') %in% names(iris)))
 
-test_that("iris measurements are biologically plausible", {
-  data(iris)
-  
-  # Sepal measurements should be positive and reasonable
-  expect_true(all(iris$Sepal.Length >= 4 & iris$Sepal.Length <= 8))
-  expect_true(all(iris$Sepal.Width >= 1.5 & iris$Sepal.Width <= 5))
-  
-  # Petal measurements
-  expect_true(all(iris$Petal.Length >= 1 & iris$Petal.Length <= 7))
-  expect_true(all(iris$Petal.Width >= 0.1 & iris$Petal.Width <= 3))
-  
-  # No missing values
-  expect_false(any(is.na(iris)))
-})
+# Test data types
+expect_true(is.numeric(iris$Sepal.Length))
+expect_true(is.numeric(iris$Sepal.Width))
+expect_true(is.factor(iris$Species))
+
+# Test value ranges
+expect_true(all(iris$Sepal.Length > 0))
+expect_true(all(iris$Petal.Length >= 0))
+expect_true(max(iris$Sepal.Length) <= 10)  # Reasonable upper bound
+
+# Test species levels
+expected_species <- c('setosa', 'versicolor', 'virginica')
+expect_equal(levels(iris$Species), expected_species)
+expect_equal(as.vector(table(iris$Species)), rep(50L, 3))
+
+# Measurements should be biologically plausible
+expect_true(all(iris$Sepal.Length >= 4 & iris$Sepal.Length <= 8))
+expect_true(all(iris$Sepal.Width >= 1.5 & iris$Sepal.Width <= 5))
+expect_true(all(iris$Petal.Length >= 1 & iris$Petal.Length <= 7))
+expect_true(all(iris$Petal.Width >= 0.1 & iris$Petal.Width <= 3))
+
+# No missing values
+expect_false(any(is.na(iris)))
 ```
 
 ##### Simple Statistical Functions with mtcars
 
 ``` r
 
-# tests/testthat/test-mtcars-stats.R
-library(testthat)
+# inst/tinytest/test_mtcars_stats.R
 
 # Helper function for testing
 calculate_mpg_summary <- function(data) {
@@ -821,114 +787,93 @@ calculate_mpg_summary <- function(data) {
   )
 }
 
-test_that("mpg summary statistics are correct", {
-  data(mtcars)
-  
-  summary_stats <- calculate_mpg_summary(mtcars)
-  
-  # Test summary statistics properties
-  expect_true(summary_stats$mean_mpg > 0)
-  expect_true(summary_stats$median_mpg > 0)
-  expect_true(summary_stats$sd_mpg > 0)
-  expect_equal(length(summary_stats$range_mpg), 2)
-  expect_true(summary_stats$range_mpg[1] <= summary_stats$range_mpg[2])
-  
-  # Test against known values (mtcars is static)
-  expect_equal(summary_stats$mean_mpg, mean(mtcars$mpg))
-  expect_equal(summary_stats$median_mpg, median(mtcars$mpg))
-  # Approximate known value
-  expect_true(abs(summary_stats$mean_mpg - 20.09) < 0.1)  
-})
+data(mtcars)
 
-test_that("correlation analysis works correctly", {
-  data(mtcars)
-  
-  # Test correlation between mpg and weight
-  cor_mpg_wt <- cor(mtcars$mpg, mtcars$wt)
-  
-  expect_true(cor_mpg_wt >= -1 & cor_mpg_wt <= 1)
-  expect_true(cor_mpg_wt < 0)  # Should be negative correlation
-  expect_true(abs(cor_mpg_wt) > 0.5)  # Should be strong correlation
-})
+# mpg summary statistics are correct
+summary_stats <- calculate_mpg_summary(mtcars)
 
-test_that("linear model fitting works", {
-  data(mtcars)
-  
-  # Fit simple linear model
-  model <- lm(mpg ~ wt + hp, data = mtcars)
-  
-  # Test model object
-  expect_s3_class(model, "lm")
-  expect_equal(length(coef(model)), 3)  # Intercept + 2 predictors
-  expect_true(summary(model)$r.squared > 0.5)
-  expect_true(summary(model)$r.squared <= 1)
-  
-  # Test residuals
-  residuals <- resid(model)
-  expect_equal(length(residuals), nrow(mtcars))
-  expect_true(abs(mean(residuals)) < 1e-10)  # Should be approximately zero
-})
+expect_true(summary_stats$mean_mpg > 0)
+expect_true(summary_stats$median_mpg > 0)
+expect_true(summary_stats$sd_mpg > 0)
+expect_equal(length(summary_stats$range_mpg), 2)
+expect_true(summary_stats$range_mpg[1] <= summary_stats$range_mpg[2])
+
+# Test against known values (mtcars is static)
+expect_equal(summary_stats$mean_mpg, mean(mtcars$mpg))
+expect_equal(summary_stats$median_mpg, median(mtcars$mpg))
+expect_true(abs(summary_stats$mean_mpg - 20.09) < 0.1)
+
+# Correlation analysis: mpg versus weight
+cor_mpg_wt <- cor(mtcars$mpg, mtcars$wt)
+expect_true(cor_mpg_wt >= -1 & cor_mpg_wt <= 1)
+expect_true(cor_mpg_wt < 0)  # Should be negative correlation
+expect_true(abs(cor_mpg_wt) > 0.5)  # Should be strong correlation
+
+# Linear model fitting
+model <- lm(mpg ~ wt + hp, data = mtcars)
+expect_inherits(model, 'lm')
+expect_equal(length(coef(model)), 3)  # Intercept + 2 predictors
+expect_true(summary(model)$r.squared > 0.5)
+expect_true(summary(model)$r.squared <= 1)
+
+# Test residuals
+residuals <- resid(model)
+expect_equal(length(residuals), nrow(mtcars))
+expect_true(abs(mean(residuals)) < 1e-10)  # Approximately zero
 ```
 
 ##### Basic Visualization Testing with penguins
 
 ``` r
 
-# tests/testthat/test-penguins-viz.R
-library(testthat)
+# inst/tinytest/test_penguins_viz.R
 library(ggplot2)
 library(palmerpenguins)
 
 # Helper function
 create_penguin_scatterplot <- function(data, x_var, y_var) {
-  ggplot(data, aes_string(x = x_var, y = y_var, color = "species")) +
+  ggplot(data, aes(x = .data[[x_var]], y = .data[[y_var]],
+                   color = species)) +
     geom_point() +
     theme_minimal() +
-    labs(title = paste("Penguins:", y_var, "vs", x_var))
+    labs(title = paste('Penguins:', y_var, 'vs', x_var))
 }
 
-test_that("penguin scatterplot creation works", {
-  data(penguins, package = "palmerpenguins")
-  
-  # Remove missing values for plotting
-  clean_penguins <- penguins[complete.cases(penguins), ]
-  expect_true(nrow(clean_penguins) > 0)
-  
-  # Create plot
-  p <- create_penguin_scatterplot(clean_penguins, "bill_length_mm", 
-                                 "body_mass_g")
-  
-  # Test plot object
-  expect_s3_class(p, "ggplot")
-  expect_equal(length(p$layers), 1)  # One geom_point layer
-  
-  # Test plot data
-  plot_data <- ggplot_build(p)$data[[1]]
-  expect_equal(nrow(plot_data), nrow(clean_penguins))
-  expect_true(all(c("x", "y", "colour") %in% names(plot_data)))
-})
+data(penguins, package = 'palmerpenguins')
 
-test_that("penguin data visualization validates species separation", {
-  data(penguins, package = "palmerpenguins")
-  clean_penguins <- penguins[complete.cases(penguins), ]
-  
-  # Create species summary for visualization validation
-  species_summary <- aggregate(body_mass_g ~ species, 
-                              data = clean_penguins, 
-                              FUN = function(x) c(mean = mean(x), 
+# Remove missing values for plotting
+clean_penguins <- penguins[complete.cases(penguins), ]
+expect_true(nrow(clean_penguins) > 0)
+
+# Create plot
+p <- create_penguin_scatterplot(clean_penguins, 'bill_length_mm',
+                                'body_mass_g')
+
+# Test plot object
+expect_inherits(p, 'ggplot')
+expect_equal(length(p$layers), 1)  # One geom_point layer
+
+# Test plot data
+plot_data <- ggplot_build(p)$data[[1]]
+expect_equal(nrow(plot_data), nrow(clean_penguins))
+expect_true(all(c('x', 'y', 'colour') %in% names(plot_data)))
+
+# Validate species separation
+species_summary <- aggregate(body_mass_g ~ species,
+                             data = clean_penguins,
+                             FUN = function(x) c(mean = mean(x),
                                                  sd = sd(x)))
-  
-  expect_equal(nrow(species_summary), 3)  # Three species
-  expect_true(all(species_summary$body_mass_g[, "mean"] > 0))
-  expect_true(all(species_summary$body_mass_g[, "sd"] > 0))
-  
-  # Gentoo penguins should be heaviest on average
-  gentoo_mean <- species_summary[species_summary$species == "Gentoo", 
-                                "body_mass_g"][1, "mean"]
-  adelie_mean <- species_summary[species_summary$species == "Adelie", 
-                               "body_mass_g"][1, "mean"]
-  expect_true(gentoo_mean > adelie_mean)
-})
+
+expect_equal(nrow(species_summary), 3)  # Three species
+expect_true(all(species_summary$body_mass_g[, 'mean'] > 0))
+expect_true(all(species_summary$body_mass_g[, 'sd'] > 0))
+
+# Gentoo penguins should be heaviest on average
+gentoo_mean <- species_summary[species_summary$species == 'Gentoo',
+                               'body_mass_g'][1, 'mean']
+adelie_mean <- species_summary[species_summary$species == 'Adelie',
+                               'body_mass_g'][1, 'mean']
+expect_true(gentoo_mean > adelie_mean)
 ```
 
 #### Medium Complexity Examples
@@ -937,8 +882,7 @@ test_that("penguin data visualization validates species separation", {
 
 ``` r
 
-# tests/testthat/test-iris-pipeline.R
-library(testthat)
+# inst/tinytest/test_iris_pipeline.R
 
 # Analysis pipeline functions
 prepare_iris_data <- function(data) {
@@ -946,100 +890,80 @@ prepare_iris_data <- function(data) {
   data$sepal_ratio <- data$Sepal.Length / data$Sepal.Width
   data$petal_ratio <- data$Petal.Length / data$Petal.Width
   data$total_length <- data$Sepal.Length + data$Petal.Length
-  return(data)
+  data
 }
 
 analyze_species_differences <- function(data) {
   # Perform ANOVA for each measurement
   results <- list()
-  measurements <- c("Sepal.Length", "Sepal.Width", "Petal.Length", 
-                   "Petal.Width")
-  
+  measurements <- c('Sepal.Length', 'Sepal.Width', 'Petal.Length',
+                    'Petal.Width')
+
   for (measure in measurements) {
-    formula_str <- paste(measure, "~ Species")
+    formula_str <- paste(measure, '~ Species')
     aov_result <- aov(as.formula(formula_str), data = data)
     results[[measure]] <- summary(aov_result)
   }
-  
-  return(results)
+
+  results
 }
 
-test_that("iris data preparation pipeline works", {
-  data(iris)
-  
-  # Test data preparation
-  prepared_data <- prepare_iris_data(iris)
-  
-  # Check new variables were added
-  expect_true("sepal_ratio" %in% names(prepared_data))
-  expect_true("petal_ratio" %in% names(prepared_data))
-  expect_true("total_length" %in% names(prepared_data))
-  
-  # Check derived variables are reasonable
-  expect_true(all(prepared_data$sepal_ratio > 0))
-  expect_true(all(prepared_data$petal_ratio > 0))
-  expect_true(all(prepared_data$total_length > 
-                  prepared_data$Sepal.Length))
-  expect_true(all(prepared_data$total_length > 
-                  prepared_data$Petal.Length))
-  
-  # Check no missing values introduced
-  expect_false(any(is.na(prepared_data$sepal_ratio)))
-  expect_false(any(is.na(prepared_data$petal_ratio)))
-})
+data(iris)
 
-test_that("species analysis produces valid results", {
-  data(iris)
-  prepared_data <- prepare_iris_data(iris)
-  
-  # Run analysis
-  analysis_results <- analyze_species_differences(prepared_data)
-  
-  # Check structure of results
-  expect_true(is.list(analysis_results))
-  expect_equal(length(analysis_results), 4)
-  expect_true(all(c("Sepal.Length", "Sepal.Width", "Petal.Length", 
-                    "Petal.Width") %in% names(analysis_results)))
-  
-  # Check each ANOVA result
-  for (result in analysis_results) {
-    expect_true(is.list(result))
-    expect_true(length(result) == 1)  # One ANOVA table
-    
-    # Check F-statistic exists and is positive
-    f_stat <- result[[1]][1, "F value"]
-    expect_true(f_stat > 0)
-    
-    # Check p-value is between 0 and 1
-    p_value <- result[[1]][1, "Pr(>F)"]
-    expect_true(p_value >= 0 & p_value <= 1)
-  }
-})
+# Data preparation pipeline works
+prepared_data <- prepare_iris_data(iris)
 
-test_that("complete iris analysis pipeline is reproducible", {
-  data(iris)
-  
-  # Run pipeline twice
-  set.seed(123)
-  prepared1 <- prepare_iris_data(iris)
-  results1 <- analyze_species_differences(prepared1)
-  
-  set.seed(123)
-  prepared2 <- prepare_iris_data(iris)
-  results2 <- analyze_species_differences(prepared2)
-  
-  # Results should be identical
-  expect_equal(prepared1, prepared2)
-  expect_equal(results1, results2)
-})
+expect_true('sepal_ratio' %in% names(prepared_data))
+expect_true('petal_ratio' %in% names(prepared_data))
+expect_true('total_length' %in% names(prepared_data))
+
+expect_true(all(prepared_data$sepal_ratio > 0))
+expect_true(all(prepared_data$petal_ratio > 0))
+expect_true(all(prepared_data$total_length > prepared_data$Sepal.Length))
+expect_true(all(prepared_data$total_length > prepared_data$Petal.Length))
+
+expect_false(any(is.na(prepared_data$sepal_ratio)))
+expect_false(any(is.na(prepared_data$petal_ratio)))
+
+# Species analysis produces valid results
+analysis_results <- analyze_species_differences(prepared_data)
+
+expect_true(is.list(analysis_results))
+expect_equal(length(analysis_results), 4)
+expect_true(all(c('Sepal.Length', 'Sepal.Width', 'Petal.Length',
+                  'Petal.Width') %in% names(analysis_results)))
+
+for (result in analysis_results) {
+  expect_true(is.list(result))
+  expect_true(length(result) == 1)  # One ANOVA table
+
+  # Check F-statistic exists and is positive
+  f_stat <- result[[1]][1, 'F value']
+  expect_true(f_stat > 0)
+
+  # Check p-value is between 0 and 1
+  p_value <- result[[1]][1, 'Pr(>F)']
+  expect_true(p_value >= 0 & p_value <= 1)
+}
+
+# Complete pipeline is reproducible
+set.seed(123)
+prepared1 <- prepare_iris_data(iris)
+results1 <- analyze_species_differences(prepared1)
+
+set.seed(123)
+prepared2 <- prepare_iris_data(iris)
+results2 <- analyze_species_differences(prepared2)
+
+expect_equal(prepared1, prepared2)
+expect_equal(results1, results2)
 ```
 
 ##### Advanced Statistical Testing with mtcars
 
 ``` r
 
-# tests/testthat/test-mtcars-advanced.R
-library(testthat)
+# inst/tinytest/test_mtcars_advanced.R
 
 # Advanced analysis functions
 perform_regression_analysis <- function(data, response, predictors) {
@@ -1087,78 +1011,55 @@ validate_model_assumptions <- function(model_result) {
   )
 }
 
-test_that("regression analysis function works correctly", {
-  data(mtcars)
-  
-  # Test basic regression
-  result <- perform_regression_analysis(mtcars, "mpg", 
-                                       c("wt", "hp", "cyl"))
-  
-  # Check structure
-  expect_true(is.list(result))
-  expect_true(all(c("model", "summary", "diagnostics") %in% names(result)))
-  
-  # Check model object
-  expect_s3_class(result$model, "lm")
-  expect_equal(length(coef(result$model)), 4)  # Intercept + 3 predictors
-  
-  # Check diagnostics
-  expect_true(result$diagnostics$r_squared >= 0 & 
-              result$diagnostics$r_squared <= 1)
-  expect_true(result$diagnostics$adj_r_squared <= 
-              result$diagnostics$r_squared)
-  expect_true(result$diagnostics$aic > 0)
-  expect_true(result$diagnostics$bic > 0)
-  expect_equal(length(result$diagnostics$residuals), nrow(mtcars))
-})
+data(mtcars)
 
-test_that("model validation catches assumption violations", {
-  data(mtcars)
-  
-  # Create a good model
-  good_result <- perform_regression_analysis(mtcars, "mpg", c("wt", "hp"))
-  good_validation <- validate_model_assumptions(good_result)
-  
-  # Check that validation runs without error
-  expect_true(is.list(good_validation))
-  expect_true(abs(good_validation$mean_residual) < 1e-10)  # Near zero
-  
-  # Test with a poor model (if we had one)
-  # This tests that our validation function works
-  expect_true(length(good_validation$residual_range) == 2)
-  expect_true(good_validation$residual_range[1] <= 
-              good_validation$residual_range[2])
-})
+# Regression analysis function works correctly
+result <- perform_regression_analysis(mtcars, 'mpg',
+                                      c('wt', 'hp', 'cyl'))
 
-test_that("regression handles different model specifications", {
-  data(mtcars)
-  
-  # Test different model complexities
-  simple_model <- perform_regression_analysis(mtcars, "mpg", "wt")
-  complex_model <- perform_regression_analysis(mtcars, "mpg", 
-                                             c("wt", "hp", "cyl", 
-                                               "disp", "qsec"))
-  
-  # Simple model should have fewer parameters
-  expect_true(length(coef(simple_model$model)) < 
-              length(coef(complex_model$model)))
-  
-  # Complex model might have higher R-squared but not necessarily better AIC
-  expect_true(complex_model$diagnostics$r_squared >= 
-              simple_model$diagnostics$r_squared)
-  
-  # Both should be valid model objects
-  expect_s3_class(simple_model$model, "lm")
-  expect_s3_class(complex_model$model, "lm")
-})
+expect_true(is.list(result))
+expect_true(all(c('model', 'summary', 'diagnostics') %in% names(result)))
+
+expect_inherits(result$model, 'lm')
+expect_equal(length(coef(result$model)), 4)  # Intercept + 3 predictors
+
+expect_true(result$diagnostics$r_squared >= 0 &
+            result$diagnostics$r_squared <= 1)
+expect_true(result$diagnostics$adj_r_squared <=
+            result$diagnostics$r_squared)
+expect_true(result$diagnostics$aic > 0)
+expect_true(result$diagnostics$bic > 0)
+expect_equal(length(result$diagnostics$residuals), nrow(mtcars))
+
+# Model validation runs and reports diagnostics
+good_result <- perform_regression_analysis(mtcars, 'mpg', c('wt', 'hp'))
+good_validation <- validate_model_assumptions(good_result)
+
+expect_true(is.list(good_validation))
+expect_true(abs(good_validation$mean_residual) < 1e-10)  # Near zero
+expect_true(length(good_validation$residual_range) == 2)
+expect_true(good_validation$residual_range[1] <=
+            good_validation$residual_range[2])
+
+# Regression handles different model specifications
+simple_model <- perform_regression_analysis(mtcars, 'mpg', 'wt')
+complex_model <- perform_regression_analysis(mtcars, 'mpg',
+                                             c('wt', 'hp', 'cyl',
+                                               'disp', 'qsec'))
+
+expect_true(length(coef(simple_model$model)) <
+            length(coef(complex_model$model)))
+expect_true(complex_model$diagnostics$r_squared >=
+            simple_model$diagnostics$r_squared)
+expect_inherits(simple_model$model, 'lm')
+expect_inherits(complex_model$model, 'lm')
 ```
 
 ##### Integration Testing with penguins Dataset
 
 ``` r
 
-# tests/testthat/test-penguins-integration.R
-library(testthat)
+# inst/tinytest/test_penguins_integration.R
 library(palmerpenguins)
 library(ggplot2)
 
@@ -1240,177 +1141,140 @@ run_penguin_analysis <- function(remove_na = TRUE) {
   )
 }
 
-test_that("complete penguin analysis workflow executes successfully", {
-  # Run complete analysis
-  expect_no_error({
-    results <- run_penguin_analysis(remove_na = TRUE)
-  })
-  
-  # Check overall structure
-  expect_true(is.list(results))
-  expect_true(all(c("data", "summary_stats", "models", "plots", 
-                    "sample_size") %in% names(results)))
-  
-  # Check data
-  expect_s3_class(results$data, "data.frame")
-  expect_true(results$sample_size > 300)  # Should have substantial sample
-  expect_false(any(is.na(results$data)))  # No missing values after cleaning
-  
-  # Check summary statistics
-  expect_equal(length(results$summary_stats), 4)
-  for (stat in results$summary_stats) {
-    expect_true(all(c("mean", "sd", "median", "range") %in% names(stat)))
-    expect_true(stat$mean > 0)
-    expect_true(stat$sd > 0)
-  }
-  
-  # Check models
-  expect_s3_class(results$models$body_mass_model, "lm")
-  expect_s3_class(results$models$flipper_species_model, "aov")
-  
-  # Check plots
-  expect_s3_class(results$plots$bill_scatter, "ggplot")
-  expect_s3_class(results$plots$mass_boxplot, "ggplot")
-})
+# Complete workflow executes successfully
+results <- run_penguin_analysis(remove_na = TRUE)
 
-test_that("penguin analysis produces biologically meaningful results", {
-  results <- run_penguin_analysis(remove_na = TRUE)
-  
-  # Check that Gentoo penguins are heaviest (known biological fact)
-  species_masses <- aggregate(body_mass_g ~ species, data = results$data, 
-                             mean)
-  gentoo_mass <- species_masses[species_masses$species == "Gentoo", 
-                               "body_mass_g"]
-  adelie_mass <- species_masses[species_masses$species == "Adelie", 
-                               "body_mass_g"]
-  chinstrap_mass <- species_masses[species_masses$species == "Chinstrap", 
-                                  "body_mass_g"]
-  
-  expect_true(gentoo_mass > adelie_mass)
-  expect_true(gentoo_mass > chinstrap_mass)
-  
-  # Check that body mass model is significant
-  model_summary <- summary(results$models$body_mass_model)
-  expect_true(model_summary$r.squared > 0.1)  # At least some explanatory
-                                              # power
-  expect_true(model_summary$fstatistic[1] > 1)  # F-statistic should be > 1
-  
-  # Check that species differences in flipper length are significant
-  anova_result <- summary(results$models$flipper_species_model)
-  f_stat <- anova_result[[1]][1, "F value"]
-  p_value <- anova_result[[1]][1, "Pr(>F)"]
-  expect_true(f_stat > 1)
-  expect_true(p_value < 0.05)  # Should be significant
-})
+expect_true(is.list(results))
+expect_true(all(c('data', 'summary_stats', 'models', 'plots',
+                  'sample_size') %in% names(results)))
 
-test_that("penguin analysis is reproducible with different options", {
-  # Test reproducibility with NA removal
-  results1 <- run_penguin_analysis(remove_na = TRUE)
-  results2 <- run_penguin_analysis(remove_na = TRUE)
-  
-  # Data should be identical
-  expect_equal(results1$data, results2$data)
-  expect_equal(results1$sample_size, results2$sample_size)
-  
-  # Summary statistics should be identical
-  expect_equal(results1$summary_stats, results2$summary_stats)
-  
-  # Model coefficients should be identical
-  expect_equal(coef(results1$models$body_mass_model), 
-               coef(results2$models$body_mass_model))
-})
+expect_inherits(results$data, 'data.frame')
+expect_true(results$sample_size > 300)  # Substantial sample
+expect_false(any(is.na(results$data)))  # No missing values after cleaning
+
+expect_equal(length(results$summary_stats), 4)
+for (stat in results$summary_stats) {
+  expect_true(all(c('mean', 'sd', 'median', 'range') %in% names(stat)))
+  expect_true(stat$mean > 0)
+  expect_true(stat$sd > 0)
+}
+
+expect_inherits(results$models$body_mass_model, 'lm')
+expect_inherits(results$models$flipper_species_model, 'aov')
+
+expect_inherits(results$plots$bill_scatter, 'ggplot')
+expect_inherits(results$plots$mass_boxplot, 'ggplot')
+
+# Results are biologically meaningful: Gentoo are heaviest
+species_masses <- aggregate(body_mass_g ~ species, data = results$data,
+                            mean)
+gentoo_mass <- species_masses[species_masses$species == 'Gentoo',
+                              'body_mass_g']
+adelie_mass <- species_masses[species_masses$species == 'Adelie',
+                              'body_mass_g']
+chinstrap_mass <- species_masses[species_masses$species == 'Chinstrap',
+                                 'body_mass_g']
+
+expect_true(gentoo_mass > adelie_mass)
+expect_true(gentoo_mass > chinstrap_mass)
+
+# Body mass model has explanatory power
+model_summary <- summary(results$models$body_mass_model)
+expect_true(model_summary$r.squared > 0.1)
+expect_true(model_summary$fstatistic[1] > 1)
+
+# Species differences in flipper length are significant
+anova_result <- summary(results$models$flipper_species_model)
+f_stat <- anova_result[[1]][1, 'F value']
+p_value <- anova_result[[1]][1, 'Pr(>F)']
+expect_true(f_stat > 1)
+expect_true(p_value < 0.05)
+
+# Analysis is reproducible across repeated runs
+results1 <- run_penguin_analysis(remove_na = TRUE)
+results2 <- run_penguin_analysis(remove_na = TRUE)
+
+expect_equal(results1$data, results2$data)
+expect_equal(results1$sample_size, results2$sample_size)
+expect_equal(results1$summary_stats, results2$summary_stats)
+expect_equal(coef(results1$models$body_mass_model),
+             coef(results2$models$body_mass_model))
 ```
 
 #### Complete Test Suite Template
 
 ``` r
 
-# tests/testthat/test-complete-analysis.R
-library(testthat)
+# inst/tinytest/test_complete_analysis.R
 library(myanalysis)
 
-# Unit tests for core functions
-test_that("data loading functions work", {
-  # Test various data formats
-  csv_data <- load_csv_data("tests/data/sample.csv")
-  expect_s3_class(csv_data, "data.frame")
-  
-  xlsx_data <- load_excel_data("tests/data/sample.xlsx")
-  expect_s3_class(xlsx_data, "data.frame")
-})
+# Unit tests for core functions: data loading
+csv_data <- load_csv_data('inst/tinytest/data/sample.csv')
+expect_inherits(csv_data, 'data.frame')
 
-test_that("statistical functions are correct", {
-  test_data <- data.frame(
-    group = rep(c("A", "B"), each = 50),
-    value = c(rnorm(50, 10, 2), rnorm(50, 12, 2))
-  )
-  
-  # Test t-test wrapper
-  result <- compare_groups(test_data, "value", "group")
-  expect_s3_class(result, "htest")
-  expect_true(result$p.value > 0 & result$p.value <= 1)
-})
+xlsx_data <- load_excel_data('inst/tinytest/data/sample.xlsx')
+expect_inherits(xlsx_data, 'data.frame')
 
-# Integration tests
-test_that("complete workflow executes", {
-  # Test with sample dataset
-  expect_no_error({
-    data <- load_analysis_data()
-    cleaned <- clean_and_validate(data)
-    models <- fit_models(cleaned)
-    results <- summarize_results(models)
-    plots <- create_visualizations(results)
-  })
-  
-  # Validate final outputs
-  expect_s3_class(results, "analysis_summary")
-  expect_true(length(plots) > 0)
-})
+# Statistical functions are correct
+test_data <- data.frame(
+  group = rep(c('A', 'B'), each = 50),
+  value = c(rnorm(50, 10, 2), rnorm(50, 12, 2))
+)
 
-# Reproducibility tests
-test_that("analysis is reproducible", {
-  set.seed(123)
-  result1 <- run_bootstrap_analysis(n_bootstrap = 100)
-  
-  set.seed(123)
-  result2 <- run_bootstrap_analysis(n_bootstrap = 100)
-  
-  expect_equal(result1, result2)
-})
+result <- compare_groups(test_data, 'value', 'group')
+expect_inherits(result, 'htest')
+expect_true(result$p.value > 0 & result$p.value <= 1)
+
+# Integration: complete workflow executes
+data <- load_analysis_data()
+cleaned <- clean_and_validate(data)
+models <- fit_models(cleaned)
+results <- summarize_results(models)
+plots <- create_visualizations(results)
+
+expect_inherits(results, 'analysis_summary')
+expect_true(length(plots) > 0)
+
+# Reproducibility: identical seeds yield identical results
+set.seed(123)
+result1 <- run_bootstrap_analysis(n_bootstrap = 100)
+
+set.seed(123)
+result2 <- run_bootstrap_analysis(n_bootstrap = 100)
+
+expect_equal(result1, result2)
 ```
 
 #### Data Validation Template
 
 ``` r
 
-# tests/testthat/test-data-validation.R
+# inst/tinytest/test_data_validation.R
 library(testdat)
 
-test_that("clinical trial data meets requirements", {
-  data <- load_trial_data()
-  
-  # Structure validation
-  expect_data(data, has_all_names, 
-              c("patient_id", "treatment", "outcome", "baseline_score"))
-  expect_data(data, has_nrows, min = 200)  # Minimum sample size
-  
-  # Data type validation
-  expect_data(data, is_col_type, "patient_id", "character")
-  expect_data(data, is_col_type, "treatment", "factor") 
-  expect_data(data, is_col_type, "outcome", "numeric")
-  
-  # Value validation
-  expect_data(data, has_range, "outcome", min = 0, max = 100)
-  expect_data(data, has_no_missing, "patient_id")
-  
-  # Business logic validation
-  treatment_groups <- levels(data$treatment)
-  expect_true(all(c("placebo", "active") %in% treatment_groups))
-  
-  # Check randomization balance
-  group_sizes <- table(data$treatment)
-  expect_true(all(group_sizes >= 90 & group_sizes <= 110))
-})
+data <- load_trial_data()
+
+# Structure validation
+expect_data(data, has_all_names,
+            c('patient_id', 'treatment', 'outcome', 'baseline_score'))
+expect_data(data, has_nrows, min = 200)  # Minimum sample size
+
+# Data type validation
+expect_data(data, is_col_type, 'patient_id', 'character')
+expect_data(data, is_col_type, 'treatment', 'factor')
+expect_data(data, is_col_type, 'outcome', 'numeric')
+
+# Value validation
+expect_data(data, has_range, 'outcome', min = 0, max = 100)
+expect_data(data, has_no_missing, 'patient_id')
+
+# Business logic validation
+treatment_groups <- levels(data$treatment)
+expect_true(all(c('placebo', 'active') %in% treatment_groups))
+
+# Check randomization balance
+group_sizes <- table(data$treatment)
+expect_true(all(group_sizes >= 90 & group_sizes <= 110))
 ```
 
 ### References
@@ -1436,6 +1300,10 @@ Psychology Guide to Doing Open Science.
 
 Ushey, K. (2022). renv: Project Environments. R package version 0.16.0.
 <https://CRAN.R-project.org/package=renv>
+
+van der Loo, M. (2020). A method for deriving information from running R
+code (tinytest: lightweight, no-dependency unit testing). The R Journal,
+12(1), 454-462. <https://CRAN.R-project.org/package=tinytest>
 
 van der Loo, M., & de Jonge, E. (2021). Data validation infrastructure
 for R. Journal of Statistical Software, 97(10), 1-31.

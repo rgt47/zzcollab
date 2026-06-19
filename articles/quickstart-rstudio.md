@@ -60,14 +60,17 @@ zzcollab config set profile-name "rstudio"
 Create your reproducible analysis project:
 
 ``` bash
-# Create project directory and initialize
+# Create project directory and initialize with the rstudio profile
 mkdir penguin-bills && cd penguin-bills
-zzc analysis                     # Full setup (init + renv + docker)
+zzc rstudio                      # Full setup (init + renv + docker)
 zzc github                       # Create private GitHub repo (optional)
 
 # Build Docker image with RStudio Server
 make docker-build
 ```
+
+The profile can also come from your config (Step 1 set `profile-name` to
+`rstudio`), in which case `zzc init` selects it automatically.
 
 **What this does:**
 
@@ -142,7 +145,7 @@ In RStudio, create file `analysis/report/report.Rmd`:
     ---
     title: "Palmer Penguins Bill Dimensions Analysis"
     author: "Reproducible Research Team"
-    date: "2026-05-28"
+    date: "2026-06-19"
     output:
       html_document:
         toc: true
@@ -238,67 +241,50 @@ Your HTML report appears in `analysis/report/paper.html`!
 
 ### Step 5: Add Unit Tests in RStudio (2 minutes)
 
-Create tests in RStudio:
+ZZCOLLAB projects use tinytest. Test files live in `inst/tinytest/` and
+contain bare top-level expectations (no `test_that()` wrapper).
 
-#### 5.1 Initialize Testing
-
-In RStudio Console:
-
-``` r
-
-usethis::use_testthat()
-```
-
-#### 5.2 Create Test File
+#### 5.1 Create Test File
 
 **File → New File → R Script**
 
 ``` r
 
+# inst/tinytest/test-bill_analysis.R
 # Source function from R/
 source('../../R/bill_analysis.R')
 
-test_that('create_bill_plot produces valid ggplot', {
-  plot <- create_bill_plot()
+# create_bill_plot produces a valid ggplot with the expected title
+plot <- create_bill_plot()
+expect_inherits(plot, 'ggplot')
+expect_equal(plot$labels$title, 'Palmer Penguins: Bill Dimensions')
 
-  # Valid ggplot object
-  expect_s3_class(plot, 'ggplot')
+# create_bill_plot handles missing data
+test_data <- palmerpenguins::penguins
+test_data$bill_length_mm[1:5] <- NA
+plot_na <- create_bill_plot(test_data)
+expect_inherits(plot_na, 'ggplot')
 
-  # Correct title
-  expect_equal(plot$labels$title, 'Palmer Penguins: Bill Dimensions')
-})
-
-test_that('create_bill_plot handles missing data', {
-  # Data with missing values
-  test_data <- palmerpenguins::penguins
-  test_data$bill_length_mm[1:5] <- NA
-
-  plot <- create_bill_plot(test_data)
-
-  # Should still produce plot
-  expect_s3_class(plot, 'ggplot')
-})
-
-test_that('create_bill_plot includes all species', {
-  plot <- create_bill_plot()
-
-  # Should have species in color aesthetic
-  expect_true('species' %in% names(plot$labels))
-})
+# create_bill_plot includes species in the color aesthetic
+expect_true('species' %in% names(plot$labels))
 ```
 
-Save as: `tests/testthat/test-bill_analysis.R`
+Save as: `inst/tinytest/test-bill_analysis.R`
 
-#### 5.3 Run Tests in RStudio
+#### 5.2 Run Tests
 
-In RStudio Console:
+From the terminal:
+
+``` bash
+make docker-test
+```
+
+Or in the RStudio Console:
 
 ``` r
 
-devtools::test()
+tinytest::run_test_dir('inst/tinytest')
 ```
-
-Or use **Build → Test Package** (if package structure)
 
 ### Step 6: Exit RStudio and Validate (1 minute)
 
@@ -312,8 +298,8 @@ Close your browser tab, then in terminal:
 make docker-test
 # Auto-restore runs when R starts - all packages installed automatically!
 
-# Validate dependencies (pure shell - NO R REQUIRED!)
-make check-renv  # Pure shell validation (grep, awk, curl, jq)
+# Validate dependencies (runs zzrenvcheck in the container)
+make check-renv
 ```
 
 ### Step 7: Commit and Push (1 minute)
@@ -334,10 +320,6 @@ Reproducibility:
 - Level 3: Docker environment isolation (rstudio profile)
 - Level 4: Unit tests for computational correctness
 - Level 5: CI/CD automated validation
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 
@@ -462,7 +444,7 @@ RStudio is great for development, but some tasks need terminal:
 **Use Terminal for:**
 
 - Running tests: `make docker-test`
-- Validation: `make check-renv` (pure shell - NO R required!)
+- Validation: `make check-renv` (runs zzrenvcheck in the container)
 - Git operations: `git commit`, `git push`
 - Building images: `make docker-build`
 - Note: Auto-snapshot and auto-restore run automatically
@@ -485,7 +467,8 @@ RStudio is great for development, but some tasks need terminal:
 3.  **RStudio:** Author report and render locally
 4.  **Exit RStudio:** Auto-snapshot captures packages in renv.lock
 5.  **Terminal:** Run full test suite (auto-restore installs packages)
-6.  **Terminal:** Validate dependencies (pure shell - no R needed)
+6.  **Terminal:** Validate dependencies with `make check-renv`
+    (zzrenvcheck)
 7.  **Terminal:** Commit and push
 8.  **CI/CD:** Automated validation runs
 
@@ -639,11 +622,9 @@ create_flipper_plot <- function(data) {
   # Flipper length vs body mass
 }
 
-# Write more tests
-test_that("model includes species interaction", {
-  model <- fit_bill_model(penguins)
-  expect_true("bill_length_mm:species" %in% names(coef(model)))
-})
+# Write more tests (tinytest, in inst/tinytest/)
+model <- fit_bill_model(penguins)
+expect_true('bill_length_mm:species' %in% names(coef(model)))
 ```
 
 **Share with colleagues:**

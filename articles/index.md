@@ -12,6 +12,8 @@
   Workflow](https://rgt47.github.io/zzcollab/articles/quickstart1.md):
 - [Quickstart: Collaborative Analysis
   Workflow](https://rgt47.github.io/zzcollab/articles/quickstart2.md):
+- [Quickstart: Reproducibility Feature
+  Toggles](https://rgt47.github.io/zzcollab/articles/quickstart3.md):
 - [ZZCOLLAB Configuration
   System](https://rgt47.github.io/zzcollab/articles/configuration.md):
 
@@ -23,6 +25,9 @@
   Everywhere](https://rgt47.github.io/zzcollab/articles/reusable-team-images.md):
 - [Why Reproducibility Matters: The Case for Docker and renv in Data
   Analysis](https://rgt47.github.io/zzcollab/articles/why-reproducibility-matters.md):
+- [Reproducibility Infrastructure and the Replication Crisis:
+  Positioning zzcollab in Light of the SCORE
+  Project](https://rgt47.github.io/zzcollab/articles/score-replication-crisis-zzcollab.md):
 - [Testing Data Analysis
   Workflows](https://rgt47.github.io/zzcollab/articles/testing.md):
 - [Palmer Penguins Bill Dimensions

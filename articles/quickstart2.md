@@ -86,8 +86,10 @@ This creates the research compendium structure:
     │   │   └── references.bib
     │   └── scripts/
     ├── R/
+    ├── inst/
+    │   └── tinytest/
     ├── tests/
-    │   └── testthat/
+    │   └── tinytest.R
     ├── DESCRIPTION
     ├── Dockerfile
     ├── Makefile
@@ -264,139 +266,114 @@ validate_mtcars_data <- function(data) {
 
 ### 3.1 Create Data Validation Tests
 
-Create `tests/testthat/test-data-validation.R`:
+ZZCOLLAB projects use tinytest. Test files live in `inst/tinytest/` and
+contain bare top-level expectations (no `test_that()` wrapper).
+
+Create `inst/tinytest/test-data-validation.R`:
 
 ``` r
 
 # test-data-validation.R
 # Tests for data integrity and validation functions
 
-test_that("raw data file exists and is readable", {
-  raw_data_path <- "analysis/data/raw_data/mtcars.csv"
+raw_data_path <- 'analysis/data/raw_data/mtcars.csv'
 
-  expect_true(file.exists(raw_data_path))
+# Raw data file exists and is readable
+expect_true(file.exists(raw_data_path))
+data <- read.csv(raw_data_path, row.names = 1)
+expect_inherits(data, 'data.frame')
 
-  data <- read.csv(raw_data_path, row.names = 1)
-  expect_s3_class(data, "data.frame")
-})
+# Expected dimensions
+expect_equal(nrow(data), 32L)
+expect_equal(ncol(data), 11L)
 
-test_that("raw data has expected dimensions", {
-  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
+# Required columns present
+required_cols <- c('mpg', 'cyl', 'disp', 'hp', 'drat', 'wt',
+                   'qsec', 'vs', 'am', 'gear', 'carb')
+expect_true(all(required_cols %in% names(data)))
 
-  expect_equal(nrow(data), 32)
-  expect_equal(ncol(data), 11)
-})
+# Values within expected ranges
+expect_true(all(data$mpg > 0 & data$mpg < 50))
+expect_true(all(data$cyl %in% c(4, 6, 8)))
+expect_true(all(data$hp > 0 & data$hp < 500))
+expect_true(all(data$wt > 0))
 
-test_that("raw data contains required columns", {
-  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
-
-  required_cols <- c("mpg", "cyl", "disp", "hp", "drat", "wt",
-                     "qsec", "vs", "am", "gear", "carb")
-
-  expect_true(all(required_cols %in% names(data)))
-})
-
-test_that("raw data values are within expected ranges", {
-  data <- read.csv("analysis/data/raw_data/mtcars.csv", row.names = 1)
-
-  expect_true(all(data$mpg > 0 & data$mpg < 50))
-  expect_true(all(data$cyl %in% c(4, 6, 8)))
-  expect_true(all(data$hp > 0 & data$hp < 500))
-  expect_true(all(data$wt > 0))
-})
-
-test_that("derived data has correct subset size", {
-  skip_if_not(file.exists("analysis/data/derived_data/mtcars_processed.rds"))
-
-  data <- readRDS("analysis/data/derived_data/mtcars_processed.rds")
-
-  expect_equal(nrow(data), 16)
-})
+# Derived data has the correct subset size (only if it has been created)
+derived_path <- 'analysis/data/derived_data/mtcars_processed.rds'
+if (file.exists(derived_path)) {
+  expect_equal(nrow(readRDS(derived_path)), 16L)
+}
 ```
 
 ### 3.2 Create Function Tests
 
-Create `tests/testthat/test-data-functions.R`:
+Create `inst/tinytest/test-data-functions.R`:
 
 ``` r
 
 # test-data-functions.R
 # Tests for R/data_functions.R
 
-test_that("validate_mtcars_data accepts valid data", {
-  valid_data <- data.frame(
-    mpg = c(21, 22), cyl = c(6, 4), disp = c(160, 140),
-    hp = c(110, 93), drat = c(3.9, 3.85), wt = c(2.6, 2.3),
-    qsec = c(16.5, 18.6), vs = c(0, 1), am = c(1, 1),
-    gear = c(4, 4), carb = c(4, 2)
-  )
+# validate_mtcars_data accepts valid data
+valid_data <- data.frame(
+  mpg = c(21, 22), cyl = c(6, 4), disp = c(160, 140),
+  hp = c(110, 93), drat = c(3.9, 3.85), wt = c(2.6, 2.3),
+  qsec = c(16.5, 18.6), vs = c(0, 1), am = c(1, 1),
+  gear = c(4, 4), carb = c(4, 2)
+)
+expect_true(validate_mtcars_data(valid_data))
 
-  expect_true(validate_mtcars_data(valid_data))
-})
+# validate_mtcars_data rejects missing columns
+expect_error(validate_mtcars_data(data.frame(mpg = 21, cyl = 6)),
+             pattern = 'Missing required columns')
 
-test_that("validate_mtcars_data rejects missing columns", {
-  incomplete_data <- data.frame(mpg = 21, cyl = 6)
+# validate_mtcars_data rejects empty data
+expect_error(validate_mtcars_data(mtcars[0, ]), pattern = 'empty')
 
-  expect_error(
-    validate_mtcars_data(incomplete_data),
-    "Missing required columns"
-  )
-})
+# validate_mtcars_data rejects invalid mpg
+bad_data <- mtcars[1:2, ]
+bad_data$mpg[1] <- -5
+expect_error(validate_mtcars_data(bad_data),
+             pattern = 'mpg must be positive')
 
-test_that("validate_mtcars_data rejects empty data", {
-  empty_data <- mtcars[0, ]
+# add_derived_variables creates the expected columns
+result <- add_derived_variables(mtcars[1:5, ])
+expect_true('efficiency_class' %in% names(result))
+expect_true('weight_kg' %in% names(result))
+expect_true('power_to_weight' %in% names(result))
 
-  expect_error(validate_mtcars_data(empty_data), "empty")
-})
+# add_derived_variables calculates efficiency_class correctly
+ec_data <- data.frame(
+  mpg = c(25, 17, 12),
+  wt = c(2.5, 3.0, 3.5),
+  hp = c(100, 150, 200)
+)
+expect_equal(add_derived_variables(ec_data)$efficiency_class,
+             c('high', 'medium', 'low'))
 
-test_that("validate_mtcars_data rejects invalid mpg", {
-  bad_data <- mtcars[1:2, ]
-  bad_data$mpg[1] <- -5
+# add_derived_variables calculates weight_kg correctly
+kg_result <- add_derived_variables(data.frame(mpg = 20, wt = 1, hp = 100))
+expect_equal(kg_result$weight_kg, 453.592, tolerance = 0.001)
 
-  expect_error(validate_mtcars_data(bad_data), "mpg must be positive")
-})
-
-test_that("add_derived_variables creates expected columns", {
-  test_data <- mtcars[1:5, ]
-  result <- add_derived_variables(test_data)
-
-  expect_true("efficiency_class" %in% names(result))
-  expect_true("weight_kg" %in% names(result))
-  expect_true("power_to_weight" %in% names(result))
-})
-
-test_that("add_derived_variables calculates efficiency_class correctly", {
-  test_data <- data.frame(
-    mpg = c(25, 17, 12),
-    wt = c(2.5, 3.0, 3.5),
-    hp = c(100, 150, 200)
-  )
-
-  result <- add_derived_variables(test_data)
-
-  expect_equal(result$efficiency_class, c("high", "medium", "low"))
-})
-
-test_that("add_derived_variables calculates weight_kg correctly", {
-  test_data <- data.frame(mpg = 20, wt = 1, hp = 100)
-  result <- add_derived_variables(test_data)
-
-  expect_equal(result$weight_kg, 453.592, tolerance = 0.001)
-})
-
-test_that("add_derived_variables requires correct input columns", {
-  bad_data <- data.frame(x = 1, y = 2)
-
-  expect_error(
-    add_derived_variables(bad_data),
-    "must contain mpg, wt, and hp"
-  )
-})
+# add_derived_variables requires the correct input columns
+expect_error(add_derived_variables(data.frame(x = 1, y = 2)),
+             pattern = 'must contain mpg, wt, and hp')
 ```
 
 ### 3.3 Run Tests
 
-Enter the container and run tests:
+Run the tinytest suite:
+
+``` bash
+make docker-test
+```
+
+Expected output (each expectation reported as a passing check):
+
+    inst/tinytest/test-data-functions.R............    8 tests OK
+    inst/tinytest/test-data-validation.R...........    7 tests OK
+
+To run interactively inside the container instead:
 
 ``` bash
 make r
@@ -405,13 +382,8 @@ make r
 ``` r
 
 # Inside R
-devtools::test()
+tinytest::run_test_dir('inst/tinytest')
 ```
-
-Expected output:
-
-    == Testing mtcarsanalysis =====================================================
-    [ FAIL 0 | WARN 0 | SKIP 0 | PASS 11 ]
 
 Exit R when done:
 
@@ -420,7 +392,9 @@ Exit R when done:
 q()
 ```
 
-Packages are automatically captured to renv.lock on exit.
+Packages are automatically captured to `renv.lock` when you exit R
+(auto-snapshot). Auto-restore on startup is disabled in the container;
+packages are baked into the image at build time.
 
 ## Part 4: Initial Analysis Report (Developer 1)
 
@@ -431,7 +405,7 @@ Edit `analysis/report/report.Rmd`:
     ---
     title: "Fuel Efficiency Analysis: mtcars Subset"
     author: "Developer 1"
-    date: "2026-05-28"
+    date: "2026-06-19"
     output:
       html_document:
         toc: true
@@ -549,8 +523,9 @@ After exiting R, validate that all packages are properly tracked:
 make check-renv
 ```
 
-This pure-shell validation ensures DESCRIPTION and renv.lock are
-synchronized.
+This runs `zzrenvcheck::check_packages()` inside the container to verify
+that DESCRIPTION and renv.lock are synchronized with the code’s actual
+[`library()`](https://rdrr.io/r/base/library.html) calls.
 
 ## Part 5: Push to GitHub (Developer 1)
 
@@ -578,11 +553,7 @@ git commit -m "Initial project setup with mtcars analysis
 - Add raw data (complete mtcars CSV)
 - Create data processing script (extracts first half)
 - Add data validation and function tests
-- Create initial report structure
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+- Create initial report structure"
 
 gh repo create myteam/mtcars-analysis --private --source=. --push
 ```
@@ -591,21 +562,39 @@ gh repo create myteam/mtcars-analysis --private --source=. --push
 
 ``` bash
 make docker-build
-zzc dockerhub                    # Push to DockerHub
+
+# Multi-arch push (amd64 + arm64) and records digest to .team-image-digest:
+make docker-push-team
+
+# Commit the digest so team members can pull the exact same image:
+git add .team-image-digest
+git commit -m "Record team image digest"
+git push
 ```
 
-This makes the Docker image available for Developer 2.
+`make docker-push-team` builds a multi-architecture image (linux/amd64
+and linux/arm64), pushes it to Docker Hub, and writes the manifest
+digest to `.team-image-digest`. Committing that file lets team members
+run `make docker-pull-team` to get the byte-identical image.
+
+`zzc dockerhub` is a simpler alternative that pushes a
+single-architecture image without recording the digest.
 
 ## Part 6: Add Visualization (Developer 2)
 
 ### 6.1 Clone the Repository
 
-Developer 2 clones the project and pulls the team Docker image:
+Developer 2 clones the project and loads the team Docker image:
 
 ``` bash
 git clone git@github.com:myteam/mtcars-analysis.git
 cd mtcars-analysis
-docker pull myteam/mtcars-analysis:latest
+
+# Preferred: pull the exact digest the team lead recorded (bit-identical)
+make docker-pull-team          # reads .team-image-digest committed by team lead
+
+# Alternative: build from Dockerfile (always works, takes 5-15 min)
+make docker-build
 ```
 
 ### 6.2 Enter Container and Verify Setup
@@ -620,7 +609,7 @@ make r
 readRDS("analysis/data/derived_data/mtcars_processed.rds") |> head()
 
 # Run existing tests to ensure environment is correct
-devtools::test()
+tinytest::run_test_dir('inst/tinytest')
 
 q()
 ```
@@ -688,85 +677,50 @@ plot_mpg_by_cylinder <- function(data) {
 
 ### 6.4 Add Tests for New Functions
 
-Create `tests/testthat/test-plot-functions.R`:
+Create `inst/tinytest/test-plot-functions.R`:
 
 ``` r
 
 # test-plot-functions.R
 # Tests for R/plot_functions.R
 
-test_that("plot_power_weight returns ggplot object", {
-  test_data <- mtcars[1:5, ] |> add_derived_variables()
+# plot_power_weight returns a ggplot object
+pw_data <- mtcars[1:5, ] |> add_derived_variables()
+expect_inherits(plot_power_weight(pw_data), 'ggplot')
 
-  result <- plot_power_weight(test_data)
+# plot_power_weight requires the power_to_weight column
+expect_error(plot_power_weight(mtcars[1:5, ]),
+             pattern = 'power_to_weight')
 
-  expect_s3_class(result, "ggplot")
-})
+# plot_power_weight respects the show_labels parameter
+expect_inherits(plot_power_weight(pw_data, show_labels = TRUE), 'ggplot')
+expect_inherits(plot_power_weight(pw_data, show_labels = FALSE), 'ggplot')
 
-test_that("plot_power_weight requires power_to_weight column", {
-  bad_data <- mtcars[1:5, ]
-
-  expect_error(
-    plot_power_weight(bad_data),
-    "power_to_weight"
-  )
-})
-
-test_that("plot_power_weight respects show_labels parameter", {
-  test_data <- mtcars[1:5, ] |> add_derived_variables()
-
-  with_labels <- plot_power_weight(test_data, show_labels = TRUE)
-  without_labels <- plot_power_weight(test_data, show_labels = FALSE)
-
-  expect_s3_class(with_labels, "ggplot")
-  expect_s3_class(without_labels, "ggplot")
-})
-
-test_that("plot_mpg_by_cylinder returns ggplot object", {
-  test_data <- mtcars[1:5, ]
-
-  result <- plot_mpg_by_cylinder(test_data)
-
-  expect_s3_class(result, "ggplot")
-})
+# plot_mpg_by_cylinder returns a ggplot object
+expect_inherits(plot_mpg_by_cylinder(mtcars[1:5, ]), 'ggplot')
 ```
 
 ### 6.5 Run All Tests
 
 ``` bash
-make r
+make docker-test
 ```
 
-``` r
+Expected output (all three test files passing):
 
-devtools::test()
-```
-
-Expected output:
-
-    == Testing mtcarsanalysis =====================================================
-    [ FAIL 0 | WARN 0 | SKIP 0 | PASS 15 ]
-
-Exit R:
-
-``` r
-
-q()
-```
+    inst/tinytest/test-data-functions.R............    8 tests OK
+    inst/tinytest/test-data-validation.R...........    7 tests OK
+    inst/tinytest/test-plot-functions.R............    5 tests OK
 
 ### 6.6 Commit and Push Changes
 
 ``` bash
-git add R/plot_functions.R tests/testthat/test-plot-functions.R
+git add R/plot_functions.R inst/tinytest/test-plot-functions.R
 git commit -m "Add visualization functions for power-weight analysis
 
 - Add plot_power_weight() for scatter plots
 - Add plot_mpg_by_cylinder() for boxplots
-- Include tests for both plotting functions
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+- Include tests for both plotting functions"
 
 git push
 ```
@@ -791,8 +745,8 @@ Verify new packages are auto-restored:
 
 ``` r
 
-devtools::test()
-# All 15 tests should pass
+tinytest::run_test_dir('inst/tinytest')
+# All three test files should pass
 
 q()
 ```
@@ -888,11 +842,7 @@ git commit -m "Finalize analysis report with collaborative visualizations
 - Integrate power-weight scatter plot
 - Add cylinder comparison boxplot
 - Write conclusions section
-- Add session info for reproducibility
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+- Add session info for reproducibility"
 
 git push
 ```
@@ -976,10 +926,10 @@ packages immediately - no installation wait.
 | Pull from DockerHub   | Downloads pre-built image with packages | 1-3 min  |
 
 ``` bash
-# Option B: Pull pre-built image (faster, requires DockerHub setup)
+# Option B: Pull pre-built image pinned by digest (faster, requires DockerHub setup)
 git clone https://github.com/myteam/study.git
 cd study
-docker pull myteam/study:latest
+make docker-pull-team    # reads .team-image-digest; byte-identical for all members
 make r
 ```
 
@@ -1003,21 +953,22 @@ the image. This is what makes pulling faster for team members - packages
 are pre-installed rather than installed on first run.
 
 ``` bash
-# 1. Build image (installs packages from renv.lock)
+# 1. Build image (installs packages from renv.lock into /opt/renv/library)
 make docker-build
 
-# 2. Push the built image to DockerHub
-zzc dockerhub                    # Pushes to dockerhub-account/project:latest
+# 2. Push multi-arch image and record digest (preferred)
+make docker-push-team            # writes .team-image-digest; commit this file
 
-# Or with version tag
-zzc dockerhub --tag v1.0
+# Alternative: single-arch push without digest recording
+zzc dockerhub                    # Pushes to dockerhub-account/project:latest
+zzc dockerhub --tag v1.0         # Or with an explicit version tag
 ```
 
 **When to rebuild and push:**
 
-- After adding packages (renv.lock changed)
+- After adding packages (`renv.lock` changed)
 - After modifying Dockerfile
-- Before onboarding new team members (ensure they get latest)
+- Before onboarding new team members (ensure they get current image)
 
 ``` bash
 # Check if renv.lock changed since last push
@@ -1091,9 +1042,10 @@ mkdir team-analysis && cd team-analysis
 zzc analysis
 zzc github
 
-# Push Docker image
-docker login                     # One-time authentication
-zzc dockerhub
+# Build and push multi-arch image; records digest to .team-image-digest
+docker login                     # One-time DockerHub authentication
+make docker-push-team
+git add .team-image-digest && git commit -m "Record team image digest" && git push
 
 # Add collaborators
 gh repo edit --add-collaborator alice
@@ -1107,23 +1059,23 @@ gh repo edit --add-collaborator bob
 git clone https://github.com/leader/team-analysis.git
 cd team-analysis
 
-# Option A: Fast path (pull image)
+# Option A: Pull image pinned to the committed digest (fast, reproducible)
 docker login                     # If private DockerHub repo
-docker pull leader/team-analysis:latest
+make docker-pull-team            # reads .team-image-digest
 make r
 
-# Option B: Full reproducibility (build from scratch)
-make docker-build                # Takes longer but verifies Dockerfile
+# Option B: Build from Dockerfile (always works, verifies reproducibility)
+make docker-build
 make r
 ```
 
 **Daily workflow (all team members):**
 
 ``` bash
-git pull                         # Get latest code
-make r                           # Enter container (auto-restores packages)
-# ... work ...
-exit                             # Auto-snapshots packages
+git pull                         # Get latest code and any updated digest
+make r                           # Enter container (packages baked in)
+# ... work, install new packages with install.packages() if needed ...
+exit                             # Auto-snapshot writes updated renv.lock
 git add . && git commit && git push
 ```
 
@@ -1153,19 +1105,23 @@ The final repository contains:
 
 ## Quick Reference
 
-| Task                        | Command                     |
-|-----------------------------|-----------------------------|
-| Create project (full setup) | `zzc analysis`              |
-| Add GitHub repo             | `zzc github`                |
-| Enter container             | `make r`                    |
-| Run tests                   | `devtools::test()` inside R |
-| Validate packages           | `make check-renv`           |
-| Build Docker image          | `make docker-build`         |
-| Push to DockerHub           | `zzc dockerhub`             |
-| Push with tag               | `zzc dockerhub --tag v1.0`  |
-| Switch profile              | `zzc publishing`            |
-| List profiles               | `zzc list profiles`         |
-| Render report               | `make docker-render`        |
+| Task | Command |
+|----|----|
+| Create project (full setup) | `zzc analysis` |
+| Add GitHub repo | `zzc github` |
+| Enter container | `make r` |
+| Run tests | `make docker-test` |
+| Validate packages | `make check-renv` |
+| Build Docker image | `make docker-build` |
+| Push multi-arch image + record digest | `make docker-push-team` |
+| Pull image pinned by digest | `make docker-pull-team` |
+| Push single-arch (simpler) | `zzc dockerhub` |
+| Push with tag | `zzc dockerhub --tag v1.0` |
+| Hash raw data for integrity | `make hash-data` |
+| Verify raw data against manifest | `make verify-data` |
+| Change base image | `zzcollab docker --base-image rocker/verse` |
+| List profiles | `zzc list profiles` |
+| Render report | `make docker-render` |
 
 ## Next Steps
 

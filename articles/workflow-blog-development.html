@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-05-28</h4>
+            <h4 data-toc-skip class="date">2026-06-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-blog-development.Rmd" class="external-link"><code>vignettes/workflow-blog-development.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-blog-development.Rmd</code></div>
@@ -96,9 +96,12 @@ workflow.</p>
 </h3>
 <ul>
 <li>Structuring blog posts as reproducible research compendia</li>
-<li>Using symlinks to integrate with Quarto’s blog system</li>
+<li>Authoring the post as <code>analysis/report/index.qmd</code> within
+the compendium</li>
 <li>Organizing media assets (images, audio, video)</li>
-<li>Running Quarto blog development inside Docker containers</li>
+<li>Rendering Quarto posts inside Docker with
+<code>make docker-render-qmd</code>
+</li>
 <li>Managing dependencies with renv for exact reproducibility</li>
 </ul>
 </div>
@@ -108,7 +111,8 @@ workflow.</p>
 <ul>
 <li>Docker installed and running</li>
 <li>ZZCOLLAB installed (<code>./install.sh</code>)</li>
-<li>An existing Quarto blog (or willingness to create one)</li>
+<li>A base image with Quarto (the <code>rocker/verse</code> base
+provides Quarto and LaTeX; see Step 1)</li>
 <li>Git configured with credentials</li>
 </ul>
 </div>
@@ -119,15 +123,11 @@ workflow.</p>
 <div class="section level3">
 <h3 id="structure-overview">Structure Overview<a class="anchor" aria-label="anchor" href="#structure-overview"></a>
 </h3>
-<p>Each blog post follows the unified compendium structure with a
-dual-symlink system that enables intuitive editing while maintaining
-Quarto compatibility:</p>
+<p>Each blog post follows the unified compendium structure. The post
+itself lives at <code>analysis/report/index.qmd</code>, consistent with
+the manuscript workflow, and renders in place with
+<code>make docker-render-qmd</code>:</p>
 <pre><code>posts/palmer_penguins_part1/
-├── index.qmd → analysis/report/index.qmd     # Symlink for Quarto
-├── figures/ → analysis/figures/              # Symlink for HTML resolution
-├── media/ → analysis/media/                  # Symlink for HTML resolution
-├── data/ → analysis/data/                    # Symlink for HTML resolution
-│
 ├── Dockerfile                                # Computational environment
 ├── renv.lock                                 # Exact package versions
 ├── .Rprofile                                 # R session configuration
@@ -136,22 +136,19 @@ Quarto compatibility:</p>
 ├── README.md                                 # Reader instructions
 │
 ├── analysis/
-│   ├── paper/
-│   │   ├── index.qmd                         # Blog post content (actual file)
-│   │   ├── figures/ → ../figures/            # Symlink for intuitive editing
-│   │   ├── media/ → ../media/                # Symlink for intuitive editing
-│   │   └── data/ → ../data/                  # Symlink for intuitive editing
+│   ├── report/
+│   │   └── index.qmd                         # Blog post content (Quarto)
 │   │
 │   ├── scripts/                              # Numbered analysis pipeline
 │   │   ├── 01_prepare_data.R
 │   │   ├── 02_fit_models.R
 │   │   └── 03_generate_figures.R
 │   │
-│   ├── figures/                              # R-generated plots (actual)
+│   ├── figures/                              # R-generated plots
 │   │   ├── eda-overview.png
 │   │   └── model-diagnostics.png
 │   │
-│   ├── media/                                # Static media assets (actual)
+│   ├── media/                                # Static media assets
 │   │   ├── images/                           # Hero images, photos
 │   │   │   ├── README.md                     # Source/license info
 │   │   │   └── penguin-hero.jpg
@@ -171,34 +168,28 @@ Quarto compatibility:</p>
     └── utils.R</code></pre>
 </div>
 <div class="section level3">
-<h3 id="why-dual-symlinks">Why Dual Symlinks?<a class="anchor" aria-label="anchor" href="#why-dual-symlinks"></a>
+<h3 id="paths-are-relative-to-the-post">Paths Are Relative to the Post<a class="anchor" aria-label="anchor" href="#paths-are-relative-to-the-post"></a>
 </h3>
-<p>Quarto blogs expect <code>posts/*/index.qmd</code> at the post root,
-but ZZCOLLAB places documents in <code>analysis/report/</code>. The
-dual-symlink system addresses this:</p>
-<p><strong>At post root</strong> (for Quarto and HTML resolution):</p>
-<pre><code>index.qmd → analysis/report/index.qmd
-figures/  → analysis/figures/
-media/    → analysis/media/
-data/     → analysis/data/</code></pre>
-<p><strong>In analysis/report/</strong> (for intuitive editing):</p>
-<pre><code>figures/ → ../figures/
-media/   → ../media/
-data/    → ../data/</code></pre>
+<p>The post and its assets live together under <code>analysis/</code>,
+so figures, media, and data are referenced with paths relative to
+<code>analysis/report/index.qmd</code>. Quarto renders the document in
+place; <code>make docker-render-qmd</code> runs
+<code>quarto render analysis/report/index.qmd</code> inside the
+container.</p>
 <p><strong>Benefits</strong>:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Quarto compatibility</strong>: Finds <code>index.qmd</code>
-at expected location</li>
+<strong>No symlinks to maintain</strong>: One canonical location for
+the post and assets</li>
 <li>
-<strong>Intuitive paths</strong>: Write
-<code>![Plot](figures/plot.png)</code> in your <code>.qmd</code>
+<strong>Intuitive paths</strong>: Reference assets relative to
+<code>analysis/report/</code>
 </li>
 <li>
-<strong>Correct HTML</strong>: Rendered paths resolve via root
-symlinks</li>
+<strong>Reproducible render</strong>:
+<code>make docker-render-qmd</code> builds in the container</li>
 <li>
-<strong>rrtools consistency</strong>: Actual content lives in
+<strong>rrtools consistency</strong>: Content lives in
 <code>analysis/report/</code>
 </li>
 </ol>
@@ -258,147 +249,133 @@ symlinks</li>
 <div class="section level3">
 <h3 id="step-1-initialize-post-as-zzcollab-project">Step 1: Initialize Post as ZZCOLLAB Project<a class="anchor" aria-label="anchor" href="#step-1-initialize-post-as-zzcollab-project"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="bu">cd</span> ~/prj/qblog/posts</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co"># Create post directory</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">mkdir</span> palmer_penguins_part1 <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> palmer_penguins_part1</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># Initialize with publishing profile (includes Quarto)</span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-r</span> ubuntu_standard_publishing</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="bu">cd</span> ~/prj/qblog/posts</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co"># Create post directory</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="fu">mkdir</span> palmer_penguins_part1 <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> palmer_penguins_part1</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co"># Initialize with the rocker/verse base image, which provides Quarto and</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co"># LaTeX (needed for PDF output). For HTML-only posts, the default analysis</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co"># profile is sufficient.</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/verse</span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="step-2-set-up-blog-structure">Step 2: Set Up Blog Structure<a class="anchor" aria-label="anchor" href="#step-2-set-up-blog-structure"></a>
+<h3 id="step-2-prepare-the-post-directories">Step 2: Prepare the Post Directories<a class="anchor" aria-label="anchor" href="#step-2-prepare-the-post-directories"></a>
 </h3>
-<p>Run the <code>setup_symlinks.sh</code> script to create the blog post
-structure:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Run the setup script (creates symlinks, media dirs, and index.qmd template)</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">modules/setup_symlinks.sh</span></span></code></pre></div>
-<p>This single command:</p>
-<ol style="list-style-type: decimal">
-<li>Creates media directories
-(<code>analysis/media/{images,audio,video}/</code>)</li>
-<li>Copies the <code>index.qmd</code> template to
-<code>analysis/report/</code>
-</li>
-<li>Creates root-level symlinks for Quarto compatibility</li>
-<li>Creates <code>analysis/report/</code> symlinks for intuitive
-editing</li>
-</ol>
-<p><strong>Verify the structure:</strong></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Check root-level symlinks</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># Check analysis/report/ symlinks</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span> analysis/report/</span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co"># Check status anytime</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="ex">modules/setup_symlinks.sh</span> <span class="at">--status</span></span></code></pre></div>
-<p><strong>To remove blog structure</strong> (revert to standard
-ZZCOLLAB project):</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">modules/setup_symlinks.sh</span> <span class="at">--remove</span></span></code></pre></div>
+<p>Create the media directories and the Quarto post file inside the
+compendium:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Media directories for static assets</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> analysis/media/images analysis/media/audio analysis/media/video</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># The Quarto post lives alongside the manuscript</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">touch</span> analysis/report/index.qmd</span></code></pre></div>
+<p>The post is authored at <code>analysis/report/index.qmd</code> and
+rendered with <code>make docker-render-qmd</code>, which runs
+<code>quarto render analysis/report/index.qmd</code> inside the
+container. No symlinks are required.</p>
 </div>
 <div class="section level3">
 <h3 id="step-3-add-static-media-assets">Step 3: Add Static Media Assets<a class="anchor" aria-label="anchor" href="#step-3-add-static-media-assets"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Hero image for blog listing</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">cp</span> ~/assets/penguin-hero.jpg analysis/media/images/</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># Supporting photos</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">cp</span> ~/assets/palmer-station.jpg analysis/media/images/</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co"># Document sources (important for attribution)</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> analysis/media/images/README.md <span class="op">&lt;&lt; 'EOF'</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="st"># Image Sources</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="st">## penguin-hero.jpg</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="st">- Source: Unsplash</span></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="st">- Photographer: John Doe</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="st">- License: Unsplash License</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="st">- URL: https://unsplash.com/photos/xxxxx</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a></span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="st">## palmer-station.jpg</span></span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="st">- Source: Palmer LTER</span></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="st">- License: CC BY 4.0</span></span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Hero image for blog listing</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">cp</span> ~/assets/penguin-hero.jpg analysis/media/images/</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Supporting photos</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">cp</span> ~/assets/palmer-station.jpg analysis/media/images/</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co"># Document sources (important for attribution)</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> analysis/media/images/README.md <span class="op">&lt;&lt; 'EOF'</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="st"># Image Sources</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="st">## penguin-hero.jpg</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="st">- Source: Unsplash</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="st">- Photographer: John Doe</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="st">- License: Unsplash License</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="st">- URL: https://unsplash.com/photos/xxxxx</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="st">## palmer-station.jpg</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="st">- Source: Palmer LTER</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="st">- License: CC BY 4.0</span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-4-edit-blog-post">Step 4: Edit Blog Post<a class="anchor" aria-label="anchor" href="#step-4-edit-blog-post"></a>
 </h3>
-<p>The <code>setup_symlinks.sh</code> script created a template at
-<code>analysis/report/index.qmd</code>. Edit it to customize your
-post:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Palmer Penguins Analysis (Part 1): EDA and Simple Regression"</span></span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Getting acquainted with our Antarctic friends"</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Your Name"</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="an">date:</span><span class="co"> "2025-01-15"</span></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="an">categories:</span><span class="co"> [R Programming, Data Science, Palmer Penguins]</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Exploratory data analysis and simple regression modeling"</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="an">image:</span><span class="co"> "media/images/penguin-hero.jpg"</span></span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="an">execute:</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">  echo: true</span></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">  warning: false</span></span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">  message: false</span></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="an">format:</span></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">  html:</span></span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">    code-fold: false</span></span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a></span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="al">![Palmer Station, Antarctica](media/images/palmer-station.jpg)</span>{.img-fluid}</span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a></span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="fu"># Introduction</span></span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a></span>
-<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>Welcome to our exploration of the Palmer penguins dataset!</span>
-<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a></span>
-<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a></span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a></span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co"># Load pre-computed results (generated by analysis/scripts/)</span></span>
-<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>penguins_clean <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/derived_data/penguins_clean.csv"</span>)</span>
-<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>model_results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/derived_data/model_coefficients.csv"</span>)</span>
-<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a></span>
-<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="fu"># Exploratory Data Analysis</span></span>
-<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a></span>
-<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a>Our analysis reveals distinct patterns across species:</span>
-<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="al">![Species distribution and morphometric relationships](figures/eda-overview.png)</span></span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="fu"># Model Results</span></span>
-<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a></span>
-<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a></span>
-<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>simple_model <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/derived_data/simple_model.rds"</span>)</span>
-<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a><span class="fu">summary</span>(simple_model)</span>
-<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a></span>
-<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a><span class="al">![Model diagnostic plots](figures/model-diagnostics.png)</span></span>
-<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a></span>
-<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a><span class="fu"># Video Walkthrough</span></span>
-<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a></span>
-<span id="cb9-51"><a href="#cb9-51" tabindex="-1"></a><span class="in">```{=html}</span></span>
-<span id="cb9-52"><a href="#cb9-52" tabindex="-1"></a><span class="in">&lt;video width="100%" controls&gt;</span></span>
-<span id="cb9-53"><a href="#cb9-53" tabindex="-1"></a><span class="in">  &lt;source src="media/video/analysis-walkthrough.mp4" type="video/mp4"&gt;</span></span>
-<span id="cb9-54"><a href="#cb9-54" tabindex="-1"></a><span class="in">&lt;/video&gt;</span></span>
-<span id="cb9-55"><a href="#cb9-55" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-56"><a href="#cb9-56" tabindex="-1"></a></span>
-<span id="cb9-57"><a href="#cb9-57" tabindex="-1"></a><span class="fu"># Reproducibility</span></span>
-<span id="cb9-58"><a href="#cb9-58" tabindex="-1"></a></span>
-<span id="cb9-59"><a href="#cb9-59" tabindex="-1"></a>This post is a reproducible research compendium:</span>
-<span id="cb9-60"><a href="#cb9-60" tabindex="-1"></a></span>
-<span id="cb9-61"><a href="#cb9-61" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb9-62"><a href="#cb9-62" tabindex="-1"></a><span class="fu">git</span> clone <span class="op">&lt;</span>repo<span class="op">&gt;</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> posts/palmer_penguins_part1</span>
-<span id="cb9-63"><a href="#cb9-63" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-post-render</span>
-<span id="cb9-64"><a href="#cb9-64" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-65"><a href="#cb9-65" tabindex="-1"></a></span>
-<span id="cb9-66"><a href="#cb9-66" tabindex="-1"></a></span>
-<span id="cb9-67"><a href="#cb9-67" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb9-68"><a href="#cb9-68" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
-<span id="cb9-69"><a href="#cb9-69" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
-<p><strong>Note</strong>: All paths are simple (<code>figures/</code>,
-<code>media/</code>, <code>data/</code>) because symlinks in
-<code>analysis/report/</code> resolve them to actual directories.</p>
+<p>Author the post at <code>analysis/report/index.qmd</code>. Asset
+paths are relative to that file, so they begin with <code>../</code> to
+reach <code>analysis/figures/</code>, <code>analysis/media/</code>, and
+<code>analysis/data/</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Palmer Penguins Analysis (Part 1): EDA and Simple Regression"</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Getting acquainted with our Antarctic friends"</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Your Name"</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="an">date:</span><span class="co"> "2025-01-15"</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="an">categories:</span><span class="co"> [R Programming, Data Science, Palmer Penguins]</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Exploratory data analysis and simple regression modeling"</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="an">image:</span><span class="co"> "../media/images/penguin-hero.jpg"</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">  echo: true</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">  message: false</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="an">format:</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">    code-fold: false</span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="al">![Palmer Station, Antarctica](../media/images/palmer-station.jpg)</span>{.img-fluid}</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="fu"># Introduction</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>Welcome to our exploration of the Palmer penguins dataset!</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co"># Load pre-computed results (generated by analysis/scripts/)</span></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>penguins_clean <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../data/derived_data/penguins_clean.csv"</span>)</span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>model_results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../data/derived_data/model_coefficients.csv"</span>)</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a></span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="fu"># Exploratory Data Analysis</span></span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a></span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>Our analysis reveals distinct patterns across species:</span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a></span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="al">![Species distribution and morphometric relationships](../figures/eda-overview.png)</span></span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="fu"># Model Results</span></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a></span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a></span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>simple_model <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../data/derived_data/simple_model.rds"</span>)</span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a><span class="fu">summary</span>(simple_model)</span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a></span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a><span class="al">![Model diagnostic plots](../figures/model-diagnostics.png)</span></span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a></span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a><span class="fu"># Video Walkthrough</span></span>
+<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a></span>
+<span id="cb5-51"><a href="#cb5-51" tabindex="-1"></a><span class="in">```{=html}</span></span>
+<span id="cb5-52"><a href="#cb5-52" tabindex="-1"></a><span class="in">&lt;video width="100%" controls&gt;</span></span>
+<span id="cb5-53"><a href="#cb5-53" tabindex="-1"></a><span class="in">  &lt;source src="../media/video/analysis-walkthrough.mp4" type="video/mp4"&gt;</span></span>
+<span id="cb5-54"><a href="#cb5-54" tabindex="-1"></a><span class="in">&lt;/video&gt;</span></span>
+<span id="cb5-55"><a href="#cb5-55" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb5-56"><a href="#cb5-56" tabindex="-1"></a></span>
+<span id="cb5-57"><a href="#cb5-57" tabindex="-1"></a><span class="fu"># Reproducibility</span></span>
+<span id="cb5-58"><a href="#cb5-58" tabindex="-1"></a></span>
+<span id="cb5-59"><a href="#cb5-59" tabindex="-1"></a>This post is a reproducible research compendium:</span>
+<span id="cb5-60"><a href="#cb5-60" tabindex="-1"></a></span>
+<span id="cb5-61"><a href="#cb5-61" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb5-62"><a href="#cb5-62" tabindex="-1"></a><span class="fu">git</span> clone <span class="op">&lt;</span>repo<span class="op">&gt;</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> posts/palmer_penguins_part1</span>
+<span id="cb5-63"><a href="#cb5-63" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-render-qmd</span>
+<span id="cb5-64"><a href="#cb5-64" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb5-65"><a href="#cb5-65" tabindex="-1"></a></span>
+<span id="cb5-66"><a href="#cb5-66" tabindex="-1"></a></span>
+<span id="cb5-67"><a href="#cb5-67" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb5-68"><a href="#cb5-68" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb5-69"><a href="#cb5-69" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<p><strong>Note</strong>: Asset paths use <code>../</code> because they
+are resolved relative to <code>analysis/report/index.qmd</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="step-5-create-analysis-scripts">Step 5: Create Analysis Scripts<a class="anchor" aria-label="anchor" href="#step-5-create-analysis-scripts"></a>
@@ -407,15 +384,15 @@ post:</p>
 <h4 id="script-1-data-preparation">Script 1: Data Preparation<a class="anchor" aria-label="anchor" href="#script-1-data-preparation"></a>
 </h4>
 <p>Create <code>analysis/scripts/01_prepare_data.R</code>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 01_prepare_data.R</span></span>
 <span><span class="co"># Purpose: Prepare penguin data for analysis</span></span>
 <span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://allisonhorst.github.io/palmerpenguins/" class="external-link">palmerpenguins</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">penguins_clean</span> <span class="op">&lt;-</span> <span class="va">penguins</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu">drop_na</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span><span class="va">penguins_clean</span> <span class="op">&lt;-</span> <span class="va">penguins</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">drop_na</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">mutate</span><span class="op">(</span>log_body_mass <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">body_mass_g</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">write_csv</span><span class="op">(</span><span class="va">penguins_clean</span>, <span class="st">"analysis/data/derived_data/penguins_clean.csv"</span><span class="op">)</span></span>
@@ -426,7 +403,7 @@ post:</p>
 <h4 id="script-2-fit-models">Script 2: Fit Models<a class="anchor" aria-label="anchor" href="#script-2-fit-models"></a>
 </h4>
 <p>Create <code>analysis/scripts/02_fit_models.R</code>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 02_fit_models.R</span></span>
 <span><span class="co"># Purpose: Fit regression models</span></span>
 <span></span>
@@ -447,7 +424,7 @@ post:</p>
 <h4 id="script-3-generate-figures">Script 3: Generate Figures<a class="anchor" aria-label="anchor" href="#script-3-generate-figures"></a>
 </h4>
 <p>Create <code>analysis/scripts/03_generate_figures.R</code>:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 03_generate_figures.R</span></span>
 <span><span class="co"># Purpose: Generate publication-quality figures</span></span>
 <span></span>
@@ -485,52 +462,50 @@ post:</p>
 <div class="section level3">
 <h3 id="step-6-develop-in-container">Step 6: Develop in Container<a class="anchor" aria-label="anchor" href="#step-6-develop-in-container"></a>
 </h3>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Build Docker image</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># Enter container</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co"># Install required packages</span></span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="op">&gt;</span> install.packages<span class="kw">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"palmerpenguins"</span><span class="ex">,</span> <span class="st">"tidyverse"</span>, <span class="st">"broom"</span><span class="kw">))</span></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span>  <span class="co"># Auto-snapshot on exit captures packages</span></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a></span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co"># Run analysis pipeline</span></span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/01_prepare_data.R</span>
-<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/02_fit_models.R</span>
-<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/03_generate_figures.R</span>
-<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a></span>
-<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="co"># Render blog post (from post root, via symlink)</span></span>
-<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a><span class="ex">quarto</span> render index.qmd</span>
-<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a></span>
-<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a><span class="co"># Exit container</span></span>
-<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Build Docker image</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co"># Enter container</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co"># Install required packages</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="op">&gt;</span> install.packages<span class="kw">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"palmerpenguins"</span><span class="ex">,</span> <span class="st">"tidyverse"</span>, <span class="st">"broom"</span><span class="kw">))</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span>  <span class="co"># Auto-snapshot on exit captures packages</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co"># Run analysis pipeline</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/01_prepare_data.R</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/02_fit_models.R</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/03_generate_figures.R</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co"># Render the Quarto post</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="ex">quarto</span> render analysis/report/index.qmd</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co"># Exit container</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<p>Alternatively, render from the host with the framework target, which
+runs <code>quarto render analysis/report/index.qmd</code> inside the
+container:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd</span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="step-7-add-makefile-targets">Step 7: Add Makefile Targets<a class="anchor" aria-label="anchor" href="#step-7-add-makefile-targets"></a>
+<h3 id="step-7-optional-project-targets-for-the-pipeline">Step 7: Optional Project Targets for the Pipeline<a class="anchor" aria-label="anchor" href="#step-7-optional-project-targets-for-the-pipeline"></a>
 </h3>
-<p>Add to <code>Makefile</code>:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="ot">.PHONY:</span><span class="dt"> post-analysis post-render docker-post-render docker-post-preview</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co"># Run analysis pipeline</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="dv">post-analysis:</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="er">    </span>Rscript analysis/scripts/01_prepare_data.R</span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>    Rscript analysis/scripts/02_fit_models.R</span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>    Rscript analysis/scripts/03_generate_figures.R</span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co"># Render blog post (via root symlink)</span></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="dv">post-render:</span><span class="dt"> post-analysis</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="er">    </span>quarto render index.qmd</span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co"># Docker versions</span></span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="dv">docker-post-render:</span></span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="er">    </span>docker run --rm -v <span class="st">"</span><span class="ch">$$</span><span class="st">(pwd):/project"</span> -w /project <span class="ch">$(</span><span class="dt">DOCKER_IMAGE</span><span class="ch">)</span> \</span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a>        make post-render</span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a></span>
-<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="dv">docker-post-preview:</span></span>
-<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="er">    </span>docker run --rm -p 8080:8080 -v <span class="st">"</span><span class="ch">$$</span><span class="st">(pwd):/project"</span> -w /project <span class="ch">$(</span><span class="dt">DOCKER_IMAGE</span><span class="ch">)</span> \</span>
-<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a>        quarto preview index.qmd --host 0.0.0.0 --port 8080</span></code></pre></div>
+<p>The framework provides <code>make docker-render-qmd</code> for
+rendering. If you want a single command that also runs the analysis
+pipeline first, you can add your own project target. The following are
+user-added targets, not framework provided:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode makefile"><code class="sourceCode makefile"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="ot">.PHONY:</span><span class="dt"> post-analysis post-render</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co"># Run analysis pipeline (user-added convenience target)</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="dv">post-analysis:</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="er">    </span>Rscript analysis/scripts/01_prepare_data.R</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>    Rscript analysis/scripts/02_fit_models.R</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>    Rscript analysis/scripts/03_generate_figures.R</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co"># Run pipeline then render via the framework target</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="dv">post-render:</span><span class="dt"> post-analysis</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="er">    </span><span class="ch">$(</span><span class="dt">MAKE</span><span class="ch">)</span> docker-render-qmd</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -540,13 +515,13 @@ post:</p>
 <h3 id="parent-blog-_quarto-yml">Parent Blog _quarto.yml<a class="anchor" aria-label="anchor" href="#parent-blog-_quarto-yml"></a>
 </h3>
 <p>Your existing Quarto blog configuration works unchanged:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">project</span><span class="kw">:</span></span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> website</span></span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="at">  </span><span class="fu">render</span><span class="kw">:</span></span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"*.qmd"</span></span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"posts/*/index.qmd"</span><span class="co">    # Finds symlinked index.qmd</span></span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"!posts/*/analysis/scripts/"</span></span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"!posts/*/R/"</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">project</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> website</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="at">  </span><span class="fu">render</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"*.qmd"</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"posts/*/analysis/report/index.qmd"</span><span class="co">   # Post lives in the compendium</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"!posts/*/analysis/scripts/"</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"!posts/*/R/"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="rendering-workflow">Rendering Workflow<a class="anchor" aria-label="anchor" href="#rendering-workflow"></a>
@@ -554,33 +529,33 @@ post:</p>
 <div class="section level4">
 <h4 id="option-1-render-posts-individually">Option 1: Render Posts Individually<a class="anchor" aria-label="anchor" href="#option-1-render-posts-individually"></a>
 </h4>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Each post renders in its own container (full reproducibility)</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="bu">cd</span> posts/palmer_penguins_part1</span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="fu">make</span> docker-post-render</span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a></span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="bu">cd</span> ../palmer_penguins_part2</span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="fu">make</span> docker-post-render</span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a></span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="co"># Build parent blog</span></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="bu">cd</span> ../..</span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="ex">quarto</span> render</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Each post renders in its own container (full reproducibility)</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="bu">cd</span> posts/palmer_penguins_part1</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="bu">cd</span> ../palmer_penguins_part2</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co"># Build parent blog</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="bu">cd</span> ../..</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="ex">quarto</span> render</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="option-2-batch-render-script">Option 2: Batch Render Script<a class="anchor" aria-label="anchor" href="#option-2-batch-render-script"></a>
 </h4>
 <p>Create <code>render_all_posts.sh</code> at blog root:</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="bu">set</span> <span class="at">-e</span></span>
-<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a></span>
-<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="cf">for</span> post <span class="kw">in</span> posts/<span class="pp">*</span>/<span class="kw">;</span> <span class="cf">do</span></span>
-<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">"</span><span class="va">$post</span><span class="st">/Makefile"</span> <span class="bu">]</span> <span class="kw">&amp;&amp;</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">"</span><span class="va">$post</span><span class="st">/Dockerfile"</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
-<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>        <span class="bu">echo</span> <span class="st">"=== Rendering: </span><span class="va">$post</span><span class="st"> ==="</span></span>
-<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>        <span class="kw">(</span><span class="bu">cd</span> <span class="st">"</span><span class="va">$post</span><span class="st">"</span> <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-post-render<span class="kw">)</span></span>
-<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>    <span class="cf">fi</span></span>
-<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="cf">done</span></span>
-<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a></span>
-<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"=== Building site ==="</span></span>
-<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="ex">quarto</span> render</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="bu">set</span> <span class="at">-e</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="cf">for</span> post <span class="kw">in</span> posts/<span class="pp">*</span>/<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">"</span><span class="va">$post</span><span class="st">/Makefile"</span> <span class="bu">]</span> <span class="kw">&amp;&amp;</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">"</span><span class="va">$post</span><span class="st">/Dockerfile"</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>        <span class="bu">echo</span> <span class="st">"=== Rendering: </span><span class="va">$post</span><span class="st"> ==="</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>        <span class="kw">(</span><span class="bu">cd</span> <span class="st">"</span><span class="va">$post</span><span class="st">"</span> <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-render-qmd<span class="kw">)</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"=== Building site ==="</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="ex">quarto</span> render</span></code></pre></div>
 </div>
 </div>
 </div>
@@ -609,13 +584,13 @@ post:</p>
 <li>
 <strong>Document sources</strong> in <code>README.md</code>:</li>
 </ul>
-<div class="sourceCode" id="cb18"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu"># Image Sources</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a></span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="fu">## penguin-hero.jpg</span></span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="ss">- </span>Source: Unsplash</span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="ss">- </span>Photographer: Derek Oyen</span>
-<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="ss">- </span>License: Unsplash License</span>
-<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="ss">- </span>URL: https://unsplash.com/photos/xxxxx</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu"># Image Sources</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="fu">## penguin-hero.jpg</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="ss">- </span>Source: Unsplash</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="ss">- </span>Photographer: Derek Oyen</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="ss">- </span>License: Unsplash License</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="ss">- </span>URL: https://unsplash.com/photos/xxxxx</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="audio-analysismediaaudio">Audio (<code>analysis/media/audio/</code>)<a class="anchor" aria-label="anchor" href="#audio-analysismediaaudio"></a>
@@ -638,10 +613,10 @@ post:</p>
 <div class="section level3">
 <h3 id="git-lfs-for-large-files">Git LFS for Large Files<a class="anchor" aria-label="anchor" href="#git-lfs-for-large-files"></a>
 </h3>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">git</span> lfs install</span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="fu">git</span> lfs track <span class="st">"analysis/media/video/*.mp4"</span></span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="fu">git</span> lfs track <span class="st">"analysis/media/audio/*.mp3"</span></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="fu">git</span> add .gitattributes</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">git</span> lfs install</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">git</span> lfs track <span class="st">"analysis/media/video/*.mp4"</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="fu">git</span> lfs track <span class="st">"analysis/media/audio/*.mp3"</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="fu">git</span> add .gitattributes</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -660,54 +635,41 @@ post:</p>
 .Rproj.user/
 
 # OS files
-.DS_Store
-
-# Don't ignore symlinks - they're part of the structure
-# !index.qmd  # This is a symlink, keep it</code></pre>
-</div>
-<div class="section level3">
-<h3 id="committing-symlinks">Committing Symlinks<a class="anchor" aria-label="anchor" href="#committing-symlinks"></a>
-</h3>
-<p>Git tracks symlinks as files containing the target path. Commit
-them:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">git</span> add index.qmd figures media data</span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="fu">git</span> add analysis/report/figures analysis/report/media analysis/report/data</span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add symlink structure for blog post"</span></span></code></pre></div>
+.DS_Store</code></pre>
 </div>
 <div class="section level3">
 <h3 id="complete-commit">Complete Commit<a class="anchor" aria-label="anchor" href="#complete-commit"></a>
 </h3>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">git</span> add .</span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add Palmer Penguins Part 1: Reproducible blog post</span></span>
-<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a></span>
-<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="st">Structure:</span></span>
-<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="st">- analysis/report/index.qmd: Blog post content</span></span>
-<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="st">- analysis/scripts/: Analysis pipeline (3 scripts)</span></span>
-<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="st">- analysis/figures/: Generated plots</span></span>
-<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="st">- analysis/media/: Static images, audio, video</span></span>
-<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="st">- Dual symlinks for Quarto compatibility</span></span>
-<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a></span>
-<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="st">Reproduce:</span></span>
-<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a><span class="st">  make docker-build &amp;&amp; make docker-post-render"</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add Palmer Penguins Part 1: Reproducible blog post</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="st">Structure:</span></span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="st">- analysis/report/index.qmd: Blog post content</span></span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="st">- analysis/scripts/: Analysis pipeline (3 scripts)</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="st">- analysis/figures/: Generated plots</span></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="st">- analysis/media/: Static images, audio, video</span></span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a><span class="st">Reproduce:</span></span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a><span class="st">  make docker-build &amp;&amp; make docker-render-qmd"</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
 <h2 id="reader-instructions-readme-md">Reader Instructions (README.md)<a class="anchor" aria-label="anchor" href="#reader-instructions-readme-md"></a>
 </h2>
-<div class="sourceCode" id="cb23"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu"># Palmer Penguins Part 1: EDA and Simple Regression</span></span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>This blog post is a **reproducible research compendium**.</span>
-<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a></span>
-<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="fu">## Quick Start</span></span>
-<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a></span>
-<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/qblog.git</span>
-<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="bu">cd</span> qblog/posts/palmer_penguins_part1</span>
-<span id="cb23-10"><a href="#cb23-10" tabindex="-1"></a></span>
-<span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a><span class="fu">make</span> docker-post-render</span>
-<span id="cb23-13"><a href="#cb23-13" tabindex="-1"></a></span>
-<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a><span class="ex">open</span> index.html</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu"># Palmer Penguins Part 1: EDA and Simple Regression</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>This blog post is a **reproducible research compendium**.</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="fu">## Quick Start</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/qblog.git</span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a><span class="bu">cd</span> qblog/posts/palmer_penguins_part1</span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd</span>
+<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a></span>
+<span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a><span class="ex">open</span> analysis/report/index.html</span></code></pre></div>
 <div class="section level3">
 <h3 id="requirements">Requirements<a class="anchor" aria-label="anchor" href="#requirements"></a>
 </h3>
@@ -719,11 +681,8 @@ them:</p>
 <div class="section level3">
 <h3 id="structure">Structure<a class="anchor" aria-label="anchor" href="#structure"></a>
 </h3>
-<pre><code>├── index.qmd              # Symlink to analysis/report/index.qmd
-├── figures/               # Symlink to analysis/figures/
-├── media/                 # Symlink to analysis/media/
-├── analysis/
-│   ├── paper/index.qmd    # Blog post (actual file)
+<pre><code>├── analysis/
+│   ├── report/index.qmd   # Blog post (Quarto)
 │   ├── scripts/           # Analysis pipeline
 │   ├── figures/           # Generated plots
 │   ├── media/             # Static assets
@@ -735,25 +694,25 @@ them:</p>
 <h3 id="reproducibility">Reproducibility<a class="anchor" aria-label="anchor" href="#reproducibility"></a>
 </h3>
 <p>All figures are generated by scripts in
-<code>analysis/scripts/</code>. Run the pipeline:
-<code>make post-analysis</code></p>
+<code>analysis/scripts/</code>. Run the pipeline, then render with
+<code>make docker-render-qmd</code>.</p>
 <pre><code>
 # Best Practices Summary
 
 ## Structure
 
 - **Blog post in `analysis/report/index.qmd`** - Consistent with rrtools
-- **Dual symlinks** - Root level for Quarto, paper level for editing
+- **Assets under `analysis/`** - Referenced with `../` relative paths
 - **Numbered scripts** - Clear execution order
 - **Separate figures from media** - Generated vs static
 
 ## Paths in index.qmd
 
-Write simple, intuitive paths:
+Reference assets relative to `analysis/report/index.qmd`:
 
 ```markdown
-![Plot](figures/plot.png)           # Works via symlink
-![Hero](media/images/hero.jpg)      # Works via symlink</code></pre>
+![Plot](../figures/plot.png)           # analysis/figures/
+![Hero](../media/images/hero.jpg)      # analysis/media/images/</code></pre>
 </div>
 <div class="section level3">
 <h3 id="reproducibility-1">Reproducibility<a class="anchor" aria-label="anchor" href="#reproducibility-1"></a>
@@ -774,9 +733,9 @@ steps</li>
 <div class="section level3">
 <h3 id="workflow">Workflow<a class="anchor" aria-label="anchor" href="#workflow"></a>
 </h3>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">make</span> docker-build         <span class="co"># Build environment</span></span>
-<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="fu">make</span> r            <span class="co"># Interactive development</span></span>
-<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="fu">make</span> docker-post-render   <span class="co"># Full pipeline + render</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">make</span> docker-build         <span class="co"># Build environment</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="fu">make</span> r                    <span class="co"># Interactive development</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd    <span class="co"># Render the Quarto post</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -806,49 +765,49 @@ referenced from elsewhere</li>
 </h3>
 <p><strong>DO ✅</strong>: Copy/store images inside the post’s
 <code>analysis/media/images/</code> directory</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Copy hero image INTO the post</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">cp</span> ~/assets/penguin-hero.jpg posts/my_post/analysis/media/images/</span>
-<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a></span>
-<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="co"># Reference it locally in your index.qmd</span></span>
-<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="ex">![Hero</span> image]<span class="er">(</span><span class="ex">media/images/penguin-hero.jpg</span><span class="kw">)</span><span class="ex">{.img-fluid}</span></span></code></pre></div>
-<p><strong>DON’T ❌</strong>: Reference images from parent project
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Copy hero image INTO the post</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="fu">cp</span> ~/assets/penguin-hero.jpg posts/my_post/analysis/media/images/</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="co"># Reference it relative to analysis/report/index.qmd</span></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="ex">![Hero</span> image]<span class="er">(</span><span class="ex">../media/images/penguin-hero.jpg</span><span class="kw">)</span><span class="ex">{.img-fluid}</span></span></code></pre></div>
+<p><strong>DON’T</strong>: Reference images from parent project
 paths</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># AVOID: This breaks if post is cloned independently</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="ex">![Hero</span> image]<span class="er">(</span><span class="ex">../../images/posts/penguin-hero.jpg</span><span class="kw">)</span><span class="ex">{.img-fluid}</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># AVOID: This breaks if post is cloned independently</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="ex">![Hero</span> image]<span class="er">(</span><span class="ex">../../../images/posts/penguin-hero.jpg</span><span class="kw">)</span><span class="ex">{.img-fluid}</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="verifying-self-containment">Verifying Self-Containment<a class="anchor" aria-label="anchor" href="#verifying-self-containment"></a>
 </h3>
 <p>Test that your blog post is truly self-contained:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># Clone just the post directory (simulating independent use)</span></span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="fu">git</span> clone <span class="at">--sparse</span> https://github.com/yourrepo qblog</span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="bu">cd</span> qblog</span>
-<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="fu">git</span> sparse-checkout set posts/my_post</span>
-<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="bu">cd</span> posts/my_post</span>
-<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a></span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="co"># Try to render - should work without parent project</span></span>
-<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a><span class="fu">make</span> docker-post-render</span>
-<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a></span>
-<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a><span class="co"># If images render correctly, you're self-contained ✓</span></span>
-<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="ex">open</span> index.html</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># Clone just the post directory (simulating independent use)</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">git</span> clone <span class="at">--sparse</span> https://github.com/yourrepo qblog</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="bu">cd</span> qblog</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a><span class="fu">git</span> sparse-checkout set posts/my_post</span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="bu">cd</span> posts/my_post</span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="co"># Try to render; should work without parent project</span></span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd</span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a></span>
+<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a><span class="co"># If images render correctly, the post is self-contained</span></span>
+<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a><span class="ex">open</span> analysis/report/index.html</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="media-directory-checklist">Media Directory Checklist<a class="anchor" aria-label="anchor" href="#media-directory-checklist"></a>
 </h3>
 <p>Before publishing your blog post, verify:</p>
 <ul>
-<li>✓ All images are in <code>analysis/media/images/</code>
+<li>All images are in <code>analysis/media/images/</code>
 </li>
-<li>✓ <code>analysis/media/images/README.md</code> documents all image
+<li>
+<code>analysis/media/images/README.md</code> documents all image
 sources</li>
-<li>✓ All image paths use <code>media/images/filename</code> (not
-<code>../../images/...</code>)</li>
-<li>✓ Large media files (video, audio) use Git LFS tracking</li>
-<li>✓ Post renders successfully:
-<code>make docker-post-render</code>
+<li>All image paths use <code>../media/images/filename</code> (relative
+to the post)</li>
+<li>Large media files (video, audio) use Git LFS tracking</li>
+<li>Post renders successfully: <code>make docker-render-qmd</code>
 </li>
-<li>✓ Post is self-contained: can clone just this directory and
+<li>Post is self-contained: can clone just this directory and
 render</li>
 </ul>
 </div>
@@ -856,26 +815,20 @@ render</li>
 <h3 id="example-complete-self-contained-post">Example: Complete Self-Contained Post<a class="anchor" aria-label="anchor" href="#example-complete-self-contained-post"></a>
 </h3>
 <pre><code>posts/my_analysis/
-├── index.qmd → analysis/report/index.qmd       # Symlink
-├── figures/ → analysis/figures/                # Symlink
-├── media/ → analysis/media/                    # Symlink
-├── data/ → analysis/data/                      # Symlink
-│
 ├── analysis/report/
-│   ├── index.qmd                               # Actual blog post file
-│   ├── figures/ → ../figures/                  # Symlink
-│   ├── media/ → ../media/                      # Symlink
-│   └── data/ → ../data/                        # Symlink
+│   └── index.qmd                               # Blog post (Quarto)
 │
 ├── analysis/media/
 │   └── images/
 │       ├── README.md                           # Image sources/licenses
-│       ├── hero-image.jpg                      # ✓ STORED HERE (12 MB)
-│       └── supporting-photo.jpg                # ✓ STORED HERE
+│       ├── hero-image.jpg                      # Stored here (12 MB)
+│       └── supporting-photo.jpg                # Stored here
 │
 ├── analysis/figures/                           # Generated by scripts
 │   ├── eda-plot.png
 │   └── model-diagnostics.png
+│
+├── analysis/data/                              # Raw and derived data
 │
 ├── Dockerfile                                  # Complete environment
 ├── renv.lock                                   # Exact packages
@@ -883,32 +836,12 @@ render</li>
 ├── Makefile
 └── README.md</code></pre>
 <p>In <code>analysis/report/index.qmd</code>:</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "My Analysis"</span></span>
-<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="an">image:</span><span class="co"> "media/images/hero-image.jpg"  # YAML also uses local path</span></span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a></span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="al">![Hero](media/images/hero-image.jpg)</span>{.img-fluid}  # Local reference</span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="template-post-as-reference">Template Post as Reference<a class="anchor" aria-label="anchor" href="#template-post-as-reference"></a>
-</h3>
-<p>The <code>template_post/</code> in your ZZCOLLAB installation serves
-as a <strong>working exemplar</strong> of a self-contained blog
-post:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># Copy the template as your starting point</span></span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-r</span> /path/to/zzcollab/template_post posts/my_new_post</span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="co"># It already has:</span></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="co"># ✓ Correct directory structure</span></span>
-<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="co"># ✓ Images in analysis/media/images/</span></span>
-<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="co"># ✓ All symlinks properly set up</span></span>
-<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="co"># ✓ Example YAML and content</span></span>
-<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="co"># ✓ Analysis scripts showing best practices</span></span>
-<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a></span>
-<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="co"># Just customize the content</span></span>
-<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="bu">cd</span> posts/my_new_post</span>
-<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="va">$EDITOR</span> analysis/report/index.qmd</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "My Analysis"</span></span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="an">image:</span><span class="co"> "../media/images/hero-image.jpg"  # Relative to the post</span></span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="al">![Hero](../media/images/hero-image.jpg)</span>{.img-fluid}  # Relative reference</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
