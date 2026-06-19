@@ -263,6 +263,42 @@ test_migration_doctor_backfills_state() {
 }
 
 ##############################################################################
+# Outdated-template advisory must respect version *direction*: a stamp newer
+# than the current template (e.g. a project predating a version reset) is not
+# outdated and must not be nudged toward a downgrade. Only a strictly older
+# stamp is flagged. Regression guard for the naive string-inequality check.
+##############################################################################
+
+test_outdated_banner_respects_version_direction() {
+    setup_test
+    _seed_config
+    cd proj
+
+    local out
+    # Stamps far newer than any current template version: not outdated.
+    printf '# zzcollab Makefile v999.0.0\n'   > Makefile
+    printf '# zzcollab .Rprofile v999.0.0\n'  > .Rprofile
+    printf '# zzcollab Dockerfile v999.0.0\n' > Dockerfile
+    out=$(ZZCOLLAB_ACCEPT_DEFAULTS=true bash "$ZZCOLLAB_SH" status . < /dev/null 2>&1)
+    if echo "$out" | grep -q "Outdated templates"; then
+        echo "FAIL: newer-than-template stamps flagged as outdated"
+        teardown_test; return 1
+    fi
+
+    # Stamps older than the current template: still flagged.
+    printf '# zzcollab Makefile v0.0.1\n'   > Makefile
+    printf '# zzcollab .Rprofile v0.0.1\n'  > .Rprofile
+    printf '# zzcollab Dockerfile v0.0.1\n' > Dockerfile
+    out=$(ZZCOLLAB_ACCEPT_DEFAULTS=true bash "$ZZCOLLAB_SH" status . < /dev/null 2>&1)
+    if ! echo "$out" | grep -q "Outdated templates"; then
+        echo "FAIL: older-than-template stamps not flagged as outdated"
+        teardown_test; return 1
+    fi
+
+    teardown_test
+}
+
+##############################################################################
 # Data-integrity toggle: zzc data writes a manifest, verify checks it, rm
 # removes it. A capture feature with a presence-driven artifact.
 ##############################################################################
