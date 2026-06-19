@@ -35,7 +35,12 @@ jobs:
 
       - uses: codecov/codecov-action@v4
         with:
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' }}
+          # Do not fail the job on a Codecov upload error. On a protected
+          # branch (main) Codecov rejects tokenless uploads ("Token required"),
+          # which previously failed the whole job even though coverage computed
+          # fine. Coverage is informational, not a correctness gate; if a
+          # CODECOV_TOKEN secret is configured the upload still succeeds.
+          fail_ci_if_error: false
           file: ./cobertura.xml
           plugin: noop
           disable_search: true

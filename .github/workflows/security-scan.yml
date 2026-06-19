@@ -129,7 +129,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      # The zzcollab framework repository has no root Dockerfile: it generates
+      # Dockerfiles from templates/. Hadolint errors on a missing file, so only
+      # lint when a Dockerfile is actually present (e.g. in a generated project).
+      - name: Detect Dockerfile
+        id: detect
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No root Dockerfile in this repository (zzcollab generates them from templates/); skipping Hadolint." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Run Hadolint
+        if: steps.detect.outputs.present == 'true'
         uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: Dockerfile
@@ -137,6 +151,7 @@ jobs:
           failure-threshold: error
 
       - name: Check Dockerfile best practices
+        if: steps.detect.outputs.present == 'true'
         run: |
           echo "## Dockerfile Security Review" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
