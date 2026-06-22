@@ -6,6 +6,41 @@ is archived in `CHANGELOG-2.x.md`.
 
 ------------------------------------------------------------------------
 
+## Unreleased
+
+### Added
+
+- `zzc init` now back-fills an existing `~/.zzcollab/config.yaml` to the
+  current schema. Older or hand-trimmed configs that lack whole sections
+  (`author`, `license`, `r_package`, `style`, `github`) gain those
+  sections with their default values and comments, while every value
+  already set is preserved. Implemented as an idempotent deep-merge of
+  the default skeleton under the existing file
+  (`config_backfill_schema`); the merge runs only when a schema key is
+  genuinely missing.
+
+### Changed
+
+- `zzc init` identity step no longer silently re-prompts only when
+  fields are absent. When name and email are already saved, it displays
+  the stored identity and offers an optional update, pre-filling each
+  prompt with the current value so a bare Enter keeps it. Because
+  `zzc init` is run for every new repository, the default is to keep
+  existing values (no prompt churn); only an explicit confirmation walks
+  the fields.
+
+### Fixed
+
+- `config_set KEY VALUE --local` (and `zzc init`, which uses it to
+  record the archetype) no longer seeds a freshly created project
+  `zzcollab.yaml` with an empty `docker.default_profile: ""` stub. The
+  placeholder served no purpose — the loader skips empty values and the
+  real key is written immediately after — but persisted as a meaningless
+  override. The creation template now matches the one used by the
+  interactive project prompt (header only).
+
+------------------------------------------------------------------------
+
 ## 0.1.0 — 2026-06-16
 
 Re-baseline. The CLI, the template stamp, and the R package version had
