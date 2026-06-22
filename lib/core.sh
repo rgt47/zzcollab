@@ -359,13 +359,28 @@ gum_header() {
     gum style --foreground 212 --border rounded --padding '0 1' --margin '0 0' "$1"
 }
 
+# Hint appended to every gum prompt header so the cancel key is discoverable.
+# All gum wrappers return non-zero when the user presses Esc.
+readonly ZZCOLLAB_GUM_ESC_HINT="(esc to exit)"
+
+# _gum_header_with_hint HEADER
+# Appends the esc-to-exit hint to a header, or returns the hint alone when the
+# header is empty.
+_gum_header_with_hint() {
+    if [[ -n "$1" ]]; then
+        printf '%s  %s' "$1" "$ZZCOLLAB_GUM_ESC_HINT"
+    else
+        printf '%s' "$ZZCOLLAB_GUM_ESC_HINT"
+    fi
+}
+
 # gum_input PLACEHOLDER HEADER [DEFAULT]
 # Prompts for freeform text. Writes result to stdout.
 # Returns 1 if the user cancels (Ctrl-C / Esc).
 gum_input() {
     local placeholder="$1" header="$2" default="${3:-}"
-    local args=(gum input --placeholder "$placeholder")
-    [[ -n "$header" ]] && args+=(--header "$header")
+    local args=(gum input --placeholder "$placeholder" \
+        --header "$(_gum_header_with_hint "$header")")
     [[ -n "$default" ]] && args+=(--value "$default")
     "${args[@]}"
 }
@@ -375,7 +390,7 @@ gum_input() {
 # Returns 1 if the user cancels.
 gum_choose() {
     local header="$1"; shift
-    gum choose --header "$header" "$@"
+    gum choose --header "$(_gum_header_with_hint "$header")" "$@"
 }
 
 # gum_multichoose HEADER PRESELECTED_CSV OPTION...
@@ -383,13 +398,14 @@ gum_choose() {
 # of OPTION). Echoes the chosen options, one per line.
 gum_multichoose() {
     local header="$1" selected="$2"; shift 2
-    gum choose --no-limit --header "$header" --selected="$selected" "$@"
+    gum choose --no-limit --header "$(_gum_header_with_hint "$header")" \
+        --selected="$selected" "$@"
 }
 
 # gum_confirm PROMPT
 # Returns 0 for Yes, 1 for No or cancel.
 gum_confirm() {
-    gum confirm "$1"
+    gum confirm "$(_gum_header_with_hint "$1")"
 }
 
 #=============================================================================
