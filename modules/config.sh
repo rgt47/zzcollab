@@ -472,13 +472,14 @@ config_set() {
 
     if [[ ! -f "$file" ]]; then
         if [[ "$file" == "$CONFIG_PROJECT" ]]; then
-            # Create minimal project config
+            # Create minimal project config. Only the header; the actual key
+            # is written below, so no placeholder stub (an empty
+            # docker.default_profile here would persist as a meaningless
+            # override). Matches config_project_prompt's creation site.
             cat > "$file" << 'EOF'
 # Project-specific zzcollab configuration
 # Overrides user config (~/.zzcollab/config.yaml)
-
-docker:
-  default_profile: ""
+# Commit this file to version control.
 EOF
             log_debug "Created project config: $file"
         else

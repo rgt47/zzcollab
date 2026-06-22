@@ -27,6 +27,15 @@ archived in `CHANGELOG-2.x.md`.
   new repository, the default is to keep existing values (no prompt churn);
   only an explicit confirmation walks the fields.
 
+### Fixed
+
+- `config_set KEY VALUE --local` (and `zzc init`, which uses it to record the
+  archetype) no longer seeds a freshly created project `zzcollab.yaml` with an
+  empty `docker.default_profile: ""` stub. The placeholder served no purpose —
+  the loader skips empty values and the real key is written immediately after —
+  but persisted as a meaningless override. The creation template now matches
+  the one used by the interactive project prompt (header only).
+
 ---
 
 ## 0.1.0 — 2026-06-16
