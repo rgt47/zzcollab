@@ -314,10 +314,9 @@ config_identity_gate() {
         return 1
     fi
 
-    if [[ ! -f "$CONFIG_USER" ]]; then
-        mkdir -p "$CONFIG_USER_DIR"
-        _create_default_config
-    fi
+    # Ensure the file exists and carries the full current schema, so the
+    # writes below land in a structured, complete config.
+    config_backfill_schema "$CONFIG_USER"
 
     echo ""
     print_section "One-time Identity Setup"
@@ -327,7 +326,7 @@ config_identity_gate() {
 
     local val
     if [[ "$needs_name" == "true" ]]; then
-        prompt_input "Full name" "" val || return 1
+        prompt_input "Full name" "${CONFIG_AUTHOR_NAME:-}" val || return 1
         if [[ -z "$val" ]]; then
             log_error "Name is required"
             return 1
@@ -337,7 +336,7 @@ config_identity_gate() {
     fi
 
     if [[ "$needs_email" == "true" ]]; then
-        prompt_validated "Email address" "" val \
+        prompt_validated "Email address" "${CONFIG_AUTHOR_EMAIL:-}" val \
             validate_email "Invalid email format. Example: user@example.com" || return 1
         if [[ -z "$val" ]]; then
             log_error "Email is required"
@@ -350,7 +349,7 @@ config_identity_gate() {
     if [[ -z "${CONFIG_GITHUB_ACCOUNT:-}" ]]; then
         echo ""
         echo "  Your personal GitHub username (can be overridden per-project in the next step)."
-        prompt_github_account "Personal GitHub username (optional)" "" val || return 1
+        prompt_github_account "Personal GitHub username (optional)" "${CONFIG_GITHUB_ACCOUNT:-}" val || return 1
         if [[ -n "$val" ]]; then
             _set_github_account_yaml "$CONFIG_USER" "$val"
             CONFIG_GITHUB_ACCOUNT="$val"
@@ -359,6 +358,76 @@ config_identity_gate() {
 
     echo ""
     log_success "Identity saved to: $CONFIG_USER"
+    return 0
+}
+
+##############################################################################
+# FUNCTION: config_identity_review
+# PURPOSE:  Single entry point for the identity step of `zzc init`. Handles
+#           two cases:
+#             1. Required fields (name/email) missing -> delegate to
+#                config_identity_gate, which prompts for them (required).
+#             2. Both present -> show the saved identity and offer an optional
+#                update, pre-filling each prompt with the existing value so a
+#                bare Enter keeps it. Because users run `zzc init` for every
+#                new repo, the default is to keep existing values (no prompt
+#                churn); only an explicit yes walks the fields.
+# RETURNS:  0 on success or skip, 1 if required fields cannot be captured.
+##############################################################################
+config_identity_review() {
+    local needs_name=false needs_email=false
+    [[ -z "${CONFIG_AUTHOR_NAME:-}" ]] && needs_name=true
+    [[ -z "${CONFIG_AUTHOR_EMAIL:-}" ]] && needs_email=true
+
+    # Case 1: required fields absent -> must capture them.
+    if [[ "$needs_name" == "true" || "$needs_email" == "true" ]]; then
+        config_identity_gate || return 1
+        return 0
+    fi
+
+    # Case 2: identity already complete. Non-interactive runs keep it silently.
+    if [[ ! -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
+        return 0
+    fi
+
+    echo ""
+    print_section "Author Identity"
+    echo "  Saved in ~/.zzcollab/config.yaml (used for DESCRIPTION and reports)."
+    printf "    Name:   %s\n" "${CONFIG_AUTHOR_NAME}"
+    printf "    Email:  %s\n" "${CONFIG_AUTHOR_EMAIL}"
+    [[ -n "${CONFIG_GITHUB_ACCOUNT:-}" ]] && printf "    GitHub: %s\n" "${CONFIG_GITHUB_ACCOUNT}"
+    echo ""
+
+    local ans
+    prompt_yesno "Change these values?" "n" ans || return 0
+    [[ "$ans" != "true" ]] && return 0
+
+    # Make sure the file carries the full schema before writing into it.
+    config_backfill_schema "$CONFIG_USER"
+
+    local val
+    prompt_input "Full name" "${CONFIG_AUTHOR_NAME}" val || return 0
+    if [[ -n "$val" ]]; then
+        yaml_set "$CONFIG_USER" "author.name" "$val"
+        CONFIG_AUTHOR_NAME="$val"
+    fi
+
+    prompt_validated "Email address" "${CONFIG_AUTHOR_EMAIL}" val \
+        validate_email "Invalid email format. Example: user@example.com" || return 0
+    if [[ -n "$val" ]]; then
+        yaml_set "$CONFIG_USER" "author.email" "$val"
+        CONFIG_AUTHOR_EMAIL="$val"
+    fi
+
+    prompt_github_account "Personal GitHub username (optional)" \
+        "${CONFIG_GITHUB_ACCOUNT:-}" val || return 0
+    if [[ -n "$val" ]]; then
+        _set_github_account_yaml "$CONFIG_USER" "$val"
+        CONFIG_GITHUB_ACCOUNT="$val"
+    fi
+
+    echo ""
+    log_success "Identity updated: $CONFIG_USER"
     return 0
 }
 
@@ -483,11 +552,12 @@ config_init() {
     fi
 }
 
-_create_default_config() {
+_write_config_skeleton() {
+    local target="${1:-$CONFIG_USER}"
     local current_year
     current_year=$(date +%Y)
 
-    cat > "$CONFIG_USER" << EOF
+    cat > "$target" << EOF
 # ZZCOLLAB Configuration
 # Generated: $(date '+%Y-%m-%d %H:%M:%S')
 #
@@ -572,8 +642,83 @@ defaults:
   skip_confirmation: false
   with_examples: false
 EOF
+}
 
+##############################################################################
+# FUNCTION: _create_default_config
+# PURPOSE:  Write a complete, commented config skeleton to the user config
+#           path. Used when no config exists yet.
+##############################################################################
+_create_default_config() {
+    _write_config_skeleton "$CONFIG_USER"
     log_success "Created default config: $CONFIG_USER"
+}
+
+##############################################################################
+# FUNCTION: config_backfill_schema
+# PURPOSE:  Bring an existing config file up to the current schema without
+#           losing any values the user has already set. Older configs (and
+#           hand-trimmed ones) may lack whole sections (author, license,
+#           r_package, style, github). This deep-merges the current default
+#           skeleton UNDER the existing file: missing keys gain their default
+#           values and comments, while every value already present is kept.
+# INPUTS:   $1 - config file (default: $CONFIG_USER)
+# OUTPUTS:  Rewrites the file in place when a merge is needed; invalidates the
+#           load_config memo so the next read reflects the new structure.
+# RETURNS:  0 on success or when nothing to do; non-zero only on hard failure.
+##############################################################################
+config_backfill_schema() {
+    local file="${1:-$CONFIG_USER}"
+
+    # Absent file: nothing to back-fill, create a fresh one instead.
+    if [[ ! -f "$file" ]]; then
+        mkdir -p "$(dirname "$file")"
+        _create_default_config
+        _CONFIG_LOADED=""
+        return 0
+    fi
+
+    _require_yq || return 0
+
+    local tmp_skel tmp_merged
+    tmp_skel=$(mktemp) || return 1
+    tmp_merged=$(mktemp) || { rm -f "$tmp_skel"; return 1; }
+
+    _write_config_skeleton "$tmp_skel"
+
+    # Only merge when the file is genuinely missing one or more schema keys.
+    # This keeps the operation idempotent: yq re-attaches the skeleton's head
+    # comments on every merge, so an unconditional merge would accumulate
+    # duplicate comment blocks across repeated `zzc init` runs.
+    local leaf_query='.. | select(tag != "!!map" and tag != "!!seq") | path | join(".")'
+    local file_set need_merge=false p
+    file_set=" $(yq eval "$leaf_query" "$file" 2>/dev/null | tr '\n' ' ') "
+    while IFS= read -r p; do
+        [[ -z "$p" ]] && continue
+        if [[ "$file_set" != *" $p "* ]]; then
+            need_merge=true
+            break
+        fi
+    done < <(yq eval "$leaf_query" "$tmp_skel" 2>/dev/null)
+
+    if [[ "$need_merge" == "false" ]]; then
+        rm -f "$tmp_skel" "$tmp_merged"
+        return 0
+    fi
+
+    # Skeleton is fileIndex 0 (provides structure, comments, defaults); the
+    # existing file is fileIndex 1 and wins on every conflict, so user values
+    # are preserved and only missing keys are filled.
+    if yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
+        "$tmp_skel" "$file" > "$tmp_merged" 2>/dev/null && [[ -s "$tmp_merged" ]]; then
+        mv "$tmp_merged" "$file"
+        _CONFIG_LOADED=""
+    else
+        rm -f "$tmp_merged"
+    fi
+
+    rm -f "$tmp_skel"
+    return 0
 }
 
 #=============================================================================

@@ -261,18 +261,24 @@ cmd_init() {
     # (./zzcollab.yaml). Project values override user values.
     load_config 2>/dev/null || true
 
+    # Bring an existing user config up to the current schema (adds any missing
+    # sections without touching values already set). Interactive runs only, so
+    # scripted/CI invocations never rewrite the user's config unexpectedly.
+    if [[ -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
+        config_backfill_schema "$CONFIG_USER"
+        load_config 2>/dev/null || true
+    fi
+
     echo ""
     echo "═══════════════════════════════════════════════════════════"
     echo "  Initializing: $PKG_NAME"
     echo "═══════════════════════════════════════════════════════════"
     echo ""
 
-    # Phase 1: Identity gate (one-time, writes to user config only).
-    # Runs only when required fields (name, email) are absent.
-    if [[ -z "${CONFIG_AUTHOR_NAME:-}" ]] || [[ -z "${CONFIG_AUTHOR_EMAIL:-}" ]]; then
-        config_identity_gate || exit 1
-        load_config 2>/dev/null || true
-    fi
+    # Phase 1: Identity. Prompts for required fields (name, email) when absent;
+    # when already set, offers an optional update pre-filled with current values.
+    config_identity_review || exit 1
+    load_config 2>/dev/null || true
 
     # Phase 2: Project overrides (per-project, writes to ./zzcollab.yaml only).
     # Skipped in non-interactive and accept-defaults modes.
