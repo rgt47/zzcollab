@@ -719,9 +719,17 @@ generate_dockerfile_inline() {
 RUN R -e "install.packages('renv')"
 RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
 COPY renv.lock renv.lock
+# RENV_LOCK_HASH is passed by the builder as a digest of renv.lock. Declaring
+# it here and referencing it in the RUN below makes the restore layer's cache
+# key depend on the lockfile content, so renv::restore() re-runs whenever
+# renv.lock changes. This guards against BuildKit serving a stale restore
+# layer, which would otherwise bake a library that silently diverges from the
+# lockfile (and from the image's content-addressable hash label).
+ARG RENV_LOCK_HASH=unknown
 # renv::init creates the platform-specific library directory structure that
 # renv::restore() requires to link packages from the cache.
-RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
+RUN echo "renv.lock hash: ${RENV_LOCK_HASH}" && \
+    R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
 IRENV
 )
     else
@@ -906,6 +914,17 @@ build_docker_image() {
     # Build with hash label for future cache lookups
     [[ -n "$dockerfile_hash" ]] && build_args+=(--label "zzcollab.dockerfile.hash=$dockerfile_hash")
     [[ "$no_cache" == "true" ]] && build_args+=(--no-cache)
+
+    # Pass a digest of renv.lock as a build-arg so the Dockerfile's restore
+    # layer (which declares ARG RENV_LOCK_HASH) is cache-busted whenever the
+    # lockfile changes. Without this, BuildKit can reuse a stale restore layer
+    # and bake a library that no longer matches renv.lock, producing an image
+    # whose contents contradict its content-addressable hash label.
+    if [[ -f "renv.lock" ]]; then
+        local renv_lock_hash
+        renv_lock_hash=$(shasum -a 256 renv.lock | cut -d' ' -f1)
+        build_args+=(--build-arg "RENV_LOCK_HASH=$renv_lock_hash")
+    fi
 
     # Container runtime for the local build: docker (BuildKit) or podman, which
     # accepts the same build flags. (Multi-arch team publishing uses docker
