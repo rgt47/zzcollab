@@ -538,7 +538,9 @@ forge_user() {
     case "$forge" in
         gitlab)
             command -v glab >/dev/null 2>&1 || return 1
-            out=$(GITLAB_HOST="$host" glab api user 2>/dev/null) || return 1
+            # glab api targets gitlab.com unless --hostname is given (it does
+            # not read GITLAB_HOST), so pass the host explicitly for self-hosted.
+            out=$(glab api user --hostname "$host" 2>/dev/null) || return 1
             [[ -n "$out" ]] || return 1
             if command -v jq >/dev/null 2>&1; then
                 printf '%s' "$out" | jq -r '.username // empty' 2>/dev/null
@@ -561,7 +563,7 @@ forge_account_exists() {
     case "$forge" in
         gitlab)
             command -v glab >/dev/null 2>&1 || return 2
-            out=$(GITLAB_HOST="$host" glab api "users?username=${account}" 2>/dev/null) || return 2
+            out=$(glab api "users?username=${account}" --hostname "$host" 2>/dev/null) || return 2
             [[ -n "$out" && "$out" != "[]" ]] && return 0 || return 1
             ;;
         *)

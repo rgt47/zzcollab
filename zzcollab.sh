@@ -1744,7 +1744,7 @@ cmd_gitlab() {
 
     local remote_url="https://${host}/${namespace}/${project_name}.git"
 
-    if glab repo view "${namespace}/${project_name}" &>/dev/null; then
+    if GITLAB_HOST="$host" glab repo view "${namespace}/${project_name}" &>/dev/null; then
         log_warn "Repository ${namespace}/${project_name} already exists"
         echo ""
         echo "Options:"
@@ -1767,7 +1767,7 @@ cmd_gitlab() {
                 ;;
             2)
                 log_warn "Deleting existing repository..."
-                glab repo delete "${namespace}/${project_name}" -y || {
+                GITLAB_HOST="$host" glab repo delete "${namespace}/${project_name}" -y || {
                     log_error "Failed to delete repository"
                     return 1
                 }
@@ -1787,7 +1787,7 @@ cmd_gitlab() {
         git branch -M main
         if git push -u origin main; then
             log_success "GitLab repository created and pushed"
-            glab repo view --web 2>/dev/null || true
+            GITLAB_HOST="$host" glab repo view --web 2>/dev/null || true
         else
             log_error "Repository created but push failed. Check: git push -u origin main"
             return 1
