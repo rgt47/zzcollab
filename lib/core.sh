@@ -356,7 +356,11 @@ has_gum() { command -v gum >/dev/null 2>&1; }
 # gum_header TEXT
 # Renders a rounded-border styled section banner.
 gum_header() {
-    gum style --foreground 212 --border rounded --padding '0 1' --margin '0 0' "$1"
+    # Foreground 13 is the terminal palette's bright magenta (the 16-color
+    # index, not a fixed 256-index), matching fzf's named 'bright-magenta' in
+    # ZZCOLLAB_FZF_COLORS so both TUIs track the user's theme and read as one
+    # UI. lipgloss takes the numeric index; fzf takes the name - same color.
+    gum style --foreground 13 --border rounded --padding '0 1' --margin '0 0' "$1"
 }
 
 # Hint appended to every gum prompt header so the cancel key is discoverable.
@@ -406,6 +410,165 @@ gum_multichoose() {
 # Returns 0 for Yes, 1 for No or cancel.
 gum_confirm() {
     gum confirm "$(_gum_header_with_hint "$1")"
+}
+
+#=============================================================================
+# FZF TUI WRAPPERS
+#=============================================================================
+# fzf-driven single-select with a live preview pane: an "info box" to the right
+# of the list that re-renders as the cursor moves between options. Used where
+# per-option guidance helps the choice (e.g. the package backend). Callers must
+# guard with has_fzf() and keep a gum/zzc_read fallback, exactly as the gum
+# wrappers do. Install: brew install fzf
+
+has_fzf() { command -v fzf >/dev/null 2>&1; }
+
+# Pinned fzf theme, set explicitly on every invocation rather than inheriting
+# the user's FZF_DEFAULT_OPTS, so the UI is consistent regardless of the
+# caller's personal fzf configuration. Named ANSI colors (not 256-indexed) so
+# the menu tracks the terminal's own 16-color palette: bright-magenta for the
+# active accents (matching gum's accent), bright-black for chrome, bright-white
+# for the current line.
+readonly ZZCOLLAB_FZF_COLORS='pointer:bright-magenta,marker:bright-magenta,hl:bright-magenta,hl+:bright-magenta,fg+:bright-white,prompt:bright-magenta,header:bright-black,border:bright-black,preview-border:bright-black,gutter:-1'
+
+# fzf_choose_preview HEADER INFO_DIR ITEM...
+# Presents ITEMs as a single-select list with an info box on the right. For the
+# highlighted ITEM the box shows the contents of "$INFO_DIR/<item>" - one file
+# per item, named exactly as the item - which the caller writes before calling.
+# Writes the chosen item to stdout; returns 1 if the user cancels (Esc). The
+# first ITEM is highlighted initially, so callers list the default first.
+fzf_choose_preview() {
+    local header="$1" info_dir="$2"; shift 2
+    printf '%s\n' "$@" | fzf \
+        --height=14 --reverse --no-multi --no-info --cycle \
+        --color="$ZZCOLLAB_FZF_COLORS" \
+        --pointer='>' --prompt='> ' \
+        --header="$header  (esc to cancel)" \
+        --preview="cat -- '$info_dir'/{}" \
+        --preview-window='right:62%:wrap:border-rounded'
+}
+
+# fzf_checklist_preview HEADER INFO_DIR STATE_FILE
+# A multi-toggle checklist with a live info box. Unlike fzf's native
+# multi-select (whose accept falls back to the cursor line when nothing is
+# ticked - wrong for a checklist where "all off" is valid), checkbox state is
+# kept in STATE_FILE, which the CALLER pre-populates and reads back. Each line
+# of STATE_FILE is "<name> on|off"; tab/space toggles the highlighted item and
+# Enter commits. INFO_DIR holds one info file per name (see fzf_choose_preview).
+# Returns 0 when committed (read STATE_FILE for the result) or non-zero on Esc.
+# The caller owns STATE_FILE and INFO_DIR; this function only edits STATE_FILE.
+fzf_checklist_preview() {
+    local header="$1" info_dir="$2" state="$3"
+    local helper
+    helper=$(mktemp -d "${TMPDIR:-/tmp}/zzc-fzfck.XXXXXX") || return 1
+    # render: STATE_FILE -> tab-separated "[x]<TAB>name" lines for fzf input.
+    cat > "$helper/render" <<'RENDER'
+#!/usr/bin/env bash
+while read -r name st; do
+    if [[ "$st" == on ]]; then printf '[x]\t%s\n' "$name"
+    else printf '[ ]\t%s\n' "$name"; fi
+done < "$1"
+RENDER
+    # toggle: flip one name's state in place (atomic rename).
+    cat > "$helper/toggle" <<'TOGGLE'
+#!/usr/bin/env bash
+sf="$1"; name="$2"; tmp="$sf.tmp"
+while read -r n st; do
+    [[ "$n" == "$name" ]] && { [[ "$st" == on ]] && st=off || st=on; }
+    printf '%s %s\n' "$n" "$st"
+done < "$sf" > "$tmp"
+mv "$tmp" "$sf"
+TOGGLE
+    chmod +x "$helper/render" "$helper/toggle"
+    local toggle_act="execute-silent(bash '$helper/toggle' '$state' {2})+reload(bash '$helper/render' '$state')"
+    local rc=0
+    # --track --id-nth=2 keeps the cursor on the same item across reloads even
+    # though the checkbox field changes; {2} is the name field (tab-delimited).
+    bash "$helper/render" "$state" | fzf \
+        --height=16 --reverse --no-info --no-multi --cycle --track \
+        --color="$ZZCOLLAB_FZF_COLORS" \
+        --delimiter='\t' --with-nth='1,2' --id-nth='2' \
+        --pointer='>' --prompt='> ' \
+        --header="$header  (tab toggles, enter applies, esc cancels)" \
+        --bind "tab:$toggle_act" \
+        --bind "space:$toggle_act" \
+        --preview="cat -- '$info_dir'/{2}" \
+        --preview-window='right:58%:wrap:border-rounded' \
+        >/dev/null || rc=$?
+    rm -rf "$helper"
+    return $rc
+}
+
+#=============================================================================
+# CI FORGE DETECTION
+#=============================================================================
+
+# zzc_ci_forge [DIR]
+# Which CI forge a project carries, by artifact presence:
+#   .github/workflows/r-package.yml -> github
+#   .gitlab-ci.yml                  -> gitlab
+#   neither                         -> none
+# A project uses a single forge; if both somehow exist, github wins. Shared by
+# status, the toggle wizard, and doctor so the notion of "CI present" stays
+# consistent across GitHub and GitLab.
+zzc_ci_forge() {
+    local d="${1:-.}"
+    if [[ -f "$d/.github/workflows/r-package.yml" ]]; then
+        echo github
+    elif [[ -f "$d/.gitlab-ci.yml" ]]; then
+        echo gitlab
+    else
+        echo none
+    fi
+}
+
+#=============================================================================
+# FORGE ACCOUNT HELPERS
+#=============================================================================
+# Forge-aware wrappers over the gh / glab CLIs, so account detection and
+# existence checks have one implementation each. All degrade gracefully when
+# the relevant CLI is absent. HOST applies to GitLab self-hosted instances
+# (default gitlab.com); it is ignored for GitHub.
+
+# forge_user FORGE [HOST]
+# Echo the authenticated user's login/username for the forge, or nothing.
+# Returns non-zero when the CLI is absent or the lookup fails.
+forge_user() {
+    local forge="$1" host="${2:-gitlab.com}" out
+    case "$forge" in
+        gitlab)
+            command -v glab >/dev/null 2>&1 || return 1
+            out=$(GITLAB_HOST="$host" glab api user 2>/dev/null) || return 1
+            [[ -n "$out" ]] || return 1
+            if command -v jq >/dev/null 2>&1; then
+                printf '%s' "$out" | jq -r '.username // empty' 2>/dev/null
+            else
+                printf '%s' "$out" | sed -n 's/.*"username"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
+            fi
+            ;;
+        *)
+            command -v gh >/dev/null 2>&1 || return 1
+            gh api user --jq '.login' 2>/dev/null
+            ;;
+    esac
+}
+
+# forge_account_exists FORGE ACCOUNT [HOST]
+# 0 = account exists, 1 = not found, 2 = cannot check (CLI absent or error).
+# Callers typically accept the input on 2 (the historical gh behaviour).
+forge_account_exists() {
+    local forge="$1" account="$2" host="${3:-gitlab.com}" out
+    case "$forge" in
+        gitlab)
+            command -v glab >/dev/null 2>&1 || return 2
+            out=$(GITLAB_HOST="$host" glab api "users?username=${account}" 2>/dev/null) || return 2
+            [[ -n "$out" && "$out" != "[]" ]] && return 0 || return 1
+            ;;
+        *)
+            command -v gh >/dev/null 2>&1 || return 2
+            gh api "users/${account}" >/dev/null 2>&1 && return 0 || return 1
+            ;;
+    esac
 }
 
 #=============================================================================

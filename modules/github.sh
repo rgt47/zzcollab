@@ -21,6 +21,31 @@ set -euo pipefail
 # module now provides only the workflow installer below.
 #=============================================================================
 
+# Install CI for the configured forge (CONFIG_FORGE, default github). GitHub
+# gets the two Actions workflows; GitLab gets the single .gitlab-ci.yml. Called
+# at init time from setup_project.
+create_ci_workflows() {
+    load_config 2>/dev/null || true
+    if [[ "${CONFIG_FORGE:-github}" == gitlab ]]; then
+        create_gitlab_ci
+    else
+        create_github_workflows
+    fi
+}
+
+create_gitlab_ci() {
+    log_debug "Creating GitLab CI pipeline..."
+    if install_template "gitlab/.gitlab-ci.yml" ".gitlab-ci.yml" \
+        "GitLab CI pipeline" "Created GitLab CI pipeline"; then
+        log_info "  - Stages: check, render"
+        log_info "  - Triggers: merge requests and default branch"
+    else
+        log_error "Failed to create GitLab CI pipeline"
+        return 1
+    fi
+    log_success "GitLab CI pipeline created"
+}
+
 create_github_workflows() {
     log_debug "Creating GitHub Actions workflows..."
 

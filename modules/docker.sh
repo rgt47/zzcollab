@@ -231,11 +231,9 @@ prompt_new_workspace_setup() {
     esac
 
     # Step 3: GitHub setup (optional)
-    # Try to detect from gh CLI if not already set
-    local gh_user=""
-    if command -v gh &>/dev/null; then
-        gh_user=$(gh api user --jq '.login' 2>/dev/null) || gh_user=""
-    fi
+    # Try to detect the logged-in GitHub user if not already set.
+    local gh_user
+    gh_user=$(forge_user github 2>/dev/null) || gh_user=""
     local default_gh="${github_account:-$gh_user}"
 
     echo "" >&2

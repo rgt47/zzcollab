@@ -13,8 +13,9 @@
 8. [Build System with Make](#build-system-with-make)
 9. [Configuration System](#configuration-system)
 10. [GitHub Actions CI/CD](#github-actions-cicd)
-11. [Troubleshooting](#troubleshooting)
-12. [Platform-Specific Notes](#platform-specific-notes)
+11. [GitLab support](#gitlab-support)
+12. [Troubleshooting](#troubleshooting)
+13. [Platform-Specific Notes](#platform-specific-notes)
 
 ## What is ZZCOLLAB?
 
@@ -581,6 +582,45 @@ DOCKERHUB_TOKEN:    your-dockerhub-access-token
 ```
 
 Create an access token at https://hub.docker.com/settings/security.
+
+## GitLab support
+
+zzcollab supports GitLab as an alternative to GitHub. The active forge is
+a single choice, set once:
+
+```
+zzc config set forge gitlab
+zzc config set gitlab-account mylab
+zzc config set gitlab-host gitlab.example.edu   # self-hosted only
+```
+
+The forge can also be chosen interactively in `zzc toggle` (the forge
+picker), and is the first decision in the feature wizard.
+
+With `forge=gitlab`, the framework adapts as follows:
+
+- **CI**: a single `.gitlab-ci.yml` replaces the two GitHub Actions
+  workflows. It self-adapts to the backend (Nix flake, Docker, renv, or
+  DESCRIPTION) and runs a check stage and a path-filtered render stage,
+  mirroring the GitHub pipeline. Install or remove it with
+  `zzc add cicd` / `zzc rm cicd`, or via the `ci` feature in `zzc toggle`.
+- **Remote repository**: `zzc gitlab` (counterpart to `zzc github`) uses
+  the `glab` CLI to create the project and push, honouring `gitlab-host`
+  for self-hosted instances. Visibility is `--private` (default),
+  `--public`, or `--internal`.
+- **Container registry**: pushes default to the GitLab Container Registry
+  (`registry.gitlab.com`, or `registry.<host>` for self-hosted), whose CI
+  authentication is provided automatically by GitLab's `$CI_REGISTRY`
+  variables. Override with `zzc config set docker-registry <host>`. Push
+  with `zzc push` (the registry-aware command; `zzc dockerhub` is a
+  back-compat alias).
+- **Cloud launch**: `zzc cloud` installs a GitLab Workspaces devfile
+  (`.devfile.yaml`) instead of the Codespaces devcontainer. Force either
+  with `zzc cloud --platform workspace` or `--platform devcontainer`.
+
+GitLab integration requires the `glab` CLI for repository creation
+(`zzc gitlab`); CI, registry, and Workspaces configuration are generated
+without it.
 
 ## Troubleshooting
 

@@ -128,19 +128,15 @@ prompt_github_account() {
                 printf -v "$result_var" '%s' ""
                 return 0
             fi
-            if command -v gh &>/dev/null; then
-                log_info "Checking GitHub account..."
-                if gh api "users/$input" &>/dev/null; then
-                    log_success "Account found: $input"
-                    printf -v "$result_var" '%s' "$input"
-                    return 0
-                else
-                    log_warn "Account '$input' not found on GitHub. Please check the username."
-                fi
-            else
-                printf -v "$result_var" '%s' "$input"
-                return 0
-            fi
+            log_info "Checking GitHub account..."
+            local rc=0
+            forge_account_exists github "$input" || rc=$?
+            case $rc in
+                0)  log_success "Account found: $input"
+                    printf -v "$result_var" '%s' "$input"; return 0 ;;
+                2)  printf -v "$result_var" '%s' "$input"; return 0 ;;
+                *)  log_warn "Account '$input' not found on GitHub. Please check the username." ;;
+            esac
         done
     fi
 
@@ -166,20 +162,17 @@ prompt_github_account() {
             return 0
         fi
 
-        if command -v gh &>/dev/null; then
-            printf "  Checking GitHub account..."
-            if gh api "users/$input" &>/dev/null; then
-                echo " OK"
-                printf -v "$result_var" '%s' "$input"
-                return 0
-            else
-                echo " not found"
-                echo "  Account '$input' not found on GitHub. Please check the username."
-            fi
-        else
-            printf -v "$result_var" '%s' "$input"
-            return 0
-        fi
+        printf "  Checking GitHub account..."
+        local rc=0
+        forge_account_exists github "$input" || rc=$?
+        case $rc in
+            0)  echo " OK"
+                printf -v "$result_var" '%s' "$input"; return 0 ;;
+            2)  echo ""
+                printf -v "$result_var" '%s' "$input"; return 0 ;;
+            *)  echo " not found"
+                echo "  Account '$input' not found on GitHub. Please check the username." ;;
+        esac
     done
 }
 
@@ -901,7 +894,7 @@ _setup_change_existing() {
     yaml_set "$CONFIG_USER" "defaults.profile_name" "$val"
     yaml_set "$CONFIG_USER" "docker.default_profile" "$val"
 
-    prompt_select "Docker registry" "docker.io,ghcr.io" \
+    prompt_select "Docker registry" "docker.io,ghcr.io,registry.gitlab.com" \
         "${CONFIG_DOCKER_REGISTRY:-docker.io}" val || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "docker.registry" "$val"
 

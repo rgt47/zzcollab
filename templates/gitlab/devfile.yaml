@@ -1,0 +1,25 @@
+# GitLab Workspaces devfile (devfile.io spec v2.2.0). The GitLab counterpart to
+# devcontainer.json (GitHub Codespaces): it opens this compendium in a
+# browser-based container via GitLab Workspaces. Installed as .devfile.yaml at
+# the repo root when the cloud feature is enabled and forge=gitlab.
+#
+# The container image is the project's own image, so the environment matches the
+# Dockerfile (capture level L2). renv paths mirror the devcontainer settings.
+schemaVersion: 2.2.0
+metadata:
+  name: $PKG_NAME
+components:
+  - name: tooling-container
+    container:
+      image: $PACKAGE_NAME
+      memoryLimit: 4Gi
+      mountSources: true
+      env:
+        - name: ZZCOLLAB_CONTAINER
+          value: "true"
+        - name: ZZCOLLAB_AUTO_RESTORE
+          value: "false"
+        - name: RENV_PATHS_LIBRARY
+          value: /opt/renv/library
+        - name: RENV_PATHS_CACHE
+          value: /opt/renv/cache

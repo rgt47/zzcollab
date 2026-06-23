@@ -267,8 +267,9 @@ create_renv_setup() {
     return 0
 }
 
-# GitHub Actions workflows are installed by create_github_workflows() in
-# modules/github.sh (sourced after this module), which setup_project() calls.
+# CI workflows are installed by create_ci_workflows() in modules/github.sh
+# (sourced after this module), which dispatches on the configured forge
+# (GitHub Actions or GitLab CI) and which setup_project() calls.
 
 #=============================================================================
 # DOCUMENTATION FILES
@@ -327,7 +328,7 @@ setup_project() {
     create_analysis_files || return 1
     create_devtools || return 1
     create_renv_setup || return 1
-    create_github_workflows || return 1
+    create_ci_workflows || return 1
     create_docs_files || return 1
 
     # Adopt-mode: Dockerfile is written by the docker module, not here.

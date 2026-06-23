@@ -34,7 +34,8 @@ Commands:
   renv                  Create or update renv.lock
   nix                   Create flake.nix (Nix backend, alternative to renv)
   github [--public]     Create GitHub repo and push
-  dockerhub [--tag T]   Push image to Docker Hub
+  gitlab [--public]     Create GitLab repo and push (forge: gitlab)
+  push [--tag T]        Push image to the configured registry (alias: dockerhub)
   status                Show reproducibility features and level (read-only)
   toggle                Interactively view and change features
   validate              Check package dependencies (via zzrenvcheck)
@@ -48,8 +49,8 @@ Commands:
   config <subcommand>   Manage configuration (get/set/list/init)
   list <profiles|libs|pkgs>
                         List available profiles and bundles
-  add <feature>         Add a feature (docker, renv, nix, data, code-quality, tests, cloud, cicd)
-  rm <feature>          Remove a feature (docker, renv, nix, git, github, cicd, data, code-quality, tests, cloud, all)
+  add <feature>         Add a feature (docker, renv, nix, data, code-quality, tests, cloud, cicd, github, gitlab)
+  rm <feature>          Remove a feature (docker, renv, nix, git, github, gitlab, cicd, data, code-quality, tests, cloud, all)
   uninstall [--force]   Remove the zzcollab scaffold from this directory
   help <topic>          Show detailed help for a topic
 
@@ -97,7 +98,7 @@ After zzc init / zzc <profile>:
   4. Run tests:             make docker-test
   5. Validate deps:         make check-renv
   6. Commit and push:       git add . && git commit && git push
-  7. (optional) Publish:    zzc github      zzc dockerhub
+  7. (optional) Publish:    zzc github (or zzc gitlab)   zzc push
 
 See vignette("quickstart1") for the full walkthrough.
 EOF
@@ -163,6 +164,6 @@ Files (project overrides user):
 
 Keys: author-name, author-email, author-orcid, author-affiliation,
       github-account, dockerhub-account, profile-name, r-version,
-      license-type
+      license-type, forge, gitlab-account, gitlab-host
 EOF
 }

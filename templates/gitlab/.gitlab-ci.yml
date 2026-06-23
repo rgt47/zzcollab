@@ -1,0 +1,265 @@
+# zzcollab .gitlab-ci.yml v$ZZCOLLAB_TEMPLATE_VERSION
+#
+# GitLab CI counterpart to the GitHub Actions templates (r-package.yml +
+# render-report.yml), combined into one pipeline as is conventional on GitLab.
+# Self-adapting: the backend is chosen from artifact presence via rule
+# `exists:` clauses, so the same file survives toggling renv, the Nix flake, or
+# Docker with no edits.
+#
+#   check stage
+#     flake.nix present -> check-nix: R CMD check inside `nix develop`.
+#     otherwise         -> check-container: rocker container; renv.lock restores
+#                          the pinned library (L1), else DESCRIPTION via pak (L0).
+#   render stage (path-filtered to analysis/environment changes)
+#     flake.nix          -> render-nix: render in `nix develop` (L2).
+#     Dockerfile (no nix)-> render-docker: build the project image and render
+#                           inside it (L2). See the dind note on that job.
+#     neither            -> render-host: render on the runner; renv.lock (L1)
+#                           or DESCRIPTION via pak (L0).
+#
+# Note: rocker tags are pinned literally to match the GitHub templates. A future
+# change may derive them from the configured R version.
+
+stages:
+  - check
+  - render
+
+# Run for merge requests and for the default branches, without the duplicate
+# branch-plus-MR pipeline GitLab would otherwise create.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+
+# Paths that trigger the render stage (mirrors render-report.yml path filter).
+.render_changes: &render_changes
+  - analysis/**/*
+  - R/**/*
+  - DESCRIPTION
+  - renv.lock
+  - Dockerfile
+  - flake.nix
+  - .gitlab-ci.yml
+
+# ---------------------------------------------------------------------------
+# check stage
+# ---------------------------------------------------------------------------
+
+# Container check: renv backend or DESCRIPTION install (no flake).
+check-container:
+  stage: check
+  image: rocker/tidyverse:4.6.0
+  rules:
+    - exists:
+        - flake.nix
+      when: never
+    - when: on_success
+  variables:
+    ZZCOLLAB_CONTAINER: "true"
+    CI_TOOLS_LIB: "/tmp/ci-tools"
+    RENV_CONFIG_REPOS_OVERRIDE: "https://packagemanager.posit.co/cran/__linux__/noble/latest"
+    _R_CHECK_FORCE_SUGGESTS_: "false"
+    # GitLab only caches paths under the project dir, so redirect renv's cache
+    # there (the GitHub template can use ~/.cache because Actions caching is not
+    # path-restricted).
+    RENV_PATHS_CACHE: "$CI_PROJECT_DIR/.renv-cache"
+  cache:
+    key:
+      files:
+        - renv.lock
+    paths:
+      - .renv-cache
+  script:
+    - apt-get update && apt-get install -y jq libcurl4-openssl-dev libssl-dev libxml2-dev cmake
+    - test -f DESCRIPTION || { echo "Missing DESCRIPTION"; exit 1; }
+    - |
+      if [ -f renv.lock ]; then
+        echo "Backend: renv (renv.lock present)"
+        Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+        Rscript -e "renv::restore(prompt = FALSE)"
+      else
+        echo "Backend: DESCRIPTION (no renv.lock)"
+        Rscript -e "install.packages('pak', repos = 'https://cloud.r-project.org')"
+        Rscript -e "pak::local_install_deps(root = '.', dependencies = TRUE)"
+      fi
+    - mkdir -p "$CI_TOOLS_LIB"
+    - Rscript -e "install.packages(c('rcmdcheck', 'tinytest'), lib = Sys.getenv('CI_TOOLS_LIB'), repos = 'https://cloud.r-project.org')"
+    - |
+      Rscript --no-init-file -e '
+        rlib <- normalizePath(Sys.glob("renv/library/*/*")[1], mustWork = FALSE)
+        libs <- c(Sys.getenv("CI_TOOLS_LIB"), rlib, .libPaths())
+        .libPaths(libs[!is.na(libs) & nchar(libs) > 0])
+        rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")'
+    - |
+      Rscript -e '
+        .libPaths(c(Sys.getenv("CI_TOOLS_LIB"), .libPaths()))
+        if (dir.exists("inst/tinytest")) {
+          out <- tinytest::run_test_dir("inst/tinytest")
+          if (any(!as.logical(out))) quit(status = 1)
+        } else {
+          message("No inst/tinytest directory found, skipping tests")
+        }' || echo "tests reported failures (non-blocking)"
+
+# Nix check: the flake pins the environment; no container.
+check-nix:
+  stage: check
+  image: nixos/nix:latest
+  rules:
+    - exists:
+        - flake.nix
+  variables:
+    NIX_CONFIG: "experimental-features = nix-command flakes"
+  script:
+    - test -f DESCRIPTION || { echo "Missing DESCRIPTION"; exit 1; }
+    - nix develop -c sh -c 'R CMD build . && R CMD check --no-manual *.tar.gz'
+    - |
+      nix develop -c Rscript -e '
+        if (dir.exists("inst/tinytest")) {
+          out <- tinytest::run_test_dir("inst/tinytest")
+          if (any(!as.logical(out))) quit(status = 1)
+        } else {
+          message("No inst/tinytest directory found, skipping tests")
+        }' || echo "tests reported failures (non-blocking)"
+
+# ---------------------------------------------------------------------------
+# render stage
+# ---------------------------------------------------------------------------
+
+# Host render: no flake, no Dockerfile; renv pins packages when present.
+render-host:
+  stage: render
+  image: rocker/tidyverse:4.6.0
+  rules:
+    - exists:
+        - flake.nix
+      when: never
+    - exists:
+        - Dockerfile
+      when: never
+    - changes: *render_changes
+  script:
+    - apt-get update && apt-get install -y pandoc
+    - |
+      if [ -f renv.lock ]; then
+        echo "Restoring packages from renv.lock..."
+        Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+        Rscript -e "renv::restore(prompt = FALSE)"
+      else
+        echo "No renv.lock; installing dependencies from DESCRIPTION via pak..."
+        Rscript -e "install.packages('pak', repos = 'https://cloud.r-project.org')"
+        Rscript -e "pak::local_install_deps(root = '.', dependencies = TRUE)"
+      fi
+    - Rscript -e "if (!requireNamespace('rmarkdown', quietly = TRUE)) install.packages('rmarkdown', repos = 'https://cloud.r-project.org')"
+    - |
+      Rscript -e '
+        rmds <- unique(c(
+          list.files("analysis", pattern = "^report[.]Rmd$", recursive = TRUE, full.names = TRUE),
+          list.files("analysis/posts", pattern = "[.]Rmd$", full.names = TRUE)))
+        cat("Found", length(rmds), "manuscripts to render\n\n")
+        failed <- character()
+        for (rmd in rmds) {
+          cat("=== Rendering:", rmd, "===\n")
+          old_wd <- setwd(dirname(rmd))
+          tryCatch(rmarkdown::render(basename(rmd), output_format = "html_document"),
+                   error = function(e) { cat("FAILED:", conditionMessage(e), "\n"); failed <<- c(failed, rmd) })
+          setwd(old_wd)
+        }
+        cat("\n=== summary ===\n")
+        cat("rendered:", length(rmds) - length(failed), "\n")
+        cat("failed:  ", length(failed), "\n")
+        if (length(failed) > 0) { for (f in failed) cat("  ", f, "\n"); quit(status = 1) }'
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - analysis/**/*.html
+
+# Nix render: the flake pins the environment.
+render-nix:
+  stage: render
+  image: nixos/nix:latest
+  rules:
+    - exists:
+        - flake.nix
+      changes: *render_changes
+  variables:
+    NIX_CONFIG: "experimental-features = nix-command flakes"
+  script:
+    - |
+      nix develop -c Rscript -e '
+        rmds <- unique(c(
+          list.files("analysis", pattern = "^report[.]Rmd$", recursive = TRUE, full.names = TRUE),
+          list.files("analysis/posts", pattern = "[.]Rmd$", full.names = TRUE)))
+        cat("Found", length(rmds), "manuscripts to render\n\n")
+        failed <- character()
+        for (rmd in rmds) {
+          cat("=== Rendering:", rmd, "===\n")
+          old_wd <- setwd(dirname(rmd))
+          tryCatch(rmarkdown::render(basename(rmd), output_format = "html_document"),
+                   error = function(e) { cat("FAILED:", conditionMessage(e), "\n"); failed <<- c(failed, rmd) })
+          setwd(old_wd)
+        }
+        cat("\n=== summary ===\n")
+        cat("rendered:", length(rmds) - length(failed), "\n")
+        cat("failed:  ", length(failed), "\n")
+        if (length(failed) > 0) { for (f in failed) cat("  ", f, "\n"); quit(status = 1) }'
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - analysis/**/*.html
+
+# Containerised render: the project image pins the environment (L2).
+#
+# dind caveat: the docker:dind daemon cannot see the runner's working tree, so
+# the GitHub `-v workspace:/project` mount would be empty here. Instead the
+# checked-out source is layered onto the env image, the render runs inside it,
+# and the rendered HTML is copied back out for the artifact upload. A future
+# registry-based path (build once, push to $CI_REGISTRY_IMAGE, reuse as
+# `image:`) would be cleaner; see the GitLab Container Registry work.
+render-docker:
+  stage: render
+  image: docker:27-cli
+  services:
+    - docker:27-dind
+  rules:
+    - exists:
+        - flake.nix
+      when: never
+    - exists:
+        - Dockerfile
+      changes: *render_changes
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - docker build -t compendium-env .
+    - printf 'FROM compendium-env\nCOPY . /project\nWORKDIR /project\n' > Dockerfile.zzc-render
+    - docker build -f Dockerfile.zzc-render -t compendium-render .
+    - |
+      docker run --name zzc-render -e CI=true compendium-render Rscript --vanilla -e '
+        baked_lib <- Sys.glob("/opt/renv/library/*/*")[1]
+        if (!is.na(baked_lib) && nzchar(baked_lib)) .libPaths(c(baked_lib, .libPaths()))
+        rmds <- unique(c(
+          list.files("analysis", pattern = "^report[.]Rmd$", recursive = TRUE, full.names = TRUE),
+          list.files("analysis/posts", pattern = "[.]Rmd$", full.names = TRUE)))
+        cat("Found", length(rmds), "manuscripts to render\n\n")
+        failed <- character()
+        for (rmd in rmds) {
+          cat("=== Rendering:", rmd, "===\n")
+          old_wd <- setwd(dirname(rmd))
+          tryCatch(rmarkdown::render(basename(rmd), output_format = "html_document"),
+                   error = function(e) { cat("FAILED:", conditionMessage(e), "\n"); failed <<- c(failed, rmd) })
+          setwd(old_wd)
+        }
+        cat("\n=== summary ===\n")
+        cat("rendered:", length(rmds) - length(failed), "\n")
+        cat("failed:  ", length(failed), "\n")
+        if (length(failed) > 0) { for (f in failed) cat("  ", f, "\n"); quit(status = 1) }'
+    - docker cp zzc-render:/project/analysis/. ./analysis/ || true
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - analysis/**/*.html

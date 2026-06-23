@@ -109,31 +109,45 @@ cmd_status() {
     # --- Global tier: defaults for new projects -----------------------------
     # config_get triggers a guarded load_config; degrade quietly if yq or the
     # user config is absent.
-    local g_profile g_account
+    local g_profile g_account g_registry
     g_profile=$(config_get profile_name 2>/dev/null || true)
     g_account=$(config_get dockerhub_account 2>/dev/null || true)
     [[ -z "$g_profile" ]] && g_profile="${CONFIG_DOCKER_DEFAULT_PROFILE:-${CONFIG_PROFILE_NAME:-}}"
     [[ -z "$g_account" ]] && g_account="${CONFIG_DOCKERHUB_ACCOUNT:-}"
+    # Registry: configured value, else the forge-aware default cmd_dockerhub
+    # uses (GitLab CR when forge=gitlab, Docker Hub otherwise). Previously this
+    # printed a hardcoded literal that ignored the configuration.
+    g_registry="${CONFIG_DOCKER_REGISTRY:-}"
+    if [[ -z "$g_registry" ]]; then
+        [[ "${CONFIG_FORGE:-github}" == gitlab ]] && g_registry="registry.gitlab.com" || g_registry="docker.io"
+    fi
 
     echo ""
     echo "GLOBAL  ${CONFIG_USER:-~/.zzcollab/config.yaml}   (defaults for new projects)"
     printf "  %-14s %s\n" "profile"  "${g_profile:-(unset)}"
-    printf "  %-14s %s\n" "registry" "ghcr"
+    printf "  %-14s %s\n" "registry" "$g_registry"
     printf "  %-14s %s\n" "dockerhub" "${g_account:-(unset)}"
     printf "  %-14s %s\n" "runtime"  "${CONFIG_DOCKER_RUNTIME:-docker}"
     printf "  %-14s %s\n" "validate" "strict=${CONFIG_VALIDATE_STRICT:-true}  fix=${CONFIG_VALIDATE_FIX:-false}"
 
     # --- Local tier: live state from artifact presence ----------------------
-    local backend docker_on ci_check ci_render tests data quality dev binder git_on
+    local backend docker_on ci_check ci_render tests data quality dev binder workspace git_on
     backend=$(_zzc_detect_backend "$d")
     [[ -f "$d/Dockerfile" ]] && docker_on=on || docker_on=off
-    [[ -f "$d/.github/workflows/r-package.yml" ]]    && ci_check=true  || ci_check=false
-    [[ -f "$d/.github/workflows/render-report.yml" ]] && ci_render=true || ci_render=false
+    # GitLab carries check and render in one .gitlab-ci.yml, so both report on
+    # when it is present; GitHub keeps the per-workflow distinction.
+    if [[ "$(zzc_ci_forge "$d")" == gitlab ]]; then
+        ci_check=true; ci_render=true
+    else
+        [[ -f "$d/.github/workflows/r-package.yml" ]]     && ci_check=true  || ci_check=false
+        [[ -f "$d/.github/workflows/render-report.yml" ]] && ci_render=true || ci_render=false
+    fi
     [[ -d "$d/inst/tinytest" ]]        && tests=true  || tests=false
     [[ -f "$d/data-manifest.sha256" ]] && data=true   || data=false
     [[ -f "$d/.pre-commit-config.yaml" ]] && quality=true || quality=false
-    [[ -d "$d/.devcontainer" ]]        && dev=true     || dev=false
-    [[ -d "$d/.binder" ]]              && binder=true  || binder=false
+    [[ -d "$d/.devcontainer" ]]        && dev=true       || dev=false
+    [[ -d "$d/.binder" ]]              && binder=true    || binder=false
+    [[ -f "$d/.devfile.yaml" ]]        && workspace=true || workspace=false
     [[ -d "$d/.git" ]]                 && git_on=true  || git_on=false
 
     local level base digest mode src verified
@@ -182,7 +196,7 @@ cmd_status() {
     printf "  %-14s %s\n" "unit tests" "$(_zzc_onoff "$tests")  (validation)   inst/tinytest/"
     printf "  %-14s %s\n" "code quality" "$(_zzc_onoff "$quality")  (validation)   .pre-commit-config.yaml"
     printf "  %-14s %s\n" "data hash"  "$(_zzc_onoff "$data")  (capture)      data-manifest.sha256"
-    printf "  %-14s %s\n" "cloud"      "devcontainer $(_zzc_onoff "$dev")  binder $(_zzc_onoff "$binder")"
+    printf "  %-14s %s\n" "cloud"      "devcontainer $(_zzc_onoff "$dev")  workspace $(_zzc_onoff "$workspace")  binder $(_zzc_onoff "$binder")"
     printf "  %-14s %s\n" "git"        "$(_zzc_onoff "$git_on")"
     echo ""
     echo "Levels: L0 locatable, L1 pinned packages, L2 pinned environment, L3 verified."

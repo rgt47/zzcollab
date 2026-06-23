@@ -864,7 +864,7 @@ cmd_rm_tests() {
 # is the feature's on state (zzc status). devcontainer drives VS Code / GitHub
 # Codespaces; binder is recognised by status but not yet templated.
 cmd_cloud() {
-    local platform="devcontainer"
+    local platform=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --platform) platform="$2"; shift 2 ;;
@@ -876,12 +876,15 @@ Scaffolds a config that lets the compendium run in a browser-based
 container.
 
 USAGE:
-    zzcollab cloud                       # devcontainer (Codespaces/VS Code)
-    zzcollab cloud --platform devcontainer
+    zzcollab cloud                       # platform by forge (see below)
+    zzcollab cloud --platform devcontainer   # GitHub Codespaces / VS Code
+    zzcollab cloud --platform workspace      # GitLab Workspaces (.devfile.yaml)
     zzcollab rm cloud                    # remove cloud config
 
-Platforms: devcontainer (default). binder is detected by 'zzc status'
-but not yet templated.
+Platforms: devcontainer (GitHub Codespaces / VS Code) and workspace
+(GitLab Workspaces). With no --platform, the default follows the
+configured forge (workspace when forge=gitlab, else devcontainer).
+binder is detected by 'zzc status' but not yet templated.
 EOF
                 return 0 ;;
             *) log_error "Unknown option: $1"; return 1 ;;
@@ -889,6 +892,13 @@ EOF
     done
 
     ensure_workspace_initialized "cloud" || exit 1
+
+    # Default platform follows the forge: GitLab Workspaces for forge=gitlab,
+    # GitHub Codespaces (devcontainer) otherwise.
+    if [[ -z "$platform" ]]; then
+        load_config 2>/dev/null || true
+        [[ "${CONFIG_FORGE:-github}" == gitlab ]] && platform="workspace" || platform="devcontainer"
+    fi
 
     case "$platform" in
         devcontainer)
@@ -903,11 +913,22 @@ EOF
             echo "  Cloud launch (devcontainer) enabled."
             echo "  Open in GitHub Codespaces, or VS Code: 'Reopen in Container'."
             ;;
+        workspace)
+            if [[ ! -f "$ZZCOLLAB_TEMPLATES_DIR/gitlab/devfile.yaml" ]]; then
+                log_error "GitLab Workspaces devfile template not found."
+                return 1
+            fi
+            install_template "gitlab/devfile.yaml" ".devfile.yaml" \
+                "GitLab Workspaces devfile"
+            echo ""
+            echo "  Cloud launch (GitLab Workspaces) enabled."
+            echo "  Launch from the GitLab project: Edit > New workspace."
+            ;;
         binder)
-            log_error "binder platform is not yet templated; use --platform devcontainer."
+            log_error "binder platform is not yet templated; use --platform devcontainer or workspace."
             return 1 ;;
         *)
-            log_error "Unknown platform: $platform (supported: devcontainer)"
+            log_error "Unknown platform: $platform (supported: devcontainer, workspace)"
             return 1 ;;
     esac
 }
@@ -916,8 +937,9 @@ cmd_rm_cloud() {
     local removed=0
     [[ -d ".devcontainer" ]] && rm -rf ".devcontainer" && removed=1
     [[ -d ".binder" ]]       && rm -rf ".binder"       && removed=1
+    [[ -f ".devfile.yaml" ]] && rm -f ".devfile.yaml"  && removed=1
     if [[ "$removed" -eq 1 ]]; then
-        log_success "Removed cloud launch config (.devcontainer/ and/or .binder/)"
+        log_success "Removed cloud launch config (.devcontainer/, .binder/, and/or .devfile.yaml)"
     else
         log_info "No cloud launch config to remove"
     fi
@@ -1050,6 +1072,7 @@ _ZZC_UPDATE_MANAGED=(
     ".Rprofile|.Rprofile"
     "workflows/r-package.yml|.github/workflows/r-package.yml"
     "workflows/render-report.yml|.github/workflows/render-report.yml"
+    "gitlab/.gitlab-ci.yml|.gitlab-ci.yml"
     "ZZCOLLAB_USER_GUIDE.md|docs/ZZCOLLAB_USER_GUIDE.md"
 )
 
@@ -1562,11 +1585,9 @@ EOF
     return 0
 }
 
-cmd_github() {
-    # Ensure git is initialized first
-    cmd_git || return 1
-
-    # Ensure there's at least one commit (required for --push)
+# Ensure the repo has at least one commit (a remote push needs one). Pure git,
+# shared by cmd_github and cmd_gitlab.
+_ensure_initial_commit() {
     if ! git rev-parse HEAD &>/dev/null; then
         log_info "Creating initial commit..."
         git add .
@@ -1578,6 +1599,12 @@ Generated with zzcollab" || {
         }
         log_success "Initial commit created"
     fi
+}
+
+cmd_github() {
+    # Ensure git is initialized first
+    cmd_git || return 1
+    _ensure_initial_commit || return 1
 
     # Check if gh CLI is available
     if ! command -v gh &>/dev/null; then
@@ -1661,6 +1688,128 @@ Generated with zzcollab" || {
     return 0
 }
 
+# cmd_gitlab - GitLab counterpart to cmd_github, via the glab CLI. Honours the
+# configured host (gitlab.host, default gitlab.com) for self-hosted instances,
+# the namespace (gitlab.account, else the authenticated user), and visibility
+# (gitlab.default_visibility, default private; GitLab also allows internal).
+cmd_gitlab() {
+    cmd_git || return 1
+    _ensure_initial_commit || return 1
+
+    if ! command -v glab &>/dev/null; then
+        log_error "GitLab CLI (glab) not installed"
+        log_info "Install: https://gitlab.com/gitlab-org/cli"
+        return 1
+    fi
+
+    if git remote get-url origin &>/dev/null; then
+        log_info "Git remote already configured"
+        git remote get-url origin
+        return 0
+    fi
+
+    load_config 2>/dev/null || true
+    local host="${CONFIG_GITLAB_HOST:-gitlab.com}"
+    local project_name
+    project_name=$(basename "$(pwd)")
+
+    if ! glab auth status --hostname "$host" &>/dev/null; then
+        log_error "Not authenticated with GitLab ($host)"
+        log_info "Run: glab auth login --hostname $host"
+        return 1
+    fi
+
+    # Namespace: the configured account, else the authenticated user.
+    local namespace="${CONFIG_GITLAB_ACCOUNT:-}"
+    if [[ -z "$namespace" ]]; then
+        namespace=$(forge_user gitlab "$host") || {
+            log_error "Could not determine GitLab username"
+            log_info "Set it with: zzc config set gitlab-account <username>"
+            return 1
+        }
+        [[ -n "$namespace" ]] || {
+            log_error "Could not determine GitLab username"
+            log_info "Set it with: zzc config set gitlab-account <username>"
+            return 1
+        }
+    fi
+
+    local visibility="${GITLAB_VISIBILITY:-${CONFIG_GITLAB_DEFAULT_VISIBILITY:-private}}"
+    local vis_flag
+    case "$visibility" in
+        public)   vis_flag="--public" ;;
+        internal) vis_flag="--internal" ;;
+        *)        vis_flag="--private"; visibility="private" ;;
+    esac
+
+    local remote_url="https://${host}/${namespace}/${project_name}.git"
+
+    if glab repo view "${namespace}/${project_name}" &>/dev/null; then
+        log_warn "Repository ${namespace}/${project_name} already exists"
+        echo ""
+        echo "Options:"
+        echo "  1) Connect to existing repo (add remote and push)"
+        echo "  2) Delete and recreate"
+        echo "  3) Cancel"
+        echo ""
+        local choice
+        zzc_read -r -p "Choice [1]: " choice
+        choice="${choice:-1}"
+        case "$choice" in
+            1)
+                log_info "Connecting to existing repository..."
+                git remote add origin "$remote_url" 2>/dev/null || \
+                    git remote set-url origin "$remote_url"
+                git branch -M main
+                git push -u origin main --force-with-lease
+                log_success "Connected and pushed to existing repository"
+                return 0
+                ;;
+            2)
+                log_warn "Deleting existing repository..."
+                glab repo delete "${namespace}/${project_name}" -y || {
+                    log_error "Failed to delete repository"
+                    return 1
+                }
+                log_success "Deleted ${namespace}/${project_name}"
+                ;;
+            *)
+                log_info "Cancelled"
+                return 0
+                ;;
+        esac
+    fi
+
+    log_info "Creating GitLab repository: ${namespace}/${project_name} ($visibility) on $host"
+    if GITLAB_HOST="$host" glab repo create "$project_name" "$vis_flag"; then
+        git remote add origin "$remote_url" 2>/dev/null || \
+            git remote set-url origin "$remote_url"
+        git branch -M main
+        if git push -u origin main; then
+            log_success "GitLab repository created and pushed"
+            glab repo view --web 2>/dev/null || true
+        else
+            log_error "Repository created but push failed. Check: git push -u origin main"
+            return 1
+        fi
+    else
+        log_error "Failed to create GitLab repository"
+        return 1
+    fi
+    return 0
+}
+
+cmd_rm_gitlab() {
+    if ! git remote get-url origin &>/dev/null; then
+        log_info "No GitLab remote to remove"
+        return 0
+    fi
+
+    git remote remove origin
+    log_success "GitLab remote removed (local repo preserved)"
+    log_info "Note: Remote repository still exists on GitLab"
+}
+
 cmd_dockerhub() {
     local tag="${1:-latest}"
     local project_name
@@ -1675,30 +1824,63 @@ cmd_dockerhub() {
     # Ensure image exists (prompts to build if not)
     ensure_docker_image_built "$project_name" || return 1
 
-    # Get DockerHub username from config or environment
-    # Priority: DOCKERHUB_ACCOUNT env > configured dockerhub_account
     load_config 2>/dev/null || true
-    local dockerhub_user="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
 
-    if [[ -z "$dockerhub_user" ]]; then
+    # Registry: explicit docker.registry config wins; otherwise default by forge
+    # (GitLab Container Registry when forge=gitlab, Docker Hub otherwise).
+    # Honouring docker.registry here fixes the prior behaviour where it was
+    # ignored and every push went to Docker Hub.
+    local registry="${CONFIG_DOCKER_REGISTRY:-}"
+    if [[ -z "$registry" ]]; then
+        if [[ "${CONFIG_FORGE:-github}" == gitlab ]]; then
+            registry="registry.gitlab.com"
+        else
+            registry="docker.io"
+        fi
+    fi
+
+    # Resolve the namespace account and its config key for this registry.
+    local account account_key label
+    case "$registry" in
+        docker.io)
+            account="${DOCKERHUB_ACCOUNT:-${CONFIG_DOCKERHUB_ACCOUNT:-}}"
+            account_key="dockerhub-account"; label="Docker Hub" ;;
+        ghcr.io)
+            account="${CONFIG_GITHUB_ACCOUNT:-}"
+            account_key="github-account"; label="GitHub Container Registry" ;;
+        *)
+            # registry.gitlab.com or a self-hosted GitLab registry host.
+            account="${CONFIG_GITLAB_ACCOUNT:-}"
+            account_key="gitlab-account"; label="GitLab Container Registry" ;;
+    esac
+
+    if [[ -z "$account" ]]; then
         if [[ ! -t 0 ]] && [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" != "true" ]]; then
-            log_error "DockerHub username not configured"
-            echo "  Set with: zzc config set dockerhub-account <username>" >&2
+            log_error "$label account not configured"
+            echo "  Set with: zzc config set $account_key <name>" >&2
             return 1
         fi
-        zzc_read -r -p "DockerHub username: " dockerhub_user
-        if [[ -z "$dockerhub_user" ]]; then
-            log_error "DockerHub username required"
+        zzc_read -r -p "$label account/namespace: " account
+        if [[ -z "$account" ]]; then
+            log_error "$label account required"
             return 1
         fi
         local _save
         zzc_read -r -p "Save to config? [Y/n]: " _save
         if [[ ! "$_save" =~ ^[Nn]$ ]]; then
-            config_set "dockerhub-account" "$dockerhub_user"
+            config_set "$account_key" "$account"
         fi
     fi
 
-    local remote_image="${dockerhub_user}/${project_name}:${tag}"
+    # Build the image reference. docker.io is implicit, so no host prefix
+    # (preserving the historical Docker Hub tag form); other registries are
+    # prefixed with the registry host.
+    local remote_image
+    if [[ "$registry" == docker.io ]]; then
+        remote_image="${account}/${project_name}:${tag}"
+    else
+        remote_image="${registry}/${account}/${project_name}:${tag}"
+    fi
 
     log_info "Tagging: $project_name → $remote_image"
     docker tag "$project_name" "$remote_image" || {
@@ -1706,14 +1888,17 @@ cmd_dockerhub() {
         return 1
     }
 
-    log_info "Pushing to DockerHub: $remote_image"
+    local login_hint="docker login"
+    [[ "$registry" == docker.io ]] || login_hint="docker login $registry"
+
+    log_info "Pushing to $label: $remote_image"
     if docker push "$remote_image"; then
         log_success "Pushed: $remote_image"
         echo ""
         echo "Pull with:"
         echo "  docker pull $remote_image"
     else
-        log_error "Push failed. Check: docker login"
+        log_error "Push failed. Check: $login_hint"
         return 1
     fi
 
@@ -1965,19 +2150,20 @@ cmd_add() {
         tests)         cmd_tests "$@" ;;
         cloud)         cmd_cloud "$@" ;;
         github)        cmd_github "$@" ;;
+        gitlab)        cmd_gitlab "$@" ;;
         cicd)
             ensure_workspace_initialized "cicd" || return 1
             _toggle_add_ci && log_success "Installed CI workflows"
             ;;
         ""|help|--help|-h)
             echo "Usage: zzcollab add <feature> [options]"
-            echo "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github"
+            echo "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github, gitlab"
             echo "Equivalent to the bare verbs (zzc docker, zzc renv, ...); 'rm' is the inverse."
             [[ -z "$feature" ]] && return 1 || return 0
             ;;
         *)
             log_error "Unknown feature: $feature"
-            log_info "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github"
+            log_info "Features: docker, renv, nix, data, code-quality, tests, cloud, cicd, github, gitlab"
             return 1
             ;;
     esac
@@ -1999,6 +2185,9 @@ cmd_rm() {
             ;;
         github)
             cmd_rm_github
+            ;;
+        gitlab)
+            cmd_rm_gitlab
             ;;
         cicd)
             cmd_rm_cicd
@@ -2182,15 +2371,22 @@ cmd_rm_github() {
 }
 
 cmd_rm_cicd() {
-    if [[ ! -d ".github/workflows" ]]; then
-        log_info "No CI/CD workflows to remove"
-        return 0
+    local removed=false
+    if [[ -d ".github/workflows" ]]; then
+        rm -rf .github/workflows
+        # Remove .github if empty
+        rmdir .github 2>/dev/null || true
+        removed=true
     fi
-
-    rm -rf .github/workflows
-    # Remove .github if empty
-    rmdir .github 2>/dev/null || true
-    log_success "CI/CD workflows removed"
+    if [[ -f ".gitlab-ci.yml" ]]; then
+        rm -f .gitlab-ci.yml
+        removed=true
+    fi
+    if [[ "$removed" == true ]]; then
+        log_success "CI/CD workflows removed"
+    else
+        log_info "No CI/CD workflows to remove"
+    fi
 }
 
 cmd_rm_all() {
@@ -2246,7 +2442,8 @@ Commands (can be combined):
   docker     Add Docker containerization (Dockerfile)
   git        Initialize git repository
   github     Initialize git + create GitHub repo
-  dockerhub  Push Docker image to DockerHub
+  gitlab     Initialize git + create GitLab repo (forge: gitlab)
+  push       Push Docker image to the configured registry (alias: dockerhub)
 
 Profiles (new project: init+renv+docker, existing: switch profile):
   minimal       Base R, command-line only (~650MB)
@@ -2256,7 +2453,7 @@ Profiles (new project: init+renv+docker, existing: switch profile):
 Management:
   rebuild        Rebuild Docker image (uses content-addressable cache)
   tools          Install render-stamp helpers in tools/ (PDF provenance)
-  rm <feature>   Remove: docker, renv, git, github, cicd
+  rm <feature>   Remove: docker, renv, git, github, gitlab, cicd
   uninstall      Remove the zzcollab scaffold from this directory
   doctor         Check workspace files are current with templates
   update         Regenerate framework-managed files to the current template version
@@ -2279,8 +2476,9 @@ Per-command options (must follow their command):
              -r, --profile <name>     Select profile (analysis, minimal, ...)
              --base-image <img>       Override base image
              --r-version <ver>        Pin R version
-  dockerhub: -t, --tag <tag>          Image tag (default: latest)
+  push:      -t, --tag <tag>          Image tag (default: latest); alias: dockerhub
   github:    --private | --public     Repo visibility (default: private)
+  gitlab:    --private | --public | --internal   Repo visibility (default: private)
   rm:        -f, --force              Skip confirmation
   update:    --dry-run                Preview changes; write nothing
              -f, --force              Proceed on a dirty/non-git tree
@@ -2430,6 +2628,10 @@ cmd_menu() {
         log_info  "Create one first:  zzcollab analysis  (or minimal, rstudio)"
         return 1
     fi
+    # Repo entry follows the configured forge (GitHub or GitLab).
+    load_config 2>/dev/null || true
+    local repo_label="Create GitHub repo"
+    [[ "${CONFIG_FORGE:-github}" == gitlab ]] && repo_label="Create GitLab repo"
     while true; do
         local choice
         choice=$(_menu_choose "zzcollab — what would you like to do?" \
@@ -2439,8 +2641,8 @@ cmd_menu() {
             "Set GitHub account" \
             "Pin R version" \
             "Rebuild Docker image" \
-            "Push image to Docker Hub" \
-            "Create GitHub repo" \
+            "Push image to registry" \
+            "$repo_label" \
             "View configuration" \
             "Check workspace health" \
             "Quit") || break
@@ -2451,8 +2653,9 @@ cmd_menu() {
             "Set GitHub account")        _menu_set_value github-account "GitHub account" ;;
             "Pin R version")             _menu_set_value r-version "R version (X.Y.Z)" ;;
             "Rebuild Docker image")      cmd_build ;;
-            "Push image to Docker Hub")  cmd_dockerhub ;;
+            "Push image to registry")    cmd_dockerhub ;;
             "Create GitHub repo")        cmd_github ;;
+            "Create GitLab repo")        cmd_gitlab ;;
             "View configuration")        config_list ;;
             "Check workspace health")    cmd_doctor ;;
             "Quit"|"")                   break ;;
@@ -2621,7 +2824,22 @@ main() {
                 cmd_github
                 commands_run=$((commands_run + 1))
                 ;;
-            dockerhub)
+            gitlab)
+                shift
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        --private)  export GITLAB_VISIBILITY="private";  shift ;;
+                        --public)   export GITLAB_VISIBILITY="public";   shift ;;
+                        --internal) export GITLAB_VISIBILITY="internal"; shift ;;
+                        *)          break ;;
+                    esac
+                done
+                cmd_gitlab
+                commands_run=$((commands_run + 1))
+                ;;
+            push|dockerhub)
+                # 'push' is the forge-neutral name (it honours docker.registry);
+                # 'dockerhub' is kept as a back-compat alias.
                 shift
                 local dockerhub_tag="latest"
                 while [[ $# -gt 0 ]]; do

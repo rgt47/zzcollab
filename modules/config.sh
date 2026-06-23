@@ -92,6 +92,17 @@ CONFIG_DOCKER_RUNTIME=""
 CONFIG_GITHUB_DEFAULT_VISIBILITY=""
 CONFIG_GITHUB_DEFAULT_BRANCH=""
 
+# Extended configuration state - forge / GitLab
+# Source forge for CI, remote creation, and cloud launch. Empty -> github
+# (back-compatible). Consumers apply the default at the use site, e.g.
+# "${CONFIG_FORGE:-github}", as with the feature defaults above.
+CONFIG_FORGE=""
+CONFIG_GITLAB_ACCOUNT=""
+# GitLab host for self-hosted instances; empty -> gitlab.com at the use site.
+CONFIG_GITLAB_HOST=""
+CONFIG_GITLAB_DEFAULT_VISIBILITY=""
+CONFIG_GITLAB_DEFAULT_BRANCH=""
+
 #=============================================================================
 # YAML OPERATIONS
 #=============================================================================
@@ -254,6 +265,11 @@ load_config() {
     CONFIG_DOCKER_RUNTIME=""
     CONFIG_GITHUB_DEFAULT_VISIBILITY=""
     CONFIG_GITHUB_DEFAULT_BRANCH=""
+    CONFIG_FORGE=""
+    CONFIG_GITLAB_ACCOUNT=""
+    CONFIG_GITLAB_HOST=""
+    CONFIG_GITLAB_DEFAULT_VISIBILITY=""
+    CONFIG_GITLAB_DEFAULT_BRANCH=""
 
     # Load in reverse priority (later overrides earlier)
     _load_file "$CONFIG_USER"
@@ -307,6 +323,11 @@ features.cloud                  CONFIG_FEAT_CLOUD
 github.account                  CONFIG_GITHUB_ACCOUNT
 github.default_visibility       CONFIG_GITHUB_DEFAULT_VISIBILITY
 github.default_branch           CONFIG_GITHUB_DEFAULT_BRANCH
+forge                           CONFIG_FORGE
+gitlab.account                  CONFIG_GITLAB_ACCOUNT
+gitlab.host                     CONFIG_GITLAB_HOST
+gitlab.default_visibility       CONFIG_GITLAB_DEFAULT_VISIBILITY
+gitlab.default_branch           CONFIG_GITLAB_DEFAULT_BRANCH
 "
 
 # Friendly user-key aliases that do NOT follow the derivation rule (user key =
@@ -538,6 +559,12 @@ EOF
                 case "$value" in
                     true|false) ;;
                     *) log_error "Expected true or false for $key (got: $value)"
+                       return 1 ;;
+                esac ;;
+            forge)
+                case "$value" in
+                    github|gitlab|none) ;;
+                    *) log_error "Unknown forge: $value (valid: github, gitlab, none)"
                        return 1 ;;
                 esac ;;
         esac

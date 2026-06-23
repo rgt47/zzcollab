@@ -507,6 +507,35 @@ check_version_stamps() {
         fi
     fi
 
+    # .gitlab-ci.yml (forge: gitlab). Same full-replacement policy as the
+    # GitHub workflows above: the body changes between versions, so a stamp-only
+    # bump would lie. The GitHub blocks self-guard on .github/workflows, so they
+    # no-op for a GitLab project; this block covers it.
+    local gitlab_ci_file="$dir/.gitlab-ci.yml"
+    local template_gitlab_ci="${ZZCOLLAB_TEMPLATES_DIR}/gitlab/.gitlab-ci.yml"
+
+    if [[ -f "$gitlab_ci_file" ]]; then
+        local gitlab_ci_ver
+        gitlab_ci_ver=$(extract_version "$gitlab_ci_file" ".gitlab-ci.yml")
+        if ! print_version_status ".gitlab-ci.yml" "$gitlab_ci_ver"; then
+            issues=$((issues + 1))
+            if [[ -t 0 ]] && [[ -f "$template_gitlab_ci" ]]; then
+                local replace_gitlab_choice
+                read -r -p "    Replace with template (overwrites local edits)? [y/N]: " replace_gitlab_choice
+                if [[ "$replace_gitlab_choice" =~ ^[Yy]$ ]]; then
+                    if install_template_stamped "$template_gitlab_ci" \
+                           "$gitlab_ci_file" "$CURRENT_VERSION"; then
+                        printf "    ${COL_GREEN}✓ Replaced .gitlab-ci.yml (v%s)${COL_RESET}\n" \
+                            "$CURRENT_VERSION"
+                        issues=$((issues - 1))
+                    else
+                        printf "    ${COL_RED}✗ Failed to replace${COL_RESET}\n"
+                    fi
+                fi
+            fi
+        fi
+    fi
+
     # .Rprofile.local (owned by zzvim-R, informational only)
     if [[ -f "$dir/.Rprofile.local" ]]; then
         local rprofile_local_ver
