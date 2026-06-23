@@ -285,6 +285,8 @@ zzcollab config validate               # Validate YAML syntax
 ### Customizable Settings
 
 - **Team settings**: `team_name`, `github_account`
+- **Forge**: `forge` (`github` \| `gitlab` \| `none`), `gitlab_account`,
+  `gitlab_host` (self-hosted)
 - **Automation**: `auto_github`, `skip_confirmation`
 
 ## Core R Functions
@@ -454,7 +456,7 @@ zzcollab <profile>            # quickstart: init + renv + docker
 zzcollab config <subcommand>
 
 COMMANDS (can be combined):
-  init, renv, docker, git, github, dockerhub
+  init, renv, docker, git, github, gitlab, push (alias: dockerhub)
   build, doctor, validate, config, list, help
 
 PROFILES (quickstart, or switch profile in an existing project):
@@ -474,8 +476,9 @@ PER-COMMAND OPTIONS:
              -r, --profile NAME       Select profile (analysis, minimal, ...)
              --base-image IMG         Override base image (default: rocker/r-ver)
              --r-version VER          Pin R version
-  dockerhub: -t, --tag TAG            Image tag (default: latest)
+  push:      -t, --tag TAG            Image tag (default: latest); alias: dockerhub
   github:    --private | --public     Repo visibility (default: private)
+  gitlab:    --private | --public | --internal   Repo visibility (default: private)
   rm:        -f, --force              Skip the removal confirmation prompt
 
 CONFIG COMMANDS:
@@ -489,6 +492,9 @@ EXAMPLES:
   # Configuration (one-time)
   zzcollab config set dockerhub-account myteam   # Docker Hub namespace
   zzcollab config set github-account myorg       # GitHub namespace
+  # GitLab instead of GitHub (single forge):
+  zzcollab config set forge gitlab               # use GitLab
+  zzcollab config set gitlab-account mylab       # GitLab namespace
 
   # Solo researcher
   mkdir study && cd study
@@ -496,8 +502,9 @@ EXAMPLES:
 
   # Team collaboration - Lead
   cd study && zzcollab analysis
-  zzcollab dockerhub                          # Push team image to Docker Hub
+  zzcollab push                               # Push team image to the registry
   zzcollab github                             # Create repo + push
+  # (with forge=gitlab: zzcollab gitlab)
 
   # Team collaboration - Member
   git clone https://github.com/myteam/study.git && cd study

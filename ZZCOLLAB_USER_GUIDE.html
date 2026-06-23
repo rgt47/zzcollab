@@ -59,6 +59,7 @@
 <li><a href="#build-system-with-make">Build System with Make</a></li>
 <li><a href="#configuration-system">Configuration System</a></li>
 <li><a href="#github-actions-cicd">GitHub Actions CI/CD</a></li>
+<li><a href="#gitlab-support">GitLab support</a></li>
 <li><a href="#troubleshooting">Troubleshooting</a></li>
 <li><a href="#platform-specific-notes">Platform-Specific Notes</a></li>
 </ol></div>
@@ -501,6 +502,24 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="gitlab-support">GitLab support<a class="anchor" aria-label="anchor" href="#gitlab-support"></a></h2>
+<p>zzcollab supports GitLab as an alternative to GitHub. The active forge is a single choice, set once:</p>
+<pre><code>zzc config set forge gitlab
+zzc config set gitlab-account mylab
+zzc config set gitlab-host gitlab.example.edu   # self-hosted only</code></pre>
+<p>The forge can also be chosen interactively in <code>zzc toggle</code> (the forge picker), and is the first decision in the feature wizard.</p>
+<p>With <code>forge=gitlab</code>, the framework adapts as follows:</p>
+<ul><li>
+<strong>CI</strong>: a single <code>.gitlab-ci.yml</code> replaces the two GitHub Actions workflows. It self-adapts to the backend (Nix flake, Docker, renv, or DESCRIPTION) and runs a check stage and a path-filtered render stage, mirroring the GitHub pipeline. Install or remove it with <code>zzc add cicd</code> / <code>zzc rm cicd</code>, or via the <code>ci</code> feature in <code>zzc toggle</code>.</li>
+<li>
+<strong>Remote repository</strong>: <code>zzc gitlab</code> (counterpart to <code>zzc github</code>) uses the <code>glab</code> CLI to create the project and push, honouring <code>gitlab-host</code> for self-hosted instances. Visibility is <code>--private</code> (default), <code>--public</code>, or <code>--internal</code>.</li>
+<li>
+<strong>Container registry</strong>: pushes default to the GitLab Container Registry (<code>registry.gitlab.com</code>, or <code>registry.&lt;host&gt;</code> for self-hosted), whose CI authentication is provided automatically by GitLab’s <code>$CI_REGISTRY</code> variables. Override with <code>zzc config set docker-registry &lt;host&gt;</code>. Push with <code>zzc push</code> (the registry-aware command; <code>zzc dockerhub</code> is a back-compat alias).</li>
+<li>
+<strong>Cloud launch</strong>: <code>zzc cloud</code> installs a GitLab Workspaces devfile (<code>.devfile.yaml</code>) instead of the Codespaces devcontainer. Force either with <code>zzc cloud --platform workspace</code> or <code>--platform devcontainer</code>.</li>
+</ul><p>GitLab integration requires the <code>glab</code> CLI for repository creation (<code>zzc gitlab</code>); CI, registry, and Workspaces configuration are generated without it.</p>
+</div>
+<div class="section level2">
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a></h2>
 <div class="section level3">
 <h3 id="docker-problems">Docker Problems<a class="anchor" aria-label="anchor" href="#docker-problems"></a></h3>
@@ -565,54 +584,54 @@ Solution: make check-system-deps</code></pre>
 <div class="section level3">
 <h3 id="platform-configuration">Platform Configuration<a class="anchor" aria-label="anchor" href="#platform-configuration"></a></h3>
 <p>The Docker build/run platform is controlled by Docker’s own environment variable (zzcollab does not store it in config):</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64   <span class="co"># force AMD64 (e.g. rocker/verse on ARM)</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/arm64   <span class="co"># force ARM64</span></span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="bu">unset</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span>                 <span class="co"># use the host architecture (default)</span></span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64   <span class="co"># force AMD64 (e.g. rocker/verse on ARM)</span></span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/arm64   <span class="co"># force ARM64</span></span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a><span class="bu">unset</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span>                 <span class="co"># use the host architecture (default)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
 <h2 id="cli-reference">CLI Reference<a class="anchor" aria-label="anchor" href="#cli-reference"></a></h2>
 <div class="section level3">
 <h3 id="commands-1">Commands<a class="anchor" aria-label="anchor" href="#commands-1"></a></h3>
-<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="ex">zzc</span> <span class="op">&lt;</span>profile<span class="op">&gt;</span>                   <span class="co"># create or switch profile</span></span>
-<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="ex">zzc</span> init                        <span class="co"># create R package structure</span></span>
-<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a><span class="ex">zzc</span> renv                        <span class="co"># set up renv</span></span>
-<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>            <span class="co"># generate/build Dockerfile</span></span>
-<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="ex">zzc</span> rebuild <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>           <span class="co"># rebuild Docker image</span></span>
-<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="ex">zzc</span> git                         <span class="co"># initialize git</span></span>
-<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a><span class="ex">zzc</span> github [--public<span class="kw">|</span><span class="ex">--private]</span> <span class="co"># create GitHub repository</span></span>
-<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="ex">zzc</span> dockerhub [--tag TAG]       <span class="co"># push image to Docker Hub</span></span>
-<span id="cb40-9"><a href="#cb40-9" tabindex="-1"></a><span class="ex">zzc</span> validate <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>          <span class="co"># check project structure</span></span>
-<span id="cb40-10"><a href="#cb40-10" tabindex="-1"></a><span class="ex">zzc</span> doctor <span class="pp">[</span><span class="ss">DIR</span><span class="pp">]</span> [--scan DIR]   <span class="co"># detect outdated templates</span></span>
-<span id="cb40-11"><a href="#cb40-11" tabindex="-1"></a><span class="ex">zzc</span> update <span class="pp">[</span><span class="ss">DIR</span><span class="pp">]</span> <span class="pp">[--</span><span class="ss">dry</span><span class="pp">-</span><span class="ss">run</span><span class="pp">]</span> <span class="pp">[--</span><span class="ss">force</span><span class="pp">]</span>  <span class="co"># regenerate managed files to current version</span></span>
-<span id="cb40-12"><a href="#cb40-12" tabindex="-1"></a><span class="ex">zzc</span> config <span class="op">&lt;</span>subcommand<span class="op">&gt;</span>         <span class="co"># configuration management</span></span>
-<span id="cb40-13"><a href="#cb40-13" tabindex="-1"></a><span class="ex">zzc</span> list [profiles<span class="kw">|</span><span class="ex">libs</span><span class="kw">|</span><span class="ex">pkgs]</span>   <span class="co"># list available options</span></span>
-<span id="cb40-14"><a href="#cb40-14" tabindex="-1"></a><span class="ex">zzc</span> rm <span class="op">&lt;</span>feature<span class="op">&gt;</span> <span class="pp">[-</span><span class="ss">f</span><span class="pp">]</span>           <span class="co"># remove docker|renv|git|all</span></span>
-<span id="cb40-15"><a href="#cb40-15" tabindex="-1"></a><span class="ex">zzc</span> help <span class="pp">[</span><span class="ss">topic</span><span class="pp">]</span>                <span class="co"># show help</span></span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="ex">zzc</span> <span class="op">&lt;</span>profile<span class="op">&gt;</span>                   <span class="co"># create or switch profile</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="ex">zzc</span> init                        <span class="co"># create R package structure</span></span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a><span class="ex">zzc</span> renv                        <span class="co"># set up renv</span></span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>            <span class="co"># generate/build Dockerfile</span></span>
+<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="ex">zzc</span> rebuild <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>           <span class="co"># rebuild Docker image</span></span>
+<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a><span class="ex">zzc</span> git                         <span class="co"># initialize git</span></span>
+<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a><span class="ex">zzc</span> github [--public<span class="kw">|</span><span class="ex">--private]</span> <span class="co"># create GitHub repository</span></span>
+<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a><span class="ex">zzc</span> dockerhub [--tag TAG]       <span class="co"># push image to Docker Hub</span></span>
+<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a><span class="ex">zzc</span> validate <span class="pp">[</span><span class="ss">OPTIONS</span><span class="pp">]</span>          <span class="co"># check project structure</span></span>
+<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a><span class="ex">zzc</span> doctor <span class="pp">[</span><span class="ss">DIR</span><span class="pp">]</span> [--scan DIR]   <span class="co"># detect outdated templates</span></span>
+<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a><span class="ex">zzc</span> update <span class="pp">[</span><span class="ss">DIR</span><span class="pp">]</span> <span class="pp">[--</span><span class="ss">dry</span><span class="pp">-</span><span class="ss">run</span><span class="pp">]</span> <span class="pp">[--</span><span class="ss">force</span><span class="pp">]</span>  <span class="co"># regenerate managed files to current version</span></span>
+<span id="cb41-12"><a href="#cb41-12" tabindex="-1"></a><span class="ex">zzc</span> config <span class="op">&lt;</span>subcommand<span class="op">&gt;</span>         <span class="co"># configuration management</span></span>
+<span id="cb41-13"><a href="#cb41-13" tabindex="-1"></a><span class="ex">zzc</span> list [profiles<span class="kw">|</span><span class="ex">libs</span><span class="kw">|</span><span class="ex">pkgs]</span>   <span class="co"># list available options</span></span>
+<span id="cb41-14"><a href="#cb41-14" tabindex="-1"></a><span class="ex">zzc</span> rm <span class="op">&lt;</span>feature<span class="op">&gt;</span> <span class="pp">[-</span><span class="ss">f</span><span class="pp">]</span>           <span class="co"># remove docker|renv|git|all</span></span>
+<span id="cb41-15"><a href="#cb41-15" tabindex="-1"></a><span class="ex">zzc</span> help <span class="pp">[</span><span class="ss">topic</span><span class="pp">]</span>                <span class="co"># show help</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="global-flags">Global Flags<a class="anchor" aria-label="anchor" href="#global-flags"></a></h3>
-<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="ex">-v,</span> <span class="at">--verbose</span>                   <span class="co"># verbose output</span></span>
-<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="ex">-q,</span> <span class="at">--quiet</span>                     <span class="co"># errors only</span></span>
-<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a><span class="ex">-y,</span> <span class="at">--yes</span>                       <span class="co"># accept all defaults</span></span>
-<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="ex">-h,</span> <span class="at">--help</span>                      <span class="co"># show usage</span></span>
-<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="ex">--version</span>                       <span class="co"># show version</span></span>
-<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a><span class="ex">--no-build</span>                      <span class="co"># skip Docker build prompts</span></span></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="ex">-v,</span> <span class="at">--verbose</span>                   <span class="co"># verbose output</span></span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="ex">-q,</span> <span class="at">--quiet</span>                     <span class="co"># errors only</span></span>
+<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a><span class="ex">-y,</span> <span class="at">--yes</span>                       <span class="co"># accept all defaults</span></span>
+<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a><span class="ex">-h,</span> <span class="at">--help</span>                      <span class="co"># show usage</span></span>
+<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a><span class="ex">--version</span>                       <span class="co"># show version</span></span>
+<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a><span class="ex">--no-build</span>                      <span class="co"># skip Docker build prompts</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="help-topics">Help Topics<a class="anchor" aria-label="anchor" href="#help-topics"></a></h3>
-<div class="sourceCode" id="cb42"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="ex">zzc</span> help quickstart             <span class="co"># getting started</span></span>
-<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="ex">zzc</span> help workflow               <span class="co"># daily development</span></span>
-<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a><span class="ex">zzc</span> help team                   <span class="co"># team collaboration</span></span>
-<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a><span class="ex">zzc</span> help config                 <span class="co"># configuration system</span></span>
-<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a><span class="ex">zzc</span> help profiles               <span class="co"># Docker profiles</span></span>
-<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a><span class="ex">zzc</span> help docker                 <span class="co"># Docker architecture</span></span>
-<span id="cb42-7"><a href="#cb42-7" tabindex="-1"></a><span class="ex">zzc</span> help renv                   <span class="co"># package management</span></span>
-<span id="cb42-8"><a href="#cb42-8" tabindex="-1"></a><span class="ex">zzc</span> help cicd                   <span class="co"># CI/CD automation</span></span>
-<span id="cb42-9"><a href="#cb42-9" tabindex="-1"></a><span class="ex">zzc</span> help doctor                 <span class="co"># workspace health checks</span></span>
-<span id="cb42-10"><a href="#cb42-10" tabindex="-1"></a><span class="ex">zzc</span> help rm                     <span class="co"># removing features</span></span>
-<span id="cb42-11"><a href="#cb42-11" tabindex="-1"></a><span class="ex">zzc</span> help troubleshoot           <span class="co"># common issues</span></span>
-<span id="cb42-12"><a href="#cb42-12" tabindex="-1"></a><span class="ex">zzc</span> help options                <span class="co"># all command-line options</span></span></code></pre></div>
+<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="ex">zzc</span> help quickstart             <span class="co"># getting started</span></span>
+<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a><span class="ex">zzc</span> help workflow               <span class="co"># daily development</span></span>
+<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a><span class="ex">zzc</span> help team                   <span class="co"># team collaboration</span></span>
+<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a><span class="ex">zzc</span> help config                 <span class="co"># configuration system</span></span>
+<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a><span class="ex">zzc</span> help profiles               <span class="co"># Docker profiles</span></span>
+<span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a><span class="ex">zzc</span> help docker                 <span class="co"># Docker architecture</span></span>
+<span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a><span class="ex">zzc</span> help renv                   <span class="co"># package management</span></span>
+<span id="cb43-8"><a href="#cb43-8" tabindex="-1"></a><span class="ex">zzc</span> help cicd                   <span class="co"># CI/CD automation</span></span>
+<span id="cb43-9"><a href="#cb43-9" tabindex="-1"></a><span class="ex">zzc</span> help doctor                 <span class="co"># workspace health checks</span></span>
+<span id="cb43-10"><a href="#cb43-10" tabindex="-1"></a><span class="ex">zzc</span> help rm                     <span class="co"># removing features</span></span>
+<span id="cb43-11"><a href="#cb43-11" tabindex="-1"></a><span class="ex">zzc</span> help troubleshoot           <span class="co"># common issues</span></span>
+<span id="cb43-12"><a href="#cb43-12" tabindex="-1"></a><span class="ex">zzc</span> help options                <span class="co"># all command-line options</span></span></code></pre></div>
 </div>
 </div>
 </div>

@@ -380,6 +380,8 @@
 <strong>Team settings</strong>: <code>team_name</code>, <code>github_account</code>
 </li>
 <li>
+<strong>Forge</strong>: <code>forge</code> (<code>github</code> | <code>gitlab</code> | <code>none</code>), <code>gitlab_account</code>, <code>gitlab_host</code> (self-hosted)</li>
+<li>
 <strong>Automation</strong>: <code>auto_github</code>, <code>skip_confirmation</code>
 </li>
 </ul>
@@ -570,7 +572,7 @@
 <span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="ex">zzcollab</span> config <span class="op">&lt;</span>subcommand<span class="op">&gt;</span></span>
 <span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a></span>
 <span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="ex">COMMANDS</span> <span class="er">(</span><span class="ex">can</span> be combined<span class="kw">)</span><span class="bu">:</span></span>
-<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>  <span class="ex">init,</span> renv, docker, git, github, dockerhub</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>  <span class="ex">init,</span> renv, docker, git, github, gitlab, push <span class="er">(</span><span class="ex">alias:</span> dockerhub<span class="kw">)</span></span>
 <span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>  <span class="ex">build,</span> doctor, validate, config, list, help</span>
 <span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a></span>
 <span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="ex">PROFILES</span> <span class="er">(</span><span class="ex">quickstart,</span> or switch profile in an existing project<span class="kw">)</span><span class="bu">:</span></span>
@@ -590,39 +592,44 @@
 <span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a>             <span class="ex">-r,</span> <span class="at">--profile</span> NAME       Select profile <span class="er">(</span><span class="ex">analysis,</span> minimal, ...<span class="kw">)</span></span>
 <span id="cb21-24"><a href="#cb21-24" tabindex="-1"></a>             <span class="ex">--base-image</span> IMG         Override base image <span class="er">(</span><span class="ex">default:</span> rocker/r-ver<span class="kw">)</span></span>
 <span id="cb21-25"><a href="#cb21-25" tabindex="-1"></a>             <span class="ex">--r-version</span> VER          Pin R version</span>
-<span id="cb21-26"><a href="#cb21-26" tabindex="-1"></a>  <span class="ex">dockerhub:</span> <span class="at">-t,</span> <span class="at">--tag</span> TAG            Image tag <span class="er">(</span><span class="ex">default:</span> latest<span class="kw">)</span></span>
+<span id="cb21-26"><a href="#cb21-26" tabindex="-1"></a>  <span class="ex">push:</span>      <span class="at">-t,</span> <span class="at">--tag</span> TAG            Image tag <span class="er">(</span><span class="ex">default:</span> latest<span class="kw">);</span> <span class="ex">alias:</span> dockerhub</span>
 <span id="cb21-27"><a href="#cb21-27" tabindex="-1"></a>  <span class="ex">github:</span>    <span class="at">--private</span> <span class="kw">|</span> <span class="ex">--public</span>     Repo visibility <span class="er">(</span><span class="ex">default:</span> private<span class="kw">)</span></span>
-<span id="cb21-28"><a href="#cb21-28" tabindex="-1"></a>  <span class="ex">rm:</span>        <span class="at">-f,</span> <span class="at">--force</span>              Skip the removal confirmation prompt</span>
-<span id="cb21-29"><a href="#cb21-29" tabindex="-1"></a></span>
-<span id="cb21-30"><a href="#cb21-30" tabindex="-1"></a><span class="ex">CONFIG</span> COMMANDS:</span>
-<span id="cb21-31"><a href="#cb21-31" tabindex="-1"></a>  <span class="ex">zzcollab</span> config init                    <span class="co"># Create default config</span></span>
-<span id="cb21-32"><a href="#cb21-32" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set KEY VALUE           <span class="co"># Set configuration value</span></span>
-<span id="cb21-33"><a href="#cb21-33" tabindex="-1"></a>  <span class="ex">zzcollab</span> config get KEY                 <span class="co"># Get configuration value</span></span>
-<span id="cb21-34"><a href="#cb21-34" tabindex="-1"></a>  <span class="ex">zzcollab</span> config list                    <span class="co"># List all configuration</span></span>
-<span id="cb21-35"><a href="#cb21-35" tabindex="-1"></a>  <span class="ex">zzcollab</span> config validate                <span class="co"># Validate YAML syntax</span></span>
-<span id="cb21-36"><a href="#cb21-36" tabindex="-1"></a></span>
-<span id="cb21-37"><a href="#cb21-37" tabindex="-1"></a><span class="ex">EXAMPLES:</span></span>
-<span id="cb21-38"><a href="#cb21-38" tabindex="-1"></a>  <span class="co"># Configuration (one-time)</span></span>
-<span id="cb21-39"><a href="#cb21-39" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set dockerhub-account myteam   <span class="co"># Docker Hub namespace</span></span>
-<span id="cb21-40"><a href="#cb21-40" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set github-account myorg       <span class="co"># GitHub namespace</span></span>
-<span id="cb21-41"><a href="#cb21-41" tabindex="-1"></a></span>
-<span id="cb21-42"><a href="#cb21-42" tabindex="-1"></a>  <span class="co"># Solo researcher</span></span>
-<span id="cb21-43"><a href="#cb21-43" tabindex="-1"></a>  <span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb21-44"><a href="#cb21-44" tabindex="-1"></a>  <span class="ex">zzcollab</span> analysis                           <span class="co"># Full setup (tidyverse)</span></span>
+<span id="cb21-28"><a href="#cb21-28" tabindex="-1"></a>  <span class="ex">gitlab:</span>    <span class="at">--private</span> <span class="kw">|</span> <span class="ex">--public</span> <span class="kw">|</span> <span class="ex">--internal</span>   Repo visibility <span class="er">(</span><span class="ex">default:</span> private<span class="kw">)</span></span>
+<span id="cb21-29"><a href="#cb21-29" tabindex="-1"></a>  <span class="ex">rm:</span>        <span class="at">-f,</span> <span class="at">--force</span>              Skip the removal confirmation prompt</span>
+<span id="cb21-30"><a href="#cb21-30" tabindex="-1"></a></span>
+<span id="cb21-31"><a href="#cb21-31" tabindex="-1"></a><span class="ex">CONFIG</span> COMMANDS:</span>
+<span id="cb21-32"><a href="#cb21-32" tabindex="-1"></a>  <span class="ex">zzcollab</span> config init                    <span class="co"># Create default config</span></span>
+<span id="cb21-33"><a href="#cb21-33" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set KEY VALUE           <span class="co"># Set configuration value</span></span>
+<span id="cb21-34"><a href="#cb21-34" tabindex="-1"></a>  <span class="ex">zzcollab</span> config get KEY                 <span class="co"># Get configuration value</span></span>
+<span id="cb21-35"><a href="#cb21-35" tabindex="-1"></a>  <span class="ex">zzcollab</span> config list                    <span class="co"># List all configuration</span></span>
+<span id="cb21-36"><a href="#cb21-36" tabindex="-1"></a>  <span class="ex">zzcollab</span> config validate                <span class="co"># Validate YAML syntax</span></span>
+<span id="cb21-37"><a href="#cb21-37" tabindex="-1"></a></span>
+<span id="cb21-38"><a href="#cb21-38" tabindex="-1"></a><span class="ex">EXAMPLES:</span></span>
+<span id="cb21-39"><a href="#cb21-39" tabindex="-1"></a>  <span class="co"># Configuration (one-time)</span></span>
+<span id="cb21-40"><a href="#cb21-40" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set dockerhub-account myteam   <span class="co"># Docker Hub namespace</span></span>
+<span id="cb21-41"><a href="#cb21-41" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set github-account myorg       <span class="co"># GitHub namespace</span></span>
+<span id="cb21-42"><a href="#cb21-42" tabindex="-1"></a>  <span class="co"># GitLab instead of GitHub (single forge):</span></span>
+<span id="cb21-43"><a href="#cb21-43" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set forge gitlab               <span class="co"># use GitLab</span></span>
+<span id="cb21-44"><a href="#cb21-44" tabindex="-1"></a>  <span class="ex">zzcollab</span> config set gitlab-account mylab       <span class="co"># GitLab namespace</span></span>
 <span id="cb21-45"><a href="#cb21-45" tabindex="-1"></a></span>
-<span id="cb21-46"><a href="#cb21-46" tabindex="-1"></a>  <span class="co"># Team collaboration - Lead</span></span>
-<span id="cb21-47"><a href="#cb21-47" tabindex="-1"></a>  <span class="bu">cd</span> study <span class="kw">&amp;&amp;</span> <span class="ex">zzcollab</span> analysis</span>
-<span id="cb21-48"><a href="#cb21-48" tabindex="-1"></a>  <span class="ex">zzcollab</span> dockerhub                          <span class="co"># Push team image to Docker Hub</span></span>
-<span id="cb21-49"><a href="#cb21-49" tabindex="-1"></a>  <span class="ex">zzcollab</span> github                             <span class="co"># Create repo + push</span></span>
-<span id="cb21-50"><a href="#cb21-50" tabindex="-1"></a></span>
-<span id="cb21-51"><a href="#cb21-51" tabindex="-1"></a>  <span class="co"># Team collaboration - Member</span></span>
-<span id="cb21-52"><a href="#cb21-52" tabindex="-1"></a>  <span class="fu">git</span> clone https://github.com/myteam/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb21-53"><a href="#cb21-53" tabindex="-1"></a>  <span class="fu">make</span> docker-build                           <span class="co"># Build from project Dockerfile</span></span>
-<span id="cb21-54"><a href="#cb21-54" tabindex="-1"></a>  <span class="fu">make</span> r                                      <span class="co"># Start development</span></span>
-<span id="cb21-55"><a href="#cb21-55" tabindex="-1"></a>  <span class="co"># Inside container: install.packages("pkg") as needed</span></span>
-<span id="cb21-56"><a href="#cb21-56" tabindex="-1"></a></span>
-<span id="cb21-57"><a href="#cb21-57" tabindex="-1"></a>  <span class="co"># Custom base image</span></span>
-<span id="cb21-58"><a href="#cb21-58" tabindex="-1"></a>  <span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rgt47/r-pluspackages</span></code></pre></div>
+<span id="cb21-46"><a href="#cb21-46" tabindex="-1"></a>  <span class="co"># Solo researcher</span></span>
+<span id="cb21-47"><a href="#cb21-47" tabindex="-1"></a>  <span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb21-48"><a href="#cb21-48" tabindex="-1"></a>  <span class="ex">zzcollab</span> analysis                           <span class="co"># Full setup (tidyverse)</span></span>
+<span id="cb21-49"><a href="#cb21-49" tabindex="-1"></a></span>
+<span id="cb21-50"><a href="#cb21-50" tabindex="-1"></a>  <span class="co"># Team collaboration - Lead</span></span>
+<span id="cb21-51"><a href="#cb21-51" tabindex="-1"></a>  <span class="bu">cd</span> study <span class="kw">&amp;&amp;</span> <span class="ex">zzcollab</span> analysis</span>
+<span id="cb21-52"><a href="#cb21-52" tabindex="-1"></a>  <span class="ex">zzcollab</span> push                               <span class="co"># Push team image to the registry</span></span>
+<span id="cb21-53"><a href="#cb21-53" tabindex="-1"></a>  <span class="ex">zzcollab</span> github                             <span class="co"># Create repo + push</span></span>
+<span id="cb21-54"><a href="#cb21-54" tabindex="-1"></a>  <span class="co"># (with forge=gitlab: zzcollab gitlab)</span></span>
+<span id="cb21-55"><a href="#cb21-55" tabindex="-1"></a></span>
+<span id="cb21-56"><a href="#cb21-56" tabindex="-1"></a>  <span class="co"># Team collaboration - Member</span></span>
+<span id="cb21-57"><a href="#cb21-57" tabindex="-1"></a>  <span class="fu">git</span> clone https://github.com/myteam/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb21-58"><a href="#cb21-58" tabindex="-1"></a>  <span class="fu">make</span> docker-build                           <span class="co"># Build from project Dockerfile</span></span>
+<span id="cb21-59"><a href="#cb21-59" tabindex="-1"></a>  <span class="fu">make</span> r                                      <span class="co"># Start development</span></span>
+<span id="cb21-60"><a href="#cb21-60" tabindex="-1"></a>  <span class="co"># Inside container: install.packages("pkg") as needed</span></span>
+<span id="cb21-61"><a href="#cb21-61" tabindex="-1"></a></span>
+<span id="cb21-62"><a href="#cb21-62" tabindex="-1"></a>  <span class="co"># Custom base image</span></span>
+<span id="cb21-63"><a href="#cb21-63" tabindex="-1"></a>  <span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rgt47/r-pluspackages</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="docker-integration">Docker Integration<a class="anchor" aria-label="anchor" href="#docker-integration"></a>
