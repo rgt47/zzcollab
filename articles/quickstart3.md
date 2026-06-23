@@ -1,82 +1,217 @@
 # Quickstart: Reproducibility Feature Toggles
 
-## Overview
+A zzcollab project is not all-or-nothing. You start with whatever you
+have and add reproducibility one piece at a time, in any order, whenever
+you are ready. This guide shows you how to turn those pieces on and off.
 
-A zzcollab compendium is not all-or-nothing. Reproducibility is built
-from independent features that can be added or removed at any time: a
-package backend, a containerised environment, continuous integration,
-data-integrity hashing, code-quality hooks, unit tests, and cloud
-launch. This guide exercises the machinery that creates a compendium and
-changes those features afterwards.
+> **Key terms in this vignette.** New to the reproducibility vocabulary?
+> These are the only terms you need here, and each is defined again on
+> first use. Full definitions are in `vignette('glossary')`.
+>
+> - **Compendium**: your project folder, holding data, code, and
+>   write-up together so the whole thing can be re-run as a unit.
+> - **Feature**: an independently switchable capability (a package
+>   backend, Docker, continuous integration, data hashing, code-quality
+>   checks, unit tests, or cloud launch).
+> - **Package backend**: how the project records exact package versions,
+>   either `renv`, Nix, or none.
+> - **Capture level (L0 to L3)**: how locked-down the project is, from
+>   ‘just findable’ (L0) up to ‘rebuilt and verified’ (L3).
+> - **Validation feature**: a check (tests, CI, code quality) that
+>   confirms the setup without changing the capture level.
+> - **Data-integrity hash**: a small checksum file that flags if a raw
+>   data file changes later.
+> - **Archetype**: the project type you choose at creation (analysis,
+>   manuscript, package, simulation, or blog).
+> - **Container runtime**: the engine that runs your Docker image,
+>   either Docker, Podman, or Apptainer.
 
-Two ideas organise everything below.
+## Add your first feature
 
-- **The artifact is the state.** A feature is on when its primary file
-  is present (`renv.lock`, `Dockerfile`, `flake.nix`,
-  `data-manifest.sha256`, and so on). The generated files self-adapt to
-  what they find, so toggling a feature is a matter of creating or
-  removing one artifact, not editing scattered configuration.
+Suppose you already have a project and you want it to run in a Docker
+container (a self-contained, shareable environment) so a colleague gets
+the same results. That is one command:
 
-- **Capture versus validation.** Capture features pin the computational
-  environment and set the reproducibility level; validation features
-  (CI, tests, code quality) check the result without changing the level.
+``` bash
+zzc add docker
+```
 
-| Level | Meaning                                            |
-|-------|----------------------------------------------------|
-| L0    | Locatable: a valid compendium, packages not pinned |
-| L1    | Packages pinned (a backend present)                |
-| L2    | Environment pinned (a container or Nix)            |
-| L3    | Verified: rebuilt and re-run, matching a baseline  |
+That is the whole idea. Each capability is a *feature* you add when you
+need it and remove when you do not. To see everything you can toggle at
+once, run the interactive wizard:
 
-## Creating a compendium
+``` bash
+zzc toggle
+```
 
-`zzc init` scaffolds the compendium and asks two creation-time
-questions: the research archetype and which reproducibility features to
-enable.
+The rest of this guide fills in the menu of features, how to create a
+project, how to check where you stand, and (later, once you have toggled
+something) how the system works underneath.
+
+## Create a project
+
+`zzc init` scaffolds a new compendium (your project folder) and asks two
+questions.
 
 ``` bash
 mkdir penguins-study && cd penguins-study
 zzc init
 ```
 
-The first question is the **archetype**, which shapes the starter layout
-and the render gate:
+The first question is the **archetype**, the project type, which shapes
+the starter layout:
 
     Archetype [analysis/manuscript/package/simulation/blog] (default analysis):
 
 - `manuscript`, `analysis`, and `blog` scaffold a report
-  (`analysis/report/report.Rmd`) and carry a render gate; `blog`
-  additionally gets an `analysis/posts/` directory.
+  (`analysis/report/report.Rmd`); `blog` also gets an `analysis/posts/`
+  directory.
 - `package` and `simulation` do not scaffold a report; `simulation` gets
   a seeded, parallel-ready starter script instead.
 
-The second is the **feature wizard** (the same wizard that `zzc toggle`
-uses, described below). At creation it recommends the full L2 setup,
-renv plus Docker, which you may untick. Non-interactive callers skip the
-wizard entirely:
+The second question is the feature wizard (the same one `zzc toggle`
+uses). It recommends a sensible default (renv plus Docker), which you
+can accept or untick. To skip all questions and just scaffold the
+folder, add `--yes`:
 
 ``` bash
-# Fully non-interactive: scaffold only, add features later.
+# Non-interactive: scaffold only, add features later.
 zzc init --yes --archetype package
 ```
 
-The archetype can also be supplied as a flag or read from configuration:
+You can also set the archetype as a flag, or as a default for future
+projects:
 
 ``` bash
 zzc init --archetype manuscript
 zzc config set archetype simulation   # default for future projects
 ```
 
-## Seeing the current state: `zzc status`
+## The features you can toggle
 
-`zzc status` is read-only. It prints the user-level defaults (what new
-projects start from) and the live state of the current compendium,
-derived from artifact presence, with each feature tagged as a capture or
-validation concern.
+Every project can have any combination of these. None is required to
+start.
+
+- **Package backend** (`renv` / Nix / none): records exact package
+  versions so installs are repeatable.
+- **Docker environment**: runs the project in a container for an
+  identical setup across machines.
+- **CI workflows**: re-run the checks (and render the report)
+  automatically on every push.
+- **Data-integrity hashing**: a checksum file (`data-manifest.sha256`)
+  that detects if a raw data file changes.
+- **Code-quality hooks**: pre-commit checks (styler and lintr) that tidy
+  and lint code before each commit.
+- **Unit tests**: a `tinytest` test scaffold.
+- **Cloud launch**: a `.devcontainer` so the project opens in a cloud
+  editor or Binder.
+
+## Add and remove features
+
+### Interactively
+
+`zzc toggle` shows the backend (a single choice) and the feature
+checklist, previews the change, and applies it only after you confirm.
+Cancelling changes nothing.
+
+``` bash
+zzc toggle
+```
+
+It opens with the current state and then adapts to the interactive tools
+you have installed, preferring the richest one available: with `fzf` it
+presents a two-pane selector, with `gum` a tickable list, and with
+neither a plain prompt per feature. All three converge on the same
+confirmation step.
+
+    Current: backend=renv  docker=on  ci=on  data=off  code-quality=off  tests=on  cloud=on
+
+**Selecting with `fzf`.** The backend appears first as a single-select
+list with a live information panel that re-renders as you move the
+cursor, so the trade-off of each choice is visible while you decide:
+
+    > renv          Backend: renv (R lockfile)
+      nix           Pins:    L1 - exact R package versions
+      none          Image:   pinned only when Docker is on
+                    Deps:    renv, bundled in the project
+
+Use the arrow keys to move, Enter to choose, or Esc to cancel the
+wizard. The features then appear as a checklist, the same panel now
+describing the highlighted feature:
+
+    > [x] docker          Docker environment
+      [ ] ci              Adds:  Dockerfile + make r / make rstudio
+      [ ] data            Pins:  L2 - the full environment, for sharing
+      [x] tests           Cost:  image build time and disk
+      [ ] cloud
+
+Press Tab or Space to tick the highlighted feature on or off; the cursor
+holds its place as the box updates. Enter applies your selection, Esc
+cancels.
+
+**Selecting with `gum` or plain prompts.** Without `fzf`, an installed
+`gum` renders the checklist as a single tickable list. With neither
+tool, the wizard asks one question at a time:
+
+    Backend [renv/nix/none] (default: renv): renv
+      Docker environment        [on/off] (current: on): on
+      CI workflows              [on/off] (current: on): on
+      Data integrity hashing    [on/off] (current: off): on
+      Code quality (pre-commit) [on/off] (current: off): on
+      Unit testing (tinytest)   [on/off] (current: on): on
+      Cloud launch (devcontainer) [on/off] (current: on): on
+
+Whichever interface you used, the wizard previews the difference and
+applies it only on confirmation; after applying, the new state is
+printed:
+
+    Planned changes:
+      - data: off -> on
+      - code-quality: off -> on
+
+    Apply these changes? [y/N]: y
+
+The wizard also catches a few common mismatches for you:
+
+- Turning on **CI** when there is no report offers to scaffold one,
+  since the render workflow needs something to render.
+- Choosing **renv** with **Docker** off notes that renv alone reaches
+  level L1, while Docker reaches L2 (levels are explained below).
+- Choosing the **Nix** backend turns Docker off by default, because Nix
+  already pins the environment without a container.
+
+### Non-interactively
+
+Every feature also has a plain command, so scripts and CI never see a
+prompt. The bare verb and the `add` / `rm` forms are equivalent:
+
+``` bash
+zzc data                 # write data-manifest.sha256
+zzc add data             # the same, explicit form
+zzc rm data              # remove it
+
+zzc code-quality         # install .pre-commit-config.yaml (styler + lintr)
+zzc tests                # scaffold inst/tinytest
+zzc cloud                # scaffold .devcontainer
+zzc rm cloud
+```
+
+`zzc add <feature>` and `zzc rm <feature>` accept `docker`, `renv`,
+`nix`, `data`, `code-quality`, `tests`, `cloud`, `cicd`, and `github`.
+Per-feature flags pass through, for example
+`zzc add docker --base-image rocker/verse`.
+
+## See where you stand: `zzc status`
+
+`zzc status` is read-only. It prints your defaults for new projects and
+the current project’s state, tagging each feature as either *capture*
+(pins the environment) or *validation* (only checks it).
 
 ``` bash
 zzc status
 ```
+
+Example `zzc status` output
 
     GLOBAL  ~/.zzcollab/config.yaml   (defaults for new projects)
       profile        analysis
@@ -99,82 +234,45 @@ zzc status
     Levels: L0 locatable, L1 pinned packages, L2 pinned environment, L3 verified.
     verified: no  (run 'zzc verify' for coherence, 'zzc verify --full' for L3)
 
-The facts come from a generated `.zzcollab-state` record (the base
-image, its digest, the install mode, the archetype), so `status` never
-re-parses the `Dockerfile`.
+## How locked-down is your project? Capture levels
 
-## Changing features interactively: `zzc toggle`
+As you add capture features, the project climbs a four-step scale. You
+do not have to aim for the top; pick the level that fits the work.
 
-`zzc toggle` presents the backend (a single-select choice) and the
-feature checklist (multi-select), diffs the desired state against the
-current one, confirms once, and applies the change set by reusing the
-per-feature commands. Cancelling makes no changes.
+| Level | Meaning                                            |
+|-------|----------------------------------------------------|
+| L0    | Locatable: a valid compendium, packages not pinned |
+| L1    | Packages pinned (a backend present)                |
+| L2    | Environment pinned (a container or Nix)            |
+| L3    | Verified: rebuilt and re-run, matching a baseline  |
 
-``` bash
-zzc toggle
-```
+Only the **capture** features (the backend and the Docker environment)
+move the level. The **validation** features (tests, CI, code quality)
+check your work but never change the level.
 
-    Current: backend=renv  docker=on  ci=on  data=off  code-quality=off  tests=on  cloud=on
+## How it works: two ideas
 
-    Backend [renv/nix/none] (default: renv): renv
-      Docker environment        [on/off] (current: on): on
-      CI workflows              [on/off] (current: on): on
-      Data integrity hashing    [on/off] (current: off): on
-      Code quality (pre-commit) [on/off] (current: off): on
-      Unit testing (tinytest)   [on/off] (current: on): on
-      Cloud launch (devcontainer) [on/off] (current: on): on
-      Validation: strict (scan tests/ & vignettes/) [on/off] (current: on): on
-      Validation: auto-fix DESCRIPTION [on/off] (current: off): off
+You can use everything above without reading this section. When you are
+curious why toggling is so simple, it rests on two ideas.
 
-    Planned changes:
-      - data: off -> on
-      - code-quality: off -> on
+- **The artifact is the state.** A feature is on exactly when its
+  primary file is present (`renv.lock`, `Dockerfile`, `flake.nix`,
+  `data-manifest.sha256`, and so on). The generated files adapt to
+  whatever they find, so toggling a feature means creating or removing
+  one file, not editing scattered configuration.
+- **Capture versus validation.** Capture features pin the computational
+  environment and set the reproducibility level; validation features
+  only check the result.
 
-    Apply these changes? [y/N]: y
+The facts behind `zzc status` come from a generated `.zzcollab-state`
+record (the base image, its digest, the install mode, the archetype), so
+`status` never has to re-parse the `Dockerfile`.
 
-When a terminal multi-select tool (`gum`) is available the checklist is
-a single tickable list; otherwise the prompts above are used. After
-applying, `zzc status` is printed so the new state is immediate.
+## Choosing a package backend: renv, Nix, or none
 
-### Couplings and nudges
-
-The wizard enforces a few couplings rather than leaving them to fail
-later:
-
-- Enabling **CI** when no report exists offers to scaffold one, since
-  the render workflow needs something to render.
-- Choosing the **renv** backend while leaving **Docker** off prints an
-  advisory that renv alone is L1 and Docker reaches L2.
-- Choosing the **Nix** backend defaults Docker off, because Nix already
-  pins the environment without a container.
-
-## Changing features non-interactively
-
-Every feature has an explicit command, so scripts and CI never see a
-prompt. The bare verbs and the symmetric `add`/`rm` forms are
-equivalent:
-
-``` bash
-zzc data                 # write data-manifest.sha256
-zzc add data             # the same, explicit form
-zzc rm data              # remove it
-
-zzc code-quality         # install .pre-commit-config.yaml (styler + lintr)
-zzc tests                # scaffold inst/tinytest
-zzc cloud                # scaffold .devcontainer
-zzc rm cloud
-```
-
-`zzc add <feature>` and `zzc rm <feature>` accept `docker`, `renv`,
-`nix`, `data`, `code-quality`, `tests`, `cloud`, `cicd`, and `github`.
-Per-feature flags pass through, for example
-`zzc add docker --base-image rocker/verse`.
-
-## The package backend: renv, Nix, or none
-
-The backend is mutually exclusive, so it is a single choice rather than
-a checklist item. Switching backends removes the old artifact before
-writing the new one, so `renv.lock` and `flake.nix` never coexist.
+The backend is a single choice, not a checklist item. Switching backends
+removes the old file before writing the new one, so `renv.lock` and
+`flake.nix` never coexist.
 
 ``` bash
 zzc renv                 # renv.lock (the default backend)
@@ -184,19 +282,18 @@ zzc nix                  # flake.nix pinned to a nixpkgs revision (L2)
 zzc rm nix
 ```
 
-With a `Dockerfile` present, toggling the backend regenerates the
+With a `Dockerfile` present, switching the backend regenerates the
 `Dockerfile` in the matching install mode (restore from `renv.lock`, or
-install from `DESCRIPTION` via `pak`), reusing the remembered base image
-and R version from `.zzcollab-state` so no question is re-asked.
+install from `DESCRIPTION` via `pak`), reusing the base image and R
+version remembered in `.zzcollab-state`, so no question is re-asked. The
+Nix backend wires through the same way: `make r` enters `nix develop`,
+host R targets run via `nix develop -c`, and CI installs Nix and runs in
+`nix develop`.
 
-The Nix backend wires through the generated files the same way: `make r`
-enters `nix develop`, the host R targets run via `nix develop -c`, and
-CI installs Nix and runs in `nix develop`.
+## Choosing a container runtime: Docker, Podman, or Apptainer
 
-## The container runtime: Docker, Podman, or Apptainer
-
-The runtime is a parameter over the same image, set once in
-configuration. The `Makefile` reads it (overridable per invocation):
+The runtime is the engine that runs the same image; you set it once in
+configuration and the `Makefile` reads it (overridable per call):
 
 ``` bash
 zzc config set docker-runtime podman      # daemonless, drop-in for `make r`
@@ -207,20 +304,22 @@ make sif                                   # build env.sif from the image
 make CONTAINER_RUNTIME=apptainer r         # apptainer shell env.sif
 ```
 
-Multi-arch team publishing uses Docker `buildx` and stays
-Docker-specific; the local build and run honour the configured runtime.
+Multi-architecture team publishing uses Docker `buildx` and stays
+Docker-specific; the local build and run honor the configured runtime.
 
-## Verifying the claim: `zzc verify`
+## Verify your setup: `zzc verify`
 
-Where `status` shows the declared level, `verify` confirms it. The
-coherence tier needs no build: it checks that the artifacts agree with
-`.zzcollab-state` (no backend conflict, the install mode matches
-`renv.lock` presence, no dangling `COPY renv.lock`, the base image
-matches, R versions agree, the data matches `data-manifest.sha256`).
+Where `status` shows the level you have declared, `verify` confirms it.
+The coherence tier needs no build: it checks that the files agree with
+`.zzcollab-state` (no backend conflict, install mode matches `renv.lock`
+presence, base image matches, R versions agree, data matches
+`data-manifest.sha256`).
 
 ``` bash
 zzc verify
 ```
+
+Example `zzc verify` output
 
     VERIFY  /path/to/penguins-study
 
@@ -249,33 +348,33 @@ zzc verify --full
 ## Defaults for new projects: `zzc toggle --global`
 
 The same wizard, run with `--global`, edits the feature defaults in
-`~/.zzcollab/config.yaml` instead of a project. The `zzc init` wizard
-then starts new projects from those defaults.
+`~/.zzcollab/config.yaml` instead of a project. New projects then start
+from those defaults.
 
 ``` bash
 zzc toggle --global      # e.g. default Docker off for new projects
 ```
 
-## Bringing an older compendium up to date: `zzc doctor`
+## Update an older project: `zzc doctor`
 
-`zzc doctor` is toggle-aware: `renv.lock` and `Dockerfile` are reported
-as on/off features rather than required files, so a lower-level project
-is not flagged as broken. For a compendium created before the state
-record existed, `doctor --fix` back-fills `.zzcollab-state` from
-artifact presence without touching any primary artifact.
+`zzc doctor` understands toggles: `renv.lock` and `Dockerfile` are
+reported as on/off features, not required files, so a lower-level
+project is not flagged as broken. For a compendium created before the
+state record existed, `doctor --fix` back-fills `.zzcollab-state` from
+the files present, without touching any primary file.
 
 ``` bash
 zzc doctor          # report
 zzc doctor --fix    # refresh stamps and back-fill the state record
 ```
 
-## Moving across the option space
+## Reference: moving around the option space
 
 The features form a small state space. The two capture axes, **backend**
-(`none` / `renv` / `nix`) and **environment** (`Docker` off / on), set
-the level; the validation features and the runtime are independent of
-it. This section walks selections around that space and shows the effect
-of each move.
+(`none` / `renv` / `nix`) and **environment** (Docker off / on), set the
+level; the validation features and the runtime are independent of it.
+This section is a reference for moving between configurations; skip it
+until you need it.
 
 ### Climbing the levels (L0 to L2)
 
@@ -299,10 +398,10 @@ The backend-environment grid and how to move between cells:
 | renv              | L1         | L2 (renv restore)        |
 | nix               | L2 (flake) | L2 (+ container)         |
 
-### Switching the backend (renv, Nix, none)
+### Switching the backend
 
-The backend is single-select, so a switch removes the old artifact
-before writing the new one; `renv.lock` and `flake.nix` never coexist.
+The backend is single-select, so a switch removes the old file before
+writing the new one; `renv.lock` and `flake.nix` never coexist.
 
 ``` bash
 # renv -> Nix (drops renv.lock, writes flake.nix; still L2 via the flake)
@@ -318,9 +417,9 @@ zzc renv
 
 With a `Dockerfile` present, each switch regenerates it in the matching
 install mode and reuses the remembered base image, so the environment is
-preserved across the backend change.
+preserved across the change.
 
-### Switching the container runtime (Docker, Podman, Apptainer)
+### Switching the container runtime
 
 The runtime is a parameter over the same image, not a capture change, so
 the level is untouched:
@@ -332,10 +431,9 @@ make sif                                   # build env.sif for apptainer
 zzc config set docker-runtime docker       # back to the default
 ```
 
-### Toggling validation features on and off
+### Toggling validation features
 
-These flip independently and never move the level (they check, they do
-not capture):
+These flip independently and never move the level:
 
 ``` bash
 zzc tests          ; zzc rm tests           # inst/tinytest
@@ -352,8 +450,8 @@ holds steady.
 
 The dependency check (`zzc validate`, also run by `make check-renv`)
 enforces that every package used in code is declared in `DESCRIPTION`
-and pinned in `renv.lock`. Two knobs ride the same toggle checklist as
-the features above, but they are configuration rather than artifacts:
+and pinned in `renv.lock`. Two knobs ride the same toggle checklist, but
+they are configuration rather than files:
 
 - **strict** also scans `tests/` and `vignettes/` for package use
   (default on).
@@ -362,13 +460,8 @@ the features above, but they are configuration rather than artifacts:
 
 Because they are configuration, the toggle persists them rather than
 creating or deleting a file: project-local in `zzc toggle`, user-level
-in `zzc toggle --global`. `zzc status` reports the effective values:
-
-    GLOBAL  ~/.zzcollab/config.yaml   (defaults for new projects)
-      validate       strict=true  fix=false
-
-Set them without the wizard, or override per invocation with explicit
-flags that take precedence over the stored defaults:
+in `zzc toggle --global`. Set them without the wizard, or override per
+run:
 
 ``` bash
 zzc config set validate-strict false          # persist (user-level)
@@ -382,7 +475,7 @@ dependency check behaves.
 
 ### Downgrades and re-adds
 
-Removing a capture feature lowers the level and the self-adapting files
+Removing a capture feature lowers the level and the generated files
 follow; re-adding restores the prior configuration without re-asking:
 
 ``` bash
@@ -391,30 +484,6 @@ zzc status         # environment off; base image no longer shown
 zzc docker         # re-add: reuses the remembered base image + R version
 zzc status         # back to L2, same base as before
 ```
-
-### One interactive step changing several selections
-
-`zzc toggle` can move several axes at once. Here the developer switches
-to the Nix backend, turns on data integrity and code quality, and turns
-off cloud launch, all in one confirmed diff:
-
-    Backend [renv/nix/none] (default: renv): nix
-      Note: Nix pins the environment (L2) without a container; Docker is for distribution only.
-      Docker environment        [on/off] (current: on): off
-      CI workflows              [on/off] (current: on): on
-      Data integrity hashing    [on/off] (current: off): on
-      Code quality (pre-commit) [on/off] (current: off): on
-      Unit testing (tinytest)   [on/off] (current: on): on
-      Cloud launch (devcontainer) [on/off] (current: on): off
-
-    Planned changes:
-      - backend: renv -> nix
-      - docker: on -> off
-      - data: off -> on
-      - code-quality: off -> on
-      - cloud: on -> off
-
-    Apply these changes? [y/N]: y
 
 ### A round trip that ends where it began
 
