@@ -84,6 +84,21 @@ if (!renv_enabled) {
   # Activate renv (set project-local library paths)
   if (file.exists("renv/activate.R")) {
     source("renv/activate.R")
+  } else if (in_container && nzchar(Sys.getenv("RENV_PATHS_LIBRARY"))) {
+    # Image-library-authoritative mode: renv/ is not bind-mounted, so there
+    # is no activate.R to source at runtime. The packages were baked into
+    # RENV_PATHS_LIBRARY at build time; put that library on the path directly
+    # so the project's declared packages resolve. renv's library layout is
+    # <RENV_PATHS_LIBRARY>/<platform>/R-<major.minor>/<arch>.
+    renv_lib_root <- Sys.getenv("RENV_PATHS_LIBRARY")
+    baked_lib <- Sys.glob(file.path(renv_lib_root, "*", "R-*", "*"))
+    baked_lib <- baked_lib[dir.exists(baked_lib)]
+    if (length(baked_lib) > 0) {
+      .libPaths(c(baked_lib[[1]], .libPaths()))
+    } else {
+      warning("⚠️  RENV_PATHS_LIBRARY set but no baked library found under ",
+              renv_lib_root, call. = FALSE)
+    }
   }
 
   # renv consent (skips first-time prompts)
