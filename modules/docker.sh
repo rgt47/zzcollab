@@ -50,9 +50,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 "
     fi
 
-    # Always install languageserver for IDE support and yaml for R Markdown
+    # Always install languageserver for IDE support and yaml for R Markdown.
+    # Ncpus parallelises the ~40-package binary install, which otherwise runs
+    # serially at ~1.5s/package (white paper F-8).
     cmds+="# Install languageserver for IDE support and yaml for R Markdown dependencies
-RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
+RUN R -e \"install.packages(c('languageserver', 'yaml'), Ncpus = max(1L, parallel::detectCores()))\"
 "
 
     echo "$cmds"
@@ -727,7 +729,7 @@ ARG RENV_LOCK_HASH=unknown
 # renv::init creates the platform-specific library directory structure that
 # renv::restore() requires to link packages from the cache.
 RUN echo "renv.lock hash: ${RENV_LOCK_HASH}" && \
-    R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
+    R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore(exclude = 'renv')"
 IRENV
 )
     else
