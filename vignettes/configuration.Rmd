@@ -24,6 +24,25 @@ knitr::opts_chunk$set(
 
 ZZCOLLAB's configuration system provides flexible control over Docker environments, package management, and team collaboration through a multi-layered configuration hierarchy and comprehensive CLI flags.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in `vignette('glossary')`.
+>
+> - **Profile**: the Docker image bundle the environment is built from
+>   (`minimal`, `analysis`, `rstudio`).
+> - **Two-layer package management**: shared, image-baked packages
+>   (Layer 1) versus per-user packages added at runtime (Layer 2).
+> - **Package backend (renv / Nix / none)**: how the project records
+>   exact package versions; a single mutually-exclusive choice.
+> - **Auto-snapshot / auto-restore**: zzcollab records installed
+>   packages to `renv.lock` on exit and installs missing ones on start.
+> - **Base image**: the starting Docker image a project builds on
+>   (e.g. `rocker/tidyverse`, `rocker/verse`).
+> - **Team image**: a pre-built Docker image shared via a registry so
+>   every collaborator works from a byte-identical environment.
+> - **`zzc` / `zzcollab`**: the framework's command-line interface;
+>   `zzc` is an alias for `zzcollab`.
+
 ## Key Features
 
 - **Multi-layered configuration**: User, project, system, and built-in defaults

@@ -40,6 +40,30 @@ single journal. Together these sources map a precise causal account of
 reproducibility failure and identify which architectural choices in
 zzcollab address which failure modes.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in `vignette('glossary')`.
+>
+> - **Computational reproducibility**: getting the same numerical
+>   results from the same data and the same code.
+> - **Reproducibility crisis**: the widespread finding that many
+>   published results cannot be independently reproduced.
+> - **Five Pillars (of reproducibility)**: the five artifacts treated as
+>   jointly sufficient: the `Dockerfile`, `renv.lock`, `.Rprofile`, the
+>   source code, and the research data.
+> - **Docker / container / image / Dockerfile**: a tool that packages
+>   software with its environment; a running instance, its template, and
+>   the recipe that builds it.
+> - **renv**: an R package giving each project its own isolated,
+>   version-pinned package library.
+> - **Continuous integration (CI)**: automatically building and testing
+>   code on every push.
+> - **Data provenance / lineage**: a record of where data came from and
+>   how it was transformed.
+> - **Seed (`set.seed`) / RNG kind**: a fixed starting point making
+>   random results reproducible; the generator whose default has changed
+>   across R versions.
+
 ---
 
 ## 1. Background: The Scale and Structure of the Problem

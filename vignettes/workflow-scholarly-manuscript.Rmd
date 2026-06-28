@@ -29,6 +29,29 @@ is the organizing principle**---you start writing from day one, and the
 compendium directories (`R/`, `tests/`, `analysis/scripts/`) emerge naturally
 as code matures.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in `vignette('glossary')`.
+>
+> - **Research compendium**: a single version-controlled unit bundling
+>   data, code, environment, and documentation.
+> - **Computational reproducibility**: getting the same numerical
+>   results from the same data and the same code.
+> - **Raw vs derived data**: immutable original data files versus the
+>   processed, analysis-ready datasets generated from them.
+> - **Container / Dockerfile**: a packaged software environment and the
+>   recipe that builds it, so the manuscript renders identically
+>   elsewhere.
+> - **`renv.lock`**: a JSON record of every package version needed to
+>   rebuild the environment.
+> - **`R/`**: the directory holding reusable functions extracted from
+>   inline manuscript code.
+> - **Unit test / tinytest**: a focused check that one piece of code
+>   behaves as intended; zzcollab projects use tinytest.
+> - **zzrenvcheck**: zzcollab's dependency check verifying every
+>   package used in code is declared in `DESCRIPTION` and pinned in
+>   `renv.lock`.
+
 ## The Write as You Go Approach
 
 Traditional workflow:
