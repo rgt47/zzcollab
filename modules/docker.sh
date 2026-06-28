@@ -748,9 +748,10 @@ IDESC
 # syntax=docker/dockerfile:1.4
 # zzcollab Dockerfile v${ZZCOLLAB_TEMPLATE_VERSION}
 
+# BASE_IMAGE is parsed out of this file by the project Makefile ('make r'
+# derives the profile label from it); keep it even though the FROM below uses
+# a fully-substituted literal and does not reference the ARG.
 ARG BASE_IMAGE=${base_image}
-ARG R_VERSION=${r_version}
-ARG USERNAME=analyst
 
 FROM ${from_spec}
 

@@ -103,29 +103,34 @@ generated file, the text says so; where it was instead checked by an actual
 build, a runtime test, or a query to the package registry, that is stated
 too. Findings already acted on are noted as fixed.
 
-### F-1. The BASE_IMAGE and R_VERSION build args are inert
+### F-1. Pre-FROM build args: one inert, one a Makefile metadata channel (fixed)
 
-The generator emits, in sequence:
+The generator emitted, before `FROM`, the args `BASE_IMAGE`, `R_VERSION`,
+and `USERNAME`. The `FROM` line is a generation-time literal
+(`${base_image}:${r_version}@${image_digest}`) and references none of them,
+so at first reading all three look inert with respect to the docker build.
+That was the original framing of this finding, and it was partly wrong.
 
-```
-ARG BASE_IMAGE=${base_image}
-ARG R_VERSION=${r_version}
-...
-FROM ${from_spec}
-```
+Acting on it surfaced the correction. `R_VERSION` is genuinely unread: the
+`FROM` ignores it, no `--build-arg R_VERSION` is passed, and nothing else
+consults it. It was removed. The duplicate pre-`FROM` `USERNAME` was also
+removed (the post-`FROM` `ARG USERNAME` is the one `useradd`/`USER` use; see
+F-4). But removing `BASE_IMAGE` broke `make r`: the project `Makefile`
+parses it back out of the generated Dockerfile by text
+(`grep '^ARG BASE_IMAGE=' Dockerfile`) to derive the profile label shown
+when entering the container, and a second grep recovers `USERNAME`. So
+`ARG BASE_IMAGE` is not inert at all; it is a metadata side-channel that the
+build ignores but the tooling reads. The regression was caught before the
+change was pushed.
 
-`from_spec` is a generation-time shell expansion of
-`${base_image}:${r_version}@${image_digest}`. The `FROM` line therefore
-contains a fully-substituted literal and never references the Dockerfile
-arguments `${BASE_IMAGE}` or `${R_VERSION}`. The two `ARG` declarations are
-inert: a `docker build --build-arg R_VERSION=4.5.0` against the generated
-file has no effect on the base image, while appearing to offer an override.
-This is a correctness-of-interface defect. Resolution options: reference
-the args in `FROM` (`FROM ${BASE_IMAGE}:${R_VERSION}`, accepting that a
-digest pin and a mutable arg are in tension), or remove the inert args and
-rely on regeneration as the supported way to change the base. The digest
-pin is the stronger reproducibility guarantee and should win the tension;
-the misleading args should be removed rather than wired up.
+Resolution (applied): keep `ARG BASE_IMAGE` (with a comment explaining the
+Makefile reads it), and remove only `R_VERSION` and the duplicate pre-`FROM`
+`USERNAME`. A cleaner long-term design would have the Makefile recover the
+base image from the `FROM` line or the `zzcollab.base.image` `LABEL` rather
+than from an `ARG`, after which `BASE_IMAGE` could also be dropped; that
+Makefile change is deferred. Lesson recorded: 'the build does not reference
+it' does not establish that a line is dead when out-of-band tooling parses
+the generated file.
 
 ### F-2. Runtime renv library is not writable by the run user
 
@@ -718,11 +723,12 @@ Appendix A.
   required for the `RUN --mount` syntax the generator uses elsewhere.
 - `# zzcollab Dockerfile vX` (line 2). A provenance comment recording the
   template version that produced the file.
-- `ARG BASE_IMAGE` / `ARG R_VERSION` (lines 4-5). Declared but unused by the
-  `FROM` line, which is fully substituted at generation time (finding F-1).
-  They are inert and slated for removal.
-- `ARG USERNAME=analyst` (line 6). The non-root account name, declared
-  before `FROM` so it is in scope if ever needed there.
+- `ARG BASE_IMAGE` (lines 4-6). The `FROM` line is a fully-substituted
+  literal and does not reference it, but the project Makefile parses it back
+  out of the file to label the profile in `make r`, so it is kept (finding
+  F-1). The previously emitted `ARG R_VERSION` and a duplicate pre-`FROM`
+  `ARG USERNAME` were genuinely unread and were removed; the non-root account
+  name is declared once, after `FROM` (Section 9.2).
 - `FROM <base>:<rver>@sha256:<digest>` (line 8). The base image, pinned to
   an immutable content digest so the build is reproducible even if the tag
   is later repointed. **This is the principal line that varies by profile**
@@ -842,9 +848,9 @@ the `languageserver` install (now `Ncpus`-parallel) and the renv restore
 # syntax=docker/dockerfile:1.4
 # zzcollab Dockerfile v0.1.0
 
+# BASE_IMAGE is read by the project Makefile (make r); the FROM below is a
+# fully-substituted literal and does not reference it.
 ARG BASE_IMAGE=rocker/r-ver
-ARG R_VERSION=4.6.0
-ARG USERNAME=analyst
 
 FROM rocker/r-ver:4.6.0@sha256:6f05a1a8b8c52328f181593923909b01cbfd14c9caea93bf75ddc65e806d8eac
 
@@ -1028,5 +1034,5 @@ statistics but not necessarily in container tooling.
   block; the generator uses one to write the Dockerfile.
 
 ---
-*Rendered on 2026-06-28 at 16:45 PDT.*<br>
+*Rendered on 2026-06-28 at 17:39 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/dockerfile-template-optimization-whitepaper.md*
