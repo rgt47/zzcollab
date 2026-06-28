@@ -171,7 +171,7 @@ prompt_new_workspace_setup() {
     ((step++))
     echo "" >&2
     echo "  [1] minimal     - Base R, command-line only (~650MB)" >&2
-    echo "  [2] analysis    - tidyverse data analysis (~1.2GB)" >&2
+    echo "  [2] tidyverse   - tidyverse data analysis (~1.2GB)" >&2
     echo "  [3] rstudio     - RStudio Server (~980MB)" >&2
     echo "" >&2
 
@@ -185,7 +185,7 @@ prompt_new_workspace_setup() {
 
     case "$profile_choice" in
         1) selected_profile="minimal" ;;
-        2) selected_profile="analysis" ;;
+        2) selected_profile="tidyverse" ;;
         3) selected_profile="rstudio" ;;
         *)
             log_error "Invalid choice" >&2

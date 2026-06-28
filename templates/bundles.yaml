@@ -84,7 +84,10 @@ profiles:
     pkgs: minimal
     size: "~650MB"
 
-  analysis:
+  # Renamed from 'analysis' to avoid colliding with the 'analysis' research
+  # archetype; 'analysis' is still accepted as a deprecated alias (see
+  # get_profile_base_image in modules/profiles.sh).
+  tidyverse:
     description: "Data analysis with tidyverse"
     base_image: "rocker/tidyverse"
     libs: minimal

@@ -27,9 +27,10 @@ Commands:
   init [--force] [--archetype A]
                         Create compendium structure (archetype: manuscript|
                         analysis|package|simulation|blog; default analysis)
-  analysis | minimal | rstudio
+  tidyverse | minimal | rstudio
                         Quickstart: init + renv + docker (new project),
                         or switch profile (existing project)
+                        ('analysis' still works as a deprecated alias)
   docker [--build]      Generate/build the Docker image
   renv                  Create or update renv.lock
   nix                   Create flake.nix (Nix backend, alternative to renv)
@@ -58,7 +59,7 @@ Topics: docker, profiles, config
 
 Daily workflow:
   mkdir myproject && cd myproject
-  zzc analysis                 # full setup
+  zzc tidyverse                # full setup
   make r                       # enter container, work in R, q() to exit
   make docker-test             # run tests
   git add . && git commit && git push
