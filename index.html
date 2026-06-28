@@ -49,6 +49,7 @@
     <li><a class="dropdown-item" href="articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -227,7 +228,7 @@
 <p><strong>Team Lead</strong> (one-time setup):</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">zzcollab</span> config set dockerhub-account mylab   <span class="co"># one-time</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis                             <span class="co"># init + renv + docker (tidyverse)</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="ex">zzcollab</span> tidyverse                             <span class="co"># init + renv + docker (tidyverse)</span></span>
 <span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="ex">zzcollab</span> dockerhub                            <span class="co"># push team image to Docker Hub</span></span>
 <span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
 <p><strong>Team Member</strong> (joining project):</p>
@@ -324,7 +325,7 @@
 <h3 id="selecting-a-profile">Selecting a Profile<a class="anchor" aria-label="anchor" href="#selecting-a-profile"></a>
 </h3>
 <div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Select the profile when creating the project (run inside the project directory)</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span></code></pre></div>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="ex">zzcollab</span> tidyverse</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="adding-packages-all-team-members">Adding Packages (All Team Members)<a class="anchor" aria-label="anchor" href="#adding-packages-all-team-members"></a>
@@ -589,7 +590,7 @@
 <span id="cb21-20"><a href="#cb21-20" tabindex="-1"></a><span class="ex">PER-COMMAND</span> OPTIONS:</span>
 <span id="cb21-21"><a href="#cb21-21" tabindex="-1"></a>  <span class="ex">init:</span>      <span class="at">--force</span>                  Scaffold even if the directory is not empty</span>
 <span id="cb21-22"><a href="#cb21-22" tabindex="-1"></a>  <span class="ex">docker:</span>    <span class="at">-b,</span> <span class="at">--build</span>              Build image after generating</span>
-<span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a>             <span class="ex">-r,</span> <span class="at">--profile</span> NAME       Select profile <span class="er">(</span><span class="ex">analysis,</span> minimal, ...<span class="kw">)</span></span>
+<span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a>             <span class="ex">-r,</span> <span class="at">--profile</span> NAME       Select profile <span class="er">(</span><span class="ex">tidyverse,</span> minimal, ...<span class="kw">)</span></span>
 <span id="cb21-24"><a href="#cb21-24" tabindex="-1"></a>             <span class="ex">--base-image</span> IMG         Override base image <span class="er">(</span><span class="ex">default:</span> rocker/r-ver<span class="kw">)</span></span>
 <span id="cb21-25"><a href="#cb21-25" tabindex="-1"></a>             <span class="ex">--r-version</span> VER          Pin R version</span>
 <span id="cb21-26"><a href="#cb21-26" tabindex="-1"></a>  <span class="ex">push:</span>      <span class="at">-t,</span> <span class="at">--tag</span> TAG            Image tag <span class="er">(</span><span class="ex">default:</span> latest<span class="kw">);</span> <span class="ex">alias:</span> dockerhub</span>
@@ -614,10 +615,10 @@
 <span id="cb21-45"><a href="#cb21-45" tabindex="-1"></a></span>
 <span id="cb21-46"><a href="#cb21-46" tabindex="-1"></a>  <span class="co"># Solo researcher</span></span>
 <span id="cb21-47"><a href="#cb21-47" tabindex="-1"></a>  <span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb21-48"><a href="#cb21-48" tabindex="-1"></a>  <span class="ex">zzcollab</span> analysis                           <span class="co"># Full setup (tidyverse)</span></span>
+<span id="cb21-48"><a href="#cb21-48" tabindex="-1"></a>  <span class="ex">zzcollab</span> tidyverse                           <span class="co"># Full setup (tidyverse)</span></span>
 <span id="cb21-49"><a href="#cb21-49" tabindex="-1"></a></span>
 <span id="cb21-50"><a href="#cb21-50" tabindex="-1"></a>  <span class="co"># Team collaboration - Lead</span></span>
-<span id="cb21-51"><a href="#cb21-51" tabindex="-1"></a>  <span class="bu">cd</span> study <span class="kw">&amp;&amp;</span> <span class="ex">zzcollab</span> analysis</span>
+<span id="cb21-51"><a href="#cb21-51" tabindex="-1"></a>  <span class="bu">cd</span> study <span class="kw">&amp;&amp;</span> <span class="ex">zzcollab</span> tidyverse</span>
 <span id="cb21-52"><a href="#cb21-52" tabindex="-1"></a>  <span class="ex">zzcollab</span> push                               <span class="co"># Push team image to the registry</span></span>
 <span id="cb21-53"><a href="#cb21-53" tabindex="-1"></a>  <span class="ex">zzcollab</span> github                             <span class="co"># Create repo + push</span></span>
 <span id="cb21-54"><a href="#cb21-54" tabindex="-1"></a>  <span class="co"># (with forge=gitlab: zzcollab gitlab)</span></span>

@@ -12,6 +12,29 @@ introducing additional complexity. Understanding the tradeoffs enables
 informed decisions about appropriate reproducibility investments for
 different research contexts.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Computational reproducibility**: getting the same numerical
+>   results from the same data and the same code.
+> - **renv**: an R package giving each project its own isolated,
+>   version-pinned package library.
+> - **Lockfile (`renv.lock`)**: a JSON record of every package version
+>   needed to rebuild the environment.
+> - **Version pinning**: recording an exact dependency version so it
+>   cannot drift between machines or over time.
+> - **Docker / container / image / Dockerfile**: a tool that packages
+>   software with its environment; a running instance, its template, and
+>   the recipe that builds it.
+> - **Unit test / testthat / tinytest**: a focused check that one piece
+>   of code behaves as intended, and the frameworks for writing it.
+> - **Continuous integration (CI)**: automatically building and testing
+>   code on every push.
+> - **Code rot / environmental drift**: the gradual breakage of working
+>   code over time as its dependencies change underneath it.
+
 ### The Five Levels
 
 1.  **Level 1: Basic R Project** - Manual package management

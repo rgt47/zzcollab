@@ -8,6 +8,29 @@ Penguins dataset (Gorman et al., 2014) serves as an illustrative example
 for implementing computational reproducibility practices in data
 analysis.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Computational reproducibility**: getting the same numerical
+>   results from the same data and the same code.
+> - **Docker / container / image / Dockerfile**: a tool that packages
+>   software with its environment; a running instance, its template, and
+>   the recipe that builds it.
+> - **Profile**: the Docker image bundle the environment is built from
+>   (`minimal`, `analysis`, `rstudio`).
+> - **Two-layer package management**: shared, image-baked packages
+>   (Layer 1) versus per-user packages added at runtime (Layer 2).
+> - **renv**: an R package giving each project its own isolated,
+>   version-pinned package library.
+> - **Raw vs derived data**: immutable original data files versus the
+>   processed, analysis-ready datasets generated from them.
+> - **Unit test / testthat / tinytest**: a focused check that one piece
+>   of code behaves as intended.
+> - **Data provenance / lineage**: a record of where data came from and
+>   how it was transformed.
+
 ### Learning Objectives
 
 Upon completion of this tutorial, researchers will be able to:

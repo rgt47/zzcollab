@@ -153,7 +153,7 @@ renv::install("user/package")            # GitHub
 ``` bash
 zzcollab config set dockerhub-account mylab   # one-time
 mkdir study && cd study
-zzcollab analysis                             # init + renv + docker (tidyverse)
+zzcollab tidyverse                             # init + renv + docker (tidyverse)
 zzcollab dockerhub                            # push team image to Docker Hub
 git add . && git commit -m "Initial setup" && git push
 ```
@@ -234,7 +234,7 @@ Run `zzcollab list` for the full set of available profiles and bundles.
 
 ``` bash
 # Select the profile when creating the project (run inside the project directory)
-zzcollab analysis
+zzcollab tidyverse
 ```
 
 ### Adding Packages (All Team Members)
@@ -473,7 +473,7 @@ GLOBAL OPTIONS:
 PER-COMMAND OPTIONS:
   init:      --force                  Scaffold even if the directory is not empty
   docker:    -b, --build              Build image after generating
-             -r, --profile NAME       Select profile (analysis, minimal, ...)
+             -r, --profile NAME       Select profile (tidyverse, minimal, ...)
              --base-image IMG         Override base image (default: rocker/r-ver)
              --r-version VER          Pin R version
   push:      -t, --tag TAG            Image tag (default: latest); alias: dockerhub
@@ -498,10 +498,10 @@ EXAMPLES:
 
   # Solo researcher
   mkdir study && cd study
-  zzcollab analysis                           # Full setup (tidyverse)
+  zzcollab tidyverse                           # Full setup (tidyverse)
 
   # Team collaboration - Lead
-  cd study && zzcollab analysis
+  cd study && zzcollab tidyverse
   zzcollab push                               # Push team image to the registry
   zzcollab github                             # Create repo + push
   # (with forge=gitlab: zzcollab gitlab)

@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/quickstart-rstudio.Rmd" class="external-link"><code>vignettes/quickstart-rstudio.Rmd</code></a></small>
       <div class="d-none name"><code>quickstart-rstudio.Rmd</code></div>
@@ -84,6 +85,36 @@ Development Team</h4>
 Server</strong> inside a Docker container for reproducible analysis.
 You’ll work in a familiar RStudio interface while maintaining complete
 reproducibility through Docker and renv.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Profile</strong>: the Docker image bundle the environment is
+built from; here the <code>rstudio</code> profile (RStudio Server in the
+browser).</li>
+<li>
+<strong>Docker / container / image</strong>: a tool that packages
+software with its environment; a running instance and its template.</li>
+<li>
+<strong>renv</strong>: an R package giving each project its own
+isolated, version-pinned package library.</li>
+<li>
+<strong>Continuous integration (CI)</strong>: automatically building
+and testing code on every push.</li>
+<li>
+<strong>Unit test / testthat / tinytest</strong>: a focused check
+that one piece of code behaves as intended.</li>
+<li>
+<strong>Base image</strong>: the starting Docker image a project
+builds on (e.g. <code>rocker/rstudio</code>).</li>
+<li>
+<strong><code>zzc</code> / <code>zzcollab</code></strong>: the
+framework’s command-line interface; <code>zzc</code> is an alias for
+<code>zzcollab</code>.</li>
+</ul>
+</blockquote>
 <p><strong>What you will build:</strong></p>
 <ul>
 <li>RStudio Server environment accessible via browser</li>
@@ -218,7 +249,7 @@ Username: rstudio, Password: rstudio</code></pre>
 <pre><code>---
 title: "Palmer Penguins Bill Dimensions Analysis"
 author: "Reproducible Research Team"
-date: "2026-06-24"
+date: "2026-06-28"
 output:
   html_document:
     toc: true

@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -81,6 +82,46 @@
 using zzcollab. Two developers will collaborate on an analysis of the
 <code>mtcars</code> dataset, demonstrating proper data management,
 testing, reporting, and version control practices.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> These are the only terms
+this guide leans on; each is reintroduced on first use. Full definitions
+are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Compendium</strong>: your project folder, holding data,
+code, and write-up together so the whole thing can be re-run as a
+unit.</li>
+<li>
+<strong>Archetype</strong>: the project type you pick at creation
+(analysis, manuscript, package, simulation, or blog); it shapes the
+starter layout. This guide uses <code>analysis</code>.</li>
+<li>
+<strong>Profile</strong>: the Docker image bundle the environment is
+built from (minimal, analysis, rstudio). Distinct from the archetype:
+the profile is the image, the archetype is the layout.</li>
+<li>
+<strong>Feature</strong>: an independently switchable capability (a
+package backend, Docker, CI, data hashing, code-quality hooks, unit
+tests, or cloud launch) toggled with <code>zzc toggle</code> or
+<code>zzc add</code>/<code>zzc rm</code>.</li>
+<li>
+<strong>Capture vs validation</strong>: capture features (the
+backend and Docker) pin the environment and set the capture level;
+validation features (tests, CI, code quality) only check it.</li>
+<li>
+<strong>Capture level (L0 to L3)</strong>: how locked-down the
+project is, from ‘just findable’ (L0) up to ‘rebuilt and verified’
+(L3).</li>
+<li>
+<strong>Team image</strong>: the Docker image the team lead builds
+with all <code>renv.lock</code> packages baked in, so collaborators skip
+the install wait.</li>
+<li>
+<strong>Image digest</strong>: the manifest checksum
+(<code>.team-image-digest</code>) that lets every member pull the
+byte-identical team image.</li>
+</ul>
+</blockquote>
 <p><strong>Workflow Summary</strong>:</p>
 <ol style="list-style-type: decimal">
 <li>Developer 1 sets up workspace, prepares data, writes initial
@@ -122,14 +163,32 @@ analysis</li>
 <div class="section level3">
 <h3 id="create-project-workspace">1.3 Create Project Workspace<a class="anchor" aria-label="anchor" href="#create-project-workspace"></a>
 </h3>
-<p>Create a new directory and initialize with the analysis profile:</p>
+<p>Create a new directory and initialize the compendium (your project
+folder) with <code>zzc init</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">mkdir</span> mtcars-analysis</span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="bu">cd</span> mtcars-analysis</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup: init + renv + docker (prompts to build)</span></span></code></pre></div>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="ex">zzc</span> init</span></code></pre></div>
+<p><code>zzc init</code> asks two things. The first is the
+<strong>archetype</strong>, the project type, which shapes the starter
+layout:</p>
+<pre><code>Archetype [analysis/manuscript/package/simulation/blog] (default analysis):</code></pre>
+<p>This tutorial uses <code>analysis</code>, which scaffolds a report at
+<code>analysis/report/report.Rmd</code>. The second is a short feature
+wizard (renv backend, Docker, CI, data-integrity hashing, code-quality
+hooks, unit tests, cloud launch). It recommends a sensible default of
+renv plus Docker, which is what this guide assumes; accept it. The
+archetype (project layout) is separate from the <strong>profile</strong>
+(the Docker image bundle), covered in the next step.</p>
+<p>To skip every prompt and accept defaults, or to set the archetype as
+a flag:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">zzc</span> init <span class="at">--yes</span>                   <span class="co"># non-interactive, accept defaults</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="ex">zzc</span> init <span class="at">--archetype</span> analysis    <span class="co"># set archetype, still run the wizard</span></span></code></pre></div>
+<p>The full feature menu, and how to toggle features later, is
+documented in <code><a href="../articles/quickstart3.html">vignette("quickstart3")</a></code>.</p>
 <p>Optionally add GitHub:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo (independent command)</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo (independent command)</span></span></code></pre></div>
 <p>Or create with public GitHub:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">zzc</span> github <span class="at">--public</span>              <span class="co"># Create public GitHub repo</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">zzc</span> github <span class="at">--public</span>              <span class="co"># Create public GitHub repo</span></span></code></pre></div>
 <p>This creates the research compendium structure:</p>
 <pre><code>mtcars-analysis/
 ├── analysis/
@@ -156,10 +215,14 @@ analysis</li>
 <h3 id="build-the-docker-image">1.4 Build the Docker Image<a class="anchor" aria-label="anchor" href="#build-the-docker-image"></a>
 </h3>
 <p>Build the Docker environment:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
 <p>This creates a reproducible R environment based on the
-<code>analysis</code> profile (rocker/tidyverse with tidyverse
-packages).</p>
+<code>analysis</code> <strong>profile</strong>, the Docker image bundle
+(rocker/tidyverse with tidyverse packages). The profile selects the
+image; the archetype chosen in the previous step selected the layout.
+The three canonical profiles are minimal, analysis, and rstudio; list
+them with <code>zzc list profiles</code>. For specialised needs (LaTeX,
+modeling, Shiny), extend the closest profile.</p>
 </div>
 </div>
 <div class="section level2">
@@ -169,14 +232,14 @@ packages).</p>
 <h3 id="enter-the-container">2.1 Enter the Container<a class="anchor" aria-label="anchor" href="#enter-the-container"></a>
 </h3>
 <p>Start an interactive R session inside the Docker container:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="prepare-and-save-raw-data">2.2 Prepare and Save Raw Data<a class="anchor" aria-label="anchor" href="#prepare-and-save-raw-data"></a>
 </h3>
 <p>Inside R, save the complete mtcars dataset as CSV to the raw_data
 directory:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Save complete mtcars as CSV (raw data - read-only after this point)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="st">"analysis/data/raw_data/mtcars.csv"</span>, row.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
@@ -211,9 +274,9 @@ directory:</p>
 </h3>
 <p>Create a script that reads the raw CSV and extracts the first half
 for analysis.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Exit R first with q(), then create the script file on host</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Exit R first with q(), then create the script file on host</span></span></code></pre></div>
 <p>Create <code>analysis/scripts/01_prepare_data.R</code>:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 01_prepare_data.R</span></span>
 <span><span class="co"># Purpose: Extract first half of mtcars and add derived variables</span></span>
 <span></span>
@@ -253,7 +316,7 @@ for analysis.</p>
 <p>Move the core function to the package’s R/ directory for testing and
 reuse.</p>
 <p>Create <code>R/data_functions.R</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#' Prepare mtcars data for analysis</span></span>
 <span><span class="co">#'</span></span>
 <span><span class="co">#' @param data A data frame with mtcars structure</span></span>
@@ -316,7 +379,7 @@ reuse.</p>
 <code>inst/tinytest/</code> and contain bare top-level expectations (no
 <code>test_that()</code> wrapper).</p>
 <p>Create <code>inst/tinytest/test-data-validation.R</code>:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># test-data-validation.R</span></span>
 <span><span class="co"># Tests for data integrity and validation functions</span></span>
 <span></span>
@@ -352,7 +415,7 @@ reuse.</p>
 <h3 id="create-function-tests">3.2 Create Function Tests<a class="anchor" aria-label="anchor" href="#create-function-tests"></a>
 </h3>
 <p>Create <code>inst/tinytest/test-data-functions.R</code>:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># test-data-functions.R</span></span>
 <span><span class="co"># Tests for R/data_functions.R</span></span>
 <span></span>
@@ -405,17 +468,17 @@ reuse.</p>
 <h3 id="run-tests">3.3 Run Tests<a class="anchor" aria-label="anchor" href="#run-tests"></a>
 </h3>
 <p>Run the tinytest suite:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 <p>Expected output (each expectation reported as a passing check):</p>
 <pre><code>inst/tinytest/test-data-functions.R............    8 tests OK
 inst/tinytest/test-data-validation.R...........    7 tests OK</code></pre>
 <p>To run interactively inside the container instead:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Inside R</span></span>
 <span><span class="fu">tinytest</span><span class="fu">::</span><span class="fu">run_test_dir</span><span class="op">(</span><span class="st">'inst/tinytest'</span><span class="op">)</span></span></code></pre></div>
 <p>Exit R when done:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">q</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Packages are automatically captured to <code>renv.lock</code> when
 you exit R (auto-snapshot). Auto-restore on startup is disabled in the
@@ -432,7 +495,7 @@ container; packages are baked into the image at build time.</p>
 <pre><code>---
 title: "Fuel Efficiency Analysis: mtcars Subset"
 author: "Developer 1"
-date: "2026-06-24"
+date: "2026-06-28"
 output:
   html_document:
     toc: true
@@ -523,11 +586,11 @@ ggplot(data, aes(x = mpg, fill = efficiency_class)) +
 <h3 id="run-the-analysis-pipeline">4.2 Run the Analysis Pipeline<a class="anchor" aria-label="anchor" href="#run-the-analysis-pipeline"></a>
 </h3>
 <p>Enter container and run the processing script:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"analysis/scripts/01_prepare_data.R"</span><span class="op">)</span></span></code></pre></div>
 <p>Verify the derived data was created:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="st">"analysis/data/derived_data/mtcars_processed.rds"</span><span class="op">)</span></span>
 <span><span class="co"># [1] TRUE</span></span>
 <span></span>
@@ -537,7 +600,7 @@ ggplot(data, aes(x = mpg, fill = efficiency_class)) +
 <h3 id="validate-package-dependencies">4.3 Validate Package Dependencies<a class="anchor" aria-label="anchor" href="#validate-package-dependencies"></a>
 </h3>
 <p>After exiting R, validate that all packages are properly tracked:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
 <p>This runs <code>zzrenvcheck::check_packages()</code> inside the
 container to verify that DESCRIPTION and renv.lock are synchronized with
 the code’s actual <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> calls.</p>
@@ -550,33 +613,33 @@ the code’s actual <code><a href="https://rdrr.io/r/base/library.html" class="e
 <h3 id="initialize-git-and-create-github-repository">5.1 Initialize Git and Create GitHub Repository<a class="anchor" aria-label="anchor" href="#initialize-git-and-create-github-repository"></a>
 </h3>
 <p>If you haven’t created the GitHub repo yet, do it now:</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Initialize git + create private GitHub repo</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Initialize git + create private GitHub repo</span></span></code></pre></div>
 <p>Or for a public repo:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="ex">zzc</span> github <span class="at">--public</span>              <span class="co"># Create public GitHub repo</span></span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="ex">zzc</span> github <span class="at">--public</span>              <span class="co"># Create public GitHub repo</span></span></code></pre></div>
 <p>Or manually:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="fu">git</span> init</span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">git</span> add .</span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial project setup with mtcars analysis</span></span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a></span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="st">- Add raw data (complete mtcars CSV)</span></span>
-<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="st">- Create data processing script (extracts first half)</span></span>
-<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a><span class="st">- Add data validation and function tests</span></span>
-<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a><span class="st">- Create initial report structure"</span></span>
-<span id="cb28-9"><a href="#cb28-9" tabindex="-1"></a></span>
-<span id="cb28-10"><a href="#cb28-10" tabindex="-1"></a><span class="ex">gh</span> repo create myteam/mtcars-analysis <span class="at">--private</span> <span class="at">--source</span><span class="op">=</span>. <span class="at">--push</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">git</span> init</span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial project setup with mtcars analysis</span></span>
+<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a><span class="st">- Add raw data (complete mtcars CSV)</span></span>
+<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a><span class="st">- Create data processing script (extracts first half)</span></span>
+<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="st">- Add data validation and function tests</span></span>
+<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a><span class="st">- Create initial report structure"</span></span>
+<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a></span>
+<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a><span class="ex">gh</span> repo create myteam/mtcars-analysis <span class="at">--private</span> <span class="at">--source</span><span class="op">=</span>. <span class="at">--push</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="build-and-push-team-docker-image">5.2 Build and Push Team Docker Image<a class="anchor" aria-label="anchor" href="#build-and-push-team-docker-image"></a>
 </h3>
-<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a></span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="co"># Multi-arch push (amd64 + arm64) and records digest to .team-image-digest:</span></span>
-<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a></span>
-<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="co"># Commit the digest so team members can pull the exact same image:</span></span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="fu">git</span> add .team-image-digest</span>
-<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Record team image digest"</span></span>
-<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="co"># Multi-arch push (amd64 + arm64) and records digest to .team-image-digest:</span></span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="co"># Commit the digest so team members can pull the exact same image:</span></span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="fu">git</span> add .team-image-digest</span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Record team image digest"</span></span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 <p><code>make docker-push-team</code> builds a multi-architecture image
 (linux/amd64 and linux/arm64), pushes it to Docker Hub, and writes the
 manifest digest to <code>.team-image-digest</code>. Committing that file
@@ -593,20 +656,35 @@ single-architecture image without recording the digest.</p>
 <h3 id="clone-the-repository">6.1 Clone the Repository<a class="anchor" aria-label="anchor" href="#clone-the-repository"></a>
 </h3>
 <p>Developer 2 clones the project and loads the team Docker image:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">git</span> clone git@github.com:myteam/mtcars-analysis.git</span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="bu">cd</span> mtcars-analysis</span>
-<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a></span>
-<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a><span class="co"># Preferred: pull the exact digest the team lead recorded (bit-identical)</span></span>
-<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a><span class="fu">make</span> docker-pull-team          <span class="co"># reads .team-image-digest committed by team lead</span></span>
-<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a></span>
-<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="co"># Alternative: build from Dockerfile (always works, takes 5-15 min)</span></span>
-<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">git</span> clone git@github.com:myteam/mtcars-analysis.git</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="bu">cd</span> mtcars-analysis</span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="co"># Bring framework-managed template files in line with the installed</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="co"># zzcollab version, and back-fill local state.</span></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="ex">zzc</span> update</span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="co"># Preferred: pull the exact digest the team lead recorded (bit-identical)</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="fu">make</span> docker-pull-team          <span class="co"># reads .team-image-digest committed by team lead</span></span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a></span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="co"># Alternative: build from Dockerfile (always works, takes 5-15 min)</span></span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
+<p><code>zzc update</code> is a minor maintenance command. It checks the
+project’s framework-managed template files (Makefile, CI workflows, and
+similar) against the installed zzcollab version, refreshes any that are
+stale, and back-fills the state record. Running it right after a clone
+keeps a collaborator’s framework files consistent with the team lead’s,
+without touching analysis code or primary feature files. Confirm the
+result with <code>zzc status</code> (read-only) and
+<code>zzc verify</code> (coherence checks).</p>
 </div>
 <div class="section level3">
 <h3 id="enter-container-and-verify-setup">6.2 Enter Container and Verify Setup<a class="anchor" aria-label="anchor" href="#enter-container-and-verify-setup"></a>
 </h3>
-<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<p>Confirm the framework state before entering the container:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="ex">zzc</span> status                     <span class="co"># read-only: shows features and capture level</span></span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="ex">zzc</span> verify                     <span class="co"># coherence checks (files agree with state)</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Verify data is present</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"analysis/data/derived_data/mtcars_processed.rds"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -620,7 +698,7 @@ single-architecture image without recording the digest.</p>
 </h3>
 <p>Developer 2 adds a new plotting function. Create
 <code>R/plot_functions.R</code>:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#' Create power-to-weight scatter plot</span></span>
 <span><span class="co">#'</span></span>
 <span><span class="co">#' @param data Processed mtcars data frame</span></span>
@@ -679,7 +757,7 @@ single-architecture image without recording the digest.</p>
 <h3 id="add-tests-for-new-functions">6.4 Add Tests for New Functions<a class="anchor" aria-label="anchor" href="#add-tests-for-new-functions"></a>
 </h3>
 <p>Create <code>inst/tinytest/test-plot-functions.R</code>:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># test-plot-functions.R</span></span>
 <span><span class="co"># Tests for R/plot_functions.R</span></span>
 <span></span>
@@ -701,7 +779,7 @@ single-architecture image without recording the digest.</p>
 <div class="section level3">
 <h3 id="run-all-tests">6.5 Run All Tests<a class="anchor" aria-label="anchor" href="#run-all-tests"></a>
 </h3>
-<div class="sourceCode" id="cb35"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 <p>Expected output (all three test files passing):</p>
 <pre><code>inst/tinytest/test-data-functions.R............    8 tests OK
 inst/tinytest/test-data-validation.R...........    7 tests OK
@@ -710,14 +788,14 @@ inst/tinytest/test-plot-functions.R............    5 tests OK</code></pre>
 <div class="section level3">
 <h3 id="commit-and-push-changes">6.6 Commit and Push Changes<a class="anchor" aria-label="anchor" href="#commit-and-push-changes"></a>
 </h3>
-<div class="sourceCode" id="cb37"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="fu">git</span> add R/plot_functions.R inst/tinytest/test-plot-functions.R</span>
-<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add visualization functions for power-weight analysis</span></span>
-<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a></span>
-<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a><span class="st">- Add plot_power_weight() for scatter plots</span></span>
-<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a><span class="st">- Add plot_mpg_by_cylinder() for boxplots</span></span>
-<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a><span class="st">- Include tests for both plotting functions"</span></span>
-<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a></span>
-<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="fu">git</span> add R/plot_functions.R inst/tinytest/test-plot-functions.R</span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add visualization functions for power-weight analysis</span></span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="st">- Add plot_power_weight() for scatter plots</span></span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="st">- Add plot_mpg_by_cylinder() for boxplots</span></span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="st">- Include tests for both plotting functions"</span></span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a></span>
+<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -726,15 +804,18 @@ inst/tinytest/test-plot-functions.R............    5 tests OK</code></pre>
 <div class="section level3">
 <h3 id="pull-changes">7.1 Pull Changes<a class="anchor" aria-label="anchor" href="#pull-changes"></a>
 </h3>
-<p>Developer 1 pulls Developer 2’s additions:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="fu">git</span> pull</span></code></pre></div>
+<p>Developer 1 pulls Developer 2’s additions, then refreshes
+framework-managed files and confirms state:</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="fu">git</span> pull</span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="ex">zzc</span> update                     <span class="co"># refresh stale template files, back-fill state</span></span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a><span class="ex">zzc</span> status                     <span class="co"># confirm features and capture level</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="enter-container">7.2 Enter Container<a class="anchor" aria-label="anchor" href="#enter-container"></a>
 </h3>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 <p>Verify new packages are auto-restored:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tinytest</span><span class="fu">::</span><span class="fu">run_test_dir</span><span class="op">(</span><span class="st">'inst/tinytest'</span><span class="op">)</span></span>
 <span><span class="co"># All three test files should pass</span></span>
 <span></span>
@@ -746,56 +827,56 @@ inst/tinytest/test-plot-functions.R............    5 tests OK</code></pre>
 <p>Edit <code>analysis/report/report.Rmd</code> to include the new
 visualizations. Add the following sections after the existing
 histogram:</p>
-<div class="sourceCode" id="cb41"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="fu">### Power vs Weight Analysis</span></span>
-<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a></span>
-<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a></span>
-<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="co"># Functions loaded via devtools::load_all() in setup chunk</span></span>
-<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a><span class="fu">plot_power_weight</span>(data, <span class="at">show_labels =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a></span>
-<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a>This scatter plot reveals the relationship between engine power and vehicle</span>
-<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a>weight. Higher efficiency vehicles (green) cluster in the lower-left region,</span>
-<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a>indicating lower weight and moderate horsepower.</span>
-<span id="cb41-12"><a href="#cb41-12" tabindex="-1"></a></span>
-<span id="cb41-13"><a href="#cb41-13" tabindex="-1"></a><span class="fu">### Cylinder Comparison</span></span>
-<span id="cb41-14"><a href="#cb41-14" tabindex="-1"></a></span>
-<span id="cb41-15"><a href="#cb41-15" tabindex="-1"></a></span>
-<span id="cb41-16"><a href="#cb41-16" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb41-17"><a href="#cb41-17" tabindex="-1"></a><span class="fu">plot_mpg_by_cylinder</span>(data)</span>
-<span id="cb41-18"><a href="#cb41-18" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb41-19"><a href="#cb41-19" tabindex="-1"></a></span>
-<span id="cb41-20"><a href="#cb41-20" tabindex="-1"></a>The boxplot demonstrates the expected inverse relationship between cylinder</span>
-<span id="cb41-21"><a href="#cb41-21" tabindex="-1"></a>count and fuel efficiency. Four-cylinder vehicles show the highest MPG values,</span>
-<span id="cb41-22"><a href="#cb41-22" tabindex="-1"></a>while eight-cylinder vehicles demonstrate lower fuel efficiency.</span></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="fu">### Power vs Weight Analysis</span></span>
+<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a></span>
+<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a><span class="co"># Functions loaded via devtools::load_all() in setup chunk</span></span>
+<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a><span class="fu">plot_power_weight</span>(data, <span class="at">show_labels =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb44-7"><a href="#cb44-7" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb44-8"><a href="#cb44-8" tabindex="-1"></a></span>
+<span id="cb44-9"><a href="#cb44-9" tabindex="-1"></a>This scatter plot reveals the relationship between engine power and vehicle</span>
+<span id="cb44-10"><a href="#cb44-10" tabindex="-1"></a>weight. Higher efficiency vehicles (green) cluster in the lower-left region,</span>
+<span id="cb44-11"><a href="#cb44-11" tabindex="-1"></a>indicating lower weight and moderate horsepower.</span>
+<span id="cb44-12"><a href="#cb44-12" tabindex="-1"></a></span>
+<span id="cb44-13"><a href="#cb44-13" tabindex="-1"></a><span class="fu">### Cylinder Comparison</span></span>
+<span id="cb44-14"><a href="#cb44-14" tabindex="-1"></a></span>
+<span id="cb44-15"><a href="#cb44-15" tabindex="-1"></a></span>
+<span id="cb44-16"><a href="#cb44-16" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb44-17"><a href="#cb44-17" tabindex="-1"></a><span class="fu">plot_mpg_by_cylinder</span>(data)</span>
+<span id="cb44-18"><a href="#cb44-18" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb44-19"><a href="#cb44-19" tabindex="-1"></a></span>
+<span id="cb44-20"><a href="#cb44-20" tabindex="-1"></a>The boxplot demonstrates the expected inverse relationship between cylinder</span>
+<span id="cb44-21"><a href="#cb44-21" tabindex="-1"></a>count and fuel efficiency. Four-cylinder vehicles show the highest MPG values,</span>
+<span id="cb44-22"><a href="#cb44-22" tabindex="-1"></a>while eight-cylinder vehicles demonstrate lower fuel efficiency.</span></code></pre></div>
 <p>Update the Conclusions section:</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="fu">## Conclusions</span></span>
-<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a></span>
-<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a>This analysis of the mtcars subset reveals several key findings:</span>
-<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a></span>
-<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a><span class="ss">1. </span>**Efficiency Classification**: The dataset contains a mix of low, medium,</span>
-<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a>   and high efficiency vehicles based on the 15 and 20 MPG thresholds.</span>
-<span id="cb42-7"><a href="#cb42-7" tabindex="-1"></a></span>
-<span id="cb42-8"><a href="#cb42-8" tabindex="-1"></a><span class="ss">2. </span>**Weight-Power Relationship**: There is a clear positive correlation</span>
-<span id="cb42-9"><a href="#cb42-9" tabindex="-1"></a>   between vehicle weight and horsepower, with efficiency class serving as</span>
-<span id="cb42-10"><a href="#cb42-10" tabindex="-1"></a>   a useful categorization.</span>
-<span id="cb42-11"><a href="#cb42-11" tabindex="-1"></a></span>
-<span id="cb42-12"><a href="#cb42-12" tabindex="-1"></a><span class="ss">3. </span>**Cylinder Effect**: Vehicles with fewer cylinders consistently achieve</span>
-<span id="cb42-13"><a href="#cb42-13" tabindex="-1"></a>   better fuel economy, supporting the expected engineering trade-off between</span>
-<span id="cb42-14"><a href="#cb42-14" tabindex="-1"></a>   power and efficiency.</span>
-<span id="cb42-15"><a href="#cb42-15" tabindex="-1"></a></span>
-<span id="cb42-16"><a href="#cb42-16" tabindex="-1"></a><span class="fu">## Session Information</span></span>
-<span id="cb42-17"><a href="#cb42-17" tabindex="-1"></a></span>
-<span id="cb42-18"><a href="#cb42-18" tabindex="-1"></a></span>
-<span id="cb42-19"><a href="#cb42-19" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb42-20"><a href="#cb42-20" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
-<span id="cb42-21"><a href="#cb42-21" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="fu">## Conclusions</span></span>
+<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a></span>
+<span id="cb45-3"><a href="#cb45-3" tabindex="-1"></a>This analysis of the mtcars subset reveals several key findings:</span>
+<span id="cb45-4"><a href="#cb45-4" tabindex="-1"></a></span>
+<span id="cb45-5"><a href="#cb45-5" tabindex="-1"></a><span class="ss">1. </span>**Efficiency Classification**: The dataset contains a mix of low, medium,</span>
+<span id="cb45-6"><a href="#cb45-6" tabindex="-1"></a>   and high efficiency vehicles based on the 15 and 20 MPG thresholds.</span>
+<span id="cb45-7"><a href="#cb45-7" tabindex="-1"></a></span>
+<span id="cb45-8"><a href="#cb45-8" tabindex="-1"></a><span class="ss">2. </span>**Weight-Power Relationship**: There is a clear positive correlation</span>
+<span id="cb45-9"><a href="#cb45-9" tabindex="-1"></a>   between vehicle weight and horsepower, with efficiency class serving as</span>
+<span id="cb45-10"><a href="#cb45-10" tabindex="-1"></a>   a useful categorization.</span>
+<span id="cb45-11"><a href="#cb45-11" tabindex="-1"></a></span>
+<span id="cb45-12"><a href="#cb45-12" tabindex="-1"></a><span class="ss">3. </span>**Cylinder Effect**: Vehicles with fewer cylinders consistently achieve</span>
+<span id="cb45-13"><a href="#cb45-13" tabindex="-1"></a>   better fuel economy, supporting the expected engineering trade-off between</span>
+<span id="cb45-14"><a href="#cb45-14" tabindex="-1"></a>   power and efficiency.</span>
+<span id="cb45-15"><a href="#cb45-15" tabindex="-1"></a></span>
+<span id="cb45-16"><a href="#cb45-16" tabindex="-1"></a><span class="fu">## Session Information</span></span>
+<span id="cb45-17"><a href="#cb45-17" tabindex="-1"></a></span>
+<span id="cb45-18"><a href="#cb45-18" tabindex="-1"></a></span>
+<span id="cb45-19"><a href="#cb45-19" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb45-20"><a href="#cb45-20" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb45-21"><a href="#cb45-21" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="render-the-report">7.4 Render the Report<a class="anchor" aria-label="anchor" href="#render-the-report"></a>
 </h3>
-<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">rmarkdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgs.rstudio.com/rmarkdown/reference/render.html" class="external-link">render</a></span><span class="op">(</span><span class="st">"analysis/report/report.Rmd"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">q</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -803,22 +884,22 @@ histogram:</p>
 <h3 id="final-validation">7.5 Final Validation<a class="anchor" aria-label="anchor" href="#final-validation"></a>
 </h3>
 <p>Run the complete test suite:</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
+<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 <p>Validate package environment:</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="commit-final-version">7.6 Commit Final Version<a class="anchor" aria-label="anchor" href="#commit-final-version"></a>
 </h3>
-<div class="sourceCode" id="cb47"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1" tabindex="-1"></a><span class="fu">git</span> add analysis/report/report.Rmd analysis/report/report.html</span>
-<span id="cb47-2"><a href="#cb47-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Finalize analysis report with collaborative visualizations</span></span>
-<span id="cb47-3"><a href="#cb47-3" tabindex="-1"></a></span>
-<span id="cb47-4"><a href="#cb47-4" tabindex="-1"></a><span class="st">- Integrate power-weight scatter plot</span></span>
-<span id="cb47-5"><a href="#cb47-5" tabindex="-1"></a><span class="st">- Add cylinder comparison boxplot</span></span>
-<span id="cb47-6"><a href="#cb47-6" tabindex="-1"></a><span class="st">- Write conclusions section</span></span>
-<span id="cb47-7"><a href="#cb47-7" tabindex="-1"></a><span class="st">- Add session info for reproducibility"</span></span>
-<span id="cb47-8"><a href="#cb47-8" tabindex="-1"></a></span>
-<span id="cb47-9"><a href="#cb47-9" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a><span class="fu">git</span> add analysis/report/report.Rmd analysis/report/report.html</span>
+<span id="cb50-2"><a href="#cb50-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Finalize analysis report with collaborative visualizations</span></span>
+<span id="cb50-3"><a href="#cb50-3" tabindex="-1"></a></span>
+<span id="cb50-4"><a href="#cb50-4" tabindex="-1"></a><span class="st">- Integrate power-weight scatter plot</span></span>
+<span id="cb50-5"><a href="#cb50-5" tabindex="-1"></a><span class="st">- Add cylinder comparison boxplot</span></span>
+<span id="cb50-6"><a href="#cb50-6" tabindex="-1"></a><span class="st">- Write conclusions section</span></span>
+<span id="cb50-7"><a href="#cb50-7" tabindex="-1"></a><span class="st">- Add session info for reproducibility"</span></span>
+<span id="cb50-8"><a href="#cb50-8" tabindex="-1"></a></span>
+<span id="cb50-9"><a href="#cb50-9" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -831,16 +912,16 @@ workflow.</p>
 <h3 id="inviting-collaborators-to-github">8.1 Inviting Collaborators to GitHub<a class="anchor" aria-label="anchor" href="#inviting-collaborators-to-github"></a>
 </h3>
 <p><strong>Adding a single collaborator:</strong></p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a><span class="co"># Add collaborator with write access (can push commits)</span></span>
-<span id="cb48-2"><a href="#cb48-2" tabindex="-1"></a><span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> username</span>
-<span id="cb48-3"><a href="#cb48-3" tabindex="-1"></a></span>
-<span id="cb48-4"><a href="#cb48-4" tabindex="-1"></a><span class="co"># Verify collaborators</span></span>
-<span id="cb48-5"><a href="#cb48-5" tabindex="-1"></a><span class="ex">gh</span> api repos/:owner/:repo/collaborators <span class="at">--jq</span> <span class="st">'.[].login'</span></span></code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a><span class="co"># Add collaborator with write access (can push commits)</span></span>
+<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a><span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> username</span>
+<span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a></span>
+<span id="cb51-4"><a href="#cb51-4" tabindex="-1"></a><span class="co"># Verify collaborators</span></span>
+<span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a><span class="ex">gh</span> api repos/:owner/:repo/collaborators <span class="at">--jq</span> <span class="st">'.[].login'</span></span></code></pre></div>
 <p><strong>Adding multiple collaborators:</strong></p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" tabindex="-1"></a><span class="co"># Add several collaborators</span></span>
-<span id="cb49-2"><a href="#cb49-2" tabindex="-1"></a><span class="cf">for</span> user <span class="kw">in</span> alice bob charlie<span class="kw">;</span> <span class="cf">do</span></span>
-<span id="cb49-3"><a href="#cb49-3" tabindex="-1"></a>  <span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> <span class="st">"</span><span class="va">$user</span><span class="st">"</span></span>
-<span id="cb49-4"><a href="#cb49-4" tabindex="-1"></a><span class="cf">done</span></span></code></pre></div>
+<div class="sourceCode" id="cb52"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># Add several collaborators</span></span>
+<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a><span class="cf">for</span> user <span class="kw">in</span> alice bob charlie<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a>  <span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> <span class="st">"</span><span class="va">$user</span><span class="st">"</span></span>
+<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a><span class="cf">done</span></span></code></pre></div>
 <p><strong>Permission levels</strong> (from least to most access):</p>
 <table class="table">
 <thead><tr class="header">
@@ -870,8 +951,8 @@ workflow.</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a><span class="co"># Add with specific permission (default is 'write' for user repos)</span></span>
-<span id="cb50-2"><a href="#cb50-2" tabindex="-1"></a><span class="ex">gh</span> api repos/:owner/:repo/collaborators/username <span class="at">-X</span> PUT <span class="at">-f</span> permission=maintain</span></code></pre></div>
+<div class="sourceCode" id="cb53"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a><span class="co"># Add with specific permission (default is 'write' for user repos)</span></span>
+<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="ex">gh</span> api repos/:owner/:repo/collaborators/username <span class="at">-X</span> PUT <span class="at">-f</span> permission=maintain</span></code></pre></div>
 <p><strong>What happens after invitation:</strong></p>
 <ol style="list-style-type: decimal">
 <li>Collaborator receives email notification</li>
@@ -881,18 +962,18 @@ github.com/notifications)</li>
 level</li>
 </ol>
 <p><strong>Checking pending invitations:</strong></p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a><span class="ex">gh</span> api repos/:owner/:repo/invitations <span class="at">--jq</span> <span class="st">'.[].invitee.login'</span></span></code></pre></div>
+<div class="sourceCode" id="cb54"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a><span class="ex">gh</span> api repos/:owner/:repo/invitations <span class="at">--jq</span> <span class="st">'.[].invitee.login'</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="dockerhub-image-sharing-optional-but-efficient">8.2 DockerHub Image Sharing (Optional but Efficient)<a class="anchor" aria-label="anchor" href="#dockerhub-image-sharing-optional-but-efficient"></a>
 </h3>
 <p><strong>DockerHub is optional.</strong> Collaborators can always
 build from the Dockerfile:</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># Option A: Build from Dockerfile (always works, takes 5-15 minutes)</span></span>
-<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study.git</span>
-<span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a><span class="bu">cd</span> study</span>
-<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb52-5"><a href="#cb52-5" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb55"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a><span class="co"># Option A: Build from Dockerfile (always works, takes 5-15 minutes)</span></span>
+<span id="cb55-2"><a href="#cb55-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study.git</span>
+<span id="cb55-3"><a href="#cb55-3" tabindex="-1"></a><span class="bu">cd</span> study</span>
+<span id="cb55-4"><a href="#cb55-4" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb55-5"><a href="#cb55-5" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 <p><strong>Why use DockerHub?</strong> Pre-installed packages save
 time:</p>
 <p>When the team lead builds the image, all packages from
@@ -923,11 +1004,11 @@ wait.</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb53"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a><span class="co"># Option B: Pull pre-built image pinned by digest (faster, requires DockerHub setup)</span></span>
-<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study.git</span>
-<span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a><span class="bu">cd</span> study</span>
-<span id="cb53-4"><a href="#cb53-4" tabindex="-1"></a><span class="fu">make</span> docker-pull-team    <span class="co"># reads .team-image-digest; byte-identical for all members</span></span>
-<span id="cb53-5"><a href="#cb53-5" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb56"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1" tabindex="-1"></a><span class="co"># Option B: Pull pre-built image pinned by digest (faster, requires DockerHub setup)</span></span>
+<span id="cb56-2"><a href="#cb56-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study.git</span>
+<span id="cb56-3"><a href="#cb56-3" tabindex="-1"></a><span class="bu">cd</span> study</span>
+<span id="cb56-4"><a href="#cb56-4" tabindex="-1"></a><span class="fu">make</span> docker-pull-team    <span class="co"># reads .team-image-digest; byte-identical for all members</span></span>
+<span id="cb56-5"><a href="#cb56-5" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="setting-up-dockerhub-team-lead">8.3 Setting Up DockerHub (Team Lead)<a class="anchor" aria-label="anchor" href="#setting-up-dockerhub-team-lead"></a>
@@ -938,22 +1019,22 @@ wait.</p>
 <li>Create repository (can be public or private)</li>
 <li>Login from terminal:</li>
 </ol>
-<div class="sourceCode" id="cb54"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb54-1"><a href="#cb54-1" tabindex="-1"></a><span class="ex">docker</span> login</span>
-<span id="cb54-2"><a href="#cb54-2" tabindex="-1"></a><span class="co"># Enter DockerHub username and password/token</span></span></code></pre></div>
+<div class="sourceCode" id="cb57"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="ex">docker</span> login</span>
+<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a><span class="co"># Enter DockerHub username and password/token</span></span></code></pre></div>
 <p><strong>Build before pushing (important):</strong></p>
 <p>The Docker build process installs all R packages from
 <code>renv.lock</code> into the image. This is what makes pulling faster
 for team members - packages are pre-installed rather than installed on
 first run.</p>
-<div class="sourceCode" id="cb55"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb55-1"><a href="#cb55-1" tabindex="-1"></a><span class="co"># 1. Build image (installs packages from renv.lock into /opt/renv/library)</span></span>
-<span id="cb55-2"><a href="#cb55-2" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb55-3"><a href="#cb55-3" tabindex="-1"></a></span>
-<span id="cb55-4"><a href="#cb55-4" tabindex="-1"></a><span class="co"># 2. Push multi-arch image and record digest (preferred)</span></span>
-<span id="cb55-5"><a href="#cb55-5" tabindex="-1"></a><span class="fu">make</span> docker-push-team            <span class="co"># writes .team-image-digest; commit this file</span></span>
-<span id="cb55-6"><a href="#cb55-6" tabindex="-1"></a></span>
-<span id="cb55-7"><a href="#cb55-7" tabindex="-1"></a><span class="co"># Alternative: single-arch push without digest recording</span></span>
-<span id="cb55-8"><a href="#cb55-8" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Pushes to dockerhub-account/project:latest</span></span>
-<span id="cb55-9"><a href="#cb55-9" tabindex="-1"></a><span class="ex">zzc</span> dockerhub <span class="at">--tag</span> v1.0         <span class="co"># Or with an explicit version tag</span></span></code></pre></div>
+<div class="sourceCode" id="cb58"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a><span class="co"># 1. Build image (installs packages from renv.lock into /opt/renv/library)</span></span>
+<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a></span>
+<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a><span class="co"># 2. Push multi-arch image and record digest (preferred)</span></span>
+<span id="cb58-5"><a href="#cb58-5" tabindex="-1"></a><span class="fu">make</span> docker-push-team            <span class="co"># writes .team-image-digest; commit this file</span></span>
+<span id="cb58-6"><a href="#cb58-6" tabindex="-1"></a></span>
+<span id="cb58-7"><a href="#cb58-7" tabindex="-1"></a><span class="co"># Alternative: single-arch push without digest recording</span></span>
+<span id="cb58-8"><a href="#cb58-8" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Pushes to dockerhub-account/project:latest</span></span>
+<span id="cb58-9"><a href="#cb58-9" tabindex="-1"></a><span class="ex">zzc</span> dockerhub <span class="at">--tag</span> v1.0         <span class="co"># Or with an explicit version tag</span></span></code></pre></div>
 <p><strong>When to rebuild and push:</strong></p>
 <ul>
 <li>After adding packages (<code>renv.lock</code> changed)</li>
@@ -961,11 +1042,11 @@ first run.</p>
 <li>Before onboarding new team members (ensure they get current
 image)</li>
 </ul>
-<div class="sourceCode" id="cb56"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1" tabindex="-1"></a><span class="co"># Check if renv.lock changed since last push</span></span>
-<span id="cb56-2"><a href="#cb56-2" tabindex="-1"></a><span class="fu">git</span> log <span class="at">--oneline</span> <span class="at">-3</span> <span class="at">--</span> renv.lock</span>
-<span id="cb56-3"><a href="#cb56-3" tabindex="-1"></a></span>
-<span id="cb56-4"><a href="#cb56-4" tabindex="-1"></a><span class="co"># If changed, rebuild and push</span></span>
-<span id="cb56-5"><a href="#cb56-5" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="ex">zzc</span> dockerhub</span></code></pre></div>
+<div class="sourceCode" id="cb59"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb59-1"><a href="#cb59-1" tabindex="-1"></a><span class="co"># Check if renv.lock changed since last push</span></span>
+<span id="cb59-2"><a href="#cb59-2" tabindex="-1"></a><span class="fu">git</span> log <span class="at">--oneline</span> <span class="at">-3</span> <span class="at">--</span> renv.lock</span>
+<span id="cb59-3"><a href="#cb59-3" tabindex="-1"></a></span>
+<span id="cb59-4"><a href="#cb59-4" tabindex="-1"></a><span class="co"># If changed, rebuild and push</span></span>
+<span id="cb59-5"><a href="#cb59-5" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="ex">zzc</span> dockerhub</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="private-dockerhub-repositories">8.4 Private DockerHub Repositories<a class="anchor" aria-label="anchor" href="#private-dockerhub-repositories"></a>
@@ -978,12 +1059,12 @@ image)</li>
 <li>Add collaborators under “Collaborators” tab</li>
 </ol>
 <p><strong>Team members authenticate:</strong></p>
-<div class="sourceCode" id="cb57"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="co"># Each team member must login once</span></span>
-<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a><span class="ex">docker</span> login</span>
-<span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a><span class="co"># Enter their DockerHub credentials</span></span>
-<span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a></span>
-<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a><span class="co"># Then pull works</span></span>
-<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a><span class="ex">docker</span> pull myteam/private-study:latest</span></code></pre></div>
+<div class="sourceCode" id="cb60"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" tabindex="-1"></a><span class="co"># Each team member must login once</span></span>
+<span id="cb60-2"><a href="#cb60-2" tabindex="-1"></a><span class="ex">docker</span> login</span>
+<span id="cb60-3"><a href="#cb60-3" tabindex="-1"></a><span class="co"># Enter their DockerHub credentials</span></span>
+<span id="cb60-4"><a href="#cb60-4" tabindex="-1"></a></span>
+<span id="cb60-5"><a href="#cb60-5" tabindex="-1"></a><span class="co"># Then pull works</span></span>
+<span id="cb60-6"><a href="#cb60-6" tabindex="-1"></a><span class="ex">docker</span> pull myteam/private-study:latest</span></code></pre></div>
 <p><strong>Free tier limitations:</strong></p>
 <ul>
 <li>Docker Free: 1 private repo, unlimited public</li>
@@ -1009,48 +1090,52 @@ is on private GitHub anyway.</p>
 <li>Troubleshooting environment issues</li>
 </ul>
 <p><strong>Check if rebuild needed:</strong></p>
-<div class="sourceCode" id="cb58"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a><span class="co"># See if Dockerfile changed since last pull</span></span>
-<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a><span class="fu">git</span> log <span class="at">--oneline</span> <span class="at">-5</span> <span class="at">--</span> Dockerfile</span>
-<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a></span>
-<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a><span class="co"># If changes exist, rebuild</span></span>
-<span id="cb58-5"><a href="#cb58-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
+<div class="sourceCode" id="cb61"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb61-1"><a href="#cb61-1" tabindex="-1"></a><span class="co"># See if Dockerfile changed since last pull</span></span>
+<span id="cb61-2"><a href="#cb61-2" tabindex="-1"></a><span class="fu">git</span> log <span class="at">--oneline</span> <span class="at">-5</span> <span class="at">--</span> Dockerfile</span>
+<span id="cb61-3"><a href="#cb61-3" tabindex="-1"></a></span>
+<span id="cb61-4"><a href="#cb61-4" tabindex="-1"></a><span class="co"># If changes exist, rebuild</span></span>
+<span id="cb61-5"><a href="#cb61-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="complete-team-workflow-example">8.6 Complete Team Workflow Example<a class="anchor" aria-label="anchor" href="#complete-team-workflow-example"></a>
 </h3>
 <p><strong>Team Lead (one-time setup):</strong></p>
-<div class="sourceCode" id="cb59"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb59-1"><a href="#cb59-1" tabindex="-1"></a><span class="co"># Create project</span></span>
-<span id="cb59-2"><a href="#cb59-2" tabindex="-1"></a><span class="fu">mkdir</span> team-analysis <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> team-analysis</span>
-<span id="cb59-3"><a href="#cb59-3" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
-<span id="cb59-4"><a href="#cb59-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb59-5"><a href="#cb59-5" tabindex="-1"></a></span>
-<span id="cb59-6"><a href="#cb59-6" tabindex="-1"></a><span class="co"># Build and push multi-arch image; records digest to .team-image-digest</span></span>
-<span id="cb59-7"><a href="#cb59-7" tabindex="-1"></a><span class="ex">docker</span> login                     <span class="co"># One-time DockerHub authentication</span></span>
-<span id="cb59-8"><a href="#cb59-8" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb59-9"><a href="#cb59-9" tabindex="-1"></a><span class="fu">git</span> add .team-image-digest <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Record team image digest"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
-<span id="cb59-10"><a href="#cb59-10" tabindex="-1"></a></span>
-<span id="cb59-11"><a href="#cb59-11" tabindex="-1"></a><span class="co"># Add collaborators</span></span>
-<span id="cb59-12"><a href="#cb59-12" tabindex="-1"></a><span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> alice</span>
-<span id="cb59-13"><a href="#cb59-13" tabindex="-1"></a><span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> bob</span></code></pre></div>
+<div class="sourceCode" id="cb62"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1" tabindex="-1"></a><span class="co"># Create project (archetype + feature wizard; --yes accepts defaults)</span></span>
+<span id="cb62-2"><a href="#cb62-2" tabindex="-1"></a><span class="fu">mkdir</span> team-analysis <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> team-analysis</span>
+<span id="cb62-3"><a href="#cb62-3" tabindex="-1"></a><span class="ex">zzc</span> init <span class="at">--yes</span> <span class="at">--archetype</span> analysis</span>
+<span id="cb62-4"><a href="#cb62-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb62-5"><a href="#cb62-5" tabindex="-1"></a></span>
+<span id="cb62-6"><a href="#cb62-6" tabindex="-1"></a><span class="co"># Build and push multi-arch image; records digest to .team-image-digest</span></span>
+<span id="cb62-7"><a href="#cb62-7" tabindex="-1"></a><span class="ex">docker</span> login                     <span class="co"># One-time DockerHub authentication</span></span>
+<span id="cb62-8"><a href="#cb62-8" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
+<span id="cb62-9"><a href="#cb62-9" tabindex="-1"></a><span class="fu">git</span> add .team-image-digest <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Record team image digest"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span>
+<span id="cb62-10"><a href="#cb62-10" tabindex="-1"></a></span>
+<span id="cb62-11"><a href="#cb62-11" tabindex="-1"></a><span class="co"># Add collaborators</span></span>
+<span id="cb62-12"><a href="#cb62-12" tabindex="-1"></a><span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> alice</span>
+<span id="cb62-13"><a href="#cb62-13" tabindex="-1"></a><span class="ex">gh</span> repo edit <span class="at">--add-collaborator</span> bob</span></code></pre></div>
 <p><strong>Team Member (joining):</strong></p>
-<div class="sourceCode" id="cb60"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" tabindex="-1"></a><span class="co"># Clone repository</span></span>
-<span id="cb60-2"><a href="#cb60-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/leader/team-analysis.git</span>
-<span id="cb60-3"><a href="#cb60-3" tabindex="-1"></a><span class="bu">cd</span> team-analysis</span>
-<span id="cb60-4"><a href="#cb60-4" tabindex="-1"></a></span>
-<span id="cb60-5"><a href="#cb60-5" tabindex="-1"></a><span class="co"># Option A: Pull image pinned to the committed digest (fast, reproducible)</span></span>
-<span id="cb60-6"><a href="#cb60-6" tabindex="-1"></a><span class="ex">docker</span> login                     <span class="co"># If private DockerHub repo</span></span>
-<span id="cb60-7"><a href="#cb60-7" tabindex="-1"></a><span class="fu">make</span> docker-pull-team            <span class="co"># reads .team-image-digest</span></span>
-<span id="cb60-8"><a href="#cb60-8" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb60-9"><a href="#cb60-9" tabindex="-1"></a></span>
-<span id="cb60-10"><a href="#cb60-10" tabindex="-1"></a><span class="co"># Option B: Build from Dockerfile (always works, verifies reproducibility)</span></span>
-<span id="cb60-11"><a href="#cb60-11" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb60-12"><a href="#cb60-12" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb63"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb63-1"><a href="#cb63-1" tabindex="-1"></a><span class="co"># Clone repository</span></span>
+<span id="cb63-2"><a href="#cb63-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/leader/team-analysis.git</span>
+<span id="cb63-3"><a href="#cb63-3" tabindex="-1"></a><span class="bu">cd</span> team-analysis</span>
+<span id="cb63-4"><a href="#cb63-4" tabindex="-1"></a></span>
+<span id="cb63-5"><a href="#cb63-5" tabindex="-1"></a><span class="co"># Sync framework-managed files with the installed zzcollab version</span></span>
+<span id="cb63-6"><a href="#cb63-6" tabindex="-1"></a><span class="ex">zzc</span> update</span>
+<span id="cb63-7"><a href="#cb63-7" tabindex="-1"></a></span>
+<span id="cb63-8"><a href="#cb63-8" tabindex="-1"></a><span class="co"># Option A: Pull image pinned to the committed digest (fast, reproducible)</span></span>
+<span id="cb63-9"><a href="#cb63-9" tabindex="-1"></a><span class="ex">docker</span> login                     <span class="co"># If private DockerHub repo</span></span>
+<span id="cb63-10"><a href="#cb63-10" tabindex="-1"></a><span class="fu">make</span> docker-pull-team            <span class="co"># reads .team-image-digest</span></span>
+<span id="cb63-11"><a href="#cb63-11" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb63-12"><a href="#cb63-12" tabindex="-1"></a></span>
+<span id="cb63-13"><a href="#cb63-13" tabindex="-1"></a><span class="co"># Option B: Build from Dockerfile (always works, verifies reproducibility)</span></span>
+<span id="cb63-14"><a href="#cb63-14" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb63-15"><a href="#cb63-15" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 <p><strong>Daily workflow (all team members):</strong></p>
-<div class="sourceCode" id="cb61"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb61-1"><a href="#cb61-1" tabindex="-1"></a><span class="fu">git</span> pull                         <span class="co"># Get latest code and any updated digest</span></span>
-<span id="cb61-2"><a href="#cb61-2" tabindex="-1"></a><span class="fu">make</span> r                           <span class="co"># Enter container (packages baked in)</span></span>
-<span id="cb61-3"><a href="#cb61-3" tabindex="-1"></a><span class="co"># ... work, install new packages with install.packages() if needed ...</span></span>
-<span id="cb61-4"><a href="#cb61-4" tabindex="-1"></a><span class="bu">exit</span>                             <span class="co"># Auto-snapshot writes updated renv.lock</span></span>
-<span id="cb61-5"><a href="#cb61-5" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb64"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" tabindex="-1"></a><span class="fu">git</span> pull                         <span class="co"># Get latest code and any updated digest</span></span>
+<span id="cb64-2"><a href="#cb64-2" tabindex="-1"></a><span class="ex">zzc</span> update                       <span class="co"># Refresh stale framework files after a pull</span></span>
+<span id="cb64-3"><a href="#cb64-3" tabindex="-1"></a><span class="fu">make</span> r                           <span class="co"># Enter container (packages baked in)</span></span>
+<span id="cb64-4"><a href="#cb64-4" tabindex="-1"></a><span class="co"># ... work, install new packages with install.packages() if needed ...</span></span>
+<span id="cb64-5"><a href="#cb64-5" tabindex="-1"></a><span class="bu">exit</span>                             <span class="co"># Auto-snapshot writes updated renv.lock</span></span>
+<span id="cb64-6"><a href="#cb64-6" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1095,18 +1180,48 @@ Docker images</li>
 <h2 id="quick-reference">Quick Reference<a class="anchor" aria-label="anchor" href="#quick-reference"></a>
 </h2>
 <table class="table">
+<colgroup>
+<col width="40%">
+<col width="60%">
+</colgroup>
 <thead><tr class="header">
 <th>Task</th>
 <th>Command</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Create project (full setup)</td>
-<td><code>zzc analysis</code></td>
+<td>Create project (archetype + feature wizard)</td>
+<td><code>zzc init</code></td>
 </tr>
 <tr class="even">
+<td>Create project non-interactively</td>
+<td><code>zzc init --yes --archetype analysis</code></td>
+</tr>
+<tr class="odd">
 <td>Add GitHub repo</td>
 <td><code>zzc github</code></td>
+</tr>
+<tr class="even">
+<td>Refresh framework files after a clone or pull</td>
+<td><code>zzc update</code></td>
+</tr>
+<tr class="odd">
+<td>Show features and capture level (read-only)</td>
+<td><code>zzc status</code></td>
+</tr>
+<tr class="even">
+<td>Verify coherence (L3 with <code>--full</code>)</td>
+<td><code>zzc verify</code></td>
+</tr>
+<tr class="odd">
+<td>Add or remove a feature</td>
+<td>
+<code>zzc add &lt;f&gt;</code> / <code>zzc rm &lt;f&gt;</code>
+</td>
+</tr>
+<tr class="even">
+<td>Toggle features interactively</td>
+<td><code>zzc toggle</code></td>
 </tr>
 <tr class="odd">
 <td>Enter container</td>
@@ -1167,10 +1282,23 @@ Docker images</li>
 <h2 id="next-steps">Next Steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
 </h2>
 <ul>
-<li>Add CI/CD with GitHub Actions for automated testing</li>
+<li>Add CI/CD with GitHub Actions for automated testing
+(<code>zzc add cicd</code>); the feature toggle model is covered in
+<code><a href="../articles/quickstart3.html">vignette("quickstart3")</a></code>.</li>
 <li>Implement additional analyses on the second half of mtcars</li>
 <li>Create a package vignette documenting the analysis methodology</li>
 <li>Add code coverage reporting with covr</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
+</h2>
+<ul>
+<li>
+<code><a href="../articles/quickstart3.html">vignette("quickstart3")</a></code> for the feature-toggle model in
+depth: the capture-versus-validation distinction, capture levels (L0 to
+L3), and the full <code>zzc toggle</code> / <code>zzc add</code> /
+<code>zzc rm</code> menu.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

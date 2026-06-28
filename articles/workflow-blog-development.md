@@ -13,6 +13,28 @@ ZZCOLLAB project with Docker, renv, and the five pillars of
 reproducibility. The blog post itself lives in `analysis/report/`,
 consistent with the manuscript workflow.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Research compendium**: a single version-controlled unit bundling
+>   data, code, environment, and documentation, here one per blog post.
+> - **Five Pillars**: the five artifacts treated as jointly sufficient
+>   for reproducibility: `Dockerfile`, `renv.lock`, `.Rprofile`, source
+>   code, and research data.
+> - **Docker / container / Dockerfile**: a tool that packages software
+>   with its environment, a running instance of it, and the recipe that
+>   builds it.
+> - **Base image**: the starting Docker image a project builds on, here
+>   `rocker/verse` for Quarto and LaTeX.
+> - **renv / `renv.lock`**: per-project isolated package library and the
+>   JSON lockfile pinning exact package versions.
+> - **make target**: a named `Makefile` command (e.g.
+>   `make docker-render-qmd`) wrapping a container operation.
+> - **Raw vs derived data**: immutable original files versus the
+>   processed, analysis-ready datasets generated from them.
+
 ### What You Will Learn
 
 - Structuring blog posts as reproducible research compendia

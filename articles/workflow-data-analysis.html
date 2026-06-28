@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-data-analysis.Rmd" class="external-link"><code>vignettes/workflow-data-analysis.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-data-analysis.Rmd</code></div>
@@ -99,6 +100,35 @@ methods differently than the code implements them</li>
 </ol>
 <p>The Write as You Go approach addresses these problems by integrating
 writing with analysis from day one.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Research compendium</strong>: a single version-controlled
+unit bundling data, code, environment, and documentation.</li>
+<li>
+<strong>Computational reproducibility</strong>: getting the same
+numerical results from the same data and the same code.</li>
+<li>
+<strong>Raw vs derived data</strong>: immutable original data files
+versus the processed, analysis-ready datasets generated from them.</li>
+<li>
+<strong>Container / Dockerfile</strong>: a packaged software
+environment and the recipe that builds it, so results travel with their
+dependencies.</li>
+<li>
+<strong><code>renv.lock</code></strong>: a JSON record of every
+package version needed to rebuild the environment.</li>
+<li>
+<strong>Unit test / tinytest</strong>: a focused check that one
+piece of code behaves as intended; zzcollab projects use tinytest.</li>
+<li>
+<strong><code>R/</code></strong>: the directory holding reusable
+functions extracted from inline analysis code.</li>
+</ul>
+</blockquote>
 </div>
 <div class="section level2">
 <h2 id="write-as-you-go-core-principles">Write as You Go: Core Principles<a class="anchor" aria-label="anchor" href="#write-as-you-go-core-principles"></a>

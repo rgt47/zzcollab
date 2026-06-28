@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">r. glenn
 thomas</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/score-replication-crisis-zzcollab.Rmd" class="external-link"><code>vignettes/score-replication-crisis-zzcollab.Rmd</code></a></small>
       <div class="d-none name"><code>score-replication-crisis-zzcollab.Rmd</code></div>
@@ -98,6 +99,41 @@ and <span class="citation"><span class="nocase">Hardwicke et al.</span>
 Together these sources map a precise causal account of reproducibility
 failure and identify which architectural choices in zzcollab address
 which failure modes.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Computational reproducibility</strong>: getting the same
+numerical results from the same data and the same code.</li>
+<li>
+<strong>Reproducibility crisis</strong>: the widespread finding that
+many published results cannot be independently reproduced.</li>
+<li>
+<strong>Five Pillars (of reproducibility)</strong>: the five
+artifacts treated as jointly sufficient: the <code>Dockerfile</code>,
+<code>renv.lock</code>, <code>.Rprofile</code>, the source code, and the
+research data.</li>
+<li>
+<strong>Docker / container / image / Dockerfile</strong>: a tool
+that packages software with its environment; a running instance, its
+template, and the recipe that builds it.</li>
+<li>
+<strong>renv</strong>: an R package giving each project its own
+isolated, version-pinned package library.</li>
+<li>
+<strong>Continuous integration (CI)</strong>: automatically building
+and testing code on every push.</li>
+<li>
+<strong>Data provenance / lineage</strong>: a record of where data
+came from and how it was transformed.</li>
+<li>
+<strong>Seed (<code>set.seed</code>) / RNG kind</strong>: a fixed
+starting point making random results reproducible; the generator whose
+default has changed across R versions.</li>
+</ul>
+</blockquote>
 <hr>
 </div>
 <div class="section level2">

@@ -7,6 +7,32 @@ using zzcollab. Two developers will collaborate on an analysis of the
 `mtcars` dataset, demonstrating proper data management, testing,
 reporting, and version control practices.
 
+> **Key terms in this vignette.** These are the only terms this guide
+> leans on; each is reintroduced on first use. Full definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Compendium**: your project folder, holding data, code, and
+>   write-up together so the whole thing can be re-run as a unit.
+> - **Archetype**: the project type you pick at creation (analysis,
+>   manuscript, package, simulation, or blog); it shapes the starter
+>   layout. This guide uses `analysis`.
+> - **Profile**: the Docker image bundle the environment is built from
+>   (minimal, analysis, rstudio). Distinct from the archetype: the
+>   profile is the image, the archetype is the layout.
+> - **Feature**: an independently switchable capability (a package
+>   backend, Docker, CI, data hashing, code-quality hooks, unit tests,
+>   or cloud launch) toggled with `zzc toggle` or `zzc add`/`zzc rm`.
+> - **Capture vs validation**: capture features (the backend and Docker)
+>   pin the environment and set the capture level; validation features
+>   (tests, CI, code quality) only check it.
+> - **Capture level (L0 to L3)**: how locked-down the project is, from
+>   ‘just findable’ (L0) up to ‘rebuilt and verified’ (L3).
+> - **Team image**: the Docker image the team lead builds with all
+>   `renv.lock` packages baked in, so collaborators skip the install
+>   wait.
+> - **Image digest**: the manifest checksum (`.team-image-digest`) that
+>   lets every member pull the byte-identical team image.
+
 **Workflow Summary**:
 
 1.  Developer 1 sets up workspace, prepares data, writes initial
@@ -53,13 +79,39 @@ zzc config set dockerhub-account "your-dockerhub-username"
 
 ### 1.3 Create Project Workspace
 
-Create a new directory and initialize with the analysis profile:
+Create a new directory and initialize the compendium (your project
+folder) with `zzc init`:
 
 ``` bash
 mkdir mtcars-analysis
 cd mtcars-analysis
-zzc analysis                     # Full setup: init + renv + docker (prompts to build)
+zzc init
 ```
+
+`zzc init` asks two things. The first is the **archetype**, the project
+type, which shapes the starter layout:
+
+    Archetype [analysis/manuscript/package/simulation/blog] (default analysis):
+
+This tutorial uses `analysis`, which scaffolds a report at
+`analysis/report/report.Rmd`. The second is a short feature wizard (renv
+backend, Docker, CI, data-integrity hashing, code-quality hooks, unit
+tests, cloud launch). It recommends a sensible default of renv plus
+Docker, which is what this guide assumes; accept it. The archetype
+(project layout) is separate from the **profile** (the Docker image
+bundle), covered in the next step.
+
+To skip every prompt and accept defaults, or to set the archetype as a
+flag:
+
+``` bash
+zzc init --yes                   # non-interactive, accept defaults
+zzc init --archetype analysis    # set archetype, still run the wizard
+```
+
+The full feature menu, and how to toggle features later, is documented
+in
+[`vignette("quickstart3")`](https://rgt47.github.io/zzcollab/articles/quickstart3.md).
 
 Optionally add GitHub:
 
@@ -105,7 +157,11 @@ make docker-build
 ```
 
 This creates a reproducible R environment based on the `analysis`
-profile (rocker/tidyverse with tidyverse packages).
+**profile**, the Docker image bundle (rocker/tidyverse with tidyverse
+packages). The profile selects the image; the archetype chosen in the
+previous step selected the layout. The three canonical profiles are
+minimal, analysis, and rstudio; list them with `zzc list profiles`. For
+specialised needs (LaTeX, modeling, Shiny), extend the closest profile.
 
 ## Part 2: Data Preparation (Developer 1)
 
@@ -405,7 +461,7 @@ Edit `analysis/report/report.Rmd`:
     ---
     title: "Fuel Efficiency Analysis: mtcars Subset"
     author: "Developer 1"
-    date: "2026-06-24"
+    date: "2026-06-28"
     output:
       html_document:
         toc: true
@@ -590,6 +646,10 @@ Developer 2 clones the project and loads the team Docker image:
 git clone git@github.com:myteam/mtcars-analysis.git
 cd mtcars-analysis
 
+# Bring framework-managed template files in line with the installed
+# zzcollab version, and back-fill local state.
+zzc update
+
 # Preferred: pull the exact digest the team lead recorded (bit-identical)
 make docker-pull-team          # reads .team-image-digest committed by team lead
 
@@ -597,7 +657,22 @@ make docker-pull-team          # reads .team-image-digest committed by team lead
 make docker-build
 ```
 
+`zzc update` is a minor maintenance command. It checks the project’s
+framework-managed template files (Makefile, CI workflows, and similar)
+against the installed zzcollab version, refreshes any that are stale,
+and back-fills the state record. Running it right after a clone keeps a
+collaborator’s framework files consistent with the team lead’s, without
+touching analysis code or primary feature files. Confirm the result with
+`zzc status` (read-only) and `zzc verify` (coherence checks).
+
 ### 6.2 Enter Container and Verify Setup
+
+Confirm the framework state before entering the container:
+
+``` bash
+zzc status                     # read-only: shows features and capture level
+zzc verify                     # coherence checks (files agree with state)
+```
 
 ``` bash
 make r
@@ -729,10 +804,13 @@ git push
 
 ### 7.1 Pull Changes
 
-Developer 1 pulls Developer 2’s additions:
+Developer 1 pulls Developer 2’s additions, then refreshes
+framework-managed files and confirms state:
 
 ``` bash
 git pull
+zzc update                     # refresh stale template files, back-fill state
+zzc status                     # confirm features and capture level
 ```
 
 ### 7.2 Enter Container
@@ -1037,9 +1115,9 @@ make docker-build
 **Team Lead (one-time setup):**
 
 ``` bash
-# Create project
+# Create project (archetype + feature wizard; --yes accepts defaults)
 mkdir team-analysis && cd team-analysis
-zzc analysis
+zzc init --yes --archetype analysis
 zzc github
 
 # Build and push multi-arch image; records digest to .team-image-digest
@@ -1059,6 +1137,9 @@ gh repo edit --add-collaborator bob
 git clone https://github.com/leader/team-analysis.git
 cd team-analysis
 
+# Sync framework-managed files with the installed zzcollab version
+zzc update
+
 # Option A: Pull image pinned to the committed digest (fast, reproducible)
 docker login                     # If private DockerHub repo
 make docker-pull-team            # reads .team-image-digest
@@ -1073,6 +1154,7 @@ make r
 
 ``` bash
 git pull                         # Get latest code and any updated digest
+zzc update                       # Refresh stale framework files after a pull
 make r                           # Enter container (packages baked in)
 # ... work, install new packages with install.packages() if needed ...
 exit                             # Auto-snapshot writes updated renv.lock
@@ -1107,8 +1189,14 @@ The final repository contains:
 
 | Task | Command |
 |----|----|
-| Create project (full setup) | `zzc analysis` |
+| Create project (archetype + feature wizard) | `zzc init` |
+| Create project non-interactively | `zzc init --yes --archetype analysis` |
 | Add GitHub repo | `zzc github` |
+| Refresh framework files after a clone or pull | `zzc update` |
+| Show features and capture level (read-only) | `zzc status` |
+| Verify coherence (L3 with `--full`) | `zzc verify` |
+| Add or remove a feature | `zzc add <f>` / `zzc rm <f>` |
+| Toggle features interactively | `zzc toggle` |
 | Enter container | `make r` |
 | Run tests | `make docker-test` |
 | Validate packages | `make check-renv` |
@@ -1125,7 +1213,16 @@ The final repository contains:
 
 ## Next Steps
 
-- Add CI/CD with GitHub Actions for automated testing
+- Add CI/CD with GitHub Actions for automated testing (`zzc add cicd`);
+  the feature toggle model is covered in
+  [`vignette("quickstart3")`](https://rgt47.github.io/zzcollab/articles/quickstart3.md).
 - Implement additional analyses on the second half of mtcars
 - Create a package vignette documenting the analysis methodology
 - Add code coverage reporting with covr
+
+## See also
+
+- [`vignette("quickstart3")`](https://rgt47.github.io/zzcollab/articles/quickstart3.md)
+  for the feature-toggle model in depth: the capture-versus-validation
+  distinction, capture levels (L0 to L3), and the full `zzc toggle` /
+  `zzc add` / `zzc rm` menu.

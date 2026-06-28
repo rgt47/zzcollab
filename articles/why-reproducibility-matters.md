@@ -18,6 +18,28 @@ given the same data and code, any researcher should obtain identical
 numerical results. Yet this seemingly simple requirement remains elusive
 in practice.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Computational reproducibility**: getting the same numerical
+>   results from the same data and the same code.
+> - **Reproducibility crisis**: the widespread finding that many
+>   published results cannot be independently reproduced.
+> - **Code rot / environmental drift**: the gradual breakage of working
+>   code over time as its dependencies change underneath it.
+> - **renv**: an R package giving each project its own isolated,
+>   version-pinned package library.
+> - **Docker / container / image / Dockerfile**: a tool that packages
+>   software with its environment; a running instance, its template, and
+>   the recipe that builds it.
+> - **Five Pillars (of reproducibility)**: the five artifacts treated as
+>   jointly sufficient: the `Dockerfile`, `renv.lock`, `.Rprofile`, the
+>   source code, and the research data.
+> - **Version pinning**: recording an exact dependency version so it
+>   cannot drift between machines or over time.
+
 ### Why Computational Reproducibility Fails
 
 The “works on my machine” problem plagues computational research.

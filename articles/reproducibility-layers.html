@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/reproducibility-layers.Rmd" class="external-link"><code>vignettes/reproducibility-layers.Rmd</code></a></small>
       <div class="d-none name"><code>reproducibility-layers.Rmd</code></div>
@@ -88,6 +89,40 @@ on project needs and collaboration requirements.</p>
 introducing additional complexity. Understanding the tradeoffs enables
 informed decisions about appropriate reproducibility investments for
 different research contexts.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Computational reproducibility</strong>: getting the same
+numerical results from the same data and the same code.</li>
+<li>
+<strong>renv</strong>: an R package giving each project its own
+isolated, version-pinned package library.</li>
+<li>
+<strong>Lockfile (<code>renv.lock</code>)</strong>: a JSON record of
+every package version needed to rebuild the environment.</li>
+<li>
+<strong>Version pinning</strong>: recording an exact dependency
+version so it cannot drift between machines or over time.</li>
+<li>
+<strong>Docker / container / image / Dockerfile</strong>: a tool
+that packages software with its environment; a running instance, its
+template, and the recipe that builds it.</li>
+<li>
+<strong>Unit test / testthat / tinytest</strong>: a focused check
+that one piece of code behaves as intended, and the frameworks for
+writing it.</li>
+<li>
+<strong>Continuous integration (CI)</strong>: automatically building
+and testing code on every push.</li>
+<li>
+<strong>Code rot / environmental drift</strong>: the gradual
+breakage of working code over time as its dependencies change underneath
+it.</li>
+</ul>
+</blockquote>
 <div class="section level3">
 <h3 id="the-five-levels">The Five Levels<a class="anchor" aria-label="anchor" href="#the-five-levels"></a>
 </h3>
@@ -892,12 +927,12 @@ coverage</strong> for analytical functions:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check test coverage</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://covr.r-lib.org" class="external-link">covr</a></span><span class="op">)</span></span>
-<span><span class="va">coverage</span> <span class="op">&lt;-</span> <span class="fu"><a href="http://covr.r-lib.org/reference/package_coverage.html" class="external-link">package_coverage</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="http://covr.r-lib.org/reference/percent_coverage.html" class="external-link">percent_coverage</a></span><span class="op">(</span><span class="va">coverage</span><span class="op">)</span></span>
+<span><span class="va">coverage</span> <span class="op">&lt;-</span> <span class="fu">package_coverage</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">percent_coverage</span><span class="op">(</span><span class="va">coverage</span><span class="op">)</span></span>
 <span><span class="co"># [1] 94.2%</span></span>
 <span></span>
 <span><span class="co"># Generate coverage report</span></span>
-<span><span class="fu"><a href="http://covr.r-lib.org/reference/report.html" class="external-link">report</a></span><span class="op">(</span><span class="va">coverage</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">report</span><span class="op">(</span><span class="va">coverage</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Coverage Guidelines</strong>:</p>
 <ul>
 <li>

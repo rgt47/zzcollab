@@ -7,6 +7,22 @@ iTerm2 terminals. Unlike manual save-and-view approaches, zzvim-R
 intercepts R’s graphics device and displays plots automatically when
 they are created.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Docker / container**: a tool that packages software with its
+>   environment, and a running instance of that environment.
+> - **`.Rprofile`**: the R session-configuration file zzcollab
+>   generates, which sources the local override below.
+> - **`.Rprofile.local`**: a per-machine, gitignored override file where
+>   zzvim-R writes its terminal graphics functions.
+> - **make target**: a named `Makefile` command (e.g. `make r`) wrapping
+>   a container operation.
+> - **DESCRIPTION**: the package-metadata file that marks a directory as
+>   an R project root.
+
 This vignette covers:
 
 - Installation and setup

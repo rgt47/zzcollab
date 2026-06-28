@@ -16,6 +16,8 @@
   Toggles](https://rgt47.github.io/zzcollab/articles/quickstart3.md):
 - [ZZCOLLAB Configuration
   System](https://rgt47.github.io/zzcollab/articles/configuration.md):
+- [Glossary: zzcollab and Reproducible-Research
+  Terms](https://rgt47.github.io/zzcollab/articles/glossary.md):
 
 ### Concepts
 

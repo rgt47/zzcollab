@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-scholarly-manuscript.Rmd" class="external-link"><code>vignettes/workflow-scholarly-manuscript.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-scholarly-manuscript.Rmd</code></div>
@@ -86,6 +87,39 @@ research compendium framework <span class="citation">(Marwick et al.
 organizing principle</strong>—you start writing from day one, and the
 compendium directories (<code>R/</code>, <code>tests/</code>,
 <code>analysis/scripts/</code>) emerge naturally as code matures.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Research compendium</strong>: a single version-controlled
+unit bundling data, code, environment, and documentation.</li>
+<li>
+<strong>Computational reproducibility</strong>: getting the same
+numerical results from the same data and the same code.</li>
+<li>
+<strong>Raw vs derived data</strong>: immutable original data files
+versus the processed, analysis-ready datasets generated from them.</li>
+<li>
+<strong>Container / Dockerfile</strong>: a packaged software
+environment and the recipe that builds it, so the manuscript renders
+identically elsewhere.</li>
+<li>
+<strong><code>renv.lock</code></strong>: a JSON record of every
+package version needed to rebuild the environment.</li>
+<li>
+<strong><code>R/</code></strong>: the directory holding reusable
+functions extracted from inline manuscript code.</li>
+<li>
+<strong>Unit test / tinytest</strong>: a focused check that one
+piece of code behaves as intended; zzcollab projects use tinytest.</li>
+<li>
+<strong>zzrenvcheck</strong>: zzcollab’s dependency check verifying
+every package used in code is declared in <code>DESCRIPTION</code> and
+pinned in <code>renv.lock</code>.</li>
+</ul>
+</blockquote>
 <div class="section level3">
 <h3 id="the-write-as-you-go-approach">The Write as You Go Approach<a class="anchor" aria-label="anchor" href="#the-write-as-you-go-approach"></a>
 </h3>
@@ -256,7 +290,7 @@ so package usage stays consistent with <code>DESCRIPTION</code> and
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">author</span><span class="kw">:</span></span>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Your Name</span></span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="at">    </span><span class="fu">affiliation</span><span class="kw">:</span><span class="at"> Department of Biology</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"June 24, 2026"</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"June 28, 2026"</span></span>
 <span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="fu">output</span><span class="kw">:</span></span>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="at">  </span><span class="fu">pdf_document</span><span class="kw">:</span></span>
 <span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="at">    </span><span class="fu">number_sections</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>

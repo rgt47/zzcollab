@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Project</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/why-reproducibility-matters.Rmd" class="external-link"><code>vignettes/why-reproducibility-matters.Rmd</code></a></small>
       <div class="d-none name"><code>why-reproducibility-matters.Rmd</code></div>
@@ -94,6 +95,38 @@ claims when full independent replication is impractical. For
 computational research, this standard is achievable: given the same data
 and code, any researcher should obtain identical numerical results. Yet
 this seemingly simple requirement remains elusive in practice.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Computational reproducibility</strong>: getting the same
+numerical results from the same data and the same code.</li>
+<li>
+<strong>Reproducibility crisis</strong>: the widespread finding that
+many published results cannot be independently reproduced.</li>
+<li>
+<strong>Code rot / environmental drift</strong>: the gradual
+breakage of working code over time as its dependencies change underneath
+it.</li>
+<li>
+<strong>renv</strong>: an R package giving each project its own
+isolated, version-pinned package library.</li>
+<li>
+<strong>Docker / container / image / Dockerfile</strong>: a tool
+that packages software with its environment; a running instance, its
+template, and the recipe that builds it.</li>
+<li>
+<strong>Five Pillars (of reproducibility)</strong>: the five
+artifacts treated as jointly sufficient: the <code>Dockerfile</code>,
+<code>renv.lock</code>, <code>.Rprofile</code>, the source code, and the
+research data.</li>
+<li>
+<strong>Version pinning</strong>: recording an exact dependency
+version so it cannot drift between machines or over time.</li>
+</ul>
+</blockquote>
 <div class="section level3">
 <h3 id="why-computational-reproducibility-fails">Why Computational Reproducibility Fails<a class="anchor" aria-label="anchor" href="#why-computational-reproducibility-fails"></a>
 </h3>

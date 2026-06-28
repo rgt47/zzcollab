@@ -20,6 +20,28 @@ This approach is particularly valuable for:
 - **Solo researchers** working across multiple analyses
 - **Organizations** with standardized R environments
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Team image**: a pre-built Docker image shared via a registry so
+>   every collaborator works from a byte-identical environment.
+> - **Base image**: the starting Docker image a project builds on
+>   (e.g. `rocker/rstudio`, `rocker/verse`).
+> - **Profile**: the Docker image bundle the environment is built from,
+>   such as `minimal`, `analysis`, or `rstudio`.
+> - **Image digest pinning**: referencing an image by its immutable
+>   content hash (`sha256:...`) so every pull is byte-identical.
+> - **`.team-image-digest`**: a committed file recording the team
+>   image’s digest so members pull the exact same image.
+> - **Dockerfile**: the recipe that builds a project’s Docker image.
+> - **`renv.lock`**: a JSON record of every package version needed to
+>   rebuild the environment.
+> - **make target**: a named `Makefile` command (e.g.
+>   `make docker-build`, `make docker-push-team`) wrapping a container
+>   operation.
+
 ## The Time-Saving Advantage
 
 ### Traditional Approach (Per-Project Builds)

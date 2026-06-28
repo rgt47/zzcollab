@@ -6,7 +6,8 @@ you are ready. This guide shows you how to turn those pieces on and off.
 
 > **Key terms in this vignette.** New to the reproducibility vocabulary?
 > These are the only terms you need here, and each is defined again on
-> first use. Full definitions are in `vignette('glossary')`.
+> first use. Full definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
 >
 > - **Compendium**: your project folder, holding data, code, and
 >   write-up together so the whole thing can be re-run as a unit.

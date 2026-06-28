@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
       <div class="d-none name"><code>getting-started.Rmd</code></div>
@@ -85,6 +86,40 @@ reproducible research workflow using the ZZCOLLAB framework. The Palmer
 Penguins dataset (Gorman et al., 2014) serves as an illustrative example
 for implementing computational reproducibility practices in data
 analysis.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Computational reproducibility</strong>: getting the same
+numerical results from the same data and the same code.</li>
+<li>
+<strong>Docker / container / image / Dockerfile</strong>: a tool
+that packages software with its environment; a running instance, its
+template, and the recipe that builds it.</li>
+<li>
+<strong>Profile</strong>: the Docker image bundle the environment is
+built from (<code>minimal</code>, <code>analysis</code>,
+<code>rstudio</code>).</li>
+<li>
+<strong>Two-layer package management</strong>: shared, image-baked
+packages (Layer 1) versus per-user packages added at runtime (Layer
+2).</li>
+<li>
+<strong>renv</strong>: an R package giving each project its own
+isolated, version-pinned package library.</li>
+<li>
+<strong>Raw vs derived data</strong>: immutable original data files
+versus the processed, analysis-ready datasets generated from them.</li>
+<li>
+<strong>Unit test / testthat / tinytest</strong>: a focused check
+that one piece of code behaves as intended.</li>
+<li>
+<strong>Data provenance / lineage</strong>: a record of where data
+came from and how it was transformed.</li>
+</ul>
+</blockquote>
 <div class="section level3">
 <h3 id="learning-objectives">Learning Objectives<a class="anchor" aria-label="anchor" href="#learning-objectives"></a>
 </h3>

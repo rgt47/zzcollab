@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -81,6 +82,29 @@
 in kitty and iTerm2 terminals. Unlike manual save-and-view approaches,
 zzvim-R intercepts R’s graphics device and displays plots automatically
 when they are created.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Docker / container</strong>: a tool that packages software
+with its environment, and a running instance of that environment.</li>
+<li>
+<strong><code>.Rprofile</code></strong>: the R session-configuration
+file zzcollab generates, which sources the local override below.</li>
+<li>
+<strong><code>.Rprofile.local</code></strong>: a per-machine,
+gitignored override file where zzvim-R writes its terminal graphics
+functions.</li>
+<li>
+<strong>make target</strong>: a named <code>Makefile</code> command
+(e.g. <code>make r</code>) wrapping a container operation.</li>
+<li>
+<strong>DESCRIPTION</strong>: the package-metadata file that marks a
+directory as an R project root.</li>
+</ul>
+</blockquote>
 <p>This vignette covers:</p>
 <ul>
 <li>Installation and setup</li>

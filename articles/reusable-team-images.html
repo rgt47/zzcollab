@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -104,6 +105,43 @@ analyses</li>
 <li>
 <strong>Organizations</strong> with standardized R environments</li>
 </ul>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Team image</strong>: a pre-built Docker image shared via a
+registry so every collaborator works from a byte-identical
+environment.</li>
+<li>
+<strong>Base image</strong>: the starting Docker image a project
+builds on (e.g. <code>rocker/rstudio</code>,
+<code>rocker/verse</code>).</li>
+<li>
+<strong>Profile</strong>: the Docker image bundle the environment is
+built from, such as <code>minimal</code>, <code>analysis</code>, or
+<code>rstudio</code>.</li>
+<li>
+<strong>Image digest pinning</strong>: referencing an image by its
+immutable content hash (<code>sha256:...</code>) so every pull is
+byte-identical.</li>
+<li>
+<strong><code>.team-image-digest</code></strong>: a committed file
+recording the team image’s digest so members pull the exact same
+image.</li>
+<li>
+<strong>Dockerfile</strong>: the recipe that builds a project’s
+Docker image.</li>
+<li>
+<strong><code>renv.lock</code></strong>: a JSON record of every
+package version needed to rebuild the environment.</li>
+<li>
+<strong>make target</strong>: a named <code>Makefile</code> command
+(e.g. <code>make docker-build</code>,
+<code>make docker-push-team</code>) wrapping a container operation.</li>
+</ul>
+</blockquote>
 </div>
 <div class="section level2">
 <h2 id="the-time-saving-advantage">The Time-Saving Advantage<a class="anchor" aria-label="anchor" href="#the-time-saving-advantage"></a>

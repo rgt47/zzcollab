@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -81,6 +82,30 @@
 kitty terminal emulator with Docker-based R environments. Unlike X11
 forwarding, kitty’s native graphics protocol displays images directly in
 the terminal without requiring XQuartz or X11 libraries.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Docker / container</strong>: a tool that packages software
+with its environment, and a running instance of that environment.</li>
+<li>
+<strong>Profile</strong>: the Docker image bundle the environment is
+built from (e.g. <code>analysis</code>, the tidyverse profile).</li>
+<li>
+<strong>Base image</strong>: the starting Docker image a project
+builds on; here extended via <code>--base-image</code> to add X11 or vim
+tooling.</li>
+<li>
+<strong><code>.Rprofile</code></strong>: the R session-configuration
+file, here used to load the plotting helper functions
+automatically.</li>
+<li>
+<strong>make target</strong>: a named <code>Makefile</code> command
+(e.g. <code>make r</code>) wrapping a container operation.</li>
+</ul>
+</blockquote>
 <div class="section level3">
 <h3 id="why-kitty-graphics">Why Kitty Graphics?<a class="anchor" aria-label="anchor" href="#why-kitty-graphics"></a>
 </h3>

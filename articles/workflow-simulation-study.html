@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-simulation-study.Rmd" class="external-link"><code>vignettes/workflow-simulation-study.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-simulation-study.Rmd</code></div>
@@ -85,6 +86,41 @@ Write as You Go approach. The key insight is that <strong>the manuscript
 organizes the simulation from the beginning</strong>—you start with your
 research question and methods section, then build the simulation
 infrastructure to answer it.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Compendium</strong>: your project folder, holding data,
+code, environment, and write-up together so the whole thing can be
+re-run as a unit.</li>
+<li>
+<strong>Archetype</strong>: the project type chosen at creation;
+here the ‘simulation’ archetype, which seeds a parallel-ready starter
+script.</li>
+<li>
+<strong>Five Pillars</strong>: the five artifacts treated as jointly
+sufficient for reproducibility: <code>Dockerfile</code>,
+<code>renv.lock</code>, <code>.Rprofile</code>, source code, and
+research data.</li>
+<li>
+<strong>renv / <code>renv.lock</code></strong>: per-project isolated
+package library and the JSON lockfile recording every package
+version.</li>
+<li>
+<strong>Raw vs derived data</strong>: immutable original files
+versus the processed, analysis-ready datasets generated from them; here
+the cached simulation results under <code>derived_data/</code>.</li>
+<li>
+<strong>Seed (<code>set.seed</code>)</strong>: a fixed starting
+point making random results reproducible across runs.</li>
+<li>
+<strong>Unit test / tinytest</strong>: a focused check that one
+piece of code behaves as intended, and the framework used here for
+writing them.</li>
+</ul>
+</blockquote>
 <div class="section level3">
 <h3 id="the-write-as-you-go-approach-for-simulations">The Write as You Go Approach for Simulations<a class="anchor" aria-label="anchor" href="#the-write-as-you-go-approach-for-simulations"></a>
 </h3>
@@ -170,7 +206,7 @@ success?</li>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">author</span><span class="kw">:</span></span>
 <span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Your Name</span></span>
 <span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="at">    </span><span class="fu">affiliation</span><span class="kw">:</span><span class="at"> Department of Biostatistics</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"June 24, 2026"</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">date</span><span class="kw">:</span><span class="at"> </span><span class="st">"June 28, 2026"</span></span>
 <span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="fu">output</span><span class="kw">:</span></span>
 <span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="at">  </span><span class="fu">pdf_document</span><span class="kw">:</span></span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="at">    </span><span class="fu">number_sections</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>

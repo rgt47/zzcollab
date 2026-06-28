@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-package-development.Rmd" class="external-link"><code>vignettes/workflow-package-development.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-package-development.Rmd</code></div>
@@ -89,6 +90,41 @@ package development best practices <span class="citation">(Wickham
 structure</strong> for package development as data analysis. No separate
 “package paradigm”—just add package infrastructure progressively as
 needed <span class="citation">(Marwick et al. 2018)</span>.</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Research compendium</strong>: a single version-controlled
+unit bundling data, code, environment, and documentation.</li>
+<li>
+<strong>Archetype</strong>: the project type chosen at creation
+(here, a package), which shapes the starter layout.</li>
+<li>
+<strong>Unit test / tinytest</strong>: a focused check that one
+piece of code behaves as intended; zzcollab projects use tinytest.</li>
+<li>
+<strong>roxygen2</strong>: the in-source documentation system that
+generates <code>man/*.Rd</code> help files from comments above each
+function.</li>
+<li>
+<strong><code>R CMD check</code></strong>: the standard tool
+validating package structure, documentation, and tests.</li>
+<li>
+<strong>Code coverage</strong>: the fraction of code actually
+exercised by the tests.</li>
+<li>
+<strong>Continuous integration (CI)</strong>: automatically building
+and testing code on every push (here, via GitHub Actions).</li>
+<li>
+<strong><code>renv.lock</code></strong>: a JSON record of every
+package version needed to rebuild the environment.</li>
+<li>
+<strong>Raw vs derived data</strong>: immutable original data files
+versus the processed, analysis-ready datasets generated from them.</li>
+</ul>
+</blockquote>
 <div class="section level3">
 <h3 id="what-you-will-learn">What You Will Learn<a class="anchor" aria-label="anchor" href="#what-you-will-learn"></a>
 </h3>

@@ -43,6 +43,29 @@ workflows in R, building upon established software engineering practices
 while addressing the specific needs of computational research and data
 science (Poldrack, 2019; Wilson et al., 2014).
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Unit test / testthat / tinytest**: a focused check that one piece
+>   of code behaves as intended, and the frameworks for writing it.
+> - **Code coverage**: the fraction of code actually exercised by the
+>   tests.
+> - **Computational reproducibility**: getting the same numerical
+>   results from the same data and the same code.
+> - **Continuous integration (CI)**: automatically building and testing
+>   code on every push.
+> - **CI gate / quality gate**: an automated pass/fail check that must
+>   succeed before code or output is accepted.
+> - **Seed (`set.seed`) / RNG kind**: a fixed starting point making
+>   random results reproducible; the generator whose default has changed
+>   across R versions.
+> - **Raw vs derived data**: immutable original data files versus the
+>   processed, analysis-ready datasets generated from them.
+> - **`R CMD check`**: the standard tool validating package structure,
+>   documentation, and tests.
+
 ### Testing Philosophy for Data Analysis
 
 #### Core Principles

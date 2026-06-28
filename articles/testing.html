@@ -44,6 +44,7 @@
     <li><a class="dropdown-item" href="../articles/reusable-team-images.html">Reusable team images</a></li>
     <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
     <li><a class="dropdown-item" href="../articles/report.html">Report</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -69,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-06-24</h4>
+            <h4 data-toc-skip class="date">2026-06-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/testing.Rmd" class="external-link"><code>vignettes/testing.Rmd</code></a></small>
       <div class="d-none name"><code>testing.Rmd</code></div>
@@ -126,6 +127,39 @@ correct and meaningful (Wilson et al., 2017; Wickham, 2015).</p>
 analysis workflows in R, building upon established software engineering
 practices while addressing the specific needs of computational research
 and data science (Poldrack, 2019; Wilson et al., 2014).</p>
+<blockquote>
+<p><strong>Key terms in this vignette.</strong> New to the vocabulary?
+These are the terms this guide uses; each is defined again on first use.
+Full definitions are in <code><a href="../articles/glossary.html">vignette('glossary')</a></code>.</p>
+<ul>
+<li>
+<strong>Unit test / testthat / tinytest</strong>: a focused check
+that one piece of code behaves as intended, and the frameworks for
+writing it.</li>
+<li>
+<strong>Code coverage</strong>: the fraction of code actually
+exercised by the tests.</li>
+<li>
+<strong>Computational reproducibility</strong>: getting the same
+numerical results from the same data and the same code.</li>
+<li>
+<strong>Continuous integration (CI)</strong>: automatically building
+and testing code on every push.</li>
+<li>
+<strong>CI gate / quality gate</strong>: an automated pass/fail
+check that must succeed before code or output is accepted.</li>
+<li>
+<strong>Seed (<code>set.seed</code>) / RNG kind</strong>: a fixed
+starting point making random results reproducible; the generator whose
+default has changed across R versions.</li>
+<li>
+<strong>Raw vs derived data</strong>: immutable original data files
+versus the processed, analysis-ready datasets generated from them.</li>
+<li>
+<strong><code>R CMD check</code></strong>: the standard tool
+validating package structure, documentation, and tests.</li>
+</ul>
+</blockquote>
 </div>
 <div class="section level3">
 <h3 id="testing-philosophy-for-data-analysis">Testing Philosophy for Data Analysis<a class="anchor" aria-label="anchor" href="#testing-philosophy-for-data-analysis"></a>

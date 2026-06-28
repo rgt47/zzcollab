@@ -8,6 +8,29 @@ the simulation from the beginning**—you start with your research
 question and methods section, then build the simulation infrastructure
 to answer it.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **Compendium**: your project folder, holding data, code,
+>   environment, and write-up together so the whole thing can be re-run
+>   as a unit.
+> - **Archetype**: the project type chosen at creation; here the
+>   ‘simulation’ archetype, which seeds a parallel-ready starter script.
+> - **Five Pillars**: the five artifacts treated as jointly sufficient
+>   for reproducibility: `Dockerfile`, `renv.lock`, `.Rprofile`, source
+>   code, and research data.
+> - **renv / `renv.lock`**: per-project isolated package library and the
+>   JSON lockfile recording every package version.
+> - **Raw vs derived data**: immutable original files versus the
+>   processed, analysis-ready datasets generated from them; here the
+>   cached simulation results under `derived_data/`.
+> - **Seed (`set.seed`)**: a fixed starting point making random results
+>   reproducible across runs.
+> - **Unit test / tinytest**: a focused check that one piece of code
+>   behaves as intended, and the framework used here for writing them.
+
 ### The Write as You Go Approach for Simulations
 
 Traditional simulation workflow:
@@ -75,7 +98,7 @@ title: "Comparing Methods for Longitudinal Binary Outcomes: A Simulation Study"
 author:
   - name: Your Name
     affiliation: Department of Biostatistics
-date: "June 24, 2026"
+date: "June 28, 2026"
 output:
   pdf_document:
     number_sections: true

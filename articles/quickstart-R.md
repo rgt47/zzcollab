@@ -7,6 +7,24 @@ functions, without touching the command line. All functionality
 available via the `zzcollab` shell script is also accessible through the
 R package interface.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in
+> [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
+>
+> - **`zzc` / `zzcollab`**: the framework’s command-line interface, here
+>   driven through its R-function equivalents.
+> - **Profile**: the Docker image bundle the environment is built from
+>   (`minimal`, `analysis`, `rstudio`).
+> - **Package backend (renv / Nix / none)**: how the project records
+>   exact package versions; a single mutually-exclusive choice.
+> - **Auto-snapshot / auto-restore**: zzcollab records installed
+>   packages to `renv.lock` on exit and installs missing ones on start.
+> - **Docker / container / image**: a tool that packages software with
+>   its environment; a running instance and its template.
+> - **Team image**: a pre-built Docker image shared via a registry so
+>   every collaborator works from a byte-identical environment.
+
 **What you will learn:**
 
 - Configure ZZCOLLAB from R/RStudio
