@@ -184,12 +184,30 @@ prompt_yesno() {
     local result_var="$3"
     local input
 
-    if has_gum; then
-        if gum_confirm "$prompt"; then
-            printf -v "$result_var" '%s' "true"
-        else
-            printf -v "$result_var" '%s' "false"
-        fi
+    # Affirmative defaults (y/yes/true) start on Yes; everything else on No.
+    local _yes_first=false
+    case "$default" in y|yes|true|Y|Yes|TRUE) _yes_first=true ;; esac
+
+    # Selection machinery, fzf primary then gum then plain read - the same
+    # vertical Yes/No list shape as the toggle wizard's selectors.
+    if has_fzf && [[ -t 0 ]]; then
+        local _ord=("No" "Yes")
+        [[ "$_yes_first" == true ]] && _ord=("Yes" "No")
+        local _ans
+        _ans=$(fzf_select "$prompt" "${_ord[@]}") || _ans="${_ord[0]}"
+        [[ "$_ans" == "Yes" ]] && printf -v "$result_var" '%s' "true" \
+                               || printf -v "$result_var" '%s' "false"
+        return 0
+    fi
+
+    if has_gum && [[ -t 0 ]]; then
+        local _sel="No"
+        [[ "$_yes_first" == true ]] && _sel="Yes"
+        local _ans
+        _ans=$(gum choose --header "$(_gum_header_with_hint "$prompt")" \
+            --selected="$_sel" "Yes" "No") || _ans="$_sel"
+        [[ "$_ans" == "Yes" ]] && printf -v "$result_var" '%s' "true" \
+                               || printf -v "$result_var" '%s' "false"
         return 0
     fi
 
@@ -217,28 +235,60 @@ prompt_yesno() {
 }
 
 # Prompt for selection from list
-# Usage: prompt_select "Prompt" "opt1,opt2,opt3" "default" result_var
+# Usage: prompt_select "Prompt" "opt1,opt2,opt3" "default" result_var [info_func]
+# Selection machinery is fzf primary, then gum, then plain read. When INFO_FUNC
+# (a function name) is given and fzf is present, each option gets a live info
+# box rendered by "INFO_FUNC <option>"; without it fzf shows a plain list.
 prompt_select() {
     local prompt="$1"
     local options="$2"
     local default="$3"
     local result_var="$4"
+    local info_func="${5:-}"
     local input
 
-    if has_gum; then
-        local item items_csv
-        items_csv="$options"
-        local gum_args=()
-        local IFS_SAVED="$IFS"
-        IFS=',' read -ra gum_args <<< "$items_csv"
-        IFS="$IFS_SAVED"
-        local trimmed_args=()
-        for item in "${gum_args[@]}"; do
-            trimmed_args+=("${item#"${item%%[! ]*}"}")
-        done
-        input=$(gum_choose "$prompt" "${trimmed_args[@]}") || {
-            return 1
-        }
+    # Parse and trim the CSV options into an array.
+    local item
+    local -a parsed=()
+    local IFS_SAVED="$IFS"
+    IFS=',' read -ra parsed <<< "$options"
+    IFS="$IFS_SAVED"
+    local -a items=()
+    for item in "${parsed[@]}"; do
+        items+=("${item#"${item%%[! ]*}"}")
+    done
+
+    # fzf and plain-read fzf list both highlight the first item, so build a
+    # default-first ordering for them. gum honors the default via --selected,
+    # so it keeps the natural order.
+    local -a ordered=()
+    local seen_default=false
+    for item in "${items[@]}"; do
+        [[ "$item" == "$default" ]] && { seen_default=true; continue; }
+        ordered+=("$item")
+    done
+    [[ "$seen_default" == true ]] && ordered=("$default" "${ordered[@]}")
+
+    if has_fzf && [[ -t 0 ]]; then
+        if [[ -n "$info_func" ]]; then
+            local info_dir
+            info_dir=$(mktemp -d "${TMPDIR:-/tmp}/zzc-sel.XXXXXX") || return 1
+            for item in "${ordered[@]}"; do
+                "$info_func" "$item" > "$info_dir/$item"
+            done
+            input=$(fzf_choose_preview "$prompt" "$info_dir" "${ordered[@]}") \
+                || { rm -rf "$info_dir"; return 1; }
+            rm -rf "$info_dir"
+        else
+            input=$(fzf_select "$prompt" "${ordered[@]}") || return 1
+        fi
+        printf -v "$result_var" '%s' "${input:-$default}"
+        return 0
+    fi
+
+    if has_gum && [[ -t 0 ]]; then
+        input=$(gum choose --header "$(_gum_header_with_hint "$prompt")" \
+            --selected="$default" "${items[@]}") || return 1
         printf -v "$result_var" '%s' "${input:-$default}"
         return 0
     fi
@@ -263,6 +313,30 @@ prompt_select() {
             echo "  Invalid choice. Please select from: $options"
         fi
     done
+}
+
+# Info-box body shown in the fzf preview pane for one Docker profile. Mirrors
+# the toggle wizard's _toggle_*_info helpers; passed to prompt_select so the
+# profile choice gets the same live-preview treatment as backend/forge.
+_config_profile_info() {
+    case "$1" in
+        minimal) printf '%s\n' \
+            "Profile: minimal" \
+            "Base:    rocker/r-ver" \
+            "R:       base R only (no tidyverse)" \
+            "Use for: lightweight or custom package sets" ;;
+        tidyverse|analysis) printf '%s\n' \
+            "Profile: tidyverse" \
+            "Base:    rocker/tidyverse" \
+            "R:       tidyverse preinstalled" \
+            "Use for: data-analysis compendia" ;;
+        rstudio) printf '%s\n' \
+            "Profile: rstudio" \
+            "Base:    rocker/rstudio" \
+            "R:       RStudio Server in the container" \
+            "Use for: browser-based IDE workflows" ;;
+        *) printf 'No info for: %s\n' "$1" ;;
+    esac
 }
 
 # Print section header
@@ -436,10 +510,12 @@ config_identity_review() {
 config_project_prompt() {
     local pkg_name="${1:-$(basename "$(pwd)")}"
 
-    local default_profile="${CONFIG_PROFILE_NAME:-analysis}"
+    local default_profile="${CONFIG_PROFILE_NAME:-tidyverse}"
     local default_r_version="${CONFIG_R_VERSION:-}"
     local default_github="${CONFIG_GITHUB_ACCOUNT:-}"
-    local default_team="${CONFIG_TEAM_NAME:-}"
+    # Team name defaults to "<project>_team" when the user has not configured
+    # one, pre-filling the prompt; the field stays clearable (empty = no team).
+    local default_team="${CONFIG_TEAM_NAME:-${pkg_name}_team}"
 
     if [[ -z "$default_r_version" ]]; then
         default_r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
@@ -453,8 +529,8 @@ config_project_prompt() {
     local val new_profile new_r_version new_github new_team
 
     prompt_select "Docker profile" \
-        "minimal,analysis,rstudio" \
-        "$default_profile" val || return 1
+        "minimal,tidyverse,rstudio" \
+        "$default_profile" val _config_profile_info || return 1
     new_profile="$val"
 
     prompt_validated "R version" "$default_r_version" val \
@@ -466,8 +542,22 @@ config_project_prompt() {
         "$default_github" val || return 1
     new_github="$val"
 
-    prompt_input "Team name (optional)" "$default_team" val || return 1
-    new_team="$val"
+    # Team name: pre-filled with "<project>_team" (or the configured team), but
+    # clearable. prompt_input coerces an empty submission back to the default,
+    # which would make "no team" unreachable, so handle this field directly:
+    # submit an empty field (gum) or '-' (text fallback) to choose no team.
+    if has_gum && [[ -t 0 ]]; then
+        new_team=$(gum_input "$default_team" "Team name (clear for none)" "$default_team") || return 1
+    else
+        local _team_in
+        printf "Team name [%s] ('-' for none): " "$default_team"
+        zzc_read -r _team_in || return 1
+        case "$_team_in" in
+            "")  new_team="$default_team" ;;
+            "-") new_team="" ;;
+            *)   new_team="$_team_in" ;;
+        esac
+    fi
 
     local -a override_paths=()
     local -a override_values=()
@@ -484,7 +574,10 @@ config_project_prompt() {
         override_paths+=("github.account")
         override_values+=("$new_github")
     }
-    [[ -n "$new_team" && "$new_team" != "$default_team" ]] && {
+    # Persist the team name whenever it differs from the user-level value,
+    # including the auto-suggested "<project>_team" (so accepting it actually
+    # sets it) and an empty value (a deliberate "no team for this project").
+    [[ "$new_team" != "${CONFIG_TEAM_NAME:-}" ]] && {
         override_paths+=("defaults.team_name")
         override_values+=("$new_team")
     }
@@ -609,7 +702,7 @@ style:
 #=============================================================================
 
 docker:
-  default_profile: "analysis"
+  default_profile: "tidyverse"
   registry: "docker.io"        # docker.io, ghcr.io
 
 #=============================================================================
@@ -629,7 +722,7 @@ defaults:
   team_name: ""
   github_account: ""
   dockerhub_account: ""
-  profile_name: "analysis"
+  profile_name: "tidyverse"
   r_version: ""
   auto_github: false
   skip_confirmation: false
@@ -889,8 +982,9 @@ _setup_change_existing() {
     echo ""
 
     prompt_select "Default profile" \
-        "minimal,analysis,rstudio" \
-        "${CONFIG_PROFILE_NAME:-analysis}" val || { _save_and_exit; return 0; }
+        "minimal,tidyverse,rstudio" \
+        "${CONFIG_PROFILE_NAME:-tidyverse}" val _config_profile_info \
+        || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "defaults.profile_name" "$val"
     yaml_set "$CONFIG_USER" "docker.default_profile" "$val"
 

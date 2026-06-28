@@ -43,6 +43,30 @@ Penguins bill measurements.
 - `gum` installed for styled TUI prompts (optional but recommended):
   `brew install gum`
 
+> **Key terms in this vignette.** Each is defined again on first use.
+> Full definitions are in `vignette('glossary')`.
+>
+> - **Compendium**: your project folder, holding data, code, and
+>   write-up together so the whole thing can be re-run as a unit.
+> - **Archetype**: the project type you choose at creation (analysis,
+>   manuscript, package, simulation, or blog), which shapes the starter
+>   layout.
+> - **Profile**: the Docker image bundle (which R packages are baked
+>   into the container): minimal, analysis, or rstudio. Distinct
+>   from the archetype.
+> - **Feature**: an independently switchable capability (a package
+>   backend, Docker, CI, data hashing, code-quality hooks, unit tests,
+>   or cloud launch) toggled with `zzc toggle` or `zzc add` / `zzc rm`.
+> - **Capture level (L0 to L3)**: how locked-down the project is, from
+>   'just findable' (L0) up to 'rebuilt and verified' (L3).
+> - **renv / lockfile**: the package backend that records exact package
+>   versions in `renv.lock` so installs are repeatable.
+> - **Auto-snapshot**: the automatic `renv::snapshot()` that runs when
+>   you exit R in the container, capturing new packages into `renv.lock`.
+> - **Five Pillars**: Dockerfile, renv.lock, .Rprofile, source code, and
+>   research data, the necessary and sufficient parts of a reproducible
+>   compendium.
+
 # Step-by-Step Instructions
 
 ## Step 1: One-time Identity Setup
@@ -81,31 +105,45 @@ mkdir penguin-bills && cd penguin-bills
 zzc init
 ```
 
-`zzc init` runs three phases.
+`zzc init` runs an identity gate on first use, then asks two questions.
 
-**Phase 1 -- Identity gate** (first run only)
+**Identity gate** (first run only)
 
 Fires when `~/.zzcollab/config.yaml` is missing name or email. Captures
 the three identity fields described in Step 1 and saves them to your user
 config. Skipped on subsequent projects.
 
-**Phase 2 -- Project setup**
+**Question 1 -- Archetype**
 
-Four prompts, each pre-filled from your user config. Press Enter to accept
-the default or type to override. Changes are written only to
-`./zzcollab.yaml`; your global config is not touched.
+The archetype is the project type, which shapes the starter layout:
 
-| Prompt | Default | Description |
-|---|---|---|
-| Docker profile | `analysis` | Base image and pre-installed R packages |
-| R version | Current CRAN | Used in Dockerfile and renv.lock |
-| GitHub account | Personal username | Override for org or team repos |
-| Team name | (empty) | Optional project label |
+```
+Archetype [analysis/manuscript/package/simulation/blog] (default analysis):
+```
 
-Only fields that differ from your user defaults are written to
-`./zzcollab.yaml`, keeping the file minimal. Commit this file -- it
-documents project-specific decisions and allows collaborators to reproduce
-the same configuration.
+- `analysis`, `manuscript`, and `blog` scaffold a report
+  (`analysis/report/report.Rmd`); `blog` also gets an `analysis/posts/`
+  directory.
+- `package` and `simulation` do not scaffold a report; `simulation` gets
+  a seeded, parallel-ready starter script instead.
+
+For this tutorial accept the default, `analysis`.
+
+**Question 2 -- Feature wizard**
+
+The second question is the feature wizard (the same one `zzc toggle`
+uses). It recommends a sensible default, renv plus Docker, which you can
+accept or untick. Each toggle is an independently switchable *feature*:
+the package backend (renv), Docker, CI, data-integrity hashing,
+code-quality hooks, unit tests, and cloud launch. You do not have to
+decide everything now; features can be added or removed at any time (see
+`vignette("quickstart3")` for the full toggle model). For this tutorial,
+accept the recommended renv plus Docker.
+
+Only fields that differ from your user defaults are written to the
+project's `./zzcollab.yaml`, keeping the file minimal. Commit this file;
+it documents project-specific decisions and allows collaborators to
+reproduce the same configuration.
 
 Example `./zzcollab.yaml` when only the GitHub account differs:
 
@@ -117,14 +155,16 @@ github:
   account: genomicslab
 ```
 
-**Phase 3 -- Reproducibility setup**
+**Non-interactive forms.** `--yes` skips every prompt and accepts the
+defaults; `--archetype <x>` sets the archetype as a flag:
 
-Choose one:
+```bash
+# Scaffold an analysis project with default features, no prompts.
+zzc init --yes
 
-- `renv + Docker` -- full containerized environment (recommended)
-- `renv only` -- package lockfile without Docker
-- `None` -- create structure only; add reproducibility later with
-  `zzc renv` or `zzc docker`
+# Set the archetype explicitly, still ask the feature wizard.
+zzc init --archetype manuscript
+```
 
 After init, create the GitHub repository:
 
@@ -140,32 +180,41 @@ zzc analysis        # init + renv + docker in one command
 zzc github
 ```
 
-**Profile commands are smart:**
+### Profiles versus archetypes
 
-- **New project**: Full setup (init + renv + docker + build prompt)
-- **Existing project**: Switches profile and regenerates Dockerfile only
+These are two distinct choices, and it is worth keeping them apart:
+
+- An **archetype** is the project type and layout (chosen in Question 1).
+- A **profile** is the Docker image bundle, that is, which R packages are
+  baked into the container.
+
+A profile command is also smart about context:
+
+- **New project**: full setup (init + renv + docker + build prompt).
+- **Existing project**: switches the profile and regenerates the
+  Dockerfile only.
 
 ```bash
-# Create a new project with the analysis profile
+# Create a new project with the analysis profile.
 mkdir my-project && cd my-project
 zzc analysis                   # Full setup (init + renv + docker)
 
-# Switch profile on existing project
-zzc minimal                    # Regenerates Dockerfile with minimal profile
+# Switch profile on an existing project.
+zzc rstudio                    # Regenerates Dockerfile with rstudio profile
 
-# List available profiles
+# List available profiles.
 zzc list profiles
 ```
 
-**Available Profiles:**
+**Available profiles** (the three canonical profiles):
 
-- `minimal` - Base R, command-line only (~650MB)
-- `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
+- `minimal` - Command-line R environment (~650MB)
+- `analysis` - Tidyverse data analysis (~1.2GB), recommended
 - `rstudio` - RStudio Server (~980MB)
 
-For specialised needs (LaTeX, Shiny, machine learning), start with one of
-these profiles and add packages inside the container with
-`install.packages()`, then commit the updated `renv.lock`.
+For specialised needs (LaTeX, modeling, Shiny), start with the closest one and add
+packages inside the container with `install.packages()`, then commit the
+updated `renv.lock`.
 
 ## Step 3: Add Research Data and Processing Pipeline
 
@@ -670,6 +719,27 @@ git push
 - Downloadable PDF/HTML artifacts
 - Verification that analysis is fully reproducible
 
+## Step 8: Keeping Your Project Current (Optional)
+
+zzcollab manages a set of template files in your compendium (the
+Makefile, CI workflows, the `.Rprofile` template, and similar). Two minor
+maintenance commands keep those in step with the installed zzcollab
+version:
+
+```bash
+zzc update          # refresh framework-managed templates to this version
+zzc doctor          # report on the project's state record
+zzc doctor --fix    # back-fill or refresh the state record
+```
+
+`zzc update` is a minor maintenance command: it checks that the
+project's framework-managed template files match the installed zzcollab
+version, refreshes them when they have drifted, and back-fills the state
+record. `zzc doctor` reports on the project's state record and, with
+`--fix`, brings an older project's record up to date. Neither command
+touches your data, code, or analysis. Run them after upgrading zzcollab
+or when adopting a compendium created with an earlier version.
+
 # What You Built
 
 ## All 5 Reproducibility Levels
@@ -995,6 +1065,11 @@ expect_true('bill_length_mm:species' %in% names(coef(model)))
 
 ## Collaborate
 
+The collaborative workflow below uses the profile commands for a quick
+setup. To add or remove individual capabilities (CI, code-quality hooks,
+data hashing, cloud launch) on a shared project, use the feature toggles
+described in `vignette("quickstart3")`.
+
 ### Team Lead Workflow
 
 Create a team project and share the Docker image:
@@ -1096,7 +1171,7 @@ rm -rf penguin-bills  # Remove failed directory
 
 # Retry project creation
 mkdir penguin-bills && cd penguin-bills
-zzcollab
+zzc analysis
 make docker-build
 ```
 
@@ -1122,9 +1197,13 @@ make check-renv
 make docker-test
 ```
 
-# Customizing Profiles
+# Customizing Profiles and Features
 
 ## View Available Profiles
+
+A profile is the Docker image bundle (which R packages are baked into the
+container). It is separate from the archetype (the project type) and from
+the features you toggle.
 
 ```bash
 # List all predefined profiles
@@ -1137,17 +1216,17 @@ zzc list libs
 zzc list pkgs
 ```
 
-**Available Profiles:**
+**Available profiles** (the three canonical profiles):
 
-- `minimal` - Base R, command-line only (~650MB)
-- `analysis` - Tidyverse data analysis (~1.2GB) -- recommended
+- `minimal` - Command-line R environment (~650MB)
+- `analysis` - Tidyverse data analysis (~1.2GB), recommended
 - `rstudio` - RStudio Server (~980MB)
 
-For specialised needs (LaTeX, Shiny, machine learning), start with one of
-these profiles and add packages inside the container with
-`install.packages()`, then commit the updated `renv.lock`.
+For specialised needs (LaTeX, modeling, Shiny), start with the closest one and add
+packages inside the container with `install.packages()`, then commit the
+updated `renv.lock`.
 
-## Using Profiles
+## Switching Profiles
 
 ```bash
 # Profile commands are smart:
@@ -1159,24 +1238,38 @@ zzc analysis                     # Full setup with analysis profile
 zzc github                       # Add GitHub (independent)
 
 mkdir new-project && cd new-project
-zzc minimal                      # Minimal profile
+zzc rstudio                      # rstudio profile
 zzc github --public              # Create public GitHub repo
 ```
 
-## Profile System
+## Toggling Features
 
-**Profile commands** (e.g., `zzc analysis`, `zzc minimal`):
+Capabilities beyond the profile, such as Docker, CI, data-integrity
+hashing, code-quality hooks, unit tests, and cloud launch, are *features*
+you turn on and off at any time. Use the interactive wizard, or the
+explicit `add` / `rm` forms:
 
-- New project: Complete setup (init + renv + docker) with build prompt
-- Existing project: Switch profile and regenerate Dockerfile
-- Examples: `minimal`, `analysis`, `rstudio`
+```bash
+zzc toggle                       # interactive feature checklist
+zzc add code-quality             # add a single feature (styler + lintr)
+zzc rm cloud                     # remove the devcontainer
+zzc status                       # read-only view of the current state
+```
 
-**Package Management:**
+Capture features (the backend and Docker) set the project's *capture
+level* (L0 locatable, L1 pinned packages, L2 pinned environment, L3
+verified); validation features (tests, CI, code quality) only check the
+result without moving the level. The full toggle model, capture levels,
+and the `zzc verify` workflow are documented in `vignette("quickstart3")`.
 
-- Packages are added dynamically using `install.packages()` inside containers
-- **Auto-restore**: Missing packages installed automatically when R starts
-- **Auto-snapshot**: Packages captured in renv.lock when container exits
-- The renv.lock file accumulates packages from all team members automatically
+**Package management within a profile:**
+
+- Packages are added dynamically using `install.packages()` inside
+  containers.
+- **Auto-snapshot**: packages are captured in `renv.lock` when you exit R
+  in the container.
+- The `renv.lock` file accumulates packages from all team members
+  automatically.
 
 # Summary
 
@@ -1243,8 +1336,10 @@ git push
 
 **Key Insight**: The Docker image provides the foundation, but `renv.lock` ensures complete reproducibility by specifying exact versions of ALL packages.
 
-For more details, see `vignette("reproducibility-layers")`.
+For the feature-toggle model and capture levels, see
+`vignette("quickstart3")`. For the capture/validation layers in depth,
+see `vignette("reproducibility-layers")`.
 
 ---
-*Rendered on 2026-05-29 at 06:45 PDT.*<br>
+*Rendered on 2026-06-19 at 08:36 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/vignettes/quickstart1.Rmd*

@@ -39,6 +39,25 @@ several problems:
 The Write as You Go approach addresses these problems by integrating writing
 with analysis from day one.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in `vignette('glossary')`.
+>
+> - **Research compendium**: a single version-controlled unit bundling
+>   data, code, environment, and documentation.
+> - **Computational reproducibility**: getting the same numerical
+>   results from the same data and the same code.
+> - **Raw vs derived data**: immutable original data files versus the
+>   processed, analysis-ready datasets generated from them.
+> - **Container / Dockerfile**: a packaged software environment and the
+>   recipe that builds it, so results travel with their dependencies.
+> - **`renv.lock`**: a JSON record of every package version needed to
+>   rebuild the environment.
+> - **Unit test / tinytest**: a focused check that one piece of code
+>   behaves as intended; zzcollab projects use tinytest.
+> - **`R/`**: the directory holding reusable functions extracted from
+>   inline analysis code.
+
 # Write as You Go: Core Principles
 
 ## Principle 1: The Manuscript is Your Lab Notebook

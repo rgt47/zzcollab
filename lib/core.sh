@@ -406,10 +406,16 @@ gum_multichoose() {
         --selected="$selected" "$@"
 }
 
-# gum_confirm PROMPT
-# Returns 0 for Yes, 1 for No or cancel.
+# gum_confirm PROMPT [DEFAULT]
+# Returns 0 for Yes, 1 for No or cancel. DEFAULT selects the highlighted
+# button: affirmative (y/yes/true, the default when omitted) highlights Yes;
+# negative (n/no/false) highlights No.
 gum_confirm() {
-    gum confirm "$(_gum_header_with_hint "$1")"
+    local default="${2:-yes}"
+    case "$default" in
+        n|no|false|N|No|FALSE) gum confirm --default=false "$(_gum_header_with_hint "$1")" ;;
+        *)                     gum confirm "$(_gum_header_with_hint "$1")" ;;
+    esac
 }
 
 #=============================================================================
@@ -423,13 +429,49 @@ gum_confirm() {
 
 has_fzf() { command -v fzf >/dev/null 2>&1; }
 
+# fzf_select HEADER ITEM...
+# Plain single-select fzf list with no preview pane, for simple choices that
+# carry no per-option info box (yes/no, license, branch, visibility). The first
+# ITEM is highlighted initially, so callers list the default first. Writes the
+# chosen item to stdout; returns 1 if the user cancels (Esc). Shares the pinned
+# theme used by the preview-driven selectors for a consistent look.
+fzf_select() {
+    local header="$1"; shift
+    _zzc_fzf_gutter_init
+    printf '%s\n' "$@" | env -u FZF_DEFAULT_OPTS -u FZF_DEFAULT_OPTS_FILE fzf \
+        --height=10 --reverse --no-multi --no-info --cycle \
+        ${_ZZCOLLAB_FZF_GUTTER[@]+"${_ZZCOLLAB_FZF_GUTTER[@]}"} \
+        --color="$ZZCOLLAB_FZF_COLORS" \
+        --pointer='>' --prompt='> ' \
+        --header="$header  (esc to cancel)"
+}
+
 # Pinned fzf theme, set explicitly on every invocation rather than inheriting
 # the user's FZF_DEFAULT_OPTS, so the UI is consistent regardless of the
 # caller's personal fzf configuration. Named ANSI colors (not 256-indexed) so
 # the menu tracks the terminal's own 16-color palette: bright-magenta for the
 # active accents (matching gum's accent), bright-black for chrome, bright-white
 # for the current line.
+# gutter:-1 colors the gutter column; the gutter CHARACTER (fzf >=0.65 draws
+# '▌' there by default) is blanked separately via --gutter=' ' on each call,
+# without which it renders as a stray white bar on non-current rows.
 readonly ZZCOLLAB_FZF_COLORS='pointer:bright-magenta,marker:bright-magenta,hl:bright-magenta,hl+:bright-magenta,fg+:bright-white,prompt:bright-magenta,header:bright-black,border:bright-black,preview-border:bright-black,gutter:-1'
+
+# Resolve the --gutter blanking argument once. fzf >=0.65 both draws the '▌'
+# gutter and accepts --gutter to blank it (value must be exactly one column
+# wide, so a space, not empty). Older fzf has neither, and passing --gutter
+# would abort the prompt, so detect support and leave the argument empty when
+# absent. _ZZCOLLAB_FZF_GUTTER holds 0/1 fzf args; expand with the [@]+ guard so
+# an empty array is safe under 'set -u' on bash 3.2.
+_ZZCOLLAB_FZF_GUTTER=()
+_ZZCOLLAB_FZF_GUTTER_INIT=
+_zzc_fzf_gutter_init() {
+    [[ -n "$_ZZCOLLAB_FZF_GUTTER_INIT" ]] && return
+    _ZZCOLLAB_FZF_GUTTER_INIT=1
+    if fzf --help 2>&1 | grep -q -- '--gutter='; then
+        _ZZCOLLAB_FZF_GUTTER=(--gutter=' ')
+    fi
+}
 
 # fzf_choose_preview HEADER INFO_DIR ITEM...
 # Presents ITEMs as a single-select list with an info box on the right. For the
@@ -439,8 +481,10 @@ readonly ZZCOLLAB_FZF_COLORS='pointer:bright-magenta,marker:bright-magenta,hl:br
 # first ITEM is highlighted initially, so callers list the default first.
 fzf_choose_preview() {
     local header="$1" info_dir="$2"; shift 2
-    printf '%s\n' "$@" | fzf \
+    _zzc_fzf_gutter_init
+    printf '%s\n' "$@" | env -u FZF_DEFAULT_OPTS -u FZF_DEFAULT_OPTS_FILE fzf \
         --height=14 --reverse --no-multi --no-info --cycle \
+        ${_ZZCOLLAB_FZF_GUTTER[@]+"${_ZZCOLLAB_FZF_GUTTER[@]}"} \
         --color="$ZZCOLLAB_FZF_COLORS" \
         --pointer='>' --prompt='> ' \
         --header="$header  (esc to cancel)" \
@@ -484,8 +528,10 @@ TOGGLE
     local rc=0
     # --track --id-nth=2 keeps the cursor on the same item across reloads even
     # though the checkbox field changes; {2} is the name field (tab-delimited).
-    bash "$helper/render" "$state" | fzf \
+    _zzc_fzf_gutter_init
+    bash "$helper/render" "$state" | env -u FZF_DEFAULT_OPTS -u FZF_DEFAULT_OPTS_FILE fzf \
         --height=16 --reverse --no-info --no-multi --cycle --track \
+        ${_ZZCOLLAB_FZF_GUTTER[@]+"${_ZZCOLLAB_FZF_GUTTER[@]}"} \
         --color="$ZZCOLLAB_FZF_COLORS" \
         --delimiter='\t' --with-nth='1,2' --id-nth='2' \
         --pointer='>' --prompt='> ' \

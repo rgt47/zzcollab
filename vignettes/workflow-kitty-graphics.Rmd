@@ -22,6 +22,21 @@ emulator with Docker-based R environments. Unlike X11 forwarding, kitty's native
 graphics protocol displays images directly in the terminal without requiring
 XQuartz or X11 libraries.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in `vignette('glossary')`.
+>
+> - **Docker / container**: a tool that packages software with its
+>   environment, and a running instance of that environment.
+> - **Profile**: the Docker image bundle the environment is built from
+>   (e.g. `analysis`, the tidyverse profile).
+> - **Base image**: the starting Docker image a project builds on; here
+>   extended via `--base-image` to add X11 or vim tooling.
+> - **`.Rprofile`**: the R session-configuration file, here used to load
+>   the plotting helper functions automatically.
+> - **make target**: a named `Makefile` command (e.g. `make r`) wrapping
+>   a container operation.
+
 ### Why Kitty Graphics?
 
 | Approach | Pros | Cons |

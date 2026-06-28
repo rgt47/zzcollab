@@ -103,6 +103,13 @@ CONFIG_GITLAB_HOST=""
 CONFIG_GITLAB_DEFAULT_VISIBILITY=""
 CONFIG_GITLAB_DEFAULT_BRANCH=""
 
+# Confidential-repo remote guard. remote.allow=false denies remote creation
+# outright; remote.blocked_paths is a space-separated list of path prefixes
+# (a leading ~ is expanded) under which remotes are denied. Both empty -> no
+# restriction. Consumed by remote_allowed(); see docs/git-setup-flow-spec.md.
+CONFIG_REMOTE_ALLOW=""
+CONFIG_REMOTE_BLOCKED_PATHS=""
+
 #=============================================================================
 # YAML OPERATIONS
 #=============================================================================
@@ -270,6 +277,8 @@ load_config() {
     CONFIG_GITLAB_HOST=""
     CONFIG_GITLAB_DEFAULT_VISIBILITY=""
     CONFIG_GITLAB_DEFAULT_BRANCH=""
+    CONFIG_REMOTE_ALLOW=""
+    CONFIG_REMOTE_BLOCKED_PATHS=""
 
     # Load in reverse priority (later overrides earlier)
     _load_file "$CONFIG_USER"
@@ -328,6 +337,8 @@ gitlab.account                  CONFIG_GITLAB_ACCOUNT
 gitlab.host                     CONFIG_GITLAB_HOST
 gitlab.default_visibility       CONFIG_GITLAB_DEFAULT_VISIBILITY
 gitlab.default_branch           CONFIG_GITLAB_DEFAULT_BRANCH
+remote.allow                    CONFIG_REMOTE_ALLOW
+remote.blocked_paths            CONFIG_REMOTE_BLOCKED_PATHS
 "
 
 # Friendly user-key aliases that do NOT follow the derivation rule (user key =
@@ -538,9 +549,10 @@ EOF
                     return 1
                 } ;;
             profile_name|profile)
+                # 'analysis' accepted as a deprecated alias for 'tidyverse'.
                 case "$value" in
-                    minimal|analysis|rstudio) ;;
-                    *) log_error "Unknown profile: $value (valid: minimal, analysis, rstudio)"
+                    minimal|tidyverse|analysis|rstudio) ;;
+                    *) log_error "Unknown profile: $value (valid: minimal, tidyverse, rstudio)"
                        return 1 ;;
                 esac ;;
             archetype)
@@ -565,6 +577,12 @@ EOF
                 case "$value" in
                     github|gitlab|none) ;;
                     *) log_error "Unknown forge: $value (valid: github, gitlab, none)"
+                       return 1 ;;
+                esac ;;
+            remote_allow)
+                case "$value" in
+                    true|false) ;;
+                    *) log_error "Expected true or false for $key (got: $value)"
                        return 1 ;;
                 esac ;;
         esac
@@ -613,6 +631,59 @@ config_get() {
         local var
         var=$(_yaml_path_to_var "$yaml_path") && printf '%s\n' "${!var}"
     fi
+}
+
+# Reason string set by remote_allowed() when it denies a remote, so callers can
+# tell the user which signal fired. Empty when remotes are permitted.
+ZZCOLLAB_REMOTE_DENY_REASON=""
+
+# remote_allowed [DIR]
+# Confidential-repo guard (see docs/git-setup-flow-spec.md). Returns 0 when
+# creating a git remote is permitted for DIR (default cwd), 1 when denied.
+# Fail-closed: any one positive deny signal wins. On denial, sets
+# ZZCOLLAB_REMOTE_DENY_REASON to a human-readable cause. Signals:
+#   1. a .zzcollab-no-remote marker file in DIR
+#   2. config remote.allow == false (user or project level)
+#   3. DIR's resolved path lies under a config remote.blocked_paths prefix
+remote_allowed() {
+    local dir="${1:-$PWD}"
+    ZZCOLLAB_REMOTE_DENY_REASON=""
+
+    # 1. Marker file: travels with the project, needs no configuration.
+    if [[ -f "$dir/.zzcollab-no-remote" ]]; then
+        ZZCOLLAB_REMOTE_DENY_REASON=".zzcollab-no-remote marker file present"
+        return 1
+    fi
+
+    # The remaining signals are config-backed.
+    load_config 2>/dev/null || true
+
+    # 2. Explicit opt-out.
+    if [[ "${CONFIG_REMOTE_ALLOW:-}" == "false" ]]; then
+        ZZCOLLAB_REMOTE_DENY_REASON="remote.allow is false in config"
+        return 1
+    fi
+
+    # 3. Blocked-path prefix match. Resolve symlinks on both sides (the project
+    # tree may be a symlink, e.g. a Dropbox mount) so the comparison is on real
+    # paths. A leading ~ in a configured prefix expands to $HOME.
+    if [[ -n "${CONFIG_REMOTE_BLOCKED_PATHS:-}" ]]; then
+        local resolved prefix exp
+        resolved=$(cd "$dir" 2>/dev/null && pwd -P) || resolved="$dir"
+        local -a prefixes=()
+        read -ra prefixes <<< "$CONFIG_REMOTE_BLOCKED_PATHS"
+        for prefix in "${prefixes[@]}"; do
+            exp="${prefix/#\~/$HOME}"
+            [[ -d "$exp" ]] && exp=$(cd "$exp" 2>/dev/null && pwd -P)
+            [[ -z "$exp" ]] && continue
+            if [[ "$resolved" == "$exp" || "$resolved" == "$exp"/* ]]; then
+                ZZCOLLAB_REMOTE_DENY_REASON="path is under a remote.blocked_paths prefix ($prefix)"
+                return 1
+            fi
+        done
+    fi
+
+    return 0
 }
 
 config_list() {

@@ -138,6 +138,16 @@ _toggle_feature_info() {
             "Effect: writes missing deps to DESCRIPTION" \
             "Scope:  zzrenvcheck on validate / check-renv" \
             "Default: off" ;;
+        git) printf '%s\n' \
+            "Version control (git)" \
+            "Runs:   git init + .gitignore + initial commit" \
+            "Pillar: makes the compendium version-controlled" \
+            "Remove: zzc rm git (this wizard never deletes)" ;;
+        remote) printf '%s\n' \
+            "Create remote repository now" \
+            "Runs:   zzc github / zzc gitlab for the chosen forge" \
+            "Default: off (opt-in); private visibility" \
+            "Guard:  hidden for confidential projects" ;;
         *) printf 'No info for: %s\n' "$1" ;;
     esac
 }
@@ -396,9 +406,37 @@ run_feature_wizard() {
     fi
     case "$want_forge" in github|gitlab|none) ;; *) want_forge="$def_forge" ;; esac
 
+    # --- Version-control items (init mode only) ----------------------------
+    # git (default on) and remote (default off) are creation-time, one-shot
+    # actions, not steady-state toggles: removal is owned by `zzc rm git` /
+    # `zzc rm github`. They are therefore offered only during `zzc init`, never
+    # in a later `zzc toggle`. See docs/git-setup-flow-spec.md.
+    local cur_git=off cur_remote=off def_git=on def_remote=off
+    local show_git=false show_remote=false
+    if [[ "$mode" == init ]]; then
+        [[ -d .git ]] && cur_git=on
+        git remote get-url origin &>/dev/null && cur_remote=on
+        show_git=true
+        # remote is offered only when it can actually succeed: a real forge, an
+        # interactive session, the forge CLI present, and the confidential-repo
+        # guard permitting it. Otherwise it is hidden and stays off.
+        if [[ "$want_forge" != none ]] && [[ -t 0 ]] && remote_allowed; then
+            local _forge_cli=gh
+            [[ "$want_forge" == gitlab ]] && _forge_cli=glab
+            command -v "$_forge_cli" >/dev/null 2>&1 && show_remote=true
+        fi
+    fi
+
+    # Build the checklist option list, appending the version-control items when
+    # shown, so the static feature set and the init-only items share one widget.
+    local -a feat_opts=(docker ci data code-quality tests cloud \
+        validate-strict validate-fix)
+    [[ "$show_git" == true ]]    && feat_opts+=(git)
+    [[ "$show_remote" == true ]] && feat_opts+=(remote)
+
     # --- Desired feature checklist (multi-select) --------------------------
     local want_docker want_ci want_data want_quality want_tests want_cloud
-    local want_vstrict want_vfix
+    local want_vstrict want_vfix want_git="$cur_git" want_remote=off
     if [[ "$use_fzf" == true || "$use_gum" == true ]]; then
         local sel=() chosen
         [[ "$def_docker" == on ]]  && sel+=("docker")
@@ -411,14 +449,15 @@ run_feature_wizard() {
         # (zzrenvcheck), not artifacts; carried in the same checklist.
         [[ "$def_vstrict" == on ]] && sel+=("validate-strict")
         [[ "$def_vfix" == on ]]    && sel+=("validate-fix")
+        [[ "$show_git" == true && "$def_git" == on ]]       && sel+=("git")
+        [[ "$show_remote" == true && "$def_remote" == on ]] && sel+=("remote")
         local sel_csv; sel_csv=$(IFS=,; echo "${sel[*]}")
         if [[ "$use_fzf" == true ]]; then
-            chosen=$(_toggle_choose_features "$sel_csv" \
-                docker ci data code-quality tests cloud validate-strict validate-fix) \
+            chosen=$(_toggle_choose_features "$sel_csv" "${feat_opts[@]}") \
                 || { echo "Cancelled; no changes."; return 0; }
         else
             chosen=$(gum_multichoose "Features (space toggles, enter applies)" \
-                "$sel_csv" docker ci data code-quality tests cloud validate-strict validate-fix) \
+                "$sel_csv" "${feat_opts[@]}") \
                 || { echo "Cancelled; no changes."; return 0; }
         fi
         grep -qx docker          <<< "$chosen" && want_docker=on  || want_docker=off
@@ -429,6 +468,8 @@ run_feature_wizard() {
         grep -qx cloud           <<< "$chosen" && want_cloud=on   || want_cloud=off
         grep -qx validate-strict <<< "$chosen" && want_vstrict=on || want_vstrict=off
         grep -qx validate-fix    <<< "$chosen" && want_vfix=on    || want_vfix=off
+        [[ "$show_git" == true ]]    && { grep -qx git    <<< "$chosen" && want_git=on    || want_git=off; }
+        [[ "$show_remote" == true ]] && { grep -qx remote <<< "$chosen" && want_remote=on || want_remote=off; }
     else
         want_docker=$(_toggle_ask  "Docker environment"          "$def_docker")
         want_ci=$(_toggle_ask      "CI workflows"                "$def_ci")
@@ -438,6 +479,8 @@ run_feature_wizard() {
         want_cloud=$(_toggle_ask   "Cloud launch (devcontainer)" "$def_cloud")
         want_vstrict=$(_toggle_ask "Validation: strict (scan tests/ & vignettes/)" "$def_vstrict")
         want_vfix=$(_toggle_ask    "Validation: auto-fix DESCRIPTION" "$def_vfix")
+        [[ "$show_git" == true ]]    && want_git=$(_toggle_ask    "Initialize git + first commit" "$def_git")
+        [[ "$show_remote" == true ]] && want_remote=$(_toggle_ask "Create $want_forge remote now"  "$def_remote")
     fi
 
     # Backend nudge (advisory, not a constraint): renv pins packages (L1) but
@@ -477,6 +520,8 @@ run_feature_wizard() {
     [[ "$want_cloud"   != "$cur_cloud"   ]] && changes+=("cloud: $cur_cloud -> $want_cloud")
     [[ "$want_vstrict" != "$cur_vstrict" ]] && changes+=("validate-strict: $cur_vstrict -> $want_vstrict")
     [[ "$want_vfix"    != "$cur_vfix"    ]] && changes+=("validate-fix: $cur_vfix -> $want_vfix")
+    [[ "$show_git" == true && "$want_git" != "$cur_git" ]] && changes+=("git: $cur_git -> $want_git")
+    [[ "$show_remote" == true && "$want_remote" == on ]]   && changes+=("remote: create $want_forge repository")
 
     if [[ ${#changes[@]} -eq 0 ]]; then
         echo "No changes."
@@ -571,6 +616,22 @@ run_feature_wizard() {
     fi
     if [[ "$want_vfix" != "$cur_vfix" ]]; then
         config_set validate-fix "$([[ "$want_vfix" == on ]] && echo true || echo false)" true >/dev/null
+    fi
+
+    # Version control genuinely last, after every file and config mutation
+    # above (CI, Docker, zzcollab.yaml writes), so the initial commit captures
+    # the complete scaffold. git init is idempotent (cmd_git no-ops when .git
+    # exists); removal is not offered here, only via `zzc rm git`.
+    if [[ "$show_git" == true && "$want_git" == on && "$cur_git" == off ]]; then
+        cmd_git && _ensure_initial_commit
+    fi
+    # Remote creation (opt-in) dispatches to the forge command, which re-checks
+    # the confidential guard, auth, and an existing remote before pushing.
+    if [[ "$show_remote" == true && "$want_remote" == on ]]; then
+        case "$want_forge" in
+            github) cmd_github ;;
+            gitlab) cmd_gitlab ;;
+        esac
     fi
 
     echo ""

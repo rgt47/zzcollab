@@ -1602,6 +1602,15 @@ Generated with zzcollab" || {
 }
 
 cmd_github() {
+    # Confidential-repo guard: refuse before any git/gh action when remotes are
+    # denied for this project (marker file, remote.allow=false, or a blocked
+    # path prefix). See docs/git-setup-flow-spec.md.
+    if ! remote_allowed; then
+        log_error "Remote creation is disabled for this project"
+        log_info "Reason: ${ZZCOLLAB_REMOTE_DENY_REASON}"
+        return 1
+    fi
+
     # Ensure git is initialized first
     cmd_git || return 1
     _ensure_initial_commit || return 1
@@ -1693,6 +1702,13 @@ cmd_github() {
 # the namespace (gitlab.account, else the authenticated user), and visibility
 # (gitlab.default_visibility, default private; GitLab also allows internal).
 cmd_gitlab() {
+    # Confidential-repo guard (see cmd_github and docs/git-setup-flow-spec.md).
+    if ! remote_allowed; then
+        log_error "Remote creation is disabled for this project"
+        log_info "Reason: ${ZZCOLLAB_REMOTE_DENY_REASON}"
+        return 1
+    fi
+
     cmd_git || return 1
     _ensure_initial_commit || return 1
 
@@ -1991,12 +2007,13 @@ _quickstart_existing_project() {
 ##############################################################################
 # FUNCTION: cmd_quickstart
 # PURPOSE:  Smart profile command - quickstart for new, switch for existing
-# USAGE:    zzcollab analysis
+# USAGE:    zzcollab tidyverse
 #           zzcollab minimal
-# ARGS:     $1 - profile name (minimal, analysis, rstudio)
+# ARGS:     $1 - profile name (minimal, tidyverse, rstudio; 'analysis' is a
+#           deprecated alias for 'tidyverse')
 ##############################################################################
 cmd_quickstart() {
-    local profile="${1:-analysis}"
+    local profile="${1:-tidyverse}"
 
 
     # Load resolved config so scaffolded metadata (DESCRIPTION/LICENSE author,
@@ -2007,7 +2024,7 @@ cmd_quickstart() {
     local base_image
     base_image=$(get_profile_base_image "$profile") || {
         log_error "Unknown profile: $profile"
-        log_info "Available: minimal, analysis, rstudio"
+        log_info "Available: minimal, tidyverse, rstudio"
         return 1
     }
 
@@ -2054,8 +2071,9 @@ cmd_quickstart() {
     setup_project_safe || return 1
     log_success "Project structure created"
 
-    # Install zzvim-R graphics template for the analysis profile
-    if [[ "$profile" == "analysis" ]]; then
+    # Install zzvim-R graphics template for the tidyverse profile
+    # ('analysis' accepted as the deprecated alias).
+    if [[ "$profile" == "tidyverse" || "$profile" == "analysis" ]]; then
         install_zzvimr_graphics_template || true
     fi
 
@@ -2118,7 +2136,7 @@ cmd_tools() {
 
     if ! is_workspace_initialized; then
         log_error "Not in a zzcollab project"
-        log_info "Run a profile command first, e.g. 'zzc analysis'"
+        log_info "Run a profile command first, e.g. 'zzc tidyverse'"
         return 1
     fi
 
@@ -2473,7 +2491,7 @@ Global options (any position):
 
 Per-command options (must follow their command):
   docker:    -b, --build              Build image after generating
-             -r, --profile <name>     Select profile (analysis, minimal, ...)
+             -r, --profile <name>     Select profile (tidyverse, minimal, ...)
              --base-image <img>       Override base image
              --r-version <ver>        Pin R version
   push:      -t, --tag <tag>          Image tag (default: latest); alias: dockerhub
@@ -2490,7 +2508,7 @@ Note: -t is the DockerHub image tag, not team; set the team with
       'zzcollab config set dockerhub-account NAME'.
 
 Examples:
-  zzcollab analysis                # Quickstart: init + renv + docker (recommended)
+  zzcollab tidyverse               # Quickstart: init + renv + docker (recommended)
   zzcollab minimal                 # Quickstart with minimal profile
   zzcollab init                    # Create zzcollab structure only
   zzcollab docker                  # Add Docker (auto-adds renv, init)
@@ -2535,11 +2553,11 @@ _menu_change_profile() {
     if has_gum; then
         local args=(gum choose --header "Select profile (current: ${current:-none})")
         [[ -n "$current" ]] && args+=(--selected "$current")
-        args+=(minimal analysis rstudio)
+        args+=(minimal tidyverse rstudio)
         new=$("${args[@]}") || return 0
     else
         new=$(_menu_choose "Select profile (current: ${current:-none})" \
-            minimal analysis rstudio) || return 0
+            minimal tidyverse rstudio) || return 0
     fi
     [[ -z "$new" ]] && return 0
     cmd_docker --profile "$new"
@@ -2625,7 +2643,7 @@ _menu_add_package() {
 cmd_menu() {
     if ! is_workspace_initialized; then
         log_error "No zzcollab project in this directory."
-        log_info  "Create one first:  zzcollab analysis  (or minimal, rstudio)"
+        log_info  "Create one first:  zzcollab tidyverse  (or minimal, rstudio)"
         return 1
     fi
     # Repo entry follows the configured forge (GitHub or GitLab).
@@ -2780,8 +2798,9 @@ main() {
                             docker_args+=("$1" "$2")
                             shift 2
                             ;;
-                        # Profile names as implicit --profile
-                        minimal|analysis|rstudio)
+                        # Profile names as implicit --profile ('analysis' is a
+                        # deprecated alias for 'tidyverse').
+                        minimal|tidyverse|analysis|rstudio)
                             docker_args+=("--profile" "$1")
                             shift
                             ;;
@@ -2897,7 +2916,8 @@ main() {
                 ;;
 
             # Profile names as standalone commands → full quickstart
-            minimal|analysis|rstudio)
+            # ('analysis' is a deprecated alias for 'tidyverse').
+            minimal|tidyverse|analysis|rstudio)
                 local profile_name="$1"
                 shift
                 # The quickstart takes no flags. A trailing flag (e.g.

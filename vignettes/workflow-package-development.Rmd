@@ -27,6 +27,29 @@ This vignette demonstrates the recommended workflow for R package development us
 
 **Key Philosophy**: Use the **same structure** for package development as data analysis. No separate "package paradigm"—just add package infrastructure progressively as needed [@marwick2018].
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in `vignette('glossary')`.
+>
+> - **Research compendium**: a single version-controlled unit bundling
+>   data, code, environment, and documentation.
+> - **Archetype**: the project type chosen at creation (here, a
+>   package), which shapes the starter layout.
+> - **Unit test / tinytest**: a focused check that one piece of code
+>   behaves as intended; zzcollab projects use tinytest.
+> - **roxygen2**: the in-source documentation system that generates
+>   `man/*.Rd` help files from comments above each function.
+> - **`R CMD check`**: the standard tool validating package structure,
+>   documentation, and tests.
+> - **Code coverage**: the fraction of code actually exercised by the
+>   tests.
+> - **Continuous integration (CI)**: automatically building and
+>   testing code on every push (here, via GitHub Actions).
+> - **`renv.lock`**: a JSON record of every package version needed to
+>   rebuild the environment.
+> - **Raw vs derived data**: immutable original data files versus the
+>   processed, analysis-ready datasets generated from them.
+
 ## What You Will Learn
 
 - Developing R packages following rrtools conventions

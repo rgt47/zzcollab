@@ -24,6 +24,25 @@ knitr::opts_chunk$set(
 
 This quick start guide demonstrates how to use **RStudio Server** inside a Docker container for reproducible analysis. You'll work in a familiar RStudio interface while maintaining complete reproducibility through Docker and renv.
 
+> **Key terms in this vignette.** New to the vocabulary? These are the
+> terms this guide uses; each is defined again on first use. Full
+> definitions are in `vignette('glossary')`.
+>
+> - **Profile**: the Docker image bundle the environment is built from;
+>   here the `rstudio` profile (RStudio Server in the browser).
+> - **Docker / container / image**: a tool that packages software with
+>   its environment; a running instance and its template.
+> - **renv**: an R package giving each project its own isolated,
+>   version-pinned package library.
+> - **Continuous integration (CI)**: automatically building and testing
+>   code on every push.
+> - **Unit test / testthat / tinytest**: a focused check that one piece
+>   of code behaves as intended.
+> - **Base image**: the starting Docker image a project builds on
+>   (e.g. `rocker/rstudio`).
+> - **`zzc` / `zzcollab`**: the framework's command-line interface;
+>   `zzc` is an alias for `zzcollab`.
+
 **What you will build:**
 
 - RStudio Server environment accessible via browser

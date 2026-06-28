@@ -172,7 +172,8 @@ test_no_team_init_flags() {
 }
 
 test_no_removed_profiles() {
-  # The profile set is minimal/analysis/rstudio. The removed profiles
+  # The profile set is minimal/tidyverse/rstudio ('analysis' is a deprecated
+  # alias for tidyverse). The removed profiles
   # (modeling, publishing, shiny, analysis_pdf, manuscript-package) must not
   # appear as a 'zzcollab <profile>' or '--profile <profile>' invocation.
   # Scoped to invocations, so bundle keys and base-image strings (rocker/shiny,
@@ -183,7 +184,7 @@ test_no_removed_profiles() {
   matches="$matches$(grep_active_docs "\-\-profile \($removed\)")"
   matches="$matches$(grep_active_docs "\-r \($removed\)")"
   if [[ -n "$matches" ]]; then
-    echo "FAIL: Found removed profile in a 'zzcollab <profile>'/'--profile' invocation (live profiles: minimal, analysis, rstudio):" >&2
+    echo "FAIL: Found removed profile in a 'zzcollab <profile>'/'--profile' invocation (live profiles: minimal, tidyverse, rstudio):" >&2
     echo "$matches" | head -5 >&2
     return 1
   fi

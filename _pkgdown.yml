@@ -44,6 +44,8 @@ navbar:
           href: articles/testing.html
         - text: Report
           href: articles/report.html
+        - text: Glossary
+          href: articles/glossary.html
 
 articles:
   - title: Getting started
@@ -56,6 +58,7 @@ articles:
       - quickstart2
       - quickstart3
       - configuration
+      - glossary
   - title: Concepts
     navbar: ~
     contents:

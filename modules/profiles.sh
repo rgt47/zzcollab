@@ -261,6 +261,10 @@ get_package_build_deps() {
 
 get_profile_base_image() {
     local profile="$1"
+    # Deprecated alias: the 'analysis' profile was renamed to 'tidyverse' to
+    # avoid colliding with the 'analysis' research archetype. Accept the old
+    # name so existing configs and scripts keep resolving to rocker/tidyverse.
+    [[ "$profile" == "analysis" ]] && profile="tidyverse"
     local bundles_file="${ZZCOLLAB_TEMPLATES_DIR:-$HOME/.zzcollab/templates}/bundles.yaml"
 
     command -v yq >/dev/null 2>&1 || { echo "rocker/r-ver"; return 0; }
