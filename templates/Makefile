@@ -88,7 +88,7 @@ check-renv-no-strict: ## Validate deps: skip tests/ and vignettes/
 # Terminal: Interactive bash for vim editing.
 # No check-renv prerequisite: that spins up a full container validation before
 # you get a shell, and a second validation already runs after the session.
-r: ## Interactive R session (Docker/Podman, nix develop, or apptainer shell)
+r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if no container)
 	@if [ "$(CONTAINER_RUNTIME)" = apptainer ]; then \
 		if [ ! -f $(SIF) ]; then \
 			echo "No $(SIF) found - build it first: make sif"; exit 1; \
@@ -98,13 +98,39 @@ r: ## Interactive R session (Docker/Podman, nix develop, or apptainer shell)
 		exit 0; \
 	fi; \
 	if [ -f flake.nix ]; then \
-		echo "❄️  Nix backend detected; entering 'nix develop'..."; \
-		nix develop; \
-		exit 0; \
+		if command -v nix >/dev/null 2>&1; then \
+			echo "❄️  Nix backend detected; entering 'nix develop'..."; \
+			nix develop; \
+			exit 0; \
+		fi; \
+		echo "⚠️  flake.nix present but 'nix' is not installed; skipping Nix."; \
 	fi; \
-	if [ ! -f Dockerfile ]; then \
+	if [ ! -f Dockerfile ] || ! $(CONTAINER_RUNTIME) image inspect $(PACKAGE_NAME) >/dev/null 2>&1; then \
 		echo ""; \
-		echo "❌ No Dockerfile found - workspace not initialized"; \
+		if [ ! -f Dockerfile ]; then \
+			echo "⚠️  No Dockerfile found - workspace not initialized."; \
+		elif ! command -v $(CONTAINER_RUNTIME) >/dev/null 2>&1; then \
+			echo "⚠️  '$(CONTAINER_RUNTIME)' is not installed."; \
+		elif ! $(CONTAINER_RUNTIME) info >/dev/null 2>&1; then \
+			echo "⚠️  '$(CONTAINER_RUNTIME)' is installed but not responding"; \
+			echo "    (daemon stopped, or 'podman machine' not started?)."; \
+		else \
+			echo "⚠️  Container image '$(PACKAGE_NAME)' not built."; \
+		fi; \
+		if command -v R >/dev/null 2>&1; then \
+			echo ""; \
+			echo "Host R available: $$(command -v R)"; \
+			echo "WARNING: host packages may differ from the container;"; \
+			echo "         a host session is not guaranteed reproducible."; \
+			printf "Run host R anyway? [y/N] "; \
+			read _ans; \
+			case "$$_ans" in \
+				[Yy]*) echo ""; R; exit 0 ;; \
+				*) echo "Aborted."; exit 1 ;; \
+			esac; \
+		fi; \
+		echo ""; \
+		echo "❌ No container available and no host R found."; \
 		echo ""; \
 		echo "Run zzcollab to create a Docker environment:"; \
 		echo ""; \
@@ -152,7 +178,9 @@ r: ## Interactive R session (Docker/Podman, nix develop, or apptainer shell)
 			   || echo "⚠️  Package validation failed" ;; \
 		esac; \
 	fi
-	$(MAKE) test-container
+	@if [ -f Dockerfile ] && $(CONTAINER_RUNTIME) image inspect $(PACKAGE_NAME) >/dev/null 2>&1; then \
+		$(MAKE) test-container; \
+	fi
 
 docker-rstudio: ## RStudio Server at http://localhost:8787
 	@echo "Starting RStudio Server on http://localhost:8787"
