@@ -637,7 +637,10 @@ EOF
 local({
     if (!requireNamespace("renv", quietly = TRUE)) {
         message("Installing renv...")
-        install.packages("renv", repos = "https://cloud.r-project.org")
+        # utils:: qualifier: this runs while .Rprofile is sourced, when only
+        # the base package is attached, so bare install.packages() is not yet
+        # on the search path (see ?Startup).
+        utils::install.packages("renv", repos = "https://cloud.r-project.org")
     }
     renv::load()
 })

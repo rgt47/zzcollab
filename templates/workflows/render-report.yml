@@ -123,6 +123,10 @@ jobs:
               if (!is.na(baked_lib) && nzchar(baked_lib)) {
                 .libPaths(c(baked_lib, .libPaths()))
               }
+              if (!requireNamespace("rmarkdown", quietly = TRUE)) {
+                install.packages("rmarkdown",
+                                 repos = "https://cloud.r-project.org")
+              }
               rmds <- unique(c(
                 list.files("analysis", pattern = "^report[.]Rmd$",
                            recursive = TRUE, full.names = TRUE),
