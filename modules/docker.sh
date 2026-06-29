@@ -82,13 +82,13 @@ create_renv_lock_minimal() {
   "Packages": {
     "renv": {
       "Package": "renv",
-      "Version": "1.1.5",
+      "Version": "${ZZCOLLAB_DEFAULT_RENV_VERSION}",
       "Source": "Repository",
       "Repository": "RSPM"
     },
     "tinytest": {
       "Package": "tinytest",
-      "Version": "1.4.3",
+      "Version": "${ZZCOLLAB_DEFAULT_TINYTEST_VERSION}",
       "Source": "Repository",
       "Repository": "RSPM"
     }

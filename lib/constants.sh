@@ -62,6 +62,12 @@ readonly ZZCOLLAB_VERSION="0.1.0"
 readonly ZZCOLLAB_TEMPLATE_VERSION="$ZZCOLLAB_VERSION"
 readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
 readonly ZZCOLLAB_DEFAULT_R_VERSION="4.6.0"
+# Package versions for the minimal starter renv.lock. Bumped per release to
+# track current CRAN/PPM versions, so a generated lockfile pins versions that
+# still have precompiled binaries. An older pin (e.g. an archived renv) is
+# source-only on PPM and compiles from scratch.
+readonly ZZCOLLAB_DEFAULT_RENV_VERSION="1.2.3"
+readonly ZZCOLLAB_DEFAULT_TINYTEST_VERSION="1.4.3"
 # Pinned tag for the zzrenvcheck validation tool installed into the image.
 # Bump this constant when upgrading zzrenvcheck.
 readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.3.1}"

@@ -340,9 +340,12 @@ done), not by removal or caching.
   renv library if runtime ('Layer 2') installs are to be supported.
 - **F-5, zzrenvcheck self-sufficiency.** Decide whether to document the
   post-build install as an explicit image limitation.
-- **Stale hardcoded renv pin.** Independent of F-9's restore fix, the minimal
-  lockfile hardcodes renv 1.1.5 (`create_renv_lock_minimal`); a maintained or
-  derived current version would also avoid the staleness at its source.
+- **Stale hardcoded renv pin -- resolved (change log CL-3).**
+  `create_renv_lock_minimal` no longer hardcodes renv 1.1.5 (which PPM serves
+  only as archived source). It now reads `ZZCOLLAB_DEFAULT_RENV_VERSION` and
+  `ZZCOLLAB_DEFAULT_TINYTEST_VERSION` from `lib/constants.sh`, set to current
+  versions and bumped per release like `ZZCOLLAB_DEFAULT_R_VERSION`. This
+  removes the staleness at its source, complementing F-9's restore-time fix.
 - **Layer consolidation.** Low priority; needs measurement, since merging
   `RUN` layers trades rebuild granularity for fewer layers.
 
@@ -418,6 +421,19 @@ cache-mount test, and the branch was simplified to two changes.
 - **Final branch state:** two generator changes only, F-8 (Ncpus) and F-9
   (`exclude = 'renv'`). Net cold build 233.1 -> 91.8 seconds (-61%),
   shellcheck-clean, runtime-verified.
+
+### CL-3. Unstale the generated renv.lock pins (separate branch)
+
+Addresses the source-side counterpart of F-9. `create_renv_lock_minimal`
+hardcoded renv 1.1.5 and tinytest 1.4.3; renv 1.1.5 is archive-only on PPM
+(a request for its noble binary returns 404), so any generated lockfile
+pinned a version that would compile from source. The versions are now
+`ZZCOLLAB_DEFAULT_RENV_VERSION` and `ZZCOLLAB_DEFAULT_TINYTEST_VERSION` in
+`lib/constants.sh` (1.2.3 and 1.4.3, the current PPM versions), bumped per
+release like `ZZCOLLAB_DEFAULT_R_VERSION`. Verified: a freshly generated
+`renv.lock` pins renv 1.2.3; shellcheck-clean. The F-9 restore-time fix
+(`exclude = 'renv'`) remains as defence for user-supplied lockfiles that
+still pin an archived renv.
 
 ## 7. Verification plan
 
@@ -1139,5 +1155,5 @@ statistics but not necessarily in container tooling.
   block; the generator uses one to write the Dockerfile.
 
 ---
-*Rendered on 2026-06-28 at 18:56 PDT.*<br>
+*Rendered on 2026-06-29 at 11:36 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/dockerfile-template-optimization-whitepaper.md*
