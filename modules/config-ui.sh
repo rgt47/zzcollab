@@ -335,6 +335,11 @@ _config_profile_info() {
             "Base:    rocker/rstudio" \
             "R:       RStudio Server in the container" \
             "Use for: browser-based IDE workflows" ;;
+        publishing) printf '%s\n' \
+            "Profile: publishing" \
+            "Base:    rocker/verse" \
+            "R:       rmarkdown, bookdown, knitr, LaTeX preinstalled" \
+            "Use for: rendering manuscripts and reports (HTML/PDF)" ;;
         *) printf 'No info for: %s\n' "$1" ;;
     esac
 }
@@ -529,7 +534,7 @@ config_project_prompt() {
     local val new_profile new_r_version new_github new_team
 
     prompt_select "Docker profile" \
-        "minimal,tidyverse,rstudio" \
+        "minimal,tidyverse,rstudio,publishing" \
         "$default_profile" val _config_profile_info || return 1
     new_profile="$val"
 
@@ -982,7 +987,7 @@ _setup_change_existing() {
     echo ""
 
     prompt_select "Default profile" \
-        "minimal,tidyverse,rstudio" \
+        "minimal,tidyverse,rstudio,publishing" \
         "${CONFIG_PROFILE_NAME:-tidyverse}" val _config_profile_info \
         || { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "defaults.profile_name" "$val"

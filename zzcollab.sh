@@ -2055,7 +2055,7 @@ cmd_quickstart() {
     local base_image
     base_image=$(get_profile_base_image "$profile") || {
         log_error "Unknown profile: $profile"
-        log_info "Available: minimal, tidyverse, rstudio"
+        log_info "Available: minimal, tidyverse, rstudio, publishing"
         return 1
     }
 
@@ -2831,7 +2831,7 @@ main() {
                             ;;
                         # Profile names as implicit --profile ('analysis' is a
                         # deprecated alias for 'tidyverse').
-                        minimal|tidyverse|analysis|rstudio)
+                        minimal|tidyverse|analysis|rstudio|publishing)
                             docker_args+=("--profile" "$1")
                             shift
                             ;;
@@ -2948,7 +2948,7 @@ main() {
 
             # Profile names as standalone commands → full quickstart
             # ('analysis' is a deprecated alias for 'tidyverse').
-            minimal|tidyverse|analysis|rstudio)
+            minimal|tidyverse|analysis|rstudio|publishing)
                 local profile_name="$1"
                 shift
                 # The quickstart takes no flags. A trailing flag (e.g.

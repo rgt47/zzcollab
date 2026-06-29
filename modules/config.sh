@@ -550,8 +550,8 @@ EOF
             profile_name|profile)
                 # 'analysis' accepted as a deprecated alias for 'tidyverse'.
                 case "$value" in
-                    minimal|tidyverse|analysis|rstudio) ;;
-                    *) log_error "Unknown profile: $value (valid: minimal, tidyverse, rstudio)"
+                    minimal|tidyverse|analysis|rstudio|publishing) ;;
+                    *) log_error "Unknown profile: $value (valid: minimal, tidyverse, rstudio, publishing)"
                        return 1 ;;
                 esac ;;
             archetype)

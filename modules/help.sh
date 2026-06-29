@@ -27,7 +27,7 @@ Commands:
   init [--force] [--archetype A]
                         Create compendium structure (archetype: manuscript|
                         analysis|package|simulation|blog; default analysis)
-  tidyverse | minimal | rstudio
+  tidyverse | minimal | rstudio | publishing
                         Quickstart: init + renv + docker (new project),
                         or switch profile (existing project)
                         ('analysis' still works as a deprecated alias)
@@ -138,6 +138,7 @@ PROFILES
   minimal     Base R, command-line only          (~650MB)
   analysis    Tidyverse data analysis            (~1.2GB)  [recommended]
   rstudio     RStudio Server                     (~980MB)
+  publishing  Manuscript rendering (LaTeX)       (~4.2GB)
 
   zzc <profile>          New project: init + renv + docker
                          Existing project: switch profile, regenerate Dockerfile

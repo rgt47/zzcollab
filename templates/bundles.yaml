@@ -72,9 +72,10 @@ package_bundles:
 # Predefined combinations of base-image + libs + pkgs
 # Run 'zzc help profiles' for descriptions
 #
-# Three canonical profiles. For specialised needs (LaTeX, modeling, shiny),
-# start from one of these and add packages inside the container with
-# install.packages(), then commit the updated renv.lock.
+# Four profiles. 'publishing' adds the rendering toolchain (rmarkdown,
+# bookdown, LaTeX) via the rocker/verse base. For other specialised needs
+# (modeling, shiny), start from one of these and add packages inside the
+# container with install.packages(), then commit the updated renv.lock.
 
 profiles:
   minimal:
@@ -100,3 +101,10 @@ profiles:
     libs: minimal
     pkgs: minimal
     size: "~980MB"
+
+  publishing:
+    description: "Manuscript rendering (rmarkdown, bookdown, LaTeX)"
+    base_image: "rocker/verse"
+    libs: minimal
+    pkgs: minimal
+    size: "~4.2GB"
